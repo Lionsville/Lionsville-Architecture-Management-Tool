@@ -65,9 +65,37 @@ without being re-entered blind.
 | `AZURE_CODE_SIGNING_PROFILE` | the certificate **profile** name inside that account |
 | `AZURE_CODE_SIGNING_PUBLISHER` | must equal the certificate's CommonName **exactly** — the legal entity from the identity validation form, not the product name |
 
-The service principal needs the **Trusted Signing Certificate Profile Signer**
+The service principal needs the **Artifact Signing Certificate Profile Signer**
 role on the signing account. Without it, signing fails with a bare `403` and no
-explanation of what is forbidden.
+explanation of what is forbidden. Azure renamed that role from *Trusted Signing
+Certificate Profile Signer*, so the old name finds nothing in the portal.
+
+Every one of the four is readable from the signing account itself rather than
+remembered — `accountUri` is the endpoint, and the publisher is the `CN=` in the
+certificate profile's subject name. Read them; the publisher in particular is the
+legal entity and looks nothing like the product name.
+
+### The signing identity is this app's own
+
+`lionsville-architecture-tool-signing` is an app registration dedicated to this
+repository, holding that one role and nothing else. Signing here cannot be
+broken by, and cannot break, whatever else the organisation signs — which is the
+entire reason it is not shared.
+
+Its client secret is **stored nowhere**. It goes from `az` into the repository
+secret and is never written down, because a copy kept somewhere convenient is a
+copy that can leak; Azure will not show it again either. So if it is ever lost,
+do not go hunting for it — issue a new one. That costs nothing and invalidates
+nothing else, which is the whole advantage of a dedicated identity:
+
+```bash
+az ad app credential reset --id <the app registration> --append \
+  --display-name "github-actions-$(date +%Y%m%d)" --years 2 \
+  --query password -o tsv | gh secret set AZURE_CLIENT_SECRET
+```
+
+`--append` is not optional. Without it that same command **deletes every
+existing credential** on the registration before adding the new one.
 
 ## Things that have already gone wrong elsewhere
 
