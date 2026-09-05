@@ -84,3 +84,32 @@ describe.each(CASES)('$name description rendering', ({ Node, kind }) => {
     expect(queryByText('Handles the thing.')).toBeNull();
   });
 });
+
+/**
+ * A description that has grown into a page — a header table, sections, a
+ * markdown table — is drawn as its short description and nothing else. The
+ * markdown must not leak onto the canvas as text.
+ */
+const PAGE = [
+  '| Short description | Handles the thing. |',
+  '|---|---|',
+  '| Owner | Ops |',
+  '',
+  '## Interfaces',
+  '',
+  '| With | Direction |',
+  '|---|---|',
+  '| Billing | out |',
+  '',
+  '- [x] decided',
+].join('\n');
+
+describe.each(CASES)('$name with a documented element', ({ Node, kind }) => {
+  it('draws only the short description', () => {
+    const { getByText, container } = renderNode(<Node {...props(kind, PAGE)} />);
+    expect(getByText('Handles the thing.')).toBeDefined();
+    expect(container.textContent).not.toContain('Interfaces');
+    expect(container.textContent).not.toContain('|');
+    expect(container.textContent).not.toContain('Owner');
+  });
+});

@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { DESCRIPTION_TYPE, descriptionLineClamp } from '../model/placement';
+import { shortDescription } from '../model/documentation';
 import type { DesignElement, ElementKind } from '../types';
 import { ElementResizer } from './ElementResizer';
 import { LifecycleBadge } from './LifecycleBadge';
@@ -164,7 +165,8 @@ export function NodeIcon({
  * The line-clamped description block, once. Six nodes carried the same six CSS
  * properties with only the per-kind type scale differing; the clamp count is
  * derived from the node's measured height (`descriptionLineClamp`), which is the
- * part worth having in one place.
+ * part worth having in one place — as is the rule that a description that has
+ * grown into a page is drawn as its short description only.
  */
 export function NodeDescription({
   kind,
@@ -179,6 +181,9 @@ export function NodeDescription({
   sx?: SxProps<Theme>;
 }) {
   const tokens = getNodeTokens(useTheme());
+  // The one line a node shows of what may be a whole page (see
+  // model/documentation): applied here so no node can forget it.
+  const line = shortDescription(text);
   return (
     <Typography
       sx={{
@@ -192,7 +197,7 @@ export function NodeDescription({
         ...sx,
       }}
     >
-      {text ?? ''}
+      {line}
     </Typography>
   );
 }
