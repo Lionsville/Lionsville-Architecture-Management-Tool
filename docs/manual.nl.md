@@ -1,7 +1,7 @@
 <!--
   BEWAARD ALS BRONMATERIAAL — dit was README.md tot 5 september 2026.
 
-  De gebruikershandleiding verhuist naar de tool zelf (fase 9 in ROADMAP.md):
+  De gebruikershandleiding verhuist naar de tool zelf:
   in de taal van de lezer, met de taalknop mee. Tot dat zover is staat de
   Nederlandse tekst hier, zodat hij niet verloren gaat. Hij is op onderdelen
   verouderd — `src/main.tsx` is een compositiewortel van 137 regels, het

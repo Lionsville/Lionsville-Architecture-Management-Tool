@@ -15,8 +15,8 @@ import { claimKey } from './keys'
  * The working file: everything, including geometry and styling.
  *
  * A fresh definition, not a lineage. The files this tool wrote under its
- * previous name are not read — that was decided deliberately (see phase 5 in
- * ROADMAP.md) rather than by neglect, and it is why there is no list of old tags
+ * previous name are not read — that was decided deliberately, with the rename,
+ * rather than by neglect, and it is why there is no list of old tags
  * here and no migration behind it. A tool still finding its shape pays for
  * compatibility on every subsequent change; a tool with users pays for breaking
  * it. This one has no users yet, so the cheap moment is now.

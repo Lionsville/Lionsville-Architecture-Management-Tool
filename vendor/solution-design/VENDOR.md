@@ -10,7 +10,7 @@ git-remote, geen submodule en geen versie-pin die naar de bron verwijst: wat
 hier ligt is de kopie zelf en niets anders.
 
 **Wat het nu is: een fork.** Sinds **2 september 2026** wordt dit pakket hier
-onderhouden. Zo is het afgesproken in `../../ROADMAP.md` (besluit 2):
+onderhouden. Zo is het afgesproken:
 
 - **Geen upstream-synchronisatie.** Er komt geen refresh uit `hal_app`, en
   wijzigingen hier gaan niet terug. Wie een verschil met de bron zoekt, moet

@@ -30,8 +30,8 @@ import type { KeyValueStorage } from './KeyValueStorage'
  * `lvarch`, not a customer's name. It used to carry one — invisible to
  * anyone using the tool, and therefore the last place the old assumption could
  * sit unchallenged. Renaming it strands whatever is already in a browser under
- * the old prefix; that is a deliberate call taken with the rename (see phase 5
- * in ROADMAP.md), on the grounds that the working file is the durable artefact
+ * the old prefix; that is a deliberate call taken with the rename, on the
+ * grounds that the working file is the durable artefact
  * and a migration for a tool still in development outlives its usefulness by
  * years.
  */

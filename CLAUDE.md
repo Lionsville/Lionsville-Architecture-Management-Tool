@@ -4,15 +4,16 @@ The **Lionsville Architecture Management Tool**: a general-purpose architecture
 modelling tool — a Layer-7 application landscape and the C4 container diagrams
 under it. **There is no customer in this codebase.** An organisation is a
 *group*, which is data a user creates. Never write a customer's name into an
-identifier, a storage key, a file extension or a shipped example; `ROADMAP.md`
-holds the settled names (the working file is `.lvarch`). Two halves:
+identifier, a storage key, a file extension or a shipped example; *Names,
+decided* below holds the settled ones (the working file is `.lvarch`). Two
+halves:
 
 - **`vendor/solution-design/`** — the editor package (React Flow canvas, model,
   layout, i18n, PNG export). A fork, maintained here. It takes
   a `model` prop, emits `DiagramContentBatch`, and knows nothing about storage,
-  dialogs or backends. **1428 tests.** Leave it alone unless the task is in it.
+  dialogs or backends. **1435 tests.** Leave it alone unless the task is in it.
 - **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
-  **274 tests.** Almost every task lands here.
+  **352 tests.** Almost every task lands here.
 
 ## This repository is public
 
@@ -48,7 +49,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-~3 seconds: typecheck + all 274 shell tests + lint. Run it after every change.
+~3 seconds: typecheck + all 352 shell tests + lint. Run it after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.
@@ -57,7 +58,7 @@ batching up and discovering three problems at once.
 npm run check:all
 ```
 
-~40 seconds: adds the vendor package's 1428 tests, its typecheck and lint, and a
+~40 seconds: adds the vendor package's 1435 tests, its typecheck and lint, and a
 production build. Run it once before you hand work back, not during.
 
 Other commands: `npm run test:watch` · `npm run setup` (fresh clone; installs
@@ -227,9 +228,37 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
 - Errors from `core` carry a **key** (`shell.logoTooBig`), never a sentence —
   the layer that knows the language turns it into words.
 
+## Names, decided
+
+Settled 5 September 2026. Do not invent alternatives, and do not carry a name
+forward from an older document — the customer-specific file extension, storage
+prefix, example filename and window title are all dead, and are deliberately not
+written down here. This repository is public; a list of a customer's old
+identifiers is still a list of a customer's identifiers.
+
+| Thing | Value |
+|---|---|
+| Product name | **Lionsville Architecture Management Tool** |
+| Short name (menus, window title, tight spaces) | **Architecture Management Tool** |
+| Working-file extension | **`.lvarch`** |
+| Working-file discriminator (inside the JSON) | `lionsville-architecture` |
+| npm package name | `lionsville-architecture-management-tool` |
+| Desktop bundle id | `nl.lionsville.architecture` |
+| Browser storage prefix | `lvarch.project.<group>/<project>` |
+| Preferences key | `lvarch.preferences` |
+| Vendor / copyright | Lionsville Group BV |
+| Shipped example | a fictional organisation, never a real customer's landscape |
+
+Two things deliberately do **not** change:
+
+- **`.werkbestand.json` keeps opening, forever.** Every file anyone saved before
+  the rename is one. Reading is broad; writing is narrow.
+- **The interchange format is not renamed.** It is an exchange format other
+  tools read; its field names are a contract with them, not branding.
+
 ## State of play
 
-Roadmap phases 0–4 are committed (see `ROADMAP.md`, and `git log`).
+`git log` is the ground truth for what is built and when.
 
 The shell was restructured into the layers above and `main.tsx` was reduced to a
 composition root (**805 → 137 lines**, most of it the pattern brief). The IO sits
@@ -248,9 +277,14 @@ target (chrome87/safari14) has none. Switching projects **remounts** the
 workspace on purpose — the session's undo stack, id aliases and pending batches
 belong to one project and must not leak into another.
 
-`ROADMAP.md` holds the forward work — de-branding (5), the document session
-(6), the desktop app (7), branding (8) and the in-app manual (9) — and it was
-rewritten on 5 September 2026 after the names had drifted. **Read its *Names,
-decided* section before you write any name down.** It was renumbered in that
-rewrite: what older commit messages call 5C is now phase 6, and phase 6
-(Electron) is now phase 7.
+The desktop app ships: `electron/` holds the main process and preload, the
+renderer runs under `app://`, and `.github/workflows/release.yml` builds and
+signs all three platforms from a published GitHub release
+(`docs/release.md` is the operator's page). It still keeps projects in local
+storage rather than in files on disk — `src/core/documentSession.ts` and
+`src/adapters/fileSystem/` are the pure half of that work, waiting on a folder
+picker and the wiring.
+
+Older commit messages and code comments refer to numbered roadmap phases. That
+file is gone; the numbering shifted once along the way, so read such a reference
+as history, not as a plan.
