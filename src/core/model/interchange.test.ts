@@ -324,3 +324,57 @@ describe('iconType', () => {
     expect(icons(out).length).toBeGreaterThan(20)
   })
 })
+
+describe('per-diagram presentation settings', () => {
+  const base: InterchangeDoc = {
+    formatVersion: '1',
+    design: { name: 'Klein' },
+    elements: [{ key: 'app', kind: 'application', name: 'App' }],
+    diagrams: [{ key: 'l7', kind: 'layer7', name: 'Landschap', places: [{ elementKey: 'app' }] }],
+  }
+  const withDiagram = (extra: Partial<InterchangeDoc['diagrams'][number]>): InterchangeDoc =>
+    ({ ...base, diagrams: [{ ...base.diagrams[0], ...extra }] })
+
+  it('carries the title-block fields out again', () => {
+    const out = roundTrip(withDiagram({
+      author: 'W. Simons',
+      client: 'Acme Rail',
+      documentDate: '2026-09-05',
+      showTitleBlock: false,
+    }))
+    expect(diagramByKey(out, 'l7')).toMatchObject({
+      author: 'W. Simons',
+      client: 'Acme Rail',
+      documentDate: '2026-09-05',
+      showTitleBlock: false,
+    })
+  })
+
+  it('carries a renamed column and its badge code', () => {
+    const config = [{ key: 'dr', label: 'Continuity', code: 'CONT' }]
+    expect(diagramByKey(roundTrip(withDiagram({ aspectConfig: config })), 'l7').aspectConfig)
+      .toEqual(config)
+  })
+
+  /**
+   * The point of writing the empty array rather than pruning it: a document
+   * that says "no columns" must not come back saying "the default five".
+   */
+  it('keeps an empty column set empty across the round trip', () => {
+    const out = roundTrip(withDiagram({ aspectConfig: [] }))
+    expect(diagramByKey(out, 'l7').aspectConfig).toEqual([])
+  })
+
+  it('carries a hidden aspect row, configuration and all', () => {
+    const config = [{ key: 'dr', label: 'Continuity' }]
+    const out = roundTrip(withDiagram({ showAspects: false, aspectConfig: config }))
+    expect(diagramByKey(out, 'l7')).toMatchObject({ showAspects: false, aspectConfig: config })
+  })
+
+  it('says nothing about any of it when the source said nothing', () => {
+    const out = diagramByKey(roundTrip(base), 'l7')
+    for (const key of ['author', 'client', 'documentDate', 'showTitleBlock', 'aspectConfig', 'showAspects']) {
+      expect(key in out).toBe(false)
+    }
+  })
+})

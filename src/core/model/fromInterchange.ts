@@ -60,9 +60,13 @@ type InterchangeDiagram = {
   kind: DesignDiagram['kind']
   name: string
   author?: string
+  client?: string
+  documentDate?: string
+  showTitleBlock?: boolean
   applicationKey?: string
   places?: InterchangePlace[]
   aspectConfig?: DesignDiagram['aspectConfig']
+  showAspects?: boolean
 }
 
 export type InterchangeDoc = {
@@ -137,9 +141,13 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       kind: d.kind,
       name: d.name,
       author: d.author,
+      client: d.client,
+      documentDate: d.documentDate,
+      showTitleBlock: d.showTitleBlock,
       applicationElementId: d.applicationKey,
       placements,
       aspectConfig: d.aspectConfig,
+      showAspects: d.showAspects,
       needsLayout: true,
     }
   })

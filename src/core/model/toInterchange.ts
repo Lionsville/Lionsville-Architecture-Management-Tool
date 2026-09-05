@@ -100,8 +100,15 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       kind: d.kind,
       name: d.name,
       author: d.author,
+      client: d.client,
+      documentDate: d.documentDate,
+      showTitleBlock: d.showTitleBlock,
       applicationKey: k(d.applicationElementId),
-      aspectConfig: d.aspectConfig?.length ? d.aspectConfig : undefined,
+      // Written whole, empty included: an empty column set is somebody saying
+      // "none of these", and dropping it would hand the reader back the
+      // default five.
+      aspectConfig: d.aspectConfig,
+      showAspects: d.showAspects,
       places: d.placements.map((p) => prune({
         elementKey: k(p.elementId),
         zone: d.kind === 'layer7' ? p.zone : undefined,

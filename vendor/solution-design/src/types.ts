@@ -30,8 +30,18 @@ export interface AspectEntry {
 
 /** One configured aspect column on a layer7 diagram (ordered). */
 export interface AspectConfigEntry {
+  /**
+   * What per-element aspect values are filed under. Stable for the life of the
+   * column: renaming a column must not orphan every status already recorded
+   * against it, so the label moves and this does not.
+   */
   key: string;
   label: string;
+  /**
+   * What the badge cell shows, when the derived code is wrong. Absent = the
+   * curated code for a superset key, else derived from the label.
+   */
+  code?: string;
 }
 export type ElementKind =
   | 'actor'
@@ -242,13 +252,41 @@ export interface DesignDiagram {
   id: string;
   kind: 'layer7' | 'container';
   name: string;
+  /**
+   * Who drew it. Rendered in the exported PNG's title block, and nowhere else —
+   * this is a caption on a drawing, not an ownership record.
+   */
   author?: string;
+  /**
+   * Who it was drawn for, when that is not simply the group the project is
+   * filed under. Absent = the host's answer (the group name).
+   */
+  client?: string;
+  /**
+   * The date the title block carries, as `YYYY-MM-DD`. Absent = the day it was
+   * exported, which is right for a working print and wrong for a diagram that
+   * goes into a dated report and gets re-exported after a typo fix.
+   */
+  documentDate?: string;
+  /** Whether the exported PNG carries a title block at all. Absent = it does. */
+  showTitleBlock?: boolean;
   applicationElementId?: ElementId;
   placements: DiagramPlacement[];
   /** Per-diagram manual edge routes; absence/empty = default floating routing. */
   edgeRoutes?: EdgeRoute[];
-  /** Ordered aspect columns (layer7); falls back to the default five when absent. */
+  /**
+   * Ordered aspect columns (layer7); falls back to the default five when
+   * absent. An empty array is a decision, not an absence — see
+   * {@link ../model/aspects.aspectConfigFor}.
+   */
   aspectConfig?: AspectConfigEntry[];
+  /**
+   * Whether the maturity badges appear at all (layer7). Absent = they do.
+   *
+   * Separate from an empty `aspectConfig` on purpose: hiding the row for one
+   * audience must not throw away a mapping somebody spent an afternoon on.
+   */
+  showAspects?: boolean;
   layoutConfig?: DiagramLayoutConfig;
   estimatedMonthlyCost?: number;
   costEstimateNote?: string;
