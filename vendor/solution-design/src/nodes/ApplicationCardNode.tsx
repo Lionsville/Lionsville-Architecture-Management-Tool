@@ -12,6 +12,7 @@ import { DrillGlyph, LinkGlyph, WarningGlyph } from './glyphs';
 import { NodeDescription, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { AspectBadgeRow } from './AspectBadgeRow';
 import type { ElementNodeProps } from './nodeData';
+import { shortDescription } from '../model/documentation';
 
 /**
  * Application card (default 200×130, PVH/Akzo board style): category strip on
@@ -135,7 +136,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         {bodyIcon && <NodeIcon element={element} size={28} color={tokens.card.subtitle} />}
         <NodeDescription
           kind="application"
-          text={element.description}
+          text={shortDescription(element.description)}
           height={height}
           sx={{ flex: 1 }}
         />

@@ -647,4 +647,17 @@ export const NL: StringTable = {
   'group.saved': '{name} opgeslagen.',
   'group.renamed': 'Groep hernoemd naar “{name}”.',
   'group.saveFailed': 'Deze groep kon niet worden opgeslagen.',
+
+  'doc.shortDescription': 'Korte omschrijving',
+  'doc.owner': 'Eigenaar',
+  'doc.criticality': 'Bedrijfskritikaliteit',
+  'doc.users': 'Gebruikers',
+  'doc.dataClassification': 'Dataclassificatie',
+  'doc.lastReviewed': 'Laatst beoordeeld',
+  'doc.purpose': 'Doel',
+  'doc.keyFunctions': 'Kernfuncties',
+  'doc.interfaces': 'Koppelingen',
+  'doc.data': 'Gegevens',
+  'doc.operations': 'Beheer',
+  'doc.decisions': 'Besluiten en open punten',
 };

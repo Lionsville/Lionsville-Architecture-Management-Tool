@@ -674,4 +674,21 @@ export const EN = {
   'group.saved': 'Saved {name}.',
   'group.renamed': 'Group renamed to “{name}”.',
   'group.saveFailed': 'Could not save this group.',
+
+  // The documentation template: a header table, then the sections. Only what
+  // the element does not already know — vendor, technology and lifecycle are
+  // fields beside the document, not rows in it. `doc.shortDescription` is also
+  // the label `model/documentation.ts` recognises; keep them in step.
+  'doc.shortDescription': 'Short description',
+  'doc.owner': 'Owner',
+  'doc.criticality': 'Business criticality',
+  'doc.users': 'Users',
+  'doc.dataClassification': 'Data classification',
+  'doc.lastReviewed': 'Last reviewed',
+  'doc.purpose': 'Purpose',
+  'doc.keyFunctions': 'Key functions',
+  'doc.interfaces': 'Interfaces',
+  'doc.data': 'Data',
+  'doc.operations': 'Operations',
+  'doc.decisions': 'Decisions and open issues',
 } as const;

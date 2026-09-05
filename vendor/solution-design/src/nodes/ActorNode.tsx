@@ -8,6 +8,7 @@ import { useStrings } from '../i18n/LanguageContext';
 import { PersonGlyph, StickmanGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shortDescription } from '../model/documentation';
 
 /**
  * Stickman/figure mark (D11). The paths live in `glyphs.tsx` so the palette can
@@ -34,7 +35,8 @@ function Stickman({ color }: { color: string }) {
 export const ActorNode = memo(function ActorNode({ data, selected, height }: ElementNodeProps) {
   const tokens = getNodeTokens(useTheme());
   const { element } = data;
-  const hasDescription = Boolean(element.description);
+  const description = shortDescription(element.description);
+  const hasDescription = Boolean(description);
 
   // D11: the stickman render bypasses the box/radius entirely (branches BEFORE
   // shapeRadiusFor), so it never fights the actor's default pill/subtle radius.
@@ -122,7 +124,7 @@ export const ActorNode = memo(function ActorNode({ data, selected, height }: Ele
         </Typography>
       </Box>
       {hasDescription && (
-        <NodeDescription kind="actor" text={element.description} height={height} />
+        <NodeDescription kind="actor" text={description} height={height} />
       )}
     </NodeShell>
   );

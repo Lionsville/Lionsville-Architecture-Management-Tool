@@ -7,6 +7,7 @@ import { getNodeTokens } from '../theme/tokens';
 import { ChannelGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shortDescription } from '../model/documentation';
 
 /**
  * Input channel: how work and data enter the landscape (left band).
@@ -22,7 +23,8 @@ export const InputChannelNode = memo(function InputChannelNode({
 }: ElementNodeProps) {
   const tokens = getNodeTokens(useTheme());
   const { element } = data;
-  const hasDescription = Boolean(element.description);
+  const description = shortDescription(element.description);
+  const hasDescription = Boolean(description);
   return (
     <NodeShell
       element={element}
@@ -60,7 +62,7 @@ export const InputChannelNode = memo(function InputChannelNode({
         </Typography>
       </Box>
       {hasDescription && (
-        <NodeDescription kind="inputChannel" text={element.description} height={height} />
+        <NodeDescription kind="inputChannel" text={description} height={height} />
       )}
     </NodeShell>
   );
