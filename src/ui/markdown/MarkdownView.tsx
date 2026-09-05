@@ -59,7 +59,10 @@ function heading(size: string, weight = 600) {
       <Typography
         component="div"
         role="heading"
-        sx={{ fontSize: size, fontWeight: weight, lineHeight: 1.3, mt: '1.2em', mb: '0.4em', '&:first-of-type': { mt: 0 } }}
+        // `first-child`, not `first-of-type`: headings are divs and paragraphs
+        // are not, so the first heading after a paragraph is still the first
+        // div, and would lose the room it needs above it.
+        sx={{ fontSize: size, fontWeight: weight, lineHeight: 1.3, mt: '1.8em', mb: '0.5em', '&:first-child': { mt: 0 } }}
       >
         {children}
       </Typography>
@@ -78,7 +81,7 @@ function components(onElementLink?: (elementId: string) => void): Components {
     h5: heading('0.95em'),
     h6: heading('0.9em', 500),
     p: ({ children }) => (
-      <Typography component="p" sx={{ fontSize: 'inherit', lineHeight: 1.6, my: 0, '& + &': { mt: '0.7em' } }}>
+      <Typography component="p" sx={{ fontSize: 'inherit', lineHeight: 1.6, my: '0.7em', '&:first-child': { mt: 0 }, '&:last-child': { mb: 0 } }}>
         {children}
       </Typography>
     ),
