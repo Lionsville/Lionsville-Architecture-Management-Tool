@@ -71,6 +71,7 @@ export type MenuActionId =
   | 'remove-group'
   // tab
   | 'rename-diagram'
+  | 'diagram-settings'
   | 'duplicate-diagram'
   | 'delete-diagram';
 
@@ -167,6 +168,7 @@ export interface SelectionMenuFacts {
 
 export interface TabMenuFacts {
   canRename: boolean;
+  canConfigure: boolean;
   canDuplicate: boolean;
   canDelete: boolean;
   /** The only landscape left: deleting it is refused, not confirmed. */
@@ -650,6 +652,7 @@ function tabItems(ctx: MenuContext): MenuItem[] {
   const t = ctx.t ?? DEFAULT_TRANSLATE;
   const items: MenuItem[] = [];
   if (tab.canRename) items.push({ id: 'rename-diagram', label: t('menu.renameDiagram'), action: 'rename-diagram' });
+  if (tab.canConfigure) items.push({ id: 'diagram-settings', label: t('menu.diagramSettings'), action: 'diagram-settings' });
   if (tab.canDuplicate) items.push({ id: 'duplicate-diagram', label: t('menu.duplicateDiagram'), action: 'duplicate-diagram' });
   if (tab.canDelete) {
     if (items.length > 0) items.push(sep('sep-delete'));

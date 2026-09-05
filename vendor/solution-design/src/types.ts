@@ -317,6 +317,21 @@ export interface DesignDiagram {
   needsLayout?: boolean;
 }
 
+/**
+ * A diagram's own settings, as the settings dialog hands them over: the whole
+ * answer each time, not a patch. An absent field means "unset" — the host
+ * should let it fall back rather than keeping a previous value.
+ */
+export interface DiagramSettings {
+  name: string;
+  author?: string;
+  client?: string;
+  documentDate?: string;
+  showTitleBlock?: boolean;
+  aspectConfig?: AspectConfigEntry[];
+  showAspects?: boolean;
+}
+
 export interface DesignModel {
   name: string;
   customerName: string;
@@ -416,6 +431,16 @@ export interface SolutionDesignEditorProps {
   onRenameDiagram?(diagramId: string, name: string): void;
   onDuplicateDiagram?(diagramId: string): void;
   onDeleteDiagram?(diagramId: string): void;
+  /**
+   * Apply a diagram's settings — its name, what the exported title block says,
+   * and which maturity columns its applications carry. The editor opens the
+   * dialog and hands over the whole answer; wiring this is what puts "Diagram
+   * settings…" in a tab's menu.
+   *
+   * Deliberately not part of `DiagramContentBatch`: that batch is content —
+   * elements, connections, placements, routes — and this is the diagram record.
+   */
+  onDiagramSettingsChange?(diagramId: string, settings: DiagramSettings): void;
   parameterSpecs(element: DesignElement): ParameterSpec[];
   decorations?: Record<ElementId, ElementDecoration>;
   /** CM links + ADR slots, rendered by the host inside the inspector. */

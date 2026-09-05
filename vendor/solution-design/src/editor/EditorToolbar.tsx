@@ -99,6 +99,8 @@ export interface EditorToolbarProps {
    * dialog first, so `onRenameDiagram` already receives the new name.
    */
   onRenameDiagram?(diagramId: string, name: string): void;
+  /** Opens the diagram's settings dialog; the editor owns the dialog itself. */
+  onOpenDiagramSettings?(diagramId: string): void;
   onDuplicateDiagram?(diagramId: string): void;
   onDeleteDiagram?(diagramId: string): void;
   /** ⌘F: opens the element finder. */
@@ -155,6 +157,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
               diagramKind: 'layer7',
               tab: {
                 canRename: Boolean(props.onRenameDiagram),
+                canConfigure: Boolean(props.onOpenDiagramSettings),
                 canDuplicate: Boolean(props.onDuplicateDiagram),
                 canDelete: Boolean(props.onDeleteDiagram),
                 isLastLandscape: layer7Diagrams.length <= 1,
@@ -162,11 +165,12 @@ export function EditorToolbar(props: EditorToolbarProps) {
             },
           )
         : [],
-    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onDuplicateDiagram, props.onDeleteDiagram, layer7Diagrams.length],
+    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, layer7Diagrams.length],
   );
   const openTabMenu = (event: React.MouseEvent, diagramId: string) => {
     if (props.readOnly) return;
-    if (!props.onRenameDiagram && !props.onDuplicateDiagram && !props.onDeleteDiagram) return;
+    if (!props.onRenameDiagram && !props.onOpenDiagramSettings
+      && !props.onDuplicateDiagram && !props.onDeleteDiagram) return;
     event.preventDefault();
     setTabMenu({ diagramId, screen: { x: event.clientX, y: event.clientY } });
   };
@@ -177,6 +181,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
     switch (item.action) {
       case 'rename-diagram':
         props.onRenameDiagram?.(diagram.id, diagram.name);
+        return;
+      case 'diagram-settings':
+        props.onOpenDiagramSettings?.(diagram.id);
         return;
       case 'duplicate-diagram':
         props.onDuplicateDiagram?.(diagram.id);

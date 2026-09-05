@@ -55,6 +55,7 @@ import { PanelResizer } from './PanelResizer';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { DeleteElementDialog } from './DeleteElementDialog';
 import { EditorToolbar, type LayoutAction } from './EditorToolbar';
+import { DiagramSettingsDialog } from './DiagramSettingsDialog';
 import { RenameDiagramDialog } from './RenameDiagramDialog';
 import { ConnectionInspector } from './ConnectionInspector';
 import { DomainGroupInspector } from './DomainGroupInspector';
@@ -156,6 +157,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const [deleteTarget, setDeleteTarget] = useState<ElementId | undefined>(undefined);
   const [helpOpen, setHelpOpen] = useState(false);
   // "Rename diagram…" from a tab: the dialog lives here, the rename lands on the host.
+  const [settingsDiagramId, setSettingsDiagramId] = useState<string | undefined>(undefined);
   const [renameDiagramTarget, setRenameDiagramTarget] = useState<{ id: string; name: string } | undefined>(
     undefined,
   );
@@ -734,7 +736,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
       bounds,
       background: theme.palette.background.default,
       onImagesMissing: props.onExportImagesMissing,
-      titleBlock: {
+      // A diagram that says it carries no title block gets none; `titleBlock`
+      // has always been optional, so this needs nothing of the exporter.
+      titleBlock: activeDiagram.showTitleBlock === false ? undefined : {
         // The title block follows the UI language: it is a caption on a picture
         // for a reader, not a field name in a file format.
         labels: {
@@ -744,13 +748,22 @@ function EditorBody(props: SolutionDesignEditorProps) {
           date: t('export.date'),
           legend: t('export.aspects'),
         },
-        client: props.exportTitleBlock?.client ?? state.effectiveModel.customerName,
+        // The diagram's own answer wins over the host's. The host supplies a
+        // default — what it knows about the project as a whole — and somebody
+        // who opened this diagram's settings and typed a client was correcting
+        // exactly that default.
+        client:
+          activeDiagram.client
+          ?? props.exportTitleBlock?.client
+          ?? state.effectiveModel.customerName,
         title: `${state.effectiveModel.name} — ${activeDiagram.name}`,
-        author: props.exportTitleBlock?.author ?? activeDiagram.author,
+        author: activeDiagram.author ?? props.exportTitleBlock?.author,
+        // Absent = the day of export, which is the exporter's own default.
+        date: activeDiagram.documentDate || undefined,
         // The legend lists this diagram's configured aspect columns so badge
-        // codes stay readable on paper.
+        // codes stay readable on paper. A diagram with no columns gets no row.
         legend:
-          activeDiagram.kind === 'layer7'
+          activeDiagram.kind === 'layer7' && aspectConfigFor(activeDiagram).length > 0
             ? aspectConfigFor(activeDiagram)
                 .map((entry) => entry.label)
                 .join(' · ')
@@ -880,6 +893,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
         extras={props.renderDesignPanelExtras?.()}
         onRenameDiagram={
           props.onRenameDiagram ? (id, name) => setRenameDiagramTarget({ id, name }) : undefined
+        }
+        onOpenDiagramSettings={
+          props.onDiagramSettingsChange ? (id) => setSettingsDiagramId(id) : undefined
         }
         onDuplicateDiagram={props.onDuplicateDiagram}
         onDeleteDiagram={props.onDeleteDiagram}
@@ -1053,6 +1069,14 @@ function EditorBody(props: SolutionDesignEditorProps) {
           target={renameDiagramTarget}
           onRename={props.onRenameDiagram}
           onClose={() => setRenameDiagramTarget(undefined)}
+        />
+      )}
+      {props.onDiagramSettingsChange && (
+        <DiagramSettingsDialog
+          target={state.effectiveModel.diagrams.find((d) => d.id === settingsDiagramId)}
+          defaultClient={props.exportTitleBlock?.client ?? state.effectiveModel.customerName}
+          onSave={props.onDiagramSettingsChange}
+          onClose={() => setSettingsDiagramId(undefined)}
         />
       )}
     </Box>

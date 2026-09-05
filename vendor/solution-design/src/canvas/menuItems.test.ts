@@ -445,22 +445,30 @@ describe('menuItemsFor — group', () => {
 describe('menuItemsFor — tab', () => {
   const TAB = { kind: 'tab', diagramId: 'd1' } as const;
   const tab = (over: Partial<NonNullable<MenuContext['tab']>> = {}, more: Partial<MenuContext> = {}) =>
-    ctx({ tab: { canRename: true, canDuplicate: true, canDelete: true, isLastLandscape: false, ...over }, ...more });
+    ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, isLastLandscape: false, ...over }, ...more });
 
-  it('offers rename, duplicate and delete when the host wired all three', () => {
+  it('offers rename, settings, duplicate and delete when the host wired them all', () => {
     const items = menuItemsFor(TAB, tab());
-    expect(ids(items)).toEqual(['rename-diagram', 'duplicate-diagram', 'delete-diagram']);
+    expect(ids(items)).toEqual([
+      'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'delete-diagram',
+    ]);
     expect(items.filter((i) => i.divider)).toHaveLength(1);
     expect(byId(items, 'delete-diagram').danger).toBe(true);
   });
 
   it('hides each entry whose host callback is absent', () => {
-    expect(ids(menuItemsFor(TAB, tab({ canRename: false })))).toEqual(['duplicate-diagram', 'delete-diagram']);
-    expect(ids(menuItemsFor(TAB, tab({ canDuplicate: false, canDelete: false })))).toEqual(['rename-diagram']);
-    const onlyDelete = menuItemsFor(TAB, tab({ canRename: false, canDuplicate: false }));
+    expect(ids(menuItemsFor(TAB, tab({ canRename: false }))))
+      .toEqual(['diagram-settings', 'duplicate-diagram', 'delete-diagram']);
+    expect(ids(menuItemsFor(TAB, tab({ canConfigure: false }))))
+      .toEqual(['rename-diagram', 'duplicate-diagram', 'delete-diagram']);
+    expect(ids(menuItemsFor(TAB, tab({ canConfigure: false, canDuplicate: false, canDelete: false }))))
+      .toEqual(['rename-diagram']);
+    const onlyDelete = menuItemsFor(TAB, tab({ canRename: false, canConfigure: false, canDuplicate: false }));
     expect(ids(onlyDelete)).toEqual(['delete-diagram']);
     expect(onlyDelete.some((i) => i.divider)).toBe(false);
-    expect(menuItemsFor(TAB, tab({ canRename: false, canDuplicate: false, canDelete: false }))).toEqual([]);
+    expect(menuItemsFor(TAB, tab({
+      canRename: false, canConfigure: false, canDuplicate: false, canDelete: false,
+    }))).toEqual([]);
   });
 
   it('refuses to delete the last landscape', () => {
@@ -487,7 +495,7 @@ describe('menuItemsFor — invariants', () => {
       menuItemsFor({ kind: 'group', name: 'Core' }, ctx()),
       menuItemsFor(
         { kind: 'tab', diagramId: 'd' },
-        ctx({ tab: { canRename: true, canDuplicate: true, canDelete: true, isLastLandscape: false } }),
+        ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, isLastLandscape: false } }),
       ),
     ];
   };

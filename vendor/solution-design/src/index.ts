@@ -29,6 +29,7 @@ export type {
   DesignModel,
   DiagramContentBatch,
   DiagramLayoutConfig,
+  DiagramSettings,
   DomainGroupRect,
   EdgeRoute,
   EdgeRouteSource,
@@ -62,7 +63,12 @@ export { createTempId, isTempId } from './model/ids';
  * must use this rather than re-deriving the rule from `waypoints`.
  */
 export { hasRouteContent } from './model/routes';
-export { ASPECT_SUPERSET, DEFAULT_ASPECT_CONFIG } from './model/aspects';
+export {
+  ASPECT_SUPERSET,
+  DEFAULT_ASPECT_CONFIG,
+  aspectConfigFor,
+  aspectShortCode,
+} from './model/aspects';
 /**
  * The built-in icon library. A host needs it for two jobs the package cannot do
  * for it: deciding whether a key from ANOTHER tool is one the package knows
