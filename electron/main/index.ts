@@ -17,7 +17,8 @@ import { app, BrowserWindow, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { startUpdates } from './updates'
+import { addCheckForUpdatesItem } from './menu'
+import { checkForUpdatesNow, startUpdates } from './updates'
 
 /**
  * Registering the scheme has to happen before `ready`, and this statement being
@@ -172,11 +173,15 @@ const RENDERER_URL = process.env['ELECTRON_RENDERER_URL'] ?? `${APP_ORIGIN}/`
 void app.whenReady().then(() => {
   if (!process.env['ELECTRON_RENDERER_URL']) serveRenderer()
 
-  // Before the window, because it must not wait on one: the check is
-  // background work that never touches the UI, and a slow release page must
-  // not delay the first paint. It returns immediately unless this is a real
-  // installed app — see updates.ts.
+  // Before the window, because it must not wait on one: the check is background
+  // work and a slow release page must not delay the first paint. Its dialog
+  // finds a window when it has one to sit on and does without when it does not.
+  // It returns immediately unless this is a real installed app — see updates.ts.
+  //
+  // The menu item is unconditional: checking by hand has to work even in a build
+  // that never checks by itself, which is the point of an off switch.
   startUpdates()
+  addCheckForUpdatesItem(checkForUpdatesNow)
 
   const mainWindow = createWindow()
 
