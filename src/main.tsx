@@ -125,6 +125,7 @@ void shell.preferences.read()
           examples={EXAMPLES}
           makeId={makeId}
           browserLanguages={navigator.languages ?? navigator.language}
+          windowChrome={shell.windowChrome}
         />
       </StrictMode>,
     )

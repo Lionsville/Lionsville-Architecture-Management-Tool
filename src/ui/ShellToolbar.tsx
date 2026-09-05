@@ -15,6 +15,8 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '@lionsville/solution-design'
 import type { ThemeMode } from '../core/preferences'
+import { NO_WINDOW_CHROME } from '../core/windowChrome'
+import type { WindowChrome } from '../core/windowChrome'
 import { SaveMenu } from './SaveMenu'
 import { THEME_GLYPH, THEME_LABEL } from './useShellPreferences'
 
@@ -52,18 +54,35 @@ export type ShellToolbarProps = {
   /** Open the project's own settings: its name and its group. */
   onOpenSettings: () => void
   s: Translate
+  /**
+   * What the window leaves to this bar. On the desktop the macOS title bar is
+   * hidden behind us, so this bar owns the two things it used to do: keep clear
+   * of the traffic lights, and be the surface you drag the window by.
+   */
+  windowChrome?: WindowChrome
 }
 
 export function ShellToolbar({
   designName, groupName, savedAt, language, themeMode, onCycleTheme,
   onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings, s,
+  windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [saveMenu, setSaveMenu] = useState<HTMLElement | null>(null)
 
   return (
-    <Box sx={{
+    <Box data-testid="shell-toolbar" sx={{
       display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
       borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flex: '0 0 auto',
+      // The window controls are painted over this bar's start, so the first
+      // button begins after them rather than under them. 12px is this bar's own
+      // padding — the same `px: 1.5` as on the right, spelled out because it is
+      // being added to.
+      pl: `${12 + windowChrome.controlsInset}px`,
+      // Drag the bar, drag the window — except where something is clickable.
+      // Stated once for every control in here, so a button added later cannot
+      // quietly become dead surface.
+      WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
+      '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
       <Tooltip title={s('shell.projectsTip')}>
         <Button

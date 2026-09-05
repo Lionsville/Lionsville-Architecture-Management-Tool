@@ -18,6 +18,7 @@ import { groupNameOf } from '../core/project'
 import type { ProjectGroup, ProjectSnapshot } from '../core/project'
 import type { EditorPreferences } from '@lionsville/solution-design'
 import type { ThemeMode } from '../core/preferences'
+import type { WindowChrome } from '../core/windowChrome'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -56,12 +57,14 @@ export type ProjectWorkspaceProps = {
   onOpenSettings: () => void
   onApplySettings: (settings: ProjectSettings) => void
   makeId: MakeId
+  /** Passed straight to the toolbar, which is the bar the window borrows. */
+  windowChrome?: WindowChrome
 }
 
 export function ProjectWorkspace({
   project, projects, documents, notify, onStorageResult, s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
-  onLeave, groups, onOpenSettings, onApplySettings, makeId,
+  onLeave, groups, onOpenSettings, onApplySettings, makeId, windowChrome,
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
@@ -113,6 +116,7 @@ export function ProjectWorkspace({
         onLeave={onLeave}
         onOpenSettings={openSettings}
         s={s}
+        windowChrome={windowChrome}
       />
       {documentPicker.input}
       {logoPicker.input}

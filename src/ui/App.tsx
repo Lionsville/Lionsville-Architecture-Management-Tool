@@ -25,6 +25,8 @@ import type {
 } from '../core/project'
 import { refFor, sameRef } from '../core/projectRef'
 import type { ProjectRef } from '../core/projectRef'
+import { NO_WINDOW_CHROME } from '../core/windowChrome'
+import type { WindowChrome } from '../core/windowChrome'
 import type { ExampleProject } from '../examples'
 import { ProjectPicker } from './picker/ProjectPicker'
 import { ProjectWorkspace } from './ProjectWorkspace'
@@ -64,11 +66,17 @@ export type AppProps = {
   makeId: MakeId
   /** What the browser reports; injected so a test can pin the starting language. */
   browserLanguages?: readonly string[] | string
+  /**
+   * What the window around the app leaves to us. On the desktop the title bar
+   * is hidden, so our own top bar has to keep clear of the window controls and
+   * be the thing you drag the window by. A browser tab needs neither.
+   */
+  windowChrome?: WindowChrome
 }
 
 export function App({
   projects, preferences, documents, initialProject, initialPreferences,
-  examples, makeId, browserLanguages,
+  examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
 
@@ -261,6 +269,7 @@ export function App({
             onOpenSettings={refreshGroups}
             onApplySettings={applyProjectSettings}
             makeId={makeId}
+            windowChrome={windowChrome}
           />
         ) : (
           <ProjectPicker
@@ -274,6 +283,7 @@ export function App({
             revision={revision}
             language={prefs.language}
             s={s}
+            windowChrome={windowChrome}
           />
         )}
         <ToastBar

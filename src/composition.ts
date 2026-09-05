@@ -15,11 +15,13 @@
  * above it changes.
  */
 import { BrowserDocumentGateway } from './adapters/browser/BrowserDocumentGateway'
+import { hostWindowChrome } from './adapters/browser/hostWindow'
 import { InMemoryPreferencesStore } from './adapters/memory/InMemoryPreferencesStore'
 import { InMemoryProjectStore } from './adapters/memory/InMemoryProjectStore'
 import { browserStorage } from './adapters/webStorage/available'
 import { WebStoragePreferencesStore } from './adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageProjectStore } from './adapters/webStorage/WebStorageProjectStore'
+import type { WindowChrome } from './core/windowChrome'
 import type { DocumentGateway } from './ports/DocumentGateway'
 import type { PreferencesStore } from './ports/PreferencesStore'
 import type { ProjectStore } from './ports/ProjectStore'
@@ -29,6 +31,12 @@ export type Shell = {
   projects: ProjectStore
   preferences: PreferencesStore
   documents: DocumentGateway
+  /**
+   * What the window around the app is doing, which on the desktop is less than
+   * a browser does: no title bar to move it by, and controls drawn over our
+   * own top bar.
+   */
+  windowChrome: WindowChrome
 }
 
 /**
@@ -46,5 +54,6 @@ export function composeShell(): Shell {
     projects: storage ? new WebStorageProjectStore(storage) : new InMemoryProjectStore(),
     preferences: storage ? new WebStoragePreferencesStore(storage) : new InMemoryPreferencesStore(),
     documents: new BrowserDocumentGateway(),
+    windowChrome: hostWindowChrome(),
   }
 }

@@ -28,6 +28,8 @@ import { groupsOf, sortProjects } from '../../core/project'
 import type { ProjectOrder, ProjectSummary } from '../../core/project'
 import { refPath, sameRef } from '../../core/projectRef'
 import type { ProjectRef } from '../../core/projectRef'
+import { NO_WINDOW_CHROME } from '../../core/windowChrome'
+import type { WindowChrome } from '../../core/windowChrome'
 import type { ExampleProject } from '../../examples'
 import { ConfirmDialog } from '../dialogs/ConfirmDialog'
 import { NEW_GROUP, groupChoiceName } from './GroupField'
@@ -64,6 +66,12 @@ export type ProjectPickerProps = {
   revision?: number
   language: Language
   s: Translate
+  /**
+   * What the window leaves to this screen. The workspace has a toolbar to hand
+   * the window; this screen has none, so when the title bar is hidden it lends
+   * the window the strip of padding above its heading instead.
+   */
+  windowChrome?: WindowChrome
 }
 
 function whenChanged(updatedAt: string | undefined, language: Language, s: Translate): string {
@@ -79,7 +87,7 @@ function whenChanged(updatedAt: string | undefined, language: Language, s: Trans
 
 export function ProjectPicker({
   projects, examples, order, onOrderChange, onOpen, onCreate, onCopyExample,
-  revision = 0, language, s,
+  revision = 0, language, s, windowChrome = NO_WINDOW_CHROME,
 }: ProjectPickerProps) {
   const [summaries, setSummaries] = useState<ProjectSummary[]>([])
   const [newProjectOpen, setNewProjectOpen] = useState(false)
@@ -122,6 +130,18 @@ export function ProjectPicker({
       height: '100vh', width: '100vw', overflowY: 'auto',
       bgcolor: 'background.default', px: 3, py: 5,
     }}>
+      {windowChrome.draggable && (
+        // Nothing is drawn here and nothing sits under it — it is the top
+        // padding, made grabbable, so a window with no title bar can still be
+        // moved from the screen it opens on.
+        <Box
+          data-testid="window-drag-strip"
+          sx={{
+            position: 'fixed', top: 0, left: 0, right: 0, height: 32,
+            WebkitAppRegion: 'drag',
+          }}
+        />
+      )}
       <Box sx={{ maxWidth: 880, mx: 'auto' }}>
         <Stack direction="row" alignItems="flex-end" spacing={2} sx={{ mb: 3 }}>
           <Box sx={{ flex: 1 }}>
