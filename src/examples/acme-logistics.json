@@ -366,6 +366,7 @@
     {
       "key": "wms-workstation",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Floor workstation",
       "description": "What the warehouse lead and pickers actually look at.",
       "iconType": "desktop-app"
@@ -373,6 +374,7 @@
     {
       "key": "wms-api",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Inventory API",
       "description": "Stock and task queries for everything outside the warehouse.",
       "iconType": "api"
@@ -380,6 +382,7 @@
     {
       "key": "wms-task-engine",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Task engine",
       "description": "Turns demand into pick, put-away and replenishment work.",
       "iconType": "workflow"
@@ -387,6 +390,7 @@
     {
       "key": "wms-scan-service",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Scan service",
       "description": "Absorbs the scan traffic and holds it when the network drops.",
       "iconType": "connector"
@@ -394,6 +398,7 @@
     {
       "key": "wms-integration",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Integration service",
       "description": "Talks to order management, slotting and the yard.",
       "iconType": "integration-platform"
@@ -401,6 +406,7 @@
     {
       "key": "wms-db",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Inventory database",
       "description": "Stock positions and the task ledger.",
       "iconType": "database"
@@ -408,6 +414,7 @@
     {
       "key": "wms-events",
       "kind": "component",
+      "parentKey": "wms",
       "name": "Event stream",
       "description": "Every stock movement, published once, read by several.",
       "iconType": "event-stream"
