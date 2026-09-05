@@ -232,9 +232,33 @@ jobs:
         if: matrix.platform == 'win'
         shell: pwsh
         run: |
-          Install-PackageProvider -Name NuGet -Force -Scope CurrentUser | Out-Null
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+          # Bootstrapping the NuGet *provider* is a convenience, not a
+          # requirement, and it is no longer always possible: PowerShell 7 on
+          # the current runner image answers `Install-PackageProvider -Name
+          # NuGet` with "No match was found for the specified search criteria",
+          # because PackageManagement there does not carry the provider the way
+          # Windows PowerShell 5.1 did. PSGallery is already registered and
+          # `Install-Module` works without it, so try and move on rather than
+          # failing the job over a step whose only purpose is to make the next
+          # one smoother.
+          try {
+            Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -ErrorAction Stop | Out-Null
+          } catch {
+            Write-Host "NuGet provider bootstrap unavailable, continuing: $($_.Exception.Message)"
+          }
+
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module -Name TrustedSigning -Force -Scope CurrentUser -AllowClobber
+
+          # The module is the thing that actually matters, so assert it rather
+          # than discovering its absence inside electron-builder's signing call.
+          if (-not (Get-Module -ListAvailable -Name TrustedSigning)) {
+            throw 'TrustedSigning module did not install; Windows signing would fail later.'
+          }
+          Write-Host 'TrustedSigning module present.'
 
       # The AZURE_* trio is read by the Azure identity library inside that
       # module, not by electron-builder; the four ..._CODE_SIGNING_* are read by
