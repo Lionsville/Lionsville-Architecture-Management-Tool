@@ -53,6 +53,22 @@ describe('DiagramSettingsDialog — what it opens with', () => {
     expect(screen.getByText(/kept, and come back/)).toBeDefined();
   });
 
+  /**
+   * The placeholder is a promise about the card: leave this empty and the badge
+   * says *that*. A curated code must not be shown as something derived.
+   */
+  it('shows the code the badge would actually carry as the placeholder', () => {
+    open({ aspectConfig: [{ key: 'dr', label: 'Disaster recovery' }] });
+    const code = screen.getByLabelText('Badge') as HTMLInputElement;
+    expect(code.value).toBe('');
+    expect(code.placeholder).toBe('DR');
+  });
+
+  it('derives the placeholder for a column with no curated code', () => {
+    open({ aspectConfig: [{ key: 'custom-obs', label: 'Observability' }] });
+    expect((screen.getByLabelText('Badge') as HTMLInputElement).placeholder).toBe('OBS');
+  });
+
   it('offers the group as the client placeholder rather than filling it in', () => {
     open({}, 'Acme Rail');
     const field = screen.getByLabelText('Client') as HTMLInputElement;

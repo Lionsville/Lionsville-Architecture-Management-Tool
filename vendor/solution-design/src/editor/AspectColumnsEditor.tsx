@@ -27,7 +27,7 @@ import {
   ASPECT_SUPERSET,
   DEFAULT_ASPECT_CONFIG,
   aspectKeyForLabel,
-  derivedShortCode,
+  aspectShortCode,
 } from '../model/aspects';
 import { useStrings } from '../i18n/LanguageContext';
 import type { AspectConfigEntry } from '../types';
@@ -93,10 +93,23 @@ export function AspectColumnsEditor({
             <TextField
               size="small"
               label={index === 0 ? t('diagramSettings.columnCode') : undefined}
-              placeholder={derivedShortCode(column.label) || t('diagramSettings.codePlaceholder')}
+              // What the badge would say if this field stayed empty — which for
+              // a standard column is its curated code (`dr` reads DR), not
+              // something derived from the label. A placeholder that disagreed
+              // with the card would be worse than none.
+              placeholder={
+                aspectShortCode({ ...column, code: undefined })
+                || t('diagramSettings.codePlaceholder')
+              }
               value={column.code ?? ''}
               sx={{ width: 96 }}
-              slotProps={{ htmlInput: { maxLength: ASPECT_CODE_MAX } }}
+              slotProps={{
+                htmlInput: { maxLength: ASPECT_CODE_MAX },
+                // Kept shrunk so the derived code shows as the placeholder on
+                // the first row too. Otherwise the labelled row alone looks
+                // blank while every row under it shows what its badge will say.
+                inputLabel: { shrink: true },
+              }}
               onChange={(e) => editColumn(index, { code: e.target.value })}
             />
             <Tooltip title={t('diagramSettings.moveUp', { name: column.label })}>
