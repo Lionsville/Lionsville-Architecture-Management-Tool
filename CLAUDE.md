@@ -1,0 +1,228 @@
+# CLAUDE.md — working in this repo
+
+The **Lionsville Architecture Management Tool**: a general-purpose architecture
+modelling tool — a Layer-7 application landscape and the C4 container diagrams
+under it. **There is no customer in this codebase.** An organisation is a
+*group*, which is data a user creates. Never write a customer's name into an
+identifier, a storage key, a file extension or a shipped example; `ROADMAP.md`
+holds the settled names (the working file is `.lvarch`). Two halves:
+
+- **`vendor/solution-design/`** — the editor package (React Flow canvas, model,
+  layout, i18n, PNG export). A fork, maintained here. It takes
+  a `model` prop, emits `DiagramContentBatch`, and knows nothing about storage,
+  dialogs or backends. **1428 tests.** Leave it alone unless the task is in it.
+- **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
+  **274 tests.** Almost every task lands here.
+
+## The fast loop
+
+```bash
+npm run check
+```
+
+~3 seconds: typecheck + all 274 shell tests + lint. Run it after every change.
+That is the whole feedback loop — there is no gate to pass, no ceremony, no
+reviewer step. It is fast on purpose so you run it constantly instead of
+batching up and discovering three problems at once.
+
+```bash
+npm run check:all
+```
+
+~40 seconds: adds the vendor package's 1428 tests, its typecheck and lint, and a
+production build. Run it once before you hand work back, not during.
+
+Other commands: `npm run test:watch` · `npm run setup` (fresh clone; installs
+both trees) · dev server on :5200 via `.claude/launch.json` (`editor-dev`).
+**Do not start a dev server with Bash** — use the preview tooling.
+
+## Committing
+
+**Trunk-based. Commit to `main` and push.** No branch, no PR, no review gate for
+ordinary work — that is the same reasoning as the fast loop above: the cost of
+being wrong here is one revert, and the cost of ceremony is paid on every change
+whether it needed it or not.
+
+```bash
+npm run check && git add -A && git commit && git push
+```
+
+`npm run check` before you commit is the whole discipline. Run `check:all` before
+a push that touches `vendor/`, changes the build, or ends a stretch of work.
+
+Prefer **several small commits over one large one**, each with a message that
+says why rather than what. A commit that has to explain four unrelated things is
+four commits.
+
+A branch and a PR are still the right call when the change is genuinely risky,
+when you want a second pair of eyes before it lands, or when it is going to sit
+half-finished for a while. That is a judgement call, not a default — reach for
+it deliberately, not out of habit.
+
+## The layer map
+
+Read this before adding a file; it answers "where does this go" in one pass.
+
+```
+src/core/         Arithmetic. No React, no browser, no storage, no IO.
+                    model/            the design model, batching, interchange, keys
+                    project           what a project IS: open, save, order, summarise
+                    projectRef        addressing: group path + project key
+                    containerDiagram  what belongs on a fresh container diagram
+                    logo              the rules for an uploaded mark
+                    preferences       language, theme, last project, list order
+src/examples/     starting points that ship with the app. Data, not config.
+src/ports/        The seams. Interfaces only, no implementations.
+                    ProjectStore · PreferencesStore · DocumentGateway
+                    ProjectStore.contract.ts — behaviour every store must show
+src/adapters/     The outside world, one folder per flavour.
+                    webStorage/ · memory/ · browser/
+src/ui/           React. One concern per file:
+                    App.tsx           picker or workspace; theme, language, toasts
+                    ProjectWorkspace  one open project: toolbar, editor, dialogs
+                    picker/           the first screen: ProjectPicker, NewProjectDialog
+                    ShellToolbar · SaveMenu · ToastBar · dialogs/
+                    useModelSession   the editing session (batches, aliases, remount)
+                    useDiagramActions · useProjectFiles · useAutosave
+                    useShellPreferences · useToasts · useStorageNotice · useFilePicker
+src/composition.ts  Which adapter the shell gets. The ONLY file that knows both
+                    a seam and its filling.
+src/main.tsx      Composition root. Read its header first — it states the pattern.
+```
+
+**Components declare the interface they need**, not the widest one available.
+`useAutosave` asks for `{ save(project) }`, not for a `ProjectStore`, so it
+cannot reach `load()` or `clear()` and a reader does not have to check whether it
+did. The concrete adapters satisfy those shapes structurally, so narrowing costs
+nothing: no wrappers, just a smaller type. Follow that when you add a hook.
+
+**Dependencies point inward.** `core` knows nobody. `adapters` and `ui` talk to
+`ports`. Only `composition.ts` chooses. This is enforced by ESLint, not by
+convention — try importing React into `core/` and you get an error explaining
+why. If a rule blocks you, the design is telling you something; move the code,
+don't route around the rule.
+
+### Where does my change go?
+
+| It is… | Put it in | Test it in |
+|---|---|---|
+| a decision, a calculation, a validation | `src/core/` | node, no mocks needed |
+| talking to a browser/OS/network API | `src/adapters/<flavour>/` | its own suite |
+| a new kind of place to keep things | new adapter + one line in `composition.ts` | the contract |
+| something on screen | `src/ui/` | jsdom (`// @vitest-environment jsdom`) |
+| inside the canvas/palette/inspector | `vendor/solution-design/src/` | that package's suite |
+
+If you find yourself writing `localStorage`, `fetch`, `FileReader` or
+`document.` anywhere outside `src/adapters/`, stop: that belongs behind a port.
+
+## Groups and projects
+
+There is no customer compiled into this app, and no "shipped document". A
+project is addressed by a **`ProjectRef`** — a group path and a key inside it —
+and the store holds many:
+
+```
+lvarch.project.acme-logistics/warehouse-landscape
+lvarch.project.acme/rail/rolling-stock
+```
+
+A **group** is whatever the namespace is called in this environment: a customer,
+a department, a programme. `ref.group` is a **path** (`acme/rail`), so groups can
+nest later without the key format, the store interface, or any stored ref
+changing — `groupSegments()` and the picker are the only places that would grow.
+The group's display name is `model.customerName`; that field belongs to the
+package's model and this shell reads it as the group's label.
+
+A group is **derived from the projects filed under it** (`groupsOf`) — there is
+nowhere to keep an empty one. Creating a group and creating a project are
+therefore separate actions with separate dialogs: "New group" asks for the group
+and its first project, "New project" offers a select of groups that exist. Each
+group header in the picker also has its own "+ New project", which is the path
+that stops `Acme` and `Acme Logistics` becoming two namespaces.
+
+A project's name and its group are editable afterwards (`Settings…` in the
+toolbar). A rename edits the model and leaves the ref alone; a **move** changes
+the ref, so it is save-then-remove in that order — removing first and then
+failing to save would lose the project.
+
+On boot the app reopens the project you had open (a preference), or shows the
+picker. Examples live in `src/examples/` and are **copied** into a project of
+your own when opened — nothing runs against an example in place.
+
+The picker lists **alphabetically by default**, with recency as a toggle
+(`sortProjects`, persisted as `projectOrder`).
+
+## Adding a storage backend (the worked example)
+
+The point of the seams. Say you want to save to disk via the File System Access
+API. You write one file, run one suite, change one line:
+
+```ts
+// src/adapters/fileSystem/FileSystemProjectStore.ts
+export class FileSystemProjectStore implements ProjectStore { /* … */ }
+```
+
+```ts
+// src/adapters/fileSystem/FileSystemProjectStore.test.ts
+describeProjectStore('schijf', () => new FileSystemProjectStore(fakeHandle()))
+```
+
+`describeProjectStore` (in `src/ports/ProjectStore.contract.ts`) is the shared
+behaviour suite: returns what it stored under its own ref, keeps two groups'
+identically-named projects apart, keeps a nested group apart from its parent,
+lists alphabetically, stamps `updatedAt`, refuses a ref that could escape its own
+folder, and survives a round trip unchanged. Passing it is the whole admission
+test. Then one branch in
+`composition.ts`. **Nothing above the seam changes** — not `main.tsx`, not a
+component, not a test.
+
+The same holds for `PreferencesStore` and `DocumentGateway`.
+
+## Conventions
+
+- **Comments, identifiers and test names are English**, everywhere, including
+  the shell. Write in the register the rest of the code uses: say why a decision
+  was made, not what the line does, and match the density of the file you are in.
+  Dutch survives only where it is domain data (a design's own content, a
+  diacritics fixture) or a value already written into saved files.
+- **UI strings are never inline.** They live one file per language —
+  `vendor/solution-design/src/i18n/strings.en.ts` (the schema) and
+  `strings.nl.ts` — with the registry and lookup in `strings.ts`. Adding a
+  language is a new table file plus one line in `TABLES`; `strings.test.ts` loops
+  over every registered language, so completeness, empty values, placeholders and
+  "was it actually translated" are all checked automatically.
+- Every pure function gets a unit test. Every port gets a contract or a suite.
+- `readOnly` must hide every mutating affordance you add.
+- Both MUI themes must keep working; no hard-coded hex outside `theme/`.
+- Keep existing tests green. If a test pins behaviour you are deliberately
+  changing, flip it in the same change and say so.
+- Errors from `core` carry a **key** (`shell.logoTooBig`), never a sentence —
+  the layer that knows the language turns it into words.
+
+## State of play
+
+Roadmap phases 0–4 are committed (see `ROADMAP.md`, and `git log`).
+
+The shell was restructured into the layers above and `main.tsx` was reduced to a
+composition root (**805 → 137 lines**, most of it the pattern brief). The IO sits
+behind ports, the preferences duplication is gone, the editing session and the
+file actions are hooks, and the toolbar, menu, dialogs and toast bar are
+presentational components with their own props.
+
+Configuration then came out of the code: the hardcoded customer became a group
+on a project, the landscape became an example, and the store became
+`GROUP > PROJECT`.
+
+Worth knowing: the last project is resolved at the edge of the app, before the
+first render, so the workspace can start synchronously without a `null` case in
+every `useState`. It uses `.then` rather than a top-level `await` because Vite's
+target (chrome87/safari14) has none. Switching projects **remounts** the
+workspace on purpose — the session's undo stack, id aliases and pending batches
+belong to one project and must not leak into another.
+
+`ROADMAP.md` holds the forward work — de-branding (5), the document session
+(6), the desktop app (7), branding (8) and the in-app manual (9) — and it was
+rewritten on 5 September 2026 after the names had drifted. **Read its *Names,
+decided* section before you write any name down.** It was renumbered in that
+rewrite: what older commit messages call 5C is now phase 6, and phase 6
+(Electron) is now phase 7.

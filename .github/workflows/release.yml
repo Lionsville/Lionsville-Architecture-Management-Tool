@@ -1,0 +1,299 @@
+# Cut a release on GitHub; get signed installers on the release page.
+#
+# The trigger is a *published* release, not a pushed tag. The release is the
+# thing a human makes — with its notes, its tag and its title — and this
+# workflow fills it in. That ordering has one consequence worth knowing:
+# electron-builder's GitHub publisher defaults to creating *draft* releases and
+# will not upload into a published one unless `publish.releaseType` says
+# `release`. It fails by logging a warning and uploading nothing. See
+# electron-builder.cjs.
+#
+# Everything is signed. macOS: Developer ID, hardened runtime, notarized through
+# notarytool and stapled. Windows: Azure Trusted Signing. Linux is unsigned
+# because there is nothing to sign against. If a credential is missing the run
+# stops in `preflight`, before a single byte is built — an unsigned release is
+# not a degraded release, it is a broken one.
+#
+# Secrets and variables are listed in docs/release.md.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      notarize:
+        description: Submit the macOS build to Apple (adds ~15 minutes of queue time)
+        type: boolean
+        default: true
+
+# electron-builder uploads the installers to the release itself.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.run_id }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  # Secrets cannot be read from a job-level `if:`, and a `${{ secrets.X }}` that
+  # resolves to nothing is indistinguishable from one that resolves to a value
+  # until something downstream fails confusingly. So the question "can this run
+  # produce a signed release" is answered once, here, in a step that can read
+  # them — and the version is settled in the same place.
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: The tag is the version
+        id: version
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${TAG:-}" ]; then
+            case "$TAG" in
+              v*) version="${TAG#v}" ;;
+              *)  echo "::error::Release tag '$TAG' must be of the form v1.2.3." >&2; exit 1 ;;
+            esac
+          else
+            # A manual run has no tag. Build whatever package.json says; it is
+            # never published, so the number only has to be valid.
+            version="$(node -p 'require("./package.json").version')"
+          fi
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$version' is not a semantic version." >&2; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building $version"
+
+      - name: Every signing credential is present
+        shell: bash
+        env:
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_CODE_SIGNING_ENDPOINT: ${{ vars.AZURE_CODE_SIGNING_ENDPOINT }}
+          AZURE_CODE_SIGNING_ACCOUNT: ${{ vars.AZURE_CODE_SIGNING_ACCOUNT }}
+          AZURE_CODE_SIGNING_PROFILE: ${{ vars.AZURE_CODE_SIGNING_PROFILE }}
+          AZURE_CODE_SIGNING_PUBLISHER: ${{ vars.AZURE_CODE_SIGNING_PUBLISHER }}
+        run: |
+          set -uo pipefail
+          missing=()
+          for name in \
+            MAC_CSC_LINK MAC_CSC_KEY_PASSWORD \
+            APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER APPLE_TEAM_ID \
+            AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET \
+            AZURE_CODE_SIGNING_ENDPOINT AZURE_CODE_SIGNING_ACCOUNT \
+            AZURE_CODE_SIGNING_PROFILE AZURE_CODE_SIGNING_PUBLISHER
+          do
+            [ -n "${!name:-}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Not configured to sign. Missing: ${missing[*]}. See docs/release.md." >&2
+            exit 1
+          fi
+          echo "All 13 credentials present."
+
+  # Nothing gets signed, let alone published, on a red suite. This is the same
+  # `check:all` a human runs before handing work back — the shell's 274 tests,
+  # the package's 1428, both typechecks, both lints, and a production web build.
+  verify:
+    name: Verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            vendor/solution-design/package-lock.json
+      - name: Install both trees
+        run: |
+          npm ci
+          npm ci --prefix vendor/solution-design
+      - run: npm run check:all
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: [preflight, verify]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      # electron-builder writes the installers, the blockmaps and the
+      # latest*.yml update manifests onto the release.
+      contents: write
+    strategy:
+      # One platform failing must not throw away the two that succeeded; the
+      # artifacts of the survivors are worth having, and a re-run of one job is
+      # cheaper than a re-run of three.
+      fail-fast: false
+      matrix:
+        include:
+          # macos-15 is an Apple Silicon runner, which is what the arm64-only
+          # mac target wants: no cross-build, and codesign runs natively.
+          - { os: macos-15, platform: mac }
+          # x64 Windows cross-builds the arm64 NSIS installer; signtool is
+          # architecture-agnostic, so both get signed here.
+          - { os: windows-2025, platform: win }
+          - { os: ubuntu-24.04, platform: linux }
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            vendor/solution-design/package-lock.json
+
+      # The Electron binaries are ~200 MB per platform and do not change between
+      # releases; downloading them three times per run is the slowest thing here.
+      - name: Cache the Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-electron-
+
+      - name: Install both trees
+        run: |
+          npm ci
+          npm ci --prefix vendor/solution-design
+
+      # The tag is the single source of truth for the version. package.json
+      # carries 0.0.0 in the repository so nobody has to remember to bump it,
+      # and nobody can bump it to something the tag disagrees with.
+      - name: Stamp the version
+        run: npm version --no-git-tag-version --allow-same-version "${{ needs.preflight.outputs.version }}"
+
+      # Two files and three variables, because @electron/notarize wants a *path*
+      # to the .p8 — not its contents, and not base64 of its contents. Passing
+      # the key itself in APPLE_API_KEY is the single most common way this fails.
+      - name: Arm the macOS credentials
+        if: matrix.platform == 'mac'
+        shell: bash
+        env:
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY_B64: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/signing"
+          mkdir -p "$dir" && chmod 700 "$dir"
+          # openssl rather than base64(1): the BSD and GNU flags for decoding
+          # disagree, and this step runs on the one runner where that bites.
+          printf '%s' "$MAC_CSC_LINK"      | openssl base64 -d -A > "$dir/certificate.p12"
+          printf '%s' "$APPLE_API_KEY_B64" | openssl base64 -d -A > "$dir/AuthKey.p8"
+          chmod 600 "$dir"/*
+          {
+            echo "CSC_LINK=$dir/certificate.p12"
+            echo "APPLE_API_KEY=$dir/AuthKey.p8"
+            echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID"
+            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+            echo "CSC_KEY_PASSWORD<<__EOF__"
+            printf '%s\n' "$MAC_CSC_KEY_PASSWORD"
+            echo "__EOF__"
+          } >> "$GITHUB_ENV"
+
+      # electron-builder shells out to the TrustedSigning PowerShell module and
+      # installs it on demand — which fails on a runner whose NuGet package
+      # provider has not been bootstrapped (electron-builder#8828). Doing it
+      # here turns an obscure mid-build failure into an obvious early one.
+      - name: Install the Trusted Signing module
+        if: matrix.platform == 'win'
+        shell: pwsh
+        run: |
+          Install-PackageProvider -Name NuGet -Force -Scope CurrentUser | Out-Null
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name TrustedSigning -Force -Scope CurrentUser -AllowClobber
+
+      # The AZURE_* trio is read by the Azure identity library inside that
+      # module, not by electron-builder; the four ..._CODE_SIGNING_* are read by
+      # electron-builder.cjs, and are repository *variables* because none of them
+      # is a secret. All seven together are what makes the config emit an
+      # azureSignOptions block at all.
+      - name: Arm the Windows credentials
+        if: matrix.platform == 'win'
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_CODE_SIGNING_ENDPOINT: ${{ vars.AZURE_CODE_SIGNING_ENDPOINT }}
+          AZURE_CODE_SIGNING_ACCOUNT: ${{ vars.AZURE_CODE_SIGNING_ACCOUNT }}
+          AZURE_CODE_SIGNING_PROFILE: ${{ vars.AZURE_CODE_SIGNING_PROFILE }}
+          AZURE_CODE_SIGNING_PUBLISHER: ${{ vars.AZURE_CODE_SIGNING_PUBLISHER }}
+        run: |
+          set -euo pipefail
+          for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET \
+                      AZURE_CODE_SIGNING_ENDPOINT AZURE_CODE_SIGNING_ACCOUNT \
+                      AZURE_CODE_SIGNING_PROFILE AZURE_CODE_SIGNING_PUBLISHER
+          do
+            {
+              echo "$name<<__EOF__"
+              printf '%s\n' "${!name}"
+              echo "__EOF__"
+            } >> "$GITHUB_ENV"
+          done
+
+      - name: Build, sign and publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron-builder refuses to upload into a release published more
+          # than two hours ago. Notarization does not take two hours, but
+          # re-running one failed job the next morning does.
+          EP_GH_IGNORE_TIME: 'true'
+          NOTARIZE: ${{ (github.event_name == 'workflow_dispatch' && !inputs.notarize) && 'false' || 'true' }}
+        run: |
+          npx electron-vite build
+          npx electron-builder --${{ matrix.platform }} \
+            --publish ${{ github.event_name == 'release' && 'always' || 'never' }}
+
+      # Proof, and a safety net: if the upload to the release fails, the
+      # installers still exist and can be attached by hand.
+      - name: Keep the installers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-${{ needs.preflight.outputs.version }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.blockmap
+            release/latest*.yml
+          # A build that failed early has nothing to keep; that is not a second failure.
+          if-no-files-found: warn
+          retention-days: 14

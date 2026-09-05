@@ -1,0 +1,890 @@
+{
+  "formatVersion": "1",
+  "design": {
+    "name": "Acme Logistics",
+    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills."
+  },
+  "elements": [
+    {
+      "key": "order-management",
+      "kind": "application",
+      "name": "Order Management",
+      "category": "Order to delivery",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "The order of record from booking to invoice hand-off. Everything downstream reads its status.",
+      "iconType": "erp",
+      "aspects": {
+        "monitoring": {
+          "status": "managed"
+        },
+        "security": {
+          "status": "managed"
+        },
+        "self-healing": {
+          "status": "partial"
+        },
+        "dr": {
+          "status": "managed"
+        }
+      }
+    },
+    {
+      "key": "route-optimiser",
+      "kind": "application",
+      "name": "Route Optimiser",
+      "category": "Order to delivery",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Turns tomorrow’s orders into runs. Solves overnight; a re-solve during the day is manual.",
+      "iconType": "planning",
+      "aspects": {
+        "monitoring": {
+          "status": "partial"
+        },
+        "self-healing": {
+          "status": "none",
+          "note": "A failed overnight solve is noticed by the planner, not by a monitor."
+        },
+        "security": {
+          "status": "managed"
+        },
+        "dr": {
+          "status": "partial"
+        }
+      }
+    },
+    {
+      "key": "dispatch",
+      "kind": "application",
+      "name": "Dispatch",
+      "category": "Order to delivery",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "The live picture: who is driving what, and what has gone wrong since the plan was made.",
+      "iconType": "dashboard",
+      "aspects": {
+        "monitoring": {
+          "status": "managed"
+        },
+        "self-healing": {
+          "status": "partial"
+        },
+        "security": {
+          "status": "managed"
+        },
+        "dr": {
+          "status": "partial"
+        }
+      }
+    },
+    {
+      "key": "track-trace",
+      "kind": "application",
+      "name": "Track & Trace",
+      "category": "Order to delivery",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Shipment status for customers and support, assembled from scans and driver events.",
+      "iconType": "map",
+      "aspects": {
+        "monitoring": {
+          "status": "managed"
+        },
+        "security": {
+          "status": "partial"
+        },
+        "self-healing": {
+          "status": "managed"
+        },
+        "dr": {
+          "status": "managed"
+        }
+      }
+    },
+    {
+      "key": "planner",
+      "kind": "actor",
+      "name": "Transport planner",
+      "description": "Builds the daily plan: which load goes on which run, and when."
+    },
+    {
+      "key": "dispatcher",
+      "kind": "actor",
+      "name": "Dispatcher",
+      "description": "Runs the day as it actually happens — reassigns, reroutes, explains."
+    },
+    {
+      "key": "warehouse-lead",
+      "kind": "actor",
+      "name": "Warehouse lead",
+      "description": "Owns the floor: labour, dock doors, and what ships tonight."
+    },
+    {
+      "key": "support-agent",
+      "kind": "actor",
+      "name": "Support agent",
+      "description": "Answers \"where is my shipment\", and fixes what caused the question."
+    },
+    {
+      "key": "driver-app",
+      "kind": "inputChannel",
+      "name": "Driver app",
+      "description": "Run sheet, proof of delivery, exceptions. Offline for hours at a time.",
+      "iconType": "mobile-app"
+    },
+    {
+      "key": "customer-portal",
+      "kind": "inputChannel",
+      "name": "Customer portal",
+      "description": "Booking, documents and track & trace for contract customers.",
+      "iconType": "portal"
+    },
+    {
+      "key": "edi-intake",
+      "kind": "inputChannel",
+      "name": "EDI intake",
+      "description": "Orders from customers who will never use a portal. Mostly EDIFACT.",
+      "iconType": "connector"
+    },
+    {
+      "key": "scanners",
+      "kind": "inputChannel",
+      "name": "Handheld scanners",
+      "description": "Every scan in the warehouse and at the dock door.",
+      "iconType": "iot-sensor"
+    },
+    {
+      "key": "wms",
+      "kind": "application",
+      "name": "Warehouse Management",
+      "category": "Warehouse",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Stock, tasks and dock doors across three sites. The floor stops when it stops.",
+      "iconType": "storage",
+      "aspects": {
+        "monitoring": {
+          "status": "managed"
+        },
+        "security": {
+          "status": "managed"
+        },
+        "self-healing": {
+          "status": "partial"
+        },
+        "dr": {
+          "status": "atRisk",
+          "note": "Failover has never been rehearsed against a full shift."
+        }
+      }
+    },
+    {
+      "key": "slotting",
+      "kind": "application",
+      "name": "Slotting & Replenishment",
+      "category": "Warehouse",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Decides where stock lives and when to move it forward. Reads WMS, writes tasks back.",
+      "iconType": "batch-job",
+      "aspects": {
+        "monitoring": {
+          "status": "partial"
+        },
+        "security": {
+          "status": "managed"
+        }
+      }
+    },
+    {
+      "key": "yard",
+      "kind": "application",
+      "name": "Yard Management",
+      "category": "Warehouse",
+      "lifecycle": "planned",
+      "isManaged": true,
+      "description": "Trailers, doors and time slots on the yard. Bought in, lightly integrated.",
+      "iconType": "scheduler",
+      "aspects": {
+        "monitoring": {
+          "status": "none"
+        },
+        "security": {
+          "status": "partial"
+        }
+      }
+    },
+    {
+      "key": "billing",
+      "kind": "application",
+      "name": "Billing",
+      "category": "Billing",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Invoices what was delivered, from the order and the tariff that applied on the day.",
+      "iconType": "finance",
+      "aspects": {
+        "monitoring": {
+          "status": "managed"
+        },
+        "security": {
+          "status": "managed"
+        },
+        "dr": {
+          "status": "managed"
+        },
+        "self-healing": {
+          "status": "partial"
+        }
+      }
+    },
+    {
+      "key": "tariff-engine",
+      "kind": "application",
+      "name": "Tariff Engine",
+      "category": "Billing",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Contract rates, surcharges and fuel indexation. Changes here move real money.",
+      "iconType": "workflow",
+      "aspects": {
+        "monitoring": {
+          "status": "partial"
+        },
+        "security": {
+          "status": "managed"
+        },
+        "dr": {
+          "status": "partial"
+        }
+      }
+    },
+    {
+      "key": "legacy-rating",
+      "kind": "application",
+      "name": "Rating (legacy)",
+      "category": "Billing",
+      "lifecycle": "retiring",
+      "isManaged": false,
+      "description": "The rating rules the tariff engine has not absorbed yet. Two customers still price here.",
+      "iconType": "mainframe",
+      "aspects": {
+        "monitoring": {
+          "status": "none"
+        },
+        "security": {
+          "status": "atRisk",
+          "note": "Runs on an OS release that stopped receiving patches."
+        },
+        "dr": {
+          "status": "none"
+        }
+      }
+    },
+    {
+      "key": "customer-master",
+      "kind": "application",
+      "name": "Customer Master",
+      "category": "Master data",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "One record per customer and site, and the addresses everything else trusts.",
+      "iconType": "crm",
+      "aspects": {
+        "monitoring": {
+          "status": "managed"
+        },
+        "security": {
+          "status": "managed"
+        },
+        "dr": {
+          "status": "managed"
+        }
+      }
+    },
+    {
+      "key": "fleet-register",
+      "kind": "application",
+      "name": "Fleet Register",
+      "category": "Master data",
+      "lifecycle": "live",
+      "isManaged": true,
+      "description": "Vehicles, trailers, telematics units and who is allowed to drive what.",
+      "iconType": "database",
+      "aspects": {
+        "monitoring": {
+          "status": "partial"
+        },
+        "security": {
+          "status": "managed"
+        }
+      }
+    },
+    {
+      "key": "customs",
+      "kind": "externalSystem",
+      "name": "Customs declarations",
+      "description": "National customs filing. Rejections arrive hours later, by message.",
+      "iconType": "document-management"
+    },
+    {
+      "key": "partner-carriers",
+      "kind": "externalSystem",
+      "name": "Partner carriers",
+      "description": "Subcontracted runs. Each one integrates slightly differently.",
+      "iconType": "saas"
+    },
+    {
+      "key": "payments",
+      "kind": "externalSystem",
+      "name": "Payment provider",
+      "description": "Collects on invoices and reports back what settled.",
+      "iconType": "api"
+    },
+    {
+      "key": "traffic-feed",
+      "kind": "externalSystem",
+      "name": "Traffic & weather feed",
+      "description": "Third-party conditions used when planning and re-planning.",
+      "iconType": "cloud"
+    },
+    {
+      "key": "observability",
+      "kind": "managementTool",
+      "name": "Observability",
+      "description": "Metrics, logs and traces for everything that has been onboarded.",
+      "iconType": "monitoring"
+    },
+    {
+      "key": "iam",
+      "kind": "managementTool",
+      "name": "Identity & access",
+      "description": "Single sign-on and the roles behind every screen above.",
+      "iconType": "auth"
+    },
+    {
+      "key": "wms-workstation",
+      "kind": "component",
+      "name": "Floor workstation",
+      "description": "What the warehouse lead and pickers actually look at.",
+      "iconType": "desktop-app"
+    },
+    {
+      "key": "wms-api",
+      "kind": "component",
+      "name": "Inventory API",
+      "description": "Stock and task queries for everything outside the warehouse.",
+      "iconType": "api"
+    },
+    {
+      "key": "wms-task-engine",
+      "kind": "component",
+      "name": "Task engine",
+      "description": "Turns demand into pick, put-away and replenishment work.",
+      "iconType": "workflow"
+    },
+    {
+      "key": "wms-scan-service",
+      "kind": "component",
+      "name": "Scan service",
+      "description": "Absorbs the scan traffic and holds it when the network drops.",
+      "iconType": "connector"
+    },
+    {
+      "key": "wms-integration",
+      "kind": "component",
+      "name": "Integration service",
+      "description": "Talks to order management, slotting and the yard.",
+      "iconType": "integration-platform"
+    },
+    {
+      "key": "wms-db",
+      "kind": "component",
+      "name": "Inventory database",
+      "description": "Stock positions and the task ledger.",
+      "iconType": "database"
+    },
+    {
+      "key": "wms-events",
+      "kind": "component",
+      "name": "Event stream",
+      "description": "Every stock movement, published once, read by several.",
+      "iconType": "event-stream"
+    }
+  ],
+  "connections": [
+    {
+      "sourceKey": "planner",
+      "targetKey": "route-optimiser",
+      "label": "plans the day",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "planner",
+      "targetKey": "order-management",
+      "label": "checks and amends orders",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "dispatcher",
+      "targetKey": "dispatch",
+      "label": "runs the day",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "warehouse-lead",
+      "targetKey": "wms",
+      "label": "assigns work on the floor",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "support-agent",
+      "targetKey": "track-trace",
+      "label": "answers where a shipment is",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "support-agent",
+      "targetKey": "order-management",
+      "label": "corrects an order",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "customer-portal",
+      "targetKey": "order-management",
+      "label": "books shipments",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "edi-intake",
+      "targetKey": "order-management",
+      "label": "delivers EDIFACT orders",
+      "protocol": "AS2"
+    },
+    {
+      "sourceKey": "driver-app",
+      "targetKey": "dispatch",
+      "label": "reports position and exceptions",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "driver-app",
+      "targetKey": "track-trace",
+      "label": "sends proof of delivery",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "scanners",
+      "targetKey": "wms",
+      "label": "every scan on the floor",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "customer-portal",
+      "targetKey": "track-trace",
+      "label": "shows shipment status",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "order-management",
+      "targetKey": "route-optimiser",
+      "label": "hands over tomorrow’s orders",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "route-optimiser",
+      "targetKey": "dispatch",
+      "label": "publishes the plan",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "dispatch",
+      "targetKey": "track-trace",
+      "label": "streams run events",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "order-management",
+      "targetKey": "wms",
+      "label": "requests picking and shipping",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "wms",
+      "targetKey": "track-trace",
+      "label": "publishes stock movements",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "order-management",
+      "targetKey": "billing",
+      "label": "hands over what was delivered",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "billing",
+      "targetKey": "tariff-engine",
+      "label": "asks what it costs",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "billing",
+      "targetKey": "legacy-rating",
+      "label": "rates two remaining contracts",
+      "protocol": "SOAP"
+    },
+    {
+      "sourceKey": "slotting",
+      "targetKey": "wms",
+      "label": "writes replenishment tasks",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "wms",
+      "targetKey": "yard",
+      "label": "books a dock door",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "dispatch",
+      "targetKey": "yard",
+      "label": "announces arrivals",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "order-management",
+      "targetKey": "customer-master",
+      "label": "resolves customer and site",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "billing",
+      "targetKey": "customer-master",
+      "label": "invoices the right legal entity",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "dispatch",
+      "targetKey": "fleet-register",
+      "label": "checks vehicle and licence",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "route-optimiser",
+      "targetKey": "fleet-register",
+      "label": "plans against real capacity",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "order-management",
+      "targetKey": "customs",
+      "label": "files declarations",
+      "protocol": "AS4"
+    },
+    {
+      "sourceKey": "dispatch",
+      "targetKey": "partner-carriers",
+      "label": "subcontracts runs",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "partner-carriers",
+      "targetKey": "track-trace",
+      "label": "returns status events",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "billing",
+      "targetKey": "payments",
+      "label": "collects on invoices",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "route-optimiser",
+      "targetKey": "traffic-feed",
+      "label": "reads conditions",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "observability",
+      "targetKey": "order-management",
+      "label": "monitors",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "observability",
+      "targetKey": "wms",
+      "label": "monitors",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "observability",
+      "targetKey": "dispatch",
+      "label": "monitors",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "iam",
+      "targetKey": "customer-portal",
+      "label": "authenticates",
+      "protocol": "OIDC"
+    },
+    {
+      "sourceKey": "iam",
+      "targetKey": "order-management",
+      "label": "authorises",
+      "protocol": "OIDC"
+    },
+    {
+      "sourceKey": "iam",
+      "targetKey": "wms",
+      "label": "authorises",
+      "protocol": "OIDC"
+    },
+    {
+      "sourceKey": "wms-workstation",
+      "targetKey": "wms-api",
+      "label": "reads stock and tasks",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "scanners",
+      "targetKey": "wms-scan-service",
+      "label": "scans",
+      "protocol": "HTTPS"
+    },
+    {
+      "sourceKey": "wms-scan-service",
+      "targetKey": "wms-events",
+      "label": "publishes movements",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "wms-api",
+      "targetKey": "wms-db",
+      "label": "reads and writes",
+      "protocol": "SQL"
+    },
+    {
+      "sourceKey": "wms-task-engine",
+      "targetKey": "wms-db",
+      "label": "writes the task ledger",
+      "protocol": "SQL"
+    },
+    {
+      "sourceKey": "wms-events",
+      "targetKey": "wms-task-engine",
+      "label": "triggers replenishment",
+      "protocol": "AMQP"
+    },
+    {
+      "sourceKey": "wms-integration",
+      "targetKey": "wms-api",
+      "label": "serves the outside world",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "order-management",
+      "targetKey": "wms-integration",
+      "label": "requests picking and shipping",
+      "protocol": "REST"
+    },
+    {
+      "sourceKey": "slotting",
+      "targetKey": "wms-integration",
+      "label": "writes replenishment tasks",
+      "protocol": "REST"
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "landscape",
+      "kind": "layer7",
+      "name": "Application landscape",
+      "aspectConfig": [
+        {
+          "key": "monitoring",
+          "label": "Monitoring"
+        },
+        {
+          "key": "self-healing",
+          "label": "Self-healing"
+        },
+        {
+          "key": "security",
+          "label": "Security"
+        },
+        {
+          "key": "dr",
+          "label": "Disaster recovery"
+        }
+      ],
+      "places": [
+        {
+          "elementKey": "order-management",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "route-optimiser",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "dispatch",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "track-trace",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "planner",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "dispatcher",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "warehouse-lead",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "support-agent",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "driver-app",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "customer-portal",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "edi-intake",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "scanners",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "wms",
+          "zone": "landscape",
+          "domainGroup": "Warehouse"
+        },
+        {
+          "elementKey": "slotting",
+          "zone": "landscape",
+          "domainGroup": "Warehouse"
+        },
+        {
+          "elementKey": "yard",
+          "zone": "landscape",
+          "domainGroup": "Warehouse"
+        },
+        {
+          "elementKey": "billing",
+          "zone": "landscape",
+          "domainGroup": "Billing"
+        },
+        {
+          "elementKey": "tariff-engine",
+          "zone": "landscape",
+          "domainGroup": "Billing"
+        },
+        {
+          "elementKey": "legacy-rating",
+          "zone": "landscape",
+          "domainGroup": "Billing"
+        },
+        {
+          "elementKey": "customer-master",
+          "zone": "landscape",
+          "domainGroup": "Master data"
+        },
+        {
+          "elementKey": "fleet-register",
+          "zone": "landscape",
+          "domainGroup": "Master data"
+        },
+        {
+          "elementKey": "customs",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "partner-carriers",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "payments",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "traffic-feed",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "observability",
+          "zone": "management"
+        },
+        {
+          "elementKey": "iam",
+          "zone": "management"
+        }
+      ]
+    },
+    {
+      "key": "wms-containers",
+      "kind": "container",
+      "name": "Warehouse Management · containers",
+      "applicationKey": "wms",
+      "places": [
+        {
+          "elementKey": "wms"
+        },
+        {
+          "elementKey": "wms-workstation"
+        },
+        {
+          "elementKey": "wms-api"
+        },
+        {
+          "elementKey": "wms-task-engine"
+        },
+        {
+          "elementKey": "wms-scan-service"
+        },
+        {
+          "elementKey": "wms-integration"
+        },
+        {
+          "elementKey": "wms-db"
+        },
+        {
+          "elementKey": "wms-events"
+        },
+        {
+          "elementKey": "warehouse-lead"
+        },
+        {
+          "elementKey": "scanners"
+        },
+        {
+          "elementKey": "order-management"
+        },
+        {
+          "elementKey": "slotting"
+        },
+        {
+          "elementKey": "yard"
+        }
+      ]
+    }
+  ]
+}

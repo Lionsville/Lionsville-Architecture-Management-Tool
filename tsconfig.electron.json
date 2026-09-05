@@ -1,0 +1,9 @@
+{
+  "//": "The main and preload bundles: Node and Electron, not the DOM. Separate from tsconfig.json because they compile against a different world — `npm run typecheck` runs both.",
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022"], "module": "ESNext",
+    "moduleResolution": "bundler", "strict": true, "skipLibCheck": true,
+    "noEmit": true, "types": ["node"], "allowImportingTsExtensions": true
+  },
+  "include": ["electron", "build"]
+}

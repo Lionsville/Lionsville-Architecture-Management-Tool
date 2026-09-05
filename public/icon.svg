@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Lionsville Architecture Management Tool">
+  <!--
+    The app mark: L7, drawn in Lionsville's own vocabulary.
+
+    The brand mark is three stacked rounded bars carrying a blue-to-violet
+    gradient on near-black. So the letters here are not type — they are built
+    from that same bar, which keeps the family resemblance and, just as
+    usefully, means rasterising this file never depends on a font being
+    installed on the machine doing the rasterising.
+
+    Full-bleed square on purpose. That is the right shape for Windows and Linux,
+    and the macOS variant is derived from it by insetting the whole square into
+    Apple's 824-in-1024 rounded body (scripts/make-mac-icon.swift) — the OS does
+    not apply that mask itself.
+  -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a1230"/>
+      <stop offset="1" stop-color="#08050f"/>
+    </linearGradient>
+    <!-- User space, not the default object bounding box: the mark is drawn as
+         several overlapping shapes, and a per-shape gradient makes every overlap
+         visible as a band of the wrong shade. One gradient across the whole
+         mark also makes the L and the 7 read as one object rather than two. -->
+    <linearGradient id="mark" gradientUnits="userSpaceOnUse" x1="196" y1="250" x2="854" y2="774">
+      <stop offset="0" stop-color="#2f6bff"/>
+      <stop offset="0.55" stop-color="#8a5cdb"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.28" cy="0.22" r="0.75">
+      <stop offset="0" stop-color="#8a5cdb" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#8a5cdb" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#ground)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+
+  <g fill="url(#mark)">
+    <!-- L, as one outline. Two overlapping rects leave a visible seam where the
+         upright meets the foot once both have rounded corners; the concave
+         corner between them is deliberately square, the way a bar bent through
+         90 degrees would be. -->
+    <path d="M 196 280 A 30 30 0 0 1 226 250 L 298 250 A 30 30 0 0 1 328 280
+             L 328 642 L 466 642 A 30 30 0 0 1 496 672 L 496 744
+             A 30 30 0 0 1 466 774 L 226 774 A 30 30 0 0 1 196 744 Z"/>
+
+    <!-- 7, as one closed outline — no second shape, no stroke, nothing
+         overlapping anything.
+
+         The bump came from treating the 7 as a bar with a separate diagonal
+         under it: two shapes whose silhouettes have to be made to agree at the
+         seam, and they never quite do at every size. Drawn as one path there is
+         no seam to get wrong. The top-right corner turns straight from the top
+         edge into the descender rather than dropping vertically first, so the
+         right side is a single unbroken line from the corner to the tail.
+
+         The corner arcs are r=30, the same as the L, with tangent points offset
+         along each edge by r·tan(θ/2) — 30 at the square corners, 40 where the
+         edges meet obtusely, 22 at the tail's sharp one. Offsetting every corner
+         by a flat 30 is what leaves the small kinks. The descender is 132 across,
+         measured perpendicular, so it matches the L's bars rather than merely
+         looking close. -->
+    <path d="M 546 280 A 30 30 0 0 1 576 250
+             L 814 250 A 30 30 0 0 1 843 288
+             L 706 753 A 30 30 0 0 1 678 774
+             L 602 774 A 30 30 0 0 1 574 736
+             L 678 382 L 576 382 A 30 30 0 0 1 546 352 Z"/>
+  </g>
+</svg>

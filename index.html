@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/icon.svg" />
+    <title>Lionsville Architecture Management Tool</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; font-family: system-ui, sans-serif }
+      /* The ground the app paints over. Dark, because the window is created with
+         a dark background colour and a white flash between the two is the most
+         visible thing about starting the app. */
+      body { background: #0e0b16 }
+      #boot { display: flex; height: 100%; align-items: center; justify-content: center;
+              color: #6d6880; font-size: 13px; letter-spacing: .02em }
+    </style>
+  </head>
+  <body>
+    <!-- Replaced as soon as the app mounts. What was here before was a page of
+         instructions telling the reader to install dependencies and start a dev
+         server — true for someone who had double-clicked this file out of a
+         source checkout, and wrong in every other case. In a packaged desktop
+         app it is worse than wrong: it is the screen you get when the bundle
+         failed to load, and it blames the reader for it. A single line that
+         says nothing is a better failure. -->
+    <div id="root"><div id="boot">Loading…</div></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

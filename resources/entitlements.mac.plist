@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hardened runtime is on, which means the app gets nothing it does not ask for.
+  These four are what an Electron app needs to start at all; everything beyond
+  them (camera, microphone, address book) is absent because this app has no use
+  for it, and every entitlement is a promise made to Apple's reviewer.
+
+  allow-jit and allow-unsigned-executable-memory are not optional here for a
+  second reason beyond V8: the edge router is WebAssembly, compiled at runtime.
+  Without them the app launches, draws, and routes every connection as a
+  straight line — the same silent degradation the CSP's 'wasm-unsafe-eval' guards
+  against in the renderer.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+  <!-- Electron's helpers and framework are signed by Electron, not by us. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>
