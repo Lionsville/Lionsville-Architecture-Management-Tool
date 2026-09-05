@@ -14,13 +14,64 @@ import type {
   DesignModel, DesignElement, DesignConnection, DesignDiagram, DiagramPlacement, Layer7Zone,
 } from '@lionsville/solution-design'
 
+/**
+ * The document's own shapes, deliberately not the model's: everything is
+ * addressed by `key` rather than by id, no geometry is carried, and whatever
+ * the model defaults is optional here.
+ *
+ * Writing them down is what makes the mapping below checked rather than merely
+ * believed. Field types are taken from the model by indexed access instead of
+ * being restated, so a closed vocabulary that gains a member — a new lifecycle
+ * stage, a new element kind — cannot drift apart from the model's own.
+ */
+type InterchangeElement = {
+  key: string
+  kind: DesignElement['kind']
+  parentKey?: string
+  name: string
+  category?: string
+  vendor?: string
+  technology?: string
+  description?: string
+  lifecycle?: DesignElement['lifecycle']
+  isManaged?: boolean
+  aspects?: DesignElement['aspects']
+  /** Unknown, not string: an unrecognised key is kept and handed back (see below). */
+  iconType?: unknown
+}
+
+type InterchangeConnection = {
+  key?: string
+  sourceKey: string
+  targetKey: string
+  label?: string
+  protocol?: string
+  isBidirectional?: boolean
+}
+
+type InterchangePlace = {
+  elementKey: string
+  zone?: Layer7Zone
+  domainGroup?: string
+}
+
+type InterchangeDiagram = {
+  key: string
+  kind: DesignDiagram['kind']
+  name: string
+  author?: string
+  applicationKey?: string
+  places?: InterchangePlace[]
+  aspectConfig?: DesignDiagram['aspectConfig']
+}
+
 export type InterchangeDoc = {
   formatVersion: string
   design: { name: string; description?: string }
-  elements: any[]
-  connections?: any[]
-  diagrams: any[]
-  adrLinks?: any[]
+  elements: InterchangeElement[]
+  connections?: InterchangeConnection[]
+  diagrams: InterchangeDiagram[]
+  adrLinks?: unknown[]
 }
 
 export interface HostExtras {
@@ -74,9 +125,9 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
   }))
 
   const diagrams: DesignDiagram[] = (doc.diagrams ?? []).map((d) => {
-    const placements: DiagramPlacement[] = (d.places ?? []).map((p: any) => ({
+    const placements: DiagramPlacement[] = (d.places ?? []).map((p) => ({
       elementId: p.elementKey,
-      zone: p.zone as Layer7Zone | undefined,
+      zone: p.zone,
       domainGroup: p.domainGroup,
       x: 0,
       y: 0,

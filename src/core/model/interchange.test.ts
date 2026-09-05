@@ -18,6 +18,25 @@ import type { InterchangeDoc } from './fromInterchange'
 import { toInterchange } from './toInterchange'
 
 const GROUP_NAME = 'Acme Logistics'
+
+/**
+ * Find or fail. The document's types are no longer `any`, so `find` returns
+ * `T | undefined` — and a test that asks `'lifecycle' in <missing>` should
+ * report which key it could not find, rather than the absence showing up as a
+ * type error here or an obscure TypeError at run time.
+ */
+const elementByKey = (out: InterchangeDoc, key: string) => {
+  const found = out.elements.find((e) => e.key === key)
+  if (!found) throw new Error(`no element with key '${key}' in the document`)
+  return found
+}
+
+const diagramByKey = (out: InterchangeDoc, key: string) => {
+  const found = out.diagrams.find((d) => d.key === key)
+  if (!found) throw new Error(`no diagram with key '${key}' in the document`)
+  return found
+}
+
 const source = doc as unknown as InterchangeDoc
 
 /** Deep copy with each object's keys sorted alphabetically. */
@@ -144,7 +163,7 @@ describe('fromInterchange → toInterchange on a synthetic document', () => {
   it('keeps aspects, notes and all', () => {
     const out = roundTrip(synthetic)
 
-    expect(out.elements.find((e) => e.key === 'app').aspects).toEqual({
+    expect(elementByKey(out, 'app').aspects).toEqual({
       monitoring: { status: 'partial' },
       'self-healing': { status: 'none', note: 'Nachtelijke batch.' },
     })
@@ -152,7 +171,7 @@ describe('fromInterchange → toInterchange on a synthetic document', () => {
 
   it('writes lifecycle/isManaged back where the source said them, and only there', () => {
     const out = roundTrip(synthetic)
-    const byKey = (key: string) => out.elements.find((e) => e.key === key)
+    const byKey = (key: string) => elementByKey(out, key)
 
     // said explicitly at the default value → said again
     expect(byKey('app')).toMatchObject({ lifecycle: 'live', isManaged: true })
@@ -181,8 +200,8 @@ describe('fromInterchange → toInterchange on a synthetic document', () => {
 
   it('keeps zone and domainGroup on layer7 places and off container places', () => {
     const out = roundTrip(synthetic)
-    const l7 = out.diagrams.find((d) => d.key === 'l7')
-    const cd = out.diagrams.find((d) => d.key === 'cd')
+    const l7 = diagramByKey(out, 'l7')
+    const cd = diagramByKey(out, 'cd')
 
     expect(l7.places).toEqual([
       { elementKey: 'app', zone: 'landscape', domainGroup: 'Kern' },
@@ -197,7 +216,7 @@ describe('fromInterchange → toInterchange on a synthetic document', () => {
     const out = roundTrip(synthetic)
     const connections = out.connections ?? []
 
-    expect(out.diagrams.find((d) => d.key === 'l7').aspectConfig)
+    expect(diagramByKey(out, 'l7').aspectConfig)
       .toEqual([{ key: 'monitoring', label: 'Monitoring' }])
     expect(out.adrLinks).toEqual([{ key: 'adr-1', title: 'Waarom REST' }])
     expect(connections[0]).toMatchObject({ isBidirectional: true, label: 'levert', protocol: 'REST' })
@@ -253,7 +272,7 @@ describe('iconType', () => {
 
   it('stays silent for an element with no icon', () => {
     const out = roundTrip(withIcons)
-    expect('iconType' in out.elements.find((e) => e.key === 'kaal')).toBe(false)
+    expect('iconType' in elementByKey(out, 'kaal')).toBe(false)
   })
 
   it('writes a built-in key the editor just set, unasked', () => {
@@ -275,7 +294,7 @@ describe('iconType', () => {
 
     const out = toInterchange(model)
 
-    expect('iconType' in out.elements.find((e) => e.key === 'kern')).toBe(false)
+    expect('iconType' in elementByKey(out, 'kern')).toBe(false)
   })
 
   it('drops an unknown key the source never carried', () => {
@@ -288,7 +307,7 @@ describe('iconType', () => {
 
     const out = toInterchange(model)
 
-    expect('iconType' in out.elements.find((e) => e.key === 'kaal')).toBe(false)
+    expect('iconType' in elementByKey(out, 'kaal')).toBe(false)
   })
 
   it('returns the shipped example\'s icons unchanged', () => {
