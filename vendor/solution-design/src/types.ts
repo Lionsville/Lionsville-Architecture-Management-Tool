@@ -505,6 +505,14 @@ export interface SolutionDesignEditorProps {
    */
   focusElement?: { id: ElementId; nonce: number };
   /**
+   * Open the documentation page from outside the editor — a host's own menu
+   * bar, or its search. Without `elementId` the page opens on the selected
+   * element, failing that the first element placed on the active diagram, and
+   * failing that the first element in the model; with no elements at all it
+   * does nothing. Bump `nonce` to ask again.
+   */
+  documentationRequest?: { elementId?: ElementId; nonce: number };
+  /**
    * Scope-level cost summary, rendered as a corner chip on layer7 diagrams.
    * The host composes it from the diagram's estimate and linked scope T&S
    * line totals.

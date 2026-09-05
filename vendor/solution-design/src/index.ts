@@ -136,3 +136,11 @@ export { LanguageProvider, useStrings } from './i18n/LanguageContext';
  * either way).
  */
 export { PANEL_LIMITS, clampPanelWidth, panelWidth } from './model/panels';
+/**
+ * The editor's one rule for "found" and the helpers that read a document, so a
+ * host's own search and its own pages match and link the way the editor does
+ * rather than nearly the same way.
+ */
+export { fold, matchesQuery, queryTokens } from './model/textSearch';
+export { linkElementRefs, outline, stripInline } from './model/documentation';
+export type { OutlineEntry } from './model/documentation';

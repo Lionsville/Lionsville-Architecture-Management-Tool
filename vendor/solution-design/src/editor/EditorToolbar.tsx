@@ -21,7 +21,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../types';
 import { getNodeTokens } from '../theme/tokens';
-import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, FullscreenIcon, HelpIcon, LifecycleIcon, MinimapIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from './toolbarIcons';
+import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, FullscreenIcon, HelpIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from './toolbarIcons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, type Language, type StringKey } from '../i18n/strings';
 
@@ -232,6 +232,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
                     diagram={diagram}
                     model={props.model}
                     onActiveDiagramChange={props.onActiveDiagramChange}
+                    onOpenDiagramSettings={props.readOnly ? undefined : props.onOpenDiagramSettings}
                   />
                 }
               />
@@ -538,14 +539,30 @@ function TidySplitButton({
  * they are one click from the tab they belong to, and the breadcrumb still takes
  * over once one is open.
  */
+/**
+ * The two controls a tab carries beside its name. Spans with button semantics,
+ * not IconButtons: a Tab is already a <button>, and buttons do not nest.
+ */
+const TAB_ACTION_SX = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  p: 0.25,
+  borderRadius: 1,
+  color: 'text.secondary',
+  '&:hover, &:focus-visible': { color: 'text.primary', bgcolor: 'action.hover' },
+} as const;
+
 function TabLabel({
   diagram,
   model,
   onActiveDiagramChange,
+  onOpenDiagramSettings,
 }: {
   diagram: DesignDiagram;
   model: DesignModel;
   onActiveDiagramChange(diagramId: string): void;
+  /** Absent when the host offers no settings, and when the editor is read-only. */
+  onOpenDiagramSettings?(diagramId: string): void;
 }) {
   const { t } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -560,14 +577,17 @@ function TabLabel({
     event.preventDefault();
     setAnchor(event.currentTarget as HTMLElement);
   };
+  const openSettings = (event: React.MouseEvent | React.KeyboardEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+    onOpenDiagramSettings?.(diagram.id);
+  };
 
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
       <span>{diagram.name}</span>
       {containers.length > 0 && (
         <>
-          {/* A `span` with button semantics, not an IconButton: a Tab is already a
-              <button>, and buttons do not nest. */}
           <Tooltip title={t('toolbar.containerDiagrams')}>
             <Box
               component="span"
@@ -580,14 +600,7 @@ function TabLabel({
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') open(event);
               }}
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                p: 0.25,
-                borderRadius: 1,
-                color: 'text.secondary',
-                '&:hover, &:focus-visible': { color: 'text.primary', bgcolor: 'action.hover' },
-              }}
+              sx={TAB_ACTION_SX}
             >
               <CaretIcon />
             </Box>
@@ -620,6 +633,23 @@ function TabLabel({
             ))}
           </Menu>
         </>
+      )}
+      {onOpenDiagramSettings && (
+        <Tooltip title={t('toolbar.diagramSettings')}>
+          <Box
+            component="span"
+            role="button"
+            tabIndex={0}
+            aria-label={t('toolbar.diagramSettingsOf', { name: diagram.name })}
+            onClick={openSettings}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') openSettings(event);
+            }}
+            sx={TAB_ACTION_SX}
+          >
+            <RadarIcon />
+          </Box>
+        </Tooltip>
       )}
     </Box>
   );

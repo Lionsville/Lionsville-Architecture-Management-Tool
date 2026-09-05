@@ -333,3 +333,21 @@ export function MinimapIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Maturity: concentric rings with a sweep and a blip on it.
+ *
+ * The diagram's settings are, in practice, the maturity columns — so the tab
+ * carries the radar rather than a gear, which would promise "everything about
+ * this diagram" and be one more anonymous cog in a bar that has enough of them.
+ */
+export function RadarIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 12l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="15.5" cy="8.5" r="1.7" fill="currentColor" />
+    </svg>
+  );
+}

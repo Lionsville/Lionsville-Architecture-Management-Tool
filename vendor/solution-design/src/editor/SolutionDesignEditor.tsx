@@ -287,6 +287,22 @@ function EditorBody(props: SolutionDesignEditorProps) {
     setFocusRequest({ id: hostFocus.id, nonce: focusNonce.current });
   }, [hostFocus]);
 
+  // The host's "open the documentation" — same nonce discipline as focus above.
+  // Resolving WHICH element happens here rather than in the host, because the
+  // selection is the editor's and a host cannot see it.
+  const hostDoc = props.documentationRequest;
+  const hostDocRef = useRef<SolutionDesignEditorProps['documentationRequest']>(undefined);
+  const selectedForDoc = state.selectedElement?.id;
+  const firstPlaced = activeDiagram?.placements[0]?.elementId;
+  const firstInModel = state.effectiveModel.elements[0]?.id;
+  useEffect(() => {
+    if (!hostDoc) return;
+    if (hostDocRef.current && hostDocRef.current.nonce === hostDoc.nonce) return;
+    hostDocRef.current = hostDoc;
+    const id = hostDoc.elementId ?? selectedForDoc ?? firstPlaced ?? firstInModel;
+    if (id) openDocumentation(id);
+  }, [hostDoc, selectedForDoc, firstPlaced, firstInModel, openDocumentation]);
+
   useFocusElement({
     focusElement: focusRequest,
     model: state.effectiveModel,
