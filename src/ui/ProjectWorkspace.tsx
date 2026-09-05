@@ -22,6 +22,7 @@ import type { WindowChrome } from '../core/windowChrome'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
+import { renderMarkdown } from './markdown/renderMarkdown'
 import { ShellToolbar } from './ShellToolbar'
 import { useAutosave } from './useAutosave'
 import type { ProjectSaver } from './useAutosave'
@@ -147,6 +148,7 @@ export function ProjectWorkspace({
           onRequestLogoUpload={logoPicker.open}
           onExportImagesMissing={onExportImagesMissing}
           onLayoutError={onLayoutError}
+          renderMarkdown={renderMarkdown}
           onRenameDiagram={diagrams.onRenameDiagram}
           onDiagramSettingsChange={diagrams.onDiagramSettingsChange}
           onDuplicateDiagram={diagrams.onDuplicateDiagram}

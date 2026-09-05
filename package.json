@@ -50,6 +50,8 @@
     "libavoid-js": "0.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "simple-icons": "16.29.0",
     "typescript": "~5.7.0",
     "typescript-eslint": "^8.69.0",

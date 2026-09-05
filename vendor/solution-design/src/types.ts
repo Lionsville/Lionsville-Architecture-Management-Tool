@@ -408,6 +408,18 @@ export interface UploadedLogo {
   url: string;
 }
 
+/**
+ * What a host's markdown renderer may be told beyond the text.
+ *
+ * An element link is a link whose href is `element:<id>`. The package writes
+ * those (a `[[Name]]` in a description resolves to one); the renderer only has
+ * to recognise the scheme and hand the id back, so it stays ignorant of the
+ * model and the page stays ignorant of the renderer.
+ */
+export interface MarkdownRenderOptions {
+  onElementLink?(elementId: string): void;
+}
+
 export interface SolutionDesignEditorProps {
   model: DesignModel;
   activeDiagramId: string;
@@ -470,9 +482,13 @@ export interface SolutionDesignEditorProps {
   /**
    * Optional markdown renderer for element descriptions. The package stays
    * dependency-free here: without it, the preview falls back to a plain
-   * <pre> block. hal_app passes its themed renderer.
+   * <pre> block. The host passes its themed renderer.
+   *
+   * The second argument is what the package knows and the renderer does not:
+   * today, what to do with a link to another element. Callers that only need
+   * the text still call it with one argument.
    */
-  renderMarkdown?(md: string): ReactNode;
+  renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
   /**
    * Imperative focus request (e.g. the coverage drawer's click-to-focus).
    * When `nonce` changes, the editor selects the element and pans/zooms to

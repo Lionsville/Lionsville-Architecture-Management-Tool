@@ -6,6 +6,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { EyeIcon, PencilIcon } from './toolbarIcons';
 import { useStrings } from '../i18n/LanguageContext';
+import type { MarkdownRenderOptions } from '../types';
 
 /**
  * Markdown description editor with a preview toggle. Rendering is host-
@@ -22,7 +23,7 @@ export function MarkdownField({
   value: string;
   disabled: boolean;
   onChange(value: string): void;
-  renderMarkdown?(md: string): ReactNode;
+  renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
 }) {
   const { t } = useStrings();
   const [preview, setPreview] = useState(false);

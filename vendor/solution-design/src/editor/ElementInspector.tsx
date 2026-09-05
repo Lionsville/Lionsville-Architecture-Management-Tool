@@ -14,6 +14,7 @@ import type {
   DesignDiagram,
   DesignElement,
   DesignModel,
+  MarkdownRenderOptions,
   NodeIconSize,
   NodeShapeVariant,
   ParameterSpec,
@@ -88,7 +89,7 @@ export interface ElementInspectorProps {
   parameterSpecs: ParameterSpec[];
   actions: EditorActions;
   onRequestDelete(): void;
-  renderMarkdown?(md: string): ReactNode;
+  renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
   extras?: ReactNode;
   /**
    * Opens the host's logo-upload flow. Absent = the icon picker shows no upload
