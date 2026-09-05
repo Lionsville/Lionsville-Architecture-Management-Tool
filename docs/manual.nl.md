@@ -192,6 +192,52 @@ element op de plaat laat zien; zonder die regel is dat de eerste alinea.
 `[[Naam]]` in de tekst wordt een koppeling naar dat element. Gewone koppelingen
 openen buiten de app.
 
+**Documentatie** in de bovenbalk opent de pagina van het geselecteerde element,
+of van het eerste element op het diagram als niets geselecteerd is. Een
+codeblok gemarkeerd als `mermaid` wordt op elke pagina als diagram getekend.
+
+## Besluiten
+
+**Besluiten** in de bovenbalk opent de architectuurbesluiten (ADR's): een boom
+links, de besluiten van het gekozen knooppunt in het midden, en het besluit dat
+u leest rechts. Er zijn drie niveaus. De besluiten van de **groep** gelden voor
+elk project dat eronder valt en worden bij de groep bewaard. De besluiten van
+de **landschappen** horen bij het project als geheel. Elke **applicatie** heeft
+een eigen lijst. Een applicatie die uit het model is verdwenen houdt haar
+besluiten onder *Verwijderde applicaties*.
+
+Een besluit volgt het MADR-formaat: context en probleemstelling,
+beslisfactoren, de overwogen opties, de uitkomst en haar gevolgen, de voor- en
+nadelen van elke optie, meer informatie. **Nieuw besluit** vraagt de titel en
+begint de tekst vanuit dat sjabloon. Titel, status, datum en besluitnemers zijn
+velden boven de tekst; de tabel **beoordelaars en ondertekening** onderaan
+noemt aan wie het besluit is voorgelegd, elk met een oordeel en de dag waarop
+het gegeven is.
+
+De status is een werkstroom, geen etiket. Een besluit begint als
+**voorgesteld**, gaat naar **in beoordeling** en wordt dan **aanvaard** of
+**afgewezen**. Die twee zijn het eindpunt: daarna kan het besluit niet meer
+worden bewerkt of verwijderd, want een besluit dat achteraf herschreven kan
+worden is geen vastlegging. Een aanvaard besluit kan later **vervangen**
+worden; dat vraagt welk besluit het vervangt en toont de verwijzing in beide
+richtingen. Een beoordeling kan terug naar voorgesteld.
+
+Het zoekveld boven de lijst doorzoekt alle besluiten in de boom tegelijk —
+titel, tekst en beoordelaars. De tekst is markdown, met dezelfde
+`[[Naam]]`-verwijzingen als documentatie; **Hulp bij opmaak** naast de bron
+toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met het
+project bewaard, of met de groep voor de besluiten van de groep.
+
+## Zoeken
+
+**Zoeken** in de bovenbalk, of ⌘K, doorzoekt het hele project in één keer:
+elementen op naam, categorie, leverancier en technologie; documentatie op wat
+erin geschreven staat; en besluiten op alle drie de niveaus, die van de groep
+inbegrepen. Een element kiezen selecteert het en schuift ernaartoe, een
+documentatietreffer opent de pagina van dat element, en een besluit opent de
+vastlegging. ⌘F in de editor blijft de snelle zoeker als u alleen een blok op
+het canvas zoekt.
+
 ## Diagraminstellingen
 
 Rechtsklik een diagramtabblad, **Diagraminstellingen…**.

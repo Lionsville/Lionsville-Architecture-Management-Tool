@@ -10,7 +10,7 @@
  * nothing else.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MarkdownView } from './MarkdownView'
 
 afterEach(() => cleanup())
@@ -77,5 +77,30 @@ describe('MarkdownView', () => {
   it('keeps an element link intact when no one is listening', () => {
     render(<MarkdownView markdown={'[Billing](element:el-42)'} />)
     expect(screen.getByRole('link', { name: 'Billing' }).getAttribute('href')).toBe('element:el-42')
+  })
+
+  it('draws a mermaid fence with the renderer it is given, and only that fence', async () => {
+    const render_ = vi.fn(async (code: string) => `<svg data-code="${code.trim()}"></svg>`)
+    const { container } = render(
+      <MarkdownView
+        markdown={'```mermaid\nflowchart LR\n  A --> B\n```\n\n```js\nconst x = 1\n```'}
+        renderMermaid={render_}
+      />,
+    )
+    await waitFor(() => expect(container.querySelector('svg[data-code]')).not.toBeNull())
+    expect(render_).toHaveBeenCalledTimes(1)
+    expect(render_.mock.calls[0][0]).toBe('flowchart LR\n  A --> B')
+    // The mermaid fence is not wrapped in a code block; the JS fence still is.
+    expect(container.querySelectorAll('pre')).toHaveLength(1)
+    expect(container.querySelector('pre')?.textContent).toContain('const x = 1')
+  })
+
+  it('keeps the source on screen when the diagram cannot be drawn', async () => {
+    const { container } = render(
+      <MarkdownView markdown={'```mermaid\nnot a diagram\n```'} renderMermaid={async () => { throw new Error('Parse error') }} />,
+    )
+    await waitFor(() => expect(container.querySelector('[data-state="failed"]')).not.toBeNull())
+    expect(container.textContent).toContain('not a diagram')
+    expect(container.textContent).toContain('Parse error')
   })
 })

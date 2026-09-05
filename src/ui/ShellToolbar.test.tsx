@@ -29,6 +29,9 @@ const props = {
   onOpenFile: () => {},
   onLeave: () => {},
   onOpenSettings: () => {},
+  onOpenDocumentation: () => {},
+  onOpenDecisions: () => {},
+  onOpenSearch: () => {},
   s: translator('en'),
 }
 
@@ -65,5 +68,15 @@ describe('ShellToolbar and the window around it', () => {
     const bar = barIn(container)
     expect(getComputedStyle(bar).paddingLeft).toBe('12px')
     expect(rulesFor(bar)).not.toContain('-webkit-app-region:drag')
+  })
+
+  it('offers the three pages beside the canvas', () => {
+    // By text, not by accessible name: the tooltip supplies the name, and it
+    // is the words on the button a user finds it by.
+    const { container } = render(<ShellToolbar {...props} />)
+    const labels = [...barIn(container).querySelectorAll('button')].map((button) => button.textContent)
+    for (const label of ['Documentation', 'Decisions', 'Search']) {
+      expect(labels).toContain(label)
+    }
   })
 })

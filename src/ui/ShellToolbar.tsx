@@ -1,6 +1,6 @@
 /**
- * The bar at the top: what the design is called, when it was last accepted, and
- * the four things you can do with it.
+ * The bar at the top: what the design is called, when it was last accepted, the
+ * three pages beside the canvas, and the four things you can do with the file.
  *
  * Takes no decisions and holds no state except which menu is open. Everything
  * that happens arrives from outside as a function, and there is no file field
@@ -53,6 +53,14 @@ export type ShellToolbarProps = {
   onLeave: () => void
   /** Open the project's own settings: its name and its group. */
   onOpenSettings: () => void
+  /**
+   * The three pages beside the canvas. Documentation opens on the selected
+   * element (the editor resolves which); decisions is the ADR page; search is
+   * the one over elements, documentation and decisions together.
+   */
+  onOpenDocumentation: () => void
+  onOpenDecisions: () => void
+  onOpenSearch: () => void
   s: Translate
   /**
    * What the window leaves to this bar. On the desktop the macOS title bar is
@@ -64,7 +72,8 @@ export type ShellToolbarProps = {
 
 export function ShellToolbar({
   designName, groupName, savedAt, language, themeMode, onCycleTheme,
-  onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings, s,
+  onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings,
+  onOpenDocumentation, onOpenDecisions, onOpenSearch, s,
   windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [saveMenu, setSaveMenu] = useState<HTMLElement | null>(null)
@@ -106,6 +115,23 @@ export function ShellToolbar({
           {s('settings.open')}
         </Button>
       </Tooltip>
+      <Box sx={{ width: '1px', alignSelf: 'stretch', my: 0.5, mx: 0.5, borderLeft: 1, borderColor: 'divider' }} />
+      {([
+        ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
+        ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],
+        ['shell.search', 'shell.searchTip', onOpenSearch],
+      ] as const).map(([label, tip, onClick]) => (
+        <Tooltip key={label} title={s(tip)}>
+          <Button
+            size="small"
+            color="inherit"
+            onClick={onClick}
+            sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
+          >
+            {s(label)}
+          </Button>
+        </Tooltip>
+      ))}
       <Box sx={{ flex: 1 }} />
       <Typography sx={{ fontSize: 11, color: 'text.secondary' }} data-testid="saved-indicator">
         {savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}

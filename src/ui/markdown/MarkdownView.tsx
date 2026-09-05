@@ -18,7 +18,8 @@
  * preview and on a full page at reading size, and it should scale with the
  * container rather than fight it.
  */
-import type { ComponentProps, MouseEvent } from 'react'
+import { isValidElement, useMemo } from 'react'
+import type { ComponentProps, MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Checkbox from '@mui/material/Checkbox'
 import Link from '@mui/material/Link'
@@ -32,6 +33,8 @@ import Typography from '@mui/material/Typography'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import type { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { MermaidBlock } from './MermaidBlock'
+import type { MermaidRenderer } from './MermaidBlock'
 
 export const ELEMENT_LINK_SCHEME = 'element:'
 
@@ -39,6 +42,17 @@ export type MarkdownViewProps = {
   markdown: string
   /** A link to another element was followed; the argument is its id. */
   onElementLink?: (elementId: string) => void
+  /** How a ```mermaid fence is drawn. The default loads mermaid on first use; a test hands in a fake. */
+  renderMermaid?: MermaidRenderer
+}
+
+const MERMAID_CLASS = 'language-mermaid'
+
+/** Whether a `pre` holds nothing but a mermaid fence, which then draws itself. */
+function isMermaidFence(children: ReactNode): boolean {
+  return isValidElement<{ className?: unknown }>(children)
+    && typeof children.props.className === 'string'
+    && children.props.className.split(' ').includes(MERMAID_CLASS)
 }
 
 /**
@@ -72,7 +86,7 @@ function heading(size: string, weight = 600) {
 
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
-function components(onElementLink?: (elementId: string) => void): Components {
+function components(onElementLink?: (elementId: string) => void, renderMermaid?: MermaidRenderer): Components {
   return {
     h1: heading('1.6em'),
     h2: heading('1.35em'),
@@ -129,7 +143,9 @@ function components(onElementLink?: (elementId: string) => void): Components {
       </Box>
     ),
     hr: () => <Box component="hr" sx={{ border: 0, borderTop: 1, borderColor: 'divider', my: '1em' }} />,
-    code: ({ children, className }) => (
+    code: ({ children, className }) => (className ?? '').split(' ').includes(MERMAID_CLASS) ? (
+      <MermaidBlock code={String(children).replace(/\n$/, '')} render={renderMermaid} />
+    ) : (
       <Box
         component="code"
         className={className}
@@ -138,7 +154,7 @@ function components(onElementLink?: (elementId: string) => void): Components {
         {children}
       </Box>
     ),
-    pre: ({ children }) => (
+    pre: ({ children }) => isMermaidFence(children) ? <>{children}</> : (
       <Box
         component="pre"
         sx={{
@@ -171,10 +187,13 @@ function alignOf(style: { textAlign?: string | number } | undefined): 'left' | '
   return align === 'center' || align === 'right' ? align : 'left'
 }
 
-export function MarkdownView({ markdown, onElementLink }: MarkdownViewProps) {
+export function MarkdownView({ markdown, onElementLink, renderMermaid }: MarkdownViewProps) {
+  // Memoised, because these are component TYPES: a fresh set on every render
+  // would remount every block, and a mermaid block that remounts draws again.
+  const comps = useMemo(() => components(onElementLink, renderMermaid), [onElementLink, renderMermaid])
   return (
     <Box sx={{ fontSize: 'inherit', wordBreak: 'break-word' }}>
-      <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={components(onElementLink)}>
+      <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={comps}>
         {markdown}
       </Markdown>
     </Box>

@@ -10,16 +10,21 @@
  * do: `projects` is "something that can save", not a `ProjectStore`. It can be
  * mounted in a test with two plain objects and a two-diagram model.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '@lionsville/solution-design'
 import type { Language, Translate } from '@lionsville/solution-design'
 import { groupNameOf } from '../core/project'
 import type { ProjectGroup, ProjectSnapshot } from '../core/project'
+import type { HostModel } from '../core/model/fromInterchange'
 import type { EditorPreferences } from '@lionsville/solution-design'
+import type { Adr } from '../core/adr'
 import type { ThemeMode } from '../core/preferences'
+import type { SearchHit } from '../core/search'
 import type { WindowChrome } from '../core/windowChrome'
+import { AdrPage } from './adr/AdrPage'
 import { ShellDialogs } from './dialogs/ShellDialogs'
+import { GlobalSearchDialog } from './search/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from './markdown/renderMarkdown'
@@ -56,16 +61,40 @@ export type ProjectWorkspaceProps = {
   groups: readonly ProjectGroup[]
   /** Called when the dialog opens, so the caller can refresh that list. */
   onOpenSettings: () => void
-  onApplySettings: (settings: ProjectSettings) => void
+  /**
+   * Apply the settings to the project as it stands, and hand back what was
+   * saved so the session can take it on. Nothing comes back from a move: that
+   * changes the ref, and this workspace is remounted on it.
+   */
+  onApplySettings: (
+    settings: ProjectSettings,
+    current: ProjectSnapshot,
+  ) => Promise<ProjectSnapshot | undefined>
   makeId: MakeId
+  /**
+   * The group's own decision records, and how to write them back. They are
+   * kept with the group, not with this project, so they arrive and leave as a
+   * list rather than living on the model like the project's own.
+   */
+  groupDecisions: readonly Adr[]
+  onGroupDecisionsChange: (next: Adr[]) => void
+  /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
+  today?: () => string
   /** Passed straight to the toolbar, which is the bar the window borrows. */
   windowChrome?: WindowChrome
+}
+
+function localToday(): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 export function ProjectWorkspace({
   project, projects, documents, notify, onStorageResult, s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
-  onLeave, groups, onOpenSettings, onApplySettings, makeId, windowChrome,
+  onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
+  today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
@@ -102,6 +131,74 @@ export function ProjectWorkspace({
     console.error('layout', message)
   }, [notify])
 
+  // --- the three pages beside the canvas ---------------------------------------
+
+  /**
+   * Requests INTO the editor carry a nonce, because "open the documentation"
+   * asked twice is two requests and a prop that did not change is none.
+   */
+  const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
+  const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | undefined>(undefined)
+  const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  const openDocumentation = useCallback((elementId?: string) => {
+    if (session.current().elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
+    setDocRequest((prev) => ({ elementId, nonce: (prev?.nonce ?? 0) + 1 }))
+  }, [session, notify, s])
+
+  const openDecisions = useCallback((adrId?: string) => setAdrPage({ open: true, adrId }), [])
+
+  const chooseHit = useCallback((hit: SearchHit) => {
+    switch (hit.kind) {
+      case 'element':
+        setFocusRequest((prev) => ({ id: hit.elementId, nonce: (prev?.nonce ?? 0) + 1 }))
+        break
+      case 'documentation':
+        openDocumentation(hit.elementId)
+        break
+      case 'adr':
+        openDecisions(hit.adrId)
+        break
+    }
+  }, [openDocumentation, openDecisions])
+
+  // ⌘K / Ctrl+K from anywhere in the workspace. The editor's own ⌘F stays the
+  // canvas finder; this is the wider one.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  /**
+   * Hand the settings to the caller together with the project as the session
+   * has it, and take back whatever was saved.
+   *
+   * Both halves matter. The session's model is the one being edited, so it is
+   * what the settings must be applied to; and the saved result has to come back
+   * into the session, or the session goes on holding a model from before the
+   * dialog and the next autosave writes the settings straight back out again.
+   */
+  const applySettings = useCallback((settings: ProjectSettings) => {
+    session.flush()
+    void onApplySettings(settings, session.snapshot()).then((saved) => {
+      if (saved) session.adopt(saved, false)
+    })
+  }, [session, onApplySettings])
+
+  /** The project's records live on the model, so a change is one model commit. */
+  const onProjectDecisionsChange = useCallback((next: Adr[]) => {
+    session.flush()
+    const m = session.current()
+    session.commit(next.length ? { ...m, decisions: next } : withoutDecisions(m))
+  }, [session])
+
   return (
     <>
       <ShellToolbar
@@ -116,6 +213,9 @@ export function ProjectWorkspace({
         onOpenFile={documentPicker.open}
         onLeave={onLeave}
         onOpenSettings={openSettings}
+        onOpenDocumentation={() => openDocumentation()}
+        onOpenDecisions={() => openDecisions()}
+        onOpenSearch={() => setSearchOpen(true)}
         s={s}
         windowChrome={windowChrome}
       />
@@ -159,6 +259,8 @@ export function ProjectWorkspace({
           historyResetToken={session.historyToken}
           language={language}
           onLanguageChange={onChooseLanguage}
+          focusElement={focusRequest}
+          documentationRequest={docRequest}
         />
       </Box>
 
@@ -172,14 +274,46 @@ export function ProjectWorkspace({
         onNewDiagramNameChange={diagrams.setNewDiagramName}
         onConfirmNewDiagram={diagrams.confirmNewDiagram}
       />
+      <AdrPage
+        open={adrPage.open}
+        onClose={() => setAdrPage({ open: false })}
+        model={session.model}
+        groupName={groupNameOf(session.model)}
+        groupDecisions={groupDecisions}
+        onGroupDecisionsChange={onGroupDecisionsChange}
+        onProjectDecisionsChange={onProjectDecisionsChange}
+        initialAdrId={adrPage.adrId}
+        s={s}
+        language={language}
+        makeId={makeId}
+        today={today}
+        renderMarkdown={renderMarkdown}
+        onOpenElement={(elementId) => openDocumentation(elementId)}
+        windowChrome={windowChrome}
+      />
+      <GlobalSearchDialog
+        open={searchOpen}
+        model={session.model}
+        groupDecisions={groupDecisions}
+        onClose={() => setSearchOpen(false)}
+        onChoose={chooseHit}
+        s={s}
+      />
       <ProjectSettingsDialog
         open={settingsOpen}
         project={project}
         groups={groups}
         onCancel={() => setSettingsOpen(false)}
-        onSave={(settings) => { setSettingsOpen(false); onApplySettings(settings) }}
+        onSave={(settings) => { setSettingsOpen(false); applySettings(settings) }}
         s={s}
       />
     </>
   )
+}
+
+/** A model with no decisions left has no `decisions` key: what lands in a file is what a hand-written one would look like. */
+function withoutDecisions(model: HostModel): HostModel {
+  const next = { ...model }
+  delete next.decisions
+  return next
 }

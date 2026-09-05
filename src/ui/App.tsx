@@ -11,14 +11,16 @@
  * but the hooks below it do not, and each asks for its own slice. Nothing here
  * knows whether a project lives in browser storage, on disk or on a server.
  */
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '@lionsville/solution-design'
+import type { Adr } from '../core/adr'
+import { groupProfileFor, normaliseGroupProfile } from '../core/group'
 import type { GroupProfile } from '../core/group'
 import {
-  emptyProject, groupsOf, isProjectOrder, keysInGroup, moveToGroup, projectFromDocument,
+  emptyProject, groupNameOf, groupsOf, isProjectOrder, keysInGroup, moveToGroup, projectFromDocument,
   relabelGroup, renameProject, setProjectDefaults,
 } from '../core/project'
 import type {
@@ -198,13 +200,26 @@ export function App({
    * A rename edits the model in place. A move changes the ref, so the store has
    * to take the new address before it forgets the old one — that order matters:
    * removing first and then failing to save would lose the project outright.
+   *
+   * The edit is made on `current` — the project as the open session has it, not
+   * as this component last saw it. Those two drift apart with every stroke of
+   * editing, and applying settings to the stale one would write a model without
+   * this afternoon's work over the model with it.
+   *
+   * What comes back is the saved project when the workspace stays mounted, so
+   * the session can take it on: without that, the session keeps a model that
+   * knows nothing of the new defaults and the next autosave puts it back.
+   * Nothing comes back from a move, because a move changes the ref and the
+   * workspace remounts on it anyway.
    */
-  const applyProjectSettings = useCallback((settings: ProjectSettings) => {
-    if (!project) return
-    void projects.list().then(async (existing) => {
+  const applyProjectSettings = useCallback((
+    settings: ProjectSettings,
+    current: ProjectSnapshot,
+  ): Promise<ProjectSnapshot | undefined> => {
+    return projects.list().then(async (existing) => {
       const targetGroup = settings.group
-      const moving = targetGroup !== project.ref.group
-      const named = setProjectDefaults(renameProject(project, settings.name), {
+      const moving = targetGroup !== current.ref.group
+      const named = setProjectDefaults(renameProject(current, settings.name), {
         author: settings.defaultAuthor,
         aspectConfig: settings.defaultAspectConfig,
       })
@@ -225,9 +240,10 @@ export function App({
         await projects.save(next)
       } catch {
         reportStorage(false)
-        return
+        return undefined
       }
-      if (moving && !sameRef(project.ref, next.ref)) await projects.remove(project.ref)
+      const moved = moving && !sameRef(current.ref, next.ref)
+      if (moved) await projects.remove(current.ref)
       enter(next)
       setRevision((r) => r + 1)
       toasts.notify(
@@ -236,8 +252,9 @@ export function App({
           : s('settings.renamed', { name: settings.name }),
         'success',
       )
+      return moved ? undefined : next
     })
-  }, [project, projects, enter, toasts, reportStorage, s])
+  }, [projects, enter, toasts, reportStorage, s])
 
   /**
    * Apply a group's edited record: what it is called, what it is, where the rest
@@ -290,6 +307,48 @@ export function App({
   }, [groupRecords, projects, project, enter, toasts, reportStorage, s])
 
   /**
+   * The open project's group record, for the decisions kept at group level.
+   *
+   * Read when a project is entered and after every write, not on every render:
+   * the record is small and rarely changes, and the workspace only needs the
+   * decisions off it. A group without a record has none — `groupProfileFor`
+   * supplies the plain profile, so the write path below never has to ask
+   * whether one existed.
+   */
+  const [groupProfiles, setGroupProfiles] = useState<GroupProfile[]>([])
+  const groupKey = project?.ref.group
+  useEffect(() => {
+    if (!groupKey) return
+    let live = true
+    void groupRecords.list().then(
+      (all) => { if (live) setGroupProfiles(all) },
+      () => { if (live) setGroupProfiles([]) },
+    )
+    return () => { live = false }
+  }, [groupKey, groupRecords])
+
+  const groupDecisions = useMemo<readonly Adr[]>(
+    () => (groupKey ? groupProfiles.find((p) => p.group === groupKey)?.decisions ?? [] : []),
+    [groupProfiles, groupKey],
+  )
+
+  const saveGroupDecisions = useCallback((next: Adr[]) => {
+    if (!project) return
+    const held = groupProfileFor(project.ref.group, groupNameOf(project.model), groupProfiles)
+    const profile = normaliseGroupProfile({ ...held, decisions: next })
+    // Optimistic: the page shows the change at once, and a failed write puts
+    // the old record back along with the message.
+    setGroupProfiles((all) => [...all.filter((p) => p.group !== profile.group), profile])
+    void groupRecords.save(profile).then(
+      undefined,
+      () => {
+        toasts.notify(s('group.saveFailed'), 'error')
+        setGroupProfiles((all) => [...all.filter((p) => p.group !== held.group), held])
+      },
+    )
+  }, [project, groupProfiles, groupRecords, toasts, s])
+
+  /**
    * An example is a starting point, not a document you keep opening. Copying it
    * into a project of your own is what makes it editable and savable; opening it
    * again later opens *your* copy, which is why an existing one wins here.
@@ -334,6 +393,8 @@ export function App({
             onOpenSettings={refreshGroups}
             onApplySettings={applyProjectSettings}
             makeId={makeId}
+            groupDecisions={groupDecisions}
+            onGroupDecisionsChange={saveGroupDecisions}
             windowChrome={windowChrome}
           />
         ) : (

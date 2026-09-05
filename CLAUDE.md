@@ -11,9 +11,9 @@ halves:
 - **`vendor/solution-design/`** — the editor package (React Flow canvas, model,
   layout, i18n, PNG export). A fork, maintained here. It takes
   a `model` prop, emits `DiagramContentBatch`, and knows nothing about storage,
-  dialogs or backends. **1435 tests.** Leave it alone unless the task is in it.
+  dialogs or backends. **1509 tests.** Leave it alone unless the task is in it.
 - **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
-  **352 tests.** Almost every task lands here.
+  **512 tests.** Almost every task lands here.
 
 ## This repository is public
 
@@ -49,7 +49,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-~3 seconds: typecheck + all 352 shell tests + lint. Run it after every change.
+~3 seconds: typecheck + all 512 shell tests + lint. Run it after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.
@@ -58,7 +58,7 @@ batching up and discovering three problems at once.
 npm run check:all
 ```
 
-~40 seconds: adds the vendor package's 1435 tests, its typecheck and lint, and a
+~40 seconds: adds the vendor package's 1509 tests, its typecheck and lint, and a
 production build. Run it once before you hand work back, not during.
 
 Other commands: `npm run test:watch` · `npm run setup` (fresh clone; installs
@@ -100,6 +100,8 @@ src/core/         Arithmetic. No React, no browser, no storage, no IO.
                     containerDiagram  what belongs on a fresh container diagram
                     logo              the rules for an uploaded mark
                     preferences       language, theme, last project, list order
+                    adr               decision records: MADR body, status machine, signers
+                    search            one search over elements, documentation and decisions
 src/examples/     starting points that ship with the app. Data, not config.
 src/ports/        The seams. Interfaces only, no implementations.
                     ProjectStore · PreferencesStore · DocumentGateway
@@ -110,6 +112,9 @@ src/ui/           React. One concern per file:
                     App.tsx           picker or workspace; theme, language, toasts
                     ProjectWorkspace  one open project: toolbar, editor, dialogs
                     picker/           the first screen: ProjectPicker, NewProjectDialog
+                    adr/              the decisions page: tree · list · reading pane
+                    search/           ⌘K, the search over everything
+                    markdown/         the renderer the editor and the pages share; mermaid
                     ShellToolbar · SaveMenu · ToastBar · dialogs/
                     useModelSession   the editing session (batches, aliases, remount)
                     useDiagramActions · useProjectFiles · useAutosave
@@ -143,6 +148,17 @@ don't route around the rule.
 
 If you find yourself writing `localStorage`, `fetch`, `FileReader` or
 `document.` anywhere outside `src/adapters/`, stop: that belongs behind a port.
+
+## Decisions (ADRs)
+
+Three lists, one shape (`src/core/adr.ts`). The **group's** records live on its
+`GroupProfile.decisions`; the **landscape's** and every **application's** live
+on `model.decisions`, told apart by `applicationId`. The body is MADR markdown;
+title, status, date and signers are fields. The status is a state machine —
+proposed → reviewing → accepted | rejected, accepted → superseded (with the
+successor's id) — and the three end states lock the record: `updateAdr` and
+`removeAdr` refuse them. Numbers are per list and never reused. The working
+file is version 2 because of this field; v1 still opens.
 
 ## Groups and projects
 
@@ -227,7 +243,8 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
   lights, `-webkit-app-region: drag` on the bar and `no-drag` on its controls.
   Electron computes drag regions from geometry, not from what is painted on
   top, so the shell toolbar's drag strip stays live under a dialog and swallows
-  every click on the controls placed there. `DocumentationPage` is the example.
+  every click on the controls placed there. `DocumentationPage` and `AdrPage`
+  are the examples; both pin it in a test.
 - Both MUI themes must keep working; no hard-coded hex outside `theme/`.
 - Keep existing tests green. If a test pins behaviour you are deliberately
   changing, flip it in the same change and say so.

@@ -184,6 +184,49 @@ sections. The **Short description** row of that table is what the element
 shows on the canvas; without it, the first paragraph is. `[[Name]]` in the
 text becomes a link to that element. Ordinary links open outside the app.
 
+**Documentation** in the top bar opens the page for the selected element, or
+for the first element on the diagram when nothing is selected. A fenced code
+block marked `mermaid` in any page is drawn as a diagram.
+
+## Decisions
+
+**Decisions** in the top bar opens the architecture decision records: a tree
+down the left, the records of the selected node in the middle, and the record
+you are reading on the right. There are three levels. The **group's** decisions
+hold for every project filed under it and are kept with the group. The
+**landscapes'** decisions belong to the project as a whole. Each
+**application** has a list of its own. An application that has left the model
+keeps its records under *Removed applications*.
+
+A record follows the MADR format: context and problem statement, decision
+drivers, the options considered, the outcome and its consequences, the pros and
+cons of each option, more information. **New decision** asks for the title and
+starts the body from that template. Title, status, date and decision-makers are
+fields above the body; the **reviewers and signatures** table at the end lists
+who the decision was put to, each with a verdict and the day it was given.
+
+The status is a workflow, not a label. A record starts **proposed**, moves to
+**under review**, and is then **accepted** or **rejected**. Those two are the
+end of the road: from there the record can no longer be edited or deleted,
+because a decision that can be rewritten afterwards is not a record of one. An
+accepted record can later be **superseded**, which asks for the record that
+replaces it and shows the link both ways. Review can be sent back to proposed.
+
+The search field above the list searches every record in the tree at once —
+title, body and reviewers. Bodies are markdown, with the same `[[Name]]` links
+as documentation; **Formatting help** beside the source shows the syntax,
+mermaid diagrams included. Changes are saved with the project, or with the
+group for the group's records.
+
+## Search
+
+**Search** in the top bar, or ⌘K, searches the whole project at once: elements
+by name, category, vendor and technology; documentation by what is written in
+it; and decisions at all three levels, the group's included. Choosing an
+element selects it and pans to it, a documentation hit opens that element's
+page, and a decision opens its record. ⌘F inside the editor remains the quick
+finder when all you want is a box on the canvas.
+
 ## Diagram settings
 
 Right-click a diagram tab, **Diagram settings…**.
