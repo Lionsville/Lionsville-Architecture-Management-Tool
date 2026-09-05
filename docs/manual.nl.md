@@ -130,6 +130,21 @@ een knikpunt, de lege plaat, een selectie van meerdere elementen, een
 domeingroep en een diagramtabblad. Shift+F10 opent het menu voor de huidige
 selectie.
 
+**Documentatie.** Elk element heeft een omschrijving in markdown, en die kan
+een hele pagina zijn. Open hem als pagina via **Documentatie openen** in het
+rechtermuismenu, de knop naast het omschrijvingsveld in het paneel rechts,
+Enter op het geselecteerde element, of een dubbelklik op alles wat geen
+applicatie is (een applicatie opent met dubbelklik nog altijd haar
+containeraanzicht). De pagina opent om te lezen; **Bewerken** zet er een
+gesplitst venster naast met de bron links en het resultaat rechts, en maakt
+ook de velden van het element aan de rechterkant bewerkbaar. Een lege pagina
+kan beginnen met het sjabloon: een koptabel en de gebruikelijke secties. De
+regel *Korte omschrijving* in die tabel is wat het element op de plaat laat
+zien — staat hij er niet, dan is dat de eerste alinea. `[[Naam]]` in de tekst
+wordt een koppeling naar dat element. Links op de pagina staan de andere
+elementen van het aanzicht, met een paginateken bij wie al documentatie
+heeft; Escape gaat eerst uit Bewerken en dan uit de pagina.
+
 **Verwijderen vraagt na.** Een lijn weghalen en een selectie van meerdere
 dingen weghalen gingen zonder een woord; nu komt er eerst een venster dat zegt
 hoeveel er weggaat — inclusief de lijnen die niemand selecteerde maar die met
