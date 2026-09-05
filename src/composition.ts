@@ -16,19 +16,24 @@
  */
 import { BrowserDocumentGateway } from './adapters/browser/BrowserDocumentGateway'
 import { hostWindowChrome } from './adapters/browser/hostWindow'
+import { InMemoryGroupStore } from './adapters/memory/InMemoryGroupStore'
 import { InMemoryPreferencesStore } from './adapters/memory/InMemoryPreferencesStore'
 import { InMemoryProjectStore } from './adapters/memory/InMemoryProjectStore'
 import { browserStorage } from './adapters/webStorage/available'
+import { WebStorageGroupStore } from './adapters/webStorage/WebStorageGroupStore'
 import { WebStoragePreferencesStore } from './adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageProjectStore } from './adapters/webStorage/WebStorageProjectStore'
 import type { WindowChrome } from './core/windowChrome'
 import type { DocumentGateway } from './ports/DocumentGateway'
+import type { GroupStore } from './ports/GroupStore'
 import type { PreferencesStore } from './ports/PreferencesStore'
 import type { ProjectStore } from './ports/ProjectStore'
 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
   projects: ProjectStore
+  /** What each group says about itself. Decoration; groups are still derived. */
+  groups: GroupStore
   preferences: PreferencesStore
   documents: DocumentGateway
   /**
@@ -52,6 +57,7 @@ export function composeShell(): Shell {
   const storage = browserStorage()
   return {
     projects: storage ? new WebStorageProjectStore(storage) : new InMemoryProjectStore(),
+    groups: storage ? new WebStorageGroupStore(storage) : new InMemoryGroupStore(),
     preferences: storage ? new WebStoragePreferencesStore(storage) : new InMemoryPreferencesStore(),
     documents: new BrowserDocumentGateway(),
     windowChrome: hostWindowChrome(),

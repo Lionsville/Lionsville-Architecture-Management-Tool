@@ -16,9 +16,10 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '@lionsville/solution-design'
+import type { GroupProfile } from '../core/group'
 import {
   emptyProject, groupsOf, isProjectOrder, keysInGroup, moveToGroup, projectFromDocument,
-  renameProject, setProjectDefaults,
+  relabelGroup, renameProject, setProjectDefaults,
 } from '../core/project'
 import type {
   ProjectGroup, ProjectOrder, ProjectSnapshot, ProjectSummary,
@@ -46,6 +47,17 @@ import { useToasts } from './useToasts'
  * Spelled out rather than named, so the workspace and the picker below can each
  * be handed a smaller slice of it and a reader can see that they were.
  */
+/**
+ * What the app needs from the group store. `remove` is deliberately absent: a
+ * group's record outliving its last project is harmless — re-create the group
+ * and its description is waiting — and nothing here should be able to erase one
+ * as a side effect of something else.
+ */
+export type GroupRecords = {
+  list(): Promise<GroupProfile[]>
+  save(profile: GroupProfile): Promise<void>
+}
+
 export type ProjectLibrary = {
   list(): Promise<ProjectSummary[]>
   load(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
@@ -55,6 +67,7 @@ export type ProjectLibrary = {
 
 export type AppProps = {
   projects: ProjectLibrary
+  groupRecords: GroupRecords
   preferences: PreferencesWriter
   documents: ProjectFileChannel
 
@@ -76,7 +89,7 @@ export type AppProps = {
 }
 
 export function App({
-  projects, preferences, documents, initialProject, initialPreferences,
+  projects, groupRecords, preferences, documents, initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -227,6 +240,56 @@ export function App({
   }, [project, projects, enter, toasts, reportStorage, s])
 
   /**
+   * Apply a group's edited record: what it is called, what it is, where the rest
+   * of its material lives.
+   *
+   * The record is one write. The **name** is not, because the editor reads a
+   * group's name off each project (`model.customerName`) — so a rename has to
+   * sweep the group's projects too, and it is the sweep, not the record, that
+   * the toast is about. The record goes first: if the sweep then fails halfway,
+   * the group still knows its own name and reopening any project shows the old
+   * label rather than the group losing its identity outright.
+   *
+   * No ref changes. A group path is an address; renaming relabels.
+   */
+  const applyGroupSettings = useCallback((profile: GroupProfile) => {
+    void (async () => {
+      try {
+        await groupRecords.save(profile)
+      } catch {
+        toasts.notify(s('group.saveFailed'), 'error')
+        return
+      }
+
+      const inGroup = (await projects.list()).filter((it) => it.ref.group === profile.group)
+      const renaming = inGroup.some((it) => it.groupName !== profile.name)
+      for (const summary of inGroup) {
+        const held = await projects.load(summary.ref)
+        if (!held) continue
+        const relabelled = relabelGroup(held, profile.name)
+        if (relabelled === held) continue
+        try {
+          await projects.save(relabelled)
+        } catch {
+          reportStorage(false)
+          return
+        }
+      }
+
+      // The open project holds its own copy of the model, so it has to be told
+      // rather than left to notice.
+      if (project && project.ref.group === profile.group) {
+        enter(relabelGroup(project, profile.name))
+      }
+      setRevision((r) => r + 1)
+      toasts.notify(
+        renaming ? s('group.renamed', { name: profile.name }) : s('group.saved', { name: profile.name }),
+        'success',
+      )
+    })()
+  }, [groupRecords, projects, project, enter, toasts, reportStorage, s])
+
+  /**
    * An example is a starting point, not a document you keep opening. Copying it
    * into a project of your own is what makes it editable and savable; opening it
    * again later opens *your* copy, which is why an existing one wins here.
@@ -276,6 +339,8 @@ export function App({
         ) : (
           <ProjectPicker
             projects={projects}
+            groups={groupRecords}
+            onApplyGroupSettings={applyGroupSettings}
             examples={examples}
             order={order}
             onOrderChange={chooseOrder}

@@ -10,7 +10,7 @@ import acmeLogistics from '../examples/acme-logistics.json'
 import type { InterchangeDoc } from './model/fromInterchange'
 import {
   emptyProject, groupNameOf, groupsOf, isProjectOrder, isUsableProject, keysInGroup,
-  moveToGroup, openProjectDocument, projectFromDocument, renameProject, setProjectDefaults, resolveActive,
+  moveToGroup, openProjectDocument, projectFromDocument, relabelGroup, renameProject, setProjectDefaults, resolveActive,
   sortProjects, summarise, toWorkingFile,
 } from './project'
 import type { ProjectSummary } from './project'
@@ -326,6 +326,22 @@ describe('keysInGroup', () => {
 
   it('is why the same project name may exist in two groups', () => {
     expect(keysInGroup([summary('globex', 'one')], 'acme')).toEqual([])
+  })
+})
+
+describe('relabelGroup', () => {
+  it('writes the group name onto the model, where the editor reads it', () => {
+    expect(relabelGroup(sampleProject(), 'Acme Rail').model.customerName).toBe('Acme Rail')
+  })
+
+  it('leaves the ref alone — a group rename relabels, it does not re-file', () => {
+    const out = relabelGroup(sampleProject(), 'Acme Rail')
+    expect(out.ref).toEqual(sampleProject().ref)
+  })
+
+  it('hands back the same project when the name has not moved', () => {
+    const project = sampleProject()
+    expect(relabelGroup(project, groupNameOf(project.model))).toBe(project)
   })
 })
 

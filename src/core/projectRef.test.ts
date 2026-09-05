@@ -4,7 +4,7 @@
  * once there is a desktop build — across an IPC boundary and onto a filesystem.
  */
 import { describe, expect, it } from 'vitest'
-import { groupSegments, isProjectRef, refFor, refPath, sameRef } from './projectRef'
+import { groupSegments, isGroupPath, isProjectRef, refFor, refPath, sameRef } from './projectRef'
 
 describe('groupSegments', () => {
   it('reads a single group as one segment', () => {
@@ -100,5 +100,20 @@ describe('refFor', () => {
   it('still yields a usable ref for a name that slugs away to nothing', () => {
     const ref = refFor('!!!', '???')
     expect(isProjectRef(ref)).toBe(true)
+  })
+})
+
+describe('isGroupPath', () => {
+  it('accepts what a group may be addressed by', () => {
+    expect(isGroupPath('acme')).toBe(true)
+    expect(isGroupPath('acme/rail')).toBe(true)
+  })
+
+  it('refuses what could escape its own folder, or address nothing', () => {
+    expect(isGroupPath('')).toBe(false)
+    expect(isGroupPath('/')).toBe(false)
+    expect(isGroupPath('../secrets')).toBe(false)
+    expect(isGroupPath('acme rail')).toBe(false)
+    expect(isGroupPath(42)).toBe(false)
   })
 })

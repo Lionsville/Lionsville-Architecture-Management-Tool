@@ -290,6 +290,19 @@ export function renameProject(project: ProjectSnapshot, name: string): ProjectSn
 }
 
 /**
+ * The project, relabelled with its group's new name.
+ *
+ * The group's display name lives on every project in the group
+ * (`model.customerName`) because that is the field the editor reads. Renaming a
+ * group is therefore a sweep over its projects, not one write — and it changes
+ * no ref, because the group path is an address and a rename is not a move.
+ */
+export function relabelGroup(project: ProjectSnapshot, groupName: string): ProjectSnapshot {
+  if (groupNameOf(project.model) === groupName) return project
+  return { ...project, model: { ...project.model, customerName: groupName } }
+}
+
+/**
  * The project's fallbacks: who an unattributed diagram names, and what columns a
  * new landscape starts with.
  *

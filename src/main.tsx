@@ -118,6 +118,7 @@ void shell.preferences.read()
       <StrictMode>
         <App
           projects={shell.projects}
+          groupRecords={shell.groups}
           preferences={shell.preferences}
           documents={shell.documents}
           initialProject={initialProject}

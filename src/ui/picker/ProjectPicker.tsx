@@ -18,12 +18,15 @@ import Card from '@mui/material/Card'
 import CardActionArea from '@mui/material/CardActionArea'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '@lionsville/solution-design'
+import { groupProfileFor } from '../../core/group'
+import type { GroupProfile } from '../../core/group'
 import { groupsOf, sortProjects } from '../../core/project'
 import type { ProjectOrder, ProjectSummary } from '../../core/project'
 import { refPath, sameRef } from '../../core/projectRef'
@@ -34,6 +37,7 @@ import type { ExampleProject } from '../../examples'
 import { ConfirmDialog } from '../dialogs/ConfirmDialog'
 import { NEW_GROUP, groupChoiceName } from './GroupField'
 import type { GroupChoice } from './GroupField'
+import { GroupSettingsDialog } from './GroupSettingsDialog'
 import { NewGroupDialog } from './NewGroupDialog'
 import { NewProjectDialog } from './NewProjectDialog'
 
@@ -50,8 +54,23 @@ export type ProjectCatalogue = {
   remove(ref: ProjectRef): Promise<void>
 }
 
+/**
+ * What the picker needs from the group store: to read the records. Narrower
+ * than `GroupStore` — this screen has no business forgetting one, and a
+ * component that could is one a reader has to check.
+ */
+export type GroupCatalogue = {
+  list(): Promise<GroupProfile[]>
+}
+
 export type ProjectPickerProps = {
   projects: ProjectCatalogue
+  groups: GroupCatalogue
+  /**
+   * Apply a group's edited record. Not done here: a rename has to relabel every
+   * project filed under the group, which is the caller's store to write to.
+   */
+  onApplyGroupSettings: (profile: GroupProfile) => void
   examples: readonly ExampleProject[]
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
@@ -86,10 +105,13 @@ function whenChanged(updatedAt: string | undefined, language: Language, s: Trans
 }
 
 export function ProjectPicker({
-  projects, examples, order, onOrderChange, onOpen, onCreate, onCopyExample,
+  projects, groups: groupCatalogue, onApplyGroupSettings, examples, order, onOrderChange,
+  onOpen, onCreate, onCopyExample,
   revision = 0, language, s, windowChrome = NO_WINDOW_CHROME,
 }: ProjectPickerProps) {
   const [summaries, setSummaries] = useState<ProjectSummary[]>([])
+  const [profiles, setProfiles] = useState<GroupProfile[]>([])
+  const [groupToEdit, setGroupToEdit] = useState<GroupProfile | undefined>(undefined)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [newGroupOpen, setNewGroupOpen] = useState(false)
   const [group, setGroup] = useState<GroupChoice>({ selected: NEW_GROUP, newName: '' })
@@ -99,7 +121,10 @@ export function ProjectPicker({
 
   const refresh = useCallback(() => {
     void projects.list().then(setSummaries, () => setSummaries([]))
-  }, [projects])
+    // A group's record is decoration: failing to read it costs the description
+    // and the links, never the list of projects.
+    void groupCatalogue.list().then(setProfiles, () => setProfiles([]))
+  }, [projects, groupCatalogue])
 
   useEffect(refresh, [refresh, revision])
 
@@ -109,7 +134,17 @@ export function ProjectPicker({
    */
   const ordered = useMemo(() => sortProjects(summaries, order), [summaries, order])
 
-  const groups = useMemo(() => groupsOf(ordered), [ordered])
+  /**
+   * Still derived from the projects — a record decorates a group, it never
+   * conjures one — with whatever that group has said about itself folded in.
+   */
+  const groups = useMemo(
+    () => groupsOf(ordered).map((entry) => ({
+      ...entry,
+      profile: groupProfileFor(entry.group, entry.name, profiles),
+    })),
+    [ordered, profiles],
+  )
 
   /** Open "new project" with a group already chosen — the common case. */
   const addToGroup = useCallback((slug: string) => {
@@ -196,24 +231,58 @@ export function ProjectPicker({
 
         {groups.map((entry) => (
           <Box key={entry.group} sx={{ mb: 2.5 }}>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.75 }}>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
               <Typography sx={{
                 fontSize: 11, fontWeight: 700, color: 'text.secondary',
                 textTransform: 'uppercase', letterSpacing: 0.6, flex: 1,
               }}>
-                {entry.name}
+                {entry.profile.name}
               </Typography>
-              <Tooltip title={s('picker.addProject', { name: entry.name })}>
+              <Tooltip title={s('group.openFor', { name: entry.profile.name })}>
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={() => setGroupToEdit(entry.profile)}
+                  sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
+                  aria-label={s('group.openFor', { name: entry.profile.name })}
+                >
+                  {s('group.open')}
+                </Button>
+              </Tooltip>
+              <Tooltip title={s('picker.addProject', { name: entry.profile.name })}>
                 <Button
                   size="small"
                   onClick={() => addToGroup(entry.group)}
                   sx={{ fontSize: 11, minWidth: 0, px: 1 }}
-                  aria-label={s('picker.addProject', { name: entry.name })}
+                  aria-label={s('picker.addProject', { name: entry.profile.name })}
                 >
                   + {s('picker.newProject')}
                 </Button>
               </Tooltip>
             </Stack>
+            {entry.profile.description && (
+              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>
+                {entry.profile.description}
+              </Typography>
+            )}
+            {entry.profile.links && entry.profile.links.length > 0 && (
+              <Stack direction="row" spacing={0.75} sx={{ mb: 0.75, flexWrap: 'wrap' }}>
+                {entry.profile.links.map((link) => (
+                  <Link
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    // `noopener` because the opened page gets a handle on this
+                    // window otherwise, and the address came from a file that
+                    // may have been written by somebody else.
+                    rel="noopener noreferrer"
+                    sx={{ fontSize: 11 }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </Stack>
+            )}
             <Stack spacing={0.75}>
               {entry.projects.map((summary) => (
                 <Card key={refPath(summary.ref)} variant="outlined">
@@ -288,6 +357,12 @@ export function ProjectPicker({
           })
           setProjectName('')
         }}
+        s={s}
+      />
+      <GroupSettingsDialog
+        target={groupToEdit}
+        onCancel={() => setGroupToEdit(undefined)}
+        onSave={(profile) => { setGroupToEdit(undefined); onApplyGroupSettings(profile) }}
         s={s}
       />
       <NewGroupDialog

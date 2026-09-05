@@ -63,6 +63,20 @@ export function isProjectRef(value: unknown): value is ProjectRef {
 }
 
 /**
+ * Is this a group path a store may be asked for?
+ *
+ * The group half of {@link isProjectRef}, on its own, because a group is now
+ * addressable in its own right — a profile is filed under one. Same rule and
+ * same reason: a segment that is not a slug could escape its own folder in a
+ * store that keeps things on disk.
+ */
+export function isGroupPath(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const segments = groupSegments(value)
+  return segments.length > 0 && segments.every((segment) => KEY_RE.test(segment))
+}
+
+/**
  * A ref from what somebody typed.
  *
  * The names stay on the model; this only makes them addressable. `taken` keeps a
