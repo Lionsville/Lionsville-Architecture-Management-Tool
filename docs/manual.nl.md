@@ -1,256 +1,248 @@
-<!--
-  BEWAARD ALS BRONMATERIAAL — dit was README.md tot 5 september 2026.
+# Gebruikershandleiding
 
-  De gebruikershandleiding verhuist naar de tool zelf:
-  in de taal van de lezer, met de taalknop mee. Tot dat zover is staat de
-  Nederlandse tekst hier, zodat hij niet verloren gaat. Hij is op onderdelen
-  verouderd — `src/main.tsx` is een compositiewortel van 137 regels, het
-  "meegeleverde document" bestaat niet meer, en het werkbestand heet vanaf
-  fase 5 `.lvarch`. De ontwikkelaarsdocumentatie staat in README.md, in het
-  Engels.
--->
+De Lionsville Architecture Management Tool tekent een applicatielandschap in
+Layer 7-banden en de C4-containerdiagrammen eronder. Dit is de handleiding
+voor het gebruik. Wat het is en waarom het bestaat staat in de
+[README](../README.md); de Engelse versie van deze handleiding is
+[manual.en.md](manual.en.md).
 
-# Editor
+## Beginnen
 
-De Lionsville solution-design editor als op zichzelf staande app: het Layer
-7-applicatielandschap en de C4 containerdiagrammen, volledig te bewerken,
-zonder backend en zonder verwijzingen buiten deze map. Het editorpakket zelf
-ligt in `vendor/solution-design`.
+**Desktop.** Download het installatiebestand voor je platform van de
+[releasepagina](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest).
+De app kijkt op de achtergrond of daar een nieuwere versie staat en
+installeert die bij het afsluiten; **Check for Updates…** in het appmenu doet het
+op verzoek.
 
-Licentie: zie `LICENTIE.md` — gebruiksrecht voor NS voor de duur van het
-programma, het intellectueel eigendom blijft bij Lionsville Group BV.
+**Browser.** Vanuit een kloon van de repository eenmalig `npm run setup`, daarna
+`npm run dev`; open <http://127.0.0.1:5200>. Alles wat je maakt leeft in de
+opslag van die browser tot je een bestand bewaart.
 
-## Draaien
+In beide gevallen verlaat niets je computer. Er is geen account, geen backend
+en geen telemetrie.
 
-Nodig: Node 20 of nieuwer. Eenmalig is er internet nodig voor `npm install`;
-daarna draait alles lokaal.
+## Projecten en groepen
 
-```
-npm install
-npm run dev
-```
+De app opent op de **projectlijst**. Een project is één ontwerp: een landschap,
+de containerdiagrammen eronder en alles wat erop staat. Elk project staat onder
+een **groep**: een klant, een afdeling, een programma, hoe de naamruimte bij jou
+ook heet.
 
-en open http://127.0.0.1:5200.
+- **Voorbeelden** komen met de app mee. Een voorbeeld openen **kopieert** het
+  naar een eigen project; niets wat je doet raakt het voorbeeld zelf.
+- **Nieuwe groep** vraagt de groep en haar eerste project in één keer. Een groep
+  bestaat alleen door de projecten eronder, dus een lege groep is er niet.
+- **Nieuw project** biedt de groepen die er zijn. Elke groepskop heeft ook een
+  eigen **Project toevoegen**, en dat is de weg die voorkomt dat `Acme` en
+  `Acme Logistics` twee groepen worden.
+- **Volgorde** sorteert op naam, of op wat je het laatst hebt gewijzigd.
+- **Verwijderen** haalt een project uit deze browser of deze desktop-app. Een
+  werkbestand dat je elders hebt bewaard blijft staan.
 
-## Hoe het werkt
+De **instellingen** van een groep bevatten haar naam, een omschrijving en
+koppelingen: een wiki, een ticketwachtrij, een dashboard. Een groep hernoemen
+hernoemt het label van elk project erin. Bij het starten opent de app het
+project dat je open had.
 
-Het model leeft in de browser en wordt automatisch bewaard (localStorage).
-De balk bovenin:
+## De werkruimte
 
-| Knop | Wat hij doet |
+Eén open project: een balk bovenin, de editor eronder.
+
+| In de balk | Wat hij doet |
 |---|---|
-| **Bewaren…** | Eén menu met de twee bewaarvormen. **Werkbestand** staat bovenaan: alles inclusief geometrie, opmaak en eigen logo's, om later verder te werken. **Interchange-document** eronder, met erbij wat het niet draagt: topologie en semantiek, zonder geometrie en opmaak — de vorm voor review en versiebeheer |
-| **Openen…** | Laadt een interchange-document of een werkbestand. Een interchange-document wordt opnieuw gelegd, een werkbestand komt terug zoals het was |
-| **Meegeleverd document** | Terug naar `src/ns-design.json` |
-| **☀ / ☾ / ◑** | Licht, donker of *systeem* — de knop gaat rond langs de drie. *Systeem* volgt de instelling van je computer en schakelt dus vanzelf mee |
+| **Projecten…** | Terug naar de projectlijst |
+| **Instellingen…** | Naam en groep van dit project, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een project naar een andere groep verplaatsen laat de inhoud met rust |
+| **Bewaren…** | Eén menu, twee vormen. **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer |
+| **Openen…** | Laadt allebei. Een interchange-document wordt opnieuw gelegd, een werkbestand komt terug zoals het was. Bestanden van onder de vorige naam van de tool blijven openen |
+| **Thema** | Licht, donker of systeem. Systeem volgt je computer en schakelt mee |
+| **Bewaard · uu:mm** | Wanneer deze browser of desktop-app het project voor het laatst aannam |
 
-Rechts van de knoppen staat **Bewaard · hh:mm**: het moment waarop de browser
-dit ontwerp voor het laatst aannam. Weigert de opslag — vol, of geblokkeerd in
-privémodus — dan zegt de balk onderin dat één keer, en blijft de editor gewoon
-werken; bewaar dan een werkbestand, want zonder browseropslag is het bij het
-sluiten van het tabblad weg. Alle meldingen (bewaard, geladen, mislukt) komen
-in die balk onderin en niet meer als grijze tekst in de kop.
+Alles wordt vanzelf bewaard terwijl je werkt. Weigert de opslag — vol, of
+geblokkeerd in een privévenster — dan zegt de balk onderin dat één keer en
+werkt de editor gewoon door; bewaar dan een werkbestand, want zonder opslag is
+het project weg als het tabblad sluit. Elke melding (bewaard, geladen, mislukt)
+verschijnt in die balk onderin.
 
-**Voorkeuren blijven staan.** Raster, uitlijnen op raster, levenscyclusbadges,
-ingeklapte panelen, de breedte van beide panelen, het overzichtskaartje, de
-Tidy-instellingen, de taal en het thema worden in deze browser bewaard onder één
-eigen sleutel. Ze horen bij jou en niet bij het document: ze reizen niet mee in
-een bestand en ze verdwijnen niet met *Meegeleverd document*.
+**Taal.** De knop **NL/EN** rechts in de werkbalk van de editor schakelt de
+hele interface om: menu's, dialogen, tooltips, bandnamen, foutmeldingen en het
+titelblok van een PNG-export. De eerste keer beslist de taal van de browser. Het
+ontwerp zelf verandert niet; namen van elementen zijn inhoud, geen interface.
 
-**Taalkeuze.** De hele editor spreekt Nederlands én Engels. De knop **NL/EN**
-rechts in de werkbalk van de editor wisselt; de eerste keer kiest de browsertaal
-(begint die met `nl`, dan Nederlands, anders Engels). De keuze geldt voor alles:
-menu's, dialogen, tooltips, de bandnamen op de plaat, de foutmeldingen én het
-titelblok van de PNG-export. Het document zelf verandert niet — namen van
-elementen zijn inhoud, geen interface.
+## Tekenen
 
-**Donker thema.** De themaknop in de balk bovenin schakelt tussen licht, donker
-en systeem. De plaat, de panelen en de schil volgen alle drie; de PNG-export
-houdt bewust zijn vaste zwart-op-wit titelblok, want die plaat belandt in een
-document.
+**Het landschap** heeft vijf banden: actoren, invoerkanalen, externe systemen,
+het applicatielandschap en de beheerlaag. Sleep een element uit het palet links
+in een band, of rechtsklik op de plaat en kies **Hier toevoegen**. Banden
+vergroot je door aan hun rand te slepen.
 
-**Zoeken (⌘F / Ctrl+F).** Typ een naam, categorie, leverancier of technologie:
-de lijst toont wat past, Enter of een klik selecteert het element en de plaat
-schuift ernaartoe — staat het op een ander aanzicht, dan gaat de editor daar
-eerst heen. Het palet links heeft zijn eigen zoekveld, dat zowel op de
-Nederlandse als op de Engelse woorden zoekt.
+**Domeingroepen** zetten de applicaties die bij elkaar horen in één vak. Voeg er
+een toe uit het palet of het plaatmenu, geef hem een kleur, sleep applicaties
+erin, leg hem apart netjes. Een groep weghalen laat zijn elementen staan.
 
-**Panelen op maat.** Tussen elk paneel en de plaat zit een sleeprand: sleep hem
-om het paneel breder of smaller te maken, dubbelklik om terug te gaan naar de
-standaardbreedte. Met het toetsenbord kan het ook — tab naar de rand en gebruik
-de pijltjes (Shift maakt de stap groter). De chevrons klappen een paneel nog
-steeds helemaal in.
+**Containerdiagrammen.** Dubbelklik op een applicatie om het containerdiagram
+eronder te openen, of er een te maken. De applicatie wordt de grens van dat
+diagram en haar componenten staan erin. De tabbladen bovenin tonen het
+landschap en de containerdiagrammen eronder; rechtsklik een tabblad om te
+hernoemen, te dupliceren, te verwijderen of de **diagraminstellingen** te
+openen.
 
-**Overzichtskaartje.** De knop met het kaartje in de werkbalk zet het
-minimap-hoekje aan of uit; het staat standaard uit, want op een plaat die het
-scherm al vult is het vooral verloren ruimte.
+**Zoeken.** ⌘F / Ctrl+F opent de zoeker: typ een naam, categorie, leverancier
+of technologie, Enter of een klik selecteert het element en de plaat schuift
+ernaartoe, zo nodig eerst naar een ander diagram. Het palet heeft zijn eigen
+zoekveld, in beide talen.
 
-**Toetsenbord.** Tab loopt langs de elementen op de plaat met een duidelijke
-focusring (een andere kleur dan de selectie), Enter selecteert het element onder
-de focus en Shift+Enter voegt het toe aan de selectie. De pijltjes verplaatsen
-de selectie met een rasterstap (Shift: één pixel). Sneltoetsen werken nu overal
-in de editor — ook met de cursor op een knop in het paneel rechts; alleen in een
-tekstveld houdt het typen zijn eigen toetsen. `?` toont de volledige lijst.
+**Panelen.** Sleep de rand tussen een paneel en de plaat om het te verbreden of
+te versmallen, dubbelklik de rand voor de standaardbreedte, klap een paneel
+met de chevrons in tot een rail. De minimapknop in de werkbalk toont of
+verbergt het overzichtskaartje.
 
-In de editor zelf: slepen vanuit het palet links, detail in het paneel
-rechts, dubbelklik op een applicatie opent (of maakt) haar containerdiagram,
-de knop Tidy legt de plaat opnieuw, en de PNG-knop exporteert de plaat met
-titelblok. Dubbelklik op een koppelvlak legt een routepunt neer.
+**Toetsenbord.** Tab loopt langs de elementen op de plaat, Enter selecteert het
+element onder de focus en Shift+Enter voegt het toe aan de selectie. De pijltjes
+verplaatsen de selectie een rasterstap, met Shift één pixel. `?` toont alle
+sneltoetsen.
 
-**Lijnen.** Elke geselecteerde lijn toont handvatten: vierkantjes op de
-knikpunten en pilletjes midden op elk been. Sleep een pil om dat been te
-verschuiven (de lijn blijft haaks), sleep een vierkant om een knik te
-verplaatsen. De eerste handbewerking maakt de route *handgetekend*; de router
-laat hem dan met rust tot je hem in het paneel rechts (sectie Route) of in het
-rechtermuismenu weer op automatisch zet. **Aanhechtzijde:** kies per uiteinde
-aan welke kant van het element de lijn vertrekt of aankomt — *Leaves from* /
-*Arrives at* in het paneel, of **Attach at ▸** in het lijnmenu — of houd Alt
-(Option) ingedrukt terwijl je een verbinding vanaf een specifiek zijhandvat
-sleept. De router respecteert die keuze bij elke nieuwe legging; *Automatic*
-geeft hem de vrije keuze terug. Een gekozen zijde alleen maakt een route niet
-handgetekend.
+## Elementen
 
-**Meerdere tegelijk.** Selecteer meer dan één element en het paneel rechts
-krijgt onder *Op alles toepassen* vier knoppen: levenscyclus, accentkleur,
-pictogram en domeingroep. Elke wijziging is één stap in Ongedaan maken over de
-hele selectie. De velden staan er leeg bij en tonen geen huidige waarde: bij een
-gemengde selectie ís er geen huidige waarde, en een veld dat er een liet zien
-zou lezen als een formulier in plaats van een schakelaar.
+Zeven soorten: applicatie, component, extern systeem, invoerkanaal,
+beheertool, actor, en de domeingroep die ze bijeenhoudt. Selecteer er een en de
+**inspector** rechts toont zijn velden in drie tabbladen.
 
-**Soort wijzigen.** Rechtsklik een element → **Soort wijzigen ▸** en kies wat het
-had moeten zijn; de koppelingen, de omschrijving en de plaats blijven. Twee
-gevallen worden geweigerd, met de reden erbij: een applicatie waar een
-containeraanzicht over gaat (verwijder dat aanzicht eerst) en een component dat
-nog aan een applicatie hangt (maak het eerst los). Het element verhuist zo nodig
-naar de band die bij de nieuwe soort hoort en een handmatig gezette maat wordt
-bijgeknipt tot wat daar past.
+- **Algemeen.** Naam, categorie, leverancier, technologie, levenscyclus
+  (gepland, live, uitfaserend, uitgefaseerd; als badge, uitgefaseerde
+  elementen dimmen), of je het beheert, de omschrijving (zie *Documentatie*) en
+  waar het staat.
+- **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte.
+- **Gegevens.** De **volwassenheidsaspecten** van een applicatie: per kolom van
+  dit diagram beheerd, deels, geen of risico, met een notitie. De kolommen
+  stel je per diagram in bij de diagraminstellingen.
 
-**Rechtermuismenu.** Rechtsklikken werkt overal: op een element, een lijn of
-een knikpunt, de lege plaat, een selectie van meerdere elementen, een
-domeingroep en een diagramtabblad. Shift+F10 opent het menu voor de huidige
-selectie.
+**Pictogrammen.** Ruim honderd ingebouwde tekens, doorzoekbaar op naam,
+categorie en trefwoord in beide talen, in twee maten: klein in de kop, groot
+voorop de kaart voor een plaat die van een afstand gelezen wordt. **Upload a
+logo** in de kiezer voegt een eigen SVG of PNG toe (tot 200 kB). Geüploade
+logo's reizen mee in het werkbestand, nooit in het interchange-document.
 
-**Documentatie.** Elk element heeft een omschrijving in markdown, en die kan
-een hele pagina zijn. Open hem als pagina via **Documentatie openen** in het
-rechtermuismenu, de knop naast het omschrijvingsveld in het paneel rechts,
-Enter op het geselecteerde element, of een dubbelklik op alles wat geen
-applicatie is (een applicatie opent met dubbelklik nog altijd haar
-containeraanzicht). De pagina opent om te lezen; **Bewerken** zet er een
-gesplitst venster naast met de bron links en het resultaat rechts, en maakt
-ook de velden van het element aan de rechterkant bewerkbaar. Een lege pagina
-kan beginnen met het sjabloon: een koptabel en de gebruikelijke secties. De
-regel *Korte omschrijving* in die tabel is wat het element op de plaat laat
-zien — staat hij er niet, dan is dat de eerste alinea. `[[Naam]]` in de tekst
-wordt een koppeling naar dat element. Links op de pagina staan de andere
-elementen van het aanzicht, met een paginateken bij wie al documentatie
-heeft; Escape gaat eerst uit Bewerken en dan uit de pagina.
+**Meer tegelijk.** Selecteer meerdere elementen en de inspector biedt
+levenscyclus, kleur, pictogram en domeingroep voor allemaal, elk één stap in
+Ongedaan maken.
 
-**Verwijderen vraagt na.** Een lijn weghalen en een selectie van meerdere
-dingen weghalen gingen zonder een woord; nu komt er eerst een venster dat zegt
-hoeveel er weggaat — inclusief de lijnen die niemand selecteerde maar die met
-een element meegaan. Eén element houdt zijn eigen, betere vraag (*uit dit
-aanzicht* of *uit het model*), en een groepsvak weghalen vraagt niets: de
-elementen erin blijven. Undo werkt in alle gevallen.
+**Soort wijzigen.** Rechtsklik een element, **Soort wijzigen ▸**, en kies wat
+het had moeten zijn; koppelingen, omschrijving en plaats blijven. Twee gevallen
+worden geweigerd, met de reden erbij: een applicatie met een containerdiagram,
+en een component dat nog aan een applicatie hangt.
 
-**Aanzichten.** Rechtsklik een tabblad om een landschap te hernoemen, te
-dupliceren of te verwijderen. Haal je een applicatie uit het model, dan gaat
-haar containeraanzicht mee — een tab met de naam van iets dat niet meer bestaat
-is erger dan geen tab — en de balk onderin zegt dat.
+Elementen horen bij het model, niet bij een diagram: één element kan op
+meerdere diagrammen staan, en **Uit dit aanzicht halen** is iets anders dan
+**Uit het model verwijderen**. Verwijderen vraagt eerst, en zegt hoeveel
+koppelingen meegaan.
 
-## De twee bewaarvormen
+## Koppelingen
 
-Het interchange-document draagt bewust geen geometrie en geen opmaak: **het
-document draagt de topologie en de semantiek, het gereedschap bezit de
-geometrie.** Kleuren, lijnstijlen, eigen logo's en de ligging van de plaat
-reizen alleen mee in het werkbestand. Eén uitzondering: de keuze van een
-*ingebouwd* icoon gaat wel mee, als `iconType` — zie hieronder. Wie een plaat met de hand heeft geschikt en dat
-zo wil houden, bewaart dus het werkbestand; wie de inhoud wil reviewen of
-versioneren, bewaart het interchange-document.
+Sleep van het handvat van een element naar een ander, of rechtsklik en kies
+**Verbinding starten naar…**. Een koppeling heeft een label, een protocol (wat
+je maar typt: REST, EDI, Kafka), een richting die de pijlpunten bepaalt, een
+kleur en een lijnstijl. Dubbelklik het label om het ter plekke te bewerken.
 
-Nieuwe elementen krijgen bij de eerste bewerking een blijvende, leesbare
-sleutel op basis van hun naam; die sleutel verandert daarna niet meer, ook
-niet bij hernoemen. Wat het brondocument droeg komt bij een export ongewijzigd
-terug — beschrijving, adrLinks, en welke elementen hun levenscyclus expliciet
-noemden — al kan de eerste export de veldvolgorde binnen een element een keer
-normaliseren.
+Lijnen worden door een echte router om elementen heen gelegd en opnieuw gelegd
+als er iets verschuift. Als automatisch niet is wat je wilt:
 
-## Delen
+- Sleep een **pil** midden op een been om dat been te verschuiven, sleep een
+  **vierkant** om een knik te verplaatsen; de route wordt handgetekend en de
+  router laat hem met rust.
+- **Knik toevoegen**, **Knik verwijderen**, **Terug naar automatische route**
+  in het lijnmenu.
+- **Route vastzetten** houdt een lijn precies zoals hij is, ook zonder knikken.
+- **Aanhechten aan ▸** kiest aan welke kant van een element elk uiteinde
+  vertrekt of aankomt, of houd Alt ingedrukt terwijl je een verbinding vanaf
+  een specifiek zijhandvat sleept. Een gekozen zijde is een randvoorwaarde die
+  de router respecteert, geen handgetekende route.
+- Sleep het label van zijn standaardplek; **Labelpositie herstellen** zet het
+  terug.
 
-`./inpakken.sh` maakt `../NS-solution-design-editor.zip` met alleen de bron:
-zonder `node_modules/`, `dist/` en `public/` (samen ruim 100 MB
-build-artefacten die de ontvanger met `npm install` zelf en passend bij het
-eigen platform terugkrijgt).
+## Lay-out
 
-## Iconen
+**Tidy** legt het diagram automatisch, met een richting (dwars, omlaag, of
+groepen dwars en hun applicaties omlaag), een dichtheid, en pinnen voor wat je
+met de hand hebt neergezet. **Verbindingen leggen** tekent alleen de lijnen
+opnieuw en laat elk element staan; **Alles opnieuw leggen** negeert pinnen.
+Een domeingroep leg je apart netjes vanuit zijn menu.
 
-Elk element kan een icoon dragen. De kiezer zit op drie plekken — het paneel
-links (voordat je plaatst), de inspector rechts (tabblad Vormgeving) en het
-rechtermuismenu op een element (**Icoon…**) — en het is overal dezelfde
-zoekbare rasterkiezer. Zoeken gaat op naam, op categorie en op trefwoorden, ook
-de Nederlandse: *materieel*, *perron*, *dienstregeling*, *sein*, *wissel*,
-*meldkamer*, *reisinformatie*, *ov-chipkaart*. Twee maten: klein (in de kop,
-zoals altijd) en groot (28 px, voorop in de kaart) voor een plaat die van een
-afstand gelezen wordt.
+Met de hand: **uitlijnen** en **verdelen** van een selectie via de zwevende
+werkbalk of het selectiemenu, een **raster** met optioneel uitlijnen, verplaatsen
+met de pijltjes, **passend maken** (Shift+1) en 100 % (Shift+2).
 
-Het pakket levert ruim honderd ingebouwde tekens: eigen, algemene
-categorietekens (data, integratie, applicaties, platform, beveiliging en
-beheer), een spoorset, en echte merktekens uit het CC0-pakket `simple-icons`.
-Ze zijn allemaal eenkleurig en nemen de kleur van het element over, dus ze
-werken in beide thema's.
+## Documentatie
 
-**Eigen logo's** kun je toevoegen via de tegel **Upload a logo** in de kiezer:
-SVG of PNG, maximaal 200 kB. Ze worden als data-URL bewaard in deze browser en
-in het werkbestand — niet in het interchange-document (zie hieronder) — en ze
-komen in volle kleur op de plaat, met op een donker thema een licht plaatje
-eronder zodat een donker merkteken niet wegvalt.
+Elk element heeft een omschrijving in markdown, en die kan een hele pagina zijn.
+Open hem als pagina met **Documentatie openen** in het elementmenu, de
+uitklapknop naast het omschrijvingsveld in de inspector, Enter op het
+geselecteerde element, of een dubbelklik op alles wat geen applicatie is.
 
-## Interchange: iconType
+De pagina opent om te **lezen**: het document met een inhoudsopgave, links de
+andere elementen van het diagram om tussen te wisselen (een paginateken toont
+wie al documentatie heeft), rechts de velden van het element zelf.
+**Bewerken** zet de bron links en het resultaat ernaast, en maakt ook de velden
+rechts bewerkbaar. ⌘B en ⌘I omhullen de selectie; Escape gaat eerst uit
+Bewerken en dan uit de pagina. Wijzigingen worden bewaard na een korte pauze en
+bij het verlaten, één stap in Ongedaan maken per pauze.
 
-Een element mag in het interchange-document een `iconType` dragen: de sleutel
-van een **ingebouwd** icoon (`"database"`, `"vendor-sap"`, `"rail-train"`, …).
-Optioneel; afwezig betekent geen icoon.
+Een lege pagina kan **beginnen met het sjabloon**: een koptabel en de
+gebruikelijke secties. De regel **Korte omschrijving** in die tabel is wat het
+element op de plaat laat zien; zonder die regel is dat de eerste alinea.
+`[[Naam]]` in de tekst wordt een koppeling naar dat element. Gewone koppelingen
+openen buiten de app.
 
-- **Lezen** is ruim: een sleutel die dit gereedschap niet kent blijft staan en
-  komt bij een export terug, zodat een document uit een ander of nieuwer
-  gereedschap zijn iconen niet kwijt is. Het element valt ondertussen terug op
-  de glief van zijn soort.
-- **Schrijven** is streng: een ingebouwde sleutel gaat erin, een sleutel die de
-  bron droeg gaat erin, en een geüploade (`lib:`) sleutel nooit. Een data-URL in
-  iemands browser is geen topologie en geen semantiek, en een reviewer van het
-  document kan hem niet oplossen. Eigen logo's reizen daarom mee in het
-  werkbestand.
-- Een document dat geen iconen gebruikt blijft na een export woordelijk gelijk.
+## Diagraminstellingen
 
-Het werkbestand staat sinds deze wijziging op `version: 2`, met één veld erbij:
-`logoLibrary`. Een v1-bestand laadt onveranderd en komt terug zonder eigen
-logo's.
+Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 
-## Wat hier bewust niet in zit
+- **Op de tekening.** Auteur, opdrachtgever en datum voor het titelblok van een
+  PNG-export — leeg gelaten vallen ze terug op de standaard van het project of
+  de dag van export — en of het titelblok überhaupt getekend wordt.
+- **Volwassenheidskolommen.** De aspectkolommen die applicaties op dit diagram
+  dragen: voeg een standaardkolom toe (platform, CI/CD, DR, beveiliging,
+  monitoring, back-up, compliance, kosten), voeg een eigen kolom toe, hernoem,
+  herschik, of zet de badges helemaal uit. Een kolom hernoemen bewaart elke
+  status die er al tegen is vastgelegd.
 
-- **De parameter- en kostenkant** van het model (parameters, kostenchips)
-  staat uit; dit landschap gebruikt haar niet.
-- **Koppelingen naar andere systemen**: de editor is host-agnostisch en deze
-  schil levert er geen. De logo-bibliotheek is er wél — die zit in deze schil
-  (`src/logoLibrary.ts`) en niet in een backend.
+## Bewaren, exporteren, delen
 
-## Bestanden
+Drie uitgangen, voor drie doelen.
 
-| Bestand | Wat het is |
+- **Het werkbestand** (`.lvarch`) is alles, en is wat je bewaart en aan iemand
+  geeft die verder gaat bewerken.
+- **Het interchange-document** draagt topologie en semantiek en geen geometrie
+  of opmaak: een diff ervan laat zien wat er aan de architectuur veranderde,
+  niet wat er op de plaat verschoof. Een ingebouwd pictogram reist mee als
+  `iconType`; een geüpload logo niet. Wat deze tool in een document niet kent
+  overleeft een rondreis ongewijzigd, en een document zonder pictogrammen komt
+  woordelijk gelijk terug.
+- **PNG-export** (de downloadknop) tekent het huidige diagram op drukformaat met
+  het titelblok en de aspectlegenda. Levenscyclusbadges kun je eerst uitzetten
+  voor een schone plaat. Kon een logo niet worden ingebed, dan zegt de balk
+  onderin welk.
+
+## Voorkeuren
+
+Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun
+breedte, het overzichtskaartje, de Tidy-instellingen, de taal en het thema
+worden per browser of per desktopinstallatie onthouden. Ze zijn van jou, niet
+van het project: ze reizen niet mee in een bestand.
+
+## Sneltoetsen om te kennen
+
+| Toetsen | Doet |
 |---|---|
-| `vendor/solution-design/` | Het editorpakket, broncode en tests |
-| `src/main.tsx` | De schil: model in de browser, bewaren, openen |
-| `src/hostModel.ts` | Het rekenwerk van de schil: een batch her-sleutelen en toepassen |
-| `src/fromInterchange.ts` | interchange-document → editormodel |
-| `src/toInterchange.ts` | editormodel → interchange-document |
-| `src/ns-design.json` | Het meegeleverde document |
-| `src/keys.ts` | Sleutelregels, gedeeld door schil en export |
-| `src/logoLibrary.ts` | Eigen logo's inlezen: formaat, grens, sleutel |
-| `src/preferences.ts` | De voorkeuren van de editor in de browseropslag |
-| `bijwerken.sh` | Genereert `src/ns-design.json` uit de bron — alleen zinvol in de werkmap |
-| `inpakken.sh` | Maakt de deelbare zip, zonder build-artefacten |
-| `LICENTIE.md` | Het gebruiksrecht |
+| `?` | Alle sneltoetsen |
+| ⌘F / Ctrl+F | Element zoeken |
+| Enter | Documentatie van het geselecteerde element openen |
+| F2 | Selectie hernoemen |
+| Delete | Selectie weghalen, na navraag |
+| ⌘Z, ⌘⇧Z | Ongedaan maken, opnieuw |
+| ⌘C ⌘X ⌘V, ⌘D | Kopiëren, knippen, plakken, dupliceren |
+| Pijltjes, ⇧Pijltjes | Verplaatsen per rasterstap, per pixel |
+| Shift+1, Shift+2, `=`, `-` | Passend maken, 100 %, inzoomen, uitzoomen |
+| Shift+F10 | Het menu voor de selectie |
+| ⌘S / Ctrl+S | Nu bewaren |
 
-`npm test` draait beide testsuites: eerst die van de schil (`src/*.test.ts`,
-Vitest met `vitest.config.ts`), daarna die van het pakket via
-`npm run test:package` (installeert eenmalig de testafhankelijkheden van het
-pakket zelf).
+Op Windows en Linux lees je Ctrl voor ⌘.

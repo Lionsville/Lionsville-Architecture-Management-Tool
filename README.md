@@ -248,9 +248,10 @@ is save-then-remove in that order.
 
 ## The user manual
 
-The manual is moving into the tool itself, in the reader's language. Until then
-the older Dutch text is kept, unedited and partly out of date, in
-`docs/manual.nl.md`.
+In two languages, one file each: [docs/manual.en.md](docs/manual.en.md) and
+[docs/manual.nl.md](docs/manual.nl.md). It covers projects and groups, the
+workspace, drawing, elements, connections, layout, the documentation page,
+diagram settings, saving and sharing, and the shortcuts worth knowing.
 
 ## Files worth knowing
 
@@ -265,7 +266,7 @@ the older Dutch text is kept, unedited and partly out of date, in
 | `src/ports/ProjectStore.contract.ts` | The behaviour every store must show |
 | `electron/main/index.ts` | The desktop main process; its header states what is load-bearing |
 | `build/libavoidWasm.ts` | Publishes the router's wasm; fails a build, not a shipped app |
-| `docs/manual.nl.md` | The old Dutch user manual, kept as source for the in-app one |
+| `docs/manual.en.md`, `docs/manual.nl.md` | The user manual, in English and in Dutch |
 | `LICENSE` | The licence |
 
 ## Licence
