@@ -14,6 +14,34 @@ holds the settled names (the working file is `.lvarch`). Two halves:
 - **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
   **274 tests.** Almost every task lands here.
 
+## This repository is public
+
+Everything here is world-readable the moment it is pushed, and a force-push is
+not an unpublish — GitHub keeps unreachable objects, clones and caches exist,
+and search engines are faster than you are. **Nothing sensitive may enter this
+tree in any scenario**, including "just for a minute", "it is a test value" and
+"I will squash it out before pushing".
+
+Two categories, both absolute:
+
+- **Credentials.** Tokens, API keys, certificates, `.p12`/`.p8`/`.pem`/`.pfx`,
+  connection strings, `.env` files, anything from a password manager. They live
+  in GitHub Actions secrets and variables and are referenced **by name only** —
+  `docs/release.md` lists all thirteen and carries not one value. If a
+  credential ever does land here, it is burned: **rotate it first**, then clean
+  the history. Cleaning history alone is not a remedy, it is a tidy-up.
+- **Customer data.** A real organisation's landscape, its application names,
+  hostnames, internal URLs, staff names, ticket numbers, org chart. Examples and
+  fixtures are **fictional** (`src/examples/acme-logistics.json`). If you need a
+  real landscape to test against, open it as a working file — that is what the
+  working file is for. Do not commit it.
+
+The second one is easy to get wrong, because a customer is identifiable without
+being named. Their vocabulary, their systems' names and their domain terms
+identify them as well as their logo does. When you add data you did not invent,
+ask who it came from before you `git add` it — and if you did not write a file
+yourself, read it before committing it.
+
 ## The fast loop
 
 ```bash

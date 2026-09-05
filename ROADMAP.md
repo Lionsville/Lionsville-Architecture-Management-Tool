@@ -323,22 +323,22 @@ second config file. `docs/release.md` is the operator's page: the thirteen
 secrets, and the four ways this has already gone wrong elsewhere.
 
 Excluding `node_modules` from the bundle took the asar from 61 MB to 6.5 MB — the
-HAL9000 lesson below, confirmed here. **Still open:** the `.lvarch` file
+lesson below, confirmed here. **Still open:** the `.lvarch` file
 association, and `electron-updater` (the workflow already publishes the
 `latest*.yml` manifests it needs).
-- electron-builder, configured the way `hal_desktop` in the HAL9000 repo already
+- electron-builder, configured the way an earlier internal desktop app of ours already
   is — that setup works and is the reference, not a starting point to rediscover:
   - `electron-builder.yml` with `appId`, `productName`, `directories.output:
     release`, `buildResources: resources`, and `files: [out/**, package.json]`.
   - **`dependencies` stays empty** unless something is genuinely loaded from
     `node_modules` at runtime. electron-builder copies production dependencies
-    into the bundle; HAL9000 shipped a 96 MB asar of code the app never read
+    into the bundle; that project shipped a 96 MB asar of code the app never read
     before this was understood.
   - **A separate macOS icon.** Windows and Linux want full-bleed square artwork;
     macOS expects the file to already contain Apple's grid — an 824×824 rounded
     body inset in a 1024×1024 canvas, 185.4pt corner radius — and does **not**
     apply that mask itself. A square PNG renders as a hard-edged tile visibly
-    larger than every neighbour in the Dock. HAL9000 has a
+    larger than every neighbour in the Dock. that project has a
     `scripts/make-mac-icon.swift` that does the inset; reuse it.
   - arm64-only for macOS is defensible (signing cost scales with bytes hashed
     and each architecture is a separate notarization submission); if Intel is
@@ -346,7 +346,7 @@ association, and `electron-updater` (the workflow already publishes the
 - **Signing exists and is known-good.** macOS: Developer ID + `hardenedRuntime`
   + entitlements + notarization through `notarytool`. Windows: **Azure Trusted
   Signing** — the `.pfx` route no longer exists, the OV key must live on a
-  token, HSM or cloud service. Both are wired in HAL9000's
+  token, HSM or cloud service. Both are wired in that project's
   `.github/workflows/desktop-release.yml`, credentials in GitHub secrets, and a
   local `electron-builder --dir` still builds unsigned with no setup. Copy that
   workflow's shape: a preflight job that turns "are the secrets present" into a
@@ -429,7 +429,7 @@ than it was and the browser tool gained a real working file.
   another process, pull the network, let OneDrive dehydrate the file — run before
   each release. Write that script in 7B, not later.
 - **Certificate expiry is a silent outage.** Since March 2026 OV certificates
-  live ~460 days. HAL9000 holds the credentials; put the renewal in a calendar
+  live ~460 days. the credentials are held outside this repository; put the renewal in a calendar
   the day 7D lands.
 - **The example is the first impression.** A thin fictional landscape makes the
   tool look thin. Budget real time for it in phase 5C.
