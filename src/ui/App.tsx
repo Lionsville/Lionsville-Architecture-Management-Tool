@@ -18,7 +18,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '@lionsville/solution-design'
 import {
   emptyProject, groupsOf, isProjectOrder, keysInGroup, moveToGroup, projectFromDocument,
-  renameProject,
+  renameProject, setProjectDefaults,
 } from '../core/project'
 import type {
   ProjectGroup, ProjectOrder, ProjectSnapshot, ProjectSummary,
@@ -30,6 +30,7 @@ import type { WindowChrome } from '../core/windowChrome'
 import type { ExampleProject } from '../examples'
 import { ProjectPicker } from './picker/ProjectPicker'
 import { ProjectWorkspace } from './ProjectWorkspace'
+import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
 import type { MakeId } from './useDiagramActions'
 import type { ProjectFileChannel } from './useProjectFiles'
@@ -185,14 +186,15 @@ export function App({
    * to take the new address before it forgets the old one — that order matters:
    * removing first and then failing to save would lose the project outright.
    */
-  const applyProjectSettings = useCallback((settings: {
-    name: string; group: string; groupName: string
-  }) => {
+  const applyProjectSettings = useCallback((settings: ProjectSettings) => {
     if (!project) return
     void projects.list().then(async (existing) => {
       const targetGroup = settings.group
       const moving = targetGroup !== project.ref.group
-      const named = renameProject(project, settings.name)
+      const named = setProjectDefaults(renameProject(project, settings.name), {
+        author: settings.defaultAuthor,
+        aspectConfig: settings.defaultAspectConfig,
+      })
       let next = moving
         ? moveToGroup(named, targetGroup, settings.groupName)
         : { ...named, model: { ...named.model, customerName: settings.groupName } }

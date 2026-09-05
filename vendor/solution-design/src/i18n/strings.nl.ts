@@ -623,4 +623,10 @@ export const NL: StringTable = {
   'settings.moved': 'Verhuisd naar {name}.',
   'settings.renamed': 'Hernoemd naar \u201c{name}\u201d.',
   'settings.groupRenamed': 'Groep hernoemd naar \u201c{name}\u201d.',
+  'settings.defaults': 'STANDAARD VOOR DIT PROJECT',
+  'settings.defaultsHelp':
+    'Waar een aanzicht in dit project op terugvalt. Dit herschrijft nooit een aanzicht dat al is ingesteld.',
+  'settings.defaultAuthor': 'Auteur',
+  'settings.defaultAuthorHelp': 'Vermeld op een geëxporteerd aanzicht zonder eigen auteur.',
+  'settings.defaultColumns': 'De volwassenheidskolommen waarmee een nieuw landschap begint.',
 };

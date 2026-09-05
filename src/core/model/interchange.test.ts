@@ -378,3 +378,32 @@ describe('per-diagram presentation settings', () => {
     }
   })
 })
+
+describe('project-wide defaults', () => {
+  const doc: InterchangeDoc = {
+    formatVersion: '1',
+    design: {
+      name: 'Klein',
+      author: 'W. Simons',
+      aspectConfig: [{ key: 'dr', label: 'Continuity', code: 'CONT' }],
+    },
+    elements: [{ key: 'app', kind: 'application', name: 'App' }],
+    diagrams: [{ key: 'l7', kind: 'layer7', name: 'Landschap', places: [{ elementKey: 'app' }] }],
+  }
+
+  it('reads them off the design block and writes them back', () => {
+    const model = fromInterchange(doc, GROUP_NAME)
+    expect(model.defaultAuthor).toBe('W. Simons')
+    expect(model.defaultAspectConfig).toEqual([{ key: 'dr', label: 'Continuity', code: 'CONT' }])
+    expect(toInterchange(model).design).toMatchObject({
+      author: 'W. Simons',
+      aspectConfig: [{ key: 'dr', label: 'Continuity', code: 'CONT' }],
+    })
+  })
+
+  it('says nothing about them when the source said nothing', () => {
+    const out = toInterchange(fromInterchange({ ...doc, design: { name: 'Klein' } }, GROUP_NAME))
+    expect('author' in out.design).toBe(false)
+    expect('aspectConfig' in out.design).toBe(false)
+  })
+})

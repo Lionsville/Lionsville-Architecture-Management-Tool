@@ -23,22 +23,12 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import {
-  ASPECT_CODE_MAX,
-  ASPECT_SUPERSET,
-  DEFAULT_ASPECT_CONFIG,
-  aspectKeyForLabel,
-  derivedShortCode,
-  normaliseAspectConfig,
-} from '../model/aspects';
+import { AspectColumnsEditor, settleFreshAspectKeys } from './AspectColumnsEditor';
+import { DEFAULT_ASPECT_CONFIG, normaliseAspectConfig } from '../model/aspects';
 import { useStrings } from '../i18n/LanguageContext';
 import type { AspectConfigEntry, DesignDiagram, DiagramSettings } from '../types';
 
@@ -93,7 +83,6 @@ export function DiagramSettingsDialog({
 }: DiagramSettingsDialogProps) {
   const { t } = useStrings();
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [addMenu, setAddMenu] = useState<HTMLElement | null>(null);
   // A fresh target resets the draft; the same target keeps what was typed, so a
   // stray click on the backdrop is recoverable by reopening.
   const [seenId, setSeenId] = useState<string | undefined>(undefined);
@@ -104,43 +93,12 @@ export function DiagramSettingsDialog({
 
   const isLayer7 = target?.kind === 'layer7';
   const edit = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
-  const editColumn = (index: number, patch: Partial<AspectConfigEntry>) =>
-    setDraft((d) => (d
-      ? { ...d, columns: d.columns.map((c, i) => (i === index ? { ...c, ...patch } : c)) }
-      : d));
-  const move = (index: number, by: number) =>
-    setDraft((d) => {
-      if (!d) return d;
-      const to = index + by;
-      if (to < 0 || to >= d.columns.length) return d;
-      const columns = [...d.columns];
-      [columns[index], columns[to]] = [columns[to], columns[index]];
-      return { ...d, columns };
-    });
-
-  const unusedStandard = draft
-    ? ASPECT_SUPERSET.filter((entry) => !draft.columns.some((c) => c.key === entry.key))
-    : [];
-
-  const addStandard = (entry: AspectConfigEntry) => {
-    setAddMenu(null);
-    setDraft((d) => (d ? { ...d, columns: [...d.columns, { ...entry }] } : d));
-  };
-  const addCustom = () => {
-    setAddMenu(null);
-    setDraft((d) => {
-      if (!d) return d;
-      const label = t('diagramSettings.newColumn');
-      const key = aspectKeyForLabel(label, d.columns.map((c) => c.key));
-      return { ...d, columns: [...d.columns, { key, label }], fresh: [...d.fresh, key] };
-    });
-  };
 
   const trimmedName = draft?.name.trim() ?? '';
   const canSave = Boolean(target) && trimmedName.length > 0;
   const commit = () => {
     if (!target || !draft || !canSave) return;
-    const columns = normaliseAspectConfig(withFreshKeys(draft));
+    const columns = normaliseAspectConfig(settleFreshAspectKeys(draft.columns, draft.fresh));
     onSave(target.id, {
       name: trimmedName,
       author: draft.author.trim() || undefined,
@@ -260,99 +218,12 @@ export function DiagramSettingsDialog({
                     </Typography>
                   )}
 
-                  <Stack spacing={1} sx={{ mt: 1.25, opacity: draft.showAspects ? 1 : 0.55 }}>
-                    {draft.columns.length === 0 && (
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                        {t('diagramSettings.noColumns')}
-                      </Typography>
-                    )}
-                    {draft.columns.map((column, index) => (
-                      <Stack key={column.key} direction="row" spacing={0.5} alignItems="center">
-                        <TextField
-                          size="small"
-                          label={index === 0 ? t('diagramSettings.columnLabel') : undefined}
-                          value={column.label}
-                          sx={{ flex: 1 }}
-                          onChange={(e) => editColumn(index, { label: e.target.value })}
-                        />
-                        <TextField
-                          size="small"
-                          label={index === 0 ? t('diagramSettings.columnCode') : undefined}
-                          placeholder={derivedShortCode(column.label) || t('diagramSettings.codePlaceholder')}
-                          value={column.code ?? ''}
-                          sx={{ width: 96 }}
-                          slotProps={{ htmlInput: { maxLength: ASPECT_CODE_MAX } }}
-                          onChange={(e) => editColumn(index, { code: e.target.value })}
-                        />
-                        <Tooltip title={t('diagramSettings.moveUp', { name: column.label })}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              disabled={index === 0}
-                              aria-label={t('diagramSettings.moveUp', { name: column.label })}
-                              onClick={() => move(index, -1)}
-                            >
-                              ↑
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title={t('diagramSettings.moveDown', { name: column.label })}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              disabled={index === draft.columns.length - 1}
-                              aria-label={t('diagramSettings.moveDown', { name: column.label })}
-                              onClick={() => move(index, 1)}
-                            >
-                              ↓
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title={t('diagramSettings.remove', { name: column.label })}>
-                          <IconButton
-                            size="small"
-                            aria-label={t('diagramSettings.remove', { name: column.label })}
-                            onClick={() => edit({
-                              columns: draft.columns.filter((_, i) => i !== index),
-                            })}
-                          >
-                            ✕
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    ))}
-                  </Stack>
-
-                  <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-                    <Button size="small" onClick={(e) => setAddMenu(e.currentTarget)}>
-                      {t('diagramSettings.addStandard')}
-                    </Button>
-                    <Button size="small" onClick={addCustom}>
-                      {t('diagramSettings.addCustom')}
-                    </Button>
-                    <Box sx={{ flex: 1 }} />
-                    <Button
-                      size="small"
-                      color="inherit"
-                      onClick={() => edit({ columns: [...DEFAULT_ASPECT_CONFIG] })}
-                    >
-                      {t('diagramSettings.reset')}
-                    </Button>
-                  </Stack>
-                  <Menu
-                    anchorEl={addMenu}
-                    open={addMenu !== null}
-                    onClose={() => setAddMenu(null)}
-                  >
-                    {unusedStandard.length === 0 && (
-                      <MenuItem disabled>{t('diagramSettings.allStandardUsed')}</MenuItem>
-                    )}
-                    {unusedStandard.map((entry) => (
-                      <MenuItem key={entry.key} onClick={() => addStandard(entry)}>
-                        {entry.label}
-                      </MenuItem>
-                    ))}
-                  </Menu>
+                  <AspectColumnsEditor
+                    columns={draft.columns}
+                    fresh={draft.fresh}
+                    dimmed={!draft.showAspects}
+                    onChange={(columns, fresh) => edit({ columns, fresh })}
+                  />
                 </Box>
               </>
             )}
@@ -367,22 +238,6 @@ export function DiagramSettingsDialog({
       </DialogActions>
     </Dialog>
   );
-}
-
-/**
- * Re-key the columns added in this sitting from the labels they ended up with,
- * so a column typed as "Service levels" is filed as `custom-service-levels` and
- * not as whatever the placeholder said when the row appeared.
- */
-function withFreshKeys(draft: Draft): AspectConfigEntry[] {
-  if (draft.fresh.length === 0) return draft.columns;
-  const settled = draft.columns.filter((c) => !draft.fresh.includes(c.key)).map((c) => c.key);
-  return draft.columns.map((column) => {
-    if (!draft.fresh.includes(column.key)) return column;
-    const key = aspectKeyForLabel(column.label, settled);
-    settled.push(key);
-    return { ...column, key };
-  });
 }
 
 function SectionHeading({ text }: { text: string }) {

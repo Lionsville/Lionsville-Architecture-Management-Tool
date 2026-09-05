@@ -9,11 +9,13 @@
 import { describe, expect, it } from 'vitest'
 import { createTempId } from '@lionsville/solution-design'
 import type {
-  DesignConnection, DesignElement, DiagramContentBatch, DiagramPlacement, EdgeRoute,
+  DesignConnection, DesignElement, DiagramContentBatch, DiagramPlacement, DiagramSettings,
+  EdgeRoute,
 } from '@lionsville/solution-design'
 import type { HostModel } from './fromInterchange'
 import {
-  applyBatch, deleteDiagram, duplicateDiagram, isInterchange, isWorkingFile, needsRemount,
+  applyBatch, applyDiagramSettings, deleteDiagram, duplicateDiagram, isInterchange, isWorkingFile,
+  needsRemount,
   rekeyBatch, removedDiagrams, renameDiagram, resolveActiveDiagramId, workingFileLogoLibrary,
   WORKING_FILE_TYPE, WORKING_FILE_VERSION,
 } from './hostModel'
@@ -517,6 +519,63 @@ describe('renameDiagram', () => {
     const m = model()
     expect(renameDiagram(m, 'l7', '   ')).toBe(m)
     expect(renameDiagram(m, 'l7', 'Landschap').diagrams[0]).toBe(m.diagrams[0])
+  })
+})
+
+describe('applyDiagramSettings', () => {
+  const settings = (over: Partial<DiagramSettings> = {}): DiagramSettings =>
+    ({ name: 'Landschap', ...over })
+  const l7 = (m: HostModel) => m.diagrams[0]
+
+  it('renames and sets the title-block fields', () => {
+    const out = applyDiagramSettings(model(), 'l7', settings({
+      name: '  Landschap 2027  ',
+      author: 'W. Simons',
+      client: 'Acme Rail',
+      documentDate: '2026-09-05',
+    }))
+    expect(l7(out)).toMatchObject({
+      name: 'Landschap 2027',
+      author: 'W. Simons',
+      client: 'Acme Rail',
+      documentDate: '2026-09-05',
+    })
+  })
+
+  /**
+   * The settings are the whole answer. Somebody who cleared the author field
+   * meant the export to stop naming one — keeping the old value because the
+   * field arrived undefined would make the field impossible to empty.
+   */
+  it('clears a field the settings do not carry, key and all', () => {
+    const before = applyDiagramSettings(model(), 'l7', settings({ author: 'W. Simons' }))
+    const after = applyDiagramSettings(before, 'l7', settings())
+    expect('author' in l7(after)).toBe(false)
+    expect(JSON.parse(JSON.stringify(l7(after)))).not.toHaveProperty('author')
+  })
+
+  it('keeps an empty column set, which is not the same as no column set', () => {
+    const out = applyDiagramSettings(model(), 'l7', settings({ aspectConfig: [] }))
+    expect(l7(out).aspectConfig).toEqual([])
+  })
+
+  it('stores a hidden aspect row alongside the columns it keeps', () => {
+    const config = [{ key: 'dr', label: 'Continuity' }]
+    const out = applyDiagramSettings(model(), 'l7', settings({
+      aspectConfig: config, showAspects: false,
+    }))
+    expect(l7(out)).toMatchObject({ aspectConfig: config, showAspects: false })
+  })
+
+  it('touches nobody else', () => {
+    const m = model()
+    const out = applyDiagramSettings(m, 'l7', settings({ author: 'W. Simons' }))
+    expect(out.diagrams[1]).toBe(m.diagrams[1])
+  })
+
+  it('refuses a nameless diagram', () => {
+    const m = model()
+    expect(applyDiagramSettings(m, 'l7', settings({ name: '  ' }))).toBe(m)
   })
 })
 

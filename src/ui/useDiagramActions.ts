@@ -7,10 +7,10 @@
  * message, and which dialog belongs to it.
  */
 import { useCallback, useState } from 'react'
-import type { DesignDiagram, Translate } from '@lionsville/solution-design'
+import type { DesignDiagram, DiagramSettings, Translate } from '@lionsville/solution-design'
 import { findContainerDiagram, seedContainerDiagram } from '../core/containerDiagram'
 import {
-  deleteDiagram, duplicateDiagram, renameDiagram, resolveActiveDiagramId,
+  applyDiagramSettings, deleteDiagram, duplicateDiagram, renameDiagram, resolveActiveDiagramId,
 } from '../core/model/hostModel'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -21,6 +21,8 @@ export type MakeId = (prefix: string) => string
 export type DiagramActions = {
   onCreateContainerDiagram: (applicationId: string) => void
   onRenameDiagram: (diagramId: string, name: string) => void
+  /** The editor's settings dialog, applied: name, title block, aspect columns. */
+  onDiagramSettingsChange: (diagramId: string, settings: DiagramSettings) => void
   onDuplicateDiagram: (diagramId: string) => void
 
   /** The new landscape: its name is asked for in a dialog. */
@@ -69,6 +71,11 @@ export function useDiagramActions(deps: {
     session.commit(renameDiagram(session.current(), diagramId, name))
   }, [session])
 
+  const onDiagramSettingsChange = useCallback((diagramId: string, settings: DiagramSettings) => {
+    session.flush()
+    session.commit(applyDiagramSettings(session.current(), diagramId, settings))
+  }, [session])
+
   const onDuplicateDiagram = useCallback((diagramId: string) => {
     session.flush()
     const source = session.current().diagrams.find((d) => d.id === diagramId)
@@ -91,8 +98,14 @@ export function useDiagramActions(deps: {
     const name = (newDiagramName ?? '').trim()
     if (!name) return
     setNewDiagramName(null)
-    const diagram: DesignDiagram = { id: makeId('l7'), kind: 'layer7', name, placements: [] }
     const m = session.current()
+    const diagram: DesignDiagram = {
+      id: makeId('l7'), kind: 'layer7', name, placements: [],
+      // Copied, not referenced: this landscape's columns are now its own, and
+      // changing the project's default later must not silently rewrite them.
+      // Absent when the project has no default, which leaves the standard five.
+      ...(m.defaultAspectConfig ? { aspectConfig: [...m.defaultAspectConfig] } : {}),
+    }
     session.commit({ ...m, diagrams: [...m.diagrams, diagram] }, { activeDiagramId: diagram.id })
   }, [newDiagramName, session, makeId])
 
@@ -124,7 +137,7 @@ export function useDiagramActions(deps: {
   }, [deleteId, session, notify, s])
 
   return {
-    onCreateContainerDiagram, onRenameDiagram, onDuplicateDiagram,
+    onCreateContainerDiagram, onRenameDiagram, onDiagramSettingsChange, onDuplicateDiagram,
     onCreateLayer7Diagram, newDiagramName, setNewDiagramName, confirmNewDiagram,
     requestDeleteDiagram: setDeleteId, diagramToDelete, isLastLandscape,
     cancelDeleteDiagram, confirmDeleteDiagram,

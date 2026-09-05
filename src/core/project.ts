@@ -13,7 +13,7 @@
  * programme elsewhere. Mapping it here rather than carrying a second copy keeps
  * the export title block, the picker and the stored file from ever disagreeing.
  */
-import type { UploadedLogo } from '@lionsville/solution-design'
+import type { AspectConfigEntry, UploadedLogo } from '@lionsville/solution-design'
 import { fromInterchange } from './model/fromInterchange'
 import type { HostModel, InterchangeDoc } from './model/fromInterchange'
 import {
@@ -287,6 +287,26 @@ export function keysInGroup(projects: readonly ProjectSummary[], group: string):
  */
 export function renameProject(project: ProjectSnapshot, name: string): ProjectSnapshot {
   return { ...project, model: { ...project.model, name } }
+}
+
+/**
+ * The project's fallbacks: who an unattributed diagram names, and what columns a
+ * new landscape starts with.
+ *
+ * Deleted rather than set to `undefined` when cleared, so a project nobody has
+ * given defaults to keeps a model that says so — the same shape a hand-written
+ * file would have.
+ */
+export function setProjectDefaults(
+  project: ProjectSnapshot,
+  defaults: { author?: string; aspectConfig?: AspectConfigEntry[] },
+): ProjectSnapshot {
+  const model = { ...project.model }
+  if (defaults.author === undefined) delete model.defaultAuthor
+  else model.defaultAuthor = defaults.author
+  if (defaults.aspectConfig === undefined) delete model.defaultAspectConfig
+  else model.defaultAspectConfig = defaults.aspectConfig
+  return { ...project, model }
 }
 
 /**

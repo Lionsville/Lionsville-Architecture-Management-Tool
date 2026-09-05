@@ -131,7 +131,14 @@ export function ProjectWorkspace({
           onCreateContainerDiagram={diagrams.onCreateContainerDiagram}
           onCreateLayer7Diagram={diagrams.onCreateLayer7Diagram}
           parameterSpecs={() => []}
-          exportTitleBlock={{ client: groupNameOf(session.model), author: session.model.name }}
+          // The project's answers, which a diagram's own settings override. The
+          // author used to be the design's NAME, so every exported PNG said
+          // AUTHOR: <project name>; it is now the project's default author,
+          // which is absent until somebody sets one.
+          exportTitleBlock={{
+            client: groupNameOf(session.model),
+            author: session.model.defaultAuthor,
+          }}
           layoutOnOpenDiagramIds={session.sessionLayoutIds}
           onLayoutSettled={session.onLayoutSettled}
           onForceSave={forceSave}
@@ -141,6 +148,7 @@ export function ProjectWorkspace({
           onExportImagesMissing={onExportImagesMissing}
           onLayoutError={onLayoutError}
           onRenameDiagram={diagrams.onRenameDiagram}
+          onDiagramSettingsChange={diagrams.onDiagramSettingsChange}
           onDuplicateDiagram={diagrams.onDuplicateDiagram}
           onDeleteDiagram={diagrams.requestDeleteDiagram}
           initialPreferences={editorPreferences}

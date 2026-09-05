@@ -46,6 +46,12 @@ export type {
 } from './types';
 
 export { SolutionDesignEditor } from './editor/SolutionDesignEditor';
+/**
+ * The maturity-column list, on its own. A host that keeps its own defaults —
+ * "what a new landscape in this project starts with" — edits them with the same
+ * component the diagram's own settings use, so the two cannot drift.
+ */
+export { AspectColumnsEditor, settleFreshAspectKeys } from './editor/AspectColumnsEditor';
 export { exportDiagramPng } from './export/exportPng';
 /** Where the host publishes `libavoid.wasm`; call once before the editor routes. */
 export { configureLibavoidWasm } from './layout/libavoidRouter';

@@ -69,7 +69,12 @@ export function toInterchange(model: HostModel): InterchangeDoc {
 
   return prune({
     formatVersion: typeof model.formatVersion === 'string' ? model.formatVersion : '1',
-    design: prune({ name: model.name, description: model.description }),
+    design: prune({
+      name: model.name,
+      description: model.description,
+      author: model.defaultAuthor,
+      aspectConfig: model.defaultAspectConfig,
+    }),
     elements: model.elements.map((e) => {
       const ex = explicit[e.id] ?? {}
       return prune({

@@ -7,7 +7,9 @@
  * shell holds the state, the storage and the saving; only arithmetic lives here.
  */
 import { hasRouteContent, isTempId } from '@lionsville/solution-design'
-import type { DiagramContentBatch, UploadedLogo } from '@lionsville/solution-design'
+import type {
+  DesignDiagram, DiagramContentBatch, DiagramSettings, UploadedLogo,
+} from '@lionsville/solution-design'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
 import { claimKey } from './keys'
 
@@ -221,6 +223,53 @@ export function renameDiagram(model: HostModel, diagramId: string, name: string)
     ...model,
     diagrams: model.diagrams.map((d) => (d.id === diagramId && d.name !== trimmed ? { ...d, name: trimmed } : d)),
   }
+}
+
+/**
+ * Apply a diagram's settings: its name and everything about how it presents
+ * itself — the exported title block, and which maturity columns its
+ * applications carry.
+ *
+ * The settings are the whole answer, not a patch, so an absent field **clears**
+ * the one on the diagram. That is what lets somebody empty the author field and
+ * have the export go back to saying nothing, rather than the old value living
+ * on because "undefined means leave it alone".
+ *
+ * An empty name is refused rather than applied, the same as {@link renameDiagram}
+ * — a nameless tab is not something the caller meant to ask for.
+ */
+export function applyDiagramSettings(
+  model: HostModel,
+  diagramId: string,
+  settings: DiagramSettings,
+): HostModel {
+  const name = settings.name.trim()
+  if (!name) return model
+  return {
+    ...model,
+    diagrams: model.diagrams.map((d) => {
+      if (d.id !== diagramId) return d
+      const next: DesignDiagram = { ...d, name }
+      // Written out one by one, and deleted rather than set to undefined, so
+      // what lands in a saved file is what a hand-written one would look like.
+      assign(next, 'author', settings.author)
+      assign(next, 'client', settings.client)
+      assign(next, 'documentDate', settings.documentDate)
+      assign(next, 'showTitleBlock', settings.showTitleBlock)
+      assign(next, 'aspectConfig', settings.aspectConfig)
+      assign(next, 'showAspects', settings.showAspects)
+      return next
+    }),
+  }
+}
+
+function assign<K extends keyof DesignDiagram>(
+  diagram: DesignDiagram,
+  key: K,
+  value: DesignDiagram[K],
+): void {
+  if (value === undefined) delete diagram[key]
+  else diagram[key] = value
 }
 
 /**

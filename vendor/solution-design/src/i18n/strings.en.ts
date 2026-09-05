@@ -650,4 +650,10 @@ export const EN = {
   'settings.moved': 'Moved to {name}.',
   'settings.renamed': 'Renamed to \u201c{name}\u201d.',
   'settings.groupRenamed': 'Group renamed to \u201c{name}\u201d.',
+  'settings.defaults': 'DEFAULTS FOR THIS PROJECT',
+  'settings.defaultsHelp':
+    'What a diagram in this project falls back on. Changing these never rewrites a diagram that has already been configured.',
+  'settings.defaultAuthor': 'Author',
+  'settings.defaultAuthorHelp': 'Named on an exported diagram that has no author of its own.',
+  'settings.defaultColumns': 'The maturity columns a new landscape starts with.',
 } as const;

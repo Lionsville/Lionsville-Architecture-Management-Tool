@@ -71,7 +71,14 @@ type InterchangeDiagram = {
 
 export type InterchangeDoc = {
   formatVersion: string
-  design: { name: string; description?: string }
+  design: {
+    name: string
+    description?: string
+    /** What a diagram in this project shows as its author unless it says otherwise. */
+    author?: string
+    /** What a NEW landscape in this project starts its maturity columns as. */
+    aspectConfig?: DesignDiagram['aspectConfig']
+  }
   elements: InterchangeElement[]
   connections?: InterchangeConnection[]
   diagrams: InterchangeDiagram[]
@@ -81,6 +88,17 @@ export type InterchangeDoc = {
 export interface HostExtras {
   formatVersion?: unknown
   description?: string
+  /**
+   * Project-wide defaults, both of them answers to "and what about the next
+   * diagram?".
+   *
+   * `defaultAuthor` is who the export names when a diagram has not been given
+   * an author of its own; `defaultAspectConfig` is the column set a newly
+   * created landscape starts with. Neither is ever read in place of a
+   * diagram's own answer — they seed and they fall back, they do not override.
+   */
+  defaultAuthor?: string
+  defaultAspectConfig?: DesignDiagram['aspectConfig']
   adrLinks?: unknown[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
@@ -158,6 +176,8 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     // layer produces: core has no language, and the shell's default is English.
     name: doc.design?.name ?? 'Untitled',
     customerName,
+    defaultAuthor: doc.design?.author,
+    defaultAspectConfig: doc.design?.aspectConfig,
     diagrams,
     elements,
     connections,

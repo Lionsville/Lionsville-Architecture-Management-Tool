@@ -10,7 +10,7 @@ import acmeLogistics from '../examples/acme-logistics.json'
 import type { InterchangeDoc } from './model/fromInterchange'
 import {
   emptyProject, groupNameOf, groupsOf, isProjectOrder, isUsableProject, keysInGroup,
-  moveToGroup, openProjectDocument, projectFromDocument, renameProject, resolveActive,
+  moveToGroup, openProjectDocument, projectFromDocument, renameProject, setProjectDefaults, resolveActive,
   sortProjects, summarise, toWorkingFile,
 } from './project'
 import type { ProjectSummary } from './project'
@@ -326,6 +326,29 @@ describe('keysInGroup', () => {
 
   it('is why the same project name may exist in two groups', () => {
     expect(keysInGroup([summary('globex', 'one')], 'acme')).toEqual([])
+  })
+})
+
+describe('setProjectDefaults', () => {
+  it('stores the author and the starting columns', () => {
+    const out = setProjectDefaults(sampleProject(), {
+      author: 'W. Simons',
+      aspectConfig: [{ key: 'dr', label: 'Continuity' }],
+    })
+    expect(out.model.defaultAuthor).toBe('W. Simons')
+    expect(out.model.defaultAspectConfig).toEqual([{ key: 'dr', label: 'Continuity' }])
+  })
+
+  it('clears a default rather than keeping the key with nothing in it', () => {
+    const set = setProjectDefaults(sampleProject(), { author: 'W. Simons' })
+    const cleared = setProjectDefaults(set, {})
+    expect('defaultAuthor' in cleared.model).toBe(false)
+  })
+
+  it('does not touch the original', () => {
+    const project = sampleProject()
+    setProjectDefaults(project, { author: 'W. Simons' })
+    expect(project.model.defaultAuthor).toBeUndefined()
   })
 })
 
