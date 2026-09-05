@@ -416,6 +416,13 @@ export interface UploadedLogo {
  * to recognise the scheme and hand the id back, so it stays ignorant of the
  * model and the page stays ignorant of the renderer.
  */
+export interface WindowChrome {
+  /** Space to keep clear at the start of a top bar, in px. */
+  controlsInset: number;
+  /** Whether a top bar must also drag the window. */
+  draggable: boolean;
+}
+
 export interface MarkdownRenderOptions {
   onElementLink?(elementId: string): void;
 }
@@ -520,6 +527,16 @@ export interface SolutionDesignEditorProps {
   };
   /** When provided, the toolbar shows a fullscreen button (host implements the view). */
   onOpenFullscreen?: () => void;
+  /**
+   * What the host window paints over the top of a full-window view, and
+   * whether that view's top bar has to double as the handle that moves the
+   * window. A desktop build that hides the macOS title bar leaves the traffic
+   * lights over our top-left corner: anything the editor draws across the
+   * whole window (the documentation page) must start after them, or its first
+   * button sits underneath them and cannot be clicked. Absent = a browser tab,
+   * where the page owns every pixel.
+   */
+  windowChrome?: WindowChrome;
   /**
    * Force-save hook (U4c, DK8). Mod+S always suppresses the browser's save
    * dialog; when this prop is present it also flushes the host's pending saves

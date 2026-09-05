@@ -1100,6 +1100,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             setDeleteTarget(documentationElement.id);
           }}
           onRequestLogoUpload={props.onRequestLogoUpload}
+          windowChrome={props.windowChrome}
         />
       )}
       <ElementSearchDialog

@@ -149,6 +149,7 @@ export function ProjectWorkspace({
           onExportImagesMissing={onExportImagesMissing}
           onLayoutError={onLayoutError}
           renderMarkdown={renderMarkdown}
+          windowChrome={windowChrome}
           onRenameDiagram={diagrams.onRenameDiagram}
           onDiagramSettingsChange={diagrams.onDiagramSettingsChange}
           onDuplicateDiagram={diagrams.onDuplicateDiagram}

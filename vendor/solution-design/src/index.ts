@@ -29,6 +29,7 @@ export type {
   DesignModel,
   DiagramContentBatch,
   MarkdownRenderOptions,
+  WindowChrome,
   DiagramLayoutConfig,
   DiagramSettings,
   DomainGroupRect,

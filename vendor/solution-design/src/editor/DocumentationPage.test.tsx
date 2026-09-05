@@ -190,6 +190,20 @@ describe('DocumentationPage', () => {
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('starts its top bar after the window controls, and drags the window with it', () => {
+    setup({ windowChrome: { controlsInset: 78, draggable: true } });
+    const bar = screen.getByRole('button', { name: 'Close documentation' }).parentElement!;
+    expect(getComputedStyle(bar).paddingLeft).toBe('90px');
+    // Read out of the style tags Emotion wrote: jsdom's CSSOM drops a
+    // property it does not know, and this is exactly such a property.
+    const css = Array.from(document.querySelectorAll('style')).map((tag) => tag.textContent).join('');
+    const own = Array.from(bar.classList).find((name) => css.includes(`.${name}{`));
+    const rules = (css.match(/[^{}]*\{[^{}]*\}/g) ?? []).filter((rule) => rule.includes(`.${own}`)).join('');
+    expect(rules).toContain('-webkit-app-region:drag');
+    expect(rules).toContain('button');
+    expect(rules).toContain('-webkit-app-region:no-drag');
+  });
+
   it('commits a pending draft when the page goes away', () => {
     const { updateElement, unmount } = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));

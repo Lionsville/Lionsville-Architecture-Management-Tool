@@ -222,6 +222,12 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
   "was it actually translated" are all checked automatically.
 - Every pure function gets a unit test. Every port gets a contract or a suite.
 - `readOnly` must hide every mutating affordance you add.
+- Anything that covers the whole window (a fullscreen dialog) must take
+  `windowChrome` and apply it to its top bar — the inset for the macOS traffic
+  lights, `-webkit-app-region: drag` on the bar and `no-drag` on its controls.
+  Electron computes drag regions from geometry, not from what is painted on
+  top, so the shell toolbar's drag strip stays live under a dialog and swallows
+  every click on the controls placed there. `DocumentationPage` is the example.
 - Both MUI themes must keep working; no hard-coded hex outside `theme/`.
 - Keep existing tests green. If a test pins behaviour you are deliberately
   changing, flip it in the same change and say so.

@@ -39,6 +39,7 @@ import type {
   ElementId,
   MarkdownRenderOptions,
   ParameterSpec,
+  WindowChrome,
 } from '../types';
 import {
   documentTemplate,
@@ -71,6 +72,8 @@ export interface DocumentationPageProps {
   onClose(): void;
   onRequestDelete(): void;
   onRequestLogoUpload?(): void;
+  /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
+  windowChrome?: WindowChrome;
 }
 
 export function DocumentationPage(props: DocumentationPageProps) {
@@ -188,6 +191,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
   };
 
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
+  const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
 
   return (
     <Dialog
@@ -208,6 +212,12 @@ export function DocumentationPage(props: DocumentationPageProps) {
           alignItems: 'center',
           gap: 1,
           px: 1.5,
+          // This bar covers the whole window, so it inherits the window's two
+          // jobs: start after the controls painted over its corner, and move
+          // the window when dragged — except where something is clickable.
+          pl: `${12 + chrome.controlsInset}px`,
+          WebkitAppRegion: chrome.draggable ? 'drag' : undefined,
+          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           minHeight: 48,
           borderBottom: 1,
           borderColor: 'divider',
