@@ -691,4 +691,22 @@ export const EN = {
   'doc.data': 'Data',
   'doc.operations': 'Operations',
   'doc.decisions': 'Decisions and open issues',
+
+  // The documentation page and its doors.
+  'menu.openDocumentation': 'Open documentation',
+  'shortcut.open-documentation': 'Open documentation',
+  'field.openDocumentation': 'Open as a page',
+  'node.hasDocumentation': 'Has documentation — right-click to open',
+  'doc.title': 'Documentation',
+  'doc.read': 'Read',
+  'doc.edit': 'Edit',
+  'doc.close': 'Close documentation',
+  'doc.previous': 'Previous element',
+  'doc.next': 'Next element',
+  'doc.contents': 'On this page',
+  'doc.source': 'Documentation source (markdown)',
+  'doc.insertTemplate': 'Start from the template',
+  'doc.empty': 'Nothing written yet.',
+  'doc.emptyHint': 'Switch to Edit to write, or start from the template.',
+  'doc.markdownHint': 'Markdown. [[Name]] links to another element.',
 } as const;

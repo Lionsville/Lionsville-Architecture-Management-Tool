@@ -63,6 +63,7 @@ import { ElementInspector } from './ElementInspector';
 import { InspectorEmptyState, InspectorPanel } from './InspectorPanel';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { ShortcutsHelpDialog } from './ShortcutsHelpDialog';
+import { DocumentationPage } from './DocumentationPage';
 import {
   defaultElementNames,
   selectElement,
@@ -192,6 +193,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const [showMinimap, setShowMinimap] = useState(initialPreferences.showMinimap);
   // ⌘F. The dialog owns its own query; this is only whether it is up.
   const [searchOpen, setSearchOpen] = useState(false);
+  /** The element whose documentation page is open; session state, never saved. */
+  const [documentationId, setDocumentationId] = useState<ElementId | undefined>(undefined);
   /**
    * ONE focus request, fed by two sources: the host's `focusElement` prop and
    * the editor's own ⌘F finder.
@@ -252,6 +255,15 @@ function EditorBody(props: SolutionDesignEditorProps) {
   useEffect(() => {
     if (renameRequest && renameRequest.id !== selectedElementId) setRenameRequest(undefined);
   }, [renameRequest, selectedElementId]);
+  // Selecting the element as well means closing the page lands the reader on
+  // the thing they were just reading about, with its inspector open.
+  const openDocumentation = useCallback(
+    (elementId: ElementId) => {
+      setSelection(selectElement(elementId));
+      setDocumentationId(elementId);
+    },
+    [setSelection],
+  );
   const requestMenu = useCallback((kind: 'open' | 'rename') => {
     menuNonce.current += 1;
     setMenuRequest({ kind, nonce: menuNonce.current });
@@ -787,14 +799,20 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const handleDoubleClick = useCallback(
     (elementId: ElementId) => {
       const element = state.effectiveModel.elements.find((e) => e.id === elementId);
-      if (element?.kind !== 'application') return;
+      if (!element) return;
+      // Double-click opens what is inside: an application's container diagram,
+      // and for everything else its documentation.
+      if (element.kind !== 'application') {
+        openDocumentation(elementId);
+        return;
+      }
       const existing = state.effectiveModel.diagrams.find(
         (d) => d.kind === 'container' && d.applicationElementId === elementId,
       );
       if (existing) props.onActiveDiagramChange(existing.id);
       else props.onCreateContainerDiagram(elementId);
     },
-    [state.effectiveModel, props],
+    [state.effectiveModel, props, openDocumentation],
   );
 
   // ONE owner of canvas keys (DK4): the declarative keymap-driven hook replaces
@@ -824,6 +842,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
     onOpenContextMenu: () => requestMenu('open'),
     onRequestRename: () => requestMenu('rename'),
     onOpenSearch: () => setSearchOpen(true),
+    onOpenDocumentation: openDocumentation,
   });
 
   // Attach both the wrapper ref (used by the PNG export) and the shortcut hook's
@@ -847,6 +866,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   const deleteElement = deleteTarget
     ? state.effectiveModel.elements.find((e) => e.id === deleteTarget)
+    : undefined;
+  // An element deleted (or undone out of existence) while its page is open
+  // simply has no page any more.
+  const documentationElement = documentationId
+    ? state.effectiveModel.elements.find((e) => e.id === documentationId)
     : undefined;
 
   return (
@@ -943,6 +967,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           showLifecycle={showLifecycle}
           showMinimap={showMinimap}
           onElementDoubleClick={handleDoubleClick}
+          onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
           groupTidyOptions={groupTidyOptions}
           onGroupTidyOptionsChange={readOnly ? undefined : setGroupTidyOptions}
@@ -987,6 +1012,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               extras={props.renderInspectorExtras?.(state.selectedElement)}
               renameRequest={renameRequest}
               onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
+              onOpenDocumentation={openDocumentation}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector
@@ -1057,6 +1083,25 @@ function EditorBody(props: SolutionDesignEditorProps) {
         />
       )}
       <ShortcutsHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      {documentationElement && (
+        <DocumentationPage
+          key={documentationElement.id}
+          element={documentationElement}
+          model={state.effectiveModel}
+          diagram={activeDiagram}
+          readOnly={readOnly}
+          actions={state.actions}
+          parameterSpecs={props.parameterSpecs(documentationElement)}
+          renderMarkdown={props.renderMarkdown}
+          onNavigate={openDocumentation}
+          onClose={() => setDocumentationId(undefined)}
+          onRequestDelete={() => {
+            setDocumentationId(undefined);
+            setDeleteTarget(documentationElement.id);
+          }}
+          onRequestLogoUpload={props.onRequestLogoUpload}
+        />
+      )}
       <ElementSearchDialog
         open={searchOpen}
         model={state.effectiveModel}
@@ -1096,6 +1141,7 @@ function CanvasForDiagram({
   showLifecycle,
   showMinimap,
   onElementDoubleClick,
+  onOpenDocumentation,
   onTidyGroup,
   groupTidyOptions,
   onGroupTidyOptionsChange,
@@ -1126,6 +1172,7 @@ function CanvasForDiagram({
   showLifecycle: boolean;
   showMinimap: boolean;
   onElementDoubleClick(elementId: ElementId): void;
+  onOpenDocumentation(elementId: ElementId): void;
   /** Layer 7 only — undefined in read-only mode. */
   onTidyGroup?(name: string): void;
   groupTidyOptions: TidyOptions;
@@ -1161,6 +1208,7 @@ function CanvasForDiagram({
     showLifecycle,
     showMinimap,
     onElementDoubleClick,
+    onOpenDocumentation,
     onTidy,
     onRouteConnections,
     onRouteConnectionsAll,

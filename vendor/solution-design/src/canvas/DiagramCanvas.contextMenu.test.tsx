@@ -499,25 +499,26 @@ describe('DiagramCanvas — keyboard', () => {
 });
 
 describe('DiagramCanvas — read-only', () => {
-  it('offers only navigation: open container on an element, select all / fit view on the canvas, nothing on a line', () => {
+  it('offers only navigation: documentation and container on an element, select all / fit view on the canvas, nothing on a line', () => {
     renderEditor({ readOnly: true });
+    const primary = (item: HTMLElement) => item.querySelector('.MuiListItemText-primary')?.textContent;
 
     fireEvent.contextMenu(nodeEl('a1'));
     const element = menu('Element menu');
-    expect(within(element).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Open container diagram']);
+    expect(within(element).getAllByRole('menuitem').map(primary)).toEqual(['Open documentation', 'Open container diagram']);
     fireEvent.keyDown(element, { key: 'Escape' });
 
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     const canvas = menu('Canvas menu');
-    const primary = (item: HTMLElement) => item.querySelector('.MuiListItemText-primary')?.textContent;
     expect(within(canvas).getAllByRole('menuitem').map(primary)).toEqual(['Select all', 'Fit view']);
     fireEvent.keyDown(canvas, { key: 'Escape' });
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     expect(screen.queryByRole('menu', { name: 'Connection menu' })).toBeNull();
 
-    // A non-application has no navigation entry: no menu at all.
+    // A non-application has no container to open, but reading is still allowed.
     fireEvent.contextMenu(nodeEl('b1'));
-    expect(screen.queryByRole('menu', { name: 'Element menu' })).toBeNull();
+    const other = menu('Element menu');
+    expect(within(other).getAllByRole('menuitem').map(primary)).toEqual(['Open documentation']);
   });
 });

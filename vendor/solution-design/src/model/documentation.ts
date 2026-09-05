@@ -13,7 +13,7 @@
  * Pure. No React, no renderer; the renderer is the host's and only ever sees
  * the result of {@link linkElementRefs}.
  */
-import type { DesignElement, ElementId } from '../types';
+import type { DesignDiagram, DesignElement, DesignModel, ElementId, ElementKind } from '../types';
 import type { Translate } from '../i18n/strings';
 
 /** The href scheme a link to another element carries; the host renderer hands the id back. */
@@ -223,6 +223,44 @@ export function linkElementRefs(
     if (id === undefined) return whole;
     return `[${name.trim()}](${ELEMENT_LINK_SCHEME}${encodeURIComponent(id)})`;
   });
+}
+
+// --- the page's neighbours -----------------------------------------------------
+
+/** The order the page lists kinds in: what a reader most often documents first. */
+const KIND_ORDER: readonly ElementKind[] = [
+  'application',
+  'component',
+  'externalSystem',
+  'inputChannel',
+  'managementTool',
+  'actor',
+];
+
+export interface DocumentedGroup {
+  kind: ElementKind;
+  elements: DesignElement[];
+}
+
+/**
+ * The elements placed on a diagram, grouped by kind and sorted by name, for the
+ * page's left column and its previous/next. Placement rather than the whole
+ * model, because "the other things on this drawing" is what a reader means by
+ * next; a kind with nothing placed is left out rather than shown empty.
+ */
+export function documentedElements(model: DesignModel, diagram: DesignDiagram): DocumentedGroup[] {
+  const placed = new Set(diagram.placements.map((p) => p.elementId));
+  const byKind = new Map<ElementKind, DesignElement[]>();
+  for (const element of model.elements) {
+    if (!placed.has(element.id)) continue;
+    const list = byKind.get(element.kind) ?? [];
+    list.push(element);
+    byKind.set(element.kind, list);
+  }
+  return KIND_ORDER.filter((kind) => byKind.has(kind)).map((kind) => ({
+    kind,
+    elements: [...(byKind.get(kind) ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+  }));
 }
 
 // --- the template --------------------------------------------------------------

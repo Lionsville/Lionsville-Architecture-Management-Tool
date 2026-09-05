@@ -14,6 +14,7 @@ import type {
   DesignDiagram,
   DesignElement,
   DesignModel,
+  ElementId,
   MarkdownRenderOptions,
   NodeIconSize,
   NodeShapeVariant,
@@ -102,6 +103,19 @@ export interface ElementInspectorProps {
    * once per nonce so a re-render never steals focus back.
    */
   renameRequest?: { id: string; nonce: number };
+  /**
+   * Opens the documentation page for this element. Absent = no expand button
+   * beside the description, which is the state inside the page itself.
+   */
+  onOpenDocumentation?(elementId: ElementId): void;
+  /** The page shows the description as the page; it must not show it twice. */
+  hideDescription?: boolean;
+  /**
+   * `tabs` (default) is the panel beside the canvas, where width is scarce.
+   * `stacked` lays the three tabs out one under the other, for the
+   * documentation page, where it is height that is plentiful.
+   */
+  layout?: 'tabs' | 'stacked';
 }
 
 function showVendor(kind: DesignElement['kind']): boolean {
@@ -194,6 +208,15 @@ export function ElementInspector(props: ElementInspectorProps) {
   );
   const dataHasValues = setAspectCount > 0 || setParameterCount > 0;
 
+  const stacked = props.layout === 'stacked';
+  const show = (tab: number) => stacked || activeTab === tab;
+  const sectionTitle = (text: string) =>
+    stacked ? (
+      <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+        {text}
+      </Typography>
+    ) : null;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ pb: 0.5 }}>
@@ -210,7 +233,7 @@ export function ElementInspector(props: ElementInspectorProps) {
         />
       </Box>
 
-      <Tabs
+      {!stacked && <Tabs
         value={activeTab}
         onChange={(_e, value: number) => setActiveTab(value)}
         variant="fullWidth"
@@ -219,9 +242,10 @@ export function ElementInspector(props: ElementInspectorProps) {
         <Tab label={<TabLabel text={t('tab.general')} dot={generalHasValues} />} />
         <Tab label={<TabLabel text={t('tab.appearance')} dot={appearanceHasValues} />} />
         <Tab label={<TabLabel text={t('tab.data')} dot={dataHasValues} />} />
-      </Tabs>
+      </Tabs>}
 
-      {activeTab === 0 && (
+      {sectionTitle(t('tab.general'))}
+      {show(0) && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {element.kind === 'application' && (
             <Autocomplete
@@ -282,12 +306,17 @@ export function ElementInspector(props: ElementInspectorProps) {
             />
           </Box>
 
-          <MarkdownField
-            value={element.description ?? ''}
-            disabled={readOnly}
-            onChange={(value) => update({ description: value || undefined })}
-            renderMarkdown={props.renderMarkdown}
-          />
+          {!props.hideDescription && (
+            <MarkdownField
+              value={element.description ?? ''}
+              disabled={readOnly}
+              onChange={(value) => update({ description: value || undefined })}
+              renderMarkdown={props.renderMarkdown}
+              onOpenDocumentation={
+                props.onOpenDocumentation ? () => props.onOpenDocumentation?.(element.id) : undefined
+              }
+            />
+          )}
 
           {isLayer7Placement && (
             <Box>
@@ -321,7 +350,8 @@ export function ElementInspector(props: ElementInspectorProps) {
         </Box>
       )}
 
-      {activeTab === 1 && (
+      {sectionTitle(t('tab.appearance'))}
+      {show(1) && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <ColorField
             label={t('field.accentColour')}
@@ -391,7 +421,8 @@ export function ElementInspector(props: ElementInspectorProps) {
         </Box>
       )}
 
-      {activeTab === 2 && (
+      {sectionTitle(t('tab.data'))}
+      {show(2) && (
         /* key per element: Data-tab section open/closed defaults recompute on selection change */
         <Box key={element.id} sx={{ display: 'flex', flexDirection: 'column' }}>
           {showAspects && (

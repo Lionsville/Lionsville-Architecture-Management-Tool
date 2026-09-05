@@ -98,6 +98,15 @@ export const CANVAS_SHORTCUTS: ShortcutDef[] = [
     group: 'edit',
     when: notReadOnlyWithSelection,
   },
+  // Enter opens the documentation page for the selected element; reading is
+  // allowed in read-only, so it is not gated on that.
+  {
+    id: 'open-documentation',
+    keys: ['Enter'],
+    labelKey: 'shortcut.open-documentation',
+    group: 'selection',
+    when: (ctx) => ctx.hasSelection,
+  },
   // F2 renames whatever is selected: an element (inspector Name field), a domain
   // group (inline label editor) or a connection (inline label chip).
   { id: 'rename', keys: ['F2'], labelKey: 'shortcut.rename', group: 'edit', when: notReadOnlyWithSelection },

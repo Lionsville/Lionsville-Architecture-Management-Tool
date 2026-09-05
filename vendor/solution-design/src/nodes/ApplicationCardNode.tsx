@@ -8,11 +8,11 @@ import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
 import { formatMonthlyPrice } from '../theme/format';
 import { useStrings } from '../i18n/LanguageContext';
-import { DrillGlyph, LinkGlyph, WarningGlyph } from './glyphs';
+import { DocGlyph, DrillGlyph, LinkGlyph, WarningGlyph } from './glyphs';
 import { NodeDescription, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { AspectBadgeRow } from './AspectBadgeRow';
 import type { ElementNodeProps } from './nodeData';
-import { shortDescription } from '../model/documentation';
+import { hasDocumentation, shortDescription } from '../model/documentation';
 
 /**
  * Application card (default 200×130, PVH/Akzo board style): category strip on
@@ -98,6 +98,13 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
           <Tooltip title={t('node.hasContainer')}>
             <Box sx={{ color: tokens.card.subtitle, display: 'flex' }}>
               <DrillGlyph />
+            </Box>
+          </Tooltip>
+        )}
+        {hasDocumentation(element.description) && (
+          <Tooltip title={t('node.hasDocumentation')}>
+            <Box sx={{ color: tokens.card.subtitle, display: 'flex' }} data-testid="doc-glyph">
+              <DocGlyph />
             </Box>
           </Tooltip>
         )}

@@ -55,6 +55,8 @@ export interface MenuActionHost {
   resolveDrop?(elementId: ElementId, center: Point): Pick<PlacementMove, 'zone' | 'domainGroup'>;
   /** The double-click path: open or create the application's container diagram. */
   openApplication?(elementId: ElementId): void;
+  /** "Open documentation": the editor shows the element's page. */
+  openDocumentation?(elementId: ElementId): void;
   requestRename?(elementId: ElementId): void;
   /** Opens the delete dialog (remove from diagram / delete from model). */
   requestDelete?(elementId: ElementId): void;
@@ -127,6 +129,9 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     // --- node -----------------------------------------------------------------
     case 'open-container':
       if (elementId) host.openApplication?.(elementId);
+      return;
+    case 'open-documentation':
+      if (elementId) host.openDocumentation?.(elementId);
       return;
     case 'rename':
       if (target.kind === 'node') host.requestRename?.(target.elementId);

@@ -56,6 +56,7 @@ describe('menuItemsFor — node', () => {
   it('offers the full editing menu for an application on the landscape', () => {
     const items = menuItemsFor(NODE, ctx({ element: app(), domainGroups: ['Core'] }));
     expect(ids(items)).toEqual([
+      'open-documentation',
       'open-container',
       'rename',
       'start-connection',
@@ -177,13 +178,15 @@ describe('menuItemsFor — node', () => {
     expect(byId(items, 'delete-from-model').danger).toBe(true);
   });
 
-  it('read-only keeps only the navigation entry', () => {
+  it('read-only keeps only the navigation entries', () => {
     const withContainer = menuItemsFor(NODE, ctx({ readOnly: true, element: app() }));
-    expect(ids(withContainer)).toEqual(['open-container']);
-    expect(withContainer[0].label).toBe('Open container diagram');
-    // Creating a container diagram is a mutation, so a read-only viewer sees nothing.
-    expect(menuItemsFor(NODE, ctx({ readOnly: true, element: app({ hasContainerDiagram: false }) }))).toEqual([]);
-    expect(menuItemsFor(NODE, ctx({ readOnly: true, element: app({ kind: 'actor' }) }))).toEqual([]);
+    expect(ids(withContainer)).toEqual(['open-documentation', 'open-container']);
+    expect(withContainer[0].label).toBe('Open documentation');
+    expect(withContainer[1].label).toBe('Open container diagram');
+    // Creating a container diagram is a mutation, so a read-only viewer is not
+    // offered it; reading documentation is not, so that stays.
+    expect(ids(menuItemsFor(NODE, ctx({ readOnly: true, element: app({ hasContainerDiagram: false }) })))).toEqual(['open-documentation']);
+    expect(ids(menuItemsFor(NODE, ctx({ readOnly: true, element: app({ kind: 'actor' }) })))).toEqual(['open-documentation']);
   });
 
   it('returns nothing without element facts', () => {

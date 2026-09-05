@@ -60,6 +60,17 @@ export function DrillGlyph({ size = 12, strokeWidth = 2 }: GlyphProps) {
   );
 }
 
+/** A page with lines on it: this element has documentation worth opening. */
+export function DocGlyph({ size = 12, strokeWidth = 2 }: GlyphProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 3h8l5 5v13H6z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h7M9 17h7" />
+    </svg>
+  );
+}
+
 export function WarningGlyph({ size = 12, strokeWidth = 2 }: GlyphProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>

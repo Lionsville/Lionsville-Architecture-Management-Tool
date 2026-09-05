@@ -22,6 +22,7 @@ import type { AlignAxis, DistributeAxis } from './alignDistribute';
 /** What the dispatcher does when an item is picked. */
 export type MenuActionId =
   // node
+  | 'open-documentation'
   | 'open-container'
   | 'rename'
   | 'start-connection'
@@ -270,6 +271,13 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
   const key = (id: string) => formatShortcut(id, ctx.platform);
   const items: MenuItem[] = [];
 
+  // Reading is not editing: the page opens in read-only too.
+  items.push({
+    id: 'open-documentation',
+    label: t('menu.openDocumentation'),
+    shortcut: key('open-documentation'),
+    action: 'open-documentation',
+  });
   if (el.kind === 'application') {
     if (el.hasContainerDiagram) {
       items.push({ id: 'open-container', label: t('menu.openContainer'), action: 'open-container' });

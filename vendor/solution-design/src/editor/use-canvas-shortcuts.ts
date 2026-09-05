@@ -61,6 +61,8 @@ export interface CanvasShortcutHandlers {
   onRequestRename(): void;
   /** ⌘F: the element finder. Absent = the chord is still swallowed, and inert. */
   onOpenSearch?(): void;
+  /** Enter: the documentation page for the selected element. */
+  onOpenDocumentation?(elementId: ElementId): void;
 }
 
 /** Browser-owned chords we always suppress, even when the action is inert. */
@@ -371,6 +373,9 @@ function dispatch(
     case 'context-menu':
     case 'context-menu-key':
       h.onOpenContextMenu();
+      return;
+    case 'open-documentation':
+      if (h.selectedElement) h.onOpenDocumentation?.(h.selectedElement.id);
       return;
     case 'rename':
       h.onRequestRename();

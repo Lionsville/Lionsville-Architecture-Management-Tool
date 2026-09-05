@@ -4,7 +4,7 @@ import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { EyeIcon, PencilIcon } from './toolbarIcons';
+import { EyeIcon, FullscreenIcon, PencilIcon } from './toolbarIcons';
 import { useStrings } from '../i18n/LanguageContext';
 import type { MarkdownRenderOptions } from '../types';
 
@@ -19,11 +19,14 @@ export function MarkdownField({
   disabled,
   onChange,
   renderMarkdown,
+  onOpenDocumentation,
 }: {
   value: string;
   disabled: boolean;
   onChange(value: string): void;
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
+  /** Opens the documentation page — the same text, with room to read and write it. */
+  onOpenDocumentation?(): void;
 }) {
   const { t } = useStrings();
   const [preview, setPreview] = useState(false);
@@ -34,6 +37,14 @@ export function MarkdownField({
         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
           {t('field.descriptionMarkdown')}
         </Typography>
+        <Box sx={{ display: 'flex' }}>
+        {onOpenDocumentation && (
+          <Tooltip title={t('field.openDocumentation')}>
+            <IconButton size="small" aria-label={t('field.openDocumentation')} onClick={onOpenDocumentation}>
+              <FullscreenIcon size={16} />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title={preview ? t('field.edit') : t('field.preview')}>
           <IconButton
             size="small"
@@ -43,6 +54,7 @@ export function MarkdownField({
             {preview ? <PencilIcon /> : <EyeIcon />}
           </IconButton>
         </Tooltip>
+        </Box>
       </Box>
       {preview ? (
         <Box

@@ -245,6 +245,8 @@ export interface DiagramCanvasProps {
    */
   onPaletteDragOver?(position: Point | null): void;
   onElementDoubleClick?(elementId: ElementId): void;
+  /** "Open documentation" on an element: the editor shows its page. */
+  onOpenDocumentation?(elementId: ElementId): void;
   /**
    * What a right-click on the pane at `point` (FLOW coordinates) is about, when
    * it is not the pane itself. Layer 7 answers with the domain-group box under
@@ -873,6 +875,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     layoutBusy,
     canTidyGroup,
     onRequestRename,
+    onOpenDocumentation,
     onRequestDeleteElement,
     onRequestDeleteConnection,
     onRequestDeleteSelection,
@@ -1131,6 +1134,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       addDomainGroupAt: onAddDomainGroupByDrop ? (position) => onAddDomainGroupByDrop(position) : undefined,
       resolveDrop,
       openApplication: onElementDoubleClick,
+      openDocumentation: onOpenDocumentation,
       requestRename: onRequestRename,
       requestDelete: onRequestDeleteElement,
       requestDeleteConnection: onRequestDeleteConnection,
@@ -1167,6 +1171,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       onAddDomainGroupByDrop,
       resolveDrop,
       onElementDoubleClick,
+      onOpenDocumentation,
       onRequestRename,
       onRequestDeleteElement,
       onRequestDeleteConnection,
