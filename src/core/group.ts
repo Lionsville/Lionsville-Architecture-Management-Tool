@@ -17,6 +17,9 @@
  * projects left is not a group, and the picker will not show one.
  */
 
+import { isAdrList } from './adr'
+import type { Adr } from './adr'
+
 /** One link on a group: a ticket queue, a wiki space, a dashboard. */
 export type GroupLink = {
   label: string
@@ -36,6 +39,12 @@ export type GroupProfile = {
   name: string
   description?: string
   links?: GroupLink[]
+  /**
+   * The group's own architecture decisions — the ones that hold across every
+   * project filed here. A project's decisions live on its model; these have no
+   * project to ride on, which is the reason this record exists at all.
+   */
+  decisions?: Adr[]
 }
 
 /**
@@ -73,6 +82,7 @@ export function normaliseGroupProfile(profile: GroupProfile): GroupProfile {
   const description = profile.description?.trim()
   if (description) out.description = description
   if (links.length > 0) out.links = links
+  if (profile.decisions && profile.decisions.length > 0) out.decisions = profile.decisions
   return out
 }
 
@@ -83,6 +93,7 @@ export function isGroupProfile(value: unknown): value is GroupProfile {
   if (typeof held.group !== 'string' || !held.group) return false
   if (typeof held.name !== 'string') return false
   if (held.description !== undefined && typeof held.description !== 'string') return false
+  if (held.decisions !== undefined && !isAdrList(held.decisions)) return false
   if (held.links === undefined) return true
   return Array.isArray(held.links)
     && held.links.every((link) => link

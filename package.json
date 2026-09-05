@@ -48,6 +48,7 @@
     "html-to-image": "^1.11.13",
     "jsdom": "^26.1.0",
     "libavoid-js": "0.4.5",
+    "mermaid": "^11.17.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",

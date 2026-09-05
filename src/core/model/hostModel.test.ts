@@ -445,8 +445,11 @@ describe('isWorkingFile / isInterchange', () => {
     // This shell always writes a version, so an unknown one is a file from a
     // LATER tool and not an older one. Half-reading it would silently drop
     // whatever that version added.
-    expect(isWorkingFile({ type: WORKING_FILE_TYPE, version: 2, model: model() })).toBe(false)
+    expect(isWorkingFile({ type: WORKING_FILE_TYPE, version: 3, model: model() })).toBe(false)
     expect(isWorkingFile({ type: WORKING_FILE_TYPE, model: model() })).toBe(false)
+    // Both versions this shell has written still open: v1 simply has no decisions.
+    expect(isWorkingFile({ type: WORKING_FILE_TYPE, version: 1, model: model() })).toBe(true)
+    expect(isWorkingFile({ type: WORKING_FILE_TYPE, version: 2, model: model() })).toBe(true)
   })
 
   it('refuses a file written by the tool this one replaces', () => {
@@ -490,7 +493,7 @@ describe('working file logo library', () => {
   const library = [{ key: 'lib:own-mark', label: 'Own mark', url: 'data:image/png;base64,AAA' }]
 
   it('saves in the newest version this shell knows', () => {
-    expect(WORKING_FILE_VERSION).toBe(1)
+    expect(WORKING_FILE_VERSION).toBe(2)
   })
 
   it('reads the library out of a file that carries one', () => {

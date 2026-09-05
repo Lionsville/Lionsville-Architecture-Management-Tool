@@ -63,11 +63,17 @@ export const WORKING_FILE_TYPE = 'lionsville-architecture'
  */
 export const WORKING_FILE_EXTENSION = '.lvarch'
 
-export type WorkingFileVersion = 1
+/**
+ * 1 — the first shape under this name.
+ * 2 — the model may carry `decisions` (architecture decision records). A v1
+ *     reader would keep the file's other content and silently drop those on
+ *     its next save, which is exactly the loss the version exists to refuse.
+ */
+export type WorkingFileVersion = 1 | 2
 
 /** What this shell can read. Saving always happens in the newest. */
-export const WORKING_FILE_VERSIONS: WorkingFileVersion[] = [1]
-export const WORKING_FILE_VERSION: WorkingFileVersion = 1
+export const WORKING_FILE_VERSIONS: WorkingFileVersion[] = [1, 2]
+export const WORKING_FILE_VERSION: WorkingFileVersion = 2
 
 /** tempId → permanent key, built up across flushes. */
 export type Aliases = { elements: Map<string, string>; connections: Map<string, string> }

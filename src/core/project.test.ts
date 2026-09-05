@@ -147,7 +147,7 @@ describe('toWorkingFile', () => {
   it('carries model, diagram and version', () => {
     const file = toWorkingFile(sampleProject())
     expect(file.type).toBe('lionsville-architecture')
-    expect(file.version).toBe(1)
+    expect(file.version).toBe(2)
     expect(file.activeDiagramId).toBe('l7')
   })
 

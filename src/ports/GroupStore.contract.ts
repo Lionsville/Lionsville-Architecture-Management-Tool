@@ -77,6 +77,19 @@ export function describeGroupStore(name: string, make: () => GroupStore): void {
       expect(await store.list()).toEqual([])
     })
 
+    it('keeps the decisions a group carries, verbatim', async () => {
+      const store = make()
+      const profile = sampleProfile({
+        decisions: [{
+          id: 'adr-1', number: 1, title: 'Use one identity provider', status: 'accepted',
+          date: '2026-09-01', body: '## Context\n\nEvery project logs in differently.',
+          signers: [{ name: 'A. Architect', role: 'Lead', verdict: 'approved', signedAt: '2026-09-01' }],
+        }],
+      })
+      await store.save(profile)
+      expect(await store.list()).toEqual([profile])
+    })
+
     it('survives a round trip with no links and no description', async () => {
       const store = make()
       const bare: GroupProfile = { group: 'plain', name: 'Plain' }

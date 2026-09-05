@@ -13,6 +13,7 @@
 import type {
   DesignModel, DesignElement, DesignConnection, DesignDiagram, DiagramPlacement, Layer7Zone,
 } from '@lionsville/solution-design'
+import type { Adr } from '../adr'
 
 /**
  * The document's own shapes, deliberately not the model's: everything is
@@ -100,6 +101,14 @@ export interface HostExtras {
   defaultAuthor?: string
   defaultAspectConfig?: DesignDiagram['aspectConfig']
   adrLinks?: unknown[]
+  /**
+   * The project's decision records — the landscape level's and every
+   * application's, told apart by `applicationId`. They travel in the working
+   * file and nowhere else: the interchange format is a contract with other
+   * tools, and its `adrLinks` are references to records kept elsewhere, which
+   * is a different thing from the records themselves.
+   */
+  decisions?: Adr[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }
