@@ -63,11 +63,12 @@ module.exports = {
     buildResources: 'resources',
   },
 
-  // `dependencies` is the list electron-builder copies into the app, so it is
-  // kept down to what the app actually reads from node_modules at runtime —
-  // which is `electron-updater` and nothing else. Everything the renderer uses
-  // is already bundled into `out/renderer` by Vite, and main and preload import
-  // nothing but `electron` and node builtins.
+  // `dependencies` is the list electron-builder copies into the app, and it is
+  // now empty: nothing here reads anything from node_modules at runtime.
+  // Everything the renderer uses is already bundled into `out/renderer` by Vite,
+  // and main and preload import nothing but `electron` and node builtins.
+  // (`electron-updater` used to be the one exception; the update notice in
+  // `electron/main/updates.ts` replaced it and needs no library.)
   //
   // This is not tidiness. With React, MUI and elk sitting in `dependencies` the
   // asar was 61 MB, of which 55 MB was never opened — paid for on every
@@ -113,8 +114,12 @@ module.exports = {
       // architecture is a separate notarization submission; if Intel is ever
       // needed the answer is `universal`, not `[arm64, x64]`.
       { target: 'dmg', arch: ['arm64'] },
-      // zip is not redundant with dmg: Squirrel.Mac, and therefore
-      // electron-updater, can only update from a zip.
+      // The zip's original reason is gone — it existed because Squirrel.Mac,
+      // and therefore electron-updater, could only update from one, and the app
+      // no longer updates itself. It is kept because it costs one more upload
+      // and is the form that survives being emailed or unpacked without a
+      // mount; dropping it would also save a notarization submission, which is
+      // a call worth making deliberately rather than as a side effect.
       { target: 'zip', arch: ['arm64'] },
     ],
     hardenedRuntime: true,

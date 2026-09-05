@@ -7,10 +7,10 @@ later the release page carries:
 | File | Platform |
 |---|---|
 | `…-mac-arm64.dmg` | macOS, Apple Silicon — signed, notarized, stapled |
-| `…-mac-arm64.zip` | the same app, in the form `electron-updater` can update from |
+| `…-mac-arm64.zip` | the same app, unpacked rather than mounted |
 | `…-win-x64.exe`, `…-win-arm64.exe` | Windows NSIS installers — signed |
 | `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` | Linux, unsigned |
-| `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | the update manifests |
+| `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | update manifests — written by electron-builder, read by nothing since the notice replaced the self-updater |
 
 **The tag is the version.** `package.json` says `0.0.0` and stays that way; the
 workflow stamps the number from the tag before it builds. A tag that is not
@@ -131,35 +131,57 @@ and nothing else, so a fresh clone builds with no setup at all. Gatekeeper and
 SmartScreen will warn about a locally built artifact; that is expected, not a
 defect.
 
-## The updater
+## Updates
 
-Installed copies update themselves. `electron/main/updates.ts` asks the release
-page for `latest.yml` / `latest-mac.yml` / `latest-linux.yml` on start and every
-six hours after, downloads a newer version in the background, shows the OS
-notification, and swaps it in when the app next quits. There is no dialog and no
-IPC — an update UI needs a typed channel and translated strings, which is phase
-7C.
+Installed copies **do not update themselves**. `electron/main/updates.ts` asks
+GitHub for the `latest` release on start and every six hours after; if its tag is
+a newer version than the running one it puts a dialog up —
 
-For that to work a release must carry the manifests **and** the file each
-platform's updater actually reads:
+> **Version 1.2.3 is available.** … *Download… · Later · Skip This Version*
+> ☑ Check for updates automatically
 
-| Platform | Reads | Needs |
-|---|---|---|
-| macOS | the `.zip`, never the `.dmg` | a valid Developer ID signature — Squirrel.Mac verifies it, so an unsigned build cannot self-update |
-| Windows | the NSIS `.exe`, plus its `.blockmap` to fetch only what changed | — |
-| Linux | the `.AppImage` | a `.deb` is the package manager's business and is left alone |
+— and **Download…** opens this platform's installer in the browser. The user
+installs it the way they installed the one they are running. Pressing *Later*
+means the same dialog appears again on the way out, which on macOS is the moment
+that matters: closing the window is not quitting, and the version people run for
+weeks is the one they never quit.
 
-All of them are published by the workflow. `app-update.yml`, which tells the
-installed app where its release page is, is written into the bundle by
-electron-builder from the `publish` block — note that it appears only in a build
-with real targets, so a `--dir` pack will not have one and will log a harmless
-error on start.
+That is a deliberate step back from `electron-updater`, which used to download in
+the background and swap the app out on quit. It could not work on the path most
+people take:
 
-`LVARCH_NO_UPDATE=1` turns the whole thing off for a machine that must not
-phone home.
+| | Why it did not land |
+|---|---|
+| macOS | a DMG dragged into /Applications updates through Squirrel.Mac, which reads the `.zip`, verifies the running app's Developer ID signature, and needs a writable bundle. Any of the three missing and it fails on stderr with nothing on screen — and the install it staged happened on **quit**, which closing the window is not |
+| Everywhere | ~100 MB fetched before anyone was asked whether they wanted it, announced by an OS notification that is easy to miss |
 
-**The repository has to be public**, or the updater needs a token it has no way
-to get. That is the case today.
+The notice needs nothing from the release but the tag and the assets, so there is
+no manifest, blockmap, signature or writable bundle for it to trip over. It picks
+the `.dmg` on macOS, the `.exe` for this architecture on Windows and the
+`.AppImage` on Linux — never the `.deb`, which is the package manager's business
+— and falls back to the release page whenever it cannot tell which file is meant.
+
+Two settings, both in `update-settings.json` in the app's user-data folder:
+
+| Field | Set by |
+|---|---|
+| `checkAutomatically` | the checkbox on the dialog. Off means no automatic check ever again |
+| `skippedVersion` | *Skip This Version*. One version, not a list — the next release is a new question |
+
+**Check for Updates…** in the menu (the app menu on macOS, Help elsewhere) always
+checks, ignores a skipped version, and says so when there is nothing to report —
+so an unticked checkbox can always be re-ticked.
+
+`LVARCH_NO_UPDATE=1` turns the whole thing off for a machine that must not phone
+home, and a dev or `--smoke` run never checks.
+
+**The repository has to be public**, or the release API needs a token the app has
+no way to get. That is the case today.
+
+The dialog's strings are English only. Every other string in the app comes from
+the i18n tables, but those belong to the renderer and this process cannot know
+which language it settled on without an IPC channel; when the file channel
+arrives, the notice should move into the shell with the rest of the UI.
 
 ## Not yet done
 
