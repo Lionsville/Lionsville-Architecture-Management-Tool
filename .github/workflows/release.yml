@@ -51,7 +51,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: The tag is the version
         id: version
@@ -117,8 +117,8 @@ jobs:
     name: Verify
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -155,9 +155,9 @@ jobs:
           - { os: ubuntu-24.04, platform: linux }
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -168,7 +168,7 @@ jobs:
       # The Electron binaries are ~200 MB per platform and do not change between
       # releases; downloading them three times per run is the slowest thing here.
       - name: Cache the Electron downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/electron
@@ -307,7 +307,7 @@ jobs:
       # installers still exist and can be attached by hand.
       - name: Keep the installers
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.platform }}-${{ needs.preflight.outputs.version }}
           path: |
