@@ -595,7 +595,12 @@ export interface ExportDiagramPngOptions {
   bounds?: Rect;
   /** Drawn bottom-right on the exported image only — never on the canvas. */
   titleBlock?: ExportTitleBlock;
-  /** Default 2. */
+  /**
+   * Image pixels per CSS pixel of the board. Left out, the export picks one:
+   * enough that type survives a large-format print, and never more than a
+   * canvas will hold (`exportPixelRatio`). Passing one overrides that choice,
+   * and is still held to what the canvas can take.
+   */
   pixelRatio?: number;
   /** Padding around the captured bounds, in flow pixels. Default 48. */
   padding?: number;

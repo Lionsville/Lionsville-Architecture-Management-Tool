@@ -4,11 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const toPng = vi.fn(async () => 'data:image/png;base64,AAAA');
 
 vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...(args as [])) }));
-vi.mock('@xyflow/react', () => ({
-  getViewportForBounds: () => ({ x: 0, y: 0, zoom: 1 }),
-}));
 
-const { exportDiagramPng } = await import('./exportPng');
+const { exportDiagramPng, exportPixelRatio } = await import('./exportPng');
 
 /**
  * The export inlines every remote image before capturing, because html-to-image
@@ -118,5 +115,90 @@ describe('exportDiagramPng — logo marks', () => {
     ).rejects.toThrow('canvas exploded');
 
     expect(srcOf(container)).toBe(original);
+  });
+});
+
+/**
+ * What the capture is worth on paper.
+ *
+ * The board used to be handed to `getViewportForBounds` with a padding in
+ * pixels where that function wants a ratio, which pinned the zoom at its 0.1
+ * floor: a drawing rasterised at a tenth of its size, in a bitmap sized for the
+ * whole of it. It looked like a resolution problem and was a transform
+ * problem, so both halves are pinned here — the capture is 1:1, and the pixels
+ * come from the ratio.
+ */
+describe('exportDiagramPng — how much of it survives printing', () => {
+  type CaptureOptions = {
+    width: number;
+    height: number;
+    pixelRatio: number;
+    style: { transform: string };
+  };
+  const captureOptions = () =>
+    (toPng.mock.calls[0] as unknown as [HTMLElement, CaptureOptions])[1];
+
+  it('captures the board at its own size, with the padding around it', async () => {
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+
+    await exportDiagramPng({
+      container,
+      bounds: { x: 40, y: 100, width: 1000, height: 600 },
+      padding: 48,
+    });
+
+    const options = captureOptions();
+    expect(options.width).toBe(1096);
+    expect(options.height).toBe(696);
+    // Not a fitted zoom: the drawing sits at 1:1, moved so its top-left corner
+    // lands one padding in from the corner of the image.
+    expect(options.style.transform).toBe('translate(8px, -52px) scale(1)');
+  });
+
+  it('raises the ratio for a small diagram, so a small drawing still prints large', async () => {
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+
+    await exportDiagramPng({ container, bounds: { x: 0, y: 0, width: 800, height: 500 }, padding: 0 });
+
+    // 800px of board on a sheet is 7.5 image pixels per board pixel.
+    expect(captureOptions().pixelRatio).toBe(7.5);
+  });
+
+  it('honours a ratio the caller asked for', async () => {
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+
+    await exportDiagramPng({
+      container,
+      bounds: { x: 0, y: 0, width: 1000, height: 1000 },
+      padding: 0,
+      pixelRatio: 3,
+    });
+
+    expect(captureOptions().pixelRatio).toBe(3);
+  });
+});
+
+describe('exportPixelRatio', () => {
+  it('never drops below a retina screen', () => {
+    expect(exportPixelRatio(6000, 4000)).toBe(2);
+    expect(exportPixelRatio(20000, 400)).toBeLessThan(2); // …unless the canvas says so
+  });
+
+  it('aims at the same long edge whatever the board measures', () => {
+    expect(exportPixelRatio(3000, 2000) * 3000).toBe(6000);
+    expect(exportPixelRatio(1500, 900) * 1500).toBe(6000);
+  });
+
+  it('stops magnifying a tiny drawing past the point it helps', () => {
+    expect(exportPixelRatio(100, 80)).toBe(8);
+  });
+
+  it('stays inside what a canvas will hold, request or no request', () => {
+    // A board this size at 2x would be 40000px across; Chromium hands back a
+    // blank canvas rather than an error, so the ratio has to give way.
+    const ratio = exportPixelRatio(20000, 12000);
+    expect(ratio * 20000).toBeLessThanOrEqual(16384);
+    expect(ratio * 20000 * ratio * 12000).toBeLessThanOrEqual(268_435_456);
+    expect(exportPixelRatio(20000, 12000, 4)).toBe(ratio);
   });
 });

@@ -189,7 +189,11 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       })()`, 'the router worker to be constructed')}
     })()`))
 
-  results.push(await check(window, 'PNG export settles', `
+  // The size is part of the check, not decoration: the export used to hand
+  // `getViewportForBounds` a padding in pixels where it wants a ratio, which
+  // pinned the capture at that function's 0.1 zoom floor. A tenth-scale drawing
+  // in a full-size bitmap passes "a PNG arrived" and is unreadable on paper.
+  results.push(await check(window, 'PNG export settles at a size worth printing', `
     (async () => {
       const button = [...document.querySelectorAll('button')]
         .find((b) => /Export PNG|PNG exporteren/.test((b.getAttribute('aria-label') || '') + ' ' + (b.textContent || '')))
@@ -199,10 +203,28 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
               process, so nothing reaches the filesystem. */}
       const createObjectURL = URL.createObjectURL.bind(URL)
       URL.createObjectURL = (blob) => { seen.push(blob); return createObjectURL(blob) }
+      ${'' /* Tidy, one check above, moves every node. Capturing while it settles
+              photographs a layout nobody would recognise — and it is the picture
+              this check is meant to be able to judge. */}
+      const positions = () => [...document.querySelectorAll('.react-flow__node')]
+        .map((n) => n.style.transform).join('|')
+      let last = ''
+      for (let settled = 0; settled < 3; settled += 1) {
+        await new Promise((r) => setTimeout(r, 400))
+        const now = positions()
+        if (now !== last) { settled = -1; last = now }
+      }
+      const started = Date.now()
       button.click()
-      const result = await ${waitFor("(() => { const png = seen.find((b) => b.type === 'image/png'); return png && (png.size + ' byte PNG') })()", 'a PNG blob')}
+      await ${waitFor("seen.some((b) => b.type === 'image/png') && 'arrived'", 'a PNG blob')}
       URL.createObjectURL = createObjectURL
-      return result
+      const png = seen.find((b) => b.type === 'image/png')
+      const bitmap = await createImageBitmap(png)
+      const elapsed = Date.now() - started
+      if (Math.max(bitmap.width, bitmap.height) < 3000) {
+        throw new Error('only ' + bitmap.width + 'x' + bitmap.height + ' px: too coarse to print')
+      }
+      return png.size + ' bytes, ' + bitmap.width + 'x' + bitmap.height + ' px in ' + elapsed + ' ms'
     })()`))
 
   const failed = results.filter((r) => !r.ok)

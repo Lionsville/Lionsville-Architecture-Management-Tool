@@ -1,4 +1,3 @@
-import { getViewportForBounds } from '@xyflow/react';
 import { toPng } from 'html-to-image';
 import type { ExportDiagramPngOptions, ExportTitleBlock, Rect } from '../types';
 
@@ -22,11 +21,17 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
 
   const bounds = options.bounds ?? measureNodeBounds(viewport);
   const padding = options.padding ?? 48;
-  const pixelRatio = options.pixelRatio ?? 2;
   const background = options.background ?? '#ffffff';
   const width = Math.ceil(bounds.width + padding * 2);
   const height = Math.ceil(bounds.height + padding * 2);
-  const transform = getViewportForBounds(bounds, width, height, 0.1, 4, padding);
+  const pixelRatio = exportPixelRatio(width, height, options.pixelRatio);
+
+  // The board is captured at its own size — one flow pixel is one CSS pixel —
+  // and every pixel of resolution then comes from `pixelRatio`. Type rasterised
+  // from a shrunken capture cannot be sharpened afterwards; type rasterised at
+  // 1:1 and a high ratio is drawn by the browser at that ratio, so it stays
+  // crisp however large the sheet.
+  const transform = { x: padding - bounds.x, y: padding - bounds.y, zoom: 1 };
 
   // Uploaded logo marks are remote `img` elements. html-to-image DROPS an image
   // it cannot fetch — no throw, no warning — so without this the PNG would
@@ -56,6 +61,64 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
 
   if (!options.titleBlock) return dataUrlToBlob(dataUrl);
   return composeTitleBlock(dataUrl, options.titleBlock, pixelRatio);
+}
+
+/**
+ * The floor. Two device pixels per CSS pixel is a retina screen, and the least
+ * anything leaving this tool should be.
+ */
+const MIN_PIXEL_RATIO = 2;
+
+/**
+ * What the long edge of the bitmap aims for.
+ *
+ * These drawings get plotted, not just pasted into a slide: 6000px is roughly
+ * 300 dpi across an A2 sheet, or 150 dpi across A1 — the sizes a landscape
+ * actually gets printed at. A small container diagram therefore comes out at a
+ * higher ratio than a whole landscape does, which is the point: the paper is
+ * the same size either way.
+ */
+const TARGET_LONG_EDGE = 6000;
+
+/**
+ * The ceiling. Past this a bitmap is only heavier, never more readable — the
+ * type is already vector-sharp at the scale it was rasterised.
+ */
+const MAX_PIXEL_RATIO = 8;
+
+/**
+ * What a canvas will actually hold. Chromium refuses a side over 16384px and
+ * an area over 2^28 pixels, and it refuses by handing back a blank canvas
+ * rather than by throwing — an export nobody can tell went wrong. Sizing down
+ * to fit is worth more than a resolution that produces nothing.
+ */
+const MAX_CANVAS_EDGE = 16_384;
+const MAX_CANVAS_AREA = 268_435_456;
+
+/**
+ * How many image pixels one CSS pixel of the board becomes.
+ *
+ * Enough that type is readable on a large sheet, never so many that the canvas
+ * gives up. Its own function so the rule can be read, and tested, on its own.
+ *
+ * A caller that names a ratio gets it, still held to what a canvas can take:
+ * a request the browser cannot honour comes back as a blank image, which is a
+ * worse answer than a slightly smaller one.
+ */
+export function exportPixelRatio(width: number, height: number, requested?: number): number {
+  const longEdge = Math.max(width, height, 1);
+  const wanted = requested ?? Math.min(
+    Math.max(MIN_PIXEL_RATIO, TARGET_LONG_EDGE / longEdge),
+    MAX_PIXEL_RATIO,
+  );
+  const limit = Math.min(
+    MAX_CANVAS_EDGE / longEdge,
+    Math.sqrt(MAX_CANVAS_AREA / Math.max(width * height, 1)),
+  );
+  // Two decimals, and rounded down rather than to nearest: a ratio multiplies
+  // every dimension of the bitmap, so rounding up is how a canvas limit gets
+  // exceeded by a whisker and the whole export comes back blank.
+  return Math.max(0.01, Math.floor(Math.min(wanted, limit) * 100) / 100);
 }
 
 /**
