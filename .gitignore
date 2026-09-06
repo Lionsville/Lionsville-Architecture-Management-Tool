@@ -7,3 +7,4 @@ vendor/solution-design/node_modules/
 out/
 release/
 smoke-screenshot.png
+tmp/
