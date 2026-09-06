@@ -41,9 +41,15 @@ export const WATCH_SETTLE_MS = 120
 
 /** What no editor's save should ever be reported as. */
 function isNoise(path: string): boolean {
-  const name = path.split(/[/\\]/).pop() ?? ''
-  return name.startsWith('.')
-    || name.endsWith('~')
+  const segments = path.split(/[/\\]/)
+  // Every segment, not just the last one. A dot names somebody else's workings
+  // at any depth, and the one that matters is `.git`: history snapshots commit
+  // into this very folder, so a basename-only test reports every object a
+  // snapshot writes as a user's edit — and each one is answered below with a
+  // full read and a hash of the file.
+  if (segments.some((segment) => segment.startsWith('.'))) return true
+  const name = segments[segments.length - 1] ?? ''
+  return name.endsWith('~')
     || /\.(tmp|swp|swx|part|crdownload)$/i.test(name)
     || /^\d+\.tmp$/i.test(name)
 }

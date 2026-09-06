@@ -109,6 +109,17 @@ describe('watchFolder', () => {
     expect(await watcher.quiet()).toEqual([])
   })
 
+  it('says nothing about what a snapshot writes into .git', async () => {
+    const { mkdir } = await import('node:fs/promises')
+    const watcher = collecting()
+    await mkdir(join(root, '.git', 'objects', 'f2'), { recursive: true })
+    await writeFile(join(root, '.git', 'index'), 'x')
+    await writeFile(join(root, '.git', 'objects', 'f2', '05c0049080'), 'x')
+    await writeFile(join(root, '.git', 'refs-head'), 'x')
+
+    expect(await watcher.quiet()).toEqual([])
+  })
+
   it('collects a burst into one report rather than one per event', async () => {
     const batches: number[] = []
     stops.push(watchFolder(root, (batch) => batches.push(batch.length), 20))
