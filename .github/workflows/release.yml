@@ -122,13 +122,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            vendor/solution-design/package-lock.json
-      - name: Install both trees
-        run: |
-          npm ci
-          npm ci --prefix vendor/solution-design
+          cache-dependency-path: package-lock.json
+      - run: npm ci
       - run: npm run check:all
 
   build:
@@ -161,9 +156,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            vendor/solution-design/package-lock.json
+          cache-dependency-path: package-lock.json
 
       # The Electron binaries are ~200 MB per platform and do not change between
       # releases; downloading them three times per run is the slowest thing here.
@@ -180,10 +173,7 @@ jobs:
           key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-electron-
 
-      - name: Install both trees
-        run: |
-          npm ci
-          npm ci --prefix vendor/solution-design
+      - run: npm ci
 
       # The tag is the single source of truth for the version. package.json
       # carries 0.0.0 in the repository so nobody has to remember to bump it,

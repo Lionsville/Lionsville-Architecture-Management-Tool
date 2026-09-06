@@ -12,15 +12,13 @@ export default defineConfig({
   // empty catch. It is a plugin now, and one that fails a build rather than a
   // packaged app; see build/libavoidWasm.ts.
   plugins: [react(), libavoidWasm(__dirname)],
-  // One copy of React, Emotion and MUI. The package under vendor/ has its own
-  // node_modules (same versions), and without dedupe Vite loads them twice: the
-  // shell and the package then talk to two theme contexts, and everything
-  // coloured through `sx` falls back to the default (light) theme — in dark mode
-  // a white bar with white text.
-  resolve: {
-    alias: { '@lionsville/solution-design': PKG },
-    dedupe: ['react', 'react-dom', '@emotion/react', '@emotion/styled', '@mui/material', '@mui/system', '@xyflow/react'],
-  },
+  // The `dedupe` list that used to sit here is gone with the editor's second
+  // node_modules. It existed because two copies of React, Emotion and MUI meant
+  // two theme contexts, and everything coloured through `sx` fell back to the
+  // default (light) theme — in dark mode, a white bar with white text. One
+  // node_modules cannot produce a second copy, so the list has nothing left to
+  // do. `harness.test.tsx` is the canary if that is ever wrong again.
+  resolve: { alias: { '@lionsville/solution-design': PKG } },
   // The router worker is an ES module, and not for looks: it imports libavoid-js
   // only when it needs it, and Vite's default (iife) cannot build that split —
   // "UMD and IIFE output formats are not supported for code-splitting builds".

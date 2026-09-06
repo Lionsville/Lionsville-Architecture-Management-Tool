@@ -2,8 +2,8 @@ import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
 /**
- * The shell. The package under `vendor/` has its own config; this one covers
- * `src/`.
+ * Every line of TypeScript in the repository. The editor's tree under
+ * `vendor/` used to have its own config; there is one now.
  *
  * The rules that matter are at the bottom: they guard the layering. An
  * architecture that lives only in a readme disappears in the third hurried
@@ -27,11 +27,17 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ['dist/**', 'node_modules/**', 'vendor/**', 'public/**', '*.config.ts', '*.config.js'],
+    ignores: ['dist/**', 'node_modules/**', 'public/**', '*.config.ts', '*.config.js'],
   },
   {
     rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      // `ignoreRestSiblings` permits the one idiom that needs it: omitting a
+      // property by destructuring it away (`const { color: _c, ...rest } = x`).
+      // Narrower than a `^_` varsIgnorePattern, which would excuse every unused
+      // local that happened to be named with a leading underscore. It came from
+      // the editor's config and is the better of the two, so it is now the rule
+      // everywhere.
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', ignoreRestSiblings: true }],
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },

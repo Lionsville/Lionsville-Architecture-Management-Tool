@@ -2,9 +2,9 @@
 /**
  * The gate, as one command with one verdict.
  *
- *   npm run verify   everything that has to be true before a push: both
- *                    typechecks, both test suites, both lints, the web build,
- *                    the desktop build and the desktop smoke run
+ *   npm run verify   everything that has to be true before a push: the
+ *                    typechecks, the tests, the lint, the web build, the
+ *                    desktop build and the desktop smoke run
  *   npm run smoke    the last two on their own
  *
  * Written for an agent as much as for a person. There are no flags to choose
@@ -26,12 +26,9 @@ import { spawnSync } from 'node:child_process'
 
 /** `run` is the npm script; `after` names a step this one is pointless without. */
 const ALL = [
-  { name: 'typecheck shell + desktop', run: 'typecheck' },
-  { name: 'test shell', run: 'test' },
-  { name: 'lint shell + desktop', run: 'lint' },
-  { name: 'typecheck editor', run: 'typecheck:package' },
-  { name: 'test editor', run: 'test:package' },
-  { name: 'lint editor', run: 'lint:package' },
+  { name: 'typecheck', run: 'typecheck' },
+  { name: 'test', run: 'test' },
+  { name: 'lint', run: 'lint' },
   { name: 'build web', run: 'build' },
   { name: 'build desktop', run: 'build:desktop' },
   { name: 'smoke desktop', run: 'smoke:run', after: 'build desktop' },

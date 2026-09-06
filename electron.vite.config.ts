@@ -1,7 +1,7 @@
 /**
  * The desktop build: main, preload, renderer, one config.
  *
- * The renderer half is `vite.config.ts` — same alias, same `dedupe`, same
+ * The renderer half is `vite.config.ts` — same alias, same
  * `worker.format`, same wasm plugin. It is repeated rather than imported
  * because electron-vite loads this file per target and the web config carries
  * `server`/`preview` settings that mean nothing here; the shared parts that can
@@ -76,7 +76,6 @@ export default defineConfig({
     plugins: [react(), libavoidWasm(root)],
     resolve: {
       alias: { '@lionsville/solution-design': PKG },
-      dedupe: ['react', 'react-dom', '@emotion/react', '@emotion/styled', '@mui/material', '@mui/system', '@xyflow/react'],
     },
     worker: { format: 'es' },
     build: {
