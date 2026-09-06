@@ -116,6 +116,36 @@ type ProjectHeader = {
 }
 
 /**
+ * One diagram, as the two files it owns: what it IS, and where its elements
+ * ended up.
+ *
+ * Named separately from {@link projectFiles} because this pair is the unit that
+ * changes on its own — a drag rewrites the placements and nothing else, and a
+ * store that means to write only what moved needs the format to have a word for
+ * it. `name` is the file stem, which is the diagram's id wherever the id can be
+ * a file name.
+ */
+export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderFile[] {
+  const { placements, edgeRoutes, needsLayout, ...definition } = diagram
+  return [
+    { path: `${DIAGRAMS_FOLDER}/${name}.json`, text: stableJson(definition) },
+    // Always written, even empty: a diagram that has no placement file is one
+    // whose file was deleted, and that has to mean "lay it out again" rather
+    // than "it has no placements", which is a thing a diagram can genuinely be.
+    {
+      path: `${DIAGRAMS_FOLDER}/${name}.placements.json`,
+      text: stableJson({
+        ...(needsLayout ? { needsLayout } : {}),
+        placements: [...placements].sort((a, b) => (a.elementId < b.elementId ? -1 : 1)),
+        ...(edgeRoutes
+          ? { routes: [...edgeRoutes].sort((a, b) => (a.connectionId < b.connectionId ? -1 : 1)) }
+          : {}),
+      }),
+    },
+  ]
+}
+
+/**
  * The project, as files, sorted by path so two saves of the same project are
  * the same list in the same order.
  */
@@ -148,22 +178,7 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
 
   const diagramNames = new Set<string>()
   for (const diagram of model.diagrams) {
-    const name = safeName(diagram.id, diagramNames)
-    const { placements, edgeRoutes, needsLayout, ...definition } = diagram
-    files.push({ path: `${DIAGRAMS_FOLDER}/${name}.json`, text: stableJson(definition) })
-    // Always written, even empty: a diagram that has no placement file is one
-    // whose file was deleted, and that has to mean "lay it out again" rather
-    // than "it has no placements", which is a thing a diagram can genuinely be.
-    files.push({
-      path: `${DIAGRAMS_FOLDER}/${name}.placements.json`,
-      text: stableJson({
-        ...(needsLayout ? { needsLayout } : {}),
-        placements: [...placements].sort((a, b) => (a.elementId < b.elementId ? -1 : 1)),
-        ...(edgeRoutes
-          ? { routes: [...edgeRoutes].sort((a, b) => (a.connectionId < b.connectionId ? -1 : 1)) }
-          : {}),
-      }),
-    })
+    files.push(...diagramFiles(diagram, safeName(diagram.id, diagramNames)))
   }
 
   for (const adr of model.decisions ?? []) {

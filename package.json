@@ -24,6 +24,7 @@
     "smoke:run": "electron . --smoke",
     "start:desktop": "electron-vite preview",
     "test": "vitest run",
+    "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.electron.json",
     "verify": "node scripts/verify.mjs"
