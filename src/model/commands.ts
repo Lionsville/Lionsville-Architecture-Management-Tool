@@ -20,11 +20,12 @@
  * use. `diagram.create` is the exception — a duplicate lands next to its
  * original, so it passes one going forwards too.
  *
- * **Meta rides on every command.** `label` is what the activity list and the
- * undo tooltip say; `coalesce` is what makes a run of keystrokes into one field,
- * or a live-routing follow-up and the drag that caused it, a single undo step.
+ * **Meta rides on every command.** `coalesce` is what makes a run of keystrokes
+ * into one field, or a live-routing follow-up and the drag that caused it, one
+ * undo step; `undoable` is what keeps a change that is not a person's edit off
+ * the stack. What a step is CALLED is not here — `activity.ts` works that out
+ * from the commands, so there is no second thing to keep true.
  */
-import type { StringKey } from '../i18n/strings'
 import type { Adr } from './adr'
 import type { AdrId, ConnectionId, Diagram, DiagramId, Model } from './normalised'
 import { decisionsOf } from './normalised'
@@ -91,8 +92,6 @@ export type CommandBody =
   | { type: 'transaction'; commands: Command[] }
 
 export type CommandMeta = {
-  /** What this step is called, where a step is named. */
-  label?: StringKey
   /**
    * Two commands with the same key, one after the other, are one undo step.
    * Whoever mints the key decides how wide the run is — per field for a text

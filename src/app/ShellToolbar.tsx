@@ -17,6 +17,8 @@ import type { Language, Translate } from '../i18n'
 import type { ThemeMode } from '../projects/preferences'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
+import { ActivityMenu } from './ActivityMenu'
+import type { ActivityEntry } from './ActivityMenu'
 import { SaveMenu } from './SaveMenu'
 import { THEME_GLYPH, THEME_LABEL } from './useShellPreferences'
 
@@ -70,6 +72,13 @@ export type ShellToolbarProps = {
   onOpenDocumentation: () => void
   onOpenDecisions: () => void
   onOpenSearch: () => void
+  /**
+   * Every change made to this project this session, oldest first — read when
+   * the list is opened, not held. A function rather than an array because the
+   * stack is a ref: nothing renders from it, and asking for it on every render
+   * of this bar would be paying for a list nobody has opened.
+   */
+  activity: () => readonly ActivityEntry[]
   s: Translate
   /**
    * What the window leaves to this bar. On the desktop the macOS title bar is
@@ -82,10 +91,11 @@ export type ShellToolbarProps = {
 export function ShellToolbar({
   designName, groupName, savedAt, saveFailed = false, language, themeMode, onCycleTheme,
   onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings,
-  onOpenDocumentation, onOpenDecisions, onOpenSearch, s,
+  onOpenDocumentation, onOpenDecisions, onOpenSearch, activity, s,
   windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [saveMenu, setSaveMenu] = useState<HTMLElement | null>(null)
+  const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
 
   return (
     <Box data-testid="shell-toolbar" sx={{
@@ -141,6 +151,23 @@ export function ShellToolbar({
           </Button>
         </Tooltip>
       ))}
+      <Tooltip title={s('shell.activityTip')}>
+        <Button
+          size="small"
+          color="inherit"
+          onClick={(e) => setActivityMenu(e.currentTarget)}
+          sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
+        >
+          {s('shell.activity')}
+        </Button>
+      </Tooltip>
+      <ActivityMenu
+        anchorEl={activityMenu}
+        onClose={() => setActivityMenu(null)}
+        entries={activityMenu ? activity() : []}
+        language={language}
+        s={s}
+      />
       <Box sx={{ flex: 1 }} />
       <Typography
         sx={{ fontSize: 11, color: saveFailed ? 'error.main' : 'text.secondary' }}

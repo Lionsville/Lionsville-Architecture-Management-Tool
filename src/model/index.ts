@@ -33,6 +33,9 @@ export {
   fieldEdit,
 } from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'
+/** What a step is called, for a list a person reads. */
+export type { StepSummary } from './activity'
+export { summarise } from './activity'
 export { apply, applyAll } from './reducer'
 
 /**

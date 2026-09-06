@@ -151,7 +151,6 @@ function withRoutes(diagram: Diagram, rows: Rows<EdgeRoute>): Diagram {
 
 export function apply(model: Model, command: Command): ApplyResult {
   const meta: CommandMeta = {}
-  if (command.label !== undefined) meta.label = command.label
   if (command.coalesce !== undefined) meta.coalesce = command.coalesce
   if (command.undoable !== undefined) meta.undoable = command.undoable
   const ok = (next: Model, inverse: Command): ApplyResult =>

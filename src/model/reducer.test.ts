@@ -320,12 +320,12 @@ describe('apply — transactions', () => {
     expect(step.inverse).toEqual(NOTHING)
   })
 
-  it('carries the label and the coalesce key onto the inverse', () => {
+  it('carries the meta onto the inverse', () => {
     const step = ok(apply(sample(), {
-      type: 'element.update', id: 'a', patch: { name: 'x' }, label: 'kind.actor', coalesce: 'name:a',
+      type: 'element.update', id: 'a', patch: { name: 'x' }, coalesce: 'name:a', undoable: false,
     }))
-    expect(step.inverse.label).toBe('kind.actor')
     expect(step.inverse.coalesce).toBe('name:a')
+    expect(step.inverse.undoable).toBe(false)
   })
 })
 

@@ -255,6 +255,7 @@ export function ProjectWorkspace({
         onOpenDocumentation={() => openDocumentation()}
         onOpenDecisions={() => openDecisions()}
         onOpenSearch={() => setSearchOpen(true)}
+        activity={session.history}
         s={s}
         windowChrome={windowChrome}
       />

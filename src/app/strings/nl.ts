@@ -146,6 +146,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.noElements': 'Er is nog niets om te documenteren \u2014 voeg eerst een element toe.',
   'shell.decisions': 'Besluiten',
   'shell.decisionsTip': 'Architectuurbesluiten \u2014 voor de groep, het landschap en elke applicatie',
+  'shell.activity': 'Activiteit',
+  'shell.activityTip': 'Wat er sinds het openen aan dit project is veranderd',
+  'shell.activityEmpty': 'Nog niets',
   'shell.search': 'Zoeken',
   'shell.searchTip': 'Zoek elementen, documentatie en besluiten (\u2318K)',
 }

@@ -178,6 +178,9 @@ export const EN = {
   'shell.noElements': 'There is nothing to document yet \u2014 add an element first.',
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
+  'shell.activity': 'Activity',
+  'shell.activityTip': 'What has changed in this project since you opened it',
+  'shell.activityEmpty': 'Nothing yet',
   'shell.search': 'Search',
   'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
 } as const

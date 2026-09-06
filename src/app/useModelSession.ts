@@ -19,9 +19,8 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
-import type { StringKey } from '../i18n'
-import type { Command, CommandMeta, Model, UploadedLogo } from '../model'
-import { apply, fromArrays, toArrays, transaction } from '../model'
+import type { Command, CommandMeta, Model, StepSummary, UploadedLogo } from '../model'
+import { apply, fromArrays, summarise, toArrays, transaction } from '../model'
 import { idPolicy } from '../model/keys'
 import type { IdPolicy } from '../model/keys'
 import { needsRemount } from '../model/hostModel'
@@ -47,8 +46,13 @@ const HISTORY_CAP = 200
 export type HistoryStep = {
   commands: Command[]
   inverses: Command[]
-  label?: StringKey
   coalesce?: string
+  /**
+   * What this step is called, worked out from its commands against the model
+   * as it was before them — the only moment at which a deleted row can still
+   * be named (see `model/activity.ts`).
+   */
+  summary: StepSummary
   /** When the step was made, for an activity list. */
   at: number
 }
@@ -171,6 +175,7 @@ export function useModelSession(deps: {
    * one ⌘Z, and what keeps a drag and the routing that follows it together.
    */
   const record = useCallback((
+    before: Model,
     next: Model,
     commands: Command[],
     inverses: Command[],
@@ -181,13 +186,14 @@ export function useModelSession(deps: {
     if (meta.undoable === false) return
     const top = past.current[past.current.length - 1]
     if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
+      // The step keeps the name its FIRST command gave it: a run of keystrokes
+      // is "Changed Billing", not "Changed Billing" twelve times over.
       top.commands.push(...commands)
       top.inverses.unshift(...inverses)
       top.at = Date.now()
     } else {
       past.current.push({
-        commands, inverses, at: Date.now(),
-        ...(meta.label !== undefined ? { label: meta.label } : {}),
+        commands, inverses, at: Date.now(), summary: summarise(commands, before),
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
       })
       if (past.current.length > HISTORY_CAP) past.current.shift()
@@ -223,10 +229,9 @@ export function useModelSession(deps: {
     // A command that changed nothing is not a refusal and not a step.
     if (result.model === before) return asArrays(before)
     const meta: CommandMeta = {}
-    if (command.label !== undefined) meta.label = command.label
     if (command.coalesce !== undefined) meta.coalesce = command.coalesce
     if (command.undoable !== undefined) meta.undoable = command.undoable
-    record(result.model, [command], [result.inverse], meta)
+    record(before, result.model, [command], [result.inverse], meta)
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)
   }, [notify, s, record, setActiveDiagramId, asArrays, reportOrphans])

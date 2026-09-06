@@ -35,6 +35,7 @@ const props = {
   onOpenDocumentation: () => {},
   onOpenDecisions: () => {},
   onOpenSearch: () => {},
+  activity: () => [],
   s: translator('en'),
 }
 
