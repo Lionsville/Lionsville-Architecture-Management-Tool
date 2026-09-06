@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Position } from '@xyflow/react';
-import type { Rect } from '../../model/types';
-import { diagonalSegments } from '../../layout/routeTestSupport';
+import type { Rect } from './types';
+import { diagonalSegments } from '../layout/routeTestSupport';
 import {
   assignEdgeAnchors,
   closestSides,
-  positionOfSide,
   routeEndAnchor,
   routeEndLeg,
   SIDE_STUB,
@@ -25,28 +23,20 @@ const b = rect(600, 100, 200, 130);
 describe('closestSides with a fixed end', () => {
   it('takes the fixed side as given and chooses the free end against it', () => {
     const free = closestSides(a, b);
-    expect([free.sourcePosition, free.targetPosition]).toEqual([Position.Right, Position.Left]);
+    expect([free.sourcePosition, free.targetPosition]).toEqual(['right', 'left']);
 
     const fixed = closestSides(a, b, { sourceSide: 'top' });
-    expect(fixed.sourcePosition).toBe(Position.Top);
+    expect(fixed.sourcePosition).toBe('top');
     expect([fixed.sourceX, fixed.sourceY]).toEqual([200, 100]);
     // The target is still free and is chosen AGAINST the fixed side: from a's top
     // the line runs up and across, so b's top faces it with no facing-away penalty
     // (b's left would need the line to come back down first).
-    expect(fixed.targetPosition).toBe(Position.Top);
+    expect(fixed.targetPosition).toBe('top');
 
     const both = closestSides(a, b, { sourceSide: 'bottom', targetSide: 'bottom' });
-    expect([both.sourcePosition, both.targetPosition]).toEqual([Position.Bottom, Position.Bottom]);
+    expect([both.sourcePosition, both.targetPosition]).toEqual(['bottom', 'bottom']);
   });
 
-  it('positionOfSide maps the four sides onto React Flow’s', () => {
-    expect(['top', 'right', 'bottom', 'left'].map((s) => positionOfSide(s as never))).toEqual([
-      Position.Top,
-      Position.Right,
-      Position.Bottom,
-      Position.Left,
-    ]);
-  });
 });
 
 describe('assignEdgeAnchors with fixed sides', () => {
@@ -65,8 +55,8 @@ describe('assignEdgeAnchors with fixed sides', () => {
     );
     const ab = anchors.get('ab')!;
     const ac = anchors.get('ac')!;
-    expect(ab.sourcePosition).toBe(Position.Top);
-    expect(ac.sourcePosition).toBe(Position.Top);
+    expect(ab.sourcePosition).toBe('top');
+    expect(ac.sourcePosition).toBe('top');
     expect(ab.sourceY).toBe(100);
     expect(ac.sourceY).toBe(100);
     expect(ab.sourceX).not.toBe(ac.sourceX); // two slots, not one stack
@@ -83,7 +73,7 @@ describe('assignEdgeAnchors with fixed sides', () => {
       rects,
     );
     expect(explicit.get('ab')).toEqual(plain.get('ab'));
-    expect(plain.get('ab')).toMatchObject({ sourceX: 300, sourceY: 165, sourcePosition: Position.Right });
+    expect(plain.get('ab')).toMatchObject({ sourceX: 300, sourceY: 165, sourcePosition: 'right' });
   });
 });
 
@@ -91,15 +81,15 @@ describe('routeEndLeg', () => {
   it('meets a fixed side square when the leg can: the anchor slides along it, no stub', () => {
     // A vertical leg from above, within a's x-span, onto a fixed top.
     const leg = routeEndLeg(a, { x: 250, y: 20 }, 'top');
-    expect(leg.anchor).toMatchObject({ position: Position.Top, x: 250, y: 100 });
+    expect(leg.anchor).toMatchObject({ position: 'top', x: 250, y: 100 });
     expect(leg.stubs).toEqual([]);
     // A horizontal leg from the right onto a fixed right.
     const right = routeEndLeg(a, { x: 500, y: 200 }, 'right');
-    expect(right.anchor).toMatchObject({ position: Position.Right, x: 300, y: 200 });
+    expect(right.anchor).toMatchObject({ position: 'right', x: 300, y: 200 });
     expect(right.stubs).toEqual([]);
     // A waypoint ON the side's line still meets it (a pinned router end).
     expect(routeEndLeg(a, { x: 300, y: 165 }, 'right')).toEqual({
-      anchor: { position: Position.Right, x: 300, y: 165 },
+      anchor: { position: 'right', x: 300, y: 165 },
       stubs: [],
     });
   });
@@ -107,7 +97,7 @@ describe('routeEndLeg', () => {
   it('adds a stub out of the side, then across, when the waypoint is off to one side of it', () => {
     // Told to leave from the TOP, but the route runs off to the right at mid height.
     const leg = routeEndLeg(a, { x: 500, y: 165 }, 'top');
-    expect(leg.anchor).toMatchObject({ position: Position.Top, x: 200, y: 100 });
+    expect(leg.anchor).toMatchObject({ position: 'top', x: 200, y: 100 });
     expect(leg.stubs).toEqual([
       { x: 200, y: 100 - SIDE_STUB },
       { x: 500, y: 100 - SIDE_STUB },
@@ -127,7 +117,7 @@ describe('routeEndLeg', () => {
       // A waypoint on the far side of the node from the fixed side.
       const behind = { right: { x: -200, y: 165 }, bottom: { x: 200, y: -200 }, left: { x: 700, y: 165 } }[side];
       const leg = routeEndLeg(a, behind, side);
-      expect(leg.anchor.position).toBe(positionOfSide(side));
+      expect(leg.anchor.position).toBe(side);
       expect(leg.stubs.length).toBeGreaterThan(0);
       expect(diagonalSegments([leg.anchor, ...leg.stubs, behind]), side).toEqual([]);
     }
@@ -135,7 +125,7 @@ describe('routeEndLeg', () => {
 
   it('routeEndAnchor with a side is the leg’s anchor; without one it is what it always was', () => {
     expect(routeEndAnchor(a, { x: 500, y: 165 }, 'top')).toEqual(routeEndLeg(a, { x: 500, y: 165 }, 'top').anchor);
-    expect(routeEndAnchor(a, { x: 500, y: 165 })).toMatchObject({ position: Position.Right, x: 300, y: 165 });
+    expect(routeEndAnchor(a, { x: 500, y: 165 })).toMatchObject({ position: 'right', x: 300, y: 165 });
     expect(routeEndLeg(a, { x: 500, y: 165 })).toEqual({ anchor: routeEndAnchor(a, { x: 500, y: 165 }), stubs: [] });
   });
 });

@@ -1,5 +1,4 @@
-import { Position } from '@xyflow/react';
-import type { AttachSide, Point, Rect } from '../../model/types';
+import type { AttachSide, Point, Rect } from './types';
 
 /**
  * Closest-side selection for floating edges (ported from the POC).
@@ -12,29 +11,18 @@ import type { AttachSide, Point, Rect } from '../../model/types';
  * nodes are dragged around.
  */
 
-const SIDES = [Position.Top, Position.Right, Position.Bottom, Position.Left] as const;
+const SIDES = ['top', 'right', 'bottom', 'left'] as const;
 
-const NORMALS: Record<Position, { x: number; y: number }> = {
-  [Position.Top]: { x: 0, y: -1 },
-  [Position.Right]: { x: 1, y: 0 },
-  [Position.Bottom]: { x: 0, y: 1 },
-  [Position.Left]: { x: -1, y: 0 },
+const NORMALS: Record<AttachSide, { x: number; y: number }> = {
+  top: { x: 0, y: -1 },
+  right: { x: 1, y: 0 },
+  bottom: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
 };
 
 /** Penalty for a side whose outward normal points away from the other anchor. */
 const FACING_AWAY_PENALTY = 1e6;
 
-const SIDE_POSITION: Record<AttachSide, Position> = {
-  top: Position.Top,
-  right: Position.Right,
-  bottom: Position.Bottom,
-  left: Position.Left,
-};
-
-/** The React Flow side an {@link AttachSide} names (the two share their string values, but not their types). */
-export function positionOfSide(side: AttachSide): Position {
-  return SIDE_POSITION[side];
-}
 
 /** The sides a line's two ends are told to attach to; absent = free (see `EdgeRoute.sourceSide`). */
 export interface FixedSides {
@@ -48,8 +36,8 @@ export interface SideAnchor {
 }
 
 export interface ClosestSidesResult {
-  sourcePosition: Position;
-  targetPosition: Position;
+  sourcePosition: AttachSide;
+  targetPosition: AttachSide;
   sourceX: number;
   sourceY: number;
   targetX: number;
@@ -57,13 +45,13 @@ export interface ClosestSidesResult {
 }
 
 /** Where the four handle anchors sit on a node rect, in flow coordinates. */
-export function sideAnchors(rect: Rect): Record<Position, SideAnchor> {
+export function sideAnchors(rect: Rect): Record<AttachSide, SideAnchor> {
   const { x, y, width: w, height: h } = rect;
   return {
-    [Position.Top]: { x: x + w / 2, y },
-    [Position.Right]: { x: x + w, y: y + h / 2 },
-    [Position.Bottom]: { x: x + w / 2, y: y + h },
-    [Position.Left]: { x, y: y + h / 2 },
+    top: { x: x + w / 2, y },
+    right: { x: x + w, y: y + h / 2 },
+    bottom: { x: x + w / 2, y: y + h },
+    left: { x, y: y + h / 2 },
   };
 }
 
@@ -86,8 +74,8 @@ export function closestSides(
 ): ClosestSidesResult {
   const a = sideAnchors(sourceRect);
   const b = sideAnchors(targetRect);
-  const sourceSides = fixed?.sourceSide ? [positionOfSide(fixed.sourceSide)] : SIDES;
-  const targetSides = fixed?.targetSide ? [positionOfSide(fixed.targetSide)] : SIDES;
+  const sourceSides = fixed?.sourceSide ? [fixed.sourceSide] : SIDES;
+  const targetSides = fixed?.targetSide ? [fixed.targetSide] : SIDES;
   let best: (ClosestSidesResult & { score: number }) | undefined;
   for (const sa of sourceSides) {
     for (const sb of targetSides) {
@@ -117,17 +105,17 @@ export function closestSides(
 export interface EdgeAnchors {
   sourceX: number;
   sourceY: number;
-  sourcePosition: Position;
+  sourcePosition: AttachSide;
   targetX: number;
   targetY: number;
-  targetPosition: Position;
+  targetPosition: AttachSide;
 }
 
 /** Desired margin (flow px) kept clear at each end of a side before slotting. */
 const SIDE_MARGIN = 16;
 
-function isHorizontalSide(side: Position): boolean {
-  return side === Position.Top || side === Position.Bottom;
+function isHorizontalSide(side: AttachSide): boolean {
+  return side === 'top' || side === 'bottom';
 }
 
 /**
@@ -138,7 +126,7 @@ function isHorizontalSide(side: Position): boolean {
  * coordinate is pinned to the side (Top = y, Bottom = y + h, Left = x,
  * Right = x + w).
  */
-function slotAnchor(rect: Rect, side: Position, i: number, n: number): SideAnchor {
+function slotAnchor(rect: Rect, side: AttachSide, i: number, n: number): SideAnchor {
   const { x, y, width: w, height: h } = rect;
   const horizontal = isHorizontalSide(side);
   const sideLength = horizontal ? w : h;
@@ -146,9 +134,9 @@ function slotAnchor(rect: Rect, side: Position, i: number, n: number): SideAncho
   const usable = sideLength - 2 * margin;
   const along = margin + (usable * (i + 1)) / (n + 1);
   if (horizontal) {
-    return { x: x + along, y: side === Position.Top ? y : y + h };
+    return { x: x + along, y: side === 'top' ? y : y + h };
   }
-  return { x: side === Position.Left ? x : x + w, y: y + along };
+  return { x: side === 'left' ? x : x + w, y: y + along };
 }
 
 /**
@@ -173,15 +161,15 @@ export function assignEdgeAnchors(
   }
   interface Group {
     rect: Rect;
-    side: Position;
+    side: AttachSide;
     endpoints: Endpoint[];
   }
 
   const sidesByEdge = new Map<string, ClosestSidesResult>();
   const groups = new Map<string, Group>();
-  const groupKey = (nodeId: string, side: Position) => `${nodeId} ${side}`;
+  const groupKey = (nodeId: string, side: AttachSide) => `${nodeId} ${side}`;
 
-  const addEndpoint = (nodeId: string, rect: Rect, side: Position, endpoint: Endpoint) => {
+  const addEndpoint = (nodeId: string, rect: Rect, side: AttachSide, endpoint: Endpoint) => {
     const key = groupKey(nodeId, side);
     let group = groups.get(key);
     if (!group) {
@@ -245,7 +233,7 @@ export function assignEdgeAnchors(
 }
 
 export interface ClosestSideResult {
-  position: Position;
+  position: AttachSide;
   x: number;
   y: number;
 }
@@ -264,7 +252,7 @@ export function closestSideToPoint(rect: Rect, point: { x: number; y: number }):
 function nearestSideAmong(
   rect: Rect,
   point: { x: number; y: number },
-  sides: readonly Position[],
+  sides: readonly AttachSide[],
 ): ClosestSideResult {
   const anchors = sideAnchors(rect);
   let best: (ClosestSideResult & { score: number }) | undefined;
@@ -350,8 +338,8 @@ export function routeEndAnchor(
 }
 
 /** The sides a HORIZONTAL leg can meet (they run vertically), and vice versa. */
-const VERTICAL_SIDES = [Position.Left, Position.Right] as const;
-const HORIZONTAL_SIDES = [Position.Top, Position.Bottom] as const;
+const VERTICAL_SIDES = ['left', 'right'] as const;
+const HORIZONTAL_SIDES = ['top', 'bottom'] as const;
 
 /**
  * How far a line leaves a FIXED side before it turns toward a waypoint it cannot
@@ -397,7 +385,7 @@ export function routeEndLeg(
   fixedSide?: AttachSide,
 ): RouteEndLeg {
   if (fixedSide === undefined) return { anchor: routeEndAnchor(rect, waypoint), stubs: [] };
-  const side = positionOfSide(fixedSide);
+  const side = fixedSide;
   const mid = sideAnchors(rect)[side];
   const normal = NORMALS[side];
   if (isHorizontalSide(side)) {

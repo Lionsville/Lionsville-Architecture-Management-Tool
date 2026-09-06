@@ -29,7 +29,23 @@ import {
 } from '../../model/routes';
 import { useRouteEditing } from '../canvas/RouteEditingContext';
 import { usePointerDrag } from '../canvas/usePointerDrag';
-import { closestSides, type EdgeAnchors } from './floatingEdgeMath';
+import { closestSides, type EdgeAnchors } from '../../model/floatingEdgeMath';
+
+/**
+ * A side becomes a React Flow `Position` here and nowhere else.
+ *
+ * The geometry that picks the side is pure and says `AttachSide` — the same
+ * four strings this enum holds, which is why the mapping is an identity and why
+ * it is worth having anyway: it is the one line that stops React Flow's enum
+ * being imported by thirteen files in `model/` and `layout/` that draw nothing.
+ */
+const POSITION_OF_SIDE: Record<AttachSide, Position> = {
+  top: Position.Top,
+  right: Position.Right,
+  bottom: Position.Bottom,
+  left: Position.Left,
+};
+const positionOfSide = (side: AttachSide): Position => POSITION_OF_SIDE[side];
 import { edgeDashArray, edgePathKind, resolveEdgeStroke } from './edgeStyle';
 
 export interface FloatingEdgeData extends Record<string, unknown> {
@@ -378,10 +394,10 @@ export function FloatingEdge({
     const common = {
       sourceX: sides.sourceX,
       sourceY: sides.sourceY,
-      sourcePosition: sides.sourcePosition,
+      sourcePosition: positionOfSide(sides.sourcePosition),
       targetX: sides.targetX,
       targetY: sides.targetY,
-      targetPosition: sides.targetPosition,
+      targetPosition: positionOfSide(sides.targetPosition),
     };
     if (straight) {
       [path, labelX, labelY] = getStraightPath({

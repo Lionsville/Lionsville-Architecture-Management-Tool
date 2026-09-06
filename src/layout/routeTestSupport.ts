@@ -1,5 +1,5 @@
 import type { Point, Rect } from '../model/types';
-import { closestSides, routeEndAnchor } from '../editor/edges/floatingEdgeMath';
+import { closestSides, routeEndAnchor } from '../model/floatingEdgeMath';
 
 /**
  * Test-only helpers shared by the routing suites (`routing.test.ts`,

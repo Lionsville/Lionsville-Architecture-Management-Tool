@@ -5,7 +5,7 @@ import type { ElementNode } from './nodes/nodeData';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
 import { aspectConfigFor } from '../model/aspects';
 import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
-import { assignEdgeAnchors } from './edges/floatingEdgeMath';
+import { assignEdgeAnchors } from '../model/floatingEdgeMath';
 import {
   expandRect,
   nodeMaxSize,

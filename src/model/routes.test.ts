@@ -27,7 +27,7 @@ import {
   snapOrthogonal,
   waypointInsertionIndex,
 } from './routes';
-import { routeEndAnchor } from '../editor/edges/floatingEdgeMath';
+import { routeEndAnchor } from './floatingEdgeMath';
 import { LABEL_MARGIN, ROUTE_CLEARANCE } from '../layout/routing';
 import type { EdgeRoute, Point, Rect } from './types';
 

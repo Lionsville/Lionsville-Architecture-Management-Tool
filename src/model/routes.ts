@@ -1,5 +1,5 @@
 import type { AttachSide, DesignDiagram, EdgeRoute, EdgeRouteSource, Point, Rect } from './types';
-import { routeEndAnchor, routeEndLeg } from '../editor/edges/floatingEdgeMath';
+import { routeEndAnchor, routeEndLeg } from './floatingEdgeMath';
 
 /**
  * Pure waypoint/route operations. Routes are per (diagram, connection) and

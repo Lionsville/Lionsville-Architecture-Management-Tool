@@ -1,6 +1,6 @@
 import type { DesignConnection, Point, Rect } from '../model/types';
 import { edgeLabelSize } from './edgeLabelSize';
-import { closestSideToPoint, routeEndAnchor } from '../editor/edges/floatingEdgeMath';
+import { closestSideToPoint, routeEndAnchor } from '../model/floatingEdgeMath';
 import { rectIntersectsRect } from './geometry';
 
 /**

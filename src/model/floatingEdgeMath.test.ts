@@ -7,8 +7,8 @@ import {
   routeEndAnchor,
   sideAnchors,
 } from './floatingEdgeMath';
-import type { Rect } from '../../model/types';
-import { diagonalSegments } from '../../layout/routeTestSupport';
+import type { Rect } from './types';
+import { diagonalSegments } from '../layout/routeTestSupport';
 
 const rect = (x: number, y: number, width = 100, height = 50): Rect => ({ x, y, width, height });
 

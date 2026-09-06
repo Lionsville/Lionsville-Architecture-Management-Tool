@@ -2,6 +2,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { Position } from '@xyflow/react';
 import { SolutionDesignEditor } from '../SolutionDesignEditor';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import type { DesignModel, EdgeRoute, Point } from '../../model/types';
@@ -76,6 +77,17 @@ const scaleOf = (el: HTMLElement): number => {
   if (!match) throw new Error(`no scale in ${el.style.transform}`);
   return Number(match[1]);
 };
+
+describe('a side, as React Flow says it', () => {
+  // The pure geometry answers in `AttachSide` and this component maps it onto
+  // React Flow's `Position`. The map is an identity, which is only safe as long
+  // as the enum keeps these four values — so that, and not the map, is what is
+  // pinned here.
+  it('has the same four values the geometry uses', () => {
+    expect([Position.Top, Position.Right, Position.Bottom, Position.Left])
+      .toEqual(['top', 'right', 'bottom', 'left']);
+  });
+});
 
 describe('FloatingEdge — fixed side on a routed line', () => {
   const routed: EdgeRoute = { connectionId: 'c1', waypoints: BENDS, source: 'manual', sourceSide: 'top' };

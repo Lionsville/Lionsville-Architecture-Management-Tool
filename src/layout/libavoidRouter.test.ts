@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Point, Rect } from '../model/types';
 import { pathHitsObstacles } from './geometry';
 import { diagonalSegments, pathClearance, routedPath } from './routeTestSupport';
-import { closestSideToPoint, routeEndAnchor } from '../editor/edges/floatingEdgeMath';
+import { closestSideToPoint, routeEndAnchor } from '../model/floatingEdgeMath';
 import { rectCentre, ROUTE_CLEARANCE } from './routing';
 import {
   IDEAL_NUDGING_DISTANCE,
