@@ -38,6 +38,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
+import { ChooseFolder } from './picker/ChooseFolder'
 import { ProjectPicker } from './picker/ProjectPicker'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -122,6 +123,8 @@ export type AppProps = {
   commands?: (listener: (command: HostCommand) => void) => () => void
   /** Work in a folder the user has already granted. The Recent submenu. */
   onOpenWorkingDirectory?: (root: string) => void
+  /** Folders this machine has worked in before, for the first-run screen. */
+  recentFolders?: readonly { root: string; name: string }[]
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -143,7 +146,7 @@ export type AppProps = {
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   storage = 'browser', workingDirectory, onChooseWorkingDirectory, watchProject,
-  commands, onOpenWorkingDirectory,
+  commands, onOpenWorkingDirectory, recentFolders,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
@@ -527,7 +530,19 @@ export function App({
             and around the two screens rather than around everything: a crash
             must not take the toast bar with it. */}
         <ErrorBoundary where="app" diagnostics={diagnostics} controls={hostControls} s={s}>
-        {project ? (
+        {onChooseWorkingDirectory && storage !== 'folder' ? (
+          /* The desktop, with no folder yet. Not the picker: there is nowhere
+             for a project to be until this is answered, and offering a list of
+             projects kept inside the app is offering the thing ADR-0003
+             removed. */
+          <ChooseFolder
+            recent={recentFolders}
+            onChoose={onChooseWorkingDirectory}
+            onOpen={onOpenWorkingDirectory ?? (() => {})}
+            s={s}
+            windowChrome={windowChrome}
+          />
+        ) : project ? (
           <ProjectWorkspace
             // Remounting on a project switch is the mechanism, not an accident:
             // the session's undo stack, aliases and pending batches belong to

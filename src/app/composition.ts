@@ -24,6 +24,7 @@ import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStor
 import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
 import { desktopCommands, desktopFiles } from '../adapters/desktop/desktopFiles'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
+import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
 import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
 import type { DesktopCommands, DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
 
@@ -190,6 +191,10 @@ export function inWorkingDirectory(
     ...shell,
     projects: new FileSystemProjectStore(handle),
     groups: new FileSystemGroupStore(handle),
+    // A real save dialog rather than a download. Swapped here rather than in
+    // `composeShell` because it is the same decision as the store: this is the
+    // desktop, and on the desktop a file goes where the user says.
+    documents: new DesktopDocumentGateway(files),
     storage: 'folder',
     workingDirectory: directory,
     watchProject,

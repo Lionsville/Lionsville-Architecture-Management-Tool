@@ -40,6 +40,8 @@ const files: DesktopFiles = {
   remove: (root, path, options) => ipcRenderer.invoke('files:remove', root, path, options),
   fingerprint: (root, path) => ipcRenderer.invoke('files:fingerprint', root, path),
   revealInFolder: (root, path) => ipcRenderer.invoke('files:revealInFolder', root, path),
+  saveDocument: (name, bytes, mediaType) =>
+    ipcRenderer.invoke('files:saveDocument', name, bytes, mediaType),
   watch: (root) => ipcRenderer.invoke('files:watch', root),
   unwatch: (root) => ipcRenderer.invoke('files:unwatch', root),
   onChanged: (listener) => {

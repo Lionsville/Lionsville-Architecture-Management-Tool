@@ -83,6 +83,14 @@ export type DesktopFiles = {
   /** Show it to the user in their file manager. */
   revealInFolder(root: string, path: string): Promise<void>
   /**
+   * Hand a document to the user: a real save dialog, and a file where they
+   * said. Answers `false` when they cancelled, which is not a failure.
+   *
+   * Outside every granted folder on purpose — the dialog IS the grant, for
+   * that one file, once, and nothing about the place it went is remembered.
+   */
+  saveDocument(name: string, bytes: Uint8Array, mediaType: string): Promise<boolean>
+  /**
    * Start reporting changes under this folder. Watching one twice is fine and
    * watches it once.
    */

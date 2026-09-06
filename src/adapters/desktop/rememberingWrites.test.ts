@@ -23,6 +23,7 @@ function channel(): DesktopFiles {
     remove: vi.fn(() => Promise.resolve()),
     fingerprint: () => Promise.resolve(undefined),
     revealInFolder: () => Promise.resolve(),
+    saveDocument: () => Promise.resolve(true),
     watch: () => Promise.resolve(),
     unwatch: () => Promise.resolve(),
     onChanged: () => () => {},

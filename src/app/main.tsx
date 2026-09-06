@@ -120,12 +120,18 @@ const commands = desktopCommandChannel()
  */
 async function rememberedDirectory(stored: unknown): Promise<void> {
   if (!files) return
+  const granted = await files.recentDirectories().catch(() => [])
+  // Kept for the first-run screen: a machine that has worked in a folder before
+  // should be one click away from it, not one dialog.
+  recentFolders = granted
   const wanted = readWorkingDirectory(stored)
   if (!wanted) return
-  const granted = await files.recentDirectories().catch(() => [])
   const directory = granted.find((held) => held.root === wanted)
   if (directory) shell = inWorkingDirectory(shell, files, directory)
 }
+
+/** What the first-run screen offers. Empty until the boot has asked. */
+let recentFolders: readonly DesktopDirectory[] = []
 
 /**
  * Choosing a folder, which starts the app again.
@@ -258,6 +264,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         workingDirectory={shell.workingDirectory}
         onChooseWorkingDirectory={files ? chooseWorkingDirectory : undefined}
         onOpenWorkingDirectory={files ? openWorkingDirectory : undefined}
+        recentFolders={recentFolders}
         watchProject={shell.watchProject}
         commands={commands?.on}
         initialProject={initialProject}
@@ -294,7 +301,12 @@ void shell.preferences.read()
     stored = storedPreferences
     // Before the project is read, because it decides which store reads it.
     await rememberedDirectory(storedPreferences)
-    const lastProject = readLastProject(storedPreferences)
+    // Not on a desktop with no folder yet: there is nothing to reopen, because
+    // the only place a project could be is the app's own storage, which is
+    // exactly what ADR-0003 retired. The first-run screen asks instead.
+    const lastProject = files && !shell.workingDirectory
+      ? undefined
+      : readLastProject(storedPreferences)
     const initialProject = lastProject ? await shell.projects.load(lastProject) : undefined
     renderApp(storedPreferences, initialProject)
   })

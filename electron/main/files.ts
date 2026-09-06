@@ -171,6 +171,28 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     if (target) shell.showItemInFolder(target)
   })
 
+  /**
+   * A real save dialog, and a file where the user said.
+   *
+   * The one write in this file that is not inside a granted folder, and it does
+   * not need to be: the dialog is the grant. The path is not added to the
+   * granted set and not remembered — it is one file, handed over once. It IS
+   * added to the OS's recent documents, which is what makes the association
+   * worth having.
+   */
+  ipcMain.handle('files:saveDocument', async (
+    _event, name: unknown, bytes: unknown, mediaType: unknown,
+  ): Promise<boolean> => {
+    if (typeof name !== 'string' || !isBytes(bytes)) throw new Error('shell.pathRefused')
+    const chosen = await dialog.showSaveDialog({ defaultPath: basename(name) })
+    if (chosen.canceled || !chosen.filePath) return false
+    await writeFile(chosen.filePath, bytes)
+    if (typeof mediaType === 'string' && chosen.filePath.endsWith('.lvarch')) {
+      app.addRecentDocument(chosen.filePath)
+    }
+    return true
+  })
+
   ipcMain.handle('files:watch', (_event, root: unknown) => {
     if (!isGranted(root) || watching.has(root)) return
     watching.set(root, watchFolder(root, (changes) => {

@@ -99,6 +99,12 @@ export const NL: Record<keyof typeof EN, string> = {
   'picker.order': 'Volgorde',
   'picker.orderName': 'Naam',
   'picker.orderUpdated': 'Onlangs gewijzigd',
+  'folder.title': 'Waar horen je projecten te staan?',
+  'folder.body':
+    'Kies een map; deze app bewaart je projecten daarin als bestanden die je kunt lezen, '
+    + 'back-uppen, synchroniseren en committen. In de app zelf blijft niets staan.',
+  'folder.choose': 'Map kiezen…',
+  'folder.recent': 'Onlangs gebruikt',
   'picker.folder': 'Projectenmap: {name}',
   'picker.noFolder': 'Projecten staan in de app zelf. Kies een map om ze als bestanden te bewaren.',
   'picker.chooseFolder': 'Map kiezen…',

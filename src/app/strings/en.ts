@@ -145,6 +145,17 @@ export const EN = {
    * name and not its path: the path is long, and the name is what the user
    * called it in their file manager.
    */
+  /**
+   * The desktop's first screen. There is no "somewhere in the app" on the
+   * desktop any more, so this is not an offer — it is the question that has to
+   * be answered before there is anything to show.
+   */
+  'folder.title': 'Where should your projects live?',
+  'folder.body':
+    'Pick a folder and this app keeps your projects in it as files you can read, back up, '
+    + 'sync and commit. Nothing is kept inside the app itself.',
+  'folder.choose': 'Choose a folder…',
+  'folder.recent': 'Recently used',
   'picker.folder': 'Projects folder: {name}',
   'picker.noFolder': 'Projects are kept inside the app. Choose a folder to keep them as files.',
   'picker.chooseFolder': 'Choose folder…',
