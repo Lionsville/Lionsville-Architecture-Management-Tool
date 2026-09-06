@@ -17,7 +17,9 @@
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
-import { extname, isAbsolute, relative, resolve } from 'node:path'
+import { rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
@@ -201,6 +203,28 @@ const RENDERER_LOG_PREFIX = '[lvarch]'
  * gate reports a timeout instead of the failure it actually found.
  */
 const UNATTENDED = process.argv.includes('--smoke')
+
+/**
+ * The smoke run keeps its own `userData`, and therefore its own preferences.
+ *
+ * `userData` is where Chromium puts localStorage, which is where the renderer
+ * writes the preferences — the remembered working directory among them. A smoke
+ * run grants itself a temporary folder and opens it with the SAME command the
+ * Recent menu sends, so sharing this directory with the installed app means a
+ * gate run silently repoints somebody's real app at a folder that is deleted an
+ * hour later, and they are asked to choose one again on their next launch.
+ *
+ * Emptied rather than reused, because a gate that inherits the last run's state
+ * is a gate that reports something different on the second run: the migration
+ * step counts what it copied, and a run after a run has nothing left to copy.
+ *
+ * Before `whenReady`, which is the only moment a path can be set.
+ */
+if (UNATTENDED) {
+  const own = join(tmpdir(), 'lvarch-smoke-userdata')
+  rmSync(own, { recursive: true, force: true })
+  app.setPath('userData', own)
+}
 
 /**
  * Documents the OS handed us, until something in the window is listening.
