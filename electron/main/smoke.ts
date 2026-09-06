@@ -224,10 +224,16 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
               and the question becomes deterministic. It is also the check the
               phase actually wants: Tidy completing under app:// is what proves
               wasm-in-a-worker works here. */}
-      const button = [...document.querySelectorAll('button')]
-        .find((b) => /Tidy layout|Netjes/.test((b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '') + ' ' + (b.textContent || '')))
-      if (!button) throw new Error('no Tidy button found')
-      button.click()
+      const named = (b) => (b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '') + ' ' + (b.textContent || '')
+      const tidy = () => [...document.querySelectorAll('button')]
+        .find((b) => /Tidy layout|Netjes/.test(named(b)))
+      ${'' /* Waiting for the button, not just looking for it. A machine-seeded
+              diagram lays itself out once on first open, and while any tidy is
+              running that button IS the cancel and says so — so "no Tidy button
+              found" here means the settling pass had not finished, which is a
+              race with how quickly this machine opens a project. */}
+      await ${waitFor("tidy() && 'idle'", 'the settling pass to finish and the Tidy button to be idle')}
+      tidy().click()
       return await ${waitFor(`(() => {
         const workers = window.__smokeWorkers || []
         if (window.__smokeWorkerError) throw new Error('worker error: ' + window.__smokeWorkerError)
