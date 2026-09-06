@@ -267,6 +267,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         recentFolders={recentFolders}
         watchProject={shell.watchProject}
         commands={commands?.on}
+        history={shell.history}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}

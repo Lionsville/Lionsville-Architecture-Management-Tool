@@ -99,6 +99,43 @@ export const NL: Record<keyof typeof EN, string> = {
   'picker.order': 'Volgorde',
   'picker.orderName': 'Naam',
   'picker.orderUpdated': 'Onlangs gewijzigd',
+  'history.title': 'Geschiedenis',
+  'history.snapshot': 'Momentopname…',
+  'history.snapshotNote': 'Leg het project vast zoals het nu is, in de geschiedenis van de map',
+  'history.open': 'Geschiedenis…',
+  'history.openNote': 'Elke momentopname van deze map, en wat er veranderde',
+  'history.start': 'Geschiedenis bijhouden',
+  'history.startBody':
+    'Deze map houdt nog geen geschiedenis bij. Vanaf nu wordt elke momentopname in de map zelf '
+    + 'vastgelegd, met git — er gaat niets van deze machine af.',
+  'history.message': 'Wat er veranderde',
+  'history.defaultMessage': 'Momentopname',
+  'history.take': 'Vastleggen',
+  'history.taken': 'Momentopname vastgelegd.',
+  'history.nothingToRecord': 'Er is niets veranderd sinds de vorige momentopname.',
+  'history.failed': 'De momentopname is niet gelukt: {message}',
+  'history.none': 'Nog geen momentopnames.',
+  'history.unavailable':
+    'Op deze machine staat geen git, dus de app kan geen geschiedenis bijhouden. De rest werkt gewoon.',
+  'history.compare': 'Vergeleken met het project zoals het nu is',
+  'history.unchanged': 'Er is niets veranderd sinds deze momentopname.',
+  'history.gone': 'Dit project stond bij die momentopname niet in de map.',
+  'history.by': '{author}',
+
+  'change.elementAdded': '{name} toegevoegd',
+  'change.elementRemoved': '{name} verwijderd',
+  'change.elementChanged': '{name} gewijzigd ({fields})',
+  'change.connectionAdded': '{name} getekend',
+  'change.connectionRemoved': '{name} doorgeknipt',
+  'change.connectionChanged': '{name} gewijzigd ({fields})',
+  'change.diagramAdded': 'Aanzicht {name} toegevoegd',
+  'change.diagramRemoved': 'Aanzicht {name} verwijderd',
+  'change.diagramChanged': 'Aanzicht {name} gewijzigd ({fields})',
+  'change.decisionAdded': 'Besluit {name} toegevoegd',
+  'change.decisionRemoved': 'Besluit {name} verwijderd',
+  'change.decisionChanged': 'Besluit {name} gewijzigd ({fields})',
+  'change.placement': '{count} verplaatst op {name}',
+
   'folder.title': 'Waar horen je projecten te staan?',
   'folder.body':
     'Kies een map; deze app bewaart je projecten daarin als bestanden die je kunt lezen, '

@@ -84,6 +84,9 @@ export type ShellToolbarProps = {
   onCycleTheme: () => void
   onSaveWorkingFile: () => void
   onSaveInterchange: () => void
+  /** Both absent unless this machine can keep a history of the folder. */
+  onSnapshot?: () => void
+  onOpenHistory?: () => void
   /** Open the file dialog; the field itself lives elsewhere (`useFilePicker`). */
   onOpenFile: () => void
   /** Leave this project and go back to the picker. */
@@ -116,7 +119,7 @@ export type ShellToolbarProps = {
 
 export function ShellToolbar({
   designName, groupName, savedAt, status = 'clean', saveFailed = false, language, themeMode, onCycleTheme,
-  onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings,
+  onSaveWorkingFile, onSaveInterchange, onSnapshot, onOpenHistory, onOpenFile, onLeave, onOpenSettings,
   onOpenDocumentation, onOpenDecisions, onOpenSearch, activity, s,
   windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
@@ -223,6 +226,8 @@ export function ShellToolbar({
         onClose={() => setSaveMenu(null)}
         onSaveWorkingFile={onSaveWorkingFile}
         onSaveInterchange={onSaveInterchange}
+        onSnapshot={onSnapshot}
+        onOpenHistory={onOpenHistory}
         s={s}
       />
       <Button size="small" onClick={onOpenFile}>{s('shell.open')}</Button>

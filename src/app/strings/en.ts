@@ -150,6 +150,53 @@ export const EN = {
    * desktop any more, so this is not an offer — it is the question that has to
    * be answered before there is anything to show.
    */
+  // --- history (ADR-0003, layer two) ---------------------------------------
+  /**
+   * A snapshot is a commit, and the words avoid saying so. "Commit" is exact
+   * and means nothing to half the people this tool is for; a snapshot is what
+   * the act IS, and the person who knows git will recognise it anyway.
+   */
+  'history.title': 'History',
+  'history.snapshot': 'Snapshot…',
+  'history.snapshotNote': 'Record the project as it stands, in the folder\u2019s own history',
+  'history.open': 'History…',
+  'history.openNote': 'Every snapshot of this folder, and what changed',
+  'history.start': 'Start keeping history',
+  'history.startBody':
+    'This folder does not keep a history yet. Starting one records every snapshot you take in '
+    + 'the folder itself, using git — nothing leaves this machine.',
+  'history.message': 'What changed',
+  /** When this session's log has nothing in it; the folder may still have. */
+  'history.defaultMessage': 'Snapshot',
+  'history.take': 'Take snapshot',
+  'history.taken': 'Snapshot taken.',
+  'history.nothingToRecord': 'Nothing has changed since the last snapshot.',
+  'history.failed': 'The snapshot could not be taken: {message}',
+  'history.none': 'No snapshots yet.',
+  'history.unavailable':
+    'This machine has no git, so the app cannot keep a history. Everything else works as before.',
+  'history.compare': 'Compared with the project as it is now',
+  'history.unchanged': 'Nothing has changed since this snapshot.',
+  'history.gone': 'This project was not in the folder at that snapshot.',
+  'history.by': '{author}',
+
+  // The sentences a change becomes. One per kind and subject, because "Added"
+  // and "Added the diagram" are different facts and a shared word would make
+  // the list read like a database.
+  'change.elementAdded': 'Added {name}',
+  'change.elementRemoved': 'Removed {name}',
+  'change.elementChanged': 'Changed {name} ({fields})',
+  'change.connectionAdded': 'Drew {name}',
+  'change.connectionRemoved': 'Cut {name}',
+  'change.connectionChanged': 'Changed {name} ({fields})',
+  'change.diagramAdded': 'Added the diagram {name}',
+  'change.diagramRemoved': 'Deleted the diagram {name}',
+  'change.diagramChanged': 'Changed the diagram {name} ({fields})',
+  'change.decisionAdded': 'Added the decision {name}',
+  'change.decisionRemoved': 'Removed the decision {name}',
+  'change.decisionChanged': 'Changed the decision {name} ({fields})',
+  'change.placement': 'Moved {count} on {name}',
+
   'folder.title': 'Where should your projects live?',
   'folder.body':
     'Pick a folder and this app keeps your projects in it as files you can read, back up, '

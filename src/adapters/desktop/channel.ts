@@ -35,6 +35,30 @@ export type DesktopDirectory = {
 
 export type DesktopEntry = { name: string; kind: 'file' | 'directory' }
 
+/** One snapshot in a folder's history, as git holds it. */
+export type DesktopCommit = { sha: string; subject: string; at: number; author: string }
+
+/**
+ * Layer two of ADR-0003: history, using the git that is already on the machine.
+ *
+ * Everything is per folder and everything may answer "no". A machine without
+ * git, a folder nobody has opted in for, a repository with no commits yet: all
+ * three are ordinary, and none of them may stop a save.
+ */
+export type DesktopHistory = {
+  /** Is there a git on this machine at all? */
+  available(): Promise<boolean>
+  /** Is this folder keeping history? */
+  isRepository(root: string): Promise<boolean>
+  /** Start keeping it. The opt-in, and the only thing that creates a repository. */
+  init(root: string): Promise<void>
+  /** Commit everything under one message. `undefined` when nothing changed. */
+  snapshot(root: string, message: string): Promise<string | undefined>
+  history(root: string, limit?: number): Promise<DesktopCommit[]>
+  /** One project folder's text files as they were at a commit. */
+  filesAt(root: string, sha: string, prefix: string): Promise<{ path: string; text: string }[]>
+}
+
 export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: number }
 
 /**

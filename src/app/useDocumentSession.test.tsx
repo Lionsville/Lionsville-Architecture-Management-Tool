@@ -89,7 +89,10 @@ function mount(
     takeTheirs: () => act(() => hook.takeTheirs()),
     keepMine: () => act(() => hook.keepMine()),
     unmount: () => view.unmount(),
-    force: () => act(() => hook.forceSave()),
+    // The callback returns nothing on purpose: `act` given a promise becomes
+    // the async form, which has to be awaited, and one that is not leaves React
+    // unable to render anything afterwards.
+    force: () => act(() => { void hook.forceSave() }),
     /** What editing looks like from here: the model the session holds changes. */
     edit: (name: string) => act(() => {
       latest.current = project(name)

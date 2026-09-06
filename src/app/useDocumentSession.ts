@@ -69,12 +69,14 @@ export type DocumentSessionHook = {
    */
   keepMine: () => void
   /**
-   * Save now, without waiting.
+   * Save now, without waiting, and answer when it has landed.
    *
    * The editor asks for this (`onForceSave`) at moments when it knows there is
-   * something to lose — before an export, for instance.
+   * something to lose — before an export, for instance. The promise matters to
+   * one caller: a snapshot has to be taken of a folder that already holds what
+   * is on screen.
    */
-  forceSave: () => void
+  forceSave: () => Promise<void>
 }
 
 export function useDocumentSession(deps: {
@@ -113,10 +115,12 @@ export function useDocumentSession(deps: {
   }, [])
   const editedAt = useRef(0)
 
-  const save = useCallback((trigger: SaveTrigger) => {
-    if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current)) return
+  const save = useCallback((trigger: SaveTrigger): Promise<void> => {
+    if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current)) {
+      return Promise.resolve()
+    }
     apply({ type: 'saveRequested' })
-    projects.save(snapshot()).then(
+    return projects.save(snapshot()).then(
       () => {
         // No fingerprint: a store that keeps projects in a browser has no file
         // to fingerprint, and inventing one would answer "was that our own

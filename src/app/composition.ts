@@ -22,7 +22,8 @@
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStore'
 import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
-import { desktopCommands, desktopFiles } from '../adapters/desktop/desktopFiles'
+import { DesktopProjectHistory } from '../adapters/desktop/DesktopProjectHistory'
+import { desktopCommands, desktopFiles, desktopHistory } from '../adapters/desktop/desktopFiles'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
 import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
@@ -50,6 +51,7 @@ import { refPath } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { Diagnostics } from '../ports/Diagnostics'
+import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
 import type { GroupStore } from '../ports/GroupStore'
 import type { HostControls } from '../ports/HostControls'
@@ -100,6 +102,11 @@ export type Shell = {
    * author, which is what it did before any of this existed.
    */
   watchProject?: WatchProject
+  /**
+   * The snapshots of this working directory. Absent in a browser tab and until
+   * a folder is chosen — there is nothing for a history to be a history OF.
+   */
+  history?: ProjectHistory
   /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
@@ -198,6 +205,7 @@ export function inWorkingDirectory(
     storage: 'folder',
     workingDirectory: directory,
     watchProject,
+    history: desktopHistory() && new DesktopProjectHistory(desktopHistory()!, directory.root),
   }
 }
 

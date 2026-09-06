@@ -23,6 +23,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
 import type { DesktopChange, DesktopDirectory } from '../../src/adapters/desktop/channel'
+import { filesAt, gitAvailable, history, initRepository, isRepository, snapshot } from './git'
 import { log } from './log'
 import { watchFolder } from './watch'
 import {
@@ -191,6 +192,39 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
       app.addRecentDocument(chosen.filePath)
     }
     return true
+  })
+
+  // --- history (ADR-0003, layer two) ----------------------------------------
+  //
+  // The same rule as every handler above: a root the user granted, or nothing.
+  // Git runs in the folder they chose and nowhere else.
+
+  ipcMain.handle('git:available', () => gitAvailable())
+
+  ipcMain.handle('git:isRepository', (_event, root: unknown) =>
+    isGranted(root) ? isRepository(root) : false)
+
+  ipcMain.handle('git:init', async (_event, root: unknown) => {
+    if (!isGranted(root)) throw new Error('shell.pathRefused')
+    await initRepository(root)
+  })
+
+  ipcMain.handle('git:snapshot', async (_event, root: unknown, message: unknown) => {
+    if (!isGranted(root) || typeof message !== 'string') throw new Error('shell.pathRefused')
+    return snapshot(root, message)
+  })
+
+  ipcMain.handle('git:history', (_event, root: unknown, limit: unknown) =>
+    isGranted(root) ? history(root, typeof limit === 'number' ? limit : undefined) : [])
+
+  ipcMain.handle('git:filesAt', (_event, root: unknown, sha: unknown, prefix: unknown) => {
+    if (!isGranted(root) || typeof sha !== 'string' || typeof prefix !== 'string') return []
+    // A sha is forty hex characters and a prefix is a path we wrote. Anything
+    // else is somebody trying an argument on for size.
+    if (!/^[0-9a-f]{7,40}$/.test(sha) || !/^[A-Za-z0-9_\-./]+$/.test(prefix) || prefix.includes('..')) {
+      return []
+    }
+    return filesAt(root, sha, prefix)
   })
 
   ipcMain.handle('files:watch', (_event, root: unknown) => {

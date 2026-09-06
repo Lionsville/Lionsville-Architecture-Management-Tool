@@ -34,6 +34,7 @@ import { refFor, sameRef } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
+import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -125,6 +126,8 @@ export type AppProps = {
   onOpenWorkingDirectory?: (root: string) => void
   /** Folders this machine has worked in before, for the first-run screen. */
   recentFolders?: readonly { root: string; name: string }[]
+  /** The snapshots of the working directory. Absent where there can be none. */
+  history?: ProjectHistory
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -146,7 +149,7 @@ export type AppProps = {
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   storage = 'browser', workingDirectory, onChooseWorkingDirectory, watchProject,
-  commands, onOpenWorkingDirectory, recentFolders,
+  commands, onOpenWorkingDirectory, recentFolders, history,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
@@ -552,6 +555,7 @@ export function App({
             projects={projects}
             watch={watchOpenProject}
             commands={commands}
+            history={history}
             documents={documents}
             notify={toasts.notify}
             onStorageResult={reportStorage}

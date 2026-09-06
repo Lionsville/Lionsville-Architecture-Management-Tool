@@ -18,7 +18,9 @@
  * the preload output format in `electron.vite.config.ts`.)
  */
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DesktopChange, DesktopCommands, DesktopFiles } from '../../src/adapters/desktop/channel'
+import type {
+  DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory,
+} from '../../src/adapters/desktop/channel'
 import type { HostCommand } from '../../src/platform/hostCommands'
 
 export type DesktopBridge = {
@@ -28,6 +30,8 @@ export type DesktopBridge = {
   readonly files: DesktopFiles
   /** Menu items and files the OS handed us. See `HostCommand`. */
   readonly commands: DesktopCommands
+  /** Snapshots of the working directory, through the machine's own git. */
+  readonly history: DesktopHistory
 }
 
 const files: DesktopFiles = {
@@ -67,11 +71,21 @@ const commands: DesktopCommands = {
   },
 }
 
+const history: DesktopHistory = {
+  available: () => ipcRenderer.invoke('git:available'),
+  isRepository: (root) => ipcRenderer.invoke('git:isRepository', root),
+  init: (root) => ipcRenderer.invoke('git:init', root),
+  snapshot: (root, message) => ipcRenderer.invoke('git:snapshot', root, message),
+  history: (root, limit) => ipcRenderer.invoke('git:history', root, limit),
+  filesAt: (root, sha, prefix) => ipcRenderer.invoke('git:filesAt', root, sha, prefix),
+}
+
 const bridge: DesktopBridge = {
   platform: process.platform,
   versions: { electron: process.versions.electron, chrome: process.versions.chrome },
   files,
   commands,
+  history,
 }
 
 contextBridge.exposeInMainWorld('desktop', bridge)

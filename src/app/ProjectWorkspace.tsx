@@ -23,8 +23,12 @@ import type { ThemeMode } from '../projects/preferences'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
+import type { ProjectHistory } from '../ports/ProjectHistory'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { DiskChangeNotice } from './DiskChangeNotice'
+import { HistoryPage } from './history/HistoryPage'
+import { SnapshotDialog } from './history/SnapshotDialog'
+import { useProjectHistory } from './history/useProjectHistory'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ErrorBoundary } from './ErrorBoundary'
 import { messageFor } from './messageFor'
@@ -59,6 +63,12 @@ export type ProjectWorkspaceProps = {
    * both places is how each layer handles what it owns.
    */
   commands?: (listener: (command: HostCommand) => void) => () => void
+  /**
+   * The snapshots of the folder this project is in. Absent in a browser tab and
+   * until a folder is chosen — there is nothing for a history to be a history
+   * of — and the menu offers nothing when it is.
+   */
+  history?: ProjectHistory
   documents: ProjectFileChannel
 
   notify: Notify
@@ -114,7 +124,8 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, watch, commands, documents, notify, onStorageResult, s, language, themeMode,
+  project, projects, watch, commands, history: projectHistory, documents, notify, onStorageResult,
+  s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
@@ -148,6 +159,15 @@ export function ProjectWorkspace({
     onAdopt: useCallback((held: ProjectSnapshot) => session.adopt(held, false), [session]),
   })
   const forceSave = document.forceSave
+
+  const snapshots = useProjectHistory({
+    history: projectHistory,
+    project: session.snapshot,
+    steps: session.history,
+    save: forceSave,
+    notify,
+    s,
+  })
 
   const documentPicker = useFilePicker({
     // A working file is a zip now; the JSON entries are the older versions and
@@ -292,6 +312,8 @@ export function ProjectWorkspace({
         onCycleTheme={onCycleTheme}
         onSaveWorkingFile={files.saveWorkingFile}
         onSaveInterchange={files.saveInterchange}
+        onSnapshot={snapshots.available ? snapshots.openDialog : undefined}
+        onOpenHistory={snapshots.available ? snapshots.openPage : undefined}
         onOpenFile={documentPicker.open}
         onLeave={onLeave}
         onOpenSettings={openSettings}
@@ -354,6 +376,25 @@ export function ProjectWorkspace({
         </ErrorBoundary>
       </Box>
 
+      <SnapshotDialog
+        open={snapshots.dialogOpen}
+        keeping={snapshots.keeping}
+        draft={snapshots.draft}
+        onCancel={snapshots.closeDialog}
+        onTake={snapshots.take}
+        s={s}
+      />
+      <HistoryPage
+        open={snapshots.pageOpen}
+        onClose={snapshots.closePage}
+        entries={snapshots.entries}
+        chosen={snapshots.chosen}
+        onChoose={snapshots.choose}
+        current={session.model}
+        language={language}
+        s={s}
+        windowChrome={windowChrome}
+      />
       <ShellDialogs
         s={s}
         diagramToDelete={diagrams.diagramToDelete}
