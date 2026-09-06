@@ -1,11 +1,11 @@
 /**
  * The desktop build: main, preload, renderer, one config.
  *
- * The renderer half is `vite.config.ts` — same alias, same
- * `worker.format`, same wasm plugin. It is repeated rather than imported
- * because electron-vite loads this file per target and the web config carries
- * `server`/`preview` settings that mean nothing here; the shared parts that can
- * drift silently (the dedupe list, the wasm) are the two that are factored out.
+ * The renderer half is `vite.config.ts` — same `worker.format`, same wasm
+ * plugin. It is repeated rather than imported because electron-vite loads this
+ * file per target and the web config carries `server`/`preview` settings that
+ * mean nothing here; the wasm publish is the one shared part that could drift
+ * silently, so that is the one that is factored out.
  */
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
@@ -13,7 +13,6 @@ import { resolve } from 'node:path'
 import { libavoidWasm } from './build/libavoidWasm'
 
 const root = __dirname
-const PKG = resolve(root, 'vendor/solution-design/src/index.ts')
 
 export default defineConfig({
   main: {
@@ -74,9 +73,6 @@ export default defineConfig({
   renderer: {
     root,
     plugins: [react(), libavoidWasm(root)],
-    resolve: {
-      alias: { '@lionsville/solution-design': PKG },
-    },
     worker: { format: 'es' },
     build: {
       outDir: 'out/renderer',

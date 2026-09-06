@@ -15,7 +15,7 @@
  * Promises for the same reason as everywhere else: `localStorage` is
  * synchronous, and every backend after it is not.
  */
-import type { GroupProfile } from '../core/group'
+import type { GroupProfile } from '../projects/group'
 
 export interface GroupStore {
   /** Where this one keeps things, in plain words. For messages and the trail. */

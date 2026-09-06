@@ -148,7 +148,7 @@ function createWindow(): BrowserWindow {
     // macOS only: the app draws to the top of the window instead of sitting
     // under a strip of grey. The renderer then owes the window the two things
     // the title bar was doing — room for the traffic lights, and something to
-    // drag the window by. Both come from `src/core/windowChrome.ts`, which
+    // drag the window by. Both come from `src/platform/windowChrome.ts`, which
     // reads the platform off the preload bridge.
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {

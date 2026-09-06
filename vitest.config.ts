@@ -1,58 +1,32 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'node:path'
 
-// Every test in the repository, in one runner. Deliberately its own config and
-// not `vite.config.ts`: that one copies libavoid.wasm into public/ on load,
-// which is no use to a test runner.
+// Every test in the repository, in one runner, with one convention.
 //
-// Three projects and not one, because the right environment is not the same
-// everywhere. The pure model and layout code is plain TypeScript and runs
-// fastest without a browser around it; the shell's UI and its browser adapter
-// touch the document and localStorage and cannot run in node at all. One shared
-// `environment` would mean either no component tests, or every pure test
-// dragged through a jsdom.
+// Deliberately its own config and not `vite.config.ts`: that one copies
+// libavoid.wasm into public/ on load, which is no use to a test runner.
 //
-// The editor's tree draws the line per file instead, with a
-// `// @vitest-environment jsdom` docblock — a docblock beats the project's
-// setting, so both conventions live side by side until the move puts the
-// editor's files under `src/` too.
-const alias = {
-  '@lionsville/solution-design': resolve(__dirname, 'vendor/solution-design/src/index.ts'),
-}
-
+// One project, and it took the move to make that possible. `node` is the
+// default because most of the tree is arithmetic — the model, the layout, the
+// pure halves of every module — and a jsdom around all of it would cost several
+// seconds on every run for the benefit of the minority that needs a document.
+// That minority says so per file:
+//
+//   // @vitest-environment jsdom
+//
+// The editor's tree always worked that way; the shell used to draw the line by
+// directory in this file instead, which needed two projects and stopped being
+// possible the moment a module had both halves in it (`decisions/adr.test.ts`
+// is node, `decisions/ui/AdrPage.test.tsx` is not). Every jsdom test in the
+// repository now carries the docblock, so the directory rule had nothing left
+// to decide.
 export default defineConfig({
+  plugins: [react()],
   test: {
-    projects: [
-      {
-        resolve: { alias },
-        test: {
-          name: 'model',
-          environment: 'node',
-          include: ['src/**/*.test.ts'],
-          exclude: ['src/ui/**', 'src/adapters/browser/**'],
-        },
-      },
-      {
-        plugins: [react()],
-        resolve: { alias },
-        test: {
-          name: 'ui',
-          environment: 'jsdom',
-          include: ['src/ui/**/*.test.{ts,tsx}', 'src/adapters/browser/**/*.test.{ts,tsx}'],
-        },
-      },
-      {
-        test: {
-          name: 'editor',
-          environment: 'node',
-          include: ['vendor/solution-design/src/**/*.{test,spec}.{ts,tsx}'],
-          // The editor's date tests were written against a fixed zone and used
-          // to get it from `TZ=UTC` in front of its own `vitest` command. That
-          // command is gone; the setting is not optional, so it lives here.
-          env: { TZ: 'UTC' },
-        },
-      },
-    ],
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // The date tests were written against a fixed zone. Not optional, so it is
+    // here rather than in front of a command someone has to remember.
+    env: { TZ: 'UTC' },
   },
 })

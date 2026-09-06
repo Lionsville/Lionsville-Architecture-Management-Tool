@@ -21,7 +21,7 @@
  * replaced behind their back, and there is no signature, manifest or writable
  * bundle for it to trip over.
  *
- * The decisions live in `src/core/updates.ts` and are tested there; this file is
+ * The decisions live in `src/app/updates.ts` and are tested there; this file is
  * the fetch, the file and the message box.
  *
  * **The strings here are English only, deliberately.** Every other string in
@@ -40,8 +40,8 @@ import {
   readUpdateSettings,
   shouldCheckForUpdates,
   updateAvailable,
-} from '../../src/core/updates'
-import type { Release, UpdateSettings } from '../../src/core/updates'
+} from '../../src/app/updates'
+import type { Release, UpdateSettings } from '../../src/app/updates'
 
 /**
  * Where the releases are. Must agree with the `publish` block in

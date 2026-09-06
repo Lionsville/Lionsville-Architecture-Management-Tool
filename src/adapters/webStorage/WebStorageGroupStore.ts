@@ -11,10 +11,10 @@
  * beside `lvarch.project.acme/landscape`. A group's record and its projects are
  * separate records with separate lifetimes.
  */
-import { ShellError } from '../../core/errors'
-import { isGroupProfile } from '../../core/group'
-import type { GroupProfile } from '../../core/group'
-import { isGroupPath } from '../../core/projectRef'
+import { ShellError } from '../../platform/errors'
+import { isGroupProfile } from '../../projects/group'
+import type { GroupProfile } from '../../projects/group'
+import { isGroupPath } from '../../projects/projectRef'
 import type { GroupStore } from '../../ports/GroupStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 

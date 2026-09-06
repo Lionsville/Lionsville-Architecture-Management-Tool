@@ -17,11 +17,11 @@
  * strict policy — because then everything keeps working until the tab closes,
  * and somebody needs to know.
  */
-import { ShellError } from '../../core/errors'
-import { isUsableProject, sortProjects, summarise } from '../../core/project'
-import type { ProjectSnapshot, ProjectSummary } from '../../core/project'
-import { isProjectRef, refPath } from '../../core/projectRef'
-import type { ProjectRef } from '../../core/projectRef'
+import { ShellError } from '../../platform/errors'
+import { isUsableProject, sortProjects, summarise } from '../../projects/project'
+import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
+import { isProjectRef, refPath } from '../../projects/projectRef'
+import type { ProjectRef } from '../../projects/projectRef'
 import type { ProjectStore } from '../../ports/ProjectStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 

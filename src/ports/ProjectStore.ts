@@ -27,8 +27,8 @@
  * summarise. Returning whole projects would force every store into the
  * expensive shape.
  */
-import type { ProjectSnapshot, ProjectSummary } from '../core/project'
-import type { ProjectRef } from '../core/projectRef'
+import type { ProjectSnapshot, ProjectSummary } from '../projects/project'
+import type { ProjectRef } from '../projects/projectRef'
 
 export interface ProjectStore {
   /**

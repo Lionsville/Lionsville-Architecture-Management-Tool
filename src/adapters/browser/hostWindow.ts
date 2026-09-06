@@ -6,8 +6,8 @@
  * which is the whole test. Reading a global is why this sits in an adapter —
  * the rule that follows from the answer lives in `core/windowChrome.ts`.
  */
-import { windowChromeFor } from '../../core/windowChrome'
-import type { WindowChrome } from '../../core/windowChrome'
+import { windowChromeFor } from '../../platform/windowChrome'
+import type { WindowChrome } from '../../platform/windowChrome'
 
 type DesktopHost = { platform?: string }
 

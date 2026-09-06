@@ -14,7 +14,7 @@
  *
  * **What may go in it.** The app's own messages, keys, and the renderer's
  * `[lvarch]` diagnostics — which are disciplined about this (see
- * `src/core/diagnostics.ts`). Not model content: no element names, no
+ * `src/platform/diagnostics.ts`). Not model content: no element names, no
  * documentation, no paths off the user's disk. The manual promises no
  * telemetry, and a log the user is invited to send someone is only safe to
  * invite them to send if we know what is in it.
@@ -22,7 +22,7 @@
 import { app } from 'electron'
 import { appendFileSync, mkdirSync, renameSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { logFileName, needsRotation, rolledName } from '../../src/core/logFile'
+import { logFileName, needsRotation, rolledName } from '../../src/platform/logFile'
 
 let resolved: string | undefined
 

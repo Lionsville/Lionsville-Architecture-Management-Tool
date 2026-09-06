@@ -6,8 +6,8 @@
  * then print twelve red lines that nobody is meant to read. This one is silent,
  * and its clock is a counter so an assertion can name a timestamp.
  */
-import { pushBounded, RING_SIZE } from '../../core/diagnostics'
-import type { Diagnostic, DiagnosticEntry } from '../../core/diagnostics'
+import { pushBounded, RING_SIZE } from '../../platform/diagnostics'
+import type { Diagnostic, DiagnosticEntry } from '../../platform/diagnostics'
 import type { Diagnostics } from '../../ports/Diagnostics'
 
 export class RecordingDiagnostics implements Diagnostics {

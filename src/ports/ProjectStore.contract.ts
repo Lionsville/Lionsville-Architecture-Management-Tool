@@ -21,10 +21,10 @@
  * it up on its own, because without an adapter there is nothing to run.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignElement } from '@lionsville/solution-design'
-import type { HostModel } from '../core/model/fromInterchange'
-import type { ProjectSnapshot } from '../core/project'
-import type { ProjectRef } from '../core/projectRef'
+import type { DesignElement } from '../model'
+import type { HostModel } from '../model/fromInterchange'
+import type { ProjectSnapshot } from '../projects/project'
+import type { ProjectRef } from '../projects/projectRef'
 import type { ProjectStore } from './ProjectStore'
 
 function element(id: string, name: string): DesignElement {

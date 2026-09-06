@@ -13,7 +13,7 @@
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
 import { describe, expect, it } from 'vitest'
-import type { GroupProfile } from '../core/group'
+import type { GroupProfile } from '../projects/group'
 import type { GroupStore } from './GroupStore'
 
 export function sampleProfile(over: Partial<GroupProfile> = {}): GroupProfile {

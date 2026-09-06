@@ -1,0 +1,29 @@
+/**
+ * The architecture model: what a landscape is made of, and the arithmetic over
+ * it. Pure — no React, no browser, no storage — and enforced as such.
+ *
+ * This is the module every other one may import and none of them may reach
+ * around. It replaces the surface the editor package used to publish from a
+ * single `index.ts`, minus the parts that were never model: the editor's own
+ * props and view settings are in `editor/`, the string table in `i18n/`.
+ */
+export type {
+  AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
+  DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting, EdgeArrowhead,
+  NodeShapeVariant, NodeIconSize, UploadedLogo, DiagramPlacement, DesignDiagram, DesignModel,
+  DiagramContentBatch, MarkdownRenderOptions, WindowChrome, DiagramLayoutConfig, DiagramSettings,
+  DomainGroupRect, EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, ParameterSpec,
+  DecorationChip, ElementDecoration, SolutionDesignEditorProps, Rect, ExportTitleBlock,
+  ExportDiagramPngOptions,
+} from './types'
+
+export { createTempId, isTempId } from './ids'
+/**
+ * The one definition of "this route row stores something" — a row without it is
+ * the batch's delete marker. Anything applying a `DiagramContentBatch` must use
+ * this rather than re-deriving the rule from `waypoints`.
+ */
+export { hasRouteContent } from './routes'
+export { ASPECT_SUPERSET, DEFAULT_ASPECT_CONFIG, aspectConfigFor, aspectShortCode } from './aspects'
+/** The one rule for "found", so every search in the app agrees on it. */
+export { fold, matchesQuery, queryTokens } from './textSearch'

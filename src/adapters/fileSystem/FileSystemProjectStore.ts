@@ -24,11 +24,11 @@
  * That is `documentSession`'s job in the layer above, which is where it can be
  * tested without a filesystem at all.
  */
-import { isUsableProject, summarise } from '../../core/project'
-import type { ProjectSnapshot, ProjectSummary } from '../../core/project'
-import { WORKING_FILE_EXTENSION } from '../../core/model/hostModel'
-import { groupSegments, isProjectRef } from '../../core/projectRef'
-import type { ProjectRef } from '../../core/projectRef'
+import { isUsableProject, summarise } from '../../projects/project'
+import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
+import { WORKING_FILE_EXTENSION } from '../../model/hostModel'
+import { groupSegments, isProjectRef } from '../../projects/projectRef'
+import type { ProjectRef } from '../../projects/projectRef'
 import type { ProjectStore } from '../../ports/ProjectStore'
 
 /**

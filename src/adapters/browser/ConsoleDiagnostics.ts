@@ -12,8 +12,8 @@
  * mid-teardown) would otherwise turn one failure into two, and the second one
  * lands inside the handler for the first.
  */
-import { pushBounded, formatDiagnostic, RING_SIZE } from '../../core/diagnostics'
-import type { Diagnostic, DiagnosticEntry } from '../../core/diagnostics'
+import { pushBounded, formatDiagnostic, RING_SIZE } from '../../platform/diagnostics'
+import type { Diagnostic, DiagnosticEntry } from '../../platform/diagnostics'
 import type { Diagnostics } from '../../ports/Diagnostics'
 
 /** What our lines start with, so they can be grepped out of everyone else's. */

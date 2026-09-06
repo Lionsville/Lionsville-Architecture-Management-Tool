@@ -8,11 +8,11 @@
  * store are looking at the same object, and then it falls over in the real
  * adapter, which goes through JSON. Copying makes it exactly as strict.
  */
-import { ShellError } from '../../core/errors'
-import { isUsableProject, sortProjects, summarise } from '../../core/project'
-import type { ProjectSnapshot, ProjectSummary } from '../../core/project'
-import { isProjectRef, refPath } from '../../core/projectRef'
-import type { ProjectRef } from '../../core/projectRef'
+import { ShellError } from '../../platform/errors'
+import { isUsableProject, sortProjects, summarise } from '../../projects/project'
+import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
+import { isProjectRef, refPath } from '../../projects/projectRef'
+import type { ProjectRef } from '../../projects/projectRef'
 import type { ProjectStore } from '../../ports/ProjectStore'
 
 export class InMemoryProjectStore implements ProjectStore {

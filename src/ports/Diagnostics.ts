@@ -14,7 +14,7 @@
  * See {@link Diagnostic} for what may and may not go in a message: keys and the
  * app's own words, never model content.
  */
-import type { Diagnostic, DiagnosticEntry } from '../core/diagnostics'
+import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 
 export interface Diagnostics {
   /** Which one this is, in plain words ('console', 'recording'). */

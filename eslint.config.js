@@ -14,14 +14,18 @@ import tseslint from 'typescript-eslint'
  *
  * The layers, inside out:
  *
- *   core/        arithmetic. No React, no browser, no storage.
- *   ports/       the seams: interfaces, no implementations.
- *   adapters/    the outside world, one per flavour. May know about browsers.
- *   ui/          React.
- *   composition  who gets which adapter — the only place that knows both.
+ *   model/ layout/ platform/   arithmetic. No React, no browser, no storage.
+ *   ports/                     the seams: interfaces, no implementations.
+ *   adapters/                  the outside world, one per flavour.
+ *   ui/ in each module,
+ *   editor/, app/              React.
+ *   app/composition.ts         who gets which adapter — the only place that
+ *                              knows both.
  *
- * References point inward. `core` knows nobody, `adapters` and `ui` talk to
- * `ports`, and only `composition.ts` chooses.
+ * References point inward. The pure modules know nobody, `adapters` and the
+ * React side talk to `ports`, and only `app/composition.ts` chooses. The full
+ * module-by-module matrix lands with the module indices; these are the rules
+ * that were already here, pointing at where their code lives now.
  */
 export default tseslint.config(
   eslint.configs.recommended,
@@ -61,15 +65,26 @@ export default tseslint.config(
     },
   },
   {
-    // The core computes. If it can see React or an adapter it is no longer a
-    // core: you cannot test it in node and you cannot reuse it on the desktop.
-    files: ['src/core/**/*.ts', 'src/ports/**/*.ts'],
-    ignores: ['**/*.test.ts', '**/*.contract.ts'],
+    // These modules compute. If one can see React or an adapter it stops being
+    // pure: you cannot test it in node and you cannot reuse it on the desktop.
+    // Listed by module rather than by a `**` glob because `decisions/`,
+    // `documentation/` and `search/` are pure at their root and React under
+    // their `ui/`, which is the shape every module with a screen has.
+    files: [
+      'src/model/**/*.ts', 'src/layout/**/*.ts', 'src/platform/**/*.ts',
+      'src/projects/**/*.ts', 'src/ports/**/*.ts',
+      'src/decisions/*.ts', 'src/documentation/*.ts', 'src/search/*.ts',
+    ],
+    // `model/types.ts` is exempt for exactly as long as it takes to split it:
+    // it is the editor package's old contract file, half domain and half props,
+    // and the props half imports `ReactNode`. The next commit moves that half
+    // to `editor/props.ts` and this line goes with it.
+    ignores: ['**/*.test.ts', '**/*.contract.ts', 'src/model/types.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [
           { group: ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*'],
-            message: 'core and ports compute; screen work belongs in src/ui.' },
+            message: 'This module computes; screen work belongs in its ui/ folder, in editor/ or in app/.' },
           { group: ['**/adapters/**', '**/composition'],
             message: 'References point inward: a seam may not know its filling.' },
         ],
@@ -79,16 +94,16 @@ export default tseslint.config(
   {
     // Screen work talks to a seam, never to a filling: otherwise the choice is
     // back in twenty places instead of in the composition.
-    files: ['src/ui/**/*.{ts,tsx}', 'src/main.tsx'],
+    files: ['src/app/**/*.{ts,tsx}', 'src/*/ui/**/*.{ts,tsx}', 'src/editor/**/*.{ts,tsx}'],
     // Tests may reach for a filling directly — that is how you get an in-memory
-    // store into a component — and `src/ui/testing/` is test code that happens
-    // not to end in `.test`.
-    ignores: ['**/*.test.{ts,tsx}', 'src/ui/testing/**'],
+    // store into a component — and `app/testing/` is test code that happens not
+    // to end in `.test`. The composition is the one place that chooses.
+    ignores: ['**/*.test.{ts,tsx}', 'src/app/testing/**', 'src/app/composition.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [
           { group: ['**/adapters/**'],
-            message: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/composition.ts picks which.' },
+            message: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.' },
         ],
       }],
     },
