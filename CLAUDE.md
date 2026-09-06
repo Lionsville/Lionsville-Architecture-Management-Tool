@@ -49,7 +49,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-~6 seconds: typecheck and lint of the shell and the desktop main process, plus all
+A few seconds: typecheck and lint of the shell and the desktop main process, plus all
 512 shell tests. Run it after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -59,18 +59,21 @@ batching up and discovering three problems at once.
 npm run check:all
 ```
 
-~30 seconds: adds the vendor package's 1509 tests, its typecheck and lint, and a
+About a minute: adds the vendor package's 1509 tests, its typecheck and lint, and a
 production build. Run it once before you hand work back, not during.
 
 ```bash
 npm run verify
 ```
 
-~40 seconds: everything `check:all` does, then the desktop build and the desktop
+~2 minutes: everything `check:all` does, then the desktop build and the desktop
 smoke run — every step run to the end, one table, one exit code. This is the
 gate before a push, and it is written so an agent can run it without deciding
 anything: no flags, no reading of scrollback. `npm run smoke` is the last two
 steps on their own.
+
+The timings are for an ordinary laptop; a fast desktop-class Mac does all three
+in about a third of that.
 
 Other commands: `npm run test:watch` · `npm run setup` (fresh clone; installs
 both trees) · dev server on :5200 via `.claude/launch.json` (`editor-dev`).

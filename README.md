@@ -178,14 +178,14 @@ locally).
 npm run check
 ```
 
-~6 seconds: typecheck and lint of the shell and the desktop main process, plus
+A few seconds: typecheck and lint of the shell and the desktop main process, plus
 the shell's 512 tests. Run it after every change; it is fast on purpose.
 
 ```bash
 npm run check:all
 ```
 
-~30 seconds: adds the editor package's 1509 tests, its typecheck and lint, and a
+About a minute: adds the editor package's 1509 tests, its typecheck and lint, and a
 production build. Run it once before handing work back, and before any push that
 touches `vendor/`.
 
@@ -193,7 +193,7 @@ touches `vendor/`.
 npm run verify
 ```
 
-~40 seconds: everything `check:all` does, then the desktop build and the desktop
+~2 minutes: everything `check:all` does, then the desktop build and the desktop
 smoke run — every step run to the end, one table, one exit code. The gate before
 a push, made so an agent can run it without deciding anything. `npm run smoke`
 is the last two steps on their own.
