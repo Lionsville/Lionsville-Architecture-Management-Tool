@@ -156,17 +156,23 @@ function chooseWorkingDirectory(): void {
 }
 
 /**
- * A folder from the Recent menu.
+ * A folder named by the host — the Recent menu, and the smoke run.
  *
- * Only ever one main has granted — the list it offers IS the granted set — so
- * there is nothing to check here that main has not already checked.
+ * Only ever one main has granted, and main checks that on every call it
+ * receives, so there is nothing to verify here. The recents are consulted for
+ * the folder's NAME and nothing else; a folder that is not in that list (the
+ * smoke run grants one it deliberately does not remember) is opened under the
+ * last segment of its path.
  */
+function nameOf(root: string): string {
+  return root.split(/[/\\]/).filter(Boolean).pop() ?? root
+}
+
 function openWorkingDirectory(root: string): void {
   if (!files) return
   void files.recentDirectories().then(
     async (granted) => {
-      const directory = granted.find((held) => held.root === root)
-      if (directory) await workIn(directory)
+      await workIn(granted.find((held) => held.root === root) ?? { root, name: nameOf(root) })
     },
     (cause: unknown) => {
       shell.diagnostics.report({

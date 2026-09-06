@@ -101,6 +101,27 @@ async function rememberRecent(directory: DesktopDirectory): Promise<void> {
   }
 }
 
+/**
+ * Let the renderer at this folder.
+ *
+ * Behind the dialog, and exported for the one caller that has no user to click
+ * one: the smoke run, which has to exercise the real channel against a real
+ * folder. Nothing else may call it — a granted folder is supposed to mean
+ * somebody chose it.
+ */
+export async function grantDirectory(
+  path: string, options: { remember?: boolean } = {},
+): Promise<DesktopDirectory | undefined> {
+  const real = await realpath(path).catch(() => undefined)
+  if (!real) return undefined
+  granted.add(real)
+  const directory = { root: real, name: basename(real) }
+  // The smoke run's folder is a temporary directory that will not exist an hour
+  // from now, and the Recent menu is for folders a person chose.
+  if (options.remember !== false) await rememberRecent(directory)
+  return directory
+}
+
 function isGranted(root: unknown): root is string {
   return typeof root === 'string' && granted.has(root)
 }
@@ -131,12 +152,7 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     })
     const picked = chosen.filePaths[0]
     if (chosen.canceled || !picked) return undefined
-    const real = await realpath(picked).catch(() => undefined)
-    if (!real) return undefined
-    granted.add(real)
-    const directory = { root: real, name: basename(real) }
-    await rememberRecent(directory)
-    return directory
+    return grantDirectory(picked)
   })
 
   ipcMain.handle('files:recentDirectories', (): DesktopDirectory[] => recents)

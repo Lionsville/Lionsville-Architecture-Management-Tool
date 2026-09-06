@@ -22,6 +22,8 @@
  * every visual check while being exactly the failure this phase is looking for.
  */
 import type { BrowserWindow } from 'electron'
+import { sendCommand } from './appMenu'
+import { grantDirectory } from './files'
 import { logFilePath } from './log'
 
 export type SmokeResult = { name: string; ok: boolean; detail: string }
@@ -98,6 +100,23 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   const results: SmokeResult[] = []
   process.stdout.write('\n--- 7A smoke ---\n')
 
+  const { mkdtemp, readdir, readFile } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+
+  /**
+   * A folder for this run, granted without a dialog.
+   *
+   * The desktop keeps projects in a folder the user chose (ADR-0003) and asks
+   * for one when it has none — so a smoke run that never answers that question
+   * never reaches the canvas. Granting one here and telling the renderer about
+   * it over the same command the Recent menu uses is the closest thing to a
+   * person choosing it, and it exercises that path as a side effect.
+   */
+  const folder = await grantDirectory(
+    await mkdtemp(join(tmpdir(), 'lvarch-smoke-')), { remember: false },
+  )
+
   // The export test presses the real Export PNG button, and the real button
   // downloads. Cancel it in the session rather than in the page: the DOM trick
   // that used to do this depended on the editor using an anchor, and when it
@@ -157,6 +176,16 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       }
       return 'wrapped'
     })()`))
+
+  results.push(await checkHere('the app takes a folder to work in', async () => {
+    if (!folder) throw new Error('no folder could be granted')
+    sendCommand({ type: 'openFolder', root: folder.root })
+    const seen = await window.webContents.executeJavaScript(waitFor(
+      "[...document.querySelectorAll('button')].some((b) => /Copy to a project|Open|Kopieer|Openen/.test(b.textContent || '')) && 'the picker is up'",
+      'the app to open the folder',
+    ), true) as string
+    return `${folder.root} — ${seen}`
+  }))
 
   results.push(await check(window, 'an example project opens', `
     (async () => {
@@ -272,6 +301,78 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       }
       await new Promise((r) => setTimeout(r, 100))
     }
+  }))
+
+  // --- the working directory (ADR-0003) --------------------------------------
+  //
+  // The channel end to end, in a packaged build, against a real folder: the
+  // renderer asks over IPC, main resolves the path inside the folder it was
+  // granted, and the bytes land on somebody's disk. None of that is observable
+  // from the unit tests, which know the main-process half but not the wire.
+  results.push(await checkHere('a project written through the file channel lands as files', async () => {
+    const directory = folder
+    if (!directory) throw new Error('the folder could not be granted')
+
+    const answer = await window.webContents.executeJavaScript(`
+      (async () => {
+        const root = ${JSON.stringify(directory.root)}
+        const files = window.desktop.files
+        await files.write(root, 'smoke/one/project.json', new TextEncoder().encode('{"name":"Smoke"}'))
+        const back = await files.read(root, 'smoke/one/project.json')
+        const listing = await files.list(root, 'smoke/one')
+        const escaped = await files.read(root, '../escape.json')
+        return JSON.stringify({
+          text: new TextDecoder().decode(back.bytes),
+          listing: listing.map((entry) => entry.name),
+          escaped: escaped === undefined,
+        })
+      })()`, true) as string
+
+    const held = JSON.parse(answer) as { text: string; listing: string[]; escaped: boolean }
+    if (held.text !== '{"name":"Smoke"}') throw new Error(`read back ${held.text}`)
+    if (!held.escaped) throw new Error('a path outside the folder was answered')
+    const onDisk = await readFile(join(directory.root, 'smoke/one/project.json'), 'utf8')
+    if (onDisk !== held.text) throw new Error('the file on disk is not what the channel returned')
+    const left = await readdir(join(directory.root, 'smoke/one'))
+    if (left.some((name) => name.endsWith('.tmp'))) throw new Error(`temporary files left: ${left}`)
+    return `${directory.root}, ${held.listing.join(', ')}`
+  }))
+
+  // The property a crash mid-save depends on. A renderer that dies while
+  // writing must leave the PREVIOUS project, never half of the new one — so
+  // read the file continuously while a large write is in flight and insist that
+  // every read is one whole version or the other.
+  results.push(await checkHere('a write in flight never shows half a file', async () => {
+    const directory = folder
+    if (!directory) throw new Error('the folder could not be granted')
+    const path = join(directory.root, 'smoke/two/model.json')
+    const before = '{"before":true}'
+    const after = `{"after":"${'x'.repeat(400_000)}"}`
+
+    const write = (text: string) => window.webContents.executeJavaScript(`
+      window.desktop.files.write(
+        ${JSON.stringify(directory.root)}, 'smoke/two/model.json',
+        new TextEncoder().encode(${JSON.stringify(text)}),
+      ).then(() => 'written')`, true)
+
+    await write(before)
+    const writing = write(after)
+    let reads = 0
+    let partial = 0
+    let done = false
+    void writing.then(() => { done = true })
+    while (!done) {
+      const text = await readFile(path, 'utf8').catch(() => undefined)
+      if (text !== undefined) {
+        reads += 1
+        if (text !== before && text !== after) partial += 1
+      }
+    }
+    await writing
+    if (partial > 0) throw new Error(`${partial} of ${reads} reads saw a half-written file`)
+    const settled = await readFile(path, 'utf8')
+    if (settled !== after) throw new Error('the write did not land')
+    return `${reads} reads during a ${after.length}-byte write, none of them partial`
   }))
 
   const failed = results.filter((r) => !r.ok)
