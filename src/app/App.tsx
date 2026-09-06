@@ -223,6 +223,29 @@ export function App({
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */
   const [revision, setRevision] = useState(0)
 
+  /**
+   * An address this app has just moved a project away from.
+   *
+   * A move is save-here, remove-there, and the workspace showing the project is
+   * still mounted in between — with an autosave that could land on the old
+   * address a millisecond after it was removed and put the project back. Two
+   * copies, and the one the user goes on editing is the one that will disappear
+   * next time.
+   *
+   * A ref and not state: closing this window needs the guard to be true NOW,
+   * not after React has rendered. Cleared once the workspace has been given the
+   * new address, which remounts it.
+   */
+  const movedAway = useRef<ProjectRef | undefined>(undefined)
+  const workspaceStore = useMemo(() => ({
+    save: (held: ProjectSnapshot) => (
+      movedAway.current && sameRef(movedAway.current, held.ref)
+        ? Promise.resolve()
+        : projects.save(held)
+    ),
+    load: (ref: ProjectRef) => projects.load(ref),
+  }), [projects])
+
   // The two commands that are about where the projects are kept rather than
   // about the one that is open. Everything else falls through to the workspace,
   // which subscribes to the same stream.
@@ -359,11 +382,15 @@ export function App({
         }
       }
 
+      // Before the save, so nothing can write to the old address from the
+      // moment this app stops considering it ours.
+      if (moving) movedAway.current = current.ref
       try {
         await projects.save(next)
       } catch (cause) {
         failed('applyProjectSettings.save', cause)
         reportStorage(false)
+        movedAway.current = undefined
         return undefined
       }
       const moved = moving && !sameRef(current.ref, next.ref)
@@ -380,6 +407,7 @@ export function App({
         }
       }
       enter(next)
+      movedAway.current = undefined
       setRevision((r) => r + 1)
       toasts.notify(
         moving
@@ -563,7 +591,7 @@ export function App({
             // one project and must not survive into another.
             key={`${project.ref.group}/${project.ref.project}`}
             project={project}
-            projects={projects}
+            projects={workspaceStore}
             watch={watchOpenProject}
             commands={commands}
             onUnsavedWork={onUnsavedWork}

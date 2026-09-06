@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { ProjectSnapshot } from '../projects/project'
+import type { ProjectRef } from '../projects/projectRef'
 import { renderApp } from './testing/renderShell'
 
 /** The one thing the stub does: land a change on the model, as editing would. */
@@ -84,6 +85,53 @@ function leaveTheWindow() {
 }
 
 describe('project settings on an open project', () => {
+  it('does not let a pending save put the project back where it was', async () => {
+    // A move is save-here, remove-there, and the workspace showing the project
+    // is still mounted in between. An autosave landing on the old address a
+    // millisecond after it was removed leaves two copies — and the one the user
+    // goes on editing is the one that disappears next time.
+    //
+    // The remove is held open so the window is real rather than a matter of
+    // microseconds: the stale save is fired while it is in flight.
+    const store = new InMemoryProjectStore([project()])
+    let release: (() => void) | undefined
+    const written: ProjectRef[] = []
+    const held = {
+      list: () => store.list(),
+      load: (ref: ProjectRef) => store.load(ref),
+      save: (project: ProjectSnapshot) => { written.push(project.ref); return store.save(project) },
+      remove: async (ref: ProjectRef) => {
+        await new Promise<void>((resolve) => { release = resolve })
+        await store.remove(ref)
+      },
+    }
+    renderApp({ projects: held, initialProject: project() })
+    fireEvent.click(screen.getByTestId('edit-the-diagram'))
+
+    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.mouseDown(screen.getByLabelText('Group'))
+    fireEvent.click(screen.getByText('New group…'))
+    // Two fields answer to "Group" now: the select, and the name for the new
+    // one it revealed.
+    const named = screen.getAllByLabelText('Group').find((el) => el.tagName === 'INPUT')!
+    fireEvent.change(named, { target: { value: 'Globex' } })
+    fireEvent.click(screen.getByText('Save'))
+
+    await waitFor(() => expect(release).toBeDefined())
+    written.length = 0 // the move's own save, which went to the new address
+    leaveTheWindow()
+    release!()
+
+    await waitFor(async () => {
+      expect(await store.load({ group: 'globex', project: 'landscape' })).toBeTruthy()
+    })
+    // Nothing was written to the address the project left, at any point after
+    // the move began. Whether the remove happened to run first is a matter of
+    // microseconds and not something to depend on.
+    expect(written.filter((ref) => ref.group === 'acme')).toEqual([])
+    expect(await store.load({ group: 'acme', project: 'landscape' })).toBeUndefined()
+  })
+
   it('keeps the editing the session has done', async () => {
     const store = show(project())
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
