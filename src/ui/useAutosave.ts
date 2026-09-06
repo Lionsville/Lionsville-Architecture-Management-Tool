@@ -61,9 +61,11 @@ export function useAutosave(deps: {
   useEffect(() => {
     const save = () => {
       flush()
-      // Deliberately without a notice: the tab is closing, there is nobody left
-      // to tell.
-      void projects.save(snapshot())
+      // The one fire-and-forget in the shell, and deliberately so: the tab is
+      // closing, there is nobody left to tell and no screen left to tell them
+      // on. The catch is here only so a refusal does not surface as an
+      // unhandled rejection on a page that is halfway gone.
+      projects.save(snapshot()).catch(() => {})
     }
     window.addEventListener('beforeunload', save)
     return () => window.removeEventListener('beforeunload', save)

@@ -207,10 +207,16 @@ export function ProjectWorkspace({
    */
   const applySettings = useCallback((settings: ProjectSettings) => {
     session.flush()
-    void onApplySettings(settings, session.snapshot()).then((saved) => {
-      if (saved) session.adopt(saved, false)
-    })
-  }, [session, onApplySettings])
+    void onApplySettings(settings, session.snapshot()).then(
+      (saved) => { if (saved) session.adopt(saved, false) },
+      // The caller reports what it could; this is the case where the promise
+      // itself broke, which nothing above would otherwise hear about.
+      (cause: unknown) => {
+        diagnostics.report({ level: 'error', where: 'applySettings', message: 'rejected', cause })
+        notify(s('shell.processFailed', { message: String((cause as Error)?.message ?? cause) }), 'error')
+      },
+    )
+  }, [session, onApplySettings, diagnostics, notify, s])
 
   /** The project's records live on the model, so a change is one model commit. */
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {

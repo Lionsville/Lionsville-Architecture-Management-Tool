@@ -24,7 +24,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import type { Language, Translate } from '@lionsville/solution-design'
+import type { Language, StringKey, Translate } from '@lionsville/solution-design'
 import { groupProfileFor } from '../../core/group'
 import type { GroupProfile } from '../../core/group'
 import { groupsOf, sortProjects } from '../../core/project'
@@ -81,6 +81,15 @@ export type ProjectPickerProps = {
    */
   onCreate: (project: { group?: string; groupName: string; projectName: string }) => void
   onCopyExample: (example: ExampleProject) => void
+  /**
+   * Something on this screen failed.
+   *
+   * The picker knows WHICH failure it was and says so with a key; the caller
+   * owns the trail and the toast bar. Without the key nothing is shown — a
+   * group record that would not read costs a description, which is not worth
+   * interrupting a perfectly readable list of projects for.
+   */
+  onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Bumped by the caller after it creates something, to re-read the list. */
   revision?: number
   language: Language
@@ -106,7 +115,7 @@ function whenChanged(updatedAt: string | undefined, language: Language, s: Trans
 
 export function ProjectPicker({
   projects, groups: groupCatalogue, onApplyGroupSettings, examples, order, onOrderChange,
-  onOpen, onCreate, onCopyExample,
+  onOpen, onCreate, onCopyExample, onFailure,
   revision = 0, language, s, windowChrome = NO_WINDOW_CHROME,
 }: ProjectPickerProps) {
   const [summaries, setSummaries] = useState<ProjectSummary[]>([])
@@ -120,11 +129,20 @@ export function ProjectPicker({
   const [toDelete, setToDelete] = useState<ProjectSummary | null>(null)
 
   const refresh = useCallback(() => {
-    void projects.list().then(setSummaries, () => setSummaries([]))
+    // An empty list and a list that would not read look identical on this
+    // screen, and one of them means "you have no projects" while the other
+    // means "your projects are still there, somewhere". Say which.
+    void projects.list().then(setSummaries, (cause: unknown) => {
+      setSummaries([])
+      onFailure('picker.list', cause, 'picker.listFailed')
+    })
     // A group's record is decoration: failing to read it costs the description
-    // and the links, never the list of projects.
-    void groupCatalogue.list().then(setProfiles, () => setProfiles([]))
-  }, [projects, groupCatalogue])
+    // and the links, never the list of projects. Trail only.
+    void groupCatalogue.list().then(setProfiles, (cause: unknown) => {
+      setProfiles([])
+      onFailure('picker.groups', cause)
+    })
+  }, [projects, groupCatalogue, onFailure])
 
   useEffect(refresh, [refresh, revision])
 
@@ -157,8 +175,11 @@ export function ProjectPicker({
     const target = toDelete
     setToDelete(null)
     if (!target) return
-    void projects.remove(target.ref).then(refresh)
-  }, [toDelete, projects, refresh])
+    void projects.remove(target.ref).then(
+      refresh,
+      (cause: unknown) => onFailure('picker.remove', cause, 'picker.deleteFailed'),
+    )
+  }, [toDelete, projects, refresh, onFailure])
 
   return (
     <Box sx={{

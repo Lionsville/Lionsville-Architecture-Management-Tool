@@ -17,6 +17,7 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '@lionsville/solution-design'
+import type { StringKey } from '@lionsville/solution-design'
 import type { Adr } from '../core/adr'
 import type { Diagnostic, DiagnosticEntry } from '../core/diagnostics'
 import { groupProfileFor, normaliseGroupProfile } from '../core/group'
@@ -47,6 +48,14 @@ import type { PreferencesWriter } from './useShellPreferences'
 import { useStorageNotice } from './useStorageNotice'
 import type { StorageNotice } from './useStorageNotice'
 import { useToasts } from './useToasts'
+
+/**
+ * Whatever was thrown, as something that can go in a sentence. The same one
+ * `useProjectFiles` uses; replaced by the shared `messageFor` in the next step.
+ */
+function reasonOf(error: unknown): string {
+  return String((error as Error)?.message ?? error)
+}
 
 /**
  * What `App` does to a store.
@@ -142,6 +151,23 @@ export function App({
   // The half a boundary cannot see: a throw in a listener, a timer or a promise.
   useGlobalErrors({ diagnostics, notify: toasts.notify, s })
 
+  /**
+   * What happens when one of the promises below rejects.
+   *
+   * Two things, in this order: the trail takes the cause, and — when there is
+   * something worth saying — the user takes a sentence. Most of these calls used
+   * to have neither, so a store that refused mid-session left the screen looking
+   * exactly as it does when everything is fine.
+   *
+   * The key is optional because not every failure is worth interrupting for: a
+   * group record that would not load costs a description, and saying so would
+   * be noise in front of a list of projects that is perfectly readable.
+   */
+  const failed = useCallback((where: string, cause: unknown, key?: StringKey) => {
+    diagnostics.report({ level: 'error', where, message: key ?? 'rejected', cause })
+    if (key) toasts.notify(s(key), 'error')
+  }, [diagnostics, toasts, s])
+
   const [project, setProject] = useState<ProjectSnapshot | undefined>(initialProject)
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */
   const [revision, setRevision] = useState(0)
@@ -167,9 +193,9 @@ export function App({
         if (!found) { toasts.notify(s('picker.loadFailed'), 'error'); setRevision((r) => r + 1); return }
         enter(found)
       },
-      () => toasts.notify(s('picker.loadFailed'), 'error'),
+      (cause: unknown) => failed('openProject', cause, 'picker.loadFailed'),
     )
-  }, [projects, enter, toasts, s])
+  }, [projects, enter, toasts, failed, s])
 
   const leaveProject = useCallback(() => {
     setProject(undefined)
@@ -187,9 +213,9 @@ export function App({
         setRevision((r) => r + 1)
         toasts.notify(message, 'success')
       },
-      () => reportStorage(false),
+      (cause: unknown) => { failed('createAndEnter', cause); reportStorage(false) },
     )
-  }, [projects, enter, toasts, reportStorage])
+  }, [projects, enter, toasts, failed, reportStorage])
 
   /**
    * Create a project, in a group that exists or in a new one.
@@ -213,14 +239,24 @@ export function App({
         ),
         s('shell.projectCreated', { name: wanted.projectName }),
       )
+    }, (cause: unknown) => {
+      // A list that will not read is a store that is refusing, so the standing
+      // storage notice is the honest message — and it is latched, so a burst of
+      // these says it once.
+      failed('createProject', cause)
+      reportStorage(false)
     })
-  }, [projects, createAndEnter, s])
+  }, [projects, createAndEnter, failed, reportStorage, s])
 
   /** The groups that exist, for the pickers in both dialogs. */
   const [groups, setGroups] = useState<ProjectGroup[]>([])
   const refreshGroups = useCallback(() => {
-    void projects.list().then((all) => setGroups(groupsOf(all)), () => setGroups([]))
-  }, [projects])
+    void projects.list().then((all) => setGroups(groupsOf(all)), (cause: unknown) => {
+      setGroups([])
+      failed('refreshGroups', cause)
+      reportStorage(false)
+    })
+  }, [projects, failed, reportStorage])
 
   /**
    * Change a project's name, its group, or both.
@@ -266,12 +302,24 @@ export function App({
 
       try {
         await projects.save(next)
-      } catch {
+      } catch (cause) {
+        failed('applyProjectSettings.save', cause)
         reportStorage(false)
         return undefined
       }
       const moved = moving && !sameRef(current.ref, next.ref)
-      if (moved) await projects.remove(current.ref)
+      if (moved) {
+        // Inside the guard, not after it. The save has landed, so the project
+        // exists at both addresses; a remove that throws here used to do so
+        // silently and leave a duplicate for the user to find in the picker
+        // weeks later. The move itself still counts as done.
+        try {
+          await projects.remove(current.ref)
+        } catch (cause) {
+          failed('applyProjectSettings.remove', cause)
+          toasts.notify(s('shell.moveLeftCopy', { message: reasonOf(cause) }), 'warning')
+        }
+      }
       enter(next)
       setRevision((r) => r + 1)
       toasts.notify(
@@ -281,8 +329,12 @@ export function App({
         'success',
       )
       return moved ? undefined : next
+    }, (cause: unknown) => {
+      failed('applyProjectSettings.list', cause)
+      reportStorage(false)
+      return undefined
     })
-  }, [projects, enter, toasts, reportStorage, s])
+  }, [projects, enter, toasts, failed, reportStorage, s])
 
   /**
    * Apply a group's edited record: what it is called, what it is, where the rest
@@ -301,23 +353,36 @@ export function App({
     void (async () => {
       try {
         await groupRecords.save(profile)
-      } catch {
-        toasts.notify(s('group.saveFailed'), 'error')
+      } catch (cause) {
+        failed('applyGroupSettings.record', cause, 'group.saveFailed')
         return
       }
 
-      const inGroup = (await projects.list()).filter((it) => it.ref.group === profile.group)
+      let inGroup: ProjectSummary[]
+      try {
+        inGroup = (await projects.list()).filter((it) => it.ref.group === profile.group)
+      } catch (cause) {
+        failed('applyGroupSettings.list', cause)
+        reportStorage(false)
+        return
+      }
+
       const renaming = inGroup.some((it) => it.groupName !== profile.name)
+      // What the sweep could not relabel. Collected rather than thrown, because
+      // abandoning the loop at the first failure left the group half renamed
+      // AND said nothing — the projects it never reached looked identical to
+      // the ones it had deliberately skipped.
+      const missed: string[] = []
       for (const summary of inGroup) {
-        const held = await projects.load(summary.ref)
-        if (!held) continue
-        const relabelled = relabelGroup(held, profile.name)
-        if (relabelled === held) continue
         try {
+          const held = await projects.load(summary.ref)
+          if (!held) continue
+          const relabelled = relabelGroup(held, profile.name)
+          if (relabelled === held) continue
           await projects.save(relabelled)
-        } catch {
-          reportStorage(false)
-          return
+        } catch (cause) {
+          failed('applyGroupSettings.relabel', cause)
+          missed.push(summary.name)
         }
       }
 
@@ -327,12 +392,22 @@ export function App({
         enter(relabelGroup(project, profile.name))
       }
       setRevision((r) => r + 1)
+      if (missed.length) {
+        reportStorage(false)
+        toasts.notify(s('shell.groupRenameIncomplete', { names: missed.join(', ') }), 'warning')
+        return
+      }
       toasts.notify(
         renaming ? s('group.renamed', { name: profile.name }) : s('group.saved', { name: profile.name }),
         'success',
       )
-    })()
-  }, [groupRecords, projects, project, enter, toasts, reportStorage, s])
+    })().catch((cause: unknown) => {
+      // A backstop, not a handler: everything above is caught where it can be
+      // answered. A throw that reaches here happened in the synchronous tail,
+      // which no boundary can see from inside an async function.
+      failed('applyGroupSettings', cause, 'group.saveFailed')
+    })
+  }, [groupRecords, projects, project, enter, toasts, failed, reportStorage, s])
 
   /**
    * The open project's group record, for the decisions kept at group level.
@@ -350,10 +425,15 @@ export function App({
     let live = true
     void groupRecords.list().then(
       (all) => { if (live) setGroupProfiles(all) },
-      () => { if (live) setGroupProfiles([]) },
+      (cause: unknown) => {
+        if (live) setGroupProfiles([])
+        // No message: a group's record is decoration, and its decisions page
+        // being empty is visible on its own. The trail still gets it.
+        failed('groupProfiles', cause)
+      },
     )
     return () => { live = false }
-  }, [groupKey, groupRecords])
+  }, [groupKey, groupRecords, failed])
 
   const groupDecisions = useMemo<readonly Adr[]>(
     () => (groupKey ? groupProfiles.find((p) => p.group === groupKey)?.decisions ?? [] : []),
@@ -369,12 +449,12 @@ export function App({
     setGroupProfiles((all) => [...all.filter((p) => p.group !== profile.group), profile])
     void groupRecords.save(profile).then(
       undefined,
-      () => {
-        toasts.notify(s('group.saveFailed'), 'error')
+      (cause: unknown) => {
+        failed('saveGroupDecisions', cause, 'group.saveFailed')
         setGroupProfiles((all) => [...all.filter((p) => p.group !== held.group), held])
       },
     )
-  }, [project, groupProfiles, groupRecords, toasts, s])
+  }, [project, groupProfiles, groupRecords, failed])
 
   /**
    * An example is a starting point, not a document you keep opening. Copying it
@@ -388,8 +468,11 @@ export function App({
         projectFromDocument(example.document, example.ref, example.groupName),
         s('shell.exampleCopied', { name: example.label }),
       )
+    }, (cause: unknown) => {
+      failed('copyExample', cause)
+      reportStorage(false)
     })
-  }, [projects, enter, createAndEnter, s])
+  }, [projects, enter, createAndEnter, failed, reportStorage, s])
 
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
@@ -442,6 +525,7 @@ export function App({
             onOpen={openProject}
             onCreate={createProject}
             onCopyExample={copyExample}
+            onFailure={failed}
             revision={revision}
             language={prefs.language}
             s={s}

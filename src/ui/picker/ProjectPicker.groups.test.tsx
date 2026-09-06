@@ -38,6 +38,7 @@ function show(projects: ProjectSummary[], profiles: GroupProfile[]) {
       onOpen={() => {}}
       onCreate={() => {}}
       onCopyExample={() => {}}
+      onFailure={() => {}}
       language="en"
       s={s}
     />,
@@ -102,6 +103,7 @@ describe('ProjectPicker — groups', () => {
         onOpen={() => {}}
         onCreate={() => {}}
         onCopyExample={() => {}}
+      onFailure={() => {}}
         language="en"
         s={s}
       />,

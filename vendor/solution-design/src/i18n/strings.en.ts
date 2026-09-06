@@ -619,6 +619,19 @@ export const EN = {
    * toolbar's standing indicator: this one is about the file you just asked for.
    */
   'shell.saveFileFailed': 'The file could not be saved: {message}',
+  /**
+   * A move is save-then-remove, in that order — removing first and then failing
+   * to save would lose the project outright. When the remove is the half that
+   * fails, the project is filed twice, and saying nothing would leave the user
+   * to discover a duplicate in the picker later.
+   */
+  'shell.moveLeftCopy': 'Moved — but the copy in the old group could not be removed: {message}',
+  /**
+   * Renaming a group relabels every project under it, and the sweep can fail
+   * partway. Naming what it did not reach is the difference between a job half
+   * done and a job half done in silence.
+   */
+  'shell.groupRenameIncomplete': 'The group was renamed, but these projects still carry the old name: {names}.',
   'shell.newDiagram': 'New landscape',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',
@@ -671,6 +684,8 @@ export const EN = {
   'picker.create': 'Create',
   'picker.newDesign': 'New design',
   'picker.loadFailed': 'That project could not be opened.',
+  'picker.listFailed': 'Your projects could not be read.',
+  'picker.deleteFailed': 'That project could not be deleted.',
   'picker.newGroup': 'New group',
   'picker.addProject': 'Add a project to {name}',
   'picker.renameGroup': 'Rename group',
