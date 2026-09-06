@@ -36,6 +36,19 @@ export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: nu
  */
 export type DesktopStamp = { mtimeMs: number; size: number; sha256: string }
 
+/**
+ * One path under a watched folder that changed. No stamp means it is gone.
+ *
+ * Main cannot tell whose write it was — it sees a filesystem event and nothing
+ * else — so every change is reported and the renderer, which knows what it last
+ * wrote, decides whether it is news.
+ */
+export type DesktopChange = {
+  root: string
+  path: string
+  stamp?: DesktopStamp
+}
+
 export type DesktopFiles = {
   /** Ask the user for a folder. `undefined` when they cancelled. */
   chooseDirectory(): Promise<DesktopDirectory | undefined>
@@ -62,4 +75,20 @@ export type DesktopFiles = {
   fingerprint(root: string, path: string): Promise<DesktopStamp | undefined>
   /** Show it to the user in their file manager. */
   revealInFolder(root: string, path: string): Promise<void>
+  /**
+   * Start reporting changes under this folder. Watching one twice is fine and
+   * watches it once.
+   */
+  watch(root: string): Promise<void>
+  unwatch(root: string): Promise<void>
+  /**
+   * Every change to every watched folder, until the returned function is
+   * called.
+   *
+   * One stream rather than one per folder: there is one window, and the
+   * listener filters by root. Unsubscribing has to be possible — a workspace
+   * that is remounted per project would otherwise pile up listeners for
+   * projects nobody has open.
+   */
+  onChanged(listener: (change: DesktopChange) => void): () => void
 }

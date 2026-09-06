@@ -226,6 +226,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         storage={shell.storage}
         workingDirectory={shell.workingDirectory}
         onChooseWorkingDirectory={files ? chooseWorkingDirectory : undefined}
+        watchProject={shell.watchProject}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}

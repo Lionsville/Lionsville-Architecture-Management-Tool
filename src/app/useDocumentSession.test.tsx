@@ -35,12 +35,18 @@ const project = (name = 'Landscape'): ProjectSnapshot => ({
   logoLibrary: [],
 })
 
-function mount(save: (p: ProjectSnapshot) => Promise<void> = () => Promise.resolve()) {
+function mount(
+  save: (p: ProjectSnapshot) => Promise<void> = () => Promise.resolve(),
+  onDisk?: { current: ProjectSnapshot | undefined },
+) {
   const latest = { current: project() }
   const saved = vi.fn()
   const result = vi.fn()
   const writes: ProjectSnapshot[] = []
+  const adopted: ProjectSnapshot[] = []
   let hook!: DocumentSessionHook
+  let announce: (() => void) | undefined
+  let watching = 0
 
   // The session's own array, not a fresh one per render: the hook watches these
   // three by identity, exactly as `useEffect` does.
@@ -54,9 +60,18 @@ function mount(save: (p: ProjectSnapshot) => Promise<void> = () => Promise.resol
     }
     hook = useDocumentSession({
       session,
-      projects: { save: (p) => { writes.push(p); return save(p) } },
+      projects: {
+        save: (p) => { writes.push(p); return save(p) },
+        load: () => Promise.resolve(onDisk?.current),
+      },
       onSaved: saved,
       onResult: result,
+      watch: onDisk && ((onChanged) => {
+        watching += 1
+        announce = onChanged
+        return () => { watching -= 1 }
+      }),
+      onAdopt: (held) => adopted.push(held),
     })
     return null
   }
@@ -67,7 +82,13 @@ function mount(save: (p: ProjectSnapshot) => Promise<void> = () => Promise.resol
     saved,
     result,
     writes,
+    adopted,
+    watching: () => watching,
     status: () => hook.state.status,
+    somebodyElseWrote: () => act(() => announce?.()),
+    takeTheirs: () => act(() => hook.takeTheirs()),
+    keepMine: () => act(() => hook.keepMine()),
+    unmount: () => view.unmount(),
     force: () => act(() => hook.forceSave()),
     /** What editing looks like from here: the model the session holds changes. */
     edit: (name: string) => act(() => {
@@ -221,5 +242,77 @@ describe('forceSave', () => {
     view.force()
 
     expect(view.writes).toHaveLength(0)
+  })
+})
+
+describe('when somebody else changes the folder', () => {
+  const theirs = { current: project('Theirs') }
+
+  it('says so, without touching what is on screen', () => {
+    const view = mount(undefined, theirs)
+    view.somebodyElseWrote()
+
+    expect(view.status()).toBe('external-changed')
+    expect(view.adopted).toEqual([])
+  })
+
+  it('becomes a conflict the moment we edit as well', () => {
+    // The transition most implementations miss: what could have been answered
+    // by reloading is now a question only a person can settle.
+    const view = mount(undefined, theirs)
+    view.somebodyElseWrote()
+    view.edit('Mine')
+
+    expect(view.status()).toBe('conflict')
+  })
+
+  it('refuses to save over their version behind their back', () => {
+    const view = mount(undefined, theirs)
+    view.edit('Mine')
+    view.somebodyElseWrote()
+    view.leaveWindow()
+
+    expect(view.writes).toEqual([])
+    expect(view.status()).toBe('conflict')
+  })
+
+  it('takes their version onto the screen when asked', async () => {
+    const view = mount(undefined, theirs)
+    view.somebodyElseWrote()
+    view.takeTheirs()
+    await act(async () => { await Promise.resolve() })
+
+    expect(view.adopted.map((held) => held.model.name)).toEqual(['Theirs'])
+    expect(view.status()).toBe('clean')
+  })
+
+  it('keeps ours when asked, and then writes over theirs', async () => {
+    const view = mount(undefined, theirs)
+    view.edit('Mine')
+    view.somebodyElseWrote()
+    expect(view.status()).toBe('conflict')
+
+    view.keepMine()
+    expect(view.status()).toBe('dirty')
+
+    await view.idle()
+    expect(view.writes.map((held) => held.model.name)).toEqual(['Mine'])
+  })
+
+  it('stops listening when the workspace goes', () => {
+    // The workspace is remounted per project; a listener per project ever
+    // opened is a leak with a slow fuse.
+    const view = mount(undefined, theirs)
+    expect(view.watching()).toBe(1)
+    view.unmount()
+    expect(view.watching()).toBe(0)
+  })
+
+  it('subscribes once, not once per render', () => {
+    const view = mount(undefined, theirs)
+    view.edit('One')
+    view.edit('Two')
+
+    expect(view.watching()).toBe(1)
   })
 })

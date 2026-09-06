@@ -23,6 +23,7 @@ import type { ThemeMode } from '../projects/preferences'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { AdrPage } from '../decisions/ui/AdrPage'
+import { DiskChangeNotice } from './DiskChangeNotice'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ErrorBoundary } from './ErrorBoundary'
 import { messageFor } from './messageFor'
@@ -46,6 +47,11 @@ import type { Notify } from './useToasts'
 export type ProjectWorkspaceProps = {
   project: ProjectSnapshot
   projects: ProjectSaver
+  /**
+   * Somebody else changed this project's files. Bound to this project's ref by
+   * the caller, and absent in a browser tab, where nothing can watch.
+   */
+  watch?: (onChanged: () => void) => () => void
   documents: ProjectFileChannel
 
   notify: Notify
@@ -101,7 +107,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, documents, notify, onStorageResult, s, language, themeMode,
+  project, projects, watch, documents, notify, onStorageResult, s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
@@ -125,7 +131,14 @@ export function ProjectWorkspace({
     onStorageResult(ok)
   }, [onStorageResult])
   const document = useDocumentSession({
-    session, projects, onSaved: setSavedAt, onResult: onSaveResult,
+    session,
+    projects,
+    onSaved: setSavedAt,
+    onResult: onSaveResult,
+    watch,
+    // Their version, once it has been read: straight onto the session, without
+    // a relayout — a project read back from its folder carries its geometry.
+    onAdopt: useCallback((held: ProjectSnapshot) => session.adopt(held, false), [session]),
   })
   const forceSave = document.forceSave
 
@@ -260,6 +273,13 @@ export function ProjectWorkspace({
         activity={session.history}
         s={s}
         windowChrome={windowChrome}
+      />
+      <DiskChangeNotice
+        status={document.state.status}
+        onTakeTheirs={document.takeTheirs}
+        onKeepMine={document.keepMine}
+        onSaveCopy={files.saveWorkingFile}
+        s={s}
       />
       {documentPicker.input}
       {logoPicker.input}

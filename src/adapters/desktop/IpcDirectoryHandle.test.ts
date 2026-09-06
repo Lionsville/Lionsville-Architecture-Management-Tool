@@ -44,6 +44,9 @@ function channelOver(root: string): DesktopFiles {
     remove: (held, path, options) => removeEntry(held, path, options),
     fingerprint: (held, path) => fingerprint(held, path),
     revealInFolder: () => Promise.resolve(),
+    watch: () => Promise.resolve(),
+    unwatch: () => Promise.resolve(),
+    onChanged: () => () => {},
   }
 }
 

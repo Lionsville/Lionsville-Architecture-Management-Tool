@@ -25,6 +25,7 @@ import {
 } from '../projects/documentSession'
 import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/documentSession'
 import type { ProjectSnapshot } from '../projects/project'
+import type { ProjectRef } from '../projects/projectRef'
 import type { StorageNotice } from './useStorageNotice'
 
 /**
@@ -36,6 +37,12 @@ import type { StorageNotice } from './useStorageNotice'
  */
 export type ProjectSaver = {
   save(project: ProjectSnapshot): Promise<void>
+  /**
+   * Reading is here for one reason only: taking their version. The alternative
+   * is the workspace loading the project itself and telling the machine
+   * afterwards, which puts a transition somewhere it cannot be tested.
+   */
+  load?(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
 }
 
 /** The part of the editing session this one reads: what changed, and what to write. */
@@ -51,6 +58,17 @@ export type DocumentSessionHook = {
   /** What the bar says, and what a close prompt asks about. */
   state: DocumentSession
   /**
+   * Take what is on disk. Answers the "changed on disk" notice and the "take
+   * theirs" half of a conflict — the same act in both, which is why it is one
+   * function.
+   */
+  takeTheirs: () => void
+  /**
+   * Ours stands. The document goes back to dirty, never to clean: their
+   * version is still the one on disk until the next save writes over it.
+   */
+  keepMine: () => void
+  /**
    * Save now, without waiting.
    *
    * The editor asks for this (`onForceSave`) at moments when it knows there is
@@ -64,8 +82,16 @@ export function useDocumentSession(deps: {
   projects: ProjectSaver
   onSaved: (at: Date) => void
   onResult: StorageNotice
+  /**
+   * Somebody else changed this project's files. Absent where nothing can
+   * watch — a browser tab — and the document then simply never leaves the
+   * three states it can reach on its own.
+   */
+  watch?: (onChanged: () => void) => () => void
+  /** Their version, once it has been read. The caller puts it on screen. */
+  onAdopt?: (project: ProjectSnapshot) => void
 }): DocumentSessionHook {
-  const { session, projects, onSaved, onResult } = deps
+  const { session, projects, onSaved, onResult, watch, onAdopt } = deps
   const { model, activeDiagramId, logoLibrary, snapshot } = session
 
   const [state, dispatch] = useReducer(documentSession, snapshot().ref, openSession)
@@ -135,9 +161,11 @@ export function useDocumentSession(deps: {
   }, [model, activeDiagramId, logoLibrary])
 
   /**
-   * The one case the effect above cannot cover: a write that landed with edits
-   * behind it. Nothing new has been typed, so nothing else will arm the wait,
-   * and the edits made during the save would sit there until the next one.
+   * The two cases the effect above cannot cover, and they are the same case: a
+   * document that became dirty without anybody typing. A write that landed with
+   * edits behind it, and a conflict somebody has just decided in our favour.
+   * Nothing new will be typed, so nothing else would arm the wait, and the work
+   * would sit there until the next keystroke.
    *
    * A refusal deliberately does not re-arm. A store that is saying no —
    * quota, permission, a drive that is gone — would otherwise be asked again
@@ -149,7 +177,8 @@ export function useDocumentSession(deps: {
   useEffect(() => {
     const was = before.current
     before.current = state.status
-    if (state.status !== 'dirty' || was !== 'saving' || state.lastError) return undefined
+    const decided = was === 'saving' || was === 'conflict'
+    if (state.status !== 'dirty' || !decided || state.lastError) return undefined
     const timer = window.setTimeout(() => saving.current('idle'), AUTOSAVE_IDLE_MS)
     return () => window.clearTimeout(timer)
   }, [state.status, state.lastError])
@@ -176,10 +205,48 @@ export function useDocumentSession(deps: {
     return () => window.removeEventListener('beforeunload', onLeaving)
   }, [projects, snapshot])
 
+  /**
+   * The other author.
+   *
+   * Whether this is news at all was settled before it got here: the desktop
+   * adapter drops the changes our own writes caused, by content, so everything
+   * that arrives is somebody else's. No fingerprint travels with it — a project
+   * is a folder of files and there is no one file to fingerprint, which is
+   * exactly why `sameFile` treats an absent one as "not ours".
+   */
+  useEffect(() => {
+    if (!watch) return undefined
+    return watch(() => apply({ type: 'externalChangeDetected' }))
+  }, [watch, apply])
+
+  const takeTheirs = useCallback(() => {
+    const ref = snapshot().ref
+    void projects.load?.(ref)?.then((project) => {
+      // Gone from disk entirely: somebody deleted the project while it was
+      // open. Nothing to take, and the copy on screen is now the only one —
+      // which the unsaved-work prompt will insist on when the window closes.
+      if (!project) return
+      onAdopt?.(project)
+      apply({ type: 'reloadAccepted' })
+    }, (cause: unknown) => {
+      apply({ type: 'saveFailed', reason: String(cause) })
+    })
+  }, [apply, projects, snapshot, onAdopt])
+
+  const keepMine = useCallback(() => {
+    // From `external-changed` this is a decision, and the machine only accepts
+    // one in `conflict` — deliberately, because saving over a file we have been
+    // told is newer is the one way to lose somebody's work without being asked.
+    // Editing is what turns the question into a conflict, and choosing "mine"
+    // IS an edit as far as the document is concerned.
+    apply({ type: 'edited' })
+    apply({ type: 'conflictResolved', resolution: 'mine' })
+  }, [apply])
+
   // A person asking is not the idle timer, so it does not wait — but it is
   // still refused when there is nothing to write, or when writing would land on
   // top of somebody else's change.
   const forceSave = useCallback(() => save('blur'), [save])
 
-  return { state, forceSave }
+  return { state, forceSave, takeTheirs, keepMine }
 }

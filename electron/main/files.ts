@@ -18,12 +18,13 @@
  * before it acts and answers a refusal rather than throwing something
  * interesting back across the boundary.
  */
-import { app, dialog, ipcMain, shell } from 'electron'
+import { app, dialog, ipcMain, shell, webContents } from 'electron'
 import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
-import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
+import type { DesktopChange, DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { log } from './log'
+import { watchFolder } from './watch'
 import {
   fingerprint, listDirectory, makeDirectory, readFile as readInside, removeEntry, resolveInside,
   writeFile as writeInside,
@@ -45,6 +46,9 @@ const RECENTS_KEPT = 8
 const granted = new Set<string>()
 
 let recents: DesktopDirectory[] = []
+
+/** The folders being watched, and how to stop watching each. */
+const watching = new Map<string, () => void>()
 
 function recentsPath(): string {
   return join(app.getPath('userData'), RECENTS_FILE)
@@ -150,4 +154,28 @@ export function registerFileChannel(): void {
     const target = await resolveInside(root, path)
     if (target) shell.showItemInFolder(target)
   })
+
+  ipcMain.handle('files:watch', (_event, root: unknown) => {
+    if (!isGranted(root) || watching.has(root)) return
+    watching.set(root, watchFolder(root, (changes) => {
+      // To every window there is, because there is one, and because a renderer
+      // that has been replaced (a reload, a crash) simply has no listener.
+      const events: DesktopChange[] = changes.map((change) => ({ root, ...change }))
+      for (const contents of webContents.getAllWebContents()) {
+        if (!contents.isDestroyed()) contents.send('files:changed', events)
+      }
+    }))
+  })
+
+  ipcMain.handle('files:unwatch', (_event, root: unknown) => {
+    if (typeof root !== 'string') return
+    watching.get(root)?.()
+    watching.delete(root)
+  })
+}
+
+/** Stop every watcher. Called on the way out, so nothing holds the process. */
+export function stopWatching(): void {
+  for (const stop of watching.values()) stop()
+  watching.clear()
 }

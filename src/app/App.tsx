@@ -108,6 +108,11 @@ export type AppProps = {
    */
   workingDirectory?: { name: string }
   onChooseWorkingDirectory?: () => void
+  /**
+   * Tell me when a project's folder changed under us. Absent where nothing can
+   * watch, and the workspace then never leaves the states it can reach alone.
+   */
+  watchProject?: (ref: ProjectRef, onChanged: () => void) => () => void
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -128,7 +133,7 @@ export type AppProps = {
 
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
-  storage = 'browser', workingDirectory, onChooseWorkingDirectory,
+  storage = 'browser', workingDirectory, onChooseWorkingDirectory, watchProject,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
@@ -173,6 +178,21 @@ export function App({
   }, [diagnostics, toasts, s])
 
   const [project, setProject] = useState<ProjectSnapshot | undefined>(initialProject)
+
+  /**
+   * The watcher, bound to the project that is open.
+   *
+   * Bound here because this is where "which project" is known, and memoised on
+   * the ref because the workspace subscribes to whatever it is handed: a fresh
+   * function every render would be a fresh subscription every render.
+   */
+  const group = project?.ref.group
+  const key = project?.ref.project
+  const watchOpenProject = useMemo(() => {
+    if (!watchProject || !group || !key) return undefined
+    return (onChanged: () => void) => watchProject({ group, project: key }, onChanged)
+  }, [watchProject, group, key])
+
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */
   const [revision, setRevision] = useState(0)
 
@@ -497,6 +517,7 @@ export function App({
             key={`${project.ref.group}/${project.ref.project}`}
             project={project}
             projects={projects}
+            watch={watchOpenProject}
             documents={documents}
             notify={toasts.notify}
             onStorageResult={reportStorage}

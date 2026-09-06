@@ -18,7 +18,7 @@
  * the preload output format in `electron.vite.config.ts`.)
  */
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DesktopFiles } from '../../src/adapters/desktop/channel'
+import type { DesktopChange, DesktopFiles } from '../../src/adapters/desktop/channel'
 
 export type DesktopBridge = {
   readonly platform: NodeJS.Platform
@@ -37,6 +37,17 @@ const files: DesktopFiles = {
   remove: (root, path, options) => ipcRenderer.invoke('files:remove', root, path, options),
   fingerprint: (root, path) => ipcRenderer.invoke('files:fingerprint', root, path),
   revealInFolder: (root, path) => ipcRenderer.invoke('files:revealInFolder', root, path),
+  watch: (root) => ipcRenderer.invoke('files:watch', root),
+  unwatch: (root) => ipcRenderer.invoke('files:unwatch', root),
+  onChanged: (listener) => {
+    // The event object itself is not passed on: it carries a `sender` the
+    // renderer has no business holding, and this doorway hands over data only.
+    const relay = (_event: unknown, changes: DesktopChange[]) => {
+      for (const change of changes) listener(change)
+    }
+    ipcRenderer.on('files:changed', relay)
+    return () => { ipcRenderer.off('files:changed', relay) }
+  },
 }
 
 const bridge: DesktopBridge = {

@@ -82,9 +82,9 @@ export type DocumentEvent =
   /** The write did not land. The edits are still ours. */
   | { type: 'saveFailed'; reason?: string }
   /** The file on disk looks different from what we last wrote. */
-  | { type: 'externalChangeDetected'; fingerprint: SaveFingerprint }
+  | { type: 'externalChangeDetected'; fingerprint?: SaveFingerprint }
   /** Their version has been loaded into the editor. */
-  | { type: 'reloadAccepted'; fingerprint: SaveFingerprint }
+  | { type: 'reloadAccepted'; fingerprint?: SaveFingerprint }
   /** A human decided. `fingerprint` is the new file when resolving as a copy. */
   | { type: 'conflictResolved'; resolution: ConflictResolution; fingerprint?: SaveFingerprint }
   /** The file is no longer bound — the project was closed or moved. */

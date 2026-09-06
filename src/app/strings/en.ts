@@ -28,6 +28,16 @@ export const EN = {
   'shell.saving': 'Saving…',
   'shell.changedOnDisk': 'Changed on disk',
   'shell.conflict': 'Changed here and on disk',
+  /**
+   * The strip above the canvas when the folder has a second author. Two
+   * sentences and three buttons, because the app genuinely cannot choose: there
+   * is no merge, only which version survives.
+   */
+  'shell.diskChanged': 'This project changed on disk. Nothing here is unsaved.',
+  'shell.diskConflict': 'This project changed on disk, and there are unsaved changes here.',
+  'shell.takeTheirs': 'Take theirs',
+  'shell.keepMine': 'Keep mine',
+  'shell.saveACopy': 'Save a copy…',
   'shell.save': 'Save…',
   'shell.saveMenu': 'Save',
   'shell.workingFile': 'Working file',

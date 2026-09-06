@@ -19,7 +19,7 @@ import { app, BrowserWindow, dialog, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { registerFileChannel } from './files'
+import { registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
 import { addCheckForUpdatesItem } from './menu'
 import { checkForUpdatesNow, startUpdates } from './updates'
@@ -310,3 +310,8 @@ app.on('activate', () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
+
+// A watcher holds a handle on a folder and a callback into a window that is on
+// its way out. Neither is a leak worth arguing about in a process that is
+// exiting, but a folder held open across a quit is visible on Windows.
+app.on('before-quit', () => stopWatching())

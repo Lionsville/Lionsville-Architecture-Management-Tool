@@ -24,6 +24,7 @@ import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStor
 import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
 import { desktopFiles } from '../adapters/desktop/desktopFiles'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
+import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
 import type { DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
 import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
@@ -37,6 +38,8 @@ import { browserStorage } from '../adapters/webStorage/available'
 import { WebStorageGroupStore } from '../adapters/webStorage/WebStorageGroupStore'
 import { WebStoragePreferencesStore } from '../adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageProjectStore } from '../adapters/webStorage/WebStorageProjectStore'
+import { refPath } from '../projects/projectRef'
+import type { ProjectRef } from '../projects/projectRef'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { DocumentGateway } from '../ports/DocumentGateway'
@@ -44,6 +47,13 @@ import type { GroupStore } from '../ports/GroupStore'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
 import type { ProjectStore } from '../ports/ProjectStore'
+
+/**
+ * A subscription to one project's folder. Returns the way to stop it — the
+ * workspace is remounted per project, and a listener per project ever opened
+ * is a leak with a slow fuse.
+ */
+export type WatchProject = (ref: ProjectRef, onChanged: () => void) => () => void
 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
@@ -74,6 +84,14 @@ export type Shell = {
    * which of the two the user is looking at.
    */
   workingDirectory?: DesktopDirectory
+  /**
+   * Tell me when this project's folder changed under us, other than by us.
+   *
+   * Absent when nothing can watch — a browser tab, or a folder the platform
+   * will not report on. The shell then simply never hears about a second
+   * author, which is what it did before any of this existed.
+   */
+  watchProject?: WatchProject
   /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
@@ -131,13 +149,32 @@ export function desktopFileChannel(): DesktopFiles | undefined {
 export function inWorkingDirectory(
   shell: Shell, files: DesktopFiles, directory: DesktopDirectory,
 ): Shell {
-  const handle = new IpcDirectoryHandle(files, directory.root, directory.name)
+  // Everything goes through the remembering wrapper, including the stores:
+  // a write that went round it would come back as somebody else's change.
+  const channel = rememberingWrites(files)
+  const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
+
+  const watchProject: WatchProject = (ref, onChanged) => {
+    // Watching the whole folder rather than one project: it is one watcher for
+    // the window, and watching the same root twice is a no-op in main. Nothing
+    // unwatches it — another project may be opened a second later, and the
+    // watcher costs one handle.
+    void channel.files.watch(directory.root).catch(() => undefined)
+    const prefix = `${refPath(ref)}/`
+    return channel.files.onChanged((change) => {
+      if (change.root !== directory.root || !change.path.startsWith(prefix)) return
+      if (channel.ours(change)) return
+      onChanged()
+    })
+  }
+
   return {
     ...shell,
     projects: new FileSystemProjectStore(handle),
     groups: new FileSystemGroupStore(handle),
     storage: 'folder',
     workingDirectory: directory,
+    watchProject,
   }
 }
 
