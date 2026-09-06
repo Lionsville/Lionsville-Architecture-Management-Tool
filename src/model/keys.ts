@@ -95,3 +95,11 @@ export function idsIn(model: {
     ...model.diagrams.map((d) => d.id),
   ]
 }
+
+/**
+ * How the app asks for a new id where no name suggests one — a diagram, a
+ * decision record. A function and not a counter, because who hands out ids is
+ * the composition's business: a test wants them predictable and the app wants
+ * them unique.
+ */
+export type MakeId = (prefix: string) => string

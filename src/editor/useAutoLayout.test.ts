@@ -27,7 +27,6 @@ function render(over: Partial<UseAutoLayoutArgs> = {}) {
     diagram: diagram({ needsLayout: true }),
     readOnly: false,
     busy: undefined,
-    requested: undefined,
     options: DEFAULT_TIDY_OPTIONS,
     run,
     onSettled,
@@ -59,15 +58,10 @@ describe('useAutoLayout — when it runs', () => {
     expect(run).not.toHaveBeenCalled();
   });
 
-  it('lays out a diagram named by the session prop, with no flag', async () => {
-    const { run } = render({ diagram: diagram(), requested: ['d1'] });
-    await waitFor(() => expect(run).toHaveBeenCalledTimes(1));
-  });
-
   it('runs exactly once when BOTH sources name the same diagram', async () => {
     // The two-sources seam: a diagram can legitimately be created in this session
     // and flagged server-side. The session ref is what makes that harmless.
-    const { run } = render({ diagram: diagram({ needsLayout: true }), requested: ['d1'] });
+    const { run } = render({ diagram: diagram({ needsLayout: true }) });
     await waitFor(() => expect(run).toHaveBeenCalledTimes(1));
     await new Promise((r) => setTimeout(r, 10));
     expect(run).toHaveBeenCalledTimes(1);

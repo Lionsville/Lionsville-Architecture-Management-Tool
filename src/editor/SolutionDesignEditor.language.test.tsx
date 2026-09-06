@@ -2,10 +2,10 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from './SolutionDesignEditor';
+import { HostedEditor } from './testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { DesignModel } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
 import type { Language } from '../i18n/strings';
 
 /**
@@ -49,13 +49,13 @@ function model(): DesignModel {
   };
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
   const onLanguageChange = vi.fn<(language: Language) => void>();
-  const props: SolutionDesignEditorProps = {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     onLanguageChange,
@@ -64,11 +64,11 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );
-  return { ...view, onLanguageChange };
+  return { ...view, host, onLanguageChange };
 }
 
 describe('SolutionDesignEditor — language', () => {
@@ -123,21 +123,20 @@ describe('SolutionDesignEditor — language', () => {
    * A default name is a placeholder until you don't type over it, at which point
    * it is the element's name — on the card, in the interchange document, in the
    * PNG. A Dutch editor that quietly writes "New application" is not a missing
-   * translation, it is wrong content, so this asserts the emitted batch and not
-   * just the field.
+   * translation, it is wrong content, so this asserts the model and not just
+   * the field.
    */
   it('names a new element in the UI language, in the model as well as the field', () => {
-    const onChange = vi.fn();
-    renderEditor({ language: 'nl', onChange });
+    const { host } = renderEditor({ language: 'nl' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Applicatie', expanded: false }));
     // The name field shows what you will get if you leave it blank…
     expect(screen.getByPlaceholderText('Nieuwe applicatie')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'applicatie toevoegen' }));
 
-    // …and that is exactly what the host is told the element is called.
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0][0].elements[0].name).toBe('Nieuwe applicatie');
+    // …and that is exactly what lands in the model.
+    expect(host.current.commands).toHaveLength(1);
+    expect(host.current.model.elements.at(-1)?.name).toBe('Nieuwe applicatie');
     expect((screen.getByLabelText('Naam') as HTMLInputElement).value).toBe('Nieuwe applicatie');
   });
 

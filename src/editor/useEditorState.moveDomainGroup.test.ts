@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
-import { useEditorState } from './useEditorState';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderEditorState } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
+
 
 /**
  * Piece A: `moveDomainGroup(name, dx, dy)` is a RIGID move — it translates the
@@ -44,32 +44,23 @@ function model(): DesignModel {
   };
 }
 
-function renderEditorState() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: model(),
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  return { result, onChange };
+function render() {
+  const { result, host } = renderEditorState(model(), { activeDiagramId: 'd1' });
+  return { result, host };
 }
 
 describe('moveDomainGroup (Piece A — rigid group move)', () => {
-  it('translates the box and every member by (dx, dy) in one commit, undo restores both', () => {
-    const { result, onChange } = renderEditorState();
+  it('translates the box and every member by (dx, dy) in one step, undo restores both', () => {
+    const { result, host } = render();
     const dx = 40;
     const dy = 25;
 
     act(() => result.current.actions.moveDomainGroup('G', dx, dy));
 
-    // One commit (one undo step).
-    expect(onChange).toHaveBeenCalledTimes(1);
+    // One command (one undo step).
+    expect(host.current.commands).toHaveLength(1);
 
-    const diagram = () => result.current.effectiveModel.diagrams[0];
+    const diagram = () => result.current.model.diagrams[0];
     const groups = () => new Map((diagram().layoutConfig?.domainGroups ?? []).map((g) => [g.name, g]));
     const placements = () => new Map(diagram().placements.map((p) => [p.elementId, p]));
 
@@ -94,11 +85,11 @@ describe('moveDomainGroup (Piece A — rigid group move)', () => {
   });
 
   it('is a no-op when the group name is unknown or the delta is zero', () => {
-    const { result, onChange } = renderEditorState();
+    const { result, host } = render();
 
     act(() => result.current.actions.moveDomainGroup('nope', 10, 10));
     act(() => result.current.actions.moveDomainGroup('G', 0, 0));
 
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 });

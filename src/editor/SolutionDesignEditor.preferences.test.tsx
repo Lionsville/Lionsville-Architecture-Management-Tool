@@ -2,11 +2,11 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from './SolutionDesignEditor';
+import { HostedEditor } from './testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { EditorPreferences } from './preferences';
 import type { DesignModel } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
 
 /**
  * The preferences seam: settings in through `initialPreferences`, out through
@@ -37,13 +37,13 @@ function model(): DesignModel {
   };
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
   const onPreferencesChange = vi.fn<(preferences: EditorPreferences) => void>();
-  const props: SolutionDesignEditorProps = {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     onPreferencesChange,
@@ -52,7 +52,7 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );

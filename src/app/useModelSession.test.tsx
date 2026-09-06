@@ -1,19 +1,18 @@
 // @vitest-environment jsdom
 /**
- * The editing session — the one genuinely intricate part of this shell.
+ * The editing session: the one place a change enters, and the one stack over
+ * everything that has changed (ADR-0002).
  *
- * Batches arrive per diagram and are applied after a pause; temporary ids
- * become permanent keys on the first flush and must keep resolving afterwards;
- * and taking on a different document sometimes needs the editor remounted and
- * sometimes only its undo stack cleared. Each of those has a failure mode that
- * looks like nothing: an older batch overwriting newer work, a container
- * diagram vanishing without a word, an editor that will not lay out a document
- * it has "already seen".
+ * What used to be intricate here — batches buffered per diagram, temporary ids
+ * swapped for permanent keys on the first flush, an alias map carried between
+ * them — is gone with the batch. What is left has two failure modes that still
+ * look like nothing: a container diagram vanishing without a word, and an
+ * editor that will not lay out a document it has "already seen".
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
-import type { DiagramContentBatch } from '../model'
+import { transaction } from '../model'
 import type { DesignElement, DiagramPlacement } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
@@ -28,8 +27,7 @@ function element(id: string, name: string): DesignElement {
 const at = (elementId: string): DiagramPlacement => ({ elementId, x: 0, y: 0 })
 
 
-beforeEach(() => vi.useFakeTimers())
-afterEach(() => { vi.useRealTimers(); cleanup() })
+afterEach(() => cleanup())
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
@@ -62,65 +60,36 @@ function mount(initial = project()) {
   return { notify, session: () => session }
 }
 
-/** An empty batch for one diagram: the shape the editor always sends. */
-const emptyBatch = (diagramId: string): DiagramContentBatch => ({
-  diagramId,
-  elements: [],
-  deletedElementIds: [],
-  connections: [],
-  deletedConnectionIds: [],
-  placements: [],
-  removedPlacementElementIds: [],
-  edgeRoutes: [],
-})
-
-/** A batch that renames the one element — enough to watch it land. */
-const batchFor = (diagramId: string, elementName: string): DiagramContentBatch => ({
-  ...emptyBatch(diagramId),
-  elements: [element('billing', elementName)],
-  placements: [at('billing')],
-})
-
-/** A batch that empties a diagram: every placement gone, the element deleted. */
-const clearing = (diagramId: string): DiagramContentBatch => ({
-  ...emptyBatch(diagramId),
-  deletedElementIds: ['billing'],
-  removedPlacementElementIds: ['billing'],
-})
+/** Renaming the one element — enough to watch a change land. */
+const rename = (name: string) =>
+  ({ type: 'element.update', id: 'billing', patch: { name } }) as const
 
 describe('useModelSession — landing changes', () => {
-  it('waits before applying, so a run of edits is one commit', () => {
+  it('lands a change at once, and a reader sees it without waiting for a render', () => {
     const { session } = mount()
-    act(() => session().onChange(batchFor('d1', 'Renamed')))
-    expect(session().current().elements[0].name).toBe('Billing')
-    act(() => { vi.advanceTimersByTime(250) })
+    act(() => { session().dispatch(rename('Renamed')) })
     expect(session().current().elements[0].name).toBe('Renamed')
   })
 
-  it('applies in the order the batches arrived, not the order they were first seen', () => {
-    // Two diagrams, the older one edited again last. Applied by insertion order
-    // alone, the stale batch from d1 would land after d2's newer one.
+  it('hands the new model straight back, so a gesture can read its own first half', () => {
+    const { session } = mount()
+    let answer: string | undefined
+    act(() => { answer = session().dispatch(rename('Renamed'))?.elements[0].name })
+    expect(answer).toBe('Renamed')
+  })
+
+  it('is one step however many rows the change touches', () => {
     const { session } = mount()
     act(() => {
-      session().onChange(batchFor('d1', 'First'))
-      session().onChange(batchFor('d2', 'Second'))
-      session().onChange(batchFor('d1', 'Third'))
-      session().flush()
+      session().dispatch(transaction([
+        rename('Renamed'),
+        { type: 'diagram.rename', id: 'd1', name: 'Landscape 2027' },
+      ]))
     })
-    expect(session().current().elements[0].name).toBe('Third')
-  })
-
-  it('lets a reader see the new model straight after a flush, without a render', () => {
-    const { session } = mount()
-    act(() => { session().onChange(batchFor('d1', 'Renamed')); session().flush() })
-    expect(session().current().elements[0].name).toBe('Renamed')
-  })
-
-  it('drops what is pending for a diagram that is going away', () => {
-    const { session } = mount()
-    act(() => { session().onChange(batchFor('d1', 'Renamed')); session().forget('d1') })
-    act(() => { vi.advanceTimersByTime(250) })
+    expect(session().history()).toHaveLength(1)
+    act(() => session().undo())
     expect(session().current().elements[0].name).toBe('Billing')
+    expect(session().current().diagrams[0].name).toBe('L7')
   })
 })
 
@@ -135,23 +104,24 @@ describe('useModelSession — a container view whose application left', () => {
     activeDiagramId: 'cd1',
   })
 
-  it('says so, because undo does not bring the view back', () => {
+  it('says so, because nobody asked for the view to go', () => {
     const { session, notify } = mount(withContainer())
-    act(() => {
-      session().onChange(clearing('d1'))
-      session().flush()
-    })
+    act(() => { session().dispatch({ type: 'element.delete', id: 'billing' }) })
     expect(session().current().diagrams.map((d) => d.id)).toEqual(['d1'])
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('Billing · containers'))
   })
 
   it('does not leave you standing on a view that no longer exists', () => {
     const { session } = mount(withContainer())
-    act(() => {
-      session().onChange(clearing('d1'))
-      session().flush()
-    })
+    act(() => { session().dispatch({ type: 'element.delete', id: 'billing' }) })
     expect(session().currentActiveId()).toBe('d1')
+  })
+
+  it('says nothing when the tab was the one you asked to delete', () => {
+    const { session, notify } = mount(withContainer())
+    act(() => { session().dispatch({ type: 'diagram.delete', id: 'cd1' }) })
+    expect(session().current().diagrams.map((d) => d.id)).toEqual(['d1'])
+    expect(notify).not.toHaveBeenCalled()
   })
 })
 
@@ -163,23 +133,15 @@ describe('useModelSession — taking on another document', () => {
     expect(session().editorKey).toBe(before + 1)
   })
 
-  it('keeps the editor and only clears its undo stack when it need not remount', () => {
+  it('keeps the editor and only empties the stack when it need not remount', () => {
     const { session } = mount()
     const key = session().editorKey
-    const token = session().historyToken
+    act(() => { session().dispatch(rename('Renamed')) })
     // The same diagrams, laid out already: the editor keeps viewport and panels,
-    // but its history is about a document that no longer exists.
+    // but the history is about a document that no longer exists.
     act(() => session().adopt(project({ model: model({ name: 'Renamed' }) }), false))
     expect(session().editorKey).toBe(key)
-    expect(session().historyToken).toBe(token + 1)
-  })
-
-  it('drops everything pending, so the old document cannot land on the new one', () => {
-    const { session } = mount()
-    act(() => session().onChange(batchFor('d1', 'From the old document')))
-    act(() => session().adopt(project({ model: model({ name: 'Fresh' }) }), false))
-    act(() => { vi.advanceTimersByTime(250) })
-    expect(session().current().elements[0].name).toBe('Billing')
+    expect(session().canUndo).toBe(false)
   })
 })
 
@@ -213,12 +175,6 @@ describe('useModelSession — the snapshot', () => {
  * quietly lost halfway through moving the session onto commands.
  */
 describe('useModelSession — where an id comes from', () => {
-  const drawn = (id: string): DiagramContentBatch => ({
-    ...emptyBatch('d1'),
-    elements: [element(id, 'Warehouse')],
-    placements: [at('billing'), at(id)],
-  })
-
   it('gives a name the key the file would have had', () => {
     const { session } = mount()
     expect(session().ids.element('Warehouse')).toBe('warehouse')
@@ -243,7 +199,13 @@ describe('useModelSession — where an id comes from', () => {
 
   it('lands what the editor drew under the id the editor already gave it', () => {
     const { session } = mount()
-    act(() => { session().onChange(drawn('warehouse')); session().flush() })
+    const id = session().ids.element('Warehouse')
+    act(() => {
+      session().dispatch(transaction([
+        { type: 'element.create', element: element(id, 'Warehouse') },
+        { type: 'placement.set', diagramId: 'd1', placements: [at(id)] },
+      ]))
+    })
     expect(session().current().elements.map((e) => e.id)).toEqual(['billing', 'warehouse'])
     expect(session().current().diagrams[0].placements.map((p) => p.elementId))
       .toEqual(['billing', 'warehouse'])
@@ -275,7 +237,7 @@ describe('useModelSession — undo and redo', () => {
 
   it('covers what came out of the editor as well, in the one order', () => {
     const { session } = mount()
-    act(() => { session().onChange(batchFor('d1', 'Renamed')); session().flush() })
+    act(() => { session().dispatch(rename('Renamed')) })
     act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Second thoughts' }) })
 
     act(() => session().undo())
@@ -320,7 +282,7 @@ describe('useModelSession — undo and redo', () => {
       }),
     }))
     act(() => session().onLayoutSettled('d1'))
-    expect(session().current().diagrams[0].needsLayout).toBe(false)
+    expect(session().current().diagrams[0].needsLayout).toBeUndefined()
     expect(session().canUndo).toBe(false)
   })
 
@@ -328,9 +290,9 @@ describe('useModelSession — undo and redo', () => {
     const { session, notify } = mount(project({
       model: model({ diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }] }),
     }))
-    let accepted = true
+    let accepted: unknown = 'unset'
     act(() => { accepted = session().dispatch({ type: 'diagram.delete', id: 'd1' }) })
-    expect(accepted).toBe(false)
+    expect(accepted).toBeUndefined()
     expect(session().current().diagrams).toHaveLength(1)
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('last landscape'), 'error')
   })

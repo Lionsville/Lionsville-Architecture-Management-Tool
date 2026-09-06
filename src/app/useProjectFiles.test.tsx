@@ -45,13 +45,12 @@ const snapshot = (): ProjectSnapshot => ({
 function fakeSession() {
   const library: UploadedLogo[] = []
   return {
-    flush: vi.fn(),
     snapshot: () => snapshot(),
     current: () => model(),
     currentLibrary: () => library,
     setLogoLibrary: vi.fn(),
     adopt: vi.fn(),
-  } as unknown as ModelSession & { flush: ReturnType<typeof vi.fn>; adopt: ReturnType<typeof vi.fn> }
+  } as unknown as ModelSession & { adopt: ReturnType<typeof vi.fn> }
 }
 
 function mount(documents: Partial<ProjectFileChannel>) {
@@ -97,12 +96,6 @@ describe('saving a document out', () => {
     act(() => files().saveInterchange())
     await settle()
     expect(notify).toHaveBeenCalledWith('The file could not be saved: cancelled', 'error')
-  })
-
-  it('flushes the session first, so what is written is what is on screen', () => {
-    const { files, session } = mount({})
-    act(() => files().saveWorkingFile())
-    expect(session.flush).toHaveBeenCalledOnce()
   })
 
   it('names the file after the project, not after a constant', async () => {

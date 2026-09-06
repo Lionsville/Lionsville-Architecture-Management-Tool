@@ -18,9 +18,10 @@ import type { LayoutAction } from './EditorToolbar';
  * So the question is not *whether* to run layout automatically but *where there
  * is nothing to protect*, and there are exactly two such places — both of them
  * geometry whose own author apologised for it. A newly created container diagram
- * carries the promise in a code comment on the server's seed ("the editor's
- * auto-layout takes over from there"), and an imported diagram carries a seed
- * grid because the import document deliberately holds no coordinates.
+ * carries a seed grid the editor is expected to take over from, and an imported
+ * diagram carries one because the interchange document deliberately holds no
+ * coordinates. Both say so on the diagram itself, with `needsLayout`, which is
+ * why this hook needs nothing from the host but the diagram.
  */
 export interface UseAutoLayoutArgs {
   /** The diagram on screen, or undefined while the host is still resolving it. */
@@ -28,14 +29,6 @@ export interface UseAutoLayoutArgs {
   readOnly: boolean;
   /** Whichever layout action is already running, from the editor's own flag. */
   busy: LayoutAction | undefined;
-  /**
-   * Diagrams THIS SESSION created the geometry for — the host names them.
-   *
-   * The session half of the signal. It needs no migration and covers the case
-   * that ships first: the user double-clicked an application, the server seeded a
-   * grid, and the new tab is about to open on it.
-   */
-  requested: readonly string[] | undefined;
   /** The session's Tidy settings; {@link settlingOptions} strips the pins. */
   options: TidyOptions;
   /**
@@ -83,22 +76,10 @@ export function settlingOptions(options: TidyOptions): TidyOptions {
   };
 }
 
-/**
- * Whether this diagram is carrying layout debt, from either source.
- *
- * Both resolve to the same boolean and the effect does not care which fired — a
- * diagram can legitimately be in both (created in this session AND flagged
- * server-side), and the session ref makes that harmless.
- */
-function needsLayout(diagram: DesignDiagram, requested: readonly string[] | undefined): boolean {
-  return diagram.needsLayout === true || (requested?.includes(diagram.id) ?? false);
-}
-
 export function useAutoLayout({
   diagram,
   readOnly,
   busy,
-  requested,
   options,
   run,
   onSettled,
@@ -117,7 +98,7 @@ export function useAutoLayout({
 
   useEffect(() => {
     if (!diagram || readOnly || busy !== undefined) return;
-    if (!needsLayout(diagram, requested)) return;
+    if (diagram.needsLayout !== true) return;
     // An empty diagram has nothing to lay out. `tidyLayer7` returns [] for it
     // without throwing, so this is politeness rather than safety.
     if (diagram.placements.length === 0) return;
@@ -134,5 +115,5 @@ export function useAutoLayout({
         // more attempt the next time it is opened.
       },
     );
-  }, [diagram, readOnly, busy, requested]);
+  }, [diagram, readOnly, busy]);
 }

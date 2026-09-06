@@ -14,8 +14,8 @@ import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
 /** Fresh ids come from outside: a clock inside a function makes it untestable. */
-export type { MakeId } from '../model/ids'
-import type { MakeId } from '../model/ids'
+export type { MakeId } from '../model/keys'
+import type { MakeId } from '../model/keys'
 
 export type DiagramActions = {
   onCreateContainerDiagram: (applicationId: string) => void
@@ -48,7 +48,6 @@ export function useDiagramActions(deps: {
   const { session, notify, s, makeId } = deps
 
   const onCreateContainerDiagram = useCallback((applicationId: string) => {
-    session.flush()
     const m = session.current()
     const existing = findContainerDiagram(m, applicationId)
     if (existing) { session.setActiveDiagramId(existing.id); return }
@@ -57,26 +56,25 @@ export function useDiagramActions(deps: {
       name: (name) => s('shell.containerDiagram', { name }),
     })
     if (!diagram) return
+    // `needsLayout` came with the seed: the editor lays the new tab out once,
+    // on open, and clears the flag itself.
     session.dispatch(
       { type: 'diagram.create', diagram: toDiagram(diagram) },
-      { activeDiagramId: diagram.id, layoutIds: (ids) => [...ids, diagram.id] },
+      { activeDiagramId: diagram.id },
     )
   }, [session, s, makeId])
 
   // The editor asks for the new name itself (a dialog with the current name
   // preselected) and delivers it here.
   const onRenameDiagram = useCallback((diagramId: string, name: string) => {
-    session.flush()
     session.dispatch({ type: 'diagram.rename', id: diagramId, name })
   }, [session])
 
   const onDiagramSettingsChange = useCallback((diagramId: string, settings: DiagramSettings) => {
-    session.flush()
     session.dispatch({ type: 'diagram.settings', id: diagramId, settings })
   }, [session])
 
   const onDuplicateDiagram = useCallback((diagramId: string) => {
-    session.flush()
     const source = session.indexed().diagrams[diagramId]
     if (!source) return
     const id = makeId(source.kind === 'layer7' ? 'l7' : 'cd')
@@ -88,7 +86,6 @@ export function useDiagramActions(deps: {
 
   const [newDiagramName, setNewDiagramName] = useState<string | null>(null)
   const onCreateLayer7Diagram = useCallback(() => {
-    session.flush()
     setNewDiagramName(s('shell.newDiagram'))
   }, [session, s])
 
@@ -123,16 +120,10 @@ export function useDiagramActions(deps: {
     const id = deleteId
     setDeleteId(null)
     if (!id) return
-    session.flush()
     const target = session.indexed().diagrams[id]
     if (!target) return
-    session.forget(id)
-    const deleted = session.dispatch(
-      { type: 'diagram.delete', id },
-      { layoutIds: (ids) => ids.filter((x) => x !== id) },
-    )
     // The reducer refuses the last landscape, and says so itself.
-    if (!deleted) return
+    if (!session.dispatch({ type: 'diagram.delete', id })) return
     // The active diagram gone? Then on to the first one that remains.
     if (session.currentActiveId() === id) {
       session.setActiveDiagramId(session.indexed().order.diagrams[0] ?? id)

@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderEditorState } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
 import { routeDiagramEdges } from '../layout/routeOnly';
-import { useEditorState } from './useEditorState';
+
 
 /**
  * Route-only through the editor: `routeDiagramEdges` emits a routes-only
@@ -49,47 +49,37 @@ function model(): DesignModel {
   };
 }
 
-function renderEditorState() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: model(),
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  return { result, onChange };
+function render() {
+  const { result, host } = renderEditorState(model(), { activeDiagramId: 'd1' });
+  return { result, host };
 }
 
 describe('route-only through applyTidyResult', () => {
-  it('commits one undo step that re-routes edges and moves nothing', async () => {
-    const { result, onChange } = renderEditorState();
-    const before = result.current.effectiveModel.diagrams[0];
+  it('is one undo step that re-routes edges and moves nothing', async () => {
+    const { result, host } = render();
+    const before = result.current.model.diagrams[0];
     const placementsBefore = before.placements;
     const layoutConfigBefore = before.layoutConfig;
 
     // The router is WASM, so the pass is async: await it OUTSIDE `act` and commit
     // the finished result inside, which keeps the commit a single React update.
     const routes = await routeDiagramEdges(
-      result.current.effectiveModel,
-      result.current.effectiveModel.diagrams[0],
+      result.current.model,
+      result.current.model.diagrams[0],
     );
     act(() => {
       result.current.actions.applyTidyResult(routes);
     });
 
-    // (a) ONE batch. `placements` is the full effective list the host upserts, so
-    // "moved nothing" means it comes back BYTE-IDENTICAL to what went in.
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const batch = onChange.mock.calls.at(-1)![0];
-    expect(batch.placements).toEqual(placementsBefore);
-    expect(batch.removedPlacementElementIds).toEqual([]);
-    expect(batch.layoutConfig).toBeUndefined();
+    // (a) ONE command, and it speaks only about routes: a pass that moved
+    // nothing asks for no placement and no layout.
+    expect(host.current.commands).toHaveLength(1);
+    const step = host.current.commands[0];
+    expect(step.type === 'transaction' && step.commands.map((c) => c.type))
+      .toEqual(['route.clear', 'route.set']);
 
     // (b) Positions and layout config are untouched; the routes changed.
-    const after = result.current.effectiveModel.diagrams[0];
+    const after = result.current.model.diagrams[0];
     expect(after.placements).toEqual(placementsBefore);
     expect(after.layoutConfig).toEqual(layoutConfigBefore);
     const c1 = after.edgeRoutes!.find((r) => r.connectionId === 'c1')!;
@@ -100,10 +90,10 @@ describe('route-only through applyTidyResult', () => {
 
     // (c) ONE undo restores every prior route verbatim.
     act(() => result.current.undo());
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual([
+    expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
       { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }] },
       { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
-    expect(result.current.effectiveModel.diagrams[0].placements).toEqual(placementsBefore);
+    expect(result.current.model.diagrams[0].placements).toEqual(placementsBefore);
   });
 });

@@ -2,11 +2,11 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from './SolutionDesignEditor';
+import { HostedEditor } from './testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import { PANEL_LIMITS } from './panels';
 import type { DesignModel } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
 import type { EditorPreferences } from './preferences';
 
 /**
@@ -51,14 +51,14 @@ function model(): DesignModel {
   };
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
   const onPreferencesChange = vi.fn<(preferences: EditorPreferences) => void>();
   const onActiveDiagramChange = vi.fn<(id: string) => void>();
-  const props: SolutionDesignEditorProps = {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange,
-    onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     onPreferencesChange,
@@ -67,7 +67,7 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1280px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );
@@ -190,18 +190,18 @@ describe('SolutionDesignEditor — element search', () => {
     // Both sources feed one request through one nonce counter; a ⌘F must not
     // make the host's `focusElement` prop inert for the rest of the session.
     const onActiveDiagramChange = vi.fn<(id: string) => void>();
-    const props: SolutionDesignEditorProps = {
+    const host = { current: undefined as unknown as EditorHostState };
+    const props: HostedEditorProps = {
       model: model(),
       activeDiagramId: 'd1',
       onActiveDiagramChange,
-      onChange: vi.fn(),
       onCreateContainerDiagram: vi.fn(),
       onCreateLayer7Diagram: vi.fn(),
     };
-    const ui = (extra: Partial<SolutionDesignEditorProps>) => (
+    const ui = (extra: Partial<HostedEditorProps>) => (
       <ThemeProvider theme={createTheme()}>
         <div style={{ width: '1280px', height: '800px' }}>
-          <SolutionDesignEditor {...props} {...extra} />
+          <HostedEditor {...props} {...extra} hostRef={host} />
         </div>
       </ThemeProvider>
     );

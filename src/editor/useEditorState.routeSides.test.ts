@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch, EdgeRoute } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderEditorState } from './testing/editorHost';
+import type { DesignModel, EdgeRoute } from '../model/types';
 import { manualRouteIds } from '../model/routes';
-import { useEditorState } from './useEditorState';
+
 
 /**
  * Attach sides at the actions that carry them (Phase 2d): `setRouteSides`, an
@@ -46,47 +46,43 @@ const AUTO: EdgeRoute = { connectionId: 'c1', waypoints: [{ x: 500, y: 165 }, { 
 const MANUAL: EdgeRoute = { ...AUTO, source: 'manual' };
 
 function render(initial: DesignModel) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: initial,
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
+  const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
+  const stored = (id = 'c1') =>
+    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === id);
+  /** What the last step asked for, flattened — `route.set` or `route.clear`. */
+  const asked = () => {
+    const last = host.current.commands.at(-1);
+    if (!last) return [];
+    return last.type === 'transaction' ? last.commands.map((c) => c.type) : [last.type];
   };
-  const { result } = renderHook(() => useEditorState(props));
-  const effective = (id = 'c1') =>
-    result.current.effectiveModel.diagrams[0].edgeRoutes?.find((r) => r.connectionId === id);
-  const emitted = (id = 'c1') => onChange.mock.calls.at(-1)?.[0].edgeRoutes.find((r) => r.connectionId === id);
-  return { result, onChange, effective, emitted };
+  return { result, host, stored, asked };
 }
 
 describe('setRouteSides', () => {
   it('with no stored row writes a bend-less AUTO row — the side is a constraint, not a claim', () => {
-    const { result, onChange, effective, emitted } = render(model());
-    let token: number | undefined;
+    const { result, host, stored, asked } = render(model());
+    let token: string | undefined;
     act(() => {
       token = result.current.actions.setRouteSides('c1', { sourceSide: 'top' });
     });
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(emitted()).toEqual({ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
-    expect(effective()).toEqual({ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
-    expect(manualRouteIds(result.current.effectiveModel.diagrams[0]).has('c1')).toBe(false);
-    expect(token).toBe(result.current.overlayVersion);
+    expect(host.current.commands).toHaveLength(1);
+    expect(asked()).toEqual(['route.set']);
+    expect(stored()).toEqual({ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
+    expect(manualRouteIds(result.current.model.diagrams[0]).has('c1')).toBe(false);
+    expect(token).toBe(result.current.commitToken);
   });
 
   it('merges into a hand-drawn row, which stays hand-drawn with its bends', () => {
-    const { result, effective } = render(model([MANUAL]));
+    const { result, stored } = render(model([MANUAL]));
     act(() => result.current.actions.setRouteSides('c1', { targetSide: 'left' }));
-    expect(effective()).toEqual({ ...MANUAL, targetSide: 'left' });
+    expect(stored()).toEqual({ ...MANUAL, targetSide: 'left' });
     act(() => result.current.actions.setRouteSides('c1', { sourceSide: 'bottom' }));
-    expect(effective()).toEqual({ ...MANUAL, sourceSide: 'bottom', targetSide: 'left' });
+    expect(stored()).toEqual({ ...MANUAL, sourceSide: 'bottom', targetSide: 'left' });
   });
 
   it('is a no-op for the side an end already has, and for Automatic on a line with no row', () => {
-    const { result, onChange } = render(model([{ ...AUTO, sourceSide: 'top' }]));
-    let token: number | undefined = 0;
+    const { result, host } = render(model([{ ...AUTO, sourceSide: 'top' }]));
+    let token: string | undefined = '';
     act(() => {
       token = result.current.actions.setRouteSides('c1', { sourceSide: 'top' });
     });
@@ -100,21 +96,21 @@ describe('setRouteSides', () => {
       token = bare.result.current.actions.setRouteSides('c1', { sourceSide: undefined });
     });
     expect(token).toBeUndefined();
-    expect(onChange).not.toHaveBeenCalled();
-    expect(bare.onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
+    expect(bare.host.current.commands).toEqual([]);
   });
 
-  it('freeing the last side of a side-only row deletes the row', () => {
-    const { result, effective, emitted } = render(model([{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' }]));
+  it('freeing the last side of a side-only row forgets the row', () => {
+    const { result, stored, asked } = render(model([{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' }]));
     act(() => result.current.actions.setRouteSides('c1', { sourceSide: undefined }));
-    expect(effective()).toBeUndefined();
-    expect(emitted()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined });
+    expect(stored()).toBeUndefined();
+    expect(asked()).toEqual(['route.clear']);
   });
 
-  it('with live routing OFF is a plain commit whose token the routing pass amends into: one undo step', () => {
-    const { result, effective } = render(model([AUTO]));
+  it('with live routing OFF is a plain step whose token the routing pass folds into: one undo step', () => {
+    const { result, stored } = render(model([AUTO]));
     const before = result.current.geometryVersion;
-    let token = -1;
+    let token = '';
     act(() => {
       token = result.current.actions.setRouteSides('c1', { sourceSide: 'top' })!;
     });
@@ -125,9 +121,9 @@ describe('setRouteSides', () => {
         token,
       );
     });
-    expect(effective()).toMatchObject({ sourceSide: 'top', waypoints: [{ x: 200, y: 100 }, { x: 200, y: 60 }] });
+    expect(stored()).toMatchObject({ sourceSide: 'top', waypoints: [{ x: 200, y: 100 }, { x: 200, y: 60 }] });
     act(() => result.current.undo());
-    expect(effective()).toEqual(AUTO);
+    expect(stored()).toEqual(AUTO);
     expect(result.current.canUndo).toBe(false);
   });
 
@@ -140,17 +136,17 @@ describe('setRouteSides', () => {
 });
 
 describe('connect / reconnect with sides (Alt-drag)', () => {
-  it('connect writes the line AND its side row in one commit, and returns the new id', () => {
-    const { result, onChange } = render(model());
+  it('connect writes the line AND its side row in one step, and returns the new id', () => {
+    const { result, host } = render(model());
     let id: string | undefined;
     act(() => {
       id = result.current.actions.connect('e1', 'e3', { sourceSide: 'right', targetSide: 'top' });
     });
     expect(id).toBeDefined();
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const batch = onChange.mock.calls[0][0];
-    expect(batch.connections.find((c) => c.id === id)).toMatchObject({ sourceId: 'e1', targetId: 'e3' });
-    expect(batch.edgeRoutes.find((r) => r.connectionId === id)).toEqual({
+    expect(host.current.commands).toHaveLength(1);
+    expect(result.current.model.connections.find((c) => c.id === id))
+      .toMatchObject({ sourceId: 'e1', targetId: 'e3' });
+    expect(result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === id)).toEqual({
       connectionId: id,
       waypoints: [],
       source: 'auto',
@@ -159,24 +155,25 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     });
     // One undo takes both away.
     act(() => result.current.undo());
-    expect(result.current.effectiveModel.connections.some((c) => c.id === id)).toBe(false);
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes ?? []).toEqual([]);
+    expect(result.current.model.connections.some((c) => c.id === id)).toBe(false);
+    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
   });
 
   it('connect without sides writes no route row, exactly as before', () => {
-    const { result, onChange } = render(model());
+    const { result, host } = render(model());
     act(() => result.current.actions.connect('e1', 'e3'));
-    expect(onChange.mock.calls[0][0].edgeRoutes).toEqual([]);
+    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
+    expect(host.current.commands).toHaveLength(1);
     expect(result.current.actions.connect('e1', 'e1')).toBeUndefined();
   });
 
-  it('reconnect repoints the line and fixes only the dragged end, in one geometry commit', () => {
-    const { result, onChange, effective } = render(model([{ ...AUTO, sourceSide: 'bottom' }]));
+  it('reconnect repoints the line and fixes only the dragged end, in one geometry step', () => {
+    const { result, host, stored } = render(model([{ ...AUTO, sourceSide: 'bottom' }]));
     const before = result.current.geometryVersion;
     act(() => result.current.actions.reconnect('c1', { sourceId: 'e1', targetId: 'e3' }, { targetSide: 'left' }));
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(result.current.effectiveModel.connections[0]).toMatchObject({ id: 'c1', sourceId: 'e1', targetId: 'e3' });
-    expect(effective()).toEqual({ ...AUTO, sourceSide: 'bottom', targetSide: 'left' });
+    expect(host.current.commands).toHaveLength(1);
+    expect(result.current.model.connections[0]).toMatchObject({ id: 'c1', sourceId: 'e1', targetId: 'e3' });
+    expect(stored()).toEqual({ ...AUTO, sourceSide: 'bottom', targetSide: 'left' });
     expect(result.current.geometryVersion).toBeGreaterThan(before);
   });
 });
@@ -185,51 +182,51 @@ describe('the other route actions carry sides', () => {
   const SIDED: EdgeRoute = { ...MANUAL, sourceSide: 'top' };
 
   it('removing every bend of a hand-drawn row with sides leaves a side-only AUTO row, not a claim', () => {
-    const { result, effective } = render(model([SIDED]));
+    const { result, stored } = render(model([SIDED]));
     act(() => result.current.actions.setEdgeRoute('c1', []));
-    expect(effective()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
-    expect(manualRouteIds(result.current.effectiveModel.diagrams[0]).has('c1')).toBe(false);
+    expect(stored()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
+    expect(manualRouteIds(result.current.model.diagrams[0]).has('c1')).toBe(false);
   });
 
   it('a bend edit and a label move keep the sides and still claim the route', () => {
-    const { result, effective } = render(model([SIDED]));
+    const { result, stored } = render(model([SIDED]));
     act(() => result.current.actions.setEdgeRoute('c1', [{ x: 520, y: 165 }]));
-    expect(effective()).toMatchObject({ source: 'manual', sourceSide: 'top' });
+    expect(stored()).toMatchObject({ source: 'manual', sourceSide: 'top' });
     act(() => result.current.actions.setEdgeLabelPosition('c1', { x: 1, y: 2 }));
-    expect(effective()).toMatchObject({ source: 'manual', sourceSide: 'top', labelPosition: { x: 1, y: 2 } });
+    expect(stored()).toMatchObject({ source: 'manual', sourceSide: 'top', labelPosition: { x: 1, y: 2 } });
   });
 
   it('resetting the chip of a row that then holds only sides hands the line back to the router', () => {
-    const { result, effective } = render(model([{ connectionId: 'c1', waypoints: [], labelPosition: { x: 1, y: 2 }, source: 'manual', sourceSide: 'top' }]));
+    const { result, stored } = render(model([{ connectionId: 'c1', waypoints: [], labelPosition: { x: 1, y: 2 }, source: 'manual', sourceSide: 'top' }]));
     act(() => result.current.actions.setEdgeLabelPosition('c1', undefined));
-    expect(effective()).toMatchObject({ waypoints: [], source: 'auto', sourceSide: 'top' });
+    expect(stored()).toMatchObject({ waypoints: [], source: 'auto', sourceSide: 'top' });
   });
 
   it('pin and unpin keep the sides; reset forgets them with everything else', () => {
-    const { result, effective } = render(model([{ ...AUTO, targetSide: 'right' }]));
+    const { result, stored } = render(model([{ ...AUTO, targetSide: 'right' }]));
     act(() => result.current.actions.setRouteSource('c1', 'manual'));
-    expect(effective()).toMatchObject({ source: 'manual', pinned: true, targetSide: 'right' });
+    expect(stored()).toMatchObject({ source: 'manual', pinned: true, targetSide: 'right' });
     act(() => result.current.actions.setRouteSource('c1', 'auto'));
-    expect(effective()).toMatchObject({ source: 'auto', targetSide: 'right' });
-    expect(effective()?.pinned).toBeUndefined();
+    expect(stored()).toMatchObject({ source: 'auto', targetSide: 'right' });
+    expect(stored()?.pinned).toBeUndefined();
     act(() => result.current.actions.resetEdgeRoute('c1'));
-    expect(effective()).toBeUndefined();
+    expect(stored()).toBeUndefined();
   });
 
   it('applyTidyResult writes the sides the pass emitted, and keeps the sides of a row it clears', () => {
-    const { result, effective } = render(model([{ ...AUTO, sourceSide: 'top' }]));
+    const { result, stored } = render(model([{ ...AUTO, sourceSide: 'top' }]));
     act(() =>
       result.current.actions.applyTidyResult({
         placements: [],
         edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 200, y: 60 }], source: 'auto', sourceSide: 'top' }],
       }),
     );
-    expect(effective()).toMatchObject({ waypoints: [{ x: 200, y: 60 }], sourceSide: 'top' });
+    expect(stored()).toMatchObject({ waypoints: [{ x: 200, y: 60 }], sourceSide: 'top' });
 
     // A result that lists nothing for c1 (a routed board where c1 was unroutable):
     // bends gone, side kept, row the router's.
     const cleared = render(model([{ ...MANUAL, sourceSide: 'top' }]));
     act(() => cleared.result.current.actions.applyTidyResult({ placements: [], edgeRoutes: [] }));
-    expect(cleared.effective()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
+    expect(cleared.stored()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
   });
 });

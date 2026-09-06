@@ -2,10 +2,10 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from './SolutionDesignEditor';
+import { HostedEditor } from './testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import type { DesignModel } from '../model/types';
 
 /**
  * The two deletes that used to happen in silence: one connection, and a whole
@@ -43,13 +43,12 @@ function model(): DesignModel {
   };
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     ...overrides,
@@ -57,12 +56,17 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );
-  const lastBatch = () => onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch | undefined;
-  return { ...view, onChange, lastBatch };
+  /** What the last step asked for, flattened. */
+  const asked = () => {
+    const last = host.current.commands.at(-1);
+    if (!last) return [];
+    return last.type === 'transaction' ? last.commands : [last];
+  };
+  return { ...view, host, asked };
 }
 
 const nodeEl = (id: string) => document.querySelector(`.react-flow__node[data-id="${id}"]`) as HTMLElement;
@@ -71,38 +75,38 @@ const confirm = () => fireEvent.click(within(dialog()).getByRole('button', { nam
 
 describe('SolutionDesignEditor — confirming a connection delete', () => {
   it('the line menu asks first, and Cancel keeps the line', () => {
-    const { onChange } = renderEditor();
+    const { host } = renderEditor();
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
 
     expect(within(dialog()).getByText(/Sends orders/)).toBeDefined();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
 
     fireEvent.click(within(dialog()).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 
   it('confirming deletes the connection', () => {
-    const { lastBatch } = renderEditor();
+    const { host } = renderEditor();
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
     confirm();
 
-    expect(lastBatch()?.deletedConnectionIds).toEqual(['c1']);
+    expect(host.current.model.connections).toEqual([]);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('the Delete key on a selected connection asks too', () => {
-    const { onChange } = renderEditor();
+    const { host } = renderEditor();
 
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
     fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
 
     expect(within(dialog()).getByText(/Sends orders/)).toBeDefined();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 
   it("the inspector's Delete connection button asks too", () => {
@@ -116,8 +120,8 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
 });
 
 describe('SolutionDesignEditor — confirming a multi-delete', () => {
-  it('names what goes, and deletes it in one batch once confirmed', () => {
-    const { onChange, lastBatch } = renderEditor();
+  it('names what goes, and deletes it in one step once confirmed', () => {
+    const { host, asked } = renderEditor();
 
     // Select all: two elements and the line between them.
     fireEvent.contextMenu(document.querySelector('.react-flow__pane') as HTMLElement, {
@@ -125,32 +129,34 @@ describe('SolutionDesignEditor — confirming a multi-delete', () => {
       clientY: 500,
     });
     fireEvent.click(within(screen.getByRole('menu', { name: 'Canvas menu' })).getByText('Select all'));
-    onChange.mockClear();
 
     fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
     expect(within(dialog()).getByText(/2 elements and 1 connection/)).toBeDefined();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
 
     confirm();
-    expect([...(lastBatch()?.deletedElementIds ?? [])].sort()).toEqual(['a1', 'b1']);
-    expect(lastBatch()?.deletedConnectionIds).toEqual(['c1']);
+    // One step: the two elements go, and the line goes with them rather than
+    // being asked for a second time.
+    expect(host.current.commands).toHaveLength(1);
+    expect(asked().map((c) => c.type)).toEqual(['element.delete', 'element.delete']);
+    expect(host.current.model.elements).toEqual([]);
+    expect(host.current.model.connections).toEqual([]);
   });
 
   it('the selection menu reaches the same confirmation', () => {
-    const { onChange } = renderEditor();
+    const { host } = renderEditor();
 
     fireEvent.contextMenu(document.querySelector('.react-flow__pane') as HTMLElement, {
       clientX: 700,
       clientY: 500,
     });
     fireEvent.click(within(screen.getByRole('menu', { name: 'Canvas menu' })).getByText('Select all'));
-    onChange.mockClear();
 
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(screen.getByRole('menu', { name: 'Selection menu' })).getByText('Delete'));
 
     expect(within(dialog()).getByText(/2 elements and 1 connection/)).toBeDefined();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 
   it('leaves a single element to its own dialog, which asks a better question', () => {

@@ -3,12 +3,12 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from './SolutionDesignEditor';
+import { HostedEditor } from './testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { PALETTE_DRAG_MIME } from './canvas/ElementPalette';
 import { slug } from '../model/keys';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import type { DesignModel } from '../model/types';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 
 beforeAll(() => {
@@ -47,31 +47,43 @@ function modelWithPlacement(diagramId: 'd1' | 'd2'): DesignModel {
   return model;
 }
 
-function editorUi(props: SolutionDesignEditorProps) {
+function editorUi(props: HostedEditorProps, host: { current: EditorHostState }) {
   return (
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>
   );
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: baseModel(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     ...overrides,
   };
-  const view = render(editorUi(props));
-  const rerenderWith = (more: Partial<SolutionDesignEditorProps>) =>
-    view.rerender(editorUi({ ...props, ...more }));
-  return { ...view, props, onChange, rerenderWith };
+  const view = render(editorUi(props, host));
+  const rerenderWith = (more: Partial<HostedEditorProps>) =>
+    view.rerender(editorUi({ ...props, ...more }, host));
+  /** The active diagram as it now stands — what a batch assertion becomes. */
+  const landed = () => {
+    const m = host.current.model;
+    const diagram = m.diagrams.find((d) => d.id === (overrides.activeDiagramId ?? 'd1'))!;
+    return {
+      elements: m.elements,
+      connections: m.connections,
+      placements: diagram.placements,
+      edgeRoutes: diagram.edgeRoutes ?? [],
+      layoutConfig: diagram.layoutConfig,
+    };
+  };
+  const sent = () => host.current.commands.length;
+  return { ...view, props, host, landed, sent, rerenderWith };
 }
 
 /**
@@ -94,24 +106,20 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(screen.getByRole('button', { name: 'Application', expanded: false })).toBeDefined();
   });
 
-  it('placing from the palette emits a batch with a keyed element + landscape placement and selects it', () => {
-    const { onChange } = renderEditor();
+  it('placing from the palette lands a keyed element + landscape placement, in one step, and selects it', () => {
+    const { landed, sent } = renderEditor();
     placeFromPalette('Application');
 
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const batch = onChange.mock.calls[0][0];
-    expect(batch.diagramId).toBe('d1');
-    expect(batch.elements).toHaveLength(1);
-    const created = batch.elements[0];
+    expect(sent()).toBe(1);
+    expect(landed().elements).toHaveLength(2);
+    const created = landed().elements.at(-1)!;
     // The key the file would have given it, minted as it was drawn (ADR-0002).
     // It used to be a `tmp-…` the host swapped out on the first flush.
     expect(created.id).toBe(slug(created.name));
     expect(created.kind).toBe('application');
     expect(created.isManaged).toBe(true);
-    const createdPlacement = batch.placements.find((p) => p.elementId === created.id);
+    const createdPlacement = landed().placements.find((p) => p.elementId === created.id);
     expect(createdPlacement?.zone).toBe('landscape');
-    expect(batch.deletedElementIds).toEqual([]);
-    expect(batch.removedPlacementElementIds).toEqual([]);
 
     // The new element is auto-selected: the inspector shows its name field.
     const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
@@ -119,23 +127,22 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
   });
 
   it('adds actors into the actors zone', () => {
-    const { onChange } = renderEditor();
+    const { landed } = renderEditor();
     placeFromPalette('Actor');
-    const batch = onChange.mock.calls[0][0];
-    expect(batch.elements[0].kind).toBe('actor');
-    expect(batch.elements[0].isManaged).toBe(false);
-    expect(batch.placements[0].zone).toBe('actors');
+    const created = landed().elements.at(-1)!;
+    expect(created.kind).toBe('actor');
+    expect(created.isManaged).toBe(false);
+    expect(landed().placements.find((p) => p.elementId === created.id)?.zone).toBe('actors');
   });
 
-  it('editing the selected element name emits a follow-up batch', () => {
-    const { onChange } = renderEditor();
+  it('editing the selected element name lands a change of its own', () => {
+    const { landed, sent } = renderEditor();
     placeFromPalette('Application');
     const nameInput = screen.getByLabelText('Name');
     fireEvent.change(nameInput, { target: { value: 'Storefront' } });
 
-    expect(onChange.mock.calls.length).toBeGreaterThanOrEqual(2);
-    const lastBatch = onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-    expect(lastBatch.elements[0].name).toBe('Storefront');
+    expect(sent()).toBeGreaterThanOrEqual(2);
+    expect(landed().elements.at(-1)?.name).toBe('Storefront');
   });
 
   it('clears the selection on Escape, including when focus is in the inspector', () => {
@@ -273,18 +280,17 @@ describe('SolutionDesignEditor — iteration 2', () => {
     expect(screen.queryByText('Domain group')).toBeNull();
   });
 
-  it('adding a domain group emits a batch with the layoutConfig rect', () => {
-    const { onChange } = renderEditor();
+  it('adding a domain group writes the layoutConfig rect', () => {
+    const { landed, sent } = renderEditor();
     // The row opens; the Place button inside it is what adds — same gesture as
     // every other palette row since the group stopped being an exception.
     fireEvent.click(screen.getByRole('button', { name: 'Domain group', expanded: false }));
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const batch = onChange.mock.calls[0][0];
-    expect(batch.layoutConfig?.domainGroups).toHaveLength(1);
-    expect(batch.layoutConfig?.domainGroups?.[0].name).toBe('New group');
-    expect(batch.edgeRoutes).toEqual([]);
+    expect(sent()).toBe(1);
+    expect(landed().layoutConfig?.domainGroups).toHaveLength(1);
+    expect(landed().layoutConfig?.domainGroups?.[0].name).toBe('New group');
+    expect(landed().edgeRoutes).toEqual([]);
   });
 });
 
@@ -329,7 +335,7 @@ describe('SolutionDesignEditor — edge labels', () => {
   });
 
   it('double-click opens a multiline editor; blur commits the new label', async () => {
-    const { onChange } = renderEditor({ model: modelWithConnection() });
+    const { landed } = renderEditor({ model: modelWithConnection() });
 
     fireEvent.doubleClick(await screen.findByTestId('edge-label-c1'));
     const textarea = screen.getByPlaceholderText('Interface description…') as HTMLTextAreaElement;
@@ -337,21 +343,20 @@ describe('SolutionDesignEditor — edge labels', () => {
     fireEvent.change(textarea, { target: { value: 'Sends orders\nand credit notes' } });
     fireEvent.blur(textarea);
 
-    const batch = onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-    expect(batch.connections.find((c) => c.id === 'c1')?.label).toBe(
+    expect(landed().connections.find((c) => c.id === 'c1')?.label).toBe(
       'Sends orders\nand credit notes',
     );
   });
 
-  it('Escape cancels the inline edit without emitting a change', async () => {
-    const { onChange } = renderEditor({ model: modelWithConnection() });
+  it('Escape cancels the inline edit without changing anything', async () => {
+    const { sent } = renderEditor({ model: modelWithConnection() });
 
     fireEvent.doubleClick(await screen.findByTestId('edge-label-c1'));
     const textarea = screen.getByPlaceholderText('Interface description…');
     fireEvent.change(textarea, { target: { value: 'scrapped' } });
     fireEvent.keyDown(textarea, { key: 'Escape' });
 
-    expect(onChange).not.toHaveBeenCalled();
+    expect(sent()).toBe(0);
     expect((await screen.findByTestId('edge-label-c1')).textContent).toContain('Sends orders');
   });
 
@@ -360,17 +365,15 @@ describe('SolutionDesignEditor — edge labels', () => {
     model.diagrams[0].edgeRoutes = [
       { connectionId: 'c1', waypoints: [], labelPosition: { x: 500, y: 200 } },
     ];
-    const { onChange } = renderEditor({ model });
+    const { landed } = renderEditor({ model });
 
     fireEvent.contextMenu(await screen.findByTestId('edge-label-c1'));
     fireEvent.click(screen.getByText('Reset label position'));
 
-    const batch = onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-    // No waypoints and no anchor left, so the server drops the row — and the
-    // reset is stamped `manual` like every other hand edit, because it went
-    // through the same claiming path rather than a special-cased one.
-    expect(batch.edgeRoutes).toEqual([
-      { connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'manual' },
+    // No waypoints and no anchor left, so nothing is stored — and the reset went
+    // through the same claiming path as every other hand edit rather than a
+    // special-cased one, which is why it is not left behind stamped `manual`.
+    expect(landed().edgeRoutes).toEqual([
     ]);
   });
 });
@@ -448,13 +451,12 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
   });
 
   it('claims an auto route for the user when they double-click a new bend into it', async () => {
-    const { onChange } = renderEditor({ model: routedModel('auto') });
+    const { landed } = renderEditor({ model: routedModel('auto') });
 
     fireEvent.doubleClick(await screen.findByTestId('rf__edge-c1'));
 
-    const batch = onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-    const route = batch.edgeRoutes.find((r) => r.connectionId === 'c1');
-    // One commit: the new bend AND the claim, so a single undo puts both back.
+    const route = landed().edgeRoutes.find((r) => r.connectionId === 'c1');
+    // One step: the new bend AND the claim, so a single undo puts both back.
     expect(route?.source).toBe('manual');
     expect(route?.waypoints.length).toBe(3);
   });
@@ -464,7 +466,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
 
 describe('SolutionDesignEditor — paste cascade', () => {
   it('offsets each successive paste one grid step further, and a fresh copy resets it', () => {
-    const { onChange, rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
+    const { landed, rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
     // Select the placed application (a1 sits at x:400 on the landscape).
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
     expect(screen.getByLabelText('Name')).toBeDefined();
@@ -474,14 +476,11 @@ describe('SolutionDesignEditor — paste cascade', () => {
     const target = screen.getByText('ACTORS');
     const copy = () => fireEvent.keyDown(target, { key: 'c', ctrlKey: true });
     const paste = () => fireEvent.keyDown(target, { key: 'v', ctrlKey: true });
-    // The x of every pasted placement in the latest batch — batches carry the
-    // full effective placement set, so these accumulate. A copy is anything
-    // that was not in the model to begin with.
-    const pastedXs = () => {
-      const batch = onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-      return batch.placements
+    // The x of every pasted placement on the board. A copy is anything that was
+    // not in the model to begin with.
+    const pastedXs = () =>
+      landed().placements
         .filter((p) => p.elementId !== 'a1').map((p) => p.x).sort((a, b) => a - b);
-    };
 
     copy();
     paste();
@@ -609,35 +608,36 @@ describe('SolutionDesignEditor — route connections only', () => {
 
   it('routes the blocked edge and leaves every node where it was', async () => {
     const model = modelWithBlockedEdge();
-    const { onChange } = renderEditor({ model });
+    const placements = model.diagrams[0].placements;
+    const layoutConfig = model.diagrams[0].layoutConfig;
+    const { landed, sent } = renderEditor({ model });
 
     fireEvent.click(screen.getByLabelText('Route connections only'));
 
-    // The router is WASM, so the commit lands a tick later — wait for the batch
-    // rather than for a timeout, and assert it is still exactly ONE batch.
-    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
-    const batch = onChange.mock.calls.at(-1)![0];
+    // The router is WASM, so the change lands a tick later — wait for it rather
+    // than for a timeout, and assert it is still exactly ONE step.
+    await waitFor(() => expect(sent()).toBe(1));
     // Positions come back untouched, and the blocked edge gained a route.
-    expect(batch.placements).toEqual(model.diagrams[0].placements);
-    expect(batch.layoutConfig).toBeUndefined();
-    const route = batch.edgeRoutes.find((r) => r.connectionId === 'c1');
+    expect(landed().placements).toEqual(placements);
+    expect(landed().layoutConfig).toEqual(layoutConfig);
+    const route = landed().edgeRoutes.find((r) => r.connectionId === 'c1');
     expect(route?.waypoints.length).toBeGreaterThan(0);
   });
 
   it('locks out Tidy while it runs, then releases both buttons', async () => {
-    const { onChange } = renderEditor({ model: modelWithBlockedEdge() });
+    const { sent } = renderEditor({ model: modelWithBlockedEdge() });
     const tidy = screen.getByLabelText<HTMLButtonElement>('Tidy layout');
     const route = screen.getByLabelText<HTMLButtonElement>('Route connections only');
     expect(tidy.disabled).toBe(false);
 
-    // Both actions commit one undo step over the whole diagram, so they must not
+    // Both actions are one undo step over the whole diagram, so they must not
     // overlap. `busy` is set synchronously in the click handler — no microtask has
     // run yet at this point, so this observes the pending state, not a race.
     fireEvent.click(route);
     expect(tidy.disabled).toBe(true);
     expect(route.disabled).toBe(true);
 
-    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(sent()).toBe(1));
     expect(tidy.disabled).toBe(false);
     expect(route.disabled).toBe(false);
   });
@@ -798,11 +798,8 @@ describe('SolutionDesignEditor — palette drag over the board', () => {
  * palette row that added on click and could not be dragged at all.
  */
 describe('SolutionDesignEditor — domain groups from the palette', () => {
-  const groupsFrom = (onChange: ReturnType<typeof vi.fn>) =>
-    onChange.mock.calls.at(-1)?.[0].layoutConfig?.domainGroups ?? [];
-
   it('places a named, coloured group from the tray', () => {
-    const { onChange } = renderEditor();
+    const { landed } = renderEditor();
 
     fireEvent.click(screen.getByRole('button', { name: 'Domain group', expanded: false }));
     fireEvent.change(screen.getByLabelText('Domain group name'), {
@@ -813,7 +810,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
-    expect(groupsFrom(onChange)).toEqual([
+    expect(landed().layoutConfig?.domainGroups).toEqual([
       expect.objectContaining({ name: 'Commerce', color: '#2f6fdb' }),
     ]);
   });
@@ -834,10 +831,10 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
       },
     });
 
-    const [group] = groupsFrom(view.onChange);
+    const [group] = view.landed().layoutConfig?.domainGroups ?? [];
     expect(group).toMatchObject({ name: 'Commerce', color: '#2f6fdb' });
     // And no element was created by the same gesture — a group is not an element.
-    expect(view.onChange.mock.calls.at(-1)?.[0].elements).toEqual([]);
+    expect(view.landed().elements.map((e) => e.id)).toEqual(['a1']);
   });
 
   it('never hijacks an existing group by name', () => {
@@ -845,7 +842,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     model.diagrams[0].layoutConfig = {
       domainGroups: [{ name: 'Commerce', x: 300, y: 300, width: 400, height: 300 }],
     };
-    const { onChange } = renderEditor({ model });
+    const { landed } = renderEditor({ model });
 
     fireEvent.click(screen.getByRole('button', { name: 'Domain group', expanded: false }));
     fireEvent.change(screen.getByLabelText('Domain group name'), {
@@ -853,7 +850,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
-    expect(groupsFrom(onChange).map((g: { name: string }) => g.name)).toEqual([
+    expect((landed().layoutConfig?.domainGroups ?? []).map((g) => g.name)).toEqual([
       'Commerce',
       'Commerce 2',
     ]);
@@ -862,7 +859,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
 
 describe('SolutionDesignEditor — palette tray pre-seed', () => {
   it('pre-seeds the logo and name; the inspector reflects the same fields', () => {
-    const { onChange } = renderEditor();
+    const { landed } = renderEditor();
 
     // Open the application row, pick a mark and name it before placing.
     fireEvent.click(screen.getByRole('button', { name: 'Application', expanded: false }));
@@ -872,7 +869,7 @@ describe('SolutionDesignEditor — palette tray pre-seed', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add application' }));
 
-    const created = onChange.mock.calls.at(-1)?.[0].elements[0] as DiagramContentBatch['elements'][0];
+    const created = landed().elements.at(-1)!;
     expect(created.iconKey).toBe('database');
     expect(created.name).toBe('Kernsysteem');
 
@@ -885,10 +882,10 @@ describe('SolutionDesignEditor — palette tray pre-seed', () => {
   });
 
   it('places an unseeded element when the tray is untouched — parity with today', () => {
-    const { onChange } = renderEditor();
+    const { landed } = renderEditor();
     placeFromPalette('Actor');
 
-    const created = onChange.mock.calls.at(-1)?.[0].elements[0] as DiagramContentBatch['elements'][0];
+    const created = landed().elements.at(-1)!;
     expect(created.name).toBe('New actor');
     expect(created.shapeVariant).toBeUndefined();
     expect(created.accentColor).toBeUndefined();

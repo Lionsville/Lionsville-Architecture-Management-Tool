@@ -62,7 +62,7 @@ export type Layer7Zone =
   | 'management';
 /** Element lifecycle stage — closed set, defaults to 'live' (see model-mapping). */
 export type Lifecycle = 'planned' | 'live' | 'retiring' | 'retired';
-/** Server id as string, or temp id 'tmp-…' (see createTempId/isTempId). */
+/** The key this element has in the file — see `keys.ts` for where it comes from. */
 export type ElementId = string;
 
 /**
@@ -342,29 +342,6 @@ export interface DesignModel {
   diagrams: DesignDiagram[];
   elements: DesignElement[];
   connections: DesignConnection[];
-}
-
-/** Mirrors the API save contract (PUT diagrams/{id}/content). */
-export interface DiagramContentBatch {
-  diagramId: string;
-  /** Element upserts touched this editing session (may carry temp ids). */
-  elements: DesignElement[];
-  deletedElementIds: string[];
-  connections: DesignConnection[];
-  deletedConnectionIds: string[];
-  /** Full placement set for THIS diagram. */
-  placements: DiagramPlacement[];
-  /** Element ids whose placement was removed from this diagram. */
-  removedPlacementElementIds: string[];
-  /** Route upserts touched this session; empty waypoints = delete the route. */
-  edgeRoutes: EdgeRoute[];
-  /** Present only when touched this session; upserted whole. */
-  layoutConfig?: DiagramLayoutConfig;
-  /**
-   * Present only when the auto-route toggle was flipped this session; absent =
-   * unchanged. Rides the content batch so the toggle costs no extra round-trip.
-   */
-  autoRoute?: boolean;
 }
 
 /**

@@ -11,7 +11,7 @@ export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
   Lifecycle, DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DiagramPlacement, DesignDiagram,
-  DesignModel, DiagramContentBatch, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
+  DesignModel, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'
 
@@ -34,11 +34,11 @@ export {
 export type { ApplyResult, CommandRefusal } from './reducer'
 export { apply, applyAll } from './reducer'
 
-export { createTempId, isTempId } from './ids'
 /**
- * The one definition of "this route row stores something" — a row without it is
- * the batch's delete marker. Anything applying a `DiagramContentBatch` must use
- * this rather than re-deriving the rule from `waypoints`.
+ * The one definition of "this route row stores something". A row without it is
+ * not a row to store but the instruction to forget the one that is there, and
+ * everybody deciding that must ask here rather than re-derive it from
+ * `waypoints`.
  */
 export { hasRouteContent } from './routes'
 export { ASPECT_SUPERSET, DEFAULT_ASPECT_CONFIG, aspectConfigFor, aspectShortCode } from './aspects'

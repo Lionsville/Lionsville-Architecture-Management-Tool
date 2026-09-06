@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import type { DesignModel } from '../model/types';
 import { DEFAULT_ZONE_SIZES, HOME_ZONE } from '../model/zones';
 import { NODE_MAX_SIZE } from '../model/placement';
-import { useEditorState } from './useEditorState';
+import { renderEditorState } from './testing/editorHost';
 
 /**
  * `changeElementKind` at the action: one commit, one undo step, and a placement
@@ -46,22 +45,14 @@ function model(): DesignModel {
 }
 
 function render(initial: DesignModel, activeDiagramId = 'd1') {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: initial,
-    activeDiagramId,
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  const element = (id: string) => result.current.effectiveModel.elements.find((e) => e.id === id);
+  const { result, host } = renderEditorState(initial, { activeDiagramId });
+  const element = (id: string) => result.current.model.elements.find((e) => e.id === id);
   const placement = (id: string) =>
-    result.current.effectiveModel.diagrams
+    result.current.model.diagrams
       .find((d) => d.id === activeDiagramId)
       ?.placements.find((p) => p.elementId === id);
-  return { result, onChange, element, placement };
+  const sent = () => host.current.commands;
+  return { result, host, sent, element, placement };
 }
 
 describe('changeElementKind', () => {
@@ -76,7 +67,7 @@ describe('changeElementKind', () => {
   it('keeps the connections — that is the whole point of not redrawing it', () => {
     const { result } = render(model());
     act(() => result.current.actions.changeElementKind('e1', 'application'));
-    expect(result.current.effectiveModel.connections).toHaveLength(1);
+    expect(result.current.model.connections).toHaveLength(1);
   });
 
   it('moves the placement to the new kind‘s home band', () => {
@@ -97,12 +88,14 @@ describe('changeElementKind', () => {
     expect(after?.y).toBe(0);
   });
 
-  it('is one commit — the element and its placement land in the same batch', () => {
-    const { result, onChange } = render(model());
+  it('is one command — the element and its placement travel together', () => {
+    const { result, sent } = render(model());
     act(() => result.current.actions.changeElementKind('e1', 'application'));
-    const batch = onChange.mock.calls.at(-1)?.[0];
-    expect(batch?.elements.some((e) => e.id === 'e1' && e.kind === 'application')).toBe(true);
-    expect(batch?.placements.some((p) => p.elementId === 'e1')).toBe(true);
+    expect(sent()).toHaveLength(1);
+    const command = sent()[0];
+    expect(command.type).toBe('transaction');
+    expect(command.type === 'transaction' && command.commands.map((c) => c.type))
+      .toEqual(['element.update', 'placement.set']);
   });
 
   it('is one undo step', () => {
@@ -114,28 +107,28 @@ describe('changeElementKind', () => {
   });
 
   it('refuses — and commits nothing — for an application with a container diagram', () => {
-    const { result, onChange, element } = render(model());
+    const { result, sent, element } = render(model());
     act(() => result.current.actions.changeElementKind('e2', 'externalSystem'));
     expect(element('e2')?.kind).toBe('application');
-    expect(onChange).not.toHaveBeenCalled();
+    expect(sent()).toEqual([]);
   });
 
   it('refuses a component that still belongs to an application', () => {
-    const { result, onChange, element } = render(model(), 'd2');
+    const { result, sent, element } = render(model(), 'd2');
     act(() => result.current.actions.changeElementKind('c1', 'actor'));
     expect(element('c1')?.kind).toBe('component');
-    expect(onChange).not.toHaveBeenCalled();
+    expect(sent()).toEqual([]);
   });
 
   it('refuses a kind this diagram does not hold', () => {
-    const { result, onChange } = render(model());
+    const { result, sent } = render(model());
     act(() => result.current.actions.changeElementKind('e1', 'component'));
-    expect(onChange).not.toHaveBeenCalled();
+    expect(sent()).toEqual([]);
   });
 
   it('refuses the kind it already is', () => {
-    const { result, onChange } = render(model());
+    const { result, sent } = render(model());
     act(() => result.current.actions.changeElementKind('e1', 'externalSystem'));
-    expect(onChange).not.toHaveBeenCalled();
+    expect(sent()).toEqual([]);
   });
 });

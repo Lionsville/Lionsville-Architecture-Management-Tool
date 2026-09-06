@@ -39,8 +39,7 @@ function fakeSession(latest: { current: ProjectSnapshot }) {
     activeDiagramId: 'd1',
     logoLibrary: [],
     snapshot: () => latest.current,
-    flush: vi.fn(),
-  } as unknown as ModelSession & { flush: ReturnType<typeof vi.fn> }
+  } as unknown as ModelSession
 }
 
 function mount(save: (p: ProjectSnapshot) => Promise<void> = () => Promise.resolve()) {
@@ -108,27 +107,24 @@ describe('useAutosave', () => {
     expect(result.mock.calls.map(([ok]) => ok)).toEqual([false, true])
   })
 
-  it('saves at once when asked, flushing first so nothing pending is lost', async () => {
+  it('saves at once when asked, rather than waiting out the idle window', async () => {
     const save = vi.fn((_p: ProjectSnapshot) => Promise.resolve())
-    const { session, force } = mount(save)
+    const { force } = mount(save)
     act(() => force())
-    expect(session.flush).toHaveBeenCalledOnce()
     expect(save).toHaveBeenCalledOnce()
   })
 
-  it('flushes and writes once more when the tab is closing', async () => {
+  it('writes once more when the tab is closing', async () => {
     const save = vi.fn((_p: ProjectSnapshot) => Promise.resolve())
-    const { session } = mount(save)
+    mount(save)
     act(() => { window.dispatchEvent(new Event('beforeunload')) })
-    expect(session.flush).toHaveBeenCalledOnce()
     expect(save).toHaveBeenCalledOnce()
   })
 
   it('lets go of the window when it unmounts', async () => {
     const save = vi.fn((_p: ProjectSnapshot) => Promise.resolve())
-    const { session } = mount(save)
+    mount(save)
     cleanup()
     window.dispatchEvent(new Event('beforeunload'))
-    expect(session.flush).not.toHaveBeenCalled()
   })
 })

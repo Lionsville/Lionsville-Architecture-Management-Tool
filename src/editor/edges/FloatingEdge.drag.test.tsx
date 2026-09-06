@@ -2,12 +2,12 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from '../SolutionDesignEditor';
+import { HostedEditor } from '../testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from '../testing/editorHost';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import { placementRect } from '../../model/placement';
 import { drawnPolyline, legAxis } from '../../model/routes';
-import type { DesignModel, DiagramContentBatch, Point } from '../../model/types';
-import type { SolutionDesignEditorProps } from '../props';
+import type { DesignModel, Point } from '../../model/types';
 
 /**
  * The three drag gestures on a line — bend, segment, label — through the real
@@ -60,13 +60,12 @@ function model(): DesignModel {
   };
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     ...overrides,
@@ -74,15 +73,13 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
   render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );
   const lastRoute = () =>
-    (onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch | undefined)?.edgeRoutes.find(
-      (r) => r.connectionId === 'c1',
-    );
-  return { onChange, lastRoute };
+    host.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1');
+  return { host, lastRoute };
 }
 
 /** Handles belong to the SELECTED line (2a), so every gesture starts by picking it up. */
@@ -136,13 +133,13 @@ const FROM: Point = { x: 300, y: 300 };
 
 describe('FloatingEdge — bend drag', () => {
   it('commits the bend where the pointer came up, in flow coordinates, and claims the route', async () => {
-    const { onChange, lastRoute } = renderEditor();
+    const { host, lastRoute } = renderEditor();
     await selectEdge();
     const to = { x: 360, y: 340 };
 
     drag(screen.getByTestId('waypoint-c1-0'), FROM, { x: 330, y: 320 }, to);
 
-    expect(onChange).toHaveBeenCalledTimes(1); // one gesture, one commit, one undo step
+    expect(host.current.commands).toHaveLength(1); // one gesture, one step, one undo
     const route = lastRoute();
     expect(route?.source).toBe('manual');
     expect(route?.waypoints).toHaveLength(2);
@@ -155,7 +152,7 @@ describe('FloatingEdge — bend drag', () => {
 
 describe('FloatingEdge — segment drag', () => {
   it('shifts the leg perpendicular to itself and commits an orthogonal route', async () => {
-    const { onChange, lastRoute } = renderEditor();
+    const { host, lastRoute } = renderEditor();
     await selectEdge();
     // Leg 1 is the vertical middle leg at x = 800. A drag that is mostly
     // sideways, with some vertical noise the leg cannot follow.
@@ -163,7 +160,7 @@ describe('FloatingEdge — segment drag', () => {
 
     drag(screen.getByTestId('segment-c1-1'), FROM, { x: FROM.x + delta.x, y: FROM.y + delta.y });
 
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(host.current.commands).toHaveLength(1);
     const route = lastRoute();
     expect(route?.source).toBe('manual');
     expect(route?.waypoints).toHaveLength(2);
@@ -182,7 +179,7 @@ describe('FloatingEdge — segment drag', () => {
   it('makes an orthogonal jog out of a line that has no bends', async () => {
     const m = model();
     m.diagrams[0].edgeRoutes = [];
-    const { onChange, lastRoute } = renderEditor({ model: m });
+    const { host, lastRoute } = renderEditor({ model: m });
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     // A straight line shows exactly one segment handle.
     const handle = await screen.findByTestId('segment-c1-0');
@@ -191,7 +188,7 @@ describe('FloatingEdge — segment drag', () => {
 
     drag(handle, FROM, { x: FROM.x + clientDelta({ x: 40, y: 0 }).x, y: FROM.y });
 
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(host.current.commands).toHaveLength(1);
     const route = lastRoute();
     expect(route?.source).toBe('manual');
     expect(route!.waypoints.length).toBeGreaterThanOrEqual(2);
@@ -204,13 +201,13 @@ describe('FloatingEdge — segment drag', () => {
 
 describe('FloatingEdge — label drag', () => {
   it('commits the chip anchor where the pointer came up', async () => {
-    const { onChange, lastRoute } = renderEditor();
+    const { host, lastRoute } = renderEditor();
     const chip = await screen.findByTestId('edge-label-c1');
     const to = { x: 420, y: 260 };
 
     drag(chip, FROM, { x: 350, y: 280 }, to);
 
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(host.current.commands).toHaveLength(1);
     const route = lastRoute();
     expect(route?.source).toBe('manual');
     expect(route?.waypoints).toEqual(BENDS); // the bends ride along untouched
@@ -222,7 +219,7 @@ describe('FloatingEdge — label drag', () => {
 
 describe('FloatingEdge — cancelled and aborted gestures commit nothing', () => {
   it('Escape mid-drag drops the preview and leaves the model alone', async () => {
-    const { onChange } = renderEditor();
+    const { host } = renderEditor();
     await selectEdge();
     const handle = screen.getByTestId('waypoint-c1-0');
 
@@ -234,14 +231,14 @@ describe('FloatingEdge — cancelled and aborted gestures commit nothing', () =>
 
     // …and is back on it, with nothing emitted.
     expect(handlePosition(screen.getByTestId('waypoint-c1-0'))).toEqual(BENDS[0]);
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
     // The gesture is over: a later pointer-up is dead too.
     fireEvent(handle, pointer('pointerup', { clientX: FROM.x + 50, clientY: FROM.y + 50 }));
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 
   it('pointercancel (the browser took the pointer) does the same, on every handle kind', async () => {
-    const { onChange } = renderEditor();
+    const { host } = renderEditor();
     await selectEdge();
     for (const id of ['waypoint-c1-0', 'segment-c1-1', 'edge-label-c1']) {
       const handle = screen.getByTestId(id);
@@ -250,19 +247,19 @@ describe('FloatingEdge — cancelled and aborted gestures commit nothing', () =>
       fireEvent(handle, pointer('pointercancel'));
       fireEvent(handle, pointer('pointerup', { clientX: FROM.x + 60, clientY: FROM.y + 60 }));
     }
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
     expect(handlePosition(screen.getByTestId('waypoint-c1-0'))).toEqual(BENDS[0]);
   });
 
   it('a press that travels one pixel is a click, not a drag: nothing is committed or claimed', async () => {
-    const { onChange } = renderEditor();
+    const { host } = renderEditor();
     await selectEdge();
     for (const id of ['waypoint-c1-0', 'segment-c1-1']) {
       drag(screen.getByTestId(id), FROM, { x: FROM.x + 1, y: FROM.y });
     }
     // On the chip a plain click SELECTS the line — still no route commit.
     drag(screen.getByTestId('edge-label-c1'), FROM, { x: FROM.x + 1, y: FROM.y + 1 });
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
     // Router output stays router output.
     expect(screen.getByTestId('route-badge').textContent).toBe('Automatic');
   });

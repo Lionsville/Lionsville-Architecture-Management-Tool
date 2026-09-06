@@ -3,33 +3,11 @@ import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, Diagr
 import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
 import type { TidyResult } from '../layout/tidy';
-import { buildBatch } from '../model/batch';
 import { remapClipboard, type ClipboardPayload } from '../model/clipboard';
-import { isTempId } from '../model/ids';
 import { idPolicy, idsIn } from '../model/keys';
 import type { IdPolicy } from '../model/keys';
-import { mergeModel } from '../model/merge';
-import {
-  EMPTY_OVERLAY,
-  overlayWithConnection,
-  overlayWithConnectionDeleted,
-  overlayWithEdgeRoute,
-  overlayWithElement,
-  overlayWithElementDeleted,
-  overlayWithAutoRoute,
-  overlayWithLayoutConfig,
-  overlayWithPlacement,
-  overlayWithPlacementRemoved,
-  overlayWithPlacements,
-  type ModelOverlay,
-} from '../model/overlay';
-import {
-  reconcileOverlay,
-  remapOverlayIds,
-  type EmittedConnectionSnapshot,
-  type EmittedElementSnapshot,
-} from '../model/reconcile';
-import { diffToOverlay, effectiveOverlay } from '../model/diffToOverlay';
+import { transaction } from '../model/commands';
+import type { Command } from '../model/commands';
 import {
   clampPlacementIntoZone,
   defaultContainerPosition,
@@ -200,7 +178,7 @@ export interface EditorActions {
   addElement(seed: ElementSeed): void;
   updateElement(id: ElementId, patch: Partial<Omit<DesignElement, 'id' | 'kind'>>): void;
   /**
-   * The same patch onto several elements in ONE commit — the selection menu's
+   * The same patch onto several elements in ONE step — the selection menu's
    * Lifecycle. One undo step for one gesture, exactly like a multi-node drag.
    */
   updateElements(ids: readonly ElementId[], patch: Partial<Omit<DesignElement, 'id' | 'kind'>>): void;
@@ -212,14 +190,14 @@ export interface EditorActions {
    * field write: the rules live in `model/kindChange.ts` (an application with a
    * container diagram and a parented component are refused), and the placement
    * has to follow the new kind — its home band and its size limits both change.
-   * Both land in ONE commit, so it is one undo step. A refused change commits
+   * Both land in ONE step, so it is one undo step. A refused change changes
    * nothing.
    */
   changeElementKind(id: ElementId, kind: ElementKind): void;
   movePlacements(moves: PlacementMove[]): void;
   setPlacements(placements: DiagramPlacement[]): void;
   /**
-   * Commit a Tidy run in ONE batch: element positions plus, for layer7, the
+   * Commit a Tidy run in ONE step: element positions plus, for layer7, the
    * re-sized landscape domain-group rects. Rects are merged into
    * `layoutConfig.domainGroups` BY NAME — create-or-resize: an existing rect is
    * resized in place, a tidy rect with a new name is appended (Tidy emits one
@@ -229,37 +207,37 @@ export interface EditorActions {
   applyTidyResult(result: TidyResult, amend?: CommitToken): CommitToken;
   setDomainGroup(elementId: ElementId, domainGroup: string | undefined): void;
   /**
-   * The same, for a whole selection, in ONE commit — so bulk-assigning a domain
+   * The same, for a whole selection, in ONE step — so bulk-assigning a domain
    * group is one undo step rather than one per element. Elements with no
    * placement on the active diagram are skipped.
    */
   setDomainGroups(elementIds: readonly ElementId[], domainGroup: string | undefined): void;
   /**
    * Draw a new connection. With `sides` (an Alt-connect from or to a specific
-   * side handle) the attach sides land in the SAME commit as the line, as a
+   * side handle) the attach sides land in the SAME step as the line, as a
    * bend-less `auto` route row, so one undo removes both. Returns the new
-   * connection's (temp) id; `undefined` for a refused self-connection.
+   * connection's id; `undefined` for a refused self-connection.
    */
   connect(sourceId: ElementId, targetId: ElementId, sides?: RouteSides): string | undefined;
   /**
    * Repoint an existing connection — a reconnect drag — optionally fixing the
    * end(s) the user dragged to a specific side handle with Alt held, in ONE
-   * geometry commit: a reconnect changes topology, so the live pass follows.
+   * geometry step: a reconnect changes topology, so the live pass follows.
    */
   reconnect(id: string, endpoints: { sourceId: ElementId; targetId: ElementId }, sides?: RouteSides): void;
   /**
-   * Paste a clipboard snapshot onto the active diagram: mints fresh temp ids,
-   * remaps references (parent, endpoints), offsets placements, then selects
-   * the pasted set. Reuses the tempId → reconcile round-trip (see clipboard.ts).
+   * Paste a clipboard snapshot onto the active diagram: mints the keys the
+   * copies will have in the file, remaps references (parent, endpoints),
+   * offsets placements, then selects the pasted set.
    */
   pasteClipboard(payload: ClipboardPayload, offset: Point): void;
   updateConnection(id: string, patch: Partial<Omit<DesignConnection, 'id'>>): void;
   deleteConnection(id: string): void;
   /**
    * Delete a whole selection (elements + connections + domain groups) in ONE
-   * batched commit — the destructive half of Mod+X cut. Element deletes cascade
-   * to their connections and placements; the explicit connection ids are removed
-   * too, and selected domain groups lose their rect (members survive, they just
+   * step — the destructive half of Mod+X cut. Element deletes cascade to their
+   * connections and placements; the explicit connection ids are removed too,
+   * and selected domain groups lose their rect (members survive, they just
    * stop belonging to a group).
    */
   deleteSelection(selection: Selection): void;
@@ -268,26 +246,26 @@ export interface EditorActions {
   /**
    * Replace a connection's waypoints on the active diagram (label anchor and pin
    * kept). A hand edit, so the route becomes `manual`. Clearing the last bend of
-   * a route that has no label anchor and no pin writes the delete marker instead,
-   * which hands the line back to the router — "remove all bend points" must not
-   * leave behind an empty row that every automatic pass then steps around.
+   * a route that has no label anchor and no pin forgets the row instead, which
+   * hands the line back to the router — "remove all bend points" must not leave
+   * behind an empty row that every automatic pass then steps around.
    */
   setEdgeRoute(connectionId: string, waypoints: Point[]): void;
   /** Move (or reset, with undefined) a connection's label anchor on the active diagram. */
   setEdgeLabelPosition(connectionId: string, position: Point | undefined): void;
   /**
    * Pin (`manual`) or unpin (`auto`) a connection's route without touching its
-   * geometry — one commit, one undo step. Pinning a line that has no stored row
+   * geometry — one step, one undo step. Pinning a line that has no stored row
    * writes a bend-less row carrying `pinned: true`, so the fact survives; unpinning
-   * such a row deletes it. Nothing is re-routed here: Unpin only hands the line
+   * such a row forgets it. Nothing is re-routed here: Unpin only hands the line
    * to the next automatic pass, and `resetEdgeRoute` is the action that asks for one.
    */
   setRouteSource(connectionId: string, source: EdgeRouteSource): void;
   /**
    * Forget everything stored for a connection's route on the active diagram —
    * bends, label anchor, pin, provenance, attach sides — so the router gets it
-   * back. With live auto-routing on this is a GEOMETRY commit, so the live pass
-   * follows and amends its routes into the same undo step through the returned
+   * back. With live auto-routing on this is a GEOMETRY change, so the live pass
+   * follows and folds its routes into the same undo step through the returned
    * token; with it off, the caller runs the routing pass itself and passes the
    * token to `applyTidyResult`, to the same effect: one undo puts the old route back.
    */
@@ -301,7 +279,7 @@ export interface EditorActions {
    * that exists only for them stays the router's and the next pass honours them.
    *
    * The same two roads as `resetEdgeRoute` bring the line back routed: a geometry
-   * commit with live routing on, a plain commit plus a caller-run pass with it
+   * change with live routing on, a plain one plus a caller-run pass with it
    * off, one undo step either way. Returns `undefined` when nothing changed, so
    * the caller runs no pass for a no-op.
    */
@@ -314,13 +292,13 @@ export interface EditorActions {
   resizePlacement(elementId: ElementId, rect: { x: number; y: number; width: number; height: number }): void;
   /**
    * Create or update a domain-group rectangle. With `memberIds`, those
-   * placements join the group in the same commit — how "Group into new domain
+   * placements join the group in the same step — how "Group into new domain
    * group" makes one undo step out of a box and its membership.
    */
   upsertDomainGroup(rect: DomainGroupRect, memberIds?: readonly ElementId[]): void;
   /**
    * Rigid-move a domain group: translate its box rect AND every member
-   * placement by (dx, dy) in ONE commit (one undo step). Membership is
+   * placement by (dx, dy) in ONE step (one undo step). Membership is
    * preserved — no `domainGroup` value changes.
    */
   moveDomainGroup(name: string, dx: number, dy: number): void;
@@ -341,7 +319,8 @@ export interface EditorActions {
 }
 
 export interface EditorState {
-  effectiveModel: DesignModel;
+  /** The document, as the host holds it. There is no second copy (ADR-0002). */
+  model: DesignModel;
   selection: Selection;
   setSelection(selection: Selection): void;
   selectedElement?: DesignElement;
@@ -350,18 +329,18 @@ export interface EditorState {
   selectedDomainGroup?: string;
   actions: EditorActions;
   /**
-   * Bumped by every commit that moved geometry or changed topology, and by
-   * undo/redo. Live routing debounces a whole-board reroute on it.
+   * Bumped by every change that moved geometry or changed topology. Live routing
+   * debounces a whole-board reroute on it.
    */
   geometryVersion: number;
   /**
-   * The current overlay version — the amend token a caller passes back to
-   * `applyTidyResult` to fold a follow-up commit into the step it already made.
-   * Read it BEFORE an async pass; anything that mutates the overlay meanwhile
-   * makes it stale, which is exactly what should invalidate the amend.
+   * The step the last change made — the token a caller passes back to
+   * `applyTidyResult` to fold a follow-up into the step it already made.
+   * Read it BEFORE an async pass; anything that changes the model meanwhile
+   * makes it stale, which is exactly what should invalidate the fold.
    */
-  overlayVersion: CommitToken;
-  /** In-memory undo/redo over content commits (U7). Selection/viewport excluded. */
+  commitToken: CommitToken;
+  /** The host's undo stack (ADR-0002); the toolbar buttons and ⌘Z call these. */
   undo(): void;
   redo(): void;
   canUndo: boolean;
@@ -426,310 +405,122 @@ const DEFAULT_MANAGED: Record<ElementKind, boolean> = {
 };
 
 /**
- * Owns the local overlay (see model/overlay.ts for the merge strategy) and
- * exposes the effective model plus every mutation as a small action API.
- * Each mutation synchronously emits a fresh DiagramContentBatch through
- * `onChange` — the host debounces and persists.
+ * What a change hands back so a follow-up can be folded INTO it rather than
+ * pushed after it — see `dispatch`'s amend mode.
  *
- * The overlay lives in a ref with a version counter: commits happen in event
- * handlers, must read the latest overlay synchronously (several state updates
- * can land before React re-renders), and must emit exactly once per mutation
- * (StrictMode-safe — no side effects inside setState updaters).
+ * It names one step of the host's undo stack, and the naming is load-bearing:
+ * the token a change returns is the `coalesce` key it dispatched under, so the
+ * host folds a follow-up carrying it into that step and nothing else. Anything
+ * that lands in between takes the top of the stack with it, which makes the
+ * token stale — exactly when it should be.
  */
-/** Undo history depth cap (U7/D6): drop the oldest past-snapshot beyond this. */
-const HISTORY_CAP = 50;
+export type CommitToken = string;
 
 /**
- * What a commit hands back so a follow-up can be folded INTO it rather than
- * pushed after it — see `commit`'s amend mode.
+ * The editing session, as the canvas and its panels see it.
  *
- * It is the overlay version, not a commit counter, and the difference is
- * load-bearing: `undo`/`redo` bump the overlay version without going through
- * `commit`, so a token minted before an undo is correctly stale afterwards.
+ * There is no model here. Every action builds a command and dispatches it at
+ * the host, which applies it through the one reducer and hands the result
+ * straight back (ADR-0002); what is left in this hook is the selection, the
+ * geometry counter live routing debounces on, and the arithmetic that turns a
+ * gesture into a command.
+ *
+ * The model is read through a ref rather than off the props, because a gesture
+ * that makes two changes has to see the first before React has rendered it. The
+ * ref runs ahead of the prop for exactly as long as that takes, and the two are
+ * the same object again by the next render.
  */
-export type CommitToken = number;
-
 export function useEditorState(props: SolutionDesignEditorProps): EditorState {
-  const overlayRef = useRef<ModelOverlay>(EMPTY_OVERLAY);
-  const [, setOverlayVersion] = useState(0);
-  // Mirrored in a ref so a callback can read the CURRENT value synchronously —
-  // `commit` returns it as an amend token and compares against it on the way in,
-  // both of which happen inside event handlers before React re-renders.
-  const overlayVersionRef = useRef(0);
-  const bumpOverlayVersion = useCallback(() => {
-    overlayVersionRef.current += 1;
-    setOverlayVersion(overlayVersionRef.current);
-  }, []);
-  /**
-   * Bumped by every commit that moves geometry or changes topology, and
-   * unconditionally by undo/redo. Live routing debounces on it.
-   *
-   * Deliberately NOT bumped by `applyTidyResult`: a tidy routes as its own final
-   * step, so re-routing after it would fight the `'clear'` policy it just ran
-   * under. That exclusion is also what keeps an auto-layout from triggering a
-   * second pass — an auto-layout IS an `applyTidyResult`.
-   */
-  const [geometryVersion, setGeometryVersion] = useState(0);
-  const bumpGeometry = useCallback(() => setGeometryVersion((v) => v + 1), []);
-  // In-memory undo/redo stacks (U7, B-effective-state): session-scoped, no
-  // persistence. Each snapshot is a full-upsert overlay of the EFFECTIVE state
-  // (`effectiveOverlay`), NOT the raw patch — the host swaps `props.model` on
-  // every autosave, so a raw-patch snapshot would go stale against the moved
-  // base. `undo`/`redo` synthesise the corrective patch against the CURRENT base
-  // via `diffToOverlay` and re-emit through the SAME `emitBatch`. `past` holds
-  // states to undo TO; `future` holds ones a redo restores. `commit` is the only
-  // push point (undo/redo never route through it — no flag needed).
-  const pastRef = useRef<ModelOverlay[]>([]);
-  const futureRef = useRef<ModelOverlay[]>([]);
-  const emittedElementsRef = useRef<Map<ElementId, EmittedElementSnapshot>>(new Map());
-  const emittedConnectionsRef = useRef<Map<string, EmittedConnectionSnapshot>>(new Map());
-  const previousModelRef = useRef<DesignModel>(props.model);
-  const previousAliasesRef = useRef(props.idAliases);
-  const previousHistoryTokenRef = useRef(props.historyResetToken);
-  const previousRebaseTokenRef = useRef(props.rebaseToken);
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
 
   const propsRef = useRef(props);
   propsRef.current = props;
 
+  const modelRef = useRef(props.model);
+  const seenRef = useRef(props.model);
+  if (seenRef.current !== props.model) {
+    seenRef.current = props.model;
+    modelRef.current = props.model;
+  }
+
+  /**
+   * Bumped by every change that moves geometry or changes topology. Live routing
+   * debounces on it.
+   *
+   * Deliberately NOT bumped by `applyTidyResult`: a tidy routes as its own final
+   * step, so re-routing after it would fight the `'clear'` policy it just ran
+   * under. That exclusion is also what keeps an auto-layout from triggering a
+   * second pass — an auto-layout IS an `applyTidyResult`.
+   *
+   * Nor by undo or redo, and that is a change from the days of two stacks. A
+   * step now carries the routes that were folded into it, so putting the step
+   * back puts the routes back with it; a reroute here would recompute what was
+   * just restored, and land it outside the step it belongs to.
+   */
+  const [geometryVersion, setGeometryVersion] = useState(0);
+  const bumpGeometry = useCallback(() => setGeometryVersion((v) => v + 1), []);
+
   /**
    * The host's policy when it has one, otherwise one over the model as this
-   * editor sees it — which includes what has been drawn and not yet flushed, so
-   * two elements added in one gesture cannot claim the same key.
+   * editor sees it. Either answers the same thing — a change lands before the
+   * next id is asked for — but a host's policy also remembers across a remount.
    */
   const ownIds = useRef<IdPolicy | null>(null);
-  ownIds.current ??= idPolicy(
-    () => idsIn(mergeModel(propsRef.current.model, overlayRef.current)));
+  ownIds.current ??= idPolicy(() => idsIn(modelRef.current));
   const ids = props.ids ?? ownIds.current;
 
-  const emitBatch = useCallback((overlay: ModelOverlay) => {
-    const { model, activeDiagramId, onChange } = propsRef.current;
-    const batch = buildBatch(activeDiagramId, model, overlay);
-    recordSnapshots(batch, emittedElementsRef.current, emittedConnectionsRef.current);
-    onChange(batch);
-  }, []);
+  // The step the last change made, and the counter that names the next one.
+  // Refs, because a change happens in an event handler and returns its token
+  // synchronously, long before React re-renders.
+  const tokenRef = useRef<CommitToken>('');
+  const stepsRef = useRef(0);
 
-  const commit = useCallback(
-    (mutate: (overlay: ModelOverlay) => ModelOverlay, options?: { amend?: CommitToken }) => {
-      if (propsRef.current.readOnly) return overlayVersionRef.current;
-      const previous = overlayRef.current;
-      const next = mutate(previous);
-      if (next === previous) return overlayVersionRef.current; // no-op: nothing to record
-      // AMEND (live routing): fold this commit into the undo step the caller
-      // already made, instead of pushing a second one. A node drag commits on
-      // drag-stop and its routes arrive milliseconds later; two undo entries for
-      // one gesture would mean Cmd+Z put the routes back where they were and left
-      // the node where it is.
-      //
-      // The token is the OVERLAY version, deliberately not a counter of commits.
-      // `undo`/`redo` bypass `commit` entirely but do bump the overlay version, so
-      // keying on it makes the invariant structural: any path that mutates the
-      // overlay has to bump the version to render, and bumping it is exactly what
-      // invalidates a stale amend. A commit-local counter would still match after
-      // an undo, and the reroute would then write pre-undo routes into the
-      // restored step with no undo entry of its own.
-      //
-      // A stale token falls back to a normal commit, which is correct rather than
-      // clever: the routes get their own undo step instead of being folded into
-      // the wrong one.
-      const amending = options?.amend !== undefined && options.amend === overlayVersionRef.current;
-      // A host that owns the stack (`onUndo`) gets no snapshot pushed here: the
-      // snapshot is a full-model merge, and paying for it per keystroke to fill
-      // a stack nothing reads is the worst of both mechanisms.
-      if (!amending && !propsRef.current.onUndo) {
-        // Snapshot the EFFECTIVE state BEFORE this edit (full-upsert overlay), so
-        // a later base (post-autosave) can't corrupt the undo target. Truncate the
-        // redo tail (a fresh edit invalidates it) and cap the depth (D6).
-        pastRef.current.push(effectiveOverlay(mergeModel(propsRef.current.model, previous)));
-        if (pastRef.current.length > HISTORY_CAP) pastRef.current.shift();
-        futureRef.current = [];
-      }
-      overlayRef.current = next;
-      bumpOverlayVersion();
-      emitBatch(next);
-      return overlayVersionRef.current;
+  /**
+   * Send one change to the host, and answer with the step it landed in.
+   *
+   * `amend` is the live-routing case: fold this change into the step the caller
+   * already made rather than pushing a second one. A node drag lands on
+   * drag-stop and its routes arrive milliseconds later; two undo entries for one
+   * gesture would mean Cmd+Z put the routes back where they were and left the
+   * node where it is. A stale token falls back to a step of its own, which is
+   * correct rather than clever: the routes get their own undo entry instead of
+   * being folded into the wrong one.
+   */
+  const dispatch = useCallback(
+    (command: Command, options?: { amend?: CommitToken; geometry?: boolean }): CommitToken => {
+      if (propsRef.current.readOnly) return tokenRef.current;
+      const amending = options?.amend !== undefined && options.amend === tokenRef.current;
+      const coalesce = command.coalesce
+        ?? (amending ? tokenRef.current : `step-${(stepsRef.current += 1)}`);
+      const before = modelRef.current;
+      const next = propsRef.current.dispatch({ ...command, coalesce });
+      // Refused, or a change that changed nothing: no step was made, so the
+      // token still names whatever was on top before.
+      if (next === undefined || next === before) return tokenRef.current;
+      modelRef.current = next;
+      tokenRef.current = coalesce;
+      if (options?.geometry) bumpGeometry();
+      return coalesce;
     },
-    [emitBatch, bumpOverlayVersion],
+    [bumpGeometry],
   );
 
-  // Undo/redo (U7): restore a neighbouring overlay snapshot and re-emit the
-  // cumulative corrective batch through the SAME path `commit` uses, so the
-  // autosave queue converges the server to the restored state. Content only —
-  // never selection or viewport (D5). `readOnly`-gated, exactly like `commit`.
-  const undoLocal = useCallback(() => {
-    if (propsRef.current.readOnly || pastRef.current.length === 0) return;
-    const base = propsRef.current.model;
-    // Park the current effective state for redo, restore the previous one as a
-    // fresh patch against the current base.
-    futureRef.current.push(effectiveOverlay(mergeModel(base, overlayRef.current)));
-    overlayRef.current = withModeLanes(
-      diffToOverlay(base, pastRef.current.pop() as ModelOverlay),
-      overlayRef.current,
-    );
-    bumpOverlayVersion();
-    // UNCONDITIONALLY, without inspecting whether the restored snapshot differs
-    // geometrically at all. Undo and redo deliberately bypass `commit` — it is the
-    // only push point onto the undo stack — so a bump list built out of the action
-    // functions misses them entirely, and Cmd+Z after a node move would restore the
-    // old positions while keeping the routes computed for the new ones: exactly the
-    // stale geometry live routing exists to remove, reached by the one gesture a
-    // user reaches for when they dislike what they see.
-    //
-    // Undoing a rename therefore costs one redundant whole-board reroute. That is
-    // sub-millisecond worker time on a real board for an idempotent pass, against
-    // the alternative of diffing two overlay snapshots for geometric equality on
-    // every undo — a new comparison to write, test and keep in step with the model.
-    bumpGeometry();
-    emitBatch(overlayRef.current);
-  }, [emitBatch, bumpOverlayVersion, bumpGeometry]);
-
-  const redoLocal = useCallback(() => {
-    if (propsRef.current.readOnly || futureRef.current.length === 0) return;
-    const base = propsRef.current.model;
-    pastRef.current.push(effectiveOverlay(mergeModel(base, overlayRef.current)));
-    overlayRef.current = withModeLanes(
-      diffToOverlay(base, futureRef.current.pop() as ModelOverlay),
-      overlayRef.current,
-    );
-    bumpOverlayVersion();
-    bumpGeometry(); // same reasoning as `undo` above
-    emitBatch(overlayRef.current);
-  }, [emitBatch, bumpOverlayVersion, bumpGeometry]);
-
-  // Reconcile whenever the host hands us a refreshed model — or a fresh alias
-  // map (see reconcile.ts). The two do NOT always arrive together: the host
-  // learns tmp→real only when its save call resolves, by which time the
-  // mutation's success handler has already swapped `props.model`. Running only
-  // on the model swap would reconcile with an alias map that is still missing
-  // the id that very save just assigned, and nothing would re-run afterwards.
-  useEffect(() => {
-    const modelChanged = previousModelRef.current !== props.model;
-    const aliasesChanged = previousAliasesRef.current !== props.idAliases;
-    /**
-     * The host replaced the DOCUMENT, not just its content: forget everything
-     * this session accumulated ABOUT the old one and take the incoming model as
-     * the base, rather than reconciling against a model that no longer exists.
-     *
-     * It runs before the reconcile because reconciliation is the wrong tool
-     * here. It exists to keep local edits alive across a save round-trip by
-     * matching them to the rows that came back; matching them against a
-     * different document would let a stale undo step reintroduce content the
-     * user just replaced.
-     */
-    if (previousHistoryTokenRef.current !== props.historyResetToken) {
-      previousHistoryTokenRef.current = props.historyResetToken;
-      previousRebaseTokenRef.current = props.rebaseToken;
-      previousModelRef.current = props.model;
-      previousAliasesRef.current = props.idAliases;
-      overlayRef.current = EMPTY_OVERLAY;
-      pastRef.current = [];
-      futureRef.current = [];
-      emittedElementsRef.current.clear();
-      emittedConnectionsRef.current.clear();
-      setSelection(EMPTY_SELECTION);
-      bumpOverlayVersion();
-      return;
-    }
-    /**
-     * The host changed the model for a reason that is not a reply to a batch —
-     * its own undo. Take what arrived as the base and drop the overlay, or
-     * reconciliation would let the local value win and put the undone change
-     * straight back. The selection stays: one step of the document moved, not
-     * the document (see `rebaseToken` in props.ts).
-     */
-    if (previousRebaseTokenRef.current !== props.rebaseToken) {
-      previousRebaseTokenRef.current = props.rebaseToken;
-      previousModelRef.current = props.model;
-      previousAliasesRef.current = props.idAliases;
-      overlayRef.current = EMPTY_OVERLAY;
-      emittedElementsRef.current.clear();
-      emittedConnectionsRef.current.clear();
-      bumpOverlayVersion();
-      bumpGeometry();
-      return;
-    }
-    if (!modelChanged && !aliasesChanged) return;
-    previousAliasesRef.current = props.idAliases;
-    // On an alias-only pass `previous` and `incoming` are the same model, so
-    // there are no new candidates to match heuristically — the authoritative
-    // aliases do all the work (resolving still-live temp ids, materialising
-    // raced deletes) and the stack remap below picks up the parked snapshots.
-    const result = reconcileOverlay({
-      previous: previousModelRef.current,
-      incoming: props.model,
-      overlay: overlayRef.current,
-      emittedElements: [...emittedElementsRef.current.values()],
-      emittedConnections: [...emittedConnectionsRef.current.values()],
-      knownElementAliases: props.idAliases?.elements,
-      knownConnectionAliases: props.idAliases?.connections,
-    });
-    previousModelRef.current = props.model;
-    overlayRef.current = result.overlay;
-    // The crux (D3): remap the WHOLE undo/redo stack into the server id-space so
-    // no snapshot carries a tempId that already has a real id. Use the DURABLE
-    // `props.idAliases` (the host's accumulated tmp→real contract), not just the
-    // freshly-resolved `result` aliases — those are gated on the tempId still
-    // being live in the overlay (reconcile.ts), so a tempId that survives only in
-    // a PARKED past/future snapshot (e.g. after an undo emptied the live overlay
-    // while its create was in flight) would otherwise never be remapped. A stale
-    // tempId there makes `diffToOverlay` see the reconciled real row as "absent"
-    // and synthesise a delete of a persisted row — data loss. Union both maps
-    // (result wins on overlap; both agree in practice) so heuristic-only aliases
-    // for still-live tempIds are covered too. This is also why the effect above
-    // re-runs on a late alias map: the durable contract is only durable once we
-    // have actually seen it.
-    const elementAliases = new Map<ElementId, ElementId>([
-      ...(props.idAliases?.elements ?? []),
-      ...result.elementAliases,
-    ]);
-    const connectionAliases = new Map<string, string>([
-      ...(props.idAliases?.connections ?? []),
-      ...result.connectionAliases,
-    ]);
-    if (elementAliases.size > 0 || connectionAliases.size > 0) {
-      const remap = (o: ModelOverlay) => remapOverlayIds(o, elementAliases, connectionAliases);
-      pastRef.current = pastRef.current.map(remap);
-      futureRef.current = futureRef.current.map(remap);
-    }
-    for (const [tempId] of result.elementAliases) emittedElementsRef.current.delete(tempId);
-    for (const [tempId] of result.connectionAliases) emittedConnectionsRef.current.delete(tempId);
-    // An alias-only pass that resolved nothing changed nothing observable — skip
-    // the re-render rather than churn the effective model on every save.
-    if (modelChanged || result.elementAliases.size > 0 || result.connectionAliases.size > 0) {
-      setSelection((current) => remapSelection(current, result));
-      bumpOverlayVersion();
-    }
-    if (result.mustEmit) emitBatch(result.overlay);
-  }, [
-    props.model, props.idAliases, props.historyResetToken, props.rebaseToken,
-    emitBatch, bumpOverlayVersion, bumpGeometry,
-  ]);
-
-  const overlay = overlayRef.current;
-  const effectiveModel = useMemo(
-    () => mergeModel(props.model, overlay),
-    [props.model, overlay],
-  );
+  const model = props.model;
 
   const actions = useMemo<EditorActions>(() => {
     /**
-     * Commit something that moved geometry or changed topology.
-     *
-     * The list of actions that route through this IS the specification of when
-     * live routing re-runs, so it is worth reading as one: every placement move,
+     * Which actions ask for a geometry bump IS the specification of when live
+     * routing re-runs, so it is worth reading as one: every placement move,
      * resize, group move or group rect change; every connect, delete or paste;
      * every add or removal from the diagram. Not style edits, not renames, not
      * zone/canvas resizes — those change nothing the router measures.
      *
      * `applyTidyResult` is the deliberate omission (see `geometryVersion`).
      */
-    const commitGeometry: typeof commit = (mutate, options) => {
-      const token = commit(mutate, options);
-      bumpGeometry();
-      return token;
-    };
+    const geometry = (command: Command, amend?: CommitToken): CommitToken =>
+      dispatch(command, { geometry: true, amend });
     const diagramId = () => propsRef.current.activeDiagramId;
-    const currentModel = () => mergeModel(propsRef.current.model, overlayRef.current);
+    const currentModel = () => modelRef.current;
     const currentDiagram = () => currentModel().diagrams.find((d) => d.id === diagramId());
 
     return {
@@ -763,29 +554,25 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           shapeVariant: seed.shapeVariant,
         };
         const placement = seedPlacement(seed, diagram, id);
-        commitGeometry((o) =>
-          overlayWithPlacement(overlayWithElement(o, element), diagram.id, placement),
-        );
+        geometry(transaction([
+          { type: 'element.create', element },
+          { type: 'placement.set', diagramId: diagram.id, placements: [placement] },
+        ]));
         setSelection(selectElement(id));
       },
 
       updateElement(id, patch) {
-        const element = currentModel().elements.find((e) => e.id === id);
-        if (!element) return;
-        commit((o) => overlayWithElement(o, { ...element, ...patch, id, kind: element.kind }));
+        if (!currentModel().elements.some((e) => e.id === id)) return;
+        dispatch({ type: 'element.update', id, patch });
       },
 
       updateElements(ids, patch) {
-        const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
-        const targets = ids.map((id) => elementsById.get(id)).filter((e): e is DesignElement => Boolean(e));
+        const held = new Set(currentModel().elements.map((e) => e.id));
+        const targets = ids.filter((id) => held.has(id));
         if (targets.length === 0) return;
-        commit((o) => {
-          let next = o;
-          for (const element of targets) {
-            next = overlayWithElement(next, { ...element, ...patch, id: element.id, kind: element.kind });
-          }
-          return next;
-        });
+        dispatch(transaction(
+          targets.map((id) => ({ type: 'element.update' as const, id, patch })),
+        ));
       },
 
       changeElementKind(id, kind) {
@@ -797,9 +584,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const placement = diagram.placements.find((p) => p.elementId === id);
         if (!element || !placement) return;
         const next = placementForKind(placement, kind, diagram);
-        commit((o) =>
-          overlayWithPlacement(overlayWithElement(o, { ...element, kind }), diagram.id, next),
-        );
+        dispatch(transaction([
+          { type: 'element.update', id, patch: { kind } },
+          { type: 'placement.set', diagramId: diagram.id, placements: [next] },
+        ]));
       },
 
       movePlacements(moves) {
@@ -810,50 +598,53 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // Rects before and after, for the hand-drawn routes that hang off a moved
         // node (below). Size never changes in a move, so both come from the kind.
         const rects = new Map<ElementId, { before: Rect; after: Rect }>();
-        commitGeometry((o) => {
-          let next = o;
-          for (const move of moves) {
-            const placement = diagram.placements.find((p) => p.elementId === move.elementId);
-            if (!placement) continue;
-            const element = elementsById.get(move.elementId);
-            if (element) {
-              rects.set(move.elementId, {
-                before: placementRect(element.kind, placement),
-                after: placementRect(element.kind, { ...placement, x: move.x, y: move.y }),
-              });
-            }
-            next = overlayWithPlacement(next, diagram.id, {
-              ...placement,
-              x: move.x,
-              y: move.y,
-              zone: diagram.kind === 'layer7' ? move.zone : placement.zone,
-              domainGroup: diagram.kind === 'layer7' ? move.domainGroup : placement.domainGroup,
+        const placements: DiagramPlacement[] = [];
+        for (const move of moves) {
+          const placement = diagram.placements.find((p) => p.elementId === move.elementId);
+          if (!placement) continue;
+          const element = elementsById.get(move.elementId);
+          if (element) {
+            rects.set(move.elementId, {
+              before: placementRect(element.kind, placement),
+              after: placementRect(element.kind, { ...placement, x: move.x, y: move.y }),
             });
           }
-          // Hand-drawn routes follow their nodes (Phase 2e): the bend next to a
-          // moved node slides along its end leg's axis by the node's delta, in the
-          // SAME commit as the move, so one undo takes both back. Auto routes are
-          // left alone — live routing recomputes them, and without live routing
-          // they were never the user's geometry to keep attached.
-          for (const route of diagram.edgeRoutes ?? []) {
-            if (isAutoRoute(route)) continue;
-            const connection = model.connections.find((c) => c.id === route.connectionId);
-            if (!connection) continue;
-            let followed = route;
-            const source = rects.get(connection.sourceId);
-            if (source) followed = followNodeMove(followed, source.before, source.after, true);
-            const target = rects.get(connection.targetId);
-            if (target) followed = followNodeMove(followed, target.before, target.after, false);
-            if (followed !== route) next = overlayWithEdgeRoute(next, diagram.id, followed);
-          }
-          return next;
-        });
+          placements.push({
+            ...placement,
+            x: move.x,
+            y: move.y,
+            zone: diagram.kind === 'layer7' ? move.zone : placement.zone,
+            domainGroup: diagram.kind === 'layer7' ? move.domainGroup : placement.domainGroup,
+          });
+        }
+        // Hand-drawn routes follow their nodes (Phase 2e): the bend next to a
+        // moved node slides along its end leg's axis by the node's delta, in the
+        // SAME step as the move, so one undo takes both back. Auto routes are
+        // left alone — live routing recomputes them, and without live routing
+        // they were never the user's geometry to keep attached.
+        const followed: EdgeRoute[] = [];
+        for (const route of diagram.edgeRoutes ?? []) {
+          if (isAutoRoute(route)) continue;
+          const connection = model.connections.find((c) => c.id === route.connectionId);
+          if (!connection) continue;
+          let next = route;
+          const source = rects.get(connection.sourceId);
+          if (source) next = followNodeMove(next, source.before, source.after, true);
+          const target = rects.get(connection.targetId);
+          if (target) next = followNodeMove(next, target.before, target.after, false);
+          if (next !== route) followed.push(next);
+        }
+        if (placements.length === 0 && followed.length === 0) return;
+        geometry(transaction([
+          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+          ...routeCommands(diagram.id, followed),
+        ]));
       },
 
       setPlacements(placements) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        commitGeometry((o) => overlayWithPlacements(o, diagram.id, placements));
+        geometry({ type: 'placement.set', diagramId: diagram.id, placements });
       },
 
       applyTidyResult(
@@ -861,140 +652,142 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         amend,
       ) {
         const diagram = currentDiagram();
-        if (!diagram) return overlayVersionRef.current;
-        // `commit`, never `commitGeometry`: a tidy — and an auto-layout, which is
-        // one — routes as its own final step, so bumping here would queue a second
-        // pass to fight the 'clear' policy it just ran under.
-        return commit((o) => {
-          let next = overlayWithPlacements(o, diagram.id, placements);
-          // Layer7 only: write the group rects AND the grown canvas in ONE
-          // layoutConfig object so they land in a single undo step. Group rects
-          // merge by name — create-OR-resize: a tidy rect whose name already
-          // exists resizes that rect in place; a tidy rect with a new name is
-          // appended (Tidy emits a rect for every group with members). Rects Tidy
-          // did NOT produce (member-less / other groups) are preserved untouched.
-          // The canvas is written even when there are no domainGroups, so a
-          // landscape with only loose apps still resizes/shrinks the board.
-          if (diagram.kind === 'layer7') {
-            const current = diagram.layoutConfig ?? {};
-            let nextConfig = current;
-            if (domainGroups && domainGroups.length > 0) {
-              const tidyByName = new Map(domainGroups.map((g) => [g.name, g]));
-              const existing = current.domainGroups ?? [];
-              const existingNames = new Set(existing.map((g) => g.name));
-              const groups = [
-                ...existing.map((g) => tidyByName.get(g.name) ?? g),
-                ...domainGroups.filter((g) => !existingNames.has(g.name)),
-              ];
-              nextConfig = { ...nextConfig, domainGroups: groups };
-            }
-            if (canvas) {
-              nextConfig = { ...nextConfig, canvas };
-            }
-            if (nextConfig !== current) {
-              next = overlayWithLayoutConfig(next, diagram.id, nextConfig);
-            }
+        if (!diagram) return tokenRef.current;
+        const commands: Command[] = [];
+        if (placements.length > 0) {
+          commands.push({ type: 'placement.set', diagramId: diagram.id, placements });
+        }
+        // Layer7 only: write the group rects AND the grown canvas in ONE
+        // layoutConfig object so they land in a single undo step. Group rects
+        // merge by name — create-OR-resize: a tidy rect whose name already
+        // exists resizes that rect in place; a tidy rect with a new name is
+        // appended (Tidy emits a rect for every group with members). Rects Tidy
+        // did NOT produce (member-less / other groups) are preserved untouched.
+        // The canvas is written even when there are no domainGroups, so a
+        // landscape with only loose apps still resizes/shrinks the board.
+        if (diagram.kind === 'layer7') {
+          const current = diagram.layoutConfig ?? {};
+          let nextConfig = current;
+          if (domainGroups && domainGroups.length > 0) {
+            const tidyByName = new Map(domainGroups.map((g) => [g.name, g]));
+            const existing = current.domainGroups ?? [];
+            const existingNames = new Set(existing.map((g) => g.name));
+            const groups = [
+              ...existing.map((g) => tidyByName.get(g.name) ?? g),
+              ...domainGroups.filter((g) => !existingNames.has(g.name)),
+            ];
+            nextConfig = { ...nextConfig, domainGroups: groups };
           }
-          // U-edge-2: Tidy now carries ELK's computed orthogonal edge routes, so
-          // tidied edges route AROUND the relaid-out nodes instead of cutting
-          // through them. For every edge ELK routed with bends, PERSIST those
-          // waypoints (resetting the label anchor so the chip re-centres on the
-          // new polyline). Every OTHER manual route on the effective diagram — an
-          // edge ELK routed straight, or a cross-zone/unrouted edge ELK never
-          // touched — is CLEARED back to default floating routing (U1 behaviour),
-          // since Tidy reflowed the nodes under it. All folded into THIS commit so
-          // the whole Tidy stays one undo step. `diagram` is the merged effective
-          // diagram, so `edgeRoutes` below is the union of persisted +
-          // session-pending content routes.
-          if (edgeRoutes) {
-            const routeById = new Map(edgeRoutes.map((r) => [r.connectionId, r]));
-            // An entry SETS content when it has waypoints, a pinned label — which
-            // covers a straight (waypoint-less) cross-zone edge whose chip must
-            // clear a group box — or an explicit pin re-emitted by the pass.
-            // Everything else is a straight reflow to clear.
-            const sets = hasRouteContent;
-            // There is no second "keep the manual ones" filter here any more, and
-            // its absence is the point. `pinAnchorPoints` is enforced inside the
-            // routing pass, which re-emits a preserved route verbatim — so by the
-            // time the result reaches this step it already carries the right
-            // geometry and writing it back is a no-op. Two mechanisms for one rule
-            // is how the label-only gap survived as long as it did; this step now
-            // just persists whatever the pass decided.
-            for (const r of edgeRoutes) {
-              if (!sets(r)) continue;
-              next = overlayWithEdgeRoute(next, diagram.id, {
-                connectionId: r.connectionId,
-                waypoints: r.waypoints,
-                // Tidy may pin a routed edge's label clear of a group box; otherwise
-                // reset (undefined) so the chip re-centres on the new polyline.
-                labelPosition: r.labelPosition,
-                // Whatever the routing pass said. It is `auto` for geometry the
-                // router computed and the STORED value for a route re-emitted
-                // verbatim, so a preserved manual route stays manual through here.
-                source: r.source,
-                pinned: r.pinned,
-                // The sides the pass routed under, carried back so the next one
-                // routes under them too.
-                ...routeSides(r),
-              });
-            }
-            for (const route of diagram.edgeRoutes ?? []) {
-              const r = routeById.get(route.connectionId);
-              if (r && sets(r)) continue; // already set above
-              // A PARTIAL result (one group) reflowed only its own members, so
-              // it may only clear the routes it explicitly listed — every other
-              // manual route on the board is still valid and stays.
-              if (partial && !r) continue;
-              next = overlayWithEdgeRoute(next, diagram.id, clearedRoute(route));
-            }
-          } else if (!partial && routingError === undefined) {
-            // No routes supplied by a pass that did not FAIL to produce them —
-            // a direct call. The board was reflowed, so every stored route is
-            // geometry measured against positions that no longer exist and is
-            // cleared back to default floating routing.
-            //
-            // The `routingError` guard is the load-bearing half. When the router
-            // threw, `routeOrDegrade` drops the routes and keeps the placements,
-            // and this branch used to clear the board's stored routes anyway —
-            // contradicting what both `TidyResult.routingError` and
-            // `tidy.routingFailure.test.ts` say happens. That is the worst moment
-            // to discard someone's bends: we could not compute a replacement, so
-            // destroying what is there trades "routes are stale" for "routes are
-            // gone", and pinning them would not have saved them either, since a
-            // pass that produced nothing preserved nothing.
-            for (const route of diagram.edgeRoutes ?? []) {
-              next = overlayWithEdgeRoute(next, diagram.id, clearedRoute(route));
-            }
+          if (canvas) {
+            nextConfig = { ...nextConfig, canvas };
           }
-          return next;
-        }, amend === undefined ? undefined : { amend });
+          if (nextConfig !== current) {
+            commands.push({ type: 'layout.set', diagramId: diagram.id, layoutConfig: nextConfig });
+          }
+        }
+        // U-edge-2: Tidy carries ELK's computed orthogonal edge routes, so
+        // tidied edges route AROUND the relaid-out nodes instead of cutting
+        // through them. For every edge ELK routed with bends, PERSIST those
+        // waypoints (resetting the label anchor so the chip re-centres on the
+        // new polyline). Every OTHER manual route on the diagram — an edge ELK
+        // routed straight, or a cross-zone/unrouted edge ELK never touched — is
+        // CLEARED back to default floating routing (U1 behaviour), since Tidy
+        // reflowed the nodes under it. All folded into THIS step so the whole
+        // Tidy stays one undo step.
+        const rows: EdgeRoute[] = [];
+        if (edgeRoutes) {
+          const routeById = new Map(edgeRoutes.map((r) => [r.connectionId, r]));
+          // An entry SETS content when it has waypoints, a pinned label — which
+          // covers a straight (waypoint-less) cross-zone edge whose chip must
+          // clear a group box — or an explicit pin re-emitted by the pass.
+          // Everything else is a straight reflow to clear.
+          const sets = hasRouteContent;
+          // There is no second "keep the manual ones" filter here any more, and
+          // its absence is the point. `pinAnchorPoints` is enforced inside the
+          // routing pass, which re-emits a preserved route verbatim — so by the
+          // time the result reaches this step it already carries the right
+          // geometry and writing it back is a no-op. Two mechanisms for one rule
+          // is how the label-only gap survived as long as it did; this step now
+          // just persists whatever the pass decided.
+          for (const r of edgeRoutes) {
+            if (!sets(r)) continue;
+            rows.push({
+              connectionId: r.connectionId,
+              waypoints: r.waypoints,
+              // Tidy may pin a routed edge's label clear of a group box; otherwise
+              // reset (undefined) so the chip re-centres on the new polyline.
+              labelPosition: r.labelPosition,
+              // Whatever the routing pass said. It is `auto` for geometry the
+              // router computed and the STORED value for a route re-emitted
+              // verbatim, so a preserved manual route stays manual through here.
+              source: r.source,
+              pinned: r.pinned,
+              // The sides the pass routed under, carried back so the next one
+              // routes under them too.
+              ...routeSides(r),
+            });
+          }
+          for (const route of diagram.edgeRoutes ?? []) {
+            const r = routeById.get(route.connectionId);
+            if (r && sets(r)) continue; // already set above
+            // A PARTIAL result (one group) reflowed only its own members, so
+            // it may only clear the routes it explicitly listed — every other
+            // manual route on the board is still valid and stays.
+            if (partial && !r) continue;
+            rows.push(clearedRoute(route));
+          }
+        } else if (!partial && routingError === undefined) {
+          // No routes supplied by a pass that did not FAIL to produce them —
+          // a direct call. The board was reflowed, so every stored route is
+          // geometry measured against positions that no longer exist and is
+          // cleared back to default floating routing.
+          //
+          // The `routingError` guard is the load-bearing half. When the router
+          // threw, `routeOrDegrade` drops the routes and keeps the placements,
+          // and this branch used to clear the board's stored routes anyway —
+          // contradicting what both `TidyResult.routingError` and
+          // `tidy.routingFailure.test.ts` say happens. That is the worst moment
+          // to discard someone's bends: we could not compute a replacement, so
+          // destroying what is there trades "routes are stale" for "routes are
+          // gone", and pinning them would not have saved them either, since a
+          // pass that produced nothing preserved nothing.
+          for (const route of diagram.edgeRoutes ?? []) rows.push(clearedRoute(route));
+        }
+        commands.push(...routeCommands(diagram.id, rows));
+        if (commands.length === 0) return tokenRef.current;
+        // `dispatch`, never `geometry`: a tidy — and an auto-layout, which is
+        // one — routes as its own final step, so bumping here would queue a
+        // second pass to fight the 'clear' policy it just ran under.
+        return dispatch(transaction(commands), amend === undefined ? undefined : { amend });
       },
 
       setDomainGroup(elementId, domainGroup) {
         const diagram = currentDiagram();
         const placement = diagram?.placements.find((p) => p.elementId === elementId);
         if (!diagram || !placement) return;
-        commit((o) => overlayWithPlacement(o, diagram.id, { ...placement, domainGroup }));
+        dispatch({
+          type: 'placement.set',
+          diagramId: diagram.id,
+          placements: [{ ...placement, domainGroup }],
+        });
       },
 
       setDomainGroups(elementIds, domainGroup) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        const targets = elementIds
+        const placements = elementIds
           .map((id) => diagram.placements.find((p) => p.elementId === id))
-          .filter((p): p is DiagramPlacement => Boolean(p));
-        if (targets.length === 0) return;
-        commit((o) => {
-          let next = o;
-          for (const placement of targets) {
-            next = overlayWithPlacement(next, diagram.id, { ...placement, domainGroup });
-          }
-          return next;
-        });
+          .filter((p): p is DiagramPlacement => Boolean(p))
+          .map((p) => ({ ...p, domainGroup }));
+        if (placements.length === 0) return;
+        dispatch({ type: 'placement.set', diagramId: diagram.id, placements });
       },
 
       connect(sourceId, targetId, sides) {
         if (sourceId === targetId) return undefined;
+        const model = currentModel();
+        const placed = (id: string) => model.elements.some((e) => e.id === id);
+        if (!placed(sourceId) || !placed(targetId)) return undefined;
         const diagram = currentDiagram();
         const connection: DesignConnection = {
           id: ids.connection(),
@@ -1002,18 +795,19 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           targetId,
           isBidirectional: false,
         };
-        commitGeometry((o) => {
-          const next = overlayWithConnection(o, connection);
-          // Alt-connect: the side(s) dragged from/to, in the SAME commit as the
+        geometry(transaction([
+          { type: 'connection.create', connection },
+          // Alt-connect: the side(s) dragged from/to, in the SAME step as the
           // line. A bend-less `auto` row — the router's to fill in, under the sides.
-          if (!diagram || !sides || !hasFixedSide(sides)) return next;
-          return overlayWithEdgeRoute(next, diagram.id, {
-            connectionId: connection.id,
-            waypoints: [],
-            source: 'auto',
-            ...routeSides(sides),
-          });
-        });
+          ...(diagram && sides && hasFixedSide(sides)
+            ? routeCommands(diagram.id, [{
+              connectionId: connection.id,
+              waypoints: [],
+              source: 'auto',
+              ...routeSides(sides),
+            }])
+            : []),
+        ]));
         setSelection(selectConnection(connection.id));
         return connection.id;
       },
@@ -1024,12 +818,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const connection = currentModel().connections.find((c) => c.id === id);
         if (!connection) return;
         const stored = diagram ? routeFor(diagram, id) : undefined;
-        commitGeometry((o) => {
-          const next = overlayWithConnection(o, { ...connection, ...endpoints, id });
-          if (!diagram || !sides || !hasFixedSide(sides)) return next;
+        geometry(transaction([
+          { type: 'connection.update', id, patch: endpoints },
           // Only the end(s) the drag fixed change; the other keeps whatever it had.
-          return overlayWithEdgeRoute(next, diagram.id, routeWithSides(stored, id, routeSides(sides)));
-        });
+          ...(diagram && sides && hasFixedSide(sides)
+            ? routeCommands(diagram.id, [routeWithSides(stored, id, routeSides(sides))])
+            : []),
+        ]));
       },
 
       pasteClipboard(payload, offset) {
@@ -1048,17 +843,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             ),
           },
         });
-        commitGeometry((o) => {
-          let next = o;
-          for (const element of remapped.elements) next = overlayWithElement(next, element);
-          for (const placement of remapped.placements) {
-            next = overlayWithPlacement(next, diagram.id, placement);
-          }
-          for (const connection of remapped.connections) {
-            next = overlayWithConnection(next, connection);
-          }
-          return next;
-        });
+        geometry(transaction([
+          ...remapped.elements.map((element) => ({ type: 'element.create' as const, element })),
+          { type: 'placement.set', diagramId: diagram.id, placements: remapped.placements },
+          ...remapped.connections.map((connection) => ({
+            type: 'connection.create' as const, connection,
+          })),
+        ]));
         setSelection({
           elementIds: remapped.elements.map((e) => e.id),
           connectionIds: remapped.connections.map((c) => c.id),
@@ -1067,13 +858,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       },
 
       updateConnection(id, patch) {
-        const connection = currentModel().connections.find((c) => c.id === id);
-        if (!connection) return;
-        commit((o) => overlayWithConnection(o, { ...connection, ...patch, id }));
+        if (!currentModel().connections.some((c) => c.id === id)) return;
+        dispatch({ type: 'connection.update', id, patch });
       },
 
       deleteConnection(id) {
-        commitGeometry((o) => overlayWithConnectionDeleted(o, id));
+        if (!currentModel().connections.some((c) => c.id === id)) return;
+        geometry({ type: 'connection.delete', id });
         setSelection(EMPTY_SELECTION);
       },
 
@@ -1081,33 +872,39 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (isSelectionEmpty(selection)) return;
         const model = currentModel();
         const diagram = currentDiagram();
-        commitGeometry((o) => {
-          let next = o;
-          for (const elementId of selection.elementIds) {
-            next = overlayWithElementDeleted(next, model, elementId);
-          }
-          for (const connectionId of selection.connectionIds) {
-            next = overlayWithConnectionDeleted(next, connectionId);
-          }
-          // Groups ride along in the SAME commit, so Delete over a mixed
-          // selection stays one undo step and one save round-trip.
-          if (diagram && diagram.kind === 'layer7' && selection.domainGroups.length > 0) {
-            next = overlayWithGroupsRemoved(next, diagram, new Set(selection.domainGroups));
-          }
-          return next;
-        });
+        const held = new Set(model.elements.map((e) => e.id));
+        const doomed = selection.elementIds.filter((id) => held.has(id));
+        const gone = new Set(doomed);
+        const commands: Command[] = doomed.map((id) => ({ type: 'element.delete' as const, id }));
+        for (const id of selection.connectionIds) {
+          const connection = model.connections.find((c) => c.id === id);
+          // A line whose endpoint is on its way out goes with the endpoint.
+          // Asking for it twice would refuse, and one refusal takes the whole
+          // gesture with it.
+          if (!connection || gone.has(connection.sourceId) || gone.has(connection.targetId)) continue;
+          commands.push({ type: 'connection.delete', id });
+        }
+        // Groups ride along in the SAME step, so Delete over a mixed selection
+        // stays one undo step. A layer7 diagram is never one of the diagrams an
+        // element delete takes with it, so its layout is still there to write.
+        if (diagram && diagram.kind === 'layer7' && selection.domainGroups.length > 0) {
+          commands.push(...groupRemovalCommands(diagram, new Set(selection.domainGroups)));
+        }
+        if (commands.length === 0) return;
+        geometry(transaction(commands));
         setSelection(EMPTY_SELECTION);
       },
 
       removeFromDiagram(elementId) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        commitGeometry((o) => overlayWithPlacementRemoved(o, diagram.id, elementId));
+        geometry({ type: 'placement.remove', diagramId: diagram.id, elementIds: [elementId] });
         setSelection(EMPTY_SELECTION);
       },
 
       deleteFromModel(elementId) {
-        commitGeometry((o) => overlayWithElementDeleted(o, currentModel(), elementId));
+        if (!currentModel().elements.some((e) => e.id === elementId)) return;
+        geometry({ type: 'element.delete', id: elementId });
         setSelection(EMPTY_SELECTION);
       },
 
@@ -1120,41 +917,23 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const labelPosition = stored?.labelPosition;
         const pinned = stored?.pinned;
         const sides = routeSides(stored);
-        commit((o) =>
-          hasPlacedContent({ waypoints, labelPosition, pinned })
-            ? // A hand edit CLAIMS the route (intent rule 10). Written in the same
-              // commit as the waypoints, so nudging one auto line and keeping it is
-              // a single undo step in either direction — and from here on no
-              // automatic pass may replace it.
-              overlayWithEdgeRoute(o, diagram.id, {
-                connectionId,
-                waypoints,
-                labelPosition,
-                source: 'manual',
-                pinned,
-                ...sides,
-              })
-            : hasFixedSide(sides)
-              ? // Nothing a person PLACED is left, only where the line attaches. The
-                // row stays for its sides, but as the router's: a manual side-only
-                // row would be preserved straight by every pass, for ever.
-                overlayWithEdgeRoute(o, diagram.id, {
-                  connectionId,
-                  waypoints: [],
-                  labelPosition: undefined,
-                  source: 'auto',
-                  ...sides,
-                })
-              : // The last bend went and nothing else was ever stored: the delete
-                // marker, so the line is a plain floating edge again and the router
-                // may have it. Stamping THIS `manual` would leave a label-less,
-                // bend-less row that every automatic pass then preserves forever.
-                overlayWithEdgeRoute(o, diagram.id, {
-                  connectionId,
-                  waypoints: [],
-                  labelPosition: undefined,
-                }),
-        );
+        const row: EdgeRoute = hasPlacedContent({ waypoints, labelPosition, pinned })
+          ? // A hand edit CLAIMS the route (intent rule 10). Written in the same
+            // step as the waypoints, so nudging one auto line and keeping it is
+            // a single undo step in either direction — and from here on no
+            // automatic pass may replace it.
+            { connectionId, waypoints, labelPosition, source: 'manual', pinned, ...sides }
+          : hasFixedSide(sides)
+            ? // Nothing a person PLACED is left, only where the line attaches. The
+              // row stays for its sides, but as the router's: a manual side-only
+              // row would be preserved straight by every pass, for ever.
+              { connectionId, waypoints: [], labelPosition: undefined, source: 'auto', ...sides }
+            : // The last bend went and nothing else was ever stored: the row is
+              // forgotten, so the line is a plain floating edge again and the
+              // router may have it. Stamping THIS `manual` would leave a
+              // label-less, bend-less row that every automatic pass preserves.
+              { connectionId, waypoints: [], labelPosition: undefined };
+        dispatch(transaction(routeCommands(diagram.id, [row])));
       },
 
       setEdgeLabelPosition(connectionId, position) {
@@ -1164,24 +943,22 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const waypoints = stored?.waypoints ?? [];
         const pinned = stored?.pinned;
         const sides = routeSides(stored);
-        commit((o) =>
-          // A dragged chip claims the route exactly as a dragged bend does. This
-          // is the case the old waypoint-presence heuristic could not see at all:
-          // a label-only route carries no waypoints, so it looked like nothing.
-          // Resetting the chip of a row that then holds only its sides hands the
-          // line back to the router (see `setEdgeRoute`).
-          overlayWithEdgeRoute(o, diagram.id, {
-            connectionId,
-            waypoints,
-            labelPosition: position,
-            source:
-              hasPlacedContent({ waypoints, labelPosition: position, pinned }) || !hasFixedSide(sides)
-                ? 'manual'
-                : 'auto',
-            pinned,
-            ...sides,
-          }),
-        );
+        // A dragged chip claims the route exactly as a dragged bend does. This
+        // is the case the old waypoint-presence heuristic could not see at all:
+        // a label-only route carries no waypoints, so it looked like nothing.
+        // Resetting the chip of a row that then holds only its sides hands the
+        // line back to the router (see `setEdgeRoute`).
+        dispatch(transaction(routeCommands(diagram.id, [{
+          connectionId,
+          waypoints,
+          labelPosition: position,
+          source:
+            hasPlacedContent({ waypoints, labelPosition: position, pinned }) || !hasFixedSide(sides)
+              ? 'manual'
+              : 'auto',
+          pinned,
+          ...sides,
+        }])));
       },
 
       setRouteSource(connectionId, source) {
@@ -1191,23 +968,21 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (!stored) {
           // Nothing stored and nothing to unpin.
           if (source === 'auto') return;
-          commit((o) =>
-            overlayWithEdgeRoute(o, diagram.id, {
-              connectionId,
-              waypoints: [],
-              labelPosition: undefined,
-              source: 'manual',
-              pinned: true,
-            }),
-          );
+          dispatch({
+            type: 'route.set',
+            diagramId: diagram.id,
+            routes: [{
+              connectionId, waypoints: [], labelPosition: undefined, source: 'manual', pinned: true,
+            }],
+          });
           return;
         }
         const next: EdgeRoute =
           source === 'manual'
             ? { ...stored, source: 'manual', pinned: true }
             : // Dropping the pin may leave the row without content, in which case
-              // this IS the delete marker and the row goes — a straight line that
-              // is no longer pinned has nothing left to say.
+              // the row is forgotten — a straight line that is no longer pinned
+              // has nothing left to say.
               {
                 connectionId,
                 waypoints: stored.waypoints,
@@ -1216,7 +991,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
                 // The sides stay: unpinning gives the geometry back, not the constraints.
                 ...routeSides(stored),
               };
-        commit((o) => overlayWithEdgeRoute(o, diagram.id, next));
+        dispatch(transaction(routeCommands(diagram.id, [next])));
       },
 
       setRouteSides(connectionId, sides) {
@@ -1225,28 +1000,25 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const stored = routeFor(diagram, connectionId);
         const row = routeWithSides(stored, connectionId, sides);
         // A no-op — the side it already had, or Automatic on a line with no row —
-        // commits nothing, so it costs no undo step and queues no pass.
+        // changes nothing, so it costs no undo step and queues no pass.
         if (stored ? edgeRoutesEqual(stored, row) : !hasRouteContent(row)) return undefined;
-        const write = (o: ModelOverlay) => overlayWithEdgeRoute(o, diagram.id, row);
+        const command = transaction(routeCommands(diagram.id, [row]));
         // The same two roads as `resetEdgeRoute`: live routing follows a geometry
-        // bump by itself; otherwise the caller runs the pass and amends through
+        // bump by itself; otherwise the caller runs the pass and folds it into
         // the token.
-        return diagram.autoRoute ? commitGeometry(write) : commit(write);
+        return diagram.autoRoute ? geometry(command) : dispatch(command);
       },
 
       resetEdgeRoute(connectionId) {
         const diagram = currentDiagram();
-        if (!diagram) return overlayVersionRef.current;
-        const clear = (o: ModelOverlay) =>
-          overlayWithEdgeRoute(o, diagram.id, {
-            connectionId,
-            waypoints: [],
-            labelPosition: undefined,
-          });
+        if (!diagram) return tokenRef.current;
+        const command: Command = {
+          type: 'route.clear', diagramId: diagram.id, connectionIds: [connectionId],
+        };
         // With live routing on, the geometry bump is what queues the reroute that
         // brings the line back routed; off, the caller runs that pass itself and
-        // the plain commit hands it the token to amend into.
-        return diagram.autoRoute ? commitGeometry(clear) : commit(clear);
+        // the plain change hands it the token to fold into.
+        return diagram.autoRoute ? geometry(command) : dispatch(command);
       },
 
       setZoneSize(zone, size) {
@@ -1257,7 +1029,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           ...current,
           zones: { ...current.zones, [zone]: { size: clampZoneSize(zone, size, current) } },
         };
-        commit((o) => overlayWithLayoutConfig(o, diagram.id, next));
+        dispatch({ type: 'layout.set', diagramId: diagram.id, layoutConfig: next });
       },
 
       setCanvasSize(size) {
@@ -1270,7 +1042,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // at render time stranded their nodes: the second row of a deep actors
         // band drew inside the landscape while the placement still said
         // `actors`. Write the bands the new board allows, then bring their
-        // members back inside — one commit, one undo step.
+        // members back inside — one step, one undo step.
         const zones = { ...current.zones };
         for (const zone of RESIZABLE_ZONES) {
           const stored = current.zones?.[zone]?.size;
@@ -1279,31 +1051,30 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         }
         const next: DiagramLayoutConfig = { ...current, canvas, zones };
         const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
-        commit((o) => {
-          let overlay = overlayWithLayoutConfig(o, diagram.id, next);
-          for (const placement of diagram.placements) {
-            const element = elementsById.get(placement.elementId);
-            if (!element || !placement.zone || placement.zone === 'landscape') continue;
-            const moved = clampPlacementIntoZone(placement, element.kind, next);
-            if (moved) overlay = overlayWithPlacement(overlay, diagram.id, moved);
-          }
-          return overlay;
-        });
+        const placements: DiagramPlacement[] = [];
+        for (const placement of diagram.placements) {
+          const element = elementsById.get(placement.elementId);
+          if (!element || !placement.zone || placement.zone === 'landscape') continue;
+          const moved = clampPlacementIntoZone(placement, element.kind, next);
+          if (moved) placements.push(moved);
+        }
+        dispatch(transaction([
+          { type: 'layout.set', diagramId: diagram.id, layoutConfig: next },
+          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+        ]));
       },
 
       resizePlacement(elementId, rect) {
         const diagram = currentDiagram();
         const placement = diagram?.placements.find((p) => p.elementId === elementId);
         if (!diagram || !placement) return;
-        commitGeometry((o) =>
-          overlayWithPlacement(o, diagram.id, {
-            ...placement,
-            x: rect.x,
-            y: rect.y,
-            width: rect.width,
-            height: rect.height,
-          }),
-        );
+        geometry({
+          type: 'placement.set',
+          diagramId: diagram.id,
+          placements: [{
+            ...placement, x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+          }],
+        });
       },
 
       upsertDomainGroup(rect, memberIds) {
@@ -1315,14 +1086,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (index >= 0) groups[index] = rect;
         else groups.push(rect);
         const members = new Set(memberIds ?? []);
-        commitGeometry((o) => {
-          let next = overlayWithLayoutConfig(o, diagram.id, { ...current, domainGroups: groups });
-          for (const placement of diagram.placements) {
-            if (!members.has(placement.elementId) || placement.domainGroup === rect.name) continue;
-            next = overlayWithPlacement(next, diagram.id, { ...placement, domainGroup: rect.name });
-          }
-          return next;
-        });
+        const placements = diagram.placements
+          .filter((p) => members.has(p.elementId) && p.domainGroup !== rect.name)
+          .map((p) => ({ ...p, domainGroup: rect.name }));
+        geometry(transaction([
+          { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
+          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+        ]));
       },
 
       moveDomainGroup(name, dx, dy) {
@@ -1336,14 +1106,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // Rigid move: the box and its members share one absolute frame, so the
         // same (dx, dy) applies to both. Membership is untouched.
         groups[index] = { ...group, x: group.x + dx, y: group.y + dy };
-        const moved = diagram.placements
+        const placements = diagram.placements
           .filter((p) => p.domainGroup === name)
           .map((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
-        commitGeometry((o) => {
-          let next = overlayWithPlacements(o, diagram.id, moved);
-          next = overlayWithLayoutConfig(next, diagram.id, { ...current, domainGroups: groups });
-          return next;
-        });
+        geometry(transaction([
+          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+          { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
+        ]));
       },
 
       renameDomainGroup(oldName, newName) {
@@ -1362,38 +1131,29 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             ? { ...s, domainGroups: s.domainGroups.map((n) => (n === oldName ? trimmed : n)) }
             : s,
         );
-        commit((o) => {
-          let next = overlayWithLayoutConfig(o, diagram.id, {
-            ...current,
-            domainGroups: groups,
-          });
-          for (const placement of diagram.placements) {
-            if (placement.domainGroup !== oldName) continue;
-            next = overlayWithPlacement(next, diagram.id, {
-              ...placement,
-              domainGroup: trimmed,
-            });
-          }
-          return next;
-        });
+        const placements = diagram.placements
+          .filter((p) => p.domainGroup === oldName)
+          .map((p) => ({ ...p, domainGroup: trimmed }));
+        dispatch(transaction([
+          { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
+          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+        ]));
       },
 
       setAutoRoute(on) {
-        if (propsRef.current.readOnly) return;
         const diagram = currentDiagram();
         if (!diagram || (diagram.autoRoute ?? false) === on) return;
-        // Straight into the overlay and out through `emitBatch`, bypassing
-        // `commit` — the only push point onto the undo stack. A mode is not
-        // content: undoing a node move must not switch live routing off.
-        overlayRef.current = overlayWithAutoRoute(overlayRef.current, diagram.id, on);
-        bumpOverlayVersion();
-        emitBatch(overlayRef.current);
+        // `undoable: false`: a mode is not content. Undoing a node move must not
+        // switch live routing off (see the action's doc comment).
+        dispatch({
+          type: 'diagram.update', id: diagram.id, patch: { autoRoute: on }, undoable: false,
+        });
       },
 
       removeDomainGroup(name) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        commitGeometry((o) => overlayWithGroupsRemoved(o, diagram, new Set([name])));
+        geometry(transaction(groupRemovalCommands(diagram, new Set([name]))));
         setSelection((s) =>
           s.domainGroups.includes(name)
             ? { ...s, domainGroups: s.domainGroups.filter((n) => n !== name) }
@@ -1401,7 +1161,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         );
       },
     };
-  }, [commit, bumpGeometry, bumpOverlayVersion, emitBatch]);
+  }, [dispatch, ids]);
 
   // Single-item inspector cases: exactly one thing (and nothing else) selected.
   const soleKind =
@@ -1414,25 +1174,23 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       : undefined;
   const selectedElement =
     soleKind === 'element'
-      ? effectiveModel.elements.find((e) => e.id === selection.elementIds[0])
+      ? model.elements.find((e) => e.id === selection.elementIds[0])
       : undefined;
   const selectedConnection =
     soleKind === 'connection'
-      ? effectiveModel.connections.find((c) => c.id === selection.connectionIds[0])
+      ? model.connections.find((c) => c.id === selection.connectionIds[0])
       : undefined;
   const selectedDomainGroup = soleKind === 'domainGroup' ? selection.domainGroups[0] : undefined;
 
-  // Keep selection honest when a selected item disappears from the model (e.g.
-  // a delete confirmed by the server). Prunes the vanished ids, keeping the
-  // rest of a multi-selection intact.
+  // Keep selection honest when a selected item disappears from the model — an
+  // undo of the step that drew it, or a delete. Prunes the vanished ids, keeping
+  // the rest of a multi-selection intact.
   useEffect(() => {
-    setSelection((current) =>
-      pruneSelection(current, effectiveModel, propsRef.current.activeDiagramId),
-    );
-  }, [effectiveModel, props.activeDiagramId]);
+    setSelection((current) => pruneSelection(current, model, propsRef.current.activeDiagramId));
+  }, [model, props.activeDiagramId]);
 
   return {
-    effectiveModel,
+    model,
     selection,
     setSelection,
     selectedElement,
@@ -1440,15 +1198,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     selectedDomainGroup,
     actions,
     geometryVersion,
-    overlayVersion: overlayVersionRef.current,
-    // The host's stack when it has one (see `onUndo` in props.ts), otherwise the
-    // editor's own over the content it can see.
-    undo: props.onUndo ?? undoLocal,
-    redo: props.onRedo ?? redoLocal,
-    // Recomputed each render; commit/undo/redo all bump `setOverlayVersion`, so
-    // these track the live stack depth for the toolbar buttons.
-    canUndo: props.onUndo ? props.canUndo === true : pastRef.current.length > 0,
-    canRedo: props.onRedo ? props.canRedo === true : futureRef.current.length > 0,
+    commitToken: tokenRef.current,
+    undo: props.history.undo,
+    redo: props.history.redo,
+    canUndo: props.history.canUndo,
+    canRedo: props.history.canRedo,
   };
 }
 
@@ -1479,42 +1233,29 @@ function seedPlacement(
   return { elementId, ...position };
 }
 
-function recordSnapshots(
-  batch: ReturnType<typeof buildBatch>,
-  elements: Map<ElementId, EmittedElementSnapshot>,
-  connections: Map<string, EmittedConnectionSnapshot>,
-): void {
-  for (const element of batch.elements) {
-    if (!isTempId(element.id)) continue;
-    const placement = batch.placements.find((p) => p.elementId === element.id);
-    elements.set(element.id, {
-      tempId: element.id,
-      kind: element.kind,
-      name: element.name,
-      placement: placement
-        ? { diagramId: batch.diagramId, x: placement.x, y: placement.y }
-        : elements.get(element.id)?.placement,
-    });
-  }
-  for (const connection of batch.connections) {
-    if (!isTempId(connection.id)) continue;
-    connections.set(connection.id, {
-      tempId: connection.id,
-      sourceId: connection.sourceId,
-      targetId: connection.targetId,
-      label: connection.label,
-      protocol: connection.protocol,
-      isBidirectional: connection.isBidirectional,
-    });
-  }
+/**
+ * Route rows, said as commands.
+ *
+ * A row with nothing on it — no bends, no chip, no pin, no fixed side — is not
+ * a row to store: it is the instruction to forget the one that is there.
+ * `hasRouteContent` is the single definition of that, so nobody has to
+ * re-derive the rule from `waypoints`.
+ */
+function routeCommands(diagramId: string, rows: readonly EdgeRoute[]): Command[] {
+  const routes = rows.filter((r) => hasRouteContent(r));
+  const connectionIds = rows.filter((r) => !hasRouteContent(r)).map((r) => r.connectionId);
+  const commands: Command[] = [];
+  if (connectionIds.length > 0) commands.push({ type: 'route.clear', diagramId, connectionIds });
+  if (routes.length > 0) commands.push({ type: 'route.set', diagramId, routes });
+  return commands;
 }
 
 /**
  * What a Tidy leaves of a route it did not route: the bends and the chip go —
  * they were measured against positions that no longer exist — but the attach
  * sides stay, because a constraint is not measured against anything. A row kept
- * for its sides alone is the router's (`auto`); with no sides this is the plain
- * delete marker, exactly as before.
+ * for its sides alone is the router's (`auto`); with no sides this row has no
+ * content at all, and `routeCommands` reads that as "forget it".
  */
 function clearedRoute(route: EdgeRoute): EdgeRoute {
   return {
@@ -1526,64 +1267,28 @@ function clearedRoute(route: EdgeRoute): EdgeRoute {
 }
 
 /**
- * Carry the non-content lanes of the overlay across an undo or a redo.
- *
- * `diffToOverlay` synthesises a patch from a CONTENT snapshot, so every lane the
- * undo stack does not track comes back empty — and undo/redo replace the overlay
- * wholesale rather than merging into it. Without this, a pending auto-route
- * toggle would simply vanish on the next Cmd+Z, which is worse than it sounds:
- * the overlay entry is what is still travelling to the server, so the mode would
- * silently revert to whatever the base says.
- *
- * Modes are deliberately outside content history (see `setAutoRoute`), and
- * "outside history" has to mean carried across it, not dropped by it.
- */
-function withModeLanes(next: ModelOverlay, previous: ModelOverlay): ModelOverlay {
-  return previous.autoRoutes.size === 0 ? next : { ...next, autoRoutes: previous.autoRoutes };
-}
-
-/**
  * Drop domain-group rects by name and clear their members' membership — the
  * shared body of `removeDomainGroup` and the group half of `deleteSelection`,
- * so both stay a single commit. The member ELEMENTS survive; they just stop
+ * so both stay a single step. The member ELEMENTS survive; they just stop
  * belonging to a group (removing a box is a layout edit, never a data delete).
  */
-function overlayWithGroupsRemoved(
-  overlay: ModelOverlay,
-  diagram: DesignDiagram,
-  names: Set<string>,
-): ModelOverlay {
+function groupRemovalCommands(diagram: DesignDiagram, names: Set<string>): Command[] {
   const current = diagram.layoutConfig ?? {};
-  let next = overlayWithLayoutConfig(overlay, diagram.id, {
-    ...current,
-    domainGroups: (current.domainGroups ?? []).filter((g) => !names.has(g.name)),
-  });
-  for (const placement of diagram.placements) {
-    if (!placement.domainGroup || !names.has(placement.domainGroup)) continue;
-    next = overlayWithPlacement(next, diagram.id, { ...placement, domainGroup: undefined });
+  const commands: Command[] = [{
+    type: 'layout.set',
+    diagramId: diagram.id,
+    layoutConfig: {
+      ...current,
+      domainGroups: (current.domainGroups ?? []).filter((g) => !names.has(g.name)),
+    },
+  }];
+  const placements = diagram.placements
+    .filter((p) => p.domainGroup !== undefined && names.has(p.domainGroup))
+    .map((p) => ({ ...p, domainGroup: undefined }));
+  if (placements.length > 0) {
+    commands.push({ type: 'placement.set', diagramId: diagram.id, placements });
   }
-  return next;
-}
-
-/**
- * Remap tempIds to their reconciled server ids across the id-bearing selection
- * arrays. Domain groups are keyed by name, not by id, so they never remap.
- */
-function remapSelection(
-  selection: Selection,
-  result: { elementAliases: Map<string, string>; connectionAliases: Map<string, string> },
-): Selection {
-  if (isSelectionEmpty(selection)) return selection;
-  let changed = false;
-  const remap = (ids: string[], aliases: Map<string, string>) =>
-    ids.map((id) => {
-      const mapped = aliases.get(id);
-      if (mapped) changed = true;
-      return mapped ?? id;
-    });
-  const elementIds = remap(selection.elementIds, result.elementAliases);
-  const connectionIds = remap(selection.connectionIds, result.connectionAliases);
-  return changed ? { ...selection, elementIds, connectionIds } : selection;
+  return commands;
 }
 
 /**

@@ -44,7 +44,7 @@ export function useAutosave(deps: {
   onResult: StorageNotice
 }): Autosave {
   const { session, projects, onSaved, onResult } = deps
-  const { model, activeDiagramId, logoLibrary, snapshot, flush } = session
+  const { model, activeDiagramId, logoLibrary, snapshot } = session
 
   const persist = useCallback(() => {
     projects.save(snapshot()).then(
@@ -60,7 +60,6 @@ export function useAutosave(deps: {
 
   useEffect(() => {
     const save = () => {
-      flush()
       // The one fire-and-forget in the shell, and deliberately so: the tab is
       // closing, there is nobody left to tell and no screen left to tell them
       // on. The catch is here only so a refusal does not surface as an
@@ -69,8 +68,8 @@ export function useAutosave(deps: {
     }
     window.addEventListener('beforeunload', save)
     return () => window.removeEventListener('beforeunload', save)
-  }, [flush, projects, snapshot])
+  }, [projects, snapshot])
 
-  const forceSave = useCallback(() => { flush(); persist() }, [flush, persist])
+  const forceSave = useCallback(() => persist(), [persist])
   return { forceSave }
 }

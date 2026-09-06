@@ -83,9 +83,9 @@ export function useLiveRouting({
       // The token is taken BEFORE the async pass, so any edit that lands while it
       // is in flight invalidates it and the routes get their own undo step
       // instead of being folded into a step that has moved on.
-      const token = live.state.overlayVersion;
+      const token = live.state.commitToken;
       void routeDiagramEdges(
-        live.state.effectiveModel,
+        live.state.model,
         diagram,
         'keep-stored',
         undefined,

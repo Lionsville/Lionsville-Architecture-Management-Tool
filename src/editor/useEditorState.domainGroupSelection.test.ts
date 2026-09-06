@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
-import { selectDomainGroup, useEditorState } from './useEditorState';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderEditorState } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
+import { selectDomainGroup } from './useEditorState';
 
 /**
  * A selected domain group behaves like a selected node: Delete removes it, the
@@ -39,27 +39,18 @@ function model(): DesignModel {
   };
 }
 
-function renderEditorState() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: model(),
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
+function render() {
+  const { result, host } = renderEditorState(model(), { activeDiagramId: 'd1' });
   const groups = () =>
-    (result.current.effectiveModel.diagrams[0].layoutConfig?.domainGroups ?? []).map((g) => g.name);
+    (result.current.model.diagrams[0].layoutConfig?.domainGroups ?? []).map((g) => g.name);
   const placements = () =>
-    new Map(result.current.effectiveModel.diagrams[0].placements.map((p) => [p.elementId, p]));
-  return { result, onChange, groups, placements };
+    new Map(result.current.model.diagrams[0].placements.map((p) => [p.elementId, p]));
+  return { result, host, groups, placements };
 }
 
 describe('domain-group selection', () => {
   it('exposes the sole selected group to the inspector', () => {
-    const { result } = renderEditorState();
+    const { result } = render();
 
     act(() => result.current.setSelection(selectDomainGroup('G')));
 
@@ -69,7 +60,7 @@ describe('domain-group selection', () => {
   });
 
   it('offers no single-item inspector when a group is selected alongside an element', () => {
-    const { result } = renderEditorState();
+    const { result } = render();
 
     act(() =>
       result.current.setSelection({
@@ -83,12 +74,12 @@ describe('domain-group selection', () => {
     expect(result.current.selectedElement).toBeUndefined();
   });
 
-  it('deleteSelection removes the group box and frees its members, in one commit', () => {
-    const { result, onChange, groups, placements } = renderEditorState();
+  it('deleteSelection removes the group box and frees its members, in one step', () => {
+    const { result, host, groups, placements } = render();
 
     act(() => result.current.actions.deleteSelection(selectDomainGroup('G')));
 
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(host.current.commands).toHaveLength(1);
     expect(groups()).toEqual(['H']);
     // The element survives — only its membership went.
     expect(placements().get('m1')).toMatchObject({ x: 100, y: 100 });
@@ -99,7 +90,7 @@ describe('domain-group selection', () => {
   });
 
   it('deletes elements and groups together in a single undo step', () => {
-    const { result, onChange, groups, placements } = renderEditorState();
+    const { result, host, groups, placements } = render();
 
     act(() =>
       result.current.actions.deleteSelection({
@@ -109,9 +100,9 @@ describe('domain-group selection', () => {
       }),
     );
 
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(host.current.commands).toHaveLength(1);
     expect(groups()).toEqual(['H']);
-    expect(result.current.effectiveModel.elements.map((e) => e.id)).toEqual(['m1']);
+    expect(result.current.model.elements.map((e) => e.id)).toEqual(['m1']);
 
     act(() => result.current.undo());
     expect(groups()).toEqual(['G', 'H']);
@@ -119,7 +110,7 @@ describe('domain-group selection', () => {
   });
 
   it('removeDomainGroup drops the group from the selection', () => {
-    const { result, groups } = renderEditorState();
+    const { result, groups } = render();
     act(() => result.current.setSelection(selectDomainGroup('G')));
 
     act(() => result.current.actions.removeDomainGroup('G'));
@@ -130,7 +121,7 @@ describe('domain-group selection', () => {
   });
 
   it('renameDomainGroup carries the selection to the new name', () => {
-    const { result } = renderEditorState();
+    const { result } = render();
     act(() => result.current.setSelection(selectDomainGroup('G')));
 
     act(() => result.current.actions.renameDomainGroup('G', 'Core'));
@@ -139,7 +130,7 @@ describe('domain-group selection', () => {
   });
 
   it('a rejected rename (name already taken) leaves the selection alone', () => {
-    const { result } = renderEditorState();
+    const { result } = render();
     act(() => result.current.setSelection(selectDomainGroup('G')));
 
     act(() => result.current.actions.renameDomainGroup('G', 'H'));

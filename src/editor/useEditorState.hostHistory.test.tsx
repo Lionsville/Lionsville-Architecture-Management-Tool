@@ -1,29 +1,26 @@
 // @vitest-environment jsdom
 /**
- * When the HOST owns undo.
+ * The host owns undo, and owns the document.
  *
  * This application keeps one stack over everything — a node move, a diagram
- * rename, a decision's status — so the editor's own is not used (ADR-0002). Two
- * things have to hold for that to work, and neither is visible from the outside
- * until it is broken.
+ * rename, a decision's status — and the editor is a view onto the model the
+ * host holds (ADR-0002). Three things follow, and none of them is visible from
+ * outside until one is broken: the editor keeps no stack, it keeps no second
+ * copy of the document, and one gesture is one command.
  *
- * The editor must stop paying for a stack nothing reads: every commit used to
- * push a full-model merge onto it.
- *
- * And when the host undoes, the model comes back CHANGED, which is exactly what
- * reconciliation reads as "the host echoed my save and I have a newer local
- * value" — so the overlay would win and put the undone edit straight back, then
- * re-emit it. `rebaseToken` is what says "this is not a reply to your batch".
+ * The stack itself is the session's, and `app/useModelSession.test.tsx` is
+ * where it is pinned. What is here is only the editor's half of the bargain.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { useEditorState } from './useEditorState';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
+import { renderEditorState, useEditorHost, hostedProps } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 
 afterEach(() => cleanup());
 
-function model(elementName: string): DesignModel {
+function model(elementName = 'Billing'): DesignModel {
   return {
     name: 'Landscape',
     customerName: 'ACME',
@@ -36,109 +33,114 @@ function model(elementName: string): DesignModel {
   };
 }
 
-type Host = {
-  model: DesignModel;
-  rebaseToken?: number;
-  onUndo?: () => void;
-  onRedo?: () => void;
-  canUndo?: boolean;
-  canRedo?: boolean;
-};
-
-function render(initial: Host) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const stable = {
-    onChange,
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const view = renderHook(
-    (host: Host) => useEditorState({ ...stable, ...host } as SolutionDesignEditorProps),
-    { initialProps: initial },
-  );
-  return { ...view, onChange };
-}
-
 describe('useEditorState — the host owns the stack', () => {
-  it('calls the host rather than its own, and takes canUndo from it', () => {
-    const onUndo = vi.fn();
-    const onRedo = vi.fn();
-    const { result } = render({ model: model('Billing'), onUndo, onRedo, canUndo: true, canRedo: false });
+  it('calls the host rather than a stack of its own, and takes canUndo from it', () => {
+    const history = { undo: vi.fn(), redo: vi.fn(), canUndo: true, canRedo: false };
+    const props: SolutionDesignEditorProps = {
+      model: model(),
+      history,
+      dispatch: () => undefined,
+      activeDiagramId: 'd1',
+      onActiveDiagramChange: vi.fn(),
+      onCreateContainerDiagram: vi.fn(),
+      onCreateLayer7Diagram: vi.fn(),
+    };
+    const { result } = renderHook(() => useEditorState(props));
 
     expect(result.current.canUndo).toBe(true);
     expect(result.current.canRedo).toBe(false);
     act(() => result.current.undo());
     act(() => result.current.redo());
-    expect(onUndo).toHaveBeenCalledOnce();
-    expect(onRedo).toHaveBeenCalledOnce();
+    expect(history.undo).toHaveBeenCalledOnce();
+    expect(history.redo).toHaveBeenCalledOnce();
   });
 
-  it('stops pushing a full-model snapshot per commit', () => {
-    const { result } = render({ model: model('Billing'), onUndo: vi.fn(), canUndo: false });
+  it('sends one command per gesture, however many rows it touches', () => {
+    const { result, host } = renderEditorState(model());
+
     act(() => result.current.actions.addElement({ kind: 'application' }));
-    // Its own stack stayed empty; the answer comes from the prop.
-    expect(result.current.canUndo).toBe(false);
+
+    expect(host.current.commands).toHaveLength(1);
+    // An element and its placement, in one step: undo takes back the whole card.
+    const step = host.current.commands[0];
+    expect(step.type === 'transaction' && step.commands.map((c) => c.type))
+      .toEqual(['element.create', 'placement.set']);
   });
 
-  it('keeps its own stack when the host offers none', () => {
-    const { result } = render({ model: model('Billing') });
+  it('sends nothing at all under readOnly', () => {
+    const { result, host } = renderEditorState(model(), { readOnly: true });
+
     act(() => result.current.actions.addElement({ kind: 'application' }));
-    expect(result.current.canUndo).toBe(true);
+    act(() => result.current.actions.updateElement('billing', { name: 'Renamed' }));
+    act(() => result.current.actions.movePlacements([{ elementId: 'billing', x: 9, y: 9 }]));
+
+    expect(host.current.commands).toEqual([]);
+    expect(result.current.model.elements[0].name).toBe('Billing');
   });
 });
 
 describe('useEditorState — the model moved for a reason of the host’s own', () => {
-  it('drops the overlay, so the host’s undo is not undone by the editor', () => {
-    const before = model('Billing');
-    const after = model('Renamed');
-    const { result, rerender } = render({ model: before, rebaseToken: 1, onUndo: vi.fn() });
+  it('draws what arrived: there is no local copy left to put the change back', () => {
+    const { result, host } = renderEditorState(model());
 
     act(() => result.current.actions.updateElement('billing', { name: 'Renamed' }));
-    expect(result.current.effectiveModel.elements[0].name).toBe('Renamed');
+    expect(result.current.model.elements[0].name).toBe('Renamed');
 
-    // The host applied it, then the user undid it: back to the first model.
-    rerender({ model: after, rebaseToken: 1, onUndo: vi.fn() });
-    rerender({ model: before, rebaseToken: 2, onUndo: vi.fn() });
+    // The host undoes it. With two brains this was the hazard — reconciliation
+    // read a changed model as "your save came back" and let the local value win.
+    act(() => host.current.history.undo());
 
-    expect(result.current.effectiveModel.elements[0].name).toBe('Billing');
+    expect(result.current.model.elements[0].name).toBe('Billing');
+    // And nothing was sent in response: the editor had nothing to re-assert.
+    expect(host.current.commands).toHaveLength(1);
   });
 
-  it('does not re-emit the change it just dropped', () => {
-    const before = model('Billing');
-    const { result, rerender, onChange } = render({ model: before, rebaseToken: 1, onUndo: vi.fn() });
+  it('keeps the selection across an undo — the document did not change, one step did', () => {
+    const { result, host } = renderEditorState(model());
 
     act(() => result.current.actions.updateElement('billing', { name: 'Renamed' }));
-    onChange.mockClear();
-    rerender({ model: before, rebaseToken: 2, onUndo: vi.fn() });
-
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  /**
-   * Losing what you had selected on every ⌘Z is its own bug, and is what
-   * separates this from `historyResetToken` — the document has not changed,
-   * one step of it has.
-   */
-  it('keeps the selection', () => {
-    const before = model('Billing');
-    const { result, rerender } = render({ model: before, rebaseToken: 1, onUndo: vi.fn() });
-
     act(() => result.current.setSelection({ elementIds: ['billing'], connectionIds: [], domainGroups: [] }));
-    rerender({ model: before, rebaseToken: 2, onUndo: vi.fn() });
+    act(() => host.current.history.undo());
 
     expect(result.current.selection.elementIds).toEqual(['billing']);
   });
 
-  it('reconciles as usual when the token has not moved', () => {
-    const before = model('Billing');
-    const { result, rerender } = render({ model: before, rebaseToken: 1, onUndo: vi.fn() });
+  it('prunes a selection the undo took away', () => {
+    const { result, host } = renderEditorState(model());
 
-    act(() => result.current.actions.updateElement('billing', { name: 'Renamed' }));
-    // A save round-trip: the host echoes back what it stored, token unchanged.
-    rerender({ model: model('Renamed'), rebaseToken: 1, onUndo: vi.fn() });
+    act(() => result.current.actions.addElement({ kind: 'application' }));
+    const drawn = result.current.selection.elementIds[0];
+    expect(drawn).toBeDefined();
 
-    expect(result.current.effectiveModel.elements[0].name).toBe('Renamed');
+    act(() => host.current.history.undo());
+
+    expect(result.current.model.elements.map((e) => e.id)).toEqual(['billing']);
+    expect(result.current.selection.elementIds).toEqual([]);
+  });
+});
+
+describe('useEditorState — the host swaps the document', () => {
+  it('takes the incoming document as it stands, and prunes what it named', () => {
+    const first = model('First');
+    const second: DesignModel = {
+      ...model('Second'),
+      elements: [],
+      diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    };
+    const view = renderHook(
+      (document: DesignModel) => {
+        const host = useEditorHost(document);
+        return useEditorState(hostedProps(host));
+      },
+      { initialProps: first },
+    );
+
+    act(() => view.result.current.setSelection({
+      elementIds: ['billing'], connectionIds: [], domainGroups: [],
+    }));
+    view.rerender(second);
+
+    expect(view.result.current.model.elements).toHaveLength(0);
+    expect(view.result.current.selection.elementIds).toEqual([]);
   });
 });

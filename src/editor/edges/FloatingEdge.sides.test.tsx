@@ -3,10 +3,10 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { Position } from '@xyflow/react';
-import { SolutionDesignEditor } from '../SolutionDesignEditor';
+import { HostedEditor } from '../testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from '../testing/editorHost';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import type { DesignModel, EdgeRoute, Point } from '../../model/types';
-import type { SolutionDesignEditorProps } from '../props';
 
 /**
  * What a fixed attach side does on screen (Phase 2d), and the handle sizing fix
@@ -40,12 +40,12 @@ function model(route: EdgeRoute | undefined): DesignModel {
   };
 }
 
-function renderEditor(route: EdgeRoute | undefined, overrides: Partial<SolutionDesignEditorProps> = {}) {
-  const props: SolutionDesignEditorProps = {
+function renderEditor(route: EdgeRoute | undefined, overrides: Partial<HostedEditorProps> = {}) {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(route),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     ...overrides,
@@ -53,7 +53,7 @@ function renderEditor(route: EdgeRoute | undefined, overrides: Partial<SolutionD
   render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );

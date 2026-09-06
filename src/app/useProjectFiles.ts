@@ -79,7 +79,6 @@ export function useProjectFiles(deps: {
   }, [documents, notify, s])
 
   const saveWorkingFile = useCallback(() => {
-    session.flush()
     const project = session.snapshot()
     handOver({
       name: fileNameFor(project.ref, WORKING_FILE_EXTENSION),
@@ -89,7 +88,6 @@ export function useProjectFiles(deps: {
   }, [session, handOver])
 
   const saveInterchange = useCallback(() => {
-    session.flush()
     const project = session.snapshot()
     handOver({
       name: fileNameFor(project.ref, '.json'),

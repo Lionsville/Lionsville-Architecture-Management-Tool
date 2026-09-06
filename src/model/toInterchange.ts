@@ -13,7 +13,6 @@
  */
 import type { DesignModel } from '.'
 import { isBuiltInLogoKey } from './logoRegistry'
-import { isTempId } from '.'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
 import { KEY_RE, claimKey } from './keys'
 import { UPLOADED_KEY_PREFIX } from './logo'
@@ -49,7 +48,7 @@ function keyMap(model: DesignModel): Map<string, string> {
     ...model.elements.map((e) => ({ id: e.id, name: e.name })),
     ...model.diagrams.map((d) => ({ id: d.id, name: d.name })),
   ]
-  const clean = (x: { id: string }) => !isTempId(x.id) && KEY_RE.test(x.id)
+  const clean = (x: { id: string }) => KEY_RE.test(x.id)
   all.filter(clean).forEach((x) => { taken.add(x.id); map.set(x.id, x.id) })
   all.filter((x) => !clean(x)).forEach((x) => map.set(x.id, claimKey(x.name, taken)))
   return map

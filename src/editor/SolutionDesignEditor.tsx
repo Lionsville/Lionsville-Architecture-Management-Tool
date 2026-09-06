@@ -233,7 +233,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const pasteCountRef = useRef(0);
 
   const readOnly = props.readOnly ?? false;
-  const activeDiagram = state.effectiveModel.diagrams.find((d) => d.id === props.activeDiagramId);
+  const activeDiagram = state.model.diagrams.find((d) => d.id === props.activeDiagramId);
 
   const { setSelection } = state;
   const requestRename = useCallback(
@@ -288,7 +288,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const hostDocRef = useRef<SolutionDesignEditorProps['documentationRequest']>(undefined);
   const selectedForDoc = state.selectedElement?.id;
   const firstPlaced = activeDiagram?.placements[0]?.elementId;
-  const firstInModel = state.effectiveModel.elements[0]?.id;
+  const firstInModel = state.model.elements[0]?.id;
   useEffect(() => {
     if (!hostDoc) return;
     if (hostDocRef.current && hostDocRef.current.nonce === hostDoc.nonce) return;
@@ -299,7 +299,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   useFocusElement({
     focusElement: focusRequest,
-    model: state.effectiveModel,
+    model: state.model,
     activeDiagramId: props.activeDiagramId,
     setSelection: state.setSelection,
     onActiveDiagramChange: props.onActiveDiagramChange,
@@ -360,8 +360,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const requestDeleteConnection = useCallback(
     (connectionId: string) => {
       if (readOnly) return;
-      const connection = state.effectiveModel.connections.find((c) => c.id === connectionId);
-      const summary = deletionSummary(state.effectiveModel, {
+      const connection = state.model.connections.find((c) => c.id === connectionId);
+      const summary = deletionSummary(state.model, {
         elementIds: [],
         connectionIds: [connectionId],
         domainGroups: [],
@@ -376,20 +376,20 @@ function EditorBody(props: SolutionDesignEditorProps) {
         run: () => state.actions.deleteConnection(connectionId),
       });
     },
-    [readOnly, state.effectiveModel, state.actions],
+    [readOnly, state.model, state.actions],
   );
 
   const requestDeleteSelection = useCallback(
     (selection: Selection) => {
       if (readOnly) return;
-      const summary = deletionSummary(state.effectiveModel, selection);
+      const summary = deletionSummary(state.model, selection);
       if (!needsDeleteConfirmation(summary)) {
         state.actions.deleteSelection(selection);
         return;
       }
       setConfirmDelete({ summary, run: () => state.actions.deleteSelection(selection) });
     },
-    [readOnly, state.effectiveModel, state.actions],
+    [readOnly, state.model, state.actions],
   );
 
   // --- palette (docked left panel, D1) -------------------------------------
@@ -471,8 +471,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
     try {
       const result =
         activeDiagram.kind === 'layer7'
-          ? await tidyLayer7(state.effectiveModel, activeDiagram, options)
-          : await tidyContainer(state.effectiveModel, activeDiagram, options);
+          ? await tidyLayer7(state.model, activeDiagram, options)
+          : await tidyContainer(state.model, activeDiagram, options);
       // Applied FIRST, and applied even when routing failed: `routingError` means
       // the placements are good and only the routes are missing (see
       // `routeOrDegrade`), so throwing the layout away would be the worse outcome.
@@ -506,7 +506,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   }, [
     activeDiagram,
     busy,
-    state.effectiveModel,
+    state.model,
     state.actions,
     fitView,
     tidyOptions,
@@ -530,7 +530,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
     diagram: activeDiagram,
     readOnly,
     busy,
-    requested: props.layoutOnOpenDiagramIds,
     options: tidyOptions,
     run: (override) => handleTidy(override, true),
     onSettled: props.onLayoutSettled,
@@ -545,7 +544,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       setBusy('tidy');
       try {
         const result = await tidyGroup(
-          state.effectiveModel,
+          state.model,
           activeDiagram,
           name,
           groupTidyOptions,
@@ -565,7 +564,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
     [
       activeDiagram,
       busy,
-      state.effectiveModel,
+      state.model,
       state.actions,
       groupTidyOptions,
       reportLayoutError,
@@ -593,7 +592,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       setBusy('route');
       try {
         const result = await routeDiagramEdges(
-          state.effectiveModel,
+          state.model,
           activeDiagram,
           'keep-stored',
           undefined,
@@ -610,7 +609,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
     [
       activeDiagram,
       busy,
-      state.effectiveModel,
+      state.model,
       state.actions,
       reportLayoutError,
       reportSkippedTiers,
@@ -638,7 +637,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
    * With it off, this runs the route-only pass explicitly and amends through the
    * token the reset returned — the same shape as the live effect, minus the
    * debounce. The diagram handed to the router is the one AFTER the reset (the
-   * row filtered out), because `state.effectiveModel` is still the render before
+   * row filtered out), because `state.model` is still the render before
    * the commit: routing against it would find the old row in the preserve set
    * and hand it straight back.
    */
@@ -647,7 +646,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       setBusy('route');
       try {
         const result = await routeDiagramEdges(
-          state.effectiveModel,
+          state.model,
           diagram,
           'keep-stored',
           undefined,
@@ -661,7 +660,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         setBusy(undefined);
       }
     },
-    [state.actions, state.effectiveModel, reportLayoutError, reportSkippedTiers, t],
+    [state.actions, state.model, reportLayoutError, reportSkippedTiers, t],
   );
   const handleResetRoute = useCallback(
     async (connectionId: string) => {
@@ -777,8 +776,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
         client:
           activeDiagram.client
           ?? props.exportTitleBlock?.client
-          ?? state.effectiveModel.customerName,
-        title: `${state.effectiveModel.name} — ${activeDiagram.name}`,
+          ?? state.model.customerName,
+        title: `${state.model.name} — ${activeDiagram.name}`,
         author: activeDiagram.author ?? props.exportTitleBlock?.author,
         // Absent = the day of export, which is the exporter's own default.
         date: activeDiagram.documentDate || undefined,
@@ -792,8 +791,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
             : undefined,
       },
     });
-    downloadBlob(blob, pngFilename(state.effectiveModel.customerName, activeDiagram));
-  }, [activeDiagram, exporting, getNodes, props.exportTitleBlock, state.effectiveModel, theme, t]);
+    downloadBlob(blob, pngFilename(state.model.customerName, activeDiagram));
+  }, [activeDiagram, exporting, getNodes, props.exportTitleBlock, state.model, theme, t]);
 
   /**
    * Rasterising a large board takes seconds; without a spinner the button looks
@@ -808,7 +807,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   const handleDoubleClick = useCallback(
     (elementId: ElementId) => {
-      const element = state.effectiveModel.elements.find((e) => e.id === elementId);
+      const element = state.model.elements.find((e) => e.id === elementId);
       if (!element) return;
       // Double-click opens what is inside: an application's container diagram,
       // and for everything else its documentation.
@@ -816,13 +815,13 @@ function EditorBody(props: SolutionDesignEditorProps) {
         openDocumentation(elementId);
         return;
       }
-      const existing = state.effectiveModel.diagrams.find(
+      const existing = state.model.diagrams.find(
         (d) => d.kind === 'container' && d.applicationElementId === elementId,
       );
       if (existing) props.onActiveDiagramChange(existing.id);
       else props.onCreateContainerDiagram(elementId);
     },
-    [state.effectiveModel, props, openDocumentation],
+    [state.model, props, openDocumentation],
   );
 
   // ONE owner of canvas keys (DK4): the declarative keymap-driven hook replaces
@@ -833,7 +832,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // React Flow's own Delete stays off (deleteKeyCode={null} on DiagramCanvas).
   const setShortcutContainer = useCanvasShortcuts({
     readOnly,
-    model: state.effectiveModel,
+    model: state.model,
     diagram: activeDiagram,
     selection: state.selection,
     selectedElement: state.selectedElement,
@@ -875,12 +874,12 @@ function EditorBody(props: SolutionDesignEditorProps) {
   }
 
   const deleteElement = deleteTarget
-    ? state.effectiveModel.elements.find((e) => e.id === deleteTarget)
+    ? state.model.elements.find((e) => e.id === deleteTarget)
     : undefined;
   // An element deleted (or undone out of existence) while its page is open
   // simply has no page any more.
   const documentationElement = documentationId
-    ? state.effectiveModel.elements.find((e) => e.id === documentationId)
+    ? state.model.elements.find((e) => e.id === documentationId)
     : undefined;
 
   return (
@@ -895,7 +894,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       }}
     >
       <EditorToolbar
-        model={state.effectiveModel}
+        model={state.model}
         activeDiagram={activeDiagram}
         readOnly={readOnly}
         busy={busy}
@@ -1009,7 +1008,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           {state.selectedElement ? (
             <ElementInspector
               element={state.selectedElement}
-              model={state.effectiveModel}
+              model={state.model}
               diagram={activeDiagram}
               readOnly={readOnly}
               actions={state.actions}
@@ -1022,7 +1021,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           ) : state.selectedConnection ? (
             <ConnectionInspector
               connection={state.selectedConnection}
-              model={state.effectiveModel}
+              model={state.model}
               diagram={activeDiagram}
               readOnly={readOnly}
               actions={state.actions}
@@ -1062,7 +1061,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             activeDiagram.kind === 'container' &&
             activeDiagram.applicationElementId === deleteElement.id
           }
-          hasComponents={state.effectiveModel.elements.some(
+          hasComponents={state.model.elements.some(
             (e) => e.parentApplicationId === deleteElement.id,
           )}
           onRemoveFromDiagram={() => {
@@ -1092,7 +1091,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         <DocumentationPage
           key={documentationElement.id}
           element={documentationElement}
-          model={state.effectiveModel}
+          model={state.model}
           diagram={activeDiagram}
           readOnly={readOnly}
           actions={state.actions}
@@ -1100,7 +1099,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           renderInspector={(element, { readOnly: inspectorReadOnly }) => (
             <ElementInspector
               element={element}
-              model={state.effectiveModel}
+              model={state.model}
               diagram={activeDiagram}
               readOnly={inspectorReadOnly}
               actions={state.actions}
@@ -1126,7 +1125,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       )}
       <ElementSearchDialog
         open={searchOpen}
-        model={state.effectiveModel}
+        model={state.model}
         activeDiagramId={props.activeDiagramId}
         onClose={() => setSearchOpen(false)}
         onFocus={requestFocus}
@@ -1140,8 +1139,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
       )}
       {props.onDiagramSettingsChange && (
         <DiagramSettingsDialog
-          target={state.effectiveModel.diagrams.find((d) => d.id === settingsDiagramId)}
-          defaultClient={props.exportTitleBlock?.client ?? state.effectiveModel.customerName}
+          target={state.model.diagrams.find((d) => d.id === settingsDiagramId)}
+          defaultClient={props.exportTitleBlock?.client ?? state.model.customerName}
           onSave={props.onDiagramSettingsChange}
           onClose={() => setSettingsDiagramId(undefined)}
         />
@@ -1213,7 +1212,7 @@ function CanvasForDiagram({
   menuRequest?: { kind: 'open' | 'rename'; nonce: number };
 }) {
   const shared = {
-    model: state.effectiveModel,
+    model: state.model,
     diagram,
     readOnly,
     autoRoute,

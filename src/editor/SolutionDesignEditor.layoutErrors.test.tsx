@@ -2,9 +2,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from './SolutionDesignEditor';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import { HostedEditor } from './testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import { routeDiagramEdges } from '../layout/routeOnly';
 import { tidyLayer7 } from '../layout/tidy';
@@ -75,13 +75,12 @@ function model(): DesignModel {
 }
 
 function renderEditor() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
   const onLayoutError = vi.fn<(message: string) => void>();
-  const props: SolutionDesignEditorProps = {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     onLayoutError,
@@ -89,11 +88,11 @@ function renderEditor() {
   render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );
-  return { onChange, onLayoutError };
+  return { host, onLayoutError };
 }
 
 const wasmDown = () => new Error('Edge routing is unavailable. Reload the page.');
@@ -101,13 +100,13 @@ const wasmDown = () => new Error('Edge routing is unavailable. Reload the page.'
 describe('SolutionDesignEditor — a failed layout action is reported, not swallowed', () => {
   it('reports a route-only failure and commits nothing', async () => {
     mockRoute.mockRejectedValue(wasmDown());
-    const { onChange, onLayoutError } = renderEditor();
+    const { host, onLayoutError } = renderEditor();
 
     fireEvent.click(screen.getByLabelText('Route connections only'));
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
     expect(onLayoutError.mock.calls[0][0]).toMatch(/reload the page/i);
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 
   it('releases both buttons after a failure, so the toolbar is not left dead', async () => {
@@ -126,12 +125,12 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
 
   it('reports a Tidy that failed outright and commits nothing', async () => {
     mockTidy.mockRejectedValue(new Error('ELK exploded'));
-    const { onChange, onLayoutError } = renderEditor();
+    const { host, onLayoutError } = renderEditor();
 
     fireEvent.click(screen.getByLabelText('Tidy layout'));
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
-    expect(onChange).not.toHaveBeenCalled();
+    expect(host.current.commands).toEqual([]);
   });
 
   it('KEEPS the placements of a Tidy whose routing failed, and still reports it', async () => {
@@ -140,13 +139,12 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
     // computed. The nodes are the expensive part and they are fine.
     const moved = PLACEMENTS.map((p) => ({ ...p, y: p.y + 120 }));
     mockTidy.mockResolvedValue({ placements: moved, routingError: wasmDown() });
-    const { onChange, onLayoutError } = renderEditor();
+    const { host, onLayoutError } = renderEditor();
 
     fireEvent.click(screen.getByLabelText('Tidy layout'));
 
-    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
-    const batch = onChange.mock.calls.at(-1)![0];
-    expect(batch.placements).toEqual(expect.arrayContaining(moved));
+    await waitFor(() => expect(host.current.commands).toHaveLength(1));
+    expect(host.current.model.diagrams[0].placements).toEqual(expect.arrayContaining(moved));
     // Reported all the same: the board is tidy but its edges are not routed, and
     // the user is the only one who can fix that by reloading.
     expect(onLayoutError).toHaveBeenCalledTimes(1);
@@ -182,11 +180,11 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
       placements: PLACEMENTS,
       edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 700, y: 300 }] }],
     });
-    const { onChange, onLayoutError } = renderEditor();
+    const { host, onLayoutError } = renderEditor();
 
     fireEvent.click(screen.getByLabelText('Tidy layout'));
 
-    await waitFor(() => expect(onChange).toHaveBeenCalled());
+    await waitFor(() => expect(host.current.commands.length).toBeGreaterThan(0));
     expect(onLayoutError).not.toHaveBeenCalled();
   });
 });
@@ -290,15 +288,14 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
   const overCap = [{ connectorCount: 200, connectionIds: ['c1'] }];
 
   function renderLive() {
-    const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-    const onLayoutError = vi.fn<(message: string) => void>();
+      const onLayoutError = vi.fn<(message: string) => void>();
     const live = model();
     live.diagrams[0].autoRoute = true;
-    const props: SolutionDesignEditorProps = {
+    const host = { current: undefined as unknown as EditorHostState };
+    const props: HostedEditorProps = {
       model: live,
       activeDiagramId: 'd1',
       onActiveDiagramChange: vi.fn(),
-      onChange,
       onCreateContainerDiagram: vi.fn(),
       onCreateLayer7Diagram: vi.fn(),
       onLayoutError,
@@ -306,11 +303,11 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
     render(
       <ThemeProvider theme={createTheme()}>
         <div style={{ width: '1200px', height: '800px' }}>
-          <SolutionDesignEditor {...props} />
+          <HostedEditor {...props} hostRef={host} />
         </div>
       </ThemeProvider>,
     );
-    return { onChange, onLayoutError };
+    return { host, onLayoutError };
   }
 
   /**
@@ -332,7 +329,7 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
 
   it('turns itself off and reports once when the board is over the cap', async () => {
     mockRoute.mockResolvedValue({ placements: [], edgeRoutes: [], skipped: overCap });
-    const { onChange, onLayoutError } = renderLive();
+    const { host, onLayoutError } = renderLive();
 
     // Two geometry changes: the message must still arrive exactly once.
     changeGeometry();
@@ -341,9 +338,7 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1), { timeout: 2000 });
     expect(onLayoutError.mock.calls[0][0]).toContain('200');
     // Persisted off, so reopening does not re-enter a mode that cannot work.
-    await waitFor(() =>
-      expect(onChange.mock.calls.some(([b]) => b.autoRoute === false)).toBe(true),
-    );
+    await waitFor(() => expect(host.current.model.diagrams[0].autoRoute).toBe(false));
   });
 
   it('does not report a live pass that FAILED, because nobody asked for it', async () => {
@@ -370,16 +365,15 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
  */
 describe('SolutionDesignEditor — an automatic layout that failed', () => {
   function renderNeedingLayout() {
-    const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-    const onLayoutError = vi.fn<(message: string) => void>();
+      const onLayoutError = vi.fn<(message: string) => void>();
     const onLayoutSettled = vi.fn<(diagramId: string) => void>();
     const pending = model();
     pending.diagrams[0].needsLayout = true;
-    const props: SolutionDesignEditorProps = {
+    const host = { current: undefined as unknown as EditorHostState };
+    const props: HostedEditorProps = {
       model: pending,
       activeDiagramId: 'd1',
       onActiveDiagramChange: vi.fn(),
-      onChange,
       onCreateContainerDiagram: vi.fn(),
       onCreateLayer7Diagram: vi.fn(),
       onLayoutError,
@@ -388,19 +382,19 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
     render(
       <ThemeProvider theme={createTheme()}>
         <div style={{ width: '1200px', height: '800px' }}>
-          <SolutionDesignEditor {...props} />
+          <HostedEditor {...props} hostRef={host} />
         </div>
       </ThemeProvider>,
     );
-    return { onChange, onLayoutError, onLayoutSettled };
+    return { host, onLayoutError, onLayoutSettled };
   }
 
   it('keeps the placements and says so plainly when only the ROUTING failed', async () => {
     const moved = PLACEMENTS.map((p) => ({ ...p, y: p.y + 120 }));
     mockTidy.mockResolvedValue({ placements: moved, routingError: wasmDown() });
-    const { onChange, onLayoutError, onLayoutSettled } = renderNeedingLayout();
+    const { host, onLayoutError, onLayoutSettled } = renderNeedingLayout();
 
-    await waitFor(() => expect(onChange).toHaveBeenCalled());
+    await waitFor(() => expect(host.current.commands.length).toBeGreaterThan(0));
     expect(onLayoutError).toHaveBeenCalledTimes(1);
     expect(onLayoutError.mock.calls[0][0]).toBe(
       'This diagram was laid out but its connections could not be routed.',

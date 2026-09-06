@@ -1,13 +1,19 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
-import { useEditorState } from './useEditorState';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderEditorState } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
+import type { Command } from '../model/commands';
+
+/** What one step asked for, in order — a batch assertion, said as commands. */
+function commandTypes(command: Command): string[] {
+  return command.type === 'transaction' ? command.commands.map((c) => c.type) : [command.type];
+}
+
 
 /**
- * QF4 / U2: `applyTidyResult` commits placements + the landscape domain-group
- * rects in ONE batch, merging rects BY NAME — create-OR-resize (resize an
+ * QF4 / U2: `applyTidyResult` lands placements + the landscape domain-group
+ * rects in ONE step, merging rects BY NAME — create-OR-resize (resize an
  * existing rect, append a new group name) and preserving rects Tidy never
  * touched (member-less / other groups).
  */
@@ -37,18 +43,9 @@ function model(): DesignModel {
   };
 }
 
-function renderEditorState() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: model(),
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  return { result, onChange };
+function render() {
+  const { result, host } = renderEditorState(model(), { activeDiagramId: 'd1' });
+  return { result, host };
 }
 
 /**
@@ -90,25 +87,16 @@ function modelWithRoutes(): DesignModel {
 }
 
 function renderWithRoutes() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: modelWithRoutes(),
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  return { result, onChange };
+  const { result, host } = renderEditorState(modelWithRoutes(), { activeDiagramId: 'd1' });
+  return { result, host };
 }
 
 describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
   it('clears every content-bearing route in the same commit, and a single undo restores them', () => {
-    const { result, onChange } = renderWithRoutes();
+    const { result, host } = renderWithRoutes();
 
     // Sanity: both manual routes are live before Tidy.
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual([
+    expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
       { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
       { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
@@ -123,25 +111,23 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
       });
     });
 
-    // (a) One batch; its edgeRoutes carry soft-delete markers for both routes.
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const batch = onChange.mock.calls.at(-1)![0];
-    const markers = new Map(batch.edgeRoutes.map((r) => [r.connectionId, r]));
-    expect(markers.get('c1')).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined });
-    expect(markers.get('c2')).toEqual({ connectionId: 'c2', waypoints: [], labelPosition: undefined });
-    // Routes are gone from the rendered diagram (markers are non-content).
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual([]);
+    // (a) One command, and it asks for both rows to be forgotten rather than
+    // storing an empty one.
+    expect(host.current.commands).toHaveLength(1);
+    expect(commandTypes(host.current.commands[0]))
+      .toEqual(['placement.set', 'route.clear']);
+    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
 
     // (b) One undo restores the original routes verbatim.
     act(() => result.current.undo());
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual([
+    expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
       { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
       { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
   });
 
-  it('emits no route markers when the tidied diagram has no manual routes (no-op)', () => {
-    const { result, onChange } = renderEditorState();
+  it('says nothing about routes when the tidied diagram has none (no-op)', () => {
+    const { result, host } = render();
 
     act(() => {
       result.current.actions.applyTidyResult({
@@ -150,8 +136,7 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
       });
     });
 
-    const batch = onChange.mock.calls.at(-1)![0];
-    expect(batch.edgeRoutes).toEqual([]);
+    expect(commandTypes(host.current.commands[0])).toEqual(['placement.set', 'layout.set']);
   });
 });
 
@@ -181,25 +166,16 @@ function modelWithCanvas(): DesignModel {
 }
 
 function renderWithCanvas() {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: modelWithCanvas(),
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  return { result, onChange };
+  const { result, host } = renderEditorState(modelWithCanvas(), { activeDiagramId: 'd1' });
+  return { result, host };
 }
 
 describe('applyTidyResult (U-tidy-canvas — canvas in the single commit)', () => {
   it('writes the grown canvas in one batch and a single undo restores placements + canvas', () => {
-    const { result, onChange } = renderWithCanvas();
+    const { result, host } = renderWithCanvas();
 
     // Baseline: the original canvas.
-    expect(result.current.effectiveModel.diagrams[0].layoutConfig?.canvas).toEqual({
+    expect(result.current.model.diagrams[0].layoutConfig?.canvas).toEqual({
       width: 2000,
       height: 1200,
     });
@@ -212,31 +188,31 @@ describe('applyTidyResult (U-tidy-canvas — canvas in the single commit)', () =
       });
     });
 
-    // One commit; canvas + placement updated together.
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(result.current.effectiveModel.diagrams[0].layoutConfig?.canvas).toEqual({
+    // One command; canvas + placement updated together.
+    expect(host.current.commands).toHaveLength(1);
+    expect(result.current.model.diagrams[0].layoutConfig?.canvas).toEqual({
       width: 2400,
       height: 1600,
     });
     expect(
-      result.current.effectiveModel.diagrams[0].placements.find((p) => p.elementId === 'e1'),
+      result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e1'),
     ).toMatchObject({ x: 800, y: 600 });
 
     // A single undo restores BOTH the old canvas and the old placement.
     act(() => result.current.undo());
-    expect(result.current.effectiveModel.diagrams[0].layoutConfig?.canvas).toEqual({
+    expect(result.current.model.diagrams[0].layoutConfig?.canvas).toEqual({
       width: 2000,
       height: 1200,
     });
     expect(
-      result.current.effectiveModel.diagrams[0].placements.find((p) => p.elementId === 'e1'),
+      result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e1'),
     ).toMatchObject({ x: 300, y: 300 });
   });
 });
 
 describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () => {
   it('sets ELK waypoints, clears straight/untouched routes, one commit, single undo', () => {
-    const { result, onChange } = renderWithRoutes();
+    const { result, host } = renderWithRoutes();
 
     act(() => {
       result.current.actions.applyTidyResult({
@@ -254,22 +230,13 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
       });
     });
 
-    // One batch.
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const batch = onChange.mock.calls.at(-1)![0];
-    const markers = new Map(batch.edgeRoutes.map((r) => [r.connectionId, r]));
+    // One command: c2's row is forgotten and c1's is written, together.
+    expect(host.current.commands).toHaveLength(1);
+    expect(commandTypes(host.current.commands[0]))
+      .toEqual(['placement.set', 'route.clear', 'route.set']);
 
-    // c1 gets ELK's waypoints (label anchor reset).
-    expect(markers.get('c1')).toEqual({
-      connectionId: 'c1',
-      waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }],
-      labelPosition: undefined,
-    });
-    // c2 is cleared (empty ELK route + previously had a content route).
-    expect(markers.get('c2')).toEqual({ connectionId: 'c2', waypoints: [], labelPosition: undefined });
-
-    // Rendered effective diagram: c1 routed, c2 gone.
-    const routes = result.current.effectiveModel.diagrams[0].edgeRoutes ?? [];
+    // The diagram after it: c1 routed, c2 gone.
+    const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
     const byConn = new Map(routes.map((r) => [r.connectionId, r]));
     expect(byConn.get('c1')).toEqual({
       connectionId: 'c1',
@@ -279,7 +246,7 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
 
     // One undo restores BOTH original routes verbatim.
     act(() => result.current.undo());
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual([
+    expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
       { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
       { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
@@ -302,7 +269,7 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
       });
     });
 
-    const routes = result.current.effectiveModel.diagrams[0].edgeRoutes ?? [];
+    const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
     const c2 = routes.find((r) => r.connectionId === 'c2');
     expect(c2).toEqual({ connectionId: 'c2', waypoints: [], labelPosition: { x: 12, y: 34 } });
   });
@@ -310,7 +277,7 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
 
 describe('applyTidyResult (QF4 / U2)', () => {
   it('creates-or-resizes rects by name and preserves rects Tidy did not touch', () => {
-    const { result, onChange } = renderEditorState();
+    const { result, host } = render();
 
     act(() => {
       result.current.actions.applyTidyResult({
@@ -325,7 +292,7 @@ describe('applyTidyResult (QF4 / U2)', () => {
     });
 
     const groups =
-      result.current.effectiveModel.diagrams[0].layoutConfig?.domainGroups ?? [];
+      result.current.model.diagrams[0].layoutConfig?.domainGroups ?? [];
     const byName = new Map(groups.map((g) => [g.name, g]));
 
     // Core resized in place.
@@ -337,9 +304,9 @@ describe('applyTidyResult (QF4 / U2)', () => {
     expect(byName.get('Ghost')).toEqual({ name: 'Ghost', x: 0, y: 0, width: 999, height: 999 });
     expect(groups).toHaveLength(3);
 
-    // Placement committed too, and the whole thing is ONE batch (one commit).
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const placement = result.current.effectiveModel.diagrams[0].placements.find(
+    // The placement landed too, and the whole thing is ONE step.
+    expect(host.current.commands).toHaveLength(1);
+    const placement = result.current.model.diagrams[0].placements.find(
       (p) => p.elementId === 'e1',
     );
     expect(placement).toMatchObject({ x: 100, y: 120 });
@@ -364,7 +331,7 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
       });
     });
 
-    const routes = result.current.effectiveModel.diagrams[0].edgeRoutes ?? [];
+    const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
     // c1 was listed with empty waypoints → cleared.
     expect(routes.find((r) => r.connectionId === 'c1')).toBeUndefined();
     // c2 was never listed → its manual label anchor survives untouched.
@@ -374,7 +341,7 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
       labelPosition: { x: 99, y: 88 },
     });
     // e2 was not part of the tidied group → its placement is unchanged.
-    const e2 = result.current.effectiveModel.diagrams[0].placements.find(
+    const e2 = result.current.model.diagrams[0].placements.find(
       (p) => p.elementId === 'e2',
     );
     expect(e2).toMatchObject({ x: 50, y: 50 });
@@ -390,7 +357,7 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
       });
     });
 
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual([
+    expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
       { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
       { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
@@ -421,7 +388,7 @@ describe('applyTidyResult (no second preserve filter)', () => {
       });
     });
 
-    const routes = result.current.effectiveModel.diagrams[0].edgeRoutes ?? [];
+    const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
     expect(routes.find((r) => r.connectionId === 'c1')).toMatchObject({
       waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }],
       source: 'manual',
@@ -445,7 +412,7 @@ describe('applyTidyResult (no second preserve filter)', () => {
     });
 
     expect(
-      result.current.effectiveModel.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1'),
+      result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1'),
     ).toMatchObject({ waypoints: [{ x: 500, y: 500 }], source: 'auto' });
   });
 
@@ -455,7 +422,7 @@ describe('applyTidyResult (no second preserve filter)', () => {
     // TidyResult.routingError and tidy.routingFailure.test.ts describe. Being
     // unable to compute a replacement is not a licence to delete what is there.
     const { result } = renderWithRoutes();
-    const before = result.current.effectiveModel.diagrams[0].edgeRoutes;
+    const before = result.current.model.diagrams[0].edgeRoutes;
 
     act(() => {
       result.current.actions.applyTidyResult({
@@ -466,9 +433,9 @@ describe('applyTidyResult (no second preserve filter)', () => {
 
     // The placements landed...
     expect(
-      result.current.effectiveModel.diagrams[0].placements.find((p) => p.elementId === 'e1'),
+      result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e1'),
     ).toMatchObject({ x: 200, y: 200 });
     // ...and the routes are untouched.
-    expect(result.current.effectiveModel.diagrams[0].edgeRoutes).toEqual(before);
+    expect(result.current.model.diagrams[0].edgeRoutes).toEqual(before);
   });
 });

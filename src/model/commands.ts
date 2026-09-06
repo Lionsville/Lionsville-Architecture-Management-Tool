@@ -99,6 +99,16 @@ export type CommandMeta = {
    * box, per drag for a move and the routing that follows it.
    */
   coalesce?: string
+  /**
+   * Off for a change that is not a person's edit: the auto-route toggle, or the
+   * editor reporting that it has laid a diagram out. It lands on the model and
+   * not on the stack, because ⌘Z should not ask a mode back or undo a layout
+   * nobody asked for.
+   *
+   * Only the outermost command's answer counts — a transaction is one step or
+   * none, and what its members say about themselves does not change that.
+   */
+  undoable?: boolean
 }
 
 export type Command = CommandBody & CommandMeta

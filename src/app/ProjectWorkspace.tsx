@@ -10,7 +10,7 @@
  * do: `projects` is "something that can save", not a `ProjectStore`. It can be
  * mounted in a test with two plain objects and a two-diagram model.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '../editor'
 import type { Language, Translate } from '../i18n'
@@ -207,7 +207,6 @@ export function ProjectWorkspace({
    * dialog and the next autosave writes the settings straight back out again.
    */
   const applySettings = useCallback((settings: ProjectSettings) => {
-    session.flush()
     void onApplySettings(settings, session.snapshot()).then(
       (saved) => { if (saved) session.adopt(saved, false) },
       // The caller reports what it could; this is the case where the promise
@@ -225,10 +224,18 @@ export function ProjectWorkspace({
    * one undo step, so ⌘Z puts back a record rather than a list.
    */
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {
-    session.flush()
     const commands = decisionsToCommands(session.indexed(), next)
     if (commands.length) session.dispatch(transaction(commands))
   }, [session])
+
+  /**
+   * The app's one undo stack, as the editor takes it. Memoised on what actually
+   * moves, so a render for any other reason does not look like a new stack.
+   */
+  const history = useMemo(() => ({
+    undo: session.undo, redo: session.redo,
+    canUndo: session.canUndo, canRedo: session.canRedo,
+  }), [session.undo, session.redo, session.canUndo, session.canRedo])
 
   return (
     <>
@@ -261,7 +268,8 @@ export function ProjectWorkspace({
           model={session.model}
           activeDiagramId={session.activeDiagramId}
           onActiveDiagramChange={session.setActiveDiagramId}
-          onChange={session.onChange}
+          dispatch={session.dispatch}
+          history={history}
           onCreateContainerDiagram={diagrams.onCreateContainerDiagram}
           onCreateLayer7Diagram={diagrams.onCreateLayer7Diagram}
           // The project's answers, which a diagram's own settings override. The
@@ -272,7 +280,6 @@ export function ProjectWorkspace({
             client: groupNameOf(session.model),
             author: session.model.defaultAuthor,
           }}
-          layoutOnOpenDiagramIds={session.sessionLayoutIds}
           onLayoutSettled={session.onLayoutSettled}
           onForceSave={forceSave}
           ids={session.ids}
@@ -288,12 +295,6 @@ export function ProjectWorkspace({
           onDeleteDiagram={diagrams.requestDeleteDiagram}
           initialPreferences={editorPreferences}
           onPreferencesChange={onEditorPreferencesChange}
-          historyResetToken={session.historyToken}
-          rebaseToken={session.rebaseToken}
-          onUndo={session.undo}
-          onRedo={session.redo}
-          canUndo={session.canUndo}
-          canRedo={session.canRedo}
           language={language}
           onLanguageChange={onChooseLanguage}
           focusElement={focusRequest}

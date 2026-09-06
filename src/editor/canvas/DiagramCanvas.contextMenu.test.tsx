@@ -2,11 +2,11 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { SolutionDesignEditor } from '../SolutionDesignEditor';
+import { HostedEditor } from '../testing/editorHost';
+import type { EditorHostState, HostedEditorProps } from '../testing/editorHost';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import { zoneRect } from '../../model/zones';
-import type { DesignModel, DiagramContentBatch } from '../../model/types';
-import type { SolutionDesignEditorProps } from '../props';
+import type { DesignModel, EdgeRoute } from '../../model/types';
 
 /**
  * The context menus, end to end through the editor: a right-click opens the
@@ -44,13 +44,12 @@ function model(): DesignModel {
   };
 }
 
-function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
+function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
+  const host = { current: undefined as unknown as EditorHostState };
+  const props: HostedEditorProps = {
     model: model(),
     activeDiagramId: 'd1',
     onActiveDiagramChange: vi.fn(),
-    onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
     ...overrides,
@@ -58,12 +57,27 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <div style={{ width: '1200px', height: '800px' }}>
-        <SolutionDesignEditor {...props} />
+        <HostedEditor {...props} hostRef={host} />
       </div>
     </ThemeProvider>,
   );
-  const lastBatch = () => onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-  return { ...view, props, onChange, lastBatch };
+  /**
+   * The active diagram's content as it now stands — what a batch assertion
+   * becomes once there is no batch.
+   */
+  const landed = () => {
+    const m = host.current.model;
+    const diagram = m.diagrams.find((d) => d.id === (overrides.activeDiagramId ?? 'd1'))!;
+    return {
+      elements: m.elements,
+      connections: m.connections,
+      placements: diagram.placements,
+      edgeRoutes: diagram.edgeRoutes ?? [],
+      layoutConfig: diagram.layoutConfig,
+    };
+  };
+  const sent = () => host.current.commands.length;
+  return { ...view, props, host, landed, sent };
 }
 
 const nodeEl = (id: string) => document.querySelector(`.react-flow__node[data-id="${id}"]`) as HTMLElement;
@@ -127,12 +141,12 @@ describe('DiagramCanvas — element menu', () => {
   });
 
   it('Lifecycle ▸ Retired updates the element', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     const lifecycle = openSubmenu(menu('Element menu'), 'Lifecycle');
     expect(within(lifecycle).getByRole('menuitemcheckbox', { name: 'Live' }).getAttribute('aria-checked')).toBe('true');
     fireEvent.click(within(lifecycle).getByRole('menuitemcheckbox', { name: 'Retired' }));
-    expect(lastBatch().elements.find((e) => e.id === 'a1')?.lifecycle).toBe('retired');
+    expect(landed().elements.find((e) => e.id === 'a1')?.lifecycle).toBe('retired');
   });
 
   /**
@@ -141,25 +155,25 @@ describe('DiagramCanvas — element menu', () => {
    * write and clear contract is the same, which is what this still asserts.
    */
   it('Icon… opens the picker; a tile sets the mark and None clears it', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
 
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Icon…'));
     fireEvent.click(within(screen.getByRole('group', { name: 'Icon' })).getByLabelText('Database'));
-    expect(lastBatch().elements.find((e) => e.id === 'a1')?.iconKey).toBe('database');
+    expect(landed().elements.find((e) => e.id === 'a1')?.iconKey).toBe('database');
 
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Icon…'));
     fireEvent.click(within(screen.getByRole('group', { name: 'Icon' })).getByLabelText('None'));
-    expect(lastBatch().elements.find((e) => e.id === 'a1')?.iconKey).toBeUndefined();
+    expect(landed().elements.find((e) => e.id === 'a1')?.iconKey).toBeUndefined();
   });
 
   it('Move to zone ▸ Actors re-places the element inside the actors band', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(openSubmenu(menu('Element menu'), 'Move to zone')).getByRole('menuitemcheckbox', { name: 'Actors' }));
 
-    const placement = lastBatch().placements.find((p) => p.elementId === 'a1');
+    const placement = landed().placements.find((p) => p.elementId === 'a1');
     const band = zoneRect('actors');
     expect(placement?.zone).toBe('actors');
     expect(placement?.domainGroup).toBeUndefined();
@@ -168,33 +182,33 @@ describe('DiagramCanvas — element menu', () => {
   });
 
   it('Domain group ▸ joins the group the element already sits in without moving it', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(openSubmenu(menu('Element menu'), 'Domain group')).getByRole('menuitemcheckbox', { name: 'Core' }));
-    const placement = lastBatch().placements.find((p) => p.elementId === 'a1');
+    const placement = landed().placements.find((p) => p.elementId === 'a1');
     expect(placement).toMatchObject({ domainGroup: 'Core', x: 400, y: 300 });
   });
 
   it('"Start connection to…" enters connect mode; the next node click connects, Escape cancels', () => {
-    const { lastBatch, onChange } = renderEditor();
+    const { landed, sent } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Start connection to…'));
     expect(screen.getByTestId('lv-connect-hint').textContent).toMatch(/Click a target element/);
 
     fireEvent.click(nodeEl('b1'));
-    const created = lastBatch().connections.find((c) => c.id !== 'c1');
+    const created = landed().connections.find((c) => c.id !== 'c1');
     expect(created).toMatchObject({ sourceId: 'a1', targetId: 'b1' });
     expect(screen.queryByTestId('lv-connect-hint')).toBeNull();
     // Like a hand-drawn line, the new connection is what ends up selected.
     expect(screen.getByText('Webshop → Carrier')).toBeDefined();
 
     // Escape leaves the mode without connecting anything.
-    const before = onChange.mock.calls.length;
+    const before = sent();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Start connection to…'));
     fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(screen.queryByTestId('lv-connect-hint')).toBeNull();
-    expect(onChange.mock.calls.length).toBe(before);
+    expect(sent()).toBe(before);
   });
 
   it('"Rename" focuses the inspector Name field with the text selected', async () => {
@@ -208,7 +222,7 @@ describe('DiagramCanvas — element menu', () => {
   });
 
   it('"Delete from model…" opens the delete dialog; "Remove from diagram" removes straight away', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Delete from model…'));
     expect(screen.getByRole('dialog')).toBeDefined();
@@ -217,42 +231,44 @@ describe('DiagramCanvas — element menu', () => {
 
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Remove from diagram'));
-    expect(lastBatch().removedPlacementElementIds).toEqual(['a1']);
+    // Off the diagram, still in the model — removing is a layout edit.
+    expect(landed().placements.map((p) => p.elementId)).toEqual(['b1']);
+    expect(landed().elements.map((e) => e.id)).toEqual(['a1', 'b1']);
   });
 });
 
 describe('DiagramCanvas — connection menu', () => {
   it('a line WITHOUT a stored route gets the menu; "Add bend point here" claims it', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'), { clientX: 400, clientY: 300 });
     const root = menu('Connection menu');
     expect(within(root).getByText('Remove all bend points').closest('[role="menuitem"]')?.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(within(root).getByText('Add bend point here'));
 
-    const route = lastBatch().edgeRoutes.find((r) => r.connectionId === 'c1');
+    const route = landed().edgeRoutes.find((r) => r.connectionId === 'c1');
     expect(route?.waypoints).toHaveLength(1);
     expect(route?.source).toBe('manual');
   });
 
   it('Direction ▸ Reverse swaps the endpoints; Two-way sets isBidirectional', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Direction')).getByRole('menuitemcheckbox', { name: 'Reverse' }));
-    expect(lastBatch().connections.find((c) => c.id === 'c1')).toMatchObject({ sourceId: 'b1', targetId: 'a1' });
+    expect(landed().connections.find((c) => c.id === 'c1')).toMatchObject({ sourceId: 'b1', targetId: 'a1' });
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Direction')).getByRole('menuitemcheckbox', { name: 'Two-way' }));
-    expect(lastBatch().connections.find((c) => c.id === 'c1')?.isBidirectional).toBe(true);
+    expect(landed().connections.find((c) => c.id === 'c1')?.isBidirectional).toBe(true);
   });
 
   it('Line shape ▸ writes the routing token, Smooth clears it', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Line shape')).getByRole('menuitemcheckbox', { name: 'Orthogonal' }));
-    expect(lastBatch().connections.find((c) => c.id === 'c1')?.routing).toBe('orthogonal');
+    expect(landed().connections.find((c) => c.id === 'c1')?.routing).toBe('orthogonal');
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Line shape')).getByRole('menuitemcheckbox', { name: 'Smooth' }));
-    expect(lastBatch().connections.find((c) => c.id === 'c1')?.routing).toBeUndefined();
+    expect(landed().connections.find((c) => c.id === 'c1')?.routing).toBeUndefined();
   });
 
   it('"Edit label" opens the inline editor on the chip', async () => {
@@ -264,14 +280,16 @@ describe('DiagramCanvas — connection menu', () => {
   });
 
   it('the label chip opens the same menu; Attach at ▸ Source ▸ Top fixes the source side as an auto row', async () => {
-    const { onChange } = renderEditor();
-    // The side commit is synchronous; the routing pass it triggers (live routing
-    // is off, so the editor runs one) lands a LATER batch with the routed bends.
-    // Look for the commit's own batch rather than the last one, so the pass's
-    // timing cannot decide the outcome.
-    const routeIn = (batch: DiagramContentBatch) => batch.edgeRoutes.find((r) => r.connectionId === 'c1');
-    const someBatch = (matches: (route: ReturnType<typeof routeIn>) => boolean) =>
-      onChange.mock.calls.some(([batch]) => matches(routeIn(batch)));
+    const { host } = renderEditor();
+    // The side change is synchronous; the routing pass it triggers (live routing
+    // is off, so the editor runs one) lands the routed bends a moment later. Read
+    // every row the editor has asked for rather than only the current one, so the
+    // pass's timing cannot decide the outcome.
+    const asked = () => host.current.commands
+      .flatMap((c) => (c.type === 'transaction' ? c.commands : [c]))
+      .flatMap((c) => (c.type === 'route.set' ? c.routes : []))
+      .filter((r) => r.connectionId === 'c1');
+    const someRow = (matches: (route: EdgeRoute) => boolean) => asked().some(matches);
     fireEvent.contextMenu(await screen.findByTestId('edge-label-c1'));
     const root = menu('Connection menu');
     expect(within(root).getByRole('menuitem', { name: /Pin route/ }).getAttribute('aria-disabled')).toBeNull();
@@ -282,13 +300,13 @@ describe('DiagramCanvas — connection menu', () => {
     fireEvent.click(within(source).getByRole('menuitemcheckbox', { name: 'Top' }));
     // Sides are constraints, not geometry: the new row is the router's, not a claim.
     expect(
-      someBatch((r) => r?.waypoints.length === 0 && r.source === 'auto' && r.sourceSide === 'top'),
+      someRow((r) => r.waypoints.length === 0 && r.source === 'auto' && r.sourceSide === 'top'),
     ).toBe(true);
     // The pass then routes the line out of its top — bends, still under the side.
     // Waited for, because the editor is busy until it lands and a second side
     // change meanwhile is refused (the menu disables the entries while it runs).
     await waitFor(() =>
-      expect(someBatch((r) => (r?.waypoints.length ?? 0) > 0 && r?.sourceSide === 'top')).toBe(true),
+      expect(someRow((r) => r.waypoints.length > 0 && r.sourceSide === 'top')).toBe(true),
     );
     // The menu now shows the side as chosen, and Automatic clears it again. The
     // reopen is RETRIED until the menu is there: React Flow replaces the edge's
@@ -311,21 +329,21 @@ describe('DiagramCanvas — connection menu', () => {
     await waitFor(() =>
       expect(within(again).getByRole('menuitemcheckbox', { name: 'Automatic' }).getAttribute('aria-disabled')).toBeNull(),
     );
-    const before = onChange.mock.calls.length;
+    const before = asked().length;
     fireEvent.click(within(again).getByRole('menuitemcheckbox', { name: 'Automatic' }));
     // Freeing the side drops the constraint and nothing else: the row keeps the
-    // router's bends (the pass that follows re-routes it free), so the batch
-    // carries c1 without a `sourceSide`.
-    const freed = onChange.mock.calls.slice(before).map(([batch]) => routeIn(batch));
+    // router's bends (the pass that follows re-routes it free), so what is asked
+    // for from here on carries c1 without a `sourceSide`.
+    const freed = asked().slice(before);
     expect(freed.length).toBeGreaterThan(0);
-    expect(freed.some((r) => r !== undefined && r.sourceSide === undefined)).toBe(true);
+    expect(freed.some((r) => r.sourceSide === undefined)).toBe(true);
   });
 
   it('"Pin route" pins a line with no stored route; the entry then reads "Unpin route" and unpins it', async () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Pin route'));
-    expect(lastBatch().edgeRoutes.find((r) => r.connectionId === 'c1')).toEqual({
+    expect(landed().edgeRoutes.find((r) => r.connectionId === 'c1')).toEqual({
       connectionId: 'c1',
       waypoints: [],
       labelPosition: undefined,
@@ -337,10 +355,8 @@ describe('DiagramCanvas — connection menu', () => {
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Unpin route'));
-    // A pin-only row that loses its pin has nothing left: the delete marker.
-    const unpinned = lastBatch().edgeRoutes.find((r) => r.connectionId === 'c1');
-    expect(unpinned?.waypoints).toEqual([]);
-    expect(unpinned?.pinned).toBeUndefined();
+    // A pin-only row that loses its pin has nothing left: the row is forgotten.
+    expect(landed().edgeRoutes.find((r) => r.connectionId === 'c1')).toBeUndefined();
     expect(screen.getByTestId('route-badge').textContent).toBe('None');
   });
 
@@ -355,18 +371,18 @@ describe('DiagramCanvas — connection menu', () => {
   it('a bend handle offers "Remove bend point"', async () => {
     const m = model();
     m.diagrams[0].edgeRoutes = [{ connectionId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source: 'manual' }];
-    const { lastBatch } = renderEditor({ model: m });
+    const { landed } = renderEditor({ model: m });
     // Handles belong to the SELECTED line (routing phase 2a), so pick it up first.
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     fireEvent.contextMenu(await screen.findByTestId('waypoint-c1-1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Remove bend point'));
-    expect(lastBatch().edgeRoutes.find((r) => r.connectionId === 'c1')?.waypoints).toEqual([{ x: 900, y: 320 }]);
+    expect(landed().edgeRoutes.find((r) => r.connectionId === 'c1')?.waypoints).toEqual([{ x: 900, y: 320 }]);
   });
 });
 
 describe('DiagramCanvas — canvas menu', () => {
   it('right-click on empty canvas opens the canvas menu; "Add here ▸ Application" creates one at the click point', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     // Well clear of the Core group box in flow space, on the landscape.
     const client = { x: 700, y: 500 };
     fireEvent.contextMenu(pane(), { clientX: client.x, clientY: client.y });
@@ -379,7 +395,7 @@ describe('DiagramCanvas — canvas menu', () => {
 
     fireEvent.click(within(openSubmenu(root, 'Add here')).getByText('Application'));
 
-    const batch = lastBatch();
+    const batch = landed();
     const created = batch.elements.find((e) => e.id !== 'a1' && e.id !== 'b1');
     expect(created?.kind).toBe('application');
     const placement = batch.placements.find((p) => p.elementId === created?.id);
@@ -389,15 +405,15 @@ describe('DiagramCanvas — canvas menu', () => {
   });
 
   it('"Add domain group here" lands a box centred on the click', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(pane(), { clientX: 500, clientY: 450 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Add domain group here'));
-    const groups = lastBatch().layoutConfig?.domainGroups ?? [];
+    const groups = landed().layoutConfig?.domainGroups ?? [];
     expect(groups.map((g) => g.name)).toEqual(['Core', 'New group']);
   });
 
   it('Copy on an element then "Paste here" pastes the copy with its corner at the click point', () => {
-    const { lastBatch } = renderEditor();
+    const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Copy'));
 
@@ -405,7 +421,7 @@ describe('DiagramCanvas — canvas menu', () => {
     fireEvent.contextMenu(pane(), { clientX: client.x, clientY: client.y });
     fireEvent.click(within(menu('Canvas menu')).getByText('Paste here'));
 
-    const pasted = lastBatch().placements.find((p) => p.elementId !== 'a1' && p.elementId !== 'b1');
+    const pasted = landed().placements.find((p) => p.elementId !== 'a1' && p.elementId !== 'b1');
     const expected = flowPositionOf(client);
     expect(pasted?.x).toBeCloseTo(expected.x, 3);
     expect(pasted?.y).toBeCloseTo(expected.y, 3);
@@ -431,30 +447,30 @@ describe('DiagramCanvas — canvas menu', () => {
 
 describe('DiagramCanvas — selection menu', () => {
   it('right-click on a node inside a multi-selection opens the selection menu; Lifecycle applies to all in one batch', () => {
-    const { onChange, lastBatch } = renderEditor();
+    const { landed, sent } = renderEditor();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Select all'));
 
     fireEvent.contextMenu(nodeEl('a1'));
     const root = menu('Selection menu');
     expect(within(root).getByText('Group into new domain group')).toBeDefined();
-    const before = onChange.mock.calls.length;
+    const before = sent();
     fireEvent.click(within(openSubmenu(root, 'Lifecycle')).getByText('Planned'));
-    expect(onChange.mock.calls.length).toBe(before + 1);
-    expect(lastBatch().elements.map((e) => e.lifecycle)).toEqual(['planned', 'planned']);
+    expect(sent()).toBe(before + 1);
+    expect(landed().elements.map((e) => e.lifecycle)).toEqual(['planned', 'planned']);
   });
 
   it('"Group into new domain group" boxes the landscape members and assigns them in one batch', () => {
-    const { onChange, lastBatch } = renderEditor();
+    const { landed, sent } = renderEditor();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Select all'));
-    const before = onChange.mock.calls.length;
+    const before = sent();
 
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Selection menu')).getByText('Group into new domain group'));
 
-    expect(onChange.mock.calls.length).toBe(before + 1);
-    const batch = lastBatch();
+    expect(sent()).toBe(before + 1);
+    const batch = landed();
     const group = batch.layoutConfig?.domainGroups?.find((g) => g.name === 'New group');
     expect(group).toBeDefined();
     // The landscape member joins; the band member is not a group member.
@@ -474,7 +490,7 @@ describe('DiagramCanvas — keyboard', () => {
     rerender(
       <ThemeProvider theme={createTheme()}>
         <div style={{ width: '1200px', height: '800px' }}>
-          <SolutionDesignEditor {...props} focusElement={{ id: 'a1', nonce: 1 }} />
+          <HostedEditor {...props} focusElement={{ id: 'a1', nonce: 1 }} />
         </div>
       </ThemeProvider>,
     );

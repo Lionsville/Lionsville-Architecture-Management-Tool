@@ -7,23 +7,52 @@
  * have to see any of that to read what an element is.
  */
 import type { ReactNode } from 'react';
+import type { Command } from '../model/commands';
 import type { IdPolicy } from '../model/keys';
 import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
 import type {
-  DesignModel, DiagramContentBatch, DiagramSettings, ElementId,
+  DesignModel, DiagramSettings, ElementId,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { WindowChrome } from '../platform/windowChrome';
+
+/**
+ * Undo and redo, as the editor sees them.
+ *
+ * One object rather than four props because they are one thing: a stack the
+ * editor reads and steps but does not own. Whether it can step is the host's
+ * answer, not a count of anything here.
+ */
+export interface EditorHistory {
+  undo(): void;
+  redo(): void;
+  canUndo: boolean;
+  canRedo: boolean;
+}
 
 export interface SolutionDesignEditorProps {
   model: DesignModel;
   activeDiagramId: string;
   readOnly?: boolean;
   onActiveDiagramChange(diagramId: string): void;
-  /** Debounced by the host; emitted on every local mutation. */
-  onChange(batch: DiagramContentBatch): void;
+  /**
+   * Apply a change, and answer with the model that results — `undefined` when
+   * the host refused it.
+   *
+   * The one way the editor changes anything (ADR-0002). It holds no copy of the
+   * document and buffers nothing: an action builds a command, sends it here, and
+   * reads the answer, so the next action in the same gesture sees the first
+   * without waiting for a render.
+   */
+  dispatch(command: Command): DesignModel | undefined;
+  /**
+   * The host's undo stack, which is the app's only one. The toolbar buttons and
+   * ⌘Z call it, and the editor pushes nothing of its own — so ⌘Z here undoes a
+   * diagram rename or a decision's status as readily as a node move.
+   */
+  history: EditorHistory;
   onCreateContainerDiagram(applicationElementId: ElementId): void;
   onCreateLayer7Diagram(): void;
   /**
@@ -46,8 +75,9 @@ export interface SolutionDesignEditorProps {
    * dialog and hands over the whole answer; wiring this is what puts "Diagram
    * settings…" in a tab's menu.
    *
-   * Deliberately not part of `DiagramContentBatch`: that batch is content —
-   * elements, connections, placements, routes — and this is the diagram record.
+   * Its own callback rather than a command the editor dispatches: the settings
+   * carry rules the host owns — what the exported title block says, and the
+   * project's default columns a diagram may override.
    */
   onDiagramSettingsChange?(diagramId: string, settings: DiagramSettings): void;
   exportTitleBlock?: { client: string; author?: string };
@@ -126,16 +156,6 @@ export interface SolutionDesignEditorProps {
    */
   onLayoutError?(message: string): void;
   /**
-   * Diagrams whose geometry THIS SESSION created, so the editor lays them out on
-   * open even without the persisted flag — a container diagram the user just
-   * created by double-clicking an application, or an import applied in this tab.
-   *
-   * The session half of the "unclaimed geometry" signal. It costs no migration
-   * and covers the case that ships first; the persisted flag covers the one this
-   * session cannot know about, such as a diagram an agent created hours ago.
-   */
-  layoutOnOpenDiagramIds?: string[];
-  /**
    * An automatic layout has landed on this diagram. Fires exactly once per
    * diagram per session, and only when the pass produced placements.
    *
@@ -151,25 +171,6 @@ export interface SolutionDesignEditorProps {
    * first step toward a layout that narrates itself.
    */
   onLayoutSettled?(diagramId: string): void;
-  /**
-   * Authoritative tempId → real-id maps, accumulated by the host from its
-   * save responses. Reconciliation resolves temp ids from these first and
-   * only falls back to heuristic matching (kind/name/placement) for ids the
-   * maps don't cover — heuristics alone cannot tell identical twins apart
-   * (two default-named elements, two identical parallel connections).
-   *
-   * The host MUST hand over a NEW object whenever it learns an alias — never
-   * mutate the maps in place. Aliases routinely land in a later commit than the
-   * model swap of the same save (the host fills them once its save call
-   * resolves, while the mutation's success handler already pushed the new
-   * content), and reconciliation re-runs on this prop's identity. An in-place
-   * mutation is invisible to that effect and strands the tempId (see the
-   * undo/redo remap in useEditorState).
-   */
-  idAliases?: {
-    elements: ReadonlyMap<ElementId, ElementId>;
-    connections: ReadonlyMap<string, string>;
-  };
   /**
    * View settings to start with — snap, grid, lifecycle badges, panel collapse
    * and the two Tidy option sets (see `EditorPreferences`). Read ONCE, on mount:
@@ -188,22 +189,6 @@ export interface SolutionDesignEditorProps {
    */
   onPreferencesChange?(preferences: EditorPreferences): void;
   /**
-   * Bump this when the host replaces the DOCUMENT under the same diagram ids —
-   * opening a file, or reverting to a shipped one.
-   *
-   * It clears the undo/redo stacks and any pending local overlay, which is
-   * exactly what a remount used to do and the only part of a remount that was
-   * ever load-bearing here. Without it a host that stops remounting on file open
-   * (to keep the viewport, the selection and the panel state) leaves ⌘Z able to
-   * restore content from the PREVIOUS document — undo steps are diffs, and the
-   * model they were diffed against is gone.
-   *
-   * Not needed when the diagram ids themselves change: a host swapping those
-   * must still remount, because the editor's once-per-session settling pass is
-   * keyed by diagram id.
-   */
-  historyResetToken?: number | string;
-  /**
    * Where a new element's or connection's id comes from.
    *
    * An id is the key the thing will have in the file, minted at the moment it is
@@ -216,36 +201,6 @@ export interface SolutionDesignEditorProps {
    * an id handed out is then remembered across a remount.
    */
   ids?: IdPolicy;
-  /**
-   * Undo and redo, when the HOST owns the stack.
-   *
-   * Supply all four and the editor stops keeping a stack of its own: its toolbar
-   * buttons and ⌘Z call these, and nothing is pushed. That is the arrangement
-   * this application uses — one stack over the whole app, so ⌘Z undoes a
-   * diagram rename and a decision's status as readily as a node move (ADR-0002).
-   *
-   * Supply none and the editor keeps its own, over the content it can see.
-   */
-  onUndo?(): void;
-  onRedo?(): void;
-  canUndo?: boolean;
-  canRedo?: boolean;
-  /**
-   * Bump this when the host changes the model for a reason that is NOT a reply
-   * to a batch — its own undo, most of all.
-   *
-   * Reconciliation is the wrong tool for that. It keeps local edits alive across
-   * a save round-trip by letting a differing overlay value win, which is right
-   * when the host is echoing back what it stored and exactly wrong when the host
-   * has just put the model back to where it was: the overlay would re-apply the
-   * change that was undone, and re-emit it on the next batch.
-   *
-   * So this drops the overlay and takes the incoming model as the base. Unlike
-   * {@link historyResetToken} it keeps the SELECTION and the viewport — the
-   * document has not changed, one step of it has, and losing what you had
-   * selected on every ⌘Z is its own bug.
-   */
-  rebaseToken?: number | string;
   /**
    * The UI language. Default `'en'`.
    *

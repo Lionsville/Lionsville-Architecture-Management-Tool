@@ -15,10 +15,8 @@ import {
   withRouteRow,
 } from './routes';
 import { edgeRoutesEqual } from './equality';
-import { mergeModel } from './merge';
-import { EMPTY_OVERLAY, overlayWithEdgeRoute } from './overlay';
-import { diffToOverlay, effectiveOverlay } from './diffToOverlay';
-import { reconcileOverlay } from './reconcile';
+import { apply } from './reducer';
+import { fromArrays, toArrays } from './normalised';
 import { diagonalSegments } from '../layout/routeTestSupport';
 
 /**
@@ -172,30 +170,32 @@ describe('sides travel with the row through the model layer', () => {
     expect(edgeRoutesEqual(row(), row({ targetSide: 'bottom' }))).toBe(false);
   });
 
-  it('mergeModel keeps a side-only row and drops the marker that frees it', () => {
+  it('the reducer stores a side-only row and forgets it when the side is freed', () => {
     const sideOnly = row({ source: 'auto', sourceSide: 'top' });
-    const merged = mergeModel(model([]), overlayWithEdgeRoute(EMPTY_OVERLAY, 'd1', sideOnly));
-    expect(merged.diagrams[0].edgeRoutes).toEqual([sideOnly]);
-    const freed = mergeModel(model([sideOnly]), overlayWithEdgeRoute(EMPTY_OVERLAY, 'd1', row()));
-    expect(freed.diagrams[0].edgeRoutes).toEqual([]);
+    const stored = apply(fromArrays(model([])), {
+      type: 'route.set', diagramId: 'd1', routes: [sideOnly],
+    });
+    expect(stored.ok && toArrays(stored.model).diagrams[0].edgeRoutes).toEqual([sideOnly]);
+
+    // Freeing the last side leaves a row with nothing to say, which is what
+    // `hasRouteContent` recognises and `route.clear` acts on.
+    const freed = routeWithSides(sideOnly, 'c1', { sourceSide: undefined });
+    expect(hasRouteContent(freed)).toBe(false);
+    const gone = apply(fromArrays(model([sideOnly])), {
+      type: 'route.clear', diagramId: 'd1', connectionIds: ['c1'],
+    });
+    expect(gone.ok && toArrays(gone.model).diagrams[0].edgeRoutes).toBeUndefined();
   });
 
-  it('diffToOverlay emits an upsert for a side change and round-trips it', () => {
-    const base = model([row({ source: 'auto', sourceSide: 'top' })]);
-    const target = model([row({ source: 'auto', sourceSide: 'left' })]);
-    const patch = diffToOverlay(base, effectiveOverlay(target));
-    expect(patch.edgeRoutes.get('d1')?.get('c1')?.sourceSide).toBe('left');
-    expect(mergeModel(base, patch).diagrams[0].edgeRoutes).toEqual(target.diagrams[0].edgeRoutes);
-    // Same sides, no change: nothing to emit.
-    expect(diffToOverlay(base, effectiveOverlay(base)).edgeRoutes.size).toBe(0);
-  });
-
-  it('reconcile clears an overlay row once the host reflects it, sides included', () => {
-    const local = row({ source: 'auto', sourceSide: 'top' });
-    const overlay = overlayWithEdgeRoute(EMPTY_OVERLAY, 'd1', local);
-    const stillPending = reconcileOverlay({ previous: model([]), incoming: model([row({ source: 'auto' })]), overlay, emittedElements: [], emittedConnections: [] });
-    expect(stillPending.overlay.edgeRoutes.get('d1')?.get('c1')).toEqual(local);
-    const landed = reconcileOverlay({ previous: model([]), incoming: model([local]), overlay, emittedElements: [], emittedConnections: [] });
-    expect(landed.overlay.edgeRoutes.size).toBe(0);
+  it('a side change is one step, and its inverse puts the old side back', () => {
+    const before = fromArrays(model([row({ source: 'auto', sourceSide: 'top' })]));
+    const changed = apply(before, {
+      type: 'route.set', diagramId: 'd1', routes: [row({ source: 'auto', sourceSide: 'left' })],
+    });
+    expect(changed.ok).toBe(true);
+    if (!changed.ok) return;
+    expect(toArrays(changed.model).diagrams[0].edgeRoutes?.[0].sourceSide).toBe('left');
+    const back = apply(changed.model, changed.inverse);
+    expect(back.ok && toArrays(back.model)).toEqual(toArrays(before));
   });
 });

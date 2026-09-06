@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
-import { useEditorState } from './useEditorState';
+import { describe, expect, it } from 'vitest';
+import { act } from '@testing-library/react';
+import { renderEditorState } from './testing/editorHost';
+import type { DesignModel } from '../model/types';
+
 
 /**
  * Intent rule 10, at the choke-point that enforces it.
@@ -46,52 +46,41 @@ function model(): DesignModel {
   };
 }
 
-function renderEditorState(initial: DesignModel = model()) {
-  const onChange = vi.fn<(batch: DiagramContentBatch) => void>();
-  const props: SolutionDesignEditorProps = {
-    model: initial,
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: vi.fn(),
-    onChange,
-    onCreateContainerDiagram: vi.fn(),
-    onCreateLayer7Diagram: vi.fn(),
-  };
-  const { result } = renderHook(() => useEditorState(props));
-  const routeOf = (batch: DiagramContentBatch) =>
-    batch.edgeRoutes.find((r) => r.connectionId === 'c1');
-  return { result, onChange, routeOf };
+function render(initial: DesignModel = model()) {
+  const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
+  const stored = () =>
+    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1');
+  return { result, host, stored };
 }
 
 describe('a hand edit claims the route', () => {
   it('flips an auto route to manual when its waypoints are edited', () => {
-    const { result, onChange, routeOf } = renderEditorState();
+    const { result, host, stored } = render();
 
     act(() => {
       result.current.actions.setEdgeRoute('c1', [{ x: 500, y: 250 }]);
     });
 
-    // ONE commit carrying both the new geometry and the claim.
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const route = routeOf(onChange.mock.calls.at(-1)![0]);
-    expect(route?.source).toBe('manual');
-    expect(route?.waypoints).toEqual([{ x: 500, y: 250 }]);
+    // ONE step carrying both the new geometry and the claim.
+    expect(host.current.commands).toHaveLength(1);
+    expect(stored()?.source).toBe('manual');
+    expect(stored()?.waypoints).toEqual([{ x: 500, y: 250 }]);
   });
 
   it('flips an auto route to manual when only its label chip moves', () => {
     // The gap the old waypoint-presence heuristic could not see at all: a chip is
     // a hand edit that leaves the bends exactly where the router put them, so
     // "does it have waypoints" says nothing about whether a person touched it.
-    const { result, onChange, routeOf } = renderEditorState();
+    const { result, stored } = render();
 
     act(() => {
       result.current.actions.setEdgeLabelPosition('c1', { x: 620, y: 330 });
     });
 
-    const route = routeOf(onChange.mock.calls.at(-1)![0]);
-    expect(route?.source).toBe('manual');
-    expect(route?.labelPosition).toEqual({ x: 620, y: 330 });
+    expect(stored()?.source).toBe('manual');
+    expect(stored()?.labelPosition).toEqual({ x: 620, y: 330 });
     // The router's bends ride along untouched — claiming is not rewriting.
-    expect(route?.waypoints).toEqual([{ x: 500, y: 400 }]);
+    expect(stored()?.waypoints).toEqual([{ x: 500, y: 400 }]);
   });
 
   it('claims a route that had none stored at all', () => {
@@ -99,56 +88,48 @@ describe('a hand edit claims the route', () => {
     // nothing to inherit a source from, and it must not default to auto.
     const plain = model();
     plain.diagrams[0].edgeRoutes = undefined;
-    const { result, onChange, routeOf } = renderEditorState(plain);
+    const { result, stored } = render(plain);
 
     act(() => {
       result.current.actions.setEdgeRoute('c1', [{ x: 500, y: 250 }]);
     });
 
-    expect(routeOf(onChange.mock.calls.at(-1)![0])?.source).toBe('manual');
+    expect(stored()?.source).toBe('manual');
   });
 
   it('gives the route back to the router in one undo', () => {
-    const { result, onChange, routeOf } = renderEditorState();
+    const { result, stored } = render();
 
     act(() => {
       result.current.actions.setEdgeRoute('c1', [{ x: 500, y: 250 }]);
     });
-    expect(routeOf(onChange.mock.calls.at(-1)![0])?.source).toBe('manual');
+    expect(stored()?.source).toBe('manual');
 
     act(() => {
       result.current.undo();
     });
 
-    // Asserted on the EFFECTIVE model rather than the emitted batch, because a
-    // batch is a cumulative diff against the current server base: with the edit
-    // not yet saved, "no route entry" is the correct patch and says nothing about
-    // what the user sees. What must hold is that the board is back to the
-    // router's geometry AND the router's ownership — if the claim outlived the
-    // undo, one stray double-click would permanently remove a line from the
-    // reach of every automatic pass.
-    const restored = result.current.effectiveModel.diagrams[0].edgeRoutes?.find(
-      (r) => r.connectionId === 'c1',
-    );
-    expect(restored?.source).toBe('auto');
-    expect(restored?.waypoints).toEqual([{ x: 500, y: 400 }]);
+    // The board is back to the router's geometry AND the router's ownership. If
+    // the claim outlived the undo, one stray double-click would permanently
+    // remove a line from the reach of every automatic pass.
+    expect(stored()?.source).toBe('auto');
+    expect(stored()?.waypoints).toEqual([{ x: 500, y: 400 }]);
   });
 
-  it('sends a provenance-only change to the server even when the geometry is identical', () => {
-    // The batch is a diff, so a row only travels when it differs from the base.
+  it('claims a route whose geometry did not move at all', () => {
     // Provenance is a persisted field, so "same bends, changed hands" has to
-    // count as a difference — otherwise a route that becomes manual over an
-    // already-stored auto row would look unchanged and never persist, and the
-    // rule would hold in the session and evaporate on reload.
-    const { result, onChange, routeOf } = renderEditorState();
+    // count as a change — otherwise a route that becomes manual over an
+    // already-stored auto row would look untouched, and the rule would hold in
+    // the session and evaporate on reload.
+    const { result, host, stored } = render();
 
     act(() => {
-      // Byte-identical waypoints to what the base already stores.
+      // Byte-identical waypoints to what the model already stores.
       result.current.actions.setEdgeRoute('c1', [{ x: 500, y: 400 }]);
     });
 
-    const route = routeOf(onChange.mock.calls.at(-1)![0]);
-    expect(route?.source).toBe('manual');
-    expect(route?.waypoints).toEqual([{ x: 500, y: 400 }]);
+    expect(host.current.commands).toHaveLength(1);
+    expect(stored()?.source).toBe('manual');
+    expect(stored()?.waypoints).toEqual([{ x: 500, y: 400 }]);
   });
 });

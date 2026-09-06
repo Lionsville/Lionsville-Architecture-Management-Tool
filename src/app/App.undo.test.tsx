@@ -7,13 +7,15 @@
  * on the SAME stack in the order they happened, and that the editor's buttons
  * reach it. Before this, ⌘Z undid a node move and was deaf to a diagram rename.
  *
- * The editor is stubbed down to the four things this is about: a batch in, the
- * host's undo, the host's redo, and what it is told about `canUndo`.
+ * The editor is stubbed down to the four things this is about: a command in,
+ * the host's undo, the host's redo, and what it is told about `canUndo`.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import type { DiagramContentBatch } from '../model'
+import { transaction } from '../model'
+import type { Command } from '../model'
+import type { EditorHistory } from '../editor'
 import type { ProjectSnapshot } from '../projects/project'
 import { renderApp } from './testing/renderShell'
 
@@ -23,36 +25,30 @@ vi.mock('../editor', async (importOriginal) => {
     ...actual,
     SolutionDesignEditor: (props: {
       model: { name: string; diagrams: { id: string; name: string }[] }
-      onChange: (batch: DiagramContentBatch) => void
+      dispatch: (command: Command) => unknown
+      history: EditorHistory
       onRenameDiagram?: (id: string, name: string) => void
-      onUndo?: () => void
-      onRedo?: () => void
-      canUndo?: boolean
-      canRedo?: boolean
     }) => (
       <div>
         <p data-testid="diagram-name">{props.model.diagrams[0].name}</p>
-        <p data-testid="can-undo">{String(props.canUndo)}</p>
-        <p data-testid="can-redo">{String(props.canRedo)}</p>
+        <p data-testid="can-undo">{String(props.history.canUndo)}</p>
+        <p data-testid="can-redo">{String(props.history.canRedo)}</p>
         <button data-testid="rename" onClick={() => props.onRenameDiagram?.('d1', 'Renamed')}>rename</button>
         <button
           data-testid="draw"
-          onClick={() => props.onChange({
-            diagramId: 'd1',
-            elements: [{
-              id: 'tmp-1', kind: 'application', name: 'Warehouse',
-              lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
-            }],
-            deletedElementIds: [],
-            connections: [],
-            deletedConnectionIds: [],
-            placements: [{ elementId: 'tmp-1', x: 0, y: 0 }],
-            removedPlacementElementIds: [],
-            edgeRoutes: [],
-          })}
+          onClick={() => props.dispatch(transaction([
+            {
+              type: 'element.create',
+              element: {
+                id: 'warehouse', kind: 'application', name: 'Warehouse',
+                lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
+              },
+            },
+            { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },
+          ]))}
         >draw</button>
-        <button data-testid="undo" onClick={() => props.onUndo?.()}>undo</button>
-        <button data-testid="redo" onClick={() => props.onRedo?.()}>redo</button>
+        <button data-testid="undo" onClick={() => props.history.undo()}>undo</button>
+        <button data-testid="redo" onClick={() => props.history.redo()}>redo</button>
       </div>
     ),
   }
@@ -109,10 +105,8 @@ describe('the app has one undo stack', () => {
    * which is the thing that could not be done with two.
    */
   it('interleaves what the editor did with what the shell did', () => {
-    vi.useFakeTimers()
     show()
     click('draw')
-    act(() => { vi.advanceTimersByTime(250) })
     click('rename')
 
     click('undo')
