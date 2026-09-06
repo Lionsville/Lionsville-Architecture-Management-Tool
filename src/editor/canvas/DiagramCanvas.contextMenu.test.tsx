@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from '../SolutionDesignEditor';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
-import { isTempId } from '../../model/ids';
 import { zoneRect } from '../../model/zones';
 import type { DesignModel, DiagramContentBatch } from '../../model/types';
 import type { SolutionDesignEditorProps } from '../props';
@@ -183,7 +182,7 @@ describe('DiagramCanvas — element menu', () => {
     expect(screen.getByTestId('lv-connect-hint').textContent).toMatch(/Click a target element/);
 
     fireEvent.click(nodeEl('b1'));
-    const created = lastBatch().connections.find((c) => isTempId(c.id));
+    const created = lastBatch().connections.find((c) => c.id !== 'c1');
     expect(created).toMatchObject({ sourceId: 'a1', targetId: 'b1' });
     expect(screen.queryByTestId('lv-connect-hint')).toBeNull();
     // Like a hand-drawn line, the new connection is what ends up selected.
@@ -381,7 +380,7 @@ describe('DiagramCanvas — canvas menu', () => {
     fireEvent.click(within(openSubmenu(root, 'Add here')).getByText('Application'));
 
     const batch = lastBatch();
-    const created = batch.elements.find((e) => isTempId(e.id));
+    const created = batch.elements.find((e) => e.id !== 'a1' && e.id !== 'b1');
     expect(created?.kind).toBe('application');
     const placement = batch.placements.find((p) => p.elementId === created?.id);
     const expected = flowPositionOf(client);
@@ -406,7 +405,7 @@ describe('DiagramCanvas — canvas menu', () => {
     fireEvent.contextMenu(pane(), { clientX: client.x, clientY: client.y });
     fireEvent.click(within(menu('Canvas menu')).getByText('Paste here'));
 
-    const pasted = lastBatch().placements.find((p) => isTempId(p.elementId));
+    const pasted = lastBatch().placements.find((p) => p.elementId !== 'a1' && p.elementId !== 'b1');
     const expected = flowPositionOf(client);
     expect(pasted?.x).toBeCloseTo(expected.x, 3);
     expect(pasted?.y).toBeCloseTo(expected.y, 3);

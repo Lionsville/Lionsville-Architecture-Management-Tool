@@ -204,44 +204,49 @@ describe('useModelSession — the snapshot', () => {
 })
 
 /**
- * The editor still mints `tmp-…` for what it has just drawn and goes on
- * referring to it until the map comes back. Nothing had a test on it, and the
- * whole path is easy to lose while moving the session onto commands: what you
- * see is an element that saves under a temporary id, or one that is re-created
- * on every flush.
+ * Ids exist when the thing exists (ADR-0002).
+ *
+ * There used to be two: a `tmp-…` the editor minted and a key the session
+ * swapped in on the first flush, with an alias map carried between them. What
+ * replaced both is one policy, here, over the model the session actually holds
+ * — and none of it had a test at this level, which is how the alias path was
+ * quietly lost halfway through moving the session onto commands.
  */
-describe('useModelSession — a temporary id becomes a key', () => {
-  const drawing = (id: string): DiagramContentBatch => ({
+describe('useModelSession — where an id comes from', () => {
+  const drawn = (id: string): DiagramContentBatch => ({
     ...emptyBatch('d1'),
     elements: [element(id, 'Warehouse')],
     placements: [at('billing'), at(id)],
   })
 
-  it('gives a new element the key the file would have had', () => {
+  it('gives a name the key the file would have had', () => {
     const { session } = mount()
-    act(() => { session().onChange(drawing('tmp-1')); session().flush() })
+    expect(session().ids.element('Warehouse')).toBe('warehouse')
+  })
+
+  it('does not hand out a key twice, even before the first one is in the model', () => {
+    const { session } = mount()
+    const first = session().ids.element('Warehouse')
+    const second = session().ids.element('Warehouse')
+    expect(second).not.toBe(first)
+  })
+
+  it('does not hand out a key the model already has', () => {
+    const { session } = mount()
+    expect(session().ids.element('Billing')).not.toBe('billing')
+  })
+
+  it('stays clear of the diagram ids, which share the same namespace', () => {
+    const { session } = mount()
+    expect(session().ids.element('d1')).not.toBe('d1')
+  })
+
+  it('lands what the editor drew under the id the editor already gave it', () => {
+    const { session } = mount()
+    act(() => { session().onChange(drawn('warehouse')); session().flush() })
     expect(session().current().elements.map((e) => e.id)).toEqual(['billing', 'warehouse'])
     expect(session().current().diagrams[0].placements.map((p) => p.elementId))
       .toEqual(['billing', 'warehouse'])
-  })
-
-  it('hands the map back, in a new object so the editor sees it moved', () => {
-    const { session } = mount()
-    const before = session().aliasProp
-    act(() => { session().onChange(drawing('tmp-1')); session().flush() })
-    expect(session().aliasProp).not.toBe(before)
-    expect(session().aliasProp.elements.get('tmp-1')).toBe('warehouse')
-  })
-
-  it('keeps resolving the temporary id on later batches, instead of drawing it twice', () => {
-    const { session } = mount()
-    act(() => { session().onChange(drawing('tmp-1')); session().flush() })
-    act(() => {
-      session().onChange({ ...drawing('tmp-1'), elements: [element('tmp-1', 'Warehouse East')] })
-      session().flush()
-    })
-    expect(session().current().elements.map((e) => e.id)).toEqual(['billing', 'warehouse'])
-    expect(session().current().elements[1].name).toBe('Warehouse East')
   })
 })
 

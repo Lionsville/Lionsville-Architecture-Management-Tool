@@ -5,7 +5,9 @@ import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '.
 import type { TidyResult } from '../layout/tidy';
 import { buildBatch } from '../model/batch';
 import { remapClipboard, type ClipboardPayload } from '../model/clipboard';
-import { createTempId, isTempId } from '../model/ids';
+import { isTempId } from '../model/ids';
+import { idPolicy, idsIn } from '../model/keys';
+import type { IdPolicy } from '../model/keys';
 import { mergeModel } from '../model/merge';
 import {
   EMPTY_OVERLAY,
@@ -490,6 +492,16 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
   const propsRef = useRef(props);
   propsRef.current = props;
 
+  /**
+   * The host's policy when it has one, otherwise one over the model as this
+   * editor sees it — which includes what has been drawn and not yet flushed, so
+   * two elements added in one gesture cannot claim the same key.
+   */
+  const ownIds = useRef<IdPolicy | null>(null);
+  ownIds.current ??= idPolicy(
+    () => idsIn(mergeModel(propsRef.current.model, overlayRef.current)));
+  const ids = props.ids ?? ownIds.current;
+
   const emitBatch = useCallback((overlay: ModelOverlay) => {
     const { model, activeDiagramId, onChange } = propsRef.current;
     const batch = buildBatch(activeDiagramId, model, overlay);
@@ -724,13 +736,16 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       addElement(seed) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        const id = createTempId();
+        // The name first, because the id is derived from it: an element gets the
+        // key the file would have given it, at the moment it is drawn.
+        const name =
+          seed.name?.trim() ||
+          defaultElementName(seed.kind, translator(propsRef.current.language ?? 'en'));
+        const id = ids.element(name);
         const element: DesignElement = {
           id,
           kind: seed.kind,
-          name:
-            seed.name?.trim() ||
-            defaultElementName(seed.kind, translator(propsRef.current.language ?? 'en')),
+          name,
           lifecycle: 'live',
           isManaged: DEFAULT_MANAGED[seed.kind],
           aspects: {},
@@ -982,7 +997,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (sourceId === targetId) return undefined;
         const diagram = currentDiagram();
         const connection: DesignConnection = {
-          id: createTempId(),
+          id: ids.connection(),
           sourceId,
           targetId,
           isBidirectional: false,
@@ -1022,8 +1037,8 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const diagram = currentDiagram();
         if (!diagram || payload.elements.length === 0) return;
         const remapped = remapClipboard(payload, {
-          mintElementId: createTempId,
-          mintConnectionId: createTempId,
+          mintElementId: (name) => ids.element(name),
+          mintConnectionId: () => ids.connection(),
           offset,
           target: {
             kind: diagram.kind,

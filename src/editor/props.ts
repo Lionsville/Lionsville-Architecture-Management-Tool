@@ -7,6 +7,7 @@
  * have to see any of that to read what an element is.
  */
 import type { ReactNode } from 'react';
+import type { IdPolicy } from '../model/keys';
 import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
@@ -202,6 +203,19 @@ export interface SolutionDesignEditorProps {
    * keyed by diagram id.
    */
   historyResetToken?: number | string;
+  /**
+   * Where a new element's or connection's id comes from.
+   *
+   * An id is the key the thing will have in the file, minted at the moment it is
+   * drawn, so a change can carry it and nothing ever refers to a name that is
+   * about to be replaced (ADR-0002).
+   *
+   * Optional, because the editor can answer it from the model it is holding —
+   * which already includes what this session has drawn and not yet flushed. A
+   * host supplies one when it knows more than the editor can see, and because
+   * an id handed out is then remembered across a remount.
+   */
+  ids?: IdPolicy;
   /**
    * Undo and redo, when the HOST owns the stack.
    *

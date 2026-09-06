@@ -6,7 +6,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from './SolutionDesignEditor';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { PALETTE_DRAG_MIME } from './canvas/ElementPalette';
-import { isTempId } from '../model/ids';
+import { slug } from '../model/keys';
 import type { DesignModel, DiagramContentBatch } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 import { installReactFlowMocks } from './reactFlowTestSetup';
@@ -94,7 +94,7 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(screen.getByRole('button', { name: 'Application', expanded: false })).toBeDefined();
   });
 
-  it('placing from the palette emits a batch with a temp element + landscape placement and selects it', () => {
+  it('placing from the palette emits a batch with a keyed element + landscape placement and selects it', () => {
     const { onChange } = renderEditor();
     placeFromPalette('Application');
 
@@ -103,7 +103,9 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(batch.diagramId).toBe('d1');
     expect(batch.elements).toHaveLength(1);
     const created = batch.elements[0];
-    expect(isTempId(created.id)).toBe(true);
+    // The key the file would have given it, minted as it was drawn (ADR-0002).
+    // It used to be a `tmp-…` the host swapped out on the first flush.
+    expect(created.id).toBe(slug(created.name));
     expect(created.kind).toBe('application');
     expect(created.isManaged).toBe(true);
     const createdPlacement = batch.placements.find((p) => p.elementId === created.id);
@@ -472,11 +474,13 @@ describe('SolutionDesignEditor — paste cascade', () => {
     const target = screen.getByText('ACTORS');
     const copy = () => fireEvent.keyDown(target, { key: 'c', ctrlKey: true });
     const paste = () => fireEvent.keyDown(target, { key: 'v', ctrlKey: true });
-    // The x of every pasted (temp-id) placement in the latest batch — batches
-    // carry the full effective placement set, so these accumulate.
+    // The x of every pasted placement in the latest batch — batches carry the
+    // full effective placement set, so these accumulate. A copy is anything
+    // that was not in the model to begin with.
     const pastedXs = () => {
       const batch = onChange.mock.calls.at(-1)?.[0] as DiagramContentBatch;
-      return batch.placements.filter((p) => isTempId(p.elementId)).map((p) => p.x).sort((a, b) => a - b);
+      return batch.placements
+        .filter((p) => p.elementId !== 'a1').map((p) => p.x).sort((a, b) => a - b);
     };
 
     copy();

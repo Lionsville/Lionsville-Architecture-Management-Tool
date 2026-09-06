@@ -275,7 +275,7 @@ export function ProjectWorkspace({
           layoutOnOpenDiagramIds={session.sessionLayoutIds}
           onLayoutSettled={session.onLayoutSettled}
           onForceSave={forceSave}
-          idAliases={session.aliasProp}
+          ids={session.ids}
           logoLibrary={session.logoLibrary}
           onRequestLogoUpload={logoPicker.open}
           onExportImagesMissing={onExportImagesMissing}

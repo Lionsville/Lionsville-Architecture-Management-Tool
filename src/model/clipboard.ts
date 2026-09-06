@@ -65,7 +65,8 @@ export interface PasteTarget {
 }
 
 export interface RemapOptions {
-  mintElementId(): ElementId;
+  /** The key a pasted element gets; derived from its name, like any other. */
+  mintElementId(name: string): ElementId;
   mintConnectionId(): string;
   /** Flow-coordinate shift applied to every pasted placement. */
   offset: Point;
@@ -82,7 +83,7 @@ export function remapClipboard(
   options: RemapOptions,
 ): ClipboardPayload {
   const idMap = new Map<ElementId, ElementId>();
-  for (const element of payload.elements) idMap.set(element.id, options.mintElementId());
+  for (const element of payload.elements) idMap.set(element.id, options.mintElementId(element.name));
 
   const elements: DesignElement[] = payload.elements.map((element) => ({
     ...structuredClone(element),

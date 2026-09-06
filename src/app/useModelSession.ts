@@ -26,8 +26,9 @@ import type { StringKey } from '../i18n'
 import type { Command, CommandMeta, DiagramContentBatch, Model, UploadedLogo } from '../model'
 import { apply, fromArrays, toArrays, transaction } from '../model'
 import { batchToCommands } from '../model/batchCommands'
-import { needsRemount, rekeyBatch } from '../model/hostModel'
-import type { Aliases } from '../model/hostModel'
+import { idPolicy } from '../model/keys'
+import type { IdPolicy } from '../model/keys'
+import { needsRemount } from '../model/hostModel'
 import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
 import type { Notify } from './useToasts'
@@ -77,7 +78,12 @@ export type ModelSession = {
   activeDiagramId: string
   setActiveDiagramId: (id: string) => void
   sessionLayoutIds: string[]
-  aliasProp: { elements: ReadonlyMap<string, string>; connections: ReadonlyMap<string, string> }
+  /**
+   * Where a new element's or connection's id comes from. It lives here and not
+   * in the editor because the session's model is the truth about what is taken,
+   * and because an id handed out has to stay handed out across a remount.
+   */
+  ids: IdPolicy
   /**
    * The package's settle pass runs once per diagram id per editor instance. A
    * document that has to be laid out again under ids this instance already laid
@@ -139,13 +145,6 @@ export function useModelSession(deps: {
   const [editorKey, setEditorKey] = useState(0)
   const [historyToken, setHistoryToken] = useState(0)
   const [rebaseToken, setRebaseToken] = useState(0)
-  // The editor still mints `tmp-…` ids for what it has just drawn, and the
-  // permanent key is minted here on the first flush. Both halves go when the
-  // editor takes an id policy of its own; until then the map has to keep being
-  // handed back, or the editor's overlay goes on referring to ids the model no
-  // longer has and re-creates every new element on every flush.
-  const [aliasProp, setAliasProp] = useState<ModelSession['aliasProp']>(
-    { elements: new Map(), connections: new Map() })
 
   // Last batch per diagram, applied after a short debounce; the newest batch
   // replaces the previous one because batches are cumulative.
@@ -161,8 +160,12 @@ export function useModelSession(deps: {
   // The stacks are refs, because a caller has to be able to read and move them
   // inside an event handler. Nothing renders from them directly, so a counter
   // beside them is what makes `canUndo` and `canRedo` reach the screen.
-  // Every alias ever assigned, across flushes; the prop gets copies.
-  const aliasRef = useRef<Aliases>({ elements: new Map(), connections: new Map() })
+  const ids = useRef<IdPolicy | null>(null)
+  ids.current ??= idPolicy(() => [
+    ...modelRef.current.order.elements,
+    ...modelRef.current.order.connections,
+    ...modelRef.current.order.diagrams,
+  ])
 
   const past = useRef<HistoryStep[]>([])
   const future = useRef<HistoryStep[]>([])
@@ -235,9 +238,8 @@ export function useModelSession(deps: {
     let next = before
     const commands: Command[] = []
     const inverses: Command[] = []
-    const aliasesBefore = aliasRef.current.elements.size + aliasRef.current.connections.size
     pending.current.forEach((batch) => {
-      const built = batchToCommands(rekeyBatch(batch, toArrays(next), aliasRef.current), next)
+      const built = batchToCommands(batch, next)
       if (!built.length) return
       const result = apply(next, transaction(built))
       if (!result.ok) { notify(s(result.reason), 'error'); return }
@@ -246,13 +248,6 @@ export function useModelSession(deps: {
       inverses.unshift(result.inverse)
     })
     pending.current.clear()
-    if (aliasRef.current.elements.size + aliasRef.current.connections.size > aliasesBefore) {
-      // Always a new object with new maps: reconciliation runs on identity.
-      setAliasProp({
-        elements: new Map(aliasRef.current.elements),
-        connections: new Map(aliasRef.current.connections),
-      })
-    }
     if (next === before) return
     record(next, commands, inverses, {}, true)
 
@@ -324,8 +319,6 @@ export function useModelSession(deps: {
     pending.current.clear()
     past.current = []
     future.current = []
-    aliasRef.current = { elements: new Map(), connections: new Map() }
-    setAliasProp({ elements: new Map(), connections: new Map() })
     setHistoryVersion((v) => v + 1)
     // Measured before the swap: `needsRemount` compares the old with the new.
     const remount = needsRemount(arraysRef.current, project.model, relayout)
@@ -359,7 +352,8 @@ export function useModelSession(deps: {
   const forget = useCallback((diagramId: string) => { pending.current.delete(diagramId) }, [])
 
   return {
-    model: arrays, activeDiagramId: activeId, setActiveDiagramId, sessionLayoutIds, aliasProp,
+    model: arrays, activeDiagramId: activeId, setActiveDiagramId, sessionLayoutIds,
+    ids: ids.current,
     editorKey, historyToken, rebaseToken, logoLibrary, setLogoLibrary,
     dispatch, undo, redo,
     canUndo: past.current.length > 0,
