@@ -128,7 +128,8 @@ function unindex<T>(by: Record<string, T>, order: readonly string[]): T[] {
   return order.map((id) => by[id])
 }
 
-function normaliseDiagram(diagram: DesignDiagram): Diagram {
+/** One diagram, indexed. Exported because a command carries whole diagrams. */
+export function toDiagram(diagram: DesignDiagram): Diagram {
   const [placements, placementOrder] = index(diagram.placements ?? [], (p) => p.elementId)
   const out = { ...diagram } as unknown as Diagram
   out.placements = placements
@@ -142,7 +143,8 @@ function normaliseDiagram(diagram: DesignDiagram): Diagram {
   return out
 }
 
-function denormaliseDiagram(diagram: Diagram): DesignDiagram {
+/** One diagram, back in the shape the file wants. */
+export function fromDiagram(diagram: Diagram): DesignDiagram {
   const out = { ...diagram } as unknown as DesignDiagram & { order?: DiagramOrder }
   out.placements = unindex(diagram.placements, diagram.order.placements)
   if (diagram.edgeRoutes !== undefined) {
@@ -161,7 +163,7 @@ export function fromArrays(host: HostModel): Model {
   out.elements = elements
   out.connections = connections
   out.diagrams = Object.fromEntries(
-    Object.entries(diagrams).map(([id, d]) => [id, normaliseDiagram(d)]))
+    Object.entries(diagrams).map(([id, d]) => [id, toDiagram(d)]))
   let decisionOrder: AdrId[] = []
   if (host.decisions !== undefined) {
     const [decisions, order] = index(host.decisions, (a) => a.id)
@@ -182,7 +184,7 @@ export function toArrays(model: Model): HostModel {
   const out = { ...model } as unknown as HostModel & { order?: ModelOrder }
   out.elements = unindex(model.elements, model.order.elements)
   out.connections = unindex(model.connections, model.order.connections)
-  out.diagrams = model.order.diagrams.map((id) => denormaliseDiagram(model.diagrams[id]))
+  out.diagrams = model.order.diagrams.map((id) => fromDiagram(model.diagrams[id]))
   if (model.decisions !== undefined) {
     out.decisions = unindex(model.decisions, model.order.decisions)
   }

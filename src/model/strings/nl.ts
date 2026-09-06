@@ -35,6 +35,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'kindChange.hasComponents':
     'Deze applicatie heeft componenten — verplaats of verwijder die eerst',
   'kindChange.notAllowedHere': 'Dit aanzicht draagt die soort niet',
+
+  // --- wat de enige schrijver weigert (ADR-0002) ---------------------------
+  'command.gone': 'Dat is er niet meer',
+  'command.lastLandscape': 'Dit is het laatste landschap; het kan niet worden verwijderd.',
   'logo.category.data': 'Gegevens',
   'logo.category.integration': 'Integratie',
   'logo.category.applications': 'Applicaties',

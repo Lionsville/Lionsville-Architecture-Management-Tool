@@ -33,6 +33,10 @@ export const EN = {
   'kindChange.hasComponents':
     'This application has components — move or delete them first',
   'kindChange.notAllowedHere': 'This diagram does not hold that kind',
+
+  // --- what the one writer refuses (ADR-0002) ------------------------------
+  'command.gone': 'That is no longer there',
+  'command.lastLandscape': 'This is the last landscape; it cannot be deleted.',
   'logo.category.data': 'Data',
   'logo.category.integration': 'Integration',
   'logo.category.applications': 'Applications',

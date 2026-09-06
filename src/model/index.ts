@@ -15,6 +15,23 @@ export type {
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'
 
+/**
+ * The model as the reducer holds it: indexed by id, with the file's order kept
+ * beside it. `fromArrays`/`toArrays` are the boundary — everything above this
+ * line is the shape on disk, everything below it the shape in memory.
+ */
+export type { Model, Diagram, ModelOrder, DiagramOrder, ConnectionId, DiagramId, AdrId } from './normalised'
+export {
+  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf,
+  elementList, connectionList, diagramList, decisionList, placementList, routeList,
+} from './normalised'
+
+/** The one vocabulary for changing a model, and the one writer (ADR-0002). */
+export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch } from './commands'
+export { transaction, reverse, isNothing, NOTHING } from './commands'
+export type { ApplyResult, CommandRefusal } from './reducer'
+export { apply, applyAll } from './reducer'
+
 export { createTempId, isTempId } from './ids'
 /**
  * The one definition of "this route row stores something" — a row without it is
