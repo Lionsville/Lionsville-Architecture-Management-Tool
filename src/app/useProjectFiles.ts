@@ -16,9 +16,9 @@ import { reasonOf } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
 import { toInterchange } from '../model/toInterchange'
-import { openProjectDocument, toWorkingFile } from '../projects/project'
 import { refPath } from '../projects/projectRef'
-import type { TextDocument } from '../ports/DocumentGateway'
+import { openDocumentBytes, workingFileBytes, WORKING_FILE_MEDIA_TYPE } from '../projects/workingFile'
+import type { SavedDocument } from '../ports/DocumentGateway'
 import { messageFor } from './messageFor'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -32,8 +32,8 @@ import type { Notify } from './useToasts'
  * building except what the user asked for.
  */
 export type ProjectFileChannel = {
-  save(doc: TextDocument): Promise<void>
-  readText(blob: Blob): Promise<string>
+  save(doc: SavedDocument): Promise<void>
+  readBytes(blob: Blob): Promise<Uint8Array>
   readDataUrl(blob: Blob): Promise<string>
 }
 
@@ -71,19 +71,27 @@ export function useProjectFiles(deps: {
    * cancelled picker) then showed "saved" and the user had every reason to
    * believe it. The promise decides now, and both branches say so.
    */
-  const handOver = useCallback((doc: TextDocument, success: 'shell.savedWorkingFile' | 'shell.savedInterchange') => {
+  const handOver = useCallback((doc: SavedDocument, success: 'shell.savedWorkingFile' | 'shell.savedInterchange') => {
     documents.save(doc).then(
       () => notify(s(success), 'success'),
       (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
     )
   }, [documents, notify, s])
 
+  /**
+   * The working file: the project folder, zipped (ADR-0003).
+   *
+   * The same bytes the folder holds, so an export is something a person can
+   * unzip and read, and opening it somewhere else rebuilds the folder exactly —
+   * marks and all, which the old single JSON document carried as base64 and the
+   * folder does not have to.
+   */
   const saveWorkingFile = useCallback(() => {
     const project = session.snapshot()
     handOver({
       name: fileNameFor(project.ref, WORKING_FILE_EXTENSION),
-      text: JSON.stringify(toWorkingFile(project), null, 2) + '\n',
-      mediaType: 'application/json',
+      bytes: workingFileBytes(project),
+      mediaType: WORKING_FILE_MEDIA_TYPE,
     }, 'shell.savedWorkingFile')
   }, [session, handOver])
 
@@ -105,16 +113,14 @@ export function useProjectFiles(deps: {
    * `openProjectDocument`, testable without a browser.
    */
   const openFile = useCallback((file: File) => {
-    documents.readText(file).then(
-      (text) => {
-        let parsed: unknown
-        try { parsed = JSON.parse(text) }
-        catch (err) {
-          notify(s('shell.invalidJson', { message: (err as Error).message }), 'error')
-          return
-        }
+    documents.readBytes(file).then(
+      (bytes) => {
         try {
-          const result = openProjectDocument(parsed, session.snapshot())
+          // Bytes and not text, because what a file IS is a question about its
+          // content: a version-3 zip, an older JSON document, or an interchange
+          // file from another tool. The extension is a hint, and a renamed file
+          // is still what it is.
+          const result = openDocumentBytes(bytes, session.snapshot())
           if (!result.ok) { notify(s(result.messageKey), 'error'); return }
           session.adopt(result.project, result.relayout)
           notify(s(

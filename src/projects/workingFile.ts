@@ -25,7 +25,6 @@ import { projectFiles, projectFromFolder } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import { openProjectDocument } from './project'
 import type { OpenResult, ProjectSnapshot } from './project'
-import { slug } from '../model/keys'
 
 export { WORKING_FILE_EXTENSION }
 
@@ -57,11 +56,6 @@ export function workingFileBytes(project: ProjectSnapshot): Uint8Array {
     ]
   }
   return zipSync(entries)
-}
-
-/** What the file is offered as. The project's own name, not its key. */
-export function workingFileName(project: ProjectSnapshot): string {
-  return `${slug(project.model.name) || project.ref.project}${WORKING_FILE_EXTENSION}`
 }
 
 /** Text unless the extension says otherwise — the same rule the folder store uses. */

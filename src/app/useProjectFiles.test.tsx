@@ -19,7 +19,8 @@ import type { UploadedLogo } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import { WORKING_FILE_TYPE, WORKING_FILE_VERSION } from '../model/hostModel'
 import type { ProjectSnapshot } from '../projects/project'
-import type { TextDocument } from '../ports/DocumentGateway'
+import { workingFileBytes } from '../projects/workingFile'
+import type { SavedDocument } from '../ports/DocumentGateway'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel, ProjectFiles } from './useProjectFiles'
 import type { ModelSession } from './useModelSession'
@@ -58,7 +59,7 @@ function mount(documents: Partial<ProjectFileChannel>) {
   const session = fakeSession()
   const channel: ProjectFileChannel = {
     save: () => Promise.resolve(),
-    readText: () => Promise.resolve('{}'),
+    readBytes: () => Promise.resolve(bytes('{}')),
     readDataUrl: () => Promise.resolve('data:image/png;base64,AA'),
     ...documents,
   }
@@ -70,6 +71,8 @@ function mount(documents: Partial<ProjectFileChannel>) {
   render(<Host />)
   return { files: () => files, notify, session }
 }
+
+const bytes = (text: string) => new TextEncoder().encode(text)
 
 /** Let the gateway's promise and its handler settle. */
 const settle = () => act(() => Promise.resolve().then(() => {}))
@@ -99,11 +102,22 @@ describe('saving a document out', () => {
   })
 
   it('names the file after the project, not after a constant', async () => {
-    const save = vi.fn((_doc: TextDocument) => Promise.resolve())
+    const save = vi.fn((_doc: SavedDocument) => Promise.resolve())
     const { files } = mount({ save })
     act(() => files().saveWorkingFile())
     await settle()
     expect(save.mock.calls[0][0].name).toBe('acme-landscape.lvarch')
+  })
+
+  it('hands the working file over as the zip it is', async () => {
+    // Version 3 is the project folder, zipped (ADR-0003): something a person
+    // can unzip and read, rather than a JSON document with base64 in it.
+    const save = vi.fn((_doc: SavedDocument) => Promise.resolve())
+    const { files } = mount({ save })
+    act(() => files().saveWorkingFile())
+    await settle()
+    expect(save.mock.calls[0][0].mediaType).toBe('application/zip')
+    expect(save.mock.calls[0][0].bytes?.slice(0, 2)).toEqual(new Uint8Array([0x50, 0x4b]))
   })
 })
 
@@ -113,8 +127,17 @@ describe('opening a file', () => {
   })
   const file = (name = 'x.lvarch') => new File([''], name)
 
-  it('adopts a working file and keeps its geometry', async () => {
-    const { files, notify, session } = mount({ readText: () => Promise.resolve(workingFile()) })
+  it('adopts a version-3 working file — a zip — and keeps its geometry', async () => {
+    const { files, session } = mount({
+      readBytes: () => Promise.resolve(workingFileBytes(snapshot())),
+    })
+    act(() => files().openFile(file()))
+    await settle()
+    expect(session.adopt).toHaveBeenCalledWith(expect.anything(), false)
+  })
+
+  it('still adopts a version-2 working file, which is not a zip at all', async () => {
+    const { files, notify, session } = mount({ readBytes: () => Promise.resolve(bytes(workingFile())) })
     act(() => files().openFile(file()))
     await settle()
     expect(session.adopt).toHaveBeenCalledWith(expect.anything(), false)
@@ -128,24 +151,28 @@ describe('opening a file', () => {
       connections: [],
       diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'e1' }] }],
     })
-    const { files, session } = mount({ readText: () => Promise.resolve(document) })
+    const { files, session } = mount({ readBytes: () => Promise.resolve(bytes(document)) })
     act(() => files().openFile(file('x.json')))
     await settle()
     expect(session.adopt).toHaveBeenCalledWith(expect.anything(), true)
   })
 
-  it('names the syntax error rather than swallowing it', async () => {
-    const { files, notify, session } = mount({ readText: () => Promise.resolve('{ not json') })
+  it('refuses a file that is not a document of any kind', async () => {
+    // This used to name the JSON syntax error. A file is now recognised by its
+    // bytes rather than by an assumption that it is text — a working file is a
+    // zip — so "not valid JSON" would be the wrong sentence for half the files
+    // somebody might choose. Deliberately flipped with ADR-0003.
+    const { files, notify, session } = mount({ readBytes: () => Promise.resolve(bytes('{ not json')) })
     act(() => files().openFile(file()))
     await settle()
-    expect(notify.mock.calls[0][0]).toContain('Not valid JSON')
+    expect(notify.mock.calls[0][0]).toContain('neither an interchange document nor a working file')
     expect(notify.mock.calls[0][1]).toBe('error')
     expect(session.adopt).not.toHaveBeenCalled()
   })
 
   it('refuses a file from a version this build does not know', async () => {
     const future = JSON.stringify({ type: WORKING_FILE_TYPE, version: 99, model: model() })
-    const { files, notify } = mount({ readText: () => Promise.resolve(future) })
+    const { files, notify } = mount({ readBytes: () => Promise.resolve(bytes(future)) })
     act(() => files().openFile(file()))
     await settle()
     // Today it is reported as "neither one nor the other", which is honest but
@@ -156,7 +183,7 @@ describe('opening a file', () => {
   })
 
   it('says so when the file could not be read at all', async () => {
-    const { files, notify } = mount({ readText: () => Promise.reject(new Error('unreadable')) })
+    const { files, notify } = mount({ readBytes: () => Promise.reject(new Error('unreadable')) })
     act(() => files().openFile(file()))
     await settle()
     expect(notify).toHaveBeenCalledWith(

@@ -143,7 +143,11 @@ export function ProjectWorkspace({
   const forceSave = document.forceSave
 
   const documentPicker = useFilePicker({
-    accept: '.lvarch,.json,application/json', onPick: files.openFile, testId: 'document-input',
+    // A working file is a zip now; the JSON entries are the older versions and
+    // the interchange format, both of which still open.
+    accept: '.lvarch,.json,application/json,application/zip',
+    onPick: files.openFile,
+    testId: 'document-input',
   })
   // No button in the toolbar for this one: the place you ask for a mark is the
   // icon picker itself, inside the editor.

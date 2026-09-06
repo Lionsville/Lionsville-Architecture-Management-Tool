@@ -63,7 +63,6 @@ export const NL: Record<keyof typeof EN, string> = {
     'Interchange-document bewaard — topologie en semantiek; geometrie en opmaak reizen mee in het werkbestand.',
   'shell.savedWorkingFile':
     'WorkingFile bewaard — alles, inclusief geometrie, opmaak en eigen logo’s.',
-  'shell.invalidJson': 'Geen geldige JSON: {message}',
   'shell.workingFileLoaded': 'WorkingFile “{name}” geladen.',
   'shell.interchangeLoaded':
     'Interchange-document “{name}” geladen; de platen worden opnieuw gelegd.',

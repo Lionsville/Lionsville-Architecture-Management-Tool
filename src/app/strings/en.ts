@@ -88,7 +88,6 @@ export const EN = {
   'shell.savedInterchange':
     'Interchange document saved — topology and semantics; geometry and styling travel in the working file.',
   'shell.savedWorkingFile': 'Working file saved — everything, including geometry, styling and your own logos.',
-  'shell.invalidJson': 'Not valid JSON: {message}',
   'shell.workingFileLoaded': 'Working file “{name}” loaded.',
   'shell.interchangeLoaded': 'Interchange document “{name}” loaded; the boards will be laid out again.',
   'shell.processFailed': 'The document could not be processed: {message}',

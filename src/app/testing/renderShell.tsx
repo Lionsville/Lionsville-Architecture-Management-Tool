@@ -39,7 +39,7 @@ import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics
 import type { ProjectSnapshot } from '../../projects/project'
 import type { AppProps } from '../App'
 import { App } from '../App'
-import type { TextDocument } from '../../ports/DocumentGateway'
+import type { SavedDocument } from '../../ports/DocumentGateway'
 
 export type ShellOptions = {
   language?: Language
@@ -112,11 +112,13 @@ function hexToRgb(colour: string): string {
 /** A document gateway that keeps what it was handed instead of downloading it. */
 export function recordingDocuments() {
   return {
-    saved: [] as TextDocument[],
+    saved: [] as SavedDocument[],
+    /** What a chosen file contains. Set it to whatever the test is opening. */
     text: '{}',
     dataUrl: 'data:image/png;base64,AA',
-    save(doc: TextDocument) { this.saved.push(doc); return Promise.resolve() },
+    save(doc: SavedDocument) { this.saved.push(doc); return Promise.resolve() },
     readText() { return Promise.resolve(this.text) },
+    readBytes() { return Promise.resolve(new TextEncoder().encode(this.text)) },
     readDataUrl() { return Promise.resolve(this.dataUrl) },
   }
 }

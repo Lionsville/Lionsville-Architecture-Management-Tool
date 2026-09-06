@@ -11,9 +11,7 @@ import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { bytesFromText, stableJson, textFromBytes } from './fileText'
 import { projectFiles } from './folderFormat'
 import type { ProjectSnapshot } from './project'
-import {
-  isZip, openDocumentBytes, workingFileBytes, workingFileName,
-} from './workingFile'
+import { isZip, openDocumentBytes, workingFileBytes } from './workingFile'
 
 function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
   return {
@@ -52,10 +50,6 @@ describe('workingFileBytes', () => {
     expect(JSON.parse(textFromBytes(entries['project.json'])))
       .toMatchObject({ type: WORKING_FILE_TYPE, formatVersion: 3 })
     expect(textFromBytes(entries['docs/crews.md'])).toBe('Roster.\n')
-  })
-
-  it('is named after the project, not after its key', () => {
-    expect(workingFileName(project())).toBe('application-landscape.lvarch')
   })
 })
 

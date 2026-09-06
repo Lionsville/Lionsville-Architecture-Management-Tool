@@ -9,7 +9,7 @@
  * 5C puts the File System Access API beside it (real save-in-place) and phase 6
  * a variant over IPC; both are a new file next to this one, not a rebuild of it.
  */
-import type { DocumentGateway, TextDocument } from '../../ports/DocumentGateway'
+import type { DocumentGateway, SavedDocument } from '../../ports/DocumentGateway'
 
 /** How long the blob URL must outlive the click that picked it up. */
 const REVOKE_AFTER_MS = 800
@@ -17,9 +17,11 @@ const REVOKE_AFTER_MS = 800
 export class BrowserDocumentGateway implements DocumentGateway {
   readonly id = 'browser'
 
-  save(doc: TextDocument): Promise<void> {
+  save(doc: SavedDocument): Promise<void> {
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([doc.text], { type: doc.mediaType }))
+    // Text or bytes: a working file is a zip, and a Blob takes either.
+    const body: BlobPart = doc.text ?? (doc.bytes as Uint8Array<ArrayBuffer>)
+    a.href = URL.createObjectURL(new Blob([body], { type: doc.mediaType }))
     a.download = doc.name
     document.body.appendChild(a)
     a.click()
@@ -33,6 +35,10 @@ export class BrowserDocumentGateway implements DocumentGateway {
 
   readDataUrl(blob: Blob): Promise<string> {
     return this.read((r) => r.readAsDataURL(blob))
+  }
+
+  async readBytes(blob: Blob): Promise<Uint8Array> {
+    return new Uint8Array(await blob.arrayBuffer())
   }
 
   private read(start: (reader: FileReader) => void): Promise<string> {
