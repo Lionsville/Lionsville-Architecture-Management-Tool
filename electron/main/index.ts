@@ -13,11 +13,11 @@
  * projects in localStorage — which is exactly why `app://` has to be a
  * *standard* scheme; see below.
  */
-import { app, BrowserWindow, protocol, net, shell } from 'electron'
+import { app, BrowserWindow, dialog, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { log } from './log'
+import { log, logFilePath } from './log'
 import { addCheckForUpdatesItem } from './menu'
 import { checkForUpdatesNow, startUpdates } from './updates'
 
@@ -119,7 +119,7 @@ function serveRenderer(): void {
       return new Response('not found', { status: 404 })
     }
 
-    if (process.argv.includes('--smoke')) process.stderr.write(`app:// ${requested} -> ${filePath}\n`)
+    if (UNATTENDED) process.stderr.write(`app:// ${requested} -> ${filePath}\n`)
     const response = await net.fetch(pathToFileURL(filePath).toString())
     const headers = new Headers(response.headers)
     headers.set('Content-Type', MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream')
@@ -190,6 +190,13 @@ const RENDERER_URL = process.env['ELECTRON_RENDERER_URL'] ?? `${APP_ORIGIN}/`
  */
 const RENDERER_LOG_PREFIX = '[lvarch]'
 
+/**
+ * The smoke run has nobody in front of it. A modal dialog there is not a
+ * message, it is a hang — the run waits for a click that never comes and the
+ * gate reports a timeout instead of the failure it actually found.
+ */
+const UNATTENDED = process.argv.includes('--smoke')
+
 void app.whenReady().then(() => {
   if (!process.env['ELECTRON_RENDERER_URL']) serveRenderer()
 
@@ -212,6 +219,20 @@ void app.whenReady().then(() => {
   })
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     log('renderer', `render-process-gone ${details.reason}`)
+    // A dead renderer is a window that will never paint again. Without this it
+    // stays on screen showing the last frame it managed, and the only way to
+    // tell it apart from a very slow app is to wait indefinitely.
+    if (UNATTENDED || mainWindow.isDestroyed()) return
+    void dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      message: 'The window stopped responding.',
+      detail: `Reason: ${details.reason}.\nDiagnostics: ${logFilePath()}`,
+      buttons: ['Reload', 'Close'],
+      defaultId: 0,
+      cancelId: 1,
+    }).then(({ response }) => {
+      if (response === 0 && !mainWindow.isDestroyed()) mainWindow.webContents.reload()
+    })
   })
 
   // The renderer's console, relayed. This is the desktop half of the
@@ -233,7 +254,7 @@ void app.whenReady().then(() => {
   // Under --smoke, say everything the renderer said, filter or no filter. A
   // blank window with a passing process is the failure mode this whole phase
   // exists to catch, and it is indistinguishable from success without this.
-  if (process.argv.includes('--smoke')) {
+  if (UNATTENDED) {
     mainWindow.webContents.on('console-message', (event) => {
       if (event.message.startsWith(RENDERER_LOG_PREFIX)) return // already logged above
       if (event.level === 'warning' || event.level === 'error') return
@@ -245,14 +266,34 @@ void app.whenReady().then(() => {
   }
 
   void mainWindow.loadURL(RENDERER_URL).then(async () => {
-    if (!process.argv.includes('--smoke')) return
+    if (!UNATTENDED) return
     const { runSmoke } = await import('./smoke')
     await runSmoke(mainWindow)
-  })
+  }).catch((error: unknown) => fatal('loading the app', error))
 })
+  .catch((error: unknown) => fatal('starting up', error))
+
+/**
+ * The end of the line: something went wrong before there was an app to say it
+ * in.
+ *
+ * A native box rather than a toast, because the renderer is exactly what is not
+ * available at this point — and it names the log file, because "it did not
+ * start" is not a bug report and the path is the difference.
+ */
+function fatal(during: string, error: unknown): void {
+  const detail = error instanceof Error ? (error.stack ?? error.message) : String(error)
+  log('main', `failed while ${during}: ${detail}`)
+  if (UNATTENDED) { app.exit(1); return }
+  dialog.showErrorBox(
+    'The Architecture Management Tool could not start.',
+    `It failed while ${during}.\n\n${detail}\n\nDiagnostics: ${logFilePath()}`,
+  )
+}
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) void createWindow().loadURL(RENDERER_URL)
+  if (BrowserWindow.getAllWindows().length !== 0) return
+  createWindow().loadURL(RENDERER_URL).catch((error: unknown) => fatal('reopening the window', error))
 })
 
 app.on('window-all-closed', () => {
