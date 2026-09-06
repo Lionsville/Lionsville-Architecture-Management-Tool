@@ -69,6 +69,34 @@ export function readLastProject(stored: unknown): ProjectRef | undefined {
 }
 
 /**
+ * The folder this machine keeps its projects in, or `undefined` when it does
+ * not keep them in one.
+ *
+ * A preference and not project data, for the same reason as the last project:
+ * it says where this machine looks, not what the projects are. It is a path
+ * rather than anything richer because the desktop is the only thing that can
+ * use it, and there it is checked against the folders the user has actually
+ * granted before it opens anything (`electron/main/files.ts`) — a path in a
+ * preferences blob is a wish, not an authorisation.
+ */
+export function readWorkingDirectory(stored: unknown): string | undefined {
+  if (!stored || typeof stored !== 'object') return undefined
+  const raw = (stored as Record<string, unknown>).workingDirectory
+  return typeof raw === 'string' && raw.length > 0 ? raw : undefined
+}
+
+/** The same blob, pointed at a folder. */
+export function withWorkingDirectory(stored: unknown, root: string): Record<string, unknown> {
+  const kept = stored && typeof stored === 'object' ? { ...stored as Record<string, unknown> } : {}
+  kept.workingDirectory = root
+  // The project you had open was one in the OLD folder; carrying the ref across
+  // would open the picker on a project that is not there, or — worse, if the
+  // slugs happen to match — a different project with the same address.
+  delete kept.lastProject
+  return kept
+}
+
+/**
  * The same blob with the last project taken out.
  *
  * What "Start without the last project" writes back. A ref that points at a

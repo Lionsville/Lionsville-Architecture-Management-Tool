@@ -20,6 +20,11 @@
  * pack and the line below is the whole of their wiring.
  */
 import { registerLogoPack } from '../model/logoRegistry'
+import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStore'
+import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
+import { desktopFiles } from '../adapters/desktop/desktopFiles'
+import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
+import type { DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
 import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
@@ -62,7 +67,13 @@ export type Shell = {
    * problem: without this the shell cannot tell "everything is being saved"
    * from "nothing will outlive this tab", and the user is told neither.
    */
-  storage: 'browser' | 'memory'
+  storage: 'browser' | 'memory' | 'folder'
+  /**
+   * The folder the projects are in, when they are in one. Absent in a browser
+   * tab and on a desktop that has not been given a folder yet — the picker says
+   * which of the two the user is looking at.
+   */
+  workingDirectory?: DesktopDirectory
   /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
@@ -91,6 +102,42 @@ export function composeShell(): Shell {
     hostControls: browserHostControls(),
     storage: storage ? 'browser' : 'memory',
     windowChrome: hostWindowChrome(),
+  }
+}
+
+/**
+ * Is there a desktop under us with a file channel?
+ *
+ * Re-exported through the composition rather than imported by the boot, so the
+ * rule that only this file names both a seam and a filling still holds. The
+ * answer is a capability, not a store: what it is used FOR is below.
+ */
+export function desktopFileChannel(): DesktopFiles | undefined {
+  return desktopFiles()
+}
+
+/**
+ * The same shell, keeping its projects in a folder the user chose.
+ *
+ * The whole of the desktop's storage, and it is two lines: the folder store
+ * over an IPC handle instead of over a browser's. Nothing above this file
+ * changes — not `App`, not a component, not a test — which is what the seam was
+ * for and what `ProjectStore.contract.ts` checks on both.
+ *
+ * Preferences stay where they were. They describe this machine (its language,
+ * its theme, which folder it uses), so putting them in the folder would carry
+ * one machine's settings to every other machine that opens it.
+ */
+export function inWorkingDirectory(
+  shell: Shell, files: DesktopFiles, directory: DesktopDirectory,
+): Shell {
+  const handle = new IpcDirectoryHandle(files, directory.root, directory.name)
+  return {
+    ...shell,
+    projects: new FileSystemProjectStore(handle),
+    groups: new FileSystemGroupStore(handle),
+    storage: 'folder',
+    workingDirectory: directory,
   }
 }
 

@@ -35,6 +35,7 @@ import type { FolderFile } from '../../projects/folderFormat'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
 import { groupSegments, isProjectRef } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
+import { ShellError } from '../../platform/errors'
 import type { ProjectStore } from '../../ports/ProjectStore'
 
 /**
@@ -252,10 +253,10 @@ export class FileSystemProjectStore implements ProjectStore {
 
   async save(project: ProjectSnapshot): Promise<void> {
     if (!usableRef(project.ref)) {
-      throw new Error(`shell.badProjectRef:${project.ref.group}/${project.ref.project}`)
+      throw new ShellError('shell.badProjectRef', { path: `${project.ref.group}/${project.ref.project}` })
     }
     const folder = await this.projectFolder(project.ref, true)
-    if (!folder) throw new Error('shell.folderUnavailable')
+    if (!folder) throw new ShellError('shell.folderUnavailable')
 
     const files = projectFiles(project)
     // Written before anything is removed: an interrupted save then leaves a

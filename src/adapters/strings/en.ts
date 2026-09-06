@@ -14,4 +14,10 @@ export const EN = {
    */
   'shell.badProjectRef': 'That project has no usable address ({path}), so it cannot be saved.',
   'shell.badGroupPath': 'That group has no usable address ({path}), so it cannot be saved.',
+  /**
+   * The folder itself is gone: unplugged, unmounted, renamed out from under us,
+   * or a permission withdrawn. Nothing this app can fix and everything the user
+   * can, so it says which of the two it is rather than "saving failed".
+   */
+  'shell.folderUnavailable': 'That folder is not available. Choose it again, or reconnect the drive it is on.',
 } as const

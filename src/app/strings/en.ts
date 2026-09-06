@@ -131,6 +131,15 @@ export const EN = {
   'picker.order': 'Order',
   'picker.orderName': 'Name',
   'picker.orderUpdated': 'Recently changed',
+  /**
+   * Where the projects are kept, on a desktop that can say. The folder's own
+   * name and not its path: the path is long, and the name is what the user
+   * called it in their file manager.
+   */
+  'picker.folder': 'Projects folder: {name}',
+  'picker.noFolder': 'Projects are kept inside the app. Choose a folder to keep them as files.',
+  'picker.chooseFolder': 'Choose folder…',
+  'picker.changeFolder': 'Change…',
   'picker.never': 'Not saved yet',
   'picker.changed': 'Changed {when}',
   'picker.delete': 'Delete',

@@ -44,8 +44,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { configureLibavoidWasm, configureLibavoidWorker } from '../layout'
 import { detectBrowserLanguage, translator } from '../i18n'
-import { composeShell } from './composition'
-import { readLastProject, withoutLastProject } from '../projects/preferences'
+import { composeShell, desktopFileChannel, inWorkingDirectory } from './composition'
+import {
+  readLastProject, readWorkingDirectory, withoutLastProject, withWorkingDirectory,
+} from '../projects/preferences'
 import type { ProjectSnapshot } from '../projects/project'
 import { EXAMPLES } from './examples'
 import { App } from './App'
@@ -90,7 +92,64 @@ const container = document.getElementById('root')!
 const root = createRoot(container)
 
 /** The one line that chooses what the seams are filled with. */
-const shell = composeShell()
+let shell = composeShell()
+
+/**
+ * The desktop's file channel, or nothing at all in a browser tab.
+ *
+ * Asked once, here, because it is the answer to "can this build keep projects
+ * in a folder" — and everything below phrases itself as "if we can".
+ */
+const files = desktopFileChannel()
+
+/**
+ * The folder this machine works in, if it has one it may still use.
+ *
+ * The preference says which folder; the main process says which folders the
+ * user has actually granted. The intersection is what may be opened, and it is
+ * checked this way round on purpose: a path in a preferences blob is a wish,
+ * and a blob can be edited by anybody with a text editor.
+ */
+async function rememberedDirectory(stored: unknown): Promise<void> {
+  if (!files) return
+  const wanted = readWorkingDirectory(stored)
+  if (!wanted) return
+  const granted = await files.recentDirectories().catch(() => [])
+  const directory = granted.find((held) => held.root === wanted)
+  if (directory) shell = inWorkingDirectory(shell, files, directory)
+}
+
+/**
+ * Choosing a folder, which starts the app again.
+ *
+ * Deliberately a fresh boot rather than a swap in place. The store is handed to
+ * `App` as a prop and everything under it — the picker's list, the open
+ * project, the session's undo stack — belongs to the projects in one folder;
+ * switching folders is exactly the moment none of that should carry over. It is
+ * the same reasoning as remounting the workspace when the project changes, one
+ * level up.
+ */
+function chooseWorkingDirectory(): void {
+  if (!files) return
+  void files.chooseDirectory().then(async (chosen) => {
+    if (!chosen) return
+    const kept = withWorkingDirectory(stored, chosen.root)
+    stored = kept
+    // Best effort, and the app still opens the folder if it fails: this run
+    // works, the next one asks again.
+    await shell.preferences.write(kept).catch((cause: unknown) => {
+      shell.diagnostics.report({
+        level: 'warn', where: 'workingDirectory', message: 'preference not written', cause,
+      })
+    })
+    shell = inWorkingDirectory(shell, files, chosen)
+    renderApp(kept, undefined)
+  }, (cause: unknown) => {
+    shell.diagnostics.report({
+      level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
+    })
+  })
+}
 
 /**
  * Read first, then render — and with `.then` rather than a top-level `await`.
@@ -124,6 +183,8 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
         storage={shell.storage}
+        workingDirectory={shell.workingDirectory}
+        onChooseWorkingDirectory={files ? chooseWorkingDirectory : undefined}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}
@@ -156,6 +217,8 @@ let stored: unknown = undefined
 void shell.preferences.read()
   .then(async (storedPreferences) => {
     stored = storedPreferences
+    // Before the project is read, because it decides which store reads it.
+    await rememberedDirectory(storedPreferences)
     const lastProject = readLastProject(storedPreferences)
     const initialProject = lastProject ? await shell.projects.load(lastProject) : undefined
     renderApp(storedPreferences, initialProject)

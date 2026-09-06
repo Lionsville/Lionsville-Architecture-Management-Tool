@@ -11,4 +11,5 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
   'shell.badProjectRef': 'Dat project heeft geen bruikbaar adres ({path}) en kan dus niet bewaard worden.',
   'shell.badGroupPath': 'Die groep heeft geen bruikbaar adres ({path}) en kan dus niet bewaard worden.',
+  'shell.folderUnavailable': 'Die map is niet beschikbaar. Kies hem opnieuw, of koppel de schijf weer aan.',
 }

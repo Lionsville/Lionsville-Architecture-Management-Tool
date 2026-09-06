@@ -92,6 +92,16 @@ export type ProjectPickerProps = {
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Bumped by the caller after it creates something, to re-read the list. */
   revision?: number
+  /**
+   * The folder these projects are in, and how to change it.
+   *
+   * Both absent in a browser tab, which cannot offer a folder at all. The
+   * callback present with no folder is a desktop that has not been given one
+   * yet: the projects are in the app's own storage and the line below says so,
+   * because "where is my work" is not a question anyone should have to guess at.
+   */
+  workingDirectory?: { name: string }
+  onChooseWorkingDirectory?: () => void
   language: Language
   s: Translate
   /**
@@ -116,7 +126,8 @@ function whenChanged(updatedAt: string | undefined, language: Language, s: Trans
 export function ProjectPicker({
   projects, groups: groupCatalogue, onApplyGroupSettings, examples, order, onOrderChange,
   onOpen, onCreate, onCopyExample, onFailure,
-  revision = 0, language, s, windowChrome = NO_WINDOW_CHROME,
+  revision = 0, workingDirectory, onChooseWorkingDirectory,
+  language, s, windowChrome = NO_WINDOW_CHROME,
 }: ProjectPickerProps) {
   const [summaries, setSummaries] = useState<ProjectSummary[]>([])
   const [profiles, setProfiles] = useState<GroupProfile[]>([])
@@ -222,6 +233,25 @@ export function ProjectPicker({
             {s('picker.newProject')}
           </Button>
         </Stack>
+
+        {onChooseWorkingDirectory && (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ mb: 2 }}
+            data-testid="working-directory"
+          >
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', flex: 1 }}>
+              {workingDirectory
+                ? s('picker.folder', { name: workingDirectory.name })
+                : s('picker.noFolder')}
+            </Typography>
+            <Button size="small" onClick={onChooseWorkingDirectory}>
+              {s(workingDirectory ? 'picker.changeFolder' : 'picker.chooseFolder')}
+            </Button>
+          </Stack>
+        )}
 
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
           <Typography sx={{ fontSize: 12, fontWeight: 700, flex: 1 }}>

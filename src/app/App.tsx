@@ -97,7 +97,17 @@ export type AppProps = {
    * there tomorrow. That is worth a standing notice rather than a toast,
    * because it is true for the whole session and not an event within it.
    */
-  storage?: 'browser' | 'memory'
+  storage?: 'browser' | 'memory' | 'folder'
+  /**
+   * The folder the projects are in, when they are in one, and how to change it.
+   *
+   * Both absent in a browser tab: choosing a folder is something only the
+   * desktop can offer, and an app that showed the button anyway would be
+   * offering what it cannot do. Present-but-undefined folder means a desktop
+   * that has not been given one yet, which is the first run.
+   */
+  workingDirectory?: { name: string }
+  onChooseWorkingDirectory?: () => void
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -118,7 +128,8 @@ export type AppProps = {
 
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
-  storage = 'browser', initialProject, initialPreferences,
+  storage = 'browser', workingDirectory, onChooseWorkingDirectory,
+  initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -520,6 +531,8 @@ export function App({
             onCopyExample={copyExample}
             onFailure={failed}
             revision={revision}
+            workingDirectory={workingDirectory}
+            onChooseWorkingDirectory={onChooseWorkingDirectory}
             language={prefs.language}
             s={s}
             windowChrome={windowChrome}
