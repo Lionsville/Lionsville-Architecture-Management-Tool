@@ -33,6 +33,7 @@ import type {
 import { refFor, sameRef } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
+import type { HostCommand } from '../platform/hostCommands'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -113,6 +114,14 @@ export type AppProps = {
    * watch, and the workspace then never leaves the states it can reach alone.
    */
   watchProject?: (ref: ProjectRef, onChanged: () => void) => () => void
+  /**
+   * Menu items and files the OS opened us with. Subscribed to here for the
+   * commands about folders, and handed to the workspace for the ones about the
+   * project that is open — each layer taking what it owns.
+   */
+  commands?: (listener: (command: HostCommand) => void) => () => void
+  /** Work in a folder the user has already granted. The Recent submenu. */
+  onOpenWorkingDirectory?: (root: string) => void
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -134,6 +143,7 @@ export type AppProps = {
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   storage = 'browser', workingDirectory, onChooseWorkingDirectory, watchProject,
+  commands, onOpenWorkingDirectory,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
@@ -195,6 +205,14 @@ export function App({
 
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */
   const [revision, setRevision] = useState(0)
+
+  // The two commands that are about where the projects are kept rather than
+  // about the one that is open. Everything else falls through to the workspace,
+  // which subscribes to the same stream.
+  useEffect(() => commands?.((command) => {
+    if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
+    if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
+  }), [commands, onChooseWorkingDirectory, onOpenWorkingDirectory])
 
   const [order, setOrder] = useState<ProjectOrder>(() => {
     const stored = (prefs.preferences as Record<string, unknown> | undefined)?.projectOrder
@@ -518,6 +536,7 @@ export function App({
             project={project}
             projects={projects}
             watch={watchOpenProject}
+            commands={commands}
             documents={documents}
             notify={toasts.notify}
             onStorageResult={reportStorage}

@@ -15,13 +15,15 @@
  * `app://` remains a *standard* scheme regardless, and not only for the
  * localStorage the browser fallback still uses; see below.
  */
-import { app, BrowserWindow, dialog, protocol, net, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { registerFileChannel, stopWatching } from './files'
+import { basename } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { installAppMenu, sendCommand } from './appMenu'
+import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
-import { addCheckForUpdatesItem } from './menu'
 import { checkForUpdatesNow, startUpdates } from './updates'
 
 /**
@@ -200,6 +202,72 @@ const RENDERER_LOG_PREFIX = '[lvarch]'
  */
 const UNATTENDED = process.argv.includes('--smoke')
 
+/**
+ * Documents the OS handed us, until something in the window is listening.
+ *
+ * Double-clicking a `.lvarch` in Finder starts the app and fires `open-file`
+ * before there is a window, never mind a React tree with a subscription in it.
+ * Sending the command then is sending it into the dark, so it waits here for
+ * the renderer to say it is listening (`app:listening`, from the preload).
+ */
+const waiting: string[] = []
+let listening = false
+
+/** A `.lvarch` among the arguments — how Windows and Linux say "open this". */
+function documentIn(argv: readonly string[]): string | undefined {
+  return argv.slice(1).find((held) => held.toLowerCase().endsWith('.lvarch'))
+}
+
+/**
+ * Open a document the OS gave us.
+ *
+ * Main reads it, rather than handing the renderer a path to ask for: the file
+ * is outside every folder the user granted, and the double click IS the grant —
+ * for that one file, once. Nothing about it is added to the granted set.
+ *
+ * The path never reaches the log. A log file is something the user is invited
+ * to hand over, and a path names a person's disk, their customer and often
+ * their project.
+ */
+function openDocument(path: string): void {
+  if (!listening) { waiting.push(path); return }
+  void readFile(path).then(
+    (bytes) => {
+      app.addRecentDocument(path)
+      sendCommand({ type: 'openDocument', name: basename(path), bytes: new Uint8Array(bytes) })
+    },
+    (cause: unknown) => log('files', `a document from the OS could not be read: ${String(cause)}`),
+  )
+}
+
+// macOS: fired before `ready` on a cold start, so it is registered out here
+// rather than inside `whenReady`. `preventDefault` stops Electron's own
+// handling, which is to do nothing and log a warning.
+app.on('open-file', (event, path) => {
+  event.preventDefault()
+  openDocument(path)
+})
+
+/**
+ * One instance, so a second double click reaches the window that is already
+ * open rather than starting a rival with its own watcher on the same folder.
+ *
+ * Not under `--smoke`: the gate may run while a real copy is open on the same
+ * machine, and a smoke run that quietly quits into somebody's editor session
+ * would report a pass it never made.
+ */
+if (!UNATTENDED && !app.requestSingleInstanceLock()) app.exit(0)
+
+app.on('second-instance', (_event, argv) => {
+  const window = BrowserWindow.getAllWindows()[0]
+  if (window) {
+    if (window.isMinimized()) window.restore()
+    window.focus()
+  }
+  const path = documentIn(argv)
+  if (path) openDocument(path)
+})
+
 void app.whenReady().then(() => {
   // The first line of every run, and the thing the smoke step looks for: a log
   // that exists but says nothing proves only that a file was created.
@@ -214,12 +282,30 @@ void app.whenReady().then(() => {
   // The menu item is unconditional: checking by hand has to work even in a build
   // that never checks by itself, which is the point of an off switch.
   startUpdates()
-  addCheckForUpdatesItem(checkForUpdatesNow)
+
+  const menu = () => installAppMenu({
+    recents: recentDirectories(),
+    onCheckForUpdates: checkForUpdatesNow,
+  })
+  menu()
 
   // Before the window: the renderer may ask for a folder as soon as it has
   // painted, and a handler registered after that would answer "no such
-  // channel" to the first request of the session.
-  registerFileChannel()
+  // channel" to the first request of the session. The menu is rebuilt whenever
+  // the list of folders changes, because a submenu already on screen does not
+  // redraw itself.
+  registerFileChannel({ onRecentsChanged: menu })
+
+  // Said by the preload the moment anything subscribes. Everything the OS
+  // handed us before that has been waiting.
+  ipcMain.handle('app:listening', () => {
+    listening = true
+    for (const path of waiting.splice(0)) openDocument(path)
+  })
+
+  // Windows and Linux pass the document as an argument instead of an event.
+  const opened = documentIn(process.argv)
+  if (opened) openDocument(opened)
 
   const mainWindow = createWindow()
 

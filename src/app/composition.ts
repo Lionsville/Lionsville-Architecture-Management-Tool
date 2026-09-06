@@ -22,10 +22,17 @@
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStore'
 import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
-import { desktopFiles } from '../adapters/desktop/desktopFiles'
+import { desktopCommands, desktopFiles } from '../adapters/desktop/desktopFiles'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
 import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
-import type { DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
+import type { DesktopCommands, DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
+
+/**
+ * Re-exported, because the boot has to name a folder and the lint rule says
+ * only this file may name an adapter. A type is not a filling — but a second
+ * import path into `adapters/` is exactly the crack the rule exists to close.
+ */
+export type { DesktopDirectory }
 import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
@@ -132,6 +139,17 @@ export function composeShell(): Shell {
  */
 export function desktopFileChannel(): DesktopFiles | undefined {
   return desktopFiles()
+}
+
+/**
+ * The menu, and the files the OS opens us with.
+ *
+ * Subscribed to in two places on purpose — the shell takes the commands about
+ * folders, the workspace takes the ones about the open project — so each layer
+ * handles what it actually owns instead of routing the others through props.
+ */
+export function desktopCommandChannel(): DesktopCommands | undefined {
+  return desktopCommands()
 }
 
 /**

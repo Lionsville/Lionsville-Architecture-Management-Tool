@@ -47,6 +47,19 @@ const granted = new Set<string>()
 
 let recents: DesktopDirectory[] = []
 
+/**
+ * Told whenever the list of granted folders changes, so the Recent submenu can
+ * be rebuilt. A callback rather than an import, because the menu knowing about
+ * files is one direction and files knowing about the menu is the other, and
+ * only one of them can be true without a cycle.
+ */
+let onRecentsChanged: (() => void) | undefined
+
+/** The folders the user has granted, most recent first. For the menu. */
+export function recentDirectories(): readonly DesktopDirectory[] {
+  return recents
+}
+
 /** The folders being watched, and how to stop watching each. */
 const watching = new Map<string, () => void>()
 
@@ -72,10 +85,12 @@ async function loadRecents(): Promise<void> {
     // No file yet, or one somebody edited into nonsense. An empty list is the
     // right answer to both: the user picks a folder and it fills itself.
   }
+  onRecentsChanged?.()
 }
 
 async function rememberRecent(directory: DesktopDirectory): Promise<void> {
   recents = [directory, ...recents.filter((held) => held.root !== directory.root)].slice(0, RECENTS_KEPT)
+  onRecentsChanged?.()
   try {
     await writeFile(recentsPath(), `${JSON.stringify(recents, null, 2)}\n`, 'utf8')
   } catch (cause) {
@@ -105,7 +120,8 @@ function isBytes(value: unknown): value is Uint8Array {
   return value instanceof Uint8Array
 }
 
-export function registerFileChannel(): void {
+export function registerFileChannel(options: { onRecentsChanged?: () => void } = {}): void {
+  onRecentsChanged = options.onRecentsChanged
   void loadRecents()
 
   ipcMain.handle('files:chooseDirectory', async (): Promise<DesktopDirectory | undefined> => {

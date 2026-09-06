@@ -22,6 +22,7 @@ import type { Adr } from '../decisions/adr'
 import type { ThemeMode } from '../projects/preferences'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
+import type { HostCommand } from '../platform/hostCommands'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { DiskChangeNotice } from './DiskChangeNotice'
 import { ShellDialogs } from './dialogs/ShellDialogs'
@@ -52,6 +53,12 @@ export type ProjectWorkspaceProps = {
    * the caller, and absent in a browser tab, where nothing can watch.
    */
   watch?: (onChanged: () => void) => () => void
+  /**
+   * Menu items and files the OS opened us with — the ones about the project
+   * that is open. The shell above takes the ones about folders; subscribing in
+   * both places is how each layer handles what it owns.
+   */
+  commands?: (listener: (command: HostCommand) => void) => () => void
   documents: ProjectFileChannel
 
   notify: Notify
@@ -107,7 +114,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, watch, documents, notify, onStorageResult, s, language, themeMode,
+  project, projects, watch, commands, documents, notify, onStorageResult, s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
@@ -154,6 +161,23 @@ export function ProjectWorkspace({
   const logoPicker = useFilePicker({
     accept: 'image/svg+xml,image/png', onPick: files.addLogo, testId: 'logo-input',
   })
+
+  /**
+   * What the File menu asks for, and what the OS opens us with.
+   *
+   * Everything here is something the toolbar can already do; the menu is a
+   * second way to reach it, which is what a menu is for. It is deliberately
+   * not a switch over every command — the ones this workspace does not own
+   * fall through to whoever does.
+   */
+  useEffect(() => commands?.((command) => {
+    switch (command.type) {
+      case 'save': forceSave(); break
+      case 'export': files.saveWorkingFile(); break
+      case 'open': documentPicker.open(); break
+      case 'openDocument': files.openDocument(command.name, command.bytes); break
+    }
+  }), [commands, forceSave, files, documentPicker])
 
   /**
    * The PNG still succeeds when a mark could not be embedded — the element falls

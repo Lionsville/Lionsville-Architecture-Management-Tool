@@ -44,8 +44,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { configureLibavoidWasm, configureLibavoidWorker } from '../layout'
 import { detectBrowserLanguage, translator } from '../i18n'
-import { composeShell, desktopFileChannel, inWorkingDirectory } from './composition'
-import type { Shell } from './composition'
+import {
+  composeShell, desktopCommandChannel, desktopFileChannel, inWorkingDirectory,
+} from './composition'
+import type { DesktopDirectory, Shell } from './composition'
 import {
   readLastProject, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
   withoutLastProject, withWorkingDirectory,
@@ -105,6 +107,9 @@ let shell = composeShell()
  */
 const files = desktopFileChannel()
 
+/** The File menu, and the documents the OS opens us with. */
+const commands = desktopCommandChannel()
+
 /**
  * The folder this machine works in, if it has one it may still use.
  *
@@ -136,6 +141,37 @@ function chooseWorkingDirectory(): void {
   if (!files) return
   void files.chooseDirectory().then(async (chosen) => {
     if (!chosen) return
+    await workIn(chosen)
+  }, (cause: unknown) => {
+    shell.diagnostics.report({
+      level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
+    })
+  })
+}
+
+/**
+ * A folder from the Recent menu.
+ *
+ * Only ever one main has granted — the list it offers IS the granted set — so
+ * there is nothing to check here that main has not already checked.
+ */
+function openWorkingDirectory(root: string): void {
+  if (!files) return
+  void files.recentDirectories().then(
+    async (granted) => {
+      const directory = granted.find((held) => held.root === root)
+      if (directory) await workIn(directory)
+    },
+    (cause: unknown) => {
+      shell.diagnostics.report({
+        level: 'error', where: 'workingDirectory', message: 'the folder was not opened', cause,
+      })
+    },
+  )
+}
+
+async function workIn(chosen: DesktopDirectory): Promise<void> {
+    if (!files) return
     const inFolder = inWorkingDirectory(shell, files, chosen)
     let kept = withWorkingDirectory(stored, chosen.root)
     if (await moveInto(inFolder, chosen.root)) kept = withMigratedFolder(kept, chosen.root)
@@ -149,11 +185,6 @@ function chooseWorkingDirectory(): void {
     })
     shell = inFolder
     renderApp(kept, undefined)
-  }, (cause: unknown) => {
-    shell.diagnostics.report({
-      level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
-    })
-  })
 }
 
 /**
@@ -226,7 +257,9 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         storage={shell.storage}
         workingDirectory={shell.workingDirectory}
         onChooseWorkingDirectory={files ? chooseWorkingDirectory : undefined}
+        onOpenWorkingDirectory={files ? openWorkingDirectory : undefined}
         watchProject={shell.watchProject}
+        commands={commands?.on}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}

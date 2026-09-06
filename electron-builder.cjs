@@ -80,6 +80,28 @@ module.exports = {
   // for a download link. Name the artifacts after the package instead.
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',
 
+  /**
+   * Double-clicking a working file opens it here.
+   *
+   * One extension and not two words with a dot between them, which is half of
+   * why `.lvarch` exists: Windows cannot reliably associate a double extension
+   * and shows `.werkbestand.json` as a JSON file that any other program is
+   * welcome to claim.
+   *
+   * `application/zip` because that is what a version-3 file IS (ADR-0003), and
+   * saying otherwise would be a lie the OS repeats to every other tool.
+   */
+  fileAssociations: [
+    {
+      ext: 'lvarch',
+      name: 'Architecture Working File',
+      description: 'Lionsville architecture working file',
+      mimeType: 'application/zip',
+      role: 'Editor',
+      rank: 'Owner',
+    },
+  ],
+
   // A release that quietly ships unsigned is worse than a release that fails.
   // Only asserted when credentials were supplied, so a local build is unaffected.
   forceCodeSigning: signMac || signWin,

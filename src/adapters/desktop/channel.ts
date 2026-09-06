@@ -16,7 +16,14 @@
  * Bytes rather than text, deliberately. A PNG has no text form, an encoding
  * argument is a decision this channel should not be making, and the renderer
  * already knows which of its files are text.
+ *
+ * The menu and the documents the OS opens us with are the other half of this
+ * doorway; their vocabulary is `platform/hostCommands.ts`, because the shell
+ * has to understand it too.
  */
+import type { HostCommands } from '../../platform/hostCommands'
+
+export type DesktopCommands = HostCommands
 
 /** A folder the user has given this app access to. */
 export type DesktopDirectory = {

@@ -41,6 +41,14 @@ export type ProjectFiles = {
   saveWorkingFile: () => void
   saveInterchange: () => void
   openFile: (file: File) => void
+  /**
+   * The same act, from bytes somebody else read.
+   *
+   * The desktop's `open-file` hands over the contents rather than a path: the
+   * file is outside every folder the user granted, and main read it because the
+   * double click was the grant.
+   */
+  openDocument: (name: string, bytes: Uint8Array) => void
   addLogo: (file: File) => void
 }
 
@@ -112,28 +120,30 @@ export function useProjectFiles(deps: {
    * library. Recognising the file and deciding whether to lay out again sit in
    * `openProjectDocument`, testable without a browser.
    */
+  const openDocument = useCallback((name: string, bytes: Uint8Array) => {
+    try {
+      // Bytes and not text, because what a file IS is a question about its
+      // content: a version-3 zip, an older JSON document, or an interchange
+      // file from another tool. The extension is a hint, and a renamed file is
+      // still what it is.
+      const result = openDocumentBytes(bytes, session.snapshot())
+      if (!result.ok) { notify(s(result.messageKey), 'error'); return }
+      session.adopt(result.project, result.relayout)
+      notify(s(
+        result.kind === 'workingFile' ? 'shell.workingFileLoaded' : 'shell.interchangeLoaded',
+        { name },
+      ), 'success')
+    } catch (err) {
+      notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
+    }
+  }, [session, notify, s])
+
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(
-      (bytes) => {
-        try {
-          // Bytes and not text, because what a file IS is a question about its
-          // content: a version-3 zip, an older JSON document, or an interchange
-          // file from another tool. The extension is a hint, and a renamed file
-          // is still what it is.
-          const result = openDocumentBytes(bytes, session.snapshot())
-          if (!result.ok) { notify(s(result.messageKey), 'error'); return }
-          session.adopt(result.project, result.relayout)
-          notify(s(
-            result.kind === 'workingFile' ? 'shell.workingFileLoaded' : 'shell.interchangeLoaded',
-            { name: file.name },
-          ), 'success')
-        } catch (err) {
-          notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
-        }
-      },
+      (bytes) => openDocument(file.name, bytes),
       (err: unknown) => notify(messageFor(err, s), 'error'),
     )
-  }, [documents, session, notify, s])
+  }, [documents, openDocument, notify, s])
 
   const addLogo = useCallback((file: File) => {
     readLogoFile(file, takenLogoKeys(session.currentLibrary()), () => documents.readDataUrl(file))
@@ -147,5 +157,5 @@ export function useProjectFiles(deps: {
       .catch((err: unknown) => notify(messageFor(err, s), 'error'))
   }, [documents, session, notify, s])
 
-  return { saveWorkingFile, saveInterchange, openFile, addLogo }
+  return { saveWorkingFile, saveInterchange, openFile, openDocument, addLogo }
 }

@@ -18,13 +18,16 @@
  * the preload output format in `electron.vite.config.ts`.)
  */
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DesktopChange, DesktopFiles } from '../../src/adapters/desktop/channel'
+import type { DesktopChange, DesktopCommands, DesktopFiles } from '../../src/adapters/desktop/channel'
+import type { HostCommand } from '../../src/platform/hostCommands'
 
 export type DesktopBridge = {
   readonly platform: NodeJS.Platform
   readonly versions: { electron: string; chrome: string }
   /** Present on the desktop and nowhere else — which is how the app tells. */
   readonly files: DesktopFiles
+  /** Menu items and files the OS handed us. See `HostCommand`. */
+  readonly commands: DesktopCommands
 }
 
 const files: DesktopFiles = {
@@ -50,10 +53,23 @@ const files: DesktopFiles = {
   },
 }
 
+const commands: DesktopCommands = {
+  on(listener) {
+    const relay = (_event: unknown, command: HostCommand) => listener(command)
+    ipcRenderer.on('app:command', relay)
+    // A file the OS opened us WITH arrives before this window exists, let alone
+    // before anything in it is listening. Main holds those until somebody says
+    // it is listening, which is this line, and nothing else can say it.
+    void ipcRenderer.invoke('app:listening')
+    return () => { ipcRenderer.off('app:command', relay) }
+  },
+}
+
 const bridge: DesktopBridge = {
   platform: process.platform,
   versions: { electron: process.versions.electron, chrome: process.versions.chrome },
   files,
+  commands,
 }
 
 contextBridge.exposeInMainWorld('desktop', bridge)
