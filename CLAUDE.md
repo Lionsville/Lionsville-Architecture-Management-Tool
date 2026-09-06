@@ -13,7 +13,7 @@ halves:
   a `model` prop, emits `DiagramContentBatch`, and knows nothing about storage,
   dialogs or backends. **1509 tests.** Leave it alone unless the task is in it.
 - **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
-  **512 tests.** Almost every task lands here.
+  **653 tests.** Almost every task lands here.
 
 ## This repository is public
 
@@ -50,7 +50,7 @@ npm run check
 ```
 
 A few seconds: typecheck and lint of the shell and the desktop main process, plus all
-512 shell tests. Run it after every change.
+653 shell tests. Run it after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.
@@ -116,9 +116,13 @@ src/core/         Arithmetic. No React, no browser, no storage, no IO.
                     preferences       language, theme, last project, list order
                     adr               decision records: MADR body, status machine, signers
                     search            one search over elements, documentation and decisions
+                    errors            ShellError: a refusal as a key, never a sentence
+                    diagnostics       what a failure entry is, and how a trail reads
+                    logFile           what the desktop log is called, and when it rolls
 src/examples/     starting points that ship with the app. Data, not config.
 src/ports/        The seams. Interfaces only, no implementations.
                     ProjectStore · PreferencesStore · DocumentGateway
+                    GroupStore · Diagnostics · HostControls
                     ProjectStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/
@@ -129,10 +133,15 @@ src/ui/           React. One concern per file:
                     adr/              the decisions page: tree · list · reading pane
                     search/           ⌘K, the search over everything
                     markdown/         the renderer the editor and the pages share; mermaid
+                    ErrorBoundary     what is on screen when a render throws
+                    BootFailure       what is on screen when the app never started
+                    messageFor        a thrown thing as a sentence in this language
+                    testing/          renderShell / renderApp: the shared harness
                     ShellToolbar · SaveMenu · ToastBar · dialogs/
                     useModelSession   the editing session (batches, aliases, remount)
                     useDiagramActions · useProjectFiles · useAutosave
                     useShellPreferences · useToasts · useStorageNotice · useFilePicker
+                    useGlobalErrors   the throws and rejections a boundary cannot see
 src/composition.ts  Which adapter the shell gets. The ONLY file that knows both
                     a seam and its filling.
 src/main.tsx      Composition root. Read its header first — it states the pattern.
@@ -262,8 +271,19 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
 - Both MUI themes must keep working; no hard-coded hex outside `theme/`.
 - Keep existing tests green. If a test pins behaviour you are deliberately
   changing, flip it in the same change and say so.
-- Errors from `core` carry a **key** (`shell.logoTooBig`), never a sentence —
-  the layer that knows the language turns it into words.
+- Errors from `core` and the adapters carry a **key** (`shell.logoTooBig`),
+  never a sentence — they are `ShellError`s, and `ui/messageFor.ts` is the one
+  place that turns a key into words. A refusal that is part of a function's
+  ordinary answer stays a returned value (`openProjectDocument`).
+- **A failure has somewhere to go.** Report it through the `Diagnostics` seam
+  before you draw anything about it; every `void promise` needs a rejection
+  handler or a comment saying why not. Never toast a success you did not wait
+  for. Log messages and keys, never model content — the desktop writes the
+  trail to a file the user is invited to hand over.
+- **Component tests go through `ui/testing/renderShell.tsx`.** It supplies the
+  theme and the language, and checks on every render that the theme reached the
+  tree — which is how a doubled Emotion gets caught by every test rather than by
+  one.
 
 ## Names, decided
 
