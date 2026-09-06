@@ -84,7 +84,6 @@ function renderEditor() {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     onLayoutError,
   };
   render(
@@ -302,7 +301,6 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
       onChange,
       onCreateContainerDiagram: vi.fn(),
       onCreateLayer7Diagram: vi.fn(),
-      parameterSpecs: () => [],
       onLayoutError,
     };
     render(
@@ -384,7 +382,6 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
       onChange,
       onCreateContainerDiagram: vi.fn(),
       onCreateLayer7Diagram: vi.fn(),
-      parameterSpecs: () => [],
       onLayoutError,
       onLayoutSettled,
     };

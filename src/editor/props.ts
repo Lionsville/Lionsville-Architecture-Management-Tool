@@ -11,44 +11,10 @@ import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
 import type {
-  DesignElement, DesignModel, DesignParameters, DiagramContentBatch, DiagramSettings, ElementId,
+  DesignElement, DesignModel, DiagramContentBatch, DiagramSettings, ElementId,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { WindowChrome } from '../platform/windowChrome';
-
-export interface ParameterSpec {
-  key: keyof DesignParameters;
-  label: string;
-  input: 'slider' | 'number' | 'select' | 'text';
-  min?: number;
-  max?: number;
-  step?: number;
-  options?: string[];
-}
-
-/** One host-computed figure rendered as a small chip on a card. */
-export interface DecorationChip {
-  label: string;
-  value: string;
-  title?: string;
-}
-
-export interface ElementDecoration {
-  linkCount?: number;
-  drift?: boolean;
-  dangling?: boolean;
-  unlinkedWarning?: boolean;
-  monthlyPrice?: number;
-  /**
-   * Derived figures rendered as a compact chip row (iteration 3: applications
-   * show combined complexity + averaged maturity/cloud-nativeness from their
-   * components). The package renders; the host computes — it stays
-   * semantics-agnostic about parameters.
-   */
-  parameterSummary?: DecorationChip[];
-  /** When set: warning icon with this tooltip ("commercial parameters incomplete"). */
-  incompleteWarning?: string;
-}
 
 export interface SolutionDesignEditorProps {
   model: DesignModel;
@@ -83,8 +49,6 @@ export interface SolutionDesignEditorProps {
    * elements, connections, placements, routes — and this is the diagram record.
    */
   onDiagramSettingsChange?(diagramId: string, settings: DiagramSettings): void;
-  parameterSpecs(element: DesignElement): ParameterSpec[];
-  decorations?: Record<ElementId, ElementDecoration>;
   /** CM links + ADR slots, rendered by the host inside the inspector. */
   renderInspectorExtras?(element: DesignElement): ReactNode;
   /** Coverage/ADR panel slot, rendered in the toolbar. */
@@ -135,27 +99,6 @@ export interface SolutionDesignEditorProps {
    * does nothing. Bump `nonce` to ask again.
    */
   documentationRequest?: { elementId?: ElementId; nonce: number };
-  /**
-   * Scope-level cost summary, rendered as a corner chip on layer7 diagrams.
-   * The host composes it from the diagram's estimate and linked scope T&S
-   * line totals.
-   */
-  scopeSummary?: {
-    estimatedMonthlyCost?: number;
-    costEstimateNote?: string;
-    linkedTasMonthly?: number;
-    /**
-     * Estimate-vs-linked-T&S delta (B1), composed by the host from its own
-     * delta helper. Optional and undefined-means-hide, like the rest of
-     * this prop — hosts that don't compute a delta see no change.
-     */
-    delta?: {
-      amount: number;
-      percent: number | undefined;
-      significant: boolean;
-      periodMismatch: boolean;
-    };
-  };
   /** When provided, the toolbar shows a fullscreen button (host implements the view). */
   onOpenFullscreen?: () => void;
   /**

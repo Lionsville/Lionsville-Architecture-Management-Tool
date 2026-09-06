@@ -1,6 +1,5 @@
 import { MarkerType, type Edge } from '@xyflow/react';
 import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, Rect } from '../model/types';
-import type { ElementDecoration } from './props';
 import type { ElementNode } from './nodes/nodeData';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
 import { aspectConfigFor } from '../model/aspects';
@@ -26,7 +25,6 @@ import { isAutoRoute, routeSides, routeSource } from '../model/routes';
 export interface BuildGraphArgs {
   model: DesignModel;
   diagram: DesignDiagram;
-  decorations?: Record<ElementId, ElementDecoration>;
   readOnly: boolean;
   selectedElementIds?: ReadonlySet<ElementId>;
   selectedConnectionIds?: ReadonlySet<string>;
@@ -96,7 +94,6 @@ export function buildNodes(args: BuildGraphArgs): ElementNode[] {
       data: {
         element,
         placement,
-        decoration: args.decorations?.[element.id],
         readOnly: args.readOnly,
         aspectConfig,
         hasContainerDiagram:

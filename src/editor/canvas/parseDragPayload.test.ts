@@ -31,61 +31,14 @@ describe('parseDragPayload', () => {
     expect(out.seed?.name).toBe('CRM');
   });
 
-  it('still reads the style fields an older tab may be sending', () => {
-    const out = asElement(
-      parseDragPayload(
-        JSON.stringify({ kind: 'application', accentColor: '#ff0000', shapeVariant: 'sharp' }),
-      ),
-    );
-    expect(out.kind).toBe('application');
-    expect(out.seed).toEqual({
-      accentColor: '#ff0000',
-      iconKey: undefined,
-      shapeVariant: 'sharp',
-      name: undefined,
-    });
-  });
-
   it('parses a bare kind payload (closed row) → kind only', () => {
     const out = asElement(parseDragPayload(JSON.stringify({ kind: 'actor' })));
     expect(out.kind).toBe('actor');
-    expect(out.seed).toEqual({
-      accentColor: undefined,
-      iconKey: undefined,
-      shapeVariant: undefined,
-      name: undefined,
-    });
-  });
-
-  it('falls back for a legacy bare-kind string', () => {
-    const out = asElement(parseDragPayload('component'));
-    expect(out.kind).toBe('component');
-    expect(out.seed).toBeUndefined();
-  });
-
-  it('handles a JSON-encoded bare string', () => {
-    expect(asElement(parseDragPayload(JSON.stringify('externalSystem'))).kind).toBe(
-      'externalSystem',
-    );
+    expect(out.seed).toEqual({ iconKey: undefined, name: undefined });
   });
 
   it('refuses a payload with no kind rather than guessing one', () => {
     expect(parseDragPayload(JSON.stringify({ iconKey: 'database' })).target).toBe('none');
-  });
-
-  /**
-   * The `source: 'logo'` discriminator is gone with the logo grid that needed
-   * it. A stale payload carrying it must not smuggle anything back in: the kind
-   * it carries is the kind that gets created, and nothing licenses the drop zone
-   * to override it.
-   */
-  it('ignores a stale logo source instead of reviving the zone override', () => {
-    const out = asElement(
-      parseDragPayload(JSON.stringify({ source: 'logo', kind: 'application', iconKey: 'auth' })),
-    );
-    expect(out).not.toHaveProperty('source');
-    expect(out.kind).toBe('application');
-    expect(out.seed?.iconKey).toBe('auth');
   });
 
   /**
@@ -104,11 +57,6 @@ describe('parseDragPayload', () => {
   it('parses an untouched domain group row (no seed fields set)', () => {
     const out = asGroup(parseDragPayload(JSON.stringify({ kind: 'domainGroup' })));
     expect(out.seed).toEqual({ name: undefined, color: undefined });
-  });
-
-  it('treats a bare "domainGroup" string as a group, not an element kind', () => {
-    const out = asGroup(parseDragPayload('domainGroup'));
-    expect(out.seed).toBeUndefined();
   });
 
   it('never lets a group payload carry a logo through', () => {

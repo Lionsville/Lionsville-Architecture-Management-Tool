@@ -1,12 +1,10 @@
 import type { Node, NodeProps } from '@xyflow/react';
 import type { AspectConfigEntry, DesignElement, DiagramPlacement } from '../../model/types';
-import type { ElementDecoration } from '../props';
 
 /** Shared payload for every element node on the canvas. */
 export interface ElementNodeData extends Record<string, unknown> {
   element: DesignElement;
   placement: DiagramPlacement;
-  decoration?: ElementDecoration;
   readOnly: boolean;
   /** The active diagram's configured aspect columns (badge row order). */
   aspectConfig: readonly AspectConfigEntry[];

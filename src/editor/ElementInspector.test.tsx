@@ -5,7 +5,6 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementInspector } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
-import type { ParameterSpec } from './props';
 
 /**
  * U7a tabbed inspector: General / Appearance / Data. These tests assert (a)
@@ -61,7 +60,7 @@ function makeActions(): {
 
 function renderInspector(
   el: DesignElement,
-  opts: { readOnly?: boolean; dia?: DesignDiagram; parameterSpecs?: ParameterSpec[]; extras?: React.ReactNode } = {},
+  opts: { readOnly?: boolean; dia?: DesignDiagram; extras?: React.ReactNode } = {},
 ) {
   const dia = opts.dia ?? diagram();
   const { actions, updateElement, setDomainGroup } = makeActions();
@@ -72,7 +71,6 @@ function renderInspector(
         model={model(el, dia)}
         diagram={dia}
         readOnly={opts.readOnly ?? false}
-        parameterSpecs={opts.parameterSpecs ?? []}
         actions={actions}
         onRequestDelete={vi.fn()}
         extras={opts.extras}
@@ -128,13 +126,10 @@ describe('ElementInspector — tab structure (U7a)', () => {
     expect(screen.getByLabelText('Icon size')).toBeDefined();
   });
 
-  it('Data reaches Operational aspects, Parameters, and the host extras slot', () => {
-    const specs: ParameterSpec[] = [{ key: 'serviceLevel', label: 'Service level', input: 'text' }];
-    renderInspector(element(), { parameterSpecs: specs, extras: <div>EXTRA_SLOT</div> });
+  it('Data reaches Operational aspects and the extras slot', () => {
+    renderInspector(element(), { extras: <div>EXTRA_SLOT</div> });
     openTab('Data');
     expect(screen.getByText('OPERATIONAL ASPECTS')).toBeDefined();
-    expect(screen.getByText('PARAMETERS')).toBeDefined();
-    expect(screen.getByLabelText('Service level')).toBeDefined();
     expect(screen.getByText('EXTRA_SLOT')).toBeDefined();
   });
 });
@@ -268,7 +263,6 @@ describe('ElementInspector — active tab resets on selection change', () => {
           model={model(element({ id: 'e1' }), diagram())}
           diagram={diagram()}
           readOnly={false}
-          parameterSpecs={[]}
           actions={makeActions().actions}
           onRequestDelete={vi.fn()}
         />
@@ -284,7 +278,6 @@ describe('ElementInspector — active tab resets on selection change', () => {
           model={model(element({ id: 'e2' }), diagram())}
           diagram={diagram()}
           readOnly={false}
-          parameterSpecs={[]}
           actions={makeActions().actions}
           onRequestDelete={vi.fn()}
         />
@@ -320,8 +313,7 @@ describe('ElementInspector — tab badges reflect set values', () => {
 
 describe('ElementInspector — readOnly disables controls in every tab', () => {
   it('disables General, Appearance and Data controls', () => {
-    const specs: ParameterSpec[] = [{ key: 'serviceLevel', label: 'Service level', input: 'text' }];
-    renderInspector(element({ iconKey: 'database' }), { readOnly: true, parameterSpecs: specs });
+    renderInspector(element({ iconKey: 'database' }), { readOnly: true });
 
     // General
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true);
@@ -338,7 +330,6 @@ describe('ElementInspector — readOnly disables controls in every tab', () => {
     // Data
     openTab('Data');
     expect(selectDisabled('Platform')).toBe(true);
-    expect((screen.getByLabelText('Service level') as HTMLInputElement).disabled).toBe(true);
   });
 });
 

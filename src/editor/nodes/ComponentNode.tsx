@@ -1,11 +1,8 @@
 import { memo } from 'react';
-import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
-import { WarningGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
 
@@ -26,9 +23,7 @@ export const ComponentNode = memo(function ComponentNode({
 }: ElementNodeProps) {
   const theme = useTheme();
   const tokens = getNodeTokens(theme);
-  const { element, decoration } = data;
-  const warning = decoration?.unlinkedWarning;
-  const incomplete = decoration?.incompleteWarning;
+  const { element } = data;
   return (
     <NodeShell
       element={element}
@@ -46,27 +41,10 @@ export const ComponentNode = memo(function ComponentNode({
         px: 1,
         py: 0.75,
         backgroundColor: tokens.component.bg,
-        border: `1px ${warning ? 'dashed' : 'solid'} ${warning ? tokens.card.warningBorder : resolveAccent(element, tokens.component.border)}`,
+        border: `1px solid ${resolveAccent(element, tokens.component.border)}`,
         borderRadius: shapeRadiusFor('component', element.shapeVariant, false),
       }}
     >
-      {incomplete && (
-        <Tooltip title={incomplete}>
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 4,
-              // Top-left: the top-right corner is reserved for the uniform
-              // lifecycle badge (U5) shared across all node kinds.
-              left: 4,
-              color: theme.palette.warning.main,
-              display: 'flex',
-            }}
-          >
-            <WarningGlyph />
-          </Box>
-        </Tooltip>
-      )}
       <NodeIcon
         element={element}
         size={iconSlotSize(element)}

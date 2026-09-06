@@ -37,7 +37,6 @@ import { LogoPickerPopover } from './LogoPickerPopover';
 import { FloatingEdge } from '../edges/FloatingEdge';
 import type { ElementNode } from '../nodes/nodeData';
 import type { DesignDiagram, DesignModel, ElementId, ElementKind, Point, Rect } from '../../model/types';
-import type { ElementDecoration } from '../props';
 import {
   EMPTY_SELECTION,
   mirrorGraphSelection,
@@ -196,7 +195,6 @@ const MENU_LABEL_KEYS: Record<MenuTarget['kind'], StringKey> = {
 export interface DiagramCanvasProps {
   model: DesignModel;
   diagram: DesignDiagram;
-  decorations?: Record<ElementId, ElementDecoration>;
   readOnly: boolean;
   selection: Selection;
   onSelectionChange(selection: Selection): void;
@@ -321,57 +319,32 @@ export type DragPayload =
   | { target: 'none' };
 
 /**
- * Parse a palette drag payload. Current payloads are JSON
- * `{ kind, iconKey?, name? }` for an element and `{ kind: 'domainGroup', name?,
- * color? }` for a group; `accentColor`/`shapeVariant` are still read because a
- * tab opened before the palette recut may still be sending them, and a legacy
- * bare-kind string (or any malformed payload) degrades to an unseeded add —
- * nothing regresses.
+ * Parse a palette drag payload: JSON `{ kind, iconKey?, name? }` for an element,
+ * `{ kind: 'domainGroup', name?, color? }` for a group. Anything else is
+ * `'none'` rather than a guess — the palette is the only thing that produces
+ * these, and it lives four files away.
  *
- * There is deliberately no `source` discriminator any more. It existed so a
- * kind-less vendor-logo mark could take its kind from the drop zone; a logo is
- * now chosen inside a kind's own palette row, so the kind is known before the
- * drag starts and the zone never has to guess.
+ * The `try` is not a shim: `getData` can hand back anything, and a malformed
+ * payload must end a drag, never throw out of an event handler.
  */
 export function parseDragPayload(raw: string): DragPayload {
+  let parsed: unknown;
   try {
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed === 'string') return elementPayload(parsed);
-    if (parsed && typeof parsed === 'object' && typeof (parsed as { kind?: unknown }).kind === 'string') {
-      const p = parsed as {
-        kind: string;
-        accentColor?: string;
-        iconKey?: string;
-        shapeVariant?: string;
-        name?: string;
-        color?: string;
-      };
-      if (p.kind === 'domainGroup') {
-        return { target: 'domainGroup', seed: { name: p.name, color: p.color } };
-      }
-      return {
-        target: 'element',
-        kind: p.kind as ElementKind,
-        seed: {
-          accentColor: p.accentColor,
-          iconKey: p.iconKey,
-          shapeVariant: p.shapeVariant as ElementSeedPatch['shapeVariant'],
-          name: p.name,
-        },
-      };
-    }
-    return { target: 'none' };
+    parsed = JSON.parse(raw);
   } catch {
-    // Legacy bare-kind string (pre-D10 payload).
-    return elementPayload(raw);
+    return { target: 'none' };
   }
-}
-
-/** A payload that is nothing but a kind — no seed to speak of. */
-function elementPayload(kind: string): DragPayload {
-  if (!kind) return { target: 'none' };
-  if (kind === 'domainGroup') return { target: 'domainGroup' };
-  return { target: 'element', kind: kind as ElementKind };
+  if (!parsed || typeof parsed !== 'object') return { target: 'none' };
+  const p = parsed as { kind?: unknown; iconKey?: string; name?: string; color?: string };
+  if (typeof p.kind !== 'string') return { target: 'none' };
+  if (p.kind === 'domainGroup') {
+    return { target: 'domainGroup', seed: { name: p.name, color: p.color } };
+  }
+  return {
+    target: 'element',
+    kind: p.kind as ElementKind,
+    seed: { iconKey: p.iconKey, name: p.name },
+  };
 }
 
 /**
@@ -414,14 +387,13 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       buildNodes({
         model: props.model,
         diagram: props.diagram,
-        decorations: props.decorations,
         readOnly: props.readOnly,
         selectedElementIds,
         selectedConnectionIds,
         edgeColor: tokens.edge.stroke,
         showLifecycle: props.showLifecycle,
       }),
-    [props.model, props.diagram, props.decorations, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle],
+    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle],
   );
   const derivedEdges = useMemo(
     () =>

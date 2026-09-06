@@ -6,9 +6,8 @@ import { useTheme } from '@mui/material/styles';
 import { categoryColor } from '../theme/categoryColors';
 import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
-import { formatMonthlyPrice } from '../theme/format';
 import { useStrings } from '../../i18n/LanguageContext';
-import { DocGlyph, DrillGlyph, LinkGlyph, WarningGlyph } from './glyphs';
+import { DocGlyph, DrillGlyph } from './glyphs';
 import { NodeDescription, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { AspectBadgeRow } from './AspectBadgeRow';
 import type { ElementNodeProps } from './nodeData';
@@ -31,12 +30,9 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
   height,
 }: ElementNodeProps) {
   const theme = useTheme();
-  const { t, language } = useStrings();
+  const { t } = useStrings();
   const tokens = getNodeTokens(theme);
-  const { element, decoration } = data;
-  const warning = decoration?.unlinkedWarning;
-  const incomplete = decoration?.incompleteWarning;
-  const summary = decoration?.parameterSummary ?? [];
+  const { element } = data;
   const bodyIcon = usesBodyIcon(element);
 
   return (
@@ -51,7 +47,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: tokens.card.bg,
-        border: `1px ${warning ? 'dashed' : 'solid'} ${warning ? tokens.card.warningBorder : tokens.card.border}`,
+        border: `1px solid ${tokens.card.border}`,
         borderRadius: shapeRadiusFor('application', element.shapeVariant, false),
         overflow: 'hidden',
       }}
@@ -87,13 +83,6 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         >
           {element.name}
         </Typography>
-        {incomplete && (
-          <Tooltip title={incomplete}>
-            <Box sx={{ color: theme.palette.warning.main, display: 'flex' }}>
-              <WarningGlyph />
-            </Box>
-          </Tooltip>
-        )}
         {data.hasContainerDiagram && (
           <Tooltip title={t('node.hasContainer')}>
             <Box sx={{ color: tokens.card.subtitle, display: 'flex' }}>
@@ -147,64 +136,6 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
           height={height}
           sx={{ flex: 1 }}
         />
-      </Box>
-      {summary.length > 0 && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, pb: 0.25, flexWrap: 'nowrap', overflow: 'hidden' }}>
-          {summary.map((chip) => (
-            <Tooltip key={chip.label} title={chip.title ?? ''}>
-              <Typography
-                sx={{
-                  fontSize: 8.5,
-                  fontWeight: 600,
-                  color: tokens.card.subtitle,
-                  border: `1px solid ${tokens.card.border}`,
-                  borderRadius: 1,
-                  px: 0.5,
-                  lineHeight: '13px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {chip.label} {chip.value}
-              </Typography>
-            </Tooltip>
-          ))}
-        </Box>
-      )}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, pb: 0.25, minHeight: 16 }}>
-        {decoration?.monthlyPrice !== undefined && (
-          <Typography
-            sx={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: tokens.chips.priceFg,
-              backgroundColor: tokens.chips.priceBg,
-              borderRadius: 1,
-              px: 0.5,
-              lineHeight: '14px',
-            }}
-          >
-            {formatMonthlyPrice(decoration.monthlyPrice, language)}
-          </Typography>
-        )}
-        {decoration?.drift && (
-          <Typography sx={{ fontSize: 8.5, fontWeight: 700, color: tokens.chips.driftFg, backgroundColor: tokens.chips.driftBg, borderRadius: 1, px: 0.5, lineHeight: '14px' }}>
-            DRIFT
-          </Typography>
-        )}
-        {decoration?.dangling && (
-          <Typography sx={{ fontSize: 8.5, fontWeight: 700, color: tokens.chips.danglingFg, backgroundColor: tokens.chips.danglingBg, borderRadius: 1, px: 0.5, lineHeight: '14px' }}>
-            DANGLING
-          </Typography>
-        )}
-        <Box sx={{ flex: 1 }} />
-        {(decoration?.linkCount ?? 0) > 0 && (
-          <Tooltip title={`${decoration?.linkCount} commercial line link(s)`}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, color: tokens.card.subtitle, fontSize: 9, fontWeight: 600 }}>
-              <LinkGlyph />
-              {decoration?.linkCount}
-            </Box>
-          </Tooltip>
-        )}
       </Box>
       <AspectBadgeRow aspects={element.aspects} config={data.aspectConfig} />
     </NodeShell>

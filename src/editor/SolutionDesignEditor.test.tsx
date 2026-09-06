@@ -66,7 +66,6 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     ...overrides,
   };
   const view = render(editorUi(props));
@@ -261,50 +260,6 @@ describe('SolutionDesignEditor — iteration 2', () => {
     expect(screen.getByLabelText('Cost')).toBeDefined();
     expect(screen.getByLabelText('SLA')).toBeDefined();
     expect(screen.queryByLabelText('Platform')).toBeNull();
-  });
-
-  it('shows the scope cost chip on layer7 when scopeSummary is provided', () => {
-    renderEditor({
-      scopeSummary: { estimatedMonthlyCost: 1250, linkedTasMonthly: 400 },
-    });
-    expect(screen.getByText(/Scope est\./)).toBeDefined();
-    expect(screen.getByText(/T&S/)).toBeDefined();
-  });
-
-  it('renders the delta warning segment when scopeSummary carries a significant delta', () => {
-    renderEditor({
-      scopeSummary: {
-        estimatedMonthlyCost: 1250,
-        linkedTasMonthly: 2000,
-        delta: { amount: 750, percent: 60, significant: true, periodMismatch: false },
-      },
-    });
-    expect(screen.getByText(/Δ/)).toBeDefined();
-    expect(screen.getByText(/\+60%/)).toBeDefined();
-  });
-
-  it('shows a mixed-billing-periods hint instead of a numeric delta on period mismatch', () => {
-    renderEditor({
-      scopeSummary: {
-        estimatedMonthlyCost: 1250,
-        linkedTasMonthly: 2000,
-        delta: { amount: 750, percent: 60, significant: true, periodMismatch: true },
-      },
-    });
-    expect(screen.getByText('Mixed billing periods')).toBeDefined();
-    expect(screen.queryByText(/Δ/)).toBeNull();
-  });
-
-  it('renders no delta segment when the delta is below threshold', () => {
-    renderEditor({
-      scopeSummary: {
-        estimatedMonthlyCost: 1250,
-        linkedTasMonthly: 1300,
-        delta: { amount: 50, percent: 4, significant: false, periodMismatch: false },
-      },
-    });
-    expect(screen.getByText(/Scope est\./)).toBeDefined();
-    expect(screen.queryByText(/Δ/)).toBeNull();
   });
 
   it('shows the fullscreen button only when onOpenFullscreen is provided', () => {

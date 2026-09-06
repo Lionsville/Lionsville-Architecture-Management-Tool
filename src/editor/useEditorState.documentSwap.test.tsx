@@ -43,7 +43,6 @@ function render(initial: Swap) {
     onActiveDiagramChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const view = renderHook(
     (swap: Swap) => useEditorState({ ...stable, ...swap } as SolutionDesignEditorProps),

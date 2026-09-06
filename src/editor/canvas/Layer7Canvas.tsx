@@ -1,20 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
-import { Panel } from '@xyflow/react';
 import Popover from '@mui/material/Popover';
-import Paper from '@mui/material/Paper';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import { domainGroupForPoint, domainGroupRectMap } from '../../model/placement';
 import { zoneForPoint } from '../../model/zones';
-import { getNodeTokens } from '../theme/tokens';
-import { useTheme } from '@mui/material/styles';
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../../layout/tidy';
 import { ColorField } from '../ColorField';
 import { useStrings } from '../../i18n/LanguageContext';
 import { TidySettingsPanel } from '../TidySettingsPanel';
 import type { DesignDiagram, DesignModel, ElementId, ElementKind, Layer7Zone, Point } from '../../model/types';
-import type { SolutionDesignEditorProps } from '../props';
-import { formatMonthlyPrice, formatScopeDelta } from '../theme/format';
 import { selectDomainGroup, type ElementSeedPatch } from '../useEditorState';
 import { DiagramCanvas, type DiagramCanvasProps } from './DiagramCanvas';
 import { newDomainGroupRect } from './domainGroupPlacement';
@@ -46,7 +38,6 @@ export function Layer7Canvas(
   props: SharedProps & {
     model: DesignModel;
     diagram: DesignDiagram;
-    scopeSummary?: SolutionDesignEditorProps['scopeSummary'];
     /** Right-click → "Tidy this group": re-lay-out one group's members in place. */
     onTidyGroup?(name: string): void;
     /**
@@ -211,7 +202,6 @@ export function Layer7Canvas(
         onRename={actions.renameDomainGroup}
         renameRequest={groupRename}
       />
-      <ScopeCostChip scopeSummary={props.scopeSummary} />
       <Popover
         open={groupColor !== null}
         onClose={() => setGroupColor(null)}
@@ -266,60 +256,5 @@ export function Layer7Canvas(
         />
       </Popover>
     </DiagramCanvas>
-  );
-}
-
-/** Corner chip with the scope-level cost summary (estimate + linked T&S). */
-function ScopeCostChip({
-  scopeSummary,
-}: {
-  scopeSummary?: SolutionDesignEditorProps['scopeSummary'];
-}) {
-  const tokens = getNodeTokens(useTheme());
-  const { language } = useStrings();
-  if (
-    !scopeSummary ||
-    (scopeSummary.estimatedMonthlyCost === undefined &&
-      scopeSummary.linkedTasMonthly === undefined)
-  ) {
-    return null;
-  }
-  const parts: string[] = [];
-  if (scopeSummary.estimatedMonthlyCost !== undefined) {
-    parts.push(`Scope est. ${formatMonthlyPrice(scopeSummary.estimatedMonthlyCost, language)}`);
-  }
-  if (scopeSummary.linkedTasMonthly !== undefined) {
-    parts.push(`T&S ${formatMonthlyPrice(scopeSummary.linkedTasMonthly, language)}`);
-  }
-  const delta = scopeSummary.delta;
-  return (
-    <Panel position="top-right">
-      <Tooltip title={scopeSummary.costEstimateNote ?? ''}>
-        <Paper
-          elevation={2}
-          sx={{ px: 1.25, py: 0.5, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <Typography sx={{ fontSize: 11, fontWeight: 700, color: tokens.chips.priceFg }}>
-            {parts.join(' · ')}
-          </Typography>
-          {(delta?.significant || delta?.periodMismatch) && (
-            <Typography
-              sx={{
-                fontSize: 10.5,
-                fontWeight: 700,
-                color: tokens.chips.driftFg,
-                backgroundColor: tokens.chips.driftBg,
-                borderRadius: 1,
-                px: 0.5,
-                lineHeight: '16px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {delta.periodMismatch ? 'Mixed billing periods' : formatScopeDelta(delta.amount, delta.percent, language)}
-            </Typography>
-          )}
-        </Paper>
-      </Tooltip>
-    </Panel>
   );
 }

@@ -260,7 +260,6 @@ export function ProjectWorkspace({
           onChange={session.onChange}
           onCreateContainerDiagram={diagrams.onCreateContainerDiagram}
           onCreateLayer7Diagram={diagrams.onCreateLayer7Diagram}
-          parameterSpecs={() => []}
           // The project's answers, which a diagram's own settings override. The
           // author used to be the design's NAME, so every exported PNG said
           // AUTHOR: <project name>; it is now the project's default author,

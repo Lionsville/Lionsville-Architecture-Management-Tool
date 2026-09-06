@@ -50,7 +50,6 @@ function render(initial: DesignModel) {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const { result } = renderHook(() => useEditorState(props));
   const effective = () =>

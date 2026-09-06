@@ -48,7 +48,6 @@ function renderEditor(route: EdgeRoute | undefined, overrides: Partial<SolutionD
     onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     ...overrides,
   };
   render(

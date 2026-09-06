@@ -33,7 +33,6 @@ function makeProps(m: DesignModel, onChange: (b: DiagramContentBatch) => void, e
     onActiveDiagramChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     ...extra,
   };
 }

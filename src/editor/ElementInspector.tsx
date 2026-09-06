@@ -12,7 +12,6 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
-import type { ParameterSpec } from './props';
 import { aspectConfigFor } from '../model/aspects';
 import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
@@ -23,7 +22,6 @@ import { AspectsEditor } from './AspectsEditor';
 import { ColorField } from './ColorField';
 import { InspectorSection } from './InspectorSection';
 import { MarkdownField } from '../documentation/ui/MarkdownField';
-import { ParametersEditor } from './ParametersEditor';
 
 const LIFECYCLES: DesignElement['lifecycle'][] = ['planned', 'live', 'retiring', 'retired'];
 
@@ -70,7 +68,6 @@ export interface ElementInspectorProps {
   model: DesignModel;
   diagram: DesignDiagram;
   readOnly: boolean;
-  parameterSpecs: ParameterSpec[];
   actions: EditorActions;
   onRequestDelete(): void;
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
@@ -171,12 +168,7 @@ export function ElementInspector(props: ElementInspectorProps) {
     props.diagram.kind === 'container' && props.diagram.applicationElementId === element.id;
 
   const setAspectCount = aspectConfig.filter((entry) => element.aspects[entry.key]).length;
-  const setParameterCount = props.parameterSpecs.filter(
-    (spec) => element.parameters[spec.key] !== undefined && element.parameters[spec.key] !== '',
-  ).length;
-
   const showAspects = element.kind === 'application';
-  const showParameters = props.parameterSpecs.length > 0;
 
   const generalHasValues = Boolean(
     element.description ||
@@ -189,7 +181,7 @@ export function ElementInspector(props: ElementInspectorProps) {
   const appearanceHasValues = Boolean(
     element.accentColor || element.shapeVariant || element.iconKey || element.iconSize,
   );
-  const dataHasValues = setAspectCount > 0 || setParameterCount > 0;
+  const dataHasValues = setAspectCount > 0;
 
   const stacked = props.layout === 'stacked';
   const show = (tab: number) => stacked || activeTab === tab;
@@ -423,24 +415,9 @@ export function ElementInspector(props: ElementInspectorProps) {
             </InspectorSection>
           )}
 
-          {showParameters && (
-            <InspectorSection
-              title={t('section.parameters')}
-              badge={`${setParameterCount}/${props.parameterSpecs.length}`}
-              defaultOpen
-            >
-              <ParametersEditor
-                specs={props.parameterSpecs}
-                parameters={element.parameters}
-                disabled={readOnly}
-                onChange={(parameters) => update({ parameters })}
-              />
-            </InspectorSection>
-          )}
-
           {props.extras}
 
-          {!showAspects && !showParameters && !props.extras && (
+          {!showAspects && !props.extras && (
             <Typography variant="caption" color="text.secondary" sx={{ pt: 1 }}>
               {t('element.noData')}
             </Typography>

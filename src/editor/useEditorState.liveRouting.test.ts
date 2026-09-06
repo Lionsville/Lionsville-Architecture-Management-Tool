@@ -47,7 +47,6 @@ function render(initial: DesignModel = model()) {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const { result } = renderHook(() => useEditorState(props));
   return { result, onChange };

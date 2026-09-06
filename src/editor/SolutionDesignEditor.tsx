@@ -966,7 +966,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
         )}
         <CanvasForDiagram
           diagram={activeDiagram}
-          props={props}
           state={state}
           readOnly={readOnly}
           autoRoute={autoRoute}
@@ -1015,7 +1014,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
               model={state.effectiveModel}
               diagram={activeDiagram}
               readOnly={readOnly}
-              parameterSpecs={props.parameterSpecs(state.selectedElement)}
               actions={state.actions}
               onRequestDelete={() => setDeleteTarget(state.selectedElement?.id)}
               renderMarkdown={props.renderMarkdown}
@@ -1108,7 +1106,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
               model={state.effectiveModel}
               diagram={activeDiagram}
               readOnly={inspectorReadOnly}
-              parameterSpecs={props.parameterSpecs(element)}
               actions={state.actions}
               onRequestDelete={() => {
                 setDocumentationId(undefined);
@@ -1158,7 +1155,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
 function CanvasForDiagram({
   diagram,
-  props,
   state,
   readOnly,
   autoRoute,
@@ -1188,7 +1184,6 @@ function CanvasForDiagram({
   menuRequest,
 }: {
   diagram: DesignDiagram;
-  props: SolutionDesignEditorProps;
   state: ReturnType<typeof useEditorState>;
   readOnly: boolean;
   /** Live auto-routing — drives the canvas's waypoint-free drag preview only. */
@@ -1223,7 +1218,6 @@ function CanvasForDiagram({
   const shared = {
     model: state.effectiveModel,
     diagram,
-    decorations: props.decorations,
     readOnly,
     autoRoute,
     selection: state.selection,
@@ -1254,7 +1248,6 @@ function CanvasForDiagram({
   return diagram.kind === 'layer7' ? (
     <Layer7Canvas
       {...shared}
-      scopeSummary={props.scopeSummary}
       onTidyGroup={onTidyGroup}
       groupTidyOptions={groupTidyOptions}
       onGroupTidyOptionsChange={onGroupTidyOptionsChange}

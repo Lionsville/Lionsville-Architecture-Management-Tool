@@ -46,7 +46,6 @@ function renderEditorState() {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const { result } = renderHook(() => useEditorState(props));
   return { result, onChange };
@@ -99,7 +98,6 @@ function renderWithRoutes() {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const { result } = renderHook(() => useEditorState(props));
   return { result, onChange };
@@ -191,7 +189,6 @@ function renderWithCanvas() {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const { result } = renderHook(() => useEditorState(props));
   return { result, onChange };

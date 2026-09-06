@@ -54,7 +54,6 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     ...overrides,
   };
   const view = render(

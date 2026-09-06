@@ -54,7 +54,6 @@ function render(initial: DesignModel, activeDiagramId = 'd1') {
     onChange,
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
   };
   const { result } = renderHook(() => useEditorState(props));
   const element = (id: string) => result.current.effectiveModel.elements.find((e) => e.id === id);

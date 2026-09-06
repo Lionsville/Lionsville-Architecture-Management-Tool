@@ -61,7 +61,6 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
     onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     onPreferencesChange,
     ...overrides,
   };
@@ -198,7 +197,6 @@ describe('SolutionDesignEditor — element search', () => {
       onChange: vi.fn(),
       onCreateContainerDiagram: vi.fn(),
       onCreateLayer7Diagram: vi.fn(),
-      parameterSpecs: () => [],
     };
     const ui = (extra: Partial<SolutionDesignEditorProps>) => (
       <ThemeProvider theme={createTheme()}>

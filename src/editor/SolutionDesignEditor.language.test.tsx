@@ -58,7 +58,6 @@ function renderEditor(overrides: Partial<SolutionDesignEditorProps> = {}) {
     onChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
-    parameterSpecs: () => [],
     onLanguageChange,
     ...overrides,
   };
