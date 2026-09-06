@@ -163,13 +163,13 @@ that is local.
 npm run setup && npm run dev
 ```
 
-Then open http://127.0.0.1:5200. `npm run setup` installs both trees — this repo
-and the editor package under `vendor/solution-design`, which has its own
-`node_modules`.
+Then open http://127.0.0.1:5200. One tree, one `node_modules`, one of every
+config; `npm run setup` is `npm install` and exists so the instruction does not
+have to change again.
 
 For the desktop app: `npm run dev:desktop` runs it against the Vite dev server,
 `npm run smoke:desktop` builds it and drives the real production bundle through
-nine checks in a real window, and `npm run dist:desktop` packages it (unsigned,
+eleven checks in a real window, and `npm run dist:desktop` packages it (unsigned,
 locally).
 
 ## The loop
@@ -178,16 +178,14 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of the shell and the desktop main process, plus
-the shell's 512 tests. Run it after every change; it is fast on purpose.
+A few seconds: typecheck and lint of everything, plus all 2154 tests. Run it
+after every change; it is fast on purpose.
 
 ```bash
 npm run check:all
 ```
 
-About a minute: adds the editor package's 1509 tests, its typecheck and lint, and a
-production build. Run it once before handing work back, and before any push that
-touches `vendor/`.
+Adds a production build. Run it once before handing work back.
 
 ```bash
 npm run verify
@@ -203,32 +201,38 @@ server is also declared in `.claude/launch.json` as `editor-dev`.
 
 ## How it is put together
 
-Two halves, and the boundary between them is the reason both stay workable.
-
-- **`vendor/solution-design/`** — the editor package. React Flow canvas, the
-  model, layout, routing (libavoid on WebAssembly, in a worker), i18n, PNG
-  export. It takes a `model` prop, emits a `DiagramContentBatch`, and knows
-  nothing about storage, dialogs or backends. A fork, maintained here.
-- **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
-  Almost every task lands here.
-
-The shell has layers, and dependencies point inward:
+One codebase, in modules. Each has an `index.ts` that is its public surface,
+pure files at its root, and a `ui/` folder for its React side where it has one.
 
 ```
-src/core/       decisions and arithmetic — no React, no browser, no IO
-src/ports/      the seams: ProjectStore · PreferencesStore · DocumentGateway
-src/adapters/   the outside world, one folder per flavour
-src/ui/         React
-src/examples/   starting points that ship with the app. Data, not config.
-src/composition.ts   the only file that knows both a seam and its filling
-src/main.tsx    the composition root — read its header first
-electron/       the desktop main process and preload
+src/model/          the architecture model, batching, interchange, keys, icons
+src/layout/         tidy, ELK, libavoid on WebAssembly, the router worker
+src/editor/         the canvas: nodes, edges, palette, inspectors, PNG export
+src/documentation/  descriptions as documents, and the page that reads them
+src/decisions/      architecture decision records, and the page that reads them
+src/search/         one search over elements, documentation and decisions
+src/i18n/           the registry; each module keeps its own strings/ slice
+src/projects/       what a project is, where it is filed, what is remembered
+src/platform/       a refusal, a diagnostic, the log's name, the window's chrome
+src/widgets/        icons and one dialog — presentation with no opinions
+src/ports/          the seams: ProjectStore · PreferencesStore · DocumentGateway
+src/adapters/       the outside world, one folder per flavour
+src/app/            the shell: picker, workspace, toolbar, dialogs, composition
+electron/           the desktop main process and preload
 ```
 
-Four ESLint rules enforce that rather than a convention: `core` and `ports` may
-not import React, MUI or an adapter; `ui` may not import an adapter; browser
-globals are an error outside `src/adapters/`. If a rule blocks you, the design is
-telling you something — move the code, do not route around it.
+Who may import whom is a **matrix**, declared as data at the top of
+`eslint.config.js` and generated into one rule per module, each with its own
+sentence. `model` is the bottom of the tree and knows nobody; `app` is the top
+and knows everyone; nobody imports `app`. `model`, `layout`, `platform`, `ports`,
+`projects` and `i18n` may not import React, MUI, Emotion or React Flow at all.
+Browser globals are an error outside `src/adapters/`. If a rule blocks you, the
+design is telling you something — move the code, do not route around it.
+
+Until September 2026 the editor was a separate package under
+`vendor/solution-design`, with its own toolchain and a string table carrying 177
+keys for screens it could not render. `docs/decisions/0001` records why that
+boundary went and what replaced it.
 
 Adding a different place to keep things is a class under `src/adapters/`, the
 shared behaviour suite (`src/ports/ProjectStore.contract.ts`) run over it, and
@@ -268,10 +272,11 @@ diagram settings, saving and sharing, and the shortcuts worth knowing.
 |---|---|
 | `CLAUDE.md` | How to work in this repo: the layer map, the loop, the conventions, the settled names |
 | `docs/release.md` | Cutting a release: the procedure, the thirteen secrets, what has gone wrong before |
-| `vendor/solution-design/` | The editor package, source and tests |
-| `src/main.tsx` | The composition root; its header states the pattern |
-| `src/composition.ts` | Which adapter the shell gets |
-| `src/core/project.ts` | What a project is: open, save, order, summarise |
+| `docs/decisions/` | The architecture decision records for this repository |
+| `eslint.config.js` | The import matrix: who may know about whom, and why |
+| `src/app/main.tsx` | The composition root; its header states the pattern |
+| `src/app/composition.ts` | Which adapter the shell gets, and which icon packs |
+| `src/projects/project.ts` | What a project is: open, save, order, summarise |
 | `src/ports/ProjectStore.contract.ts` | The behaviour every store must show |
 | `electron/main/index.ts` | The desktop main process; its header states what is load-bearing |
 | `build/libavoidWasm.ts` | Publishes the router's wasm; fails a build, not a shipped app |

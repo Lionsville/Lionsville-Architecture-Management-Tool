@@ -5,15 +5,11 @@ modelling tool — a Layer-7 application landscape and the C4 container diagrams
 under it. **There is no customer in this codebase.** An organisation is a
 *group*, which is data a user creates. Never write a customer's name into an
 identifier, a storage key, a file extension or a shipped example; *Names,
-decided* below holds the settled ones (the working file is `.lvarch`). Two
-halves:
+decided* below holds the settled ones (the working file is `.lvarch`).
 
-- **`vendor/solution-design/`** — the editor package (React Flow canvas, model,
-  layout, i18n, PNG export). A fork, maintained here. It takes
-  a `model` prop, emits `DiagramContentBatch`, and knows nothing about storage,
-  dialogs or backends. **1509 tests.** Leave it alone unless the task is in it.
-- **`src/`** — the shell around it: state, dialogs, storage, files, preferences.
-  **653 tests.** Almost every task lands here.
+One codebase, in modules, with **2154 tests** and one of every config. The
+editor was a separate package under `vendor/` until September 2026; that
+boundary is gone and `docs/decisions/0001` says why.
 
 ## This repository is public
 
@@ -49,8 +45,8 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of the shell and the desktop main process, plus all
-653 shell tests. Run it after every change.
+A few seconds: typecheck and lint of everything, plus all 2154 tests. Run it
+after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.
@@ -59,8 +55,7 @@ batching up and discovering three problems at once.
 npm run check:all
 ```
 
-About a minute: adds the vendor package's 1509 tests, its typecheck and lint, and a
-production build. Run it once before you hand work back, not during.
+Adds a production build. Run it once before you hand work back, not during.
 
 ```bash
 npm run verify
@@ -91,7 +86,7 @@ npm run check && git add -A && git commit && git push
 ```
 
 `npm run check` before you commit is the whole discipline. Run `verify` before
-a push that touches `vendor/`, changes the build, or ends a stretch of work.
+a push that changes the build, touches the desktop, or ends a stretch of work.
 
 Prefer **several small commits over one large one**, each with a message that
 says why rather than what. A commit that has to explain four unrelated things is
@@ -102,79 +97,98 @@ when you want a second pair of eyes before it lands, or when it is going to sit
 half-finished for a while. That is a judgement call, not a default — reach for
 it deliberately, not out of habit.
 
-## The layer map
+## The module map
 
 Read this before adding a file; it answers "where does this go" in one pass.
+Every module has an `index.ts` that is its public surface, pure files at its
+root, and a `ui/` folder for its React side where it has one. `editor/` is the
+exception: React through and through, so it keeps its subfolders.
 
 ```
-src/core/         Arithmetic. No React, no browser, no storage, no IO.
-                    model/            the design model, batching, interchange, keys
-                    project           what a project IS: open, save, order, summarise
-                    projectRef        addressing: group path + project key
-                    containerDiagram  what belongs on a fresh container diagram
-                    logo              the rules for an uploaded mark
-                    preferences       language, theme, last project, list order
-                    adr               decision records: MADR body, status machine, signers
-                    search            one search over elements, documentation and decisions
+src/model/        What a landscape is made of, and the arithmetic over it.
+                    types             the domain half; imports nothing at all
+                    kinds · zones · placement · aspects · kindChange · deletion
+                    ids · keys        addressing, temp ids, slugs
+                    routes · floatingEdgeMath   where a line leaves a box
+                    overlay/merge/reconcile/batch   in-flight edits (phase 3 owns)
+                    hostModel · fromInterchange · toInterchange · containerDiagram
+                    logo · logoRegistry · marks/    uploads, the icon registry
+                    textSearch        the one rule for "found"
+                    adr               what a decision record IS (rules: decisions/)
+src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
+src/editor/       The canvas and everything docked to it. React.
+                    canvas/ · nodes/ · edges/ · theme/ · export/
+                    props.ts          what the editor is handed (32 props)
+                    useEditorState    the editing session's brain
+src/documentation/  Descriptions as documents.
+                    documentation     outline, element links, the template
+                    ui/               DocumentationPage, MarkdownField, mermaid
+src/decisions/    Decision records: the status machine, the numbering, the page.
+src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
+src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
+                  `strings.en.ts` composes them and is the schema.
+src/projects/     A project: open, save, order, summarise, address, remember.
+src/platform/     What the app runs inside, and what a failure looks like.
                     errors            ShellError: a refusal as a key, never a sentence
                     diagnostics       what a failure entry is, and how a trail reads
                     logFile           what the desktop log is called, and when it rolls
-src/examples/     starting points that ship with the app. Data, not config.
+                    windowChrome      how much of the top bar is the window's
+src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
                     ProjectStore · PreferencesStore · DocumentGateway
                     GroupStore · Diagnostics · HostControls
                     ProjectStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
-                    webStorage/ · memory/ · browser/
-src/ui/           React. One concern per file:
-                    App.tsx           picker or workspace; theme, language, toasts
-                    ProjectWorkspace  one open project: toolbar, editor, dialogs
-                    picker/           the first screen: ProjectPicker, NewProjectDialog
-                    adr/              the decisions page: tree · list · reading pane
-                    search/           ⌘K, the search over everything
-                    markdown/         the renderer the editor and the pages share; mermaid
-                    ErrorBoundary     what is on screen when a render throws
-                    BootFailure       what is on screen when the app never started
-                    messageFor        a thrown thing as a sentence in this language
+                    webStorage/ · memory/ · browser/ · fileSystem/
+src/app/          The shell around the editor.
+                    main.tsx          composition root. Read its header first.
+                    composition.ts    which adapter, and which icon packs
+                    App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
+                    picker/ · dialogs/ · examples/ · iconPacks/
                     testing/          renderShell / renderApp: the shared harness
-                    ShellToolbar · SaveMenu · ToastBar · dialogs/
-                    useModelSession   the editing session (batches, aliases, remount)
-                    useDiagramActions · useProjectFiles · useAutosave
-                    useShellPreferences · useToasts · useStorageNotice · useFilePicker
-                    useGlobalErrors   the throws and rejections a boundary cannot see
-src/composition.ts  Which adapter the shell gets. The ONLY file that knows both
-                    a seam and its filling.
-src/main.tsx      Composition root. Read its header first — it states the pattern.
+                    use*              the hooks: session, files, autosave, toasts
+electron/         The desktop main process and preload.
 ```
 
 **Components declare the interface they need**, not the widest one available.
 `useAutosave` asks for `{ save(project) }`, not for a `ProjectStore`, so it
 cannot reach `load()` or `clear()` and a reader does not have to check whether it
-did. The concrete adapters satisfy those shapes structurally, so narrowing costs
-nothing: no wrappers, just a smaller type. Follow that when you add a hook.
+did. `DocumentationPage` asks for one `updateElement`, not the editor's whole
+action set. The concrete implementations satisfy those shapes structurally, so
+narrowing costs nothing: no wrappers, just a smaller type.
 
-**Dependencies point inward.** `core` knows nobody. `adapters` and `ui` talk to
-`ports`. Only `composition.ts` chooses. This is enforced by ESLint, not by
-convention — try importing React into `core/` and you get an error explaining
-why. If a rule blocks you, the design is telling you something; move the code,
-don't route around the rule.
+**Who may import whom is a matrix**, declared as data at the top of
+`eslint.config.js` and generated into one rule per module, each with its own
+sentence. `model` is the bottom and knows nobody; `app` is the top and knows
+everyone; nobody imports `app`, and nobody but `app/composition.ts` imports
+`adapters`. `model`, `layout`, `platform`, `ports`, `projects` and `i18n` may not
+import React, MUI, Emotion or React Flow at all. If a rule blocks you, the design
+is telling you something; move the code, don't route around the rule.
+
+Two rows are worth knowing because they are not obvious. `editor` may not import
+`decisions` or `projects` — a canvas that knows what a project is cannot be
+mounted in a test with two plain objects. And `documentation` may not import
+`editor`, which is why the documentation page takes its inspector as a
+`renderInspector` slot.
 
 ### Where does my change go?
 
 | It is… | Put it in | Test it in |
 |---|---|---|
-| a decision, a calculation, a validation | `src/core/` | node, no mocks needed |
+| what a landscape is, or arithmetic over it | `src/model/` | node, no mocks needed |
+| where something ends up on the board | `src/layout/` | node |
 | talking to a browser/OS/network API | `src/adapters/<flavour>/` | its own suite |
 | a new kind of place to keep things | new adapter + one line in `composition.ts` | the contract |
-| something on screen | `src/ui/` | jsdom (`// @vitest-environment jsdom`) |
-| inside the canvas/palette/inspector | `vendor/solution-design/src/` | that package's suite |
+| inside the canvas/palette/inspector | `src/editor/` | jsdom (`// @vitest-environment jsdom`) |
+| a screen that is not the canvas | that module's `ui/` | jsdom |
+| the shell around it all | `src/app/` | jsdom |
 
 If you find yourself writing `localStorage`, `fetch`, `FileReader` or
 `document.` anywhere outside `src/adapters/`, stop: that belongs behind a port.
 
 ## Decisions (ADRs)
 
-Three lists, one shape (`src/core/adr.ts`). The **group's** records live on its
+Three lists, one shape (`decisions/adr.ts` for the rules, `model/adr.ts` for the record). The **group's** records live on its
 `GroupProfile.decisions`; the **landscape's** and every **application's** live
 on `model.decisions`, told apart by `applicationId`. The body is MADR markdown;
 title, status, date and signers are fields. The status is a state machine —
@@ -253,12 +267,19 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
   was made, not what the line does, and match the density of the file you are in.
   Dutch survives only where it is domain data (a design's own content, a
   diacritics fixture) or a value already written into saved files.
-- **UI strings are never inline.** They live one file per language —
-  `vendor/solution-design/src/i18n/strings.en.ts` (the schema) and
-  `strings.nl.ts` — with the registry and lookup in `strings.ts`. Adding a
-  language is a new table file plus one line in `TABLES`; `strings.test.ts` loops
-  over every registered language, so completeness, empty values, placeholders and
-  "was it actually translated" are all checked automatically.
+- **UI strings are never inline, and every module owns its own.** A module keeps
+  `strings/en.ts` (`as const`, the schema for its keys) and `strings/nl.ts`
+  (typed from it, so a missing translation is a compile error where the word
+  lives). `i18n/strings.en.ts` composes the slices; that file and its Dutch twin
+  are the only ones that name every module. Adding a language is a new
+  `strings/<lang>.ts` per module plus one line in `TABLES`. `strings.test.ts`
+  loops over every registered language for completeness, empty values,
+  placeholders and "was it actually translated", and over the slices for keys
+  lost, keys nobody owns, and two modules claiming the same key.
+- **A module does not name another module's key.** `common.` is the exception —
+  shared vocabulary — and so is a refusal key that is part of a published type
+  (`KindChangeRefusal`). Anything else means publishing a table, the way
+  `decisions` publishes `STATUS_LABEL` and `SCOPE_LABEL`.
 - Every pure function gets a unit test. Every port gets a contract or a suite.
 - `readOnly` must hide every mutating affordance you add.
 - Anything that covers the whole window (a fullscreen dialog) must take
@@ -271,9 +292,10 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
 - Both MUI themes must keep working; no hard-coded hex outside `theme/`.
 - Keep existing tests green. If a test pins behaviour you are deliberately
   changing, flip it in the same change and say so.
-- Errors from `core` and the adapters carry a **key** (`shell.logoTooBig`),
-  never a sentence — they are `ShellError`s, and `ui/messageFor.ts` is the one
-  place that turns a key into words. A refusal that is part of a function's
+- Errors from the pure modules and the adapters carry a **key**
+  (`shell.logoTooBig`), never a sentence — they are `ShellError`s
+  (`platform/errors.ts`), and `app/messageFor.ts` is the one place that turns a
+  key into words. A refusal that is part of a function's
   ordinary answer stays a returned value (`openProjectDocument`).
 - **A failure has somewhere to go.** Report it through the `Diagnostics` seam
   before you draw anything about it; every `void promise` needs a rejection
@@ -306,12 +328,19 @@ identifiers is still a list of a customer's identifiers.
 | Vendor / copyright | Lionsville Group BV |
 | Shipped example | a fictional organisation, never a real customer's landscape |
 
-Two things deliberately do **not** change:
+One thing deliberately does **not** change:
 
-- **`.werkbestand.json` keeps opening, forever.** Every file anyone saved before
-  the rename is one. Reading is broad; writing is narrow.
 - **The interchange format is not renamed.** It is an exchange format other
-  tools read; its field names are a contract with them, not branding.
+  tools read; its field names are a contract with them, not branding. The same
+  goes for `solution-design/v1` inside it, and for `DesignModel`'s field names.
+
+And one thing deliberately broke, once. Files written under the tool's previous
+name are **not** opened: `isWorkingFile` accepts only the
+`lionsville-architecture` tag, and `model/hostModel.test.ts` pins the refusal
+with its reasoning. The working file was redefined rather than extended, at a
+moment when nobody had one worth keeping. Versions 1 and 2 of the current file
+both open, and phase 4 adds version 3 with a reader for both. `docs/decisions/`
+has the long version.
 
 ## State of play
 
@@ -327,6 +356,15 @@ Configuration then came out of the code: the hardcoded customer became a group
 on a project, the landscape became an example, and the store became
 `GROUP > PROJECT`.
 
+Then the editor package was dissolved (`docs/decisions/0001`). 326 files moved
+into the modules above in one mechanical commit; the second toolchain, the
+alias, the `dedupe` lists and the 720-line half-domain-half-props contract file
+went with it. The boundaries that remain are the import matrix, which is data at
+the top of `eslint.config.js` rather than prose. Around 600 lines of surface
+belonging to the application the editor was carved out of are gone, the string
+table is nine slices each owned by the module that says the words, and the rail
+icon set is a registered pack rather than a railway vocabulary in the model.
+
 Worth knowing: the last project is resolved at the edge of the app, before the
 first render, so the workspace can start synchronously without a `null` case in
 every `useState`. It uses `.then` rather than a top-level `await` because Vite's
@@ -338,7 +376,7 @@ The desktop app ships: `electron/` holds the main process and preload, the
 renderer runs under `app://`, and `.github/workflows/release.yml` builds and
 signs all three platforms from a published GitHub release
 (`docs/release.md` is the operator's page). It still keeps projects in local
-storage rather than in files on disk — `src/core/documentSession.ts` and
+storage rather than in files on disk — `src/projects/documentSession.ts` and
 `src/adapters/fileSystem/` are the pure half of that work, waiting on a folder
 picker and the wiring.
 
