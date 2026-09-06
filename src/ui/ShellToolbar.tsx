@@ -42,6 +42,15 @@ export type ShellToolbarProps = {
   groupName: string
   /** When the store last accepted this design; `null` means never. */
   savedAt: Date | null
+  /**
+   * The last write was refused.
+   *
+   * Shown instead of the time, not beside it: a time from before the failure is
+   * older than the work on screen, and an indicator saying "Saved · 14:02"
+   * while nothing has been saved since 14:02 is the most expensive kind of
+   * wrong this bar can be.
+   */
+  saveFailed?: boolean
   language: Language
   themeMode: ThemeMode
   onCycleTheme: () => void
@@ -71,7 +80,7 @@ export type ShellToolbarProps = {
 }
 
 export function ShellToolbar({
-  designName, groupName, savedAt, language, themeMode, onCycleTheme,
+  designName, groupName, savedAt, saveFailed = false, language, themeMode, onCycleTheme,
   onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings,
   onOpenDocumentation, onOpenDecisions, onOpenSearch, s,
   windowChrome = NO_WINDOW_CHROME,
@@ -133,8 +142,13 @@ export function ShellToolbar({
         </Tooltip>
       ))}
       <Box sx={{ flex: 1 }} />
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }} data-testid="saved-indicator">
-        {savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}
+      <Typography
+        sx={{ fontSize: 11, color: saveFailed ? 'error.main' : 'text.secondary' }}
+        data-testid="saved-indicator"
+      >
+        {saveFailed
+          ? s('shell.saveRefused')
+          : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}
       </Typography>
       <Tooltip title={s('shell.themeTip', { name: s(THEME_LABEL[themeMode]) })}>
         <IconButton

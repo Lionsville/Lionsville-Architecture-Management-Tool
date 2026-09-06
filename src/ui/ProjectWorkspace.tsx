@@ -111,9 +111,20 @@ export function ProjectWorkspace({
   const diagrams = useDiagramActions({ session, notify, s, makeId })
   const files = useProjectFiles({ session, documents, notify, s })
 
+  /**
+   * What the bar says about saving. Two pieces of state, not one: the last
+   * accepted time is worth keeping through a failure — it is the honest answer
+   * to "how much did I lose" — but it must not be what is on screen while the
+   * store is refusing.
+   */
   const [savedAt, setSavedAt] = useState<Date | null>(null)
+  const [saveFailed, setSaveFailed] = useState(false)
+  const onSaveResult = useCallback((ok: boolean) => {
+    setSaveFailed(!ok)
+    onStorageResult(ok)
+  }, [onStorageResult])
   const { forceSave } = useAutosave({
-    session, projects, onSaved: setSavedAt, onResult: onStorageResult,
+    session, projects, onSaved: setSavedAt, onResult: onSaveResult,
   })
 
   const documentPicker = useFilePicker({
@@ -214,6 +225,7 @@ export function ProjectWorkspace({
         designName={session.model.name}
         groupName={groupNameOf(session.model)}
         savedAt={savedAt}
+        saveFailed={saveFailed}
         language={language}
         themeMode={themeMode}
         onCycleTheme={onCycleTheme}

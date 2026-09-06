@@ -550,6 +550,13 @@ export const EN = {
   // --- the shell around the editor -----------------------------------------
   'shell.saved': 'Saved · {time}',
   'shell.notSaved': 'Not saved yet',
+  /**
+   * The third state of the same indicator. Distinct from `shell.notSaved`,
+   * which means "nothing has happened yet": this one means a write was refused,
+   * and it replaces a last-successful time that would otherwise be older than
+   * the work on screen and read as reassurance.
+   */
+  'shell.saveRefused': 'Not saved — storage refused',
   'shell.save': 'Save…',
   'shell.saveMenu': 'Save',
   'shell.workingFile': 'Working file',

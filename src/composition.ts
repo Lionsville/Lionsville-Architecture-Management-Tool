@@ -49,6 +49,14 @@ export type Shell = {
   /** What the crash fallback can do about it: reload, and copy the trail. */
   hostControls: HostControls
   /**
+   * Which of the two this composition settled on.
+   *
+   * The memory stores never fail, which is the point of them and also the
+   * problem: without this the shell cannot tell "everything is being saved"
+   * from "nothing will outlive this tab", and the user is told neither.
+   */
+  storage: 'browser' | 'memory'
+  /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
    * own top bar.
@@ -74,6 +82,7 @@ export function composeShell(): Shell {
     documents: new BrowserDocumentGateway(),
     diagnostics: new ConsoleDiagnostics(),
     hostControls: browserHostControls(),
+    storage: storage ? 'browser' : 'memory',
     windowChrome: hostWindowChrome(),
   }
 }

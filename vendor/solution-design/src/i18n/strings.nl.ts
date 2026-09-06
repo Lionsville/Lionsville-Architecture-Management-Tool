@@ -529,6 +529,7 @@ export const NL: StringTable = {
 
   'shell.saved': 'Bewaard · {time}',
   'shell.notSaved': 'Nog niet bewaard',
+  'shell.saveRefused': 'Niet bewaard — opslag weigert',
   'shell.save': 'Bewaren…',
   'shell.saveMenu': 'Bewaren',
   'shell.workingFile': 'WorkingFile',

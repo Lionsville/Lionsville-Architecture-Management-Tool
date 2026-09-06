@@ -12,10 +12,12 @@
  * `-webkit-app-region` is a property jsdom's computed style does not keep, and
  * "did Emotion emit it" is exactly the question worth asking.
  */
-import { describe, expect, it } from 'vitest'
-import { render } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import { ShellToolbar } from './ShellToolbar'
+
+afterEach(() => cleanup())
 
 const props = {
   designName: 'Warehouse landscape',
@@ -46,6 +48,29 @@ const rulesFor = (element: HTMLElement): string => {
   const own = [...element.classList].find((name) => css.includes(`.${name}{`))
   return (css.match(/[^{}]*\{[^{}]*\}/g) ?? []).filter((rule) => rule.includes(`.${own}`)).join('')
 }
+
+describe('the saved indicator', () => {
+  const indicator = () => screen.getByTestId('saved-indicator').textContent
+
+  it('says nothing has happened yet before the first write', () => {
+    render(<ShellToolbar {...props} />)
+    expect(indicator()).toBe('Not saved yet')
+  })
+
+  it('says when the store last accepted it', () => {
+    render(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} />)
+    expect(indicator()).toContain('Saved')
+    expect(indicator()).toContain('14:02')
+  })
+
+  it('replaces the time when a write was refused, rather than standing beside it', () => {
+    // The expensive wrong: a time from before the failure is older than the
+    // work on screen, and reads as reassurance.
+    render(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} saveFailed />)
+    expect(indicator()).toBe('Not saved — storage refused')
+    expect(indicator()).not.toContain('14:02')
+  })
+})
 
 describe('ShellToolbar and the window around it', () => {
   it('starts where the window controls end', () => {

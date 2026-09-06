@@ -123,6 +123,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         documents={shell.documents}
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
+        storage={shell.storage}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}

@@ -12,6 +12,7 @@
  * knows whether a project lives in browser storage, on disk or on a server.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
@@ -88,6 +89,13 @@ export type AppProps = {
   diagnostics: ShellDiagnostics
   /** What the crash fallback can do about it: reload, and copy the trail. */
   hostControls: CrashControls
+  /**
+   * Which stores the composition settled on. `memory` means storage refused at
+   * boot — a private window, a strict policy — and nothing typed here will be
+   * there tomorrow. That is worth a standing notice rather than a toast,
+   * because it is true for the whole session and not an event within it.
+   */
+  storage?: 'browser' | 'memory'
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -108,7 +116,7 @@ export type AppProps = {
 
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
-  initialProject, initialPreferences,
+  storage = 'browser', initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -441,6 +449,20 @@ export function App({
           />
         )}
         </ErrorBoundary>
+        {storage === 'memory' && (
+          /* Along the bottom rather than above the toolbar: on the desktop that
+             bar is the title bar, and anything pushed above it lands under the
+             traffic lights. A standing strip is as visible and owes the window
+             nothing. */
+          <Alert
+            severity="warning"
+            square
+            data-testid="storage-notice"
+            sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}
+          >
+            {s('shell.storageFailed')}
+          </Alert>
+        )}
         <ToastBar
           toast={toasts.toast}
           open={toasts.open}
