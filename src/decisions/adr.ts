@@ -21,42 +21,16 @@
  */
 import type { Translate } from '../i18n'
 
-export type AdrStatus = 'proposed' | 'reviewing' | 'accepted' | 'rejected' | 'superseded'
-
-/** In workflow order, which is also the order a status picker shows them in. */
-export const ADR_STATUSES: readonly AdrStatus[] = ['proposed', 'reviewing', 'accepted', 'rejected', 'superseded']
-
-export type AdrVerdict = 'approved' | 'rejected'
-
-/** One person the decision was put to. */
-export type AdrSigner = {
-  name: string
-  role?: string
-  verdict?: AdrVerdict
-  /** The day of the verdict, `yyyy-mm-dd`. Absent until there is one. */
-  signedAt?: string
-}
-
-export type Adr = {
-  /** Stable, never shown. The number is what people call it. */
-  id: string
-  /** Sequential within its list; `ADR-0007` on screen. Never reused. */
-  number: number
-  title: string
-  status: AdrStatus
-  /** The day of the last status change, `yyyy-mm-dd`. */
-  date: string
-  /** The MADR body, markdown. Title, status, date and signers are fields, not text. */
-  body: string
-  /**
-   * Which application this decision belongs to. Absent on a project record
-   * means the landscape level; a group's records never carry it.
-   */
-  applicationId?: string
-  /** Set with the `superseded` status: the record that replaced this one. */
-  supersededBy?: string
-  signers: AdrSigner[]
-}
+/**
+ * The record's shape lives in `model/` — a project's decisions hang off its
+ * model, so the model would otherwise have to import this module to say what it
+ * holds. Re-exported here because this is where the rules about a record are,
+ * and a caller reasoning about decisions should not have to know the split.
+ */
+import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../model/adr'
+import { ADR_STATUSES } from '../model/adr'
+export type { Adr, AdrSigner, AdrStatus, AdrVerdict }
+export { ADR_STATUSES }
 
 export function formatAdrNumber(number: number): string {
   return `ADR-${String(number).padStart(4, '0')}`

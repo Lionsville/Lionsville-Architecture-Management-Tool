@@ -17,7 +17,8 @@ import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
 /** Fresh ids come from outside: a clock inside a function makes it untestable. */
-export type MakeId = (prefix: string) => string
+export type { MakeId } from '../model/ids'
+import type { MakeId } from '../model/ids'
 
 export type DiagramActions = {
   onCreateContainerDiagram: (applicationId: string) => void

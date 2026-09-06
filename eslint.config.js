@@ -27,6 +27,107 @@ import tseslint from 'typescript-eslint'
  * module-by-module matrix lands with the module indices; these are the rules
  * that were already here, pointing at where their code lives now.
  */
+
+/**
+ * THE IMPORT MATRIX — who may know about whom.
+ *
+ * A row per module, listing what it may import besides itself. Everything not
+ * listed is an error with a sentence saying why, so the shape of the app is
+ * readable here rather than reconstructable from three hundred import lines.
+ *
+ * Three modules are leaves everyone may read and so have short rows of their
+ * own: `i18n` (the words), `platform` (a refusal, a diagnostic, the window) and
+ * `widgets` (icons and one dialog, with no knowledge of the model). Nobody
+ * imports `app`: it is the composition root, and a module that needs something
+ * from it takes it as a prop.
+ *
+ * Generated rather than written out, because a hand-written matrix is where the
+ * eleventh row quietly disagrees with the other ten — and because a per-module
+ * `no-restricted-imports` block REPLACES the rule rather than adding to it, so
+ * every row has to be complete.
+ */
+const MODULES = [
+  'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions',
+  'search', 'projects', 'editor', 'ports', 'adapters', 'app',
+]
+
+const MAY_IMPORT = {
+  model: ['i18n', 'platform'],
+  layout: ['model', 'i18n', 'platform'],
+  i18n: [],
+  platform: ['i18n'],
+  widgets: ['i18n'],
+  // `editor` is here until the documentation page takes its inspector as a
+  // render slot; it is the last thing this module should know about.
+  documentation: ['model', 'i18n', 'platform', 'widgets', 'editor'],
+  decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
+  search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
+  projects: ['model', 'i18n', 'platform', 'decisions', 'ports'],
+  editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
+  ports: ['model', 'platform', 'projects'],
+  adapters: ['model', 'platform', 'projects', 'ports'],
+  app: MODULES.filter((m) => m !== 'adapters' && m !== 'app'),
+}
+
+const WHY = {
+  model: 'The model is the bottom of the tree: the words and the platform are all it may know.',
+  layout: 'Layout computes geometry over the model. It draws nothing and stores nothing.',
+  i18n: 'The words know nobody — every module hands its own slice to the registry.',
+  platform: 'A refusal, a diagnostic, the window. Everything may read it, so it may read almost nothing.',
+  widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
+  documentation: 'documentation renders a description: the model, the words and the widgets.',
+  decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
+  search: 'search reads what it searches — the model, documentation, decisions — and nothing that draws them.',
+  projects: 'A project is what is saved and reopened: the model, its decisions, and the ports it is saved through.',
+  editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
+  ports: 'A seam names what crosses it: a project, a model, a diagnostic.',
+  adapters: 'An adapter fills one seam: the model, projects, ports and platform are all it may know.',
+  app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
+}
+
+/**
+ * Which modules compute and nothing else. React, MUI, Emotion or React Flow in
+ * one of these means a node test has to boot a DOM to ask where a box goes —
+ * which is how thirteen pure files ended up importing a canvas library for four
+ * strings. Separate from the matrix because it restricts package names rather
+ * than paths, and because `i18n` is on the list with one exception: a language
+ * needs a context to travel in.
+ */
+const PURE = ['model', 'layout', 'platform', 'ports', 'projects', 'i18n']
+const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*']
+
+const PURITY = [{
+  files: PURE.map((m) => `src/${m}/**/*.ts`),
+  // The module roots only: `documentation/`, `decisions/` and `search/` are pure
+  // at their root and React under their `ui/`, which every `.tsx` here would
+  // otherwise trip over. A `.ts` file that wanted React would have to become one.
+  ignores: ['**/*.test.ts', '**/*.contract.ts', 'src/i18n/LanguageContext.tsx'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{ group: SCREEN_PACKAGES, message: 'This module computes; screen work belongs in a ui/ folder, in editor/ or in app/.' }],
+    }],
+  },
+}]
+
+const IMPORT_MATRIX = MODULES.map((from) => ({
+  files: [`src/${from}/**/*.{ts,tsx}`],
+  // Tests are exempt: a test reaching across the tree for a fixture is not the
+  // coupling this guards against, and the alternative is a fixture module per
+  // pair of modules. `app/testing/` is test code that happens not to end in
+  // `.test`, and the composition is the one place that may name a filling.
+  ignores: ['**/*.test.{ts,tsx}', '**/*.contract.ts', 'src/app/testing/**', 'src/app/composition.ts'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{
+        group: MODULES
+          .filter((to) => to !== from && !MAY_IMPORT[from].includes(to))
+          .flatMap((to) => [`**/${to}/**`, `**/${to}`]),
+        message: WHY[from],
+      }],
+    }],
+  },
+}))
+
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -64,46 +165,7 @@ export default tseslint.config(
       ],
     },
   },
-  {
-    // These modules compute. If one can see React or an adapter it stops being
-    // pure: you cannot test it in node and you cannot reuse it on the desktop.
-    // Listed by module rather than by a `**` glob because `decisions/`,
-    // `documentation/` and `search/` are pure at their root and React under
-    // their `ui/`, which is the shape every module with a screen has.
-    files: [
-      'src/model/**/*.ts', 'src/layout/**/*.ts', 'src/platform/**/*.ts',
-      'src/projects/**/*.ts', 'src/ports/**/*.ts',
-      'src/decisions/*.ts', 'src/documentation/*.ts', 'src/search/*.ts',
-    ],
-    ignores: ['**/*.test.ts', '**/*.contract.ts'],
-    rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [
-          { group: ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*'],
-            message: 'This module computes; screen work belongs in its ui/ folder, in editor/ or in app/.' },
-          { group: ['**/adapters/**', '**/composition'],
-            message: 'References point inward: a seam may not know its filling.' },
-          { group: ['**/editor/**', '**/editor', '**/app/**', '**/app'],
-            message: 'A module that computes may not import the screen it is drawn on.' },
-        ],
-      }],
-    },
-  },
-  {
-    // Screen work talks to a seam, never to a filling: otherwise the choice is
-    // back in twenty places instead of in the composition.
-    files: ['src/app/**/*.{ts,tsx}', 'src/*/ui/**/*.{ts,tsx}', 'src/editor/**/*.{ts,tsx}'],
-    // Tests may reach for a filling directly — that is how you get an in-memory
-    // store into a component — and `app/testing/` is test code that happens not
-    // to end in `.test`. The composition is the one place that chooses.
-    ignores: ['**/*.test.{ts,tsx}', 'src/app/testing/**', 'src/app/composition.ts'],
-    rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [
-          { group: ['**/adapters/**'],
-            message: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.' },
-        ],
-      }],
-    },
-  },
+  ...IMPORT_MATRIX,
+  ...PURITY,
+
 )

@@ -45,9 +45,10 @@ import {
 } from '../documentation';
 import { useStrings } from '../../i18n/LanguageContext';
 import { DocGlyph } from '../../editor/nodes/glyphs';
-import { ElementInspector, kindLabel } from '../../editor/ElementInspector';
+import { ElementInspector } from '../../editor/ElementInspector';
+import { kindLabel } from '../../model/kinds';
 import type { EditorActions } from '../../editor/useEditorState';
-import { BackIcon } from '../../editor/toolbarIcons';
+import { BackIcon } from '../../widgets/icons';
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200;

@@ -17,7 +17,7 @@ import { aspectConfigFor } from '../model/aspects';
 import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
-import type { StringKey, Translate } from '../i18n/strings';
+import type { StringKey } from '../i18n/strings';
 import type { EditorActions } from './useEditorState';
 import { AspectsEditor } from './AspectsEditor';
 import { ColorField } from './ColorField';
@@ -61,19 +61,9 @@ export function shapeOptionsFor(
     : SHAPE_VARIANT_OPTIONS;
 }
 
-const KIND_LABEL_KEYS: Record<DesignElement['kind'], StringKey> = {
-  actor: 'kind.actor',
-  application: 'kind.application',
-  externalSystem: 'kind.externalSystem',
-  inputChannel: 'kind.inputChannel',
-  managementTool: 'kind.managementTool',
-  component: 'kind.component',
-};
-
-/** An element kind's name, in the given language (English when none is given). */
-export function kindLabel(kind: DesignElement['kind'], translate: Translate): string {
-  return translate(KIND_LABEL_KEYS[kind]);
-}
+/** The one table lives in the model; re-exported so this file's callers keep one import. */
+import { kindLabel } from '../model/kinds';
+export { kindLabel };
 
 export interface ElementInspectorProps {
   element: DesignElement;

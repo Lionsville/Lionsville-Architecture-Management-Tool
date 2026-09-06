@@ -11,7 +11,7 @@
  * export can hand it back without phantom changes in the diff.
  */
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramPlacement, Layer7Zone } from '.'
-import type { Adr } from '../decisions/adr'
+import type { Adr } from './adr'
 
 /**
  * The document's own shapes, deliberately not the model's: everything is

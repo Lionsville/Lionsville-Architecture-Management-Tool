@@ -4,7 +4,7 @@ import Dialog from '@mui/material/Dialog';
 import ListItemButton from '@mui/material/ListItemButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { paletteLabel } from '../../editor/canvas/paletteItems';
+import { kindLabel } from '../../model/kinds';
 import { useStrings } from '../../i18n/LanguageContext';
 import { searchElements } from '../elementSearch';
 import type { DesignModel, ElementId } from '../../model/types';
@@ -164,7 +164,7 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
             <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{hit.name}</Typography>
             <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
               {[
-                paletteLabel(hit.kind, t),
+                kindLabel(hit.kind, t),
                 hit.detail,
                 // Say where it will take you, but only when that is somewhere
                 // else — "on this diagram" would be noise on every row.

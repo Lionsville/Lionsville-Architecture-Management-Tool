@@ -21,7 +21,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, FullscreenIcon, HelpIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from './toolbarIcons';
+import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, FullscreenIcon, HelpIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, type Language, type StringKey } from '../i18n/strings';
 

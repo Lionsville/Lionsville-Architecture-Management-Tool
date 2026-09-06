@@ -17,7 +17,7 @@ import {
   DistributeVerticalIcon,
   GridIcon,
   SnapGridIcon,
-} from '../toolbarIcons';
+} from '../../widgets/icons';
 import { useStrings } from '../../i18n/LanguageContext';
 import type { StringKey } from '../../i18n/strings';
 

@@ -8,7 +8,7 @@
  */
 import type { Translate } from '../../i18n'
 import type { DesignDiagram } from '../../model'
-import { ConfirmDialog } from './ConfirmDialog'
+import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { NewDiagramDialog } from './NewDiagramDialog'
 
 export type ShellDialogsProps = {

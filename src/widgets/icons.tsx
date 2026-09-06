@@ -1,4 +1,11 @@
-/** Minimal stroke icons for the toolbar (no @mui/icons-material dependency). */
+/**
+ * Stroke icons, drawn from nothing.
+ *
+ * No `@mui/icons-material`: these are a handful of 24×24 `currentColor` paths,
+ * and the dependency is a megabyte. They live in `widgets/` rather than in the
+ * editor because the documentation page and the decisions page draw the same
+ * arrows and pencils, and neither may import the editor.
+ */
 
 interface IconProps {
   size?: number;
@@ -348,6 +355,17 @@ export function RadarIcon({ size = 14 }: IconProps) {
       <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
       <path d="M12 12l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <circle cx="15.5" cy="8.5" r="1.7" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** A page with lines on it: this element has documentation worth opening. */
+export function DocGlyph({ size = 12, strokeWidth = 2 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 3h8l5 5v13H6z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h7M9 17h7" />
     </svg>
   );
 }

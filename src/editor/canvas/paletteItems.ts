@@ -1,5 +1,6 @@
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
 import type { ElementKind } from '../../model/types';
+import { KIND_LABEL_KEYS } from '../../model/kinds';
 
 /**
  * Palette content: what each entry is called, what it says about itself, and
@@ -31,32 +32,32 @@ export interface PaletteItem {
 export const PALETTE_ITEMS: Record<PaletteKey, PaletteItem> = {
   application: {
     key: 'application',
-    labelKey: 'kind.application',
+    labelKey: KIND_LABEL_KEYS.application,
     descriptionKey: 'paletteDescription.application',
   },
   component: {
     key: 'component',
-    labelKey: 'kind.component',
+    labelKey: KIND_LABEL_KEYS.component,
     descriptionKey: 'paletteDescription.component',
   },
   inputChannel: {
     key: 'inputChannel',
-    labelKey: 'kind.inputChannel',
+    labelKey: KIND_LABEL_KEYS.inputChannel,
     descriptionKey: 'paletteDescription.inputChannel',
   },
   externalSystem: {
     key: 'externalSystem',
-    labelKey: 'kind.externalSystem',
+    labelKey: KIND_LABEL_KEYS.externalSystem,
     descriptionKey: 'paletteDescription.externalSystem',
   },
   managementTool: {
     key: 'managementTool',
-    labelKey: 'kind.managementTool',
+    labelKey: KIND_LABEL_KEYS.managementTool,
     descriptionKey: 'paletteDescription.managementTool',
   },
   actor: {
     key: 'actor',
-    labelKey: 'kind.actor',
+    labelKey: KIND_LABEL_KEYS.actor,
     descriptionKey: 'paletteDescription.actor',
   },
   domainGroup: {

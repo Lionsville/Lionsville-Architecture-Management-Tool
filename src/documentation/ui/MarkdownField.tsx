@@ -4,7 +4,7 @@ import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { EyeIcon, FullscreenIcon, PencilIcon } from '../../editor/toolbarIcons';
+import { EyeIcon, FullscreenIcon, PencilIcon } from '../../widgets/icons';
 import { useStrings } from '../../i18n/LanguageContext';
 import type { MarkdownRenderOptions } from '../documentation';
 

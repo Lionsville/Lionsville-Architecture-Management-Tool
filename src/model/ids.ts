@@ -22,3 +22,10 @@ export function createTempId(): ElementId {
 export function isTempId(id: string): boolean {
   return id.startsWith(TEMP_PREFIX);
 }
+
+/**
+ * How the app asks for a new id. A function and not a counter, because who
+ * hands out ids is the composition's business: a test wants them predictable
+ * and the app wants them unique.
+ */
+export type MakeId = (prefix: string) => string
