@@ -3,7 +3,9 @@ import {
   SAMPLE_REF, describeProjectStore, projectAt, sampleProject,
 } from '../../ports/ProjectStore.contract'
 import type { KeyValueStorage } from './KeyValueStorage'
-import { PROJECT_PREFIX, WebStorageProjectStore } from './WebStorageProjectStore'
+import {
+  PROJECT_PREFIX, STORAGE_BUDGET_CHARS, WebStorageProjectStore,
+} from './WebStorageProjectStore'
 
 /**
  * Fake storage in a `Map`. No jsdom needed: the adapter asks for four lines and
@@ -108,5 +110,64 @@ describe('WebStorageProjectStore', () => {
 
   it('does not share its prefix with the preferences key', () => {
     expect('lvarch.preferences'.startsWith(PROJECT_PREFIX)).toBe(false)
+  })
+})
+
+/**
+ * How full it is.
+ *
+ * A browser's quota is small, fixed and reached in silence — a save that simply
+ * does not happen — so the store has to be able to say how close it is before
+ * anybody finds out the hard way. The number is an estimate and is meant to be
+ * a floor: it counts what this store holds, not what the rest of the origin does.
+ */
+describe('WebStorageProjectStore — how full it is', () => {
+  it('counts what it holds, and nothing else on the origin', async () => {
+    const storage = fakeStorage({ 'something.else': 'x'.repeat(1_000) })
+    const store = new WebStorageProjectStore(storage)
+    await store.save(sampleProject())
+
+    const pressure = store.pressure()
+    expect(pressure?.budget).toBe(STORAGE_BUDGET_CHARS)
+    expect(pressure?.used).toBe(
+      (storage.getItem(keyFor('acme-logistics', 'landscape')) ?? '').length,
+    )
+  })
+
+  it('counts what was already there before this store was made', () => {
+    const held = JSON.stringify(sampleProject())
+    const store = new WebStorageProjectStore(
+      fakeStorage({ [keyFor('acme-logistics', 'landscape')]: held }),
+    )
+    expect(store.pressure()?.used).toBe(held.length)
+  })
+
+  it('follows a project that grows, and one that goes', async () => {
+    const store = new WebStorageProjectStore(fakeStorage())
+    await store.save(sampleProject())
+    const small = store.pressure()?.used ?? 0
+
+    const wordy = sampleProject()
+    wordy.model.description = 'x'.repeat(5_000)
+    await store.save(wordy)
+    expect(store.pressure()?.used ?? 0).toBeGreaterThan(small + 4_000)
+
+    await store.remove(SAMPLE_REF)
+    expect(store.pressure()?.used).toBe(0)
+  })
+
+  it('adds two projects together', async () => {
+    const store = new WebStorageProjectStore(fakeStorage())
+    await store.save(sampleProject())
+    const one = store.pressure()?.used ?? 0
+    await store.save(projectAt({ group: 'acme-logistics', project: 'second' }))
+    expect(store.pressure()?.used ?? 0).toBeGreaterThan(one)
+  })
+
+  it('says nothing is known rather than throwing when storage will not enumerate', () => {
+    expect(new WebStorageProjectStore(refusingStorage()).pressure()).toEqual({
+      used: 0,
+      budget: STORAGE_BUDGET_CHARS,
+    })
   })
 })

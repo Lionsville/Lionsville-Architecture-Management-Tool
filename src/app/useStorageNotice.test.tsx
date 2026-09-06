@@ -10,7 +10,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { translator } from '../i18n'
-import { useStorageNotice } from './useStorageNotice'
+import { useNearlyFullNotice, useStorageNotice } from './useStorageNotice'
 
 function mount() {
   const notify = vi.fn()
@@ -49,5 +49,49 @@ describe('useStorageNotice', () => {
     report(false)
     expect(notify).toHaveBeenCalledTimes(3)
     expect(notify).toHaveBeenLastCalledWith(expect.stringContaining('could not save'), 'error')
+  })
+})
+
+/**
+ * The same brake, on the warning that comes before the refusal rather than
+ * after it. A quota is reached in silence, so this is the only chance anybody
+ * gets to move their work somewhere safe while it still fits.
+ */
+function mountFull() {
+  const notify = vi.fn()
+  const { result } = renderHook(() => useNearlyFullNotice(notify, translator('en')))
+  return { notify, report: (used: number, budget = 100) => result.current({ used, budget }) }
+}
+
+describe('useNearlyFullNotice', () => {
+  it('says nothing while there is room', () => {
+    const { notify, report } = mountFull()
+    report(10)
+    report(79)
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('says so once, however many saves go past the line', () => {
+    const { notify, report } = mountFull()
+    report(80)
+    report(85)
+    report(90)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0]).toContain('80%')
+    expect(notify.mock.calls[0][1]).toBe('warning')
+  })
+
+  it('says so again after there has been room in between', () => {
+    const { notify, report } = mountFull()
+    report(90)
+    report(20)
+    report(95)
+    expect(notify).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not divide by a budget of nothing', () => {
+    const { notify, report } = mountFull()
+    report(10, 0)
+    expect(notify).not.toHaveBeenCalled()
   })
 })

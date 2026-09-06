@@ -55,6 +55,9 @@ export const EN = {
   'shell.storageFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.storageRecovered': 'Saving in this browser works again.',
+  'shell.storageNearlyFull':
+    'This browser is about {percent}% full for this app. Save your work to a folder or a '
+    + 'file before it runs out — a browser stops saving without asking.',
   /**
    * The crash fallback. One key for both boundaries — the one around the whole
    * app and the one around the canvas — because what the reader can do about it

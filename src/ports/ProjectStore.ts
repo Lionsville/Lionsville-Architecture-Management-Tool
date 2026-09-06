@@ -63,4 +63,24 @@ export interface ProjectStore {
 
   /** Remove one project. Removing what is not there is not an error. */
   remove(ref: ProjectRef): Promise<void>
+
+  /**
+   * How close this store is to being full, when it can say.
+   *
+   * Optional, because most places to keep things cannot answer it and should not
+   * pretend to: a folder on disk is as large as the disk, and a server's limit
+   * is not the client's business. Browser storage is the one that CAN answer,
+   * because its limit is small, fixed, shared with everything else on the
+   * origin, and reached in silence — a quota failure is the first anybody hears
+   * of it, and by then the save has already not happened.
+   *
+   * An estimate, and said to be one. Nothing exposes the real limit.
+   */
+  pressure?(): StoragePressure | undefined
+}
+
+/** How much of what a store will hold is already held. Characters, not bytes. */
+export type StoragePressure = {
+  used: number
+  budget: number
 }

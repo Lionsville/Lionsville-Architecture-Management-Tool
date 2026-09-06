@@ -46,6 +46,7 @@ import { useFilePicker } from './useFilePicker'
 import { useModelSession } from './useModelSession'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
+import { useNearlyFullNotice } from './useStorageNotice'
 import type { StorageNotice } from './useStorageNotice'
 import type { Notify } from './useToasts'
 
@@ -153,11 +154,16 @@ export function ProjectWorkspace({
     setSaveFailed(!ok)
     onStorageResult(ok)
   }, [onStorageResult])
+  // Per project rather than per session, because the workspace is remounted when
+  // one is opened: the same warning on a different project is worth hearing.
+  const nearlyFull = useNearlyFullNotice(notify, s)
+
   const document = useDocumentSession({
     session,
     projects,
     onSaved: setSavedAt,
     onResult: onSaveResult,
+    onPressure: nearlyFull,
     watch,
     onUnsavedWork,
     // Their version, once it has been read: straight onto the session, without

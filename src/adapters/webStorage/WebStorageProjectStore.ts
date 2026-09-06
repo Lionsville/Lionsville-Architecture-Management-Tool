@@ -22,7 +22,7 @@ import { isUsableProject, sortProjects, summarise } from '../../projects/project
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
 import { isProjectRef, refPath } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
-import type { ProjectStore } from '../../ports/ProjectStore'
+import type { ProjectStore, StoragePressure } from '../../ports/ProjectStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 
 /**
@@ -38,6 +38,25 @@ import type { KeyValueStorage } from './KeyValueStorage'
  */
 export const PROJECT_PREFIX = 'lvarch.project.'
 
+/**
+ * What this store will hold, near enough.
+ *
+ * The origin quota for browser storage is customarily five megabytes, counted
+ * by most browsers in UTF-16 code units — so about two and a half million
+ * characters, and characters are what this counts. An estimate on purpose: the
+ * real limit is the browser's, nothing exposes it, and a number that is a
+ * little pessimistic warns slightly early, which is the right direction to be
+ * wrong in.
+ *
+ * The quota is shared with everything else on the origin — preferences, the
+ * group records, whatever a future feature keeps here — so what this counts is
+ * a floor on the usage rather than the whole of it.
+ */
+export const STORAGE_BUDGET_CHARS = 2_500_000
+
+/** Where a warning is worth giving: enough room left to finish the afternoon. */
+export const STORAGE_WARNING_FRACTION = 0.8
+
 export class WebStorageProjectStore implements ProjectStore {
   readonly id = 'browser-storage'
 
@@ -48,6 +67,46 @@ export class WebStorageProjectStore implements ProjectStore {
 
   private keyFor(ref: ProjectRef): string {
     return `${this.prefix}${refPath(ref)}`
+  }
+
+  /**
+   * What each of our keys costs, so the total is arithmetic rather than a scan.
+   *
+   * Filled once, on the first save, by reading what is already there; from then
+   * on a save updates one entry. The alternative — reading every project back
+   * on every autosave to add up its length — is several megabytes of string
+   * copying every three seconds, to answer a question whose answer barely
+   * moves.
+   *
+   * A key another tab wrote is therefore missing from this until this store next
+   * lists or reads it, which makes the total a floor. That is the right
+   * direction for a warning to be wrong in, and the same direction as the budget
+   * itself.
+   */
+  private held: Map<string, number> | undefined
+
+  private sizes(): Map<string, number> {
+    if (this.held) return this.held
+    const sizes = new Map<string, number>()
+    try {
+      for (const key of this.ourKeys()) sizes.set(key, this.storage.getItem(key)?.length ?? 0)
+    } catch {
+      // A storage that will not enumerate cannot be measured either; an empty
+      // map means "nothing known yet", which reads as no pressure.
+    }
+    this.held = sizes
+    return sizes
+  }
+
+  private ourKeys(): string[] {
+    return this.storage.keys().filter((key) => key.startsWith(this.prefix))
+  }
+
+  /** See {@link ProjectStore.pressure}. */
+  pressure(): StoragePressure | undefined {
+    let used = 0
+    for (const size of this.sizes().values()) used += size
+    return { used, budget: STORAGE_BUDGET_CHARS }
   }
 
   /** One stored record, or `undefined` when it is missing or unreadable. */
@@ -106,7 +165,10 @@ export class WebStorageProjectStore implements ProjectStore {
     }
     try {
       const stamped: ProjectSnapshot = { ...project, updatedAt: new Date().toISOString() }
-      this.storage.setItem(this.keyFor(project.ref), JSON.stringify(stamped))
+      const key = this.keyFor(project.ref)
+      const text = JSON.stringify(stamped)
+      this.storage.setItem(key, text)
+      this.sizes().set(key, text.length)
       return Promise.resolve()
     } catch (err) {
       return Promise.reject(err instanceof Error ? err : new Error(String(err)))
@@ -115,7 +177,11 @@ export class WebStorageProjectStore implements ProjectStore {
 
   remove(ref: ProjectRef): Promise<void> {
     try {
-      if (isProjectRef(ref)) this.storage.removeItem(this.keyFor(ref))
+      if (isProjectRef(ref)) {
+        const key = this.keyFor(ref)
+        this.storage.removeItem(key)
+        this.sizes().delete(key)
+      }
     } catch {
       // Failing to throw something away is not a fault anybody can act on.
     }

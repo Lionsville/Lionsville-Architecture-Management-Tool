@@ -27,6 +27,7 @@ import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/do
 import type { ProjectSnapshot } from '../projects/project'
 import type { ProjectRef } from '../projects/projectRef'
 import type { StorageNotice } from './useStorageNotice'
+import type { StoragePressure } from '../ports/ProjectStore'
 
 /**
  * What this hook needs from a store: writing it out. Nothing else.
@@ -43,6 +44,13 @@ export type ProjectSaver = {
    * afterwards, which puts a transition somewhere it cannot be tested.
    */
   load?(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
+  /**
+   * How full it is, where it can say — see `ports/ProjectStore`. Read after a
+   * save rather than before one: the number that matters is what the write it
+   * just did leaves for the next one, and asking first would either measure a
+   * project this store is about to replace or cost a second serialisation.
+   */
+  pressure?(): StoragePressure | undefined
 }
 
 /** The part of the editing session this one reads: what changed, and what to write. */
@@ -85,6 +93,11 @@ export function useDocumentSession(deps: {
   onSaved: (at: Date) => void
   onResult: StorageNotice
   /**
+   * The store is filling up. Called after every successful save that a store
+   * can answer for; absent where nothing is listening.
+   */
+  onPressure?: (pressure: StoragePressure) => void
+  /**
    * Somebody else changed this project's files. Absent where nothing can
    * watch — a browser tab — and the document then simply never leaves the
    * three states it can reach on its own.
@@ -101,7 +114,9 @@ export function useDocumentSession(deps: {
    */
   onUnsavedWork?: (unsaved: boolean) => void
 }): DocumentSessionHook {
-  const { session, projects, onSaved, onResult, watch, onAdopt, onUnsavedWork } = deps
+  const {
+    session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork,
+  } = deps
   const { model, activeDiagramId, logoLibrary, snapshot } = session
 
   const [state, dispatch] = useReducer(documentSession, snapshot().ref, openSession)
@@ -137,6 +152,8 @@ export function useDocumentSession(deps: {
         apply({ type: 'saveSucceeded' })
         onSaved(new Date())
         onResult(true)
+        const pressure = projects.pressure?.()
+        if (pressure) onPressure?.(pressure)
       },
       (cause: unknown) => {
         apply({ type: 'saveFailed', reason: String(cause) })
