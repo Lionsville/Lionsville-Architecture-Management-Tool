@@ -22,6 +22,10 @@
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStore'
 import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
+import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemProjectStore'
+import {
+  canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
+} from '../adapters/browser/workingDirectory'
 import { DesktopProjectHistory } from '../adapters/desktop/DesktopProjectHistory'
 import { desktopCommands, desktopFiles, desktopHistory } from '../adapters/desktop/desktopFiles'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
@@ -161,6 +165,19 @@ export function desktopCommandChannel(): DesktopCommands | undefined {
 }
 
 /**
+ * A folder in a browser tab, where the browser can give one.
+ *
+ * Re-exported through the composition for the same reason as the file channel:
+ * this is the only file that may name an adapter, and the boot needs to know
+ * whether the offer can be made.
+ */
+export const browserFolders = {
+  possible: canChooseDirectory,
+  choose: chooseBrowserDirectory,
+  remembered: rememberedDirectory,
+}
+
+/**
  * The same shell, keeping its projects in a folder the user chose.
  *
  * The whole of the desktop's storage, and it is two lines: the folder store
@@ -172,6 +189,33 @@ export function desktopCommandChannel(): DesktopCommands | undefined {
  * its theme, which folder it uses), so putting them in the folder would carry
  * one machine's settings to every other machine that opens it.
  */
+/**
+ * The half of a folder shell that has nothing to do with which folder it is:
+ * the stores. Shared by the desktop and by a browser tab that has been given a
+ * directory handle, which is the whole reason `DirectoryHandleLike` exists.
+ */
+function overFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Shell {
+  return {
+    ...shell,
+    projects: new FileSystemProjectStore(handle),
+    groups: new FileSystemGroupStore(handle),
+    storage: 'folder',
+    workingDirectory: { root: name, name },
+  }
+}
+
+/**
+ * A browser tab, working in a folder the user picked.
+ *
+ * Everything the desktop gets except the parts a tab cannot have: no save
+ * dialog (a download is what a tab does), no watcher (nothing tells a page that
+ * a file changed) and no history (there is no git in a tab). Those are absent
+ * rather than stubbed, and the app offers what is present.
+ */
+export function inBrowserFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Shell {
+  return overFolder(shell, handle, name)
+}
+
 export function inWorkingDirectory(
   shell: Shell, files: DesktopFiles, directory: DesktopDirectory,
 ): Shell {
@@ -195,14 +239,11 @@ export function inWorkingDirectory(
   }
 
   return {
-    ...shell,
-    projects: new FileSystemProjectStore(handle),
-    groups: new FileSystemGroupStore(handle),
+    ...overFolder(shell, handle, directory.name),
     // A real save dialog rather than a download. Swapped here rather than in
     // `composeShell` because it is the same decision as the store: this is the
     // desktop, and on the desktop a file goes where the user says.
     documents: new DesktopDocumentGateway(files),
-    storage: 'folder',
     workingDirectory: directory,
     watchProject,
     history: desktopHistory() && new DesktopProjectHistory(desktopHistory()!, directory.root),

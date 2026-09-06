@@ -36,6 +36,7 @@ describe('a desktop with no folder yet', () => {
     renderApp({
       projects: new InMemoryProjectStore([project()]),
       onChooseWorkingDirectory: () => {},
+      needsFolder: true,
       storage: 'browser',
     })
 
@@ -47,6 +48,7 @@ describe('a desktop with no folder yet', () => {
     const open = vi.fn()
     renderApp({
       onChooseWorkingDirectory: () => {},
+      needsFolder: true,
       onOpenWorkingDirectory: open,
       recentFolders: [{ root: '/Users/someone/Architecture', name: 'Architecture' }],
     })
@@ -57,7 +59,7 @@ describe('a desktop with no folder yet', () => {
 
   it('asks the shell for a folder, which is the only layer that can', () => {
     const choose = vi.fn()
-    renderApp({ onChooseWorkingDirectory: choose })
+    renderApp({ onChooseWorkingDirectory: choose, needsFolder: true })
 
     fireEvent.click(screen.getByText('Choose a folder…'))
     expect(choose).toHaveBeenCalled()
@@ -69,6 +71,7 @@ describe('once there is a folder', () => {
     renderApp({
       projects: new InMemoryProjectStore([project()]),
       onChooseWorkingDirectory: () => {},
+      needsFolder: true,
       workingDirectory: { name: 'Architecture' },
       storage: 'folder',
     })
@@ -84,5 +87,14 @@ describe('a browser tab', () => {
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     expect(screen.getByText('Projects')).toBeDefined()
+  })
+
+  it('is offered a folder where the browser has one, and never made to choose', () => {
+    // Chromium can hand a page a real directory; a tab that can have a folder
+    // is still a tab that works perfectly well without one.
+    renderApp({ projects: new InMemoryProjectStore([project()]), onChooseWorkingDirectory: () => {} })
+
+    expect(screen.queryByTestId('choose-folder')).toBeNull()
+    expect(screen.getByTestId('working-directory').textContent).toContain('inside the app')
   })
 })

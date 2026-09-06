@@ -79,6 +79,13 @@ describe('openDocumentBytes', () => {
     expect(held.ok && held.project.model.name).toBe('Application landscape')
   })
 
+  it('still opens a version-1 document, from before decisions existed', () => {
+    const v1 = stableJson({ type: WORKING_FILE_TYPE, version: 1, model: project().model })
+    const held = openDocumentBytes(bytesFromText(v1), into)
+    expect(held.ok && held.kind).toBe('workingFile')
+    expect(held.ok && held.project.model.elements).toHaveLength(1)
+  })
+
   it('still opens a version-2 document, which is not a zip at all', () => {
     const v2 = stableJson({
       type: WORKING_FILE_TYPE, version: 2, model: project().model, activeDiagramId: 'l7',

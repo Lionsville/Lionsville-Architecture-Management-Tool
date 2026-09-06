@@ -45,7 +45,8 @@ import { createRoot } from 'react-dom/client'
 import { configureLibavoidWasm, configureLibavoidWorker } from '../layout'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
-  composeShell, desktopCommandChannel, desktopFileChannel, inWorkingDirectory,
+  browserFolders, composeShell, desktopCommandChannel, desktopFileChannel, inBrowserFolder,
+  inWorkingDirectory,
 } from './composition'
 import type { DesktopDirectory, Shell } from './composition'
 import {
@@ -119,7 +120,14 @@ const commands = desktopCommandChannel()
  * and a blob can be edited by anybody with a text editor.
  */
 async function rememberedDirectory(stored: unknown): Promise<void> {
-  if (!files) return
+  if (!files) {
+    // A browser tab, where a folder is best effort: only if this browser can
+    // give one, only if it gave one before, and only if the permission is still
+    // granted — asking again needs a click, and a boot is not one.
+    const handle = browserFolders.possible() ? await browserFolders.remembered() : undefined
+    if (handle) shell = inBrowserFolder(shell, handle, handle.name)
+    return
+  }
   const granted = await files.recentDirectories().catch(() => [])
   // Kept for the first-run screen: a machine that has worked in a folder before
   // should be one click away from it, not one dialog.
@@ -144,7 +152,26 @@ let recentFolders: readonly DesktopDirectory[] = []
  * level up.
  */
 function chooseWorkingDirectory(): void {
-  if (!files) return
+  if (!files) {
+    void browserFolders.choose().then(async (handle) => {
+      if (!handle) return
+      const inFolder = inBrowserFolder(shell, handle, handle.name)
+      // The same migration as the desktop's, and the same rule: copied once,
+      // nothing deleted. Keyed on the folder's name, which is all a tab knows
+      // about where it is — good enough to not copy twice into the same one.
+      let kept = withWorkingDirectory(stored, handle.name)
+      if (await moveInto(inFolder, handle.name)) kept = withMigratedFolder(kept, handle.name)
+      stored = kept
+      await shell.preferences.write(kept).catch(() => undefined)
+      shell = inFolder
+      renderApp(kept, undefined)
+    }, (cause: unknown) => {
+      shell.diagnostics.report({
+        level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
+      })
+    })
+    return
+  }
   void files.chooseDirectory().then(async (chosen) => {
     if (!chosen) return
     await workIn(chosen)
@@ -268,7 +295,10 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         hostControls={shell.hostControls}
         storage={shell.storage}
         workingDirectory={shell.workingDirectory}
-        onChooseWorkingDirectory={files ? chooseWorkingDirectory : undefined}
+        onChooseWorkingDirectory={
+          files || browserFolders.possible() ? chooseWorkingDirectory : undefined
+        }
+        needsFolder={Boolean(files)}
         onOpenWorkingDirectory={files ? openWorkingDirectory : undefined}
         recentFolders={recentFolders}
         watchProject={shell.watchProject}

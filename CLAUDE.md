@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2355 tests** and one of every config. The
+One codebase, in modules, with **2366 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2355 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2366 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -460,6 +460,14 @@ count, because a tidy pass is one sentence and four hundred changed lines.
 Everything about it may say no (no git, no repository, no commits, no project at
 that snapshot) and none of those may interrupt a save, so the menu offers
 nothing rather than failing when pressed.
+
+A browser tab can have a folder too, where Chromium's File System Access API
+can give it one: the same store over a directory handle instead of over IPC.
+Best effort, and the fallback stays honest — permission to a handle rarely
+survives a restart and asking needs a click, so a remembered folder is used
+only when the permission is *already* granted and the tab otherwise starts in
+browser storage without a word. A tab is offered a folder; only the desktop is
+made to choose one.
 
 The smoke run now grants itself a folder and tells the renderer over the same
 command the Recent menu uses, then writes a project through the real channel

@@ -112,6 +112,15 @@ export type AppProps = {
   workingDirectory?: { name: string }
   onChooseWorkingDirectory?: () => void
   /**
+   * Does this host keep projects ONLY in folders?
+   *
+   * True on the desktop, where keeping them anywhere else means a leveldb
+   * inside `userData` (ADR-0003) and the app therefore asks for a folder before
+   * it shows anything. A browser tab keeps them itself and merely *may* have a
+   * folder, so it is offered one and never made to choose.
+   */
+  needsFolder?: boolean
+  /**
    * Tell me when a project's folder changed under us. Absent where nothing can
    * watch, and the workspace then never leaves the states it can reach alone.
    */
@@ -150,7 +159,7 @@ export type AppProps = {
 
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
-  storage = 'browser', workingDirectory, onChooseWorkingDirectory, watchProject,
+  storage = 'browser', workingDirectory, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, onUnsavedWork, onOpenWorkingDirectory, recentFolders, history,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
@@ -535,7 +544,7 @@ export function App({
             and around the two screens rather than around everything: a crash
             must not take the toast bar with it. */}
         <ErrorBoundary where="app" diagnostics={diagnostics} controls={hostControls} s={s}>
-        {onChooseWorkingDirectory && storage !== 'folder' ? (
+        {needsFolder && onChooseWorkingDirectory && storage !== 'folder' ? (
           /* The desktop, with no folder yet. Not the picker: there is nowhere
              for a project to be until this is answered, and offering a list of
              projects kept inside the app is offering the thing ADR-0003
