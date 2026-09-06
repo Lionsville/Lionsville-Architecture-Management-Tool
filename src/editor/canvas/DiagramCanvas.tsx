@@ -192,6 +192,35 @@ const MENU_LABEL_KEYS: Record<MenuTarget['kind'], StringKey> = {
   tab: 'menu.tabLabel',
 };
 
+/**
+ * Above this many nodes, the canvas draws only what is in view.
+ *
+ * Not a free win either way, which is why it is a threshold and not a flag.
+ * Virtualising costs a visibility test per node on every viewport change and a
+ * mount and unmount as boxes cross the edge of the window — on a board of
+ * thirty that is more work than simply drawing all thirty and leaving them
+ * alone. On a board of two thousand it is the difference between the browser
+ * laying out fifteen hundred invisible subtrees and not.
+ *
+ * Two hundred is where a landscape stops being a picture somebody arranged by
+ * hand and starts being an inventory, and it is also the size the perf fixture
+ * calls `small` — the size at which everything here was still comfortable
+ * before this phase.
+ */
+export const VIRTUALISE_ABOVE = 200;
+
+/**
+ * Whether the canvas draws only what is in view.
+ *
+ * Worth noting what this does NOT save: the board opens fitted, so on first
+ * sight every box is on screen and every box is drawn. What it saves is the
+ * working state — zoomed in on a corner of a large landscape, where all but a
+ * handful of the boxes are somewhere off the side of the window.
+ */
+export function virtualising(nodeCount: number, mountEveryElement?: boolean): boolean {
+  return !mountEveryElement && nodeCount > VIRTUALISE_ABOVE;
+}
+
 export interface DiagramCanvasProps {
   model: DesignModel;
   diagram: DesignDiagram;
@@ -207,6 +236,22 @@ export interface DiagramCanvasProps {
   onToggleShowGrid(): void;
   /** The minimap (4B): off by default, remembered in the editor's preferences. */
   showMinimap?: boolean;
+  /**
+   * Mount every node and edge, not only the ones in view.
+   *
+   * The canvas virtualises by default. On a landscape of two thousand cards
+   * that is fifteen hundred DOM subtrees the browser lays out, paints and
+   * composites for boxes nobody can see, and every one of them is measured
+   * again the moment anything about the board changes.
+   *
+   * Nothing that reads the MODEL is affected — the minimap, the helper lines,
+   * a marquee selection and "fit view" all work from React Flow's store, which
+   * holds every node whether or not it is drawn. What IS affected is anything
+   * that reads the DOM, and there is one such thing: the PNG export captures
+   * the viewport element. So the editor turns this on for the duration of an
+   * export and waits for the browser to paint before capturing.
+   */
+  mountEveryElement?: boolean;
   /** Lifecycle-badge toggle (U5, editor-level): shows badges + the retired dim. */
   showLifecycle: boolean;
   /**
@@ -460,6 +505,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   // (helper-line math) without becoming a re-subscribing callback dependency.
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
+
+  /**
+   * Whether to keep only the boxes in view mounted — see `mountEveryElement`,
+   * and {@link VIRTUALISE_ABOVE} for why a small board does not.
+   */
+  const virtualise = virtualising(nodes.length, props.mountEveryElement);
 
   const [helperLines, setHelperLines] = useState<HelperLineResult>(NO_HELPER_LINES);
 
@@ -1351,6 +1402,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}
+          onlyRenderVisibleElements={virtualise}
           fitView
           minZoom={0.15}
           maxZoom={2.5}

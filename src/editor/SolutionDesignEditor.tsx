@@ -747,13 +747,26 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const handleExport = useCallback(async () => {
     if (!wrapperRef.current || !activeDiagram || exporting) return;
     setExporting(true);
+    // The capture reads the DOM, and the canvas only keeps what is on screen in
+    // it. `exporting` is what turns that off; this waits for the browser to
+    // have laid the whole board out under the new flag before html-to-image
+    // looks at it. The bounds below come from React Flow's store rather than
+    // from the DOM, so they were never affected — but the picture would have
+    // been, and silently: a PNG of a two-thousand element landscape showing the
+    // thirty boxes that happened to be in view.
+    await painted();
+    // The editor can be gone by the time that frame arrives — a diagram
+    // switched, a project closed, a window shut. There is nothing to capture
+    // and nothing to report.
+    const container = wrapperRef.current;
+    if (!container) return;
     const nodesBounds = getNodesBounds(getNodes());
     const bounds: Rect =
       activeDiagram.kind === 'layer7'
         ? (unionRects([canvasRect(activeDiagram.layoutConfig), nodesBounds]) as Rect)
         : nodesBounds;
     const blob = await exportDiagramPng({
-      container: wrapperRef.current,
+      container,
       bounds,
       background: theme.palette.background.default,
       onImagesMissing: props.logos?.onExportImagesMissing,
@@ -972,6 +985,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onToggleShowGrid={() => setShowGrid((on) => !on)}
           showLifecycle={showLifecycle}
           showMinimap={showMinimap}
+          mountEveryElement={exporting}
           onElementDoubleClick={handleDoubleClick}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
@@ -1149,6 +1163,26 @@ function EditorBody(props: SolutionDesignEditorProps) {
   );
 }
 
+/**
+ * Resolves once the browser has laid out and painted whatever render is
+ * pending.
+ *
+ * Two frames rather than one: the first fires before the pending render has
+ * been committed to the screen, the second after. Anything that reads the DOM
+ * expecting to see a state change it just requested has to wait for the second
+ * one. Falls back to a task where there are no frames at all, which is a test
+ * environment rather than a browser.
+ */
+function painted(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame !== 'function') {
+      setTimeout(resolve, 0);
+      return;
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 function CanvasForDiagram({
   diagram,
   state,
@@ -1160,6 +1194,7 @@ function CanvasForDiagram({
   onToggleShowGrid,
   showLifecycle,
   showMinimap,
+  mountEveryElement,
   onElementDoubleClick,
   onOpenDocumentation,
   onTidyGroup,
@@ -1190,6 +1225,8 @@ function CanvasForDiagram({
   onToggleShowGrid(): void;
   showLifecycle: boolean;
   showMinimap: boolean;
+  /** See `DiagramCanvasProps.mountEveryElement`: true while a PNG is captured. */
+  mountEveryElement: boolean;
   onElementDoubleClick(elementId: ElementId): void;
   onOpenDocumentation(elementId: ElementId): void;
   /** Layer 7 only — undefined in read-only mode. */
@@ -1225,6 +1262,7 @@ function CanvasForDiagram({
     onToggleShowGrid,
     showLifecycle,
     showMinimap,
+    mountEveryElement,
     onElementDoubleClick,
     onOpenDocumentation,
     onTidy,
