@@ -579,6 +579,18 @@ export const EN = {
   'shell.copyDiagnostics': 'Copy diagnostics',
   'shell.diagnosticsCopied': 'Copied',
   'shell.copyFailed': 'Could not copy',
+  /**
+   * Boot. Reading the preferences or the last project can fail before there is
+   * an app to put a toast in — and a boot that fails the same way on every
+   * reload is an app nobody can get back into, which is why the way out is a
+   * button rather than advice.
+   */
+  'shell.bootFailed': 'The app could not start.',
+  'shell.bootFailedNote':
+    'Reading your settings or the project you had open did not work. Starting without that project usually gets you back in; nothing is deleted.',
+  'shell.startFresh': 'Start without the last project',
+  /** A throw nobody caught. Throttled: a broken loop must not paper the screen. */
+  'shell.unexpectedError': 'Something unexpected went wrong. If the screen stops responding, reload the page.',
   'shell.orphanOne':
     'Container view “{name}” was removed: its application left the model. Undo does not bring that view back.',
   'shell.orphanOther':

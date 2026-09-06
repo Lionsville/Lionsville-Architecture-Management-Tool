@@ -67,3 +67,19 @@ export function readLastProject(stored: unknown): ProjectRef | undefined {
   const raw = (stored as Record<string, unknown>).lastProject
   return isProjectRef(raw) ? raw : undefined
 }
+
+/**
+ * The same blob with the last project taken out.
+ *
+ * What "Start without the last project" writes back. A ref that points at a
+ * project this build cannot open — half-written, from a newer version, or
+ * simply enormous — would otherwise be reopened on every boot, and every boot
+ * would fail the same way. Everything else in the blob is kept: the language
+ * and the theme are not what went wrong.
+ */
+export function withoutLastProject(stored: unknown): Record<string, unknown> {
+  if (!stored || typeof stored !== 'object') return {}
+  const next = { ...(stored as Record<string, unknown>) }
+  delete next.lastProject
+  return next
+}

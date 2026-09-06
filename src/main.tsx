@@ -43,10 +43,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { configureLibavoidWasm, configureLibavoidWorker } from '@lionsville/solution-design'
+import { detectBrowserLanguage, translator } from '@lionsville/solution-design'
 import { composeShell } from './composition'
-import { readLastProject } from './core/preferences'
+import { readLastProject, withoutLastProject } from './core/preferences'
+import type { ProjectSnapshot } from './core/project'
 import { EXAMPLES } from './examples'
 import { App } from './ui/App'
+import { BootFailure } from './ui/BootFailure'
 
 /**
  * The edge router runs on WebAssembly, and not on this thread.
@@ -110,27 +113,71 @@ const shell = composeShell()
  * `undefined` and the app opens on the picker. That is a normal first visit, not
  * an error, so nothing here reports it.
  */
+function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot | undefined): void {
+  root.render(
+    <StrictMode>
+      <App
+        projects={shell.projects}
+        groupRecords={shell.groups}
+        preferences={shell.preferences}
+        documents={shell.documents}
+        diagnostics={shell.diagnostics}
+        hostControls={shell.hostControls}
+        initialProject={initialProject}
+        initialPreferences={storedPreferences}
+        examples={EXAMPLES}
+        makeId={makeId}
+        browserLanguages={navigator.languages ?? navigator.language}
+        windowChrome={shell.windowChrome}
+      />
+    </StrictMode>,
+  )
+}
+
+/**
+ * What the boot read, kept where the failure handler can still see it.
+ *
+ * The two steps fail differently. If the *preferences* would not read there is
+ * nothing to carry forward; if the *project* would not load, the language and
+ * the theme are perfectly good and only the ref has to go.
+ */
+let stored: unknown = undefined
+
+/**
+ * A boot that fails is an app nobody can get back into.
+ *
+ * This chain had no `.catch`. A preferences blob a browser would not hand back,
+ * or a last project too damaged to load, meant `root.render` was never reached:
+ * a white page, on this reload and on every reload after it, because the thing
+ * that broke the boot is read again at the start of the next one. The way out
+ * has to be a button, not an instruction to clear browser storage by hand.
+ */
 void shell.preferences.read()
   .then(async (storedPreferences) => {
+    stored = storedPreferences
     const lastProject = readLastProject(storedPreferences)
     const initialProject = lastProject ? await shell.projects.load(lastProject) : undefined
+    renderApp(storedPreferences, initialProject)
+  })
+  .catch((error: unknown) => {
+    shell.diagnostics.report({
+      level: 'error', where: 'boot', message: 'the boot chain rejected', cause: error,
+    })
+    const s = translator(detectBrowserLanguage(navigator.languages ?? navigator.language))
     root.render(
-      <StrictMode>
-        <App
-          projects={shell.projects}
-          groupRecords={shell.groups}
-          preferences={shell.preferences}
-          documents={shell.documents}
-          diagnostics={shell.diagnostics}
-          hostControls={shell.hostControls}
-          initialProject={initialProject}
-          initialPreferences={storedPreferences}
-          examples={EXAMPLES}
-          makeId={makeId}
-          browserLanguages={navigator.languages ?? navigator.language}
-          windowChrome={shell.windowChrome}
-        />
-      </StrictMode>,
+      <BootFailure
+        s={s}
+        error={error}
+        onReload={shell.hostControls.reload}
+        onStartFresh={() => {
+          const kept = withoutLastProject(stored)
+          // Best effort: the store may be the very thing that refused. Writing
+          // it back is what stops the next boot repeating this one — the render
+          // below happens either way.
+          void shell.preferences.write(kept).catch(() => {})
+          renderApp(kept, undefined)
+        }}
+      />,
     )
   })
 

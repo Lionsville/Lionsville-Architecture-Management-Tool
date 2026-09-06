@@ -40,6 +40,7 @@ import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
 import type { MakeId } from './useDiagramActions'
 import type { ProjectFileChannel } from './useProjectFiles'
+import { useGlobalErrors } from './useGlobalErrors'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter } from './useShellPreferences'
 import { useStorageNotice } from './useStorageNotice'
@@ -129,6 +130,9 @@ export function App({
   })
   const s = useMemo(() => translator(prefs.language), [prefs.language])
   noticeRef.current = useStorageNotice(toasts.notify, s)
+
+  // The half a boundary cannot see: a throw in a listener, a timer or a promise.
+  useGlobalErrors({ diagnostics, notify: toasts.notify, s })
 
   const [project, setProject] = useState<ProjectSnapshot | undefined>(initialProject)
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  readLanguage, readThemeMode,
+  readLanguage, readThemeMode, withoutLastProject,
 } from './preferences'
 
 describe('readLanguage', () => {
@@ -35,5 +35,21 @@ describe('readThemeMode', () => {
     expect(readThemeMode({ themeMode: 'donker' })).toBeUndefined()
     expect(readThemeMode({ themeMode: true })).toBeUndefined()
     expect(readThemeMode(null)).toBeUndefined()
+  })
+})
+
+describe('withoutLastProject', () => {
+  it('drops the ref and keeps everything else', () => {
+    expect(withoutLastProject({ language: 'nl', themeMode: 'dark', lastProject: { group: 'a', project: 'b' } }))
+      .toEqual({ language: 'nl', themeMode: 'dark' })
+  })
+
+  it('leaves a blob that never had one alone', () => {
+    expect(withoutLastProject({ language: 'en' })).toEqual({ language: 'en' })
+  })
+
+  it('turns nothing into an empty blob rather than throwing', () => {
+    expect(withoutLastProject(undefined)).toEqual({})
+    expect(withoutLastProject('not a blob')).toEqual({})
   })
 })

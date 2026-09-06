@@ -553,6 +553,11 @@ export const NL: StringTable = {
   'shell.copyDiagnostics': 'Diagnostiek kopiëren',
   'shell.diagnosticsCopied': 'Gekopieerd',
   'shell.copyFailed': 'Kopiëren lukte niet',
+  'shell.bootFailed': 'De app kon niet starten.',
+  'shell.bootFailedNote':
+    'Je instellingen of het project dat openstond konden niet gelezen worden. Starten zonder dat project helpt meestal; er wordt niets verwijderd.',
+  'shell.startFresh': 'Starten zonder het laatste project',
+  'shell.unexpectedError': 'Er ging iets onverwachts mis. Herlaad de pagina als het scherm niet meer reageert.',
   'shell.orphanOne':
     'Containeraanzicht “{name}” is verwijderd: de applicatie ging uit het model. Dat aanzicht komt met Ongedaan maken niet terug.',
   'shell.orphanOther':
