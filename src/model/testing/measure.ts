@@ -99,6 +99,34 @@ export function measure(label: string, work: () => void, options: MeasureOptions
 }
 
 /**
+ * {@link measure}, for work that is a promise.
+ *
+ * A separate function rather than one that accepts both: a synchronous
+ * `measure` handed an async function would time how long it took to CREATE the
+ * promise, which is a number that looks plausible and means nothing.
+ */
+export async function measureAsync(
+  label: string, work: () => Promise<unknown>, options: MeasureOptions = {},
+): Promise<number> {
+  const { runs = 7, warmup = 2, prepare } = options
+  for (let n = 0; n < warmup; n++) {
+    prepare?.()
+    await work()
+  }
+  const times: number[] = []
+  for (let n = 0; n < runs; n++) {
+    prepare?.()
+    const started = performance.now()
+    await work()
+    times.push(performance.now() - started)
+  }
+  times.sort((a, b) => a - b)
+  const median = times[Math.floor(times.length / 2)]
+  report(label, `${format(median)} ms`, `${format(times[0])} ms best of ${runs}`)
+  return median
+}
+
+/**
  * How many megabytes the heap grew over `work`, with a collection either side.
  *
  * Only honest when the process was started with `--expose-gc`, which the perf
