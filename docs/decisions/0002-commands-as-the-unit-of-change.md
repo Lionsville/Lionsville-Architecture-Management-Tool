@@ -101,8 +101,9 @@ anything anybody has saved.
   `reconcile.ts`, `diffToOverlay.ts`, `batch.ts`, `rekeyBatch`, `applyBatch`,
   `needsRemount`, `historyResetToken`, `editorKey`, `idAliases`, `createTempId`
   and `isTempId` all go. Several thousand lines.
-* Good, because the editor's props fall from 32 to about a dozen, and what is
-  left is the model, `dispatch`, `undo`, `redo` and genuinely ephemeral inputs.
+* Good, because the editor's props fall from 32 to a dozen groups, and what is
+  left is `document`, `editing` — `dispatch`, `history`, `ids`, `readOnly` —
+  and the seams for the things the host owns around it.
 * Good, because validation — the kind-change rules, "cannot delete an
   application with components", the over-cap refusals — lives in the reducer,
   so every caller gets the same answer with the same `ShellError` key.
@@ -121,18 +122,29 @@ anything anybody has saved.
 
 ### Confirmation
 
+All met, 6 September 2026.
+
 * `grep -rn "DiagramContentBatch\|idAliases\|historyResetToken\|isTempId\|createTempId" src`
   returns nothing.
 * A test walks a mixed sequence of twenty commands, undoes all of them, redoes
-  all of them, and compares snapshots at each step.
+  all of them, and compares snapshots at each step (`model/reducer.test.ts`).
 * Property tests: for every command type over generated models,
   `apply(apply(m, c).model, inverse)` deep-equals `m`; untouched diagrams keep
   object identity; refusals carry keys.
 * The working file written for the shipped example is byte-identical before and
-  after the phase.
-* The editor's prop count is at most a dozen, listed in `editor/index.ts`.
+  after the phase (`app/examples/examples.test.ts`).
+* The editor's props are twelve, listed and named in `editor/index.ts`.
 * `npm run verify` is green, and the smoke run's routing and export checks pass
   unchanged.
+
+Two things landed differently from the sketch above, and both are written down
+where they live. Text fields **coalesce** rather than draft: the card on the
+canvas is drawn from the model, so holding the text back means watching the
+name you are typing not appear, and the per-keystroke cost that made drafting
+attractive went with the overlay. And a step's name is **derived** from its
+commands rather than carried as a `label` — a command already says what it did,
+and a label on every dispatch would be a second thing to keep true, forgotten
+exactly where it matters.
 
 ## Pros and Cons of the Options
 
@@ -174,7 +186,7 @@ one field collapses into one undo step, and the live-routing follow-up lands in
 the same step as the drag that caused it — which is what the editor's "amend
 the last history entry" hack does today, made explicit and given a name.
 
-**Transactions.** `{ type: 'transaction', label, commands }` is one undo step
+**Transactions.** `{ type: 'transaction', commands }` is one undo step
 made of several commands. Its inverse is the inverses in reverse order. This is
 how a paste, a kind change or a delete-with-dependants stays one ⌘Z.
 

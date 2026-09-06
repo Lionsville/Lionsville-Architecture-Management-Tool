@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2256 tests** and one of every config. The
+One codebase, in modules, with **2111 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2256 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2111 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -108,12 +108,11 @@ exception: React through and through, so it keeps its subfolders.
 src/model/        What a landscape is made of, and the arithmetic over it.
                     types             the domain half; imports nothing at all
                     kinds · zones · placement · aspects · kindChange · deletion
-                    ids · keys        addressing, slugs, where a new id comes from
+                    keys              addressing, slugs, where a new id comes from
                     normalised        the model indexed by id; fromArrays/toArrays
                     commands · reducer  what a change IS, and the one writer
+                    activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
-                    overlay/merge/reconcile/batch   the editor's in-flight edits,
-                                      on their way out; batchCommands is the bridge
                     hostModel · fromInterchange · toInterchange · containerDiagram
                     logo · logoRegistry · marks/    uploads, the icon registry
                     textSearch        the one rule for "found"
@@ -121,8 +120,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
-                    props.ts          what the editor is handed (38 props)
-                    useEditorState    the editing session's brain
+                    props.ts          what the editor is handed (12 groups)
+                    useEditorState    the selection, and gestures said as commands
+                    testing/          editorHost: the editor over a real reducer
 src/documentation/  Descriptions as documents.
                     documentation     outline, element links, the template
                     ui/               DocumentationPage, MarkdownField, mermaid
@@ -368,29 +368,36 @@ belonging to the application the editor was carved out of are gone, the string
 table is nine slices each owned by the module that says the words, and the rail
 icon set is a registered pack rather than a railway vocabulary in the model.
 
-Then a change became a **command** (`docs/decisions/0002`), which is the work
-in progress. The model is indexed by id in memory with `fromArrays`/`toArrays`
-at the file boundary (the file itself does not change, and a byte-for-byte
-round trip pins that); `apply(model, command)` is the only writer and returns
-the command that undoes what it just did; the session holds one stack over
-everything, so ⌘Z undoes a diagram rename, a decision's status and a project
-setting as readily as a node move. A new element gets the key the file would
-have given it at the moment it is drawn, so the temporary id, the alias map and
-the reconciliation between them are gone from the shell.
+Then a change became a **command** (`docs/decisions/0002`), and that phase is
+done. The model is indexed by id in memory with `fromArrays`/`toArrays` at the
+file boundary (the file itself does not change, and a byte-for-byte round trip
+pins that); `apply(model, command)` is the only writer and returns the command
+that undoes what it just did; the session holds one stack over everything, so
+⌘Z undoes a diagram rename, a decision's status and a project setting as
+readily as a node move. A new element gets the key the file would have given it
+at the moment it is drawn.
 
-**The editor still speaks `DiagramContentBatch`**, translated by
-`model/batchCommands.ts` and landed as one step. Converting its actions to
-dispatch, and then deleting the overlay, the merge, the reconcile and the batch,
-is what is left; the editor's own undo stack is still there but nothing pushes
-to it or reads it. Until that lands, `hostModel.applyBatch` and its neighbours
-are still exercised by their own tests and by nothing else.
+**The editor holds no copy of the document.** Every action builds a command and
+dispatches it at the session, which applies it and hands the model back. What
+that removed is the whole reason the machinery existed — two brains holding the
+same landscape — so `DiagramContentBatch`, the overlay, the merge, the
+reconcile, `applyBatch`, temporary ids, the alias map and the editor's own undo
+stack are all gone, about 2,700 lines of them. A run of keystrokes into one
+field is one undo step (`fieldEdit`, a `coalesce` key, rather than a draft: the
+card on the canvas is drawn from the model, so holding the text back means
+watching the name you are typing not appear). The toolbar's **Activity** list
+is what the log buys that undo did not — names derived from the commands, at
+the moment the step is made and against the model as it was, so a delete can
+still say what it deleted.
 
 Worth knowing: the last project is resolved at the edge of the app, before the
 first render, so the workspace can start synchronously without a `null` case in
 every `useState`. It uses `.then` rather than a top-level `await` because Vite's
 target (chrome87/safari14) has none. Switching projects **remounts** the
-workspace on purpose — the session's undo stack, id aliases and pending batches
-belong to one project and must not leak into another.
+workspace on purpose — the session's undo stack belongs to one project and must
+not leak into another. The editor is remounted (`editorKey`) only when the
+document has to be laid out again or its diagram ids change, which is the one
+thing `needsRemount` is left deciding.
 
 The desktop app ships: `electron/` holds the main process and preload, the
 renderer runs under `app://`, and `.github/workflows/release.yml` builds and
