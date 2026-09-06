@@ -1,7 +1,6 @@
 import { matchesQuery, queryTokens } from './textSearch';
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
 import { GENERIC_MARKS } from './marks/generic';
-import { RAIL_MARKS } from './marks/rail';
 import { VENDOR_MARKS } from './marks/vendors';
 
 /**
@@ -30,14 +29,20 @@ import { VENDOR_MARKS } from './marks/vendors';
  * break a diagram.
  */
 
-export type LogoCategory =
+/**
+ * The categories that ship. A registered pack brings its own, which is why this
+ * is not a closed union: `(string & {})` accepts any category while still
+ * autocompleting the built-in ones.
+ */
+export type BuiltInLogoCategory =
   | 'data'
   | 'integration'
   | 'applications'
   | 'platform'
   | 'security'
-  | 'rail'
   | 'vendors';
+
+export type LogoCategory = BuiltInLogoCategory | (string & {});
 
 export interface LogoEntry {
   /** Stable slug persisted as `DesignElement.iconKey` — append-only. */
@@ -53,14 +58,33 @@ export interface LogoEntry {
   render?: 'fill' | 'stroke';
 }
 
-/** Picker group order and headings. */
+/**
+ * A set of marks that belongs together, added by whoever composes the app.
+ *
+ * The first registry in this codebase, and the shape the plugin work will
+ * follow: a pack names its own category and its own heading, so registering one
+ * needs no edit here — and unregistering one is deleting a line in
+ * `app/composition.ts` rather than surgery on this file.
+ */
+export interface LogoPack {
+  /** Its category, which is also the picker group its marks appear under. */
+  category: LogoCategory;
+  /** The group's heading. The pack owns the string, in its own module's slice. */
+  labelKey: StringKey;
+  marks: LogoEntry[];
+}
+
+/**
+ * Picker group order and headings. A pack appends itself, so a registered pack
+ * shows up after the ones that ship — deliberate: what came with the tool reads
+ * first.
+ */
 export const LOGO_CATEGORIES: { key: LogoCategory; labelKey: StringKey }[] = [
   { key: 'data', labelKey: 'logo.category.data' },
   { key: 'integration', labelKey: 'logo.category.integration' },
   { key: 'applications', labelKey: 'logo.category.applications' },
   { key: 'platform', labelKey: 'logo.category.platform' },
   { key: 'security', labelKey: 'logo.category.security' },
-  { key: 'rail', labelKey: 'logo.category.rail' },
   { key: 'vendors', labelKey: 'logo.category.vendors' },
 ];
 
@@ -73,14 +97,57 @@ export function logoCategoryLabel(
   return entry ? translate(entry.labelKey) : category;
 }
 
-/** Every built-in mark, in picker order. */
-export const LOGO_ENTRIES: LogoEntry[] = [...GENERIC_MARKS, ...RAIL_MARKS, ...VENDOR_MARKS];
+/**
+ * Every mark this build knows, in picker order — the two that ship, plus
+ * whatever `registerLogoPack` has added.
+ *
+ * A live array rather than a snapshot, because registration happens at
+ * composition and the readers below are called long afterwards. Mutating an
+ * exported array is not a habit worth spreading; it is here because every call
+ * site already reads `LOGO_ENTRIES` and swapping the array would leave them
+ * holding the old one.
+ */
+export const LOGO_ENTRIES: LogoEntry[] = [...GENERIC_MARKS, ...VENDOR_MARKS];
 
-const BY_KEY = new Map(LOGO_ENTRIES.map((entry) => [entry.key, entry]));
+let byKey = indexOf(LOGO_ENTRIES);
 
-/** True when `key` names one of the built-in marks (the interchange vocabulary). */
+function indexOf(entries: LogoEntry[]): Map<string, LogoEntry> {
+  return new Map(entries.map((entry) => [entry.key, entry]));
+}
+
+/**
+ * Add a pack's marks and its picker group.
+ *
+ * Call it before anything reads a key — `app/composition.ts` does, at module
+ * load, which is before the first render and long before an export asks whether
+ * a key is one this build knows. A pack registered twice is ignored rather than
+ * duplicated, so a test that registers per case is safe.
+ */
+export function registerLogoPack(pack: LogoPack): void {
+  if (LOGO_CATEGORIES.some((category) => category.key === pack.category)) return;
+  LOGO_CATEGORIES.push({ key: pack.category, labelKey: pack.labelKey });
+  LOGO_ENTRIES.push(...pack.marks);
+  byKey = indexOf(LOGO_ENTRIES);
+}
+
+/**
+ * True when `key` names a mark this build knows — the closed `iconType`
+ * vocabulary of the interchange format, packs included.
+ *
+ * Which means a pack's keys stop being writable if the pack stops being
+ * registered. That is the honest answer rather than a leak: an export is a
+ * document another tool reads, and a key nothing in this build can draw is not
+ * vocabulary. A key the SOURCE document carried is written back either way
+ * (`toInterchange`), so removing a pack never silently strips a document of
+ * what it arrived with.
+ */
 export function isBuiltInLogoKey(key: string | undefined): boolean {
-  return key !== undefined && BY_KEY.has(key);
+  return key !== undefined && byKey.has(key);
+}
+
+/** One mark by key, or undefined. Reads the registry as it stands now. */
+export function builtInLogo(key: string): LogoEntry | undefined {
+  return byKey.get(key);
 }
 
 

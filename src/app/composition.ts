@@ -13,7 +13,14 @@
  * over IPC, a server) is: a class under `src/adapters/`, the contract run over
  * it (`ports/ProjectStore.contract.ts`), and one branch here. Not a single file
  * above it changes.
+ *
+ * It also decides what this build KNOWS, not only where it keeps things. The
+ * icon packs are the first of those: a general-purpose architecture tool has no
+ * business shipping a railway vocabulary in its model, so the rail marks are a
+ * pack and the line below is the whole of their wiring.
  */
+import { registerLogoPack } from '../model/logoRegistry'
+import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
@@ -86,3 +93,10 @@ export function composeShell(): Shell {
     windowChrome: hostWindowChrome(),
   }
 }
+
+/**
+ * At module load, which is before the first render and long before an export
+ * asks whether an icon key is one this build knows. Registering later would
+ * mean a window in which a saved `rail-*` key does not resolve.
+ */
+registerLogoPack(RAIL_PACK)

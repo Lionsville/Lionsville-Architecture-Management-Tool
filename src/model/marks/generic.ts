@@ -8,7 +8,7 @@ import type { LogoCategory, LogoEntry } from '../logoRegistry';
  * the per-element accent override. Nothing here is a vendor logo: these say what
  * KIND of thing an element is ("a queue", "a report", "a firewall"), which is
  * what most boxes on a landscape actually need. Real brands live in
- * `marks/vendors.ts`; the rail-specific set in `marks/rail.ts`.
+ * `marks/vendors.ts`; the rail set is a registered pack (`app/iconPacks/rail.ts`).
  *
  * Drawing rules, so additions keep looking like the rest:
  * - 24×24 box, roughly 3…21 of usable room, stroke width 2, round caps/joins.

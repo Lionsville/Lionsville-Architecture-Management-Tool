@@ -10,7 +10,12 @@ import {
 } from './logoRegistry';
 import { PathMark } from './PathMark';
 import { GENERIC_MARKS } from '../../model/marks/generic';
-import { RAIL_MARKS } from '../../model/marks/rail';
+import { RAIL_MARKS, RAIL_PACK } from '../../app/iconPacks/rail';
+import { registerLogoPack } from '../../model/logoRegistry';
+
+// The pack ships with this build, so the suite asks its questions of a build
+// that has it — the same one `composition.ts` assembles.
+registerLogoPack(RAIL_PACK);
 import { VENDOR_MARKS } from '../../model/marks/vendors';
 
 /**

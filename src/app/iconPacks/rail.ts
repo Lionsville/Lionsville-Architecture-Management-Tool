@@ -1,7 +1,14 @@
-import type { LogoEntry } from '../logoRegistry';
+import type { LogoEntry, LogoPack } from '../../model/logoRegistry';
 
 /**
  * RAIL MARKS — the domain set for a railway landscape.
+ *
+ * A PACK, and the first one: it ships with this build but is not built in.
+ * `app/composition.ts` registers it, which is the whole of its wiring, and
+ * deleting that line is the whole of removing it. It lives under `app/` because
+ * a general-purpose architecture tool has no business knowing what a catenary
+ * is — the model knows what a mark is, and the composition decides which ones
+ * this build offers.
  *
  * Same drawing contract as `marks/generic.ts` (one 24×24 stroke path,
  * `currentColor`), and the same promise about keys: `rail-*` keys are persisted
@@ -52,3 +59,10 @@ export const RAIL_MARKS: LogoEntry[] = [
   mark('rail-camera', 'Camera', ['camera', 'cctv', 'toezicht', 'beeld', 'beveiliging'],
     'M3 8l15-4l1.5 5.5L4.5 13.5L3 8zM6.5 13.2L5 20M2.5 20h7M19.5 9.5L22 8.8M18 13.5v1.5a3 3 0 0 1-3 3h-2'),
 ];
+
+/** What `registerLogoPack` is handed. The heading's words are in app's slice. */
+export const RAIL_PACK: LogoPack = {
+  category: 'rail',
+  labelKey: 'logo.category.rail',
+  marks: RAIL_MARKS,
+};

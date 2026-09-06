@@ -38,7 +38,6 @@ export const EN = {
   'logo.category.applications': 'Applications',
   'logo.category.platform': 'Platform',
   'logo.category.security': 'Security & operations',
-  'logo.category.rail': 'Rail',
   'logo.category.vendors': 'Vendors',
 
   // --- dialogs -------------------------------------------------------------

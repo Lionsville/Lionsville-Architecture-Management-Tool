@@ -6,6 +6,8 @@
  * module's slice into the table `t()` reads (`i18n/strings.ts`).
  */
 export const EN = {
+  /** The rail pack's picker heading. The pack is registered in composition.ts. */
+  'logo.category.rail': 'Rail',
 
   // --- the shell around the editor -----------------------------------------
   'shell.saved': 'Saved · {time}',

@@ -5,6 +5,11 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementPalette, PALETTE_DRAG_MIME } from './ElementPalette';
 import type { ElementKind, UploadedLogo } from '../../model/types';
+import { RAIL_PACK } from '../../app/iconPacks/rail';
+import { registerLogoPack } from '../../model/logoRegistry';
+// The rail pack ships with this build (`app/composition.ts` registers it), so
+// this suite asks its questions of the same set of marks the user sees.
+registerLogoPack(RAIL_PACK);
 
 /**
  * The palette after the "variant B, calmer" recut.

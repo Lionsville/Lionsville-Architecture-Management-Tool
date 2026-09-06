@@ -8,11 +8,9 @@
  * marks arrive through, and the resolver that reads it.
  */
 import { createContext, useContext } from 'react';
-import { LOGO_ENTRIES, type LogoEntry } from '../../model/logoRegistry';
+import { builtInLogo, type LogoEntry } from '../../model/logoRegistry';
 import { UPLOADED_KEY_PREFIX } from '../../model/logo';
 import type { UploadedLogo } from '../../model/types';
-
-const BY_KEY = new Map(LOGO_ENTRIES.map((entry) => [entry.key, entry]));
 
 /**
  * The vocabulary, re-exported so a call site keeps one import for "the logo
@@ -51,7 +49,7 @@ export type ResolvedLogo =
 export function useResolvedLogo(iconKey: string | undefined): ResolvedLogo | undefined {
   const library = useLogoLibrary();
   if (!iconKey) return undefined;
-  const builtIn = BY_KEY.get(iconKey);
+  const builtIn = builtInLogo(iconKey);
   const uploaded = library.find((entry) => entry.key === iconKey);
   if (iconKey.startsWith(UPLOADED_KEY_PREFIX)) {
     if (uploaded) return { source: 'uploaded', entry: uploaded };

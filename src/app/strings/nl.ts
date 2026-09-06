@@ -9,6 +9,8 @@
 import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
+  /** The rail pack's picker heading. The pack is registered in composition.ts. */
+  'logo.category.rail': 'Spoor',
 
   'shell.saved': 'Bewaard · {time}',
   'shell.notSaved': 'Nog niet bewaard',

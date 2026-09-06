@@ -278,11 +278,11 @@ describe('iconType', () => {
   it('writes a built-in key the editor just set, unasked', () => {
     const model = fromInterchange(withIcons, GROUP_NAME)
     model.elements = model.elements.map((e) =>
-      e.id === 'kaal' ? { ...e, iconKey: 'rail-train' } : e)
+      e.id === 'kaal' ? { ...e, iconKey: 'database' } : e)
 
     const out = toInterchange(model)
 
-    expect(out.elements.find((e) => e.key === 'kaal')).toMatchObject({ iconType: 'rail-train' })
+    expect(out.elements.find((e) => e.key === 'kaal')).toMatchObject({ iconType: 'database' })
   })
 
   it('never writes an uploaded (lib:) key — that one lives in the working file', () => {

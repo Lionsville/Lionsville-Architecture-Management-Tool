@@ -5,6 +5,11 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import type { UploadedLogo } from '../../model/types';
 import { LogoGrid } from './LogoGrid';
 import { LogoLibraryProvider } from './logoRegistry';
+import { RAIL_PACK } from '../../app/iconPacks/rail';
+import { registerLogoPack } from '../../model/logoRegistry';
+// The rail pack ships with this build (`app/composition.ts` registers it), so
+// this suite asks its questions of the same set of marks the user sees.
+registerLogoPack(RAIL_PACK);
 
 /**
  * The picker (Phase 3b). One grid serves the inspector, the palette tray and

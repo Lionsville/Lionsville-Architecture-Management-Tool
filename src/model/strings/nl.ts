@@ -40,7 +40,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'logo.category.applications': 'Applicaties',
   'logo.category.platform': 'Platform',
   'logo.category.security': 'Beveiliging & beheer',
-  'logo.category.rail': 'Spoor',
   'logo.category.vendors': 'Leveranciers',
 
   'deletion.nothing': 'niets',
