@@ -87,25 +87,38 @@ const WHY = {
  * Which modules compute and nothing else. React, MUI, Emotion or React Flow in
  * one of these means a node test has to boot a DOM to ask where a box goes —
  * which is how thirteen pure files ended up importing a canvas library for four
- * strings. Separate from the matrix because it restricts package names rather
- * than paths, and because `i18n` is on the list with one exception: a language
- * needs a context to travel in.
+ * strings.
+ *
+ * Part of the same generated rule as the matrix rather than a block of its own,
+ * because a second block naming the same files would REPLACE
+ * `no-restricted-imports` instead of adding to it, and the matrix would silently
+ * stop applying to exactly the modules that most need it.
  */
 const PURE = ['model', 'layout', 'platform', 'ports', 'projects', 'i18n']
 const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*']
 
-const PURITY = [{
-  files: PURE.map((m) => `src/${m}/**/*.ts`),
-  // The module roots only: `documentation/`, `decisions/` and `search/` are pure
-  // at their root and React under their `ui/`, which every `.tsx` here would
-  // otherwise trip over. A `.ts` file that wanted React would have to become one.
-  ignores: ['**/*.test.ts', '**/*.contract.ts', 'src/i18n/LanguageContext.tsx'],
-  rules: {
-    'no-restricted-imports': ['error', {
-      patterns: [{ group: SCREEN_PACKAGES, message: 'This module computes; screen work belongs in a ui/ folder, in editor/ or in app/.' }],
-    }],
-  },
-}]
+
+/**
+ * The one hole in the matrix, and it is a hole on purpose.
+ *
+ * These two files ARE the composition: they import every module's `strings/`
+ * slice and spread them into the table `t()` reads. It has to be a static
+ * import, because `StringKey` is `keyof typeof EN` and a type cannot be built
+ * from a runtime registration.
+ *
+ * Exempting the two files rather than widening the row to every module's
+ * strings folder, because a negated glob inside a `no-restricted-imports` group
+ * does not narrow one in this ESLint — it is silently ignored, which would have
+ * left the whole i18n row unenforced. Every other file in `i18n` knows nobody.
+ */
+const COMPOSES_THE_TABLE = ['src/i18n/strings.en.ts', 'src/i18n/strings.nl.ts']
+
+/**
+ * Files their own module's row does not apply to. `i18n` has both exceptions:
+ * the two files that compose the table, and `LanguageContext` — a language needs
+ * a context to travel in, and it is the one screen-shaped file down here.
+ */
+const EXEMPT = { i18n: ['src/i18n/LanguageContext.tsx', ...COMPOSES_THE_TABLE] }
 
 const IMPORT_MATRIX = MODULES.map((from) => ({
   files: [`src/${from}/**/*.{ts,tsx}`],
@@ -113,15 +126,24 @@ const IMPORT_MATRIX = MODULES.map((from) => ({
   // coupling this guards against, and the alternative is a fixture module per
   // pair of modules. `app/testing/` is test code that happens not to end in
   // `.test`, and the composition is the one place that may name a filling.
-  ignores: ['**/*.test.{ts,tsx}', '**/*.contract.ts', 'src/app/testing/**', 'src/app/composition.ts'],
+  ignores: [
+    '**/*.test.{ts,tsx}', '**/*.contract.ts', 'src/app/testing/**', 'src/app/composition.ts',
+    ...(EXEMPT[from] ?? []),
+  ],
   rules: {
     'no-restricted-imports': ['error', {
-      patterns: [{
-        group: MODULES
-          .filter((to) => to !== from && !MAY_IMPORT[from].includes(to))
-          .flatMap((to) => [`**/${to}/**`, `**/${to}`]),
-        message: WHY[from],
-      }],
+      patterns: [
+        {
+          group: MODULES
+            .filter((to) => to !== from && !MAY_IMPORT[from].includes(to))
+            .flatMap((to) => [`**/${to}/**`, `**/${to}`]),
+          message: WHY[from],
+        },
+        ...(PURE.includes(from) ? [{
+          group: SCREEN_PACKAGES,
+          message: 'This module computes; screen work belongs in a ui/ folder, in editor/ or in app/.',
+        }] : []),
+      ],
     }],
   },
 }))
@@ -164,6 +186,5 @@ export default tseslint.config(
     },
   },
   ...IMPORT_MATRIX,
-  ...PURITY,
 
 )

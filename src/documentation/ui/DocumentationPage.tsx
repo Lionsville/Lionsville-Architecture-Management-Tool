@@ -159,7 +159,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
       : <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{source}</Box>
     : (
       <Box sx={{ color: 'text.secondary' }}>
-        <Typography>{t('doc.empty')}</Typography>
+        <Typography>{t('common.empty')}</Typography>
         {!readOnly && <Typography variant="body2">{t('doc.emptyHint')}</Typography>}
       </Box>
     );

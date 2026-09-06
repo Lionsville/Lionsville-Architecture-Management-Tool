@@ -129,7 +129,7 @@ export function AdrReader(props: AdrReaderProps) {
 
   const rendered = source.trim()
     ? renderMarkdown(source, { onElementLink: props.onElementLink })
-    : <Typography color="text.secondary">{s('doc.empty')}</Typography>
+    : <Typography color="text.secondary">{s('common.empty')}</Typography>
 
   const nameOf = (id: string) => {
     const found = list.find((a) => a.id === id)

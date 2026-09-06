@@ -21,6 +21,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import type { Adr } from '../../decisions/adr'
+import { SCOPE_LABEL } from '../../decisions/adrScope'
 import { formatAdrNumber } from '../../decisions/adr'
 import type { HostModel } from '../../model/fromInterchange'
 import { searchAll } from '../search'
@@ -41,12 +42,6 @@ const KIND_LABEL: Record<SearchHit['kind'], StringKey> = {
   documentation: 'gsearch.documentation',
   adr: 'gsearch.decisions',
 }
-
-const SCOPE_LABEL = {
-  group: 'adr.scopeGroup',
-  landscape: 'adr.scopeLandscape',
-  application: 'adr.scopeApplications',
-} as const satisfies Record<string, StringKey>
 
 export function GlobalSearchDialog({ open, model, groupDecisions, onClose, onChoose, s }: GlobalSearchDialogProps) {
   const [query, setQuery] = useState('')

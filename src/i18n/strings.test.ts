@@ -1,6 +1,8 @@
 /**
- * The words themselves live in `strings.en.ts` and `strings.nl.ts`; this suite
- * checks that every registered language table is COMPLETE and consistent.
+ * The words themselves live one slice per module (`<module>/strings/en.ts`),
+ * composed into the two tables by `strings.en.ts` and `strings.nl.ts`; this
+ * suite checks that every registered language table is COMPLETE and consistent,
+ * and that the composition itself is sound.
  *
  * Everything below loops over `STRINGS` rather than naming `en` and `nl`. That
  * is the point: adding `strings.de.ts` and one line in the registry brings it
@@ -24,6 +26,22 @@ import {
   type StringKey,
 } from './strings';
 import { CANVAS_SHORTCUTS } from '../editor/keymap';
+import { EN as adaptersEn } from '../adapters/strings/en';
+import { EN as appEn } from '../app/strings/en';
+import { EN as decisionsEn } from '../decisions/strings/en';
+import { EN as documentationEn } from '../documentation/strings/en';
+import { EN as editorEn } from '../editor/strings/en';
+import { EN as modelEn } from '../model/strings/en';
+import { EN as projectsEn } from '../projects/strings/en';
+import { EN as searchEn } from '../search/strings/en';
+import { EN as commonEn } from './strings/en';
+
+/** Every slice, by the module that owns it — the composition, spelled out once. */
+const SLICES: Record<string, Record<string, string>> = {
+  adapters: adaptersEn, app: appEn, common: commonEn, decisions: decisionsEn,
+  documentation: documentationEn, editor: editorEn, model: modelEn,
+  projects: projectsEn, search: searchEn,
+};
 
 /** English is the schema, so its keys are THE keys. */
 const keys = Object.keys(STRINGS.en) as StringKey[];
@@ -183,5 +201,38 @@ describe('the keymap and the tables agree', () => {
         expect(t(language, def.labelKey), `${language}.${def.id}`).not.toBe(def.labelKey);
       }
     }
+  });
+});
+
+describe('the composition', () => {
+  it('loses no key: every slice’s keys are in the table', () => {
+    const composed = new Set(keys);
+    for (const [module, slice] of Object.entries(SLICES)) {
+      for (const key of Object.keys(slice)) {
+        expect(composed.has(key as StringKey), `${module} owns ${key}, which the table does not have`).toBe(true);
+      }
+    }
+  });
+
+  it('adds no key: the table is exactly the slices together', () => {
+    const owned = new Set(Object.values(SLICES).flatMap((slice) => Object.keys(slice)));
+    for (const key of keys) {
+      expect(owned.has(key), `${key} is in the table but no module owns it`).toBe(true);
+    }
+  });
+
+  it('lets no two modules define the same key', () => {
+    // A spread would silently let the later slice win, and the loser's module
+    // would go on believing it owned the word.
+    const owner = new Map<string, string>();
+    const clashes: string[] = [];
+    for (const [module, slice] of Object.entries(SLICES)) {
+      for (const key of Object.keys(slice)) {
+        const first = owner.get(key);
+        if (first) clashes.push(`${key}: ${first} and ${module}`);
+        else owner.set(key, module);
+      }
+    }
+    expect(clashes).toEqual([]);
   });
 });

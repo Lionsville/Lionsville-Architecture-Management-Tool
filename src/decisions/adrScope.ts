@@ -25,6 +25,16 @@ export function projectScopeOf(adr: Pick<Adr, 'applicationId'>): ScopeKey {
   return adr.applicationId ? appScope(adr.applicationId) : 'landscape'
 }
 
+/**
+ * What each scope is called. Published because the global search lists decisions
+ * too and must not name this module's string keys to label them.
+ */
+export const SCOPE_LABEL = {
+  group: 'adr.scopeGroup',
+  landscape: 'adr.scopeLandscape',
+  application: 'adr.scopeApplications',
+} as const satisfies Record<string, StringKey>
+
 export const STATUS_LABEL: Record<AdrStatus, StringKey> = {
   proposed: 'adr.statusProposed',
   reviewing: 'adr.statusReviewing',
