@@ -507,6 +507,12 @@ export function App({
    */
   const [groupProfiles, setGroupProfiles] = useState<GroupProfile[]>([])
   const groupKey = project?.ref.group
+  // How a failure is reported is not an input to reading the record. Kept in a
+  // ref so it cannot re-trigger the read: `list()` answers with a new array
+  // every time, so a dependency that changes identity on render is not a
+  // needless read but an endless one.
+  const failedRef = useRef(failed)
+  failedRef.current = failed
   useEffect(() => {
     if (!groupKey) return
     let live = true
@@ -516,11 +522,11 @@ export function App({
         if (live) setGroupProfiles([])
         // No message: a group's record is decoration, and its decisions page
         // being empty is visible on its own. The trail still gets it.
-        failed('groupProfiles', cause)
+        failedRef.current('groupProfiles', cause)
       },
     )
     return () => { live = false }
-  }, [groupKey, groupRecords, failed])
+  }, [groupKey, groupRecords])
 
   const groupDecisions = useMemo<readonly Adr[]>(
     () => (groupKey ? groupProfiles.find((p) => p.group === groupKey)?.decisions ?? [] : []),

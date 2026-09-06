@@ -5,7 +5,7 @@
  * report and only one place shows. This hook has no outward dependency — no
  * storage, no language — so it takes a few lines to test.
  */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { AlertColor } from '@mui/material/Alert'
 
 /** One message. The key restarts the bar when a new message arrives. */
@@ -40,5 +40,16 @@ export function useToasts(): Toasts {
   const close = useCallback(() => setOpen(false), [])
   const exited = useCallback(() => setToast(null), [])
 
-  return { toast, open, notify, close, exited }
+  /**
+   * One object, kept until something in it actually moves.
+   *
+   * A fresh literal every render would be correct and invisible here, and a
+   * loop one layer up: anything that memoises on these — `App`'s `failed`, and
+   * the effects that depend on it — would be re-created every render, and an
+   * effect that sets state would then re-run forever.
+   */
+  return useMemo(
+    () => ({ toast, open, notify, close, exited }),
+    [toast, open, notify, close, exited],
+  )
 }
