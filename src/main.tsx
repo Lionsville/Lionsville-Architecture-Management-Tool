@@ -121,6 +121,8 @@ void shell.preferences.read()
           groupRecords={shell.groups}
           preferences={shell.preferences}
           documents={shell.documents}
+          diagnostics={shell.diagnostics}
+          hostControls={shell.hostControls}
           initialProject={initialProject}
           initialPreferences={storedPreferences}
           examples={EXAMPLES}

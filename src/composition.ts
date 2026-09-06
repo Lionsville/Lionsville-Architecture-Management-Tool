@@ -15,6 +15,7 @@
  * above it changes.
  */
 import { BrowserDocumentGateway } from './adapters/browser/BrowserDocumentGateway'
+import { browserHostControls } from './adapters/browser/browserHostControls'
 import { ConsoleDiagnostics } from './adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome } from './adapters/browser/hostWindow'
 import { InMemoryGroupStore } from './adapters/memory/InMemoryGroupStore'
@@ -28,6 +29,7 @@ import type { WindowChrome } from './core/windowChrome'
 import type { Diagnostics } from './ports/Diagnostics'
 import type { DocumentGateway } from './ports/DocumentGateway'
 import type { GroupStore } from './ports/GroupStore'
+import type { HostControls } from './ports/HostControls'
 import type { PreferencesStore } from './ports/PreferencesStore'
 import type { ProjectStore } from './ports/ProjectStore'
 
@@ -44,6 +46,8 @@ export type Shell = {
    * before it draws a message.
    */
   diagnostics: Diagnostics
+  /** What the crash fallback can do about it: reload, and copy the trail. */
+  hostControls: HostControls
   /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
@@ -69,6 +73,7 @@ export function composeShell(): Shell {
     preferences: storage ? new WebStoragePreferencesStore(storage) : new InMemoryPreferencesStore(),
     documents: new BrowserDocumentGateway(),
     diagnostics: new ConsoleDiagnostics(),
+    hostControls: browserHostControls(),
     windowChrome: hostWindowChrome(),
   }
 }

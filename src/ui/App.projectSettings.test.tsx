@@ -18,6 +18,7 @@ import { App } from './App'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
+import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import type { ProjectSnapshot } from '../core/project'
 
 /** The one thing the stub does: land a change on the model, as editing would. */
@@ -68,6 +69,8 @@ function renderApp(initial: ProjectSnapshot) {
         readText: () => Promise.resolve(''),
         readDataUrl: () => Promise.resolve(''),
       }}
+      diagnostics={new RecordingDiagnostics()}
+      hostControls={{ reload: () => {}, copyText: () => Promise.resolve() }}
       initialProject={initial}
       initialPreferences={{ language: 'en' }}
       examples={[]}

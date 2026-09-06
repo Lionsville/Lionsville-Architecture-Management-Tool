@@ -24,6 +24,8 @@ import type { SearchHit } from '../core/search'
 import type { WindowChrome } from '../core/windowChrome'
 import { AdrPage } from './adr/AdrPage'
 import { ShellDialogs } from './dialogs/ShellDialogs'
+import { ErrorBoundary } from './ErrorBoundary'
+import type { CrashControls, CrashTrail } from './ErrorBoundary'
 import { GlobalSearchDialog } from './search/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -78,6 +80,13 @@ export type ProjectWorkspaceProps = {
    */
   groupDecisions: readonly Adr[]
   onGroupDecisionsChange: (next: Adr[]) => void
+  /**
+   * For the boundary around the canvas. The editor is the largest thing in the
+   * app and the likeliest to throw; catching it here is what keeps the toolbar,
+   * the save menu and the pages beside it alive when it does.
+   */
+  diagnostics: CrashTrail
+  hostControls: CrashControls
   /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
   today?: () => string
   /** Passed straight to the toolbar, which is the bar the window borrows. */
@@ -94,7 +103,7 @@ export function ProjectWorkspace({
   project, projects, documents, notify, onStorageResult, s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
-  today = localToday, windowChrome,
+  diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
@@ -222,7 +231,8 @@ export function ProjectWorkspace({
       {documentPicker.input}
       {logoPicker.input}
 
-      <Box sx={{ flex: '1 1 auto', minHeight: 0 }}>
+      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <ErrorBoundary where="editor" diagnostics={diagnostics} controls={hostControls} s={s}>
         <SolutionDesignEditor
           key={session.editorKey}
           model={session.model}
@@ -262,6 +272,7 @@ export function ProjectWorkspace({
           focusElement={focusRequest}
           documentationRequest={docRequest}
         />
+        </ErrorBoundary>
       </Box>
 
       <ShellDialogs

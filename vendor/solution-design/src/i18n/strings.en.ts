@@ -567,6 +567,18 @@ export const EN = {
   'shell.storageFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.storageRecovered': 'Saving in this browser works again.',
+  /**
+   * The crash fallback. One key for both boundaries — the one around the whole
+   * app and the one around the canvas — because what the reader can do about it
+   * is the same either way.
+   */
+  'shell.crashed': 'Something went wrong on this screen.',
+  'shell.crashedNote':
+    'Your work up to the last save is still there. Reload to carry on; the diagnostics say what happened.',
+  'shell.reload': 'Reload',
+  'shell.copyDiagnostics': 'Copy diagnostics',
+  'shell.diagnosticsCopied': 'Copied',
+  'shell.copyFailed': 'Could not copy',
   'shell.orphanOne':
     'Container view “{name}” was removed: its application left the model. Undo does not bring that view back.',
   'shell.orphanOther':

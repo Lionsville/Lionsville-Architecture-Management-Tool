@@ -546,6 +546,13 @@ export const NL: StringTable = {
   'shell.storageFailed':
     'Deze browser kon het ontwerp niet bewaren (opslag vol of geblokkeerd). Bewaar een werkbestand, anders is het bij het sluiten van het tabblad weg.',
   'shell.storageRecovered': 'Bewaren in deze browser lukt weer.',
+  'shell.crashed': 'Er ging iets mis op dit scherm.',
+  'shell.crashedNote':
+    'Je werk tot het laatste bewaarmoment staat er nog. Herlaad om verder te gaan; de diagnostiek zegt wat er gebeurde.',
+  'shell.reload': 'Herladen',
+  'shell.copyDiagnostics': 'Diagnostiek kopiëren',
+  'shell.diagnosticsCopied': 'Gekopieerd',
+  'shell.copyFailed': 'Kopiëren lukte niet',
   'shell.orphanOne':
     'Containeraanzicht “{name}” is verwijderd: de applicatie ging uit het model. Dat aanzicht komt met Ongedaan maken niet terug.',
   'shell.orphanOther':

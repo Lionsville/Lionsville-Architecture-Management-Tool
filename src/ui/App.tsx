@@ -17,6 +17,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '@lionsville/solution-design'
 import type { Adr } from '../core/adr'
+import type { Diagnostic, DiagnosticEntry } from '../core/diagnostics'
 import { groupProfileFor, normaliseGroupProfile } from '../core/group'
 import type { GroupProfile } from '../core/group'
 import {
@@ -31,6 +32,8 @@ import type { ProjectRef } from '../core/projectRef'
 import { NO_WINDOW_CHROME } from '../core/windowChrome'
 import type { WindowChrome } from '../core/windowChrome'
 import type { ExampleProject } from '../examples'
+import { ErrorBoundary } from './ErrorBoundary'
+import type { CrashControls } from './ErrorBoundary'
 import { ProjectPicker } from './picker/ProjectPicker'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -60,6 +63,15 @@ export type GroupRecords = {
   save(profile: GroupProfile): Promise<void>
 }
 
+/**
+ * What the shell does to the diagnostics seam: reports, and — for the crash
+ * fallback it hands the trail to — reads back.
+ */
+export type ShellDiagnostics = {
+  report(entry: Diagnostic): void
+  recent(): DiagnosticEntry[]
+}
+
 export type ProjectLibrary = {
   list(): Promise<ProjectSummary[]>
   load(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
@@ -72,6 +84,9 @@ export type AppProps = {
   groupRecords: GroupRecords
   preferences: PreferencesWriter
   documents: ProjectFileChannel
+  diagnostics: ShellDiagnostics
+  /** What the crash fallback can do about it: reload, and copy the trail. */
+  hostControls: CrashControls
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -91,7 +106,8 @@ export type AppProps = {
 }
 
 export function App({
-  projects, groupRecords, preferences, documents, initialProject, initialPreferences,
+  projects, groupRecords, preferences, documents, diagnostics, hostControls,
+  initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -370,6 +386,10 @@ export function App({
     <ThemeProvider theme={prefs.theme}>
       <CssBaseline />
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
+        {/* Inside the theme, so the fallback is painted in the user's colours,
+            and around the two screens rather than around everything: a crash
+            must not take the toast bar with it. */}
+        <ErrorBoundary where="app" diagnostics={diagnostics} controls={hostControls} s={s}>
         {project ? (
           <ProjectWorkspace
             // Remounting on a project switch is the mechanism, not an accident:
@@ -395,6 +415,8 @@ export function App({
             makeId={makeId}
             groupDecisions={groupDecisions}
             onGroupDecisionsChange={saveGroupDecisions}
+            diagnostics={diagnostics}
+            hostControls={hostControls}
             windowChrome={windowChrome}
           />
         ) : (
@@ -414,6 +436,7 @@ export function App({
             windowChrome={windowChrome}
           />
         )}
+        </ErrorBoundary>
         <ToastBar
           toast={toasts.toast}
           open={toasts.open}
