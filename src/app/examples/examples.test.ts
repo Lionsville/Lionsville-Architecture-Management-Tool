@@ -15,6 +15,8 @@
 import { describe, expect, it } from 'vitest'
 import { EXAMPLES } from '.'
 import { fromInterchange } from '../../model/fromInterchange'
+import { fromArrays, toArrays } from '../../model/normalised'
+import { projectFromDocument, toWorkingFile } from '../../projects/project'
 
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
   const model = fromInterchange(example.document, example.groupName)
@@ -49,5 +51,20 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
         `${component!.id} would be laid out beside the boundary, not in it`,
       ).toBe(diagram.applicationElementId)
     }
+  })
+})
+
+/**
+ * The indexed model is an in-memory shape, not a format (ADR-0002). Opening the
+ * biggest thing this repository ships, indexing it and writing it back out has
+ * to produce the same file down to the byte — key order included — or the first
+ * save after the reducer lands is a diff nobody asked for.
+ */
+describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working file', (_key, example) => {
+  it('survives the indexed model byte for byte', () => {
+    const project = projectFromDocument(example.document, example.ref, example.groupName)
+    const indexed = { ...project, model: toArrays(fromArrays(project.model)) }
+
+    expect(JSON.stringify(toWorkingFile(indexed))).toBe(JSON.stringify(toWorkingFile(project)))
   })
 })
