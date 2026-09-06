@@ -24,7 +24,12 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // `electron/` as well as `src/`: the main process now does something worth
+    // testing — it resolves paths from an untrusted renderer inside a folder the
+    // user chose, and writes files atomically. Neither is code to leave to a
+    // smoke run. The files it tests import `node:fs` and no Electron, which is
+    // exactly why they are separate from the IPC wiring.
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'electron/**/*.{test,spec}.ts'],
     // The date tests were written against a fixed zone. Not optional, so it is
     // here rather than in front of a command someone has to remember.
     env: { TZ: 'UTC' },

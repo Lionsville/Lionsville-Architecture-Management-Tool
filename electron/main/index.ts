@@ -8,15 +8,18 @@
  * protocol, the desktop plan changes shape. Hence `--smoke` at the bottom of
  * this file: it drives the real production bundle in a real window and reports.
  *
- * What this process does NOT do yet: files. No IPC channel, no dialogs, no
- * watcher (6B/6C). The renderer is the web shell unchanged, still keeping its
- * projects in localStorage — which is exactly why `app://` has to be a
- * *standard* scheme; see below.
+ * Files arrived with ADR-0003: `files.ts` is the channel, and it is the only
+ * way the renderer reaches a disk. What is still missing is the watcher, the
+ * File menu and the file associations.
+ *
+ * `app://` remains a *standard* scheme regardless, and not only for the
+ * localStorage the browser fallback still uses; see below.
  */
 import { app, BrowserWindow, dialog, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { registerFileChannel } from './files'
 import { log, logFilePath } from './log'
 import { addCheckForUpdatesItem } from './menu'
 import { checkForUpdatesNow, startUpdates } from './updates'
@@ -212,6 +215,11 @@ void app.whenReady().then(() => {
   // that never checks by itself, which is the point of an off switch.
   startUpdates()
   addCheckForUpdatesItem(checkForUpdatesNow)
+
+  // Before the window: the renderer may ask for a folder as soon as it has
+  // painted, and a handler registered after that would answer "no such
+  // channel" to the first request of the session.
+  registerFileChannel()
 
   const mainWindow = createWindow()
 
