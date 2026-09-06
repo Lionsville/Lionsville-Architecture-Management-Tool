@@ -17,6 +17,7 @@ import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey } from '../i18n/strings';
+import { fieldEdit } from '../model/commands';
 import type { EditorActions } from './useEditorState';
 import { AspectsEditor } from './AspectsEditor';
 import { ColorField } from './ColorField';
@@ -133,6 +134,12 @@ export function ElementInspector(props: ElementInspectorProps) {
   const { t } = useStrings();
   const update = (patch: Partial<Omit<DesignElement, 'id' | 'kind'>>) =>
     actions.updateElement(element.id, patch);
+  /**
+   * A text field: every keystroke reaches the model — the card on the canvas is
+   * drawn from it — but the run of them is one undo step (see `fieldEdit`).
+   */
+  const typed = (field: string, patch: Partial<Omit<DesignElement, 'id' | 'kind'>>) =>
+    actions.updateElement(element.id, patch, fieldEdit(element.id, field));
 
   // Reset to the first tab whenever the selected element changes (the tabbed
   // equivalent of the old `key={element.id}` section-default remount).
@@ -203,7 +210,7 @@ export function ElementInspector(props: ElementInspectorProps) {
           fullWidth
           disabled={readOnly}
           inputRef={nameRef}
-          onChange={(e) => update({ name: e.target.value })}
+          onChange={(e) => typed('name', { name: e.target.value })}
         />
       </Box>
 
@@ -238,7 +245,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               value={element.vendor ?? ''}
               fullWidth
               disabled={readOnly}
-              onChange={(e) => update({ vendor: e.target.value || undefined })}
+              onChange={(e) => typed('vendor', { vendor: e.target.value || undefined })}
             />
           )}
 
@@ -248,7 +255,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               value={element.technology ?? ''}
               fullWidth
               disabled={readOnly}
-              onChange={(e) => update({ technology: e.target.value || undefined })}
+              onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
             />
           )}
 
@@ -284,7 +291,7 @@ export function ElementInspector(props: ElementInspectorProps) {
             <MarkdownField
               value={element.description ?? ''}
               disabled={readOnly}
-              onChange={(value) => update({ description: value || undefined })}
+              onChange={(value) => typed('description', { description: value || undefined })}
               renderMarkdown={props.renderMarkdown}
               onOpenDocumentation={
                 props.onOpenDocumentation ? () => props.onOpenDocumentation?.(element.id) : undefined

@@ -45,6 +45,7 @@ import {
 import { useStrings } from '../../i18n/LanguageContext';
 import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
+import { fieldEdit } from '../../model/commands';
 import { BackIcon } from '../../widgets/icons';
 
 /** How long the text must be quiet before a draft becomes a commit. */
@@ -54,7 +55,8 @@ export type DocumentationMode = 'read' | 'edit';
 
 /** What this page may do to an element, and the caret it puts a link into. */
 export interface DocumentationActions {
-  updateElement(id: ElementId, patch: Partial<DesignElement>): void;
+  /** `coalesce` makes a run of edits to one field a single undo step. */
+  updateElement(id: ElementId, patch: Partial<DesignElement>, coalesce?: string): void;
   setSelectionRange?(start: number, end: number): void;
 }
 
@@ -104,10 +106,13 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const commit = useCallback(() => {
     const { draft: text, stored, id, actions: a } = latest.current;
     if (text === stored) return;
-    a.updateElement(id, { description: text || undefined });
+    // Under the field's own key, so a page's worth of writing is one ⌘Z rather
+    // than one per pause — the pauses are how it reaches the model, not how the
+    // writer thinks about what they wrote.
+    a.updateElement(id, { description: text || undefined }, fieldEdit(id, 'description'));
   }, []);
 
-  // Quiet for a moment → commit. One undo step per pause, not per keystroke.
+  // Quiet for a moment → the draft reaches the model.
   useEffect(() => {
     if (mode !== 'edit') return;
     const timer = setTimeout(commit, COMMIT_DELAY_MS);

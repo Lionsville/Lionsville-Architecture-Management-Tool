@@ -176,7 +176,16 @@ export interface PlacementMove {
 
 export interface EditorActions {
   addElement(seed: ElementSeed): void;
-  updateElement(id: ElementId, patch: Partial<Omit<DesignElement, 'id' | 'kind'>>): void;
+  /**
+   * `coalesce` folds this edit into the step the last one under the same key
+   * made — see `fieldEdit` in `model/commands.ts`. Left out, every call is its own undo step,
+   * which is what a menu item or a checkbox wants.
+   */
+  updateElement(
+    id: ElementId,
+    patch: Partial<Omit<DesignElement, 'id' | 'kind'>>,
+    coalesce?: string,
+  ): void;
   /**
    * The same patch onto several elements in ONE step — the selection menu's
    * Lifecycle. One undo step for one gesture, exactly like a multi-node drag.
@@ -231,7 +240,11 @@ export interface EditorActions {
    * offsets placements, then selects the pasted set.
    */
   pasteClipboard(payload: ClipboardPayload, offset: Point): void;
-  updateConnection(id: string, patch: Partial<Omit<DesignConnection, 'id'>>): void;
+  updateConnection(
+    id: string,
+    patch: Partial<Omit<DesignConnection, 'id'>>,
+    coalesce?: string,
+  ): void;
   deleteConnection(id: string): void;
   /**
    * Delete a whole selection (elements + connections + domain groups) in ONE
@@ -415,7 +428,6 @@ const DEFAULT_MANAGED: Record<ElementKind, boolean> = {
  * token stale — exactly when it should be.
  */
 export type CommitToken = string;
-
 /**
  * The editing session, as the canvas and its panels see it.
  *
@@ -561,9 +573,9 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         setSelection(selectElement(id));
       },
 
-      updateElement(id, patch) {
+      updateElement(id, patch, coalesce) {
         if (!currentModel().elements.some((e) => e.id === id)) return;
-        dispatch({ type: 'element.update', id, patch });
+        dispatch({ type: 'element.update', id, patch, ...(coalesce ? { coalesce } : {}) });
       },
 
       updateElements(ids, patch) {
@@ -857,9 +869,9 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         });
       },
 
-      updateConnection(id, patch) {
+      updateConnection(id, patch, coalesce) {
         if (!currentModel().connections.some((c) => c.id === id)) return;
-        dispatch({ type: 'connection.update', id, patch });
+        dispatch({ type: 'connection.update', id, patch, ...(coalesce ? { coalesce } : {}) });
       },
 
       deleteConnection(id) {

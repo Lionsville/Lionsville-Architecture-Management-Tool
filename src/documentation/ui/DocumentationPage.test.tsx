@@ -129,11 +129,11 @@ describe('DocumentationPage', () => {
       vi.advanceTimersByTime(1500);
     });
     expect(updateElement).toHaveBeenCalledTimes(1);
-    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two.' });
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two.' }, 'field:e1:description');
 
     fireEvent.change(area!, { target: { value: 'One. Two. Three.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Read' }));
-    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two. Three.' });
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two. Three.' }, 'field:e1:description');
     expect(source()).toBeNull();
   });
 
@@ -142,7 +142,7 @@ describe('DocumentationPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(source()!, { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Read' }));
-    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: undefined });
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: undefined }, 'field:e1:description');
   });
 
   it('fills an empty page from the template', () => {
@@ -220,6 +220,6 @@ describe('DocumentationPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(source()!, { target: { value: 'Unsaved words.' } });
     unmount();
-    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'Unsaved words.' });
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'Unsaved words.' }, 'field:e1:description');
   });
 });

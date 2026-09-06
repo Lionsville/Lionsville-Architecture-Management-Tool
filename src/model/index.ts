@@ -30,6 +30,7 @@ export {
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch } from './commands'
 export {
   transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands,
+  fieldEdit,
 } from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'
 export { apply, applyAll } from './reducer'

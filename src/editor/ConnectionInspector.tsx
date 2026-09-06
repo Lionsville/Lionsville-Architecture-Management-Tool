@@ -21,6 +21,7 @@ import { routeFor, routeSource, type AttachSidesPatch } from '../model/routes';
 import { ColorField } from './ColorField';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
+import { fieldEdit } from '../model/commands';
 import type { EditorActions } from './useEditorState';
 
 /**
@@ -149,6 +150,9 @@ export function ConnectionInspector({
   const name = (id: string) => model.elements.find((e) => e.id === id)?.name ?? '?';
   const update = (patch: Partial<Omit<DesignConnection, 'id'>>) =>
     actions.updateConnection(connection.id, patch);
+  /** A text field: live in the model, one undo step for the run (see `fieldEdit`). */
+  const typed = (field: string, patch: Partial<Omit<DesignConnection, 'id'>>) =>
+    actions.updateConnection(connection.id, patch, fieldEdit(connection.id, field));
 
   const route = routeFor(diagram, connection.id);
   const routeStatus: 'none' | 'auto' | 'manual' = route ? routeSource(route) : 'none';
@@ -213,7 +217,7 @@ export function ConnectionInspector({
             disabled={readOnly}
             placeholder={t('field.labelPlaceholder')}
             helperText={t('field.labelHelp')}
-            onChange={(e) => update({ label: e.target.value || undefined })}
+            onChange={(e) => typed('label', { label: e.target.value || undefined })}
           />
           <TextField
             label={t('field.protocol')}
@@ -221,7 +225,7 @@ export function ConnectionInspector({
             fullWidth
             disabled={readOnly}
             placeholder={t('field.protocolPlaceholder')}
-            onChange={(e) => update({ protocol: e.target.value || undefined })}
+            onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
           />
           <TextField
             select

@@ -113,6 +113,26 @@ export type CommandMeta = {
 
 export type Command = CommandBody & CommandMeta
 
+/**
+ * The key that makes a run of edits into one field a single undo step.
+ *
+ * Typing a name is one decision, not eleven. ⌘Z after writing one should give
+ * back the name you had, and without this it gives back the last character.
+ *
+ * The other way to get there — hold the text in a draft and write it to the
+ * model on blur or after a pause — is what the documentation page does, and it
+ * is the wrong trade here: the card on the canvas is drawn from the model, so a
+ * draft means watching the name you are typing not appear. Keeping every
+ * keystroke live and telling the stack they belong together costs one string
+ * and changes nothing about what is on screen.
+ *
+ * One key per row and field, so name and description are two steps, and the
+ * same field on two elements never folds into one.
+ */
+export function fieldEdit(id: string, field: string): string {
+  return `field:${id}:${field}`
+}
+
 /** Several commands, one undo step. */
 export function transaction(commands: Command[], meta: CommandMeta = {}): Command {
   return { type: 'transaction', commands, ...meta }
