@@ -26,6 +26,7 @@
  * | open: parse, index, derive the landscape | 16 ms | 1500 ms |
  * | one inspector keystroke to model update | 0.25 ms | 5 ms |
  * | drag-stop of 10 nodes, routing excluded | 2.0 ms | 30 ms |
+ * | search, one keystroke, warm index | 0.14-0.33 ms | 20 ms |
  * | undo or redo of one step | 1.6 ms | 5 ms |
  * | serialise one diagram file | 1.5 ms | 20 ms |
  * | 500 undo steps, heap growth | 0.02 MB | 50 MB |

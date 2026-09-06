@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -57,15 +57,25 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
     }
   }, [props.open]);
 
+  /**
+   * The field stays live while the list catches up. On a landscape of a few
+   * thousand elements the scan is real work; `useDeferredValue` lets React
+   * paint the character at once and re-run the search at lower priority, so
+   * typing never waits for the answer to the previous keystroke. Where there is
+   * no lag to hide, this is the query.
+   */
+  const asked = useDeferredValue(query);
+
   const hits = useMemo(
-    () => (props.open ? searchElements(props.model, query, props.activeDiagramId) : []),
-    [props.open, props.model, query, props.activeDiagramId],
+    () => (props.open ? searchElements(props.model, asked, props.activeDiagramId) : []),
+    [props.open, props.model, asked, props.activeDiagramId],
   );
 
   // A new query is a new list: the row you had picked out of the old one is not
   // the same row, so the highlight goes back to the top rather than landing on
-  // whatever now happens to sit at that index.
-  useEffect(() => setActiveIndex(0), [query]);
+  // whatever now happens to sit at that index. Keyed on the query the list was
+  // built from rather than on the one being typed.
+  useEffect(() => setActiveIndex(0), [asked]);
 
   const choose = (id: ElementId) => {
     props.onFocus(id);
@@ -90,7 +100,8 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
     setActiveIndex((current) => (Math.min(current, hits.length - 1) + delta + hits.length) % hits.length);
   };
 
-  const trimmed = query.trim();
+  // The empty state describes the list, so it quotes the query the list answers.
+  const trimmed = asked.trim();
 
   return (
     <Dialog

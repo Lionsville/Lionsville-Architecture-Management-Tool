@@ -10,15 +10,20 @@
  * different questions.
  *
  * Matching is the editor's own rule (`matchesQuery`): fold case and accents,
- * every word must occur. Pure, and the model rather than the session, so the
- * dialog is a rendering of this and nothing else.
+ * every word must occur. The folding is done once per model rather than once
+ * per element per keystroke — see `searchIndex.ts` — and what is left here is
+ * the ordering, the limits and what a hit is called. Still pure, and still the
+ * model rather than the session, so the dialog is a rendering of this and
+ * nothing else.
  */
-import { fold, matchesQuery, queryTokens } from '../model'
+import { fold, queryTokens } from '../model'
 import type { ElementKind } from '../model'
 import type { Adr, AdrStatus } from '../decisions/adr'
 import type { HostModel } from '../model/fromInterchange'
+import { bestMatches, groupDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
+import type { AdrEntry, AdrScope } from './searchIndex'
 
-export type AdrScope = 'group' | 'landscape' | 'application'
+export type { AdrScope }
 
 export type SearchHit =
   | {
@@ -60,53 +65,55 @@ export type SearchInput = {
 }
 
 export function searchAll({ model, groupDecisions, query, limitPerKind = SEARCH_LIMIT_PER_KIND }: SearchInput): SearchHit[] {
-  if (queryTokens(query).length === 0) return []
+  const tokens = queryTokens(query)
+  if (tokens.length === 0) return []
+  const index = searchIndex(model)
   const folded = fold(query.trim())
-  const startsWith = (name: string) => (fold(name).startsWith(folded) ? 0 : 1)
 
-  const elements: SearchHit[] = model.elements
-    .filter((e) => matchesQuery(query, [e.name, e.category, e.vendor, e.technology]))
-    .sort((a, b) => startsWith(a.name) - startsWith(b.name) || a.name.localeCompare(b.name))
-    .slice(0, limitPerKind)
-    .map((e) => ({
-      kind: 'element',
-      elementId: e.id,
-      name: e.name,
-      elementKind: e.kind,
-      detail: [e.category, e.vendor, e.technology].filter(Boolean).join(' · ') || undefined,
-    }))
+  // Name order is the index's own order, so both of these are already sorted by
+  // the time the tiers are flattened.
+  const elements: SearchHit[] = bestMatches(index.elements, limitPerKind, 2, (entry) => {
+    if (!matchesTokens(tokens, entry.fields)) return NO_MATCH
+    return entry.name.startsWith(folded) ? 0 : 1
+  }).map(({ element }) => ({
+    kind: 'element',
+    elementId: element.id,
+    name: element.name,
+    elementKind: element.kind,
+    detail: [element.category, element.vendor, element.technology].filter(Boolean).join(' · ') || undefined,
+  }))
 
-  const documentation: SearchHit[] = model.elements
-    .filter((e) => e.description && matchesQuery(query, [e.description]))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, limitPerKind)
-    .map((e) => ({
-      kind: 'documentation',
-      elementId: e.id,
-      name: e.name,
-      snippet: snippet(e.description ?? '', query),
-    }))
+  const documentation: SearchHit[] = bestMatches(index.elements, limitPerKind, 1, (entry) =>
+    (entry.description !== '' && matchesTokens(tokens, entry.description) ? 0 : NO_MATCH),
+  ).map(({ element }) => ({
+    kind: 'documentation',
+    elementId: element.id,
+    name: element.name,
+    snippet: snippet(element.description ?? '', query),
+  }))
 
-  const nameOf = new Map(model.elements.map((e) => [e.id, e.name]))
-  const adrHit = (adr: Adr, scope: AdrScope): SearchHit => ({
+  // The group's records first, then the project's, and the limit applies to the
+  // two together: a group with nine matching decisions must not push the
+  // landscape's own out of the list, and it does not, because eight is all
+  // anybody reads before narrowing the query.
+  const hit = (entry: AdrEntry): SearchHit => ({
     kind: 'adr',
-    adrId: adr.id,
-    scope,
-    applicationId: adr.applicationId,
-    applicationName: adr.applicationId ? nameOf.get(adr.applicationId) : undefined,
-    number: adr.number,
-    title: adr.title,
-    status: adr.status,
-    snippet: matchesQuery(query, [adr.title]) ? '' : snippet(adr.body, query),
+    adrId: entry.adr.id,
+    scope: entry.scope,
+    applicationId: entry.adr.applicationId,
+    applicationName: entry.adr.applicationId ? index.names.get(entry.adr.applicationId) : undefined,
+    number: entry.adr.number,
+    title: entry.adr.title,
+    status: entry.adr.status,
+    snippet: matchesTokens(tokens, entry.title) ? '' : snippet(entry.adr.body, query),
   })
-  const matchesAdr = (adr: Adr) =>
-    matchesQuery(query, [adr.title, adr.body, ...adr.signers.map((s) => s.name)])
-  const decisions: SearchHit[] = [
-    ...groupDecisions.filter(matchesAdr).map((adr) => adrHit(adr, 'group')),
-    ...(model.decisions ?? [])
-      .filter(matchesAdr)
-      .map((adr) => adrHit(adr, adr.applicationId ? 'application' : 'landscape')),
-  ].slice(0, limitPerKind)
+  const decisions: SearchHit[] = []
+  for (const list of [groupDecisionIndex(groupDecisions), index.decisions]) {
+    for (const entry of list) {
+      if (decisions.length >= limitPerKind) break
+      if (matchesTokens(tokens, entry.fields)) decisions.push(hit(entry))
+    }
+  }
 
   return [...elements, ...documentation, ...decisions]
 }

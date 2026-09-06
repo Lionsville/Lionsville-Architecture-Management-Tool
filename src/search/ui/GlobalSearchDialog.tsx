@@ -11,7 +11,7 @@
  * Pure rendering: the hits come from `core/search`, and what a chosen hit does
  * is the caller's (`onChoose`), because opening a page is the workspace's job.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
@@ -53,11 +53,24 @@ export function GlobalSearchDialog({ open, model, groupDecisions, onClose, onCho
     if (open) { setQuery(''); setActiveIndex(0) }
   }, [open])
 
+  /**
+   * The field stays live while the list catches up.
+   *
+   * The search is fast on the landscapes anybody has today, and on a big one it
+   * is a scan over every element and every decision. `useDeferredValue` lets
+   * React paint the character you just typed at once and re-run the search at
+   * lower priority, so a slow answer never makes the field itself lag. When
+   * there is no lag to hide, this is the query.
+   */
+  const asked = useDeferredValue(query)
+
   const hits = useMemo(
-    () => (open ? searchAll({ model, groupDecisions, query }) : []),
-    [open, model, groupDecisions, query],
+    () => (open ? searchAll({ model, groupDecisions, query: asked }) : []),
+    [open, model, groupDecisions, asked],
   )
-  useEffect(() => setActiveIndex(0), [query])
+  // Keyed on the query the list was built from, not on the one being typed: the
+  // highlight resets when the rows it points into change.
+  useEffect(() => setActiveIndex(0), [asked])
 
   const active = hits.length > 0 ? Math.min(activeIndex, hits.length - 1) : -1
   const optionId = (index: number) => `lv-gsearch-option-${index}`
@@ -78,7 +91,8 @@ export function GlobalSearchDialog({ open, model, groupDecisions, onClose, onCho
     onClose()
   }
 
-  const trimmed = query.trim()
+  // The empty state describes the list, so it quotes the query the list answers.
+  const trimmed = asked.trim()
 
   return (
     <Dialog
