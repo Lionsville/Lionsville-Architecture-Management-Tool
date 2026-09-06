@@ -170,6 +170,11 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.fitView': 'Passend maken',
   'toolbar.exportPng': 'PNG exporteren',
   'toolbar.exportingPng': 'Bezig met PNG exporteren…',
+  'export.largeTitle': 'Dit grote aanzicht exporteren?',
+  'export.largeBody':
+    'Dit bord levert een afbeelding van {width} bij {height}, ongeveer {megapixels} megapixels. '
+    + 'Tekenen kan even duren en het venster reageert intussen niet.',
+  'export.largeConfirm': 'Toch exporteren',
   'toolbar.lifecycleBadges': 'Levenscyclusbadges tonen of verbergen',
   'toolbar.shortcuts': 'Sneltoetsen',
   'toolbar.search': 'Element zoeken',

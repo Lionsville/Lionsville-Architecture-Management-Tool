@@ -178,6 +178,11 @@ export const EN = {
   'toolbar.fitView': 'Fit view',
   'toolbar.exportPng': 'Export PNG',
   'toolbar.exportingPng': 'Exporting PNG…',
+  'export.largeTitle': 'Export this large diagram?',
+  'export.largeBody':
+    'This board makes a {width} by {height} image, about {megapixels} megapixels. '
+    + 'Drawing it can take a while, and the window will not respond until it is done.',
+  'export.largeConfirm': 'Export anyway',
   'toolbar.lifecycleBadges': 'Toggle lifecycle badges',
   'toolbar.shortcuts': 'Keyboard shortcuts',
   'toolbar.search': 'Find element',

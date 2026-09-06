@@ -1,4 +1,4 @@
-import { toPng } from 'html-to-image';
+import { toCanvas } from 'html-to-image';
 import type { Rect } from '../../model/types';
 import type { ExportDiagramPngOptions, ExportTitleBlock } from '../props';
 
@@ -39,13 +39,20 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
   // quietly lose half its marks on its way into a customer document. Inline them
   // first, restore afterwards, and report what could not be reached.
   const restoreImages = await inlineRemoteImages(viewport);
-  let dataUrl: string;
+  let canvas: HTMLCanvasElement;
   try {
-    dataUrl = await toPng(viewport, {
-    backgroundColor: background,
-    pixelRatio,
-    width,
-    height,
+    // `toCanvas` rather than `toPng`, and this is not a detail on a large board.
+    // The PNG route encoded the bitmap, wrote it into a base64 string, decoded
+    // that string back into an image and drew it onto a SECOND canvas to add the
+    // title block — four passes over the pixels and, for a 6000px landscape, a
+    // couple of hundred megabytes of string held alongside two canvases. The
+    // title block is drawn onto the canvas that was captured, and the encode
+    // happens once, into the blob that leaves.
+    canvas = await toCanvas(viewport, {
+      backgroundColor: background,
+      pixelRatio,
+      width,
+      height,
       style: {
         width: `${width}px`,
         height: `${height}px`,
@@ -60,9 +67,52 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
     options.onImagesMissing?.(restoreImages.failed);
   }
 
-  if (!options.titleBlock) return dataUrlToBlob(dataUrl);
-  return composeTitleBlock(dataUrl, options.titleBlock, pixelRatio);
+  if (options.titleBlock) {
+    // No 2d context is a browser that has already declined the bitmap. The
+    // capture is whatever it is; refusing to hand it over as well would turn a
+    // picture without a caption into no picture at all.
+    const ctx = canvas.getContext('2d');
+    if (ctx) drawTitleBlock(ctx, canvas.width, canvas.height, options.titleBlock, pixelRatio);
+  }
+  return canvasToBlob(canvas);
 }
+
+/**
+ * How large the bitmap will be, before anything is rasterised.
+ *
+ * So a caller can ask before it commits somebody's machine to it: the ratio is
+ * chosen for paper (see {@link exportPixelRatio}), which on a landscape that
+ * already measures thousands of flow pixels is tens of megapixels and several
+ * seconds of an unresponsive tab. The arithmetic is the same as the export's,
+ * and it is here rather than in the caller so it cannot drift from it.
+ */
+export function exportBitmapSize(
+  bounds: Rect, padding = 48, requested?: number,
+): { width: number; height: number; megapixels: number; pixelRatio: number } {
+  const width = Math.ceil(bounds.width + padding * 2);
+  const height = Math.ceil(bounds.height + padding * 2);
+  const pixelRatio = exportPixelRatio(width, height, requested);
+  const pixels = width * pixelRatio * height * pixelRatio;
+  return {
+    width: Math.round(width * pixelRatio),
+    height: Math.round(height * pixelRatio),
+    megapixels: Math.round(pixels / 1e6),
+    pixelRatio,
+  };
+}
+
+/**
+ * Above this many megapixels, a caller should ask first.
+ *
+ * Roughly a 6000x6000 sheet. Below it the export is a few seconds; above it the
+ * cost climbs with the area and the browser is doing it on the main thread with
+ * no way to stop — which is exactly why the protection is a question BEFORE it
+ * starts rather than a progress bar during it. A progress bar would be a lie:
+ * neither `toCanvas` nor `toBlob` can be interrupted or report where they are,
+ * so a Cancel could only abandon a result the machine is going to finish
+ * computing anyway.
+ */
+export const LARGE_EXPORT_MEGAPIXELS = 36;
 
 /**
  * The floor. Two device pixels per CSS pixel is a retina screen, and the least
@@ -194,14 +244,6 @@ function measureNodeBounds(viewport: HTMLElement): Rect {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
-function dataUrlToBlob(dataUrl: string): Blob {
-  const [, base64] = dataUrl.split(',');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: 'image/png' });
-}
-
 const INK = '#1F2733';
 const INK_MUTED = '#6B7480';
 
@@ -216,22 +258,6 @@ const DEFAULT_TITLE_BLOCK_LABELS = {
   date: 'DATE',
   legend: 'ASPECTS',
 } as const;
-
-async function composeTitleBlock(
-  dataUrl: string,
-  block: ExportTitleBlock,
-  pixelRatio: number,
-): Promise<Blob> {
-  const image = await loadImage(dataUrl);
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return dataUrlToBlob(dataUrl);
-  ctx.drawImage(image, 0, 0);
-  drawTitleBlock(ctx, canvas.width, canvas.height, block, pixelRatio);
-  return canvasToBlob(canvas);
-}
 
 function drawTitleBlock(
   ctx: CanvasRenderingContext2D,
@@ -282,15 +308,6 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
     clipped = clipped.slice(0, -1);
   }
   return `${clipped}…`;
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('exportDiagramPng: failed to decode capture'));
-    image.src = src;
-  });
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {

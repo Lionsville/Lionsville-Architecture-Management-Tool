@@ -23,10 +23,17 @@ import type { DesignModel } from '../../model/types';
 
 vi.mock('html-to-image', () => ({
   // Counts what was in the DOM at the moment of capture, which is the whole
-  // question. A real rasteriser has nothing to do in jsdom anyway.
-  toPng: vi.fn(async (element: HTMLElement) => {
+  // question. A real rasteriser has nothing to do in jsdom anyway — there is no
+  // 2d context and no layout — so the stand-in canvas answers the two things
+  // the export asks of it and nothing else.
+  toCanvas: vi.fn(async (element: HTMLElement) => {
     captured.push(element.ownerDocument.querySelectorAll('.react-flow__node').length);
-    return 'data:image/png;base64,';
+    return {
+      width: 10,
+      height: 10,
+      getContext: () => null,
+      toBlob: (give: (blob: Blob) => void) => give(new Blob([], { type: 'image/png' })),
+    } as unknown as HTMLCanvasElement;
   }),
 }));
 
@@ -37,7 +44,7 @@ afterEach(() => { cleanup(); captured.length = 0; });
 
 /** A landscape past the threshold, on one board. */
 const big = syntheticModel({
-  elements: 260, connections: 300, diagrams: 2, descriptionBytes: 120, decisions: 0, seed: 9,
+  elements: 230, connections: 300, diagrams: 2, descriptionBytes: 120, decisions: 0, seed: 9,
 }) as DesignModel;
 
 function renderEditor(model: DesignModel, activeDiagramId: string) {
@@ -57,7 +64,7 @@ const drawn = () => document.querySelectorAll('.react-flow__node').length;
  * jsdom, and the default one-second wait is a coin toss for it when the rest of
  * the suite is running beside this file.
  */
-const SLOWLY = { timeout: 15_000 };
+const SLOWLY = { timeout: 30_000 };
 
 describe('the rule', () => {
   it('leaves a board anybody arranged by hand alone', () => {
@@ -103,7 +110,29 @@ describe('what the canvas asks React Flow to draw', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
 
+    // A board this size is tens of megapixels, so it asks first — and it asks
+    // before mounting anything, which is why the answer has to arrive before
+    // there is a capture to count.
+    const go = await screen.findByRole('button', { name: 'Export anyway' }, SLOWLY);
+    expect(captured).toHaveLength(0);
+    fireEvent.click(go);
+
     await waitFor(() => expect(captured).toHaveLength(1), SLOWLY);
     expect(captured[0]).toBe(big.diagrams[0].placements.length);
+  }, SLOWLY.timeout);
+
+  it('does not capture a board the user decided against', async () => {
+    renderEditor(big, 'landscape');
+    await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }, SLOWLY));
+
+    await waitFor(
+      () => expect((screen.getByRole('button', { name: 'Export PNG' }) as HTMLButtonElement).disabled)
+        .toBe(false),
+      SLOWLY,
+    );
+    expect(captured).toHaveLength(0);
   }, SLOWLY.timeout);
 });

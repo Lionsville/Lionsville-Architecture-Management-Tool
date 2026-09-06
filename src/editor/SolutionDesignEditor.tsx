@@ -13,7 +13,9 @@ import { newDomainGroupRect } from './canvas/domainGroupPlacement';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
 import { type ClipboardPayload } from '../model/clipboard';
-import { exportDiagramPng } from './export/exportPng';
+import {
+  exportBitmapSize, exportDiagramPng, LARGE_EXPORT_MEGAPIXELS,
+} from './export/exportPng';
 import {
   tidyContainer,
   tidyGroup,
@@ -60,6 +62,7 @@ import { ElementInspector } from './ElementInspector';
 import { InspectorEmptyState, InspectorPanel } from './InspectorPanel';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { ShortcutsHelpDialog } from './ShortcutsHelpDialog';
+import { ConfirmDialog } from '../widgets';
 import { DocumentationPage } from '../documentation/ui/DocumentationPage';
 import {
   defaultElementNames,
@@ -134,6 +137,16 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // between the two passes that do. All it owes the user is a spinner on the
   // button they pressed, and no second export while the first rasterises.
   const [exporting, setExporting] = useState(false);
+  /**
+   * The whole board is mounted for a capture. Separate from {@link exporting},
+   * which is only the button's spinner: mounting two thousand boxes is real work
+   * and must not happen while a dialog is asking whether to export at all.
+   */
+  const [capturing, setCapturing] = useState(false);
+  /** A board large enough to be worth asking about, and the answer's way back. */
+  const [largeExport, setLargeExport] = useState<
+    { size: ReturnType<typeof exportBitmapSize>; decide(go: boolean): void } | undefined
+  >(undefined);
   /**
    * The view settings, seeded from the host and reported back on every change.
    *
@@ -773,24 +786,38 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const handleExport = useCallback(async () => {
     if (!wrapperRef.current || !activeDiagram || exporting) return;
     setExporting(true);
+    const nodesBounds = getNodesBounds(getNodes());
+    const bounds: Rect =
+      activeDiagram.kind === 'layer7'
+        ? (unionRects([canvasRect(activeDiagram.layoutConfig), nodesBounds]) as Rect)
+        : nodesBounds;
+
+    // Asked BEFORE anything is mounted or rasterised, because that is the only
+    // moment at which the answer can change what happens. The ratio is chosen
+    // for paper, so a landscape that already measures thousands of flow pixels
+    // becomes tens of megapixels — several seconds during which the browser
+    // draws on the main thread and nothing can interrupt it.
+    const size = exportBitmapSize(bounds);
+    if (size.megapixels > LARGE_EXPORT_MEGAPIXELS) {
+      const go = await new Promise<boolean>((decide) => setLargeExport({ size, decide }));
+      setLargeExport(undefined);
+      if (!go) return;
+    }
+
     // The capture reads the DOM, and the canvas only keeps what is on screen in
-    // it. `exporting` is what turns that off; this waits for the browser to
+    // it. `capturing` is what turns that off; this waits for the browser to
     // have laid the whole board out under the new flag before html-to-image
-    // looks at it. The bounds below come from React Flow's store rather than
+    // looks at it. The bounds above come from React Flow's store rather than
     // from the DOM, so they were never affected — but the picture would have
     // been, and silently: a PNG of a two-thousand element landscape showing the
     // thirty boxes that happened to be in view.
+    setCapturing(true);
     await painted();
     // The editor can be gone by the time that frame arrives — a diagram
     // switched, a project closed, a window shut. There is nothing to capture
     // and nothing to report.
     const container = wrapperRef.current;
     if (!container) return;
-    const nodesBounds = getNodesBounds(getNodes());
-    const bounds: Rect =
-      activeDiagram.kind === 'layer7'
-        ? (unionRects([canvasRect(activeDiagram.layoutConfig), nodesBounds]) as Rect)
-        : nodesBounds;
     const blob = await exportDiagramPng({
       container,
       bounds,
@@ -841,7 +868,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const runExport = useCallback(() => {
     void handleExport().catch((error: unknown) => {
       reportLayoutError(t('error.export'), error);
-    }).finally(() => setExporting(false));
+    }).finally(() => {
+      setExporting(false);
+      setCapturing(false);
+    });
   }, [handleExport, reportLayoutError, t]);
 
   const handleDoubleClick = useCallback(
@@ -1012,7 +1042,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onToggleShowGrid={() => setShowGrid((on) => !on)}
           showLifecycle={showLifecycle}
           showMinimap={showMinimap}
-          mountEveryElement={exporting}
+          mountEveryElement={capturing}
           onElementDoubleClick={handleDoubleClick}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
@@ -1128,6 +1158,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
         />
       )}
       <ShortcutsHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <ConfirmDialog
+        open={largeExport !== undefined}
+        title={t('export.largeTitle')}
+        body={t('export.largeBody', {
+          width: largeExport?.size.width ?? 0,
+          height: largeExport?.size.height ?? 0,
+          megapixels: largeExport?.size.megapixels ?? 0,
+        })}
+        confirmLabel={t('export.largeConfirm')}
+        cancelLabel={t('common.cancel')}
+        onCancel={() => largeExport?.decide(false)}
+        onConfirm={() => largeExport?.decide(true)}
+      />
       {documentationElement && (
         <DocumentationPage
           key={documentationElement.id}

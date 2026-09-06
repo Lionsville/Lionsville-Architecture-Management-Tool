@@ -1,11 +1,26 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const toPng = vi.fn(async () => 'data:image/png;base64,AAAA');
+/**
+ * A stand-in for the captured canvas. jsdom has no 2d context and no
+ * `toBlob`, so the real thing cannot be produced here — and does not need to
+ * be: what these tests are about is what the export asks for and what it puts
+ * back, not what a rasteriser draws.
+ */
+const fakeCanvas = () => ({
+  width: 100,
+  height: 80,
+  getContext: () => null,
+  toBlob: (give: (blob: Blob | null) => void) => give(new Blob([], { type: 'image/png' })),
+} as unknown as HTMLCanvasElement);
 
-vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...(args as [])) }));
+const toCanvas = vi.fn(async () => fakeCanvas());
 
-const { exportDiagramPng, exportPixelRatio } = await import('./exportPng');
+vi.mock('html-to-image', () => ({ toCanvas: (...args: unknown[]) => toCanvas(...(args as [])) }));
+
+const {
+  exportBitmapSize, exportDiagramPng, exportPixelRatio, LARGE_EXPORT_MEGAPIXELS,
+} = await import('./exportPng');
 
 /**
  * The export inlines every remote image before capturing, because html-to-image
@@ -14,7 +29,7 @@ const { exportDiagramPng, exportPixelRatio } = await import('./exportPng');
  */
 
 afterEach(() => {
-  toPng.mockClear();
+  toCanvas.mockClear();
   vi.unstubAllGlobals();
   document.body.innerHTML = '';
 });
@@ -61,9 +76,9 @@ describe('exportDiagramPng — logo marks', () => {
     const container = viewportWithLogo();
     const original = srcOf(container);
     let srcDuringCapture: string | null = null;
-    toPng.mockImplementationOnce(async () => {
+    toCanvas.mockImplementationOnce(async () => {
       srcDuringCapture = srcOf(container);
-      return 'data:image/png;base64,AAAA';
+      return fakeCanvas();
     });
     vi.stubGlobal('fetch', vi.fn(async () => okSvg()));
 
@@ -107,7 +122,7 @@ describe('exportDiagramPng — logo marks', () => {
   it('restores the original sources even when the capture itself throws', async () => {
     const container = viewportWithLogo();
     const original = srcOf(container);
-    toPng.mockRejectedValueOnce(new Error('canvas exploded'));
+    toCanvas.mockRejectedValueOnce(new Error('canvas exploded'));
     vi.stubGlobal('fetch', vi.fn(async () => okSvg()));
 
     await expect(
@@ -136,7 +151,7 @@ describe('exportDiagramPng — how much of it survives printing', () => {
     style: { transform: string };
   };
   const captureOptions = () =>
-    (toPng.mock.calls[0] as unknown as [HTMLElement, CaptureOptions])[1];
+    (toCanvas.mock.calls[0] as unknown as [HTMLElement, CaptureOptions])[1];
 
   it('captures the board at its own size, with the padding around it', async () => {
     const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
@@ -202,3 +217,31 @@ describe('exportPixelRatio', () => {
     expect(exportPixelRatio(20000, 12000, 4)).toBe(ratio);
   });
 });
+
+/**
+ * How big the picture will be, asked before anything is drawn. The arithmetic
+ * is the export's own, so a caller that shows the number and a caller that
+ * rasterises it cannot disagree about what is about to happen.
+ */
+describe('exportBitmapSize', () => {
+  it('reports the bitmap the export would produce, padding included', () => {
+    const size = exportBitmapSize({ x: 0, y: 0, width: 1000, height: 500 }, 50);
+    // 1100 x 600 of board; the ratio aims the long edge at 6000.
+    expect(size.pixelRatio).toBe(exportPixelRatio(1100, 600));
+    expect(size.width).toBe(Math.round(1100 * size.pixelRatio));
+    expect(size.height).toBe(Math.round(600 * size.pixelRatio));
+  });
+
+  it('counts the megapixels a caller has to decide about', () => {
+    const size = exportBitmapSize({ x: 0, y: 0, width: 1904, height: 904 }, 48);
+    expect(size.megapixels).toBe(Math.round((size.width * size.height) / 1e6));
+  });
+
+  it('leaves an ordinary board under the threshold and a landscape over it', () => {
+    // A container diagram, and the default Layer 7 board grown to its ceiling.
+    expect(exportBitmapSize({ x: 0, y: 0, width: 900, height: 620 }).megapixels)
+      .toBeLessThan(LARGE_EXPORT_MEGAPIXELS);
+    expect(exportBitmapSize({ x: 0, y: 0, width: 4800, height: 3200 }).megapixels)
+      .toBeGreaterThan(LARGE_EXPORT_MEGAPIXELS);
+  });
+})
