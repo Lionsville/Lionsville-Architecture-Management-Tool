@@ -11,6 +11,7 @@
  * beside `lvarch.project.acme/landscape`. A group's record and its projects are
  * separate records with separate lifetimes.
  */
+import { ShellError } from '../../core/errors'
 import { isGroupProfile } from '../../core/group'
 import type { GroupProfile } from '../../core/group'
 import { isGroupPath } from '../../core/projectRef'
@@ -62,7 +63,7 @@ export class WebStorageGroupStore implements GroupStore {
 
   save(profile: GroupProfile): Promise<void> {
     if (!isGroupPath(profile.group)) {
-      return Promise.reject(new Error(`Not a usable group path: ${JSON.stringify(profile.group)}`))
+      return Promise.reject(new ShellError('shell.badGroupPath', { path: JSON.stringify(profile.group) }))
     }
     try {
       this.storage.setItem(this.keyFor(profile.group), JSON.stringify(profile))

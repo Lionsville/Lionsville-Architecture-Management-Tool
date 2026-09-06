@@ -578,6 +578,8 @@ export const NL: StringTable = {
   'shell.unknownFile': 'Dit bestand is geen interchange-document en geen werkbestand.',
   'shell.processFailed': 'Het document kon niet worden verwerkt: {message}',
   'shell.saveFileFailed': 'Het bestand kon niet worden bewaard: {message}',
+  'shell.badProjectRef': 'Dat project heeft geen bruikbaar adres ({path}) en kan dus niet bewaard worden.',
+  'shell.badGroupPath': 'Die groep heeft geen bruikbaar adres ({path}) en kan dus niet bewaard worden.',
   'shell.moveLeftCopy': 'Verplaatst — maar de kopie in de oude groep kon niet worden verwijderd: {message}',
   'shell.groupRenameIncomplete': 'De groep is hernoemd, maar deze projecten dragen nog de oude naam: {names}.',
   'shell.newDiagram': 'Nieuw landschap',

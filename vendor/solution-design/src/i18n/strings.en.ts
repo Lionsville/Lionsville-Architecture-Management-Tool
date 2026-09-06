@@ -620,6 +620,14 @@ export const EN = {
    */
   'shell.saveFileFailed': 'The file could not be saved: {message}',
   /**
+   * The two refusals a store makes about the address it was handed, rather than
+   * about the storage underneath. They travel as keys like everything else: a
+   * store has no language of its own, and these used to be English sentences
+   * shown verbatim to somebody who had chosen Dutch.
+   */
+  'shell.badProjectRef': 'That project has no usable address ({path}), so it cannot be saved.',
+  'shell.badGroupPath': 'That group has no usable address ({path}), so it cannot be saved.',
+  /**
    * A move is save-then-remove, in that order — removing first and then failing
    * to save would lose the project outright. When the remove is the half that
    * fails, the project is filed twice, and saying nothing would leave the user

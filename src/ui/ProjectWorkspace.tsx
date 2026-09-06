@@ -25,6 +25,7 @@ import type { WindowChrome } from '../core/windowChrome'
 import { AdrPage } from './adr/AdrPage'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ErrorBoundary } from './ErrorBoundary'
+import { messageFor } from './messageFor'
 import type { CrashControls, CrashTrail } from './ErrorBoundary'
 import { GlobalSearchDialog } from './search/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
@@ -213,7 +214,7 @@ export function ProjectWorkspace({
       // itself broke, which nothing above would otherwise hear about.
       (cause: unknown) => {
         diagnostics.report({ level: 'error', where: 'applySettings', message: 'rejected', cause })
-        notify(s('shell.processFailed', { message: String((cause as Error)?.message ?? cause) }), 'error')
+        notify(messageFor(cause, s), 'error')
       },
     )
   }, [session, onApplySettings, diagnostics, notify, s])

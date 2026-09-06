@@ -12,12 +12,14 @@
  */
 import { useCallback } from 'react'
 import type { Translate } from '@lionsville/solution-design'
-import { LogoError, readLogoFile, takenLogoKeys } from '../core/logo'
+import { reasonOf } from '../core/errors'
+import { readLogoFile, takenLogoKeys } from '../core/logo'
 import { WORKING_FILE_EXTENSION } from '../core/model/hostModel'
 import { toInterchange } from '../core/model/toInterchange'
 import { openProjectDocument, toWorkingFile } from '../core/project'
 import { refPath } from '../core/projectRef'
 import type { TextDocument } from '../ports/DocumentGateway'
+import { messageFor } from './messageFor'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
@@ -40,17 +42,6 @@ export type ProjectFiles = {
   saveInterchange: () => void
   openFile: (file: File) => void
   addLogo: (file: File) => void
-}
-
-/**
- * Whatever was thrown, as something that can go in a sentence.
- *
- * Replaced in the next step by the shared `messageFor` helper, which knows
- * about keys; until then this is what the two open paths in this file already
- * did, said once.
- */
-function reasonOf(error: unknown): string {
-  return String((error as Error)?.message ?? error)
 }
 
 /**
@@ -136,7 +127,7 @@ export function useProjectFiles(deps: {
           notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
         }
       },
-      (err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'),
+      (err: unknown) => notify(messageFor(err, s), 'error'),
     )
   }, [documents, session, notify, s])
 
@@ -149,8 +140,7 @@ export function useProjectFiles(deps: {
       })
       // The reader refuses with a KEY; here, where the language is known, it
       // becomes a sentence.
-      .catch((err: unknown) => notify(
-        err instanceof LogoError ? s(err.key, err.params) : reasonOf(err), 'error'))
+      .catch((err: unknown) => notify(messageFor(err, s), 'error'))
   }, [documents, session, notify, s])
 
   return { saveWorkingFile, saveInterchange, openFile, addLogo }

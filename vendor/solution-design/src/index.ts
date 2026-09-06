@@ -128,7 +128,7 @@ export {
   t,
   translator,
 } from './i18n/strings';
-export type { Language, StringKey, StringTable, Translate } from './i18n/strings';
+export type { Language, StringKey, StringParams, StringTable, Translate } from './i18n/strings';
 export { LanguageProvider, useStrings } from './i18n/LanguageContext';
 /**
  * Panel geometry: a host that persists `EditorPreferences` gets widths in the

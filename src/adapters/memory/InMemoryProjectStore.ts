@@ -8,6 +8,7 @@
  * store are looking at the same object, and then it falls over in the real
  * adapter, which goes through JSON. Copying makes it exactly as strict.
  */
+import { ShellError } from '../../core/errors'
 import { isUsableProject, sortProjects, summarise } from '../../core/project'
 import type { ProjectSnapshot, ProjectSummary } from '../../core/project'
 import { isProjectRef, refPath } from '../../core/projectRef'
@@ -37,7 +38,7 @@ export class InMemoryProjectStore implements ProjectStore {
 
   save(project: ProjectSnapshot): Promise<void> {
     if (!isProjectRef(project.ref)) {
-      return Promise.reject(new Error(`Not a usable project ref: ${JSON.stringify(project.ref)}`))
+      return Promise.reject(new ShellError('shell.badProjectRef', { path: JSON.stringify(project.ref) }))
     }
     this.held.set(refPath(project.ref), {
       ...structuredClone(project),

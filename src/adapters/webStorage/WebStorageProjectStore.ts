@@ -17,6 +17,7 @@
  * strict policy — because then everything keeps working until the tab closes,
  * and somebody needs to know.
  */
+import { ShellError } from '../../core/errors'
 import { isUsableProject, sortProjects, summarise } from '../../core/project'
 import type { ProjectSnapshot, ProjectSummary } from '../../core/project'
 import { isProjectRef, refPath } from '../../core/projectRef'
@@ -101,7 +102,7 @@ export class WebStorageProjectStore implements ProjectStore {
 
   save(project: ProjectSnapshot): Promise<void> {
     if (!isProjectRef(project.ref)) {
-      return Promise.reject(new Error(`Not a usable project ref: ${JSON.stringify(project.ref)}`))
+      return Promise.reject(new ShellError('shell.badProjectRef', { path: JSON.stringify(project.ref) }))
     }
     try {
       const stamped: ProjectSnapshot = { ...project, updatedAt: new Date().toISOString() }

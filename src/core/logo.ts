@@ -16,7 +16,8 @@
  * sees it should look in the library first, and it makes a collision with a
  * built-in key impossible.
  */
-import type { StringKey, UploadedLogo } from '@lionsville/solution-design'
+import type { StringKey, StringParams, UploadedLogo } from '@lionsville/solution-design'
+import { ShellError } from './errors'
 import { claimKey } from './model/keys'
 
 /** The prefix the package reads as "this one is an upload". */
@@ -38,21 +39,16 @@ const ALLOWED_TYPES = ['image/svg+xml', 'image/png']
  * This file is a reader without a language of its own: it knows nothing about
  * the button somebody just pressed and nothing about the language the shell is
  * in at that moment. It used to return Dutch prose that `main.tsx` passed along
- * verbatim — the one place an English shell still spoke Dutch. Now the error
- * carries a `shell.logo*` key plus the numbers that belong in it, and the shell
- * translates it at the moment of showing.
+ * verbatim — the one place an English shell still spoke Dutch.
+ *
+ * A {@link ShellError} now, and a subclass only so `instanceof LogoError` still
+ * says which reader refused. Callers that only want a sentence no longer need
+ * to know either name: `messageFor` handles every `ShellError` the same way.
  */
-export class LogoError extends Error {
-  readonly key: StringKey
-  readonly params?: Record<string, string | number>
-
-  constructor(key: StringKey, params?: Record<string, string | number>) {
-    // The key doubles as the `message`, so an error that ends up unread in a log
-    // somewhere still says WHICH refusal it was.
-    super(key)
+export class LogoError extends ShellError {
+  constructor(key: StringKey, params?: StringParams) {
+    super(key, params)
     this.name = 'LogoError'
-    this.key = key
-    this.params = params
   }
 }
 

@@ -7,6 +7,7 @@
  * shared-object bug through, and then it falls over in a real adapter that goes
  * via JSON.
  */
+import { ShellError } from '../../core/errors'
 import { isGroupProfile } from '../../core/group'
 import type { GroupProfile } from '../../core/group'
 import { isGroupPath } from '../../core/projectRef'
@@ -31,7 +32,7 @@ export class InMemoryGroupStore implements GroupStore {
 
   save(profile: GroupProfile): Promise<void> {
     if (!isGroupPath(profile.group)) {
-      return Promise.reject(new Error(`Not a usable group path: ${JSON.stringify(profile.group)}`))
+      return Promise.reject(new ShellError('shell.badGroupPath', { path: JSON.stringify(profile.group) }))
     }
     this.held.set(profile.group, structuredClone(profile))
     return Promise.resolve()

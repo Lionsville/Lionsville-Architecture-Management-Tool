@@ -14,6 +14,8 @@
  * discipline at the call sites, which is why it is written at the top of the
  * file every call site imports from.
  */
+import { reasonOf } from './errors'
+
 
 export type DiagnosticLevel = 'error' | 'warn' | 'info'
 
@@ -47,12 +49,10 @@ export const RING_SIZE = 200
  */
 export function describeCause(cause: unknown): string | undefined {
   if (cause === undefined || cause === null) return undefined
+  // The class name is worth having here and nowhere else: a log reader wants to
+  // know it was a QuotaExceededError, a user does not.
   if (cause instanceof Error) return `${cause.name}: ${cause.message}`
-  if (typeof cause === 'object') {
-    const message = (cause as { message?: unknown }).message
-    if (typeof message === 'string') return message
-  }
-  return String(cause)
+  return reasonOf(cause)
 }
 
 /** One entry as a line: the shape both the console and the copied text use. */

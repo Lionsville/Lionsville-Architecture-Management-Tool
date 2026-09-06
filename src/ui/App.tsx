@@ -20,6 +20,7 @@ import { translator } from '@lionsville/solution-design'
 import type { StringKey } from '@lionsville/solution-design'
 import type { Adr } from '../core/adr'
 import type { Diagnostic, DiagnosticEntry } from '../core/diagnostics'
+import { reasonOf } from '../core/errors'
 import { groupProfileFor, normaliseGroupProfile } from '../core/group'
 import type { GroupProfile } from '../core/group'
 import {
@@ -48,14 +49,6 @@ import type { PreferencesWriter } from './useShellPreferences'
 import { useStorageNotice } from './useStorageNotice'
 import type { StorageNotice } from './useStorageNotice'
 import { useToasts } from './useToasts'
-
-/**
- * Whatever was thrown, as something that can go in a sentence. The same one
- * `useProjectFiles` uses; replaced by the shared `messageFor` in the next step.
- */
-function reasonOf(error: unknown): string {
-  return String((error as Error)?.message ?? error)
-}
 
 /**
  * What `App` does to a store.
