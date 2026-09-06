@@ -9,4 +9,9 @@ export const EN = {
   'shell.workingFileNoDiagrams': 'This working file has no diagrams.',
   'shell.interchangeNoDiagrams': 'This document has no diagrams.',
   'shell.unknownFile': 'This file is neither an interchange document nor a working file.',
+  /**
+   * The tail of a drafted commit subject, when there were more steps than a
+   * subject line should name. The body below it lists every one.
+   */
+  'git.andMore': ' and {count} more',
 } as const

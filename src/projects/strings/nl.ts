@@ -11,5 +11,6 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
   'shell.workingFileNoDiagrams': 'Dit werkbestand heeft geen aanzichten.',
   'shell.interchangeNoDiagrams': 'Dit document heeft geen aanzichten.',
+  'git.andMore': ' en nog {count}',
   'shell.unknownFile': 'Dit bestand is geen interchange-document en geen werkbestand.',
 }
