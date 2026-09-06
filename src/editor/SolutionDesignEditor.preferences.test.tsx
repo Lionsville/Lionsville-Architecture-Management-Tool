@@ -5,7 +5,8 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from './SolutionDesignEditor';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { EditorPreferences } from './preferences';
-import type { DesignModel, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 
 /**
  * The preferences seam: settings in through `initialPreferences`, out through

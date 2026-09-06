@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel, DiagramContentBatch } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_ZONE_SIZES, HOME_ZONE } from '../model/zones';
 import { NODE_MAX_SIZE } from '../model/placement';
 import { useEditorState } from './useEditorState';

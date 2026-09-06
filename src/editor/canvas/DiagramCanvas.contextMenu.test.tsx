@@ -6,7 +6,8 @@ import { SolutionDesignEditor } from '../SolutionDesignEditor';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import { isTempId } from '../../model/ids';
 import { zoneRect } from '../../model/zones';
-import type { DesignModel, DiagramContentBatch, SolutionDesignEditorProps } from '../../model/types';
+import type { DesignModel, DiagramContentBatch } from '../../model/types';
+import type { SolutionDesignEditorProps } from '../props';
 
 /**
  * The context menus, end to end through the editor: a right-click opens the

@@ -4,7 +4,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from './SolutionDesignEditor';
 import { installReactFlowMocks } from './reactFlowTestSetup';
-import type { DesignModel, DiagramContentBatch, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel, DiagramContentBatch } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 
 /**
  * The two deletes that used to happen in silence: one connection, and a whole

@@ -9,12 +9,10 @@
  */
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
-  DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting, EdgeArrowhead,
-  NodeShapeVariant, NodeIconSize, UploadedLogo, DiagramPlacement, DesignDiagram, DesignModel,
-  DiagramContentBatch, MarkdownRenderOptions, WindowChrome, DiagramLayoutConfig, DiagramSettings,
-  DomainGroupRect, EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, ParameterSpec,
-  DecorationChip, ElementDecoration, SolutionDesignEditorProps, Rect, ExportTitleBlock,
-  ExportDiagramPngOptions,
+  Lifecycle, DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting,
+  EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DiagramPlacement, DesignDiagram,
+  DesignModel, DiagramContentBatch, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
+  EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'
 
 export { createTempId, isTempId } from './ids'

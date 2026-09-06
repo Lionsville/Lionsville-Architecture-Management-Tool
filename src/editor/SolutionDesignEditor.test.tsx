@@ -7,7 +7,8 @@ import { SolutionDesignEditor } from './SolutionDesignEditor';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { PALETTE_DRAG_MIME } from './canvas/ElementPalette';
 import { isTempId } from '../model/ids';
-import type { DesignModel, DiagramContentBatch, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel, DiagramContentBatch } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 
 beforeAll(() => {

@@ -9,6 +9,11 @@
  * untied: untying it is a redesign of the editor's state, which phase 3 owns.
  */
 export { SolutionDesignEditor } from './SolutionDesignEditor'
+/** What the editor is handed: props, decorations, export options. */
+export type {
+  DecorationChip, ElementDecoration, ExportDiagramPngOptions, ExportTitleBlock, ParameterSpec,
+  SolutionDesignEditorProps,
+} from './props'
 /**
  * The maturity-column list, on its own. The shell keeps its own defaults —
  * "what a new landscape starts with" — and edits them with the same component

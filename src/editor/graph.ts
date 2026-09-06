@@ -1,13 +1,6 @@
 import { MarkerType, type Edge } from '@xyflow/react';
-import type {
-  DesignDiagram,
-  DesignElement,
-  DesignModel,
-  EdgeRoute,
-  ElementDecoration,
-  ElementId,
-  Rect,
-} from '../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, Rect } from '../model/types';
+import type { ElementDecoration } from './props';
 import type { ElementNode } from './nodes/nodeData';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
 import { aspectConfigFor } from '../model/aspects';

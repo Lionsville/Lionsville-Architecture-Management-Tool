@@ -3,7 +3,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from './SolutionDesignEditor';
-import type { DesignModel, DiagramContentBatch, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel, DiagramContentBatch } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import { routeDiagramEdges } from '../layout/routeOnly';
 import { tidyLayer7 } from '../layout/tidy';

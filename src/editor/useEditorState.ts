@@ -1,24 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type {
-  DesignConnection,
-  DesignDiagram,
-  DesignElement,
-  DesignModel,
-  DiagramLayoutConfig,
-  DiagramPlacement,
-  DomainGroupRect,
-  EdgeRoute,
-  EdgeRouteSource,
-  ElementId,
-  ElementKind,
-  Layer7Zone,
-  NodeIconSize,
-  NodeShapeVariant,
-  Point,
-  Rect,
-  ResizableZone,
-  SolutionDesignEditorProps,
-} from '../model/types';
+import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramLayoutConfig, DiagramPlacement, DomainGroupRect, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, ResizableZone } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
 import type { TidyResult } from '../layout/tidy';
 import { buildBatch } from '../model/batch';

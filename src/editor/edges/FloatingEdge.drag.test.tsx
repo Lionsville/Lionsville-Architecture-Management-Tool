@@ -6,7 +6,8 @@ import { SolutionDesignEditor } from '../SolutionDesignEditor';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import { placementRect } from '../../model/placement';
 import { drawnPolyline, legAxis } from '../../model/routes';
-import type { DesignModel, DiagramContentBatch, Point, SolutionDesignEditorProps } from '../../model/types';
+import type { DesignModel, DiagramContentBatch, Point } from '../../model/types';
+import type { SolutionDesignEditorProps } from '../props';
 
 /**
  * The three drag gestures on a line — bend, segment, label — through the real

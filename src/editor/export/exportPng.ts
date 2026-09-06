@@ -1,5 +1,6 @@
 import { toPng } from 'html-to-image';
-import type { ExportDiagramPngOptions, ExportTitleBlock, Rect } from '../../model/types';
+import type { Rect } from '../../model/types';
+import type { ExportDiagramPngOptions, ExportTitleBlock } from '../props';
 
 /**
  * Export the rendered diagram to a PNG Blob (ported from the POC, extended

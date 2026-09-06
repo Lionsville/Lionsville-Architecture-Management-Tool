@@ -4,7 +4,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from './SolutionDesignEditor';
 import { installReactFlowMocks } from './reactFlowTestSetup';
-import type { DesignModel, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import type { Language } from '../i18n/strings';
 
 /**

@@ -36,15 +36,8 @@ import { LogoMark, useResolvedLogo } from '../nodes/logoRegistry';
 import { LogoPickerPopover } from './LogoPickerPopover';
 import { FloatingEdge } from '../edges/FloatingEdge';
 import type { ElementNode } from '../nodes/nodeData';
-import type {
-  DesignDiagram,
-  DesignModel,
-  ElementDecoration,
-  ElementId,
-  ElementKind,
-  Point,
-  Rect,
-} from '../../model/types';
+import type { DesignDiagram, DesignModel, ElementId, ElementKind, Point, Rect } from '../../model/types';
+import type { ElementDecoration } from '../props';
 import {
   EMPTY_SELECTION,
   mirrorGraphSelection,

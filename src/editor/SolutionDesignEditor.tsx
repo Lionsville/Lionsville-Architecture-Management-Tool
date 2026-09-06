@@ -4,14 +4,8 @@ import '@xyflow/react/dist/style.css';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import type {
-  DesignDiagram,
-  ElementId,
-  ElementKind,
-  Rect,
-  SolutionDesignEditorProps,
-  UploadedLogo,
-} from '../model/types';
+import type { DesignDiagram, ElementId, ElementKind, Rect, UploadedLogo } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';

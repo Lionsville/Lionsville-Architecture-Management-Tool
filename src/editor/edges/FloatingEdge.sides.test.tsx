@@ -4,7 +4,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { SolutionDesignEditor } from '../SolutionDesignEditor';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
-import type { DesignModel, EdgeRoute, Point, SolutionDesignEditorProps } from '../../model/types';
+import type { DesignModel, EdgeRoute, Point } from '../../model/types';
+import type { SolutionDesignEditorProps } from '../props';
 
 /**
  * What a fixed attach side does on screen (Phase 2d), and the handle sizing fix

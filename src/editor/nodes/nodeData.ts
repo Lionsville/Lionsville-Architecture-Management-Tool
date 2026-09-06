@@ -1,10 +1,6 @@
 import type { Node, NodeProps } from '@xyflow/react';
-import type {
-  AspectConfigEntry,
-  DesignElement,
-  DiagramPlacement,
-  ElementDecoration,
-} from '../../model/types';
+import type { AspectConfigEntry, DesignElement, DiagramPlacement } from '../../model/types';
+import type { ElementDecoration } from '../props';
 
 /** Shared payload for every element node on the canvas. */
 export interface ElementNodeData extends Record<string, unknown> {

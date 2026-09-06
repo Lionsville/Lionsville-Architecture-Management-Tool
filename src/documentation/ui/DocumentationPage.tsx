@@ -32,15 +32,10 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import type {
-  DesignDiagram,
-  DesignElement,
-  DesignModel,
-  ElementId,
-  MarkdownRenderOptions,
-  ParameterSpec,
-  WindowChrome,
-} from '../../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
+import type { MarkdownRenderOptions } from '../documentation';
+import type { ParameterSpec } from '../../editor/props';
+import type { WindowChrome } from '../../platform/windowChrome';
 import {
   documentTemplate,
   documentedElements,

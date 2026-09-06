@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import type { DesignModel, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { selectElement, type Selection } from './useEditorState';
 
 /**

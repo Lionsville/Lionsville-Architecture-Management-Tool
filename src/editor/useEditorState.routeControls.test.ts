@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import type { DesignModel, DiagramContentBatch, EdgeRoute, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel, DiagramContentBatch, EdgeRoute } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 import { manualRouteIds } from '../model/routes';
 import { useEditorState } from './useEditorState';
 

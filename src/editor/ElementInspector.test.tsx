@@ -4,13 +4,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementInspector } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
-import type {
-  DesignDiagram,
-  DesignElement,
-  DesignModel,
-  ElementKind,
-  ParameterSpec,
-} from '../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
+import type { ParameterSpec } from './props';
 
 /**
  * U7a tabbed inspector: General / Appearance / Data. These tests assert (a)

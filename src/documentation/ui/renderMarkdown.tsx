@@ -5,7 +5,7 @@
  * editor takes it as a prop, and a function that is the same object on every
  * render is one less reason for the inspector to re-render.
  */
-import type { MarkdownRenderOptions } from '../../model'
+import type { MarkdownRenderOptions } from '../documentation'
 import { MarkdownView } from './MarkdownView'
 
 export function renderMarkdown(markdown: string, options?: MarkdownRenderOptions) {

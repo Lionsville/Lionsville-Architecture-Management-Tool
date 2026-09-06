@@ -6,7 +6,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { EyeIcon, FullscreenIcon, PencilIcon } from '../../editor/toolbarIcons';
 import { useStrings } from '../../i18n/LanguageContext';
-import type { MarkdownRenderOptions } from '../../model/types';
+import type { MarkdownRenderOptions } from '../documentation';
 
 /**
  * Markdown description editor with a preview toggle. Rendering is host-

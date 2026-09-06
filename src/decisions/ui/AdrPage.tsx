@@ -32,7 +32,7 @@ import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
 import { matchesQuery } from '../../model'
 import type { Language, Translate } from '../../i18n'
-import type { MarkdownRenderOptions } from '../../model'
+import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import {
   adrsFor, formatAdrNumber, newAdr, nextAdrNumber, removeAdr, setAdrStatus, sortAdrs, updateAdr,
 } from '../adr'

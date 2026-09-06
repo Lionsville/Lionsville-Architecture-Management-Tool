@@ -32,7 +32,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { linkElementRefs, outline } from '../../documentation'
 import type { Translate } from '../../i18n'
-import type { MarkdownRenderOptions } from '../../model'
+import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import {
   formatAdrNumber, isAdrDeletable, isAdrLocked, transitionsFrom,
 } from '../adr'

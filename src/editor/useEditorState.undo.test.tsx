@@ -2,7 +2,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { useEditorState } from './useEditorState';
-import type { DesignModel, DiagramContentBatch, DiagramPlacement, SolutionDesignEditorProps } from '../model/types';
+import type { DesignModel, DiagramContentBatch, DiagramPlacement } from '../model/types';
+import type { SolutionDesignEditorProps } from './props';
 
 /**
  * U7 in-memory undo/redo. History is whole-overlay snapshots keyed off the

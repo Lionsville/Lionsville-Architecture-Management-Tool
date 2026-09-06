@@ -3,7 +3,8 @@ import MenuItem from '@mui/material/MenuItem';
 import Slider from '@mui/material/Slider';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import type { DesignParameters, ParameterSpec } from '../model/types';
+import type { DesignParameters } from '../model/types';
+import type { ParameterSpec } from './props';
 
 /**
  * Renders the host-supplied parameter specs (slider/number/select/text) for

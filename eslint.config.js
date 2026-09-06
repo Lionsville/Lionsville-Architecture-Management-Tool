@@ -75,11 +75,7 @@ export default tseslint.config(
       'src/projects/**/*.ts', 'src/ports/**/*.ts',
       'src/decisions/*.ts', 'src/documentation/*.ts', 'src/search/*.ts',
     ],
-    // `model/types.ts` is exempt for exactly as long as it takes to split it:
-    // it is the editor package's old contract file, half domain and half props,
-    // and the props half imports `ReactNode`. The next commit moves that half
-    // to `editor/props.ts` and this line goes with it.
-    ignores: ['**/*.test.ts', '**/*.contract.ts', 'src/model/types.ts'],
+    ignores: ['**/*.test.ts', '**/*.contract.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [

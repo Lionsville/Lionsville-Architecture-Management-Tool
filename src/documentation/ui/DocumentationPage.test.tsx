@@ -11,7 +11,8 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
 import type { EditorActions } from '../../editor/useEditorState';
-import type { DesignDiagram, DesignElement, DesignModel, MarkdownRenderOptions } from '../../model/types';
+import type { DesignDiagram, DesignElement, DesignModel } from '../../model/types';
+import type { MarkdownRenderOptions } from '../documentation';
 
 afterEach(() => {
   cleanup();

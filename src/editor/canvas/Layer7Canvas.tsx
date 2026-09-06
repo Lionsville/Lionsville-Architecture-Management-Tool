@@ -12,15 +12,8 @@ import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../../layout/tidy';
 import { ColorField } from '../ColorField';
 import { useStrings } from '../../i18n/LanguageContext';
 import { TidySettingsPanel } from '../TidySettingsPanel';
-import type {
-  DesignDiagram,
-  DesignModel,
-  ElementId,
-  ElementKind,
-  Layer7Zone,
-  Point,
-  SolutionDesignEditorProps,
-} from '../../model/types';
+import type { DesignDiagram, DesignModel, ElementId, ElementKind, Layer7Zone, Point } from '../../model/types';
+import type { SolutionDesignEditorProps } from '../props';
 import { formatMonthlyPrice, formatScopeDelta } from '../theme/format';
 import { selectDomainGroup, type ElementSeedPatch } from '../useEditorState';
 import { DiagramCanvas, type DiagramCanvasProps } from './DiagramCanvas';

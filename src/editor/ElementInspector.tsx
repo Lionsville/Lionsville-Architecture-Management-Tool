@@ -10,16 +10,9 @@ import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type {
-  DesignDiagram,
-  DesignElement,
-  DesignModel,
-  ElementId,
-  MarkdownRenderOptions,
-  NodeIconSize,
-  NodeShapeVariant,
-  ParameterSpec,
-} from '../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
+import type { MarkdownRenderOptions } from '../documentation/documentation';
+import type { ParameterSpec } from './props';
 import { aspectConfigFor } from '../model/aspects';
 import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
