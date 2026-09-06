@@ -22,6 +22,7 @@
  * every visual check while being exactly the failure this phase is looking for.
  */
 import type { BrowserWindow } from 'electron'
+import { logFilePath } from './log'
 
 export type SmokeResult = { name: string; ok: boolean; detail: string }
 
@@ -54,6 +55,24 @@ async function check(
       timeout,
     ])
     return report({ name, ok: true, detail: String(detail) })
+  } catch (error) {
+    return report({ name, ok: false, detail: error instanceof Error ? error.message : String(error) })
+  }
+}
+
+/**
+ * A step that runs in this process rather than in the page.
+ *
+ * Everything else here asks the renderer a question; the log file is written by
+ * main, and reading it back through the renderer would prove nothing about the
+ * path that actually writes it.
+ */
+async function checkHere(
+  name: string,
+  run: () => Promise<string>,
+): Promise<SmokeResult> {
+  try {
+    return report({ name, ok: true, detail: await run() })
   } catch (error) {
     return report({ name, ok: false, detail: error instanceof Error ? error.message : String(error) })
   }
@@ -226,6 +245,34 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       }
       return png.size + ' bytes, ' + bitmap.width + 'x' + bitmap.height + ' px in ' + elapsed + ' ms'
     })()`))
+
+  // The diagnostics trail, end to end and on a real packaged build: the shell
+  // reports through `ConsoleDiagnostics`, which writes a `[lvarch]` line; main
+  // relays the renderer's console into a dated file. Neither half is observable
+  // from inside the app, and a log nobody writes is exactly as useless as no log
+  // — so the line goes in from the renderer and comes back off the disk.
+  results.push(await checkHere("the renderer's diagnostics reach the log file", async () => {
+    const path = logFilePath()
+    const marker = `smoke relay ${Date.now()}`
+    await window.webContents.executeJavaScript(
+      `console.error(${JSON.stringify(`[lvarch] ${marker}`)})`, true)
+
+    const { readFile } = await import('node:fs/promises')
+    const deadline = Date.now() + 5_000
+    for (;;) {
+      const text = await readFile(path, 'utf8').catch(() => '')
+      const started = text.includes('started ')
+      if (started && text.includes(marker)) {
+        return `${path}, ${text.trimEnd().split('\n').length} lines`
+      }
+      if (Date.now() > deadline) {
+        throw new Error(text
+          ? `${path} has ${started ? 'the start line but not the relayed one' : 'no start line'}`
+          : `nothing at ${path}`)
+      }
+      await new Promise((r) => setTimeout(r, 100))
+    }
+  }))
 
   const failed = results.filter((r) => !r.ok)
   process.stdout.write(failed.length ? `\n${failed.length} of ${results.length} FAILED\n` : `\nall ${results.length} passed\n`)

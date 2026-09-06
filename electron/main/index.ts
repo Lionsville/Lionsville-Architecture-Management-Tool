@@ -198,6 +198,9 @@ const RENDERER_LOG_PREFIX = '[lvarch]'
 const UNATTENDED = process.argv.includes('--smoke')
 
 void app.whenReady().then(() => {
+  // The first line of every run, and the thing the smoke step looks for: a log
+  // that exists but says nothing proves only that a file was created.
+  log('main', `started ${app.getVersion()} on ${process.platform} ${process.arch}`)
   if (!process.env['ELECTRON_RENDERER_URL']) serveRenderer()
 
   // Before the window, because it must not wait on one: the check is background
