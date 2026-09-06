@@ -17,8 +17,21 @@ import { app, BrowserWindow, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { log } from './log'
 import { addCheckForUpdatesItem } from './menu'
 import { checkForUpdatesNow, startUpdates } from './updates'
+
+/**
+ * A throw nobody caught. Logged rather than left to Electron's default, which
+ * on a packaged app is a silent exit — the failure mode this whole phase is
+ * about.
+ */
+process.on('uncaughtException', (error) => {
+  log('main', `uncaughtException ${error.stack ?? error.message}`)
+})
+process.on('unhandledRejection', (reason) => {
+  log('main', `unhandledRejection ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}`)
+})
 
 /**
  * Registering the scheme has to happen before `ready`, and this statement being
@@ -170,6 +183,13 @@ function createWindow(): BrowserWindow {
  */
 const RENDERER_URL = process.env['ELECTRON_RENDERER_URL'] ?? `${APP_ORIGIN}/`
 
+/**
+ * What the renderer's own diagnostics lines start with
+ * (`adapters/browser/ConsoleDiagnostics.ts`). Spelled out rather than imported:
+ * this bundle compiles against Node and the DOM adapter it lives in does not.
+ */
+const RENDERER_LOG_PREFIX = '[lvarch]'
+
 void app.whenReady().then(() => {
   if (!process.env['ELECTRON_RENDERER_URL']) serveRenderer()
 
@@ -188,26 +208,41 @@ void app.whenReady().then(() => {
   // A load that neither finishes nor fails is the hardest thing to read from
   // outside the process: no window, no error, no exit. Say what went wrong.
   mainWindow.webContents.on('did-fail-load', (_event, code, description, url) => {
-    process.stderr.write(`did-fail-load ${code} ${description} ${url}\n`)
+    log('renderer', `did-fail-load ${code} ${description} ${url}`)
   })
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    process.stderr.write(`render-process-gone ${details.reason}\n`)
+    log('renderer', `render-process-gone ${details.reason}`)
   })
 
-  // Under --smoke, say what the renderer said. A blank window with a passing
-  // process is the failure mode this whole phase exists to catch, and it is
-  // indistinguishable from success without this.
+  // The renderer's console, relayed. This is the desktop half of the
+  // diagnostics port: the shell reports through `ConsoleDiagnostics`, which
+  // writes a `[lvarch]` line, and that line lands in the log file without an
+  // IPC channel having to exist for it.
+  //
+  // Filtered, for two reasons. `info` and `debug` from libraries we do not own
+  // is noise that would push the crash off the end of the file; and it is the
+  // one place model content could reach the log, since a third-party
+  // `console.log` may carry anything it likes. Our own lines and anything at
+  // warning or above get through — see the note at the top of `log.ts`.
+  mainWindow.webContents.on('console-message', (event) => {
+    const ours = event.message.startsWith(RENDERER_LOG_PREFIX)
+    if (!ours && event.level !== 'warning' && event.level !== 'error') return
+    log(`renderer[${event.level}]`, event.message)
+  })
+
+  // Under --smoke, say everything the renderer said, filter or no filter. A
+  // blank window with a passing process is the failure mode this whole phase
+  // exists to catch, and it is indistinguishable from success without this.
   if (process.argv.includes('--smoke')) {
     mainWindow.webContents.on('console-message', (event) => {
+      if (event.message.startsWith(RENDERER_LOG_PREFIX)) return // already logged above
+      if (event.level === 'warning' || event.level === 'error') return
       process.stderr.write(`renderer[${event.level}] ${event.message}\n`)
     })
     mainWindow.webContents.session.webRequest.onErrorOccurred(({ url, error }) => {
-      process.stderr.write(`request failed ${error} ${url}\n`)
+      log('renderer', `request failed ${error} ${url}`)
     })
   }
-  mainWindow.webContents.on('console-message', (event) => {
-    process.stderr.write(`renderer[${event.level}] ${event.message}\n`)
-  })
 
   void mainWindow.loadURL(RENDERER_URL).then(async () => {
     if (!process.argv.includes('--smoke')) return

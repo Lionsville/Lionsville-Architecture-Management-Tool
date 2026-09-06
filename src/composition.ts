@@ -15,6 +15,7 @@
  * above it changes.
  */
 import { BrowserDocumentGateway } from './adapters/browser/BrowserDocumentGateway'
+import { ConsoleDiagnostics } from './adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome } from './adapters/browser/hostWindow'
 import { InMemoryGroupStore } from './adapters/memory/InMemoryGroupStore'
 import { InMemoryPreferencesStore } from './adapters/memory/InMemoryPreferencesStore'
@@ -24,6 +25,7 @@ import { WebStorageGroupStore } from './adapters/webStorage/WebStorageGroupStore
 import { WebStoragePreferencesStore } from './adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageProjectStore } from './adapters/webStorage/WebStorageProjectStore'
 import type { WindowChrome } from './core/windowChrome'
+import type { Diagnostics } from './ports/Diagnostics'
 import type { DocumentGateway } from './ports/DocumentGateway'
 import type { GroupStore } from './ports/GroupStore'
 import type { PreferencesStore } from './ports/PreferencesStore'
@@ -36,6 +38,12 @@ export type Shell = {
   groups: GroupStore
   preferences: PreferencesStore
   documents: DocumentGateway
+  /**
+   * Where a failure goes when there is nobody to tell. Passed down like the
+   * other seams, so a boundary or a rejected promise has somewhere to report
+   * before it draws a message.
+   */
+  diagnostics: Diagnostics
   /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
@@ -60,6 +68,7 @@ export function composeShell(): Shell {
     groups: storage ? new WebStorageGroupStore(storage) : new InMemoryGroupStore(),
     preferences: storage ? new WebStoragePreferencesStore(storage) : new InMemoryPreferencesStore(),
     documents: new BrowserDocumentGateway(),
+    diagnostics: new ConsoleDiagnostics(),
     windowChrome: hostWindowChrome(),
   }
 }
