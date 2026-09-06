@@ -8,23 +8,40 @@
  * boundary and is now internal to one module. It is recorded here rather than
  * untied: untying it is a redesign of the editor's state, which phase 3 owns.
  *
- * `SolutionDesignEditorProps` is **28 props**, down from 39. Ten were the
- * surface of a host this editor no longer has, and nothing in this repository
- * passed any of them a value: `parameterSpecs` and the parameters editor behind
- * it, `decorations` and the drift/dangling/price chips that read them,
- * `scopeSummary` and its corner cost chip, and three slots for a host to render
- * into. Six more went with the batch (ADR-0002) — `onChange`, `idAliases`,
- * `historyResetToken`, `rebaseToken`, `layoutOnOpenDiagramIds` and the four
- * separate undo props, replaced by `dispatch` and one `history` object.
+ * `SolutionDesignEditorProps` is **a dozen entries**, down from 39, and each of
+ * them names one thing the host owns:
  *
- * The shell passes 27 of the 28. The one it does not is `readOnly`, which is not
- * a slot but a mode this editor implements throughout — every mutating
- * affordance checks it — and a convention `CLAUDE.md` holds new work to.
+ * | | |
+ * |---|---|
+ * | `document` | what is open, and which diagram is on screen |
+ * | `editing` | how it may change: `dispatch`, `history`, `ids`, `readOnly` |
+ * | `diagrams` | who manages the tabs |
+ * | `requests` | something outside asking the editor to show a thing |
+ * | `layout` | what to do with what a layout pass has to say |
+ * | `preferences` | view settings in, and out again |
+ * | `language` | which language, and the toggle that changes it |
+ * | `logos` | the uploaded mark library |
+ * | `exportTitleBlock` · `renderMarkdown` · `windowChrome` · `onForceSave` | four capabilities that belong to nothing larger |
+ *
+ * Ten of the thirty-nine were the surface of a host this editor no longer has,
+ * and nothing here passed any of them a value: `parameterSpecs`, `decorations`
+ * and the chips that read them, `scopeSummary`, and three render slots. Six
+ * more went with the batch (ADR-0002): `onChange`, `idAliases`,
+ * `historyResetToken`, `rebaseToken`, `layoutOnOpenDiagramIds` and the four
+ * separate undo props. The rest were grouped, which is the honest version of a
+ * small number — twenty-eight capabilities do not become fewer by being
+ * counted differently, but they do become legible when the ones that belong
+ * together are named together.
+ *
+ * `readOnly` is the one the shell never passes: not a slot but a mode this
+ * editor implements throughout, and a convention `CLAUDE.md` holds new work to.
  */
 export { SolutionDesignEditor } from './SolutionDesignEditor'
 /** What the editor is handed: props, decorations, export options. */
 export type {
-  EditorHistory, ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
+  EditorDiagramActions, EditorDocument, EditorEditing, EditorHistory, EditorLanguage,
+  EditorLayoutReports, EditorLogos, EditorPreferencesSeam, EditorRequests,
+  ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
 } from './props'
 /**
  * The maturity-column list, on its own. The shell keeps its own defaults —

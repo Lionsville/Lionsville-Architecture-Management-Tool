@@ -24,14 +24,13 @@ vi.mock('../editor', async (importOriginal) => {
   return {
     ...actual,
     SolutionDesignEditor: (props: {
-      onDiagramSettingsChange?: (
-        id: string,
-        settings: { name: string; author?: string },
-      ) => void
+      diagrams: {
+        onSettingsChange?: (id: string, settings: { name: string; author?: string }) => void
+      }
     }) => (
       <button
         data-testid="edit-the-diagram"
-        onClick={() => props.onDiagramSettingsChange?.('d1', { name: 'L7', author: 'Grace' })}
+        onClick={() => props.diagrams.onSettingsChange?.('d1', { name: 'L7', author: 'Grace' })}
       >
         edit
       </button>

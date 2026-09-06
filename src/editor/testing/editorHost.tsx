@@ -16,17 +16,59 @@ import { useCallback, useRef, useState } from 'react'
 import { renderHook } from '@testing-library/react'
 import { apply, fromArrays, toArrays, transaction } from '../../model'
 import type { Command, DesignModel, Model } from '../../model'
-import type { EditorHistory, SolutionDesignEditorProps } from '../props'
+import type {
+  EditorHistory, EditorRequests, SolutionDesignEditorProps,
+} from '../props'
+import type { EditorPreferences } from '../preferences'
+import type { DiagramSettings, ElementId, UploadedLogo } from '../../model/types'
+import type { Language } from '../../i18n/strings'
+import type { IdPolicy } from '../../model/keys'
+import type { WindowChrome } from '../../platform/windowChrome'
 import { useEditorState } from '../useEditorState'
 import { SolutionDesignEditor } from '../SolutionDesignEditor'
 
-/** What a component test hands the editor: everything but the host's own half. */
-export type HostedEditorProps = Omit<SolutionDesignEditorProps, 'dispatch' | 'history'>
+/**
+ * What a component test varies, flat.
+ *
+ * Deliberately NOT `SolutionDesignEditorProps`. The editor's own contract is
+ * grouped — a dozen entries, each naming one thing the host owns — and a test
+ * that wants a different model should be able to say `{ model }` rather than
+ * rebuild the group around it. `hostedProps` below is the one place that maps
+ * this onto the real shape, so the grouping is still exercised on every render.
+ */
+export type HostedEditorProps = {
+  model: DesignModel
+  activeDiagramId?: string
+  readOnly?: boolean
+  ids?: IdPolicy
+  onActiveDiagramChange?(diagramId: string): void
+  onCreateContainerDiagram?(applicationElementId: ElementId): void
+  onCreateLayer7Diagram?(): void
+  onRenameDiagram?(diagramId: string, name: string): void
+  onDuplicateDiagram?(diagramId: string): void
+  onDeleteDiagram?(diagramId: string): void
+  onDiagramSettingsChange?(diagramId: string, settings: DiagramSettings): void
+  focusElement?: EditorRequests['focus']
+  documentationRequest?: EditorRequests['documentation']
+  onLayoutError?(message: string): void
+  onLayoutSettled?(diagramId: string): void
+  initialPreferences?: unknown
+  onPreferencesChange?(preferences: EditorPreferences): void
+  language?: Language
+  onLanguageChange?(language: Language): void
+  logoLibrary?: UploadedLogo[]
+  onRequestLogoUpload?(): void
+  onExportImagesMissing?(labels: string[]): void
+  renderMarkdown?: SolutionDesignEditorProps['renderMarkdown']
+  exportTitleBlock?: SolutionDesignEditorProps['exportTitleBlock']
+  windowChrome?: WindowChrome
+  onForceSave?(): void
+}
 
 export type EditorHostState = {
-  /** The document as it now stands — spread onto the editor as `model`. */
+  /** The document as it now stands. */
   model: DesignModel
-  dispatch: SolutionDesignEditorProps['dispatch']
+  dispatch: SolutionDesignEditorProps['editing']['dispatch']
   history: EditorHistory
   /** Every command the editor sent, in order, newest last. */
   commands: readonly Command[]
@@ -68,7 +110,7 @@ export function useEditorHost(document: DesignModel): EditorHostState {
     return arraysRef.current.to
   }, [])
 
-  const dispatch = useCallback<SolutionDesignEditorProps['dispatch']>((command) => {
+  const dispatch = useCallback<SolutionDesignEditorProps['editing']['dispatch']>((command) => {
     commands.current.push(command)
     const before = modelRef.current
     const result = apply(before, command)
@@ -120,20 +162,44 @@ export function useEditorHost(document: DesignModel): EditorHostState {
   }
 }
 
-/** The props every editor needs, over a host that really applies them. */
+/** The flat test shape, said the way the editor asks for it. */
 export function hostedProps(
   host: EditorHostState,
-  overrides: Partial<SolutionDesignEditorProps> = {},
+  o: Partial<HostedEditorProps> = {},
 ): SolutionDesignEditorProps {
   return {
-    model: host.model,
-    dispatch: host.dispatch,
-    history: host.history,
-    activeDiagramId: 'd1',
-    onActiveDiagramChange: () => {},
-    onCreateContainerDiagram: () => {},
-    onCreateLayer7Diagram: () => {},
-    ...overrides,
+    document: {
+      model: host.model,
+      activeDiagramId: o.activeDiagramId ?? 'd1',
+      onActiveDiagramChange: o.onActiveDiagramChange ?? (() => {}),
+    },
+    editing: {
+      dispatch: host.dispatch,
+      history: host.history,
+      ids: o.ids,
+      readOnly: o.readOnly,
+    },
+    diagrams: {
+      onCreateContainer: o.onCreateContainerDiagram ?? (() => {}),
+      onCreateLayer7: o.onCreateLayer7Diagram ?? (() => {}),
+      onRename: o.onRenameDiagram,
+      onDuplicate: o.onDuplicateDiagram,
+      onDelete: o.onDeleteDiagram,
+      onSettingsChange: o.onDiagramSettingsChange,
+    },
+    requests: { focus: o.focusElement, documentation: o.documentationRequest },
+    layout: { onError: o.onLayoutError, onSettled: o.onLayoutSettled },
+    preferences: { initial: o.initialPreferences, onChange: o.onPreferencesChange },
+    language: { value: o.language, onChange: o.onLanguageChange },
+    logos: {
+      library: o.logoLibrary,
+      onRequestUpload: o.onRequestLogoUpload,
+      onExportImagesMissing: o.onExportImagesMissing,
+    },
+    renderMarkdown: o.renderMarkdown,
+    exportTitleBlock: o.exportTitleBlock,
+    windowChrome: o.windowChrome,
+    onForceSave: o.onForceSave,
   }
 }
 
@@ -145,7 +211,7 @@ export function hostedProps(
  */
 export function renderEditorState(
   document: DesignModel,
-  overrides: Partial<SolutionDesignEditorProps> = {},
+  overrides: Partial<HostedEditorProps> = {},
 ) {
   const host: { current: EditorHostState } = { current: undefined as never }
   const view = renderHook(() => {
@@ -168,12 +234,5 @@ export function HostedEditor({
 }: HostedEditorProps & { hostRef?: { current: EditorHostState } }) {
   const host = useEditorHost(props.model)
   if (hostRef) hostRef.current = host
-  return (
-    <SolutionDesignEditor
-      {...props}
-      model={host.model}
-      dispatch={host.dispatch}
-      history={host.history}
-    />
-  )
+  return <SolutionDesignEditor {...hostedProps(host, props)} />
 }

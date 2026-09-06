@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import type { DesignModel } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import type { EditorRequests } from './props';
 import { selectElement, type Selection } from './useEditorState';
 
 /**
@@ -16,7 +16,7 @@ import { selectElement, type Selection } from './useEditorState';
  * - placed nowhere → consume the nonce without doing anything.
  */
 export function useFocusElement(args: {
-  focusElement: SolutionDesignEditorProps['focusElement'];
+  focusElement: EditorRequests['focus'];
   /** Effective model (host model + local overlay). */
   model: DesignModel;
   activeDiagramId: string;

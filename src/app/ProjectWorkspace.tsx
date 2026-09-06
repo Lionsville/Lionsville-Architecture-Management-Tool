@@ -266,13 +266,29 @@ export function ProjectWorkspace({
         <ErrorBoundary where="editor" diagnostics={diagnostics} controls={hostControls} s={s}>
         <SolutionDesignEditor
           key={session.editorKey}
-          model={session.model}
-          activeDiagramId={session.activeDiagramId}
-          onActiveDiagramChange={session.setActiveDiagramId}
-          dispatch={session.dispatch}
-          history={history}
-          onCreateContainerDiagram={diagrams.onCreateContainerDiagram}
-          onCreateLayer7Diagram={diagrams.onCreateLayer7Diagram}
+          document={{
+            model: session.model,
+            activeDiagramId: session.activeDiagramId,
+            onActiveDiagramChange: session.setActiveDiagramId,
+          }}
+          editing={{ dispatch: session.dispatch, history, ids: session.ids }}
+          diagrams={{
+            onCreateContainer: diagrams.onCreateContainerDiagram,
+            onCreateLayer7: diagrams.onCreateLayer7Diagram,
+            onRename: diagrams.onRenameDiagram,
+            onDuplicate: diagrams.onDuplicateDiagram,
+            onDelete: diagrams.requestDeleteDiagram,
+            onSettingsChange: diagrams.onDiagramSettingsChange,
+          }}
+          requests={{ focus: focusRequest, documentation: docRequest }}
+          layout={{ onError: onLayoutError, onSettled: session.onLayoutSettled }}
+          preferences={{ initial: editorPreferences, onChange: onEditorPreferencesChange }}
+          language={{ value: language, onChange: onChooseLanguage }}
+          logos={{
+            library: session.logoLibrary,
+            onRequestUpload: logoPicker.open,
+            onExportImagesMissing,
+          }}
           // The project's answers, which a diagram's own settings override. The
           // author used to be the design's NAME, so every exported PNG said
           // AUTHOR: <project name>; it is now the project's default author,
@@ -281,25 +297,9 @@ export function ProjectWorkspace({
             client: groupNameOf(session.model),
             author: session.model.defaultAuthor,
           }}
-          onLayoutSettled={session.onLayoutSettled}
-          onForceSave={forceSave}
-          ids={session.ids}
-          logoLibrary={session.logoLibrary}
-          onRequestLogoUpload={logoPicker.open}
-          onExportImagesMissing={onExportImagesMissing}
-          onLayoutError={onLayoutError}
           renderMarkdown={renderMarkdown}
           windowChrome={windowChrome}
-          onRenameDiagram={diagrams.onRenameDiagram}
-          onDiagramSettingsChange={diagrams.onDiagramSettingsChange}
-          onDuplicateDiagram={diagrams.onDuplicateDiagram}
-          onDeleteDiagram={diagrams.requestDeleteDiagram}
-          initialPreferences={editorPreferences}
-          onPreferencesChange={onEditorPreferencesChange}
-          language={language}
-          onLanguageChange={onChooseLanguage}
-          focusElement={focusRequest}
-          documentationRequest={docRequest}
+          onForceSave={forceSave}
         />
         </ErrorBoundary>
       </Box>

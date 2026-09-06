@@ -37,13 +37,9 @@ describe('useEditorState — the host owns the stack', () => {
   it('calls the host rather than a stack of its own, and takes canUndo from it', () => {
     const history = { undo: vi.fn(), redo: vi.fn(), canUndo: true, canRedo: false };
     const props: SolutionDesignEditorProps = {
-      model: model(),
-      history,
-      dispatch: () => undefined,
-      activeDiagramId: 'd1',
-      onActiveDiagramChange: vi.fn(),
-      onCreateContainerDiagram: vi.fn(),
-      onCreateLayer7Diagram: vi.fn(),
+      document: { model: model(), activeDiagramId: 'd1', onActiveDiagramChange: vi.fn() },
+      editing: { history, dispatch: () => undefined },
+      diagrams: { onCreateContainer: vi.fn(), onCreateLayer7: vi.fn() },
     };
     const { result } = renderHook(() => useEditorState(props));
 

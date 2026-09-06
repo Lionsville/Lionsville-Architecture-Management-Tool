@@ -22,16 +22,15 @@ vi.mock('../editor', async (importOriginal) => {
   return {
     ...actual,
     SolutionDesignEditor: (props: {
-      dispatch: (command: Command) => unknown
-      history: EditorHistory
-      onRenameDiagram?: (id: string, name: string) => void
-      onLayoutSettled?: (diagramId: string) => void
+      editing: { dispatch: (command: Command) => unknown; history: EditorHistory }
+      diagrams: { onRename?: (id: string, name: string) => void }
+      layout?: { onSettled?: (diagramId: string) => void }
     }) => (
       <div>
-        <button data-testid="rename" onClick={() => props.onRenameDiagram?.('d1', 'Renamed')}>rename</button>
+        <button data-testid="rename" onClick={() => props.diagrams.onRename?.('d1', 'Renamed')}>rename</button>
         <button
           data-testid="draw"
-          onClick={() => props.dispatch(transaction([
+          onClick={() => props.editing.dispatch(transaction([
             {
               type: 'element.create',
               element: {
@@ -42,7 +41,7 @@ vi.mock('../editor', async (importOriginal) => {
             { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },
           ]))}
         >draw</button>
-        <button data-testid="settled" onClick={() => props.onLayoutSettled?.('d1')}>settled</button>
+        <button data-testid="settled" onClick={() => props.layout?.onSettled?.('d1')}>settled</button>
       </div>
     ),
   }

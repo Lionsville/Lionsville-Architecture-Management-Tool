@@ -24,19 +24,18 @@ vi.mock('../editor', async (importOriginal) => {
   return {
     ...actual,
     SolutionDesignEditor: (props: {
-      model: { name: string; diagrams: { id: string; name: string }[] }
-      dispatch: (command: Command) => unknown
-      history: EditorHistory
-      onRenameDiagram?: (id: string, name: string) => void
+      document: { model: { diagrams: { id: string; name: string }[] } }
+      editing: { dispatch: (command: Command) => unknown; history: EditorHistory }
+      diagrams: { onRename?: (id: string, name: string) => void }
     }) => (
       <div>
-        <p data-testid="diagram-name">{props.model.diagrams[0].name}</p>
-        <p data-testid="can-undo">{String(props.history.canUndo)}</p>
-        <p data-testid="can-redo">{String(props.history.canRedo)}</p>
-        <button data-testid="rename" onClick={() => props.onRenameDiagram?.('d1', 'Renamed')}>rename</button>
+        <p data-testid="diagram-name">{props.document.model.diagrams[0].name}</p>
+        <p data-testid="can-undo">{String(props.editing.history.canUndo)}</p>
+        <p data-testid="can-redo">{String(props.editing.history.canRedo)}</p>
+        <button data-testid="rename" onClick={() => props.diagrams.onRename?.('d1', 'Renamed')}>rename</button>
         <button
           data-testid="draw"
-          onClick={() => props.dispatch(transaction([
+          onClick={() => props.editing.dispatch(transaction([
             {
               type: 'element.create',
               element: {
@@ -47,8 +46,8 @@ vi.mock('../editor', async (importOriginal) => {
             { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },
           ]))}
         >draw</button>
-        <button data-testid="undo" onClick={() => props.history.undo()}>undo</button>
-        <button data-testid="redo" onClick={() => props.history.redo()}>redo</button>
+        <button data-testid="undo" onClick={() => props.editing.history.undo()}>undo</button>
+        <button data-testid="redo" onClick={() => props.editing.history.redo()}>redo</button>
       </div>
     ),
   }

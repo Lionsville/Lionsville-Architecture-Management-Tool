@@ -5,7 +5,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import type { DesignDiagram, ElementId, ElementKind, Rect, UploadedLogo } from '../model/types';
-import type { SolutionDesignEditorProps } from './props';
+import type { EditorRequests, SolutionDesignEditorProps } from './props';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
@@ -86,11 +86,11 @@ export function SolutionDesignEditor(props: SolutionDesignEditorProps): JSX.Elem
           through context rather than through a prop on every component. The
           default is English (see `LanguageContext`), so a host that passes no
           `language` keeps the editor it had. */}
-      <LanguageProvider language={props.language ?? 'en'}>
+      <LanguageProvider language={props.language?.value ?? 'en'}>
         {/* The uploaded logo library reaches nodes through context rather than
             through every node's props: a mark is decoration on an element that
             otherwise knows nothing about where marks come from. */}
-        <LogoLibraryProvider value={props.logoLibrary ?? EMPTY_LOGO_LIBRARY}>
+        <LogoLibraryProvider value={props.logos?.library ?? EMPTY_LOGO_LIBRARY}>
           <EditorBody {...props} />
         </LogoLibraryProvider>
       </LanguageProvider>
@@ -139,7 +139,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
    * the same object back on the next mount, and re-reading the prop would make
    * that round trip fight whatever the user just clicked.
    */
-  const initialPreferences = useState(() => mergePreferences(props.initialPreferences))[0];
+  const initialPreferences = useState(() => mergePreferences(props.preferences?.initial))[0];
   // Tidy settings (direction / density / keep-manual-routes). Nothing lands on
   // the model — they are the editor's, like the snap and lifecycle toggles.
   const [tidyOptions, setTidyOptions] = useState<TidyOptions>(initialPreferences.tidyOptions);
@@ -210,14 +210,14 @@ function EditorBody(props: SolutionDesignEditorProps) {
   );
   const focusNonce = useRef(0);
   /**
-   * The host request already adopted. It starts EMPTY, not at `props.focusElement`:
+   * The host request already adopted. It starts EMPTY, not at `props.requests?.focus`:
    * an editor mounted with a focus request already on the prop (a host that opens
    * the editor straight onto an element from its coverage drawer) would otherwise
    * see `seen === hostFocus` on the very first effect run and drop the request in
    * silence — the one case the pre-4B code, which passed the prop through to
    * `useFocusElement`, handled without thinking about it.
    */
-  const hostFocusRef = useRef<SolutionDesignEditorProps['focusElement']>(undefined);
+  const hostFocusRef = useRef<EditorRequests['focus']>(undefined);
   /**
    * A delete that has to be confirmed first — one connection, or a whole
    * multi-selection. Held here beside `deleteTarget` (the single-element
@@ -232,8 +232,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // (draw.io behaviour); a fresh copy resets the cascade.
   const pasteCountRef = useRef(0);
 
-  const readOnly = props.readOnly ?? false;
-  const activeDiagram = state.model.diagrams.find((d) => d.id === props.activeDiagramId);
+  const readOnly = props.editing.readOnly ?? false;
+  const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
 
   const { setSelection } = state;
   const requestRename = useCallback(
@@ -271,7 +271,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // Adopt the host's request whenever it is a new one. Comparing id AND nonce
   // because a host may re-request the same element (a second click on the same
   // row in its coverage drawer), which it signals by bumping only the nonce.
-  const hostFocus = props.focusElement;
+  const hostFocus = props.requests?.focus;
   useEffect(() => {
     const seen = hostFocusRef.current;
     if (!hostFocus) return;
@@ -284,8 +284,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // The host's "open the documentation" — same nonce discipline as focus above.
   // Resolving WHICH element happens here rather than in the host, because the
   // selection is the editor's and a host cannot see it.
-  const hostDoc = props.documentationRequest;
-  const hostDocRef = useRef<SolutionDesignEditorProps['documentationRequest']>(undefined);
+  const hostDoc = props.requests?.documentation;
+  const hostDocRef = useRef<EditorRequests['documentation']>(undefined);
   const selectedForDoc = state.selectedElement?.id;
   const firstPlaced = activeDiagram?.placements[0]?.elementId;
   const firstInModel = state.model.elements[0]?.id;
@@ -300,9 +300,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
   useFocusElement({
     focusElement: focusRequest,
     model: state.model,
-    activeDiagramId: props.activeDiagramId,
+    activeDiagramId: props.document.activeDiagramId,
     setSelection: state.setSelection,
-    onActiveDiagramChange: props.onActiveDiagramChange,
+    onActiveDiagramChange: props.document.onActiveDiagramChange,
   });
 
   // --- preferences out ------------------------------------------------------
@@ -317,7 +317,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
    * affordable — a host writing to storage on every call must not be called on
    * every render.
    */
-  const { onPreferencesChange } = props;
+  const onPreferencesChange = props.preferences?.onChange;
   const lastPreferencesRef = useRef<EditorPreferences>(initialPreferences);
   useEffect(() => {
     if (!onPreferencesChange) return;
@@ -424,9 +424,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const reportLayoutError = useCallback(
     (message: string, cause: unknown) => {
       console.error(message, cause);
-      props.onLayoutError?.(message);
+      props.layout?.onError?.(message);
     },
-    [props.onLayoutError],
+    [props.layout?.onError],
   );
 
   /**
@@ -532,7 +532,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
     busy,
     options: tidyOptions,
     run: (override) => handleTidy(override, true),
-    onSettled: props.onLayoutSettled,
+    onSettled: props.layout?.onSettled,
   });
 
   // Per-group tidy (right-click a group label). Deliberately does NOT fitView:
@@ -756,7 +756,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       container: wrapperRef.current,
       bounds,
       background: theme.palette.background.default,
-      onImagesMissing: props.onExportImagesMissing,
+      onImagesMissing: props.logos?.onExportImagesMissing,
       // A diagram that says it carries no title block gets none; `titleBlock`
       // has always been optional, so this needs nothing of the exporter.
       titleBlock: activeDiagram.showTitleBlock === false ? undefined : {
@@ -818,8 +818,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
       const existing = state.model.diagrams.find(
         (d) => d.kind === 'container' && d.applicationElementId === elementId,
       );
-      if (existing) props.onActiveDiagramChange(existing.id);
-      else props.onCreateContainerDiagram(elementId);
+      if (existing) props.document.onActiveDiagramChange(existing.id);
+      else props.diagrams.onCreateContainer(elementId);
     },
     [state.model, props, openDocumentation],
   );
@@ -898,8 +898,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
         activeDiagram={activeDiagram}
         readOnly={readOnly}
         busy={busy}
-        onActiveDiagramChange={props.onActiveDiagramChange}
-        onCreateLayer7Diagram={props.onCreateLayer7Diagram}
+        onActiveDiagramChange={props.document.onActiveDiagramChange}
+        onCreateLayer7Diagram={props.diagrams.onCreateLayer7}
         // Caught, not `void`ed: `handleTidy` rethrows so the unattended caller in
         // `useAutoLayout` can tell "laid out" from "did not", and `void` discards the
         // value without attaching a rejection handler — so a failed Tidy reported its
@@ -923,17 +923,17 @@ function EditorBody(props: SolutionDesignEditorProps) {
         canUndo={state.canUndo}
         canRedo={state.canRedo}
         onRenameDiagram={
-          props.onRenameDiagram ? (id, name) => setRenameDiagramTarget({ id, name }) : undefined
+          props.diagrams.onRename ? (id, name) => setRenameDiagramTarget({ id, name }) : undefined
         }
         onOpenDiagramSettings={
-          props.onDiagramSettingsChange ? (id) => setSettingsDiagramId(id) : undefined
+          props.diagrams.onSettingsChange ? (id) => setSettingsDiagramId(id) : undefined
         }
-        onDuplicateDiagram={props.onDuplicateDiagram}
-        onDeleteDiagram={props.onDeleteDiagram}
+        onDuplicateDiagram={props.diagrams.onDuplicate}
+        onDeleteDiagram={props.diagrams.onDelete}
         onOpenSearch={() => setSearchOpen(true)}
         showMinimap={showMinimap}
         onToggleMinimap={() => setShowMinimap((on) => !on)}
-        onLanguageChange={props.onLanguageChange}
+        onLanguageChange={props.language?.onChange}
       />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {!readOnly && (
@@ -941,8 +941,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
             kinds={activeDiagram.kind === 'layer7' ? LAYER7_PALETTE : CONTAINER_PALETTE}
             onAdd={handlePaletteAdd}
             onAddDomainGroup={activeDiagram.kind === 'layer7' ? addDomainGroup : undefined}
-            logoLibrary={props.logoLibrary}
-            onRequestLogoUpload={props.onRequestLogoUpload}
+            logoLibrary={props.logos?.library}
+            onRequestLogoUpload={props.logos?.onRequestUpload}
             defaultNames={defaultNames}
             collapsed={paletteCollapsed}
             onToggleCollapsed={() => setPaletteCollapsed((on) => !on)}
@@ -1015,7 +1015,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               onRequestDelete={() => setDeleteTarget(state.selectedElement?.id)}
               renderMarkdown={props.renderMarkdown}
               renameRequest={renameRequest}
-              onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
+              onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
               onOpenDocumentation={openDocumentation}
             />
           ) : state.selectedConnection ? (
@@ -1047,7 +1047,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               diagram={activeDiagram}
               readOnly={readOnly}
               actions={state.actions}
-              onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
+              onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
             />
           ) : (
             <InspectorEmptyState />
@@ -1108,7 +1108,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
                 setDeleteTarget(element.id);
               }}
               renderMarkdown={props.renderMarkdown}
-              onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
+              onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
               layout="stacked"
               hideDescription
             />
@@ -1119,29 +1119,29 @@ function EditorBody(props: SolutionDesignEditorProps) {
             setDocumentationId(undefined);
             setDeleteTarget(documentationElement.id);
           }}
-          onRequestLogoUpload={props.onRequestLogoUpload}
+          onRequestLogoUpload={props.logos?.onRequestUpload}
           windowChrome={props.windowChrome}
         />
       )}
       <ElementSearchDialog
         open={searchOpen}
         model={state.model}
-        activeDiagramId={props.activeDiagramId}
+        activeDiagramId={props.document.activeDiagramId}
         onClose={() => setSearchOpen(false)}
         onFocus={requestFocus}
       />
-      {props.onRenameDiagram && (
+      {props.diagrams.onRename && (
         <RenameDiagramDialog
           target={renameDiagramTarget}
-          onRename={props.onRenameDiagram}
+          onRename={props.diagrams.onRename}
           onClose={() => setRenameDiagramTarget(undefined)}
         />
       )}
-      {props.onDiagramSettingsChange && (
+      {props.diagrams.onSettingsChange && (
         <DiagramSettingsDialog
           target={state.model.diagrams.find((d) => d.id === settingsDiagramId)}
           defaultClient={props.exportTitleBlock?.client ?? state.model.customerName}
-          onSave={props.onDiagramSettingsChange}
+          onSave={props.diagrams.onSettingsChange}
           onClose={() => setSettingsDiagramId(undefined)}
         />
       )}

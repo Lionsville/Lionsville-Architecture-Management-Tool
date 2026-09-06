@@ -448,11 +448,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
   const propsRef = useRef(props);
   propsRef.current = props;
 
-  const modelRef = useRef(props.model);
-  const seenRef = useRef(props.model);
-  if (seenRef.current !== props.model) {
-    seenRef.current = props.model;
-    modelRef.current = props.model;
+  const modelRef = useRef(props.document.model);
+  const seenRef = useRef(props.document.model);
+  if (seenRef.current !== props.document.model) {
+    seenRef.current = props.document.model;
+    modelRef.current = props.document.model;
   }
 
   /**
@@ -479,7 +479,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
    */
   const ownIds = useRef<IdPolicy | null>(null);
   ownIds.current ??= idPolicy(() => idsIn(modelRef.current));
-  const ids = props.ids ?? ownIds.current;
+  const ids = props.editing.ids ?? ownIds.current;
 
   // The step the last change made, and the counter that names the next one.
   // Refs, because a change happens in an event handler and returns its token
@@ -500,12 +500,12 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
    */
   const dispatch = useCallback(
     (command: Command, options?: { amend?: CommitToken; geometry?: boolean }): CommitToken => {
-      if (propsRef.current.readOnly) return tokenRef.current;
+      if (propsRef.current.editing.readOnly) return tokenRef.current;
       const amending = options?.amend !== undefined && options.amend === tokenRef.current;
       const coalesce = command.coalesce
         ?? (amending ? tokenRef.current : `step-${(stepsRef.current += 1)}`);
       const before = modelRef.current;
-      const next = propsRef.current.dispatch({ ...command, coalesce });
+      const next = propsRef.current.editing.dispatch({ ...command, coalesce });
       // Refused, or a change that changed nothing: no step was made, so the
       // token still names whatever was on top before.
       if (next === undefined || next === before) return tokenRef.current;
@@ -517,7 +517,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     [bumpGeometry],
   );
 
-  const model = props.model;
+  const model = props.document.model;
 
   const actions = useMemo<EditorActions>(() => {
     /**
@@ -531,7 +531,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
      */
     const geometry = (command: Command, amend?: CommitToken): CommitToken =>
       dispatch(command, { geometry: true, amend });
-    const diagramId = () => propsRef.current.activeDiagramId;
+    const diagramId = () => propsRef.current.document.activeDiagramId;
     const currentModel = () => modelRef.current;
     const currentDiagram = () => currentModel().diagrams.find((d) => d.id === diagramId());
 
@@ -543,7 +543,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // key the file would have given it, at the moment it is drawn.
         const name =
           seed.name?.trim() ||
-          defaultElementName(seed.kind, translator(propsRef.current.language ?? 'en'));
+          defaultElementName(seed.kind, translator(propsRef.current.language?.value ?? 'en'));
         const id = ids.element(name);
         const element: DesignElement = {
           id,
@@ -840,7 +840,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       },
 
       pasteClipboard(payload, offset) {
-        if (propsRef.current.readOnly) return;
+        if (propsRef.current.editing.readOnly) return;
         const diagram = currentDiagram();
         if (!diagram || payload.elements.length === 0) return;
         const remapped = remapClipboard(payload, {
@@ -1198,8 +1198,8 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
   // undo of the step that drew it, or a delete. Prunes the vanished ids, keeping
   // the rest of a multi-selection intact.
   useEffect(() => {
-    setSelection((current) => pruneSelection(current, model, propsRef.current.activeDiagramId));
-  }, [model, props.activeDiagramId]);
+    setSelection((current) => pruneSelection(current, model, propsRef.current.document.activeDiagramId));
+  }, [model, props.document.activeDiagramId]);
 
   return {
     model,
@@ -1211,10 +1211,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     actions,
     geometryVersion,
     commitToken: tokenRef.current,
-    undo: props.history.undo,
-    redo: props.history.redo,
-    canUndo: props.history.canUndo,
-    canRedo: props.history.canRedo,
+    undo: props.editing.history.undo,
+    redo: props.editing.history.redo,
+    canUndo: props.editing.history.canUndo,
+    canRedo: props.editing.history.canRedo,
   };
 }
 
