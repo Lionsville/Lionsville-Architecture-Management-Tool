@@ -1,6 +1,6 @@
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { hasDocumentation, shortDescription } from './documentation'
-import { measure } from '../model/testing/measure'
+import { BUDGET, heapGrowthMb, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 
 /**
@@ -41,5 +41,22 @@ describe('reading what a card says', () => {
         hasDocumentation(element.description)
       }
     })
+  })
+})
+
+describe('the bound on what it remembers', () => {
+  it('does not grow with the number of descriptions it has read', () => {
+    // Ten times the bound, each one a page nobody will ask for again. The reader
+    // holds the last two thousand and forgets the rest; without the bound this
+    // would hold forty megabytes of prose for the life of the session, and go on
+    // holding more.
+    const grown = heapGrowthMb('documentation: 20,000 descriptions read, heap growth', () => {
+      for (let n = 0; n < 20_000; n++) {
+        const text = `# Page ${n}\n\n${cards[n % cards.length].description}`
+        shortDescription(text)
+        hasDocumentation(text)
+      }
+    })
+    expect(grown).toBeLessThan(BUDGET.cacheHeapMb)
   })
 })

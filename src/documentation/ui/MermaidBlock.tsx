@@ -19,6 +19,7 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import { useStrings } from '../../i18n'
+import { remembering } from '../remember'
 
 export type MermaidTheme = 'default' | 'dark'
 export type MermaidRenderer = (code: string, theme: MermaidTheme) => Promise<string>
@@ -26,11 +27,22 @@ export type MermaidRenderer = (code: string, theme: MermaidTheme) => Promise<str
 let sequence = 0
 
 /**
+ * How many drawn diagrams are kept. A page carries a handful; a session over a
+ * documented landscape can visit hundreds, and a mermaid SVG is tens to
+ * hundreds of kilobytes — which, unbounded, is a session that grows for as long
+ * as it is open.
+ */
+export const DIAGRAMS_REMEMBERED = 40
+
+/**
  * What was last drawn for a given source and theme. A block that remounts —
  * the page re-rendered around it — starts from the picture it already had
  * instead of flashing back to its source while mermaid runs again.
+ *
+ * Forgetting one costs a redraw and nothing else: the source is the key, so
+ * what comes back is the same picture.
  */
-const drawn = new Map<string, string>()
+const drawn = remembering<string>(DIAGRAMS_REMEMBERED)
 
 export const renderWithMermaid: MermaidRenderer = async (code, theme) => {
   const mermaid = (await import('mermaid')).default

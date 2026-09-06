@@ -31,6 +31,8 @@
  * | serialise one diagram file | 1.5 ms | 20 ms |
  * | derive a 600-node board after one move | 2.5 ms | 30 ms |
  * | 500 undo steps, heap growth | 0.02 MB | 50 MB |
+ * | 200 models indexed, heap growth | 0.05 MB | 50 MB |
+ * | 20,000 descriptions read, heap growth | 1.2 MB | 50 MB |
  *
  * Every {@link measure} call prints its label and its median as the run goes,
  * so `npm run test:perf` is the report and this table is the contract.
@@ -57,6 +59,13 @@ export const BUDGET = {
   derive: 30,
   /** Megabytes the heap may grow over five hundred undo steps. */
   undoHeapMb: 50,
+  /**
+   * Megabytes a cache may grow the heap over a long session's worth of work.
+   * The point of a bound is that this number does not depend on how much was
+   * asked of it, so the budget is generous on purpose — what it is watching for
+   * is a cache with no bound at all, which grows without limit.
+   */
+  cacheHeapMb: 50,
 } as const
 
 export type Budget = keyof typeof BUDGET

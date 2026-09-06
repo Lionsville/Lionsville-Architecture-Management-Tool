@@ -13,6 +13,7 @@
  * Pure. No React, no renderer; the renderer is the host's and only ever sees
  * the result of {@link linkElementRefs}.
  */
+import { readOnce } from './remember';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, ElementKind } from '../model/types';
 import type { Translate } from '../i18n/strings';
 
@@ -138,41 +139,13 @@ function firstParagraph(markdown: string): string {
  * enough that a long session over a five-thousand element project does not
  * accumulate every page anybody has looked at. The entries are the cost, not
  * the text: the key IS the description the model is already holding.
- */
-export const DESCRIPTIONS_REMEMBERED = 2_000;
-
-/**
- * A reader of a description, answering from memory the second time.
  *
  * Every node on the canvas asks {@link shortDescription} and
  * {@link hasDocumentation} what its element's page says, and both walk the
  * whole markdown to answer — twice per card, on every render, on a board that
- * can carry two thousand of them with two kilobytes of prose each. The result
- * only depends on the text, so it is worth remembering.
- *
- * A `Map` in insertion order IS an LRU once a hit re-inserts its key: the
- * oldest key is the first one the iterator gives back. Keyed on the string
- * rather than on the element, because the same description reached through two
- * different objects is the same question — and because a `WeakMap` cannot key
- * on a string at all.
+ * can carry two thousand of them with two kilobytes of prose each.
  */
-function readOnce<T>(read: (markdown: string) => T): (markdown: string) => T {
-  const held = new Map<string, T>();
-  return (markdown) => {
-    if (held.has(markdown)) {
-      const answer = held.get(markdown) as T;
-      held.delete(markdown);
-      held.set(markdown, answer);
-      return answer;
-    }
-    const answer = read(markdown);
-    held.set(markdown, answer);
-    if (held.size > DESCRIPTIONS_REMEMBERED) {
-      held.delete(held.keys().next().value as string);
-    }
-    return answer;
-  };
-}
+export const DESCRIPTIONS_REMEMBERED = 2_000;
 
 /**
  * The one line a node draws for an element.
@@ -188,6 +161,7 @@ export function shortDescription(markdown: string | undefined): string {
 
 const readShortDescription = readOnce(
   (markdown) => shortDescriptionRow(markdown) ?? firstParagraph(markdown),
+  DESCRIPTIONS_REMEMBERED,
 );
 
 /**
@@ -214,7 +188,7 @@ const readHasDocumentation = readOnce((markdown) => {
   if (rest.some((line) => /^\s*#{1,6}\s/.test(line))) return true;
   const paragraphs = rest.join('\n').split(/\n\s*\n/).filter((block) => block.trim() !== '');
   return paragraphs.length > 1;
-});
+}, DESCRIPTIONS_REMEMBERED);
 
 // --- the outline ---------------------------------------------------------------
 

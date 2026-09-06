@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { searchAll } from './search'
 import { searchElements } from './elementSearch'
 import { searchIndex } from './searchIndex'
-import { BUDGET, measure } from '../model/testing/measure'
+import { BUDGET, heapGrowthMb, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 
 /**
@@ -59,6 +59,25 @@ describe('the cost of a keystroke in a search field', () => {
       searchAll({ model, groupDecisions: [], query: 'reconciles nightly' })
     })
     expect(ms).toBeLessThan(BUDGET.search)
+  })
+
+  it('does not grow with the number of models it has indexed', () => {
+    // The index is cached on the model's identity and the folds on the rows',
+    // both in WeakMaps, so a session that has edited a project two hundred
+    // times holds one index and one set of folds — the collector takes the rest
+    // as the models it belonged to are dropped. A cache keyed on anything else
+    // would hold two hundred landscapes here.
+    const grown = heapGrowthMb('search: 200 models indexed, heap growth', () => {
+      let held = model
+      for (let n = 0; n < 200; n++) {
+        held = {
+          ...held,
+          elements: held.elements.map((e, at) => (at === n ? { ...e, name: `Renamed ${n}` } : e)),
+        }
+        searchAll({ model: held, groupDecisions: [], query: 'renamed' })
+      }
+    })
+    expect(grown).toBeLessThan(BUDGET.cacheHeapMb)
   })
 
   it('finds an element from the canvas', () => {

@@ -8,7 +8,7 @@
  * with itself every few seconds, which is how a sync feature becomes something
  * people turn off.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -28,6 +28,12 @@ afterEach(async () => {
 })
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// A filesystem notification arrives when the platform feels like it, and this
+// suite runs beside every other one. The default five seconds is a coin toss
+// under that load; these tests are quick when the watcher behaves and slow only
+// when something is actually wrong.
+vi.setConfig({ testTimeout: 30_000 })
 
 /**
  * Collect what the watcher reports.
@@ -49,11 +55,17 @@ function collecting() {
      * appeared" and "the file went" can both be waiting when it starts.
      */
     async sees(path: string, matches: (change: FolderChange) => boolean = () => true): Promise<FolderChange> {
-      for (let waited = 0; waited < 4_000; waited += 25) {
+      // Wall clock rather than a count of pauses: a `setTimeout(25)` on a
+      // machine running the rest of this suite is not 25 ms, so counting
+      // iterations gives up after an interval nobody chose. Generous, because
+      // the only thing this bound decides is how a genuine failure is reported
+      // — a watcher that never fires fails here either way.
+      const deadline = Date.now() + 15_000
+      do {
         const held = changes.find((change) => change.path === path && matches(change))
         if (held) return held
         await pause(25)
-      }
+      } while (Date.now() < deadline)
       throw new Error(`never saw ${path}; saw ${changes.map((c) => c.path).join(', ') || 'nothing'}`)
     },
     async quiet(): Promise<FolderChange[]> {
