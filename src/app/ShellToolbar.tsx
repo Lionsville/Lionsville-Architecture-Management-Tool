@@ -13,7 +13,8 @@ import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import type { Language, Translate } from '../i18n'
+import type { Language, StringKey, Translate } from '../i18n'
+import type { DocumentStatus } from '../projects/documentSession'
 import type { ThemeMode } from '../projects/preferences'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
@@ -34,6 +35,25 @@ export function clockTime(at: Date, language: Language): string {
   })
 }
 
+/**
+ * The word for each state, and the two that have none.
+ *
+ * `clean` and `no-file` fall through to the timestamp: one has a time worth
+ * showing and the other has nothing to say beyond "not yet". Everything else is
+ * a word, because a time is an answer to a different question.
+ */
+const STATUS_LABEL: Partial<Record<DocumentStatus, StringKey>> = {
+  dirty: 'shell.unsaved',
+  saving: 'shell.saving',
+  'external-changed': 'shell.changedOnDisk',
+  conflict: 'shell.conflict',
+}
+
+/** Red is for what the user has to act on, not for what is merely in flight. */
+function alarming(status: DocumentStatus, saveFailed: boolean): boolean {
+  return saveFailed || status === 'conflict' || status === 'external-changed'
+}
+
 export type ShellToolbarProps = {
   designName: string
   /**
@@ -44,6 +64,12 @@ export type ShellToolbarProps = {
   groupName: string
   /** When the store last accepted this design; `null` means never. */
   savedAt: Date | null
+  /**
+   * Where the document stands — dirty, saving, changed underneath us, or in
+   * conflict. `clean` is the ordinary case and shows the time instead, because
+   * "Saved · 14:02" says both things at once and a word would say less.
+   */
+  status?: DocumentStatus
   /**
    * The last write was refused.
    *
@@ -89,7 +115,7 @@ export type ShellToolbarProps = {
 }
 
 export function ShellToolbar({
-  designName, groupName, savedAt, saveFailed = false, language, themeMode, onCycleTheme,
+  designName, groupName, savedAt, status = 'clean', saveFailed = false, language, themeMode, onCycleTheme,
   onSaveWorkingFile, onSaveInterchange, onOpenFile, onLeave, onOpenSettings,
   onOpenDocumentation, onOpenDecisions, onOpenSearch, activity, s,
   windowChrome = NO_WINDOW_CHROME,
@@ -170,12 +196,14 @@ export function ShellToolbar({
       />
       <Box sx={{ flex: 1 }} />
       <Typography
-        sx={{ fontSize: 11, color: saveFailed ? 'error.main' : 'text.secondary' }}
+        sx={{ fontSize: 11, color: alarming(status, saveFailed) ? 'error.main' : 'text.secondary' }}
         data-testid="saved-indicator"
       >
         {saveFailed
           ? s('shell.saveRefused')
-          : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}
+          : STATUS_LABEL[status]
+            ? s(STATUS_LABEL[status]!)
+            : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}
       </Typography>
       <Tooltip title={s('shell.themeTip', { name: s(THEME_LABEL[themeMode]) })}>
         <IconButton

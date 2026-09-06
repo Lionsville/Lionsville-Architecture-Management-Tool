@@ -60,15 +60,25 @@ export type SaveFingerprint = {
 
 export type ConflictResolution = 'mine' | 'theirs' | 'copy'
 
+/**
+ * Why a fingerprint is optional everywhere below.
+ *
+ * A store that keeps projects in a browser has no file to fingerprint, and
+ * asking it to invent one would be worse than having none: the whole purpose of
+ * the four fields is to tell our own write from somebody else's, and a made-up
+ * value answers that question wrongly rather than not at all. Absent means "we
+ * cannot recognise our own writes", and `sameFile` then says false — every
+ * report of a change is somebody else's, which is the safe direction.
+ */
 export type DocumentEvent =
   /** A file is now bound to this session — opened, or saved-as for the first time. */
-  | { type: 'attached'; fingerprint: SaveFingerprint }
+  | { type: 'attached'; fingerprint?: SaveFingerprint }
   /** The model changed. */
   | { type: 'edited' }
   /** A write has started. */
   | { type: 'saveRequested' }
   /** The write landed; this is the fingerprint of what is now on disk. */
-  | { type: 'saveSucceeded'; fingerprint: SaveFingerprint }
+  | { type: 'saveSucceeded'; fingerprint?: SaveFingerprint }
   /** The write did not land. The edits are still ours. */
   | { type: 'saveFailed'; reason?: string }
   /** The file on disk looks different from what we last wrote. */
@@ -102,6 +112,18 @@ export function emptySession(ref?: ProjectRef): DocumentSession {
   return { status: 'no-file', editedWhileSaving: false, ref }
 }
 
+/**
+ * A session that starts with a project already open.
+ *
+ * The ordinary case in this shell, and not the same as `emptySession`: the app
+ * opens a project from a store before it renders anything, so there is a
+ * document from the first frame and `no-file` would be a state nobody is ever
+ * in. Clean, because what is on screen is what was just read.
+ */
+export function openSession(ref: ProjectRef, fingerprint?: SaveFingerprint): DocumentSession {
+  return { status: 'clean', editedWhileSaving: false, ref, fingerprint }
+}
+
 /** Two fingerprints describing the same bytes in the same place. */
 export function sameFile(a: SaveFingerprint | undefined, b: SaveFingerprint | undefined): boolean {
   if (!a || !b) return false
@@ -131,13 +153,17 @@ export function documentSession(state: DocumentSession, event: DocumentEvent): D
         case 'no-file': return state
         // Remember it, and settle it when the write reports back — see
         // `editedWhileSaving`.
-        case 'saving': return { ...state, editedWhileSaving: true }
+        case 'saving': return state.editedWhileSaving ? state : { ...state, editedWhileSaving: true }
         // Editing after being told their version changed is what turns a
         // question you could answer by reloading into one only a human can
         // settle. This is the transition most implementations miss.
         case 'external-changed': return { ...state, status: 'conflict' }
         case 'conflict': return state
-        default: return { ...state, status: 'dirty' }
+        // The same object when nothing moved, deliberately. A reducer that
+        // returns a fresh object for an event that changed nothing makes every
+        // caller re-render, and a caller whose render is what produced the
+        // event never stops.
+        default: return state.status === 'dirty' ? state : { ...state, status: 'dirty' }
       }
 
     case 'saveRequested':

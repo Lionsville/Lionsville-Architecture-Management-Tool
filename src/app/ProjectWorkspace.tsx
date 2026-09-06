@@ -32,8 +32,8 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { ShellToolbar } from './ShellToolbar'
-import { useAutosave } from './useAutosave'
-import type { ProjectSaver } from './useAutosave'
+import { useDocumentSession } from './useDocumentSession'
+import type { ProjectSaver } from './useDocumentSession'
 import { useDiagramActions } from './useDiagramActions'
 import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
@@ -124,9 +124,10 @@ export function ProjectWorkspace({
     setSaveFailed(!ok)
     onStorageResult(ok)
   }, [onStorageResult])
-  const { forceSave } = useAutosave({
+  const document = useDocumentSession({
     session, projects, onSaved: setSavedAt, onResult: onSaveResult,
   })
+  const forceSave = document.forceSave
 
   const documentPicker = useFilePicker({
     accept: '.lvarch,.json,application/json', onPick: files.openFile, testId: 'document-input',
@@ -243,6 +244,7 @@ export function ProjectWorkspace({
         designName={session.model.name}
         groupName={groupNameOf(session.model)}
         savedAt={savedAt}
+        status={document.state.status}
         saveFailed={saveFailed}
         language={language}
         themeMode={themeMode}

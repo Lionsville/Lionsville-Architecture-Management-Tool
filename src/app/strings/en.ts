@@ -19,6 +19,15 @@ export const EN = {
    * the work on screen and read as reassurance.
    */
   'shell.saveRefused': 'Not saved — storage refused',
+  /**
+   * The rest of the same indicator, once saving is a state machine and not a
+   * timestamp (ADR-0003). Each one is a different answer to "can I close this
+   * window now", which is the only question the bar is really being asked.
+   */
+  'shell.unsaved': 'Unsaved changes',
+  'shell.saving': 'Saving…',
+  'shell.changedOnDisk': 'Changed on disk',
+  'shell.conflict': 'Changed here and on disk',
   'shell.save': 'Save…',
   'shell.saveMenu': 'Save',
   'shell.workingFile': 'Working file',

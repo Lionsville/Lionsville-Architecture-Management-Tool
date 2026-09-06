@@ -72,6 +72,28 @@ describe('the saved indicator', () => {
     expect(indicator()).toBe('Not saved — storage refused')
     expect(indicator()).not.toContain('14:02')
   })
+
+  it('says where the document stands, when that is not simply "saved"', () => {
+    // Each of these is an answer to "can I close this window now", which is the
+    // only question this corner of the bar is really being asked. A time is an
+    // answer to a different one, so it gives way.
+    const at = new Date(2026, 8, 6, 14, 2)
+    for (const [status, expected] of [
+      ['dirty', 'Unsaved changes'],
+      ['saving', 'Saving…'],
+      ['external-changed', 'Changed on disk'],
+      ['conflict', 'Changed here and on disk'],
+    ] as const) {
+      cleanup()
+      renderShell(<ShellToolbar {...props} savedAt={at} status={status} />)
+      expect(indicator(), status).toBe(expected)
+    }
+  })
+
+  it('keeps the time for a document that is clean', () => {
+    renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} status="clean" />)
+    expect(indicator()).toContain('14:02')
+  })
 })
 
 describe('ShellToolbar and the window around it', () => {

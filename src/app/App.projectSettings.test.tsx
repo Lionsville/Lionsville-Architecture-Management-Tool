@@ -74,6 +74,15 @@ function applySettings(fields: { name?: string; author?: string }) {
 const saved = (store: InMemoryProjectStore) =>
   store.load({ group: 'acme', project: 'landscape' })
 
+/**
+ * The autosave waits three seconds now (ADR-0003), which is longer than a test
+ * wants to sit still for. Leaving the window is the other trigger and needs no
+ * clock: it is what a person does when they believe they are finished.
+ */
+function leaveTheWindow() {
+  fireEvent.blur(window)
+}
+
 describe('project settings on an open project', () => {
   it('keeps the editing the session has done', async () => {
     const store = show(project())
@@ -99,6 +108,7 @@ describe('project settings on an open project', () => {
 
     // A later change must not carry a pre-dialog model back over the defaults.
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
+    leaveTheWindow()
     await waitFor(async () => {
       const held = await saved(store)
       expect(held?.model.diagrams[0].author).toBe('Grace')
