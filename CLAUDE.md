@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2154 tests** and one of every config. The
+One codebase, in modules, with **2256 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2154 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2256 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -108,9 +108,12 @@ exception: React through and through, so it keeps its subfolders.
 src/model/        What a landscape is made of, and the arithmetic over it.
                     types             the domain half; imports nothing at all
                     kinds · zones · placement · aspects · kindChange · deletion
-                    ids · keys        addressing, temp ids, slugs
+                    ids · keys        addressing, slugs, where a new id comes from
+                    normalised        the model indexed by id; fromArrays/toArrays
+                    commands · reducer  what a change IS, and the one writer
                     routes · floatingEdgeMath   where a line leaves a box
-                    overlay/merge/reconcile/batch   in-flight edits (phase 3 owns)
+                    overlay/merge/reconcile/batch   the editor's in-flight edits,
+                                      on their way out; batchCommands is the bridge
                     hostModel · fromInterchange · toInterchange · containerDiagram
                     logo · logoRegistry · marks/    uploads, the icon registry
                     textSearch        the one rule for "found"
@@ -118,7 +121,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
-                    props.ts          what the editor is handed (32 props)
+                    props.ts          what the editor is handed (38 props)
                     useEditorState    the editing session's brain
 src/documentation/  Descriptions as documents.
                     documentation     outline, element links, the template
@@ -364,6 +367,23 @@ the top of `eslint.config.js` rather than prose. Around 600 lines of surface
 belonging to the application the editor was carved out of are gone, the string
 table is nine slices each owned by the module that says the words, and the rail
 icon set is a registered pack rather than a railway vocabulary in the model.
+
+Then a change became a **command** (`docs/decisions/0002`), which is the work
+in progress. The model is indexed by id in memory with `fromArrays`/`toArrays`
+at the file boundary (the file itself does not change, and a byte-for-byte
+round trip pins that); `apply(model, command)` is the only writer and returns
+the command that undoes what it just did; the session holds one stack over
+everything, so ⌘Z undoes a diagram rename, a decision's status and a project
+setting as readily as a node move. A new element gets the key the file would
+have given it at the moment it is drawn, so the temporary id, the alias map and
+the reconciliation between them are gone from the shell.
+
+**The editor still speaks `DiagramContentBatch`**, translated by
+`model/batchCommands.ts` and landed as one step. Converting its actions to
+dispatch, and then deleting the overlay, the merge, the reconcile and the batch,
+is what is left; the editor's own undo stack is still there but nothing pushes
+to it or reads it. Until that lands, `hostModel.applyBatch` and its neighbours
+are still exercised by their own tests and by nothing else.
 
 Worth knowing: the last project is resolved at the edge of the app, before the
 first render, so the workspace can start synchronously without a `null` case in
