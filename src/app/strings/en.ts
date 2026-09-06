@@ -175,6 +175,7 @@ export const EN = {
   'history.taken': 'Snapshot taken.',
   'history.nothingToRecord': 'Nothing has changed since the last snapshot.',
   'history.failed': 'The snapshot could not be taken: {message}',
+  'history.readFailed': 'The history could not be read: {message}',
   'history.none': 'No snapshots yet.',
   'history.unavailable':
     'This machine has no git, so the app cannot keep a history. Everything else works as before.',

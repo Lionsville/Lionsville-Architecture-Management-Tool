@@ -108,7 +108,7 @@ export function useProjectHistory(deps: {
       (held) => setChosen({ id, model: held?.model }),
       (cause: unknown) => {
         setChosen({ id })
-        notify(s('history.failed', { message: reasonOf(cause) }), 'error')
+        notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
       },
     )
   }, [history, project, notify, s])
@@ -119,7 +119,7 @@ export function useProjectHistory(deps: {
     setPageOpen(true)
     void history.entries().then(setEntries, (cause: unknown) => {
       setEntries([])
-      notify(s('history.failed', { message: reasonOf(cause) }), 'error')
+      notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
     })
   }, [history, notify, s])
 

@@ -117,6 +117,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.taken': 'Momentopname vastgelegd.',
   'history.nothingToRecord': 'Er is niets veranderd sinds de vorige momentopname.',
   'history.failed': 'De momentopname is niet gelukt: {message}',
+  'history.readFailed': 'De geschiedenis kon niet worden gelezen: {message}',
   'history.none': 'Nog geen momentopnames.',
   'history.unavailable':
     'Op deze machine staat geen git, dus de app kan geen geschiedenis bijhouden. De rest werkt gewoon.',
