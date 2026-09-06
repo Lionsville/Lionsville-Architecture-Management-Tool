@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2111 tests** and one of every config. The
+One codebase, in modules, with **2298 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2111 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2298 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -131,6 +131,10 @@ src/search/       One search over elements, documentation and decisions; ⌘K, �
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
 src/projects/     A project: open, save, order, summarise, address, remember.
+                    folderFormat      a project as files (ADR-0003); adrFile · fileText
+                    workingFile       the .lvarch container: v3 is the folder, zipped
+                    documentSession   dirty / saving / changed on disk / conflict
+                    migration         out of browser storage, into the folder
 src/platform/     What the app runs inside, and what a failure looks like.
                     errors            ShellError: a refusal as a key, never a sentence
                     diagnostics       what a failure entry is, and how a trail reads
@@ -142,21 +146,23 @@ src/ports/        The seams. Interfaces only, no implementations.
                     GroupStore · Diagnostics · HostControls
                     ProjectStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
-                    webStorage/ · memory/ · browser/ · fileSystem/
+                    webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
+                    desktop/          the Electron file channel, as a folder handle
 src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     composition.ts    which adapter, and which icon packs
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
                     picker/ · dialogs/ · examples/ · iconPacks/
                     testing/          renderShell / renderApp: the shared harness
-                    use*              the hooks: session, files, autosave, toasts
+                    use*              the hooks: session, files, document, toasts
 electron/         The desktop main process and preload.
+                    files.ts · fileStore.ts · watch.ts   the file channel
 ```
 
 **Components declare the interface they need**, not the widest one available.
-`useAutosave` asks for `{ save(project) }`, not for a `ProjectStore`, so it
-cannot reach `load()` or `clear()` and a reader does not have to check whether it
-did. `DocumentationPage` asks for one `updateElement`, not the editor's whole
+`useDocumentSession` asks for `{ save(project), load?(ref) }`, not for a
+`ProjectStore`, so it cannot reach `list()` or `remove()` and a reader does not
+have to check whether it did. `DocumentationPage` asks for one `updateElement`, not the editor's whole
 action set. The concrete implementations satisfy those shapes structurally, so
 narrowing costs nothing: no wrappers, just a smaller type.
 
@@ -197,14 +203,23 @@ on `model.decisions`, told apart by `applicationId`. The body is MADR markdown;
 title, status, date and signers are fields. The status is a state machine —
 proposed → reviewing → accepted | rejected, accepted → superseded (with the
 successor's id) — and the three end states lock the record: `updateAdr` and
-`removeAdr` refuse them. Numbers are per list and never reused. The working
-file is version 2 because of this field; v1 still opens.
+`removeAdr` refuse them. Numbers are per list and never reused. A record is one
+markdown file with front matter (`projects/adrFile.ts`), and an application's go
+in a folder of their own because numbers are per list.
 
 ## Groups and projects
 
 There is no customer compiled into this app, and no "shipped document". A
 project is addressed by a **`ProjectRef`** — a group path and a key inside it —
-and the store holds many:
+and the store holds many. In a working directory the ref IS the path, and the
+folder holding a `project.json` is the project (ADR-0003):
+
+```
+<working directory>/acme-logistics/warehouse-landscape/project.json
+<working directory>/acme/rail/rolling-stock/project.json
+```
+
+In a browser tab, which has no folder, the same refs are keys:
 
 ```
 lvarch.project.acme-logistics/warehouse-landscape
@@ -323,10 +338,11 @@ identifiers is still a list of a customer's identifiers.
 | Product name | **Lionsville Architecture Management Tool** |
 | Short name (menus, window title, tight spaces) | **Architecture Management Tool** |
 | Working-file extension | **`.lvarch`** |
-| Working-file discriminator (inside the JSON) | `lionsville-architecture` |
+| Working-file discriminator (in `project.json`) | `lionsville-architecture` |
 | npm package name | `lionsville-architecture-management-tool` |
 | Desktop bundle id | `nl.lionsville.architecture` |
-| Browser storage prefix | `lvarch.project.<group>/<project>` |
+| Working-directory layout | `<group>/<project>/project.json` |
+| Browser storage prefix (the fallback) | `lvarch.project.<group>/<project>` |
 | Preferences key | `lvarch.preferences` |
 | Vendor / copyright | Lionsville Group BV |
 | Shipped example | a fictional organisation, never a real customer's landscape |
@@ -342,8 +358,8 @@ name are **not** opened: `isWorkingFile` accepts only the
 `lionsville-architecture` tag, and `model/hostModel.test.ts` pins the refusal
 with its reasoning. The working file was redefined rather than extended, at a
 moment when nobody had one worth keeping. Versions 1 and 2 of the current file
-both open, and phase 4 adds version 3 with a reader for both. `docs/decisions/`
-has the long version.
+both open, and version 3 — the project folder in a zip — is what is written
+now. `docs/decisions/0001` and `0003` have the long version.
 
 ## State of play
 
@@ -401,11 +417,32 @@ thing `needsRemount` is left deciding.
 
 The desktop app ships: `electron/` holds the main process and preload, the
 renderer runs under `app://`, and `.github/workflows/release.yml` builds and
-signs all three platforms from a published GitHub release
-(`docs/release.md` is the operator's page). It still keeps projects in local
-storage rather than in files on disk — `src/projects/documentSession.ts` and
-`src/adapters/fileSystem/` are the pure half of that work, waiting on a folder
-picker and the wiring.
+signs all three platforms from a published GitHub release (`docs/release.md` is
+the operator's page).
+
+Then a project became **a folder of text files** (`docs/decisions/0003`). It
+had been kept in localStorage, which on the desktop meant a leveldb inside
+`userData`: invisible, unbacked-up, and a different store again under the dev
+origin. Now `<group>/<project>/` holds `project.json`, `model.json`, a
+definition and a placement file per diagram, a markdown file per description
+and per decision, and the marks as images — so a moved node is one small diff
+and a rewritten paragraph is a readable one. The single `.lvarch` stays as the
+export container and is version 3: that folder, zipped, reproducibly.
+
+What that took, in the order it was built: the format as pure functions with
+the round trip and the byte stability pinned; `FileSystemProjectStore` and
+`FileSystemGroupStore` over it, writing only what changed and removing only
+what the format itself writes; `documentSession` finally wired, so the toolbar
+says dirty / saving / changed on disk / conflict and closing the window with
+unsaved work is interrupted; a validated IPC file channel in main, with paths
+resolved inside the chosen root and writes made atomic; a folder the user
+chooses and the app remembers; the projects in browser storage copied in, once,
+deleting nothing; and a watcher, with our own writes filtered out by content so
+the app does not interrupt itself.
+
+What is not built yet: the File menu, the `.lvarch` file association and the
+`open-file` handler, git history from inside the app, and retiring the
+localStorage path on the desktop for good.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
