@@ -34,7 +34,6 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
 import type { MarkdownRenderOptions } from '../documentation';
-import type { ParameterSpec } from '../../editor/props';
 import type { WindowChrome } from '../../platform/windowChrome';
 import {
   documentTemplate,
@@ -44,10 +43,8 @@ import {
   outline,
 } from '../documentation';
 import { useStrings } from '../../i18n/LanguageContext';
-import { DocGlyph } from '../../editor/nodes/glyphs';
-import { ElementInspector } from '../../editor/ElementInspector';
+import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
-import type { EditorActions } from '../../editor/useEditorState';
 import { BackIcon } from '../../widgets/icons';
 
 /** How long the text must be quiet before a draft becomes a commit. */
@@ -55,14 +52,33 @@ const COMMIT_DELAY_MS = 1200;
 
 export type DocumentationMode = 'read' | 'edit';
 
+/** What this page may do to an element, and the caret it puts a link into. */
+export interface DocumentationActions {
+  updateElement(id: ElementId, patch: Partial<DesignElement>): void;
+  setSelectionRange?(start: number, end: number): void;
+}
+
 export interface DocumentationPageProps {
   element: DesignElement;
   model: DesignModel;
   diagram: DesignDiagram;
   readOnly: boolean;
-  actions: EditorActions;
-  parameterSpecs: ParameterSpec[];
+  /**
+   * The one thing this page changes. Not the editor's whole action set: a page
+   * that can only write a description cannot accidentally move a node, and it
+   * can be mounted in a test with one function.
+   */
+  actions: DocumentationActions;
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
+  /**
+   * The element's own fields, down the right-hand column.
+   *
+   * A slot, like `renderMarkdown` above it, and for the same reason: the
+   * inspector is the editor's, and a page that reads a description must not
+   * have to import the canvas to show the fields beside it. `readOnly` is the
+   * page's own — reading is read-only even when the document is not.
+   */
+  renderInspector?(element: DesignElement, options: { readOnly: boolean }): ReactNode;
   /** Move the page to another element (the left column, an element link, prev/next). */
   onNavigate(elementId: ElementId): void;
   onClose(): void;
@@ -367,19 +383,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
 
         {/* right: the element's own fields */}
         <Box sx={{ borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
-          <ElementInspector
-            element={element}
-            model={model}
-            diagram={diagram}
-            readOnly={readOnly || mode === 'read'}
-            parameterSpecs={props.parameterSpecs}
-            actions={actions}
-            onRequestDelete={props.onRequestDelete}
-            renderMarkdown={props.renderMarkdown}
-            onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
-            layout="stacked"
-            hideDescription
-          />
+          {props.renderInspector?.(element, { readOnly: readOnly || mode === 'read' })}
         </Box>
       </Box>
     </Dialog>

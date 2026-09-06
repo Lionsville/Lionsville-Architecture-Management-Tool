@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
-import type { EditorActions } from '../../editor/useEditorState';
+import type { DocumentationActions } from './DocumentationPage';
 import type { DesignDiagram, DesignElement, DesignModel } from '../../model/types';
 import type { MarkdownRenderOptions } from '../documentation';
 
@@ -70,8 +70,8 @@ function fakeRenderer(md: string, options?: MarkdownRenderOptions) {
 
 function setup(overrides: Partial<DocumentationPageProps> = {}) {
   const updateElement = vi.fn();
-  const actions = new Proxy({ updateElement } as unknown as EditorActions, {
-    get: (target, key) => (key in target ? target[key as keyof EditorActions] : () => {}),
+  const actions = new Proxy({ updateElement } as unknown as DocumentationActions, {
+    get: (target, key) => (key in target ? target[key as keyof DocumentationActions] : () => {}),
   });
   const main = overrides.element ?? element({ description: 'Holds every order until [[Billing]] takes it.' });
   const props: DocumentationPageProps = {
@@ -80,11 +80,15 @@ function setup(overrides: Partial<DocumentationPageProps> = {}) {
     diagram: diagram(),
     readOnly: false,
     actions,
-    parameterSpecs: [],
     renderMarkdown: fakeRenderer,
     onNavigate: vi.fn(),
     onClose: vi.fn(),
     onRequestDelete: vi.fn(),
+    // A stand-in for the editor's inspector: the page owns whether the fields
+    // may be edited, not what they are.
+    renderInspector: (el, { readOnly }) => (
+      <input aria-label="Name" defaultValue={el.name} disabled={readOnly} />
+    ),
     ...overrides,
   };
   const view = render(
@@ -170,14 +174,20 @@ describe('DocumentationPage', () => {
     expect(props.onNavigate).toHaveBeenLastCalledWith('e2');
   });
 
-  it('shows the element’s fields, editable only while editing', () => {
+  it('gives the inspector slot the element, editable only while editing', () => {
+    // What the fields ARE is the editor's business — this page takes them as a
+    // slot. What it still decides is when they may be typed into: reading is
+    // read-only even when the document is not.
     setup();
     const name = () => screen.getByLabelText('Name') as HTMLInputElement;
     expect(name().disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(name().disabled).toBe(false);
-    // The page is the description; the inspector must not show it a second time.
-    expect(screen.queryByLabelText('Description')).toBeNull();
+  });
+
+  it('renders nothing on the right when nobody fills the slot', () => {
+    setup({ renderInspector: undefined });
+    expect(screen.queryByLabelText('Name')).toBeNull();
   });
 
   it('steps back on Escape: out of Edit first, then out of the page', () => {

@@ -57,9 +57,7 @@ const MAY_IMPORT = {
   i18n: [],
   platform: ['i18n'],
   widgets: ['i18n'],
-  // `editor` is here until the documentation page takes its inspector as a
-  // render slot; it is the last thing this module should know about.
-  documentation: ['model', 'i18n', 'platform', 'widgets', 'editor'],
+  documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'ports'],

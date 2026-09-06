@@ -1101,8 +1101,25 @@ function EditorBody(props: SolutionDesignEditorProps) {
           diagram={activeDiagram}
           readOnly={readOnly}
           actions={state.actions}
-          parameterSpecs={props.parameterSpecs(documentationElement)}
           renderMarkdown={props.renderMarkdown}
+          renderInspector={(element, { readOnly: inspectorReadOnly }) => (
+            <ElementInspector
+              element={element}
+              model={state.effectiveModel}
+              diagram={activeDiagram}
+              readOnly={inspectorReadOnly}
+              parameterSpecs={props.parameterSpecs(element)}
+              actions={state.actions}
+              onRequestDelete={() => {
+                setDocumentationId(undefined);
+                setDeleteTarget(element.id);
+              }}
+              renderMarkdown={props.renderMarkdown}
+              onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
+              layout="stacked"
+              hideDescription
+            />
+          )}
           onNavigate={openDocumentation}
           onClose={() => setDocumentationId(undefined)}
           onRequestDelete={() => {
