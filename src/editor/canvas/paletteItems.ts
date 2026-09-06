@@ -6,10 +6,10 @@ import type { ElementKind } from '../../model/types';
  * which group it sits in. Kept out of `ElementPalette.tsx` so the component
  * stays about behaviour and this file stays about copy.
  *
- * The kind lists live here too (they used to sit on the two canvases) because
- * the palette is docked in the editor row and no longer receives them as a
- * canvas prop. `SolutionDesignEditor` picks the list for the active diagram and
- * imports it straight from here; the canvases no longer carry one.
+ * The kind lists are re-exported from `model/kindChange` at the bottom, so the
+ * palette and the rule that refuses a kind change cannot disagree about what a
+ * container diagram may hold. They used to be defined here, which meant the
+ * model imported the palette to find out.
  */
 
 /** A palette entry: every element kind, plus the layer7-only domain group. */
@@ -106,14 +106,10 @@ export const PALETTE_SECTIONS: PaletteSection[] = [
   { id: 'people', titleKey: 'palette.section.people', keys: ['actor', 'domainGroup'] },
 ];
 
-/** Layer 7 landscape kinds (no `component` — those belong to container diagrams). */
-export const LAYER7_PALETTE: ElementKind[] = [
-  'application',
-  'actor',
-  'externalSystem',
-  'inputChannel',
-  'managementTool',
-];
-
-/** C4 container-diagram kinds. */
-export const CONTAINER_PALETTE: ElementKind[] = ['component', 'actor', 'externalSystem'];
+/**
+ * Which kinds each sort of diagram may show. Re-exported rather than defined
+ * here: the rule is the model's — `canChangeKind` refuses a kind a diagram may
+ * not show — and a palette that owned its own copy would be a second answer to
+ * the same question.
+ */
+export { CONTAINER_PALETTE, LAYER7_PALETTE } from '../../model/kindChange';

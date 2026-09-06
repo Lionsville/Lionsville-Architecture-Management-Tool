@@ -6,7 +6,6 @@ import type {
   ElementKind,
 } from './types';
 import type { StringKey } from '../i18n/strings';
-import { CONTAINER_PALETTE, LAYER7_PALETTE } from '../editor/canvas/paletteItems';
 import { clampPlacementIntoZone, nodeMaxSize, nodeMinSize } from './placement';
 import { HOME_ZONE } from './zones';
 
@@ -58,7 +57,25 @@ export type KindChangeCheck =
   | { ok: true }
   | { ok: false; reason: KindChangeRefusal & StringKey };
 
-/** The kinds a diagram of this sort may show — the palette's list, reused. */
+/**
+ * Layer 7 landscape kinds — no `component`, those belong to container diagrams.
+ *
+ * Here and not in the palette because it is a rule about the model, not about a
+ * row of buttons: `canChangeKind` below refuses a kind the diagram may not show,
+ * and the palette offers exactly what the rule allows by importing these.
+ */
+export const LAYER7_PALETTE: ElementKind[] = [
+  'application',
+  'actor',
+  'externalSystem',
+  'inputChannel',
+  'managementTool',
+];
+
+/** C4 container-diagram kinds. */
+export const CONTAINER_PALETTE: ElementKind[] = ['component', 'actor', 'externalSystem'];
+
+/** The kinds a diagram of this sort may show. */
 export function allowedKindsOn(diagram: Pick<DesignDiagram, 'kind'>): readonly ElementKind[] {
   return diagram.kind === 'layer7' ? LAYER7_PALETTE : CONTAINER_PALETTE;
 }

@@ -83,6 +83,8 @@ export default tseslint.config(
             message: 'This module computes; screen work belongs in its ui/ folder, in editor/ or in app/.' },
           { group: ['**/adapters/**', '**/composition'],
             message: 'References point inward: a seam may not know its filling.' },
+          { group: ['**/editor/**', '**/editor', '**/app/**', '**/app'],
+            message: 'A module that computes may not import the screen it is drawn on.' },
         ],
       }],
     },

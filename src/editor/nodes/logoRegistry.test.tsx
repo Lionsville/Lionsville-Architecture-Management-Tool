@@ -9,9 +9,9 @@ import {
   type LogoCategory,
 } from './logoRegistry';
 import { PathMark } from './PathMark';
-import { GENERIC_MARKS } from './marks/generic';
-import { RAIL_MARKS } from './marks/rail';
-import { VENDOR_MARKS } from './marks/vendors';
+import { GENERIC_MARKS } from '../../model/marks/generic';
+import { RAIL_MARKS } from '../../model/marks/rail';
+import { VENDOR_MARKS } from '../../model/marks/vendors';
 
 /**
  * The registry itself: data-shaped, monochrome, grouped, searchable.

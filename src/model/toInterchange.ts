@@ -12,7 +12,7 @@
  * keeps an export without edits a clean diff.
  */
 import type { DesignModel } from '.'
-import { isBuiltInLogoKey } from '../editor'
+import { isBuiltInLogoKey } from './logoRegistry'
 import { isTempId } from '.'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
 import { KEY_RE, claimKey } from './keys'
