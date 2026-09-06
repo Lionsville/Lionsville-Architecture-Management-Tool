@@ -10,9 +10,10 @@
  *
  * It is deliberately literal about the things that trip stores up: folders have
  * to be created before they can be entered, entering a missing folder throws
- * exactly as the browser's does, and a writable is a two-step affair whose
- * contents only land on `close()`. A double that quietly created missing folders
- * would hide the very bug it exists to catch.
+ * exactly as the browser's does, removing a folder with something in it needs
+ * `recursive`, and a writable is a two-step affair whose contents only land on
+ * `close()`. A double that quietly created missing folders would hide the very
+ * bug it exists to catch.
  *
  * Not a test file itself — the contract suite and any future test can use it.
  */
@@ -20,10 +21,18 @@ import type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
 } from './FileSystemProjectStore'
 
-type StoredFile = { contents: string; lastModified: number }
+type StoredFile = { contents: string | Uint8Array; lastModified: number }
 
 /** A clock that always moves, so two saves never share an mtime. */
 let tick = 1_700_000_000_000
+
+function bytesOf(contents: string | Uint8Array): Uint8Array {
+  return typeof contents === 'string' ? new TextEncoder().encode(contents) : contents
+}
+
+function textOf(contents: string | Uint8Array): string {
+  return typeof contents === 'string' ? contents : new TextDecoder().decode(contents)
+}
 
 export class FakeDirectory implements DirectoryHandleLike {
   readonly kind = 'directory' as const
@@ -55,15 +64,23 @@ export class FakeDirectory implements DirectoryHandleLike {
     return this.handleFor(name)
   }
 
-  async removeEntry(name: string): Promise<void> {
-    if (!this.files.delete(name) && !this.folders.delete(name)) {
-      throw new Error(`NotFoundError: no entry ${name}`)
+  async removeEntry(name: string, options?: { recursive?: boolean }): Promise<void> {
+    if (this.files.delete(name)) return
+    const folder = this.folders.get(name)
+    if (!folder) throw new Error(`NotFoundError: no entry ${name}`)
+    if (!options?.recursive && !folder.isEmpty()) {
+      throw new Error(`InvalidModificationError: ${name} is not empty`)
     }
+    this.folders.delete(name)
   }
 
   async *values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike> {
     for (const folder of this.folders.values()) yield folder
     for (const name of [...this.files.keys()]) yield this.handleFor(name)
+  }
+
+  private isEmpty(): boolean {
+    return this.files.size === 0 && this.folders.size === 0
   }
 
   private handleFor(name: string): FileHandleLike {
@@ -76,24 +93,54 @@ export class FakeDirectory implements DirectoryHandleLike {
         if (!stored) throw new Error(`NotFoundError: no file ${name}`)
         return {
           lastModified: stored.lastModified,
-          size: stored.contents.length,
-          text: async () => stored.contents,
+          size: bytesOf(stored.contents).length,
+          text: async () => textOf(stored.contents),
+          arrayBuffer: async () => {
+            const bytes = bytesOf(stored.contents)
+            return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+          },
         }
       },
       async createWritable(): Promise<WritableLike> {
         // Buffered until close, like the real one: a reader that arrives
         // mid-write sees the previous contents rather than half of the new.
-        let buffer = ''
+        const chunks: (string | Uint8Array)[] = []
         return {
-          async write(data: string) { buffer += data },
-          async close() { files.set(name, { contents: buffer, lastModified: (tick += 1) }) },
+          async write(data: string | Uint8Array) { chunks.push(data) },
+          async close() {
+            const contents = chunks.every((chunk) => typeof chunk === 'string')
+              ? chunks.join('')
+              : joinBytes(chunks)
+            files.set(name, { contents, lastModified: (tick += 1) })
+          },
         }
       },
     }
   }
 
   /** Put a file there without going through the store, for the awkward cases. */
-  writeRaw(name: string, contents: string): void {
+  writeRaw(name: string, contents: string | Uint8Array): void {
     this.files.set(name, { contents, lastModified: (tick += 1) })
   }
+
+  /** Every path under here, for a test that wants to see the whole folder. */
+  paths(within = ''): string[] {
+    const found: string[] = []
+    for (const name of this.files.keys()) found.push(within ? `${within}/${name}` : name)
+    for (const [name, folder] of this.folders) {
+      found.push(...folder.paths(within ? `${within}/${name}` : name))
+    }
+    return found.sort()
+  }
+}
+
+function joinBytes(chunks: readonly (string | Uint8Array)[]): Uint8Array {
+  const parts = chunks.map(bytesOf)
+  const joined = new Uint8Array(parts.reduce((total, part) => total + part.length, 0))
+  let at = 0
+  for (const part of parts) {
+    joined.set(part, at)
+    at += part.length
+  }
+  return joined
 }

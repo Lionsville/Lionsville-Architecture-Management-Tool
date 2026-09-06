@@ -9,7 +9,7 @@ import type { DesignElement } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import { stableJson, textFromBytes } from './fileText'
 import {
-  groupFiles, groupFromFolder, MODEL_FILE, PROJECT_FILE, PROJECT_FORMAT_VERSION, projectFiles,
+  groupFiles, groupFromFolder, isFormatPath, MODEL_FILE, PROJECT_FILE, PROJECT_FORMAT_VERSION, projectFiles,
   projectFromFolder, projectSummaryFrom,
 } from './folderFormat'
 import type { FolderFile } from './folderFormat'
@@ -311,5 +311,26 @@ describe('a group', () => {
   it('drops a link that is not one rather than handing it to a renderer', () => {
     const files = [{ path: 'group.json', text: stableJson({ name: 'A', links: ['https://x.test', { url: 'y' }] }) }]
     expect(groupFromFolder(files, 'a')?.links).toEqual([])
+  })
+})
+
+describe('isFormatPath', () => {
+  it('claims every file the format writes', () => {
+    for (const file of projectFiles(project())) {
+      expect(isFormatPath(file.path), file.path).toBe(true)
+    }
+    for (const file of groupFiles({ group: 'a', name: 'A', decisions: [DECISION] })) {
+      expect(isFormatPath(file.path), file.path).toBe(true)
+    }
+  })
+
+  it('claims none of what a user keeps beside their landscape', () => {
+    // A save that tidied these away would be unforgivable.
+    for (const path of [
+      'README.md', 'notes.txt', '.git/config', 'decisions/README.md', 'logos/source.ai',
+      'diagrams/old/l7.json', 'budget.xlsx', 'docs/pictures/one.png', '../escape.json',
+    ]) {
+      expect(isFormatPath(path), path).toBe(false)
+    }
   })
 })

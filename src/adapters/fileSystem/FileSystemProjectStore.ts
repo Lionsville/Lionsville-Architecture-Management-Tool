@@ -1,32 +1,38 @@
 /**
- * Projects as files in a folder the user chose.
+ * Projects as folders in a working directory the user chose.
  *
- * The File System Access API, so a project is a real `.lvarch` file that the
- * person owns: it can sit in OneDrive, be mailed to a colleague, be committed,
- * be opened next week by a version of this tool that does not exist yet. That is
- * a different promise from browser storage, which is a per-browser cache the
- * user cannot see and a "clear site data" can wipe without warning.
+ * A project is a folder of text files (ADR-0003, and `projects/folderFormat.ts`
+ * is the format itself): a real thing the person owns, that can sit in
+ * OneDrive, be committed, be read by a version of this tool that does not exist
+ * yet. That is a different promise from browser storage, which is a per-browser
+ * cache the user cannot see and a "clear site data" can wipe without warning.
  *
- * The layout is the ref, literally: `<group path>/<project>.lvarch`. A group is
- * a path, so a nested group is nested folders, and what the picker shows is what
+ * The layout is the ref, literally: `<group path>/<project>/`. A group is a
+ * path, so a nested group is nested folders, and what the picker shows is what
  * the file manager shows. That is worth more than any index file — there is no
  * second source of truth to fall out of step, and a project dropped into the
- * folder by hand is simply there.
+ * working directory by hand is simply there.
  *
  * **Everything is by name, nothing is cached.** A directory listing is the
- * index. It costs a read per project on `list()`, which the port explicitly
- * permits ("one that cannot answer cheaply may load and summarise"), and it buys
- * the property that matters here: another program — a sync client, a colleague,
- * the user — can change the folder underneath us and the next listing is simply
- * right.
+ * index. Listing costs one small `project.json` per project, which is what that
+ * file is for; the whole landscape is only read when a project is opened.
+ *
+ * **The folder belongs to the user, not to this store.** It writes and removes
+ * exactly what `isFormatPath` claims and leaves everything else — a README, a
+ * `.git`, a spreadsheet somebody keeps beside the landscape — alone. And it
+ * writes a file only when its content has actually changed, so an autosave of
+ * an untouched diagram touches no mtime, wakes no watcher and shows up in no
+ * `git status`.
  *
  * This adapter deliberately does NOT watch for changes or resolve conflicts.
  * That is `documentSession`'s job in the layer above, which is where it can be
  * tested without a filesystem at all.
  */
-import { isUsableProject, summarise } from '../../projects/project'
+import {
+  isFormatPath, PROJECT_FILE, projectFiles, projectFromFolder, projectSummaryFrom,
+} from '../../projects/folderFormat'
+import type { FolderFile } from '../../projects/folderFormat'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
-import { WORKING_FILE_EXTENSION } from '../../model/hostModel'
 import { groupSegments, isProjectRef } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
 import type { ProjectStore } from '../../ports/ProjectStore'
@@ -38,10 +44,17 @@ import type { ProjectStore } from '../../ports/ProjectStore'
  * matter: the ambient types are not present in every TypeScript configuration
  * this repo builds under, and naming exactly what is used makes the store
  * testable against a small in-memory double instead of a browser. The double is
- * then held to the same shape by the compiler.
+ * then held to the same shape by the compiler — and so is the desktop's IPC
+ * handle, which is the same abstraction over a channel instead of a browser.
  */
-export type FileLike = { text(): Promise<string>; lastModified: number; size: number }
-export type WritableLike = { write(data: string): Promise<void>; close(): Promise<void> }
+export type FileLike = {
+  text(): Promise<string>
+  /** For the marks: a PNG has no honest text form. */
+  arrayBuffer(): Promise<ArrayBuffer>
+  lastModified: number
+  size: number
+}
+export type WritableLike = { write(data: string | Uint8Array): Promise<void>; close(): Promise<void> }
 export type FileHandleLike = {
   kind: 'file'
   name: string
@@ -57,17 +70,17 @@ export type DirectoryHandleLike = {
   values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike>
 }
 
-/** A file name that is only ever a name — never a path, never a traversal. */
-function fileNameFor(ref: ProjectRef): string {
-  return `${ref.project}${WORKING_FILE_EXTENSION}`
+/** Text unless the extension says otherwise. Only the bitmaps are bytes. */
+function isBinary(path: string): boolean {
+  return path.endsWith('.png')
 }
 
 /**
  * Reject a ref before it becomes a path.
  *
  * `getDirectoryHandle('..')` throws in a real browser, but this store is also
- * the shape the desktop adapter will take, where the same string becomes a path
- * on someone's disk. Refusing here means the rule is stated once, in the layer
+ * the shape the desktop adapter takes, where the same string becomes a path on
+ * someone's disk. Refusing here means the rule is stated once, in the layer
  * that knows what a ref is allowed to look like, rather than relying on each
  * backend to be strict on its own.
  */
@@ -78,24 +91,26 @@ function usableRef(ref: ProjectRef): boolean {
     part.length > 0 && part !== '.' && part !== '..' && !/[/\\]/.test(part))
 }
 
+/** One file in a project folder, with enough to read it, replace it or remove it. */
+type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
+
 export class FileSystemProjectStore implements ProjectStore {
   readonly id = 'folder on disk'
 
   constructor(private readonly root: DirectoryHandleLike) {}
 
   /**
-   * Walk down to a group's folder.
+   * Walk down a path of folder names.
    *
-   * `create: false` returns undefined rather than throwing for a group that is
-   * not there, because "no such group" is an ordinary answer to `load` and
+   * `create: false` returns undefined rather than throwing for a folder that is
+   * not there, because "no such project" is an ordinary answer to `load` and
    * `remove` — the same reasoning as the port's `load` returning `undefined`.
    */
-  private async groupFolder(
-    ref: ProjectRef,
-    create: boolean,
+  private async folderAt(
+    segments: readonly string[], create: boolean,
   ): Promise<DirectoryHandleLike | undefined> {
     let folder = this.root
-    for (const segment of groupSegments(ref.group)) {
+    for (const segment of segments) {
       try {
         folder = await folder.getDirectoryHandle(segment, { create })
       } catch {
@@ -105,28 +120,79 @@ export class FileSystemProjectStore implements ProjectStore {
     return folder
   }
 
-  async list(): Promise<ProjectSummary[]> {
-    const found: ProjectSummary[] = []
+  private projectFolder(ref: ProjectRef, create: boolean): Promise<DirectoryHandleLike | undefined> {
+    return this.folderAt([...groupSegments(ref.group), ref.project], create)
+  }
 
-    // Depth-first over the folder tree: every level of nesting is a group
-    // segment, so the path down to a file IS its ref.
-    const walk = async (folder: DirectoryHandleLike, group: string[]): Promise<void> => {
-      for await (const entry of folder.values()) {
-        if (entry.kind === 'directory') {
-          await walk(entry, [...group, entry.name])
-          continue
-        }
-        if (!entry.name.endsWith(WORKING_FILE_EXTENSION)) continue
-        const project = await this.read(entry, {
-          group: group.join('/'),
-          project: entry.name.slice(0, -WORKING_FILE_EXTENSION.length),
-        })
-        if (project) found.push(summarise(project))
+  /** Every file of the format under one project folder, with its path inside it. */
+  private async entries(folder: DirectoryHandleLike, within = ''): Promise<Entry[]> {
+    const found: Entry[] = []
+    for await (const entry of folder.values()) {
+      const path = within ? `${within}/${entry.name}` : entry.name
+      if (entry.kind === 'directory') {
+        found.push(...await this.entries(entry, path))
+        continue
       }
+      if (isFormatPath(path)) found.push({ path, name: entry.name, parent: folder, handle: entry })
+    }
+    return found
+  }
+
+  private async read(entry: Entry): Promise<FolderFile | undefined> {
+    try {
+      const file = await entry.handle.getFile()
+      return isBinary(entry.path)
+        ? { path: entry.path, bytes: new Uint8Array(await file.arrayBuffer()) }
+        : { path: entry.path, text: await file.text() }
+    } catch {
+      // Half a write, a file removed under us, permission withdrawn. The rest
+      // of the project is still worth reading.
+      return undefined
+    }
+  }
+
+  /**
+   * A project's own folder is one that holds a `project.json`.
+   *
+   * Everything above it is a group, so the path down to that file IS the ref —
+   * which is why nothing has to be written inside the file to say where it is
+   * filed. Walking stops there: what is inside a project is the project's.
+   */
+  private async walk(
+    folder: DirectoryHandleLike, segments: string[], found: ProjectSummary[],
+  ): Promise<void> {
+    const children: DirectoryHandleLike[] = []
+    let header: FileHandleLike | undefined
+    let latest = 0
+    for await (const entry of folder.values()) {
+      if (entry.kind === 'directory') children.push(entry)
+      else if (entry.name === PROJECT_FILE) header = entry
     }
 
+    if (header && segments.length >= 2) {
+      const ref = { group: segments.slice(0, -1).join('/'), project: segments[segments.length - 1] }
+      // The date comes off the files and never out of a field: the picker orders
+      // by it, and a stored timestamp goes stale the moment anything but this
+      // tool touches the folder — which, in a working directory, it will.
+      for (const entry of await this.entries(folder)) {
+        latest = Math.max(latest, (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)
+      }
+      const summary = projectSummaryFrom(
+        await (await header.getFile()).text(),
+        ref,
+        latest ? new Date(latest).toISOString() : undefined,
+      )
+      if (summary) found.push(summary)
+      return
+    }
+
+    for (const child of children) await this.walk(child, [...segments, child.name], found)
+  }
+
+  async list(): Promise<ProjectSummary[]> {
+    const found: ProjectSummary[] = []
     try {
-      await walk(this.root, [])
+      await this.walk(this.root, [], found)
     } catch {
       // A folder that has become unreadable — permission withdrawn, drive
       // unplugged — is an empty list rather than a broken picker.
@@ -135,80 +201,85 @@ export class FileSystemProjectStore implements ProjectStore {
     return found.sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  /**
-   * One file, or `undefined` when it is missing or unreadable.
-   *
-   * Corrupt content is skipped rather than thrown, for the same reason the
-   * browser store skips it: half-written JSON or a file somebody edited by hand
-   * is not something the user can act on, and refusing to show the rest of their
-   * projects would be a worse answer.
-   */
-  private async read(handle: FileHandleLike, ref: ProjectRef): Promise<ProjectSnapshot | undefined> {
-    let parsed: unknown
-    let lastModified: number
+  async load(ref: ProjectRef): Promise<ProjectSnapshot | undefined> {
+    if (!usableRef(ref)) return undefined
+    const folder = await this.projectFolder(ref, false)
+    if (!folder) return undefined
     try {
-      const file = await handle.getFile()
-      lastModified = file.lastModified
-      parsed = JSON.parse(await file.text())
+      const entries = await this.entries(folder)
+      const files = (await Promise.all(entries.map((entry) => this.read(entry))))
+        .filter((file): file is FolderFile => !!file)
+      const project = projectFromFolder(files, ref)
+      if (!project) return undefined
+      const latest = Math.max(0, ...await Promise.all(entries.map(async (entry) =>
+        (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)))
+      return latest ? { ...project, updatedAt: new Date(latest).toISOString() } : project
     } catch {
       return undefined
-    }
-    if (!isUsableProject(parsed)) return undefined
-    const held = parsed as ProjectSnapshot
-
-    // The ref comes from where the file IS, not from what it says. A file that
-    // was moved or renamed in the file manager is then simply the project at its
-    // new address, which is what anybody moving it would expect.
-    return {
-      ref,
-      model: held.model,
-      activeDiagramId: held.activeDiagramId ?? held.model.diagrams[0].id,
-      logoLibrary: Array.isArray(held.logoLibrary) ? held.logoLibrary : [],
-      // The file's own mtime, not a field inside it. The picker orders by this,
-      // and a stored timestamp would go stale the moment anything but this tool
-      // touched the file.
-      updatedAt: new Date(lastModified).toISOString(),
     }
   }
 
-  async load(ref: ProjectRef): Promise<ProjectSnapshot | undefined> {
-    if (!usableRef(ref)) return undefined
-    const folder = await this.groupFolder(ref, false)
-    if (!folder) return undefined
+  private async write(folder: DirectoryHandleLike, file: FolderFile): Promise<void> {
+    const parts = file.path.split('/')
+    const parent = await this.folderInside(folder, parts.slice(0, -1))
+    const handle = await parent.getFileHandle(parts[parts.length - 1], { create: true })
+
+    // Written only when it would differ. An autosave of a project whose model
+    // has not changed then touches no mtime: no watcher wakes, no sync client
+    // uploads, and `git status` stays empty. It costs a read, which is the
+    // cheap half of the pair.
+    const existing = await handle.getFile().then(
+      async (held) => 'text' in file ? held.text() : new Uint8Array(await held.arrayBuffer()),
+      () => undefined,
+    )
+    if (existing !== undefined && same(existing, file)) return
+
+    const writable = await handle.createWritable()
     try {
-      const handle = await folder.getFileHandle(fileNameFor(ref))
-      return await this.read(handle, ref)
-    } catch {
-      return undefined
+      await writable.write('text' in file ? file.text : file.bytes)
+    } finally {
+      await writable.close()
     }
+  }
+
+  private async folderInside(
+    folder: DirectoryHandleLike, segments: readonly string[],
+  ): Promise<DirectoryHandleLike> {
+    let held = folder
+    for (const segment of segments) held = await held.getDirectoryHandle(segment, { create: true })
+    return held
   }
 
   async save(project: ProjectSnapshot): Promise<void> {
     if (!usableRef(project.ref)) {
       throw new Error(`shell.badProjectRef:${project.ref.group}/${project.ref.project}`)
     }
-    const folder = await this.groupFolder(project.ref, true)
+    const folder = await this.projectFolder(project.ref, true)
     if (!folder) throw new Error('shell.folderUnavailable')
 
-    const handle = await folder.getFileHandle(fileNameFor(project.ref), { create: true })
-    const writable = await handle.createWritable()
-    // The ref is not written into the file: where a project is filed is this
-    // store's business, and a file handed to somebody else should not carry it.
-    const contents = { model: project.model, activeDiagramId: project.activeDiagramId,
-      ...(project.logoLibrary.length ? { logoLibrary: project.logoLibrary } : {}) }
-    try {
-      await writable.write(JSON.stringify(contents, null, 2) + '\n')
-    } finally {
-      await writable.close()
+    const files = projectFiles(project)
+    // Written before anything is removed: an interrupted save then leaves a
+    // folder with too much in it, which opens, rather than too little.
+    for (const file of files) await this.write(folder, file)
+
+    const wanted = new Set(files.map((file) => file.path))
+    for (const entry of await this.entries(folder)) {
+      if (wanted.has(entry.path)) continue
+      // Only what this format writes — a deleted diagram's two files, a
+      // decision that was renamed. Everything else in the folder is somebody's.
+      await entry.parent.removeEntry(entry.name).catch(() => undefined)
     }
   }
 
   async remove(ref: ProjectRef): Promise<void> {
     if (!usableRef(ref)) return
-    const folder = await this.groupFolder(ref, false)
-    if (!folder) return
+    const parent = await this.folderAt(groupSegments(ref.group), false)
+    if (!parent) return
     try {
-      await folder.removeEntry(fileNameFor(ref))
+      // The whole folder, including anything the user filed in it: this folder
+      // IS the project, and deleting a project that leaves half of itself
+      // behind is the more surprising answer.
+      await parent.removeEntry(ref.project, { recursive: true })
     } catch {
       // Removing what is not there is not an error, per the port. An empty group
       // folder is left behind on purpose: a group exists because projects are
@@ -216,4 +287,10 @@ export class FileSystemProjectStore implements ProjectStore {
       // in is not this store's call.
     }
   }
+}
+
+function same(existing: string | Uint8Array, file: FolderFile): boolean {
+  if ('text' in file) return existing === file.text
+  if (typeof existing === 'string' || existing.length !== file.bytes.length) return false
+  return existing.every((byte, i) => byte === file.bytes[i])
 }

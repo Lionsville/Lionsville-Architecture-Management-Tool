@@ -194,7 +194,11 @@ function header(project: ProjectSnapshot, files: FolderFile[]): ProjectHeader {
       return { key: logo.key, label: logo.label, url: logo.url }
     }
     const file = `${safeName(logo.key.replace(/^lib:/, '') || 'mark', names)}.${extension}`
-    files.push({ path: `${LOGOS_FOLDER}/${file}`, bytes: held.bytes })
+    // An SVG is text and is written as text: a mark should diff like the XML it
+    // is, and a store that keeps text files as text can leave it alone.
+    files.push(extension === 'svg'
+      ? { path: `${LOGOS_FOLDER}/${file}`, text: textFromBytes(held.bytes) }
+      : { path: `${LOGOS_FOLDER}/${file}`, bytes: held.bytes })
     return { key: logo.key, label: logo.label, file }
   })
 
@@ -224,6 +228,31 @@ function header(project: ProjectSnapshot, files: FolderFile[]): ProjectHeader {
       }
       : {}),
   }
+}
+
+/**
+ * Is this a file the format itself writes?
+ *
+ * The question a store has to be able to answer before it deletes anything. A
+ * project folder belongs to the user: a `README.md`, a `.git`, a spreadsheet
+ * somebody keeps beside the landscape are all allowed to be there, and a save
+ * that tidied them away would be unforgivable. So a store replaces and removes
+ * exactly what this grammar matches and leaves the rest of the folder alone.
+ *
+ * The decision files carry their number in the name for this reason as much as
+ * for ordering: `decisions/README.md` does not match, and survives.
+ */
+export function isFormatPath(path: string): boolean {
+  if (path === PROJECT_FILE || path === MODEL_FILE || path === GROUP_FILE) return true
+  const parts = path.split('/')
+  if (parts.some((part) => !part || part === '.' || part === '..')) return false
+  const [folder, ...rest] = parts
+  const name = rest[rest.length - 1]
+  if (folder === DIAGRAMS_FOLDER) return rest.length === 1 && name.endsWith('.json')
+  if (folder === DOCS_FOLDER) return rest.length === 1 && name.endsWith('.md')
+  if (folder === LOGOS_FOLDER) return rest.length === 1 && /\.(svg|png)$/.test(name)
+  if (folder === DECISIONS_FOLDER) return rest.length <= 2 && /^\d{1,6}-.*\.md$/.test(name)
+  return false
 }
 
 /** A record of the files, by path, for the readers below. */
