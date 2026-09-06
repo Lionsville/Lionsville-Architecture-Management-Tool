@@ -289,6 +289,11 @@ export function ProjectWorkspace({
           initialPreferences={editorPreferences}
           onPreferencesChange={onEditorPreferencesChange}
           historyResetToken={session.historyToken}
+          rebaseToken={session.rebaseToken}
+          onUndo={session.undo}
+          onRedo={session.redo}
+          canUndo={session.canUndo}
+          canRedo={session.canRedo}
           language={language}
           onLanguageChange={onChooseLanguage}
           focusElement={focusRequest}

@@ -86,6 +86,8 @@ export type ModelSession = {
   editorKey: number
   /** No remount, but an emptied undo stack. */
   historyToken: number
+  /** No remount and no emptied stack: the model moved under the editor's feet. */
+  rebaseToken: number
   logoLibrary: UploadedLogo[]
   setLogoLibrary: React.Dispatch<React.SetStateAction<UploadedLogo[]>>
 
@@ -136,6 +138,7 @@ export function useModelSession(deps: {
   const [logoLibrary, setLogoLibrary] = useState<UploadedLogo[]>(initialProject.logoLibrary)
   const [editorKey, setEditorKey] = useState(0)
   const [historyToken, setHistoryToken] = useState(0)
+  const [rebaseToken, setRebaseToken] = useState(0)
   // The editor still mints `tmp-…` ids for what it has just drawn, and the
   // permanent key is minted here on the first flush. Both halves go when the
   // editor takes an id policy of its own; until then the map has to keep being
@@ -225,31 +228,6 @@ export function useModelSession(deps: {
     return true
   }, [notify, s, record, setActiveDiagramId])
 
-  const step = useCallback((from: 'past' | 'future') => {
-    const stack = from === 'past' ? past.current : future.current
-    const other = from === 'past' ? future.current : past.current
-    const entry = stack.pop()
-    if (!entry) return
-    const result = apply(
-      modelRef.current,
-      transaction(from === 'past' ? entry.inverses : entry.commands),
-    )
-    if (!result.ok) {
-      // The stack refers to something the model no longer holds. Put nothing
-      // back: a stack that cannot be replayed is worse than a shorter one.
-      notify(s(result.reason), 'error')
-      setHistoryVersion((v) => v + 1)
-      return
-    }
-    other.push(entry)
-    modelRef.current = result.model
-    setModel(result.model)
-    setHistoryVersion((v) => v + 1)
-  }, [notify, s])
-
-  const undo = useCallback(() => step('past'), [step])
-  const redo = useCallback(() => step('future'), [step])
-
   const flush = useCallback(() => {
     if (timer.current != null) { window.clearTimeout(timer.current); timer.current = null }
     if (!pending.current.size) return
@@ -293,6 +271,38 @@ export function useModelSession(deps: {
         : s('shell.orphanOther', { count: gone.length }))
     }
   }, [notify, s, record, setActiveDiagramId])
+
+  const step = useCallback((from: 'past' | 'future') => {
+    // Anything still waiting is part of the state being undone, not of the step
+    // after it. Landing it afterwards would re-apply what was just taken back.
+    flush()
+    const stack = from === 'past' ? past.current : future.current
+    const other = from === 'past' ? future.current : past.current
+    const entry = stack.pop()
+    if (!entry) return
+    const result = apply(
+      modelRef.current,
+      transaction(from === 'past' ? entry.inverses : entry.commands),
+    )
+    if (!result.ok) {
+      // The stack refers to something the model no longer holds. Put nothing
+      // back: a stack that cannot be replayed is worse than a shorter one.
+      notify(s(result.reason), 'error')
+      setHistoryVersion((v) => v + 1)
+      return
+    }
+    other.push(entry)
+    modelRef.current = result.model
+    setModel(result.model)
+    setHistoryVersion((v) => v + 1)
+    // The editor is holding an overlay of what it did. Tell it the model moved
+    // for a reason that is not a reply to its batch, so it drops that overlay
+    // rather than letting it win (see `rebaseToken` in editor/props.ts).
+    setRebaseToken((t) => t + 1)
+  }, [notify, s, flush])
+
+  const undo = useCallback(() => step('past'), [step])
+  const redo = useCallback(() => step('future'), [step])
 
   const onChange = useCallback((batch: DiagramContentBatch) => {
     // Delete-then-set: a replaced batch moves to the end, so flush applies in
@@ -350,7 +360,7 @@ export function useModelSession(deps: {
 
   return {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId, sessionLayoutIds, aliasProp,
-    editorKey, historyToken, logoLibrary, setLogoLibrary,
+    editorKey, historyToken, rebaseToken, logoLibrary, setLogoLibrary,
     dispatch, undo, redo,
     canUndo: past.current.length > 0,
     canRedo: future.current.length > 0,

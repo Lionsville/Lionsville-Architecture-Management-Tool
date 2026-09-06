@@ -484,6 +484,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
   const previousModelRef = useRef<DesignModel>(props.model);
   const previousAliasesRef = useRef(props.idAliases);
   const previousHistoryTokenRef = useRef(props.historyResetToken);
+  const previousRebaseTokenRef = useRef(props.rebaseToken);
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
 
   const propsRef = useRef(props);
@@ -520,7 +521,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       // clever: the routes get their own undo step instead of being folded into
       // the wrong one.
       const amending = options?.amend !== undefined && options.amend === overlayVersionRef.current;
-      if (!amending) {
+      // A host that owns the stack (`onUndo`) gets no snapshot pushed here: the
+      // snapshot is a full-model merge, and paying for it per keystroke to fill
+      // a stack nothing reads is the worst of both mechanisms.
+      if (!amending && !propsRef.current.onUndo) {
         // Snapshot the EFFECTIVE state BEFORE this edit (full-upsert overlay), so
         // a later base (post-autosave) can't corrupt the undo target. Truncate the
         // redo tail (a fresh edit invalidates it) and cap the depth (D6).
@@ -540,7 +544,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
   // cumulative corrective batch through the SAME path `commit` uses, so the
   // autosave queue converges the server to the restored state. Content only —
   // never selection or viewport (D5). `readOnly`-gated, exactly like `commit`.
-  const undo = useCallback(() => {
+  const undoLocal = useCallback(() => {
     if (propsRef.current.readOnly || pastRef.current.length === 0) return;
     const base = propsRef.current.model;
     // Park the current effective state for redo, restore the previous one as a
@@ -567,7 +571,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     emitBatch(overlayRef.current);
   }, [emitBatch, bumpOverlayVersion, bumpGeometry]);
 
-  const redo = useCallback(() => {
+  const redoLocal = useCallback(() => {
     if (propsRef.current.readOnly || futureRef.current.length === 0) return;
     const base = propsRef.current.model;
     pastRef.current.push(effectiveOverlay(mergeModel(base, overlayRef.current)));
@@ -602,6 +606,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
      */
     if (previousHistoryTokenRef.current !== props.historyResetToken) {
       previousHistoryTokenRef.current = props.historyResetToken;
+      previousRebaseTokenRef.current = props.rebaseToken;
       previousModelRef.current = props.model;
       previousAliasesRef.current = props.idAliases;
       overlayRef.current = EMPTY_OVERLAY;
@@ -611,6 +616,24 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       emittedConnectionsRef.current.clear();
       setSelection(EMPTY_SELECTION);
       bumpOverlayVersion();
+      return;
+    }
+    /**
+     * The host changed the model for a reason that is not a reply to a batch —
+     * its own undo. Take what arrived as the base and drop the overlay, or
+     * reconciliation would let the local value win and put the undone change
+     * straight back. The selection stays: one step of the document moved, not
+     * the document (see `rebaseToken` in props.ts).
+     */
+    if (previousRebaseTokenRef.current !== props.rebaseToken) {
+      previousRebaseTokenRef.current = props.rebaseToken;
+      previousModelRef.current = props.model;
+      previousAliasesRef.current = props.idAliases;
+      overlayRef.current = EMPTY_OVERLAY;
+      emittedElementsRef.current.clear();
+      emittedConnectionsRef.current.clear();
+      bumpOverlayVersion();
+      bumpGeometry();
       return;
     }
     if (!modelChanged && !aliasesChanged) return;
@@ -665,7 +688,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       bumpOverlayVersion();
     }
     if (result.mustEmit) emitBatch(result.overlay);
-  }, [props.model, props.idAliases, props.historyResetToken, emitBatch, bumpOverlayVersion]);
+  }, [
+    props.model, props.idAliases, props.historyResetToken, props.rebaseToken,
+    emitBatch, bumpOverlayVersion, bumpGeometry,
+  ]);
 
   const overlay = overlayRef.current;
   const effectiveModel = useMemo(
@@ -1400,12 +1426,14 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     actions,
     geometryVersion,
     overlayVersion: overlayVersionRef.current,
-    undo,
-    redo,
+    // The host's stack when it has one (see `onUndo` in props.ts), otherwise the
+    // editor's own over the content it can see.
+    undo: props.onUndo ?? undoLocal,
+    redo: props.onRedo ?? redoLocal,
     // Recomputed each render; commit/undo/redo all bump `setOverlayVersion`, so
     // these track the live stack depth for the toolbar buttons.
-    canUndo: pastRef.current.length > 0,
-    canRedo: futureRef.current.length > 0,
+    canUndo: props.onUndo ? props.canUndo === true : pastRef.current.length > 0,
+    canRedo: props.onRedo ? props.canRedo === true : futureRef.current.length > 0,
   };
 }
 

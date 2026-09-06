@@ -203,6 +203,36 @@ export interface SolutionDesignEditorProps {
    */
   historyResetToken?: number | string;
   /**
+   * Undo and redo, when the HOST owns the stack.
+   *
+   * Supply all four and the editor stops keeping a stack of its own: its toolbar
+   * buttons and ⌘Z call these, and nothing is pushed. That is the arrangement
+   * this application uses — one stack over the whole app, so ⌘Z undoes a
+   * diagram rename and a decision's status as readily as a node move (ADR-0002).
+   *
+   * Supply none and the editor keeps its own, over the content it can see.
+   */
+  onUndo?(): void;
+  onRedo?(): void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  /**
+   * Bump this when the host changes the model for a reason that is NOT a reply
+   * to a batch — its own undo, most of all.
+   *
+   * Reconciliation is the wrong tool for that. It keeps local edits alive across
+   * a save round-trip by letting a differing overlay value win, which is right
+   * when the host is echoing back what it stored and exactly wrong when the host
+   * has just put the model back to where it was: the overlay would re-apply the
+   * change that was undone, and re-emit it on the next batch.
+   *
+   * So this drops the overlay and takes the incoming model as the base. Unlike
+   * {@link historyResetToken} it keeps the SELECTION and the viewport — the
+   * document has not changed, one step of it has, and losing what you had
+   * selected on every ⌘Z is its own bug.
+   */
+  rebaseToken?: number | string;
+  /**
    * The UI language. Default `'en'`.
    *
    * A prop and not a preference: an embedded editor has to speak whatever the
