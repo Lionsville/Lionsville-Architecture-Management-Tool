@@ -18,7 +18,7 @@
  * preview and on a full page at reading size, and it should scale with the
  * container rather than fight it.
  */
-import { isValidElement, useMemo } from 'react'
+import { isValidElement, memo, useMemo } from 'react'
 import type { ComponentProps, MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Checkbox from '@mui/material/Checkbox'
@@ -187,15 +187,25 @@ function alignOf(style: { textAlign?: string | number } | undefined): 'left' | '
   return align === 'center' || align === 'right' ? align : 'left'
 }
 
-export function MarkdownView({ markdown, onElementLink, renderMermaid }: MarkdownViewProps) {
+/**
+ * Memoised on the text and the two callbacks, because parsing is the expensive
+ * part and it is redone from scratch on every render: a page whose parent
+ * re-renders for an unrelated reason — a keystroke elsewhere, a selection, a
+ * theme change — re-parses every character of the document to arrive at the
+ * same tree. The parsed tree is not something `react-markdown` hands back to be
+ * kept, so what is kept is the element it renders to, which comes to the same
+ * thing: React sees the identical element and leaves the subtree alone.
+ */
+export const MarkdownView = memo(function MarkdownView(
+  { markdown, onElementLink, renderMermaid }: MarkdownViewProps,
+) {
   // Memoised, because these are component TYPES: a fresh set on every render
   // would remount every block, and a mermaid block that remounts draws again.
   const comps = useMemo(() => components(onElementLink, renderMermaid), [onElementLink, renderMermaid])
-  return (
-    <Box sx={{ fontSize: 'inherit', wordBreak: 'break-word' }}>
-      <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={comps}>
-        {markdown}
-      </Markdown>
-    </Box>
-  )
-}
+  const document = useMemo(() => (
+    <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={comps}>
+      {markdown}
+    </Markdown>
+  ), [markdown, comps])
+  return <Box sx={{ fontSize: 'inherit', wordBreak: 'break-word' }}>{document}</Box>
+})

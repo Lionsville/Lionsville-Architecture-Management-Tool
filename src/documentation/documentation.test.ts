@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DESCRIPTIONS_REMEMBERED,
   SHORT_DESCRIPTION_LABELS,
   documentTemplate,
   hasDocumentation,
@@ -165,5 +166,37 @@ describe('documentTemplate', () => {
     expect(md).not.toContain('| vendor');
     expect(md).not.toContain('| technology');
     expect(md).not.toContain('| lifecycle');
+  });
+});
+
+describe('reading a description more than once', () => {
+  it('answers the same either way, however many have been read since', () => {
+    const first = '| Short description | The one line |\n| --- | --- |\n\n## More\n\nAnd a paragraph.';
+    const short = shortDescription(first);
+    const has = hasDocumentation(first);
+    expect(short).toBe('The one line');
+    expect(has).toBe(true);
+
+    // Past the point where the first one has certainly been evicted.
+    for (let n = 0; n < DESCRIPTIONS_REMEMBERED + 100; n += 1) {
+      shortDescription(`Description number ${n}.`);
+      hasDocumentation(`Description number ${n}.`);
+    }
+
+    expect(shortDescription(first)).toBe(short);
+    expect(hasDocumentation(first)).toBe(has);
+  });
+
+  it('tells two descriptions apart rather than answering with the last one', () => {
+    expect(shortDescription('First thing.')).toBe('First thing.');
+    expect(shortDescription('Second thing.')).toBe('Second thing.');
+    expect(shortDescription('First thing.')).toBe('First thing.');
+  });
+
+  it('says nothing about an absent description, and does not remember it', () => {
+    expect(shortDescription(undefined)).toBe('');
+    expect(hasDocumentation(undefined)).toBe(false);
+    expect(hasDocumentation('')).toBe(false);
+    expect(hasDocumentation('   ')).toBe(false);
   });
 });

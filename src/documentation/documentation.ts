@@ -128,6 +128,52 @@ function firstParagraph(markdown: string): string {
   return stripInline(collected.join(' '));
 }
 
+// --- reading a description more than once --------------------------------------
+
+/**
+ * How many descriptions each reader remembers having read.
+ *
+ * Comfortably more than a board's worth of nodes, so scrolling a large
+ * landscape does not evict what is about to come back into view, and small
+ * enough that a long session over a five-thousand element project does not
+ * accumulate every page anybody has looked at. The entries are the cost, not
+ * the text: the key IS the description the model is already holding.
+ */
+export const DESCRIPTIONS_REMEMBERED = 2_000;
+
+/**
+ * A reader of a description, answering from memory the second time.
+ *
+ * Every node on the canvas asks {@link shortDescription} and
+ * {@link hasDocumentation} what its element's page says, and both walk the
+ * whole markdown to answer — twice per card, on every render, on a board that
+ * can carry two thousand of them with two kilobytes of prose each. The result
+ * only depends on the text, so it is worth remembering.
+ *
+ * A `Map` in insertion order IS an LRU once a hit re-inserts its key: the
+ * oldest key is the first one the iterator gives back. Keyed on the string
+ * rather than on the element, because the same description reached through two
+ * different objects is the same question — and because a `WeakMap` cannot key
+ * on a string at all.
+ */
+function readOnce<T>(read: (markdown: string) => T): (markdown: string) => T {
+  const held = new Map<string, T>();
+  return (markdown) => {
+    if (held.has(markdown)) {
+      const answer = held.get(markdown) as T;
+      held.delete(markdown);
+      held.set(markdown, answer);
+      return answer;
+    }
+    const answer = read(markdown);
+    held.set(markdown, answer);
+    if (held.size > DESCRIPTIONS_REMEMBERED) {
+      held.delete(held.keys().next().value as string);
+    }
+    return answer;
+  };
+}
+
 /**
  * The one line a node draws for an element.
  *
@@ -137,8 +183,12 @@ function firstParagraph(markdown: string): string {
  */
 export function shortDescription(markdown: string | undefined): string {
   if (!markdown) return '';
-  return shortDescriptionRow(markdown) ?? firstParagraph(markdown);
+  return readShortDescription(markdown);
 }
+
+const readShortDescription = readOnce(
+  (markdown) => shortDescriptionRow(markdown) ?? firstParagraph(markdown),
+);
 
 /**
  * Whether there is more here than the one line the node shows: a heading, a
@@ -147,7 +197,11 @@ export function shortDescription(markdown: string | undefined): string {
  * navigation, so "has documentation" means "worth opening".
  */
 export function hasDocumentation(markdown: string | undefined): boolean {
-  if (!markdown || !markdown.trim()) return false;
+  return markdown ? readHasDocumentation(markdown) : false;
+}
+
+const readHasDocumentation = readOnce((markdown) => {
+  if (!markdown.trim()) return false;
   const lines = markdown.split('\n');
   const table = leadingTable(lines);
   if (table) {
@@ -160,7 +214,7 @@ export function hasDocumentation(markdown: string | undefined): boolean {
   if (rest.some((line) => /^\s*#{1,6}\s/.test(line))) return true;
   const paragraphs = rest.join('\n').split(/\n\s*\n/).filter((block) => block.trim() !== '');
   return paragraphs.length > 1;
-}
+});
 
 // --- the outline ---------------------------------------------------------------
 
