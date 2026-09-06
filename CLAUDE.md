@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2367 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2487 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -61,11 +61,17 @@ Adds a production build. Run it once before you hand work back, not during.
 npm run verify
 ```
 
-~2 minutes: everything `check:all` does, then the desktop build and the desktop
-smoke run — every step run to the end, one table, one exit code. This is the
-gate before a push, and it is written so an agent can run it without deciding
-anything: no flags, no reading of scrollback. `npm run smoke` is the last two
-steps on their own.
+~2 minutes: everything `check:all` does, plus the **perf budgets**, the desktop
+build and the desktop smoke run — every step run to the end, one table, one exit
+code. This is the gate before a push, and it is written so an agent can run it
+without deciding anything: no flags, no reading of scrollback. `npm run smoke` is
+the last two steps on their own; `npm run test:perf` is the perf step alone.
+
+The perf step times a generated landscape of a few thousand elements against a
+written-down budget per operation (`model/testing/`, ADR-0004). It is
+deliberately not in `npm run check`: building those landscapes and timing work
+over them is tens of seconds, and a fast loop you batch up is not a fast loop. A
+red budget is a regression to investigate, never a threshold to raise.
 
 The timings are for an ordinary laptop; a fast desktop-class Mac does all three
 in about a third of that.
@@ -118,6 +124,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     diff              what changed, in the landscape's own terms
                     textSearch        the one rule for "found"
                     adr               what a decision record IS (rules: decisions/)
+                    testing/          the generated landscape, and the budgets
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
@@ -126,9 +133,11 @@ src/editor/       The canvas and everything docked to it. React.
                     testing/          editorHost: the editor over a real reducer
 src/documentation/  Descriptions as documents.
                     documentation     outline, element links, the template
+                    remember          caches with a bound and an eviction rule
                     ui/               DocumentationPage, MarkdownField, mermaid
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
+                    searchIndex       the haystack, folded once per model
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
 src/projects/     A project: open, save, order, summarise, address, remember.
@@ -473,6 +482,21 @@ The smoke run now grants itself a folder and tells the renderer over the same
 command the Recent menu uses, then writes a project through the real channel
 and reads a file continuously while a large write is in flight — every read one
 whole version or the other, which is what a renderer dying mid-save depends on.
+
+Then the tool was measured for the first time (`docs/decisions/0004`). A
+generated landscape of a few thousand elements, a budget per operation, and a
+`perf` step in the gate — which is how four things that had never been timed
+turned out to be wrong. Search folded every description on every keystroke; the
+canvas handed every box a new object saying what the old one said, so
+`React.memo` had nothing to compare and React Flow re-measured the whole board;
+every card re-read its element's page twice per render; and nothing was
+virtualised.
+
+Two algorithms now refuse rather than freeze. Tidy runs in a worker, declines a
+board over four hundred boxes, and can be cancelled from the button that started
+it. Routing keeps the cap it had — and the investigation into making it faster
+found that a whole-board pass costs 180 ms and declines all but 39 of 4,333
+lines, so the cap, not the clock, is what a large landscape meets.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
