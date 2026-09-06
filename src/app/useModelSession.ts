@@ -1,32 +1,78 @@
 /**
- * The editing session: the model, which diagram is open, and everything needed
- * to land changes coming out of the editor.
+ * The editing session: the model, which diagram is open, and the one place a
+ * change enters (ADR-0002).
  *
- * This is the heart of the shell and the only genuinely intricate part —
- * debounced batches, permanent keys that only come into being on the first
- * flush, and the question of when the editor has to remount. It sits apart so
- * the rest of the shell (buttons, dialogs, files) can go past it without having
- * to understand it.
+ * Everything that edits this project dispatches a command. The reducer applies
+ * it and hands back the command that undoes it, and the pair goes on a stack —
+ * so ⌘Z covers a node move, a diagram rename, a decision's status and a project
+ * setting in one order, which is the whole point.
+ *
+ * The editor still speaks `DiagramContentBatch`, so `onChange` runs each one
+ * through `batchToCommands` and dispatches the result as a single step. That
+ * bridge is temporary; what is not temporary is that the session no longer
+ * applies anything itself.
+ *
+ * Two shapes of model live here. The reducer works on the indexed one; the
+ * editor, the toolbar and the file writers want the arrays the file has. The
+ * conversion is memoised on the indexed model's identity, so it costs one pass
+ * per change rather than one per render.
  *
  * No outward dependency: no storage, no files. What comes out is `snapshot()`,
  * and who writes that away is not this hook's business.
  */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
-import type { DiagramContentBatch, UploadedLogo } from '../model'
-import type { HostModel } from '../model/fromInterchange'
-import {
-  applyBatch, needsRemount, rekeyBatch, removedDiagrams, resolveActiveDiagramId,
-} from '../model/hostModel'
+import type { StringKey } from '../i18n'
+import type { Command, CommandMeta, DiagramContentBatch, Model, UploadedLogo } from '../model'
+import { apply, fromArrays, toArrays, transaction } from '../model'
+import { batchToCommands } from '../model/batchCommands'
+import { needsRemount, rekeyBatch } from '../model/hostModel'
 import type { Aliases } from '../model/hostModel'
+import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
 import type { Notify } from './useToasts'
 
 /** How long a run of changes may continue before it lands on the model. */
 const BATCH_DEBOUNCE_MS = 250
 
+/**
+ * How many steps the session remembers. A step is now a pair of commands rather
+ * than two full-model snapshots, so this is a bound on a log rather than on
+ * memory, and it can be generous where fifty was already expensive.
+ */
+const HISTORY_CAP = 200
+
+/**
+ * One undo step: what was done, and what undoes it.
+ *
+ * Lists rather than single commands because a coalescing step grows — a run of
+ * keystrokes into one field, or a drag and the routing that follows it, is one
+ * step made of several commands. `commands` replays it forwards; `inverses`
+ * is already in undo order, newest first.
+ */
+export type HistoryStep = {
+  commands: Command[]
+  inverses: Command[]
+  label?: StringKey
+  coalesce?: string
+  /** When the step was made, for an activity list. */
+  at: number
+}
+
+export type DispatchOptions = {
+  activeDiagramId?: string
+  layoutIds?: (ids: string[]) => string[]
+  /**
+   * Off for a change that is not a user's edit — the editor reporting that it
+   * has laid a diagram out, say. It lands on the model and not on the stack,
+   * because ⌘Z after opening a document should not ask for the layout back.
+   */
+  undoable?: boolean
+}
+
 export type ModelSession = {
   // --- what the editor receives as props -----------------------------------
+  /** The model in the shape the file has. See the note at the top. */
   model: HostModel
   activeDiagramId: string
   setActiveDiagramId: (id: string) => void
@@ -43,6 +89,16 @@ export type ModelSession = {
   logoLibrary: UploadedLogo[]
   setLogoLibrary: React.Dispatch<React.SetStateAction<UploadedLogo[]>>
 
+  // --- the one way in -------------------------------------------------------
+  /** Apply a command. False when the reducer refused; the refusal is shown. */
+  dispatch: (command: Command, options?: DispatchOptions) => boolean
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
+  /** The steps taken this session, oldest first. */
+  history: () => readonly HistoryStep[]
+
   // --- controls -------------------------------------------------------------
   onChange: (batch: DiagramContentBatch) => void
   onLayoutSettled: (diagramId: string) => void
@@ -52,15 +108,12 @@ export type ModelSession = {
   // --- for the actions around it -------------------------------------------
   /** The model as it stands after a `flush()`, without waiting for a render. */
   current: () => HostModel
+  /** The same model, indexed — what a command is built against. */
+  indexed: () => Model
   currentActiveId: () => string
   currentLibrary: () => UploadedLogo[]
   /** The project as it stands now, ready to be saved. */
   snapshot: () => ProjectSnapshot
-  /** Record a new model that the shell worked out itself. */
-  commit: (next: HostModel, options?: {
-    activeDiagramId?: string
-    layoutIds?: (ids: string[]) => string[]
-  }) => void
   /** Take on an entirely different document: an opened file, or the shipped one. */
   adopt: (project: ProjectSnapshot, relayout: boolean) => void
   /** Drop pending changes for a diagram that is going away. */
@@ -74,7 +127,7 @@ export function useModelSession(deps: {
 }): ModelSession {
   const { initialProject, notify, s } = deps
 
-  const [model, setModel] = useState<HostModel>(initialProject.model)
+  const [model, setModel] = useState<Model>(() => fromArrays(initialProject.model))
   const [activeId, setActiveId] = useState(initialProject.activeDiagramId)
   const [sessionLayoutIds, setSessionLayoutIds] = useState<string[]>(
     () => initialProject.model.diagrams.filter((d) => d.needsLayout).map((d) => d.id))
@@ -83,6 +136,11 @@ export function useModelSession(deps: {
   const [logoLibrary, setLogoLibrary] = useState<UploadedLogo[]>(initialProject.logoLibrary)
   const [editorKey, setEditorKey] = useState(0)
   const [historyToken, setHistoryToken] = useState(0)
+  // The editor still mints `tmp-…` ids for what it has just drawn, and the
+  // permanent key is minted here on the first flush. Both halves go when the
+  // editor takes an id policy of its own; until then the map has to keep being
+  // handed back, or the editor's overlay goes on referring to ids the model no
+  // longer has and re-creates every new element on every flush.
   const [aliasProp, setAliasProp] = useState<ModelSession['aliasProp']>(
     { elements: new Map(), connections: new Map() })
 
@@ -94,41 +152,122 @@ export function useModelSession(deps: {
   modelRef.current = model
   const activeRef = useRef(activeId)
   activeRef.current = activeId
-  // Every alias ever assigned, across flushes; the prop gets copies.
-  const aliasRef = useRef<Aliases>({ elements: new Map(), connections: new Map() })
   const logoRef = useRef(logoLibrary)
   logoRef.current = logoLibrary
+
+  // The stacks are refs, because a caller has to be able to read and move them
+  // inside an event handler. Nothing renders from them directly, so a counter
+  // beside them is what makes `canUndo` and `canRedo` reach the screen.
+  // Every alias ever assigned, across flushes; the prop gets copies.
+  const aliasRef = useRef<Aliases>({ elements: new Map(), connections: new Map() })
+
+  const past = useRef<HistoryStep[]>([])
+  const future = useRef<HistoryStep[]>([])
+  const [, setHistoryVersion] = useState(0)
+
+  const arrays = useMemo(() => toArrays(model), [model])
+  const arraysRef = useRef(arrays)
+  arraysRef.current = arrays
 
   const setActiveDiagramId = useCallback((id: string) => {
     activeRef.current = id
     setActiveId(id)
   }, [])
 
+  /**
+   * Land a step: the new model, and what puts it back.
+   *
+   * A step whose `coalesce` key matches the one on top of the stack is folded
+   * into it rather than pushed after it — that is what makes a typed sentence
+   * one ⌘Z, and what keeps a drag and the routing that follows it together.
+   */
+  const record = useCallback((
+    next: Model,
+    commands: Command[],
+    inverses: Command[],
+    meta: CommandMeta,
+    undoable: boolean,
+  ) => {
+    modelRef.current = next
+    setModel(next)
+    if (!undoable) return
+    const top = past.current[past.current.length - 1]
+    if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
+      top.commands.push(...commands)
+      top.inverses.unshift(...inverses)
+      top.at = Date.now()
+    } else {
+      past.current.push({
+        commands, inverses, at: Date.now(),
+        ...(meta.label !== undefined ? { label: meta.label } : {}),
+        ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
+      })
+      if (past.current.length > HISTORY_CAP) past.current.shift()
+    }
+    future.current = []
+    setHistoryVersion((v) => v + 1)
+  }, [])
+
+  const dispatch = useCallback<ModelSession['dispatch']>((command, options) => {
+    const result = apply(modelRef.current, command)
+    if (!result.ok) {
+      notify(s(result.reason), 'error')
+      return false
+    }
+    if (options?.activeDiagramId !== undefined) setActiveDiagramId(options.activeDiagramId)
+    if (options?.layoutIds) setSessionLayoutIds(options.layoutIds)
+    // A command that changed nothing is not a refusal and not a step.
+    if (result.model === modelRef.current) return true
+    const meta: CommandMeta = {}
+    if (command.label !== undefined) meta.label = command.label
+    if (command.coalesce !== undefined) meta.coalesce = command.coalesce
+    record(result.model, [command], [result.inverse], meta, options?.undoable !== false)
+    return true
+  }, [notify, s, record, setActiveDiagramId])
+
+  const step = useCallback((from: 'past' | 'future') => {
+    const stack = from === 'past' ? past.current : future.current
+    const other = from === 'past' ? future.current : past.current
+    const entry = stack.pop()
+    if (!entry) return
+    const result = apply(
+      modelRef.current,
+      transaction(from === 'past' ? entry.inverses : entry.commands),
+    )
+    if (!result.ok) {
+      // The stack refers to something the model no longer holds. Put nothing
+      // back: a stack that cannot be replayed is worse than a shorter one.
+      notify(s(result.reason), 'error')
+      setHistoryVersion((v) => v + 1)
+      return
+    }
+    other.push(entry)
+    modelRef.current = result.model
+    setModel(result.model)
+    setHistoryVersion((v) => v + 1)
+  }, [notify, s])
+
+  const undo = useCallback(() => step('past'), [step])
+  const redo = useCallback(() => step('future'), [step])
+
   const flush = useCallback(() => {
     if (timer.current != null) { window.clearTimeout(timer.current); timer.current = null }
     if (!pending.current.size) return
     const before = modelRef.current
-    let m = before
+    let next = before
+    const commands: Command[] = []
+    const inverses: Command[] = []
     const aliasesBefore = aliasRef.current.elements.size + aliasRef.current.connections.size
-    pending.current.forEach((b) => { m = applyBatch(m, rekeyBatch(b, m, aliasRef.current)) })
+    pending.current.forEach((batch) => {
+      const built = batchToCommands(rekeyBatch(batch, toArrays(next), aliasRef.current), next)
+      if (!built.length) return
+      const result = apply(next, transaction(built))
+      if (!result.ok) { notify(s(result.reason), 'error'); return }
+      next = result.model
+      commands.push(...built)
+      inverses.unshift(result.inverse)
+    })
     pending.current.clear()
-    modelRef.current = m // readers after flush() see the new model immediately
-    setModel(m)
-
-    // Removing an application from the model takes its container diagram with it
-    // (`applyBatch`). Say so, and make sure you are not left standing on a
-    // diagram that no longer exists.
-    const gone = removedDiagrams(before, m)
-    if (gone.length > 0) {
-      const goneIds = new Set(gone.map((d) => d.id))
-      setSessionLayoutIds((ids) => ids.filter((id) => !goneIds.has(id)))
-      const next = resolveActiveDiagramId(m, activeRef.current)
-      if (next !== activeRef.current) setActiveDiagramId(next)
-      notify(gone.length === 1
-        ? s('shell.orphanOne', { name: gone[0].name })
-        : s('shell.orphanOther', { count: gone.length }))
-    }
-
     if (aliasRef.current.elements.size + aliasRef.current.connections.size > aliasesBefore) {
       // Always a new object with new maps: reconciliation runs on identity.
       setAliasProp({
@@ -136,7 +275,24 @@ export function useModelSession(deps: {
         connections: new Map(aliasRef.current.connections),
       })
     }
-  }, [notify, s, setActiveDiagramId])
+    if (next === before) return
+    record(next, commands, inverses, {}, true)
+
+    // Removing an application from the model takes its container diagram with
+    // it. Say so, and make sure you are not left standing on a diagram that no
+    // longer exists.
+    const gone = before.order.diagrams.filter((id) => !next.diagrams[id])
+    if (gone.length > 0) {
+      const goneIds = new Set(gone)
+      setSessionLayoutIds((ids) => ids.filter((id) => !goneIds.has(id)))
+      if (goneIds.has(activeRef.current)) {
+        setActiveDiagramId(next.order.diagrams[0] ?? activeRef.current)
+      }
+      notify(gone.length === 1
+        ? s('shell.orphanOne', { name: before.diagrams[gone[0]].name })
+        : s('shell.orphanOther', { count: gone.length }))
+    }
+  }, [notify, s, record, setActiveDiagramId])
 
   const onChange = useCallback((batch: DiagramContentBatch) => {
     // Delete-then-set: a replaced batch moves to the end, so flush applies in
@@ -149,27 +305,23 @@ export function useModelSession(deps: {
   }, [flush])
 
   const onLayoutSettled = useCallback((diagramId: string) => {
-    setModel((m) => ({
-      ...m,
-      diagrams: m.diagrams.map((d) => d.id === diagramId ? { ...d, needsLayout: false } : d),
-    }))
-  }, [])
-
-  const commit = useCallback<ModelSession['commit']>((next, options) => {
-    modelRef.current = next
-    setModel(next)
-    if (options?.activeDiagramId !== undefined) setActiveDiagramId(options.activeDiagramId)
-    if (options?.layoutIds) setSessionLayoutIds(options.layoutIds)
-  }, [setActiveDiagramId])
+    // Not a step: ⌘Z after opening a document must not ask for the layout back.
+    dispatch({ type: 'diagram.update', id: diagramId, patch: { needsLayout: false } },
+      { undoable: false })
+  }, [dispatch])
 
   const adopt = useCallback<ModelSession['adopt']>((project, relayout) => {
     pending.current.clear()
+    past.current = []
+    future.current = []
     aliasRef.current = { elements: new Map(), connections: new Map() }
     setAliasProp({ elements: new Map(), connections: new Map() })
+    setHistoryVersion((v) => v + 1)
     // Measured before the swap: `needsRemount` compares the old with the new.
-    const remount = needsRemount(modelRef.current, project.model, relayout)
-    modelRef.current = project.model
-    setModel(project.model)
+    const remount = needsRemount(arraysRef.current, project.model, relayout)
+    const next = fromArrays(project.model)
+    modelRef.current = next
+    setModel(next)
     setActiveDiagramId(project.activeDiagramId)
     logoRef.current = project.logoLibrary
     setLogoLibrary(project.logoLibrary)
@@ -182,14 +334,14 @@ export function useModelSession(deps: {
 
   /**
    * The ref is fixed for the life of the session: switching projects remounts
-   * the workspace, which is what clears the undo stack, the aliases and the
-   * pending batches along with it. A session that could change its own address
-   * mid-flight would be able to autosave one project's edits onto another.
+   * the workspace, which is what clears the undo stack and the pending batches
+   * along with it. A session that could change its own address mid-flight would
+   * be able to autosave one project's edits onto another.
    */
   const ref = initialProject.ref
   const snapshot = useCallback((): ProjectSnapshot => ({
     ref,
-    model: modelRef.current,
+    model: toArrays(modelRef.current),
     activeDiagramId: activeRef.current,
     logoLibrary: logoRef.current,
   }), [ref])
@@ -197,12 +349,17 @@ export function useModelSession(deps: {
   const forget = useCallback((diagramId: string) => { pending.current.delete(diagramId) }, [])
 
   return {
-    model, activeDiagramId: activeId, setActiveDiagramId, sessionLayoutIds, aliasProp,
+    model: arrays, activeDiagramId: activeId, setActiveDiagramId, sessionLayoutIds, aliasProp,
     editorKey, historyToken, logoLibrary, setLogoLibrary,
+    dispatch, undo, redo,
+    canUndo: past.current.length > 0,
+    canRedo: future.current.length > 0,
+    history: () => past.current,
     onChange, onLayoutSettled, flush,
-    current: () => modelRef.current,
+    current: () => toArrays(modelRef.current),
+    indexed: () => modelRef.current,
     currentActiveId: () => activeRef.current,
     currentLibrary: () => logoRef.current,
-    snapshot, commit, adopt, forget,
+    snapshot, adopt, forget,
   }
 }

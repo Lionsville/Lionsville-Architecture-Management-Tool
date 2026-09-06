@@ -26,7 +26,8 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Adr } from './adr'
-import type { AdrId, ConnectionId, Diagram, DiagramId } from './normalised'
+import type { AdrId, ConnectionId, Diagram, DiagramId, Model } from './normalised'
+import { decisionsOf } from './normalised'
 import type {
   DesignConnection, DesignElement, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
   EdgeRoute, ElementId,
@@ -123,4 +124,76 @@ export function reverse(inverses: Command[], meta: CommandMeta = {}): Command {
   const kept = inverses.filter((c) => !isNothing(c))
   if (kept.length === 1) return { ...kept[0], ...meta }
   return transaction([...kept].reverse(), meta)
+}
+
+// --- commands built from a model ---------------------------------------------
+
+/**
+ * The patch that makes one row into another whole row: every key the old one
+ * had cleared, every key the new one has set.
+ *
+ * Callers that hand over a finished row rather than a change — the editor's
+ * batch, the decisions page's list — need this to say the same thing as a
+ * patch, and they must not accidentally leave a field behind that the new row
+ * does not have.
+ */
+export function replacement<T extends object>(held: T, next: T): Partial<T> {
+  const patch: Partial<T> = {}
+  for (const key of Object.keys(held) as (keyof T)[]) patch[key] = undefined
+  for (const key of Object.keys(next) as (keyof T)[]) patch[key] = next[key]
+  return patch
+}
+
+/**
+ * A copy of a diagram, directly after the original, named "… (copy)".
+ *
+ * A constructor rather than a command of its own: duplicating is `diagram.create`
+ * with a cloned diagram and an index, and the reducer stays a set of primitives.
+ * The clone is deep, so a change in the copy never touches the original;
+ * `needsLayout` does not come along, because the drawing is already laid out.
+ */
+export function duplicateDiagram(
+  model: Model,
+  id: DiagramId,
+  newId: DiagramId,
+  copyName: (name: string) => string,
+): Command | undefined {
+  const source = model.diagrams[id]
+  if (!source) return undefined
+  const copy: Diagram = { ...structuredClone(source), id: newId, name: copyName(source.name) }
+  delete copy.needsLayout
+  return { type: 'diagram.create', diagram: copy, at: model.order.diagrams.indexOf(id) + 1 }
+}
+
+/**
+ * A whole list of decision records, said as the changes that get there.
+ *
+ * The decisions page edits a list and hands the result back, which is the shape
+ * that suited a model you replaced wholesale. Until it dispatches for itself,
+ * this works out what actually moved — so undo puts back one record rather than
+ * a list, and an untouched record keeps its identity.
+ */
+export function decisionsToCommands(model: Model, next: readonly Adr[]): Command[] {
+  const held = decisionsOf(model)
+  const wanted = new Set(next.map((adr) => adr.id))
+  const commands: Command[] = []
+  for (const id of model.order.decisions) {
+    if (!wanted.has(id)) commands.push({ type: 'decision.remove', id })
+  }
+  for (const adr of next) {
+    const before = held[adr.id]
+    if (!before) commands.push({ type: 'decision.add', decision: adr })
+    else if (!sameAdr(before, adr)) {
+      commands.push({ type: 'decision.update', id: adr.id, patch: replacement(before, adr) })
+    }
+  }
+  return commands
+}
+
+/**
+ * Records are small, flat and built by one factory, so this is honest: what it
+ * cannot tell apart, nothing downstream can either.
+ */
+function sameAdr(a: Adr, b: Adr): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
 }

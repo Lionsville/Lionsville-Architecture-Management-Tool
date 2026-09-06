@@ -202,3 +202,139 @@ describe('useModelSession — the snapshot', () => {
     expect(session().snapshot().logoLibrary).toHaveLength(1)
   })
 })
+
+/**
+ * The editor still mints `tmp-…` for what it has just drawn and goes on
+ * referring to it until the map comes back. Nothing had a test on it, and the
+ * whole path is easy to lose while moving the session onto commands: what you
+ * see is an element that saves under a temporary id, or one that is re-created
+ * on every flush.
+ */
+describe('useModelSession — a temporary id becomes a key', () => {
+  const drawing = (id: string): DiagramContentBatch => ({
+    ...emptyBatch('d1'),
+    elements: [element(id, 'Warehouse')],
+    placements: [at('billing'), at(id)],
+  })
+
+  it('gives a new element the key the file would have had', () => {
+    const { session } = mount()
+    act(() => { session().onChange(drawing('tmp-1')); session().flush() })
+    expect(session().current().elements.map((e) => e.id)).toEqual(['billing', 'warehouse'])
+    expect(session().current().diagrams[0].placements.map((p) => p.elementId))
+      .toEqual(['billing', 'warehouse'])
+  })
+
+  it('hands the map back, in a new object so the editor sees it moved', () => {
+    const { session } = mount()
+    const before = session().aliasProp
+    act(() => { session().onChange(drawing('tmp-1')); session().flush() })
+    expect(session().aliasProp).not.toBe(before)
+    expect(session().aliasProp.elements.get('tmp-1')).toBe('warehouse')
+  })
+
+  it('keeps resolving the temporary id on later batches, instead of drawing it twice', () => {
+    const { session } = mount()
+    act(() => { session().onChange(drawing('tmp-1')); session().flush() })
+    act(() => {
+      session().onChange({ ...drawing('tmp-1'), elements: [element('tmp-1', 'Warehouse East')] })
+      session().flush()
+    })
+    expect(session().current().elements.map((e) => e.id)).toEqual(['billing', 'warehouse'])
+    expect(session().current().elements[1].name).toBe('Warehouse East')
+  })
+})
+
+/** The point of the phase: one stack, over everything. */
+describe('useModelSession — undo and redo', () => {
+  it('has nothing to undo until something is dispatched', () => {
+    const { session } = mount()
+    expect(session().canUndo).toBe(false)
+    expect(session().canRedo).toBe(false)
+  })
+
+  it('undoes and redoes a change that never went near the editor', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Renamed' }) })
+    expect(session().current().diagrams[0].name).toBe('Renamed')
+    expect(session().canUndo).toBe(true)
+
+    act(() => session().undo())
+    expect(session().current().diagrams[0].name).toBe('L7')
+    expect(session().canUndo).toBe(false)
+    expect(session().canRedo).toBe(true)
+
+    act(() => session().redo())
+    expect(session().current().diagrams[0].name).toBe('Renamed')
+  })
+
+  it('covers what came out of the editor as well, in the one order', () => {
+    const { session } = mount()
+    act(() => { session().onChange(batchFor('d1', 'Renamed')); session().flush() })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Second thoughts' }) })
+
+    act(() => session().undo())
+    expect(session().current().diagrams[0].name).toBe('L7')
+    expect(session().current().elements[0].name).toBe('Renamed')
+
+    act(() => session().undo())
+    expect(session().current().elements[0].name).toBe('Billing')
+    expect(session().canUndo).toBe(false)
+  })
+
+  it('folds a run of changes that share a coalesce key into one step', () => {
+    const { session } = mount()
+    act(() => {
+      for (const name of ['R', 'Re', 'Ren']) {
+        session().dispatch({ type: 'diagram.rename', id: 'd1', name, coalesce: 'name:d1' })
+      }
+    })
+    expect(session().history()).toHaveLength(1)
+    act(() => session().undo())
+    expect(session().current().diagrams[0].name).toBe('L7')
+    act(() => session().redo())
+    expect(session().current().diagrams[0].name).toBe('Ren')
+  })
+
+  it('drops the redo tail when a fresh change lands', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'One' }) })
+    act(() => session().undo())
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Two' }) })
+    expect(session().canRedo).toBe(false)
+  })
+
+  /**
+   * The editor reporting that it has laid a diagram out is not an edit anybody
+   * made, and ⌘Z after opening a document must not ask for the layout back.
+   */
+  it('keeps a change that is not a user’s edit off the stack', () => {
+    const { session } = mount(project({
+      model: model({
+        diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [], needsLayout: true }],
+      }),
+    }))
+    act(() => session().onLayoutSettled('d1'))
+    expect(session().current().diagrams[0].needsLayout).toBe(false)
+    expect(session().canUndo).toBe(false)
+  })
+
+  it('says why a command was refused, and changes nothing', () => {
+    const { session, notify } = mount(project({
+      model: model({ diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }] }),
+    }))
+    let accepted = true
+    act(() => { accepted = session().dispatch({ type: 'diagram.delete', id: 'd1' }) })
+    expect(accepted).toBe(false)
+    expect(session().current().diagrams).toHaveLength(1)
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('last landscape'), 'error')
+  })
+
+  it('forgets the stack when it takes on another document', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Renamed' }) })
+    act(() => session().adopt(project({ model: model({ name: 'Opened file' }) }), false))
+    expect(session().canUndo).toBe(false)
+    expect(session().canRedo).toBe(false)
+  })
+})

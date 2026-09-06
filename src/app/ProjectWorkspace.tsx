@@ -16,7 +16,7 @@ import { SolutionDesignEditor } from '../editor'
 import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
-import type { HostModel } from '../model/fromInterchange'
+import { decisionsToCommands, transaction } from '../model'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { ThemeMode } from '../projects/preferences'
@@ -219,11 +219,15 @@ export function ProjectWorkspace({
     )
   }, [session, onApplySettings, diagnostics, notify, s])
 
-  /** The project's records live on the model, so a change is one model commit. */
+  /**
+   * The project's records live on the model, so a change to them is a change to
+   * the model. The page hands back the whole list; what actually moved becomes
+   * one undo step, so ⌘Z puts back a record rather than a list.
+   */
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {
     session.flush()
-    const m = session.current()
-    session.commit(next.length ? { ...m, decisions: next } : withoutDecisions(m))
+    const commands = decisionsToCommands(session.indexed(), next)
+    if (commands.length) session.dispatch(transaction(commands))
   }, [session])
 
   return (
@@ -338,11 +342,4 @@ export function ProjectWorkspace({
       />
     </>
   )
-}
-
-/** A model with no decisions left has no `decisions` key: what lands in a file is what a hand-written one would look like. */
-function withoutDecisions(model: HostModel): HostModel {
-  const next = { ...model }
-  delete next.decisions
-  return next
 }

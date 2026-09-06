@@ -1,18 +1,15 @@
 /**
  * Creating, renaming, duplicating and deleting diagrams.
  *
- * Everything the editor's tab bar and tab menu ask of the shell. The arithmetic
- * lives in `core/` (`renameDiagram`, `duplicateDiagram`, `deleteDiagram`,
- * `seedContainerDiagram`); what lives here is the order of operations, the
- * message, and which dialog belongs to it.
+ * Everything the editor's tab bar and tab menu ask of the shell. Each one is a
+ * command now (ADR-0002), so each one is also an undo step; what lives here is
+ * the order of operations, the message, and which dialog belongs to it.
  */
 import { useCallback, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { DesignDiagram, DiagramSettings } from '../model'
+import { duplicateDiagram, toDiagram } from '../model'
 import { findContainerDiagram, seedContainerDiagram } from '../model/containerDiagram'
-import {
-  applyDiagramSettings, deleteDiagram, duplicateDiagram, renameDiagram, resolveActiveDiagramId,
-} from '../model/hostModel'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
@@ -60,8 +57,8 @@ export function useDiagramActions(deps: {
       name: (name) => s('shell.containerDiagram', { name }),
     })
     if (!diagram) return
-    session.commit(
-      { ...m, diagrams: [...m.diagrams, diagram] },
+    session.dispatch(
+      { type: 'diagram.create', diagram: toDiagram(diagram) },
       { activeDiagramId: diagram.id, layoutIds: (ids) => [...ids, diagram.id] },
     )
   }, [session, s, makeId])
@@ -70,23 +67,22 @@ export function useDiagramActions(deps: {
   // preselected) and delivers it here.
   const onRenameDiagram = useCallback((diagramId: string, name: string) => {
     session.flush()
-    session.commit(renameDiagram(session.current(), diagramId, name))
+    session.dispatch({ type: 'diagram.rename', id: diagramId, name })
   }, [session])
 
   const onDiagramSettingsChange = useCallback((diagramId: string, settings: DiagramSettings) => {
     session.flush()
-    session.commit(applyDiagramSettings(session.current(), diagramId, settings))
+    session.dispatch({ type: 'diagram.settings', id: diagramId, settings })
   }, [session])
 
   const onDuplicateDiagram = useCallback((diagramId: string) => {
     session.flush()
-    const source = session.current().diagrams.find((d) => d.id === diagramId)
+    const source = session.indexed().diagrams[diagramId]
     if (!source) return
     const id = makeId(source.kind === 'layer7' ? 'l7' : 'cd')
-    session.commit(
-      duplicateDiagram(session.current(), diagramId, id, (name) => s('shell.copyOf', { name })),
-      { activeDiagramId: id },
-    )
+    const command = duplicateDiagram(
+      session.indexed(), diagramId, id, (name) => s('shell.copyOf', { name }))
+    if (!command || !session.dispatch(command, { activeDiagramId: id })) return
     notify(s('shell.duplicated', { name: source.name }), 'success')
   }, [session, notify, s, makeId])
 
@@ -108,7 +104,10 @@ export function useDiagramActions(deps: {
       // Absent when the project has no default, which leaves the standard five.
       ...(m.defaultAspectConfig ? { aspectConfig: [...m.defaultAspectConfig] } : {}),
     }
-    session.commit({ ...m, diagrams: [...m.diagrams, diagram] }, { activeDiagramId: diagram.id })
+    session.dispatch(
+      { type: 'diagram.create', diagram: toDiagram(diagram) },
+      { activeDiagramId: diagram.id },
+    )
   }, [newDiagramName, session, makeId])
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -125,15 +124,18 @@ export function useDiagramActions(deps: {
     setDeleteId(null)
     if (!id) return
     session.flush()
-    const m = session.current()
-    const target = m.diagrams.find((d) => d.id === id)
-    const next = deleteDiagram(m, id)
-    if (next === m || !target) return
+    const target = session.indexed().diagrams[id]
+    if (!target) return
     session.forget(id)
-    session.commit(next, { layoutIds: (ids) => ids.filter((x) => x !== id) })
+    const deleted = session.dispatch(
+      { type: 'diagram.delete', id },
+      { layoutIds: (ids) => ids.filter((x) => x !== id) },
+    )
+    // The reducer refuses the last landscape, and says so itself.
+    if (!deleted) return
     // The active diagram gone? Then on to the first one that remains.
     if (session.currentActiveId() === id) {
-      session.setActiveDiagramId(resolveActiveDiagramId(next, session.currentActiveId()))
+      session.setActiveDiagramId(session.indexed().order.diagrams[0] ?? id)
     }
     notify(s('shell.deleted', { name: target.name }), 'success')
   }, [deleteId, session, notify, s])

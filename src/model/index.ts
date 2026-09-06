@@ -28,7 +28,9 @@ export {
 
 /** The one vocabulary for changing a model, and the one writer (ADR-0002). */
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch } from './commands'
-export { transaction, reverse, isNothing, NOTHING } from './commands'
+export {
+  transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands,
+} from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'
 export { apply, applyAll } from './reducer'
 

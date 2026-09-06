@@ -29,9 +29,10 @@
  * goes with it.
  */
 import { hasRouteContent } from './routes'
+import { replacement } from './commands'
 import type { Command } from './commands'
 import type { Model } from './normalised'
-import type { DesignConnection, DesignElement, DiagramContentBatch } from './types'
+import type { DiagramContentBatch } from './types'
 
 export function batchToCommands(batch: DiagramContentBatch, model: Model): Command[] {
   const deletedElements = new Set(batch.deletedElementIds)
@@ -106,16 +107,4 @@ export function batchToCommands(batch: DiagramContentBatch, model: Model): Comma
   }
 
   return commands
-}
-
-/**
- * The patch that makes one row into another whole row: every key the old one had
- * cleared, every key the new one has set. An upsert was never a patch — it is
- * the row as the editor now believes it to be.
- */
-function replacement<T extends DesignElement | DesignConnection>(held: T, next: T): Partial<T> {
-  const patch: Partial<T> = {}
-  for (const key of Object.keys(held) as (keyof T)[]) patch[key] = undefined
-  for (const key of Object.keys(next) as (keyof T)[]) patch[key] = next[key]
-  return patch
 }
