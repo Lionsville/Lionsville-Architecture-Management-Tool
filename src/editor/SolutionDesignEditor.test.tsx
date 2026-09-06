@@ -262,17 +262,6 @@ describe('SolutionDesignEditor — iteration 2', () => {
     expect(screen.queryByLabelText('Platform')).toBeNull();
   });
 
-  it('shows the fullscreen button only when onOpenFullscreen is provided', () => {
-    const onOpenFullscreen = vi.fn();
-    const { unmount } = renderEditor({ onOpenFullscreen });
-    fireEvent.click(screen.getByLabelText('Open fullscreen'));
-    expect(onOpenFullscreen).toHaveBeenCalledTimes(1);
-    unmount();
-
-    renderEditor();
-    expect(screen.queryByLabelText('Open fullscreen')).toBeNull();
-  });
-
   it('offers the domain group palette entry on layer7 and not on container diagrams', () => {
     const { unmount } = renderEditor();
     expect(screen.getByRole('button', { name: 'Domain group', expanded: false })).toBeDefined();

@@ -71,7 +71,6 @@ export interface ElementInspectorProps {
   actions: EditorActions;
   onRequestDelete(): void;
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
-  extras?: ReactNode;
   /**
    * Opens the host's logo-upload flow. Absent = the icon picker shows no upload
    * tile, which is the correct state for a host with no library to add to.
@@ -126,7 +125,7 @@ function TabLabel({ text, dot }: { text: string; dot: boolean }) {
  * visible. Nothing persisted was dropped from the iteration-3 accordion; the
  * concerns were regrouped: identity/status/prose + layer7 placement in General,
  * the U6 colour/shape/logo controls in Appearance, and aspects/parameters plus
- * the host `extras` slot in Data. Tab selection is per-selection in-memory state
+ * Tab selection is per-selection in-memory state
  * and resets to General when the selected element id changes.
  */
 export function ElementInspector(props: ElementInspectorProps) {
@@ -415,9 +414,7 @@ export function ElementInspector(props: ElementInspectorProps) {
             </InspectorSection>
           )}
 
-          {props.extras}
-
-          {!showAspects && !props.extras && (
+          {!showAspects && (
             <Typography variant="caption" color="text.secondary" sx={{ pt: 1 }}>
               {t('element.noData')}
             </Typography>

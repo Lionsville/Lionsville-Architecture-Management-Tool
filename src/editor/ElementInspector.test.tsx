@@ -60,7 +60,7 @@ function makeActions(): {
 
 function renderInspector(
   el: DesignElement,
-  opts: { readOnly?: boolean; dia?: DesignDiagram; extras?: React.ReactNode } = {},
+  opts: { readOnly?: boolean; dia?: DesignDiagram } = {},
 ) {
   const dia = opts.dia ?? diagram();
   const { actions, updateElement, setDomainGroup } = makeActions();
@@ -73,7 +73,6 @@ function renderInspector(
         readOnly={opts.readOnly ?? false}
         actions={actions}
         onRequestDelete={vi.fn()}
-        extras={opts.extras}
       />
     </ThemeProvider>,
   );
@@ -126,11 +125,10 @@ describe('ElementInspector — tab structure (U7a)', () => {
     expect(screen.getByLabelText('Icon size')).toBeDefined();
   });
 
-  it('Data reaches Operational aspects and the extras slot', () => {
-    renderInspector(element(), { extras: <div>EXTRA_SLOT</div> });
+  it('Data reaches Operational aspects', () => {
+    renderInspector(element());
     openTab('Data');
     expect(screen.getByText('OPERATIONAL ASPECTS')).toBeDefined();
-    expect(screen.getByText('EXTRA_SLOT')).toBeDefined();
   });
 });
 

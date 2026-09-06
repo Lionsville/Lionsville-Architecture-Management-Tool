@@ -8,13 +8,19 @@
  * boundary and is now internal to one module. It is recorded here rather than
  * untied: untying it is a redesign of the editor's state, which phase 3 owns.
  *
- * `SolutionDesignEditorProps` is **32 props**, down from 39. The seven that went
- * were the surface of a host this editor no longer has: `parameterSpecs` and the
- * parameters editor behind it, `decorations` and the drift/dangling/price chips
- * that read them, and `scopeSummary` and its corner cost chip. Nothing in this
- * repository passed any of them a value — the shell passed
- * `parameterSpecs={() => []}` purely to satisfy the type. None of the 32 that
- * remain is unused by the shell.
+ * `SolutionDesignEditorProps` is **29 props**, down from 39. The ten that went
+ * were the surface of a host this editor no longer has, and nothing in this
+ * repository passed any of them a value: `parameterSpecs` and the parameters
+ * editor behind it (the shell passed `parameterSpecs={() => []}` purely to
+ * satisfy the type), `decorations` and the drift/dangling/price chips that read
+ * them, `scopeSummary` and its corner cost chip, and three slots for a host to
+ * render into — `renderInspectorExtras`, `renderDesignPanelExtras` and
+ * `onOpenFullscreen`, which was a toolbar button asking somebody else to draw
+ * the view.
+ *
+ * The shell passes 28 of the 29. The one it does not is `readOnly`, which is not
+ * a slot but a mode this editor implements throughout — every mutating
+ * affordance checks it — and a convention `CLAUDE.md` holds new work to.
  */
 export { SolutionDesignEditor } from './SolutionDesignEditor'
 /** What the editor is handed: props, decorations, export options. */

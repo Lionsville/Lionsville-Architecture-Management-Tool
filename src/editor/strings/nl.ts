@@ -171,7 +171,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.exportingPng': 'Bezig met PNG exporteren…',
   'toolbar.lifecycleBadges': 'Levenscyclusbadges tonen of verbergen',
   'toolbar.shortcuts': 'Sneltoetsen',
-  'toolbar.fullscreen': 'Volledig scherm openen',
   'toolbar.search': 'Element zoeken',
   'toolbar.searchTip': 'Een element zoeken (⌘F)',
   'toolbar.minimap': 'Overzichtskaartje tonen of verbergen',

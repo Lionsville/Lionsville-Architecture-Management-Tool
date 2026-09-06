@@ -179,7 +179,6 @@ export const EN = {
   'toolbar.exportingPng': 'Exporting PNG…',
   'toolbar.lifecycleBadges': 'Toggle lifecycle badges',
   'toolbar.shortcuts': 'Keyboard shortcuts',
-  'toolbar.fullscreen': 'Open fullscreen',
   'toolbar.search': 'Find element',
   'toolbar.searchTip': 'Find an element (⌘F)',
   'toolbar.minimap': 'Toggle minimap',

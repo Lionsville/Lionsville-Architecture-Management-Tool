@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -21,7 +21,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, FullscreenIcon, HelpIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, type Language, type StringKey } from '../i18n/strings';
 
@@ -91,8 +91,6 @@ export interface EditorToolbarProps {
   canUndo: boolean;
   canRedo: boolean;
   /** Optional: host-implemented fullscreen view. */
-  onOpenFullscreen?(): void;
-  extras?: ReactNode;
   /**
    * Diagram management for a Layer 7 tab's right-click menu; each entry is
    * offered only when its callback is present. Rename opens the editor's own
@@ -131,7 +129,7 @@ const LANGUAGE_NAME: Record<Language, StringKey> = {
 
 /**
  * Top bar: Layer 7 diagram tabs (breadcrumb when drilled into a container
- * diagram), host extras slot, and the tidy / fit / export actions.
+ * diagram) and the tidy / fit / export actions.
  */
 export function EditorToolbar(props: EditorToolbarProps) {
   const theme = useTheme();
@@ -258,7 +256,6 @@ export function EditorToolbar(props: EditorToolbarProps) {
 
       <Box sx={{ flex: 1 }} />
       {props.readOnly && <Chip size="small" label={t('toolbar.readOnly')} variant="outlined" />}
-      {props.extras}
       <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
       {!props.readOnly && (
         <>
@@ -411,13 +408,6 @@ export function EditorToolbar(props: EditorToolbarProps) {
           <HelpIcon />
         </IconButton>
       </Tooltip>
-      {props.onOpenFullscreen && (
-        <Tooltip title={t('toolbar.fullscreen')}>
-          <IconButton size="small" aria-label={t('toolbar.fullscreen')} onClick={props.onOpenFullscreen}>
-            <FullscreenIcon />
-          </IconButton>
-        </Tooltip>
-      )}
       {props.onLanguageChange && (
         <LanguageToggle language={language} onChange={props.onLanguageChange} />
       )}

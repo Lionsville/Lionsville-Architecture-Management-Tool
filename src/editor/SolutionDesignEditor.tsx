@@ -923,8 +923,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onRedo={state.redo}
         canUndo={state.canUndo}
         canRedo={state.canRedo}
-        onOpenFullscreen={props.onOpenFullscreen}
-        extras={props.renderDesignPanelExtras?.()}
         onRenameDiagram={
           props.onRenameDiagram ? (id, name) => setRenameDiagramTarget({ id, name }) : undefined
         }
@@ -1017,7 +1015,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
               actions={state.actions}
               onRequestDelete={() => setDeleteTarget(state.selectedElement?.id)}
               renderMarkdown={props.renderMarkdown}
-              extras={props.renderInspectorExtras?.(state.selectedElement)}
               renameRequest={renameRequest}
               onRequestLogoUpload={readOnly ? undefined : props.onRequestLogoUpload}
               onOpenDocumentation={openDocumentation}

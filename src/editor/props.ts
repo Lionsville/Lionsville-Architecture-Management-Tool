@@ -11,7 +11,7 @@ import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
 import type {
-  DesignElement, DesignModel, DiagramContentBatch, DiagramSettings, ElementId,
+  DesignModel, DiagramContentBatch, DiagramSettings, ElementId,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { WindowChrome } from '../platform/windowChrome';
@@ -49,10 +49,6 @@ export interface SolutionDesignEditorProps {
    * elements, connections, placements, routes — and this is the diagram record.
    */
   onDiagramSettingsChange?(diagramId: string, settings: DiagramSettings): void;
-  /** CM links + ADR slots, rendered by the host inside the inspector. */
-  renderInspectorExtras?(element: DesignElement): ReactNode;
-  /** Coverage/ADR panel slot, rendered in the toolbar. */
-  renderDesignPanelExtras?(): ReactNode;
   exportTitleBlock?: { client: string; author?: string };
   /**
    * The shared uploaded logo library. The package never fetches it — the host
@@ -99,8 +95,6 @@ export interface SolutionDesignEditorProps {
    * does nothing. Bump `nonce` to ask again.
    */
   documentationRequest?: { elementId?: ElementId; nonce: number };
-  /** When provided, the toolbar shows a fullscreen button (host implements the view). */
-  onOpenFullscreen?: () => void;
   /**
    * What the host window paints over the top of a full-window view, and
    * whether that view's top bar has to double as the handle that moves the
