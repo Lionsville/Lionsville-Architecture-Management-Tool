@@ -135,7 +135,8 @@ Three ways out, for three different purposes:
   the aspect legend.
 
 Reading is broad and writing is narrow: a key this tool does not understand
-survives a round trip untouched, and files written by older builds keep opening.
+survives a round trip untouched, and files written by older builds keep opening
+— a file is recognised by what is in it rather than by what it is called.
 
 ### Two languages, three themes
 
@@ -145,12 +146,36 @@ dark and system themes.
 
 ## Where your work is kept
 
-Projects and preferences are stored locally by the app itself (in the desktop
-build and in the browser alike), and the working file is the durable artefact —
-the thing to keep, back up and share. If local storage refuses — a private
-window, a strict policy — the session falls back to memory: everything works and
-nothing is left behind, which is what opening such a window asked for. The
-status bar says so once.
+**On the desktop, in a folder you choose**, as text files you can read
+(`docs/decisions/0003`):
+
+```
+<your folder>/<group>/<project>/project.json · model.json
+                                diagrams/<id>.json · <id>.placements.json
+                                docs/<element>.md · decisions/NNNN-<slug>.md
+                                logos/<key>.svg
+```
+
+Nothing is hidden inside the app. The folder syncs, backs up and commits like
+anything else you own; a moved element rewrites one small file, a rewritten
+paragraph one markdown file, and `git diff` says what changed in words you
+recognise. Everything is written three seconds after you stop editing, when you
+leave the window and when you close it — and closing with unsaved work asks
+first. If a file changes underneath you, the app says so and never overwrites
+the other version without asking.
+
+With git on the machine, **Save… ▸ Snapshot…** records the folder under a
+message drafted from what you actually did, and **History…** shows what has
+changed since any snapshot — as architecture, not as lines.
+
+**In a browser tab**, which has no folder, projects live in that browser's
+storage and the working file is the durable artefact. If local storage refuses —
+a private window, a strict policy — the session falls back to memory:
+everything works and nothing is left behind, which is what opening such a window
+asked for. The status bar says so once.
+
+The working file (`.lvarch`) is the same folder in one file — a zip — for
+handing to somebody else. Files written by older builds keep opening.
 
 On boot the app reopens the project you had open, or shows the picker.
 
@@ -216,6 +241,7 @@ src/projects/       what a project is, where it is filed, what is remembered
 src/platform/       a refusal, a diagnostic, the log's name, the window's chrome
 src/widgets/        icons and one dialog — presentation with no opinions
 src/ports/          the seams: ProjectStore · PreferencesStore · DocumentGateway
+                    GroupStore · ProjectHistory · Diagnostics · HostControls
 src/adapters/       the outside world, one folder per flavour
 src/app/            the shell: picker, workspace, toolbar, dialogs, composition
 electron/           the desktop main process and preload

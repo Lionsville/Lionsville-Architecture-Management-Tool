@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2298 tests** and one of every config. The
+One codebase, in modules, with **2351 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2298 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2351 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -115,6 +115,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · fromInterchange · toInterchange · containerDiagram
                     logo · logoRegistry · marks/    uploads, the icon registry
+                    diff              what changed, in the landscape's own terms
                     textSearch        the one rule for "found"
                     adr               what a decision record IS (rules: decisions/)
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
@@ -143,7 +144,7 @@ src/platform/     What the app runs inside, and what a failure looks like.
 src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
                     ProjectStore · PreferencesStore · DocumentGateway
-                    GroupStore · Diagnostics · HostControls
+                    GroupStore · ProjectHistory · Diagnostics · HostControls
                     ProjectStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
@@ -152,11 +153,14 @@ src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     composition.ts    which adapter, and which icon packs
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
-                    picker/ · dialogs/ · examples/ · iconPacks/
+                    picker/ · dialogs/ · examples/ · iconPacks/ · history/
                     testing/          renderShell / renderApp: the shared harness
                     use*              the hooks: session, files, document, toasts
+src/platform/     …and `hostCommands`: what a menu or an OS may ask for.
 electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel
+                    git.ts            snapshots, through the machine's own git
+                    appMenu.ts        the File menu; every item sends a command
 ```
 
 **Components declare the interface they need**, not the widest one available.
@@ -440,9 +444,27 @@ chooses and the app remembers; the projects in browser storage copied in, once,
 deleting nothing; and a watcher, with our own writes filtered out by content so
 the app does not interrupt itself.
 
-What is not built yet: the File menu, the `.lvarch` file association and the
-`open-file` handler, git history from inside the app, and retiring the
-localStorage path on the desktop for good.
+Then the desktop stopped behaving like a tab in a window. `.lvarch` is
+associated with the app and a double click reaches the window that is already
+open; there is a File menu whose every item sends a command and decides
+nothing; saving a file is a save dialog rather than a download; and a build
+with no working directory asks for one instead of listing projects kept inside
+the app. The last-project preference is not followed there either — it can only
+point somewhere that no longer keeps projects.
+
+Layer two of ADR-0003 followed: **history**, on the git that is already on the
+machine (`electron/main/git.ts`, through `execFile`, no library). Snapshot from
+the Save menu under a message drafted from the command log; History shows what
+changed since one, as a **semantic** diff (`model/diff.ts`) — geometry as a
+count, because a tidy pass is one sentence and four hundred changed lines.
+Everything about it may say no (no git, no repository, no commits, no project at
+that snapshot) and none of those may interrupt a save, so the menu offers
+nothing rather than failing when pressed.
+
+The smoke run now grants itself a folder and tells the renderer over the same
+command the Recent menu uses, then writes a project through the real channel
+and reads a file continuously while a large write is in flight — every read one
+whole version or the other, which is what a renderer dying mid-save depends on.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference

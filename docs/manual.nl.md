@@ -15,8 +15,9 @@ installeert die bij het afsluiten; **Check for Updates…** in het appmenu doet 
 op verzoek.
 
 **Browser.** Vanuit een kloon van de repository eenmalig `npm run setup`, daarna
-`npm run dev`; open <http://127.0.0.1:5200>. Alles wat je maakt leeft in de
-opslag van die browser tot je een bestand bewaart.
+`npm run dev`; open <http://127.0.0.1:5200>. Een browsertab heeft geen map om in
+te werken, dus alles wat je maakt leeft in de opslag van die browser tot je een
+bestand bewaart.
 
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
 en geen telemetrie.
@@ -36,13 +37,68 @@ ook heet.
   eigen **Project toevoegen**, en dat is de weg die voorkomt dat `Acme` en
   `Acme Logistics` twee groepen worden.
 - **Volgorde** sorteert op naam, of op wat je het laatst hebt gewijzigd.
-- **Verwijderen** haalt een project uit deze browser of deze desktop-app. Een
-  werkbestand dat je elders hebt bewaard blijft staan.
+- **Verwijderen** haalt het project weg: op de desktop de map, in de browser het
+  record. Een werkbestand dat je elders hebt bewaard blijft staan.
 
 De **instellingen** van een groep bevatten haar naam, een omschrijving en
 koppelingen: een wiki, een ticketwachtrij, een dashboard. Een groep hernoemen
 hernoemt het label van elk project erin. Bij het starten opent de app het
 project dat je open had.
+
+## Je projectenmap (desktop)
+
+De eerste keer dat de desktop-app start vraagt hij om een **map om in te
+werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
+
+```
+<jouw map>/
+  acme-logistics/                     de groep
+    group.json                        naam, omschrijving en koppelingen
+    warehouse-landscape/              het project
+      project.json                    hoe het heet, en wat erin zit
+      model.json                      de applicaties en de lijnen ertussen
+      diagrams/landscape.json         wat een aanzicht is
+      diagrams/landscape.placements.json   waar de elementen staan
+      docs/warehouse.md               de omschrijving van een element, als tekst
+      decisions/0007-one-writer.md    een besluit
+      logos/own.svg                   een logo dat je hebt geüpload
+```
+
+Er zit niets verstopt in de app. Zet de map in OneDrive, in Dropbox, op een
+netwerkschijf of in een git-repository en hij gedraagt zich zoals alles daar.
+**Wijzigen…** op de projectlijst brengt je naar een andere map; de mappen die je
+eerder gebruikte staan in **File ▸ Open Recent Folder**.
+
+Dat je werk bestanden zijn heeft twee gevolgen.
+
+- **Iemand anders kan ze wijzigen.** Verandert een bestand onder je handen — een
+  collega, een synchronisatiedienst, jijzelf op een andere machine — dan
+  verschijnt een strook boven de plaat. Staat er niets open, dan biedt hij hun
+  versie aan; staan er wijzigingen open, dan zegt hij dat beide kanten zijn
+  veranderd en vraagt welke blijft. Hun versie wordt nooit ongevraagd
+  overschreven.
+- **Alles wordt geschreven zodra het verandert.** Drie seconden nadat je stopt
+  met bewerken, als je het venster verlaat, en als je het sluit. Alleen de
+  bestanden die echt veranderden worden herschreven, dus één element verplaatsen
+  herschrijft één klein bestand en verder niets.
+
+## Geschiedenis (desktop)
+
+Staat er **git** op de machine, dan kan de app een geschiedenis van je map
+bijhouden. **Bewaren… ▸ Momentopname…** komt met een tekst die al geschreven is
+uit wat je deed — "Warehouse Management gewijzigd, 3 elementen verplaatst" — en
+die je kunt aanpassen voor hij wordt vastgelegd. De eerste keer vraagt hij of
+je überhaupt geschiedenis wilt bijhouden; er gaat in geen van beide gevallen
+iets van je machine af.
+
+**Bewaren… ▸ Geschiedenis…** toont elke momentopname. Kies er een en je ziet wat
+er sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen
+getekend en doorgeknipt, besluiten genomen — met de geometrie als aantal in
+plaats van als lijst, want een Tidy-ronde is één zin en vierhonderd gewijzigde
+regels.
+
+Zonder git biedt de app dit alles eenvoudigweg niet aan, en werkt de rest
+precies zoals eerst.
 
 ## De werkruimte
 
@@ -52,16 +108,18 @@ Eén open project: een balk bovenin, de editor eronder.
 |---|---|
 | **Projecten…** | Terug naar de projectlijst |
 | **Instellingen…** | Naam en groep van dit project, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een project naar een andere groep verplaatsen laat de inhoud met rust |
-| **Bewaren…** | Eén menu, twee vormen. **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer |
-| **Openen…** | Laadt allebei. Een interchange-document wordt opnieuw gelegd, een werkbestand komt terug zoals het was. Bestanden van onder de vorige naam van de tool blijven openen |
+| **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je projectmap in één bestand. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
+| **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |
 | **Thema** | Licht, donker of systeem. Systeem volgt je computer en schakelt mee |
-| **Bewaard · uu:mm** | Wanneer deze browser of desktop-app het project voor het laatst aannam |
+| **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Gewijzigd op schijf**, **Hier én op schijf gewijzigd** |
 
-Alles wordt vanzelf bewaard terwijl je werkt. Weigert de opslag — vol, of
-geblokkeerd in een privévenster — dan zegt de balk onderin dat één keer en
-werkt de editor gewoon door; bewaar dan een werkbestand, want zonder opslag is
-het project weg als het tabblad sluit. Elke melding (bewaard, geladen, mislukt)
-verschijnt in die balk onderin.
+Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als
+je het venster verlaat en als je het sluit — en sluiten met openstaande
+wijzigingen vraagt eerst. Weigert in een browser de opslag (vol, of geblokkeerd
+in een privévenster) dan zegt de balk onderin dat één keer en werkt de editor
+gewoon door; bewaar dan een werkbestand, want zonder opslag is het project weg
+als het tabblad sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
+die balk onderin.
 
 **Taal.** De knop **NL/EN** rechts in de werkbalk van de editor schakelt de
 hele interface om: menu's, dialogen, tooltips, bandnamen, foutmeldingen en het
@@ -255,8 +313,10 @@ Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 
 Drie uitgangen, voor drie doelen.
 
-- **Het werkbestand** (`.lvarch`) is alles, en is wat je bewaart en aan iemand
-  geeft die verder gaat bewerken.
+- **Het werkbestand** (`.lvarch`) is alles, en is wat je aan iemand geeft die
+  verder gaat bewerken. Het is je projectmap in één bestand — een zip — zodat
+  iedereen het kan uitpakken en lezen zonder deze tool. Werkbestanden van
+  eerdere versies openen gewoon.
 - **Het interchange-document** draagt topologie en semantiek en geen geometrie
   of opmaak: een diff ervan laat zien wat er aan de architectuur veranderde,
   niet wat er op de plaat verschoof. Een ingebouwd pictogram reist mee als

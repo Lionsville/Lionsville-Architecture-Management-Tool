@@ -42,9 +42,15 @@ function collecting() {
   stops.push(watchFolder(root, (batch) => changes.push(...batch), 20))
   return {
     changes,
-    async sees(path: string): Promise<FolderChange> {
+    /**
+     * `matches` exists because a watcher can report a change that happened
+     * just BEFORE it was installed — the platform's coalescing window is
+     * wider than the gap between two statements in a test — so "the file
+     * appeared" and "the file went" can both be waiting when it starts.
+     */
+    async sees(path: string, matches: (change: FolderChange) => boolean = () => true): Promise<FolderChange> {
       for (let waited = 0; waited < 4_000; waited += 25) {
-        const held = changes.find((change) => change.path === path)
+        const held = changes.find((change) => change.path === path && matches(change))
         if (held) return held
         await pause(25)
       }
@@ -79,7 +85,7 @@ describe('watchFolder', () => {
     const watcher = collecting()
     await rm(join(root, 'gone.json'))
 
-    expect((await watcher.sees('gone.json')).stamp).toBeUndefined()
+    expect((await watcher.sees('gone.json', (change) => !change.stamp)).stamp).toBeUndefined()
   })
 
   it('says nothing about an editor’s scratch files', async () => {

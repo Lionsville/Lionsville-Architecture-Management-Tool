@@ -14,8 +14,9 @@ the next time you quit; **Check for Updates…** in the app menu does it on
 request.
 
 **Browser.** From a clone of the repository, `npm run setup` once and then
-`npm run dev`; open <http://127.0.0.1:5200>. Everything you make lives in that
-browser's storage until you save a file.
+`npm run dev`; open <http://127.0.0.1:5200>. A browser tab has no folder to
+work in, so everything you make lives in that browser's storage until you save
+a file.
 
 Nothing leaves your machine either way. There is no account, no backend and no
 telemetry.
@@ -35,12 +36,64 @@ namespace is called where you work.
   own **Add a project**, which is the path that keeps `Acme` and
   `Acme Logistics` from becoming two groups.
 - **Order** lists projects by name, or by what you changed most recently.
-- **Delete** removes a project from this browser or this desktop app. A working
-  file you saved elsewhere is not touched.
+- **Delete** removes the project: its folder on the desktop, its record in the
+  browser. A working file you saved elsewhere is not touched.
 
 The **settings** of a group hold its name, a description and links: a wiki
 space, a ticket queue, a dashboard. Renaming a group relabels every project in
 it. On boot the app reopens the project you had open.
+
+## Your projects folder (desktop)
+
+The first time the desktop app runs it asks for a **folder to work in**, and
+everything you make lives there as files you can read:
+
+```
+<your folder>/
+  acme-logistics/                     the group
+    group.json                        its name, description and links
+    warehouse-landscape/              the project
+      project.json                    what it is called, and what it holds
+      model.json                      the applications and the lines between them
+      diagrams/landscape.json         what a diagram is
+      diagrams/landscape.placements.json   where its elements sit
+      docs/warehouse.md               an element's description, as prose
+      decisions/0007-one-writer.md    a decision record
+      logos/own.svg                   a logo you uploaded
+```
+
+Nothing is hidden inside the app. Put the folder in OneDrive, in Dropbox, on a
+network share or in a git repository and it behaves the way anything else there
+does. **Change…** on the project list moves you to a different folder; the
+folders you have used before are in **File ▸ Open Recent Folder**.
+
+Two things follow from your work being files.
+
+- **Somebody else can change them.** If a file changes underneath you — a
+  colleague's checkout, a sync client, you on another machine — a strip appears
+  above the canvas. With nothing unsaved it offers to take their version; with
+  unsaved work it says both sides changed and asks which one survives. It never
+  overwrites their version without asking.
+- **Everything is written as it changes.** Three seconds after you stop
+  editing, when you leave the window, and when you close it. Only the files
+  that actually changed are rewritten, so moving one element rewrites one small
+  file and nothing else.
+
+## History (desktop)
+
+If the machine has **git**, the app can keep a history of your folder.
+**Save… ▸ Snapshot…** offers a message already written from what you did —
+"Changed Warehouse Management, Moved 3 elements" — which you can edit before it
+is recorded. The first snapshot asks whether to start keeping history at all;
+nothing leaves the machine either way.
+
+**Save… ▸ History…** lists every snapshot. Choosing one shows what has changed
+since it — applications added, removed and altered, connections drawn and cut,
+decisions taken — with the geometry as a count rather than a list, because a
+tidy pass is one sentence and four hundred changed lines.
+
+Without git the app simply does not offer any of this, and everything else
+works as before.
 
 ## The workspace
 
@@ -50,16 +103,17 @@ One open project: a bar at the top, the editor below it.
 |---|---|
 | **Projects…** | Back to the project list |
 | **Settings…** | This project's name and group, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a project to another group leaves its content untouched |
-| **Save…** | One menu, two forms. **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes. **Interchange document** is topology and semantics only, the form for review and version control |
-| **Open…** | Loads either. An interchange document is laid out again; a working file comes back as it was. Files written under the tool's previous name keep opening |
+| **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your project folder in one file. **Interchange document** is topology and semantics only, the form for review and version control. On the desktop the menu also offers **Snapshot…** and **History…** |
+| **Open…** | Loads either, and recognises which by what is in the file rather than by its name |
 | **Theme** | Light, dark or system. System follows your computer and switches with it |
-| **Saved · hh:mm** | When this browser or desktop app last took the project |
+| **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed on disk**, **Changed here and on disk** |
 
-Everything is saved automatically as you work. If storage refuses — full, or
-blocked in a private window — the bar at the bottom says so once and the
-editor keeps working; save a working file then, because without storage the
-project is gone when the tab closes. Every notice (saved, loaded, failed)
-appears in that bottom bar.
+Everything is saved automatically as you work: three seconds after you stop, on
+leaving the window, and on closing it — and closing with unsaved work asks
+first. In a browser, if storage refuses (full, or blocked in a private window)
+the bar at the bottom says so once and the editor keeps working; save a working
+file then, because without storage the project is gone when the tab closes.
+Every notice (saved, loaded, failed) appears in that bottom bar.
 
 **Language.** The **NL/EN** button at the right of the editor's toolbar
 switches the whole interface: menus, dialogs, tooltips, band names, error
@@ -244,8 +298,10 @@ Right-click a diagram tab, **Diagram settings…**.
 
 Three ways out, for three purposes.
 
-- **The working file** (`.lvarch`) is everything and is what you keep and hand
-  to someone who will edit further.
+- **The working file** (`.lvarch`) is everything and is what you hand to
+  someone who will edit further. It is your project folder in one file — a zip
+  — so anybody can unpack it and read what is inside without this tool.
+  Working files from earlier versions still open.
 - **The interchange document** carries topology and semantics and no geometry
   or styling: a diff of it shows what changed about the architecture, not what
   moved on the canvas. A built-in icon travels as `iconType`; an uploaded logo

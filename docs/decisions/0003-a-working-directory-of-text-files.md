@@ -127,6 +127,22 @@ in the extension. Versions 1 and 2 keep opening. The interchange format is
 untouched: it is a contract with other tools and has nothing to do with how we
 keep our own working copy.
 
+**History is layer two, and it is opt-in.** The folder diffs well on its own and
+that is worth having with no further machinery — anybody can run `git` in it.
+Inside the app, a snapshot and a history page are offered only where they can
+work: the desktop, with git already on the machine, in a folder the user has
+said yes for. It runs the **system binary** through `execFile` rather than a
+library, because the six commands involved are the whole of what this needs, no
+shell means a folder name cannot become an argument, and a git library is a
+dependency trusted with somebody's repository. A machine without git simply has
+no history, and nothing else changes — degrading is the requirement, not the
+fallback.
+
+The diff shown there is **semantic** (`model/diff.ts`). `git diff` answers
+"which lines changed" and this answers "what happened to the architecture", and
+the difference is the whole value: moving forty nodes is four hundred lines and
+one sentence. Geometry is therefore a count and never a list.
+
 ### Consequences
 
 * Documents are where the user put them, in a folder that syncs, backs up and
