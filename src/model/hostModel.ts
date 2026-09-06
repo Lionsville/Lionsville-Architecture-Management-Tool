@@ -66,10 +66,16 @@ export const WORKING_FILE_EXTENSION = '.lvarch'
  * 2 — the model may carry `decisions` (architecture decision records). A v1
  *     reader would keep the file's other content and silently drop those on
  *     its next save, which is exactly the loss the version exists to refuse.
+ *
+ * There is a version 3, and it is deliberately not in this union: it is the
+ * project folder in a zip (ADR-0003), so there is no JSON document to carry a
+ * version field at all. Its number lives inside, on the folder's `project.json`
+ * — one number for one shape. `projects/workingFile.ts` reads it, and reaches
+ * the two below by asking whether the bytes are a zip.
  */
 export type WorkingFileVersion = 1 | 2
 
-/** What this shell can read. Saving always happens in the newest. */
+/** What this shell reads as a JSON document. The newest file is a zip. */
 export const WORKING_FILE_VERSIONS: WorkingFileVersion[] = [1, 2]
 export const WORKING_FILE_VERSION: WorkingFileVersion = 2
 

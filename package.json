@@ -45,6 +45,7 @@
     "electron-vite": "^5.0.0",
     "elkjs": "^0.9.3",
     "eslint": "^10.10.0",
+    "fflate": "^0.8.3",
     "html-to-image": "^1.11.13",
     "jsdom": "^26.1.0",
     "libavoid-js": "0.4.5",
