@@ -64,6 +64,11 @@ export type ProjectWorkspaceProps = {
    */
   commands?: (listener: (command: HostCommand) => void) => () => void
   /**
+   * Tell the host whether closing the window would lose something. Absent in a
+   * browser tab, where the window is ours and `beforeunload` says it.
+   */
+  onUnsavedWork?: (unsaved: boolean) => void
+  /**
    * The snapshots of the folder this project is in. Absent in a browser tab and
    * until a folder is chosen — there is nothing for a history to be a history
    * of — and the menu offers nothing when it is.
@@ -124,8 +129,8 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, watch, commands, history: projectHistory, documents, notify, onStorageResult,
-  s, language, themeMode,
+  project, projects, watch, commands, onUnsavedWork, history: projectHistory, documents, notify,
+  onStorageResult, s, language, themeMode,
   onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
@@ -154,6 +159,7 @@ export function ProjectWorkspace({
     onSaved: setSavedAt,
     onResult: onSaveResult,
     watch,
+    onUnsavedWork,
     // Their version, once it has been read: straight onto the session, without
     // a relayout — a project read back from its folder carries its geometry.
     onAdopt: useCallback((held: ProjectSnapshot) => session.adopt(held, false), [session]),

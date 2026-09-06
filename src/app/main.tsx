@@ -273,6 +273,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         recentFolders={recentFolders}
         watchProject={shell.watchProject}
         commands={commands?.on}
+        onUnsavedWork={commands?.reportUnsaved}
         history={shell.history}
         initialProject={initialProject}
         initialPreferences={storedPreferences}

@@ -31,8 +31,17 @@ export type HostCommand =
    */
   | { type: 'openDocument'; name: string; bytes: Uint8Array }
 
-/** Somewhere to send them. Implemented by an adapter; absent in a browser tab. */
+/**
+ * Somewhere to send them, and one thing to send back.
+ *
+ * The traffic runs both ways because both halves are about the window rather
+ * than about the document. The host owns closing it, and only the app knows
+ * whether closing it would lose anything — a browser tab has `beforeunload` for
+ * exactly that conversation, and a desktop window has to have it out loud.
+ */
 export type HostCommands = {
   /** Every command, until the returned function is called. */
   on(listener: (command: HostCommand) => void): () => void
+  /** Is there work that closing the window would lose? */
+  reportUnsaved(unsaved: boolean): void
 }

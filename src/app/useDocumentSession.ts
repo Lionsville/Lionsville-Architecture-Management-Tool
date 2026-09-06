@@ -92,8 +92,16 @@ export function useDocumentSession(deps: {
   watch?: (onChanged: () => void) => () => void
   /** Their version, once it has been read. The caller puts it on screen. */
   onAdopt?: (project: ProjectSnapshot) => void
+  /**
+   * Is there work that closing the window would lose?
+   *
+   * Told to whoever owns the window. In a browser that is `beforeunload`, which
+   * this hook handles itself; on the desktop the window belongs to another
+   * process, and it cannot know unless it is told.
+   */
+  onUnsavedWork?: (unsaved: boolean) => void
 }): DocumentSessionHook {
-  const { session, projects, onSaved, onResult, watch, onAdopt } = deps
+  const { session, projects, onSaved, onResult, watch, onAdopt, onUnsavedWork } = deps
   const { model, activeDiagramId, logoLibrary, snapshot } = session
 
   const [state, dispatch] = useReducer(documentSession, snapshot().ref, openSession)
@@ -192,6 +200,14 @@ export function useDocumentSession(deps: {
     window.addEventListener('blur', onBlur)
     return () => window.removeEventListener('blur', onBlur)
   }, [save])
+
+  const outstanding = hasUnsavedWork(state)
+  useEffect(() => {
+    onUnsavedWork?.(outstanding)
+    // On the way out there is nothing left to lose in this workspace, whatever
+    // it was holding a moment ago — the next one will say for itself.
+    return () => onUnsavedWork?.(false)
+  }, [outstanding, onUnsavedWork])
 
   useEffect(() => {
     const onLeaving = (event: BeforeUnloadEvent) => {

@@ -69,6 +69,7 @@ const commands: DesktopCommands = {
     void ipcRenderer.invoke('app:listening')
     return () => { ipcRenderer.off('app:command', relay) }
   },
+  reportUnsaved: (unsaved) => { void ipcRenderer.invoke('app:unsaved', unsaved) },
 }
 
 const history: DesktopHistory = {

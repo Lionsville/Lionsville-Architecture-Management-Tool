@@ -44,6 +44,7 @@ function mount(
   const result = vi.fn()
   const writes: ProjectSnapshot[] = []
   const adopted: ProjectSnapshot[] = []
+  const reported: boolean[] = []
   let hook!: DocumentSessionHook
   let announce: (() => void) | undefined
   let watching = 0
@@ -66,6 +67,7 @@ function mount(
       },
       onSaved: saved,
       onResult: result,
+      onUnsavedWork: (held) => reported.push(held),
       watch: onDisk && ((onChanged) => {
         watching += 1
         announce = onChanged
@@ -83,6 +85,7 @@ function mount(
     result,
     writes,
     adopted,
+    reported,
     watching: () => watching,
     status: () => hook.state.status,
     somebodyElseWrote: () => act(() => announce?.()),
@@ -317,5 +320,33 @@ describe('when somebody else changes the folder', () => {
     view.edit('Two')
 
     expect(view.watching()).toBe(1)
+  })
+})
+
+describe('what the window is told', () => {
+  it('says there is nothing to lose while the document is clean', () => {
+    // The desktop window belongs to another process and cannot know unless it
+    // is told; a browser tab has `beforeunload` and is told nothing.
+    expect(mount().reported).toEqual([false])
+  })
+
+  it('says there is, the moment there is', () => {
+    const view = mount()
+    view.edit('Edited')
+    expect(view.reported.at(-1)).toBe(true)
+  })
+
+  it('takes it back once the write has landed', async () => {
+    const view = mount()
+    view.edit('Edited')
+    await view.idle()
+    expect(view.reported.at(-1)).toBe(false)
+  })
+
+  it('takes it back when the workspace goes, whatever it was holding', () => {
+    const view = mount()
+    view.edit('Edited')
+    view.unmount()
+    expect(view.reported.at(-1)).toBe(false)
   })
 })

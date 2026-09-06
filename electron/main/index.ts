@@ -213,6 +213,15 @@ const UNATTENDED = process.argv.includes('--smoke')
 const waiting: string[] = []
 let listening = false
 
+/**
+ * Does the window have work in it that closing would lose?
+ *
+ * Told by the renderer whenever it changes, because only the renderer knows —
+ * and asking at close time would be a round trip inside an event that has to
+ * decide synchronously whether to let the window go.
+ */
+let unsaved = false
+
 /** A `.lvarch` among the arguments — how Windows and Linux say "open this". */
 function documentIn(argv: readonly string[]): string | undefined {
   return argv.slice(1).find((held) => held.toLowerCase().endsWith('.lvarch'))
@@ -298,6 +307,8 @@ void app.whenReady().then(() => {
 
   // Said by the preload the moment anything subscribes. Everything the OS
   // handed us before that has been waiting.
+  ipcMain.handle('app:unsaved', (_event, held: unknown) => { unsaved = held === true })
+
   ipcMain.handle('app:listening', () => {
     listening = true
     for (const path of waiting.splice(0)) openDocument(path)
@@ -308,6 +319,7 @@ void app.whenReady().then(() => {
   if (opened) openDocument(opened)
 
   const mainWindow = createWindow()
+  guardUnsavedWork(mainWindow)
 
   // A load that neither finishes nor fails is the hardest thing to read from
   // outside the process: no window, no error, no exit. Say what went wrong.
@@ -369,6 +381,52 @@ void app.whenReady().then(() => {
   }).catch((error: unknown) => fatal('loading the app', error))
 })
   .catch((error: unknown) => fatal('starting up', error))
+
+/**
+ * Closing the window must not lose the last few seconds of work.
+ *
+ * The browser has `beforeunload` for this and shows its own dialog; Electron
+ * fires the same event and does NOT — returning a value there cancels the close
+ * silently, which is worse than either alternative. So the conversation happens
+ * here.
+ *
+ * It saves rather than asking. Everything in this app is written three seconds
+ * after you stop typing; a window that interrupts you to ask whether you meant
+ * it is a window that trains you to dismiss the question. What it does ask
+ * about is the case where saving did not work — a folder that has gone, a
+ * permission withdrawn — because closing then really does lose something.
+ */
+function guardUnsavedWork(window: BrowserWindow): void {
+  let letting = false
+  window.on('close', (event) => {
+    if (letting || !unsaved || UNATTENDED) return
+    event.preventDefault()
+    sendCommand({ type: 'save' })
+
+    const deadline = Date.now() + 5_000
+    const poll = setInterval(() => {
+      if (!unsaved) {
+        clearInterval(poll)
+        letting = true
+        window.close()
+        return
+      }
+      if (Date.now() <= deadline) return
+      clearInterval(poll)
+      const choice = dialog.showMessageBoxSync(window, {
+        type: 'warning',
+        message: 'This project could not be saved.',
+        detail: 'Closing now loses the changes that are still only in this window.',
+        buttons: ['Close anyway', 'Keep the window open'],
+        defaultId: 1,
+        cancelId: 1,
+      })
+      if (choice !== 0) return
+      letting = true
+      window.close()
+    }, 100)
+  })
+}
 
 /**
  * The end of the line: something went wrong before there was an app to say it

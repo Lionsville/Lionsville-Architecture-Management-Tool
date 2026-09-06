@@ -122,6 +122,8 @@ export type AppProps = {
    * project that is open — each layer taking what it owns.
    */
   commands?: (listener: (command: HostCommand) => void) => () => void
+  /** Tell the host whether closing the window would lose something. */
+  onUnsavedWork?: (unsaved: boolean) => void
   /** Work in a folder the user has already granted. The Recent submenu. */
   onOpenWorkingDirectory?: (root: string) => void
   /** Folders this machine has worked in before, for the first-run screen. */
@@ -149,7 +151,7 @@ export type AppProps = {
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   storage = 'browser', workingDirectory, onChooseWorkingDirectory, watchProject,
-  commands, onOpenWorkingDirectory, recentFolders, history,
+  commands, onUnsavedWork, onOpenWorkingDirectory, recentFolders, history,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
@@ -555,6 +557,7 @@ export function App({
             projects={projects}
             watch={watchOpenProject}
             commands={commands}
+            onUnsavedWork={onUnsavedWork}
             history={history}
             documents={documents}
             notify={toasts.notify}
