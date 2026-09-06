@@ -10,13 +10,16 @@ voor het gebruik. Wat het is en waarom het bestaat staat in de
 
 **Desktop.** Download het installatiebestand voor je platform van de
 [releasepagina](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest).
-De app kijkt op de achtergrond of daar een nieuwere versie staat en
-installeert die bij het afsluiten; **Check for Updates…** in het appmenu doet het
-op verzoek.
+De app kijkt op de achtergrond of daar een nieuwere versie staat en zegt het als
+die er is — **Download…** opent het installatiebestand in je browser, **Skip
+This Version** zegt deze niet, en het vinkje in dat venster zet de automatische
+controle uit. Er installeert zichzelf niets. **Check for Updates…** in het
+appmenu vraagt het op verzoek.
 
 **Browser.** Vanuit een kloon van de repository eenmalig `npm run setup`, daarna
-`npm run dev`; open <http://127.0.0.1:5200>. Een browsertab heeft geen map om in
-te werken, dus alles wat je maakt leeft in de opslag van die browser tot je een
+`npm run dev`; open <http://127.0.0.1:5200>. Waar de browser het aanbiedt —
+Chromium doet dat — kan een tabblad net als de desktop in een map werken. Waar
+dat niet kan, leeft alles wat je maakt in de opslag van die browser tot je een
 bestand bewaart.
 
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
@@ -82,6 +85,12 @@ Dat je werk bestanden zijn heeft twee gevolgen.
   bestanden die echt veranderden worden herschreven, dus één element verplaatsen
   herschrijft één klein bestand en verder niets.
 
+Een browsertabblad kan ook in een map werken, waar de browser dat aanbiedt —
+maar de toestemming overleeft een herstart zelden en erom vragen vereist een
+klik, dus een tabblad pakt een onthouden map alleen weer op als de toestemming
+nog geldt en begint anders zonder iets te zeggen in de browseropslag. De desktop
+is degene die moet kiezen.
+
 ## Geschiedenis (desktop)
 
 Staat er **git** op de machine, dan kan de app een geschiedenis van je map
@@ -110,15 +119,18 @@ Eén open project: een balk bovenin, de editor eronder.
 | **Instellingen…** | Naam en groep van dit project, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een project naar een andere groep verplaatsen laat de inhoud met rust |
 | **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je projectmap in één bestand. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
 | **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |
+| **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
 | **Thema** | Licht, donker of systeem. Systeem volgt je computer en schakelt mee |
 | **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Gewijzigd op schijf**, **Hier én op schijf gewijzigd** |
 
 Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als
 je het venster verlaat en als je het sluit — en sluiten met openstaande
-wijzigingen vraagt eerst. Weigert in een browser de opslag (vol, of geblokkeerd
-in een privévenster) dan zegt de balk onderin dat één keer en werkt de editor
-gewoon door; bewaar dan een werkbestand, want zonder opslag is het project weg
-als het tabblad sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
+wijzigingen vraagt eerst. In een browser zonder map zegt de app één keer dat de
+opslag voor viervijfde vol zit — dat is de enige waarschuwing die je krijgt,
+want een browser stopt zonder te vragen met bewaren. Weigert de opslag helemaal
+(vol, of geblokkeerd in een privévenster) dan zegt de balk onderin dat één keer
+en werkt de editor gewoon door; bewaar dan een werkbestand, want zonder opslag
+is het project weg als het tabblad sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
 die balk onderin.
 
 **Taal.** De knop **NL/EN** rechts in de werkbalk van de editor schakelt de
@@ -217,6 +229,12 @@ als er iets verschuift. Als automatisch niet is wat je wilt:
 - Sleep het label van zijn standaardplek; **Labelpositie herstellen** zet het
   terug.
 
+Op een heel druk bord — meer dan ongeveer honderdvijftig lijnen die om dezelfde
+ruimte strijden — slaat het automatisch leggen over in plaats van er minuten
+aan te besteden, en zegt dat in de balk onderin. Er gaat niets verloren: de
+lijnen houden de routes die ze hadden, en alles wat je met de hand tekende
+blijft precies zoals je het achterliet.
+
 ## Lay-out
 
 **Tidy** legt het diagram automatisch, met een richting (dwars, omlaag, of
@@ -224,6 +242,12 @@ groepen dwars en hun applicaties omlaag), een dichtheid, en pinnen voor wat je
 met de hand hebt neergezet. **Verbindingen leggen** tekent alleen de lijnen
 opnieuw en laat elk element staan; **Alles opnieuw leggen** negeert pinnen.
 Een domeingroep leg je apart netjes vanuit zijn menu.
+
+Tidy werkt naast de app in plaats van erin, dus het venster blijft reageren
+terwijl het loopt en de Tidy-knop is intussen een **Annuleren**. Op een diagram
+van meer dan vierhonderd blokken slaat het over en zegt dat, in plaats van er
+minuten over te doen: verdeel het bord over meerdere diagrammen, of leg één
+domeingroep tegelijk netjes.
 
 Met de hand: **uitlijnen** en **verdelen** van een selectie via de zwevende
 werkbalk of het selectiemenu, een **raster** met optioneel uitlijnen, verplaatsen
@@ -326,7 +350,8 @@ Drie uitgangen, voor drie doelen.
 - **PNG-export** (de downloadknop) tekent het huidige diagram op drukformaat met
   het titelblok en de aspectlegenda. Levenscyclusbadges kun je eerst uitzetten
   voor een schone plaat. Kon een logo niet worden ingebed, dan zegt de balk
-  onderin welk.
+  onderin welk. Een heel groot bord is tientallen megapixels en kost tijd om te
+  tekenen, dus de app zegt hoe groot de afbeelding wordt en vraagt het eerst.
 
 ## Voorkeuren
 
@@ -334,6 +359,18 @@ Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun
 breedte, het overzichtskaartje, de Tidy-instellingen, de taal en het thema
 worden per browser of per desktopinstallatie onthouden. Ze zijn van jou, niet
 van het project: ze reizen niet mee in een bestand.
+
+## Ongedaan maken
+
+**⌘Z** dekt alles, in de volgorde waarin je het deed: een blok verplaatst, een
+diagram hernoemd, een besluit aanvaard, een projectinstelling gewist. Een naam
+typen is één stap in plaats van één per letter, en een sleep met de lijnen die
+erna opnieuw worden gelegd is één stap — dus één keer terug geeft je wat je had,
+niet wat je een toetsaanslag geleden had.
+
+**Activiteit** in de bovenbalk toont die stappen met hun naam en tijd. Het is
+een verslag, geen weg terug: naar een regel springen roept een vraag op ("en
+alles daarna?") die ⌘Z al beantwoordt.
 
 ## Sneltoetsen om te kennen
 
@@ -344,7 +381,7 @@ van het project: ze reizen niet mee in een bestand.
 | Enter | Documentatie van het geselecteerde element openen |
 | F2 | Selectie hernoemen |
 | Delete | Selectie weghalen, na navraag |
-| ⌘Z, ⌘⇧Z | Ongedaan maken, opnieuw |
+| ⌘Z, ⌘⇧Z | Ongedaan maken, opnieuw — één stapel over alles |
 | ⌘C ⌘X ⌘V, ⌘D | Kopiëren, knippen, plakken, dupliceren |
 | Pijltjes, ⇧Pijltjes | Verplaatsen per rasterstap, per pixel |
 | Shift+1, Shift+2, `=`, `-` | Passend maken, 100 %, inzoomen, uitzoomen |

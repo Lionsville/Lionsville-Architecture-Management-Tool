@@ -25,10 +25,13 @@ copy and take apart.*
 | Windows (x64 / ARM64) | `…-win-x64.exe`, `…-win-arm64.exe` — signed installers |
 | Linux | `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` — unsigned |
 
-The desktop app checks that release page for a newer version in the background
-and installs it the next time you quit. Releases are still pre-1.0: the
-capabilities below all work, the format keeps opening older files, but expect
-rough edges.
+The desktop app checks that release page for a newer version in the background —
+switchable off, and **Check for Updates…** in the app menu asks on request. It
+tells you and hands you the installer; it never installs anything behind your
+back.
+
+New here? The **[user manual](docs/manual.en.md)**
+(also in [Dutch](docs/manual.nl.md)) is the place to start.
 
 Prefer a browser, or want to change something? See
 [Running from source](#running-from-source).
@@ -59,9 +62,7 @@ at risk — for the parts of a landscape that are about who runs what.
 
 Elements are model-level: an element exists whether or not it is placed on a
 diagram, one element can appear on more than one, and removing it from a diagram
-is a different action from deleting it from the model. The search (⌘F) finds
-elements by name, category or vendor across the whole design, including the ones
-not currently on a board.
+is a different action from deleting it from the model.
 
 ### Connections
 
@@ -87,6 +88,12 @@ points, group placements, group contents, the container boundary. There is also
 a **route-only** pass that leaves every element where it is and just redraws the
 lines.
 
+Tidy runs off the main thread, so the window stays alive while it works and the
+button that started it becomes a **Cancel** you can actually press. Past four
+hundred boxes on one diagram it declines with a message rather than thinking for
+several minutes: the layered algorithm's cost climbs far faster than the board
+does.
+
 By hand: align and distribute a selection, a grid with optional snapping, nudge
 with the arrow keys (finer with Shift), a minimap, and fit-view.
 
@@ -97,13 +104,37 @@ platform, security and operations, rail and vendors — searchable, and settable
 for a whole selection at once. You can upload your own SVG or PNG, which joins
 an "uploaded" category in the picker.
 
+### Decisions, written down where the architecture is
+
+Every landscape, every application and every group keeps its own **architecture
+decision records** — MADR markdown with a title, a status, a date and the people
+it was put to. The status is a state machine (proposed → reviewing → accepted or
+rejected, and accepted → superseded by a named successor), and the three end
+states lock the record rather than trusting anybody to leave it alone. Numbers
+run per list and are never reused.
+
+### One search over all of it
+
+**⌘K** searches everything a project knows at once — element names, the prose
+written about them, and the decisions taken around them — and each kind of hit
+opens the thing it is about: the box on the canvas, that element's page, or the
+record. **⌘F** is the narrower one on the canvas: find a box by name, category,
+vendor or technology, including boxes not on the diagram you are looking at.
+
 ### Editing, in general
 
 Right-click menus on everything — element, connection, canvas, domain group,
 selection, diagram tab — each offering what that thing can actually do.
 Multi-select with a rubber band or Shift-click, then edit lifecycle, colour,
-icon or domain group for all of it in one undo step. Undo and redo over the
-whole session. Rename in place with F2. Copy, cut, paste, duplicate. Resizable
+icon or domain group for all of it in one undo step.
+
+**One undo stack over everything**: a node dragged, a diagram renamed, a
+decision accepted and a project setting cleared are the same kind of change and
+come back in the order you made them. Typing a name is one step, not eleven; a
+drag and the routing that follows it are one step. An **Activity** menu lists
+what has happened since you opened the project, with names and times.
+
+Rename in place with F2. Copy, cut, paste, duplicate. Resizable
 palette and inspector panels. A keyboard-shortcut overlay that is generated from
 the same table that dispatches the keys, so it cannot drift.
 
@@ -138,6 +169,21 @@ Reading is broad and writing is narrow: a key this tool does not understand
 survives a round trip untouched, and files written by older builds keep opening
 — a file is recognised by what is in it rather than by what it is called.
 
+### Large landscapes
+
+The tool is measured against a generated landscape of two thousand elements,
+five thousand connections and thirty diagrams, with two kilobytes of markdown on
+every element. Those budgets run in the gate before every release
+(`docs/decisions/0004`); on that landscape, opening a project takes 16 ms, a
+keystroke in an inspector 0.25 ms, a keystroke in search a third of a
+millisecond, and five hundred undo steps 0.02 MB of memory.
+
+Two things decline rather than freeze, and say so: **Tidy** past four hundred
+boxes, and **automatic routing** past a hundred and fifty connectors competing
+for one channel — where it leaves your stored routes exactly as they are. A very
+large **PNG export** asks first, with the size of the image, before it starts
+drawing.
+
 ### Two languages, three themes
 
 Dutch and English, switchable at any moment, covering menus, dialogs, band
@@ -168,11 +214,14 @@ With git on the machine, **Save… ▸ Snapshot…** records the folder under a
 message drafted from what you actually did, and **History…** shows what has
 changed since any snapshot — as architecture, not as lines.
 
-**In a browser tab**, which has no folder, projects live in that browser's
-storage and the working file is the durable artefact. If local storage refuses —
-a private window, a strict policy — the session falls back to memory:
-everything works and nothing is left behind, which is what opening such a window
-asked for. The status bar says so once.
+**In a browser tab**, a folder too where the browser offers one (Chromium's File
+System Access API); otherwise projects live in that browser's storage and the
+working file is the durable artefact. Browser storage is small and fixed, so the
+app says once when it is about four fifths full — a browser stops saving without
+asking, and that is the only warning there is. If storage refuses outright — a
+private window, a strict policy — the session falls back to memory: everything
+works and nothing is left behind, which is what opening such a window asked for.
+The status bar says so once.
 
 The working file (`.lvarch`) is the same folder in one file — a zip — for
 handing to somebody else. Files written by older builds keep opening.
@@ -194,7 +243,7 @@ have to change again.
 
 For the desktop app: `npm run dev:desktop` runs it against the Vite dev server,
 `npm run smoke:desktop` builds it and drives the real production bundle through
-eleven checks in a real window, and `npm run dist:desktop` packages it (unsigned,
+thirteen checks in a real window, and `npm run dist:desktop` packages it (unsigned,
 locally).
 
 ## The loop
@@ -203,7 +252,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2154 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2487 tests. Run it
 after every change; it is fast on purpose.
 
 ```bash
@@ -216,10 +265,17 @@ Adds a production build. Run it once before handing work back.
 npm run verify
 ```
 
-~2 minutes: everything `check:all` does, then the desktop build and the desktop
-smoke run — every step run to the end, one table, one exit code. The gate before
-a push, made so an agent can run it without deciding anything. `npm run smoke`
-is the last two steps on their own.
+~2 minutes: everything `check:all` does, plus the perf budgets, the desktop build
+and the desktop smoke run — every step run to the end, one table, one exit code.
+The gate before a push, made so an agent can run it without deciding anything.
+`npm run smoke` is the last two steps on their own; `npm run test:perf` is the
+perf step alone.
+
+The perf step times a generated landscape of a few thousand elements against a
+written-down budget per operation (`src/model/testing/`, `docs/decisions/0004`).
+It is deliberately not in `npm run check`: building those landscapes and timing
+work over them is tens of seconds, and a fast loop you batch up is not a fast
+loop.
 
 Other commands: `npm run test:watch`, `npm run build`, `npm run preview`. The dev
 server is also declared in `.claude/launch.json` as `editor-dev`.
@@ -230,7 +286,8 @@ One codebase, in modules. Each has an `index.ts` that is its public surface,
 pure files at its root, and a `ui/` folder for its React side where it has one.
 
 ```
-src/model/          the architecture model, batching, interchange, keys, icons
+src/model/          the model, the commands that change it, interchange, keys
+                    testing/ — the generated landscape, and the perf budgets
 src/layout/         tidy, ELK, libavoid on WebAssembly, the router worker
 src/editor/         the canvas: nodes, edges, palette, inspectors, PNG export
 src/documentation/  descriptions as documents, and the page that reads them

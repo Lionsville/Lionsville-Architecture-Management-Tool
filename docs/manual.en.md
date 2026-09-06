@@ -9,14 +9,17 @@ the Dutch version of this manual is [manual.nl.md](manual.nl.md).
 
 **Desktop.** Download the installer for your platform from the
 [releases page](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest).
-The app checks that page for a newer version in the background and installs it
-the next time you quit; **Check for Updates…** in the app menu does it on
-request.
+The app checks that page for a newer version in the background and tells you
+when there is one — **Download…** opens the installer in your browser, **Skip
+This Version** says not this one, and the checkbox in that dialog turns the
+automatic check off. Nothing installs itself. **Check for Updates…** in the app
+menu asks on request.
 
 **Browser.** From a clone of the repository, `npm run setup` once and then
-`npm run dev`; open <http://127.0.0.1:5200>. A browser tab has no folder to
-work in, so everything you make lives in that browser's storage until you save
-a file.
+`npm run dev`; open <http://127.0.0.1:5200>. Where the browser offers it —
+Chromium does — a tab can work in a folder just as the desktop does. Where it
+does not, everything you make lives in that browser's storage until you save a
+file.
 
 Nothing leaves your machine either way. There is no account, no backend and no
 telemetry.
@@ -79,6 +82,12 @@ Two things follow from your work being files.
   that actually changed are rewritten, so moving one element rewrites one small
   file and nothing else.
 
+A browser tab can work in a folder too, where the browser offers it — but the
+permission rarely survives a restart and asking for it needs a click, so a tab
+only picks a remembered folder back up when the permission is still granted and
+otherwise starts in browser storage without a word. The desktop is the one that
+is made to choose.
+
 ## History (desktop)
 
 If the machine has **git**, the app can keep a history of your folder.
@@ -105,14 +114,18 @@ One open project: a bar at the top, the editor below it.
 | **Settings…** | This project's name and group, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a project to another group leaves its content untouched |
 | **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your project folder in one file. **Interchange document** is topology and semantics only, the form for review and version control. On the desktop the menu also offers **Snapshot…** and **History…** |
 | **Open…** | Loads either, and recognises which by what is in the file rather than by its name |
+| **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken. Read-only: ⌘Z is how you go back |
 | **Theme** | Light, dark or system. System follows your computer and switches with it |
 | **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed on disk**, **Changed here and on disk** |
 
 Everything is saved automatically as you work: three seconds after you stop, on
 leaving the window, and on closing it — and closing with unsaved work asks
-first. In a browser, if storage refuses (full, or blocked in a private window)
-the bar at the bottom says so once and the editor keeps working; save a working
-file then, because without storage the project is gone when the tab closes.
+first. In a browser without a folder, the app says once when its storage is
+about four fifths full — that is the only warning you get, because a browser
+stops saving without asking. If storage refuses outright (full, or blocked in a
+private window) the bar at the bottom says so once and the editor keeps working;
+save a working file then, because without storage the project is gone when the
+tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
 
 **Language.** The **NL/EN** button at the right of the editor's toolbar
@@ -206,6 +219,11 @@ moves. When automatic is not what you want:
 - Drag the label off its default position; **Reset label position** puts it
   back.
 
+On a very crowded board — more than about a hundred and fifty lines competing
+for one channel — automatic routing declines rather than spending minutes on it,
+and says so in the bottom bar. Nothing is lost: the lines keep the routes they
+had, and everything you drew by hand stays exactly as you left it.
+
 ## Layout
 
 **Tidy** runs an automatic layout over the diagram, with a direction (across,
@@ -213,6 +231,12 @@ down, or groups across and their applications down), a density, and pins for
 what you placed by hand. **Route connections** redraws only the lines and
 leaves every element where it is; **Re-route everything** ignores pins. A
 domain group can be tidied on its own from its menu.
+
+Tidy works beside the app rather than inside it, so the window stays alive while
+it runs and the Tidy button becomes a **Cancel** while it does. On a diagram of
+more than four hundred boxes it declines and says so, rather than thinking for
+several minutes: split the board across diagrams, or tidy one domain group at a
+time.
 
 By hand: **align** and **distribute** a selection from the floating toolbar or
 the selection menu, a **grid** with optional snapping, nudge with the arrows,
@@ -310,7 +334,9 @@ Three ways out, for three purposes.
 - **PNG export** (the download button) renders the current diagram at print
   size with the title block and the aspect legend. Lifecycle badges can be
   switched off first for a clean picture. If a logo could not be embedded, the
-  bottom bar says which.
+  bottom bar says which. A very large board is tens of megapixels and takes a
+  while to draw, so the app tells you how big the image will be and asks before
+  it starts.
 
 ## Preferences
 
@@ -318,6 +344,18 @@ Grid, snapping, lifecycle badges, collapsed panels and their widths, the
 minimap, the tidy settings, the language and the theme are remembered per
 browser or per desktop install. They belong to you, not to the project: they
 do not travel in a file.
+
+## Undo
+
+**⌘Z** covers everything, in the order you did it: a box moved, a diagram
+renamed, a decision accepted, a project setting cleared. Typing a name is one
+step rather than one per letter, and a drag and the lines that re-route after it
+are one step — so going back once gives you what you had rather than what you
+had a keystroke ago.
+
+**Activity** in the top bar lists those steps with their names and times. It is
+a record, not a way back: stepping to an entry would raise a question ("and
+everything after it?") that ⌘Z already answers.
 
 ## Shortcuts worth knowing
 
@@ -328,7 +366,7 @@ do not travel in a file.
 | Enter | Open the selected element's documentation |
 | F2 | Rename the selection |
 | Delete | Remove the selection, after asking |
-| ⌘Z, ⌘⇧Z | Undo, redo |
+| ⌘Z, ⌘⇧Z | Undo, redo — one stack over everything |
 | ⌘C ⌘X ⌘V, ⌘D | Copy, cut, paste, duplicate |
 | Arrows, ⇧Arrows | Nudge by a grid step, by a pixel |
 | Shift+1, Shift+2, `=`, `-` | Fit view, 100 %, zoom in, zoom out |
