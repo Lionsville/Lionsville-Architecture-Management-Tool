@@ -607,6 +607,11 @@ export const EN = {
   'shell.interchangeLoaded': 'Interchange document “{name}” loaded; the boards will be laid out again.',
   'shell.unknownFile': 'This file is neither an interchange document nor a working file.',
   'shell.processFailed': 'The document could not be processed: {message}',
+  /**
+   * A save that did not happen. Separate from `shell.notSaved`, which is the
+   * toolbar's standing indicator: this one is about the file you just asked for.
+   */
+  'shell.saveFileFailed': 'The file could not be saved: {message}',
   'shell.newDiagram': 'New landscape',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',

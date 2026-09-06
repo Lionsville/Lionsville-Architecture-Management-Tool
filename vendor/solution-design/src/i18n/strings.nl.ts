@@ -576,6 +576,7 @@ export const NL: StringTable = {
     'Interchange-document “{name}” geladen; de platen worden opnieuw gelegd.',
   'shell.unknownFile': 'Dit bestand is geen interchange-document en geen werkbestand.',
   'shell.processFailed': 'Het document kon niet worden verwerkt: {message}',
+  'shell.saveFileFailed': 'Het bestand kon niet worden bewaard: {message}',
   'shell.newDiagram': 'Nieuw landschap',
   'shell.add': 'Toevoegen',
   'shell.imagesMissing': 'PNG geëxporteerd, maar deze logo’s ontbreken: {labels}.',

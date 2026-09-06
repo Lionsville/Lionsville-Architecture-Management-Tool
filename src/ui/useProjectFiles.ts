@@ -43,6 +43,17 @@ export type ProjectFiles = {
 }
 
 /**
+ * Whatever was thrown, as something that can go in a sentence.
+ *
+ * Replaced in the next step by the shared `messageFor` helper, which knows
+ * about keys; until then this is what the two open paths in this file already
+ * did, said once.
+ */
+function reasonOf(error: unknown): string {
+  return String((error as Error)?.message ?? error)
+}
+
+/**
  * A filename from the project itself rather than a constant.
  *
  * One fixed name was fine while there was one project and one customer. With
@@ -61,27 +72,40 @@ export function useProjectFiles(deps: {
 }): ProjectFiles {
   const { session, documents, notify, s } = deps
 
+  /**
+   * Hand a document over, and say what happened — after it happened.
+   *
+   * Both of these used to fire the gateway and toast success in the next
+   * statement, without waiting. A refused save (no permission, a full disk, a
+   * cancelled picker) then showed "saved" and the user had every reason to
+   * believe it. The promise decides now, and both branches say so.
+   */
+  const handOver = useCallback((doc: TextDocument, success: 'shell.savedWorkingFile' | 'shell.savedInterchange') => {
+    documents.save(doc).then(
+      () => notify(s(success), 'success'),
+      (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
+    )
+  }, [documents, notify, s])
+
   const saveWorkingFile = useCallback(() => {
     session.flush()
     const project = session.snapshot()
-    void documents.save({
+    handOver({
       name: fileNameFor(project.ref, WORKING_FILE_EXTENSION),
       text: JSON.stringify(toWorkingFile(project), null, 2) + '\n',
       mediaType: 'application/json',
-    })
-    notify(s('shell.savedWorkingFile'), 'success')
-  }, [session, documents, notify, s])
+    }, 'shell.savedWorkingFile')
+  }, [session, handOver])
 
   const saveInterchange = useCallback(() => {
     session.flush()
     const project = session.snapshot()
-    void documents.save({
+    handOver({
       name: fileNameFor(project.ref, '.json'),
       text: JSON.stringify(toInterchange(project.model), null, 2) + '\n',
       mediaType: 'application/json',
-    })
-    notify(s('shell.savedInterchange'), 'success')
-  }, [session, documents, notify, s])
+    }, 'shell.savedInterchange')
+  }, [session, handOver])
 
   /**
    * Open a chosen file into the project you are in.
@@ -112,8 +136,7 @@ export function useProjectFiles(deps: {
           notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
         }
       },
-      (err: unknown) => notify(
-        s('shell.processFailed', { message: String((err as Error)?.message ?? err) }), 'error'),
+      (err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'),
     )
   }, [documents, session, notify, s])
 
@@ -127,8 +150,7 @@ export function useProjectFiles(deps: {
       // The reader refuses with a KEY; here, where the language is known, it
       // becomes a sentence.
       .catch((err: unknown) => notify(
-        err instanceof LogoError ? s(err.key, err.params) : String((err as Error)?.message ?? err),
-        'error'))
+        err instanceof LogoError ? s(err.key, err.params) : reasonOf(err), 'error'))
   }, [documents, session, notify, s])
 
   return { saveWorkingFile, saveInterchange, openFile, addLogo }
