@@ -124,4 +124,35 @@ describe.skipIf(!available)('git in a working directory', () => {
     await mkdir(inside)
     expect(await isRepository(inside)).toBe(false)
   })
+
+  it('reads no history from the repository it merely sits inside', async () => {
+    // Git walks up until it finds one, so a folder that keeps no history was
+    // being handed the enclosing project's commits and showing them as its
+    // own snapshots — which then cannot be read back once this folder has a
+    // repository of its own: `ls-tree` answers `not a tree object`.
+    await initRepository(root)
+    await project('project.json', '{}')
+    const outer = await snapshot(root, 'The enclosing project')
+
+    const inside = join(root, 'nested')
+    await mkdir(inside)
+    expect(await history(inside)).toEqual([])
+    expect(await filesAt(inside, outer!, 'acme/landscape')).toEqual([])
+  })
+
+  it('starts a repository here rather than committing into the one above', async () => {
+    await initRepository(root)
+    await project('project.json', '{}')
+    await snapshot(root, 'The enclosing project')
+
+    const inside = join(root, 'nested/landscape')
+    await mkdir(inside, { recursive: true })
+    await writeFile(join(inside, 'project.json'), '{}', 'utf8')
+
+    expect(await snapshot(inside, 'The nested one')).toMatch(/^[0-9a-f]{40}$/)
+    expect(await isRepository(inside)).toBe(true)
+    expect((await history(inside)).map((held) => held.subject)).toEqual(['The nested one'])
+    // And the folder above is untouched: its own snapshot is still the only one.
+    expect((await history(root)).map((held) => held.subject)).toEqual(['The enclosing project'])
+  })
 })

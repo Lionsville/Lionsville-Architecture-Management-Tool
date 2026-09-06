@@ -23,6 +23,12 @@
  * - An identity only when the machine has none configured, so a snapshot works
  *   on a fresh laptop and uses the person's real name everywhere else.
  *
+ * And one rule the whole file keeps: **this folder, never an ancestor.** Git
+ * walks up until it finds a repository, so every command here first asks
+ * `isRepository` — otherwise a working directory nested inside somebody's
+ * project reads that project's commits as its own snapshots, and commits into
+ * it when one is taken.
+ *
  * No Electron in here, so it can be tested against a real repository.
  */
 import { execFile } from 'node:child_process'
@@ -130,6 +136,11 @@ async function hasIdentity(root: string): Promise<boolean> {
  * between them genuinely have nothing to record.
  */
 export async function snapshot(root: string, message: string): Promise<string | undefined> {
+  // A snapshot of this folder is a snapshot of THIS folder. Without the guard,
+  // a working directory inside somebody's repository would have its `add -A`
+  // answered by that repository — which is the accident `isRepository` exists
+  // to prevent, and which nothing below this line would notice.
+  if (!await isRepository(root)) await initRepository(root)
   await git(root, ['add', '-A'])
   try {
     await git(root, ['diff', '--cached', '--quiet'])
@@ -146,6 +157,10 @@ export async function snapshot(root: string, message: string): Promise<string | 
 
 /** The last `limit` snapshots, newest first. Empty for a repository with none. */
 export async function history(root: string, limit = 50): Promise<GitCommit[]> {
+  // Not this folder's history if it is somebody else's: git walks up until it
+  // finds a repository, so a folder that keeps none would otherwise be handed
+  // the enclosing project's commits and show them as its own snapshots.
+  if (!await isRepository(root)) return []
   let out: string
   try {
     out = await git(root, ['log', `-n${Math.max(1, Math.trunc(limit))}`, `--format=%H${UNIT}%s${UNIT}%at${UNIT}%an`])
@@ -172,6 +187,7 @@ export async function history(root: string, limit = 50): Promise<GitCommit[]> {
  * nothing anybody asks this for.
  */
 export async function filesAt(root: string, sha: string, prefix: string): Promise<GitFile[]> {
+  if (!await isRepository(root)) return []
   const listing = await git(root, ['ls-tree', '-r', '--name-only', sha, '--', prefix])
   const paths = listing.split('\n').filter((path) => path && !path.endsWith('.png'))
   const files: GitFile[] = []
