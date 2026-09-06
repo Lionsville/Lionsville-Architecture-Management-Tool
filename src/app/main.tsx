@@ -45,9 +45,12 @@ import { createRoot } from 'react-dom/client'
 import { configureLibavoidWasm, configureLibavoidWorker } from '../layout'
 import { detectBrowserLanguage, translator } from '../i18n'
 import { composeShell, desktopFileChannel, inWorkingDirectory } from './composition'
+import type { Shell } from './composition'
 import {
-  readLastProject, readWorkingDirectory, withoutLastProject, withWorkingDirectory,
+  readLastProject, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
+  withoutLastProject, withWorkingDirectory,
 } from '../projects/preferences'
+import { migrated, migrateInto } from '../projects/migration'
 import type { ProjectSnapshot } from '../projects/project'
 import { EXAMPLES } from './examples'
 import { App } from './App'
@@ -133,7 +136,9 @@ function chooseWorkingDirectory(): void {
   if (!files) return
   void files.chooseDirectory().then(async (chosen) => {
     if (!chosen) return
-    const kept = withWorkingDirectory(stored, chosen.root)
+    const inFolder = inWorkingDirectory(shell, files, chosen)
+    let kept = withWorkingDirectory(stored, chosen.root)
+    if (await moveInto(inFolder, chosen.root)) kept = withMigratedFolder(kept, chosen.root)
     stored = kept
     // Best effort, and the app still opens the folder if it fails: this run
     // works, the next one asks again.
@@ -142,13 +147,49 @@ function chooseWorkingDirectory(): void {
         level: 'warn', where: 'workingDirectory', message: 'preference not written', cause,
       })
     })
-    shell = inWorkingDirectory(shell, files, chosen)
+    shell = inFolder
     renderApp(kept, undefined)
   }, (cause: unknown) => {
     shell.diagnostics.report({
       level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
     })
   })
+}
+
+/**
+ * The projects that were in browser storage, copied into the folder — once.
+ *
+ * Once per folder, which is what the preference records. Copying again would be
+ * harmless in itself (nothing already in a folder is overwritten) but it would
+ * resurrect projects the user deleted from the folder on purpose.
+ *
+ * Nothing is deleted from browser storage, here or later. Until somebody has
+ * opened the migrated folder and seen their work in it, the old copy is the
+ * only one that has certainly survived, and a drive can be unplugged.
+ */
+async function moveInto(folder: Shell, root: string): Promise<boolean> {
+  if (readMigratedFolders(stored).includes(root)) return false
+  const tally = await migrateInto(
+    { from: shell.projects, into: folder.projects },
+    { from: shell.groups, into: folder.groups },
+  ).catch((cause: unknown) => {
+    shell.diagnostics.report({
+      level: 'error', where: 'migration', message: 'copying into the folder failed', cause,
+    })
+    return undefined
+  })
+  if (!tally) return false
+  // Counts, never names: this line goes to a log file the user is invited to
+  // hand over.
+  shell.diagnostics.report({
+    level: 'info',
+    where: 'migration',
+    message: `copied ${tally.projects} projects and ${tally.groups} groups, kept ${tally.kept}, failed ${tally.failed}`,
+  })
+  // Marked as done even when there was nothing to copy: an empty browser store
+  // has been migrated, and asking again every time is how a folder acquires
+  // projects somebody threw away.
+  return migrated(tally) || tally.failed === 0
 }
 
 /**

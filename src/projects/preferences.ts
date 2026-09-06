@@ -97,6 +97,29 @@ export function withWorkingDirectory(stored: unknown, root: string): Record<stri
 }
 
 /**
+ * The folders this machine has already copied its browser-storage projects
+ * into.
+ *
+ * A list rather than a flag, because a person can have two folders — one per
+ * customer, one per machine — and each of them wants the migration once and
+ * exactly once. Copying again would be harmless (nothing already in a folder is
+ * overwritten) but it would resurrect projects the user deleted from the folder
+ * on purpose, which is the same nuisance as a sync client that will not let go.
+ */
+export function readMigratedFolders(stored: unknown): string[] {
+  if (!stored || typeof stored !== 'object') return []
+  const raw = (stored as Record<string, unknown>).migratedFolders
+  return Array.isArray(raw) ? raw.filter((held): held is string => typeof held === 'string') : []
+}
+
+/** The same blob, with one more folder marked as done. */
+export function withMigratedFolder(stored: unknown, root: string): Record<string, unknown> {
+  const kept = stored && typeof stored === 'object' ? { ...stored as Record<string, unknown> } : {}
+  kept.migratedFolders = [...new Set([...readMigratedFolders(stored), root])]
+  return kept
+}
+
+/**
  * The same blob with the last project taken out.
  *
  * What "Start without the last project" writes back. A ref that points at a
