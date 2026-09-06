@@ -1,8 +1,8 @@
-import type { ElkExtendedEdge, ElkNode } from 'elkjs';
+import type { ELK as ElkEngine, ElkExtendedEdge, ElkNode } from 'elkjs';
 
 /**
- * Thin ELK wrapper (ported from the POC). The bundled build is imported
- * lazily so the ~1.4 MB engine only loads when the user hits "Tidy".
+ * Thin ELK wrapper (ported from the POC). The engine is imported lazily so the
+ * ~1.4 MB of it only loads when the user hits "Tidy".
  *
  * ELK is a PLACEMENT engine here, not a router. It used to hand back its computed
  * bendpoints too and `tidy.ts` persisted them as edge waypoints, but libavoid routes
@@ -11,6 +11,98 @@ import type { ElkExtendedEdge, ElkNode } from 'elkjs';
  * {@link ElkEdgeSpec} and the `elk.edgeRouting` option — because they are what makes
  * ELK reserve the channel space those routes need.
  */
+
+// ── where the layout runs, and how to stop it ───────────────────────────────
+
+let workerFactory: (() => Worker) | undefined;
+
+/**
+ * Hand the layout a way to construct the ELK worker.
+ *
+ * **Absent, everything lays out in-process exactly as before**, which is what
+ * keeps vitest, node and any non-Vite consumer working unchanged. Constructing
+ * a worker is bundler-specific — Vite wants `?worker` or a literal
+ * `new URL(..., import.meta.url)` — so this takes a factory rather than a URL,
+ * mirroring {@link configureLibavoidWorker} exactly.
+ *
+ * Why bother: ELK's layered algorithm is synchronous, has no progress and no
+ * timeout, and its cost grows steeply — a hundred boxes lay out in about a
+ * seventh of a second and three hundred take five seconds. On this thread that
+ * is five seconds of frozen window with a spinner that cannot animate; beside
+ * it, it is five seconds a person can watch and cancel.
+ */
+export function configureElkWorker(factory: () => Worker): void {
+  workerFactory = factory;
+}
+
+/**
+ * How many boxes one pass will lay out.
+ *
+ * Not a limit of the algorithm but of anybody's patience. Measured on the
+ * generated landscape, which has the hub-and-tail connection shape a real one
+ * has: 100 boxes lay out in 0.15 s, 200 in 0.44 s, 300 in 4.9 s, 400 in 6.1 s,
+ * and 600 had not finished after six minutes. Somewhere past four hundred the
+ * layered algorithm's crossing minimisation falls off a cliff, and past it the
+ * honest answer is that Tidy is the wrong tool for this diagram rather than
+ * that it is slow.
+ *
+ * The cap is not the whole protection, because the numbers depend on the
+ * connections at least as much as on the boxes: a board of three hundred with
+ * thousands of lines can still take minutes. That is what the cancel is for,
+ * and why it matters that the pass has a thread of its own to be cancelled on.
+ */
+export const MAX_TIDY_NODES = 400;
+
+/** Why a layout pass produced no board. */
+export type LayoutRefusal = 'cancelled' | 'tooLarge';
+
+/**
+ * A pass that did not produce a board, and why.
+ *
+ * A reason rather than a sentence: the words belong to whoever is showing them,
+ * and this module has no string table of its own — the same arrangement as
+ * `SkippedTier`, which the router reports and the editor words.
+ */
+export class LayoutRefused extends Error {
+  readonly reason: LayoutRefusal;
+  /** For `tooLarge`: how many boxes were asked for, and how many fit. */
+  readonly count?: number;
+  readonly limit?: number;
+
+  constructor(reason: LayoutRefusal, detail?: { count: number; limit: number }) {
+    super(reason);
+    this.name = 'LayoutRefused';
+    this.reason = reason;
+    this.count = detail?.count;
+    this.limit = detail?.limit;
+  }
+}
+
+export function isLayoutRefusal(error: unknown, reason?: LayoutRefusal): error is LayoutRefused {
+  return error instanceof LayoutRefused && (reason === undefined || error.reason === reason);
+}
+
+/** The pass that is running, if one is. */
+let running: { cancel(): void } | undefined;
+
+/**
+ * Stop the layout pass that is running.
+ *
+ * With a worker this is a termination: the thread stops mid-algorithm and the
+ * caller is refused. Without one there is nothing to stop — the algorithm is
+ * synchronous on this thread — so the pass is abandoned rather than cancelled:
+ * the caller is refused at once and the computation finishes into a result
+ * nobody reads. That is the difference the worker buys, and it is why the
+ * button offering the cancel only appears where there is one.
+ */
+export function cancelElkLayout(): void {
+  running?.cancel();
+}
+
+/** Whether a running pass can actually be stopped, which is what a Cancel promises. */
+export function canCancelElkLayout(): boolean {
+  return workerFactory !== undefined;
+}
 
 export interface ElkChild {
   id: string;
@@ -159,8 +251,10 @@ export async function layoutGraph(
   edges: ElkEdgeSpec[],
   options: LayoutOptions = {},
 ): Promise<LayoutResult> {
-  const { default: ELK } = await import('elkjs/lib/elk.bundled.js');
-  const elk = new ELK();
+  const count = countBoxes(children);
+  if (count > MAX_TIDY_NODES) {
+    throw new LayoutRefused('tooLarge', { count, limit: MAX_TIDY_NODES });
+  }
 
   // Density moves BOTH spacings together — they are kept equal on purpose (see
   // LAYOUT_OPTIONS), so the grid scales uniformly instead of stretching one axis.
@@ -198,7 +292,8 @@ export async function layoutGraph(
       : {}),
   }));
 
-  const result = await elk.layout({
+  const engine = await engine_();
+  const result = await raced(engine, {
     id: 'root',
     layoutOptions,
     children: children.map((child) => toElkNode(child, spacing, options.groupDirection)),
@@ -226,5 +321,54 @@ function collect(
       groupSizes.set(node.id, { width: node.width ?? 0, height: node.height ?? 0 });
       collect(node.children, x, y, positions, groupSizes);
     }
+  }
+}
+
+/** Boxes, groups and their members alike — what the cap counts. */
+function countBoxes(children: readonly ElkChild[]): number {
+  let count = 0;
+  for (const child of children) count += 1 + countBoxes(child.children ?? []);
+  return count;
+}
+
+type Engine = { elk: ElkEngine; stop(): void };
+
+/**
+ * The engine for this pass. A worker where the host gave us one, and the
+ * self-contained bundle otherwise — the two have the same API, which is the
+ * whole reason elkjs ships both.
+ */
+async function engine_(): Promise<Engine> {
+  if (workerFactory) {
+    const factory = workerFactory;
+    const { default: ELK } = await import('elkjs/lib/elk-api.js');
+    const elk = new ELK({ workerFactory: () => factory() });
+    return { elk, stop: () => elk.terminateWorker() };
+  }
+  const { default: ELK } = await import('elkjs/lib/elk.bundled.js');
+  return { elk: new ELK(), stop: () => {} };
+}
+
+/**
+ * The layout, against a cancellation.
+ *
+ * One pass at a time is the caller's rule, not this one's — the editor's `busy`
+ * interlock — so the running pass can be a single module-level handle rather
+ * than a token threaded through four layers of layout code to reach one button.
+ */
+async function raced(engine: Engine, graph: ElkNode): Promise<ElkNode> {
+  const cancelled = new Promise<never>((_, refuse) => {
+    running = {
+      cancel: () => {
+        engine.stop();
+        refuse(new LayoutRefused('cancelled'));
+      },
+    };
+  });
+  try {
+    return await Promise.race([engine.elk.layout(graph), cancelled]);
+  } finally {
+    running = undefined;
+    engine.stop();
   }
 }

@@ -42,7 +42,8 @@
  */
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { configureLibavoidWasm, configureLibavoidWorker } from '../layout'
+import { configureElkWorker, configureLibavoidWasm, configureLibavoidWorker } from '../layout'
+import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, composeShell, desktopCommandChannel, desktopFileChannel, inBrowserFolder,
@@ -84,6 +85,20 @@ configureLibavoidWorker(() => new Worker(
   new URL('../layout/routerWorker.ts', import.meta.url),
   { type: 'module' },
 ))
+
+/**
+ * And the same for the placement engine, for the same reason. ELK's layered
+ * algorithm is synchronous and its cost grows far faster than the board does —
+ * two hundred boxes in half a second, three hundred in five. On this thread
+ * that is a window that stops answering with a spinner that cannot even turn;
+ * beside it, it is a wait somebody can watch and call off, which is what makes
+ * the Cancel on the Tidy button honest.
+ *
+ * elkjs ships the worker as a built script, so this is its own module rather
+ * than one of ours — Vite's `?worker` suffix is what turns it into a
+ * constructor at build time.
+ */
+configureElkWorker(() => new ElkWorker())
 
 /**
  * Fresh ids for diagrams the shell creates itself.

@@ -385,14 +385,27 @@ export function bandTargets(
 ): Map<ElementId, BandTarget> {
   const targets = new Map<ElementId, BandTarget>();
   const mean = (values: number[]) => values.reduce((sum, v) => sum + v, 0) / values.length;
+  // Adjacency once, rather than a walk over every connection per band member.
+  // On a landscape with five thousand connections and three hundred chips in
+  // the bands that inner loop was a million and a half comparisons for an
+  // answer that is two lookups; it is now proportional to the connections plus
+  // the members rather than to their product.
+  const neighbours = new Map<ElementId, ElementId[]>();
+  const link = (from: ElementId, to: ElementId) => {
+    const held = neighbours.get(from);
+    if (held) held.push(to);
+    else neighbours.set(from, [to]);
+  };
+  for (const conn of model.connections) {
+    link(conn.sourceId, conn.targetId);
+    // A line from an element to itself was one neighbour to the loop this
+    // replaces — the first branch matched and the second never ran.
+    if (conn.targetId !== conn.sourceId) link(conn.targetId, conn.sourceId);
+  }
   for (const placement of placements) {
     const flow: number[] = [];
     const cross: number[] = [];
-    for (const conn of model.connections) {
-      let otherId: ElementId | undefined;
-      if (conn.sourceId === placement.elementId) otherId = conn.targetId;
-      else if (conn.targetId === placement.elementId) otherId = conn.sourceId;
-      else continue;
+    for (const otherId of neighbours.get(placement.elementId) ?? []) {
       const land = landscapePos.get(otherId);
       if (!land) continue;
       const centreX = land.x + land.width / 2;

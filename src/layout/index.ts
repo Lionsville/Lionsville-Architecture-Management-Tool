@@ -11,3 +11,14 @@ export { configureLibavoidWasm } from './libavoidRouter'
  * the `new Worker(...)` — without a factory everything routes in-process.
  */
 export { configureLibavoidWorker, terminateLibavoidWorker } from './libavoidRouter'
+
+/**
+ * The same arrangement for the placement engine. ELK's layered algorithm is
+ * synchronous and its cost grows steeply with the board, so on the main thread
+ * a Tidy of three hundred boxes is five seconds of frozen window; beside it,
+ * it is five seconds somebody can watch and cancel.
+ */
+export { configureElkWorker, cancelElkLayout, canCancelElkLayout } from './elkLayout'
+/** What a Tidy answers when it will not lay a board out, and how big is too big. */
+export { isLayoutRefusal, LayoutRefused, MAX_TIDY_NODES } from './elkLayout'
+export type { LayoutRefusal } from './elkLayout'

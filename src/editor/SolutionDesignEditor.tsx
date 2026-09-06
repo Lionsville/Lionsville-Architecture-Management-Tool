@@ -30,6 +30,9 @@ import {
   type AttachSidesPatch,
 } from '../model/routes';
 import { MAX_CONNECTORS_PER_TIER, type SkippedTier } from '../layout/libavoidRouter';
+import {
+  cancelElkLayout, canCancelElkLayout, isLayoutRefusal, MAX_TIDY_NODES,
+} from '../layout/elkLayout';
 import { aspectConfigFor } from '../model/aspects';
 import {
   deletionSummary,
@@ -493,6 +496,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
       }
       requestAnimationFrame(() => fitView({ padding: 0.1, duration: 300 }));
     } catch (error) {
+      // A cancel is the answer to a question the user asked; a toast saying the
+      // thing they stopped did not finish is noise. A board past the cap gets
+      // its own words, because "reload the page and try again" is advice that
+      // will not help and the real advice — fewer boxes on this diagram — is
+      // something only this message can give.
+      if (isLayoutRefusal(error, 'cancelled')) throw error;
+      if (isLayoutRefusal(error, 'tooLarge')) {
+        reportLayoutError(
+          t('error.tidyTooLarge', { count: error.count ?? 0, limit: error.limit ?? MAX_TIDY_NODES }),
+          error,
+        );
+        throw error;
+      }
       reportLayoutError(t(unattended ? 'error.tidyUnattended' : 'error.tidy'), error);
       // Rethrown so an UNATTENDED caller can tell "laid out" from "did not":
       // `useAutoLayout` must not clear the persisted flag for a pass that
@@ -556,6 +572,16 @@ function EditorBody(props: SolutionDesignEditorProps) {
           reportSkippedTiers(result.skipped);
         }
       } catch (error) {
+        // Same two answers as the whole-board pass above: a cancel says nothing,
+        // and a group past the cap says what the cap is.
+        if (isLayoutRefusal(error, 'cancelled')) return;
+        if (isLayoutRefusal(error, 'tooLarge')) {
+          reportLayoutError(
+            t('error.tidyTooLarge', { count: error.count ?? 0, limit: error.limit ?? MAX_TIDY_NODES }),
+            error,
+          );
+          return;
+        }
         reportLayoutError(t('error.tidyGroupFailed'), error);
       } finally {
         setBusy(undefined);
@@ -919,6 +945,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         // toast AND went to the console as an unhandled rejection. The button has
         // already been told; there is nothing further to do with the error here.
         onTidy={() => void handleTidy().catch(() => {})}
+        onCancelTidy={canCancelElkLayout() ? cancelElkLayout : undefined}
         tidyOptions={tidyOptions}
         onTidyOptionsChange={setTidyOptions}
         onRouteEdges={() => void handleRouteEdges()}

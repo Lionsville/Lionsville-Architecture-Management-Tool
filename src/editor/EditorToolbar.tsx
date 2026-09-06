@@ -42,6 +42,12 @@ export interface EditorToolbarProps {
   onActiveDiagramChange(diagramId: string): void;
   onCreateLayer7Diagram(): void;
   onTidy(): void;
+  /**
+   * Stop the tidy that is running. Absent when the layout has no thread of its
+   * own to stop, in which case the button stays a disabled spinner — a Cancel
+   * that cannot cancel is worse than no Cancel.
+   */
+  onCancelTidy?(): void;
   /** Session Tidy settings, opened from the caret beside the Tidy button. */
   tidyOptions: TidyOptions;
   onTidyOptionsChange(options: TidyOptions): void;
@@ -289,6 +295,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         <TidySplitButton
           busy={props.busy}
           onTidy={props.onTidy}
+          onCancelTidy={props.onCancelTidy}
           options={props.tidyOptions}
           onOptionsChange={props.onTidyOptionsChange}
           // A container diagram has one "group" — the application boundary — so
@@ -457,12 +464,18 @@ function LanguageToggle({
 function TidySplitButton({
   busy,
   onTidy,
+  onCancelTidy,
   options,
   onOptionsChange,
   boundaryLabels,
 }: {
   busy?: LayoutAction;
   onTidy(): void;
+  /**
+   * Stop the pass that is running. Absent where it cannot honestly be offered —
+   * the layout only stops when it has a thread of its own to stop.
+   */
+  onCancelTidy?(): void;
   options: TidyOptions;
   onOptionsChange(options: TidyOptions): void;
   boundaryLabels?: boolean;
@@ -470,17 +483,21 @@ function TidySplitButton({
   const { t } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const close = () => setAnchor(null);
+  const cancelling = busy === 'tidy' && onCancelTidy !== undefined;
 
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Tooltip title={t('toolbar.tidyTip')}>
+        {/* While a tidy is running the button IS the cancel: the spinner is
+            where the eye already is, and a second control that only exists for
+            a few seconds is a control nobody finds in time. */}
+        <Tooltip title={cancelling ? t('toolbar.cancelTidy') : t('toolbar.tidyTip')}>
           <span>
             <IconButton
               size="small"
-              aria-label={t('toolbar.tidy')}
-              onClick={onTidy}
-              disabled={busy !== undefined}
+              aria-label={cancelling ? t('toolbar.cancelTidy') : t('toolbar.tidy')}
+              onClick={cancelling ? onCancelTidy : onTidy}
+              disabled={busy !== undefined && !cancelling}
             >
               {busy === 'tidy' ? <CircularProgress size={16} /> : <TidyIcon />}
             </IconButton>

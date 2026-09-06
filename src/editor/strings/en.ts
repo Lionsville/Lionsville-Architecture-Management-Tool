@@ -168,6 +168,7 @@ export const EN = {
   'toolbar.redoTip': 'Redo (⌘⇧Z)',
   'toolbar.tidy': 'Tidy layout',
   'toolbar.tidyTip': 'Tidy layout (ELK)',
+  'toolbar.cancelTidy': 'Cancel tidy',
   'toolbar.tidySettings': 'Tidy settings',
   'toolbar.routeOnly': 'Route connections only',
   'toolbar.routeOnlyTip': 'Route connections only (keeps node positions)',
@@ -451,6 +452,9 @@ export const EN = {
     'The nodes were tidied but the connections could not be routed. Reload the page and try again.',
   'error.tidyUnattended': 'This diagram could not be laid out automatically.',
   'error.tidy': 'Tidy failed. Reload the page and try again.',
+  'error.tidyTooLarge':
+    'This diagram is too large to tidy: it has {count} boxes and Tidy lays out at most {limit}. '
+    + 'Arrange it in groups, or split it across diagrams.',
   'error.tidyGroup':
     'The group was tidied but the connections could not be routed. Reload the page and try again.',
   'error.tidyGroupFailed': 'Tidying the group failed. Reload the page and try again.',

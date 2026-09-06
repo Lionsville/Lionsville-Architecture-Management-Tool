@@ -9,5 +9,14 @@ declare module 'elkjs/lib/elk.bundled.js' {
   export default ELK;
 }
 
+// The same surface, reached through the worker-backed entry point. Which of
+// the two is used is decided at runtime by whether the host handed the layout a
+// worker factory; see `layout/elkLayout.ts`.
+declare module 'elkjs/lib/elk-api.js' {
+  import ELK from 'elkjs';
+  export * from 'elkjs';
+  export default ELK;
+}
+
 // Allow importing @xyflow/react's stylesheet from TypeScript.
 declare module '*.css';

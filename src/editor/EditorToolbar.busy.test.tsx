@@ -84,3 +84,37 @@ describe('EditorToolbar — export busy', () => {
     );
   });
 });
+
+/**
+ * A tidy that has a thread of its own can be called off, and the button that
+ * started it is where the eye already is. Where it has no thread — no worker
+ * handed in — the cancel is absent rather than inert: a Cancel that cannot
+ * cancel is worse than no Cancel at all.
+ */
+describe('cancelling a tidy', () => {
+  it('turns the tidy button into a cancel while one is running', () => {
+    const onCancelTidy = vi.fn();
+    const props = renderToolbar({ busy: 'tidy', onCancelTidy });
+
+    const button = screen.getByRole('button', { name: 'Cancel tidy' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(onCancelTidy).toHaveBeenCalledTimes(1);
+    expect(props.onTidy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Tidy layout' })).toBeNull();
+  });
+
+  it('leaves the button disabled where there is nothing to cancel', () => {
+    renderToolbar({ busy: 'tidy' });
+    expect((screen.getByRole('button', { name: 'Tidy layout' }) as HTMLButtonElement).disabled)
+      .toBe(true);
+    expect(screen.queryByRole('button', { name: 'Cancel tidy' })).toBeNull();
+  });
+
+  it('is the tidy button again once the pass is over', () => {
+    renderToolbar({ onCancelTidy: vi.fn() });
+    expect((screen.getByRole('button', { name: 'Tidy layout' }) as HTMLButtonElement).disabled)
+      .toBe(false);
+    expect(screen.queryByRole('button', { name: 'Cancel tidy' })).toBeNull();
+  });
+});

@@ -159,6 +159,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.redoTip': 'Opnieuw (⌘⇧Z)',
   'toolbar.tidy': 'Indeling opschonen',
   'toolbar.tidyTip': 'Indeling opschonen (ELK)',
+  'toolbar.cancelTidy': 'Opschonen annuleren',
   'toolbar.tidySettings': 'Instellingen voor opschonen',
   'toolbar.routeOnly': 'Alleen koppelingen routeren',
   'toolbar.routeOnlyTip': 'Alleen koppelingen routeren (elementen blijven staan)',
@@ -438,6 +439,9 @@ export const NL: Record<keyof typeof EN, string> = {
     'De elementen zijn ingedeeld, maar de koppelingen konden niet worden gerouteerd. Ververs de pagina en probeer het opnieuw.',
   'error.tidyUnattended': 'Dit aanzicht kon niet automatisch worden ingedeeld.',
   'error.tidy': 'Opschonen is mislukt. Ververs de pagina en probeer het opnieuw.',
+  'error.tidyTooLarge':
+    'Dit aanzicht is te groot om op te schonen: het heeft {count} blokken en opschonen doet er '
+    + 'hoogstens {limit}. Deel het op in groepen of verdeel het over meerdere aanzichten.',
   'error.tidyGroup':
     'De groep is opgeschoond, maar de koppelingen konden niet worden gerouteerd. Ververs de pagina en probeer het opnieuw.',
   'error.tidyGroupFailed':
