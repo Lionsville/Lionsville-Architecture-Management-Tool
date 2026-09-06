@@ -143,16 +143,35 @@ export function toDiagram(diagram: DesignDiagram): Diagram {
   return out
 }
 
-/** One diagram, back in the shape the file wants. */
+/**
+ * One diagram, back in the shape the file wants.
+ *
+ * The answer is kept against the diagram it was made from, so a diagram no
+ * command has touched comes back as the SAME object every time the model is
+ * converted. That is what carries "an untouched diagram keeps its identity"
+ * (ADR-0002) across this boundary: without it, a keystroke in an inspector
+ * rebuilds all thirty diagram objects, and everything memoised on one of them
+ * downstream — the canvas's nodes and edges, first of all — re-derives for a
+ * change that was nowhere near it.
+ *
+ * Safe because a converted diagram is never mutated: every writer in the app
+ * returns a new one. Bounded by the collector rather than by a size limit, for
+ * the same reason.
+ */
 export function fromDiagram(diagram: Diagram): DesignDiagram {
+  const held = converted.get(diagram)
+  if (held) return held
   const out = { ...diagram } as unknown as DesignDiagram & { order?: DiagramOrder }
   out.placements = unindex(diagram.placements, diagram.order.placements)
   if (diagram.edgeRoutes !== undefined) {
     out.edgeRoutes = unindex(diagram.edgeRoutes, diagram.order.routes)
   }
   delete out.order
+  converted.set(diagram, out)
   return out
 }
+
+const converted = new WeakMap<Diagram, DesignDiagram>()
 
 /** The model as it comes off disk, indexed. */
 export function fromArrays(host: HostModel): Model {

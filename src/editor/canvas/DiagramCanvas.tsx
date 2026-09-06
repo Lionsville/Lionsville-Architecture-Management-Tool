@@ -382,9 +382,19 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     [props.selection],
   );
 
+  /**
+   * What the last derive produced, so this one can hand back the objects that
+   * still say the same thing (`keepingUnchanged` in `graph.ts`). Read and
+   * written during render, which is safe here because the reuse is decided
+   * purely by comparison: a second invocation sees its own answer and reuses
+   * all of it, which is the same answer again.
+   */
+  const lastNodes = useRef<ElementNode[]>([]);
+  const lastEdges = useRef<FloatingEdgeModel[]>([]);
+
   const derivedNodes = useMemo(
-    () =>
-      buildNodes({
+    () => {
+      const next = buildNodes({
         model: props.model,
         diagram: props.diagram,
         readOnly: props.readOnly,
@@ -392,12 +402,15 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         selectedConnectionIds,
         edgeColor: tokens.edge.stroke,
         showLifecycle: props.showLifecycle,
-      }),
+      }, lastNodes.current);
+      lastNodes.current = next;
+      return next;
+    },
     [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle],
   );
   const derivedEdges = useMemo(
-    () =>
-      buildEdges({
+    () => {
+      const next = buildEdges({
         model: props.model,
         diagram: props.diagram,
         readOnly: props.readOnly,
@@ -407,7 +420,10 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         // Only while the mode is on — see `autoRoute` on the props.
         draggingElementIds: props.autoRoute ? draggingElementIds : undefined,
         previewRoutes: props.autoRoute ? preview.previewRoutes : undefined,
-      }),
+      }, lastEdges.current);
+      lastEdges.current = next;
+      return next;
+    },
     [
       props.model,
       props.diagram,

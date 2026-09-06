@@ -29,6 +29,7 @@
  * | search, one keystroke, warm index | 0.14-0.33 ms | 20 ms |
  * | undo or redo of one step | 1.6 ms | 5 ms |
  * | serialise one diagram file | 1.5 ms | 20 ms |
+ * | derive a 600-node board after one move | 2.5 ms | 30 ms |
  * | 500 undo steps, heap growth | 0.02 MB | 50 MB |
  *
  * Every {@link measure} call prints its label and its median as the run goes,

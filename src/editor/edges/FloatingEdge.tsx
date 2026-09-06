@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -193,7 +193,7 @@ interface SegmentGesture {
  * persists per diagram on the edge route) and double-click opens an inline
  * multiline editor (Enter = newline, blur commits, Esc cancels).
  */
-export function FloatingEdge({
+export const FloatingEdge = memo(function FloatingEdge({
   id,
   source,
   target,
@@ -760,4 +760,4 @@ export function FloatingEdge({
       )}
     </>
   );
-}
+});

@@ -1,7 +1,8 @@
 import { MarkerType, type Edge } from '@xyflow/react';
 import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, Rect } from '../model/types';
-import type { ElementNode } from './nodes/nodeData';
+import type { ElementNode, ElementNodeData } from './nodes/nodeData';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
+import type { EdgeAnchors } from '../model/floatingEdgeMath';
 import { aspectConfigFor } from '../model/aspects';
 import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
 import { assignEdgeAnchors } from '../model/floatingEdgeMath';
@@ -63,7 +64,7 @@ export interface BuildGraphArgs {
 const BOUNDARY_PADDING = 56;
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
-export function buildNodes(args: BuildGraphArgs): ElementNode[] {
+export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {
   const elementsById = new Map(args.model.elements.map((e) => [e.id, e]));
   const containerDiagramApps = new Set(
     args.model.diagrams
@@ -106,7 +107,7 @@ export function buildNodes(args: BuildGraphArgs): ElementNode[] {
       },
     });
   }
-  return nodes;
+  return keepingUnchanged(nodes, previous, sameNode);
 }
 
 /**
@@ -139,7 +140,9 @@ export function boundaryRect(
 
 export type FloatingEdgeModel = Edge<FloatingEdgeData>;
 
-export function buildEdges(args: BuildGraphArgs): FloatingEdgeModel[] {
+export function buildEdges(
+  args: BuildGraphArgs, previous?: readonly FloatingEdgeModel[],
+): FloatingEdgeModel[] {
   const placed = new Set(args.diagram.placements.map((p) => p.elementId));
   const routes = new Map(
     (args.diagram.edgeRoutes ?? []).map((route) => [route.connectionId, route]),
@@ -245,7 +248,7 @@ export function buildEdges(args: BuildGraphArgs): FloatingEdgeModel[] {
       },
     });
   }
-  return edges;
+  return keepingUnchanged(edges, previous, sameEdge);
 }
 
 /** Sizes used by ELK and the boundary: explicit placement size or kind default. */
@@ -255,4 +258,128 @@ export function nodeSizeOf(element: DesignElement, diagram: DesignDiagram): {
 } {
   const placement = diagram.placements.find((p) => p.elementId === element.id);
   return placementSize(element.kind, placement);
+}
+
+// --- keeping the objects that did not change ---------------------------------
+
+/**
+ * The derive is a projection, so it naturally builds a fresh object for every
+ * node and every edge on every commit — and a fresh `data` literal is what
+ * `React.memo` on the seven node components and on the edge compares against.
+ * The result was that typing one character into an inspector re-rendered every
+ * box on the board, because every box was handed a new object saying exactly
+ * what the old one said.
+ *
+ * So the projection is built as before and then reconciled against what the
+ * canvas last drew: a row that says the same thing keeps the object it already
+ * had, and a list in which nothing moved comes back as the list itself, so the
+ * push into React Flow does not happen either.
+ *
+ * The comparisons below are by IDENTITY wherever the model supplies the value —
+ * the element, the placement, the aspect columns, a stored route's waypoints —
+ * because the reducer keeps those stable (ADR-0002) and `fromDiagram` carries
+ * that across the array boundary. Only the values this file computes fresh each
+ * time, the rects and the slotted anchors, are compared by value.
+ */
+function keepingUnchanged<T extends { id: string }>(
+  built: T[], previous: readonly T[] | undefined, same: (held: T, next: T) => boolean,
+): T[] {
+  if (!previous || previous.length === 0) return built;
+  const held = new Map(previous.map((row) => [row.id, row]));
+  for (let n = 0; n < built.length; n++) {
+    const before = held.get(built[n].id);
+    if (before && same(before, built[n])) built[n] = before;
+  }
+  const unmoved =
+    built.length === previous.length && built.every((row, n) => row === previous[n]);
+  return unmoved ? (previous as T[]) : built;
+}
+
+function sameNode(held: ElementNode, next: ElementNode): boolean {
+  return (
+    held.type === next.type &&
+    held.position.x === next.position.x &&
+    held.position.y === next.position.y &&
+    held.width === next.width &&
+    held.height === next.height &&
+    held.zIndex === next.zIndex &&
+    held.draggable === next.draggable &&
+    held.selectable === next.selectable &&
+    held.selected === next.selected &&
+    sameNodeData(held.data, next.data)
+  );
+}
+
+function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
+  return (
+    held.element === next.element &&
+    held.placement === next.placement &&
+    held.readOnly === next.readOnly &&
+    held.aspectConfig === next.aspectConfig &&
+    held.hasContainerDiagram === next.hasContainerDiagram &&
+    held.showLifecycle === next.showLifecycle &&
+    held.resizeLimits.min.width === next.resizeLimits.min.width &&
+    held.resizeLimits.min.height === next.resizeLimits.min.height &&
+    held.resizeLimits.max.width === next.resizeLimits.max.width &&
+    held.resizeLimits.max.height === next.resizeLimits.max.height
+  );
+}
+
+function sameEdge(held: FloatingEdgeModel, next: FloatingEdgeModel): boolean {
+  return (
+    held.type === next.type &&
+    held.source === next.source &&
+    held.target === next.target &&
+    held.selected === next.selected &&
+    held.reconnectable === next.reconnectable &&
+    sameMarker(held.markerEnd, next.markerEnd) &&
+    sameMarker(held.markerStart, next.markerStart) &&
+    sameEdgeData(held.data, next.data)
+  );
+}
+
+function sameEdgeData(held?: FloatingEdgeData, next?: FloatingEdgeData): boolean {
+  if (!held || !next) return held === next;
+  return (
+    held.label === next.label &&
+    held.protocol === next.protocol &&
+    held.isBidirectional === next.isBidirectional &&
+    held.color === next.color &&
+    held.lineStyle === next.lineStyle &&
+    held.routing === next.routing &&
+    held.routeSource === next.routeSource &&
+    held.sourceSide === next.sourceSide &&
+    held.targetSide === next.targetSide &&
+    // The stored route's own array where there is one, and a fresh empty array
+    // where there is not — so identity answers the first case and the length
+    // answers the second.
+    (held.waypoints === next.waypoints ||
+      ((held.waypoints?.length ?? 0) === 0 && (next.waypoints?.length ?? 0) === 0)) &&
+    held.labelPosition === next.labelPosition &&
+    sameAnchors(held.anchors, next.anchors)
+  );
+}
+
+function sameAnchors(held?: EdgeAnchors, next?: EdgeAnchors): boolean {
+  if (!held || !next) return held === next;
+  return (
+    held.sourceX === next.sourceX &&
+    held.sourceY === next.sourceY &&
+    held.sourcePosition === next.sourcePosition &&
+    held.targetX === next.targetX &&
+    held.targetY === next.targetY &&
+    held.targetPosition === next.targetPosition
+  );
+}
+
+/** React Flow's marker: our own literal, so four fields rather than a reference. */
+function sameMarker(held: FloatingEdgeModel['markerEnd'], next: FloatingEdgeModel['markerEnd']): boolean {
+  if (!held || !next) return held === next;
+  if (typeof held === 'string' || typeof next === 'string') return held === next;
+  return (
+    held.type === next.type &&
+    held.width === next.width &&
+    held.height === next.height &&
+    held.color === next.color
+  );
 }
