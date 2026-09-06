@@ -9,13 +9,10 @@
  * filed at two addresses.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
-import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
-import { App } from './App'
 import type { ProjectLibrary } from './App'
+import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -34,46 +31,29 @@ const project = (key: string, name: string) => ({
   logoLibrary: [],
 })
 
+/** The whole app on the picker, with one seam replaced by a refusing one. */
 function show(projects: Partial<ProjectLibrary>) {
-  const diagnostics = new RecordingDiagnostics()
-  const library: ProjectLibrary = {
-    list: () => Promise.resolve([]),
-    load: () => Promise.resolve(undefined),
-    save: () => Promise.resolve(),
-    remove: () => Promise.resolve(),
-    ...projects,
-  }
-  render(
-    <App
-      projects={library}
-      groupRecords={new InMemoryGroupStore()}
-      preferences={new InMemoryPreferencesStore()}
-      documents={{
-        save: () => Promise.resolve(),
-        readText: () => Promise.resolve(''),
-        readDataUrl: () => Promise.resolve(''),
-      }}
-      diagnostics={diagnostics}
-      hostControls={{ reload: () => {}, copyText: () => Promise.resolve() }}
-      initialProject={undefined}
-      initialPreferences={{ language: 'en' }}
-      examples={[{
-        key: 'acme',
-        ref: { group: 'acme', project: 'landscape' },
-        groupName: 'Acme',
-        label: 'Acme Logistics',
-        description: 'an example',
-        document: {
-          formatVersion: '1',
-          design: { name: 'Warehouse landscape' },
-          elements: [], connections: [], diagrams: [],
-        },
-      }]}
-      makeId={(prefix) => `${prefix}-new`}
-      browserLanguages={['en']}
-    />,
-  )
-  return { diagnostics }
+  return renderApp({
+    projects: {
+      list: () => Promise.resolve([]),
+      load: () => Promise.resolve(undefined),
+      save: () => Promise.resolve(),
+      remove: () => Promise.resolve(),
+      ...projects,
+    },
+    examples: [{
+      key: 'acme',
+      ref: { group: 'acme', project: 'landscape' },
+      groupName: 'Acme',
+      label: 'Acme Logistics',
+      description: 'an example',
+      document: {
+        formatVersion: '1',
+        design: { name: 'Warehouse landscape' },
+        elements: [], connections: [], diagrams: [],
+      },
+    }],
+  })
 }
 
 describe('the picker, when the store refuses', () => {
@@ -104,7 +84,6 @@ describe('copying an example, when the store refuses', () => {
 
 describe('renaming a group when the sweep cannot finish', () => {
   it('names the projects it did not reach instead of stopping in silence', async () => {
-    const diagnostics = new RecordingDiagnostics()
     const projects = new InMemoryProjectStore([
       project('warehouse', 'Warehouse'),
       project('rolling-stock', 'Rolling stock'),
@@ -116,25 +95,7 @@ describe('renaming a group when the sweep cannot finish', () => {
         ? Promise.reject(new Error('quota'))
         : Promise.resolve())
 
-    render(
-      <App
-        projects={projects}
-        groupRecords={new InMemoryGroupStore()}
-        preferences={new InMemoryPreferencesStore()}
-        documents={{
-          save: () => Promise.resolve(),
-          readText: () => Promise.resolve(''),
-          readDataUrl: () => Promise.resolve(''),
-        }}
-        diagnostics={diagnostics}
-        hostControls={{ reload: () => {}, copyText: () => Promise.resolve() }}
-        initialProject={undefined}
-        initialPreferences={{ language: 'en' }}
-        examples={[]}
-        makeId={(prefix) => `${prefix}-new`}
-        browserLanguages={['en']}
-      />,
-    )
+    const { diagnostics } = renderApp({ projects })
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings for Acme' }))
     fireEvent.change(await screen.findByLabelText('Group name'), {

@@ -7,13 +7,14 @@
  * caller keeps it.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import type { Adr } from '../../core/adr'
 import type { HostModel } from '../../core/model/fromInterchange'
 import { MarkdownView } from '../markdown/MarkdownView'
 import { AdrPage } from './AdrPage'
 import type { AdrPageProps } from './AdrPage'
+import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -41,7 +42,7 @@ let ids = 0
 function mount(over: Partial<AdrPageProps> = {}) {
   const onGroup = vi.fn()
   const onProject = vi.fn()
-  const utils = render(
+  const utils = renderShell(
     <AdrPage
       open
       onClose={() => {}}

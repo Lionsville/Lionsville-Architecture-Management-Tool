@@ -13,13 +13,10 @@
  * the session and the store, and a real canvas would only slow it down.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { App } from './App'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
-import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
-import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import type { ProjectSnapshot } from '../core/project'
+import { renderApp } from './testing/renderShell'
 
 /** The one thing the stub does: land a change on the model, as editing would. */
 vi.mock('@lionsville/solution-design', async (importOriginal) => {
@@ -57,27 +54,9 @@ const project = (): ProjectSnapshot => ({
   logoLibrary: [],
 })
 
-function renderApp(initial: ProjectSnapshot) {
+function show(initial: ProjectSnapshot) {
   const projects = new InMemoryProjectStore([initial])
-  render(
-    <App
-      projects={projects}
-      groupRecords={new InMemoryGroupStore()}
-      preferences={new InMemoryPreferencesStore()}
-      documents={{
-        save: () => Promise.resolve(),
-        readText: () => Promise.resolve(''),
-        readDataUrl: () => Promise.resolve(''),
-      }}
-      diagnostics={new RecordingDiagnostics()}
-      hostControls={{ reload: () => {}, copyText: () => Promise.resolve() }}
-      initialProject={initial}
-      initialPreferences={{ language: 'en' }}
-      examples={[]}
-      makeId={(prefix) => `${prefix}-new`}
-      browserLanguages={['en']}
-    />,
-  )
+  renderApp({ projects, initialProject: initial })
   return projects
 }
 
@@ -98,7 +77,7 @@ const saved = (store: InMemoryProjectStore) =>
 
 describe('project settings on an open project', () => {
   it('keeps the editing the session has done', async () => {
-    const store = renderApp(project())
+    const store = show(project())
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
 
     applySettings({ author: 'Ada' })
@@ -112,7 +91,7 @@ describe('project settings on an open project', () => {
   })
 
   it('hands the saved project back to the session, so the next save keeps it', async () => {
-    const store = renderApp(project())
+    const store = show(project())
     applySettings({ name: 'Renamed', author: 'Ada' })
 
     // The toolbar reads the session's model: seeing the new name is the proof

@@ -4,11 +4,12 @@
  * and a chosen hit handed back whole so the caller can open what it is about.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import type { HostModel } from '../../core/model/fromInterchange'
 import type { Adr } from '../../core/adr'
 import { GlobalSearchDialog } from './GlobalSearchDialog'
+import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -31,7 +32,7 @@ const groupDecisions: Adr[] = [
 
 describe('GlobalSearchDialog', () => {
   it('groups hits by kind and says where a decision lives', () => {
-    render(<GlobalSearchDialog open model={model} groupDecisions={groupDecisions} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    renderShell(<GlobalSearchDialog open model={model} groupDecisions={groupDecisions} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'kafka' } })
     const options = screen.getAllByRole('option')
     expect(options).toHaveLength(4)
@@ -45,7 +46,7 @@ describe('GlobalSearchDialog', () => {
   it('Enter takes the highlighted hit and closes; the arrows move the highlight', () => {
     const onChoose = vi.fn()
     const onClose = vi.fn()
-    render(<GlobalSearchDialog open model={model} groupDecisions={groupDecisions} onClose={onClose} onChoose={onChoose} s={translator('en')} />)
+    renderShell(<GlobalSearchDialog open model={model} groupDecisions={groupDecisions} onClose={onClose} onChoose={onChoose} s={translator('en')} />)
     const field = screen.getByRole('combobox')
     fireEvent.change(field, { target: { value: 'kafka' } })
     fireEvent.keyDown(field, { key: 'ArrowDown' })
@@ -55,7 +56,7 @@ describe('GlobalSearchDialog', () => {
   })
 
   it('says so when nothing matches', () => {
-    render(<GlobalSearchDialog open model={model} groupDecisions={[]} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    renderShell(<GlobalSearchDialog open model={model} groupDecisions={[]} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzz' } })
     expect(screen.getByText('Nothing matches “zzz”.')).toBeTruthy()
   })

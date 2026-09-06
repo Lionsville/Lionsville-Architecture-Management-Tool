@@ -74,7 +74,10 @@ export default tseslint.config(
     // Screen work talks to a seam, never to a filling: otherwise the choice is
     // back in twenty places instead of in the composition.
     files: ['src/ui/**/*.{ts,tsx}', 'src/main.tsx'],
-    ignores: ['**/*.test.{ts,tsx}'],
+    // Tests may reach for a filling directly — that is how you get an in-memory
+    // store into a component — and `src/ui/testing/` is test code that happens
+    // not to end in `.test`.
+    ignores: ['**/*.test.{ts,tsx}', 'src/ui/testing/**'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [

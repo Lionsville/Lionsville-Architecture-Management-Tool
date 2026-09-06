@@ -6,15 +6,16 @@
  * browser storage by hand.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import { BootFailure } from './BootFailure'
+import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
 
 describe('BootFailure', () => {
   it('says what happened, in the words of whoever refused', () => {
-    render(<BootFailure
+    renderShell(<BootFailure
       s={translator('en')} error={new Error('storage refused')}
       onStartFresh={() => {}} onReload={() => {}} />)
     expect(screen.getByTestId('boot-failure').textContent).toContain('The app could not start.')
@@ -24,7 +25,7 @@ describe('BootFailure', () => {
   it('offers the way out, and takes it', () => {
     const onStartFresh = vi.fn()
     const onReload = vi.fn()
-    render(<BootFailure
+    renderShell(<BootFailure
       s={translator('en')} error="nope" onStartFresh={onStartFresh} onReload={onReload} />)
 
     fireEvent.click(screen.getByText('Start without the last project'))

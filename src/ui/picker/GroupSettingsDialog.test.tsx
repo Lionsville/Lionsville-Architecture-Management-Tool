@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import { GroupSettingsDialog } from './GroupSettingsDialog'
 import type { GroupProfile } from '../../core/group'
+import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -12,7 +13,7 @@ const s = translator('en')
 function open(target: Partial<GroupProfile> = {}) {
   const onSave = vi.fn<(profile: GroupProfile) => void>()
   const onCancel = vi.fn()
-  render(
+  renderShell(
     <GroupSettingsDialog
       target={{ group: 'acme', name: 'Acme', ...target }}
       onSave={onSave}

@@ -13,9 +13,10 @@
  * "did Emotion emit it" is exactly the question worth asking.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, screen } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import { ShellToolbar } from './ShellToolbar'
+import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -53,12 +54,12 @@ describe('the saved indicator', () => {
   const indicator = () => screen.getByTestId('saved-indicator').textContent
 
   it('says nothing has happened yet before the first write', () => {
-    render(<ShellToolbar {...props} />)
+    renderShell(<ShellToolbar {...props} />)
     expect(indicator()).toBe('Not saved yet')
   })
 
   it('says when the store last accepted it', () => {
-    render(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} />)
+    renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} />)
     expect(indicator()).toContain('Saved')
     expect(indicator()).toContain('14:02')
   })
@@ -66,7 +67,7 @@ describe('the saved indicator', () => {
   it('replaces the time when a write was refused, rather than standing beside it', () => {
     // The expensive wrong: a time from before the failure is older than the
     // work on screen, and reads as reassurance.
-    render(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} saveFailed />)
+    renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} saveFailed />)
     expect(indicator()).toBe('Not saved — storage refused')
     expect(indicator()).not.toContain('14:02')
   })
@@ -74,13 +75,13 @@ describe('the saved indicator', () => {
 
 describe('ShellToolbar and the window around it', () => {
   it('starts where the window controls end', () => {
-    const { container } = render(
+    const { container } = renderShell(
       <ShellToolbar {...props} windowChrome={{ controlsInset: 78, draggable: true }} />)
     expect(getComputedStyle(barIn(container)).paddingLeft).toBe('90px')
   })
 
   it('lets the window be dragged by the bar, but not by a control on it', () => {
-    const { container } = render(
+    const { container } = renderShell(
       <ShellToolbar {...props} windowChrome={{ controlsInset: 78, draggable: true }} />)
     const rules = rulesFor(barIn(container))
     expect(rules).toContain('-webkit-app-region:drag')
@@ -89,7 +90,7 @@ describe('ShellToolbar and the window around it', () => {
   })
 
   it('leaves a window that has a title bar of its own alone', () => {
-    const { container } = render(<ShellToolbar {...props} />)
+    const { container } = renderShell(<ShellToolbar {...props} />)
     const bar = barIn(container)
     expect(getComputedStyle(bar).paddingLeft).toBe('12px')
     expect(rulesFor(bar)).not.toContain('-webkit-app-region:drag')
@@ -98,7 +99,7 @@ describe('ShellToolbar and the window around it', () => {
   it('offers the three pages beside the canvas', () => {
     // By text, not by accessible name: the tooltip supplies the name, and it
     // is the words on the button a user finds it by.
-    const { container } = render(<ShellToolbar {...props} />)
+    const { container } = renderShell(<ShellToolbar {...props} />)
     const labels = [...barIn(container).querySelectorAll('button')].map((button) => button.textContent)
     for (const label of ['Documentation', 'Decisions', 'Search']) {
       expect(labels).toContain(label)

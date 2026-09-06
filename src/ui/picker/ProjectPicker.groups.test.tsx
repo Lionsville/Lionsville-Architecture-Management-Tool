@@ -8,11 +8,12 @@
  * leave the screen exactly as it found it.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import { ProjectPicker } from './ProjectPicker'
 import type { GroupProfile } from '../../core/group'
 import type { ProjectSummary } from '../../core/project'
+import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -27,7 +28,7 @@ const summary = (group: string, groupName: string, name: string): ProjectSummary
 
 function show(projects: ProjectSummary[], profiles: GroupProfile[]) {
   const onApplyGroupSettings = vi.fn()
-  render(
+  renderShell(
     <ProjectPicker
       projects={{ list: () => Promise.resolve(projects), remove: () => Promise.resolve() }}
       groups={{ list: () => Promise.resolve(profiles) }}
@@ -89,7 +90,7 @@ describe('ProjectPicker — groups', () => {
 
   /** Decoration that cannot be read costs the decoration, never the projects. */
   it('still lists the projects when the group records will not load', async () => {
-    render(
+    renderShell(
       <ProjectPicker
         projects={{
           list: () => Promise.resolve([summary('acme', 'Acme', 'Landscape')]),

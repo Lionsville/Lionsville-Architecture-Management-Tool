@@ -7,10 +7,11 @@
  * drawing it, and hand that recording over. All three are pinned here.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { translator } from '@lionsville/solution-design'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import { ErrorBoundary } from './ErrorBoundary'
+import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
 
@@ -37,7 +38,7 @@ function mount(options: {
 } = {}) {
   const diagnostics = options.diagnostics ?? new RecordingDiagnostics()
   const host = options.controls ?? controls()
-  quietly(() => render(
+  quietly(() => renderShell(
     <ErrorBoundary
       where="editor"
       diagnostics={diagnostics}

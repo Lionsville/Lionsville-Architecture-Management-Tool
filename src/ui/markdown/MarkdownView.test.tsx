@@ -10,14 +10,15 @@
  * nothing else.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { MarkdownView } from './MarkdownView'
+import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
 
 describe('MarkdownView', () => {
   it('renders GFM: headings, a table, and a task list', () => {
-    const { container } = render(
+    const { container } = renderShell(
       <MarkdownView
         markdown={[
           '## Interfaces',
@@ -41,14 +42,14 @@ describe('MarkdownView', () => {
   })
 
   it('shows HTML as text instead of rendering it', () => {
-    const { container } = render(<MarkdownView markdown={'before <script>alert(1)</script> <b>bold</b> after'} />)
+    const { container } = renderShell(<MarkdownView markdown={'before <script>alert(1)</script> <b>bold</b> after'} />)
     expect(container.querySelector('script')).toBeNull()
     expect(container.querySelector('b')).toBeNull()
     expect(container.textContent).toContain('<b>bold</b>')
   })
 
   it('drops a javascript: href', () => {
-    const { container } = render(<MarkdownView markdown={'[click](javascript:alert(1))'} />)
+    const { container } = renderShell(<MarkdownView markdown={'[click](javascript:alert(1))'} />)
     // Without an href it is not even a link any more, only the words.
     const anchor = container.querySelector('a')
     expect(anchor?.textContent).toBe('click')
@@ -56,7 +57,7 @@ describe('MarkdownView', () => {
   })
 
   it('opens an ordinary link outside the app', () => {
-    render(<MarkdownView markdown={'[docs](https://example.org/x)'} />)
+    renderShell(<MarkdownView markdown={'[docs](https://example.org/x)'} />)
     const link = screen.getByRole('link', { name: 'docs' })
     expect(link.getAttribute('href')).toBe('https://example.org/x')
     expect(link.getAttribute('target')).toBe('_blank')
@@ -65,7 +66,7 @@ describe('MarkdownView', () => {
 
   it('hands an element link back by id and does not navigate', () => {
     const onElementLink = vi.fn()
-    render(<MarkdownView markdown={'see [Billing](element:el-42)'} onElementLink={onElementLink} />)
+    renderShell(<MarkdownView markdown={'see [Billing](element:el-42)'} onElementLink={onElementLink} />)
     const link = screen.getByRole('link', { name: 'Billing' })
     expect(link.getAttribute('target')).toBeNull()
     const event = fireEvent.click(link)
@@ -75,13 +76,13 @@ describe('MarkdownView', () => {
   })
 
   it('keeps an element link intact when no one is listening', () => {
-    render(<MarkdownView markdown={'[Billing](element:el-42)'} />)
+    renderShell(<MarkdownView markdown={'[Billing](element:el-42)'} />)
     expect(screen.getByRole('link', { name: 'Billing' }).getAttribute('href')).toBe('element:el-42')
   })
 
   it('draws a mermaid fence with the renderer it is given, and only that fence', async () => {
     const render_ = vi.fn(async (code: string) => `<svg data-code="${code.trim()}"></svg>`)
-    const { container } = render(
+    const { container } = renderShell(
       <MarkdownView
         markdown={'```mermaid\nflowchart LR\n  A --> B\n```\n\n```js\nconst x = 1\n```'}
         renderMermaid={render_}
@@ -96,7 +97,7 @@ describe('MarkdownView', () => {
   })
 
   it('keeps the source on screen when the diagram cannot be drawn', async () => {
-    const { container } = render(
+    const { container } = renderShell(
       <MarkdownView markdown={'```mermaid\nnot a diagram\n```'} renderMermaid={async () => { throw new Error('Parse error') }} />,
     )
     await waitFor(() => expect(container.querySelector('[data-state="failed"]')).not.toBeNull())
