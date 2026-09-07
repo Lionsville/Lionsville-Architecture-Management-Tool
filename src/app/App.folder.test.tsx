@@ -37,7 +37,7 @@ describe('a desktop with no folder yet', () => {
       projects: new InMemoryProjectStore([project()]),
       onChooseWorkingDirectory: () => {},
       needsFolder: true,
-      storage: 'browser',
+      source: { kind: 'browserStorage' },
     })
 
     expect(screen.getByTestId('choose-folder')).toBeDefined()
@@ -72,8 +72,7 @@ describe('once there is a folder', () => {
       projects: new InMemoryProjectStore([project()]),
       onChooseWorkingDirectory: () => {},
       needsFolder: true,
-      workingDirectory: { name: 'Architecture' },
-      storage: 'folder',
+      source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' },
     })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()

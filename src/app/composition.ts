@@ -56,6 +56,8 @@ import { WebStorageProjectStore } from '../adapters/webStorage/WebStorageProject
 import { refPath } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import type { WindowChrome } from '../platform/windowChrome'
+import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
+import type { WorkingSource } from '../platform/workingSource'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
@@ -89,19 +91,16 @@ export type Shell = {
   /** What the crash fallback can do about it: reload, and copy the trail. */
   hostControls: HostControls
   /**
-   * Which of the two this composition settled on.
+   * What this composition settled on: a folder, the browser's storage, or
+   * memory (ADR-0005).
    *
    * The memory stores never fail, which is the point of them and also the
    * problem: without this the shell cannot tell "everything is being saved"
-   * from "nothing will outlive this tab", and the user is told neither.
+   * from "nothing will outlive this tab", and the user is told neither. A
+   * desktop that has not been given a folder yet is not on a folder, and the
+   * first-run screen asks.
    */
-  storage: 'browser' | 'memory' | 'folder'
-  /**
-   * The folder the projects are in, when they are in one. Absent in a browser
-   * tab and on a desktop that has not been given a folder yet — the picker says
-   * which of the two the user is looking at.
-   */
-  workingDirectory?: DesktopDirectory
+  source: WorkingSource
   /**
    * Tell me when this project's folder changed under us, other than by us.
    *
@@ -153,7 +152,7 @@ export function composeShell(): Shell {
     documents: new BrowserDocumentGateway(),
     diagnostics: new ConsoleDiagnostics(),
     hostControls: browserHostControls(),
-    storage: storage ? 'browser' : 'memory',
+    source: storage ? BROWSER_STORAGE : IN_MEMORY,
     // The one desktop seam that does not wait for a folder: it is about this
     // install, not about where the projects are.
     updateSettings: desktopSettings() && new DesktopUpdateSettings(desktopSettings()!),
@@ -219,8 +218,8 @@ function overFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Sh
     projects: new FileSystemProjectStore(handle),
     groups: new FileSystemGroupStore(handle),
     folderSettings: new FileSystemFolderSettings(handle),
-    storage: 'folder',
-    workingDirectory: { root: name, name },
+    // A browser's handle has no path to give, so its name stands in for one.
+    source: { kind: 'folder', name, root: name },
   }
 }
 
@@ -264,7 +263,7 @@ export function inWorkingDirectory(
     // `composeShell` because it is the same decision as the store: this is the
     // desktop, and on the desktop a file goes where the user says.
     documents: new DesktopDocumentGateway(files),
-    workingDirectory: directory,
+    source: { kind: 'folder', name: directory.name, root: directory.root },
     watchProject,
     history: desktopHistory() && new DesktopProjectHistory(desktopHistory()!, directory.root),
   }

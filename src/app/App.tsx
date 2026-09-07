@@ -42,6 +42,8 @@ import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import type { WindowChrome } from '../platform/windowChrome'
+import { BROWSER_STORAGE } from '../platform/workingSource'
+import type { WorkingSource } from '../platform/workingSource'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
@@ -103,21 +105,18 @@ export type AppProps = {
   /** What the crash fallback can do about it: reload, and copy the trail. */
   hostControls: CrashControls
   /**
-   * Which stores the composition settled on. `memory` means storage refused at
-   * boot — a private window, a strict policy — and nothing typed here will be
-   * there tomorrow. That is worth a standing notice rather than a toast,
-   * because it is true for the whole session and not an event within it.
+   * What you are working from (ADR-0005): a folder by name, the browser's
+   * storage, or memory. `memory` means storage refused at boot — a private
+   * window, a strict policy — and nothing typed here will be there tomorrow.
+   * That is worth a standing notice rather than a toast, because it is true
+   * for the whole session and not an event within it; the top bar says it too.
    */
-  storage?: 'browser' | 'memory' | 'folder'
+  source?: WorkingSource
   /**
-   * The folder the projects are in, when they are in one, and how to change it.
-   *
-   * Both absent in a browser tab: choosing a folder is something only the
-   * desktop can offer, and an app that showed the button anyway would be
-   * offering what it cannot do. Present-but-undefined folder means a desktop
-   * that has not been given one yet, which is the first run.
+   * How to change the folder. Absent in a browser tab whose browser cannot
+   * give one: an app that showed the button anyway would be offering what it
+   * cannot do.
    */
-  workingDirectory?: { name: string }
   onChooseWorkingDirectory?: () => void
   /**
    * Does this host keep projects ONLY in folders?
@@ -181,7 +180,7 @@ export type AppProps = {
 
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
-  storage = 'browser', workingDirectory, onChooseWorkingDirectory, needsFolder = false, watchProject,
+  source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
@@ -671,7 +670,7 @@ export function App({
             and around the two screens rather than around everything: a crash
             must not take the toast bar with it. */}
         <ErrorBoundary where="app" diagnostics={diagnostics} controls={hostControls} s={s}>
-        {needsFolder && onChooseWorkingDirectory && storage !== 'folder' ? (
+        {needsFolder && onChooseWorkingDirectory && source.kind !== 'folder' ? (
           /* The desktop, with no folder yet. Not the picker: there is nowhere
              for a project to be until this is answered, and offering a list of
              projects kept inside the app is offering the thing ADR-0003
@@ -692,6 +691,7 @@ export function App({
             project={project}
             projects={workspaceStore}
             watch={watchOpenProject}
+            source={source}
             commands={bus.on}
             overflow={hostMenu ? undefined : {
               themeMode: prefs.themeMode,
@@ -731,7 +731,7 @@ export function App({
             onCopyExample={copyExample}
             onFailure={failed}
             revision={revision}
-            workingDirectory={workingDirectory}
+            workingDirectory={source.kind === 'folder' ? source : undefined}
             onChooseWorkingDirectory={onChooseWorkingDirectory}
             language={prefs.language}
             s={s}
@@ -739,7 +739,7 @@ export function App({
           />
         )}
         </ErrorBoundary>
-        {storage === 'memory' && (
+        {source.kind === 'memory' && (
           /* Along the bottom rather than above the toolbar: on the desktop that
              bar is the title bar, and anything pushed above it lands under the
              traffic lights. A standing strip is as visible and owes the window

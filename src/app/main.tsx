@@ -308,8 +308,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         documents={shell.documents}
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
-        storage={shell.storage}
-        workingDirectory={shell.workingDirectory}
+        source={shell.source}
         onChooseWorkingDirectory={
           files || browserFolders.possible() ? chooseWorkingDirectory : undefined
         }
@@ -361,7 +360,7 @@ void shell.preferences.read()
     // Not on a desktop with no folder yet: there is nothing to reopen, because
     // the only place a project could be is the app's own storage, which is
     // exactly what ADR-0003 retired. The first-run screen asks instead.
-    const lastProject = files && !shell.workingDirectory
+    const lastProject = files && shell.source.kind !== 'folder'
       ? undefined
       : readLastProject(storedPreferences)
     const initialProject = lastProject ? await shell.projects.load(lastProject) : undefined
