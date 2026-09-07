@@ -17,7 +17,7 @@
  * plain object at each end.
  */
 import type { AgentAnswer, AgentRequest, ToolContent } from '../../src/agent/tools'
-import { REFUSAL_SENTENCE, TOOLS } from '../../src/agent/tools'
+import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS } from '../../src/agent/tools'
 import { randomUUID } from 'node:crypto'
 import type { AgentClient } from '../../src/platform/agentServer'
 
@@ -138,14 +138,35 @@ export async function respond(
       return ok(toolResult(answer))
     }
 
-    case 'resources/list':
-      return ok({ resources: [] })
+    // Descriptions and decisions as resources, so an agent reads them without
+    // a call. The app answers both as JSON text through the same relay a tool
+    // call takes; a refusal is the resource not being there.
+    case 'resources/list': {
+      const answer = await relay.ask({ id: String(id), tool: RESOURCE_LIST, args: {} })
+      const listed = asJson(answer)
+      return listed ? ok(listed) : ok({ resources: [] })
+    }
 
-    case 'resources/read':
-      return fail(RPC.invalidParams, 'no such resource')
+    case 'resources/read': {
+      const answer = await relay.ask({ id: String(id), tool: RESOURCE_READ, args: { uri: params['uri'] } })
+      const read = asJson(answer)
+      return read ? ok(read) : fail(RPC.invalidParams, `no such resource: ${String(params['uri'])}`)
+    }
 
     default:
       return fail(RPC.methodNotFound, `method not found: ${message.method}`)
+  }
+}
+
+/** The JSON an ok answer's first text block carries, or nothing. */
+function asJson(answer: AgentAnswer): Record<string, unknown> | undefined {
+  if (!answer.ok) return undefined
+  const block = answer.content[0]
+  if (!block || block.type !== 'text') return undefined
+  try {
+    return JSON.parse(block.text) as Record<string, unknown>
+  } catch {
+    return undefined
   }
 }
 

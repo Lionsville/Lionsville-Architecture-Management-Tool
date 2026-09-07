@@ -41,7 +41,7 @@ export { SolutionDesignEditor } from './SolutionDesignEditor'
 export type {
   EditorDiagramActions, EditorDocument, EditorEditing, EditorHistory, EditorLanguage,
   EditorLayoutReports, EditorLogos, EditorPreferencesSeam, EditorRequests,
-  ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
+  EditorHandle, EditorRefusal, ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
 } from './props'
 /**
  * The maturity-column list, on its own. The shell keeps its own defaults —
@@ -69,3 +69,4 @@ export { DEFAULT_EDITOR_PREFERENCES, mergePreferences, preferencesEqual } from '
 export type { EditorPreferences } from './preferences'
 /** Panel geometry, for sanitising widths that arrive in a stored blob. */
 export { PANEL_LIMITS, clampPanelWidth, panelWidth } from './panels'
+export { EditorRefused } from './props'

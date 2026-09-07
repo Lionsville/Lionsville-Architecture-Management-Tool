@@ -315,7 +315,7 @@ export const TOOLS = [
     },
   },
 
-  // --- the see tier: structure first, then relational placement --------------------
+  // --- the see tier: structure first, then pixels, then relational placement ------
   {
     name: 'diagram.inspect',
     tier: 'see',
@@ -331,6 +331,64 @@ export const TOOLS = [
         diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
         limit: { type: 'integer', description: 'How many of each finding to list. Default 40.', minimum: 1, maximum: 500 },
       },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'diagram.render',
+    tier: 'see',
+    description:
+      'A picture of a diagram as the app draws it, as a PNG, with the transform it was drawn with so a '
+      + 'pixel maps back to a flow coordinate. Crop to some elements or to a region: a whole landscape '
+      + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+        elementIds: { type: 'array', description: 'Crop to these elements and their surroundings.', items: { type: 'string' } },
+        x: { type: 'number', description: 'Crop to a region: its left, in flow coordinates.' },
+        y: { type: 'number', description: 'Crop to a region: its top.' },
+        width: { type: 'number', description: 'Crop to a region: its width.' },
+        height: { type: 'number', description: 'Crop to a region: its height.' },
+        maxPixels: { type: 'integer', description: 'The most image pixels to hand over. Default 4,000,000.', minimum: 10000, maximum: 16000000 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'diagram.tidy',
+    tier: 'see',
+    description:
+      'Lay a diagram out, as the Tidy button does: the app\'s layout engine places every card and routes '
+      + 'every line. One undo step. Refuses a board over the cap. Answers with the layout report afterwards.',
+    inputSchema: {
+      type: 'object',
+      properties: { diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'diagram.route',
+    tier: 'see',
+    description:
+      'Route the lines of a diagram around its cards without moving any card, as the Route button does. '
+      + 'Hand-drawn and pinned routes are kept. One undo step. Answers with the layout report afterwards.',
+    inputSchema: {
+      type: 'object',
+      properties: { diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'focus',
+    tier: 'see',
+    description:
+      'Point at an element: select it in the app and bring it into view, switching diagram if it is drawn '
+      + 'elsewhere, so the person sees which one you mean.',
+    inputSchema: {
+      type: 'object',
+      properties: { elementId: ID('element') },
+      required: ['elementId'],
       additionalProperties: false,
     },
   },
@@ -403,6 +461,13 @@ export const TOOLS = [
 
 export type ToolName = (typeof TOOLS)[number]['name']
 
+/**
+ * The two pseudo-tools the protocol relays for MCP resources: not in the list
+ * a client sees, answered by the same handler as everything else.
+ */
+export const RESOURCE_LIST = 'resources.list'
+export const RESOURCE_READ = 'resources.read'
+
 export const TOOL_NAMES: readonly ToolName[] = TOOLS.map((tool) => tool.name)
 
 export function isToolName(value: unknown): value is ToolName {
@@ -448,6 +513,8 @@ export type AgentRefusal =
   | 'agent.windowHidden'
   | 'agent.locked'
   | 'agent.notDrawn'
+  | 'agent.busy'
+  | 'agent.cancelled'
   | 'agent.noAnswer'
   | CommandRefusal
 
@@ -462,6 +529,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.tooLarge': 'The board is too large for this operation.',
   'agent.locked': 'The decision record is accepted, rejected or superseded, and locked; nothing about it may change.',
   'agent.notDrawn': 'That element is not drawn on that diagram.',
+  'agent.busy': 'A layout pass is already running. Try again when it has finished.',
+  'agent.cancelled': 'The person cancelled the layout pass.',
   'agent.windowHidden': 'The window is hidden or minimised, so nothing can be drawn. Bring it to the front.',
   'agent.noAnswer': 'The app did not answer in time.',
   'command.gone': 'Something the change refers to is no longer in the project.',

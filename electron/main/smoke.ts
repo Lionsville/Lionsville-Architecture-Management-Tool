@@ -479,6 +479,28 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     const current = JSON.parse(result.content[0]?.text ?? '{}') as { name?: string; elements?: number }
     if (!current.name || !current.elements) throw new Error(`no project in the answer: ${JSON.stringify(current)}`)
     if (agentStatus().kind !== 'connected') throw new Error('the app does not say connected')
+
+    // The four things only the renderer can do, through the same client: a
+    // picture of the board comes back as an image block with the transform
+    // beside it, and pointing at an element is answered. Tidy ran a check
+    // ago from the button; through the agent it is the same handler.
+    const listed = await client.callTool({ name: 'elements.list', arguments: { limit: 1 } }) as
+      { content: { text?: string }[] }
+    const first = (JSON.parse(listed.content[0]?.text ?? '{}') as { elements?: { id: string }[] }).elements?.[0]?.id
+    if (!first) throw new Error('elements.list named nothing')
+    const pointed = await client.callTool({ name: 'focus', arguments: { elementId: first } }) as { isError?: boolean }
+    if (pointed.isError) throw new Error('focus refused')
+    const drawn = await client.callTool({ name: 'diagram.render', arguments: { elementIds: [first], maxPixels: 250_000 } }) as
+      { isError?: boolean; content: { type: string; data?: string; mimeType?: string; text?: string }[] }
+    if (drawn.isError) throw new Error(`diagram.render refused: ${drawn.content[0]?.text}`)
+    const image = drawn.content[0]
+    if (image.type !== 'image' || image.mimeType !== 'image/png' || !image.data) throw new Error('no image block')
+    const png = Buffer.from(image.data, 'base64')
+    if (png.subarray(0, 4).toString('hex') !== '89504e47') throw new Error('the image is not a PNG')
+    const transform = JSON.parse(drawn.content[1]?.text ?? '{}') as { width?: number; height?: number }
+    if (!transform.width || !transform.height || transform.width * transform.height > 250_000) {
+      throw new Error(`the picture is ${transform.width}x${transform.height}, over the budget`)
+    }
     await client.close()
 
     // A relaunch keeps the port and the token: the file is read back and the
@@ -493,7 +515,8 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     await setAgentEnabled(false)
     const closed = await fetch(endpoint).then(() => false, () => true)
     if (!closed) throw new Error('the port is still open with the feature off')
-    return `port ${on.port}: ${tools.length} tools, "${current.name}" with ${current.elements} elements, closed again`
+    return `port ${on.port}: ${tools.length} tools, "${current.name}" with ${current.elements} elements, `
+      + `a ${transform.width}x${transform.height} picture of ${first}, closed again`
   }))
 
   const failed = results.filter((r) => !r.ok)

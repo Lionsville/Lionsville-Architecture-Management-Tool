@@ -16,20 +16,50 @@ import type { ProjectSnapshot } from '../projects/project'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import { renderApp } from './testing/renderShell'
 
+/** What the stubbed editor's handle was asked, for the renderer tests. */
+const asked: { tidied: number; captured: unknown[] } = { tidied: 0, captured: [] }
+
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
+  const { useEffect } = await import('react')
   return {
     ...actual,
     SolutionDesignEditor: (props: {
       editing: { dispatch: (command: unknown) => unknown }
-    }) => (
-      <button
-        data-testid="rename-billing"
-        onClick={() => props.editing.dispatch({ type: 'element.update', id: 'billing', patch: { name: 'Invoicing' } })}
-      >
-        rename
-      </button>
-    ),
+      document: { activeDiagramId: string }
+      requests?: { focus?: { id: string } }
+      onHandle?: (handle: unknown) => void
+    }) => {
+      // The stub hands out a handle the way the editor does, so the workspace's
+      // renderer view can be exercised without a canvas.
+      const { onHandle, document } = props
+      useEffect(() => {
+        onHandle?.({
+          activeDiagramId: document.activeDiagramId,
+          busy: false,
+          tidy: async () => { asked.tidied += 1 },
+          routeEdges: async () => {},
+          // Duck-typed rather than a `Blob`: jsdom's Blob has no `arrayBuffer`,
+          // and the browser's is what the workspace reads through.
+          capture: async (options: unknown) => {
+            asked.captured.push(options)
+            return { arrayBuffer: async () => new Uint8Array([9, 8, 7]).buffer }
+          },
+        })
+        return () => onHandle?.(undefined)
+      }, [onHandle, document.activeDiagramId])
+      return (
+        <div>
+          <button
+            data-testid="rename-billing"
+            onClick={() => props.editing.dispatch({ type: 'element.update', id: 'billing', patch: { name: 'Invoicing' } })}
+          >
+            rename
+          </button>
+          <span data-testid="focused">{props.requests?.focus?.id ?? ''}</span>
+        </div>
+      )
+    },
   }
 })
 
@@ -96,6 +126,24 @@ describe('the agent seam, bound to the shell', () => {
     renderApp({ initialProject: undefined, agent: gateway })
     await waitFor(() => expect(bound()).toBe(true))
     expect(await ask('project.current')).toEqual({ ok: false, refusal: 'agent.noProject' })
+  })
+
+  it('points, draws and tidies through the editor’s handle', async () => {
+    const { gateway, ask } = fakeGateway()
+    renderApp({ initialProject: project, agent: gateway })
+    await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
+
+    expect(parsed(await ask('focus', { elementId: 'billing' }))).toMatchObject({ focused: true })
+    await waitFor(() => expect(screen.getByTestId('focused').textContent).toBe('billing'))
+
+    const drawn = await ask('diagram.render', { elementIds: ['billing'] })
+    expect(drawn.ok).toBe(true)
+    if (drawn.ok) expect(drawn.content[0]).toEqual({ type: 'image', data: 'CQgH', mimeType: 'image/png' })
+    expect(asked.captured).toHaveLength(1)
+
+    const before = asked.tidied
+    expect(parsed(await ask('diagram.tidy'))).toMatchObject({ diagramId: 'd1' })
+    expect(asked.tidied).toBe(before + 1)
   })
 
   it('moves the binding from the shell to the workspace when a project opens', async () => {

@@ -5,7 +5,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import type { DesignDiagram, ElementId, ElementKind, Rect, UploadedLogo } from '../model/types';
-import type { EditorRequests, SolutionDesignEditorProps } from './props';
+import { EditorRefused } from './props';
+import type { EditorHandle, EditorRequests, SolutionDesignEditorProps } from './props';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
@@ -859,6 +860,55 @@ function EditorBody(props: SolutionDesignEditorProps) {
     });
     downloadBlob(blob, pngFilename(state.model.customerName, activeDiagram));
   }, [activeDiagram, exporting, getNodes, props.exportTitleBlock, state.model, theme, t]);
+
+  /**
+   * The board as pixels for a host — an agent asking through the shell
+   * (ADR-0007). The export's capture without its download, its title block
+   * or its size question: the host chose the region and the ratio, and the
+   * budget is its. A hidden window cannot paint, and `html-to-image` waits on
+   * a frame that never comes; saying so is the difference between a refusal
+   * and a hang.
+   */
+  const captureBoard = useCallback(async (options: { bounds: Rect; pixelRatio: number; padding: number }) => {
+    if (!wrapperRef.current || !activeDiagram) throw new EditorRefused('gone');
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') throw new EditorRefused('hidden');
+    setCapturing(true);
+    try {
+      await painted();
+      const container = wrapperRef.current;
+      if (!container) throw new EditorRefused('gone');
+      return await exportDiagramPng({
+        container,
+        bounds: options.bounds,
+        pixelRatio: options.pixelRatio,
+        padding: options.padding,
+        background: theme.palette.background.default,
+        onImagesMissing: props.logos?.onExportImagesMissing,
+      });
+    } finally {
+      setCapturing(false);
+    }
+  }, [activeDiagram, theme, props.logos?.onExportImagesMissing]);
+
+  /**
+   * The handle, handed out whenever what it closes over changes and withdrawn
+   * on unmount. `busy` is read at call time through the closure, so a pass
+   * asked for while another runs is refused rather than silently dropped the
+   * way the button's second press is.
+   */
+  const onHandle = props.onHandle;
+  useEffect(() => {
+    if (!onHandle) return;
+    const handle: EditorHandle = {
+      activeDiagramId: activeDiagram?.id,
+      busy: busy !== undefined,
+      tidy: () => (busy ? Promise.reject(new EditorRefused('busy')) : handleTidy(undefined, true)),
+      routeEdges: () => (busy ? Promise.reject(new EditorRefused('busy')) : handleRouteEdges()),
+      capture: captureBoard,
+    };
+    onHandle(handle);
+    return () => onHandle(undefined);
+  }, [onHandle, activeDiagram?.id, busy, handleTidy, handleRouteEdges, captureBoard]);
 
   /**
    * Rasterising a large board takes seconds; without a spinner the button looks

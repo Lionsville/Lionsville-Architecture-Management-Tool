@@ -12,12 +12,15 @@ export type {
   ToolSpec, ToolTier,
 } from './tools'
 export {
-  REFUSAL_SENTENCE, TOOLS, TOOL_NAMES, checkArguments, isToolName, json, refused, text, toolSpec,
+  REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS, TOOL_NAMES, checkArguments, isToolName, json,
+  refused, text, toolSpec,
 } from './tools'
 export type { ReadView } from './answer'
 export { answer } from './answer'
 export type { SessionView } from './handle'
 export { handle } from './handle'
+export type { CaptureOptions, RendererRefusal, RendererView } from './renderer'
+export { RendererRefused, isRendererRefusal, toBase64 } from './renderer'
 export type { Prepared, WriteView } from './commandFor'
 export { commandFor } from './commandFor'
 export type { InspectReport } from './inspect'

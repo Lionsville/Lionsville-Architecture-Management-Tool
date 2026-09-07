@@ -10,9 +10,12 @@
  * do: `projects` is "something that can save", not a `ProjectStore`. It can be
  * mounted in a test with two plain objects and a two-diagram model.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
-import { SolutionDesignEditor } from '../editor'
+import { EditorRefused, SolutionDesignEditor } from '../editor'
+import type { EditorHandle } from '../editor'
+import { RendererRefused } from '../agent/renderer'
+import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
@@ -158,6 +161,10 @@ export function ProjectWorkspace({
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
   const session = useModelSession({ initialProject: project, notify, s })
   const diagrams = useDiagramActions({ session, notify, s, makeId })
+  // A request INTO the editor carries a nonce: "show this one" asked twice is
+  // two requests. Declared here because the agent's renderer view, below,
+  // points with it too.
+  const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | undefined>(undefined)
   const files = useProjectFiles({ session, documents, notify, s })
 
   /**
@@ -196,6 +203,54 @@ export function ProjectWorkspace({
    * version of the project stands.
    */
   const documentStatus = document.state.status
+
+  /**
+   * The editor's handle, as the agent's renderer view (ADR-0007). Held in a
+   * ref because the editor hands out a new one whenever a pass starts or
+   * ends, and the view must always reach the current one without the
+   * subscription being rebuilt.
+   */
+  const editorHandle = useRef<EditorHandle | undefined>(undefined)
+  const onEditorHandle = useCallback((handle: EditorHandle | undefined) => { editorHandle.current = handle }, [])
+  const renderer = useMemo<RendererView>(() => {
+    const current = (): EditorHandle => {
+      const held = editorHandle.current
+      if (!held) throw new RendererRefused('gone')
+      return held
+    }
+    const asRefusal = (error: unknown): never => {
+      if (error instanceof EditorRefused) throw new RendererRefused(error.reason)
+      throw error
+    }
+    /** Poll until the editor says it is on the diagram and idle, or give up. */
+    const settled = async (diagramId: string) => {
+      const deadline = Date.now() + 10_000
+      while (Date.now() < deadline) {
+        const held = editorHandle.current
+        if (held && held.activeDiagramId === diagramId && !held.busy) return
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+      throw new RendererRefused('busy')
+    }
+    return {
+      async show(diagramId) {
+        if (session.currentActiveId() !== diagramId) session.setActiveDiagramId(diagramId)
+        await settled(diagramId)
+        // A settling pass on a machine-laid-out diagram starts a moment after
+        // the switch; give it that moment, then wait it out.
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        await settled(diagramId)
+      },
+      tidy: () => current().tidy().catch(asRefusal),
+      route: () => current().routeEdges().catch(asRefusal),
+      capture: async (options) => {
+        const blob = await current().capture(options).catch(asRefusal)
+        return new Uint8Array(await blob.arrayBuffer())
+      },
+      focus: (elementId) => setFocusRequest((prev) => ({ id: elementId, nonce: (prev?.nonce ?? 0) + 1 })),
+    }
+  }, [session])
+
   useAgentGateway(agent, useMemo(() => ({
     indexed: session.indexed,
     current: session.current,
@@ -208,7 +263,8 @@ export function ProjectWorkspace({
     today,
     translate: s,
     containerName: (name: string) => s('shell.containerDiagram', { name }),
-  }), [session, groupDecisions, documentStatus, makeId, today, s]))
+    renderer,
+  }), [session, groupDecisions, documentStatus, makeId, today, s, renderer]))
 
   const snapshots = useProjectHistory({
     history: projectHistory,
@@ -277,7 +333,6 @@ export function ProjectWorkspace({
    * asked twice is two requests and a prop that did not change is none.
    */
   const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
-  const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | undefined>(undefined)
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -427,6 +482,7 @@ export function ProjectWorkspace({
           renderMarkdown={renderMarkdown}
           windowChrome={windowChrome}
           onForceSave={forceSave}
+          onHandle={onEditorHandle}
         />
         </ErrorBoundary>
       </Box>

@@ -106,6 +106,38 @@ export interface EditorRequests {
     documentation?: { elementId?: ElementId; nonce: number };
 }
 
+/**
+ * What a host may ask the editor to do directly (ADR-0007): the few things
+ * only the renderer can, for an agent asking through the shell. Handed out
+ * through `onHandle` whenever it changes and withdrawn on unmount, the way a
+ * ref would be, so a host that holds one always holds the current one.
+ */
+export interface EditorHandle {
+  /** The diagram on screen. */
+  readonly activeDiagramId: string | undefined;
+  /** A layout pass is running; `tidy` and `routeEdges` refuse meanwhile. */
+  readonly busy: boolean;
+  /** Lay the diagram on screen out, as the Tidy button does. Rejects with the layout's own refusal. */
+  tidy(): Promise<void>;
+  /** Route the lines around the cards, as the Route button does. */
+  routeEdges(): Promise<void>;
+  /**
+   * The board as a PNG: a region of it, at a ratio, with padding. Rejects
+   * with {@link EditorRefused} when the window cannot draw.
+   */
+  capture(options: { bounds: Rect; pixelRatio: number; padding: number }): Promise<Blob>;
+}
+
+/** Why the editor would not do what the handle asked. */
+export type EditorRefusal = 'hidden' | 'busy' | 'gone';
+
+export class EditorRefused extends Error {
+  constructor(readonly reason: EditorRefusal) {
+    super(reason);
+    this.name = 'EditorRefused';
+  }
+}
+
 /** What the editor says about a layout pass, and what it says it settled. */
 export interface EditorLayoutReports {
     /**
@@ -272,6 +304,11 @@ export interface SolutionDesignEditorProps {
    * preventDefault no-op so the package still works standalone.
    */
   onForceSave?: () => void;
+  /**
+   * The editor's handle, whenever it changes, and `undefined` on unmount
+   * (ADR-0007). A host that answers an agent holds the latest one.
+   */
+  onHandle?: (handle: EditorHandle | undefined) => void;
 }
 
 export interface ExportTitleBlock {

@@ -23,8 +23,8 @@ export function useAgentGateway(gateway: AgentGateway | undefined, session: Sess
   const view = useRef(session)
   view.current = session
 
-  useEffect(() => gateway?.on(async (request) => {
+  useEffect(() => gateway?.on((request) => {
     const held = view.current
-    return held ? handle(request, held) : refused('agent.noProject')
+    return held ? handle(request, held) : Promise.resolve(refused('agent.noProject'))
   }), [gateway])
 }
