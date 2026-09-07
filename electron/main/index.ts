@@ -27,7 +27,7 @@ import { installAppMenu, reportTheme, sendCommand } from './appMenu'
 import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
-import { checkForUpdatesNow, startUpdates } from './updates'
+import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
 
 /**
  * A throw nobody caught. Logged rather than left to Electron's default, which
@@ -316,6 +316,7 @@ void app.whenReady().then(() => {
   // The menu item is unconditional: checking by hand has to work even in a build
   // that never checks by itself, which is the point of an off switch.
   startUpdates()
+  registerSettingsChannel()
 
   const menu = () => installAppMenu({
     recents: recentDirectories(),

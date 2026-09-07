@@ -28,7 +28,8 @@ import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../adapters/browser/workingDirectory'
 import { DesktopProjectHistory } from '../adapters/desktop/DesktopProjectHistory'
-import { desktopCommands, desktopFiles, desktopHistory } from '../adapters/desktop/desktopFiles'
+import { desktopCommands, desktopFiles, desktopHistory, desktopSettings } from '../adapters/desktop/desktopFiles'
+import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
 import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
@@ -59,6 +60,7 @@ import type { Diagnostics } from '../ports/Diagnostics'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
+import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type { GroupStore } from '../ports/GroupStore'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
@@ -121,6 +123,11 @@ export type Shell = {
    */
   folderSettings?: FolderSettingsStore
   /**
+   * The settings the desktop's main process keeps for itself — whether to
+   * check for updates. Absent in a browser tab, which has no host to ask.
+   */
+  updateSettings?: UpdateSettingsStore
+  /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
    * own top bar.
@@ -147,6 +154,9 @@ export function composeShell(): Shell {
     diagnostics: new ConsoleDiagnostics(),
     hostControls: browserHostControls(),
     storage: storage ? 'browser' : 'memory',
+    // The one desktop seam that does not wait for a folder: it is about this
+    // install, not about where the projects are.
+    updateSettings: desktopSettings() && new DesktopUpdateSettings(desktopSettings()!),
     windowChrome: hostWindowChrome(),
   }
 }

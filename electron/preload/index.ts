@@ -19,7 +19,7 @@
  */
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
-  DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory,
+  DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings,
 } from '../../src/adapters/desktop/channel'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import type { ThemeMode } from '../../src/platform/theme'
@@ -33,6 +33,8 @@ export type DesktopBridge = {
   readonly commands: DesktopCommands
   /** Snapshots of the working directory, through the machine's own git. */
   readonly history: DesktopHistory
+  /** What main keeps for itself: the update settings. See `DesktopSettings`. */
+  readonly settings: DesktopSettings
 }
 
 const files: DesktopFiles = {
@@ -83,12 +85,18 @@ const history: DesktopHistory = {
   filesAt: (root, sha, prefix) => ipcRenderer.invoke('git:filesAt', root, sha, prefix),
 }
 
+const settings: DesktopSettings = {
+  readUpdates: () => ipcRenderer.invoke('settings:readUpdates'),
+  writeUpdates: (patch) => ipcRenderer.invoke('settings:writeUpdates', patch),
+}
+
 const bridge: DesktopBridge = {
   platform: process.platform,
   versions: { electron: process.versions.electron, chrome: process.versions.chrome },
   files,
   commands,
   history,
+  settings,
 }
 
 contextBridge.exposeInMainWorld('desktop', bridge)

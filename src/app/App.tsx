@@ -34,7 +34,13 @@ import { refFor, sameRef } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
+import type { UpdateSettings } from '../platform/updateSettings'
+import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
+import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { ProjectHistory } from '../ports/ProjectHistory'
+import type { UpdateSettingsStore } from '../ports/UpdateSettings'
+import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -148,6 +154,13 @@ export type AppProps = {
   recentFolders?: readonly { root: string; name: string }[]
   /** The snapshots of the working directory. Absent where there can be none. */
   history?: ProjectHistory
+  /**
+   * The two folder scopes of ADR-0005. Absent where there is no folder; the
+   * machine section of the preferences dialog needs this AND a history.
+   */
+  folderSettings?: FolderSettingsStore
+  /** The desktop's own update settings. Absent on the web, and the section with it. */
+  updateSettings?: UpdateSettingsStore
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -170,7 +183,7 @@ export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   storage = 'browser', workingDirectory, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
-  history, initialProject, initialPreferences,
+  history, folderSettings, updateSettings, initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -212,6 +225,11 @@ export function App({
     diagnostics.report({ level: 'error', where, message: key ?? 'rejected', cause })
     if (key) toasts.notify(s(key), 'error')
   }, [diagnostics, toasts, s])
+
+  // Kept in a ref so an effect can report without depending on `failed`'s
+  // identity — see the group record effect below for the reason.
+  const failedRef = useRef(failed)
+  failedRef.current = failed
 
   const [project, setProject] = useState<ProjectSnapshot | undefined>(initialProject)
 
@@ -262,11 +280,71 @@ export function App({
    * which subscribes to the same stream.
    */
   const bus = useHostCommands(commands)
+  const [prefsOpen, setPrefsOpen] = useState(false)
   useEffect(() => bus.on((command) => {
     if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
     if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
+    if (command.type === 'preferences') setPrefsOpen(true)
   }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs])
+
+  /**
+   * The two scopes the dialog reads from somewhere other than the blob.
+   *
+   * Read when the dialog opens, not at boot: the update settings are a round
+   * trip to main and the machine file is a read from the folder, and neither
+   * is needed until somebody is looking. The machine section also asks the
+   * history whether it is available at all — a folder in a browser tab has
+   * one seam and not the other, and offering sync there would be offering
+   * something that cannot happen.
+   */
+  const [updates, setUpdates] = useState<UpdateSettings | undefined>(undefined)
+  const [local, setLocal] = useState<LocalSettings | undefined>(undefined)
+  useEffect(() => {
+    if (!prefsOpen) return
+    let live = true
+    if (updateSettings) {
+      void updateSettings.read().then(
+        (held) => { if (live) setUpdates(held) },
+        (cause: unknown) => failedRef.current('updateSettings', cause),
+      )
+    }
+    if (folderSettings && history) {
+      void history.available().then(async (can) => {
+        if (!can) return
+        const held = await folderSettings.readLocal()
+        if (live) setLocal(held)
+      }, (cause: unknown) => failedRef.current('folderSettings', cause))
+    }
+    return () => { live = false }
+  }, [prefsOpen, updateSettings, folderSettings, history])
+
+  const settingFailed = useCallback((where: string, cause: unknown) => {
+    failedRef.current(where, cause)
+    toasts.notify(s('prefs.writeFailed', { message: reasonOf(cause) }), 'error')
+  }, [toasts, s])
+
+  const changeUpdates = useCallback((checkAutomatically: boolean) => {
+    if (!updateSettings) return
+    // Optimistic, and put back from what the host says is now in force.
+    setUpdates((held) => held && { ...held, checkAutomatically })
+    void updateSettings.write({ checkAutomatically }).then(setUpdates, (cause: unknown) => {
+      settingFailed('updateSettings.write', cause)
+      void updateSettings.read().then(setUpdates, () => undefined)
+    })
+  }, [updateSettings, settingFailed])
+
+  const changeLocal = useCallback((patch: LocalSettingsPatch) => {
+    if (!folderSettings) return
+    setLocal((held) => held && { git: { ...held.git, ...patch.git } })
+    void folderSettings.writeLocal(patch).then(
+      () => folderSettings.readLocal().then(setLocal),
+      (cause: unknown) => {
+        settingFailed('folderSettings.write', cause)
+        void folderSettings.readLocal().then(setLocal, () => undefined)
+      },
+    )
+  }, [folderSettings, settingFailed])
 
   // The second fact the host is told, after unsaved work: which theme is on.
   useEffect(() => { onThemeMode?.(prefs.themeMode) }, [onThemeMode, prefs.themeMode])
@@ -524,12 +602,10 @@ export function App({
    */
   const [groupProfiles, setGroupProfiles] = useState<GroupProfile[]>([])
   const groupKey = project?.ref.group
-  // How a failure is reported is not an input to reading the record. Kept in a
-  // ref so it cannot re-trigger the read: `list()` answers with a new array
-  // every time, so a dependency that changes identity on render is not a
-  // needless read but an endless one.
-  const failedRef = useRef(failed)
-  failedRef.current = failed
+  // How a failure is reported is not an input to reading the record. `failed`
+  // is read through the ref so it cannot re-trigger the read: `list()` answers
+  // with a new array every time, so a dependency that changes identity on
+  // render is not a needless read but an endless one.
   useEffect(() => {
     if (!groupKey) return
     let live = true
@@ -629,7 +705,6 @@ export function App({
             onStorageResult={reportStorage}
             s={s}
             language={prefs.language}
-            onChooseLanguage={prefs.chooseLanguage}
             editorPreferences={prefs.preferences}
             onEditorPreferencesChange={prefs.savePreferences}
             onLeave={leaveProject}
@@ -678,6 +753,23 @@ export function App({
             {s('shell.storageFailed')}
           </Alert>
         )}
+        <PreferencesDialog
+          open={prefsOpen}
+          onClose={() => setPrefsOpen(false)}
+          language={prefs.language}
+          onLanguageChange={prefs.chooseLanguage}
+          themeMode={prefs.themeMode}
+          onThemeChange={prefs.chooseTheme}
+          order={order}
+          onOrderChange={chooseOrder}
+          updates={updateSettings && updates && {
+            checkAutomatically: updates.checkAutomatically, onChange: changeUpdates,
+          }}
+          machine={folderSettings && history && local && {
+            ...local.git, path: LOCAL_SETTINGS_PATH, onChange: changeLocal,
+          }}
+          s={s}
+        />
         <ToastBar
           toast={toasts.toast}
           open={toasts.open}

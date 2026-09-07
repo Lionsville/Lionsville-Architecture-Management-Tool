@@ -91,7 +91,6 @@ export type ProjectWorkspaceProps = {
   onStorageResult: StorageNotice
   s: Translate
   language: Language
-  onChooseLanguage: (language: Language) => void
   editorPreferences: unknown
   onEditorPreferencesChange: (next: EditorPreferences) => void
 
@@ -139,8 +138,7 @@ function localToday(): string {
 
 export function ProjectWorkspace({
   project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
-  documents, notify, onStorageResult, s, language, onChooseLanguage, editorPreferences,
-  onEditorPreferencesChange,
+  documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
@@ -375,7 +373,10 @@ export function ProjectWorkspace({
           requests={{ focus: focusRequest, documentation: docRequest }}
           layout={{ onError: onLayoutError, onSettled: session.onLayoutSettled }}
           preferences={{ initial: editorPreferences, onChange: onEditorPreferencesChange }}
-          language={{ value: language, onChange: onChooseLanguage }}
+          // No `onChange`: the language is chosen in the preferences dialog
+          // now (ADR-0005), and the editor's contract withdraws its own NL/EN
+          // toggle when the host owns the language elsewhere.
+          language={{ value: language }}
           logos={{
             library: session.logoLibrary,
             onRequestUpload: logoPicker.open,

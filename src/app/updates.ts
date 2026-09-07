@@ -16,35 +16,15 @@
  * A download link works on every platform, always, and asks first.
  */
 
-/** What the user has decided about update checks. Persisted by the desktop. */
-export type UpdateSettings = {
-  readonly checkAutomatically: boolean
-  /**
-   * A version the user pressed "Skip this version" on. One version, not a list:
-   * skipping is a way of saying "not this one", and the next release is a new
-   * question.
-   */
-  readonly skippedVersion?: string
-}
-
-export const DEFAULT_UPDATE_SETTINGS: UpdateSettings = { checkAutomatically: true }
+import type { UpdateSettings } from '../platform/updateSettings'
 
 /**
- * The settings out of whatever was on disk.
- *
- * Checking is on unless the file says otherwise, so a corrupt, empty or
- * hand-edited file fails towards being told about security fixes rather than
- * away from it.
+ * The settings themselves moved to `platform/updateSettings.ts`, where both
+ * processes can read them (ADR-0005). Re-exported so the arithmetic and the
+ * shape are still one import for main.
  */
-export function readUpdateSettings(stored: unknown): UpdateSettings {
-  if (!stored || typeof stored !== 'object') return DEFAULT_UPDATE_SETTINGS
-  const raw = stored as Record<string, unknown>
-  const skipped = raw['skippedVersion']
-  return {
-    checkAutomatically: raw['checkAutomatically'] !== false,
-    ...(typeof skipped === 'string' && skipped ? { skippedVersion: skipped } : {}),
-  }
-}
+export { DEFAULT_UPDATE_SETTINGS, readUpdateSettings } from '../platform/updateSettings'
+export type { UpdateSettings } from '../platform/updateSettings'
 
 type Version = { readonly numbers: readonly number[]; readonly prerelease: string }
 

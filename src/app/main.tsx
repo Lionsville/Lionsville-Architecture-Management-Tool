@@ -322,6 +322,8 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         onUnsavedWork={commands?.reportUnsaved}
         onThemeMode={commands?.reportTheme}
         history={shell.history}
+        folderSettings={shell.folderSettings}
+        updateSettings={shell.updateSettings}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}

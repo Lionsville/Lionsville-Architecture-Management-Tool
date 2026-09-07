@@ -22,6 +22,7 @@
  * has to understand it too.
  */
 import type { HostCommands } from '../../platform/hostCommands'
+import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
 
 export type DesktopCommands = HostCommands
 
@@ -57,6 +58,19 @@ export type DesktopHistory = {
   history(root: string, limit?: number): Promise<DesktopCommit[]>
   /** One project folder's text files as they were at a commit. */
   filesAt(root: string, sha: string, prefix: string): Promise<{ path: string; text: string }[]>
+}
+
+/**
+ * The settings main keeps for itself (ADR-0005): what it must read before any
+ * window exists. A channel of its own beside the files, because `userData` is
+ * not a folder the user granted, and because main reacts to a write — the
+ * six-hourly timer starts or stops — which a file written behind its back
+ * could not make it do.
+ */
+export type DesktopSettings = {
+  readUpdates(): Promise<UpdateSettings>
+  /** Patch, and answer with what is now in force. */
+  writeUpdates(patch: UpdateSettingsPatch): Promise<UpdateSettings>
 }
 
 export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: number }

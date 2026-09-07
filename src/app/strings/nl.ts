@@ -173,6 +173,22 @@ export const NL: Record<keyof typeof EN, string> = {
   'settings.defaultAuthorHelp': 'Vermeld op een geëxporteerd aanzicht zonder eigen auteur.',
   'settings.defaultColumns': 'De volwassenheidskolommen waarmee een nieuw landschap begint.',
 
+  'prefs.title': 'Voorkeuren',
+  'prefs.general': 'ALGEMEEN',
+  'prefs.language': 'Taal',
+  'prefs.theme': 'Thema',
+  'prefs.projectOrder': 'Volgorde van de projectenlijst',
+  'prefs.updates': 'UPDATES',
+  'prefs.checkAutomatically': 'Automatisch op updates controleren',
+  'prefs.updatesNote':
+    'Kijkt bij het starten en elke zes uur op de releasepagina. Er wordt niets gedownload zonder te vragen.',
+  'prefs.thisMachine': 'DEZE MAP, OP DEZE MACHINE',
+  'prefs.thisMachineNote':
+    'Staat in {path} en wordt niet gedeeld \u2014 een andere machine die deze map opent beslist zelf.',
+  'prefs.pullOnOpen': 'Van de remote ophalen als deze map wordt geopend',
+  'prefs.pushAfterSnapshot': 'Na elke momentopname pushen',
+  'prefs.writeFailed': 'Die instelling kon niet worden bewaard: {message}',
+
   'group.title': 'Groepsinstellingen',
   'group.open': 'Instellingen…',
   'group.openFor': 'Instellingen voor {name}',

@@ -31,7 +31,7 @@
  * price of not building one yet; when the file channel arrives, this notice
  * should move into the shell with the rest of the UI.
  */
-import { app, BrowserWindow, dialog, net, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
@@ -42,6 +42,7 @@ import {
   updateAvailable,
 } from '../../src/app/updates'
 import type { Release, UpdateSettings } from '../../src/app/updates'
+import type { UpdateSettingsPatch } from '../../src/platform/updateSettings'
 
 /**
  * Where the releases are. Must agree with the `publish` block in
@@ -234,6 +235,30 @@ function schedule(): void {
 function stop(): void {
   if (timer) clearInterval(timer)
   timer = undefined
+}
+
+/**
+ * The renderer's side of these settings (ADR-0005): the preferences dialog
+ * reads them and writes the one that is a preference. A write reacts the way
+ * the checkbox on the native dialog does — the timer starts or stops now, not
+ * at the next launch — which is the reason this is a channel and not a file
+ * the renderer could edit.
+ *
+ * The patch is a shape until it has been checked, like every payload from the
+ * renderer: only a boolean under the one key the dialog owns gets through.
+ */
+export function registerSettingsChannel(): void {
+  ipcMain.handle('settings:readUpdates', (): UpdateSettings => settings)
+  ipcMain.handle('settings:writeUpdates', async (_event, patch: unknown): Promise<UpdateSettings> => {
+    const wanted = (patch as UpdateSettingsPatch | undefined)?.checkAutomatically
+    if (typeof wanted !== 'boolean') return settings
+    if (wanted !== settings.checkAutomatically) {
+      await saveSettings({ ...settings, checkAutomatically: wanted })
+      if (wanted) schedule()
+      else stop()
+    }
+    return settings
+  })
 }
 
 /** The menu item. Always checks, whatever the automatic setting says. */

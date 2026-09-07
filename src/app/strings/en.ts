@@ -239,6 +239,27 @@ export const EN = {
   'settings.defaultAuthorHelp': 'Named on an exported diagram that has no author of its own.',
   'settings.defaultColumns': 'The maturity columns a new landscape starts with.',
 
+  // --- preferences, in three scopes (ADR-0005) ------------------------------
+  'prefs.title': 'Preferences',
+  'prefs.general': 'GENERAL',
+  'prefs.language': 'Language',
+  'prefs.theme': 'Theme',
+  'prefs.projectOrder': 'Project list order',
+  'prefs.updates': 'UPDATES',
+  'prefs.checkAutomatically': 'Check for updates automatically',
+  'prefs.updatesNote':
+    'Looks at the release page on start and every six hours. Nothing is downloaded without asking.',
+  /**
+   * The machine-local scope says out loud that it is not shared: the file
+   * sits in the folder, and everything else in the folder travels.
+   */
+  'prefs.thisMachine': 'THIS FOLDER, ON THIS MACHINE',
+  'prefs.thisMachineNote':
+    'Kept in {path} and not shared \u2014 another machine that opens this folder decides for itself.',
+  'prefs.pullOnOpen': 'Pull from the remote when this folder is opened',
+  'prefs.pushAfterSnapshot': 'Push after every snapshot',
+  'prefs.writeFailed': 'That setting could not be saved: {message}',
+
   'group.title': 'Group settings',
   'group.open': 'Settings…',
   'group.openFor': 'Settings for {name}',

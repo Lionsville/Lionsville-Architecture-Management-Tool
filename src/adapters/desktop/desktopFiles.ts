@@ -6,9 +6,11 @@
  * window chrome. Reading a global is why this sits in an adapter; what to DO
  * about the answer is `app/composition.ts`.
  */
-import type { DesktopCommands, DesktopFiles, DesktopHistory } from './channel'
+import type { DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings } from './channel'
 
-type Bridge = { files?: DesktopFiles; commands?: DesktopCommands; history?: DesktopHistory }
+type Bridge = {
+  files?: DesktopFiles; commands?: DesktopCommands; history?: DesktopHistory; settings?: DesktopSettings
+}
 
 function bridge(): Bridge | undefined {
   return (window as unknown as { desktop?: Bridge }).desktop
@@ -26,4 +28,9 @@ export function desktopCommands(): DesktopCommands | undefined {
 /** Snapshots, through the machine's own git. Absent in a browser tab. */
 export function desktopHistory(): DesktopHistory | undefined {
   return bridge()?.history
+}
+
+/** The settings main keeps for itself. Absent in a browser tab. */
+export function desktopSettings(): DesktopSettings | undefined {
+  return bridge()?.settings
 }
