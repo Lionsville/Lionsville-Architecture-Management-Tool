@@ -20,13 +20,13 @@ import type { IdPolicy, MakeId } from '../model/keys'
 import type { Diagram } from '../model/normalised'
 import { toDiagram, toArrays } from '../model/normalised'
 import {
-  defaultContainerPosition, defaultZonePosition, placementRect,
+  defaultContainerPosition, defaultZonePosition, groupRectAround, placementRect, unionRects,
 } from '../model/placement'
 import { HOME_ZONE } from '../model/zones'
 import { seedContainerDiagram } from '../model/containerDiagram'
 import type {
-  DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, ElementId, ElementKind, Layer7Zone,
-  Lifecycle,
+  DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId,
+  ElementKind, Layer7Zone, Lifecycle,
 } from '../model/types'
 import type { AdrStatus } from '../model/adr'
 import { isAdrLocked, newAdr, nextAdrNumber, transitionAdr, transitionsFrom } from '../decisions/adr'
@@ -89,12 +89,16 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const targetId = args.targetId as string
       for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
       if (sourceId === targetId) return refused('agent.badArguments', 'a connection needs two different elements')
+      const look = lineLook(args)
+      if ('ok' in look) return look
       const connection: DesignConnection = {
         id: view.ids.connection(),
         sourceId,
         targetId,
         isBidirectional: args.isBidirectional === true,
         ...strings(args, ['label', 'protocol']),
+        ...(look.color !== undefined ? { color: look.color } : {}),
+        ...(look.lineStyle !== undefined ? { lineStyle: look.lineStyle } : {}),
       }
       return {
         command: { type: 'connection.create', connection, origin: 'agent' },
@@ -104,7 +108,11 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'connection.update': {
       const id = args.id as string
       if (!model.connections[id]) return refused('agent.unknownId', `connection ${id}`)
-      const patch = fieldsOf(args, ['label', 'protocol', 'isBidirectional'])
+      const look = lineLook(args)
+      if ('ok' in look) return look
+      // Solid and an empty colour are asked for by name and land as deletions,
+      // so the line falls back to the theme rather than carrying a default.
+      const patch = { ...fieldsOf(args, ['label', 'protocol', 'isBidirectional']), ...look }
       return {
         command: { type: 'connection.update', id, patch: patch as Partial<DesignConnection>, origin: 'agent' },
         answer: json({ id, changed: Object.keys(patch) }),
@@ -162,6 +170,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         answer: json({ diagramId: diagram.id, elementId, x: placement.x, y: placement.y, zone: placement.zone, domainGroup: placement.domainGroup }),
       }
     }
+    case 'group': return groupElements(args, view)
     case 'align':
     case 'distribute': {
       const placed = onDiagram(args, view)
@@ -327,6 +336,60 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   }
 }
 
+/**
+ * File elements under a domain group and draw its box. The box is the
+ * editor's own "Group into new domain group" maths around the members, and an
+ * existing box is never moved or shrunk: it grows to the union of itself and
+ * what it now holds, so a card already inside stays inside.
+ */
+function groupElements(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const { model } = view
+  const diagram = diagramOf(args, view)
+  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  if (diagram.kind !== 'layer7') return refused('agent.badArguments', 'domain groups are drawn on a landscape')
+  const name = (args.name as string).trim()
+  if (!name) return refused('agent.badArguments', '"name" must not be blank')
+  const color = args.color === undefined || args.color === null ? undefined : hexColour(args.color)
+  if (color === false) return refused('agent.badArguments', '"color" must be a hex colour like #2e86c1')
+
+  const placements: DiagramPlacement[] = []
+  for (const id of (args.elementIds as string[] | undefined) ?? []) {
+    if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
+    const held = diagram.placements[id]
+    if (!held) return refused('agent.notDrawn', id)
+    if ((held.zone ?? 'landscape') !== 'landscape') {
+      return refused('agent.badArguments', `${id} is in the ${held.zone} band; only landscape cards can be grouped`)
+    }
+    placements.push(held)
+  }
+
+  const current = diagram.layoutConfig ?? {}
+  const groups = [...(current.domainGroups ?? [])]
+  const index = groups.findIndex((g) => g.name === name)
+  const existing: DomainGroupRect | undefined = index >= 0 ? groups[index] : undefined
+  if (!existing && placements.length === 0) return refused('agent.badArguments', 'a new group needs at least one element')
+
+  const around = groupRectAround(placements.map((p) => placementRect(model.elements[p.elementId].kind, p)))
+  const box = unionRects([...(existing ? [existing] : []), ...(around ? [around] : [])])!
+  const rect: DomainGroupRect = { name, x: box.x, y: box.y, width: box.width, height: box.height }
+  const tint = color === undefined ? existing?.color : color === '' ? undefined : color
+  if (tint !== undefined) rect.color = tint
+  if (index >= 0) groups[index] = rect
+  else groups.push(rect)
+
+  const filed = placements.filter((p) => p.domainGroup !== name).map((p) => ({ ...p, domainGroup: name }))
+  return {
+    command: transaction([
+      { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
+      ...(filed.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements: filed }] : []),
+    ], { origin: 'agent' }),
+    answer: json({
+      diagramId: diagram.id, name, created: !existing, box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      members: placements.map((p) => p.elementId),
+    }),
+  }
+}
+
 // --- helpers ----------------------------------------------------------------------------
 
 function diagramOf(args: Args, view: ReadView): Diagram | undefined {
@@ -352,6 +415,29 @@ function onDiagram(args: Args, view: ReadView): { diagram: Diagram; placements: 
 function fieldsOf(args: Args, keys: readonly string[]): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const key of keys) if (args[key] !== undefined && args[key] !== null) out[key] = args[key]
+  return out
+}
+
+/** A hex colour as the model keeps it, '' for "none", or false for something else. */
+function hexColour(value: unknown): string | '' | false {
+  if (typeof value !== 'string') return false
+  const trimmed = value.trim()
+  if (trimmed === '') return ''
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed.toLowerCase() : false
+}
+
+/**
+ * The look of a line as a patch: a colour or a style that was asked for, and
+ * `undefined` — a deletion, to the reducer — for solid and for an empty colour.
+ */
+function lineLook(args: Args): { color?: string; lineStyle?: EdgeLineStyle } | AgentAnswer {
+  const out: { color?: string; lineStyle?: EdgeLineStyle } = {}
+  if (args.color !== undefined && args.color !== null) {
+    const color = hexColour(args.color)
+    if (color === false) return refused('agent.badArguments', '"color" must be a hex colour like #c0392b')
+    out.color = color === '' ? undefined : color
+  }
+  if (typeof args.lineStyle === 'string') out.lineStyle = args.lineStyle === 'solid' ? undefined : args.lineStyle as EdgeLineStyle
   return out
 }
 

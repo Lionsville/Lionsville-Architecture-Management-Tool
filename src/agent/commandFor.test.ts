@@ -13,6 +13,7 @@ import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import { idPolicy } from '../model/keys'
 import { fromArrays, toArrays } from '../model/normalised'
+import { groupRectAround, placementRect, unionRects } from '../model/placement'
 import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { syntheticModel } from '../model/testing/synthetic'
@@ -103,7 +104,9 @@ describe('every write, applied and undone', () => {
     ['element.update', { id: 'billing', description: 'Sends the invoices.', lifecycle: 'retiring' }],
     ['element.remove', { id: 'billing' }],
     ['connect', { sourceId: 'billing', targetId: 'crm', label: 'invoices', protocol: 'REST' }],
+    ['connect', { sourceId: 'billing', targetId: 'crm', color: '#C0392B', lineStyle: 'dashed' }],
     ['connection.update', { id: 'c1', label: 'orders', isBidirectional: true }],
+    ['connection.update', { id: 'c1', color: '#2e86c1', lineStyle: 'dotted' }],
     ['connection.remove', { id: 'c1' }],
     ['decision.propose', { title: 'Move CRM to the cloud' }],
     ['decision.propose', { title: 'Split the API', applicationId: 'billing', body: '# Custom' }],
@@ -113,6 +116,8 @@ describe('every write, applied and undone', () => {
     ['diagram.create', { kind: 'container', applicationId: 'billing' }],
     ['moveBy', { elementIds: ['billing', 'crm'], dx: 40, dy: -20 }],
     ['placeNextTo', { elementId: 'crm', anchorId: 'billing', side: 'below', gap: 24 }],
+    ['group', { name: 'Finance', elementIds: ['crm'] }],
+    ['group', { name: 'Sales', elementIds: ['crm'], color: '#2e86c1' }],
     ['align', { elementIds: ['billing', 'crm'], axis: 'top' }],
     ['distribute', { elementIds: ['billing', 'crm', 'who'], axis: 'horizontal' }],
   ]
@@ -215,6 +220,80 @@ describe('relational placement', () => {
     expect(aligned).toMatchObject({ moved: [{ elementId: 'billing', x: 20 }, { elementId: 'crm', x: 20 }] })
     const spaced = answerOf(commandFor('distribute', { elementIds: ['who', 'billing', 'crm'], axis: 'horizontal' }, view(model)))
     expect((spaced.moved as unknown[]).length).toBe(1)
+  })
+})
+
+describe('the look of a line', () => {
+  const model = fromArrays(host)
+
+  it('keeps a colour as the model does, and leaves the theme its line when nothing is asked', () => {
+    const drawn = prepared(commandFor('connect', { sourceId: 'billing', targetId: 'crm', color: '#C0392B', lineStyle: 'dashed' }, view(model))).command
+    if (drawn.type !== 'connection.create') throw new Error(drawn.type)
+    expect(drawn.connection).toMatchObject({ color: '#c0392b', lineStyle: 'dashed' })
+    const plain = prepared(commandFor('connect', { sourceId: 'billing', targetId: 'crm' }, view(model))).command
+    if (plain.type !== 'connection.create') throw new Error(plain.type)
+    expect('color' in plain.connection).toBe(false)
+    expect('lineStyle' in plain.connection).toBe(false)
+  })
+
+  it('takes solid and an empty colour as deletions, so the line falls back to the theme', () => {
+    const out = prepared(commandFor('connection.update', { id: 'c1', color: '', lineStyle: 'solid' }, view(model))).command
+    if (out.type !== 'connection.update') throw new Error(out.type)
+    expect(Object.keys(out.patch)).toEqual(['color', 'lineStyle'])
+    expect(out.patch.color).toBeUndefined()
+    expect(out.patch.lineStyle).toBeUndefined()
+  })
+
+  it('refuses a colour that is not a hex', () => {
+    expect(commandFor('connection.update', { id: 'c1', color: 'red' }, view(model))).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+    expect(commandFor('connect', { sourceId: 'billing', targetId: 'crm', color: '#abc' }, view(model))).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+  })
+})
+
+describe('group', () => {
+  const model = fromArrays(host)
+  const crm = placementRect('application', { elementId: 'crm', x: 400, y: 400 })
+
+  it('draws a new box around its members, the way the editor does, and files them', () => {
+    const out = commandFor('group', { name: 'Sales', elementIds: ['crm'], color: '#2E86C1' }, view(model))
+    expect(answerOf(out)).toMatchObject({ name: 'Sales', created: true, box: groupRectAround([crm]), members: ['crm'] })
+    const after = roundTrip(model, out)
+    expect(after.diagrams.l7.placements.crm.domainGroup).toBe('Sales')
+    expect(after.diagrams.l7.layoutConfig?.domainGroups).toEqual([{ name: 'Sales', ...groupRectAround([crm]), color: '#2e86c1' }])
+  })
+
+  it('grows an existing box to take a member in, never moving or shrinking it', () => {
+    const boxed = fromArrays({
+      ...host,
+      diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ name: 'Finance', x: 40, y: 300, width: 300, height: 200, color: '#111111' }] } }],
+    })
+    const out = commandFor('group', { name: 'Finance', elementIds: ['crm'] }, view(boxed))
+    const grown = unionRects([{ x: 40, y: 300, width: 300, height: 200 }, groupRectAround([crm])!])
+    expect(answerOf(out)).toMatchObject({ name: 'Finance', created: false, box: grown })
+    const after = roundTrip(boxed, out)
+    expect(after.diagrams.l7.layoutConfig?.domainGroups).toEqual([{ name: 'Finance', ...grown, color: '#111111' }])
+    // The name is the key: no second Finance.
+    expect(after.diagrams.l7.layoutConfig?.domainGroups?.length).toBe(1)
+  })
+
+  it('recolours an existing box on its own, and wants a member for a new one', () => {
+    const boxed = fromArrays({
+      ...host,
+      diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ name: 'Finance', x: 40, y: 300, width: 300, height: 200 }] } }],
+    })
+    const after = roundTrip(boxed, commandFor('group', { name: 'Finance', color: '#aa0000' }, view(boxed)))
+    expect(after.diagrams.l7.layoutConfig?.domainGroups?.[0]).toMatchObject({ x: 40, y: 300, width: 300, height: 200, color: '#aa0000' })
+    expect(commandFor('group', { name: 'Fresh' }, view(boxed))).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+  })
+
+  it('groups only landscape cards, and only on a landscape', () => {
+    expect(commandFor('group', { name: 'People', elementIds: ['who'] }, view(model))).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+    expect(commandFor('group', { name: 'People', elementIds: ['nobody'] }, view(model))).toMatchObject({ ok: false, refusal: 'agent.unknownId' })
+    expect(commandFor('group', { name: 'People', elementIds: ['api'] }, view(model))).toMatchObject({ ok: false, refusal: 'agent.notDrawn' })
+    const withContainer = roundTrip(model, commandFor('diagram.create', { kind: 'container', applicationId: 'billing' }, view(model)))
+    const container = withContainer.order.diagrams.find((id) => withContainer.diagrams[id].kind === 'container')!
+    expect(commandFor('group', { name: 'People', elementIds: ['api'], diagramId: container }, view(withContainer)))
+      .toMatchObject({ ok: false, refusal: 'agent.badArguments' })
   })
 })
 

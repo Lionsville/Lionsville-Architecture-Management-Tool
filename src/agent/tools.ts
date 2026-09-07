@@ -55,6 +55,13 @@ const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `Th
 const KINDS = ['actor', 'application', 'externalSystem', 'inputChannel', 'managementTool', 'component'] as const
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
+const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
+
+/** How a line is drawn. Absent means the theme's own stroke and a solid line. */
+const LINE_FIELDS = {
+  color: { type: 'string', description: 'The stroke, as a hex colour like #c0392b. The theme\'s own when absent.' },
+  lineStyle: { type: 'string', description: 'Solid, dashed or dotted. Solid when absent.', enum: LINE_STYLES },
+} as const satisfies Record<string, ArgumentSchema>
 
 /** The fields of an element an agent may set. Description is markdown, the element's page. */
 const ELEMENT_FIELDS = {
@@ -235,6 +242,7 @@ export const TOOLS = [
         label: { type: 'string', description: 'What flows, in a few words.' },
         protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
         isBidirectional: { type: 'boolean', description: 'Whether it flows both ways. Default false.' },
+        ...LINE_FIELDS,
       },
       required: ['sourceId', 'targetId'],
       additionalProperties: false,
@@ -243,7 +251,9 @@ export const TOOLS = [
   {
     name: 'connection.update',
     tier: 'write',
-    description: 'Change a connection\'s label, protocol or direction.',
+    description:
+      'Change a connection\'s label, protocol, direction, colour or line style. Colour a line by what '
+      + 'flows over it and a busy board reads again; "solid" and an empty colour give the theme back its line.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -251,6 +261,7 @@ export const TOOLS = [
         label: { type: 'string', description: 'What flows, in a few words.' },
         protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
         isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
+        ...LINE_FIELDS,
       },
       required: ['id'],
       additionalProperties: false,
@@ -424,6 +435,25 @@ export const TOOLS = [
         diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
       },
       required: ['elementId', 'anchorId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'group',
+    tier: 'see',
+    description:
+      'File elements under a domain group on a landscape and draw its box: a new box hugs the members, '
+      + 'an existing one grows to take them in and keeps its place. Only cards in the landscape band group. '
+      + 'Name an existing group with no elements to recolour its box. One undo step.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'The group. Its name is its key: the same name is the same box.' },
+        elementIds: { type: 'array', description: 'The elements to file under it.', items: { type: 'string' } },
+        color: { type: 'string', description: 'The box\'s tint, as a hex colour like #2e86c1. The theme\'s neutral when absent.' },
+        diagramId: { type: 'string', description: 'The landscape. Default: the one on screen.' },
+      },
+      required: ['name'],
       additionalProperties: false,
     },
   },
