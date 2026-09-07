@@ -162,18 +162,18 @@ describe('preferencesEqual — 4B fields', () => {
 });
 
 describe('line labels', () => {
-  it('shows every label until somebody asks otherwise', () => {
-    // The default is the behaviour the tool always had; hiding is the opt-in.
-    expect(mergePreferences({}).showEdgeLabels).toBe(true);
+  it('starts on hover only, until somebody asks for them all', () => {
+    // A landscape is busy by nature; the labels are a hover away.
+    expect(mergePreferences({}).showEdgeLabels).toBe(false);
   });
 
-  it('keeps a stored choice to hide them, and ignores junk', () => {
-    expect(mergePreferences({ showEdgeLabels: false }).showEdgeLabels).toBe(false);
-    expect(mergePreferences({ showEdgeLabels: 'no' }).showEdgeLabels).toBe(true);
+  it('keeps a stored choice to show them, and ignores junk', () => {
+    expect(mergePreferences({ showEdgeLabels: true }).showEdgeLabels).toBe(true);
+    expect(mergePreferences({ showEdgeLabels: 'yes' }).showEdgeLabels).toBe(false);
   });
 
   it('is part of the equality', () => {
     const a = mergePreferences({});
-    expect(preferencesEqual(a, { ...a, showEdgeLabels: false })).toBe(false);
+    expect(preferencesEqual(a, { ...a, showEdgeLabels: true })).toBe(false);
   });
 });

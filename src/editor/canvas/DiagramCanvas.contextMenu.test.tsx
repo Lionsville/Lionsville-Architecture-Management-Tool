@@ -280,7 +280,8 @@ describe('DiagramCanvas — connection menu', () => {
   });
 
   it('the label chip opens the same menu; Attach at ▸ Source ▸ Top fixes the source side as an auto row', async () => {
-    const { host } = renderEditor();
+    // Labels start on hover only; the chip is the target here, so it is asked for.
+    const { host } = renderEditor({ initialPreferences: { showEdgeLabels: true } });
     // The side change is synchronous; the routing pass it triggers (live routing
     // is off, so the editor runs one) lands the routed bends a moment later. Read
     // every row the editor has asked for rather than only the current one, so the

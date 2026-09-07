@@ -320,11 +320,13 @@ function modelWithConnection(): DesignModel {
   return model;
 }
 
+// Labels start on hover only; these tests reach the chip directly, so they ask
+// for them all, as a person who wants them would.
 describe('SolutionDesignEditor — edge labels', () => {
   it('stacks the technology below the description in ONE chip, honouring newlines', async () => {
     const model = modelWithConnection();
     model.connections[0].label = 'Sends orders\nand invoices';
-    renderEditor({ model });
+    renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
 
     const chip = await screen.findByTestId('edge-label-c1');
     const spans = chip.querySelectorAll('span');
@@ -335,7 +337,7 @@ describe('SolutionDesignEditor — edge labels', () => {
   });
 
   it('double-click opens a multiline editor; blur commits the new label', async () => {
-    const { landed } = renderEditor({ model: modelWithConnection() });
+    const { landed } = renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: true } });
 
     fireEvent.doubleClick(await screen.findByTestId('edge-label-c1'));
     const textarea = screen.getByPlaceholderText('Interface description…') as HTMLTextAreaElement;
@@ -349,7 +351,7 @@ describe('SolutionDesignEditor — edge labels', () => {
   });
 
   it('Escape cancels the inline edit without changing anything', async () => {
-    const { sent } = renderEditor({ model: modelWithConnection() });
+    const { sent } = renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: true } });
 
     fireEvent.doubleClick(await screen.findByTestId('edge-label-c1'));
     const textarea = screen.getByPlaceholderText('Interface description…');
@@ -365,7 +367,7 @@ describe('SolutionDesignEditor — edge labels', () => {
     model.diagrams[0].edgeRoutes = [
       { connectionId: 'c1', waypoints: [], labelPosition: { x: 500, y: 200 } },
     ];
-    const { landed } = renderEditor({ model });
+    const { landed } = renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
 
     fireEvent.contextMenu(await screen.findByTestId('edge-label-c1'));
     fireEvent.click(screen.getByText('Reset label position'));
@@ -398,7 +400,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
   it('shows no handles on an UNSELECTED line, whoever drew it', async () => {
     for (const source of ['manual', 'auto'] as const) {
       cleanup();
-      renderEditor({ model: routedModel(source) });
+      renderEditor({ model: routedModel(source), initialPreferences: { showEdgeLabels: true } });
       // The label proves the edge rendered — it is the handles specifically that stay away.
       await screen.findByTestId('edge-label-c1');
       expect(screen.queryByTestId('waypoint-c1-0')).toBeNull();
@@ -409,7 +411,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
   it('shows a bend handle per waypoint and a segment handle per leg once the line is selected — router output included', async () => {
     for (const source of ['manual', 'auto'] as const) {
       cleanup();
-      renderEditor({ model: routedModel(source) });
+      renderEditor({ model: routedModel(source), initialPreferences: { showEdgeLabels: true } });
       await selectEdge('c1');
       expect(await screen.findByTestId('waypoint-c1-0')).toBeTruthy();
       expect(screen.getByTestId('waypoint-c1-1')).toBeTruthy();
@@ -427,7 +429,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // stripped their handles.
     const model = modelWithConnection();
     model.diagrams[0].edgeRoutes = [{ connectionId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
-    renderEditor({ model });
+    renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
     await screen.findByTestId('edge-label-c1');
     const path = document.getElementById('c1') as SVGPathElement | null;
     // A manual radius of 8 on this leg geometry: the corner's control point is the
@@ -441,7 +443,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // line with bends always drew rounded whatever the user picked.
     const model = routedModel('manual');
     model.connections[0].routing = 'orthogonal';
-    renderEditor({ model });
+    renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
     await screen.findByTestId('edge-label-c1');
     const d = document.getElementById('c1')?.getAttribute('d') ?? '';
     // Radius 0: the polyline goes straight through both bends, no arc anywhere.
@@ -549,25 +551,37 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     return path;
   };
 
-  it('shows labels by default, and hides them all on the toggle', async () => {
+  it('starts on hover only, and shows them all on the toggle', async () => {
     renderEditor({ model: modelWithConnection() });
-    await screen.findByTestId('edge-label-c1');
-    expect(labelsButton().getAttribute('aria-pressed')).toBe('true');
+    await screen.findByTestId('rf__edge-c1');
+    expect(labelsButton().getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByTestId('edge-label-c1')).toBeNull();
 
     fireEvent.click(labelsButton());
 
-    expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+    expect(await screen.findByTestId('edge-label-c1')).toBeDefined();
   });
 
-  it('starts hidden when the host says so, and reports the change back', async () => {
+  it('starts shown when the host says so, and reports the change back', async () => {
     const onPreferencesChange = vi.fn();
     renderEditor({
       model: modelWithConnection(),
-      initialPreferences: { showEdgeLabels: false },
+      initialPreferences: { showEdgeLabels: true },
       onPreferencesChange,
     });
-    await screen.findByTestId('rf__edge-c1');
+    await screen.findByTestId('edge-label-c1');
+
+    fireEvent.click(labelsButton());
+    expect(onPreferencesChange).toHaveBeenCalledWith(
+      expect.objectContaining({ showEdgeLabels: false }),
+    );
     expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+  });
+
+  it('shows them when asked, and reports that back', async () => {
+    const onPreferencesChange = vi.fn();
+    renderEditor({ model: modelWithConnection(), onPreferencesChange });
+    await screen.findByTestId('rf__edge-c1');
 
     fireEvent.click(labelsButton());
     expect(onPreferencesChange).toHaveBeenCalledWith(

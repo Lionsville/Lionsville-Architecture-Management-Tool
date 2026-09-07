@@ -36,9 +36,10 @@ export interface EditorPreferences {
   /** The React Flow minimap (4B): off by default — it costs board area. */
   showMinimap: boolean;
   /**
-   * Every line's label chip, always. Off, a busy board shows its lines bare and
-   * a label appears only while its line is under the pointer, selected or being
-   * edited — the labels are still there, they just stop competing for the eye.
+   * Every line's label chip, always. Off — the default — a board shows its
+   * lines bare and a label appears only while its line is under the pointer,
+   * selected or being edited: the labels are still there, they just stop
+   * competing for the eye. A person who wants them all on says so once.
    */
   showEdgeLabels: boolean;
   /**
@@ -86,7 +87,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
   paletteWidth: PANEL_LIMITS.palette.default,
   inspectorWidth: PANEL_LIMITS.inspector.default,
   showMinimap: false,
-  showEdgeLabels: true,
+  showEdgeLabels: false,
   tidyOptions: BOARD_TIDY_DEFAULTS,
   groupTidyOptions: DEFAULT_TIDY_OPTIONS,
 };

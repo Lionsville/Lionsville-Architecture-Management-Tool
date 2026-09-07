@@ -68,6 +68,8 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     onActiveDiagramChange: vi.fn(),
     onCreateContainerDiagram: vi.fn(),
     onCreateLayer7Diagram: vi.fn(),
+    // Labels start on hover only; the chip is dragged here, so it is asked for.
+    initialPreferences: { showEdgeLabels: true },
     ...overrides,
   };
   render(
