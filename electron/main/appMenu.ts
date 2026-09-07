@@ -6,6 +6,10 @@
  * and a hand-written template would mean owning all of that, including the
  * platform differences, to gain five items.
  *
+ * One of those defaults is a File menu of its own, holding nothing but Close
+ * Window, and ours takes its place rather than sitting beside it. See
+ * {@link fileMenuSlot}.
+ *
  * **The menu decides nothing.** Every item sends a command to the window
  * (`HostCommand`) and that is the end of main's involvement. Whether
  * anything is open, whether there is unsaved work, what a working file is: all
@@ -18,6 +22,7 @@
 import { Menu, MenuItem, webContents } from 'electron'
 import type { MenuItemConstructorOptions } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
+import { fileMenuSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 
 /**
@@ -79,9 +84,10 @@ export function installAppMenu(options: {
     ],
   })
 
-  // After the app menu on macOS, first on the platforms that have none.
+  // Over Electron's own File menu, whose one item ours ends with.
   const items = [...defaults]
-  items.splice(process.platform === 'darwin' ? 1 : 0, 0, file)
+  const slot = fileMenuSlot(items, process.platform)
+  items.splice(slot.index, slot.replace ? 1 : 0, file)
 
   const menu = new Menu()
   for (const held of items) menu.append(held)
