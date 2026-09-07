@@ -12,11 +12,13 @@ later the release page carries:
 | `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` | Linux, unsigned |
 | `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | update manifests — written by electron-builder, read by nothing since the notice replaced the self-updater |
 
-**Then the README.** Its Download section links three assets by full name,
-and the name carries the version (`…-1.1.0-mac-arm64.dmg`), so a stable
-release is followed by one commit that bumps the tag, the three filenames and
-the version line under them. A beta is not: the README points at the stable
-release only.
+**Then the README, by itself.** Its Download section links three installers
+by full name, and the name carries the version (`…-1.1.0-mac-arm64.dmg`). The
+workflow's last job (`readme`) runs `build/readmeDownloads.ts` on `main` once
+all three builds have succeeded and commits the three moved links, so the
+README points at the newest stable release without anyone editing it. A beta
+skips that job: the README offers stable releases only. If one platform's
+build fails and is re-run, the job runs again after it.
 
 **The tag is the version.** `package.json` says `0.0.0` and stays that way; the
 workflow stamps the number from the tag before it builds. A tag that is not

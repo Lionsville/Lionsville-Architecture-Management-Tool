@@ -29,7 +29,7 @@ export default defineConfig({
     // user chose, and writes files atomically. Neither is code to leave to a
     // smoke run. The files it tests import `node:fs` and no Electron, which is
     // exactly why they are separate from the IPC wiring.
-    include: ['src/**/*.{test,spec}.{ts,tsx}', 'electron/**/*.{test,spec}.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'electron/**/*.{test,spec}.ts', 'build/**/*.test.ts'],
     // The perf tests have a runner of their own (`vitest.perf.config.ts`) and a
     // step of their own in the gate. They build landscapes of thousands of
     // elements, which is tens of seconds — the wrong thing to put in front of a

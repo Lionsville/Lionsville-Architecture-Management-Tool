@@ -1,10 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Windows">
-  <rect x="4" y="4" width="112" height="112" rx="22" fill="#eef2f7" stroke="#c9d3df" stroke-width="2"/>
-  <g fill="none" stroke="#2f5d8a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="26" y="28" width="68" height="44" rx="4"/>
-    <path d="M26 62h68"/>
-    <path d="M32 67h8M44 67h6"/>
-    <path d="M50 78v6M42 84h16"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="170" viewBox="0 0 220 170" role="img" aria-label="Windows: Download .exe">
+  <rect x="1.5" y="1.5" width="217" height="167" rx="16" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <g fill="none" stroke="#0969da" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(74 22)">
+    <rect x="6" y="10" width="60" height="40" rx="4"/>
+    <path d="M6 42h60"/>
+    <path d="M12 46h7M23 46h5"/>
+    <path d="M36 50v8M27 58h18"/>
   </g>
-  <text x="60" y="100" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#24364a">Windows</text>
+  <text x="110" y="120" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#1f2328">Download .exe</text>
+  <text x="110" y="145" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#656d76">x64 installer</text>
 </svg>

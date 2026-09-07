@@ -311,3 +311,38 @@ jobs:
           # A build that failed early has nothing to keep; that is not a second failure.
           if-no-files-found: warn
           retention-days: 14
+
+  # The README's Download section names the installers by file, and the file
+  # names carry the version. So a stable release ends by pointing the README at
+  # itself: only once all three builds have succeeded, since a link to an
+  # installer that never got uploaded is worse than a link one version behind;
+  # never for a beta, which the README does not offer; and on `main`, not on
+  # the tag, so the commit lands where the next release will build from.
+  readme:
+    name: Point the README at this release
+    needs: [preflight, build]
+    if: github.event_name == 'release' && !github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Rewrite the download links
+        run: node build/readmeDownloads.ts "${{ needs.preflight.outputs.version }}"
+      - name: Commit, if anything moved
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "README already points at ${{ needs.preflight.outputs.version }}."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m "readme: downloads point at ${{ needs.preflight.outputs.version }}" \
+            -m "Made by the release workflow once every installer was on the release."
+          git push origin HEAD:main

@@ -17,26 +17,16 @@ copy and take apart.*
 
 ## Download
 
-<table align="center"><tr>
-<td align="center" width="200">
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-mac-arm64.dmg"><img src="docs/download/macos.svg" width="96" alt="macOS"></a><br>
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-mac-arm64.dmg"><b>Download DMG</b></a><br>
-<sub>Apple Silicon · signed, notarized</sub>
-</td>
-<td align="center" width="200">
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-win-x64.exe"><img src="docs/download/windows.svg" width="96" alt="Windows"></a><br>
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-win-x64.exe"><b>Download installer</b></a><br>
-<sub>x64 · signed</sub>
-</td>
-<td align="center" width="200">
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-linux-amd64.deb"><img src="docs/download/linux.svg" width="96" alt="Linux"></a><br>
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-linux-amd64.deb"><b>Download .deb</b></a><br>
-<sub>amd64 · unsigned</sub>
-</td>
-</tr></table>
+<p align="center">
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-mac-arm64.dmg"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/macos-dark.svg"><img src="docs/download/macos.svg" width="220" alt="macOS: Download .dmg"></picture></a>
+&nbsp;
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-win-x64.exe"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/windows-dark.svg"><img src="docs/download/windows.svg" width="220" alt="Windows: Download .exe"></picture></a>
+&nbsp;
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-linux-amd64.deb"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/linux-dark.svg"><img src="docs/download/linux.svg" width="220" alt="Linux: Download .deb"></picture></a>
+</p>
 
 <p align="center"><b><a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest">More details →</a></b><br>
-<sub>Version 1.1.0. The release page also carries a Windows ARM64 installer, a Linux AppImage, and the notes.</sub></p>
+<sub>Version 1.1.0 · the release page also has a Windows ARM64 installer, a Linux AppImage and the notes.</sub></p>
 
 The desktop app checks that release page for a newer version in the background —
 switchable off, and **Check for Updates…** in the app menu asks on request. It
