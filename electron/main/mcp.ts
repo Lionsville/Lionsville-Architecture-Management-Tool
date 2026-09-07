@@ -104,6 +104,27 @@ function broadcast(): void {
   }
 }
 
+/**
+ * Keep the window painting while an agent may ask it to draw.
+ *
+ * Chromium stops painting a page whose window is minimised or covered, and
+ * Electron then reports it hidden — which is the ordinary state of this app
+ * while a person works in a terminal beside it, and exactly when an agent
+ * asks for a picture. With background throttling off the page keeps painting
+ * and keeps saying it is visible, so a capture succeeds without anyone
+ * clicking. It costs a canvas animating in the background, so it is off only
+ * while the server listens, and back on the moment it stops.
+ */
+export function keepPaintingForAgent(contents: Electron.WebContents): void {
+  contents.setBackgroundThrottling(listener === undefined)
+}
+
+function throttleEverywhere(): void {
+  for (const held of webContents.getAllWebContents()) {
+    if (!held.isDestroyed()) keepPaintingForAgent(held)
+  }
+}
+
 function touch(): void {
   if (idle) clearTimeout(idle)
   idle = setTimeout(() => {
@@ -187,6 +208,7 @@ async function start(): Promise<void> {
   if (settings.port !== listener.port || settings.token !== token) {
     await saveSettings({ enabled: true, port: listener.port, token })
   }
+  throttleEverywhere()
   broadcast()
 }
 
@@ -203,6 +225,7 @@ async function stop(): Promise<void> {
   }
   await held.close()
   log('agent', 'stopped listening')
+  throttleEverywhere()
   broadcast()
 }
 

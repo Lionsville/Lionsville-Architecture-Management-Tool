@@ -22,8 +22,12 @@ it:
   beside `connect`; the whole list is in `CLAUDE.md` under *Names, decided*.
 * **The open questions were answered** the conservative way, and each can be
   reopened: no snapshot tool; the focused window, with no session id yet;
-  recipes for Claude Code, Codex and Cursor plus the bare endpoint; a hidden
-  window refuses with `agent.windowHidden`; and the module is `agent`.
+  recipes for Claude Code, Claude Desktop, Codex and Cursor plus the bare
+  endpoint; and the module is `agent`. The hidden window was first a
+  refusal, and a day of use turned it around: a window covered by a terminal
+  is the ordinary state while an agent works, so main turns the window's
+  background throttling off while the server listens and the page keeps
+  painting; `agent.windowHidden` remains for a window that truly cannot.
 
 It takes number 0007 because ADR-0005 already refers to the update work as
 ADR-0006.

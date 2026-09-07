@@ -38,6 +38,7 @@ import { agentEndpoint } from '../../platform/agentServer'
 /** The clients the app carries a recipe for, and the one line for the rest. */
 const RECIPES: readonly { readonly id: string; readonly tab: StringKey; readonly recipe: StringKey }[] = [
   { id: 'claude', tab: 'agent.tabClaude', recipe: 'agent.recipeClaude' },
+  { id: 'claudeDesktop', tab: 'agent.tabClaudeDesktop', recipe: 'agent.recipeClaudeDesktop' },
   { id: 'codex', tab: 'agent.tabCodex', recipe: 'agent.recipeCodex' },
   { id: 'cursor', tab: 'agent.tabCursor', recipe: 'agent.recipeCursor' },
   { id: 'other', tab: 'agent.tabOther', recipe: 'agent.recipeOther' },

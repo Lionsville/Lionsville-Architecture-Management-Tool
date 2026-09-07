@@ -59,6 +59,12 @@ describe('ConnectAgentDialog', () => {
 
   it('switches recipe with the tabs, and the last one is the bare endpoint', () => {
     renderShell(<ConnectAgentDialog {...base} status={listening} />)
+    // The desktop app needs a bridge, and its connector screen is a trap.
+    fireEvent.click(screen.getByText('Claude Desktop'))
+    const desktop = screen.getByTestId('agent-recipe').textContent ?? ''
+    expect(desktop).toContain('mcp-remote')
+    expect(desktop).toContain('Add custom connector')
+    expect(desktop).toContain(`Authorization: Bearer ${TOKEN}`)
     fireEvent.click(screen.getByText('Cursor'))
     expect(screen.getByTestId('agent-recipe').textContent).toContain('"mcpServers"')
     fireEvent.click(screen.getByText('Other'))

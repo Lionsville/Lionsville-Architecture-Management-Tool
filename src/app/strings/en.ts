@@ -331,6 +331,7 @@ export const EN = {
   'agent.recipes': 'CONNECT YOUR CLIENT',
   'agent.recipesNote': 'The port and the token below are this machine\u2019s. Pick your client and paste.',
   'agent.tabClaude': 'Claude Code',
+  'agent.tabClaudeDesktop': 'Claude Desktop',
   'agent.tabCodex': 'Codex',
   'agent.tabCursor': 'Cursor',
   'agent.tabOther': 'Other',
@@ -340,6 +341,25 @@ export const EN = {
    * corrected without a build of the dialog.
    */
   'agent.recipeClaude': 'claude mcp add --transport http lvarch {endpoint} --header "Authorization: Bearer {token}"',
+  /**
+   * The desktop app launches local servers over stdio and its "Add custom
+   * connector" screen is for servers on the internet, so the way in is a
+   * bridge in its developer settings. Two ways to get it there: a sentence to
+   * hand Claude Code, which can edit the file, or the entry to paste yourself.
+   */
+  'agent.recipeClaudeDesktop':
+    '# Not the "Add custom connector" screen: that is for servers on the internet and cannot reach this machine.\n'
+    + '# Claude Desktop launches local servers over stdio, so it needs the mcp-remote bridge in its developer settings.\n'
+    + '#\n'
+    + '# Easiest: paste this to Claude Code, which has the settings already, then restart Claude Desktop:\n'
+    + 'Add the MCP server "lvarch" to my Claude Desktop developer settings (claude_desktop_config.json): '
+    + 'command "npx", args ["-y", "mcp-remote", "{endpoint}", "--transport", "http-only", "--header", '
+    + '"Authorization: Bearer {token}"].\n'
+    + '#\n'
+    + '# Or add it yourself, in Claude Desktop under Settings → Developer → Edit Config:\n'
+    + '{\n  "mcpServers": {\n    "lvarch": {\n      "command": "npx",\n'
+    + '      "args": ["-y", "mcp-remote", "{endpoint}", "--transport", "http-only", "--header", "Authorization: Bearer {token}"]\n'
+    + '    }\n  }\n}',
   'agent.recipeCodex':
     '# ~/.codex/config.toml\n[mcp_servers.lvarch]\nurl = "{endpoint}"\nhttp_headers = { Authorization = "Bearer {token}" }',
   'agent.recipeCursor':

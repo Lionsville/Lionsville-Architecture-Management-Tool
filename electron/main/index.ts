@@ -28,7 +28,7 @@ import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
-import { registerAgentChannel, startAgent, stopAgent } from './mcp'
+import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 
 /**
  * A throw nobody caught. Logged rather than left to Electron's default, which
@@ -170,6 +170,8 @@ function createWindow(): BrowserWindow {
   })
 
   window.once('ready-to-show', () => window.show())
+  // A window made after the agent server came up inherits its rule (ADR-0007).
+  keepPaintingForAgent(window.webContents)
 
   // Nothing in this app opens a second window or navigates away from itself. A
   // link in a document is the browser's job, not ours.

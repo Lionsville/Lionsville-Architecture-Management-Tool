@@ -248,10 +248,24 @@ export const NL: Record<keyof typeof EN, string> = {
   'agent.recipes': 'JE CLIENT KOPPELEN',
   'agent.recipesNote': 'De poort en het token hieronder zijn van deze machine. Kies je client en plak.',
   'agent.tabClaude': 'Claude Code',
+  'agent.tabClaudeDesktop': 'Claude Desktop',
   'agent.tabCodex': 'Codex',
   'agent.tabCursor': 'Cursor',
   'agent.tabOther': 'Anders',
   'agent.recipeClaude': 'claude mcp add --transport http lvarch {endpoint} --header "Authorization: Bearer {token}"',
+  'agent.recipeClaudeDesktop':
+    '# Niet het scherm "Add custom connector": dat is voor servers op internet en kan deze machine niet bereiken.\n'
+    + '# Claude Desktop start lokale servers via stdio, dus het heeft de mcp-remote-brug in zijn developer-instellingen nodig.\n'
+    + '#\n'
+    + '# Het makkelijkst: plak dit in Claude Code, dat de instellingen al kent, en herstart daarna Claude Desktop:\n'
+    + 'Add the MCP server "lvarch" to my Claude Desktop developer settings (claude_desktop_config.json): '
+    + 'command "npx", args ["-y", "mcp-remote", "{endpoint}", "--transport", "http-only", "--header", '
+    + '"Authorization: Bearer {token}"].\n'
+    + '#\n'
+    + '# Of voeg het zelf toe, in Claude Desktop onder Settings → Developer → Edit Config:\n'
+    + '{\n  "mcpServers": {\n    "lvarch": {\n      "command": "npx",\n'
+    + '      "args": ["-y", "mcp-remote", "{endpoint}", "--transport", "http-only", "--header", "Authorization: Bearer {token}"]\n'
+    + '    }\n  }\n}',
   'agent.recipeCodex':
     '# ~/.codex/config.toml\n[mcp_servers.lvarch]\nurl = "{endpoint}"\nhttp_headers = { Authorization = "Bearer {token}" }',
   'agent.recipeCursor':
