@@ -23,6 +23,9 @@
  */
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
+import type {
+  PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide,
+} from '../../platform/sync'
 
 export type DesktopCommands = HostCommands
 
@@ -58,6 +61,16 @@ export type DesktopHistory = {
   history(root: string, limit?: number): Promise<DesktopCommit[]>
   /** One project folder's text files as they were at a commit. */
   filesAt(root: string, sha: string, prefix: string): Promise<{ path: string; text: string }[]>
+
+  // --- the remote (ADR-0005). Each answers with a value, never an exception. ---
+
+  /** The remote and branch git would push to, or nothing. */
+  remote(root: string): Promise<SyncRemote | undefined>
+  pull(root: string): Promise<PullOutcome>
+  push(root: string): Promise<PushOutcome>
+  resolve(root: string, side: SyncSide): Promise<ResolveOutcome>
+  /** Keep this machine's settings file out of the folder's history. */
+  excludeLocal(root: string): Promise<void>
 }
 
 /**

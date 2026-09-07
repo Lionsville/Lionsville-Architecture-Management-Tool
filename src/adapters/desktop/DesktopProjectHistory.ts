@@ -12,14 +12,25 @@ import { projectFromFolder } from '../../projects/folderFormat'
 import type { ProjectSnapshot } from '../../projects/project'
 import { refPath } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
-import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
+import type { HistoryEntry, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
+import type { SyncSide } from '../../platform/sync'
 import type { DesktopHistory } from './channel'
 
 export class DesktopProjectHistory implements ProjectHistory {
+  /** The remote, bound to the same folder. Always present on the desktop. */
+  readonly sync: ProjectSync
+
   constructor(
     private readonly git: DesktopHistory,
     private readonly root: string,
-  ) {}
+  ) {
+    this.sync = {
+      remote: () => git.remote(root),
+      pull: () => git.pull(root),
+      push: () => git.push(root),
+      resolve: (side: SyncSide) => git.resolve(root, side),
+    }
+  }
 
   available(): Promise<boolean> {
     return this.git.available()

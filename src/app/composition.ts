@@ -257,15 +257,29 @@ export function inWorkingDirectory(
     })
   }
 
+  const folder = overFolder(shell, handle, directory.name)
+  const git = desktopHistory()
   return {
-    ...overFolder(shell, handle, directory.name),
+    ...folder,
     // A real save dialog rather than a download. Swapped here rather than in
     // `composeShell` because it is the same decision as the store: this is the
     // desktop, and on the desktop a file goes where the user says.
     documents: new DesktopDocumentGateway(files),
     source: { kind: 'folder', name: directory.name, root: directory.root },
     watchProject,
-    history: desktopHistory() && new DesktopProjectHistory(desktopHistory()!, directory.root),
+    history: git && new DesktopProjectHistory(git, directory.root),
+    // The machine file is kept out of the folder's history from the moment it
+    // first exists: `.git/info/exclude`, so a `git add -A` typed in a terminal
+    // does not pick it up either. Best effort — the snapshot excludes it on
+    // its own — and this is the one place that knows both the store and the
+    // git, which is why the wrapping is here and not in either.
+    folderSettings: folder.folderSettings && {
+      ...folder.folderSettings,
+      writeLocal: async (patch) => {
+        await folder.folderSettings!.writeLocal(patch)
+        await git?.excludeLocal(directory.root).catch(() => undefined)
+      },
+    },
   }
 }
 

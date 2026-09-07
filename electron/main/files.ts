@@ -23,7 +23,10 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
 import type { DesktopChange, DesktopDirectory } from '../../src/adapters/desktop/channel'
-import { filesAt, gitAvailable, history, initRepository, isRepository, snapshot } from './git'
+import {
+  excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, pull, push, remote,
+  resolve, snapshot,
+} from './git'
 import { log } from './log'
 import { watchFolder } from './watch'
 import {
@@ -241,6 +244,25 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
       return []
     }
     return filesAt(root, sha, prefix)
+  })
+
+  // The remote (ADR-0005). The same rule again, and every answer is a value:
+  // a refusal crosses the boundary as a word, never as a thrown error with a
+  // path in it.
+  ipcMain.handle('git:remote', (_event, root: unknown) =>
+    isGranted(root) ? remote(root) : undefined)
+
+  ipcMain.handle('git:pull', (_event, root: unknown) =>
+    isGranted(root) ? pull(root) : 'no-remote')
+
+  ipcMain.handle('git:push', (_event, root: unknown) =>
+    isGranted(root) ? push(root) : 'no-remote')
+
+  ipcMain.handle('git:resolve', (_event, root: unknown, side: unknown) =>
+    isGranted(root) && (side === 'theirs' || side === 'ours') ? resolve(root, side) : 'no-remote')
+
+  ipcMain.handle('git:excludeLocal', async (_event, root: unknown) => {
+    if (isGranted(root)) await excludeLocalSettings(root)
   })
 
   ipcMain.handle('files:watch', (_event, root: unknown) => {

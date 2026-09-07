@@ -260,6 +260,31 @@ export const EN = {
   'prefs.pushAfterSnapshot': 'Push after every snapshot',
   'prefs.writeFailed': 'That setting could not be saved: {message}',
 
+  // --- git sync (ADR-0005) --------------------------------------------------
+  /** The snapshot a sync begins with, when this session has no log to draft from. */
+  'history.beforeSync': 'Before syncing',
+  /**
+   * The folder and its remote have both moved on. The same two answers the
+   * disk-change notice offers for one file, scaled up; both keep everything.
+   */
+  'sync.diverged':
+    'This folder and its remote have both moved on. Nothing is merged: choose which version stands. '
+    + 'Ours is kept on a branch either way.',
+  'sync.takeTheirs': 'Take theirs',
+  'sync.keepOurs': 'Keep ours',
+  'sync.pulled': 'Up to date with the remote.',
+  'sync.pushed': 'Pushed to the remote.',
+  'sync.tookTheirs': 'The remote\u2019s version stands; ours is on a branch.',
+  'sync.keptOurs': 'Our version stands, recorded as a merge.',
+  'sync.noRemote': 'This folder has no remote to sync with.',
+  'sync.unreachable': 'The remote could not be reached.',
+  'sync.credentials':
+    'The remote refused this machine\u2019s credentials. The app asks for none; sign in with your git client.',
+  'sync.timeout': 'The remote did not answer in time.',
+  'sync.pullRefused': 'The folder was not pulled: {reason}',
+  'sync.pushRefused': 'The snapshot was not pushed: {reason}',
+  'sync.resolveRefused': 'Nothing was changed: {reason}',
+
   'group.title': 'Group settings',
   'group.open': 'Settings…',
   'group.openFor': 'Settings for {name}',

@@ -381,6 +381,63 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     return `${reads} reads during a ${after.length}-byte write, none of them partial`
   }))
 
+  // --- git sync (ADR-0005) ------------------------------------------------------
+  //
+  // The remote half of the history channel, end to end, against a bare
+  // repository in a second temporary folder: the renderer asks over IPC, main
+  // runs the machine's own git in the folder it was granted, and the commit
+  // lands in the remote. And the refusals first, because those are what a
+  // person meets before anything works.
+  results.push(await checkHere('a folder pushes to and pulls from a local remote', async () => {
+    const directory = folder
+    if (!directory) throw new Error('the folder could not be granted')
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    const run = promisify(execFile)
+    const git = (cwd: string, args: string[]) =>
+      run('git', args, { cwd, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }).then((r) => r.stdout.trim())
+    try {
+      await git(directory.root, ['--version'])
+    } catch {
+      return 'no git on this machine; nothing to exercise'
+    }
+    const bare = await mkdtemp(join(tmpdir(), 'lvarch-smoke-remote-'))
+    await git(bare, ['init', '--bare'])
+
+    const ask = (script: string) => window.webContents.executeJavaScript(`
+      (async () => {
+        const root = ${JSON.stringify(directory.root)}
+        const history = window.desktop.history
+        ${script}
+      })()`, true) as Promise<string>
+
+    const before = JSON.parse(await ask(`
+      await history.init(root)
+      const remote = await history.remote(root)
+      const pull = await history.pull(root)
+      const push = await history.push(root)
+      return JSON.stringify({ remote: remote === undefined, pull, push })`)) as
+      { remote: boolean; pull: string; push: string }
+    if (!before.remote || before.pull !== 'no-remote' || before.push !== 'no-remote') {
+      throw new Error(`before a remote: ${JSON.stringify(before)}`)
+    }
+
+    await git(directory.root, ['remote', 'add', 'origin', bare])
+    const after = JSON.parse(await ask(`
+      const sha = await history.snapshot(root, 'smoke sync')
+      const push = await history.push(root)
+      const pull = await history.pull(root)
+      const remote = await history.remote(root)
+      return JSON.stringify({ sha: Boolean(sha), push, pull, remote })`)) as
+      { sha: boolean; push: string; pull: string; remote: { name: string; branch: string } }
+    if (!after.sha) throw new Error('nothing was snapshotted')
+    if (after.push !== 'done') throw new Error(`push answered ${after.push}`)
+    if (after.pull !== 'done') throw new Error(`pull answered ${after.pull}`)
+    const landed = await git(bare, ['log', '--all', '--format=%s'])
+    if (!landed.includes('smoke sync')) throw new Error(`the remote holds: ${landed || 'nothing'}`)
+    return `${after.remote.name}/${after.remote.branch}: pushed, pulled, and the remote has the snapshot`
+  }))
+
   const failed = results.filter((r) => !r.ok)
   process.stdout.write(failed.length ? `\n${failed.length} of ${results.length} FAILED\n` : `\nall ${results.length} passed\n`)
 

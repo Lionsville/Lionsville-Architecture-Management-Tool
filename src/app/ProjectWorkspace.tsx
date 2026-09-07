@@ -85,6 +85,8 @@ export type ProjectWorkspaceProps = {
    * of — and the menu offers nothing when it is.
    */
   history?: ProjectHistory
+  /** A snapshot succeeded. The shell decides whether that means a push. */
+  onSnapshotTaken?: () => void
   documents: ProjectFileChannel
 
   notify: Notify
@@ -138,7 +140,7 @@ function localToday(): string {
 
 export function ProjectWorkspace({
   project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
-  documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
+  onSnapshotTaken, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
@@ -185,6 +187,7 @@ export function ProjectWorkspace({
     save: forceSave,
     notify,
     s,
+    onTaken: onSnapshotTaken,
   })
 
   const documentPicker = useFilePicker({

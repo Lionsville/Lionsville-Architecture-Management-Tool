@@ -83,6 +83,11 @@ const history: DesktopHistory = {
   snapshot: (root, message) => ipcRenderer.invoke('git:snapshot', root, message),
   history: (root, limit) => ipcRenderer.invoke('git:history', root, limit),
   filesAt: (root, sha, prefix) => ipcRenderer.invoke('git:filesAt', root, sha, prefix),
+  remote: (root) => ipcRenderer.invoke('git:remote', root),
+  pull: (root) => ipcRenderer.invoke('git:pull', root),
+  push: (root) => ipcRenderer.invoke('git:push', root),
+  resolve: (root, side) => ipcRenderer.invoke('git:resolve', root, side),
+  excludeLocal: (root) => ipcRenderer.invoke('git:excludeLocal', root),
 }
 
 const settings: DesktopSettings = {

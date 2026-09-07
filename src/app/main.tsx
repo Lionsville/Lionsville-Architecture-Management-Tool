@@ -51,10 +51,11 @@ import {
 } from './composition'
 import type { DesktopDirectory, Shell } from './composition'
 import {
-  readLastProject, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
+  readLanguage, readLastProject, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
   withoutLastProject, withWorkingDirectory,
 } from '../projects/preferences'
 import { migrated, migrateInto } from '../projects/migration'
+import type { PullOutcome } from '../platform/sync'
 import type { ProjectSnapshot } from '../projects/project'
 import { EXAMPLES } from './examples'
 import { App } from './App'
@@ -238,7 +239,34 @@ async function workIn(chosen: DesktopDirectory): Promise<void> {
       })
     })
     shell = inFolder
-    renderApp(kept, undefined)
+    renderApp(kept, undefined, await pullOnOpen())
+}
+
+/**
+ * Pull from the folder's remote, if this machine says so (ADR-0005).
+ *
+ * Here, at the edge, because of when it has to happen: before the project is
+ * read, so what opens is what was pulled, and before the watcher starts, so a
+ * fast-forward's writes are never reported as somebody else's change. It
+ * begins with a snapshot — the app writes files without committing them, and
+ * a fast-forward that touched unrecorded work would refuse — under the only
+ * message a boot can draft. Everything about it may say no, and a refusal is
+ * a notice the shell shows rather than a failure to open.
+ */
+async function pullOnOpen(): Promise<PullOutcome | undefined> {
+  const { history, folderSettings } = shell
+  if (!history?.sync || !folderSettings) return undefined
+  try {
+    if (!(await folderSettings.readLocal()).git.pullOnOpen) return undefined
+    // No repository, no remote: nothing to pull, and nothing to say about it.
+    if (!await history.keeping()) return undefined
+    const s = translator(readLanguage(stored) ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
+    await history.snapshot(s('history.beforeSync'))
+    return await history.sync.pull()
+  } catch (cause) {
+    shell.diagnostics.report({ level: 'warn', where: 'sync', message: 'pull on open failed', cause })
+    return undefined
+  }
 }
 
 /**
@@ -298,7 +326,9 @@ async function moveInto(folder: Shell, root: string): Promise<boolean> {
  * `undefined` and the app opens on the picker. That is a normal first visit, not
  * an error, so nothing here reports it.
  */
-function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot | undefined): void {
+function renderApp(
+  storedPreferences: unknown, initialProject: ProjectSnapshot | undefined, initialSync?: PullOutcome,
+): void {
   root.render(
     <StrictMode>
       <App
@@ -323,6 +353,7 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         history={shell.history}
         folderSettings={shell.folderSettings}
         updateSettings={shell.updateSettings}
+        initialSync={initialSync}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}
@@ -357,6 +388,8 @@ void shell.preferences.read()
     stored = storedPreferences
     // Before the project is read, because it decides which store reads it.
     await rememberedDirectory(storedPreferences)
+    // After the folder, before the project: see `pullOnOpen`.
+    const initialSync = await pullOnOpen()
     // Not on a desktop with no folder yet: there is nothing to reopen, because
     // the only place a project could be is the app's own storage, which is
     // exactly what ADR-0003 retired. The first-run screen asks instead.
@@ -364,7 +397,7 @@ void shell.preferences.read()
       ? undefined
       : readLastProject(storedPreferences)
     const initialProject = lastProject ? await shell.projects.load(lastProject) : undefined
-    renderApp(storedPreferences, initialProject)
+    renderApp(storedPreferences, initialProject, initialSync)
   })
   .catch((error: unknown) => {
     shell.diagnostics.report({

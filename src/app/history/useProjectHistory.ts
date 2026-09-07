@@ -50,8 +50,10 @@ export function useProjectHistory(deps: {
   save: () => Promise<void>
   notify: Notify
   s: Translate
+  /** A snapshot succeeded. What follows — a push, perhaps — is the caller's. */
+  onTaken?: () => void
 }): ProjectHistoryState {
-  const { history, project, steps, save, notify, s } = deps
+  const { history, project, steps, save, notify, s, onTaken } = deps
 
   const [available, setAvailable] = useState(false)
   const [keeping, setKeeping] = useState(false)
@@ -96,10 +98,13 @@ export function useProjectHistory(deps: {
       setKeeping(true)
       recorded.current = steps().length
       notify(s(written ? 'history.taken' : 'history.nothingToRecord'), written ? 'success' : 'info')
+      // Whether or not anything was recorded: an earlier push may have been
+      // refused, and the snapshot is the moment this machine tries again.
+      onTaken?.()
     })().catch((cause: unknown) => {
       notify(s('history.failed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, keeping, save, steps, notify, s])
+  }, [history, keeping, save, steps, notify, s, onTaken])
 
   const choose = useCallback((id: string) => {
     if (!history) return

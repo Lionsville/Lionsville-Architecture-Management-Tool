@@ -188,6 +188,24 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.pullOnOpen': 'Van de remote ophalen als deze map wordt geopend',
   'prefs.pushAfterSnapshot': 'Na elke momentopname pushen',
   'prefs.writeFailed': 'Die instelling kon niet worden bewaard: {message}',
+  'history.beforeSync': 'Voor het synchroniseren',
+  'sync.diverged':
+    'Deze map en de remote zijn allebei verdergegaan. Er wordt niets samengevoegd: kies welke versie blijft. '
+    + 'De onze blijft hoe dan ook op een branch bewaard.',
+  'sync.takeTheirs': 'Die van de remote',
+  'sync.keepOurs': 'Die van ons',
+  'sync.pulled': 'Gelijk met de remote.',
+  'sync.pushed': 'Naar de remote gepusht.',
+  'sync.tookTheirs': 'De versie van de remote blijft; de onze staat op een branch.',
+  'sync.keptOurs': 'Onze versie blijft, vastgelegd als merge.',
+  'sync.noRemote': 'Deze map heeft geen remote om mee te synchroniseren.',
+  'sync.unreachable': 'De remote is niet bereikbaar.',
+  'sync.credentials':
+    'De remote weigert de inloggegevens van deze machine. De app vraagt er niet om; meld je aan met je git-client.',
+  'sync.timeout': 'De remote antwoordde niet op tijd.',
+  'sync.pullRefused': 'De map is niet opgehaald: {reason}',
+  'sync.pushRefused': 'De momentopname is niet gepusht: {reason}',
+  'sync.resolveRefused': 'Er is niets veranderd: {reason}',
 
   'group.title': 'Groepsinstellingen',
   'group.open': 'Instellingen…',

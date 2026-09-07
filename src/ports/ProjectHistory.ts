@@ -14,6 +14,7 @@
  */
 import type { ProjectSnapshot } from '../projects/project'
 import type { ProjectRef } from '../projects/projectRef'
+import type { PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide } from '../platform/sync'
 
 /** One snapshot, as a person reads a list of them. */
 export type HistoryEntry = {
@@ -51,4 +52,24 @@ export interface ProjectHistory {
    * how a landscape is compared.
    */
   projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined>
+  /**
+   * The remote, where this history has one to talk to (ADR-0005). Absent
+   * rather than answering "no" — a history that can be kept but not shared,
+   * such as one a test supplies, offers nothing about syncing.
+   */
+  sync?: ProjectSync
+}
+
+/**
+ * Push, pull, and the one question a person answers when the sides disagree.
+ *
+ * Each answers with a value, never an exception — a refusal is an ordinary
+ * answer here — and none of them may interrupt a save. `resolve` leaves the
+ * folder as it was when it refuses.
+ */
+export interface ProjectSync {
+  remote(): Promise<SyncRemote | undefined>
+  pull(): Promise<PullOutcome>
+  push(): Promise<PushOutcome>
+  resolve(side: SyncSide): Promise<ResolveOutcome>
 }

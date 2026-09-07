@@ -35,12 +35,15 @@ import type { ProjectRef } from '../projects/projectRef'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
 import type { UpdateSettings } from '../platform/updateSettings'
+import type { PullOutcome } from '../platform/sync'
 import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import { PreferencesDialog } from './dialogs/PreferencesDialog'
+import { SyncNotice } from './SyncNotice'
+import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
@@ -160,6 +163,13 @@ export type AppProps = {
   folderSettings?: FolderSettingsStore
   /** The desktop's own update settings. Absent on the web, and the section with it. */
   updateSettings?: UpdateSettingsStore
+  /**
+   * What the boot's pull answered, when the machine asked for one. Made at
+   * the edge of the app, before the project was read and before the watcher
+   * started, so a fast-forward's writes are never reported as somebody
+   * else's change; what is left for the shell is to say so.
+   */
+  initialSync?: PullOutcome
 
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ProjectSnapshot | undefined
@@ -182,7 +192,7 @@ export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
-  history, folderSettings, updateSettings, initialProject, initialPreferences,
+  history, folderSettings, updateSettings, initialSync, initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -248,6 +258,30 @@ export function App({
 
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */
   const [revision, setRevision] = useState(0)
+
+  /**
+   * Bumped when the open project has to be read again from disk with nothing
+   * carried over — after *take theirs* on the whole folder. Part of the
+   * workspace's key, so the session and its undo stack start again from what
+   * is now on disk, the way they do when a different project is opened.
+   */
+  const [reloadKey, setReloadKey] = useState(0)
+  const reloadOpenProject = useCallback(() => {
+    if (!project) return
+    void projects.load(project.ref).then(
+      (found) => {
+        if (!found) { setProject(undefined); setRevision((r) => r + 1); return }
+        setProject(found)
+        setReloadKey((k) => k + 1)
+      },
+      (cause: unknown) => failedRef.current('reloadOpenProject', cause, 'picker.loadFailed'),
+    )
+  }, [project, projects])
+
+  const sync = useSync({
+    history, folderSettings, initial: initialSync, onTheirs: reloadOpenProject,
+    notify: toasts.notify, s, diagnostics,
+  })
 
   /**
    * An address this app has just moved a project away from.
@@ -687,7 +721,7 @@ export function App({
             // Remounting on a project switch is the mechanism, not an accident:
             // the session's undo stack, aliases and pending batches belong to
             // one project and must not survive into another.
-            key={`${project.ref.group}/${project.ref.project}`}
+            key={`${project.ref.group}/${project.ref.project}#${reloadKey}`}
             project={project}
             projects={workspaceStore}
             watch={watchOpenProject}
@@ -700,6 +734,7 @@ export function App({
             }}
             onUnsavedWork={onUnsavedWork}
             history={history}
+            onSnapshotTaken={sync.afterSnapshot}
             documents={documents}
             notify={toasts.notify}
             onStorageResult={reportStorage}
@@ -739,6 +774,12 @@ export function App({
           />
         )}
         </ErrorBoundary>
+        <SyncNotice
+          open={sync.diverged}
+          onTakeTheirs={() => sync.resolve('theirs')}
+          onKeepOurs={() => sync.resolve('ours')}
+          s={s}
+        />
         {source.kind === 'memory' && (
           /* Along the bottom rather than above the toolbar: on the desktop that
              bar is the title bar, and anything pushed above it lands under the

@@ -9,9 +9,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { filesAt, gitAvailable, history, initRepository, isRepository, snapshot } from './git'
+
+const run = promisify(execFile)
 
 const available = await gitAvailable()
 
@@ -154,5 +158,209 @@ describe.skipIf(!available)('git in a working directory', () => {
     expect((await history(inside)).map((held) => held.subject)).toEqual(['The nested one'])
     // And the folder above is untouched: its own snapshot is still the only one.
     expect((await history(root)).map((held) => held.subject)).toEqual(['The enclosing project'])
+  })
+})
+
+/**
+ * The remote (ADR-0005), against a bare repository in a second temporary
+ * folder. Real git again, because what matters is what git says when it
+ * refuses — and a fast-forward, a rejection and a merge with `-s ours` are
+ * exactly the things a double would agree with whatever this file believed.
+ */
+import {
+  excludeLocalSettings, pull, push, remote, resolve,
+} from './git'
+import { LOCAL_SETTINGS_PATH } from '../../src/projects/folderSettings'
+
+const sh = (cwd: string, args: string[]) => run('git', args, {
+  cwd, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+}).then((held) => held.stdout.trim())
+
+let bare = ''
+let other = ''
+
+beforeEach(async () => {
+  bare = await realpath(await mkdtemp(join(tmpdir(), 'lvarch-remote-')))
+  other = await realpath(await mkdtemp(join(tmpdir(), 'lvarch-other-')))
+  await sh(bare, ['init', '--bare', '--initial-branch=main'])
+})
+
+afterEach(async () => {
+  await rm(bare, { recursive: true, force: true })
+  await rm(other, { recursive: true, force: true })
+})
+
+/** A folder of ours, keeping history, with the bare repository as its origin. */
+async function withRemote(): Promise<void> {
+  await initRepository(root)
+  await sh(root, ['checkout', '-b', 'main'])
+  await sh(root, ['remote', 'add', 'origin', bare])
+}
+
+/** Somebody else's clone of the same remote, with one commit pushed. */
+async function colleagueCommits(name: string, contents: string): Promise<void> {
+  await sh(other, ['clone', '-q', bare, '.'])
+  await sh(other, ['checkout', '-q', '-B', 'main'])
+  await mkdir(join(other, 'acme/landscape'), { recursive: true })
+  await writeFile(join(other, 'acme/landscape', name), contents, 'utf8')
+  await sh(other, ['add', '-A'])
+  await sh(other, ['-c', 'user.name=Colleague', '-c', 'user.email=c@example.test', 'commit', '-q', '-m', 'Theirs'])
+  await sh(other, ['push', '-q', 'origin', 'HEAD:refs/heads/main'])
+}
+
+describe.skipIf(!available)('the remote', () => {
+  it('has none for a folder that keeps no history, or has no remote', async () => {
+    expect(await remote(root)).toBeUndefined()
+    await initRepository(root)
+    expect(await remote(root)).toBeUndefined()
+    expect(await pull(root)).toBe('no-remote')
+    expect(await push(root)).toBe('no-remote')
+    expect(await resolve(root, 'theirs')).toBe('no-remote')
+  })
+
+  it('reads what git declares, and defaults to origin before any upstream is set', async () => {
+    await withRemote()
+    expect(await remote(root)).toEqual({ name: 'origin', branch: 'main', url: bare })
+  })
+
+  it('refuses rather than hangs when the remote is not there', async () => {
+    await initRepository(root)
+    await sh(root, ['remote', 'add', 'origin', join(bare, 'no-such-repository')])
+    await project('project.json', '{}')
+    await snapshot(root, 'One')
+    expect(await pull(root)).toBe('unreachable')
+    expect(await push(root)).toBe('unreachable')
+  })
+
+  it('pushes, sets the upstream, and then has nothing to pull', async () => {
+    await withRemote()
+    await project('project.json', '{"name":"Ours"}')
+    await snapshot(root, 'Ours')
+
+    expect(await push(root)).toBe('done')
+    expect(await sh(bare, ['log', '--format=%s', 'main'])).toBe('Ours')
+    expect(await sh(root, ['config', '--get', 'branch.main.remote'])).toBe('origin')
+    expect(await pull(root)).toBe('done')
+  })
+
+  it('pushes nothing from a repository with no commits, and calls that done', async () => {
+    await withRemote()
+    expect(await push(root)).toBe('done')
+  })
+
+  it('fast-forwards to what a colleague pushed, into a folder with no commits yet', async () => {
+    await withRemote()
+    await colleagueCommits('project.json', '{"name":"Theirs"}')
+    expect(await pull(root)).toBe('done')
+    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"name":"Theirs"}')
+  })
+
+  it('fast-forwards when only they moved on', async () => {
+    await withRemote()
+    await project('project.json', '{"n":1}')
+    await snapshot(root, 'One')
+    await push(root)
+    await colleagueCommits('model.json', '{"elements":[]}')
+    expect(await pull(root)).toBe('done')
+    expect(await readFile(join(root, 'acme/landscape/model.json'), 'utf8')).toBe('{"elements":[]}')
+  })
+
+  it('answers diverged from one end and rejected from the other when both moved on', async () => {
+    await withRemote()
+    await project('project.json', '{"n":1}')
+    await snapshot(root, 'One')
+    await push(root)
+    await colleagueCommits('model.json', '{"theirs":true}')
+    await project('project.json', '{"n":2}')
+    await snapshot(root, 'Two')
+
+    expect(await push(root)).toBe('rejected')
+    expect(await pull(root)).toBe('diverged')
+    // Neither merged, rebased nor stashed: ours is exactly as it was.
+    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"n":2}')
+    expect((await history(root)).map((held) => held.subject)).toEqual(['Two', 'One'])
+  })
+
+  it('take theirs: the remote stands, and ours is kept on a branch named for the moment', async () => {
+    await withRemote()
+    await project('project.json', '{"n":1}')
+    await snapshot(root, 'One')
+    await push(root)
+    await colleagueCommits('model.json', '{"theirs":true}')
+    await project('project.json', '{"n":2}')
+    await snapshot(root, 'Two')
+    // And something not yet recorded, which the reset must not destroy.
+    await project('unrecorded.json', '{"kept":true}')
+
+    expect(await resolve(root, 'theirs')).toBe('done')
+    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"n":1}')
+    expect(await readFile(join(root, 'acme/landscape/model.json'), 'utf8')).toBe('{"theirs":true}')
+    const branches = await sh(root, ['branch', '--list', 'before-sync/*'])
+    expect(branches).toMatch(/before-sync\//)
+    const kept = branches.trim().replace(/^\*?\s*/, '')
+    expect(await sh(root, ['show', `${kept}:acme/landscape/project.json`])).toBe('{"n":2}')
+    expect(await sh(root, ['show', `${kept}:acme/landscape/unrecorded.json`])).toBe('{"kept":true}')
+    expect(await pull(root)).toBe('done')
+  })
+
+  it('keep ours: a merge commit whose tree is ours and whose parents are both sides', async () => {
+    await withRemote()
+    await project('project.json', '{"n":1}')
+    await snapshot(root, 'One')
+    await push(root)
+    await colleagueCommits('model.json', '{"theirs":true}')
+    await project('project.json', '{"n":2}')
+    await snapshot(root, 'Two')
+
+    expect(await resolve(root, 'ours')).toBe('done')
+    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"n":2}')
+    // Their file is not in our tree: no line of anything was combined.
+    await expect(readFile(join(root, 'acme/landscape/model.json'), 'utf8')).rejects.toThrow()
+    expect((await sh(root, ['log', '-1', '--format=%P'])).split(' ')).toHaveLength(2)
+    // And it fast-forwards for everyone else.
+    expect(await push(root)).toBe('done')
+    expect(await sh(bare, ['rev-parse', 'main'])).toBe(await sh(root, ['rev-parse', 'HEAD']))
+  })
+
+  it('leaves the folder as it was when resolving is refused', async () => {
+    await initRepository(root)
+    await sh(root, ['remote', 'add', 'origin', join(bare, 'gone')])
+    await project('project.json', '{"n":1}')
+    await snapshot(root, 'One')
+    expect(await resolve(root, 'theirs')).toBe('unreachable')
+    expect((await history(root)).map((held) => held.subject)).toEqual(['One'])
+    expect(await sh(root, ['branch', '--list', 'before-sync/*'])).toBe('')
+  })
+})
+
+describe.skipIf(!available)('this machine\'s settings file', () => {
+  it('is never in a snapshot, and never picked up by a git add -A in a terminal', async () => {
+    await initRepository(root)
+    await mkdir(join(root, '.lionsville-architecture'), { recursive: true })
+    await writeFile(join(root, LOCAL_SETTINGS_PATH), '{"version":1}', 'utf8')
+    await project('project.json', '{}')
+    const sha = await snapshot(root, 'With the local file beside it')
+    const listed = await sh(root, ['ls-tree', '-r', '--name-only', sha!])
+    expect(listed).not.toContain('local.json')
+    expect(listed).toContain('acme/landscape/project.json')
+
+    await sh(root, ['add', '-A'])
+    expect(await sh(root, ['diff', '--cached', '--name-only'])).toBe('')
+    expect(await readFile(join(root, '.git/info/exclude'), 'utf8')).toContain(LOCAL_SETTINGS_PATH)
+  })
+
+  it('does not write the user\'s .gitignore for it, and adds the exclude once', async () => {
+    await writeFile(join(root, '.gitignore'), 'secrets/\n', 'utf8')
+    await initRepository(root)
+    await excludeLocalSettings(root)
+    await excludeLocalSettings(root)
+    expect(await readFile(join(root, '.gitignore'), 'utf8')).toBe('secrets/\n')
+    const exclude = await readFile(join(root, '.git/info/exclude'), 'utf8')
+    expect(exclude.split('\n').filter((line) => line === LOCAL_SETTINGS_PATH)).toHaveLength(1)
+  })
+
+  it('is nothing on a folder that keeps no history', async () => {
+    await excludeLocalSettings(root)
+    expect(await isRepository(root)).toBe(false)
   })
 })
