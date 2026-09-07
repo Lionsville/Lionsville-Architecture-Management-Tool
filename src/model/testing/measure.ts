@@ -33,6 +33,7 @@
  * | 500 undo steps, heap growth | 0.02 MB | 50 MB |
  * | 200 models indexed, heap growth | 0.05 MB | 50 MB |
  * | 20,000 descriptions read, heap growth | 1.2 MB | 50 MB |
+ * | the agent's layout report over the landscape | 83 ms | 500 ms |
  *
  * Every {@link measure} call prints its label and its median as the run goes,
  * so `npm run test:perf` is the report and this table is the contract.
@@ -57,6 +58,12 @@ export const BUDGET = {
   serialiseDiagram: 20,
   /** Nodes and edges for a 600-node board, re-derived after one element moved. */
   derive: 30,
+  /**
+   * The agent's layout report over the generated landscape (ADR-0007): every
+   * box against every box it could overlap, every line against every box its
+   * span could touch. The loop an agent runs pays this on every turn.
+   */
+  inspect: 500,
   /** Megabytes the heap may grow over five hundred undo steps. */
   undoHeapMb: 50,
   /**

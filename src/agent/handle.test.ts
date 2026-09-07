@@ -70,6 +70,17 @@ describe('handle', () => {
       .toMatchObject({ ok: false, refusal: 'agent.badArguments' })
   })
 
+  it('answers the layout report without a command, even while blocked', () => {
+    const held = session({ blocked: () => 'agent.conflict' })
+    const out = handle({ id: '1', tool: 'diagram.inspect', args: {} }, held)
+    expect(out.ok).toBe(true)
+    if (out.ok && out.content[0].type === 'text') {
+      expect(JSON.parse(out.content[0].text)).toMatchObject({ diagramId: 'l7', drawn: { elements: 1, connections: 0 } })
+    }
+    expect(handle({ id: '2', tool: 'diagram.inspect', args: { diagramId: 'nope' } }, held))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
   it('dispatches a write at the session and answers with the id it minted', () => {
     const held = session()
     const out = handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held)

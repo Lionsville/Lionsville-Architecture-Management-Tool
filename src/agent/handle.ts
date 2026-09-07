@@ -20,8 +20,9 @@ import type { Translate } from '../i18n/strings'
 import { answer } from './answer'
 import type { ReadTool } from './answer'
 import { commandFor } from './commandFor'
+import { inspect } from './inspect'
 import type { AgentAnswer, AgentRefusal, AgentRequest } from './tools'
-import { isToolName, refused, toolSpec } from './tools'
+import { checkArguments, isToolName, json, refused, toolSpec } from './tools'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
 export type SessionView = {
@@ -64,6 +65,17 @@ export function handle(request: AgentRequest, session: SessionView): AgentAnswer
     groupDecisions: session.groupDecisions(),
   }
   if (spec.tier === 'read') return answer(request.tool as ReadTool, request.args, view)
+
+  // The report changes nothing, so it is answered like a read: while the
+  // session is blocked, and without a command.
+  if (request.tool === 'diagram.inspect') {
+    const wrong = checkArguments(spec.inputSchema, request.args)
+    if (wrong) return refused('agent.badArguments', wrong)
+    const args = (request.args ?? {}) as { diagramId?: string; limit?: number }
+    const diagram = view.model.diagrams[args.diagramId ?? view.activeDiagramId]
+    if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+    return json(inspect(view.model, diagram, args.limit))
+  }
 
   const blocked = session.blocked()
   if (blocked) return refused(blocked)

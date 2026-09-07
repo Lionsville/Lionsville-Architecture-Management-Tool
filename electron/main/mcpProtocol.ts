@@ -70,6 +70,9 @@ export const INSTRUCTIONS =
   + 'Read the landscape with the read tools, and prefer ids from elements.list over guessing. '
   + 'Every change you make shows in the app\'s Activity list and is undone with ⌘Z.'
 
+/** The see-tier tools that change nothing: a report, and a picture. */
+const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render']
+
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const held = value as Record<string, unknown>
@@ -119,7 +122,7 @@ export async function respond(
           description: tool.description,
           inputSchema: tool.inputSchema,
           annotations: {
-            readOnlyHint: tool.tier === 'read',
+            readOnlyHint: tool.tier === 'read' || LOOKS_ONLY.includes(tool.name),
             // A remove is the one kind of change ⌘Z is the only way back from
             // once the person has moved on; a client may ask before one.
             destructiveHint: tool.name.endsWith('.remove'),

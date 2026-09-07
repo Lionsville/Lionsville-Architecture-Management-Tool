@@ -315,7 +315,25 @@ export const TOOLS = [
     },
   },
 
-  // --- the see tier, first half: relational placement, so an agent never invents a coordinate ------
+  // --- the see tier: structure first, then relational placement --------------------
+  {
+    name: 'diagram.inspect',
+    tier: 'see',
+    description:
+      'A layout report on a diagram, in geometry rather than pixels: the box around everything, '
+      + 'cards that overlap and by how much, lines that cut through a card, cards drawn in another band '
+      + 'than they are filed in, group members outside their group, cards off the board, cards nothing '
+      + 'connects to, and how full each band is. Lists are capped; totals are whole. Read this before '
+      + 'and after moving anything.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+        limit: { type: 'integer', description: 'How many of each finding to list. Default 40.', minimum: 1, maximum: 500 },
+      },
+      additionalProperties: false,
+    },
+  },
   {
     name: 'moveBy',
     tier: 'see',
