@@ -13,6 +13,7 @@
  * the wire compile against.
  */
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
+import type { AgentServerPatch, AgentServerStatus } from '../platform/agentServer'
 
 export interface AgentGateway {
   readonly id: string
@@ -22,4 +23,13 @@ export interface AgentGateway {
    * a request nobody answers is a client waiting on a timeout.
    */
   on(handler: (request: AgentRequest) => Promise<AgentAnswer>): () => void
+
+  /** The three facts, now. */
+  status(): Promise<AgentServerStatus>
+  /** The three facts, whenever they change, until the returned function is called. */
+  onStatus(listener: (status: AgentServerStatus) => void): () => void
+  /** The switch. Answers with what is now in force. */
+  configure(patch: AgentServerPatch): Promise<AgentServerStatus>
+  /** A new token; every agent configured before now needs it again. */
+  newToken(): Promise<AgentServerStatus>
 }

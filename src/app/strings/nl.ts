@@ -229,6 +229,40 @@ export const NL: Record<keyof typeof EN, string> = {
   'group.saved': '{name} opgeslagen.',
   'group.renamed': 'Groep hernoemd naar “{name}”.',
   'group.saveFailed': 'Deze groep kon niet worden opgeslagen.',
+  'agent.title': 'Een agent koppelen',
+  'agent.tipOff': 'Een agent koppelen…',
+  'agent.tipListening': 'Wacht op een agent op poort {port}',
+  'agent.tipConnected': '{name} gekoppeld',
+  'agent.what':
+    'Je codeer-agent — Claude Code, Codex, Cursor of een andere MCP-client — kan dit landschap lezen, '
+    + 'wijzigingen voorstellen en naar diagrammen kijken terwijl jij werkt. Alles wat hij doet staat onder zijn '
+    + 'naam in Activiteit en is met ⌘Z ongedaan te maken. Hij koppelt via het standaard Model Context Protocol, '
+    + 'alleen op deze machine. Er verlaat niets de computer.',
+  'agent.enable': 'Agentverbindingen toestaan',
+  'agent.listening': 'Luistert op poort {port}.',
+  'agent.connected': '{name} is gekoppeld.',
+  'agent.moved':
+    'Poort {from} was bezet toen de app startte, dus hij luistert nu op {port}. Een agent die met de oude poort is ingesteld heeft het nieuwe adres nodig.',
+  'agent.desktopOnly':
+    'Een agent koppelen vraagt de desktop-app — alleen die kan op deze machine luisteren. Open dit project daar en de schakelaar staat hier.',
+  'agent.recipes': 'JE CLIENT KOPPELEN',
+  'agent.recipesNote': 'De poort en het token hieronder zijn van deze machine. Kies je client en plak.',
+  'agent.tabClaude': 'Claude Code',
+  'agent.tabCodex': 'Codex',
+  'agent.tabCursor': 'Cursor',
+  'agent.tabOther': 'Anders',
+  'agent.recipeClaude': 'claude mcp add --transport http lvarch {endpoint} --header "Authorization: Bearer {token}"',
+  'agent.recipeCodex':
+    '# ~/.codex/config.toml\n[mcp_servers.lvarch]\nurl = "{endpoint}"\nhttp_headers = { Authorization = "Bearer {token}" }',
+  'agent.recipeCursor':
+    '// .cursor/mcp.json\n{\n  "mcpServers": {\n    "lvarch": {\n      "url": "{endpoint}",\n'
+    + '      "headers": { "Authorization": "Bearer {token}" }\n    }\n  }\n}',
+  'agent.recipeOther': 'Transport: Streamable HTTP\nEindpunt: {endpoint}\nHeader: Authorization: Bearer {token}',
+  'agent.copy': 'Kopiëren',
+  'agent.copied': 'Gekopieerd',
+  'agent.newToken': 'Nieuw token',
+  'agent.newTokenNote': 'Elke agent die vóór nu is ingesteld heeft het nieuwe token nodig.',
+  'agent.changeFailed': 'Dat kon niet worden gewijzigd: {message}',
   'shell.documentation': 'Documentatie',
   'shell.documentationTip': 'Open de documentatiepagina van het geselecteerde element',
   'shell.noElements': 'Er is nog niets om te documenteren \u2014 voeg eerst een element toe.',

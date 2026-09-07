@@ -21,6 +21,7 @@ export const EN = {
   'menu.exportInterchange': 'Export Interchange Document…',
   'menu.snapshot': 'Snapshot…',
   'menu.history': 'History…',
+  'menu.connectAgent': 'Connect an Agent…',
   /** Where the platform puts it decides which of the two words it gets. */
   'menu.preferences': 'Preferences…',
   'menu.settings': 'Settings…',

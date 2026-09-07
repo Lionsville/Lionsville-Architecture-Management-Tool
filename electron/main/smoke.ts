@@ -438,6 +438,64 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     return `${after.remote.name}/${after.remote.branch}: pushed, pulled, and the remote has the snapshot`
   }))
 
+  // --- an agent as a peer of the menu (ADR-0007) ------------------------------
+  //
+  // The server end to end, in a packaged build: turned on the way the dialog
+  // turns it on, connected to with the real SDK client, a tool relayed into
+  // the window and answered from the project that is open there. And the two
+  // refusals a person meets first: a wrong token, and a port that is closed
+  // again once the feature is off.
+  results.push(await checkHere('an agent connects and reads the project on screen', async () => {
+    const { agentStatus, reloadAgent, setAgentEnabled } = await import('./mcp')
+    if (agentStatus().kind !== 'off') throw new Error('listening before being turned on')
+
+    const on = await setAgentEnabled(true)
+    if (on.kind === 'off') throw new Error('did not start listening')
+    const endpoint = `http://127.0.0.1:${on.port}/mcp`
+
+    // The client the agents actually use, from node_modules — a dev
+    // dependency, reached through a path the bundler cannot see so it is not
+    // bundled into main.
+    const sdk = '@modelcontextprotocol/sdk/client/'
+    const { Client } = await import(/* @vite-ignore */ `${sdk}index.js`) as
+      typeof import('@modelcontextprotocol/sdk/client/index.js')
+    const { StreamableHTTPClientTransport } = await import(/* @vite-ignore */ `${sdk}streamableHttp.js`) as
+      typeof import('@modelcontextprotocol/sdk/client/streamableHttp.js')
+
+    const wrong = await fetch(endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer not-it' }, body: '{}',
+    })
+    if (wrong.status !== 401) throw new Error(`a wrong token was answered with ${wrong.status}`)
+
+    const client = new Client({ name: 'smoke-agent', version: '0' })
+    await client.connect(new StreamableHTTPClientTransport(new URL(endpoint), {
+      requestInit: { headers: { Authorization: `Bearer ${on.token}` } },
+    }))
+    const { tools } = await client.listTools()
+    if (!tools.some((tool) => tool.name === 'project.current')) throw new Error('the tools were not listed')
+    const result = await client.callTool({ name: 'project.current', arguments: {} }) as
+      { isError?: boolean; content: { type: string; text?: string }[] }
+    if (result.isError) throw new Error(`project.current refused: ${result.content[0]?.text}`)
+    const current = JSON.parse(result.content[0]?.text ?? '{}') as { name?: string; elements?: number }
+    if (!current.name || !current.elements) throw new Error(`no project in the answer: ${JSON.stringify(current)}`)
+    if (agentStatus().kind !== 'connected') throw new Error('the app does not say connected')
+    await client.close()
+
+    // A relaunch keeps the port and the token: the file is read back and the
+    // listener comes up on the same address, so an agent configured before
+    // the relaunch still connects.
+    await reloadAgent()
+    const again = agentStatus()
+    if (again.kind === 'off' || again.port !== on.port || again.token !== on.token) {
+      throw new Error('the port or the token did not survive a relaunch')
+    }
+
+    await setAgentEnabled(false)
+    const closed = await fetch(endpoint).then(() => false, () => true)
+    if (!closed) throw new Error('the port is still open with the feature off')
+    return `port ${on.port}: ${tools.length} tools, "${current.name}" with ${current.elements} elements, closed again`
+  }))
+
   const failed = results.filter((r) => !r.ok)
   process.stdout.write(failed.length ? `\n${failed.length} of ${results.length} FAILED\n` : `\nall ${results.length} passed\n`)
 

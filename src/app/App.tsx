@@ -42,6 +42,9 @@ import type { AgentGateway } from '../ports/AgentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
+import { AGENT_OFF } from '../platform/agentServer'
+import type { AgentServerStatus } from '../platform/agentServer'
+import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
 import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import { SyncNotice } from './SyncNotice'
 import { useSync } from './useSync'
@@ -322,12 +325,45 @@ export function App({
    */
   const bus = useHostCommands(commands)
   const [prefsOpen, setPrefsOpen] = useState(false)
+  const [agentOpen, setAgentOpen] = useState(false)
   useEffect(() => bus.on((command) => {
     if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
     if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
     if (command.type === 'preferences') setPrefsOpen(true)
+    if (command.type === 'connectAgent') setAgentOpen(true)
   }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs])
+
+  /**
+   * The server's three facts (ADR-0007), asked once and then told. Held here
+   * rather than in the workspace because the glyph outlives a project switch
+   * and the dialog is reachable from the picker too.
+   */
+  const [agentStatus, setAgentStatus] = useState<AgentServerStatus>(AGENT_OFF)
+  useEffect(() => {
+    if (!agent) return
+    let live = true
+    void agent.status().then(
+      (held) => { if (live) setAgentStatus(held) },
+      (cause: unknown) => failedRef.current('agent.status', cause),
+    )
+    const off = agent.onStatus((held) => { if (live) setAgentStatus(held) })
+    return () => { live = false; off() }
+  }, [agent])
+
+  const agentChangeFailed = useCallback((where: string, cause: unknown) => {
+    failedRef.current(where, cause)
+    toasts.notify(s('agent.changeFailed', { message: reasonOf(cause) }), 'error')
+  }, [toasts, s])
+  const changeAgentEnabled = useCallback((enabled: boolean) => {
+    if (!agent) return
+    void agent.configure({ enabled }).then(setAgentStatus, (cause: unknown) => agentChangeFailed('agent.configure', cause))
+  }, [agent, agentChangeFailed])
+  const newAgentToken = useCallback(() => {
+    if (!agent) return
+    void agent.newToken().then(setAgentStatus, (cause: unknown) => agentChangeFailed('agent.newToken', cause))
+  }, [agent, agentChangeFailed])
+  const agentBar = useMemo(() => ({ status: agentStatus, onOpen: () => setAgentOpen(true) }), [agentStatus])
 
   /**
    * The two scopes the dialog reads from somewhere other than the blob.
@@ -748,6 +784,7 @@ export function App({
             history={history}
             onSnapshotTaken={sync.afterSnapshot}
             agent={agent}
+            agentBar={agentBar}
             documents={documents}
             notify={toasts.notify}
             onStorageResult={reportStorage}
@@ -822,6 +859,15 @@ export function App({
           machine={folderSettings && history && local && {
             ...local.git, path: LOCAL_SETTINGS_PATH, onChange: changeLocal,
           }}
+          s={s}
+        />
+        <ConnectAgentDialog
+          open={agentOpen}
+          onClose={() => setAgentOpen(false)}
+          status={agent ? agentStatus : undefined}
+          onEnabledChange={changeAgentEnabled}
+          onNewToken={newAgentToken}
+          copyText={hostControls.copyText}
           s={s}
         />
         <ToastBar

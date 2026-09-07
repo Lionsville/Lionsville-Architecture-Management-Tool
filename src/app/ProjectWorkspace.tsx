@@ -39,7 +39,7 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { ShellToolbar } from './ShellToolbar'
-import type { ToolbarOverflow } from './ShellToolbar'
+import type { ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
 import type { ProjectSaver } from './useDocumentSession'
 import { useAgentGateway } from './useAgentGateway'
@@ -95,6 +95,8 @@ export type ProjectWorkspaceProps = {
    * project that is open.
    */
   agent?: AgentGateway
+  /** The glyph on the bar: the server's state, and the way to the dialog. */
+  agentBar?: ToolbarAgent
   documents: ProjectFileChannel
 
   notify: Notify
@@ -148,7 +150,7 @@ function localToday(): string {
 
 export function ProjectWorkspace({
   project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
-  onSnapshotTaken, agent, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
+  onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
@@ -364,6 +366,7 @@ export function ProjectWorkspace({
         onOpenDecisions={() => openDecisions()}
         onOpenSearch={() => setSearchOpen(true)}
         activity={session.history}
+        agent={agentBar}
         s={s}
         windowChrome={windowChrome}
       />

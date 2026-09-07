@@ -20,6 +20,10 @@ function channel() {
       answers.push([id, answer])
       return Promise.resolve()
     },
+    status: () => Promise.resolve({ kind: 'off' }),
+    onStatus: () => () => {},
+    configure: () => Promise.resolve({ kind: 'off' }),
+    newToken: () => Promise.resolve({ kind: 'off' }),
   }
   return {
     held, answers,

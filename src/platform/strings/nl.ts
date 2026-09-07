@@ -18,6 +18,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.exportInterchange': 'Interchange-document exporteren…',
   'menu.snapshot': 'Momentopname…',
   'menu.history': 'Geschiedenis…',
+  'menu.connectAgent': 'Agent koppelen…',
   'menu.preferences': 'Voorkeuren…',
   'menu.settings': 'Instellingen…',
   'menu.theme': 'Thema',

@@ -71,6 +71,10 @@ export const FILE_MENU: readonly MenuEntry[] = [
   { kind: 'separator' },
   item('menu.snapshot', { type: 'snapshot' }, undefined, 'history'),
   item('menu.history', { type: 'history' }, undefined, 'history'),
+  { kind: 'separator' },
+  // On both hosts, and needing nothing: in a browser tab the dialog explains
+  // and says the desktop app is where an agent can connect (ADR-0007).
+  item('menu.connectAgent', { type: 'connectAgent' }),
 ]
 
 /**

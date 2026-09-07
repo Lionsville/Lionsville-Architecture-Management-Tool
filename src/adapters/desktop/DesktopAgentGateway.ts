@@ -9,6 +9,7 @@
  */
 import type { AgentAnswer, AgentRequest } from '../../agent/tools'
 import { refused } from '../../agent/tools'
+import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentServer'
 import { reasonOf } from '../../platform/errors'
 import type { AgentGateway } from '../../ports/AgentGateway'
 import type { DesktopAgent } from './channel'
@@ -28,5 +29,21 @@ export class DesktopAgentGateway implements AgentGateway {
         // is left to tell.
         .catch(() => undefined)
     })
+  }
+
+  status(): Promise<AgentServerStatus> {
+    return this.channel.status()
+  }
+
+  onStatus(listener: (status: AgentServerStatus) => void): () => void {
+    return this.channel.onStatus(listener)
+  }
+
+  configure(patch: AgentServerPatch): Promise<AgentServerStatus> {
+    return this.channel.configure(patch)
+  }
+
+  newToken(): Promise<AgentServerStatus> {
+    return this.channel.newToken()
   }
 }

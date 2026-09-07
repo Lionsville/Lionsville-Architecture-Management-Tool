@@ -22,6 +22,7 @@
  * has to understand it too.
  */
 import type { AgentAnswer, AgentRequest } from '../../agent/tools'
+import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentServer'
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type {
@@ -97,6 +98,12 @@ export type DesktopAgent = {
   onRequest(listener: (request: AgentRequest) => void): () => void
   /** The answer to one request. */
   answer(id: string, answer: AgentAnswer): Promise<void>
+  /** The three facts main reports: off, listening on which port, connected by whom. */
+  status(): Promise<AgentServerStatus>
+  onStatus(listener: (status: AgentServerStatus) => void): () => void
+  /** The switch, and a new token. Each answers with what is now in force. */
+  configure(patch: AgentServerPatch): Promise<AgentServerStatus>
+  newToken(): Promise<AgentServerStatus>
 }
 
 export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: number }

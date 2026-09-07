@@ -22,6 +22,7 @@ import type {
   DesktopAgent, DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings,
 } from '../../src/adapters/desktop/channel'
 import type { AgentRequest } from '../../src/agent/tools'
+import type { AgentServerStatus } from '../../src/platform/agentServer'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import type { ThemeMode } from '../../src/platform/theme'
 
@@ -105,6 +106,14 @@ const agent: DesktopAgent = {
     return () => { ipcRenderer.off('agent:request', relay) }
   },
   answer: (id, answer) => ipcRenderer.invoke('agent:answer', id, answer),
+  status: () => ipcRenderer.invoke('agent:status'),
+  onStatus(listener) {
+    const relay = (_event: unknown, status: AgentServerStatus) => listener(status)
+    ipcRenderer.on('agent:status', relay)
+    return () => { ipcRenderer.off('agent:status', relay) }
+  },
+  configure: (patch) => ipcRenderer.invoke('agent:configure', patch),
+  newToken: () => ipcRenderer.invoke('agent:newToken'),
 }
 
 const bridge: DesktopBridge = {

@@ -17,10 +17,13 @@
 import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Language, StringKey, Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
+import type { AgentServerStatus } from '../platform/agentServer'
+import { AgentIcon } from '../widgets/icons'
 import type { HostCommand } from '../platform/hostCommands'
 import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
@@ -72,6 +75,25 @@ export function sourceLabel(source: WorkingSource, s: Translate): string {
     case 'folder': return s('shell.sourceFolder', { name: source.name })
     case 'browserStorage': return s('shell.sourceBrowser')
     case 'memory': return s('shell.sourceMemory')
+  }
+}
+
+/**
+ * The agent glyph (ADR-0007): the one place the server's state is visible,
+ * and how a person finds out the feature exists. Three states, encoded in the
+ * glyph and named in its tooltip.
+ */
+export type ToolbarAgent = {
+  status: AgentServerStatus
+  onOpen: () => void
+}
+
+/** What the glyph says, per state. */
+export function agentTip(status: AgentServerStatus, s: Translate): string {
+  switch (status.kind) {
+    case 'off': return s('agent.tipOff')
+    case 'listening': return s('agent.tipListening', { port: status.port })
+    case 'connected': return s('agent.tipConnected', { name: status.client.name })
   }
 }
 
@@ -131,6 +153,8 @@ export type ShellToolbarProps = {
   activity: () => readonly ActivityEntry[]
   /** The menu, for a host that has no menu bar. */
   overflow?: ToolbarOverflow
+  /** The agent glyph. Present on every host: on the web it opens the explanation. */
+  agent?: ToolbarAgent
   s: Translate
   /**
    * What the window leaves to this bar. On the desktop the macOS title bar is
@@ -143,7 +167,7 @@ export type ShellToolbarProps = {
 export function ShellToolbar({
   source = BROWSER_STORAGE, designName, groupName, savedAt, status = 'clean', saveFailed = false,
   language, onLeave, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenSearch, activity,
-  overflow, s, windowChrome = NO_WINDOW_CHROME,
+  overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
 
@@ -222,6 +246,27 @@ export function ShellToolbar({
         language={language}
         s={s}
       />
+      {agent && (
+        <Tooltip title={agentTip(agent.status, s)}>
+          <IconButton
+            size="small"
+            aria-label={agentTip(agent.status, s)}
+            data-testid="agent-glyph"
+            data-state={agent.status.kind}
+            onClick={agent.onOpen}
+            sx={{
+              width: 30, height: 30,
+              // Dimmed when off, ordinary when listening, the accent when
+              // something is actually editing beside the person.
+              color: agent.status.kind === 'connected'
+                ? 'primary.main'
+                : agent.status.kind === 'listening' ? 'text.secondary' : 'text.disabled',
+            }}
+          >
+            <AgentIcon filled={agent.status.kind === 'connected'} />
+          </IconButton>
+        </Tooltip>
+      )}
       {overflow && (
         <OverflowMenu
           themeMode={overflow.themeMode}

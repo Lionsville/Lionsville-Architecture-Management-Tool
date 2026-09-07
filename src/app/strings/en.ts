@@ -308,6 +308,50 @@ export const EN = {
   'group.saved': 'Saved {name}.',
   'group.renamed': 'Group renamed to “{name}”.',
   'group.saveFailed': 'Could not save this group.',
+  // --- an agent as a peer of the menu (ADR-0007) ------------------------------
+  'agent.title': 'Connect an agent',
+  /** The glyph's three states, as its tooltip names them. */
+  'agent.tipOff': 'Connect an agent…',
+  'agent.tipListening': 'Waiting for an agent on port {port}',
+  'agent.tipConnected': '{name} connected',
+  /** Four sentences in a person's language: what this is, before any switch. */
+  'agent.what':
+    'Your coding agent — Claude Code, Codex, Cursor or any other MCP client — can read this landscape, '
+    + 'propose changes and look at diagrams while you work. Everything it does shows in Activity under its '
+    + 'name and is undone with ⌘Z. It connects over the standard Model Context Protocol, on this machine only. '
+    + 'Nothing leaves the computer.',
+  'agent.enable': 'Accept agent connections',
+  'agent.listening': 'Listening on port {port}.',
+  'agent.connected': '{name} is connected.',
+  'agent.moved':
+    'Port {from} was taken when the app started, so it listens on {port} now. An agent configured with the old port needs the new address.',
+  /** A browser tab: the explanation stands, and this replaces the switch. */
+  'agent.desktopOnly':
+    'Connecting an agent needs the desktop app — only it can listen on this machine. Open this project there and the switch is here.',
+  'agent.recipes': 'CONNECT YOUR CLIENT',
+  'agent.recipesNote': 'The port and the token below are this machine\u2019s. Pick your client and paste.',
+  'agent.tabClaude': 'Claude Code',
+  'agent.tabCodex': 'Codex',
+  'agent.tabCursor': 'Cursor',
+  'agent.tabOther': 'Other',
+  /**
+   * The recipes. One string each with placeholders, because a recipe is the
+   * kind of thing that is wrong six months later, and a string is what can be
+   * corrected without a build of the dialog.
+   */
+  'agent.recipeClaude': 'claude mcp add --transport http lvarch {endpoint} --header "Authorization: Bearer {token}"',
+  'agent.recipeCodex':
+    '# ~/.codex/config.toml\n[mcp_servers.lvarch]\nurl = "{endpoint}"\nhttp_headers = { Authorization = "Bearer {token}" }',
+  'agent.recipeCursor':
+    '// .cursor/mcp.json\n{\n  "mcpServers": {\n    "lvarch": {\n      "url": "{endpoint}",\n'
+    + '      "headers": { "Authorization": "Bearer {token}" }\n    }\n  }\n}',
+  'agent.recipeOther': 'Transport: Streamable HTTP\nEndpoint: {endpoint}\nHeader: Authorization: Bearer {token}',
+  'agent.copy': 'Copy',
+  'agent.copied': 'Copied',
+  'agent.newToken': 'New token',
+  'agent.newTokenNote': 'Every agent configured before now needs the new token.',
+  'agent.changeFailed': 'That could not be changed: {message}',
+
   // --- the shell's top bar: the three pages beside the canvas -------------
   'shell.documentation': 'Documentation',
   'shell.documentationTip': 'Open the documentation page of the selected element',

@@ -57,6 +57,10 @@ function fakeGateway() {
       handler = next
       return () => { if (handler === next) handler = undefined }
     },
+    status: () => Promise.resolve({ kind: 'off' }),
+    onStatus: () => () => {},
+    configure: () => Promise.resolve({ kind: 'off' }),
+    newToken: () => Promise.resolve({ kind: 'off' }),
   }
   const ask = (tool: string, args: unknown = {}): Promise<AgentAnswer> => {
     if (!handler) throw new Error('nobody is listening')

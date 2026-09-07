@@ -18,7 +18,8 @@ describe('offered', () => {
     expect(labels(offered(FILE_MENU, 'desktop', { history: true, folders: true }))).toEqual([
       'menu.openFolder', '<recentFolders>', '<separator>',
       'menu.open', 'menu.save', 'menu.exportWorkingFile', 'menu.exportInterchange', '<separator>',
-      'menu.snapshot', 'menu.history',
+      'menu.snapshot', 'menu.history', '<separator>',
+      'menu.connectAgent',
     ])
   })
 
@@ -35,8 +36,10 @@ describe('offered', () => {
     const entries = labels(offered(FILE_MENU, 'web', { history: false, folders: true }))
     expect(entries).not.toContain('menu.snapshot')
     expect(entries).not.toContain('menu.history')
-    // The section that emptied leaves no rule behind.
+    // The section that emptied leaves no rule behind, and no doubled one
+    // before what follows it.
     expect(entries[entries.length - 1]).not.toBe('<separator>')
+    expect(entries.filter((label) => label === '<separator>').length).toBe(2)
   })
 
   it('offers no folder to a tab whose browser cannot give one', () => {

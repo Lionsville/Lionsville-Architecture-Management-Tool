@@ -28,6 +28,7 @@ import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
+import { registerAgentChannel, startAgent, stopAgent } from './mcp'
 
 /**
  * A throw nobody caught. Logged rather than left to Electron's default, which
@@ -318,6 +319,11 @@ void app.whenReady().then(() => {
   startUpdates()
   registerSettingsChannel()
 
+  // The agent server (ADR-0007): its channel before the window, like the
+  // files', and the listener only if `mcp.json` says so. Off by default.
+  registerAgentChannel()
+  void startAgent()
+
   const menu = () => installAppMenu({
     recents: recentDirectories(),
     onCheckForUpdates: checkForUpdatesNow,
@@ -487,4 +493,9 @@ app.on('window-all-closed', () => {
 // A watcher holds a handle on a folder and a callback into a window that is on
 // its way out. Neither is a leak worth arguing about in a process that is
 // exiting, but a folder held open across a quit is visible on Windows.
-app.on('before-quit', () => stopWatching())
+app.on('before-quit', () => {
+  stopWatching()
+  // The listener holds the port; a quit that left it bound would make the
+  // next launch take another one and every configured agent miss the app.
+  void stopAgent()
+})

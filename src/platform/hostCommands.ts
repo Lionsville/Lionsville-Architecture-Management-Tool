@@ -46,6 +46,8 @@ export type HostCommand =
   | { type: 'preferences' }
   /** The View menu's radio, or the overflow's: one of the three themes. */
   | { type: 'theme'; mode: ThemeMode }
+  /** Open the dialog that explains and enables an agent's way in (ADR-0007). */
+  | { type: 'connectAgent' }
 
 /**
  * Somewhere to send them, and two things to send back.

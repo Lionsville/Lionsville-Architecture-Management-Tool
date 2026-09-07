@@ -369,3 +369,22 @@ export function DocGlyph({ size = 12, strokeWidth = 2 }: { size?: number; stroke
     </svg>
   );
 }
+
+/**
+ * An agent beside the app: a rounded head with two eyes and an antenna.
+ * Outline when nothing is connected, filled when something is — the glyph
+ * carries the state, and the tooltip names it.
+ */
+export function AgentIcon({ size = 18, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 3v3M9 6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect
+        x="4" y="8" width="16" height="12" rx="3"
+        stroke="currentColor" strokeWidth="2" fill={filled ? 'currentColor' : 'none'}
+      />
+      <circle cx="9" cy="14" r="1.5" fill={filled ? 'var(--agent-eye, #fff)' : 'currentColor'} />
+      <circle cx="15" cy="14" r="1.5" fill={filled ? 'var(--agent-eye, #fff)' : 'currentColor'} />
+    </svg>
+  );
+}
