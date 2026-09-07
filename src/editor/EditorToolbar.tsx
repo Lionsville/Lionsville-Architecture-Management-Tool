@@ -21,7 +21,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, type Language, type StringKey } from '../i18n/strings';
 
@@ -111,6 +111,9 @@ export interface EditorToolbarProps {
   onOpenSearch(): void;
   /** Minimap toggle (4B): persisted with the other view settings. */
   showMinimap: boolean;
+  /** Line labels always, or only on hover and selection; default on. */
+  showEdgeLabels: boolean;
+  onToggleEdgeLabels(): void;
   onToggleMinimap(): void;
   /**
    * The NL/EN toggle. Shown ONLY when the host wired `onLanguageChange` — an
@@ -359,6 +362,22 @@ export function EditorToolbar(props: EditorToolbarProps) {
           }}
         >
           <MinimapIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={props.showEdgeLabels ? t('toolbar.edgeLabelsOn') : t('toolbar.edgeLabelsOff')}>
+        <IconButton
+          size="small"
+          aria-label={t('toolbar.edgeLabels')}
+          aria-pressed={props.showEdgeLabels}
+          onClick={props.onToggleEdgeLabels}
+          sx={{
+            color: props.showEdgeLabels ? 'primary.main' : 'text.secondary',
+            backgroundColor: props.showEdgeLabels
+              ? alpha(theme.palette.primary.main, 0.12)
+              : 'transparent',
+          }}
+        >
+          <LabelIcon />
         </IconButton>
       </Tooltip>
       <Tooltip title={t('toolbar.fitView')}>

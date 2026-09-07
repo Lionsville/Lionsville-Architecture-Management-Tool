@@ -538,6 +538,74 @@ describe('SolutionDesignEditor — minimap', () => {
   });
 });
 
+// ── Line labels on hover only ────────────────────────────────────────────────
+
+describe('SolutionDesignEditor — line labels hidden', () => {
+  const labelsButton = () => screen.getByLabelText('Toggle line labels');
+  const linePath = async () => {
+    const edge = await screen.findByTestId('rf__edge-c1');
+    const path = edge.querySelector('.react-flow__edge-path');
+    if (!path) throw new Error('no edge path drawn');
+    return path;
+  };
+
+  it('shows labels by default, and hides them all on the toggle', async () => {
+    renderEditor({ model: modelWithConnection() });
+    await screen.findByTestId('edge-label-c1');
+    expect(labelsButton().getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(labelsButton());
+
+    expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+  });
+
+  it('starts hidden when the host says so, and reports the change back', async () => {
+    const onPreferencesChange = vi.fn();
+    renderEditor({
+      model: modelWithConnection(),
+      initialPreferences: { showEdgeLabels: false },
+      onPreferencesChange,
+    });
+    await screen.findByTestId('rf__edge-c1');
+    expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+
+    fireEvent.click(labelsButton());
+    expect(onPreferencesChange).toHaveBeenCalledWith(
+      expect.objectContaining({ showEdgeLabels: true }),
+    );
+    expect(await screen.findByTestId('edge-label-c1')).toBeDefined();
+  });
+
+  it('shows a hidden label while the pointer is on its line, then lets it go', async () => {
+    renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
+    const path = await linePath();
+
+    fireEvent.mouseEnter(path);
+    const chip = await screen.findByTestId('edge-label-c1');
+    expect(chip.textContent).toContain('Sends orders');
+
+    // Leaving is deferred a beat so the chip can be reached from the line;
+    // stepping onto the chip keeps it.
+    fireEvent.mouseLeave(path);
+    fireEvent.mouseEnter(chip);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(screen.getByTestId('edge-label-c1')).toBeDefined();
+
+    fireEvent.mouseLeave(chip);
+    await waitFor(() => expect(screen.queryByTestId('edge-label-c1')).toBeNull());
+  });
+
+  it('keeps a hidden label on a selected line, so it can still be edited in place', async () => {
+    renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
+    const edge = await screen.findByTestId('rf__edge-c1');
+    expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+
+    fireEvent.click(edge);
+
+    expect(await screen.findByTestId('edge-label-c1')).toBeDefined();
+  });
+});
+
 // ── Keyboard access (4B) ─────────────────────────────────────────────────────
 
 describe('SolutionDesignEditor — keyboard focus on nodes', () => {

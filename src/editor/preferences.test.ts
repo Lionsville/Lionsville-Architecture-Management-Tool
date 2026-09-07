@@ -160,3 +160,20 @@ describe('preferencesEqual — 4B fields', () => {
     expect(preferencesEqual(a, { ...a, showMinimap: !a.showMinimap })).toBe(false);
   });
 });
+
+describe('line labels', () => {
+  it('shows every label until somebody asks otherwise', () => {
+    // The default is the behaviour the tool always had; hiding is the opt-in.
+    expect(mergePreferences({}).showEdgeLabels).toBe(true);
+  });
+
+  it('keeps a stored choice to hide them, and ignores junk', () => {
+    expect(mergePreferences({ showEdgeLabels: false }).showEdgeLabels).toBe(false);
+    expect(mergePreferences({ showEdgeLabels: 'no' }).showEdgeLabels).toBe(true);
+  });
+
+  it('is part of the equality', () => {
+    const a = mergePreferences({});
+    expect(preferencesEqual(a, { ...a, showEdgeLabels: false })).toBe(false);
+  });
+});

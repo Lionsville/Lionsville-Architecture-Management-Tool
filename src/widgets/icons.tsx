@@ -331,6 +331,17 @@ export function SearchIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** The line-label toggle: a line with a label chip sitting on it. */
+export function LabelIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 12h4M17 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect x="7" y="8" width="10" height="8" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M10 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** The minimap toggle (4B): a board with a viewport rectangle on it. */
 export function MinimapIcon({ size = 18 }: IconProps) {
   return (

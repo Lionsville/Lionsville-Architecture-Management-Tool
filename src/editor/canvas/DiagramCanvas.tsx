@@ -236,6 +236,8 @@ export interface DiagramCanvasProps {
   onToggleShowGrid(): void;
   /** The minimap (4B): off by default, remembered in the editor's preferences. */
   showMinimap?: boolean;
+  /** Line labels always (default), or only on hover and selection. */
+  showEdgeLabels?: boolean;
   /**
    * Mount every node and edge, not only the ones in view.
    *
@@ -897,6 +899,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     model,
     showGrid,
     snapToGrid,
+    showEdgeLabels = true,
     clipboardRef,
     pasteCountRef,
     onTidy,
@@ -1126,6 +1129,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const routeEditing = useMemo<RouteEditingApi>(
     () => ({
       readOnly,
+      showLabels: showEdgeLabels,
       setWaypoints: (connectionId, waypoints) => actions.setEdgeRoute(connectionId, waypoints),
       setLabelPosition: (connectionId, position) =>
         actions.setEdgeLabelPosition(connectionId, position),
@@ -1142,7 +1146,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       setSides: (connectionId, sides) => onSetRouteSides?.(connectionId, sides),
       labelEditRequest,
     }),
-    [readOnly, actions, screenToFlowPosition, onSelectionChange, onResetRoute, onSetRouteSides, labelEditRequest],
+    [readOnly, showEdgeLabels, actions, screenToFlowPosition, onSelectionChange, onResetRoute, onSetRouteSides, labelEditRequest],
   );
 
   const requestLabelEdit = useCallback((connectionId: string) => {

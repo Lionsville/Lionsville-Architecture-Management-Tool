@@ -66,6 +66,8 @@ function Harness(props: {
         onOpenSearch={() => {}}
         showMinimap={false}
         onToggleMinimap={() => {}}
+        showEdgeLabels
+        onToggleEdgeLabels={() => {}}
       />
     </ThemeProvider>
   );

@@ -49,6 +49,8 @@ function renderToolbar(overrides: Partial<EditorToolbarProps> = {}) {
     onOpenSearch: vi.fn(),
     showMinimap: false,
     onToggleMinimap: vi.fn(),
+    showEdgeLabels: true,
+    onToggleEdgeLabels: vi.fn(),
     ...overrides,
   };
   render(

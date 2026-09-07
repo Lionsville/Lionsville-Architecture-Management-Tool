@@ -202,6 +202,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // The minimap (4B): off by default — it costs board area on a landscape that
   // already fills the window.
   const [showMinimap, setShowMinimap] = useState(initialPreferences.showMinimap);
+  // Line labels: on by default; off, a label shows only on hover or selection.
+  const [showEdgeLabels, setShowEdgeLabels] = useState(initialPreferences.showEdgeLabels);
   // ⌘F. The dialog owns its own query; this is only whether it is up.
   const [searchOpen, setSearchOpen] = useState(false);
   /** The element whose documentation page is open; session state, never saved. */
@@ -347,6 +349,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       paletteWidth,
       inspectorWidth,
       showMinimap,
+      showEdgeLabels,
       tidyOptions,
       groupTidyOptions,
     };
@@ -363,6 +366,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
     paletteWidth,
     inspectorWidth,
     showMinimap,
+    showEdgeLabels,
     tidyOptions,
     groupTidyOptions,
   ]);
@@ -1053,6 +1057,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onOpenSearch={() => setSearchOpen(true)}
         showMinimap={showMinimap}
         onToggleMinimap={() => setShowMinimap((on) => !on)}
+        showEdgeLabels={showEdgeLabels}
+        onToggleEdgeLabels={() => setShowEdgeLabels((on) => !on)}
         onLanguageChange={props.language?.onChange}
       />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -1092,6 +1098,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onToggleShowGrid={() => setShowGrid((on) => !on)}
           showLifecycle={showLifecycle}
           showMinimap={showMinimap}
+          showEdgeLabels={showEdgeLabels}
           mountEveryElement={capturing}
           onElementDoubleClick={handleDoubleClick}
           onOpenDocumentation={openDocumentation}
@@ -1314,6 +1321,7 @@ function CanvasForDiagram({
   onToggleShowGrid,
   showLifecycle,
   showMinimap,
+  showEdgeLabels,
   mountEveryElement,
   onElementDoubleClick,
   onOpenDocumentation,
@@ -1345,6 +1353,7 @@ function CanvasForDiagram({
   onToggleShowGrid(): void;
   showLifecycle: boolean;
   showMinimap: boolean;
+  showEdgeLabels: boolean;
   /** See `DiagramCanvasProps.mountEveryElement`: true while a PNG is captured. */
   mountEveryElement: boolean;
   onElementDoubleClick(elementId: ElementId): void;
@@ -1382,6 +1391,7 @@ function CanvasForDiagram({
     onToggleShowGrid,
     showLifecycle,
     showMinimap,
+    showEdgeLabels,
     mountEveryElement,
     onElementDoubleClick,
     onOpenDocumentation,

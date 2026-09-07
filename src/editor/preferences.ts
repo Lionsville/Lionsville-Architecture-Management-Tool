@@ -36,6 +36,12 @@ export interface EditorPreferences {
   /** The React Flow minimap (4B): off by default — it costs board area. */
   showMinimap: boolean;
   /**
+   * Every line's label chip, always. Off, a busy board shows its lines bare and
+   * a label appears only while its line is under the pointer, selected or being
+   * edited — the labels are still there, they just stop competing for the eye.
+   */
+  showEdgeLabels: boolean;
+  /**
    * Board-level Tidy settings (the toolbar's caret popover).
    *
    * Defaults to hybrid + compact rather than to {@link DEFAULT_TIDY_OPTIONS} —
@@ -80,6 +86,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
   paletteWidth: PANEL_LIMITS.palette.default,
   inspectorWidth: PANEL_LIMITS.inspector.default,
   showMinimap: false,
+  showEdgeLabels: true,
   tidyOptions: BOARD_TIDY_DEFAULTS,
   groupTidyOptions: DEFAULT_TIDY_OPTIONS,
 };
@@ -132,6 +139,7 @@ export function mergePreferences(stored: unknown): EditorPreferences {
     paletteWidth: panelWidth('palette', raw.paletteWidth),
     inspectorWidth: panelWidth('inspector', raw.inspectorWidth),
     showMinimap: bool(raw.showMinimap, defaults.showMinimap),
+    showEdgeLabels: bool(raw.showEdgeLabels, defaults.showEdgeLabels),
     tidyOptions: tidyOptions(raw.tidyOptions, defaults.tidyOptions),
     groupTidyOptions: tidyOptions(raw.groupTidyOptions, defaults.groupTidyOptions),
   };
@@ -163,6 +171,7 @@ export function preferencesEqual(a: EditorPreferences, b: EditorPreferences): bo
     a.paletteWidth === b.paletteWidth &&
     a.inspectorWidth === b.inspectorWidth &&
     a.showMinimap === b.showMinimap &&
+    a.showEdgeLabels === b.showEdgeLabels &&
     tidyEqual(a.tidyOptions, b.tidyOptions) &&
     tidyEqual(a.groupTidyOptions, b.groupTidyOptions)
   );

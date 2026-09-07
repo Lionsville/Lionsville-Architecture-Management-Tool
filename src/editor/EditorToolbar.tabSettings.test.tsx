@@ -57,6 +57,8 @@ function renderToolbar(props: {
         onOpenSearch={vi.fn()}
         showMinimap={false}
         onToggleMinimap={vi.fn()}
+        showEdgeLabels
+        onToggleEdgeLabels={vi.fn()}
       />
     </ThemeProvider>,
   );

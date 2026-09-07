@@ -115,6 +115,8 @@ const CHIP_CLEARANCE_PX = 24;
 const BEND_HANDLE_PX = 10;
 const SEGMENT_HANDLE_PX = { width: 18, height: 8 };
 const HANDLE_HIT_PX = 16;
+/** How long a chip stays after the pointer leaves the line, so it can be reached. */
+const HOVER_LEAVE_MS = 150;
 /** The bar drawn on a fixed side while the line is selected: along the side, across the leg. */
 const SIDE_MARKER_PX = { along: 14, across: 3 };
 
@@ -213,6 +215,28 @@ export const FloatingEdge = memo(function FloatingEdge({
   const [dragLabel, setDragLabel] = useState<Point | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  // Whether the pointer is over the line or its chip — only consulted while the
+  // board hides labels. Leaving is deferred a beat: the chip sits ON the line, so
+  // moving from the path onto the chip fires a leave before the enter, and a chip
+  // that unmounted on the leave would never receive the enter.
+  const [hovered, setHovered] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelLeave = () => {
+    if (leaveTimer.current !== null) clearTimeout(leaveTimer.current);
+    leaveTimer.current = null;
+  };
+  const onHoverEnter = () => {
+    cancelLeave();
+    setHovered(true);
+  };
+  const onHoverLeave = () => {
+    cancelLeave();
+    leaveTimer.current = setTimeout(() => {
+      leaveTimer.current = null;
+      setHovered(false);
+    }, HOVER_LEAVE_MS);
+  };
+  useEffect(() => cancelLeave, []);
   const editCancelledRef = useRef(false);
   // All three drags are declared here, above the "no nodes yet" bail-out, because
   // a hook cannot live behind an early return. What each gesture is ABOUT arrives
@@ -452,7 +476,10 @@ export const FloatingEdge = memo(function FloatingEdge({
   // Chip anchor: live drag position > stored per-diagram anchor > path midpoint.
   const anchor = dragLabel ?? data?.labelPosition ?? { x: labelX, y: labelY };
   // An empty selected edge still shows a ghost chip so the text is addable in place.
-  const showChip = hasLabel || editing || (selected && !routeEditing.readOnly);
+  // With labels hidden board-wide, a chip is shown only while the line is under
+  // the pointer, selected, or being edited — a busy board reads its lines bare.
+  const chipWanted = hasLabel || editing || (selected && !routeEditing.readOnly);
+  const showChip = chipWanted && (routeEditing.showLabels || hovered || selected || editing);
   // The chip's own segment handle collision check needs to know whether a chip is
   // actually drawn there.
   const chipAt = showChip ? anchor : undefined;
@@ -543,18 +570,24 @@ export const FloatingEdge = memo(function FloatingEdge({
 
   return (
     <>
-      <BaseEdge
-        id={id}
-        path={path}
-        markerEnd={markerEnd}
-        markerStart={markerStart}
-        style={{ stroke, strokeWidth: selected ? 2 : 1.5, strokeDasharray: dashArray }}
-      />
+      {/* The group carries the hover, since BaseEdge takes no handlers of its
+          own; its interaction path is what makes a 1.5 px line easy to reach. */}
+      <g onMouseEnter={onHoverEnter} onMouseLeave={onHoverLeave}>
+        <BaseEdge
+          id={id}
+          path={path}
+          markerEnd={markerEnd}
+          markerStart={markerStart}
+          style={{ stroke, strokeWidth: selected ? 2 : 1.5, strokeDasharray: dashArray }}
+        />
+      </g>
       {showChip && (
         <EdgeLabelRenderer>
           <div
             className="nodrag nopan"
             data-testid={`edge-label-${id}`}
+            onMouseEnter={onHoverEnter}
+            onMouseLeave={onHoverLeave}
             onPointerDown={beginLabelDrag}
             onDoubleClick={(event) => {
               event.stopPropagation();

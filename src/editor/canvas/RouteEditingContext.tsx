@@ -9,6 +9,13 @@ import type { AttachSidesPatch } from '../../model/routes';
  */
 export interface RouteEditingApi {
   readOnly: boolean;
+  /**
+   * Every label chip, always. Off, a line shows its chip only while it is under
+   * the pointer, selected or being edited. A view setting rather than edge data
+   * because it is one answer for the whole board, and putting it on every edge's
+   * data would make every edge "changed" when it flips.
+   */
+  showLabels: boolean;
   /** Replace a connection's waypoints on the active diagram (label anchor kept). */
   setWaypoints(connectionId: string, waypoints: Point[]): void;
   /** Move (or reset, with undefined) a connection's label anchor on the active diagram. */
@@ -40,6 +47,7 @@ export interface RouteEditingApi {
 
 const noop: RouteEditingApi = {
   readOnly: true,
+  showLabels: true,
   setWaypoints: () => undefined,
   setLabelPosition: () => undefined,
   setLabelText: () => undefined,
