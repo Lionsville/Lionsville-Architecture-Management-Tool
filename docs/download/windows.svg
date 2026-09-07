@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Windows">
+  <rect x="4" y="4" width="112" height="112" rx="22" fill="#eef2f7" stroke="#c9d3df" stroke-width="2"/>
+  <g fill="none" stroke="#2f5d8a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="26" y="28" width="68" height="44" rx="4"/>
+    <path d="M26 62h68"/>
+    <path d="M32 67h8M44 67h6"/>
+    <path d="M50 78v6M42 84h16"/>
+  </g>
+  <text x="60" y="100" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#24364a">Windows</text>
+</svg>

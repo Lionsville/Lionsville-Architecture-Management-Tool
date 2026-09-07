@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="macOS">
+  <rect x="4" y="4" width="112" height="112" rx="22" fill="#eef2f7" stroke="#c9d3df" stroke-width="2"/>
+  <g fill="none" stroke="#2f5d8a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="30" y="30" width="60" height="38" rx="5"/>
+    <path d="M20 76h80"/>
+    <path d="M50 76h20"/>
+  </g>
+  <text x="60" y="100" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#24364a">macOS</text>
+</svg>

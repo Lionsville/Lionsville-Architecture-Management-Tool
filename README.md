@@ -17,13 +17,26 @@ copy and take apart.*
 
 ## Download
 
-**[Download the desktop app →](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest)**
+<table align="center"><tr>
+<td align="center" width="200">
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-mac-arm64.dmg"><img src="docs/download/macos.svg" width="96" alt="macOS"></a><br>
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-mac-arm64.dmg"><b>Download DMG</b></a><br>
+<sub>Apple Silicon · signed, notarized</sub>
+</td>
+<td align="center" width="200">
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-win-x64.exe"><img src="docs/download/windows.svg" width="96" alt="Windows"></a><br>
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-win-x64.exe"><b>Download installer</b></a><br>
+<sub>x64 · signed</sub>
+</td>
+<td align="center" width="200">
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-linux-amd64.deb"><img src="docs/download/linux.svg" width="96" alt="Linux"></a><br>
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v1.1.0/lionsville-architecture-management-tool-1.1.0-linux-amd64.deb"><b>Download .deb</b></a><br>
+<sub>amd64 · unsigned</sub>
+</td>
+</tr></table>
 
-| Platform | File |
-|---|---|
-| macOS (Apple Silicon) | `…-mac-arm64.dmg` — signed, notarized |
-| Windows (x64 / ARM64) | `…-win-x64.exe`, `…-win-arm64.exe` — signed installers |
-| Linux | `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` — unsigned |
+<p align="center"><b><a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest">More details →</a></b><br>
+<sub>Version 1.1.0. The release page also carries a Windows ARM64 installer, a Linux AppImage, and the notes.</sub></p>
 
 The desktop app checks that release page for a newer version in the background —
 switchable off, and **Check for Updates…** in the app menu asks on request. It
