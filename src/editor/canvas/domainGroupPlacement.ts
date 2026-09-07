@@ -1,7 +1,8 @@
 import { DEFAULT_TRANSLATE, type Translate } from '../../i18n/strings';
-import { expandRect, unionRects } from '../../model/placement';
+import { MIN_GROUP_SIZE } from '../../model/placement';
+export { GROUP_AROUND_PADDING, GROUP_LABEL_ROOM, groupRectAround } from '../../model/placement';
 import { zoneRect } from '../../model/zones';
-import type { DiagramLayoutConfig, DomainGroupRect, Point, Rect } from '../../model/types';
+import type { DiagramLayoutConfig, DomainGroupRect, Point } from '../../model/types';
 
 /** A new group's box. Big enough to drop two or three cards into straight away. */
 export const DEFAULT_GROUP_SIZE = { width: 420, height: 280 } as const;
@@ -18,9 +19,6 @@ export const DEFAULT_GROUP_SIZE = { width: 420, height: 280 } as const;
 export function defaultGroupName(translate: Translate = DEFAULT_TRANSLATE): string {
   return translate('newName.domainGroup');
 }
-
-/** Never let a dropped box get so small it cannot hold a card. */
-const MIN_GROUP_SIZE = 120;
 
 /**
  * A group name that is not taken yet. Names are the group's KEY — `upsertDomainGroup`
@@ -104,26 +102,4 @@ function clamp(value: number, min: number, max: number): number {
   // rather than returning a nonsense coordinate.
   if (max < min) return min;
   return Math.min(Math.max(value, min), max);
-}
-
-/** Air between a group's members and its border when the box is drawn around them. */
-export const GROUP_AROUND_PADDING = 28;
-/** Extra room above the members for the name pill, which sits on the top edge. */
-export const GROUP_LABEL_ROOM = 14;
-
-/**
- * A box that hugs `memberRects` — "Group into new domain group" from a
- * selection. Padded all round, with a little more on top for the label pill.
- * Undefined for an empty selection: there is nothing to draw around.
- */
-export function groupRectAround(memberRects: readonly Rect[]): Rect | undefined {
-  const union = unionRects([...memberRects]);
-  if (!union) return undefined;
-  const padded = expandRect(union, GROUP_AROUND_PADDING);
-  return {
-    ...padded,
-    y: padded.y - GROUP_LABEL_ROOM,
-    height: Math.max(padded.height + GROUP_LABEL_ROOM, MIN_GROUP_SIZE),
-    width: Math.max(padded.width, MIN_GROUP_SIZE),
-  };
 }

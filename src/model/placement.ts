@@ -289,6 +289,31 @@ export function defaultContainerPosition(
   return { x: -280, y: 40 + existingOfKindGroup * (size.height + 32) };
 }
 
+/** Never let a group box get so small it cannot hold a card. */
+export const MIN_GROUP_SIZE = 120;
+/** Air between a group's members and its border when the box is drawn around them. */
+export const GROUP_AROUND_PADDING = 28;
+/** Extra room above the members for the name pill, which sits on the top edge. */
+export const GROUP_LABEL_ROOM = 14;
+
+/**
+ * A box that hugs `memberRects` — "Group into new domain group" from a
+ * selection, and the box an agent's `group` draws. Padded all round, with a
+ * little more on top for the label pill. Undefined for an empty selection:
+ * there is nothing to draw around.
+ */
+export function groupRectAround(memberRects: readonly Rect[]): Rect | undefined {
+  const union = unionRects([...memberRects]);
+  if (!union) return undefined;
+  const padded = expandRect(union, GROUP_AROUND_PADDING);
+  return {
+    ...padded,
+    y: padded.y - GROUP_LABEL_ROOM,
+    height: Math.max(padded.height + GROUP_LABEL_ROOM, MIN_GROUP_SIZE),
+    width: Math.max(padded.width, MIN_GROUP_SIZE),
+  };
+}
+
 /**
  * Domain groups are explicit rectangles stored in the diagram's layoutConfig
  * (iteration 2 — they used to be derived from member bounding boxes).
