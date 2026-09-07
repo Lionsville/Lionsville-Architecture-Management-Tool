@@ -108,6 +108,13 @@ export type CommandMeta = {
    * none, and what its members say about themselves does not change that.
    */
   undoable?: boolean
+  /**
+   * Who took the step, when it was not the person at the keyboard (ADR-0007).
+   * The activity list says so; the reducer and the stack treat the step like
+   * any other, which is the point — ⌘Z after an agent's step undoes the
+   * agent's step.
+   */
+  origin?: 'agent'
 }
 
 export type Command = CommandBody & CommandMeta

@@ -361,6 +361,8 @@ export const EN = {
   'shell.activity': 'Activity',
   'shell.activityTip': 'What has changed in this project since you opened it',
   'shell.activityEmpty': 'Nothing yet',
+  /** The tag on a step an agent took, beside the time (ADR-0007). */
+  'shell.activityAgent': 'AGENT',
   'shell.search': 'Search',
   'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
 } as const

@@ -1,13 +1,13 @@
-import type { ElementId } from '../../model/types';
+import type { ElementId } from '../model/types';
 
 /**
  * ALIGN & DISTRIBUTE (U4a) — pure geometry.
  * -----------------------------------------
- * Operates on measured node bounds ({x,y,width,height}). The canvas layer is
- * the only place real sizes exist — `DiagramPlacement.width/height` are only
- * set for *resized* nodes, so this must be fed `node.measured` sizes from the
- * React Flow layer, never the overlay. Callers turn the returned positions
- * into a single `movePlacements` batch (one batched commit, one save).
+ * Operates on node bounds ({x,y,width,height}). The canvas feeds it the
+ * measured sizes from the React Flow layer, which is where real sizes exist;
+ * the agent's relational moves (ADR-0007) feed it the canonical sizes from
+ * `model/placement.ts`, which is why this lives in `layout/` and not beside
+ * the canvas. Callers turn the returned positions into one `placement.set`.
  */
 
 export type AlignAxis = 'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom';

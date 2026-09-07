@@ -70,7 +70,7 @@ import {
   type AlignAxis,
   type DistributeAxis,
   type NodeBounds,
-} from './alignDistribute';
+} from '../../layout/alignDistribute';
 import { getHelperLines, HelperLines, type HelperLineResult } from './HelperLines';
 import { PlacementToolbar } from './PlacementToolbar';
 import { serializeSelection, type ClipboardPayload } from '../../model/clipboard';

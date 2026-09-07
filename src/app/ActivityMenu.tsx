@@ -24,6 +24,8 @@ export type ActivityEntry = {
   summary: StepSummary
   /** Epoch milliseconds, as `Date.now()` gives them. */
   at: number
+  /** An agent's step rather than the person's (ADR-0007): the line says so. */
+  origin?: 'agent'
 }
 
 export type ActivityMenuProps = {
@@ -60,6 +62,14 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
                   count: entry.summary.count ?? 1,
                 })}
               </Typography>
+              {entry.origin === 'agent' && (
+                <Typography
+                  data-testid="activity-origin"
+                  sx={{ fontSize: 10, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}
+                >
+                  {s('shell.activityAgent')}
+                </Typography>
+              )}
               <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
                 {clockTime(new Date(entry.at), language)}
               </Typography>

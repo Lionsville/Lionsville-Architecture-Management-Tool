@@ -22,6 +22,11 @@ import { searchAll } from '../search/search'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
 
+/** The tools this file answers: the read tier, by name. */
+export type ReadTool = Extract<ToolName,
+  'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
+  | 'decisions.list' | 'decision.read' | 'search'>
+
 /**
  * What the read tier needs to know. The session offers both shapes of the
  * model and this takes both: the indexed one is what a lookup by id wants, the
@@ -38,7 +43,7 @@ export type ReadView = {
 
 type Args = Record<string, unknown>
 
-export function answer(tool: ToolName, rawArgs: unknown, view: ReadView): AgentAnswer {
+export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentAnswer {
   const wrong = checkArguments(toolSpec(tool).inputSchema, rawArgs)
   if (wrong) return refused('agent.badArguments', wrong)
   const args = (rawArgs ?? {}) as Args

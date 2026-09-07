@@ -153,6 +153,7 @@ export function apply(model: Model, command: Command): ApplyResult {
   const meta: CommandMeta = {}
   if (command.coalesce !== undefined) meta.coalesce = command.coalesce
   if (command.undoable !== undefined) meta.undoable = command.undoable
+  if (command.origin !== undefined) meta.origin = command.origin
   const ok = (next: Model, inverse: Command): ApplyResult =>
     ({ ok: true, model: next, inverse: { ...inverse, ...meta } })
 

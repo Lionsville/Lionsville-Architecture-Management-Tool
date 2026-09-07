@@ -3,7 +3,7 @@ import { formatShortcut, type Platform } from '../keymap';
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
 import { zoneMenuLabel } from '../../model/zones';
 import { paletteLabel } from './paletteItems';
-import type { AlignAxis, DistributeAxis } from './alignDistribute';
+import type { AlignAxis, DistributeAxis } from '../../layout/alignDistribute';
 
 /**
  * CONTEXT MENUS — the pure half.

@@ -120,7 +120,9 @@ export async function respond(
           inputSchema: tool.inputSchema,
           annotations: {
             readOnlyHint: tool.tier === 'read',
-            destructiveHint: false,
+            // A remove is the one kind of change ⌘Z is the only way back from
+            // once the person has moved on; a client may ask before one.
+            destructiveHint: tool.name.endsWith('.remove'),
             openWorldHint: false,
           },
         })),

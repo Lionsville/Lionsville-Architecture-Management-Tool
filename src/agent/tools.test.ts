@@ -10,9 +10,9 @@ import {
 import type { AgentRefusal, InputSchema } from './tools'
 
 describe('the tool list', () => {
-  it('names every tool once, in dotted lower-case', () => {
+  it('names every tool once, as a noun, a dot and a verb, or one camel-cased verb', () => {
     expect(new Set(TOOL_NAMES).size).toBe(TOOLS.length)
-    for (const name of TOOL_NAMES) expect(name).toMatch(/^[a-z]+(\.[a-zA-Z]+)?$/)
+    for (const name of TOOL_NAMES) expect(name).toMatch(/^[a-z]+(?:[A-Z][a-z]+)*(?:\.[a-z]+(?:[A-Z][a-z]+)*)?$/)
   })
 
   it('describes every tool in a sentence a client can show', () => {

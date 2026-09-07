@@ -52,8 +52,23 @@ const NO_ARGUMENTS: InputSchema = { type: 'object', properties: {}, additionalPr
 
 const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `The id of the ${what}.` })
 
+const KINDS = ['actor', 'application', 'externalSystem', 'inputChannel', 'managementTool', 'component'] as const
+const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
+const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
+
+/** The fields of an element an agent may set. Description is markdown, the element's page. */
+const ELEMENT_FIELDS = {
+  name: { type: 'string', description: 'The name.' },
+  description: { type: 'string', description: 'The documentation, as markdown. The first paragraph is drawn on the card.' },
+  category: { type: 'string', description: 'A business category or capability.' },
+  vendor: { type: 'string', description: 'Who makes it.' },
+  technology: { type: 'string', description: 'What it is built on.' },
+  lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
+  isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
+} as const satisfies Record<string, ArgumentSchema>
+
 /**
- * The read tier: answers built over the model, nothing changes.
+ * Three tiers, in the order they earn their keep: read, write, see.
  *
  * Written as a tuple literal so {@link ToolName} is derived from it rather than
  * listed twice. The order is the order a client lists them in, which is why the
@@ -159,6 +174,213 @@ export const TOOLS = [
       additionalProperties: false,
     },
   },
+
+  // --- the write tier: one command each, one undo step, one Activity line ------
+  {
+    name: 'element.add',
+    tier: 'write',
+    description:
+      'Add an element to the landscape and draw it on a diagram (the one on screen unless said otherwise). '
+      + 'It gets the id the file would give it, derived from the name, and lands in its kind\'s own band '
+      + 'unless a zone or a spot is named. Answers with the id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: ELEMENT_FIELDS.name,
+        kind: { type: 'string', description: 'What kind of element. Default application.', enum: KINDS },
+        description: ELEMENT_FIELDS.description,
+        category: ELEMENT_FIELDS.category,
+        vendor: ELEMENT_FIELDS.vendor,
+        technology: ELEMENT_FIELDS.technology,
+        lifecycle: ELEMENT_FIELDS.lifecycle,
+        parentApplicationId: { type: 'string', description: 'For a component: the application it is part of.' },
+        diagramId: { type: 'string', description: 'The diagram to draw it on. Default: the one on screen.' },
+        zone: { type: 'string', description: 'On a landscape: the band to draw it in. Default: the kind\'s own.', enum: ZONES },
+        domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under.' },
+        x: { type: 'number', description: 'Where to draw it, in flow coordinates. Prefer placeNextTo over guessing.' },
+        y: { type: 'number', description: 'Where to draw it, in flow coordinates.' },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'element.update',
+    tier: 'write',
+    description: 'Change an element\'s fields. Only the fields given change; the rest stay as they are.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('element'), ...ELEMENT_FIELDS },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'element.remove',
+    tier: 'write',
+    description:
+      'Remove an element from the landscape, with every connection that ends on it, its place on every '
+      + 'diagram, and any container view about it. One undo step puts all of it back.',
+    inputSchema: { type: 'object', properties: { id: ID('element') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'connect',
+    tier: 'write',
+    description: 'Draw a connection from one element to another. Answers with the connection\'s id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sourceId: ID('element the connection starts at'),
+        targetId: ID('element it ends at'),
+        label: { type: 'string', description: 'What flows, in a few words.' },
+        protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
+        isBidirectional: { type: 'boolean', description: 'Whether it flows both ways. Default false.' },
+      },
+      required: ['sourceId', 'targetId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'connection.update',
+    tier: 'write',
+    description: 'Change a connection\'s label, protocol or direction.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('connection'),
+        label: { type: 'string', description: 'What flows, in a few words.' },
+        protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
+        isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'connection.remove',
+    tier: 'write',
+    description: 'Cut a connection, and its route on every diagram.',
+    inputSchema: { type: 'object', properties: { id: ID('connection') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'decision.propose',
+    tier: 'write',
+    description:
+      'Add an architecture decision record in the proposed state, numbered after the last one in its list: '
+      + 'the landscape\'s, or one application\'s. The body is MADR markdown; leave it out for the template. '
+      + 'Answers with the id and the number.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'What was decided, as a title.' },
+        body: { type: 'string', description: 'The record as MADR markdown. Title, status, date and signers are fields, not text.' },
+        applicationId: { type: 'string', description: 'The application the decision is about. Absent: the landscape.' },
+      },
+      required: ['title'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'decision.transition',
+    tier: 'write',
+    description:
+      'Move a decision record to its next status: proposed → reviewing → accepted or rejected, '
+      + 'accepted → superseded (naming the successor). Accepted, rejected and superseded records are locked.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('decision record'),
+        status: { type: 'string', description: 'The status to move to.', enum: ['proposed', 'reviewing', 'accepted', 'rejected', 'superseded'] },
+        supersededBy: { type: 'string', description: 'For superseded: the id of the record that replaces it.' },
+      },
+      required: ['id', 'status'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'diagram.create',
+    tier: 'write',
+    description:
+      'Add a diagram and switch to it: a new landscape by name, or a C4 container view of one application, '
+      + 'seeded with its components and laid out on first open. Answers with the id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', description: 'A layer-7 landscape or a container view.', enum: ['layer7', 'container'] },
+        name: { type: 'string', description: 'For a landscape: its name.' },
+        applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
+      },
+      required: ['kind'],
+      additionalProperties: false,
+    },
+  },
+
+  // --- the see tier, first half: relational placement, so an agent never invents a coordinate ------
+  {
+    name: 'moveBy',
+    tier: 'see',
+    description: 'Nudge elements on a diagram by a distance, in flow coordinates. One undo step.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        elementIds: { type: 'array', description: 'Which elements.', items: { type: 'string' } },
+        dx: { type: 'number', description: 'Right is positive.' },
+        dy: { type: 'number', description: 'Down is positive.' },
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+      },
+      required: ['elementIds', 'dx', 'dy'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'placeNextTo',
+    tier: 'see',
+    description:
+      'Put an element beside another one on a diagram — to its right, left, above or below — with a gap, '
+      + 'in the same band and domain group. The way to place something without inventing a coordinate.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        elementId: ID('element to move'),
+        anchorId: ID('element to put it beside'),
+        side: { type: 'string', description: 'Which side of the anchor. Default right.', enum: ['right', 'left', 'above', 'below'] },
+        gap: { type: 'number', description: 'Space between them in flow pixels. Default 40.' },
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+      },
+      required: ['elementId', 'anchorId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'align',
+    tier: 'see',
+    description: 'Align two or more elements to a shared edge or centre line of their bounding box.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        elementIds: { type: 'array', description: 'Which elements; at least two.', items: { type: 'string' } },
+        axis: { type: 'string', description: 'The edge or centre to align to.', enum: ['left', 'centerX', 'right', 'top', 'centerY', 'bottom'] },
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+      },
+      required: ['elementIds', 'axis'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'distribute',
+    tier: 'see',
+    description: 'Space three or more elements evenly along an axis, keeping the first and last where they are.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        elementIds: { type: 'array', description: 'Which elements; at least three.', items: { type: 'string' } },
+        axis: { type: 'string', description: 'Along which axis.', enum: ['horizontal', 'vertical'] },
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+      },
+      required: ['elementIds', 'axis'],
+      additionalProperties: false,
+    },
+  },
 ] as const satisfies readonly { name: string; tier: ToolTier; description: string; inputSchema: InputSchema }[]
 
 export type ToolName = (typeof TOOLS)[number]['name']
@@ -206,6 +428,8 @@ export type AgentRefusal =
   | 'agent.unknownId'
   | 'agent.tooLarge'
   | 'agent.windowHidden'
+  | 'agent.locked'
+  | 'agent.notDrawn'
   | 'agent.noAnswer'
   | CommandRefusal
 
@@ -218,6 +442,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.badArguments': 'The arguments do not match the tool\'s schema.',
   'agent.unknownId': 'Nothing in the project has that id.',
   'agent.tooLarge': 'The board is too large for this operation.',
+  'agent.locked': 'The decision record is accepted, rejected or superseded, and locked; nothing about it may change.',
+  'agent.notDrawn': 'That element is not drawn on that diagram.',
   'agent.windowHidden': 'The window is hidden or minimised, so nothing can be drawn. Bring it to the front.',
   'agent.noAnswer': 'The app did not answer in time.',
   'command.gone': 'Something the change refers to is no longer in the project.',

@@ -5,7 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
 import { alpha, useTheme } from '@mui/material/styles';
-import type { AlignAxis, DistributeAxis } from './alignDistribute';
+import type { AlignAxis, DistributeAxis } from '../../layout/alignDistribute';
 import {
   AlignBottomIcon,
   AlignCenterXIcon,

@@ -13,7 +13,8 @@ import { fromArrays, toArrays } from '../model/normalised'
 import { syntheticModel } from '../model/testing/synthetic'
 import { answer } from './answer'
 import type { ReadView } from './answer'
-import type { AgentAnswer, ToolName } from './tools'
+import type { ReadTool } from './answer'
+import type { AgentAnswer } from './tools'
 
 const element = (id: string, name: string, over: Partial<HostModel['elements'][number]> = {}) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const,
@@ -69,7 +70,7 @@ function view(model: HostModel = host, activeDiagramId = 'l7'): ReadView {
 }
 
 /** The JSON out of an answer, or the refusal, as a test wants to read it. */
-function read(tool: ToolName, args: unknown, over: ReadView = view()): unknown {
+function read(tool: ReadTool, args: unknown, over: ReadView = view()): unknown {
   const held: AgentAnswer = answer(tool, args, over)
   if (!held.ok) return held
   const block = held.content[0]
@@ -216,7 +217,7 @@ describe('over the generated landscape', () => {
   const held = view(large, 'landscape')
 
   it('answers every read tool without a refusal', () => {
-    const asks: [ToolName, unknown][] = [
+    const asks: [ReadTool, unknown][] = [
       ['project.current', {}],
       ['elements.list', { kind: 'application', limit: 5 }],
       ['element.describe', { id: 'app-0001' }],

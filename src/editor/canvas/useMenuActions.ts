@@ -26,7 +26,7 @@ import {
 } from '../../model/routes';
 import { defaultGroupName, groupRectAround, uniqueGroupName } from './domainGroupPlacement';
 import type { Translate } from '../../i18n/strings';
-import type { AlignAxis, DistributeAxis, NodeBounds } from './alignDistribute';
+import type { AlignAxis, DistributeAxis, NodeBounds } from '../../layout/alignDistribute';
 import type { MenuItem, MenuTarget } from './menuItems';
 import type { ContextMenuState } from './useContextMenu';
 import { GRID_SIZE } from './gridSize';

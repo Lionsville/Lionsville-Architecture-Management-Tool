@@ -11,9 +11,15 @@
  * that is waiting on a person. The reducer's own refusals pass through.
  */
 import type { Adr } from '../model/adr'
+import type { Command } from '../model/commands'
 import type { HostModel } from '../model/fromInterchange'
+import type { IdPolicy, MakeId } from '../model/keys'
 import type { Model } from '../model/normalised'
+import { apply } from '../model/reducer'
+import type { Translate } from '../i18n/strings'
 import { answer } from './answer'
+import type { ReadTool } from './answer'
+import { commandFor } from './commandFor'
 import type { AgentAnswer, AgentRefusal, AgentRequest } from './tools'
 import { isToolName, refused, toolSpec } from './tools'
 
@@ -31,22 +37,52 @@ export type SessionView = {
    * conflict, or the project is read-only. A read still answers.
    */
   blocked(): Extract<AgentRefusal, 'agent.conflict' | 'agent.readOnly'> | undefined
+  /**
+   * The one way in (ADR-0002): apply a command at the session, so it is one
+   * undo step and one Activity line. Answers with nothing when the reducer
+   * refused, which the handler has already asked about itself.
+   */
+  dispatch(command: Command, options?: { activeDiagramId?: string }): HostModel | undefined
+  /** Where a new element's or connection's id comes from. The session's, so nothing collides. */
+  ids: IdPolicy
+  /** Where a diagram's or a decision's id comes from. */
+  makeId: MakeId
+  /** Today as `yyyy-mm-dd`, for a decision's date. */
+  today(): string
+  translate: Translate
+  /** What a container view is called, after its application. */
+  containerName(applicationName: string): string
 }
 
 export function handle(request: AgentRequest, session: SessionView): AgentAnswer {
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const spec = toolSpec(request.tool)
-  if (spec.tier === 'read') {
-    return answer(request.tool, request.args, {
-      model: session.indexed(),
-      current: session.current,
-      activeDiagramId: session.activeDiagramId(),
-      groupDecisions: session.groupDecisions(),
-    })
+  const view = {
+    model: session.indexed(),
+    current: session.current,
+    activeDiagramId: session.activeDiagramId(),
+    groupDecisions: session.groupDecisions(),
   }
+  if (spec.tier === 'read') return answer(request.tool as ReadTool, request.args, view)
+
   const blocked = session.blocked()
   if (blocked) return refused(blocked)
-  // The write and see tiers land in later steps of ADR-0007; until then a
-  // tool of theirs is one the list does not carry, and this line is unreachable.
-  return refused('agent.unknownTool', request.tool)
+  const prepared = commandFor(request.tool, request.args, {
+    ...view,
+    ids: session.ids,
+    makeId: session.makeId,
+    today: session.today,
+    translate: session.translate,
+    containerName: session.containerName,
+  })
+  if ('ok' in prepared) return prepared
+
+  // Asked of the reducer first, so a refusal comes back with its reason: the
+  // session shows one to the person and answers with nothing, and an agent
+  // needs the key. Applying twice is cheap; a command touches the path it
+  // names and copies nothing else.
+  const trial = apply(view.model, prepared.command)
+  if (!trial.ok) return refused(trial.reason)
+  session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
+  return prepared.answer
 }

@@ -55,6 +55,8 @@ export type HistoryStep = {
   summary: StepSummary
   /** When the step was made, for an activity list. */
   at: number
+  /** Who made it, when it was not the person (ADR-0007). */
+  origin?: 'agent'
 }
 
 export type DispatchOptions = {
@@ -195,6 +197,7 @@ export function useModelSession(deps: {
       past.current.push({
         commands, inverses, at: Date.now(), summary: summarise(commands, before),
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
+        ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
       })
       if (past.current.length > HISTORY_CAP) past.current.shift()
     }
@@ -231,6 +234,7 @@ export function useModelSession(deps: {
     const meta: CommandMeta = {}
     if (command.coalesce !== undefined) meta.coalesce = command.coalesce
     if (command.undoable !== undefined) meta.undoable = command.undoable
+    if (command.origin !== undefined) meta.origin = command.origin
     record(before, result.model, [command], [result.inverse], meta)
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)

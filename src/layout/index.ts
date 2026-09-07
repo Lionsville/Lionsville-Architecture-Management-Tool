@@ -22,3 +22,6 @@ export { configureElkWorker, cancelElkLayout, canCancelElkLayout } from './elkLa
 /** What a Tidy answers when it will not lay a board out, and how big is too big. */
 export { isLayoutRefusal, LayoutRefused, MAX_TIDY_NODES } from './elkLayout'
 export type { LayoutRefusal } from './elkLayout'
+/** Aligning and spacing a set of boxes: pure geometry the canvas and the agent share. */
+export { alignNodes, distributeNodes } from './alignDistribute'
+export type { AlignAxis, DistributeAxis, NodeBounds, PositionUpdate } from './alignDistribute'

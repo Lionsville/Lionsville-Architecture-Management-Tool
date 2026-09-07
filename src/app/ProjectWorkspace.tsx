@@ -202,7 +202,13 @@ export function ProjectWorkspace({
     activeDiagramId: session.currentActiveId,
     groupDecisions: () => groupDecisions,
     blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
-  }), [session, groupDecisions, documentStatus]))
+    dispatch: session.dispatch,
+    ids: session.ids,
+    makeId,
+    today,
+    translate: s,
+    containerName: (name: string) => s('shell.containerDiagram', { name }),
+  }), [session, groupDecisions, documentStatus, makeId, today, s]))
 
   const snapshots = useProjectHistory({
     history: projectHistory,
