@@ -595,6 +595,36 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     await waitFor(() => expect(screen.queryByTestId('edge-label-c1')).toBeNull());
   });
 
+  it('puts a hovered label where the pointer is, and follows it along the line', async () => {
+    renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
+    const path = await linePath();
+    const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
+    const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(viewport.style.transform);
+    if (!m) throw new Error(`unexpected viewport transform: ${viewport.style.transform}`);
+    const [tx, ty, k] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const toFlow = (client: { x: number; y: number }) => ({ x: (client.x - tx) / k, y: (client.y - ty) / k });
+    const chipAt = () => {
+      const t = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)\s*$/.exec(
+        screen.getByTestId('edge-label-c1').style.transform,
+      );
+      if (!t) throw new Error('chip has no position');
+      return { x: Number(t[1]), y: Number(t[2]) };
+    };
+
+    fireEvent.mouseEnter(path, { clientX: 300, clientY: 200 });
+    fireEvent.mouseMove(path, { clientX: 300, clientY: 200 });
+    await screen.findByTestId('edge-label-c1');
+    let expected = toFlow({ x: 300, y: 200 });
+    expect(chipAt().x).toBeCloseTo(expected.x, 5);
+    // Lifted 18 screen pixels above the pointer, so it never sits under the cursor.
+    expect(chipAt().y).toBeCloseTo(expected.y - 18 / k, 5);
+
+    fireEvent.mouseMove(path, { clientX: 340, clientY: 260 });
+    expected = toFlow({ x: 340, y: 260 });
+    expect(chipAt().x).toBeCloseTo(expected.x, 5);
+    expect(chipAt().y).toBeCloseTo(expected.y - 18 / k, 5);
+  });
+
   it('keeps a hidden label on a selected line, so it can still be edited in place', async () => {
     renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
     const edge = await screen.findByTestId('rf__edge-c1');
