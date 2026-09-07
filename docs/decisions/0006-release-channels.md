@@ -1,6 +1,6 @@
 # ADR-0006 — Release channels: stable, and beta
 
-* Status: proposed
+* Status: accepted
 * Date: 2026-09-07
 * Deciders: Wouter Simons
 
