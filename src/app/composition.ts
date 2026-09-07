@@ -20,6 +20,7 @@
  * pack and the line below is the whole of their wiring.
  */
 import { registerLogoPack } from '../model/logoRegistry'
+import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
 import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStore'
 import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
 import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemProjectStore'
@@ -57,6 +58,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
+import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { GroupStore } from '../ports/GroupStore'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
@@ -111,6 +113,13 @@ export type Shell = {
    * a folder is chosen — there is nothing for a history to be a history OF.
    */
   history?: ProjectHistory
+  /**
+   * The folder's own settings — what everyone who opens it agrees on, and what
+   * this machine does about it (ADR-0005). Absent where there is no folder,
+   * rather than a null object: a dialog section with nothing to be about is
+   * not drawn.
+   */
+  folderSettings?: FolderSettingsStore
   /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
@@ -199,6 +208,7 @@ function overFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Sh
     ...shell,
     projects: new FileSystemProjectStore(handle),
     groups: new FileSystemGroupStore(handle),
+    folderSettings: new FileSystemFolderSettings(handle),
     storage: 'folder',
     workingDirectory: { root: name, name },
   }
