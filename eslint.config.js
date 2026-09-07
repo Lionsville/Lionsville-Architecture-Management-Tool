@@ -48,7 +48,7 @@ import tseslint from 'typescript-eslint'
  */
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions',
-  'search', 'projects', 'editor', 'ports', 'adapters', 'app',
+  'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
 ]
 
 const MAY_IMPORT = {
@@ -62,7 +62,8 @@ const MAY_IMPORT = {
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'ports'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
-  ports: ['model', 'platform', 'projects'],
+  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'search'],
+  ports: ['model', 'platform', 'projects', 'agent'],
   adapters: ['model', 'platform', 'projects', 'ports'],
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'app'),
 }
@@ -78,7 +79,8 @@ const WHY = {
   search: 'search reads what it searches — the model, documentation, decisions — and nothing that draws them.',
   projects: 'A project is what is saved and reopened: the model, its decisions, and the ports it is saved through.',
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
-  ports: 'A seam names what crosses it: a project, a model, a diagnostic.',
+  agent: 'An agent asks about the landscape in the landscape\'s own terms. It does not know how the model is drawn or where it is saved.',
+  ports: 'A seam names what crosses it: a project, a model, a diagnostic, an agent\'s request.',
   adapters: 'An adapter fills one seam: the model, projects, ports and platform are all it may know.',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }
@@ -94,7 +96,7 @@ const WHY = {
  * `no-restricted-imports` instead of adding to it, and the matrix would silently
  * stop applying to exactly the modules that most need it.
  */
-const PURE = ['model', 'layout', 'platform', 'ports', 'projects', 'i18n']
+const PURE = ['model', 'layout', 'platform', 'ports', 'projects', 'i18n', 'agent']
 const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*']
 
 
