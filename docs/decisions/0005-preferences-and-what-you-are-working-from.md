@@ -4,11 +4,10 @@
 * Date: 2026-09-07
 * Deciders: Wouter Simons
 
-**This record is accepted as a design, not as a report.** Nothing in it is
-built yet. It is written for the agent who picks the work up; the last section
-is the order to build it in, and *Open questions* is what nobody has decided
-yet. Everything else here has been decided, including the things that look like
-they were left open.
+**Built, 7 September 2026**, in the order the last section gives; `git log`
+has the eight commits. The two *Open questions* were answered by the
+implementer with the conservative reading, and are marked there — a person
+may still decide otherwise.
 
 ## Context and Problem Statement
 
@@ -414,6 +413,9 @@ choose:
   pushed, and leaving it local means the next automatic push does it anyway.
   Whether the notice's button should say so — *Keep ours and push* — or leave
   the push to the setting, is a wording question with a behaviour inside it.
+  *As built:* the push follows the setting. The merge commit is a snapshot in
+  every sense, so `pushAfterSnapshot` decides, and the button says *Keep ours*.
 * **Should a refused pull offer to open the folder in the user's git client**,
   for the cases `resolve` cannot handle? Which client, and how the app would
-  know, is the part nobody has an answer to.
+  know, is the part nobody has an answer to. *As built:* no; the notice names
+  the refusal and leaves the folder as it was.

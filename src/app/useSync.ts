@@ -11,7 +11,7 @@
  * both keep everything, and it goes away only when one of them has been
  * carried out; a refusal there leaves the folder as it was and says so.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
 import type { Diagnostic } from '../platform/diagnostics'
 import type { PullOutcome, SyncRefusal, SyncSide } from '../platform/sync'
@@ -53,12 +53,13 @@ export function useSync(deps: {
    * Said once, on mount. A refusal at boot is a notice rather than a failure
    * to open: the folder opened, and this says why it is not up to date.
    */
+  const said = useRef(false)
   useEffect(() => {
-    if (initial && isSyncRefusal(initial)) {
-      notify(s('sync.pullRefused', { reason: s(SYNC_REFUSAL_LABEL[initial]) }), 'warning')
-    }
-    // Only the outcome the boot handed over, once; a re-render is not a boot,
-    // and the initial outcome never changes after mount.
+    // Once: the translator changes with the language, and a change of
+    // language is not a second boot.
+    if (said.current || !initial || !isSyncRefusal(initial)) return
+    said.current = true
+    notify(s('sync.pullRefused', { reason: s(SYNC_REFUSAL_LABEL[initial]) }), 'warning')
   }, [initial, notify, s])
 
   const afterSnapshot = useCallback(() => {

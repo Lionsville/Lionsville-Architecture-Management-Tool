@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2367 tests** and one of every config. The
+One codebase, in modules, with **2577 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2487 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2577 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -150,10 +150,15 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     diagnostics       what a failure entry is, and how a trail reads
                     logFile           what the desktop log is called, and when it rolls
                     windowChrome      how much of the top bar is the window's
+                    hostCommands · menu   what a menu or an OS may ask for, and
+                                      the File and View items said once as data
+                    theme · workingSource · updateSettings · sync   facts two
+                                      processes share (ADR-0005)
 src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
                     ProjectStore · PreferencesStore · DocumentGateway
                     GroupStore · ProjectHistory · Diagnostics · HostControls
+                    FolderSettings · UpdateSettings   the two other scopes
                     ProjectStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
@@ -163,9 +168,10 @@ src/app/          The shell around the editor.
                     composition.ts    which adapter, and which icon packs
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
                     picker/ · dialogs/ · examples/ · iconPacks/ · history/
+                    OverflowMenu      the menu, on a host that has no menu bar
+                    SyncNotice · useSync   the folder and its remote disagree
                     testing/          renderShell / renderApp: the shared harness
                     use*              the hooks: session, files, document, toasts
-src/platform/     …and `hostCommands`: what a menu or an OS may ask for.
 electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel
                     git.ts            snapshots, through the machine's own git
@@ -355,6 +361,7 @@ identifiers is still a list of a customer's identifiers.
 | npm package name | `lionsville-architecture-management-tool` |
 | Desktop bundle id | `nl.lionsville.architecture` |
 | Working-directory layout | `<group>/<project>/project.json` |
+| Folder settings (ADR-0005) | `<root>/.lionsville-architecture/folder.json` (shared) and `local.json` (this machine) |
 | Browser storage prefix (the fallback) | `lvarch.project.<group>/<project>` |
 | Preferences key | `lvarch.preferences` |
 | Vendor / copyright | Lionsville Group BV |
@@ -463,7 +470,7 @@ point somewhere that no longer keeps projects.
 
 Layer two of ADR-0003 followed: **history**, on the git that is already on the
 machine (`electron/main/git.ts`, through `execFile`, no library). Snapshot from
-the Save menu under a message drafted from the command log; History shows what
+the File menu under a message drafted from the command log; History shows what
 changed since one, as a **semantic** diff (`model/diff.ts`) — geometry as a
 count, because a tidy pass is one sentence and four hundred changed lines.
 Everything about it may say no (no git, no repository, no commits, no project at
@@ -497,6 +504,24 @@ board over four hundred boxes, and can be cancelled from the button that started
 it. Routing keeps the cap it had — and the investigation into making it faster
 found that a whole-board pass costs 180 ms and declines all but 39 of 4,333
 lines, so the cap, not the clock, is what a large landscape meets.
+
+Then preferences got three scopes and the top bar said where you are
+(`docs/decisions/0005`). A setting is written to whatever it is about: language,
+theme, project order and the update check follow the person (the last one in
+main's own file, over a small `DesktopSettings` channel); what everyone who
+opens a folder agrees on is `.lionsville-architecture/folder.json`, not written
+until it has a key; and what this machine does about the folder's remote is
+`local.json` beside it, unstaged after every snapshot and listed in
+`.git/info/exclude` rather than in the user's `.gitignore`. The File and View
+vocabulary is data in `platform/menu.ts`, rendered by the menu bar on the
+desktop and by one `⋯` on the web, both sending into one command bus; the Save
+menu, Open and the theme glyph left the toolbar, and the bar now opens with
+`WorkingSource` — a folder by name, this browser, or nowhere. Git sync runs the
+user's own git with prompts disabled: push after a snapshot and pull on open
+are per-machine flags, every answer is a value, and a disagreement is a strip
+with *take theirs* (ours on a `before-sync/` branch) and *keep ours* (a merge
+commit whose tree is ours). `git.test.ts` runs it against a bare remote and
+the smoke run against a real local one.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
