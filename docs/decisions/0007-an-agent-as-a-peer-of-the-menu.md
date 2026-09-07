@@ -1,14 +1,29 @@
 # ADR-0007 — An agent as a peer of the menu: an MCP server that speaks commands
 
-* Status: proposed
+* Status: accepted
 * Date: 2026-09-07
 * Deciders: Wouter Simons
 
-**This record is a proposal, not a decision.** Nothing in it is built and
-nothing in it has been agreed. It is written so the decision can be made
-against something concrete: a module, a seam, a tool list and an order to
-build in. *Open questions* at the end is what a reader has to answer before
-anything in *What this takes* starts.
+**Built, 7 September 2026**, in the order the last section gives, with
+three departures from the text below that are worth knowing before reading
+it:
+
+* **The server is hand-written, not the SDK.** `electron-builder.cjs` keeps
+  the desktop's `dependencies` empty on purpose, and `@modelcontextprotocol/sdk`
+  would have brought express, hono and ajv along for a loopback relay. The
+  streamable HTTP transport a server that never pushes needs is a POST with a
+  JSON-RPC body, so `electron/main/mcpProtocol.ts` speaks it directly over
+  Node's `http`. The SDK stays a dev dependency: its **client** is what
+  `mcp.test.ts` and the smoke run connect with, so what is spoken is checked
+  against the client the agents actually use rather than against a reading
+  of the specification.
+* **The tool names settled** as `element.add` rather than `application.add`
+  (a kind is an argument), with `connection.update` and `connection.remove`
+  beside `connect`; the whole list is in `CLAUDE.md` under *Names, decided*.
+* **The open questions were answered** the conservative way, and each can be
+  reopened: no snapshot tool; the focused window, with no session id yet;
+  recipes for Claude Code, Codex and Cursor plus the bare endpoint; a hidden
+  window refuses with `agent.windowHidden`; and the module is `agent`.
 
 It takes number 0007 because ADR-0005 already refers to the update work as
 ADR-0006.
@@ -440,8 +455,8 @@ are still in flight. Step 3 depends on the preferences dialog existing.
 
 ## Open questions
 
-Nobody has decided these, and the agent picking this up should ask rather than
-choose:
+Answered as the note at the top says when the record was built, each with
+the conservative answer. They stay listed because each can be reopened:
 
 * **May an agent snapshot?** A `project.snapshot` tool means an agent writes
   to git history under a message it drafted. The commit-message drafting

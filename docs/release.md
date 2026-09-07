@@ -197,6 +197,17 @@ the i18n tables, but those belong to the renderer and this process cannot know
 which language it settled on without an IPC channel; when the file channel
 arrives, the notice should move into the shell with the rest of the UI.
 
+## The agent server
+
+Since ADR-0007 the desktop can listen for an MCP client, on the loopback
+only and off until a person turns it on from **Connect an Agent…**. Nothing
+about a release changes: there is no port to open, no certificate, no
+credential. The port and the bearer token are minted on the user's machine and
+kept in `mcp.json` under `userData` with mode 0600; they never reach a folder,
+a project, a log or this repository. The smoke run turns the server on,
+connects with the real SDK client, reads and draws through it, and checks the
+port is closed again once it is off.
+
 ## Not yet done
 
 - **Linux is unsigned**, and on Ubuntu 24.04+ an AppImage of an Electron app

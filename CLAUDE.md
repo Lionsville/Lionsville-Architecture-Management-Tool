@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2585 tests** and one of every config. The
+One codebase, in modules, with **2705 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -138,6 +138,15 @@ src/documentation/  Descriptions as documents.
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
+src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
+                  module that exists for a client that is not a person.
+                    tools             the vocabulary: names, schemas, refusals — a
+                                      protocol contract, English, outside i18n
+                    answer · commandFor   the read tier over the model, and a write
+                                      as one Command through the session
+                    inspect           the layout report, in geometry not pixels
+                    handle · renderer   one request in, one answer out; the four
+                                      things only the canvas can do, as a view
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
 src/projects/     A project: open, save, order, summarise, address, remember.
@@ -154,11 +163,13 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       the File and View items said once as data
                     theme · workingSource · updateSettings · sync   facts two
                                       processes share (ADR-0005)
+                    agentServer       the server's three states, and mcp.json's shape
 src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
                     ProjectStore · PreferencesStore · DocumentGateway
                     GroupStore · ProjectHistory · Diagnostics · HostControls
                     FolderSettings · UpdateSettings   the two other scopes
+                    AgentGateway      where an agent's calls arrive, and the switch
                     ProjectStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
@@ -170,12 +181,17 @@ src/app/          The shell around the editor.
                     picker/ · dialogs/ · examples/ · iconPacks/ · history/
                     OverflowMenu      the menu, on a host that has no menu bar
                     SyncNotice · useSync   the folder and its remote disagree
+                    useAgentGateway · dialogs/ConnectAgentDialog   the seam bound
+                                      to the session, and the way in for a person
                     testing/          renderShell / renderApp: the shared harness
                     use*              the hooks: session, files, document, toasts
 electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel
                     git.ts            snapshots, through the machine's own git
                     appMenu.ts        the File menu; every item sends a command
+                    mcp.ts · mcpProtocol.ts · mcpServer.ts   the agent server:
+                                      the kept port and token, the protocol by
+                                      hand, the loopback listener
 ```
 
 **Components declare the interface they need**, not the widest one available.
@@ -193,11 +209,14 @@ everyone; nobody imports `app`, and nobody but `app/composition.ts` imports
 import React, MUI, Emotion or React Flow at all. If a rule blocks you, the design
 is telling you something; move the code, don't route around the rule.
 
-Two rows are worth knowing because they are not obvious. `editor` may not import
+Three rows are worth knowing because they are not obvious. `editor` may not import
 `decisions` or `projects` — a canvas that knows what a project is cannot be
-mounted in a test with two plain objects. And `documentation` may not import
+mounted in a test with two plain objects. `documentation` may not import
 `editor`, which is why the documentation page takes its inspector as a
-`renderInspector` slot.
+`renderInspector` slot. And `agent` may not import `editor`, `projects`,
+`ports` or `app`: the four things only the canvas can do reach it as a
+`RendererView` the workspace fills over the editor's handle, so the whole
+module is tested in node with a plain object in that slot.
 
 ### Where does my change go?
 
@@ -364,6 +383,12 @@ identifiers is still a list of a customer's identifiers.
 | Folder settings (ADR-0005) | `<root>/.lionsville-architecture/folder.json` (shared) and `local.json` (this machine) |
 | Browser storage prefix (the fallback) | `lvarch.project.<group>/<project>` |
 | Preferences key | `lvarch.preferences` |
+| Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
+| Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
+| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` |
+| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `decision.propose` `decision.transition` `diagram.create` |
+| Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `align` `distribute` |
+| Agent resources | `lvarch://element/<id>/description`, `lvarch://decision/<id>` |
 | Vendor / copyright | Lionsville Group BV |
 | Shipped example | a fictional organisation, never a real customer's landscape |
 
@@ -528,6 +553,21 @@ The Updates section then took the release channel (`docs/decisions/0006`):
 beta is a prerelease published like any release and a beta user still hears
 about the stable that follows. One key in main's file, one toggle, one pure
 reduction over the release list.
+
+Then an agent became **a peer of the menu** (`docs/decisions/0007`). The
+desktop can accept an MCP client on the loopback — off by default, a port and
+a bearer token minted when a person turns it on and kept in `mcp.json` until
+they turn it off — and every tool call is relayed into the window and
+answered against the live session: a read over the indexed model, a write as
+one `Command` through the same dispatch a keystroke takes, so it is one undo
+step and one Activity line tagged AGENT, and the four things only the canvas
+can do through a small handle the editor hands the workspace. `diagram.inspect`
+is a layout report in geometry, budgeted; `diagram.render` is a PNG crop with
+the transform beside it. The server is hand-written over Node's `http` because
+the desktop ships nothing from `node_modules`; the SDK's own client is what
+the tests and the smoke run connect with. The way in for a person is a glyph
+on the bar with the server's three states and a dialog that explains, switches
+and shows the recipe per client with the real port and token filled in.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
