@@ -1,6 +1,13 @@
 /**
- * The bar at the top: what the design is called, when it was last accepted, the
- * three pages beside the canvas, and the four things you can do with the file.
+ * The bar at the top: what you are working from, what you have open and how
+ * it stands, the three pages beside the canvas, and — on a host with no menu
+ * bar — the menu.
+ *
+ * It reads left to right the way ADR-0005 asks: the source, then the group
+ * and the project with their settings, then the status beside them. Saving,
+ * opening, exporting and the history moved out of here and into the File
+ * menu, where ⌘S already was; on the web the overflow at the end carries the
+ * same list, and the theme went the same way.
  *
  * Takes no decisions and holds no state except which menu is open. Everything
  * that happens arrives from outside as a function, and there is no file field
@@ -10,18 +17,20 @@
 import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Language, StringKey, Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
-import type { ThemeMode } from '../projects/preferences'
+import type { HostCommand } from '../platform/hostCommands'
+import type { MenuCapabilities } from '../platform/menu'
+import type { ThemeMode } from '../platform/theme'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
+import { BROWSER_STORAGE } from '../platform/workingSource'
+import type { WorkingSource } from '../platform/workingSource'
 import { ActivityMenu } from './ActivityMenu'
 import type { ActivityEntry } from './ActivityMenu'
-import { SaveMenu } from './SaveMenu'
-import { THEME_GLYPH, THEME_LABEL } from './useShellPreferences'
+import { OverflowMenu } from './OverflowMenu'
 
 /**
  * The clock in the user's language.
@@ -54,7 +63,28 @@ function alarming(status: DocumentStatus, saveFailed: boolean): boolean {
   return saveFailed || status === 'conflict' || status === 'external-changed'
 }
 
+/**
+ * What the source is called on the bar. A folder by its name — the name is
+ * what the person called it in their file manager, and the path is long.
+ */
+export function sourceLabel(source: WorkingSource, s: Translate): string {
+  switch (source.kind) {
+    case 'folder': return s('shell.sourceFolder', { name: source.name })
+    case 'browserStorage': return s('shell.sourceBrowser')
+    case 'memory': return s('shell.sourceMemory')
+  }
+}
+
+/** The web's overflow. Absent on the desktop, which has a menu bar. */
+export type ToolbarOverflow = {
+  themeMode: ThemeMode
+  can: MenuCapabilities
+  onCommand: (command: HostCommand) => void
+}
+
 export type ShellToolbarProps = {
+  /** Where the project is kept. The first thing on the bar, because it was the one thing it did not say. */
+  source?: WorkingSource
   designName: string
   /**
    * The group this project is filed under — a customer, a department, a
@@ -80,15 +110,6 @@ export type ShellToolbarProps = {
    */
   saveFailed?: boolean
   language: Language
-  themeMode: ThemeMode
-  onCycleTheme: () => void
-  onSaveWorkingFile: () => void
-  onSaveInterchange: () => void
-  /** Both absent unless this machine can keep a history of the folder. */
-  onSnapshot?: () => void
-  onOpenHistory?: () => void
-  /** Open the file dialog; the field itself lives elsewhere (`useFilePicker`). */
-  onOpenFile: () => void
   /** Leave this project and go back to the picker. */
   onLeave: () => void
   /** Open the project's own settings: its name and its group. */
@@ -108,6 +129,8 @@ export type ShellToolbarProps = {
    * of this bar would be paying for a list nobody has opened.
    */
   activity: () => readonly ActivityEntry[]
+  /** The menu, for a host that has no menu bar. */
+  overflow?: ToolbarOverflow
   s: Translate
   /**
    * What the window leaves to this bar. On the desktop the macOS title bar is
@@ -118,13 +141,13 @@ export type ShellToolbarProps = {
 }
 
 export function ShellToolbar({
-  designName, groupName, savedAt, status = 'clean', saveFailed = false, language, themeMode, onCycleTheme,
-  onSaveWorkingFile, onSaveInterchange, onSnapshot, onOpenHistory, onOpenFile, onLeave, onOpenSettings,
-  onOpenDocumentation, onOpenDecisions, onOpenSearch, activity, s,
-  windowChrome = NO_WINDOW_CHROME,
+  source = BROWSER_STORAGE, designName, groupName, savedAt, status = 'clean', saveFailed = false,
+  language, onLeave, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenSearch, activity,
+  overflow, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
-  const [saveMenu, setSaveMenu] = useState<HTMLElement | null>(null)
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
+
+  const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
 
   return (
     <Box data-testid="shell-toolbar" sx={{
@@ -142,62 +165,29 @@ export function ShellToolbar({
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
       <Tooltip title={s('shell.projectsTip')}>
-        <Button
-          size="small"
-          color="inherit"
-          onClick={onLeave}
-          sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
-        >
+        <Button size="small" color="inherit" onClick={onLeave} sx={quiet}>
           {s('shell.projects')}
         </Button>
+      </Tooltip>
+      <Tooltip title={s('shell.sourceTip')}>
+        <Typography
+          data-testid="working-source"
+          sx={{
+            fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1,
+            color: source.kind === 'memory' ? 'warning.main' : 'text.secondary',
+            border: 1, borderColor: source.kind === 'memory' ? 'warning.main' : 'divider',
+          }}
+        >
+          {sourceLabel(source, s)}
+        </Typography>
       </Tooltip>
       <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{designName}</Typography>
       <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{groupName}</Typography>
       <Tooltip title={s('settings.title')}>
-        <Button
-          size="small"
-          color="inherit"
-          onClick={onOpenSettings}
-          sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
-        >
+        <Button size="small" color="inherit" onClick={onOpenSettings} sx={quiet}>
           {s('settings.open')}
         </Button>
       </Tooltip>
-      <Box sx={{ width: '1px', alignSelf: 'stretch', my: 0.5, mx: 0.5, borderLeft: 1, borderColor: 'divider' }} />
-      {([
-        ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
-        ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],
-        ['shell.search', 'shell.searchTip', onOpenSearch],
-      ] as const).map(([label, tip, onClick]) => (
-        <Tooltip key={label} title={s(tip)}>
-          <Button
-            size="small"
-            color="inherit"
-            onClick={onClick}
-            sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
-          >
-            {s(label)}
-          </Button>
-        </Tooltip>
-      ))}
-      <Tooltip title={s('shell.activityTip')}>
-        <Button
-          size="small"
-          color="inherit"
-          onClick={(e) => setActivityMenu(e.currentTarget)}
-          sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
-        >
-          {s('shell.activity')}
-        </Button>
-      </Tooltip>
-      <ActivityMenu
-        anchorEl={activityMenu}
-        onClose={() => setActivityMenu(null)}
-        entries={activityMenu ? activity() : []}
-        language={language}
-        s={s}
-      />
-      <Box sx={{ flex: 1 }} />
       <Typography
         sx={{ fontSize: 11, color: alarming(status, saveFailed) ? 'error.main' : 'text.secondary' }}
         data-testid="saved-indicator"
@@ -208,29 +198,38 @@ export function ShellToolbar({
             ? s(STATUS_LABEL[status]!)
             : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}
       </Typography>
-      <Tooltip title={s('shell.themeTip', { name: s(THEME_LABEL[themeMode]) })}>
-        <IconButton
-          size="small"
-          aria-label={s('shell.theme')}
-          onClick={onCycleTheme}
-          sx={{ color: 'text.secondary', fontSize: 14, width: 30, height: 30 }}
-        >
-          {THEME_GLYPH[themeMode]}
-        </IconButton>
+      <Box sx={{ flex: 1 }} />
+      {([
+        ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
+        ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],
+        ['shell.search', 'shell.searchTip', onOpenSearch],
+      ] as const).map(([label, tip, onClick]) => (
+        <Tooltip key={label} title={s(tip)}>
+          <Button size="small" color="inherit" onClick={onClick} sx={quiet}>
+            {s(label)}
+          </Button>
+        </Tooltip>
+      ))}
+      <Tooltip title={s('shell.activityTip')}>
+        <Button size="small" color="inherit" onClick={(e) => setActivityMenu(e.currentTarget)} sx={quiet}>
+          {s('shell.activity')}
+        </Button>
       </Tooltip>
-      <Button size="small" variant="contained" onClick={(e) => setSaveMenu(e.currentTarget)}>
-        {s('shell.save')}
-      </Button>
-      <SaveMenu
-        anchorEl={saveMenu}
-        onClose={() => setSaveMenu(null)}
-        onSaveWorkingFile={onSaveWorkingFile}
-        onSaveInterchange={onSaveInterchange}
-        onSnapshot={onSnapshot}
-        onOpenHistory={onOpenHistory}
+      <ActivityMenu
+        anchorEl={activityMenu}
+        onClose={() => setActivityMenu(null)}
+        entries={activityMenu ? activity() : []}
+        language={language}
         s={s}
       />
-      <Button size="small" onClick={onOpenFile}>{s('shell.open')}</Button>
+      {overflow && (
+        <OverflowMenu
+          themeMode={overflow.themeMode}
+          can={overflow.can}
+          onCommand={overflow.onCommand}
+          s={s}
+        />
+      )}
     </Box>
   )
 }

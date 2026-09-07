@@ -33,7 +33,7 @@ import type {
 import { refFor, sameRef } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import type { HostCommand } from '../platform/hostCommands'
+import type { ThemeMode } from '../platform/theme'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { ExampleProject } from './examples'
@@ -47,6 +47,8 @@ import { ToastBar } from './ToastBar'
 import type { MakeId } from './useDiagramActions'
 import type { ProjectFileChannel } from './useProjectFiles'
 import { useGlobalErrors } from './useGlobalErrors'
+import { useHostCommands } from './useHostCommands'
+import type { CommandStream } from './useHostCommands'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter } from './useShellPreferences'
 import { useStorageNotice } from './useStorageNotice'
@@ -130,9 +132,16 @@ export type AppProps = {
    * commands about folders, and handed to the workspace for the ones about the
    * project that is open — each layer taking what it owns.
    */
-  commands?: (listener: (command: HostCommand) => void) => () => void
+  commands?: CommandStream
+  /**
+   * Does the host draw a menu bar of its own? When it does not, the toolbar
+   * carries the menu in an overflow (ADR-0005). A browser tab never has one.
+   */
+  hostMenu?: boolean
   /** Tell the host whether closing the window would lose something. */
   onUnsavedWork?: (unsaved: boolean) => void
+  /** Tell the host which theme is on, so its View menu's radio can be right. */
+  onThemeMode?: (mode: ThemeMode) => void
   /** Work in a folder the user has already granted. The Recent submenu. */
   onOpenWorkingDirectory?: (root: string) => void
   /** Folders this machine has worked in before, for the first-run screen. */
@@ -160,8 +169,8 @@ export type AppProps = {
 export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   storage = 'browser', workingDirectory, onChooseWorkingDirectory, needsFolder = false, watchProject,
-  commands, onUnsavedWork, onOpenWorkingDirectory, recentFolders, history,
-  initialProject, initialPreferences,
+  commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
+  history, initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -246,13 +255,21 @@ export function App({
     load: (ref: ProjectRef) => projects.load(ref),
   }), [projects])
 
-  // The two commands that are about where the projects are kept rather than
-  // about the one that is open. Everything else falls through to the workspace,
-  // which subscribes to the same stream.
-  useEffect(() => commands?.((command) => {
+  /**
+   * The menu bar's commands and the overflow's, on one bus. The ones about
+   * where the projects are kept and about this person's preferences are taken
+   * here; everything about the open project falls through to the workspace,
+   * which subscribes to the same stream.
+   */
+  const bus = useHostCommands(commands)
+  useEffect(() => bus.on((command) => {
     if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
     if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
-  }), [commands, onChooseWorkingDirectory, onOpenWorkingDirectory])
+    if (command.type === 'theme') prefs.chooseTheme(command.mode)
+  }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs])
+
+  // The second fact the host is told, after unsaved work: which theme is on.
+  useEffect(() => { onThemeMode?.(prefs.themeMode) }, [onThemeMode, prefs.themeMode])
 
   const [order, setOrder] = useState<ProjectOrder>(() => {
     const stored = (prefs.preferences as Record<string, unknown> | undefined)?.projectOrder
@@ -599,7 +616,12 @@ export function App({
             project={project}
             projects={workspaceStore}
             watch={watchOpenProject}
-            commands={commands}
+            commands={bus.on}
+            overflow={hostMenu ? undefined : {
+              themeMode: prefs.themeMode,
+              can: { folders: Boolean(onChooseWorkingDirectory) },
+              onCommand: bus.send,
+            }}
             onUnsavedWork={onUnsavedWork}
             history={history}
             documents={documents}
@@ -607,8 +629,6 @@ export function App({
             onStorageResult={reportStorage}
             s={s}
             language={prefs.language}
-            themeMode={prefs.themeMode}
-            onCycleTheme={prefs.cycleTheme}
             onChooseLanguage={prefs.chooseLanguage}
             editorPreferences={prefs.preferences}
             onEditorPreferencesChange={prefs.savePreferences}

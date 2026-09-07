@@ -19,10 +19,10 @@ import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
 import { decisionsToCommands, transaction } from '../model'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
-import type { ThemeMode } from '../projects/preferences'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
+import type { WorkingSource } from '../platform/workingSource'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { DiskChangeNotice } from './DiskChangeNotice'
@@ -38,6 +38,7 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { ShellToolbar } from './ShellToolbar'
+import type { ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
 import type { ProjectSaver } from './useDocumentSession'
 import { useDiagramActions } from './useDiagramActions'
@@ -59,11 +60,20 @@ export type ProjectWorkspaceProps = {
    */
   watch?: (onChanged: () => void) => () => void
   /**
-   * Menu items and files the OS opened us with — the ones about the project
-   * that is open. The shell above takes the ones about folders; subscribing in
-   * both places is how each layer handles what it owns.
+   * Menu items, the web's overflow and files the OS opened us with — the ones
+   * about the project that is open. The shell above takes the ones about
+   * folders and preferences; subscribing in both places is how each layer
+   * handles what it owns.
    */
   commands?: (listener: (command: HostCommand) => void) => () => void
+  /**
+   * The menu, for a host with no menu bar. Absent on the desktop. The
+   * workspace fills in the one capability it knows — whether there is a
+   * history to offer — and passes the rest through.
+   */
+  overflow?: Omit<ToolbarOverflow, 'can'> & { can: Omit<ToolbarOverflow['can'], 'history'> }
+  /** Where this project is kept, for the bar to say. */
+  source?: WorkingSource
   /**
    * Tell the host whether closing the window would lose something. Absent in a
    * browser tab, where the window is ours and `beforeunload` says it.
@@ -81,8 +91,6 @@ export type ProjectWorkspaceProps = {
   onStorageResult: StorageNotice
   s: Translate
   language: Language
-  themeMode: ThemeMode
-  onCycleTheme: () => void
   onChooseLanguage: (language: Language) => void
   editorPreferences: unknown
   onEditorPreferencesChange: (next: EditorPreferences) => void
@@ -130,9 +138,9 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, watch, commands, onUnsavedWork, history: projectHistory, documents, notify,
-  onStorageResult, s, language, themeMode,
-  onCycleTheme, onChooseLanguage, editorPreferences, onEditorPreferencesChange,
+  project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
+  documents, notify, onStorageResult, s, language, onChooseLanguage, editorPreferences,
+  onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
@@ -195,21 +203,26 @@ export function ProjectWorkspace({
   })
 
   /**
-   * What the File menu asks for, and what the OS opens us with.
+   * What the File menu asks for, what the web's overflow asks for, and what
+   * the OS opens us with.
    *
-   * Everything here is something the toolbar can already do; the menu is a
-   * second way to reach it, which is what a menu is for. It is deliberately
-   * not a switch over every command — the ones this workspace does not own
-   * fall through to whoever does.
+   * The menu is the only way to reach most of these now (ADR-0005), so this is
+   * not a second route but the route. It is deliberately not a switch over
+   * every command — the ones this workspace does not own fall through to
+   * whoever does. A history item on a machine that cannot keep one is
+   * ignored rather than answered with a dialog that would go nowhere.
    */
   useEffect(() => commands?.((command) => {
     switch (command.type) {
       case 'save': forceSave(); break
       case 'export': files.saveWorkingFile(); break
+      case 'exportInterchange': files.saveInterchange(); break
       case 'open': documentPicker.open(); break
       case 'openDocument': files.openDocument(command.name, command.bytes); break
+      case 'snapshot': if (snapshots.available) snapshots.openDialog(); break
+      case 'history': if (snapshots.available) snapshots.openPage(); break
     }
-  }), [commands, forceSave, files, documentPicker])
+  }), [commands, forceSave, files, documentPicker, snapshots])
 
   /**
    * The PNG still succeeds when a mark could not be embedded — the element falls
@@ -314,19 +327,14 @@ export function ProjectWorkspace({
   return (
     <>
       <ShellToolbar
+        source={source}
         designName={session.model.name}
         groupName={groupNameOf(session.model)}
         savedAt={savedAt}
         status={document.state.status}
         saveFailed={saveFailed}
         language={language}
-        themeMode={themeMode}
-        onCycleTheme={onCycleTheme}
-        onSaveWorkingFile={files.saveWorkingFile}
-        onSaveInterchange={files.saveInterchange}
-        onSnapshot={snapshots.available ? snapshots.openDialog : undefined}
-        onOpenHistory={snapshots.available ? snapshots.openPage : undefined}
-        onOpenFile={documentPicker.open}
+        overflow={overflow && { ...overflow, can: { ...overflow.can, history: snapshots.available } }}
         onLeave={onLeave}
         onOpenSettings={openSettings}
         onOpenDocumentation={() => openDocumentation()}

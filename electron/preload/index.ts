@@ -22,6 +22,7 @@ import type {
   DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory,
 } from '../../src/adapters/desktop/channel'
 import type { HostCommand } from '../../src/platform/hostCommands'
+import type { ThemeMode } from '../../src/platform/theme'
 
 export type DesktopBridge = {
   readonly platform: NodeJS.Platform
@@ -70,6 +71,7 @@ const commands: DesktopCommands = {
     return () => { ipcRenderer.off('app:command', relay) }
   },
   reportUnsaved: (unsaved) => { void ipcRenderer.invoke('app:unsaved', unsaved) },
+  reportTheme: (mode: ThemeMode) => { void ipcRenderer.invoke('app:theme', mode) },
 }
 
 const history: DesktopHistory = {

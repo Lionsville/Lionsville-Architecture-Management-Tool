@@ -68,14 +68,21 @@ describe('useShellPreferences — writing', () => {
     expect(written.at(-1)).toMatchObject({ language: 'nl' })
   })
 
-  it('cycles the theme light → dark → system and back', () => {
-    const { prefs } = mount({ themeMode: 'light' })
-    act(() => prefs().cycleTheme())
+  it('takes the theme it is told, and writes it', () => {
+    const { prefs, written } = mount({ themeMode: 'light' })
+    act(() => prefs().chooseTheme('dark'))
     expect(prefs().themeMode).toBe('dark')
-    act(() => prefs().cycleTheme())
+    expect(written.at(-1)).toMatchObject({ themeMode: 'dark' })
+    act(() => prefs().chooseTheme('system'))
     expect(prefs().themeMode).toBe('system')
-    act(() => prefs().cycleTheme())
-    expect(prefs().themeMode).toBe('light')
+  })
+
+  it('does not write a theme that is already on', () => {
+    // The View menu's radio reports back what it was told; a round trip must
+    // not become a write on every render.
+    const { prefs, written } = mount({ themeMode: 'light' })
+    act(() => prefs().chooseTheme('light'))
+    expect(written).toHaveLength(0)
   })
 
   it('patches: what you did not mention stays, including what it does not recognise', () => {
@@ -105,7 +112,7 @@ describe('useShellPreferences — writing', () => {
 
   it('writes once per press, not twice — the updater form would under StrictMode', () => {
     const { prefs, written } = mount({ themeMode: 'light' })
-    act(() => prefs().cycleTheme())
+    act(() => prefs().chooseTheme('dark'))
     expect(written).toHaveLength(1)
   })
 })

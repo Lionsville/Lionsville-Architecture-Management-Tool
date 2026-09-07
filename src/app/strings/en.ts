@@ -38,20 +38,6 @@ export const EN = {
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',
-  'shell.save': 'Save…',
-  'shell.saveMenu': 'Save',
-  'shell.workingFile': 'Working file',
-  'shell.workingFileNote':
-    'Everything: topology, geometry, styling and your own logos — to keep working',
-  'shell.interchange': 'Interchange document',
-  'shell.interchangeNote':
-    'Topology and semantics — without geometry and styling; for review and version control',
-  'shell.open': 'Open…',
-  'shell.theme': 'Theme',
-  'shell.themeLight': 'Light',
-  'shell.themeDark': 'Dark',
-  'shell.themeSystem': 'System',
-  'shell.themeTip': 'Theme — {name}',
   'shell.storageFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.storageRecovered': 'Saving in this browser works again.',
@@ -126,6 +112,15 @@ export const EN = {
     'The placements, groups and routes of this landscape are lost. The elements themselves stay in the model, and container views remain.',
   'shell.deleteContainerBody':
     'The placements and routes of this container view are lost. The elements themselves stay in the model.',
+  /**
+   * What you are working from — the first thing on the bar, because it was
+   * the one thing the bar did not say (ADR-0005). A folder by its name: the
+   * name is what the person called it in their file manager.
+   */
+  'shell.sourceFolder': 'Folder · {name}',
+  'shell.sourceBrowser': 'In this browser',
+  'shell.sourceMemory': 'Not kept anywhere',
+  'shell.sourceTip': 'Where this project is kept',
   'shell.projects': 'Projects\u2026',
   'shell.projectsTip': 'Back to the project list',
   'shell.projectCreated': 'Project \u201c{name}\u201d created.',

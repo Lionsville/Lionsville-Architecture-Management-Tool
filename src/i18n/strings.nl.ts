@@ -11,6 +11,7 @@ import { NL as documentation } from '../documentation/strings/nl'
 import { NL as editor } from '../editor/strings/nl'
 import { NL as common } from './strings/nl'
 import { NL as model } from '../model/strings/nl'
+import { NL as platform } from '../platform/strings/nl'
 import { NL as projects } from '../projects/strings/nl'
 import { NL as search } from '../search/strings/nl'
 
@@ -22,6 +23,7 @@ export const NL = {
   ...editor,
   ...common,
   ...model,
+  ...platform,
   ...projects,
   ...search,
 } as const

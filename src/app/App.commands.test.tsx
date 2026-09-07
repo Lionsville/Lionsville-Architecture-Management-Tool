@@ -12,9 +12,12 @@
  * the store, and a real canvas would only slow it down.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { HostCommand } from '../platform/hostCommands'
+import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { translator } from '../i18n'
+import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { ProjectSnapshot } from '../projects/project'
 import { workingFileBytes } from '../projects/workingFile'
 import { renderApp } from './testing/renderShell'
@@ -73,8 +76,11 @@ function show(over: Parameters<typeof renderApp>[0] = {}) {
 }
 
 describe('commands from the host', () => {
-  it('reach the shell and the workspace, each subscribing for itself', () => {
-    expect(show().listeners()).toBe(2)
+  it('reach the shell and the workspace through one bus, subscribed to once', () => {
+    // One subscription to the host, because the web's overflow sends into the
+    // same bus (ADR-0005): the shell and the workspace each listen to the bus
+    // for what they own, and neither knows who pressed the item.
+    expect(show().listeners()).toBe(1)
   })
 
   it('Export… hands the project over as a working file', async () => {
@@ -84,6 +90,30 @@ describe('commands from the host', () => {
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
     expect(view.documents.saved[0].name).toBe('acme-landscape.lvarch')
     expect(view.documents.saved[0].mediaType).toBe('application/zip')
+  })
+
+  it('the interchange export hands over topology and semantics only', async () => {
+    const view = show()
+    view.send({ type: 'exportInterchange' })
+
+    await waitFor(() => expect(view.documents.saved).toHaveLength(1))
+    expect(view.documents.saved[0].name).toBe('acme-landscape.json')
+  })
+
+  it('the theme is chosen outright, from the View menu or the overflow', async () => {
+    const view = show({ initialPreferences: { themeMode: 'light' } })
+    view.send({ type: 'theme', mode: 'dark' })
+    await waitFor(async () => {
+      expect(await view.preferences.read()).toMatchObject({ themeMode: 'dark' })
+    })
+  })
+
+  it('reports the theme to the host, so a radio item can be right', async () => {
+    const reported: string[] = []
+    const view = show({ onThemeMode: (mode) => reported.push(mode) })
+    expect(reported).toEqual(['system'])
+    view.send({ type: 'theme', mode: 'light' })
+    await waitFor(() => expect(reported.at(-1)).toBe('light'))
   })
 
   it('Save writes now rather than waiting for the idle timer', async () => {
@@ -128,5 +158,61 @@ describe('commands from the host', () => {
     const view = show()
     cleanup()
     expect(view.listeners()).toBe(0)
+  })
+})
+
+/**
+ * On the web the overflow is load-bearing: everything that moved out of the
+ * toolbar and into the menu bar (ADR-0005) is reachable only through it, so a
+ * jsdom test walks the whole list.
+ */
+describe('the overflow on the web', () => {
+  const history: ProjectHistory = {
+    available: () => Promise.resolve(true),
+    keeping: () => Promise.resolve(true),
+    start: () => Promise.resolve(),
+    snapshot: () => Promise.resolve(true),
+    entries: () => Promise.resolve([]),
+    projectAt: () => Promise.resolve(undefined),
+  }
+  const s = translator('en')
+
+  const openOverflow = async () => {
+    fireEvent.click(screen.getByTestId('overflow-button'))
+    await waitFor(() => expect(screen.getByText('Export Working File…')).toBeDefined())
+  }
+
+  it('reaches every item the desktop menu bar carries', async () => {
+    show({ history, onChooseWorkingDirectory: () => {} })
+    await openOverflow()
+    // Wait for the history to have answered, so its two items are offered.
+    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
+
+    const expected = offered(FILE_MENU, 'web', { history: true, folders: true })
+      .flatMap((entry) => (entry.kind === 'item' ? [s(entry.label)] : []))
+    for (const label of expected) expect(screen.getByText(label), label).toBeDefined()
+    for (const item of THEME_ITEMS) expect(screen.getByText(s(item.label))).toBeDefined()
+    expect(screen.getByText(s(PREFERENCES_ITEM.label))).toBeDefined()
+  })
+
+  it('sends the same command the menu bar would', async () => {
+    const view = show({ history })
+    await openOverflow()
+    fireEvent.click(screen.getByText('Export Working File…'))
+
+    await waitFor(() => expect(view.documents.saved).toHaveLength(1))
+    expect(view.documents.saved[0].name).toBe('acme-landscape.lvarch')
+  })
+
+  it('offers no folder where none can be chosen, and no history where none can be kept', async () => {
+    show()
+    await openOverflow()
+    expect(screen.queryByText('Open Folder…')).toBeNull()
+    expect(screen.queryByText('Snapshot…')).toBeNull()
+  })
+
+  it('is absent on a host that has a menu bar of its own', () => {
+    show({ hostMenu: true })
+    expect(screen.queryByTestId('overflow-button')).toBeNull()
   })
 })

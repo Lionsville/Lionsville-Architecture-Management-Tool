@@ -76,9 +76,13 @@ function show(history?: ProjectHistory) {
   return { ...renderApp({ projects, initialProject: project(), history }), projects }
 }
 
+/**
+ * The Save menu is gone (ADR-0005): on the web the items live in the toolbar's
+ * overflow, which carries the same list as the desktop's File menu.
+ */
 const openSaveMenu = async () => {
-  fireEvent.click(screen.getByText('Save…'))
-  await waitFor(() => expect(screen.getByText('Working file')).toBeDefined())
+  fireEvent.click(screen.getByTestId('overflow-button'))
+  await waitFor(() => expect(screen.getByText('Export Working File…')).toBeDefined())
 }
 
 describe('what the menu offers', () => {

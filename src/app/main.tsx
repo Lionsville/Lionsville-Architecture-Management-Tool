@@ -318,7 +318,9 @@ function renderApp(storedPreferences: unknown, initialProject: ProjectSnapshot |
         recentFolders={recentFolders}
         watchProject={shell.watchProject}
         commands={commands?.on}
+        hostMenu={Boolean(commands)}
         onUnsavedWork={commands?.reportUnsaved}
+        onThemeMode={commands?.reportTheme}
         history={shell.history}
         initialProject={initialProject}
         initialPreferences={storedPreferences}

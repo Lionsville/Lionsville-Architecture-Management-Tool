@@ -15,20 +15,14 @@
  * store without these two functions noticing.
  */
 import { isLanguage } from '../i18n'
+import { isThemeMode } from '../platform/theme'
+import type { ThemeMode } from '../platform/theme'
 import type { Language } from '../i18n'
 import { isProjectRef } from './projectRef'
 import type { ProjectRef } from './projectRef'
 
-/**
- * The light or dark theme — or the system's.
- *
- * Three settings and not two: "follow the system" is what most people want, and
- * it is the only setting that moves along by itself in the evening. A shell that
- * knew only light/dark would force everybody to choose something every day.
- */
-export type ThemeMode = 'light' | 'dark' | 'system'
+export type { ThemeMode } from '../platform/theme'
 
-const THEME_MODES: readonly string[] = ['light', 'dark', 'system']
 
 /**
  * The language from the stored preferences, or `undefined` when there is nothing
@@ -47,7 +41,7 @@ export function readLanguage(stored: unknown): Language | undefined {
 export function readThemeMode(stored: unknown): ThemeMode | undefined {
   if (!stored || typeof stored !== 'object') return undefined
   const raw = (stored as Record<string, unknown>).themeMode
-  return typeof raw === 'string' && THEME_MODES.includes(raw) ? (raw as ThemeMode) : undefined
+  return isThemeMode(raw) ? raw : undefined
 }
 
 /**

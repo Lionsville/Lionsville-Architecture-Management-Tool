@@ -25,11 +25,6 @@ const props = {
   groupName: 'Acme Logistics',
   savedAt: null,
   language: 'en' as const,
-  themeMode: 'dark' as const,
-  onCycleTheme: () => {},
-  onSaveWorkingFile: () => {},
-  onSaveInterchange: () => {},
-  onOpenFile: () => {},
   onLeave: () => {},
   onOpenSettings: () => {},
   onOpenDocumentation: () => {},
@@ -117,6 +112,32 @@ describe('ShellToolbar and the window around it', () => {
     const bar = barIn(container)
     expect(getComputedStyle(bar).paddingLeft).toBe('12px')
     expect(rulesFor(bar)).not.toContain('-webkit-app-region:drag')
+  })
+
+  it('says where the project is kept, first', () => {
+    // The one question the bar did not answer (ADR-0005). A folder by name,
+    // and the fallback says it is the fallback.
+    const { container } = renderShell(
+      <ShellToolbar {...props} source={{ kind: 'folder', name: 'Architecture', root: '/x' }} />)
+    expect(screen.getByTestId('working-source').textContent).toBe('Folder · Architecture')
+    const text = barIn(container).textContent ?? ''
+    expect(text.indexOf('Folder · Architecture')).toBeLessThan(text.indexOf('Warehouse landscape'))
+    cleanup()
+    renderShell(<ShellToolbar {...props} source={{ kind: 'browserStorage' }} />)
+    expect(screen.getByTestId('working-source').textContent).toBe('In this browser')
+    cleanup()
+    renderShell(<ShellToolbar {...props} source={{ kind: 'memory' }} />)
+    expect(screen.getByTestId('working-source').textContent).toBe('Not kept anywhere')
+  })
+
+  it('carries the menu in an overflow only where the host has no menu bar', () => {
+    renderShell(<ShellToolbar {...props} />)
+    expect(screen.queryByTestId('overflow-button')).toBeNull()
+    cleanup()
+    renderShell(<ShellToolbar {...props} overflow={{
+      themeMode: 'dark', can: { history: false, folders: false }, onCommand: () => {},
+    }} />)
+    expect(screen.getByTestId('overflow-button')).toBeDefined()
   })
 
   it('offers the three pages beside the canvas', () => {

@@ -24,20 +24,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.takeTheirs': 'Die van schijf',
   'shell.keepMine': 'Die van mij',
   'shell.saveACopy': 'Kopie bewaren…',
-  'shell.save': 'Bewaren…',
-  'shell.saveMenu': 'Bewaren',
-  'shell.workingFile': 'WorkingFile',
-  'shell.workingFileNote':
-    'Alles: topologie, geometrie, opmaak en eigen logo’s — om verder te werken',
-  'shell.interchange': 'Interchange-document',
-  'shell.interchangeNote':
-    'Topologie en semantiek — zonder geometrie en opmaak; voor review en versiebeheer',
-  'shell.open': 'Openen…',
-  'shell.theme': 'Thema',
-  'shell.themeLight': 'Licht',
-  'shell.themeDark': 'Donker',
-  'shell.themeSystem': 'Systeem',
-  'shell.themeTip': 'Thema — {name}',
   'shell.storageFailed':
     'Deze browser kon het ontwerp niet bewaren (opslag vol of geblokkeerd). Bewaar een werkbestand, anders is het bij het sluiten van het tabblad weg.',
   'shell.storageRecovered': 'Bewaren in deze browser lukt weer.',
@@ -85,6 +71,10 @@ export const NL: Record<keyof typeof EN, string> = {
     'De plaatsingen, groepen en routes van dit landschap gaan verloren. De elementen zelf blijven in het model, en containeraanzichten blijven staan.',
   'shell.deleteContainerBody':
     'De plaatsingen en routes van dit containeraanzicht gaan verloren. De elementen zelf blijven in het model.',
+  'shell.sourceFolder': 'Map · {name}',
+  'shell.sourceBrowser': 'In deze browser',
+  'shell.sourceMemory': 'Nergens bewaard',
+  'shell.sourceTip': 'Waar dit project wordt bewaard',
   'shell.projects': 'Projecten\u2026',
   'shell.projectsTip': 'Terug naar de projectenlijst',
   'shell.projectCreated': 'Project \u201c{name}\u201d aangemaakt.',

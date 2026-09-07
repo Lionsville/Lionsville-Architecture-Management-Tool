@@ -23,7 +23,8 @@ import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { installAppMenu, sendCommand } from './appMenu'
+import { installAppMenu, reportTheme, sendCommand } from './appMenu'
+import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, startUpdates } from './updates'
@@ -332,6 +333,9 @@ void app.whenReady().then(() => {
   // Said by the preload the moment anything subscribes. Everything the OS
   // handed us before that has been waiting.
   ipcMain.handle('app:unsaved', (_event, held: unknown) => { unsaved = held === true })
+
+  // The second fact the renderer reports, so the View menu's radio is right.
+  ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) reportTheme(held) })
 
   ipcMain.handle('app:listening', () => {
     listening = true

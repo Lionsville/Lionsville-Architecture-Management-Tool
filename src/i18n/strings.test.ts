@@ -32,6 +32,7 @@ import { EN as decisionsEn } from '../decisions/strings/en';
 import { EN as documentationEn } from '../documentation/strings/en';
 import { EN as editorEn } from '../editor/strings/en';
 import { EN as modelEn } from '../model/strings/en';
+import { EN as platformEn } from '../platform/strings/en';
 import { EN as projectsEn } from '../projects/strings/en';
 import { EN as searchEn } from '../search/strings/en';
 import { EN as commonEn } from './strings/en';
@@ -39,7 +40,7 @@ import { EN as commonEn } from './strings/en';
 /** Every slice, by the module that owns it — the composition, spelled out once. */
 const SLICES: Record<string, Record<string, string>> = {
   adapters: adaptersEn, app: appEn, common: commonEn, decisions: decisionsEn,
-  documentation: documentationEn, editor: editorEn, model: modelEn,
+  documentation: documentationEn, editor: editorEn, model: modelEn, platform: platformEn,
   projects: projectsEn, search: searchEn,
 };
 

@@ -19,6 +19,7 @@ import { EN as documentation } from '../documentation/strings/en'
 import { EN as editor } from '../editor/strings/en'
 import { EN as common } from './strings/en'
 import { EN as model } from '../model/strings/en'
+import { EN as platform } from '../platform/strings/en'
 import { EN as projects } from '../projects/strings/en'
 import { EN as search } from '../search/strings/en'
 
@@ -30,6 +31,7 @@ export const EN = {
   ...editor,
   ...common,
   ...model,
+  ...platform,
   ...projects,
   ...search,
 } as const

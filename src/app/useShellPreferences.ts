@@ -15,7 +15,7 @@ import { detectBrowserLanguage } from '../i18n'
 import type { EditorPreferences } from '../editor'
 import type { Language } from '../i18n'
 import { readLanguage, readThemeMode } from '../projects/preferences'
-import type { ThemeMode } from '../projects/preferences'
+import type { ThemeMode } from '../platform/theme'
 import type { StorageNotice } from './useStorageNotice'
 
 /**
@@ -29,13 +29,6 @@ import type { StorageNotice } from './useStorageNotice'
 export type PreferencesWriter = {
   write(preferences: Record<string, unknown>): Promise<void>
 }
-
-/** The order the theme button cycles through, and the glyph for each. */
-export const THEME_ORDER: ThemeMode[] = ['light', 'dark', 'system']
-export const THEME_GLYPH: Record<ThemeMode, string> = { light: '☀', dark: '☾', system: '◑' }
-export const THEME_LABEL = {
-  light: 'shell.themeLight', dark: 'shell.themeDark', system: 'shell.themeSystem',
-} as const
 
 export type ShellPreferences = {
   /**
@@ -51,7 +44,12 @@ export type ShellPreferences = {
   theme: Theme
   savePreferences: (next: EditorPreferences) => void
   chooseLanguage: (next: Language) => void
-  cycleTheme: () => void
+  /**
+   * One of the three, said outright. The toolbar used to cycle them from a
+   * glyph; the View menu, the overflow and the preferences dialog all name
+   * the one they mean (ADR-0005), so the hook takes a mode rather than a step.
+   */
+  chooseTheme: (next: ThemeMode) => void
   /**
    * Patch anything else the shell wants remembered — which project was open,
    * how the picker is ordered.
@@ -99,11 +97,11 @@ export function useShellPreferences(deps: {
     writePrefs({ language: next })
   }, [writePrefs])
 
-  // Reads `themeMode` directly rather than using the updater form of
-  // `setThemeMode`: React is allowed to call such an updater twice (StrictMode),
-  // and then the write to storage would go out twice.
-  const cycleTheme = useCallback(() => {
-    const next = THEME_ORDER[(THEME_ORDER.indexOf(themeMode) + 1) % THEME_ORDER.length]
+  // Not the updater form of `setThemeMode`: React is allowed to call such an
+  // updater twice (StrictMode), and then the write to storage would go out
+  // twice. A mode that is already on is not written again either.
+  const chooseTheme = useCallback((next: ThemeMode) => {
+    if (next === themeMode) return
     setThemeMode(next)
     writePrefs({ themeMode: next })
   }, [themeMode, writePrefs])
@@ -117,6 +115,6 @@ export function useShellPreferences(deps: {
 
   return {
     preferences, language, themeMode, theme,
-    savePreferences, chooseLanguage, cycleTheme, writePreference: writePrefs,
+    savePreferences, chooseLanguage, chooseTheme, writePreference: writePrefs,
   }
 }
