@@ -298,8 +298,8 @@ disabled** — a disabled control implies one is coming:
 * **Updates** — check automatically, over `DesktopSettings`. Absent on the web.
   The release channel is **not** here yet: `releases/latest` is by GitHub's
   definition the newest non-prerelease, so a channel needs a different request
-  as well as a setting, and both belong to the update record (ADR-0006, not yet
-  written). This section is where it will land.
+  as well as a setting, and both belong to the update record (ADR-0006). This
+  section is where it will land.
 * **This folder** — absent until `folder.json` has a key.
 * **This folder, on this machine** — pull on open, push after snapshot. Written
   to `local.json`, and it says out loud that these are not shared. Present only
