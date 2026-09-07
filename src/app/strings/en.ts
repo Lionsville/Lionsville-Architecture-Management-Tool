@@ -249,6 +249,12 @@ export const EN = {
   'prefs.checkAutomatically': 'Check for updates automatically',
   'prefs.updatesNote':
     'Looks at the release page on start and every six hours. Nothing is downloaded without asking.',
+  /** The channel (ADR-0006). A beta is a prerelease, published and signed like any other. */
+  'prefs.channel': 'Release channel',
+  'prefs.channelStable': 'Stable',
+  'prefs.channelBeta': 'Beta',
+  'prefs.channelNote':
+    'Betas are builds ahead of a release, signed and published the same way. Leaving the beta channel keeps whatever is installed.',
   /**
    * The machine-local scope says out loud that it is not shared: the file
    * sits in the folder, and everything else in the folder travels.

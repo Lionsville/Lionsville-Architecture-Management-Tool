@@ -161,12 +161,26 @@ the `.dmg` on macOS, the `.exe` for this architecture on Windows and the
 `.AppImage` on Linux — never the `.deb`, which is the package manager's business
 — and falls back to the release page whenever it cannot tell which file is meant.
 
-Two settings, both in `update-settings.json` in the app's user-data folder:
+Three settings, all in `update-settings.json` in the app's user-data folder,
+and the first two also in the **Updates** section of the preferences dialog:
 
 | Field | Set by |
 |---|---|
 | `checkAutomatically` | the checkbox on the dialog. Off means no automatic check ever again |
+| `channel` | `stable` (the default) or `beta` — the toggle in the preferences dialog (ADR-0006) |
 | `skippedVersion` | *Skip This Version*. One version, not a list — the next release is a new question |
+
+### Publishing a beta
+
+A beta is a GitHub **prerelease**, and nothing else is different. Tag it
+`vX.Y.Z-beta.N`, title it as above, tick *Set as a pre-release*, publish; the
+workflow builds and signs it like any release. `releases/latest` never returns
+a prerelease, so installs on the stable channel never hear of it. Installs on
+the beta channel ask for the newest few releases and take the newest by
+version, prerelease or not — so the stable `vX.Y.Z` that follows reaches them
+too, and nobody is left on a beta. A folder written by a beta must open in the
+release that follows it; that is a rule for what goes into a beta, not a
+mechanism.
 
 **Check for Updates…** in the menu (the app menu on macOS, Help elsewhere) always
 checks, ignores a skipped version, and says so when there is nothing to report —

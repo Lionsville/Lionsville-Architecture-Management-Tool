@@ -35,6 +35,7 @@ import { LANGUAGES } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { THEME_ITEMS } from '../../platform/menu'
 import type { ThemeMode } from '../../platform/theme'
+import type { UpdateChannel, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type { LocalSettingsPatch } from '../../projects/folderSettings'
 import type { ProjectOrder } from '../../projects/project'
 
@@ -55,7 +56,8 @@ export type PreferencesDialogProps = {
   /** The desktop's own settings. Absent on the web, and the section with it. */
   updates?: {
     checkAutomatically: boolean
-    onChange: (next: boolean) => void
+    channel: UpdateChannel
+    onChange: (patch: UpdateSettingsPatch) => void
   }
 
   /**
@@ -159,11 +161,24 @@ export function PreferencesDialog({
                     <Checkbox
                       size="small"
                       checked={updates.checkAutomatically}
-                      onChange={(e) => updates.onChange(e.target.checked)}
+                      onChange={(e) => updates.onChange({ checkAutomatically: e.target.checked })}
                     />
                   )}
                   label={<Typography sx={{ fontSize: 13 }}>{s('prefs.checkAutomatically')}</Typography>}
                 />
+                <Row label={s('prefs.channel')}>
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={updates.channel}
+                    onChange={(_e, next: UpdateChannel | null) => { if (next) updates.onChange({ channel: next }) }}
+                    aria-label={s('prefs.channel')}
+                  >
+                    <ToggleButton value="stable" sx={{ fontSize: 11, px: 1.5 }}>{s('prefs.channelStable')}</ToggleButton>
+                    <ToggleButton value="beta" sx={{ fontSize: 11, px: 1.5 }}>{s('prefs.channelBeta')}</ToggleButton>
+                  </ToggleButtonGroup>
+                </Row>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('prefs.channelNote')}</Typography>
               </Section>
             </>
           )}

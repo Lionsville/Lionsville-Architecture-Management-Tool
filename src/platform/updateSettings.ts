@@ -7,8 +7,16 @@
  * (ADR-0005). The arithmetic of updating — is this newer, which file is mine —
  * stays in `app/updates.ts`.
  */
+/**
+ * Which releases count (ADR-0006). `stable` is GitHub's `latest`: the newest
+ * release that is not a prerelease. `beta` is the newest release of any kind,
+ * so a beta user is told about the stable that follows a beta too.
+ */
+export type UpdateChannel = 'stable' | 'beta'
+
 export type UpdateSettings = {
   readonly checkAutomatically: boolean
+  readonly channel: UpdateChannel
   /**
    * A version the user pressed "Skip this version" on. One version, not a list:
    * skipping is a way of saying "not this one", and the next release is a new
@@ -17,10 +25,10 @@ export type UpdateSettings = {
   readonly skippedVersion?: string
 }
 
-export const DEFAULT_UPDATE_SETTINGS: UpdateSettings = { checkAutomatically: true }
+export const DEFAULT_UPDATE_SETTINGS: UpdateSettings = { checkAutomatically: true, channel: 'stable' }
 
 /** What the dialog may change. The skipped version is not a preference. */
-export type UpdateSettingsPatch = Partial<Pick<UpdateSettings, 'checkAutomatically'>>
+export type UpdateSettingsPatch = Partial<Pick<UpdateSettings, 'checkAutomatically' | 'channel'>>
 
 /**
  * The settings out of whatever was on disk.
@@ -35,6 +43,8 @@ export function readUpdateSettings(stored: unknown): UpdateSettings {
   const skipped = raw['skippedVersion']
   return {
     checkAutomatically: raw['checkAutomatically'] !== false,
+    // Anything but the one word that opts in reads as stable.
+    channel: raw['channel'] === 'beta' ? 'beta' : 'stable',
     ...(typeof skipped === 'string' && skipped ? { skippedVersion: skipped } : {}),
   }
 }

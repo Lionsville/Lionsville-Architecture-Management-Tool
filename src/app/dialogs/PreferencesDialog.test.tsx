@@ -49,9 +49,17 @@ describe('PreferencesDialog', () => {
 
   it('offers the update check where the host keeps one, and writes it', () => {
     const onChange = vi.fn()
-    renderShell(<PreferencesDialog {...base} updates={{ checkAutomatically: true, onChange }} />)
+    renderShell(<PreferencesDialog {...base} updates={{ checkAutomatically: true, channel: 'stable', onChange }} />)
     fireEvent.click(screen.getByLabelText('Check for updates automatically'))
-    expect(onChange).toHaveBeenCalledWith(false)
+    expect(onChange).toHaveBeenCalledWith({ checkAutomatically: false })
+  })
+
+  it('offers the beta channel beside it, and says what leaving it keeps', () => {
+    const onChange = vi.fn()
+    renderShell(<PreferencesDialog {...base} updates={{ checkAutomatically: true, channel: 'stable', onChange }} />)
+    expect(screen.getByText(/keeps whatever is installed/)).toBeDefined()
+    fireEvent.click(screen.getByText('Beta'))
+    expect(onChange).toHaveBeenCalledWith({ channel: 'beta' })
   })
 
   it('says where the machine settings are kept, and writes them as a patch', () => {

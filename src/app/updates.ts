@@ -189,6 +189,30 @@ export function readRelease(payload: unknown, platform: string, arch: string): R
   }
 }
 
+/**
+ * A GitHub `releases` list, reduced to the newest release in it (ADR-0006).
+ *
+ * The beta channel's request. Drafts are skipped and prereleases are not:
+ * the newest release of any kind is the answer, so a stable release that
+ * follows a beta reaches the people on the beta channel too. Newest by
+ * version, not by position — GitHub lists newest first, but "newest" here is
+ * a fact about the tags and not about the order somebody published in. Every
+ * entry is checked the way a single payload is; an entry that is not a
+ * release is skipped rather than trusted, and a payload that is not a list
+ * is nothing.
+ */
+export function readNewestRelease(payload: unknown, platform: string, arch: string): Release | undefined {
+  if (!Array.isArray(payload)) return undefined
+  let newest: Release | undefined
+  for (const entry of payload) {
+    if (!entry || typeof entry !== 'object' || (entry as Record<string, unknown>)['draft'] === true) continue
+    const release = readRelease(entry, platform, arch)
+    if (!release) continue
+    if (!newest || isNewerVersion(release.version, newest.version)) newest = release
+  }
+  return newest
+}
+
 /** `https:` and nothing else — a `javascript:` URL must never reach `openExternal`. */
 function isHttps(raw: string): boolean {
   try {

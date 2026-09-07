@@ -4,10 +4,9 @@
 * Date: 2026-09-07
 * Deciders: Wouter Simons
 
-**This record is a design, not a report.** Nothing in it is built yet. It is
-written for the agent who picks the work up; the last section is the order to
-build it in. ADR-0005 left the **Updates** section of the preferences dialog
-as the place this lands, and this record is what lands there.
+**Built, 7 September 2026**, in the order the last section gives. ADR-0005
+left the **Updates** section of the preferences dialog as the place this
+lands, and this record is what landed there.
 
 ## Context and Problem Statement
 

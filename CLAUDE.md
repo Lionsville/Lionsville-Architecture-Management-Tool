@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2577 tests** and one of every config. The
+One codebase, in modules, with **2585 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2577 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2585 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -522,6 +522,12 @@ are per-machine flags, every answer is a value, and a disagreement is a strip
 with *take theirs* (ours on a `before-sync/` branch) and *keep ours* (a merge
 commit whose tree is ours). `git.test.ts` runs it against a bare remote and
 the smoke run against a real local one.
+
+The Updates section then took the release channel (`docs/decisions/0006`):
+`stable` is GitHub's `latest`, `beta` is the newest release of any kind, so a
+beta is a prerelease published like any release and a beta user still hears
+about the stable that follows. One key in main's file, one toggle, one pure
+reduction over the release list.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference

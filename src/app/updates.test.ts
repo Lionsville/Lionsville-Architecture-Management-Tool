@@ -4,6 +4,7 @@ import {
   isNewerVersion,
   parseVersion,
   pickDownloadAsset,
+  readNewestRelease,
   readRelease,
   readUpdateSettings,
   shouldCheckForUpdates,
@@ -183,10 +184,53 @@ describe('readUpdateSettings', () => {
     expect(readUpdateSettings({ checkAutomatically: false }).checkAutomatically).toBe(false)
   })
 
+  it('follows the stable channel unless the file says beta, in that one word', () => {
+    expect(readUpdateSettings({}).channel).toBe('stable')
+    expect(readUpdateSettings({ channel: 'beta' }).channel).toBe('beta')
+    for (const held of ['Beta', 'nightly', true, 1, '']) {
+      expect(readUpdateSettings({ channel: held }).channel, String(held)).toBe('stable')
+    }
+  })
+
   it('remembers a skipped version', () => {
     expect(readUpdateSettings({ skippedVersion: '1.2.3' }).skippedVersion).toBe('1.2.3')
     expect(readUpdateSettings({ skippedVersion: '' }).skippedVersion).toBeUndefined()
     expect(readUpdateSettings({ skippedVersion: 7 }).skippedVersion).toBeUndefined()
+  })
+})
+
+describe('readNewestRelease', () => {
+  const release = (tag: string, over: Record<string, unknown> = {}) => ({
+    tag_name: tag,
+    html_url: `https://github.com/x/y/releases/tag/${tag}`,
+    assets: [{ name: 'app-arm64.dmg', browser_download_url: `https://example.test/${tag}.dmg` }],
+    ...over,
+  })
+
+  it('takes the newest release of any kind, prerelease or not', () => {
+    const list = [release('v1.3.0-beta.1', { prerelease: true }), release('v1.2.9')]
+    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.3.0-beta.1')
+  })
+
+  it('puts a stable release above the beta it follows, so nobody is stranded', () => {
+    const list = [release('v1.3.0-beta.2', { prerelease: true }), release('v1.3.0')]
+    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.3.0')
+  })
+
+  it('goes by version, not by the order the page lists them in', () => {
+    const list = [release('v1.2.0'), release('v1.4.0'), release('v1.3.0')]
+    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.4.0')
+  })
+
+  it('skips drafts, and an entry that is not a release', () => {
+    const list = [release('v9.0.0', { draft: true }), 'nonsense', null, release('not-a-version'), release('v1.1.0')]
+    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.1.0')
+  })
+
+  it('is nothing for a payload that is not a list, or a list with nothing in it', () => {
+    expect(readNewestRelease({ message: 'rate limited' }, 'darwin', 'arm64')).toBeUndefined()
+    expect(readNewestRelease([release('v2.0.0', { draft: true })], 'darwin', 'arm64')).toBeUndefined()
+    expect(readNewestRelease([], 'darwin', 'arm64')).toBeUndefined()
   })
 })
 

@@ -38,7 +38,7 @@ const project = (): ProjectSnapshot => ({
   logoLibrary: [],
 })
 
-function fakeUpdates(initial: UpdateSettings = { checkAutomatically: true }) {
+function fakeUpdates(initial: UpdateSettings = { checkAutomatically: true, channel: 'stable' }) {
   let held = initial
   const writes: UpdateSettingsPatch[] = []
   const store: UpdateSettingsStore = {
@@ -135,7 +135,7 @@ describe('the update check', () => {
   })
 
   it('is read from the host and written back to it', async () => {
-    const updates = fakeUpdates({ checkAutomatically: true })
+    const updates = fakeUpdates({ checkAutomatically: true, channel: 'stable' })
     const view = show({ updateSettings: updates.store })
     await opened(view)
     const box = await screen.findByLabelText('Check for updates automatically') as HTMLInputElement
@@ -144,6 +144,14 @@ describe('the update check', () => {
     await waitFor(() => expect(updates.writes).toEqual([{ checkAutomatically: false }]))
     // Nothing of it in the blob: it belongs to the host, not to the renderer.
     expect(JSON.stringify(await view.preferences.read() ?? {})).not.toContain('checkAutomatically')
+  })
+
+  it('switches the channel through the same store (ADR-0006)', async () => {
+    const updates = fakeUpdates()
+    const view = show({ updateSettings: updates.store })
+    await opened(view)
+    fireEvent.click(await screen.findByText('Beta'))
+    await waitFor(() => expect(updates.writes).toEqual([{ channel: 'beta' }]))
   })
 })
 

@@ -34,7 +34,7 @@ import { refFor, sameRef } from '../projects/projectRef'
 import type { ProjectRef } from '../projects/projectRef'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
-import type { UpdateSettings } from '../platform/updateSettings'
+import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
 import type { PullOutcome } from '../platform/sync'
 import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
@@ -357,11 +357,11 @@ export function App({
     toasts.notify(s('prefs.writeFailed', { message: reasonOf(cause) }), 'error')
   }, [toasts, s])
 
-  const changeUpdates = useCallback((checkAutomatically: boolean) => {
+  const changeUpdates = useCallback((patch: UpdateSettingsPatch) => {
     if (!updateSettings) return
     // Optimistic, and put back from what the host says is now in force.
-    setUpdates((held) => held && { ...held, checkAutomatically })
-    void updateSettings.write({ checkAutomatically }).then(setUpdates, (cause: unknown) => {
+    setUpdates((held) => held && { ...held, ...patch })
+    void updateSettings.write(patch).then(setUpdates, (cause: unknown) => {
       settingFailed('updateSettings.write', cause)
       void updateSettings.read().then(setUpdates, () => undefined)
     })
@@ -804,7 +804,7 @@ export function App({
           order={order}
           onOrderChange={chooseOrder}
           updates={updateSettings && updates && {
-            checkAutomatically: updates.checkAutomatically, onChange: changeUpdates,
+            checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: changeUpdates,
           }}
           machine={folderSettings && history && local && {
             ...local.git, path: LOCAL_SETTINGS_PATH, onChange: changeLocal,

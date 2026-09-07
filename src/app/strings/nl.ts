@@ -182,6 +182,11 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.checkAutomatically': 'Automatisch op updates controleren',
   'prefs.updatesNote':
     'Kijkt bij het starten en elke zes uur op de releasepagina. Er wordt niets gedownload zonder te vragen.',
+  'prefs.channel': 'Releasekanaal',
+  'prefs.channelStable': 'Stabiel',
+  'prefs.channelBeta': 'Bèta',
+  'prefs.channelNote':
+    'Bèta’s zijn builds die vooruitlopen op een release, op dezelfde manier ondertekend en gepubliceerd. Wie het bètakanaal verlaat, houdt wat er geïnstalleerd is.',
   'prefs.thisMachine': 'DEZE MAP, OP DEZE MACHINE',
   'prefs.thisMachineNote':
     'Staat in {path} en wordt niet gedeeld \u2014 een andere machine die deze map opent beslist zelf.',

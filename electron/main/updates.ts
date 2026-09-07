@@ -36,6 +36,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   DEFAULT_UPDATE_SETTINGS,
+  readNewestRelease,
   readRelease,
   readUpdateSettings,
   shouldCheckForUpdates,
@@ -51,7 +52,14 @@ import type { UpdateSettingsPatch } from '../../src/platform/updateSettings'
  */
 const OWNER = 'Lionsville'
 const REPO = 'Lionsville-Architecture-Management-Tool'
-const LATEST_RELEASE = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`
+const RELEASES = `https://api.github.com/repos/${OWNER}/${REPO}/releases`
+/** Stable: GitHub's own idea of the newest non-prerelease. */
+const LATEST_RELEASE = `${RELEASES}/latest`
+/**
+ * Beta (ADR-0006): the newest few of any kind, reduced to the newest by
+ * version. Ten is a bound, not a promise — GitHub lists newest first.
+ */
+const RECENT_RELEASES = `${RELEASES}?per_page=10`
 
 /**
  * Six hours. Long enough to be invisible, short enough that a machine left on
@@ -83,6 +91,9 @@ let quitting = false
 
 let timer: NodeJS.Timeout | undefined
 
+/** Whether this process talks to the release page at all; see `startUpdates`. */
+let checking = false
+
 function log(message: string): void {
   process.stderr.write(`update: ${message}\n`)
 }
@@ -107,7 +118,8 @@ async function saveSettings(next: UpdateSettings): Promise<void> {
 }
 
 /**
- * The `latest` release, or `undefined` for every way that can fail.
+ * The newest release the channel counts, or `undefined` for every way that
+ * can fail.
  *
  * `net.fetch` rather than the global one so the request goes through Chromium's
  * network stack, and therefore through the system proxy and its certificates —
@@ -115,7 +127,8 @@ async function saveSettings(next: UpdateSettings): Promise<void> {
  */
 async function fetchLatest(): Promise<Release | undefined> {
   try {
-    const response = await net.fetch(LATEST_RELEASE, {
+    const beta = settings.channel === 'beta'
+    const response = await net.fetch(beta ? RECENT_RELEASES : LATEST_RELEASE, {
       headers: {
         Accept: 'application/vnd.github+json',
         // GitHub rejects an API request without one.
@@ -127,7 +140,10 @@ async function fetchLatest(): Promise<Release | undefined> {
       log(`release check returned ${response.status}`)
       return undefined
     }
-    return readRelease(await response.json(), process.platform, process.arch)
+    const payload: unknown = await response.json()
+    return beta
+      ? readNewestRelease(payload, process.platform, process.arch)
+      : readRelease(payload, process.platform, process.arch)
   } catch (error) {
     // A release page that cannot be reached is not a reason to interrupt
     // someone drawing a diagram. It is written down and tried again later.
@@ -250,13 +266,17 @@ function stop(): void {
 export function registerSettingsChannel(): void {
   ipcMain.handle('settings:readUpdates', (): UpdateSettings => settings)
   ipcMain.handle('settings:writeUpdates', async (_event, patch: unknown): Promise<UpdateSettings> => {
-    const wanted = (patch as UpdateSettingsPatch | undefined)?.checkAutomatically
-    if (typeof wanted !== 'boolean') return settings
-    if (wanted !== settings.checkAutomatically) {
-      await saveSettings({ ...settings, checkAutomatically: wanted })
-      if (wanted) schedule()
-      else stop()
-    }
+    const held = (patch ?? {}) as UpdateSettingsPatch
+    const wanted = typeof held.checkAutomatically === 'boolean' ? held.checkAutomatically : settings.checkAutomatically
+    const channel = held.channel === 'beta' || held.channel === 'stable' ? held.channel : settings.channel
+    if (wanted === settings.checkAutomatically && channel === settings.channel) return settings
+    const switched = channel !== settings.channel
+    await saveSettings({ ...settings, checkAutomatically: wanted, channel })
+    if (wanted) schedule()
+    else stop()
+    // Switching channels should show the beta that is already out, not wait
+    // six hours for it. Only when the process checks at all (see startUpdates).
+    if (switched && checking) void check(false)
     return settings
   })
 }
@@ -268,6 +288,7 @@ export function checkForUpdatesNow(): void {
 
 export function startUpdates(): void {
   if (!shouldCheckForUpdates(app.isPackaged, process.argv, process.env)) return
+  checking = true
 
   /**
    * On the way out, ask again about an update the user has already been shown
