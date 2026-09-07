@@ -64,7 +64,7 @@ const MAY_IMPORT = {
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'search'],
   ports: ['model', 'platform', 'projects', 'agent'],
-  adapters: ['model', 'platform', 'projects', 'ports'],
+  adapters: ['model', 'platform', 'projects', 'ports', 'agent'],
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'app'),
 }
 
@@ -81,7 +81,7 @@ const WHY = {
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
   agent: 'An agent asks about the landscape in the landscape\'s own terms. It does not know how the model is drawn or where it is saved.',
   ports: 'A seam names what crosses it: a project, a model, a diagnostic, an agent\'s request.',
-  adapters: 'An adapter fills one seam: the model, projects, ports and platform are all it may know.',
+  adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know.',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }
 

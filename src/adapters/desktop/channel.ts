@@ -21,6 +21,7 @@
  * doorway; their vocabulary is `platform/hostCommands.ts`, because the shell
  * has to understand it too.
  */
+import type { AgentAnswer, AgentRequest } from '../../agent/tools'
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type {
@@ -84,6 +85,18 @@ export type DesktopSettings = {
   readUpdates(): Promise<UpdateSettings>
   /** Patch, and answer with what is now in force. */
   writeUpdates(patch: UpdateSettingsPatch): Promise<UpdateSettings>
+}
+
+/**
+ * An agent's calls, relayed (ADR-0007). Main runs the MCP server and knows no
+ * model; every tool call is handed to the window as a request and the window
+ * answers it. The id is main's, so an answer finds its call.
+ */
+export type DesktopAgent = {
+  /** Every request, until the returned function is called. */
+  onRequest(listener: (request: AgentRequest) => void): () => void
+  /** The answer to one request. */
+  answer(id: string, answer: AgentAnswer): Promise<void>
 }
 
 export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: number }

@@ -38,6 +38,7 @@ import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSett
 import type { PullOutcome } from '../platform/sync'
 import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
+import type { AgentGateway } from '../ports/AgentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
@@ -57,6 +58,7 @@ import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
 import type { MakeId } from './useDiagramActions'
 import type { ProjectFileChannel } from './useProjectFiles'
+import { useAgentGateway } from './useAgentGateway'
 import { useGlobalErrors } from './useGlobalErrors'
 import { useHostCommands } from './useHostCommands'
 import type { CommandStream } from './useHostCommands'
@@ -164,6 +166,12 @@ export type AppProps = {
   /** The desktop's own update settings. Absent on the web, and the section with it. */
   updateSettings?: UpdateSettingsStore
   /**
+   * Where an agent's tool calls arrive (ADR-0007). Absent in a browser tab.
+   * The open workspace answers them; with no project open, this shell does,
+   * with a refusal.
+   */
+  agent?: AgentGateway
+  /**
    * What the boot's pull answered, when the machine asked for one. Made at
    * the edge of the app, before the project was read and before the watcher
    * started, so a fast-forward's writes are never reported as somebody
@@ -192,7 +200,7 @@ export function App({
   projects, groupRecords, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
-  history, folderSettings, updateSettings, initialSync, initialProject, initialPreferences,
+  history, folderSettings, updateSettings, agent, initialSync, initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
 }: AppProps) {
   const toasts = useToasts()
@@ -381,6 +389,10 @@ export function App({
 
   // The second fact the host is told, after unsaved work: which theme is on.
   useEffect(() => { onThemeMode?.(prefs.themeMode) }, [onThemeMode, prefs.themeMode])
+
+  // An agent asking while no project is open is told so. The workspace binds
+  // the same seam to its session while one is; the two never overlap.
+  useAgentGateway(project ? undefined : agent, undefined)
 
   const [order, setOrder] = useState<ProjectOrder>(() => {
     const stored = (prefs.preferences as Record<string, unknown> | undefined)?.projectOrder
@@ -735,6 +747,7 @@ export function App({
             onUnsavedWork={onUnsavedWork}
             history={history}
             onSnapshotTaken={sync.afterSnapshot}
+            agent={agent}
             documents={documents}
             notify={toasts.notify}
             onStorageResult={reportStorage}

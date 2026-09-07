@@ -27,8 +27,11 @@ import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemProje
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../adapters/browser/workingDirectory'
+import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
 import { DesktopProjectHistory } from '../adapters/desktop/DesktopProjectHistory'
-import { desktopCommands, desktopFiles, desktopHistory, desktopSettings } from '../adapters/desktop/desktopFiles'
+import {
+  desktopAgent, desktopCommands, desktopFiles, desktopHistory, desktopSettings,
+} from '../adapters/desktop/desktopFiles'
 import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
@@ -58,6 +61,7 @@ import type { ProjectRef } from '../projects/projectRef'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
+import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
@@ -127,6 +131,11 @@ export type Shell = {
    */
   updateSettings?: UpdateSettingsStore
   /**
+   * Where an agent's tool calls arrive (ADR-0007). Absent in a browser tab,
+   * which has no main process to listen on its behalf.
+   */
+  agent?: AgentGateway
+  /**
    * What the window around the app is doing, which on the desktop is less than
    * a browser does: no title bar to move it by, and controls drawn over our
    * own top bar.
@@ -156,6 +165,7 @@ export function composeShell(): Shell {
     // The one desktop seam that does not wait for a folder: it is about this
     // install, not about where the projects are.
     updateSettings: desktopSettings() && new DesktopUpdateSettings(desktopSettings()!),
+    agent: desktopAgent() && new DesktopAgentGateway(desktopAgent()!),
     windowChrome: hostWindowChrome(),
   }
 }

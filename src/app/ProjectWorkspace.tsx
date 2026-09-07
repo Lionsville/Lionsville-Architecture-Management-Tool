@@ -23,6 +23,7 @@ import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
 import type { WorkingSource } from '../platform/workingSource'
+import type { AgentGateway } from '../ports/AgentGateway'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { DiskChangeNotice } from './DiskChangeNotice'
@@ -41,6 +42,7 @@ import { ShellToolbar } from './ShellToolbar'
 import type { ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
 import type { ProjectSaver } from './useDocumentSession'
+import { useAgentGateway } from './useAgentGateway'
 import { useDiagramActions } from './useDiagramActions'
 import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
@@ -87,6 +89,12 @@ export type ProjectWorkspaceProps = {
   history?: ProjectHistory
   /** A snapshot succeeded. The shell decides whether that means a push. */
   onSnapshotTaken?: () => void
+  /**
+   * Where an agent's tool calls arrive (ADR-0007). Absent in a browser tab.
+   * Bound here, to the session, because a request is answered against the
+   * project that is open.
+   */
+  agent?: AgentGateway
   documents: ProjectFileChannel
 
   notify: Notify
@@ -140,7 +148,7 @@ function localToday(): string {
 
 export function ProjectWorkspace({
   project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
-  onSnapshotTaken, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
+  onSnapshotTaken, agent, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
@@ -179,6 +187,20 @@ export function ProjectWorkspace({
     onAdopt: useCallback((held: ProjectSnapshot) => session.adopt(held, false), [session]),
   })
   const forceSave = document.forceSave
+
+  /**
+   * The agent, as a peer of the menu: a request is answered against the
+   * session as it stands, and refused while the person is deciding which
+   * version of the project stands.
+   */
+  const documentStatus = document.state.status
+  useAgentGateway(agent, useMemo(() => ({
+    indexed: session.indexed,
+    current: session.current,
+    activeDiagramId: session.currentActiveId,
+    groupDecisions: () => groupDecisions,
+    blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
+  }), [session, groupDecisions, documentStatus]))
 
   const snapshots = useProjectHistory({
     history: projectHistory,

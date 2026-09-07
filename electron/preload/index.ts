@@ -19,8 +19,9 @@
  */
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
-  DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings,
+  DesktopAgent, DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings,
 } from '../../src/adapters/desktop/channel'
+import type { AgentRequest } from '../../src/agent/tools'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import type { ThemeMode } from '../../src/platform/theme'
 
@@ -35,6 +36,8 @@ export type DesktopBridge = {
   readonly history: DesktopHistory
   /** What main keeps for itself: the update settings. See `DesktopSettings`. */
   readonly settings: DesktopSettings
+  /** An agent's tool calls, relayed from the MCP server in main. See `DesktopAgent`. */
+  readonly agent: DesktopAgent
 }
 
 const files: DesktopFiles = {
@@ -95,6 +98,15 @@ const settings: DesktopSettings = {
   writeUpdates: (patch) => ipcRenderer.invoke('settings:writeUpdates', patch),
 }
 
+const agent: DesktopAgent = {
+  onRequest(listener) {
+    const relay = (_event: unknown, request: AgentRequest) => listener(request)
+    ipcRenderer.on('agent:request', relay)
+    return () => { ipcRenderer.off('agent:request', relay) }
+  },
+  answer: (id, answer) => ipcRenderer.invoke('agent:answer', id, answer),
+}
+
 const bridge: DesktopBridge = {
   platform: process.platform,
   versions: { electron: process.versions.electron, chrome: process.versions.chrome },
@@ -102,6 +114,7 @@ const bridge: DesktopBridge = {
   commands,
   history,
   settings,
+  agent,
 }
 
 contextBridge.exposeInMainWorld('desktop', bridge)

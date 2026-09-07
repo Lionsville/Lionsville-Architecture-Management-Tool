@@ -353,6 +353,7 @@ function renderApp(
         history={shell.history}
         folderSettings={shell.folderSettings}
         updateSettings={shell.updateSettings}
+        agent={shell.agent}
         initialSync={initialSync}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
