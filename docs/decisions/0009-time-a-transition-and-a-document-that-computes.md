@@ -1,8 +1,32 @@
 # ADR-0009 — Time on the facts, a transition as a record, and a document that computes
 
-* Status: proposed
+* Status: accepted
 * Date: 2026-09-08
 * Deciders: Wouter Simons
+
+**Built, 8 September 2026**, in the order the last section gives, with four
+departures from the text below that are worth knowing before reading it:
+
+* **There is no `src/transitions/`.** A plan and a timeline turned out to be
+  the same view — a plan IS a band on the axis, and reading one always means
+  asking what else is happening that month — so the transitions page and the
+  roadmap page are one page, and a plan's rules are small and pure enough to
+  live in `model/transition.ts`. The module map grew by one row, not two.
+* **`checks.ts` is in `model/`, not in `roadmap/`.** The import matrix refused
+  `agent → roadmap` when `roadmap.check` was written, and it was right: the
+  checks have two consumers and are arithmetic over a landscape. Moved rather
+  than routed around.
+* **Plans are not in ⌘K.** The roadmap lists every plan directly and a project
+  has a handful of them, so the search hit is a small follow-up rather than a
+  gap. Nothing else in step 6's list was dropped.
+* **The inspector fields were missed and then found.** Steps 4 and 5 put dates
+  on the model and drew them, and nothing edited them — the feature was
+  unreachable until running the app in a browser showed it. The three lifecycle
+  dates, the successor, the owner and a connection's window landed with step 7.
+
+The open questions were answered as their recommendations said, with one
+exception noted there: the scorecard **is** in the block, exactly as specified —
+two columns, an explicit 1–5 scale, a maximum that is derived.
 
 ## Context and Problem Statement
 
