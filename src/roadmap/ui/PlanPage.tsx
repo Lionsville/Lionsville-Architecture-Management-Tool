@@ -150,7 +150,9 @@ export function PlanPage(props: PlanPageProps) {
       {plan && (
         <Box sx={{ display: 'grid', gridTemplateColumns: '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
           <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} />
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto' }}>
+          {/* The table scrolls inside a cap of its own, so a plan with forty
+              interfaces still leaves the document its half of the column. */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} />
             <Body plan={plan} editing={editing} renderMarkdown={props.renderMarkdown} onChange={(body) => actions.updateTransition(plan.id, { body })} />
           </Box>
@@ -464,7 +466,7 @@ function Interfaces({ plan, model, today, readOnly, actions }: {
 
   if (ports.length === 0) {
     return (
-      <Box sx={{ px: 3, pt: 2 }}>
+      <Box sx={{ px: 3, pt: 1.5, pb: 1, flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
         <Heading>{t('plan.interfaces')}</Heading>
         <Typography variant="body2" color="text.secondary">{t('plan.noInterfaces')}</Typography>
       </Box>
@@ -480,8 +482,8 @@ function Interfaces({ plan, model, today, readOnly, actions }: {
   )
 
   return (
-    <Box sx={{ px: 3, pt: 2, borderBottom: 1, borderColor: 'divider' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '45%', flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', px: 3, pt: 1.5, pb: 0.5 }}>
         <Heading>{t('plan.interfaces')}</Heading>
         <Typography variant="caption" color="text.secondary">
           {t('roadmap.planPorted', { done: String(ports.length - remaining.length), total: String(ports.length) })}
@@ -512,7 +514,18 @@ function Interfaces({ plan, model, today, readOnly, actions }: {
           </>
         )}
       </Box>
-      <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', my: 1, fontSize: 13, '& td, & th': { py: 0.5, pr: 1.5, textAlign: 'left', verticalAlign: 'middle' }, '& th': { fontSize: 11, color: 'text.secondary', fontWeight: 700 } }}>
+      <Box sx={{ overflow: 'auto', minHeight: 0, px: 3, pb: 1 }}>
+      <Box
+        component="table"
+        sx={{
+          width: '100%', borderCollapse: 'collapse', fontSize: 12, lineHeight: 1.3,
+          '& td, & th': { py: 0.25, pr: 1.5, textAlign: 'left', verticalAlign: 'middle' },
+          '& th': { fontSize: 11, color: 'text.secondary', fontWeight: 700, position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1 },
+          '& tr + tr td': { borderTop: 1, borderColor: 'divider' },
+          '& input': { fontSize: 12, py: 0.25 },
+          '& .MuiSelect-select': { fontSize: 12, py: 0.25 },
+        }}
+      >
         <thead>
           <tr>
             <th>{t('plan.counterpart')}</th>
@@ -559,12 +572,15 @@ function Interfaces({ plan, model, today, readOnly, actions }: {
                 {/* Only a dated twin was written as a port. An undated line that
                     happens to match is somebody's drawing, and not ours to delete. */}
                 {!readOnly && port.to && port.on && (
-                  <Button size="small" onClick={() => actions.unport(plan.id, port.from.id)}>{t('plan.unport')}</Button>
+                  <Button size="small" sx={{ whiteSpace: 'nowrap', py: 0, minWidth: 0 }} onClick={() => actions.unport(plan.id, port.from.id)}>
+                    {t('plan.unport')}
+                  </Button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
+      </Box>
       </Box>
     </Box>
   )
@@ -588,7 +604,7 @@ function Body({ plan, editing, renderMarkdown, onChange }: {
     : <Typography color="text.secondary">{t('plan.bodyEmpty')}</Typography>
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0, flex: 1 }}>
       {editing && (
         <Box
           component="textarea"
