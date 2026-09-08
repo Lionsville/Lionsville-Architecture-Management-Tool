@@ -68,7 +68,9 @@ export type ServerIdentity = { name: string; version: string }
 export const INSTRUCTIONS =
   'This is the Lionsville Architecture Management Tool with a project open on screen. '
   + 'Read the landscape with the read tools, and prefer ids from elements.list over guessing. '
-  + 'Every change you make shows in the app\'s Activity list and is undone with ⌘Z.'
+  + 'Every change you make shows in the app\'s Activity list and is undone with ⌘Z, or with undo while the '
+  + 'newest steps are yours. Every mutation answers with the project\'s revision; pass it as ifRevision '
+  + 'when a call must not land on a project that has moved on, and use batch to land several changes as one step.'
 
 /** The see-tier tools that change nothing: a report, and a picture. */
 const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render']

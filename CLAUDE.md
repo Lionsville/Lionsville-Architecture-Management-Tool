@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3098 tests** and one of every config. The
+One codebase, in modules, with **3153 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3098 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3153 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -439,10 +439,11 @@ identifiers is still a list of a customer's identifiers.
 | Preferences key | `lvarch.preferences` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
-| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` |
-| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `decision.propose` `decision.transition` `diagram.create` |
-| Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `group` `align` `distribute` |
-| Agent tools, time (ADR-0009, ADR-0010) | `plans.list` `roadmap.check` `plan.replace` `plan.port` |
+| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` |
+| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
+| Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
+| Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
+| Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
@@ -683,6 +684,18 @@ model could already say. A split is the source staying; a merge is more
 sources retiring into the same thing. The roadmap takes a window, hatches a
 plan's shadow run, and counts its ports; the board draws a dotted *replaces*
 arrow under the lifecycle toggle.
+
+Then an agent was given **everything a person can do on a page**
+(`docs/decisions/0011`), from the report an agent wrote after the first real
+job: a plan is a record it may write, an element's dates and a line's window
+are fields like any other, one plan's *port all* leaves what another plan
+dated alone (`closedOn`, derived), a decision can be corrected while it is
+still being written, a card told to be in a group lands inside the group's
+box, and a picture can be added. What only the session knows is the agent's
+too: every mutation answers with a `revision` and takes `ifRevision`, the
+Activity list is a read, `undo` takes back the agent's own newest steps and
+stops at a person's, `project.save` writes now, and `batch` lands several
+changes as one step or none.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
