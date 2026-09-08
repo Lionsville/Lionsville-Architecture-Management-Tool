@@ -13,6 +13,7 @@
  * diagrams/<id>.placements.json     where its elements ended up
  * docs/<elementId>.md               an element's description, as prose
  * decisions/[<applicationId>/]NNNN-<slug>.md
+ * transitions/NNNN-<slug>.md        a plan, its window and what it touches
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * logos/<key>.svg | .png            uploaded marks, as images
  * ```
@@ -41,9 +42,13 @@ import type {
 } from '../model'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
+import type { Transition } from '../model/transition'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { slug } from '../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
+import {
+  TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
+} from './transitionFile'
 import {
   dataUrl, markdownBody, markdownFile, parseJson, readDataUrl, stableJson, textFromBytes,
 } from './fileText'
@@ -66,7 +71,7 @@ export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
 export const GROUP_FILE = 'group.json'
-export { DECISIONS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER }
 
 /**
  * 3, and the same 3 as the working file's version — the single `.lvarch` is
@@ -210,6 +215,10 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
     files.push({ path: adrPath(adr), text: adrFileText(adr) })
   }
 
+  for (const transition of model.transitions ?? []) {
+    files.push({ path: transitionPath(transition), text: transitionFileText(transition) })
+  }
+
   files.push(...imageFiles(project.imageLibrary ?? []))
 
   files.push({ path: PROJECT_FILE, text: stableJson(header(project, files)) })
@@ -338,6 +347,7 @@ export function isFormatPath(path: string): boolean {
   if (folder === LOGOS_FOLDER) return rest.length === 1 && /\.(svg|png)$/.test(name)
   if (folder === IMAGES_FOLDER) return rest.length === 1 && isImageFile(name)
   if (folder === DECISIONS_FOLDER) return rest.length <= 2 && /^\d{1,6}-.*\.md$/.test(name)
+  if (folder === TRANSITIONS_FOLDER) return rest.length === 1 && /^\d{1,6}-.*\.md$/.test(name)
   return false
 }
 
@@ -479,6 +489,24 @@ export function readDecisions(files: readonly FolderFile[], within = ''): Adr[] 
     (a.applicationId ?? '').localeCompare(b.applicationId ?? '') || a.number - b.number)
 }
 
+/**
+ * Every plan in the folder, in number order (ADR-0009).
+ *
+ * Flat, and skipping what is not one — a `README.md` in `transitions/` is
+ * somebody's note about the plans, not a plan.
+ */
+export function readTransitions(files: readonly FolderFile[]): Transition[] {
+  const prefix = `${TRANSITIONS_FOLDER}/`
+  const found: Transition[] = []
+  for (const file of files) {
+    if (!file.path.startsWith(prefix) || !file.path.endsWith('.md')) continue
+    if (!('text' in file)) continue
+    const transition = transitionFromFile(file.text, file.path)
+    if (transition) found.push(transition)
+  }
+  return found.sort((a, b) => a.number - b.number)
+}
+
 function readLogos(folder: Folder, held: ProjectHeader): UploadedLogo[] {
   const named = new Set<string>()
   const library: UploadedLogo[] = []
@@ -559,6 +587,7 @@ export function projectFromFolder(
   if (ordered.length === 0) return undefined
 
   const decisions = readDecisions(files)
+  const transitions = readTransitions(files)
   const { elements, explicitFields } = readElements(folder)
   const model: HostModel = {
     name: typeof held.name === 'string' ? held.name : ref.project,
@@ -571,6 +600,7 @@ export function projectFromFolder(
       ? { formatVersion: held.interchange.formatVersion } : {}),
     ...(held.interchange?.adrLinks !== undefined ? { adrLinks: held.interchange.adrLinks } : {}),
     ...(decisions.length ? { decisions } : {}),
+    ...(transitions.length ? { transitions } : {}),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     connections: readConnections(folder),

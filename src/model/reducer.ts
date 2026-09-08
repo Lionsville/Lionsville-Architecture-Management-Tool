@@ -34,8 +34,9 @@
 import { transaction, reverse, NOTHING } from './commands'
 import type { Command, CommandMeta, DiagramPatch, ProjectPatch } from './commands'
 import type { Adr } from './adr'
+import type { Transition } from './transition'
 import type { ConnectionId, Diagram, DiagramId, Model, ModelOrder } from './normalised'
-import { decisionsOf, routesOf } from './normalised'
+import { decisionsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
 import type {
   DesignConnection, DesignElement, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId,
@@ -124,6 +125,17 @@ function withDecisions(model: Model, rows: Rows<Adr>): Model {
     return out
   }
   return { ...model, decisions: rows.by, order }
+}
+
+function withTransitions(model: Model, rows: Rows<Transition>): Model {
+  const order = withOrder(model, 'transitions', rows.order)
+  // Emptied means gone, exactly as `decisions` is — see the note at the top.
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.transitions
+    return out
+  }
+  return { ...model, transitions: rows.by, order }
 }
 
 function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {
@@ -400,6 +412,29 @@ export function apply(model: Model, command: Command): ApplyResult {
       const at = model.order.decisions.indexOf(command.id)
       const rows = drop(decisionsOf(model), model.order.decisions, command.id)
       return ok(withDecisions(model, rows), { type: 'decision.add', decision: held, at })
+    }
+
+    // --- plans (ADR-0009) ---------------------------------------------------
+    case 'transition.add': {
+      const { transition, at } = command
+      const rows = put(transitionsOf(model), model.order.transitions, transition.id, transition, at)
+      return ok(withTransitions(model, rows), { type: 'transition.remove', id: transition.id })
+    }
+
+    case 'transition.update': {
+      const held = transitionsOf(model)[command.id]
+      if (!held) return gone
+      const { row, inverse } = patched(held, command.patch)
+      const rows = put(transitionsOf(model), model.order.transitions, command.id, row)
+      return ok(withTransitions(model, rows), { type: 'transition.update', id: command.id, patch: inverse })
+    }
+
+    case 'transition.remove': {
+      const held = transitionsOf(model)[command.id]
+      if (!held) return gone
+      const at = model.order.transitions.indexOf(command.id)
+      const rows = drop(transitionsOf(model), model.order.transitions, command.id)
+      return ok(withTransitions(model, rows), { type: 'transition.add', transition: held, at })
     }
 
     // --- the project itself -------------------------------------------------

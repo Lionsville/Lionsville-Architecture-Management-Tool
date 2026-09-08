@@ -27,7 +27,8 @@
  * from the commands, so there is no second thing to keep true.
  */
 import type { Adr } from './adr'
-import type { AdrId, ConnectionId, Diagram, DiagramId, Model } from './normalised'
+import type { Transition } from './transition'
+import type { AdrId, ConnectionId, Diagram, DiagramId, Model, TransitionId } from './normalised'
 import { decisionsOf } from './normalised'
 import type {
   DesignConnection, DesignElement, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
@@ -85,6 +86,11 @@ export type CommandBody =
   | { type: 'decision.add'; decision: Adr; at?: number }
   | { type: 'decision.update'; id: AdrId; patch: Partial<Adr> }
   | { type: 'decision.remove'; id: AdrId }
+
+  // --- plans (ADR-0009) ----------------------------------------------------
+  | { type: 'transition.add'; transition: Transition; at?: number }
+  | { type: 'transition.update'; id: TransitionId; patch: Partial<Transition> }
+  | { type: 'transition.remove'; id: TransitionId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }

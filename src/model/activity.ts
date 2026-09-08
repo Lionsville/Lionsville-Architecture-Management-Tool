@@ -20,7 +20,7 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
-import { decisionsOf } from './normalised'
+import { decisionsOf, transitionsOf } from './normalised'
 import type { Model } from './normalised'
 
 export type StepSummary = {
@@ -114,6 +114,13 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
       return { key: 'activity.decisionChanged', name: decisionsOf(before)[lead.id]?.title }
     case 'decision.remove':
       return { key: 'activity.decisionRemoved', name: decisionsOf(before)[lead.id]?.title }
+
+    case 'transition.add':
+      return { key: 'activity.planAdded', name: lead.transition.title }
+    case 'transition.update':
+      return { key: 'activity.planChanged', name: transitionsOf(before)[lead.id]?.title }
+    case 'transition.remove':
+      return { key: 'activity.planRemoved', name: transitionsOf(before)[lead.id]?.title }
 
     case 'project.settings':
       return { key: 'activity.projectSettings' }

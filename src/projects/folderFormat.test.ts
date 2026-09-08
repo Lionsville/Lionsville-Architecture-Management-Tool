@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Adr } from '../decisions/adr'
 import type { DesignElement } from '../model'
+import type { Transition } from '../model/transition'
 import type { HostModel } from '../model/fromInterchange'
 import { stableJson, textFromBytes } from './fileText'
 import {
@@ -20,6 +21,15 @@ const REF: ProjectRef = { group: 'acme-logistics', project: 'landscape' }
 
 function element(id: string, name: string, over: Partial<DesignElement> = {}): DesignElement {
   return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over }
+}
+
+const PLAN: Transition = {
+  id: 'tr-1', number: 1, title: 'Replace the warehouse system', status: 'agreed',
+  from: '2027-01-15', to: '2028-01-31', owner: 'Logistics IT',
+  elements: [{ elementId: 'crews', role: 'retires' }],
+  decisions: ['adr-1'],
+  milestones: [{ date: '2027-04-01', name: 'Cutover begins' }],
+  body: '## Goal\n\nOne system.',
 }
 
 const DECISION: Adr = {
@@ -47,6 +57,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
       { id: 'containers', kind: 'container', name: 'Crews · containers', placements: [] },
     ],
     decisions: [DECISION],
+    transitions: [PLAN],
     explicitFields: { crews: { lifecycle: true } },
     ...(over.model ?? {}),
   }
@@ -93,6 +104,7 @@ describe('projectFiles', () => {
       'logos/own.svg',
       'model.json',
       'project.json',
+      'transitions/0001-replace-the-warehouse-system.md',
     ])
   })
 
@@ -255,6 +267,23 @@ describe('projectFromFolder', () => {
       .toEqual(['l7', 'containers', 'extra'])
   })
 
+  it('files a plan as its own markdown file, and reads it back', () => {
+    const files = projectFiles(project())
+    expect(textOf(files, 'transitions/0001-replace-the-warehouse-system.md'))
+      .toContain('# TR-0001 — Replace the warehouse system')
+    expect(projectFromFolder(files, REF)?.model.transitions).toEqual([PLAN])
+  })
+
+  it('says nothing rather than nothing-at-all for a project with no plans', () => {
+    const back = projectFromFolder(projectFiles(project({ model: { transitions: [] } as never })), REF)
+    expect(back?.model && 'transitions' in back.model).toBe(false)
+  })
+
+  it('ignores a README in the transitions folder rather than reading it as a plan', () => {
+    const files = [...projectFiles(project()), { path: 'transitions/README.md', text: 'Notes.\n' }]
+    expect(projectFromFolder(files, REF)?.model.transitions).toHaveLength(1)
+  })
+
   it('reads the pictures back off the folder, which is their whole index', () => {
     const back = projectFromFolder(projectFiles(project()), REF)
     expect(back?.imageLibrary).toEqual([{ file: 'cutover.png', url: 'data:image/png;base64,AQI=' }])
@@ -386,6 +415,7 @@ describe('isFormatPath', () => {
       'README.md', 'notes.txt', '.git/config', 'decisions/README.md', 'logos/source.ai',
       'diagrams/old/l7.json', 'budget.xlsx', 'docs/pictures/one.png', '../escape.json',
       'images/source.psd', 'images/notes.md', 'images/nested/one.png',
+      'transitions/README.md', 'transitions/notes.txt', 'transitions/old/0001-x.md',
     ]) {
       expect(isFormatPath(path), path).toBe(false)
     }

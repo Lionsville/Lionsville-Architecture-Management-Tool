@@ -20,9 +20,11 @@ export type {
  * beside it. `fromArrays`/`toArrays` are the boundary — everything above this
  * line is the shape on disk, everything below it the shape in memory.
  */
-export type { Model, Diagram, ModelOrder, DiagramOrder, ConnectionId, DiagramId, AdrId } from './normalised'
+export type {
+  Model, Diagram, ModelOrder, DiagramOrder, ConnectionId, DiagramId, AdrId, TransitionId,
+} from './normalised'
 export {
-  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf,
+  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf,
   elementList, connectionList, diagramList, decisionList, placementList, routeList,
 } from './normalised'
 
@@ -32,6 +34,16 @@ export {
   phaseAt, today,
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'
+
+/** A plan for changing the landscape (ADR-0009). */
+export {
+  addDays, elementsWithRole, isTransitionFinished, nextTransitionNumber, setTransitionStatus,
+  shiftDays, sortTransitions, transitionDays, transitionLabel, TRANSITION_STATUSES,
+  transitionsForElement, transitionsFrom as transitionStatusesFrom,
+} from './transition'
+export type {
+  Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus,
+} from './transition'
 
 /** The one vocabulary for changing a model, and the one writer (ADR-0002). */
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'

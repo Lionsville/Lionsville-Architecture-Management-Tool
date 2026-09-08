@@ -33,10 +33,12 @@ import type {
 } from './types'
 import type { Adr } from './adr'
 import type { HostModel } from './fromInterchange'
+import type { Transition } from './transition'
 
 export type ConnectionId = string
 export type DiagramId = string
 export type AdrId = string
+export type TransitionId = string
 
 /** What the file's array order encoded implicitly, said out loud. */
 export type ModelOrder = {
@@ -44,6 +46,7 @@ export type ModelOrder = {
   connections: ConnectionId[]
   diagrams: DiagramId[]
   decisions: AdrId[]
+  transitions: TransitionId[]
 }
 
 /** A diagram's own two lists, in the order the file had them. */
@@ -59,18 +62,25 @@ export type Diagram = Omit<DesignDiagram, 'placements' | 'edgeRoutes'> & {
   order: DiagramOrder
 }
 
-export type Model = Omit<HostModel, 'elements' | 'connections' | 'diagrams' | 'decisions'> & {
+export type Model = Omit<HostModel, 'elements' | 'connections' | 'diagrams' | 'decisions' | 'transitions'> & {
   elements: Record<ElementId, DesignElement>
   connections: Record<ConnectionId, DesignConnection>
   diagrams: Record<DiagramId, Diagram>
   /** Present exactly when the file carried the key; see the note at the top. */
   decisions?: Record<AdrId, Adr>
+  /** The plans (ADR-0009). Absent exactly as `decisions` is, and for the same reason. */
+  transitions?: Record<TransitionId, Transition>
   order: ModelOrder
 }
 
 /** The decisions on this model, whether or not the file carried the key. */
 export function decisionsOf(model: Model): Record<AdrId, Adr> {
   return model.decisions ?? {}
+}
+
+/** The plans on this model, whether or not the file carried the key. */
+export function transitionsOf(model: Model): Record<TransitionId, Transition> {
+  return model.transitions ?? {}
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
@@ -189,11 +199,18 @@ export function fromArrays(host: HostModel): Model {
     out.decisions = decisions
     decisionOrder = order
   }
+  let transitionOrder: TransitionId[] = []
+  if (host.transitions !== undefined) {
+    const [transitions, order] = index(host.transitions, (t) => t.id)
+    out.transitions = transitions
+    transitionOrder = order
+  }
   out.order = {
     elements: elementOrder,
     connections: connectionOrder,
     diagrams: diagramOrder,
     decisions: decisionOrder,
+    transitions: transitionOrder,
   }
   return out
 }
@@ -206,6 +223,9 @@ export function toArrays(model: Model): HostModel {
   out.diagrams = model.order.diagrams.map((id) => fromDiagram(model.diagrams[id]))
   if (model.decisions !== undefined) {
     out.decisions = unindex(model.decisions, model.order.decisions)
+  }
+  if (model.transitions !== undefined) {
+    out.transitions = unindex(model.transitions, model.order.transitions)
   }
   delete out.order
   return out

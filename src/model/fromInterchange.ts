@@ -12,6 +12,7 @@
  */
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramPlacement, Layer7Zone } from '.'
 import type { Adr } from './adr'
+import type { Transition } from './transition'
 
 /**
  * The document's own shapes, deliberately not the model's: everything is
@@ -114,6 +115,14 @@ export interface HostExtras {
    * is a different thing from the records themselves.
    */
   decisions?: Adr[]
+  /**
+   * The project's plans (ADR-0009).
+   *
+   * Beside `decisions` and for the same reason: they belong to the project, not
+   * to the interchange document, which is a contract with other tools and knows
+   * nothing about them.
+   */
+  transitions?: Transition[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

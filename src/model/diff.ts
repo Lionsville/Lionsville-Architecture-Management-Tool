@@ -18,12 +18,14 @@
  */
 import type { HostModel } from './fromInterchange'
 import type { Adr } from './adr'
+import type { Transition } from './transition'
 import type { DesignConnection, DesignDiagram, DesignElement, DiagramPlacement } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
-export type ChangeSubject = 'element' | 'connection' | 'diagram' | 'decision' | 'placement'
+export type ChangeSubject =
+  | 'element' | 'connection' | 'diagram' | 'decision' | 'transition' | 'placement'
 
 export type ModelChange = {
   kind: ChangeKind
@@ -146,7 +148,17 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
     changes.push(...compare<Adr>('decision', id, was, now, (held) => held.title))
   }
 
-  const order: ChangeSubject[] = ['element', 'connection', 'diagram', 'decision', 'placement']
+  // Plans after the decisions they rest on (ADR-0009), and before the geometry.
+  const wasPlans = byId(before.transitions ?? [])
+  const nowPlans = byId(after.transitions ?? [])
+  for (const id of ids(wasPlans, nowPlans)) {
+    changes.push(...compare<Transition>(
+      'transition', id, wasPlans.get(id), nowPlans.get(id), (held) => held.title))
+  }
+
+  const order: ChangeSubject[] = [
+    'element', 'connection', 'diagram', 'decision', 'transition', 'placement',
+  ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }
 
