@@ -9,7 +9,7 @@
  * disk while *keep ours* leaves it alone.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncSide } from '../platform/sync'
 import type { LocalSettings } from '../projects/folderSettings'
@@ -35,12 +35,32 @@ const project = (name = 'Landscape'): ProjectSnapshot => ({
   logoLibrary: [],
 })
 
+/** A promise, and the way to settle it from somewhere else. */
+function deferred() {
+  let settle = () => {}
+  const promise = new Promise<void>((resolve) => { settle = resolve })
+  return { promise, settle }
+}
+
+/**
+ * The seam, and a way to wait for the work rather than for the clock.
+ *
+ * `asked.push` and `asked.resolve` settle the moment the fake is called, and
+ * every test here waits for one inside `act`. That is deterministic where
+ * polling the DOM is not: everything behind a snapshot in this file is
+ * microtasks — a save that writes nothing, a fake that answers at once — and
+ * an awaited `act` drains the microtask queue and flushes React before it
+ * returns, so the notice is on screen by then. `findBy*` would instead race a
+ * one-second timer against a machine running the rest of the suite beside it,
+ * which measures the machine rather than the shell.
+ */
 function fakeHistory(answers: {
   push?: PushOutcome
   pull?: PullOutcome
   resolve?: ResolveOutcome
 } = {}) {
   const calls = { pushes: 0, resolved: [] as SyncSide[], snapshots: 0 }
+  const asked = { push: deferred(), resolve: deferred() }
   const history: ProjectHistory = {
     available: () => Promise.resolve(true),
     keeping: () => Promise.resolve(true),
@@ -52,11 +72,19 @@ function fakeHistory(answers: {
     sync: {
       remote: () => Promise.resolve({ name: 'origin', branch: 'main' }),
       pull: () => Promise.resolve(answers.pull ?? 'done'),
-      push: () => { calls.pushes += 1; return Promise.resolve(answers.push ?? 'done') },
-      resolve: (side) => { calls.resolved.push(side); return Promise.resolve(answers.resolve ?? 'done') },
+      push: () => {
+        calls.pushes += 1
+        asked.push.settle()
+        return Promise.resolve(answers.push ?? 'done')
+      },
+      resolve: (side) => {
+        calls.resolved.push(side)
+        asked.resolve.settle()
+        return Promise.resolve(answers.resolve ?? 'done')
+      },
     },
   }
-  return { history, calls }
+  return { history, calls, asked: { push: asked.push.promise, resolve: asked.resolve.promise } }
 }
 
 function folderSettings(local: LocalSettings): FolderSettingsStore {
@@ -76,15 +104,19 @@ function show(over: Parameters<typeof renderApp>[0] = {}) {
   return { ...renderApp({ projects, initialProject: project(), ...over }), projects }
 }
 
+/** Everything the fakes have queued, carried out and drawn. */
+function settled(work: Promise<void> = Promise.resolve()) {
+  return act(() => work)
+}
+
 /** Take a snapshot through the overflow, the way a person on the web would. */
 async function takeSnapshot() {
+  // The menu offers a snapshot only once the seam has answered `available()`,
+  // which is one microtask; from there every click renders inside `act`.
+  await settled()
   fireEvent.click(screen.getByTestId('overflow-button'))
-  fireEvent.click(await screen.findByText('Snapshot…'))
-  await screen.findByLabelText('What changed')
+  fireEvent.click(screen.getByText('Snapshot…'))
   fireEvent.click(screen.getByText('Take snapshot'))
-  // The dialog closing is the signal; the "taken" toast can be replaced by the
-  // push's own word before a poll sees it.
-  await waitFor(() => expect(screen.queryByLabelText('What changed')).toBeNull())
 }
 
 describe('what the boot’s pull becomes', () => {
@@ -96,9 +128,9 @@ describe('what the boot’s pull becomes', () => {
     expect(screen.queryByTestId('sync-notice')).toBeNull()
   })
 
-  it('a notice, when the remote refused — the folder still opened', async () => {
+  it('a notice, when the remote refused — the folder still opened', () => {
     show({ initialSync: 'credentials' })
-    expect(await screen.findByText(/refused this machine/)).toBeDefined()
+    expect(screen.getByText(/refused this machine/)).toBeDefined()
     expect(screen.getByTestId('editor')).toBeDefined()
   })
 
@@ -115,15 +147,16 @@ describe('the push after a snapshot', () => {
     const held = fakeHistory({ push: 'done' })
     show({ history: held.history, folderSettings: pushing })
     await takeSnapshot()
-    await waitFor(() => expect(held.calls.pushes).toBe(1))
-    expect(await screen.findByText('Pushed to the remote.')).toBeDefined()
+    await settled(held.asked.push)
+    expect(held.calls.pushes).toBe(1)
+    expect(screen.getByText('Pushed to the remote.')).toBeDefined()
   })
 
   it('does not happen when this machine does not say so', async () => {
     const held = fakeHistory()
     show({ history: held.history, folderSettings: quiet })
     await takeSnapshot()
-    await act(() => Promise.resolve())
+    await settled()
     expect(held.calls.pushes).toBe(0)
   })
 
@@ -131,7 +164,7 @@ describe('the push after a snapshot', () => {
     const held = fakeHistory()
     show({ history: held.history })
     await takeSnapshot()
-    await act(() => Promise.resolve())
+    await settled()
     expect(held.calls.pushes).toBe(0)
   })
 
@@ -139,7 +172,8 @@ describe('the push after a snapshot', () => {
     const held = fakeHistory({ push: 'unreachable' })
     show({ history: held.history, folderSettings: pushing })
     await takeSnapshot()
-    expect(await screen.findByText(/was not pushed/)).toBeDefined()
+    await settled(held.asked.push)
+    expect(screen.getByText(/was not pushed/)).toBeDefined()
     expect(held.calls.snapshots).toBe(1)
     expect(screen.queryByTestId('sync-notice')).toBeNull()
   })
@@ -148,7 +182,8 @@ describe('the push after a snapshot', () => {
     const held = fakeHistory({ push: 'rejected' })
     show({ history: held.history, folderSettings: pushing })
     await takeSnapshot()
-    expect(await screen.findByTestId('sync-notice')).toBeDefined()
+    await settled(held.asked.push)
+    expect(screen.getByTestId('sync-notice')).toBeDefined()
   })
 })
 
@@ -160,9 +195,10 @@ describe('the two answers', () => {
     await view.projects.save(project('From the remote'))
     fireEvent.click(screen.getByText('Take theirs'))
 
-    await waitFor(() => expect(held.calls.resolved).toEqual(['theirs']))
-    await waitFor(() => expect(screen.queryByTestId('sync-notice')).toBeNull())
-    expect(await screen.findByText('From the remote')).toBeDefined()
+    await settled(held.asked.resolve)
+    expect(held.calls.resolved).toEqual(['theirs'])
+    expect(screen.queryByTestId('sync-notice')).toBeNull()
+    expect(screen.getByText('From the remote')).toBeDefined()
   })
 
   it('keep ours: our version stands, unread and unmoved', async () => {
@@ -171,8 +207,9 @@ describe('the two answers', () => {
     await view.projects.save(project('From the remote'))
     fireEvent.click(screen.getByText('Keep ours'))
 
-    await waitFor(() => expect(held.calls.resolved).toEqual(['ours']))
-    await waitFor(() => expect(screen.queryByTestId('sync-notice')).toBeNull())
+    await settled(held.asked.resolve)
+    expect(held.calls.resolved).toEqual(['ours'])
+    expect(screen.queryByTestId('sync-notice')).toBeNull()
     expect(screen.getByText('Landscape')).toBeDefined()
     expect(screen.queryByText('From the remote')).toBeNull()
     // Not pushed: this machine did not say so.
@@ -183,14 +220,16 @@ describe('the two answers', () => {
     const held = fakeHistory()
     show({ initialSync: 'diverged', history: held.history, folderSettings: pushing })
     fireEvent.click(screen.getByText('Keep ours'))
-    await waitFor(() => expect(held.calls.pushes).toBe(1))
+    await settled(held.asked.push)
+    expect(held.calls.pushes).toBe(1)
   })
 
   it('a refusal leaves the folder as it was, and the question standing', async () => {
     const held = fakeHistory({ resolve: 'unreachable' })
     show({ initialSync: 'diverged', history: held.history, folderSettings: quiet })
     fireEvent.click(screen.getByText('Take theirs'))
-    expect(await screen.findByText(/Nothing was changed/)).toBeDefined()
+    await settled(held.asked.resolve)
+    expect(screen.getByText(/Nothing was changed/)).toBeDefined()
     expect(screen.getByTestId('sync-notice')).toBeDefined()
   })
 })
