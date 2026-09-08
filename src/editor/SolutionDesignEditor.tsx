@@ -1245,6 +1245,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               renameRequest={renameRequest}
               onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
               onOpenDocumentation={openDocumentation}
+              onReplace={readOnly ? undefined : props.plans?.onReplace}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector
@@ -1351,10 +1352,12 @@ function EditorBody(props: SolutionDesignEditorProps) {
               }}
               renderMarkdown={props.renderMarkdown}
               onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
+              onReplace={readOnly ? undefined : props.plans?.onReplace}
               layout="stacked"
               hideDescription
             />
           )}
+          plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
           onNavigate={openDocumentation}
           onClose={() => setDocumentationId(undefined)}
           onRequestDelete={() => {

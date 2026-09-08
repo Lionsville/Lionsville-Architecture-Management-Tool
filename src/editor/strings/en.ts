@@ -285,6 +285,7 @@ export const EN = {
   'field.date.retired': 'Gone on',
   'field.successor': 'Replaced by',
   'field.owner': 'Owner',
+  'field.replace': 'Replace…',
   'field.validFrom': 'Line valid from',
   'field.validUntil': 'Line valid until',
   'field.managed': 'Managed',

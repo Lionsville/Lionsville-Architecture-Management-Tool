@@ -36,6 +36,8 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
+import { transitionLabel, transitionsForElement } from '../../model/transition';
+import type { Transition } from '../../model/transition';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import {
@@ -103,6 +105,11 @@ export interface DocumentationPageProps {
   onAddImage?(file: File): Promise<string | undefined>;
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
+  /**
+   * The plans over the landscape (ADR-0010), so the page can list the ones
+   * that name this element above its fields. Absent = no such section.
+   */
+  plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
 }
 
 export function DocumentationPage(props: DocumentationPageProps) {
@@ -167,6 +174,10 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const text = mode === 'edit' ? draft : (element.description ?? '');
   const source = useMemo(() => linkElementRefs(text, model.elements), [text, model.elements]);
   const headings = useMemo(() => outline(text).filter((h) => h.level <= 3), [text]);
+  const plansHere = useMemo(
+    () => (props.plans ? transitionsForElement(props.plans.list, element.id) : []),
+    [props.plans, element.id],
+  );
   const groups = useMemo(() => documentedElements(model, diagram), [model, diagram]);
   const order = useMemo(() => groups.flatMap((g) => g.elements.map((e) => e.id)), [groups]);
   const position = order.indexOf(element.id);
@@ -466,8 +477,22 @@ export function DocumentationPage(props: DocumentationPageProps) {
           </Box>
         </Box>
 
-        {/* right: the element's own fields */}
+        {/* right: the plans that name it, then the element's own fields */}
         <Box sx={{ borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
+          {plansHere.length > 0 && (
+            <Box data-testid="doc-plans" sx={{ mb: 2 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.plans')}</Typography>
+              {plansHere.map((plan) => (
+                <Typography
+                  key={plan.id}
+                  sx={{ fontSize: 13, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+                  onClick={() => props.plans?.onOpen(plan.id)}
+                >
+                  {transitionLabel(plan)} {plan.title}
+                </Typography>
+              ))}
+            </Box>
+          )}
           {props.renderInspector?.(element, { readOnly: readOnly || mode === 'read' })}
         </Box>
       </Box>

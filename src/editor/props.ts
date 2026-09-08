@@ -18,6 +18,7 @@ import type {
   DesignModel, DiagramSettings, ElementId,
   Rect, UploadedLogo,
 } from '../model/types';
+import type { Transition } from '../model/transition';
 import type { WindowChrome } from '../platform/windowChrome';
 
 /**
@@ -284,12 +285,28 @@ export interface EditorHistoryRequests {
   onDescription?(elementId: ElementId): void;
 }
 
+/**
+ * The plans over the landscape (ADR-0009, ADR-0010), as far as the editor
+ * needs them: which ones touch an element, so the datasheet can list them;
+ * how to open one; and how to start a replacement from an element. The editor
+ * draws none of this itself — a plan's page and the replace dialog are the
+ * host's — so a canvas mounted in a test with no plans shows nothing about
+ * them.
+ */
+export interface EditorPlans {
+  list: readonly Transition[];
+  onOpen(transitionId: string): void;
+  /** Absent in read-only mode: the inspector then offers no Replace… button. */
+  onReplace?(elementId: ElementId): void;
+}
+
 export interface SolutionDesignEditorProps {
   document: EditorDocument;
   editing: EditorEditing;
   diagrams: EditorDiagramActions;
   history?: EditorHistoryRequests;
   requests?: EditorRequests;
+  plans?: EditorPlans;
   layout?: EditorLayoutReports;
   preferences?: EditorPreferencesSeam;
   language?: EditorLanguage;

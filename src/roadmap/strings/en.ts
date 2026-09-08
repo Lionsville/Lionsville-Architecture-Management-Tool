@@ -81,6 +81,26 @@ export const EN = {
   'plan.notPlanned': 'Not yet planned',
   'plan.portAll': 'Port all remaining',
   'plan.unport': 'Take back',
+  // Replace… (ADR-0010): the three inputs, and the words the gesture writes.
+  'replace.title': 'Replace {name}',
+  'replace.arrives': 'Replaced by',
+  'replace.newApplication': 'A new application, in the image of this one',
+  'replace.newName': '{name} (new)',
+  'replace.existing': 'One that already exists',
+  'replace.which': 'Which one',
+  'replace.shape': 'What happens to it',
+  'replace.goes': '{name} goes on cutover',
+  'replace.stays': 'Part of it moves; {name} stays',
+  'replace.also': 'Also retiring into it',
+  'replace.alsoField': 'Another application that retires into it',
+  'replace.shadowFrom': 'Shadow run from',
+  'replace.cutover': 'Cutover',
+  'replace.help': 'From the shadow run the new one is live and taps the old for its data; the interfaces still land on the old one until each is moved. On cutover the old one is gone and the tap closes. Which interface moves when is set on the plan.',
+  'replace.start': 'Start the plan',
+  'replace.planTitle': 'Replace {from} with {to}',
+  'replace.tap': 'shadow tap',
+  'replace.shadowMilestone': 'Shadow run starts',
+  'replace.cutoverMilestone': 'Cutover',
   'plan.template': `## Goal
 
 ## Scope

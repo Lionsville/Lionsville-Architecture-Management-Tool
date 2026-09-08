@@ -20,8 +20,8 @@ import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
 import {
-  addDays, decisionsToCommands, isDay, nextTransitionNumber, portCommands, portsOf, shiftDays,
-  transaction, transitionList, transitionsOf, unportCommands,
+  addDays, decisionsToCommands, isDay, nextTransitionNumber, portCommands, portsOf, replacementCommands,
+  shiftDays, transaction, transitionList, transitionsOf, unportCommands,
 } from '../model'
 import type { Command } from '../model'
 import type { EditorPreferences } from '../editor'
@@ -45,8 +45,8 @@ import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
-import { PlanPage, RoadmapPage, planBodyTemplate } from '../roadmap'
-import type { PlanActions, RoadmapActions } from '../roadmap'
+import { PlanPage, ReplaceDialog, RoadmapPage, planBodyTemplate } from '../roadmap'
+import type { PlanActions, ReplaceAnswer, RoadmapActions } from '../roadmap'
 import { imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
@@ -377,6 +377,8 @@ export function ProjectWorkspace({
   // The plan being read on its own page (ADR-0010); over the roadmap, which
   // stays open underneath so closing the plan lands back on the axis.
   const [planId, setPlanId] = useState<string | undefined>(undefined)
+  // The element a replacement is being started from (ADR-0010).
+  const [replacing, setReplacing] = useState<string | undefined>(undefined)
   // The clock, read once per render of the workspace rather than per component:
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
@@ -550,6 +552,36 @@ export function ProjectWorkspace({
     },
   }), [session])
 
+  /**
+   * Replace… answered (ADR-0010): the new element, the dates, the successor,
+   * the tap and the plan, as one transaction — then the plan's page, because
+   * the next thing to do is on it.
+   */
+  const startReplacement = useCallback((answer: ReplaceAnswer) => {
+    const current = session.current()
+    const from = current.elements.find((e) => e.id === answer.from[0]?.elementId)
+    const to = answer.to
+    const toName = 'name' in to ? to.name : current.elements.find((e) => e.id === to.elementId)?.name ?? ''
+    const { commands, planId: id } = replacementCommands(current, {
+      ...answer,
+      words: {
+        planTitle: s('replace.planTitle', { from: from?.name ?? '', to: toName }),
+        tapLabel: s('replace.tap'),
+        shadowMilestone: s('replace.shadowMilestone'),
+        cutoverMilestone: s('replace.cutoverMilestone'),
+        body: planBodyTemplate(s),
+        owner: from?.owner,
+      },
+    }, {
+      element: (name) => session.ids.element(name),
+      connection: () => session.ids.connection(),
+      transition: makeId('tr'),
+    }, nextTransitionNumber(transitionList(session.indexed())))
+    session.dispatch(transaction(commands))
+    setReplacing(undefined)
+    setPlanId(id)
+  }, [session, makeId, s])
+
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {
     const commands = decisionsToCommands(session.indexed(), next)
     if (commands.length) session.dispatch(transaction(commands))
@@ -629,6 +661,11 @@ export function ProjectWorkspace({
           }}
           history={historyRequests}
           requests={{ focus: focusRequest, documentation: docRequest }}
+          plans={{
+            list: session.model.transitions ?? [],
+            onOpen: (id) => setPlanId(id),
+            onReplace: (elementId) => setReplacing(elementId),
+          }}
           layout={{ onError: onLayoutError, onSettled: session.onLayoutSettled }}
           preferences={{ initial: editorPreferences, onChange: onEditorPreferencesChange }}
           // No `onChange`: the language is chosen in the preferences dialog
@@ -719,6 +756,12 @@ export function ProjectWorkspace({
         actions={roadmapActions}
         onClose={() => setRoadmapOpen(false)}
         windowChrome={windowChrome}
+      />
+      <ReplaceDialog
+        subject={replacing ? session.model.elements.find((e) => e.id === replacing) : undefined}
+        model={session.model}
+        onCancel={() => setReplacing(undefined)}
+        onConfirm={startReplacement}
       />
       <PlanPage
         open={planId !== undefined}

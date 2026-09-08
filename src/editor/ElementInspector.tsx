@@ -90,6 +90,12 @@ export interface ElementInspectorProps {
    * beside the description, which is the state inside the page itself.
    */
   onOpenDocumentation?(elementId: ElementId): void;
+  /**
+   * Start a replacement of this element (ADR-0010): the host opens its dialog.
+   * Absent = no Replace… button, which is read-only mode and a host with no
+   * plans.
+   */
+  onReplace?(elementId: ElementId): void;
   /** The page shows the description as the page; it must not show it twice. */
   hideDescription?: boolean;
   /**
@@ -327,22 +333,33 @@ export function ElementInspector(props: ElementInspectorProps) {
             ))}
           </Box>
 
-          <TextField
-            select
-            label={t('field.successor')}
-            value={element.successorId ?? ''}
-            disabled={readOnly}
-            onChange={(e) => update({ successorId: e.target.value || undefined })}
-          >
-            <MenuItem value="">{t('field.notSet')}</MenuItem>
-            {props.model.elements
-              // Anything but itself: a successor is another thing in this
-              // landscape, and a self-reference would be a cycle in the checks.
-              .filter((other) => other.id !== element.id && other.kind === element.kind)
-              .map((other) => (
-                <MenuItem key={other.id} value={other.id}>{other.name}</MenuItem>
-              ))}
-          </TextField>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <TextField
+              select
+              label={t('field.successor')}
+              value={element.successorId ?? ''}
+              disabled={readOnly}
+              sx={{ flex: 1 }}
+              onChange={(e) => update({ successorId: e.target.value || undefined })}
+            >
+              <MenuItem value="">{t('field.notSet')}</MenuItem>
+              {props.model.elements
+                // Anything but itself: a successor is another thing in this
+                // landscape, and a self-reference would be a cycle in the checks.
+                .filter((other) => other.id !== element.id && other.kind === element.kind)
+                .map((other) => (
+                  <MenuItem key={other.id} value={other.id}>{other.name}</MenuItem>
+                ))}
+            </TextField>
+            {/* The gesture that sets this field and everything around it
+                (ADR-0010). Beside the field rather than under it, so "replaced
+                by" and "replace…" read as one question. */}
+            {!readOnly && props.onReplace && (
+              <Button size="small" variant="outlined" onClick={() => props.onReplace?.(element.id)}>
+                {t('field.replace')}
+              </Button>
+            )}
+          </Box>
 
           <TextField
             label={t('field.owner')}

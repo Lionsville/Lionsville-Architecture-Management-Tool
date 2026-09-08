@@ -31,6 +31,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.decisions': 'Besluiten en open punten',
   'field.openDocumentation': 'Als pagina openen',
   'doc.title': 'Documentatie',
+  'doc.plans': 'Plannen',
   'doc.read': 'Lezen',
   'doc.edit': 'Bewerken',
   'doc.close': 'Documentatie sluiten',

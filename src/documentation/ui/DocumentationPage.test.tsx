@@ -110,6 +110,29 @@ function transfer(files: File[], text = '') {
   return { files, items: [], types: files.length ? ['Files'] : [], getData: () => text };
 }
 
+describe('DocumentationPage — the plans that name the element (ADR-0010)', () => {
+  const plan = (id: string, title: string, elementId: string) => ({
+    id, number: Number(id.slice(-1)), title, status: 'agreed' as const,
+    elements: [{ elementId, role: 'retires' as const }], decisions: [], milestones: [], body: '',
+  });
+
+  it('lists them above the fields and opens one through the host', () => {
+    const onOpen = vi.fn();
+    const main = element();
+    setup({ element: main, plans: { list: [plan('tr-1', 'Replace it', main.id), plan('tr-2', 'Elsewhere', 'other')], onOpen } });
+    const section = screen.getByTestId('doc-plans');
+    expect(section.textContent).toContain('TR-0001 Replace it');
+    expect(section.textContent).not.toContain('Elsewhere');
+    fireEvent.click(screen.getByText('TR-0001 Replace it'));
+    expect(onOpen).toHaveBeenCalledWith('tr-1');
+  });
+
+  it('shows no section when nothing names the element', () => {
+    setup({ plans: { list: [], onOpen: vi.fn() } });
+    expect(screen.queryByTestId('doc-plans')).toBeNull();
+  });
+});
+
 describe('DocumentationPage', () => {
   it('offers the description\'s history only where the host has one to show (ADR-0008)', () => {
     setup();

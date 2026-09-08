@@ -69,6 +69,26 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.notPlanned': 'Nog niet gepland',
   'plan.portAll': 'Rest overzetten',
   'plan.unport': 'Terugnemen',
+  // Replace… (ADR-0010): the three inputs, and the words the gesture writes.
+  'replace.title': '{name} vervangen',
+  'replace.arrives': 'Vervangen door',
+  'replace.newApplication': 'Een nieuwe applicatie, naar het beeld van deze',
+  'replace.newName': '{name} (nieuw)',
+  'replace.existing': 'Een die al bestaat',
+  'replace.which': 'Welke',
+  'replace.shape': 'Wat ermee gebeurt',
+  'replace.goes': '{name} verdwijnt bij de cutover',
+  'replace.stays': 'Een deel verhuist; {name} blijft',
+  'replace.also': 'Gaat er ook in op',
+  'replace.alsoField': 'Nog een applicatie die erin opgaat',
+  'replace.shadowFrom': 'Schaduwdraaien vanaf',
+  'replace.cutover': 'Cutover',
+  'replace.help': 'Vanaf het schaduwdraaien is de nieuwe live en tapt die de oude af voor zijn data; de koppelingen komen nog op de oude aan tot elk is verhuisd. Op de cutover is de oude weg en sluit de tap. Welke koppeling wanneer verhuist staat op het plan.',
+  'replace.start': 'Plan starten',
+  'replace.planTitle': '{from} vervangen door {to}',
+  'replace.tap': 'schaduwtap',
+  'replace.shadowMilestone': 'Schaduwdraaien begint',
+  'replace.cutoverMilestone': 'Cutover',
   'plan.template': `## Doel
 
 ## Scope

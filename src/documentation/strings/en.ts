@@ -32,6 +32,7 @@ export const EN = {
   'doc.decisions': 'Decisions and open issues',
   'field.openDocumentation': 'Open as a page',
   'doc.title': 'Documentation',
+  'doc.plans': 'Plans',
   'doc.read': 'Read',
   'doc.edit': 'Edit',
   'doc.close': 'Close documentation',

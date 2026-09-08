@@ -274,6 +274,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.date.retired': 'Weg op',
   'field.successor': 'Vervangen door',
   'field.owner': 'Eigenaar',
+  'field.replace': 'Vervangen…',
   'field.validFrom': 'Koppeling geldig vanaf',
   'field.validUntil': 'Koppeling geldig tot',
   'field.managed': 'Beheerd',

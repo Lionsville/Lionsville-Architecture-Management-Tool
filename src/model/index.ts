@@ -64,6 +64,8 @@ export type { RestoreRefusal, RestoreResult, RestoreSubject } from './restore'
 export { restoreCommand } from './restore'
 export { lastDayBefore, portCommands, portProgress, portsOf, twinOf, unportCommands } from './porting'
 export type { Port } from './porting'
+export { replacementCommands } from './replacement'
+export type { Replacement, ReplacementIds, ReplacementRequest } from './replacement'
 
 /**
  * The one definition of "this route row stores something". A row without it is

@@ -59,7 +59,7 @@ function makeActions(): {
 
 function renderInspector(
   el: DesignElement,
-  opts: { readOnly?: boolean; dia?: DesignDiagram } = {},
+  opts: { readOnly?: boolean; dia?: DesignDiagram; onReplace?: (id: string) => void } = {},
 ) {
   const dia = opts.dia ?? diagram();
   const { actions, updateElement, setDomainGroup } = makeActions();
@@ -72,6 +72,7 @@ function renderInspector(
         readOnly={opts.readOnly ?? false}
         actions={actions}
         onRequestDelete={vi.fn()}
+        onReplace={opts.onReplace}
       />
     </ThemeProvider>,
   );
@@ -353,5 +354,22 @@ describe('ElementInspector — actor stickman shape (U7c/D11)', () => {
     fireEvent.mouseDown(screen.getByLabelText('Shape'));
     fireEvent.click(within(screen.getByRole('listbox')).getByText('Stickman'));
     expect(updateElement).toHaveBeenCalledWith('e1', { shapeVariant: 'figure' });
+  });
+});
+
+describe('ElementInspector — Replace… (ADR-0010)', () => {
+  it('offers the gesture beside "Replaced by" when the host can start one', () => {
+    const onReplace = vi.fn();
+    renderInspector(element({ id: 'wms' }), { onReplace });
+    fireEvent.click(screen.getByRole('button', { name: 'Replace…' }));
+    expect(onReplace).toHaveBeenCalledWith('wms');
+  });
+
+  it('offers nothing without a host to answer it, or when read-only', () => {
+    renderInspector(element());
+    expect(screen.queryByRole('button', { name: 'Replace…' })).toBeNull();
+    cleanup();
+    renderInspector(element(), { readOnly: true, onReplace: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Replace…' })).toBeNull();
   });
 });
