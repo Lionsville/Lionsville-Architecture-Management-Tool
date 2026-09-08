@@ -84,6 +84,30 @@ function safeName(id: string, taken: Set<string>): string {
   return name
 }
 
+/**
+ * Where an element's description is filed as prose, or nowhere.
+ *
+ * Only when the element's id can BE the file name — nothing else maps the file
+ * back to the element. Any other element keeps its description in `model.json`,
+ * where it is at least safe. Said once, here, so the writer and anybody asking
+ * "which file is this description" (`historyPath.ts`) cannot disagree.
+ */
+export function descriptionPath(elementId: string): string | undefined {
+  return SAFE_NAME.test(elementId) ? `${DOCS_FOLDER}/${elementId}.md` : undefined
+}
+
+/**
+ * The file stem each diagram is written under, by id.
+ *
+ * Order matters and is the model's: two ids that slug to the same name are
+ * told apart by who came first, so the stems are only right when worked out
+ * over the whole list, which is why this is a map and not a function of one id.
+ */
+export function diagramStems(diagrams: readonly { id: string }[]): Map<string, string> {
+  const taken = new Set<string>()
+  return new Map(diagrams.map((diagram) => [diagram.id, safeName(diagram.id, taken)]))
+}
+
 function byPath(a: FolderFile, b: FolderFile): number {
   return a.path < b.path ? -1 : a.path > b.path ? 1 : 0
 }
@@ -157,12 +181,10 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
   const elements = byId(model.elements).map((element) => {
     const explicit = model.explicitFields?.[element.id]
     const description = element.description
-    // A description is filed as prose only when the element's id can BE the
-    // file name — nothing else maps the file back to the element. Anything
-    // else keeps its description in `model.json`, where it is at least safe.
-    if (description !== undefined && SAFE_NAME.test(element.id)) {
+    const page = descriptionPath(element.id)
+    if (description !== undefined && page) {
       filed.add(element.id)
-      files.push({ path: `${DOCS_FOLDER}/${element.id}.md`, text: markdownFile(description) })
+      files.push({ path: page, text: markdownFile(description) })
     }
     const { description: _filed, ...rest } = element
     return {
@@ -176,9 +198,9 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
     text: stableJson({ connections: byId(model.connections), elements }),
   })
 
-  const diagramNames = new Set<string>()
+  const stems = diagramStems(model.diagrams)
   for (const diagram of model.diagrams) {
-    files.push(...diagramFiles(diagram, safeName(diagram.id, diagramNames)))
+    files.push(...diagramFiles(diagram, stems.get(diagram.id)))
   }
 
   for (const adr of model.decisions ?? []) {

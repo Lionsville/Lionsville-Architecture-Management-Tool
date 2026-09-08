@@ -44,12 +44,25 @@ function numberPrefix(number: number): string {
  */
 export function adrPath(adr: Adr): string {
   const name = `${numberPrefix(adr.number)}-${adr.title.trim() ? slug(adr.title) : 'decision'}.md`
+  return `${adrFolder(adr)}/${name}`
+}
+
+/**
+ * Every path this record has ever been filed at, as one glob.
+ *
+ * The title is in the file name, so a retitled record has moved; the number
+ * is the part that stays. A history of the record (ADR-0008) is a history of
+ * `decisions/0007-*.md`, whatever the record was called at the time.
+ */
+export function adrPathPattern(adr: Pick<Adr, 'number' | 'applicationId'>): string {
+  return `${adrFolder(adr)}/${numberPrefix(adr.number)}-*.md`
+}
+
+function adrFolder(adr: Pick<Adr, 'applicationId'>): string {
   // A folder name is only ever an id we minted. Anything else — an id from an
   // imported document, say — stays flat rather than becoming a path.
   const application = adr.applicationId && KEY_RE.test(adr.applicationId) ? adr.applicationId : undefined
-  return application
-    ? `${DECISIONS_FOLDER}/${application}/${name}`
-    : `${DECISIONS_FOLDER}/${name}`
+  return application ? `${DECISIONS_FOLDER}/${application}` : DECISIONS_FOLDER
 }
 
 function signerRows(signers: readonly AdrSigner[]): Record<string, string>[] {
