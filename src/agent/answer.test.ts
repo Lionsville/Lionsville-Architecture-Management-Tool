@@ -178,12 +178,14 @@ describe('diagrams.list', () => {
 })
 
 describe('decisions.list and decision.read', () => {
-  const ids = (args: unknown) => (read('decisions.list', args) as { decisions: { id: string; scope: string }[] }).decisions
+  const ids = (args: unknown) => (read('decisions.list', args) as { decisions: { id: string; scope: string; label: string }[] }).decisions
 
-  it('lists the three scopes together, the group first', () => {
+  it('lists the three scopes together, the group first, each with the label its scope shows', () => {
     expect(ids({}).map((d) => [d.id, d.scope])).toEqual([
       ['g-1', 'group'], ['adr-1', 'landscape'], ['adr-2', 'application'],
     ])
+    // Numbers are per scope, so two records share ADR-0001 and the scope tells them apart.
+    expect(ids({}).map((d) => d.label)).toEqual(['ADR-0001', 'ADR-0001', 'ADR-0001'])
   })
 
   it('narrows to a scope or an application', () => {

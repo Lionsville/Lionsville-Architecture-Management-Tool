@@ -24,6 +24,7 @@ import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
 import type { DesignConnection, DesignElement, ElementId } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
+import { formatAdrNumber } from '../decisions/adr'
 import { searchAll } from '../search/search'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -188,6 +189,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       const scope = own ? (adr.applicationId ? 'application' : 'landscape') : 'group'
       return json({
         ...adr,
+        label: formatAdrNumber(adr.number),
         scope,
         application: adr.applicationId ? nameOf(model, adr.applicationId) : undefined,
       })
@@ -346,6 +348,7 @@ function decisionLine(adr: Adr, scope: 'group' | 'landscape' | 'application') {
   return {
     id: adr.id,
     number: adr.number,
+    label: formatAdrNumber(adr.number),
     title: adr.title,
     status: adr.status,
     date: adr.date,

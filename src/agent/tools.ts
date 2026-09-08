@@ -145,6 +145,24 @@ const PLAN_LISTS = {
   decisionIds: { type: 'array', description: 'The ids of the decision records it rests on.', items: { type: 'string' } },
 } as const satisfies Record<string, ArgumentSchema>
 
+/** Who a decision was put to. Given whole: the list replaces the list. */
+const SIGNERS: ArgumentSchema = {
+  type: 'array',
+  description: 'The people the decision is put to, replacing the list. Each has a name and may have a role, a verdict and the day of it.',
+  items: {
+    type: 'object',
+    description: 'One signer.',
+    properties: {
+      name: { type: 'string', description: 'Their name.' },
+      role: { type: 'string', description: 'Their role, in a few words.' },
+      verdict: { type: 'string', description: 'What they said, once they have.', enum: ['approved', 'rejected'] },
+      signedAt: { type: 'string', description: 'The day of the verdict, yyyy-mm-dd.' },
+    },
+    required: ['name'],
+    additionalProperties: false,
+  },
+}
+
 /**
  * Three tiers, in the order they earn their keep: read, write, see.
  *
@@ -220,8 +238,9 @@ export const TOOLS = [
     name: 'decisions.list',
     tier: 'read',
     description:
-      'The architecture decision records: id, number, title, status and date. Three scopes: '
-      + 'the group the project is filed under, the landscape, and each application.',
+      'The architecture decision records: id, number, label, title, status and date. Three scopes: '
+      + 'the group the project is filed under, the landscape, and each application — and numbers are '
+      + 'per scope, so name a record in text by its label and scope (ADR-0001 of the landscape), never by the number alone.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -419,17 +438,45 @@ export const TOOLS = [
     description:
       'Add an architecture decision record in the proposed state, numbered after the last one in its list: '
       + 'the landscape\'s, or one application\'s. The body is MADR markdown; leave it out for the template. '
-      + 'Answers with the id and the number.',
+      + 'Name the plans that rest on it and they are linked in the same step. A record is about one '
+      + 'application at most — that is its scope, not a list of elements. Answers with the id and the label.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'What was decided, as a title.' },
         body: { type: 'string', description: 'The record as MADR markdown. Title, status, date and signers are fields, not text.' },
         applicationId: { type: 'string', description: 'The application the decision is about. Absent: the landscape.' },
+        signers: SIGNERS,
+        planIds: { type: 'array', description: 'Plans that rest on this decision; each is linked to it.', items: { type: 'string' } },
       },
       required: ['title'],
       additionalProperties: false,
     },
+  },
+  {
+    name: 'decision.update',
+    tier: 'write',
+    description:
+      'Correct a record that is still proposed or reviewing: its title, its body, its date, or who it was '
+      + 'put to. Accepted, rejected and superseded records are locked; a group\'s records are changed on their page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('decision record'),
+        title: { type: 'string', description: 'A new title.' },
+        body: { type: 'string', description: 'The record as MADR markdown.' },
+        date: { type: 'string', description: 'The day the record carries, yyyy-mm-dd.' },
+        signers: SIGNERS,
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'decision.remove',
+    tier: 'write',
+    description: 'Throw away a record that is still proposed or reviewing. A locked record stays; its number is never reused.',
+    inputSchema: { type: 'object', properties: { id: ID('decision record') }, required: ['id'], additionalProperties: false },
   },
   {
     name: 'decision.transition',

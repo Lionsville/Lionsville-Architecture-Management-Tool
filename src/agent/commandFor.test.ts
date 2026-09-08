@@ -113,6 +113,10 @@ describe('every write, applied and undone', () => {
     ['connections.remove', { ids: ['c1', 'c1'] }],
     ['decision.propose', { title: 'Move CRM to the cloud' }],
     ['decision.propose', { title: 'Split the API', applicationId: 'billing', body: '# Custom' }],
+    ['decision.propose', { title: 'Sign it', signers: [{ name: 'Ada', role: 'CTO', verdict: 'approved', signedAt: '2026-09-01' }] }],
+    ['decision.update', { id: 'adr-1', title: 'Keep the ledger, for now', body: '# Revised', date: '2026-09-05' }],
+    ['decision.update', { id: 'adr-1', signers: [{ name: 'Ada' }] }],
+    ['decision.remove', { id: 'adr-1' }],
     ['decision.transition', { id: 'adr-1', status: 'reviewing' }],
     ['decision.transition', { id: 'adr-3', status: 'accepted' }],
     ['diagram.create', { kind: 'layer7', name: 'Target state' }],
@@ -219,6 +223,52 @@ describe('an element’s dates, successor, owner and look (ADR-0009)', () => {
     const out = commandFor('element.add', { name: 'Ledger', liveOn: '2027-01-01', lifecycle: 'planned', owner: 'Finance', aspects: { dr: 'managed' } }, view(model))
     const after = roundTrip(model, out)
     expect(after.elements.ledger).toMatchObject({ lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' }, owner: 'Finance', aspects: { dr: { status: 'managed' } } })
+  })
+})
+
+describe('a decision record an agent may correct', () => {
+  const model = fromArrays(host)
+
+  it('decision.update changes what is given on a record still being written, and answers with the label', () => {
+    const out = commandFor('decision.update', { id: 'adr-1', title: ' Keep the ledger, twice ', signers: [{ name: 'Ada', role: 'CTO' }] }, view(model))
+    expect(answerOf(out)).toEqual({ id: 'adr-1', label: 'ADR-0001', changed: ['title', 'signers'] })
+    const after = roundTrip(model, out)
+    expect(after.decisions?.['adr-1']).toMatchObject({ title: 'Keep the ledger, twice', signers: [{ name: 'Ada', role: 'CTO' }], body: '# body' })
+  })
+
+  it('decision.update and decision.remove keep a locked record locked, and a group’s where it is', () => {
+    expect(commandFor('decision.update', { id: 'adr-2', title: 'x' }, view(model))).toMatchObject({ refusal: 'agent.locked' })
+    expect(commandFor('decision.remove', { id: 'adr-2' }, view(model))).toMatchObject({ refusal: 'agent.locked' })
+    expect(commandFor('decision.update', { id: 'g-1', title: 'x' }, view(model))).toMatchObject({ refusal: 'agent.readOnly' })
+    expect(commandFor('decision.remove', { id: 'ghost' }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('decision.update', { id: 'adr-1', date: 'yesterday' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('decision.update', { id: 'adr-1', signers: [{ name: ' ' }] }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('decision.remove takes a proposed record and unlinks whoever it superseded', () => {
+    const chain = fromArrays({
+      ...host,
+      decisions: [
+        ...host.decisions!.map((adr) => (adr.id === 'adr-2' ? { ...adr, status: 'superseded' as const, supersededBy: 'adr-1' } : adr)),
+      ],
+    })
+    const out = commandFor('decision.remove', { id: 'adr-1' }, view(chain))
+    expect(answerOf(out)).toMatchObject({ id: 'adr-1', label: 'ADR-0001', removed: true })
+    const after = roundTrip(chain, out)
+    expect(after.decisions?.['adr-1']).toBeUndefined()
+    expect(after.decisions?.['adr-2']).not.toHaveProperty('supersededBy')
+  })
+
+  it('decision.propose links the plans that rest on it in the same step', () => {
+    const withPlan = fromArrays({
+      ...host,
+      transitions: [{ id: 'tr-1', number: 1, title: 'Move', status: 'draft' as const, elements: [], decisions: ['adr-1'], milestones: [], body: '' }],
+    })
+    const out = commandFor('decision.propose', { title: 'Use PostgreSQL', planIds: ['TR-0001', 'tr-1'] }, view(withPlan))
+    expect(answerOf(out)).toMatchObject({ label: 'ADR-0003', plans: ['tr-1'] })
+    const after = roundTrip(withPlan, out)
+    expect(after.transitions?.['tr-1'].decisions).toEqual(['adr-1', 'adr-new-1'])
+    expect(commandFor('decision.propose', { title: 'x', planIds: ['tr-9'] }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
   })
 })
 
