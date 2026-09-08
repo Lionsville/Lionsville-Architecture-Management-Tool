@@ -4,9 +4,9 @@
  *
  * The arithmetic is pinned in `timeline.test.ts` and `checks.test.ts`; what is
  * pinned here is what the page promises: only dated things get a row, the
- * scrubber moves the board behind it, a plan's status offers only the moves the
- * machine allows, and a landscape with no dates says so instead of drawing an
- * empty frame.
+ * scrubber moves the board behind it, a band opens its plan, a window cuts the
+ * axis to a period, and a landscape with no dates says so instead of drawing
+ * an empty frame.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
@@ -53,9 +53,7 @@ function model(over: Partial<DesignModel & { transitions: Transition[] }> = {}) 
 function setup(over: Partial<RoadmapPageProps> = {}) {
   const actions: RoadmapActions = {
     addTransition: vi.fn(),
-    updateTransition: vi.fn(),
-    removeTransition: vi.fn(),
-    shiftTransition: vi.fn(),
+    onOpenPlan: vi.fn(),
     setAsOf: vi.fn(),
     onOpenElement: vi.fn(),
     ...over.actions,
@@ -134,30 +132,42 @@ describe('the checks', () => {
 })
 
 describe('a plan', () => {
-  it('opens beside the axis when it is picked', () => {
-    setup()
-    fireEvent.click(screen.getByText(/Replace the warehouse system/))
-    expect(screen.getByDisplayValue('Replace the warehouse system')).toBeTruthy()
-    expect(screen.getByDisplayValue('Logistics IT')).toBeTruthy()
-    expect(screen.getByText('Retires — Warehouse Management')).toBeTruthy()
-  })
-
-  it('offers only the moves its status machine allows', () => {
-    setup()
-    fireEvent.click(screen.getByText(/Replace the warehouse system/))
-    fireEvent.mouseDown(screen.getByRole('combobox'))
-    const offered = within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent)
-    // From `agreed`: running, draft, abandoned — and where it already is.
-    expect(offered).toEqual(['Draft', 'Agreed', 'Running', 'Abandoned'])
-    expect(offered).not.toContain('Done')
-  })
-
-  it('moves by a number of days as one action', () => {
+  it('is opened from its band', () => {
     const { actions } = setup()
     fireEvent.click(screen.getByText(/Replace the warehouse system/))
-    fireEvent.change(screen.getByLabelText('Days to move it, forwards or back'), { target: { value: '30' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Move by…' }))
-    expect(actions.shiftTransition).toHaveBeenCalledWith('tr-1', 30)
+    expect(actions.onOpenPlan).toHaveBeenCalledWith('tr-1')
+  })
+
+  it('is written with a title and left to the caller to open', () => {
+    const { actions } = setup()
+    fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Move billing' } })
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })
+    expect(actions.addTransition).toHaveBeenCalledWith('Move billing')
+  })
+})
+
+describe('the window', () => {
+  it('cuts the axis to the period chosen, once both ends are set', () => {
+    setup()
+    fireEvent.change(screen.getByLabelText('Show from'), { target: { value: '2029-01-01' } })
+    // One end alone changes nothing: the whole axis still shows.
+    expect(find('[data-testid="track-wms-old"]')).not.toBeNull()
+    fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '2029-12-31' } })
+    // Both applications have settled by 2029 — the old one gone, the new one
+    // live with nothing left to change — and the plan ended in 2028.
+    expect(find('[data-testid="track-wms-old"]')).toBeNull()
+    expect(find('[data-testid="track-wms-new"]')).not.toBeNull()
+    expect(find('[data-testid="plan-tr-1"]')).toBeNull()
+    expect(screen.getAllByText('2029-01-01').length).toBeGreaterThan(0)
+  })
+
+  it('goes back to the whole axis in one click', () => {
+    setup()
+    fireEvent.change(screen.getByLabelText('Show from'), { target: { value: '2029-01-01' } })
+    fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '2029-12-31' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Whole axis' }))
+    expect(find('[data-testid="track-wms-old"]')).not.toBeNull()
   })
 })
 

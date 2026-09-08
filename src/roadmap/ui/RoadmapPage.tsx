@@ -1,11 +1,12 @@
 /**
  * The landscape on a time axis, and the plans over it (ADR-0009).
  *
- * One page rather than two. ADR-0009 sketched a transitions page beside a
- * roadmap page; a plan and a timeline turned out to be the same view — a plan
- * IS a band on the axis, and reading one always means asking what else is
- * happening that month. So the axis is the left three-quarters, the plan you
- * picked is the right, and the findings sit under both.
+ * The axis, the plans as bands over it, and the findings under both. A plan
+ * is opened from its band and read on a page of its own (`PlanPage`,
+ * ADR-0010); this page only draws it. A window a person chooses cuts the axis
+ * to a period and keeps only what is there or changes inside it — a view
+ * state, not a model one, because which years you are looking at is not a
+ * fact about the landscape.
  *
  * The scrubber is the join between this page and the canvas behind it: dragging
  * it sets the open diagram's `asOf`, so the board and the axis cannot disagree
@@ -23,24 +24,20 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
 import Slider from '@mui/material/Slider'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import { addDays, daysBetween, isDay, transitionLabel } from '../../model'
-import type {
-  DesignModel, ElementId, Lifecycle, Transition, TransitionStatus,
-} from '../../model'
-import { TRANSITION_STATUSES, transitionStatusesFrom } from '../../model'
+import type { DesignModel, ElementId, Lifecycle } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon } from '../../widgets/icons'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
-import { fractionOf, roadmapOf } from '../timeline'
+import { fractionOf, roadmapOf, within } from '../timeline'
 
 /** The colour each phase is drawn in. The canvas's own tokens, said once here. */
 const PHASE_COLOUR: Record<Lifecycle, string> = {
@@ -48,14 +45,6 @@ const PHASE_COLOUR: Record<Lifecycle, string> = {
   live: '#2e7d32',
   retiring: '#ed6c02',
   retired: '#9e9e9e',
-}
-
-const STATUS_LABEL: Record<TransitionStatus, StringKey> = {
-  draft: 'plan.draft',
-  agreed: 'plan.agreed',
-  running: 'plan.running',
-  done: 'plan.done',
-  abandoned: 'plan.abandoned',
 }
 
 const CHECK_SENTENCE: Record<Finding['kind'], StringKey> = {
@@ -67,12 +56,10 @@ const CHECK_SENTENCE: Record<Finding['kind'], StringKey> = {
 }
 
 export type RoadmapActions = {
-  /** Write a plan. The caller mints the id and the number. */
+  /** Write a plan. The caller mints the id and the number, and opens it. */
   addTransition(title: string): void
-  updateTransition(id: string, patch: Partial<Transition>): void
-  removeTransition(id: string): void
-  /** Move a plan and the dates it owns by a number of days, as one step. */
-  shiftTransition(id: string, days: number): void
+  /** Read a plan on its own page. */
+  onOpenPlan(id: string): void
   /** Put the board behind this page on a day. */
   setAsOf(day: string | undefined): void
   /** Show an element on the canvas. */
@@ -96,22 +83,27 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const { model, today, readOnly, actions } = props
   const { t } = useStrings()
   const theme = useTheme()
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const [newTitle, setNewTitle] = useState<string | null>(null)
-  const [shiftBy, setShiftBy] = useState<string>('')
+  // The period a person chose to look at. Both ends or neither: one end alone
+  // is half a question, and the natural axis answers it until the other is set.
+  const [window_, setWindow] = useState<{ from: string; to: string }>({ from: '', to: '' })
 
-  const roadmap = useMemo(() => roadmapOf(model, today), [model, today])
+  const whole = useMemo(() => roadmapOf(model, today), [model, today])
+  const cut = isDay(window_.from) && isDay(window_.to) && window_.from < window_.to
+  const roadmap = useMemo(
+    () => (cut ? within(whole, window_.from, window_.to) : whole),
+    [whole, cut, window_.from, window_.to],
+  )
   const problems = useMemo(
     () => findings({ model, today }),
     [model, today],
   )
-  const selected = roadmap.transitions.find((one) => one.id === selectedId)
 
   const span = daysBetween(roadmap.from, roadmap.to)
   const at = (day: string) => `${fractionOf(roadmap.from, roadmap.to, day) * 100}%`
   const scrubDay = props.asOf && isDay(props.asOf) ? props.asOf : today
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false }
-  const empty = roadmap.tracks.length === 0 && roadmap.transitions.length === 0
+  const empty = whole.tracks.length === 0 && whole.transitions.length === 0
 
   return (
     <Dialog
@@ -137,6 +129,21 @@ export function RoadmapPage(props: RoadmapPageProps) {
         </Tooltip>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('roadmap.title')}</Typography>
         <Box sx={{ flex: 1 }} />
+        <TextField
+          type="date" size="small" label={t('roadmap.windowFrom')} value={window_.from}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowFrom') } }}
+          sx={{ width: 160 }}
+          onChange={(e) => setWindow((w) => ({ ...w, from: e.target.value }))}
+        />
+        <TextField
+          type="date" size="small" label={t('roadmap.windowTo')} value={window_.to}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowTo') } }}
+          sx={{ width: 160 }}
+          onChange={(e) => setWindow((w) => ({ ...w, to: e.target.value }))}
+        />
+        {cut && (
+          <Button size="small" onClick={() => setWindow({ from: '', to: '' })}>{t('roadmap.windowClear')}</Button>
+        )}
         {!readOnly && (
           <Button size="small" variant="outlined" onClick={() => setNewTitle('')}>
             {t('roadmap.newPlan')}
@@ -144,9 +151,9 @@ export function RoadmapPage(props: RoadmapPageProps) {
         )}
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', flex: 1, minHeight: 0 }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {/* the axis */}
-        <Box sx={{ overflow: 'auto', p: 2, minWidth: 0 }}>
+        <Box sx={{ overflow: 'auto', p: 2, minWidth: 0, flex: 1 }}>
           {empty ? (
             <Box sx={{ color: 'text.secondary' }}>
               <Typography>{t('roadmap.empty')}</Typography>
@@ -222,18 +229,19 @@ export function RoadmapPage(props: RoadmapPageProps) {
               {roadmap.transitions.map((plan) => (
                 <Box key={plan.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <Typography
-                    sx={{ fontSize: 12, fontWeight: plan.id === selectedId ? 700 : 400, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    onClick={() => setSelectedId(plan.id)}
+                    sx={{ fontSize: 12, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    onClick={() => actions.onOpenPlan(plan.id)}
                   >
                     {transitionLabel(plan)} {plan.title}
                   </Typography>
                   <Box
                     data-testid={`plan-${plan.id}`}
-                    onClick={() => setSelectedId(plan.id)}
+                    onClick={() => actions.onOpenPlan(plan.id)}
                     sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1, cursor: 'pointer' }}
                   >
                     {isDay(plan.from) && (
                       <Box
+                        data-testid="plan-band"
                         sx={{
                           position: 'absolute', top: 3, bottom: 3,
                           left: at(plan.from),
@@ -242,7 +250,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                         }}
                       />
                     )}
-                    {plan.milestones.filter((m) => isDay(m.date)).map((milestone, index) => (
+                    {plan.milestones.filter((m) => isDay(m.date) && m.date >= roadmap.from && m.date <= roadmap.to).map((milestone, index) => (
                       <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
                         <Box
                           data-testid="milestone"
@@ -285,22 +293,6 @@ export function RoadmapPage(props: RoadmapPageProps) {
           )}
         </Box>
 
-        {/* the plan you picked */}
-        <Box sx={{ borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
-          {selected ? (
-            <PlanDetail
-              plan={selected}
-              model={model}
-              readOnly={readOnly}
-              actions={actions}
-              shiftBy={shiftBy}
-              onShiftByChange={setShiftBy}
-              onDeleted={() => setSelectedId(undefined)}
-            />
-          ) : (
-            <Typography variant="body2" color="text.secondary">{t('roadmap.noPlans')}</Typography>
-          )}
-        </Box>
       </Box>
 
       <Dialog open={newTitle !== null} onClose={() => setNewTitle(null)} maxWidth="xs" fullWidth>
@@ -343,109 +335,5 @@ function Marker({ left, colour, label }: { left: string; colour: string; label: 
     <Tooltip title={label}>
       <Box sx={{ position: 'absolute', top: -2, bottom: -2, left, width: '2px', ml: '-1px', bgcolor: colour, opacity: 0.7 }} />
     </Tooltip>
-  )
-}
-
-function PlanDetail(
-  { plan, model, readOnly, actions, shiftBy, onShiftByChange, onDeleted }: {
-    plan: Transition
-    model: DesignModel
-    readOnly: boolean
-    actions: RoadmapActions
-    shiftBy: string
-    onShiftByChange(value: string): void
-    onDeleted(): void
-  },
-) {
-  const { t } = useStrings()
-  const named = new Map(model.elements.map((element) => [element.id, element.name]))
-  const set = (patch: Partial<Transition>) => actions.updateTransition(plan.id, patch)
-  const days = Number(shiftBy)
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{transitionLabel(plan)}</Typography>
-      <TextField
-        size="small" label={t('common.name')} value={plan.title} disabled={readOnly}
-        onChange={(e) => set({ title: e.target.value })}
-      />
-      <TextField
-        size="small" select label={t('roadmap.status')} value={plan.status} disabled={readOnly}
-        onChange={(e) => set({ status: e.target.value as TransitionStatus })}
-      >
-        {TRANSITION_STATUSES
-          // Only where the machine allows, plus where it already is.
-          .filter((status) => status === plan.status || transitionStatusesFrom(plan.status).includes(status))
-          .map((status) => (
-            <MenuItem key={status} value={status}>{t(STATUS_LABEL[status])}</MenuItem>
-          ))}
-      </TextField>
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <TextField
-          type="date" size="small" fullWidth label={t('roadmap.planWindow', { from: '', to: '' }).trim()}
-          value={plan.from ?? ''} disabled={readOnly}
-          slotProps={{ inputLabel: { shrink: true } }}
-          onChange={(e) => set({ from: e.target.value || undefined })}
-        />
-        <TextField
-          type="date" size="small" fullWidth label={t('roadmap.planOpen')}
-          value={plan.to ?? ''} disabled={readOnly}
-          slotProps={{ inputLabel: { shrink: true } }}
-          onChange={(e) => set({ to: e.target.value || undefined })}
-        />
-      </Box>
-      <TextField
-        size="small" label={t('roadmap.owner')} value={plan.owner ?? ''} disabled={readOnly}
-        onChange={(e) => set({ owner: e.target.value || undefined })}
-      />
-
-      <Box>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>{t('roadmap.touches')}</Typography>
-        {plan.elements.length === 0 && <Typography variant="body2" color="text.secondary">—</Typography>}
-        <Box component="ul" sx={{ pl: '1.2em', my: 0.5 }}>
-          {plan.elements.map((one) => (
-            <Box component="li" key={one.elementId} sx={{ fontSize: 13 }}>
-              {t(`plan.${one.role}` as StringKey)} — {named.get(one.elementId) ?? one.elementId}
-            </Box>
-          ))}
-        </Box>
-      </Box>
-
-      <Box>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>{t('roadmap.milestones')}</Typography>
-        {plan.milestones.length === 0 && <Typography variant="body2" color="text.secondary">—</Typography>}
-        <Box component="ul" sx={{ pl: '1.2em', my: 0.5 }}>
-          {plan.milestones.map((milestone, index) => (
-            <Box component="li" key={index} sx={{ fontSize: 13 }}>{milestone.date} — {milestone.name}</Box>
-          ))}
-        </Box>
-      </Box>
-
-      {!readOnly && (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-          <TextField
-            size="small" type="number" label={t('roadmap.shiftDays')} value={shiftBy}
-            onChange={(e) => onShiftByChange(e.target.value)}
-            helperText={t('roadmap.shiftHelp')}
-          />
-          <Button
-            size="small"
-            disabled={!Number.isFinite(days) || days === 0}
-            onClick={() => { actions.shiftTransition(plan.id, days); onShiftByChange('') }}
-          >
-            {t('roadmap.shift')}
-          </Button>
-        </Box>
-      )}
-
-      {!readOnly && (
-        <Button
-          size="small" color="error"
-          onClick={() => { actions.removeTransition(plan.id); onDeleted() }}
-        >
-          {t('roadmap.delete')}
-        </Button>
-      )}
-    </Box>
   )
 }

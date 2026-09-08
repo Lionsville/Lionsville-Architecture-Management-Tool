@@ -140,3 +140,34 @@ export function roadmapOf(
 function firstMark(track: ElementTrack): string {
   return track.spans[1]?.from ?? track.spans[0]?.from ?? ''
 }
+
+/**
+ * The roadmap, cut to a window a person chose.
+ *
+ * The axis becomes the window, and a row stays if it has something to say
+ * inside it: a track if the element is there during the window or changes
+ * phase inside it — so what was retired before it opened and what does not
+ * arrive until after it closed are both left out — and a plan if any day it
+ * has an opinion about falls inside, or if it has no dates at all, because a
+ * plan that says nothing about time cannot be outside any period and hiding
+ * it would make it unreachable. Spans are rebuilt from the window's own
+ * start, so the first one begins at the frame and not before it.
+ */
+export function within(roadmap: Roadmap, from: string, to: string): Roadmap {
+  const inside = (day: string) => day >= from && day <= to
+  const tracks = roadmap.tracks
+    .filter(({ element }) => {
+      const changes = LIFECYCLE_ORDER
+        .some((phase) => phase !== 'planned' && isDay(element.lifecycleDates?.[phase]) && inside(element.lifecycleDates![phase]!))
+      const opening = phaseAt(element, from)
+      return changes || (opening !== 'retired' && opening !== 'planned')
+    })
+    .map(({ element }) => ({ element, spans: spansFor(element, from) }))
+  const transitions = roadmap.transitions.filter((plan) => {
+    const days = transitionDays(plan)
+    if (days.length === 0) return true
+    if (isDay(plan.from) && isDay(plan.to)) return plan.from <= to && plan.to >= from
+    return days.some(inside)
+  })
+  return { from, to, tracks, transitions }
+}

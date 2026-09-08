@@ -18,9 +18,12 @@ export const EN = {
   'roadmap.newPlan': 'New plan',
   'roadmap.newPlanTitle': 'What is the plan called?',
   'roadmap.noPlans': 'No plans yet.',
-  'roadmap.planWindow': '{from} to {to}',
-  'roadmap.planOpen': 'no end date',
-  'roadmap.planUndated': 'not dated yet',
+  'roadmap.planFrom': 'From',
+  'roadmap.planTo': 'To',
+  'roadmap.planPorted': '{done} of {total} interfaces ported',
+  'roadmap.windowFrom': 'Show from',
+  'roadmap.windowTo': 'Show to',
+  'roadmap.windowClear': 'Whole axis',
   'roadmap.owner': 'Owner',
   'roadmap.milestones': 'Milestones',
   'roadmap.touches': 'What it changes',
@@ -44,6 +47,43 @@ export const EN = {
   'plan.introduces': 'Introduces',
   'plan.retires': 'Retires',
   'plan.changes': 'Changes',
+
+  // The plan's own page (ADR-0010): the record, read and written in one place.
+  'plan.page': 'Plan',
+  'plan.close': 'Back to the roadmap',
+  'plan.read': 'Read',
+  'plan.edit': 'Edit',
+  'plan.source': 'Plan source (markdown)',
+  'plan.bodyEmpty': 'Nothing written yet.',
+  'plan.role': 'Role',
+  'plan.addElement': 'Application',
+  'plan.add': 'Add',
+  'plan.remove': 'Remove',
+  'plan.noElements': 'Names nothing yet. Add what it introduces, retires or changes.',
+  // The dates on an element the plan introduces or retires. They are the
+  // element's own (ADR-0009); this is where they are set together.
+  'plan.date.live': 'Live from',
+  'plan.date.retiring': 'Retiring from',
+  'plan.date.retired': 'Gone on',
+  'plan.milestoneName': 'Milestone',
+  'plan.milestoneDate': 'Date',
+  'plan.noMilestones': 'No milestones yet.',
+  'plan.decision': 'Decision',
+  'plan.noDecisions': 'Rests on no recorded decision yet.',
+  'plan.template': `## Goal
+
+## Scope
+
+## Approach and phases
+
+## Business case
+
+{businessCase}
+
+## Risks
+
+## Rollback
+`,
 
   // The checks. Each one names a contradiction, never staleness.
   'check.title': 'What the dates disagree about',

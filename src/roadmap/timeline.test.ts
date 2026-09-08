@@ -6,7 +6,7 @@
  * without a browser.
  */
 import { describe, expect, it } from 'vitest'
-import { fractionOf, monthsFrom, rangeOf, roadmapOf, spansFor } from './timeline'
+import { fractionOf, monthsFrom, rangeOf, roadmapOf, spansFor, within } from './timeline'
 import type { DesignElement } from '../model/types'
 
 const TODAY = '2026-09-08'
@@ -139,5 +139,44 @@ describe('roadmapOf', () => {
     const bare = roadmapOf({ elements: [element('a'), element('b')] }, TODAY)
     expect(bare.tracks).toEqual([])
     expect(bare.from).toBe('2026-03-08')
+  })
+})
+
+describe('within', () => {
+  const model = {
+    elements: [
+      element('early', { lifecycleDates: { retired: '2026-01-01' } }),
+      element('late', { lifecycle: 'planned', lifecycleDates: { live: '2029-06-01' } }),
+      element('long', { lifecycleDates: { retiring: '2025-01-01', retired: '2030-01-01' } }),
+    ],
+    transitions: [
+      { id: 'a', number: 1, title: 'Before', status: 'done' as const, from: '2025-01-01', to: '2025-12-31', elements: [], decisions: [], milestones: [], body: '' },
+      { id: 'b', number: 2, title: 'During', status: 'agreed' as const, from: '2027-01-01', to: '2027-12-31', elements: [], decisions: [], milestones: [], body: '' },
+      { id: 'c', number: 3, title: 'Undated', status: 'draft' as const, elements: [], decisions: [], milestones: [], body: '' },
+      { id: 'd', number: 4, title: 'Only a milestone', status: 'draft' as const, elements: [], decisions: [], milestones: [{ date: '2027-06-01', name: 'x' }], body: '' },
+    ],
+  }
+  const cut = within(roadmapOf(model, TODAY), '2027-01-01', '2028-12-31')
+
+  it('becomes the window', () => {
+    expect([cut.from, cut.to]).toEqual(['2027-01-01', '2028-12-31'])
+  })
+
+  it('keeps what is there during the window, and drops what is gone or not yet arrived', () => {
+    // `early` was retired a year before the window opens; `late` does not go
+    // live until after it closes. Neither has anything to say about 2027.
+    expect(cut.tracks.map((t) => t.element.id)).toEqual(['long'])
+  })
+
+  it('keeps a track for a change inside the window even if the element is planned before it', () => {
+    const arriving = within(roadmapOf(model, TODAY), '2029-01-01', '2029-12-31')
+    expect(arriving.tracks.map((t) => t.element.id).sort()).toEqual(['late', 'long'])
+    // And its spans start at the frame, not at the natural axis start.
+    const late = arriving.tracks.find((t) => t.element.id === 'late')!
+    expect(late.spans[0]).toEqual({ phase: 'planned', from: '2029-01-01', to: '2029-06-01' })
+  })
+
+  it('keeps the plans that touch the window, and the ones that say nothing about time', () => {
+    expect(cut.transitions.map((p) => p.id)).toEqual(['b', 'c', 'd'])
   })
 })

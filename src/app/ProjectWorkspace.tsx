@@ -45,8 +45,8 @@ import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
-import { RoadmapPage } from '../roadmap'
-import type { RoadmapActions } from '../roadmap'
+import { PlanPage, RoadmapPage, planBodyTemplate } from '../roadmap'
+import type { PlanActions, RoadmapActions } from '../roadmap'
 import { imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
@@ -374,6 +374,9 @@ export function ProjectWorkspace({
   const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
   const [roadmapOpen, setRoadmapOpen] = useState(false)
+  // The plan being read on its own page (ADR-0010); over the roadmap, which
+  // stays open underneath so closing the plan lands back on the axis.
+  const [planId, setPlanId] = useState<string | undefined>(undefined)
   // The clock, read once per render of the workspace rather than per component:
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
@@ -453,14 +456,34 @@ export function ProjectWorkspace({
       const model = session.indexed()
       const list = transitionList(model)
       const number = nextTransitionNumber(list)
+      const id = makeId('tr')
       session.dispatch({
         type: 'transition.add',
         transition: {
-          id: makeId('tr'), number, title, status: 'draft',
-          elements: [], decisions: [], milestones: [], body: '',
+          id, number, title, status: 'draft',
+          elements: [], decisions: [], milestones: [], body: planBodyTemplate(s),
         },
       })
+      setPlanId(id)
     },
+    onOpenPlan(id) { setPlanId(id) },
+    setAsOf(day) {
+      const id = session.currentActiveId()
+      if (!id) return
+      session.dispatch({ type: 'diagram.update', id, patch: { asOf: day }, coalesce: `asOf:${id}` })
+    },
+    onOpenElement(id) {
+      setRoadmapOpen(false)
+      setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
+    },
+  }), [session, makeId, s])
+
+  /**
+   * What a plan's page may do (ADR-0010). The dates on an element the plan
+   * introduces or retires are written to the element, not to the plan — the
+   * page is where they are set together, the element is where they live.
+   */
+  const planActions = useMemo<PlanActions>(() => ({
     updateTransition(id, patch) {
       session.dispatch({ type: 'transition.update', id, patch, coalesce: `plan:${id}` })
     },
@@ -487,16 +510,20 @@ export function ProjectWorkspace({
       }
       session.dispatch(transaction(commands))
     },
-    setAsOf(day) {
-      const id = session.currentActiveId()
-      if (!id) return
-      session.dispatch({ type: 'diagram.update', id, patch: { asOf: day }, coalesce: `asOf:${id}` })
+    updateElementDates(id, lifecycleDates) {
+      session.dispatch({ type: 'element.update', id, patch: { lifecycleDates }, coalesce: `dates:${id}` })
     },
     onOpenElement(id) {
+      setPlanId(undefined)
       setRoadmapOpen(false)
       setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
     },
-  }), [session, makeId])
+    onOpenDecision(adrId) {
+      setPlanId(undefined)
+      setRoadmapOpen(false)
+      setAdrPage({ open: true, adrId })
+    },
+  }), [session])
 
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {
     const commands = decisionsToCommands(session.indexed(), next)
@@ -666,6 +693,17 @@ export function ProjectWorkspace({
         readOnly={false}
         actions={roadmapActions}
         onClose={() => setRoadmapOpen(false)}
+        windowChrome={windowChrome}
+      />
+      <PlanPage
+        open={planId !== undefined}
+        plan={planId ? session.model.transitions?.find((one) => one.id === planId) : undefined}
+        model={session.model}
+        decisions={session.model.decisions}
+        readOnly={false}
+        actions={planActions}
+        renderMarkdown={renderDocument}
+        onClose={() => setPlanId(undefined)}
         windowChrome={windowChrome}
       />
       <GlobalSearchDialog
