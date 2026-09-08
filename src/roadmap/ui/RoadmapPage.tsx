@@ -49,6 +49,16 @@ const PHASE_COLOUR: Record<Lifecycle, string> = {
   retired: '#9e9e9e',
 }
 
+/**
+ * Where the axis opens: three calendar years either side of this one, whole
+ * years, so what is being planned is in view and what was retired a decade ago
+ * is not — and "Whole axis" is one click for when it should be.
+ */
+export function defaultWindow(today: string): { from: string; to: string } {
+  const year = Number(today.slice(0, 4))
+  return { from: `${year - 3}-01-01`, to: `${year + 3}-12-31` }
+}
+
 const CHECK_SENTENCE: Record<Finding['kind'], StringKey> = {
   retiresWithDependants: 'check.retiresWithDependants',
   successorTooLate: 'check.successorTooLate',
@@ -88,7 +98,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const [newTitle, setNewTitle] = useState<string | null>(null)
   // The period a person chose to look at. Both ends or neither: one end alone
   // is half a question, and the natural axis answers it until the other is set.
-  const [window_, setWindow] = useState<{ from: string; to: string }>({ from: '', to: '' })
+  const [window_, setWindow] = useState<{ from: string; to: string }>(() => defaultWindow(today))
 
   const whole = useMemo(() => roadmapOf(model, today), [model, today])
   const cut = isDay(window_.from) && isDay(window_.to) && window_.from < window_.to
@@ -131,21 +141,6 @@ export function RoadmapPage(props: RoadmapPageProps) {
         </Tooltip>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('roadmap.title')}</Typography>
         <Box sx={{ flex: 1 }} />
-        <TextField
-          type="date" size="small" label={t('roadmap.windowFrom')} value={window_.from}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowFrom') } }}
-          sx={{ width: 160 }}
-          onChange={(e) => setWindow((w) => ({ ...w, from: e.target.value }))}
-        />
-        <TextField
-          type="date" size="small" label={t('roadmap.windowTo')} value={window_.to}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowTo') } }}
-          sx={{ width: 160 }}
-          onChange={(e) => setWindow((w) => ({ ...w, to: e.target.value }))}
-        />
-        {cut && (
-          <Button size="small" onClick={() => setWindow({ from: '', to: '' })}>{t('roadmap.windowClear')}</Button>
-        )}
         {!readOnly && (
           <Button size="small" variant="outlined" onClick={() => setNewTitle('')}>
             {t('roadmap.newPlan')}
@@ -163,8 +158,16 @@ export function RoadmapPage(props: RoadmapPageProps) {
             </Box>
           ) : (
             <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <Typography variant="caption" color="text.secondary">{roadmap.from}</Typography>
+              {/* The window's two ends are the axis's two ends, so the fields
+                  that set them sit where the ends are, either side of the
+                  scrubber, with room for their labels. */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, pt: 1 }}>
+                <TextField
+                  type="date" size="small" label={t('roadmap.windowFrom')} value={window_.from}
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowFrom') } }}
+                  sx={{ width: 160 }}
+                  onChange={(e) => setWindow((w) => ({ ...w, from: e.target.value }))}
+                />
                 <Box sx={{ flex: 1 }}>
                   <Slider
                     size="small"
@@ -181,7 +184,17 @@ export function RoadmapPage(props: RoadmapPageProps) {
                     }}
                   />
                 </Box>
-                <Typography variant="caption" color="text.secondary">{roadmap.to}</Typography>
+                <TextField
+                  type="date" size="small" label={t('roadmap.windowTo')} value={window_.to}
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('roadmap.windowTo') } }}
+                  sx={{ width: 160 }}
+                  onChange={(e) => setWindow((w) => ({ ...w, to: e.target.value }))}
+                />
+                {cut ? (
+                  <Button size="small" onClick={() => setWindow({ from: '', to: '' })}>{t('roadmap.windowClear')}</Button>
+                ) : (
+                  <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>{roadmap.from} – {roadmap.to}</Typography>
+                )}
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
                 {t('roadmap.scrubHelp')}

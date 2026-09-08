@@ -154,10 +154,20 @@ describe('a plan', () => {
 })
 
 describe('the window', () => {
+  it('opens on three calendar years either side of today', () => {
+    setup()
+    expect((screen.getByLabelText('Show from') as HTMLInputElement).value).toBe('2023-01-01')
+    expect((screen.getByLabelText('Show to') as HTMLInputElement).value).toBe('2029-12-31')
+    // And the axis is that window.
+    expect(screen.getByLabelText('Showing').getAttribute('aria-valuemax')).toBe(String(7 * 365 + 1))
+  })
+
   it('cuts the axis to the period chosen, once both ends are set', () => {
     setup()
     fireEvent.change(screen.getByLabelText('Show from'), { target: { value: '2029-01-01' } })
-    // One end alone changes nothing: the whole axis still shows.
+    // Both ends still make a window, so the old system — gone by 2028 — drops
+    // out already; but an emptied end is half a question and shows the whole axis.
+    fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '' } })
     expect(find('[data-testid="track-wms-old"]')).not.toBeNull()
     fireEvent.change(screen.getByLabelText('Show to'), { target: { value: '2029-12-31' } })
     // Both applications have settled by 2029 — the old one gone, the new one
