@@ -34,6 +34,14 @@
  * | 200 models indexed, heap growth | 0.05 MB | 50 MB |
  * | 20,000 descriptions read, heap growth | 1.2 MB | 50 MB |
  * | the agent's layout report over the landscape | 83 ms | 500 ms |
+ * | history: one snapshot looked at, for one diagram | 17 ms | 1500 ms |
+ * | history: restore one diagram | 1.2 ms | 50 ms |
+ * | history: restore the whole project | 18 ms | 500 ms |
+ *
+ * The three history rows were measured 8 September 2026 (ADR-0008), on the
+ * same machine and fixture. Measuring them is what found `placement.set`
+ * copying its record once per row: a one-diagram restore cost 254 ms before
+ * that was made a single pass, and the drag-stop row fell with it.
  *
  * Every {@link measure} call prints its label and its median as the run goes,
  * so `npm run test:perf` is the report and this table is the contract.
@@ -64,6 +72,16 @@ export const BUDGET = {
    * span could touch. The loop an agent runs pays this on every turn.
    */
   inspect: 500,
+  /**
+   * The history page, per snapshot clicked (ADR-0008): the folder read back
+   * as a project, compared with now, filtered to one subject. What the page
+   * pays for a click, on top of the adapter fetching the text.
+   */
+  historyLook: 1500,
+  /** One diagram brought back to a snapshot, as commands through the reducer. */
+  restoreDiagram: 50,
+  /** The whole project brought back — every element, connection, diagram and decision. */
+  restoreProject: 500,
   /** Megabytes the heap may grow over five hundred undo steps. */
   undoHeapMb: 50,
   /**
