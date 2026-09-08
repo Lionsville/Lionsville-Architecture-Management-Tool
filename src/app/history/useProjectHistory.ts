@@ -16,13 +16,24 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { draftCommitMessage } from '../../projects/commitMessage'
 import { historyPaths } from '../../projects/historyPath'
 import type { HistorySubject } from '../../projects/historyPath'
+import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/fromInterchange'
+import { fromArrays } from '../../model/normalised'
+import type { Model } from '../../model/normalised'
+import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
 import type { Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import type { ProjectSnapshot } from '../../projects/project'
 import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
 import type { Notify } from '../useToasts'
+
+/** The day a snapshot was taken, `yyyy-mm-dd`, in the person's own clock. */
+function dayOf(at: number): string {
+  const held = new Date(at)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${held.getFullYear()}-${pad(held.getMonth() + 1)}-${pad(held.getDate())}`
+}
 
 export type ProjectHistoryState = {
   /** Can this machine keep a history at all? Nothing is offered when it cannot. */
@@ -46,6 +57,12 @@ export type ProjectHistoryState = {
   choose: (id: string) => void
   /** Narrow or widen what the open page is about; the list is read again. */
   setSubject: (subject: HistorySubject | undefined) => void
+  /**
+   * Make the subject — or, with none, the whole project — what the chosen
+   * snapshot held, as one command through the session (ADR-0008). Nothing
+   * happens until the snapshot has been read; the page's button waits for it.
+   */
+  restore: () => void
 }
 
 export function useProjectHistory(deps: {
@@ -55,12 +72,15 @@ export function useProjectHistory(deps: {
   steps: () => readonly { summary: StepSummary }[]
   /** Write the project out and answer when it has landed. */
   save: () => Promise<void>
+  /** The session's two halves a restore needs: what stands, and the one way to change it. */
+  indexed: () => Model
+  dispatch: (command: Command) => unknown
   notify: Notify
   s: Translate
   /** A snapshot succeeded. What follows — a push, perhaps — is the caller's. */
   onTaken?: () => void
 }): ProjectHistoryState {
-  const { history, project, steps, save, notify, s, onTaken } = deps
+  const { history, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
 
   const [available, setAvailable] = useState(false)
   const [keeping, setKeeping] = useState(false)
@@ -150,6 +170,29 @@ export function useProjectHistory(deps: {
     list(of)
   }, [history, list])
 
+  /**
+   * The restore itself. A refusal is a toast and nothing else; a success
+   * closes the page, so the person sees what came back, and offers the
+   * snapshot rather than taking it — a restore that was itself a mistake is
+   * one ⌘Z away until it is recorded.
+   */
+  const restore = useCallback(() => {
+    if (!chosen?.model) return
+    const entry = entries.find((held) => held.id === chosen.id)
+    const asOf = entry ? dayOf(entry.at) : ''
+    const result = restoreCommand(fromArrays(chosen.model), indexed(), subject, asOf)
+    if (!result.ok) { notify(s(result.reason), 'warning'); return }
+    dispatch(result.command)
+    setPageOpen(false)
+    const name = result.command.type === 'restore' ? result.command.restored.name : ''
+    let message = subject
+      ? s('history.restored', { name, date: asOf })
+      : s('history.restoredProject', { date: asOf })
+    if (result.dropped) message += s('history.restoredDropped', { count: result.dropped })
+    if (result.kept) message += s('history.restoredKept', { count: result.kept })
+    notify(message, 'success', { label: s('history.snapshotNow'), onClick: openDialog })
+  }, [chosen, entries, subject, indexed, dispatch, notify, s, openDialog])
+
   const setSubject = useCallback((of: HistorySubject | undefined) => {
     // The chosen snapshot is dropped with the list: it may not be in the new one.
     setChosen(undefined)
@@ -173,5 +216,6 @@ export function useProjectHistory(deps: {
     closePage: useCallback(() => setPageOpen(false), []),
     choose,
     setSubject,
+    restore,
   }
 }

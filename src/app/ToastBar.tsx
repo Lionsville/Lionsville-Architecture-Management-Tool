@@ -4,6 +4,7 @@
  */
 import Alert from '@mui/material/Alert'
 import type { AlertColor } from '@mui/material/Alert'
+import Button from '@mui/material/Button'
 import Snackbar from '@mui/material/Snackbar'
 import type { Toast } from './useToasts'
 
@@ -45,6 +46,15 @@ export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
         variant="filled"
         onClose={onClose}
         sx={{ maxWidth: 640, fontSize: 13 }}
+        // An offer, when the toast has one: the button closes the toast and
+        // does the thing, so it cannot be pressed twice.
+        action={toast?.action
+          ? (
+            <Button color="inherit" size="small" onClick={() => { onClose(); toast.action?.onClick() }}>
+              {toast.action.label}
+            </Button>
+          )
+          : undefined}
       >
         {toast?.message}
       </Alert>

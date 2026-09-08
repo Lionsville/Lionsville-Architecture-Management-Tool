@@ -18,8 +18,9 @@
  * model's — nothing here knows a path — the page only chooses which rows to
  * speak.
  */
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
@@ -37,6 +38,7 @@ import type { HistoryEntry } from '../../ports/ProjectHistory'
 import type { HistorySubject } from '../../projects/historyPath'
 import { changeLine } from './changeLine'
 import { changesFor } from './changesFor'
+import { RestoreDialog } from './RestoreDialog'
 
 export type HistoryPageProps = {
   open: boolean
@@ -51,6 +53,8 @@ export type HistoryPageProps = {
   /** Whose history this is; absent is the whole project's. */
   subject?: HistorySubject
   onSubjectChange: (subject: HistorySubject | undefined) => void
+  /** Make the subject, or the whole project, what the chosen snapshot held (ADR-0008). */
+  onRestore: () => void
   language: Language
   s: Translate
   windowChrome?: WindowChrome
@@ -73,8 +77,9 @@ function when(at: number, language: Language): string {
 }
 
 export function HistoryPage(props: HistoryPageProps) {
-  const { open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, language, s } = props
+  const { open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, onRestore, language, s } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
+  const [confirming, setConfirming] = useState(false)
 
   // What can be asked about: every diagram, every described element, every
   // decision — of the project as it is now, which is where the person stands.
@@ -97,6 +102,22 @@ export function HistoryPage(props: HistoryPageProps) {
     [chosen, current, subject],
   )
   const counts = changes && countChanges(changes)
+
+  // What the restore would be called, from the project as it is now — or,
+  // for a thing that is gone now, from the snapshot, which still has it.
+  const subjectName = useMemo(() => {
+    if (!subject) return undefined
+    const from = (model: HostModel | undefined) => {
+      if (!model) return undefined
+      switch (subject.what) {
+        case 'diagram': return model.diagrams.find((held) => held.id === subject.id)?.name
+        case 'description': return model.elements.find((held) => held.id === subject.id)?.name
+        case 'decision': return (model.decisions ?? []).find((held) => held.id === subject.id)?.title
+      }
+    }
+    return from(current) ?? from(chosen?.model) ?? subject.id
+  }, [subject, current, chosen])
+  const chosenEntry = entries.find((entry) => entry.id === chosen?.id)
 
   return (
     <Dialog
@@ -196,9 +217,21 @@ export function HistoryPage(props: HistoryPageProps) {
           )}
           {changes && (
             <>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 2 }}>
-                {s('history.compare')}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  {s('history.compare')}
+                </Typography>
+                <Box sx={{ flex: 1 }} />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color={subject ? 'primary' : 'warning'}
+                  disabled={changes.length === 0}
+                  onClick={() => setConfirming(true)}
+                >
+                  {s(subject ? 'history.restore' : 'history.restoreProject')}
+                </Button>
+              </Box>
               {changes.length === 0 ? (
                 <Typography sx={{ fontSize: 13 }}>{s(subject ? 'history.unchangedFor' : 'history.unchanged')}</Typography>
               ) : (
@@ -223,6 +256,14 @@ export function HistoryPage(props: HistoryPageProps) {
           )}
         </Box>
       </Box>
+      <RestoreDialog
+        open={confirming}
+        name={subjectName}
+        date={chosenEntry ? when(chosenEntry.at, language) : ''}
+        onCancel={() => setConfirming(false)}
+        onRestore={() => { setConfirming(false); onRestore() }}
+        s={s}
+      />
     </Dialog>
   )
 }

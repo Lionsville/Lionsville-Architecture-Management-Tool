@@ -278,6 +278,8 @@ export function ProjectWorkspace({
     project: session.snapshot,
     steps: session.history,
     save: forceSave,
+    indexed: session.indexed,
+    dispatch: session.dispatch,
     notify,
     s,
     onTaken: onSnapshotTaken,
@@ -525,6 +527,7 @@ export function ProjectWorkspace({
         current={session.model}
         subject={snapshots.subject}
         onSubjectChange={snapshots.setSubject}
+        onRestore={snapshots.restore}
         language={language}
         s={s}
         windowChrome={windowChrome}

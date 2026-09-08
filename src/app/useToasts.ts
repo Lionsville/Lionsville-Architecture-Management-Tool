@@ -8,11 +8,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { AlertColor } from '@mui/material/Alert'
 
+/** What a toast may offer to do about itself — one button, at most. */
+export type ToastAction = { label: string; onClick: () => void }
+
 /** One message. The key restarts the bar when a new message arrives. */
-export type Toast = { key: number; message: string; severity: AlertColor }
+export type Toast = { key: number; message: string; severity: AlertColor; action?: ToastAction }
 
 /** What every place with something to report is handed. */
-export type Notify = (message: string, severity?: AlertColor) => void
+export type Notify = (message: string, severity?: AlertColor, action?: ToastAction) => void
 
 export type Toasts = {
   toast: Toast | null
@@ -31,9 +34,9 @@ export function useToasts(): Toasts {
   const [open, setOpen] = useState(false)
   const seq = useRef(0)
 
-  const notify = useCallback<Notify>((message, severity = 'info') => {
+  const notify = useCallback<Notify>((message, severity = 'info', action) => {
     seq.current += 1
-    setToast({ key: seq.current, message, severity })
+    setToast({ key: seq.current, message, severity, ...(action ? { action } : {}) })
     setOpen(true)
   }, [])
 

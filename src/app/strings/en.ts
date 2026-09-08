@@ -185,6 +185,20 @@ export const EN = {
   'history.decisions': 'Decisions',
   'history.noneFor': 'No snapshot has touched this yet.',
   'history.unchangedFor': 'This has not changed since this snapshot.',
+  'history.restore': 'Restore this version…',
+  'history.restoreProject': 'Restore the whole project…',
+  'history.restoreTitle': 'Restore {name} as of {date}?',
+  'history.restoreProjectTitle': 'Restore the whole project as of {date}?',
+  'history.restoreBody':
+    'This makes {name} what it was at that snapshot, as a new change — the history keeps everything that happened since, and this step goes on top of it. It can be undone with ⌘Z until the next snapshot records it.',
+  'history.restoreProjectBody':
+    'Every element, connection, diagram and decision becomes what it was at that snapshot, as one new change on top of everything that happened since. Decisions that have been accepted, rejected or superseded stay as they are. It can be undone with ⌘Z until the next snapshot records it.',
+  'history.restoreConfirm': 'Restore',
+  'history.restored': 'Restored {name} as of {date}.',
+  'history.restoredProject': 'Restored the whole project as of {date}.',
+  'history.restoredDropped': ' {count} placed elements no longer exist and were left out.',
+  'history.restoredKept': ' {count} locked decisions were left as they are.',
+  'history.snapshotNow': 'Snapshot',
 
   // The sentences a change becomes. One per kind and subject, because "Added"
   // and "Added the diagram" are different facts and a shared word would make

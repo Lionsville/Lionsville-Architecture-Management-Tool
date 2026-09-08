@@ -75,6 +75,16 @@ describe('ToastBar', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('offers the one thing a toast may do, and closes itself when it is taken', () => {
+    // ADR-0008: a restore offers the snapshot rather than taking it.
+    const onClose = vi.fn()
+    const onClick = vi.fn()
+    renderShell(<ToastBar toast={{ ...toast('success'), action: { label: 'Snapshot', onClick } }} open onClose={onClose} onExited={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Snapshot' }))
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('gives an error longer on screen than anything else, because it has to be read', () => {
     expect(hideAfter('error')).toBeGreaterThan(hideAfter('success'))
     expect(hideAfter('success')).toBe(hideAfter(undefined))

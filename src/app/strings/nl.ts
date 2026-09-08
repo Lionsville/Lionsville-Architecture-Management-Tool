@@ -122,6 +122,20 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.decisions': 'Besluiten',
   'history.noneFor': 'Nog geen momentopname heeft dit geraakt.',
   'history.unchangedFor': 'Dit is niet veranderd sinds deze momentopname.',
+  'history.restore': 'Deze versie terugzetten…',
+  'history.restoreProject': 'Het hele project terugzetten…',
+  'history.restoreTitle': '{name} terugzetten naar {date}?',
+  'history.restoreProjectTitle': 'Het hele project terugzetten naar {date}?',
+  'history.restoreBody':
+    'Dit maakt {name} weer wat het bij die momentopname was, als een nieuwe wijziging — de geschiedenis houdt alles wat sindsdien gebeurde, en deze stap komt daar bovenop. Tot de volgende momentopname het vastlegt is het met ⌘Z ongedaan te maken.',
+  'history.restoreProjectBody':
+    'Elk element, elke verbinding, elk aanzicht en elk besluit wordt weer wat het bij die momentopname was, als één nieuwe wijziging bovenop alles wat sindsdien gebeurde. Besluiten die aanvaard, afgewezen of vervangen zijn blijven zoals ze zijn. Tot de volgende momentopname het vastlegt is het met ⌘Z ongedaan te maken.',
+  'history.restoreConfirm': 'Terugzetten',
+  'history.restored': '{name} teruggezet naar {date}.',
+  'history.restoredProject': 'Het hele project teruggezet naar {date}.',
+  'history.restoredDropped': ' {count} geplaatste elementen bestaan niet meer en zijn weggelaten.',
+  'history.restoredKept': ' {count} afgesloten besluiten zijn gelaten zoals ze zijn.',
+  'history.snapshotNow': 'Momentopname',
 
   'change.elementAdded': '{name} toegevoegd',
   'change.elementRemoved': '{name} verwijderd',
