@@ -224,6 +224,9 @@ export const EN = {
   'change.decisionAdded': 'Added the decision {name}',
   'change.decisionRemoved': 'Removed the decision {name}',
   'change.decisionChanged': 'Changed the decision {name} ({fields})',
+  'change.transitionAdded': 'Added the plan {name}',
+  'change.transitionRemoved': 'Removed the plan {name}',
+  'change.transitionChanged': 'Changed the plan {name} ({fields})',
   'change.placement': 'Moved {count} on {name}',
 
   'folder.title': 'Where should your projects live?',

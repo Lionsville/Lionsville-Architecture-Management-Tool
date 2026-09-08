@@ -158,6 +158,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'change.decisionAdded': 'Besluit {name} toegevoegd',
   'change.decisionRemoved': 'Besluit {name} verwijderd',
   'change.decisionChanged': 'Besluit {name} gewijzigd ({fields})',
+  'change.transitionAdded': 'Plan {name} toegevoegd',
+  'change.transitionRemoved': 'Plan {name} verwijderd',
+  'change.transitionChanged': 'Plan {name} gewijzigd ({fields})',
   'change.placement': '{count} verplaatst op {name}',
 
   'folder.title': 'Waar horen je projecten te staan?',

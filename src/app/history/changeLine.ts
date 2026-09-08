@@ -6,10 +6,19 @@
  * and subject, because "Added" and "Added the diagram" are different facts, and
  * a list that said "Added" for both would read like a database table.
  */
-import type { ModelChange } from '../../model/diff'
+import type { ChangeKind, ChangeSubject, ModelChange } from '../../model/diff'
 import type { StringKey, Translate } from '../../i18n'
 
-const KEYS: Record<string, StringKey> = {
+/**
+ * Every subject the diff can name, times every kind — as a type, so that a
+ * subject added to `diffModels` without a sentence here is a compile error and
+ * not a page that throws the first time somebody opens the history of a
+ * project with one in it. Placement is the exception: it is a count, not a
+ * kind, and has its own line below.
+ */
+type LineKey = `${Exclude<ChangeSubject, 'placement'>}:${ChangeKind}`
+
+const KEYS: Record<LineKey, StringKey> = {
   'element:added': 'change.elementAdded',
   'element:removed': 'change.elementRemoved',
   'element:changed': 'change.elementChanged',
@@ -22,6 +31,9 @@ const KEYS: Record<string, StringKey> = {
   'decision:added': 'change.decisionAdded',
   'decision:removed': 'change.decisionRemoved',
   'decision:changed': 'change.decisionChanged',
+  'transition:added': 'change.transitionAdded',
+  'transition:removed': 'change.transitionRemoved',
+  'transition:changed': 'change.transitionChanged',
 }
 
 export function changeLine(change: ModelChange, s: Translate): string {
