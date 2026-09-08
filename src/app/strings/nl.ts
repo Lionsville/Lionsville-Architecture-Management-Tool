@@ -115,6 +115,13 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.unchanged': 'Er is niets veranderd sinds deze momentopname.',
   'history.gone': 'Dit project stond bij die momentopname niet in de map.',
   'history.by': '{author}',
+  'history.subject': 'Toon de geschiedenis van',
+  'history.everything': 'Het hele project',
+  'history.diagrams': 'Aanzichten',
+  'history.descriptions': 'Beschrijvingen',
+  'history.decisions': 'Besluiten',
+  'history.noneFor': 'Nog geen momentopname heeft dit geraakt.',
+  'history.unchangedFor': 'Dit is niet veranderd sinds deze momentopname.',
 
   'change.elementAdded': '{name} toegevoegd',
   'change.elementRemoved': '{name} verwijderd',

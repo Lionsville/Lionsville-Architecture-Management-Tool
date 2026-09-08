@@ -14,6 +14,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { draftCommitMessage } from '../../projects/commitMessage'
+import { historyPaths } from '../../projects/historyPath'
+import type { HistorySubject } from '../../projects/historyPath'
 import type { HostModel } from '../../model/fromInterchange'
 import type { StepSummary } from '../../model/activity'
 import type { Translate } from '../../i18n'
@@ -33,12 +35,17 @@ export type ProjectHistoryState = {
   draft: string
   entries: readonly HistoryEntry[]
   chosen?: { id: string; model?: HostModel }
+  /** Whose history the page is showing; absent is the whole project's (ADR-0008). */
+  subject?: HistorySubject
   openDialog: () => void
   closeDialog: () => void
   take: (message: string) => void
-  openPage: () => void
+  /** Open the page, on everything or on one thing. */
+  openPage: (subject?: HistorySubject) => void
   closePage: () => void
   choose: (id: string) => void
+  /** Narrow or widen what the open page is about; the list is read again. */
+  setSubject: (subject: HistorySubject | undefined) => void
 }
 
 export function useProjectHistory(deps: {
@@ -62,6 +69,7 @@ export function useProjectHistory(deps: {
   const [draft, setDraft] = useState('')
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([])
   const [chosen, setChosen] = useState<{ id: string; model?: HostModel } | undefined>(undefined)
+  const [subject, setSubjectState] = useState<HistorySubject | undefined>(undefined)
 
   /** How much of this session's log the last snapshot already covers. */
   const recorded = useRef(0)
@@ -118,15 +126,36 @@ export function useProjectHistory(deps: {
     )
   }, [history, project, notify, s])
 
-  const openPage = useCallback(() => {
+  /**
+   * The list, for one subject or for everything. A subject the model cannot
+   * place (a decision that is gone) has no paths and therefore no snapshots —
+   * an empty list, not everybody's.
+   */
+  const list = useCallback((of: HistorySubject | undefined) => {
     if (!history) return
-    setChosen(undefined)
-    setPageOpen(true)
-    void history.entries().then(setEntries, (cause: unknown) => {
+    const held = project()
+    const paths = of ? historyPaths(of, held.model) : undefined
+    const read = of && !paths ? Promise.resolve([]) : history.entries(undefined, paths && { ref: held.ref, paths })
+    void read.then(setEntries, (cause: unknown) => {
       setEntries([])
       notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, notify, s])
+  }, [history, project, notify, s])
+
+  const openPage = useCallback((of?: HistorySubject) => {
+    if (!history) return
+    setChosen(undefined)
+    setSubjectState(of)
+    setPageOpen(true)
+    list(of)
+  }, [history, list])
+
+  const setSubject = useCallback((of: HistorySubject | undefined) => {
+    // The chosen snapshot is dropped with the list: it may not be in the new one.
+    setChosen(undefined)
+    setSubjectState(of)
+    list(of)
+  }, [list])
 
   return {
     available,
@@ -136,11 +165,13 @@ export function useProjectHistory(deps: {
     draft,
     entries,
     chosen,
+    subject,
     openDialog,
     closeDialog: useCallback(() => setDialogOpen(false), []),
     take,
     openPage,
     closePage: useCallback(() => setPageOpen(false), []),
     choose,
+    setSubject,
   }
 }

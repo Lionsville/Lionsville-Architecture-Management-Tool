@@ -105,6 +105,21 @@ describe('AdrPage', () => {
     expect(next[1].applicationId).toBeUndefined()
   })
 
+  it('offers a project record\'s history, and never a group record\'s (ADR-0008)', () => {
+    // A group's records are kept in the group's own file, outside any
+    // project's folder, so no project history has them.
+    const onOpenHistory = vi.fn()
+    mount({ initialAdrId: 'l1', onOpenHistory })
+    fireEvent.click(within(screen.getByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
+    expect(onOpenHistory).toHaveBeenCalledExactlyOnceWith('l1')
+    cleanup()
+    mount({ initialAdrId: 'g1', onOpenHistory })
+    expect(within(screen.getByTestId('adr-reader')).queryByRole('button', { name: 'History…' })).toBeNull()
+    cleanup()
+    mount({ initialAdrId: 'l1' })
+    expect(within(screen.getByTestId('adr-reader')).queryByRole('button', { name: 'History…' })).toBeNull()
+  })
+
   it('offers only the moves the machine allows, and applies one', () => {
     const { onProject } = mount({ initialAdrId: 'l1' })
     const reader = screen.getByTestId('adr-reader')

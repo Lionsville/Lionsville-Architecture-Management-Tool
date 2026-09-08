@@ -178,6 +178,13 @@ export const EN = {
   'history.unchanged': 'Nothing has changed since this snapshot.',
   'history.gone': 'This project was not in the folder at that snapshot.',
   'history.by': '{author}',
+  'history.subject': 'Show the history of',
+  'history.everything': 'The whole project',
+  'history.diagrams': 'Diagrams',
+  'history.descriptions': 'Descriptions',
+  'history.decisions': 'Decisions',
+  'history.noneFor': 'No snapshot has touched this yet.',
+  'history.unchangedFor': 'This has not changed since this snapshot.',
 
   // The sentences a change becomes. One per kind and subject, because "Added"
   // and "Added the diagram" are different facts and a shared word would make

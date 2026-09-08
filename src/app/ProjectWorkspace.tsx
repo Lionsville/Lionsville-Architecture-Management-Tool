@@ -409,6 +409,19 @@ export function ProjectWorkspace({
   }, [session])
 
   /**
+   * "History…" on a diagram's tab and on the documentation page (ADR-0008):
+   * the page, opened on one thing. Absent where there is no history to open,
+   * so no page offers an item that leads nowhere.
+   */
+  const openHistoryOf = snapshots.openPage
+  const historyRequests = useMemo(() => (snapshots.available
+    ? {
+      onDiagram: (id: string) => openHistoryOf({ what: 'diagram', id }),
+      onDescription: (id: string) => openHistoryOf({ what: 'description', id }),
+    }
+    : undefined), [snapshots.available, openHistoryOf])
+
+  /**
    * The app's one undo stack, as the editor takes it. Memoised on what actually
    * moves, so a render for any other reason does not look like a new stack.
    */
@@ -466,6 +479,7 @@ export function ProjectWorkspace({
             onDelete: diagrams.requestDeleteDiagram,
             onSettingsChange: diagrams.onDiagramSettingsChange,
           }}
+          history={historyRequests}
           requests={{ focus: focusRequest, documentation: docRequest }}
           layout={{ onError: onLayoutError, onSettled: session.onLayoutSettled }}
           preferences={{ initial: editorPreferences, onChange: onEditorPreferencesChange }}
@@ -509,6 +523,8 @@ export function ProjectWorkspace({
         chosen={snapshots.chosen}
         onChoose={snapshots.choose}
         current={session.model}
+        subject={snapshots.subject}
+        onSubjectChange={snapshots.setSubject}
         language={language}
         s={s}
         windowChrome={windowChrome}
@@ -538,6 +554,9 @@ export function ProjectWorkspace({
         today={today}
         renderMarkdown={renderMarkdown}
         onOpenElement={(elementId) => openDocumentation(elementId)}
+        onOpenHistory={snapshots.available
+          ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
+          : undefined}
         windowChrome={windowChrome}
       />
       <GlobalSearchDialog

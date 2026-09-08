@@ -474,6 +474,17 @@ describe('menuItemsFor — tab', () => {
     }))).toEqual([]);
   });
 
+  it('offers the diagram\'s history only where the host keeps one, above the delete', () => {
+    // ADR-0008: a tab in a browser keeps no history and shows no item that
+    // leads nowhere.
+    expect(ids(menuItemsFor(TAB, tab()))).not.toContain('diagram-history');
+    const items = menuItemsFor(TAB, tab({ canHistory: true }));
+    expect(ids(items)).toEqual([
+      'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'diagram-history', 'delete-diagram',
+    ]);
+    expect(byId(items, 'diagram-history').label).toBe('History…');
+  });
+
   it('refuses to delete the last landscape', () => {
     const remove = byId(menuItemsFor(TAB, tab({ isLastLandscape: true })), 'delete-diagram');
     expect(remove.disabled).toBe(true);

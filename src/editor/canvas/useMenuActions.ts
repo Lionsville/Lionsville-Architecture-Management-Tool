@@ -325,6 +325,7 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     case 'rename-diagram':
     case 'duplicate-diagram':
     case 'delete-diagram':
+    case 'diagram-history':
       return;
   }
 }

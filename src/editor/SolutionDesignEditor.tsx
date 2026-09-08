@@ -1141,6 +1141,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         }
         onDuplicateDiagram={props.diagrams.onDuplicate}
         onDeleteDiagram={props.diagrams.onDelete}
+        onDiagramHistory={props.history?.onDiagram}
         onOpenSearch={() => setSearchOpen(true)}
         showMinimap={showMinimap}
         onToggleMinimap={() => setShowMinimap((on) => !on)}
@@ -1353,6 +1354,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
             setDeleteTarget(documentationElement.id);
           }}
           onRequestLogoUpload={props.logos?.onRequestUpload}
+          onOpenHistory={props.history?.onDescription
+            ? () => props.history?.onDescription?.(documentationElement.id)
+            : undefined}
           windowChrome={props.windowChrome}
         />
       )}

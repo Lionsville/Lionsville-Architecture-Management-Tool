@@ -128,7 +128,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
-                    props.ts          what the editor is handed (12 groups)
+                    props.ts          what the editor is handed (13 groups)
                     useEditorState    the selection, and gestures said as commands
                     testing/          editorHost: the editor over a real reducer
 src/documentation/  Descriptions as documents.

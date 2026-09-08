@@ -11,7 +11,8 @@
  * workspace, the history seam and the store.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { InMemoryProjectHistory } from '../../adapters/memory/InMemoryProjectHistory'
 import { InMemoryProjectStore } from '../../adapters/memory/InMemoryProjectStore'
 import type { HostModel } from '../../model/fromInterchange'
 import type { ProjectSnapshot } from '../../projects/project'
@@ -24,13 +25,21 @@ vi.mock('../../editor', async (importOriginal) => {
     ...actual,
     SolutionDesignEditor: (props: {
       diagrams: { onSettingsChange?: (id: string, settings: { name: string }) => void }
+      history?: { onDiagram?: (id: string) => void }
     }) => (
-      <button
-        data-testid="edit-the-diagram"
-        onClick={() => props.diagrams.onSettingsChange?.('d1', { name: 'Edited' })}
-      >
-        edit
-      </button>
+      <>
+        <button
+          data-testid="edit-the-diagram"
+          onClick={() => props.diagrams.onSettingsChange?.('d1', { name: 'Edited' })}
+        >
+          edit
+        </button>
+        {props.history?.onDiagram && (
+          <button data-testid="history-of-the-diagram" onClick={() => props.history?.onDiagram?.('d1')}>
+            history
+          </button>
+        )}
+      </>
     ),
   }
 })
@@ -247,5 +256,87 @@ describe('reading one back', () => {
     expect(getComputedStyle(bar).paddingLeft).toBe('90px')
     const css = [...document.querySelectorAll('style')].map((tag) => tag.textContent).join('')
     expect(css).toContain('-webkit-app-region:drag')
+  })
+})
+
+describe('the history of one thing (ADR-0008)', () => {
+  const at = 1_757_000_000_000
+  const described = (): HostModel => model({
+    elements: [{
+      id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
+      aspects: {}, parameters: {}, description: 'Sends the invoices.',
+    }],
+    decisions: [{
+      id: 'adr-1', number: 1, title: 'One writer', status: 'proposed', date: '2026-09-01', body: 'Why.', signers: [],
+    }],
+  })
+  const withDescribed = (): ProjectSnapshot => ({ ...project(), model: described() })
+
+  /** Three snapshots: one touched the diagram, one the description, one the decision. */
+  const threeSnapshots = () => new InMemoryProjectHistory([
+    {
+      id: 'c3', subject: 'Retitled the decision', at: at + 2000, author: 'W.',
+      touched: ['acme/landscape/decisions/0001-one-writer.md'],
+      projects: [{ ...withDescribed(), model: { ...described(), decisions: [{ ...described().decisions![0], title: 'Two writers' }] } }],
+    },
+    {
+      id: 'c2', subject: 'Wrote about billing', at: at + 1000, author: 'W.',
+      touched: ['acme/landscape/docs/billing.md'],
+      projects: [withDescribed()],
+    },
+    {
+      id: 'c1', subject: 'Moved everything', at, author: 'W.',
+      touched: ['acme/landscape/diagrams/d1.placements.json', 'acme/landscape/diagrams/d1.json'],
+      projects: [{ ...withDescribed(), model: { ...described(), diagrams: [{ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] }] } }],
+    },
+  ])
+
+  function showDescribed(history: InMemoryProjectHistory) {
+    const projects = new InMemoryProjectStore([withDescribed()])
+    return renderApp({ projects, initialProject: withDescribed(), history })
+  }
+
+  it('opens on a diagram from its tab, listing only the snapshots that touched it', async () => {
+    showDescribed(threeSnapshots())
+    fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
+    const list = await screen.findByTestId('history-list')
+    await waitFor(() => expect(within(list).getByText('Moved everything')).toBeDefined())
+    expect(within(list).queryByText('Wrote about billing')).toBeNull()
+    expect((screen.getByLabelText('Show the history of') as HTMLSelectElement).value).toBe('diagram:d1')
+    // And the changes are the diagram's own: renamed since, nothing about the decision.
+    const diff = screen.getByTestId('history-diff')
+    expect(await within(diff).findByText('Changed the diagram L7 (name)')).toBeDefined()
+    expect(within(diff).queryByText(/One writer/)).toBeNull()
+  })
+
+  it('opens on a decision from its page, by number, so the retitled one is found', async () => {
+    showDescribed(threeSnapshots())
+    fireEvent.click(screen.getByText('Decisions'))
+    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('One writer'))
+    fireEvent.click(within(await screen.findByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
+    const list = await screen.findByTestId('history-list')
+    await waitFor(() => expect(within(list).getByText('Retitled the decision')).toBeDefined())
+    expect(within(list).queryByText('Moved everything')).toBeNull()
+    expect((screen.getByLabelText('Show the history of') as HTMLSelectElement).value).toBe('decision:adr-1')
+  })
+
+  it('widens back to the whole project from the picker', async () => {
+    showDescribed(threeSnapshots())
+    fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
+    const list = await screen.findByTestId('history-list')
+    await waitFor(() => expect(within(list).getByText('Moved everything')).toBeDefined())
+    fireEvent.change(screen.getByLabelText('Show the history of'), { target: { value: '' } })
+    await waitFor(() => expect(within(screen.getByTestId('history-list')).getByText('Wrote about billing')).toBeDefined())
+    fireEvent.change(screen.getByLabelText('Show the history of'), { target: { value: 'description:billing' } })
+    await waitFor(() => expect(within(screen.getByTestId('history-list')).queryByText('Moved everything')).toBeNull())
+    expect(within(screen.getByTestId('history-list')).getByText('Wrote about billing')).toBeDefined()
+  })
+
+  it('says so when no snapshot touched the thing', async () => {
+    showDescribed(new InMemoryProjectHistory([
+      { id: 'c1', subject: 'Something else', at, author: 'W.', touched: ['acme/landscape/model.json'] },
+    ]))
+    fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
+    expect(await screen.findByText('No snapshot has touched this yet.')).toBeDefined()
   })
 })

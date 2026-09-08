@@ -48,6 +48,8 @@ export type HostedEditorProps = {
   onDuplicateDiagram?(diagramId: string): void
   onDeleteDiagram?(diagramId: string): void
   onDiagramSettingsChange?(diagramId: string, settings: DiagramSettings): void
+  onDiagramHistory?(diagramId: string): void
+  onDescriptionHistory?(elementId: ElementId): void
   focusElement?: EditorRequests['focus']
   documentationRequest?: EditorRequests['documentation']
   onLayoutError?(message: string): void
@@ -187,6 +189,9 @@ export function hostedProps(
       onDelete: o.onDeleteDiagram,
       onSettingsChange: o.onDiagramSettingsChange,
     },
+    history: o.onDiagramHistory || o.onDescriptionHistory
+      ? { onDiagram: o.onDiagramHistory, onDescription: o.onDescriptionHistory }
+      : undefined,
     requests: { focus: o.focusElement, documentation: o.documentationRequest },
     layout: { onError: o.onLayoutError, onSettled: o.onLayoutSettled },
     preferences: { initial: o.initialPreferences, onChange: o.onPreferencesChange },

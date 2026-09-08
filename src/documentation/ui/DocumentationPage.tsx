@@ -86,6 +86,8 @@ export interface DocumentationPageProps {
   onClose(): void;
   onRequestDelete(): void;
   onRequestLogoUpload?(): void;
+  /** The host keeps a history and can show this description's (ADR-0008). Absent: no button. */
+  onOpenHistory?(): void;
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
 }
@@ -266,6 +268,9 @@ export function DocumentationPage(props: DocumentationPageProps) {
             </IconButton>
           </span>
         </Tooltip>
+        {props.onOpenHistory && (
+          <Button size="small" onClick={props.onOpenHistory} sx={{ ml: 1 }}>{t('common.history')}</Button>
+        )}
         <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: DocumentationMode | null) => switchMode(value)} sx={{ ml: 1 }}>
           <ToggleButton value="read">{t('doc.read')}</ToggleButton>
           {!readOnly && <ToggleButton value="edit">{t('doc.edit')}</ToggleButton>}

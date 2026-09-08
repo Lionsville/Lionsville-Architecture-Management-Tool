@@ -1078,6 +1078,21 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     await waitFor(() => expect(screen.getByRole('tooltip').textContent).toMatch(/last landscape/));
   });
 
+  it('"History…" on a tab asks the host for that diagram\'s history (ADR-0008)', () => {
+    const onDiagramHistory = vi.fn();
+    renderEditor({ model: twoLandscapes(), onDiagramHistory });
+    fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — US/ }));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'Diagram menu' })).getByText('History…'));
+    expect(onDiagramHistory).toHaveBeenCalledExactlyOnceWith('d3');
+  });
+
+  it('"History…" on the documentation page asks for the description\'s (ADR-0008)', () => {
+    const onDescriptionHistory = vi.fn();
+    renderEditor({ documentationRequest: { elementId: 'a1', nonce: 1 }, onDescriptionHistory });
+    fireEvent.click(screen.getByRole('button', { name: 'History…' }));
+    expect(onDescriptionHistory).toHaveBeenCalledExactlyOnceWith('a1');
+  });
+
   it('opens no tab menu without any diagram callbacks, nor in read-only', () => {
     renderEditor({ model: twoLandscapes() });
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));

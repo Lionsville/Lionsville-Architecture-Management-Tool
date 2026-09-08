@@ -269,10 +269,24 @@ export interface EditorEditing {
  * where view settings live, which language to speak — and four single
  * capabilities that belong to nothing larger.
  */
+/**
+ * Where the host keeps a history, and wants to be asked for one thing's worth of
+ * it (ADR-0008). Each callback is an entry point — a menu item on a diagram's
+ * tab, a button on the documentation page — and is offered only when present:
+ * a tab in a browser keeps no history, and shows no item that leads nowhere.
+ */
+export interface EditorHistoryRequests {
+  /** "History…" on a diagram's tab menu. */
+  onDiagram?(diagramId: string): void;
+  /** "History…" on the documentation page: the description's, not the element's. */
+  onDescription?(elementId: ElementId): void;
+}
+
 export interface SolutionDesignEditorProps {
   document: EditorDocument;
   editing: EditorEditing;
   diagrams: EditorDiagramActions;
+  history?: EditorHistoryRequests;
   requests?: EditorRequests;
   layout?: EditorLayoutReports;
   preferences?: EditorPreferencesSeam;

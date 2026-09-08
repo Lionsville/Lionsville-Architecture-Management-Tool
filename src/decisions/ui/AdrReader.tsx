@@ -57,6 +57,8 @@ export type AdrReaderProps = {
   /** A status move. `superseded` is asked for here and completed by the page's dialog. */
   onStatus: (next: AdrStatus) => void
   onDelete: () => void
+  /** "History…", where the host offers one for this record. */
+  onHistory?: () => void
   /** Follow a superseded/supersedes link to another record in this list. */
   onSelect: (adrId: string) => void
   onElementLink?: (elementId: string) => void
@@ -150,6 +152,9 @@ export function AdrReader(props: AdrReaderProps) {
         ))}
         {!readOnly && isAdrDeletable(adr) && (
           <Button size="small" color="error" onClick={props.onDelete}>{s('adr.delete')}</Button>
+        )}
+        {props.onHistory && (
+          <Button size="small" onClick={props.onHistory}>{s('common.history')}</Button>
         )}
         <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
           <ToggleButton value="read">{s('adr.read')}</ToggleButton>

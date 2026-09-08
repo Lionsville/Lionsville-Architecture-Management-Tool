@@ -18,4 +18,6 @@ export const EN = {
   'common.languageNl': 'Nederlands',
   'common.languageEn': 'English',
   'common.empty': 'Nothing written yet.',
+  /** Three pages offer it — a diagram, a description, a decision — and it is the same word (ADR-0008). */
+  'common.history': 'History…',
 } as const

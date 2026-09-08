@@ -66,6 +66,8 @@ export type AdrPageProps = {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   /** An element link in a record was followed; the page closes and the caller opens that element. */
   onOpenElement?: (elementId: string) => void
+  /** The host keeps a history and can show this record's (ADR-0008). Only a project's records have one. */
+  onOpenHistory?: (adrId: string) => void
   windowChrome?: WindowChrome
 }
 
@@ -347,6 +349,11 @@ export function AdrPage(props: AdrPageProps) {
                 onUpdate={(patch) => update(selected, patch)}
                 onStatus={(next) => move(selected, next)}
                 onDelete={() => setDeleting(selected)}
+                // A group's records are kept in the group's own file, which no
+                // project's history covers; only a project's have one to show.
+                onHistory={props.onOpenHistory && scopeOfRecord(selected) !== 'group'
+                  ? () => props.onOpenHistory?.(selected.id)
+                  : undefined}
                 onSelect={(id) => {
                   const target = allRecords.find((a) => a.id === id)
                   if (target) chooseRecord(target, scopeOfRecord(target))

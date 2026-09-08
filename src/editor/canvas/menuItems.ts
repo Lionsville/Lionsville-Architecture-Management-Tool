@@ -74,7 +74,8 @@ export type MenuActionId =
   | 'rename-diagram'
   | 'diagram-settings'
   | 'duplicate-diagram'
-  | 'delete-diagram';
+  | 'delete-diagram'
+  | 'diagram-history';
 
 /** The parameter a submenu entry carries alongside its action. */
 export interface MenuActionArgs {
@@ -172,6 +173,8 @@ export interface TabMenuFacts {
   canConfigure: boolean;
   canDuplicate: boolean;
   canDelete: boolean;
+  /** The host keeps a history and can show this diagram's (ADR-0008). */
+  canHistory?: boolean;
   /** The only landscape left: deleting it is refused, not confirmed. */
   isLastLandscape: boolean;
 }
@@ -662,6 +665,7 @@ function tabItems(ctx: MenuContext): MenuItem[] {
   if (tab.canRename) items.push({ id: 'rename-diagram', label: t('menu.renameDiagram'), action: 'rename-diagram' });
   if (tab.canConfigure) items.push({ id: 'diagram-settings', label: t('menu.diagramSettings'), action: 'diagram-settings' });
   if (tab.canDuplicate) items.push({ id: 'duplicate-diagram', label: t('menu.duplicateDiagram'), action: 'duplicate-diagram' });
+  if (tab.canHistory) items.push({ id: 'diagram-history', label: t('common.history'), action: 'diagram-history' });
   if (tab.canDelete) {
     if (items.length > 0) items.push(sep('sep-delete'));
     items.push({

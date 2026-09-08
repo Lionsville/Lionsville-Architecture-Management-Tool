@@ -102,6 +102,16 @@ function setup(overrides: Partial<DocumentationPageProps> = {}) {
 const source = () => screen.queryByLabelText('Documentation source (markdown)') as HTMLTextAreaElement | null;
 
 describe('DocumentationPage', () => {
+  it('offers the description\'s history only where the host has one to show (ADR-0008)', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: 'History…' })).toBeNull();
+    cleanup();
+    const onOpenHistory = vi.fn();
+    setup({ onOpenHistory });
+    fireEvent.click(screen.getByRole('button', { name: 'History…' }));
+    expect(onOpenHistory).toHaveBeenCalledOnce();
+  });
+
   it('opens reading, with element refs already turned into links', () => {
     setup();
     expect(source()).toBeNull();

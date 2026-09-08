@@ -11,6 +11,12 @@
  * Compared with **the project as it is now**, not with the snapshot before it.
  * The question people actually have in front of a history is "what has happened
  * since then", and answering the other one would need two selections to ask.
+ *
+ * **Or of one thing** (ADR-0008). The subject picker narrows the page to a
+ * diagram, a description or a decision: the list is then the snapshots that
+ * touched it, and the changes are the rows about it. The diff is still the
+ * model's — nothing here knows a path — the page only chooses which rows to
+ * speak.
  */
 import { useEffect, useMemo } from 'react'
 import Box from '@mui/material/Box'
@@ -18,6 +24,7 @@ import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
+import NativeSelect from '@mui/material/NativeSelect'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { countChanges, diffModels } from '../../model/diff'
@@ -27,7 +34,9 @@ import type { Language, Translate } from '../../i18n'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { HistoryEntry } from '../../ports/ProjectHistory'
+import type { HistorySubject } from '../../projects/historyPath'
 import { changeLine } from './changeLine'
+import { changesFor } from './changesFor'
 
 export type HistoryPageProps = {
   open: boolean
@@ -39,9 +48,22 @@ export type HistoryPageProps = {
   onChoose: (id: string) => void
   /** What is on screen now — the other side of every comparison. */
   current: HostModel
+  /** Whose history this is; absent is the whole project's. */
+  subject?: HistorySubject
+  onSubjectChange: (subject: HistorySubject | undefined) => void
   language: Language
   s: Translate
   windowChrome?: WindowChrome
+}
+
+/** The picker's value: one string per subject, and the empty one for everything. */
+const encode = (subject: HistorySubject | undefined): string => (subject ? `${subject.what}:${subject.id}` : '')
+function decode(value: string): HistorySubject | undefined {
+  const at = value.indexOf(':')
+  if (at < 0) return undefined
+  const what = value.slice(0, at)
+  if (what !== 'diagram' && what !== 'description' && what !== 'decision') return undefined
+  return { what, id: value.slice(at + 1) }
 }
 
 function when(at: number, language: Language): string {
@@ -51,8 +73,18 @@ function when(at: number, language: Language): string {
 }
 
 export function HistoryPage(props: HistoryPageProps) {
-  const { open, onClose, entries, chosen, onChoose, current, language, s } = props
+  const { open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, language, s } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
+
+  // What can be asked about: every diagram, every described element, every
+  // decision — of the project as it is now, which is where the person stands.
+  const subjects = useMemo(() => ({
+    diagrams: current.diagrams.map((diagram) => ({ id: diagram.id, name: diagram.name })),
+    descriptions: current.elements
+      .filter((element) => element.description !== undefined)
+      .map((element) => ({ id: element.id, name: element.name })),
+    decisions: (current.decisions ?? []).map((adr) => ({ id: adr.id, name: adr.title })),
+  }), [current])
 
   // The newest snapshot is what somebody is nearly always asking about.
   const first = entries[0]?.id
@@ -61,8 +93,8 @@ export function HistoryPage(props: HistoryPageProps) {
   }, [open, first, chosen, onChoose])
 
   const changes: ModelChange[] | undefined = useMemo(
-    () => (chosen?.model ? diffModels(chosen.model, current) : undefined),
-    [chosen, current],
+    () => (chosen?.model ? changesFor(diffModels(chosen.model, current), subject) : undefined),
+    [chosen, current, subject],
   )
   const counts = changes && countChanges(changes)
 
@@ -98,13 +130,46 @@ export function HistoryPage(props: HistoryPageProps) {
           </IconButton>
         </Tooltip>
         <Typography variant="body2" sx={{ fontWeight: 600 }}>{s('history.title')}</Typography>
+        <Box sx={{ flex: 1 }} />
+        <Typography component="label" htmlFor="history-subject" sx={{ fontSize: 12, color: 'text.secondary' }}>
+          {s('history.subject')}
+        </Typography>
+        <NativeSelect
+          id="history-subject"
+          value={encode(subject)}
+          onChange={(event) => onSubjectChange(decode(event.target.value))}
+          sx={{ fontSize: 13, minWidth: 220 }}
+        >
+          <option value="">{s('history.everything')}</option>
+          {subjects.diagrams.length > 0 && (
+            <optgroup label={s('history.diagrams')}>
+              {subjects.diagrams.map((held) => (
+                <option key={held.id} value={encode({ what: 'diagram', id: held.id })}>{held.name}</option>
+              ))}
+            </optgroup>
+          )}
+          {subjects.descriptions.length > 0 && (
+            <optgroup label={s('history.descriptions')}>
+              {subjects.descriptions.map((held) => (
+                <option key={held.id} value={encode({ what: 'description', id: held.id })}>{held.name}</option>
+              ))}
+            </optgroup>
+          )}
+          {subjects.decisions.length > 0 && (
+            <optgroup label={s('history.decisions')}>
+              {subjects.decisions.map((held) => (
+                <option key={held.id} value={encode({ what: 'decision', id: held.id })}>{held.name}</option>
+              ))}
+            </optgroup>
+          )}
+        </NativeSelect>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         <Box sx={{ borderRight: 1, borderColor: 'divider', overflowY: 'auto' }}>
           {entries.length === 0 ? (
             <Typography sx={{ fontSize: 13, color: 'text.secondary', p: 2 }}>
-              {s('history.none')}
+              {s(subject ? 'history.noneFor' : 'history.none')}
             </Typography>
           ) : (
             <List dense disablePadding data-testid="history-list">
@@ -135,7 +200,7 @@ export function HistoryPage(props: HistoryPageProps) {
                 {s('history.compare')}
               </Typography>
               {changes.length === 0 ? (
-                <Typography sx={{ fontSize: 13 }}>{s('history.unchanged')}</Typography>
+                <Typography sx={{ fontSize: 13 }}>{s(subject ? 'history.unchangedFor' : 'history.unchanged')}</Typography>
               ) : (
                 <>
                   <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>

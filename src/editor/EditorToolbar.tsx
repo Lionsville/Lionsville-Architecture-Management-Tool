@@ -107,6 +107,8 @@ export interface EditorToolbarProps {
   onOpenDiagramSettings?(diagramId: string): void;
   onDuplicateDiagram?(diagramId: string): void;
   onDeleteDiagram?(diagramId: string): void;
+  /** "History…" on the tab menu; absent where the host keeps none (ADR-0008). */
+  onDiagramHistory?(diagramId: string): void;
   /** ⌘F: opens the element finder. */
   onOpenSearch(): void;
   /** Minimap toggle (4B): persisted with the other view settings. */
@@ -167,17 +169,18 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 canConfigure: Boolean(props.onOpenDiagramSettings),
                 canDuplicate: Boolean(props.onDuplicateDiagram),
                 canDelete: Boolean(props.onDeleteDiagram),
+                canHistory: Boolean(props.onDiagramHistory),
                 isLastLandscape: layer7Diagrams.length <= 1,
               },
             },
           )
         : [],
-    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, layer7Diagrams.length],
+    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, props.onDiagramHistory, layer7Diagrams.length],
   );
   const openTabMenu = (event: React.MouseEvent, diagramId: string) => {
     if (props.readOnly) return;
     if (!props.onRenameDiagram && !props.onOpenDiagramSettings
-      && !props.onDuplicateDiagram && !props.onDeleteDiagram) return;
+      && !props.onDuplicateDiagram && !props.onDeleteDiagram && !props.onDiagramHistory) return;
     event.preventDefault();
     setTabMenu({ diagramId, screen: { x: event.clientX, y: event.clientY } });
   };
@@ -197,6 +200,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
         return;
       case 'delete-diagram':
         props.onDeleteDiagram?.(diagram.id);
+        return;
+      case 'diagram-history':
+        props.onDiagramHistory?.(diagram.id);
         return;
     }
   };
