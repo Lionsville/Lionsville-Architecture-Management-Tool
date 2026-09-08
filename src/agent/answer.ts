@@ -25,14 +25,14 @@ import { matchesQuery } from '../model/textSearch'
 import type { DesignConnection, DesignElement, ElementId } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { formatAdrNumber } from '../decisions/adr'
-import { searchAll } from '../search/search'
+import { SEARCH_LIMIT_PER_KIND, searchAll, snippet } from '../search/search'
 import type { AgentAnswer, ToolName } from './tools'
-import { checkArguments, json, refused, toolSpec } from './tools'
+import { checkArguments, json, refused, text, toolSpec } from './tools'
 
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
-  | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search'>
+  | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -195,16 +195,102 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       })
     }
 
-    case 'search':
+    case 'search': {
+      const query = args.query as string
+      const limit = (args.limit as number | undefined) ?? SEARCH_LIMIT_PER_KIND
+      // Plans are not in the app's index yet; the same rule for "found",
+      // applied here, so an agent's search covers them as well.
+      const plans = transitionList(model)
+        .filter((plan) => matchesQuery(query, [transitionLabel(plan), plan.title, plan.owner, plan.body, ...plan.milestones.map((m) => m.name)]))
+        .slice(0, limit)
+        .map((plan) => ({
+          kind: 'plan' as const, planId: plan.id, label: transitionLabel(plan), title: plan.title, status: plan.status,
+          snippet: snippet(plan.body, query),
+        }))
       return json({
-        hits: searchAll({
-          model: view.current(),
-          groupDecisions: view.groupDecisions,
-          query: args.query as string,
-          limitPerKind: args.limit as number | undefined,
-        }),
+        hits: [
+          ...searchAll({ model: view.current(), groupDecisions: view.groupDecisions, query, limitPerKind: limit }),
+          ...plans,
+        ],
       })
+    }
+
+    case 'project.export':
+      return args.format === 'json' ? json(view.current()) : text(exportMarkdown(model, view))
   }
+}
+
+// --- the whole project as one document ---------------------------------------------
+
+/**
+ * The landscape as markdown, one table per kind of thing, for diffing against
+ * a document a person wrote. Ids are in every row so a line of the export can
+ * be turned back into a call; the bodies — descriptions, decisions, plans —
+ * are left out, because they are markdown already and each is one call away.
+ */
+function exportMarkdown(model: Model, view: ReadView): string {
+  const cell = (value: unknown): string => (value === undefined || value === null || value === '' ? '' : String(value).replace(/\|/g, '\\|').replace(/\r?\n/g, ' '))
+  const table = (header: string[], rows: unknown[][]): string[] => (rows.length === 0 ? ['_None._', ''] : [
+    `| ${header.join(' | ')} |`,
+    `| ${header.map(() => '---').join(' | ')} |`,
+    ...rows.map((row) => `| ${row.map(cell).join(' | ')} |`),
+    '',
+  ])
+  const dates = (element: DesignElement): string => {
+    const held = element.lifecycleDates ?? {}
+    return ['live', 'retiring', 'retired'].filter((phase) => held[phase as keyof typeof held])
+      .map((phase) => `${phase} ${held[phase as keyof typeof held]}`).join(', ')
+  }
+  const name = (id: string): string => model.elements[id]?.name ?? id
+  const lines: string[] = [`# ${model.name}`, '', `Group: ${model.customerName}`, '']
+  if (model.description) lines.push(model.description, '')
+
+  const kinds = ['actor', 'inputChannel', 'application', 'component', 'externalSystem', 'managementTool'] as const
+  lines.push('## Elements', '')
+  for (const kind of kinds) {
+    const rows = model.order.elements.map((id) => model.elements[id]).filter((e) => e.kind === kind)
+    if (rows.length === 0) continue
+    lines.push(`### ${kind}`, '', ...table(
+      ['id', 'name', 'lifecycle', 'dates', 'successor', 'owner', 'category', 'vendor', 'technology', 'parent'],
+      rows.map((e) => [e.id, e.name, e.lifecycle, dates(e), e.successorId, e.owner, e.category, e.vendor, e.technology, e.parentApplicationId]),
+    ))
+  }
+
+  lines.push('## Connections', '', ...table(
+    ['id', 'from', 'to', 'label', 'protocol', 'both ways', 'valid from', 'valid until'],
+    model.order.connections.map((id) => model.connections[id])
+      .map((c) => [c.id, `${name(c.sourceId)} (${c.sourceId})`, `${name(c.targetId)} (${c.targetId})`, c.label, c.protocol, c.isBidirectional ? 'yes' : '', c.validFrom, c.validUntil]),
+  ))
+
+  lines.push('## Diagrams', '', ...table(
+    ['id', 'name', 'kind', 'about', 'as of', 'elements'],
+    model.order.diagrams.map((id) => model.diagrams[id])
+      .map((d) => [d.id, d.name, d.kind, d.applicationElementId ? name(d.applicationElementId) : '', d.asOf, placementList(d).length]),
+  ))
+
+  const plans = transitionList(model)
+  lines.push('## Plans', '', ...table(
+    ['id', 'label', 'title', 'status', 'from', 'to', 'owner', 'introduces', 'retires', 'changes', 'decisions', 'milestones'],
+    plans.map((p) => [
+      p.id, transitionLabel(p), p.title, p.status, p.from, p.to, p.owner,
+      p.elements.filter((e) => e.role === 'introduces').map((e) => e.elementId).join(', '),
+      p.elements.filter((e) => e.role === 'retires').map((e) => e.elementId).join(', '),
+      p.elements.filter((e) => e.role === 'changes').map((e) => e.elementId).join(', '),
+      p.decisions.join(', '),
+      p.milestones.map((m) => `${m.date} ${m.name}`).join('; '),
+    ]),
+  ))
+
+  const own = decisionsOf(model)
+  const decisions = [
+    ...view.groupDecisions.map((adr) => ({ adr, scope: 'group' })),
+    ...model.order.decisions.map((id) => ({ adr: own[id], scope: own[id].applicationId ? 'application' : 'landscape' })),
+  ]
+  lines.push('## Decisions', '', ...table(
+    ['id', 'label', 'scope', 'application', 'title', 'status', 'date', 'supersedes by'],
+    decisions.map(({ adr, scope }) => [adr.id, formatAdrNumber(adr.number), scope, adr.applicationId ? name(adr.applicationId) : '', adr.title, adr.status, adr.date, adr.supersededBy]),
+  ))
+  return lines.join('\n')
 }
 
 // --- the lines an answer is made of ----------------------------------------------

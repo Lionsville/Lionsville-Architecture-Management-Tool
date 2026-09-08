@@ -214,6 +214,20 @@ describe('search', () => {
   })
 })
 
+describe('project.export', () => {
+  it('hands over the working file’s JSON, or one markdown document with a table per kind', () => {
+    expect(read('project.export', { format: 'json' })).toEqual(host)
+    const markdown = answer('project.export', {}, view())
+    if (!markdown.ok || markdown.content[0].type !== 'text') throw new Error('not text')
+    const doc = markdown.content[0].text
+    expect(doc).toContain('# Warehouse landscape')
+    expect(doc).toContain('| billing | Billing | live |')
+    expect(doc).toContain('| c1 | CRM (crm) | Billing (billing) | orders | REST |')
+    expect(doc).toContain('| g-1 | ADR-0001 | group |')
+    expect(doc).toMatch(/## Plans\n\n_None._/)
+  })
+})
+
 describe('over the generated landscape', () => {
   const large = syntheticModel('large')
   const held = view(large, 'landscape')
@@ -286,6 +300,14 @@ describe('plans.list (ADR-0010)', () => {
     expect(dated.find((c) => c.id === 'c2')).toMatchObject({ validUntil: '2027-04-30', planId: 'tr-1', plan: 'TR-0001' })
     expect(dated.find((c) => c.id === 'twin')).toMatchObject({ validFrom: '2027-05-01', plan: 'TR-0001' })
     expect(dated.find((c) => c.id === 'c3')).not.toHaveProperty('plan')
+  })
+
+  it('search finds a plan by its title, its body or a milestone, beside the app’s own hits', () => {
+    const model: HostModel = { ...withPlan, transitions: [{ ...plan, body: 'Move the **ledger** first.', milestones: [{ date: '2027-03-01', name: 'Pilot' }] }] }
+    const hits = (read('search', { query: 'ledger' }, view(model)) as { hits: Record<string, unknown>[] }).hits
+    expect(hits.filter((h) => h.kind === 'plan')).toEqual([expect.objectContaining({ planId: 'tr-1', label: 'TR-0001', snippet: expect.stringContaining('ledger') })])
+    expect((read('search', { query: 'pilot' }, view(model)) as { hits: { kind: string }[] }).hits.map((h) => h.kind)).toEqual(['plan'])
+    expect((read('search', { query: 'nothing here' }, view(model)) as { hits: unknown[] }).hits).toEqual([])
   })
 
   it('plan.read answers one plan by id or by label, with what its business case computes', () => {

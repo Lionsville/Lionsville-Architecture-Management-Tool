@@ -49,11 +49,15 @@ export type RowSchema = {
   readonly additionalProperties: false
 }
 
-/** A map from a name to one string: an element's aspects, keyed by aspect. */
+/**
+ * A map from a name to one string: an element's aspects, keyed by aspect. Or,
+ * with `additionalProperties: true`, any object at all — the arguments of a
+ * step inside `batch`, which the named tool checks for itself.
+ */
 export type MapSchema = {
   readonly type: 'object'
   readonly description: string
-  readonly additionalProperties: { readonly type: 'string'; readonly enum?: readonly string[] }
+  readonly additionalProperties: { readonly type: 'string'; readonly enum?: readonly string[] } | true
 }
 
 export type InputSchema = {
@@ -170,13 +174,14 @@ const SIGNERS: ArgumentSchema = {
  * listed twice. The order is the order a client lists them in, which is why the
  * orientation tool comes first.
  */
-export const TOOLS = [
+const SPECS = [
   {
     name: 'project.current',
     tier: 'read',
     description:
       'The project that is open: its name, the group it is filed under, its description, '
-      + 'how many elements, connections, diagrams and decisions it holds, and which diagram is on screen.',
+      + 'how many elements, connections, diagrams and decisions it holds, which diagram is on screen, '
+      + 'and its revision — a counter that moves with every change, for ifRevision on a write.',
     inputSchema: NO_ARGUMENTS,
   },
   {
@@ -298,10 +303,44 @@ export const TOOLS = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
+    name: 'activity.list',
+    tier: 'read',
+    description:
+      'The steps taken in this session, newest first, as the app\'s Activity list shows them: when, by '
+      + 'whom (the person or an agent), and what. Read it to see what stuck; undo takes back the '
+      + 'newest steps while they are an agent\'s.',
+    inputSchema: {
+      type: 'object',
+      properties: { limit: { type: 'integer', description: 'At most this many. Default 20.', minimum: 1, maximum: 200 } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'images.list',
+    tier: 'read',
+    description:
+      'The pictures the project holds for its documents (ADR-0009): the file name to refer to each by, '
+      + 'its size, and which documents show it.',
+    inputSchema: NO_ARGUMENTS,
+  },
+  {
+    name: 'project.export',
+    tier: 'read',
+    description:
+      'The whole project in one answer, for diffing against a document: as the JSON the working file '
+      + 'holds, or as one markdown document with a table per kind of thing. Large for a large landscape; '
+      + 'the list tools are the way to read a part.',
+    inputSchema: {
+      type: 'object',
+      properties: { format: { type: 'string', description: 'json or markdown. Default markdown.', enum: ['json', 'markdown'] } },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'search',
     tier: 'read',
     description:
-      'Search elements, their documentation and the decision records together, the way ⌘K does in the app. '
+      'Search elements, their documentation, the decision records and the plans together, the way ⌘K does in the app. '
       + 'Every word of the query must occur; case and accents do not matter.',
     inputSchema: {
       type: 'object',
@@ -670,6 +709,76 @@ export const TOOLS = [
     },
   },
 
+  {
+    name: 'image.upload',
+    tier: 'write',
+    description:
+      'Put a picture into the project for its documents to show (ADR-0009): a PNG, JPEG, SVG or WebP '
+      + 'under two megabytes, as base64 or a data URL. Answers with the file name and the markdown line '
+      + 'that shows it from a description, a decision or a plan. Not an undo step: the picture is a '
+      + 'file beside the model, and a document that stops referring to it is what removes it from view.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'What to call it; the file name is derived from this.' },
+        data: { type: 'string', description: 'The bytes, base64-encoded, or a data: URL carrying them.' },
+        type: { type: 'string', description: 'The media type. Needed unless the data is a data: URL.', enum: ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'] },
+      },
+      required: ['name', 'data'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'batch',
+    tier: 'write',
+    description:
+      'Several changes as one undo step, all or nothing: each step names a write or placement tool and '
+      + 'its arguments, and is built against the model as the steps before it left it, so a step may use an '
+      + 'id an earlier one answered with. A step that is refused stops the whole batch before anything lands. '
+      + 'Answers with each step\'s answer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        steps: {
+          type: 'array',
+          description: 'The changes, in order.',
+          items: {
+            type: 'object',
+            description: 'One tool call.',
+            properties: {
+              tool: { type: 'string', description: 'The tool, by name: any write tool, or moveBy, placeNextTo, element.place, element.draw, element.undraw, group, ungroup, align, distribute.' },
+              args: { type: 'object', description: 'Its arguments, as that tool takes them.', additionalProperties: true },
+            },
+            required: ['tool'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['steps'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'undo',
+    tier: 'write',
+    description:
+      'Take back the newest step, or several, as ⌘Z does — but only while the newest step is an agent\'s. '
+      + 'A person\'s step stops it, and is theirs to undo. Answers with what was undone.',
+    inputSchema: {
+      type: 'object',
+      properties: { steps: { type: 'integer', description: 'How many steps. Default 1.', minimum: 1, maximum: 200 } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'project.save',
+    tier: 'write',
+    description:
+      'Write the project to wherever it is kept, now, rather than at the next idle moment. The app '
+      + 'autosaves; call this before a step that could take the app down, or when what you did has to be on disk.',
+    inputSchema: NO_ARGUMENTS,
+  },
+
   // --- the see tier: structure first, then pixels, then relational placement ------
   {
     name: 'diagram.inspect',
@@ -910,7 +1019,30 @@ export const TOOLS = [
   },
 ] as const satisfies readonly { name: string; tier: ToolTier; description: string; inputSchema: InputSchema }[]
 
-export type ToolName = (typeof TOOLS)[number]['name']
+export type ToolName = (typeof SPECS)[number]['name']
+
+/**
+ * Every tool that changes something also takes `ifRevision`: the project's
+ * revision the caller last saw, so two writers do not clobber each other. The
+ * revision is on every mutation's answer and on project.current; a call whose
+ * revision is not the current one is refused with `agent.stale` and nothing
+ * lands. Added here rather than written into thirty schemas, so no write can
+ * forget it.
+ */
+const REVISION_GUARD: ArgumentSchema = {
+  type: 'integer',
+  description: 'The project revision this call was decided against; refused when the project has moved on since.',
+  minimum: 0,
+}
+
+/** The tools that only look: no revision to guard. */
+const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render', 'focus']
+
+export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => (
+  tool.tier === 'read' || LOOKS_ONLY.includes(tool.name)
+    ? tool
+    : { ...tool, inputSchema: { ...tool.inputSchema, properties: { ...tool.inputSchema.properties, ifRevision: REVISION_GUARD } } }
+))
 
 /**
  * The two pseudo-tools the protocol relays for MCP resources: not in the list
@@ -968,6 +1100,9 @@ export type AgentRefusal =
   | 'agent.cancelled'
   | 'agent.noAnswer'
   | 'agent.planned'
+  | 'agent.stale'
+  | 'agent.notYours'
+  | 'agent.saveFailed'
   | CommandRefusal
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
@@ -986,6 +1121,9 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.windowHidden': 'The window is hidden or minimised, so nothing can be drawn. Bring it to the front.',
   'agent.noAnswer': 'The app did not answer in time.',
   'agent.planned': 'That interface was already dated by another plan, or by hand. Take that port back first.',
+  'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',
+  'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
+  'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',
@@ -1066,6 +1204,7 @@ function checkValue(spec: ArgumentSchema, value: unknown): string | undefined {
         const wrong = checkArguments(spec, value)
         return wrong === undefined ? undefined : `has a problem: ${wrong}`
       }
+      if (spec.additionalProperties === true) return undefined
       for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
         if (item === null) continue
         const wrong = checkValue({ ...spec.additionalProperties, description: '' }, item)

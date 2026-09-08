@@ -314,7 +314,13 @@ export function ProjectWorkspace({
     translate: s,
     containerName: (name: string) => s('shell.containerDiagram', { name }),
     renderer,
-  }), [session, groupDecisions, documentStatus, makeId, today, s, renderer]))
+    revision: session.revision,
+    history: session.history,
+    undo: session.undo,
+    images: session.currentImages,
+    addImage: (image) => session.setImageLibrary((library) => [...library, image]),
+    save: forceSave,
+  }), [session, groupDecisions, documentStatus, makeId, today, s, renderer, forceSave]))
 
   const snapshots = useProjectHistory({
     history: projectHistory,

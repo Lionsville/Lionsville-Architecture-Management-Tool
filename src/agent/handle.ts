@@ -13,12 +13,21 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
+import type { StepSummary } from '../model/activity'
 import type { Adr } from '../model/adr'
 import type { Command } from '../model/commands'
+import { transaction } from '../model/commands'
+import { MAX_IMAGE_BYTES, readImageFile, takenImageFiles } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
 import type { IdPolicy, MakeId } from '../model/keys'
+import { idPolicy } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf } from '../model/normalised'
+import { decisionsOf, toArrays, transitionList } from '../model/normalised'
+import { transitionLabel } from '../model/transition'
+import type { DocumentImage } from '../model/types'
+import { ShellError } from '../platform/errors'
+import { documentsUsing, imageReference } from '../documentation/images'
+import type { NamedDocument } from '../documentation/images'
 import { expandRect, placementRect, unionRects } from '../model/placement'
 import { apply } from '../model/reducer'
 import type { Rect } from '../model/types'
@@ -29,10 +38,11 @@ import { formatAdrNumber } from '../decisions/adr'
 import { answer } from './answer'
 import type { ReadTool } from './answer'
 import { commandFor } from './commandFor'
+import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
-import type { AgentAnswer, AgentRefusal, AgentRequest } from './tools'
+import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
 import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused, toolSpec } from './tools'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
@@ -66,6 +76,28 @@ export type SessionView = {
   containerName(applicationName: string): string
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
+  /**
+   * A counter that moves with every change to the model — a step, an undo, a
+   * project adopted — so a caller can say which state it decided against.
+   */
+  revision(): number
+  /** The steps of this session, oldest first: what the Activity list shows. */
+  history(): readonly HistoryEntry[]
+  /** ⌘Z. The handler has already checked whose step is on top. */
+  undo(): void
+  /** The pictures the documents may show, and the way one arrives (ADR-0009). Shell state, not a step. */
+  images(): readonly DocumentImage[]
+  addImage(image: DocumentImage): void
+  /** Write the project now. Rejects when the store refuses. */
+  save(): Promise<void>
+}
+
+/** One step as the handler reads it: enough to name it, date it and say whose it was. */
+export type HistoryEntry = {
+  readonly at: number
+  readonly origin?: 'agent'
+  readonly summary: StepSummary
+  readonly commands: readonly Command[]
 }
 
 const RESOURCE_SCHEME = 'lvarch://'
@@ -93,6 +125,11 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
 
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const spec = toolSpec(request.tool)
+  // Three reads that need the session rather than the model: the log, the
+  // pictures, and the revision on the orientation answer.
+  if (request.tool === 'activity.list') return listActivity(request.args, session)
+  if (request.tool === 'images.list') return listImages(view.model, session)
+  if (request.tool === 'project.current') return withRevision(answer(request.tool, request.args, view), session)
   if (spec.tier === 'read') return answer(request.tool as ReadTool, request.args, view)
 
   const wrong = checkArguments(spec.inputSchema, request.args)
@@ -115,18 +152,21 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   const blocked = session.blocked()
   if (blocked) return refused(blocked)
 
+  // The revision a caller decided against, when it said: a project that has
+  // moved on since is refused before anything is built.
+  if (typeof args.ifRevision === 'number' && args.ifRevision !== session.revision()) {
+    return refused('agent.stale', `the project is at revision ${session.revision()}, not ${args.ifRevision}`)
+  }
+
   if (request.tool === 'diagram.tidy' || request.tool === 'diagram.route') {
     return seeing(request.tool, args, session)
   }
+  if (request.tool === 'image.upload') return uploadImage(args, session)
+  if (request.tool === 'undo') return undoSteps(args, session)
+  if (request.tool === 'project.save') return saveProject(session)
+  if (request.tool === 'batch') return batch(args, session)
 
-  const prepared = commandFor(request.tool, request.args, {
-    ...view,
-    ids: session.ids,
-    makeId: session.makeId,
-    today: session.today,
-    translate: session.translate,
-    containerName: session.containerName,
-  })
+  const prepared = commandFor(request.tool, withoutGuard(request.args), writeView(session))
   if ('ok' in prepared) return prepared
 
   // Asked of the reducer first, so a refusal comes back with its reason: the
@@ -136,7 +176,207 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   const trial = apply(view.model, prepared.command)
   if (!trial.ok) return refused(trial.reason)
   session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
-  return prepared.answer
+  return withRevision(prepared.answer, session)
+}
+
+function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteView {
+  return {
+    model: session.indexed(),
+    current: session.current,
+    activeDiagramId: session.activeDiagramId(),
+    groupDecisions: session.groupDecisions(),
+    ids: session.ids,
+    makeId: session.makeId,
+    today: session.today,
+    translate: session.translate,
+    containerName: session.containerName,
+    ...over,
+  }
+}
+
+/** The arguments without the guard, which the builders were not shown. */
+function withoutGuard(args: unknown): unknown {
+  if (!args || typeof args !== 'object') return args
+  const { ifRevision: _guard, ...rest } = args as Record<string, unknown>
+  void _guard
+  return rest
+}
+
+/**
+ * The revision, written into a JSON answer beside what it already says. Every
+ * mutation answers with the revision it produced, so the next call can name
+ * it; a refusal and a picture are left as they are.
+ */
+function withRevision(held: AgentAnswer, session: SessionView): AgentAnswer {
+  if (!held.ok || held.content.length !== 1 || held.content[0].type !== 'text') return held
+  try {
+    const parsed = JSON.parse(held.content[0].text) as Record<string, unknown>
+    return json({ ...parsed, revision: session.revision() })
+  } catch {
+    return held
+  }
+}
+
+// --- the session's own: the log, undo, save, and the pictures -----------------------------
+
+function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
+  const wrong = checkArguments(toolSpec('activity.list').inputSchema, rawArgs)
+  if (wrong) return refused('agent.badArguments', wrong)
+  const limit = ((rawArgs ?? {}) as { limit?: number }).limit ?? 20
+  const steps = [...session.history()].reverse().slice(0, limit).map((step) => ({
+    at: new Date(step.at).toISOString(),
+    by: step.origin === 'agent' ? 'agent' : 'person',
+    what: session.translate(step.summary.key, {
+      name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '',
+    }),
+    ...step.summary,
+    commands: step.commands.length,
+  }))
+  return json({ revision: session.revision(), total: session.history().length, steps })
+}
+
+/**
+ * ⌘Z, while the newest step is an agent's. A person's step on top ends the
+ * run rather than being undone: it is theirs, and undoing it from a terminal
+ * they are not looking at is what "a peer of the menu" must not do.
+ */
+function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAnswer {
+  const wanted = (args.steps as number | undefined) ?? 1
+  const undone: string[] = []
+  for (let n = 0; n < wanted; n += 1) {
+    const history = session.history()
+    const top = history[history.length - 1]
+    if (!top || top.origin !== 'agent') break
+    const what = session.translate(top.summary.key, {
+      name: top.summary.name ?? '', count: top.summary.count ?? 0, asOf: top.summary.asOf ?? '',
+    })
+    session.undo()
+    undone.push(what)
+  }
+  if (undone.length === 0) {
+    const history = session.history()
+    return history.length === 0 ? refused('agent.badArguments', 'nothing to undo') : refused('agent.notYours')
+  }
+  const history = session.history()
+  const top = history[history.length - 1]
+  return json({
+    undone,
+    revision: session.revision(),
+    ...(undone.length < wanted ? { stopped: top ? 'the next step is a person\'s' : 'nothing left to undo' } : {}),
+  })
+}
+
+async function saveProject(session: SessionView): Promise<AgentAnswer> {
+  try {
+    await session.save()
+    return json({ saved: true, revision: session.revision() })
+  } catch (error) {
+    return refused('agent.saveFailed', error instanceof Error ? error.message : String(error))
+  }
+}
+
+function listImages(model: Model, session: SessionView): AgentAnswer {
+  // Every markdown the project holds, labelled the way the page labels it.
+  const documents: NamedDocument[] = [
+    ...model.order.elements.flatMap((id) => (model.elements[id].description ? [{ label: model.elements[id].name, text: model.elements[id].description! }] : [])),
+    ...model.order.decisions.map((id) => ({ label: decisionsOf(model)[id].title, text: decisionsOf(model)[id].body })),
+    ...transitionList(model).map((plan) => ({ label: transitionLabel(plan), text: plan.body })),
+  ]
+  return json({
+    images: session.images().map((image) => ({
+      file: image.file,
+      reference: `../images/${image.file}`,
+      bytes: dataUrlBytes(image.url),
+      usedBy: documentsUsing(image.file, documents),
+    })),
+  })
+}
+
+/** How many bytes a data URL carries: three for every four base64 characters, less the padding. */
+function dataUrlBytes(url: string): number {
+  const comma = url.indexOf(',')
+  const payload = comma >= 0 ? url.slice(comma + 1) : ''
+  if (!/;base64/i.test(url.slice(0, Math.max(comma, 0)))) return payload.length
+  const padding = payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0
+  return Math.floor((payload.length * 3) / 4) - padding
+}
+
+/**
+ * A picture in, through the same reader the page uses, so the rules — the
+ * four formats, the size, the file name with the moment in it — are one set.
+ */
+async function uploadImage(args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> {
+  const name = (args.name as string).trim()
+  if (!name) return refused('agent.badArguments', '"name" must not be blank')
+  const data = (args.data as string).trim()
+  const asUrl = /^data:([^;,]+)(;base64)?,/i.exec(data)
+  const type = asUrl ? asUrl[1].toLowerCase() : (args.type as string | undefined)
+  if (!type) return refused('agent.badArguments', '"type" is needed when the data is not a data: URL')
+  if (asUrl && !asUrl[2]) return refused('agent.badArguments', 'the data: URL must be base64')
+  const url = asUrl ? data : `data:${type};base64,${data}`
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(url.slice(url.indexOf(',') + 1))) return refused('agent.badArguments', '"data" is not base64')
+  try {
+    const image = await readImageFile(
+      { name, type, size: dataUrlBytes(url) },
+      takenImageFiles(session.images()),
+      () => Promise.resolve(url),
+    )
+    session.addImage(image)
+    return json({ file: image.file, reference: `../images/${image.file}`, markdown: imageReference(image.file, name), bytes: dataUrlBytes(url) })
+  } catch (error) {
+    if (error instanceof ShellError) {
+      if (error.key === 'shell.imageTooBig') return refused('agent.tooLarge', `${dataUrlBytes(url)} bytes; the most is ${MAX_IMAGE_BYTES}`)
+      return refused('agent.badArguments', error.key === 'shell.imageBadType' ? 'type must be image/png, image/jpeg, image/svg+xml or image/webp' : error.key)
+    }
+    throw error
+  }
+}
+
+// --- several changes, one step ------------------------------------------------------------
+
+/** What a batch may hold: every command-building tool, and none that draws, looks or asks the session. */
+function batchable(name: string): name is ToolName {
+  if (!isToolName(name)) return false
+  const spec = toolSpec(name)
+  if (spec.tier === 'write') return !['batch', 'undo', 'project.save', 'image.upload'].includes(name)
+  return spec.tier === 'see' && !['diagram.inspect', 'diagram.render', 'diagram.tidy', 'diagram.route', 'focus'].includes(name)
+}
+
+/**
+ * Each step is built against the model as the steps before it left it, so a
+ * later step may use an id an earlier one minted — and every step is applied
+ * to that trial model, so the refusal a step would meet at the reducer is
+ * met here, before the person sees anything. What lands is one transaction.
+ */
+function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer {
+  const steps = args.steps as { tool: string; args?: unknown }[]
+  if (steps.length === 0) return refused('agent.badArguments', 'a batch needs at least one step')
+  let model = session.indexed()
+  // Ids over the trial model, so what one step mints the next cannot mint again.
+  const ids = idPolicy(() => [...model.order.elements, ...model.order.connections, ...model.order.diagrams])
+  const commands: Command[] = []
+  const answers: unknown[] = []
+  let activeDiagramId: string | undefined
+  for (const [index, step] of steps.entries()) {
+    if (!batchable(step.tool)) return refused('agent.badArguments', `steps[${index}]: ${step.tool} cannot be part of a batch`)
+    const prepared = commandFor(step.tool, withoutGuard(step.args), writeView(session, {
+      model, current: () => toArrays(model), ids,
+      ...(activeDiagramId !== undefined ? { activeDiagramId } : {}),
+    }))
+    if ('ok' in prepared) {
+      return refused(prepared.ok ? 'agent.badArguments' : prepared.refusal,
+        `steps[${index}]${!prepared.ok && prepared.detail ? `: ${prepared.detail}` : ''}`)
+    }
+    const trial = apply(model, prepared.command)
+    if (!trial.ok) return refused(trial.reason, `steps[${index}]`)
+    model = trial.model
+    commands.push(prepared.command)
+    if (prepared.activeDiagramId) activeDiagramId = prepared.activeDiagramId
+    const text = prepared.answer.ok && prepared.answer.content[0]?.type === 'text' ? prepared.answer.content[0].text : '{}'
+    answers.push(JSON.parse(text))
+  }
+  session.dispatch(transaction(commands, { origin: 'agent' }), activeDiagramId ? { activeDiagramId } : undefined)
+  return json({ steps: answers, revision: session.revision() })
 }
 
 function diagramOf(model: Model, args: Record<string, unknown>, active: string): Diagram | undefined {

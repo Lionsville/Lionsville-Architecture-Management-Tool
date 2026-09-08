@@ -103,6 +103,12 @@ export type ModelSession = {
   canRedo: boolean
   /** The steps taken this session, oldest first. */
   history: () => readonly HistoryStep[]
+  /**
+   * A counter that moves with every change to the model — a step, an undo, a
+   * redo, a project adopted. What an agent names to say which state it
+   * decided against (ADR-0007), and nothing else reads it.
+   */
+  revision: () => number
 
   // --- controls -------------------------------------------------------------
   onLayoutSettled: (diagramId: string) => void
@@ -171,6 +177,7 @@ export function useModelSession(deps: {
   const past = useRef<HistoryStep[]>([])
   const future = useRef<HistoryStep[]>([])
   const [, setHistoryVersion] = useState(0)
+  const revision = useRef(0)
 
   const setActiveDiagramId = useCallback((id: string) => {
     activeRef.current = id
@@ -193,6 +200,7 @@ export function useModelSession(deps: {
   ) => {
     modelRef.current = next
     setModel(next)
+    revision.current += 1
     if (meta.undoable === false) return
     const top = past.current[past.current.length - 1]
     if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
@@ -267,6 +275,7 @@ export function useModelSession(deps: {
     other.push(entry)
     modelRef.current = result.model
     setModel(result.model)
+    revision.current += 1
     setHistoryVersion((v) => v + 1)
   }, [notify, s])
 
@@ -291,6 +300,7 @@ export function useModelSession(deps: {
     const next = fromArrays(project.model)
     modelRef.current = next
     setModel(next)
+    revision.current += 1
     setActiveDiagramId(project.activeDiagramId)
     logoRef.current = project.logoLibrary
     setLogoLibrary(project.logoLibrary)
@@ -324,6 +334,7 @@ export function useModelSession(deps: {
     canUndo: past.current.length > 0,
     canRedo: future.current.length > 0,
     history: () => past.current,
+    revision: () => revision.current,
     onLayoutSettled,
     current: () => asArrays(modelRef.current),
     indexed: () => modelRef.current,
