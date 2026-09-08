@@ -39,6 +39,9 @@ export const NL: Record<keyof typeof EN, string> = {
   // --- wat de enige schrijver weigert (ADR-0002) ---------------------------
   'command.gone': 'Dat is er niet meer',
   'command.lastLandscape': 'Dit is het laatste landschap; het kan niet worden verwijderd.',
+  'restore.absentThen': 'Dit stond bij die momentopname niet in het project.',
+  'restore.absentNow': 'Het element staat niet meer in het project; zet het hele project terug om het terug te halen.',
+  'restore.locked': 'Dit besluit is aanvaard, afgewezen of vervangen, en een afgesloten record wordt niet gewijzigd. Schrijf een nieuw besluit dat het vervangt.',
   'logo.category.data': 'Gegevens',
   'logo.category.integration': 'Integratie',
   'logo.category.applications': 'Applicaties',
@@ -80,4 +83,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.decisionChanged': 'Besluit {name} gewijzigd',
   'activity.decisionRemoved': 'Besluit {name} verwijderd',
   'activity.projectSettings': 'Projectinstellingen gewijzigd',
+  'activity.diagramRestored': 'Aanzicht {name} teruggezet naar {asOf}',
+  'activity.descriptionRestored': 'Beschrijving van {name} teruggezet naar {asOf}',
+  'activity.decisionRestored': 'Besluit {name} teruggezet naar {asOf}',
+  'activity.projectRestored': 'Het hele project teruggezet naar {asOf}',
 }

@@ -16,6 +16,16 @@ export type AdrStatus = 'proposed' | 'reviewing' | 'accepted' | 'rejected' | 'su
 /** In workflow order, which is also the order a status picker shows them in. */
 export const ADR_STATUSES: readonly AdrStatus[] = ['proposed', 'reviewing', 'accepted', 'rejected', 'superseded']
 
+/**
+ * Accepted, rejected and superseded records are history: title, body and
+ * signers stay as they were. Vocabulary rather than a rule — which is why it
+ * is here and not in `decisions/`: a restore (ADR-0008) has to refuse a locked
+ * record from inside the model, where the rules are out of reach.
+ */
+export function isAdrLocked(adr: { status: AdrStatus }): boolean {
+  return adr.status === 'accepted' || adr.status === 'rejected' || adr.status === 'superseded'
+}
+
 export type AdrVerdict = 'approved' | 'rejected'
 
 /** One person the decision was put to. */

@@ -60,6 +60,7 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
                 {s(entry.summary.key, {
                   name: entry.summary.name ?? '—',
                   count: entry.summary.count ?? 1,
+                  asOf: entry.summary.asOf ?? '',
                 })}
               </Typography>
               {entry.origin === 'agent' && (

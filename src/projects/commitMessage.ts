@@ -24,7 +24,7 @@ const NAMED_IN_SUBJECT = 3
 const SUBJECT_LIMIT = 72
 
 function sentence(summary: StepSummary, t: Translate): string {
-  return t(summary.key, { name: summary.name ?? '—', count: summary.count ?? 1 })
+  return t(summary.key, { name: summary.name ?? '—', count: summary.count ?? 1, asOf: summary.asOf ?? '' })
 }
 
 /**

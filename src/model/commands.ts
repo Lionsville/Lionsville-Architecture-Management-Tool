@@ -91,6 +91,26 @@ export type CommandBody =
   // --- several changes, one undo step --------------------------------------
   | { type: 'transaction'; commands: Command[] }
 
+  // --- a version put back (ADR-0008) ---------------------------------------
+  /**
+   * The commands that make one thing — or the whole project — what a
+   * snapshot held. Applied exactly as a transaction; a type of its own only so
+   * the activity list can say what the step WAS: not "changed the settings of
+   * Warehouse" but "restored Warehouse as of the 3rd". `restore.ts` builds it.
+   */
+  | { type: 'restore'; restored: Restored; commands: Command[] }
+
+/** What a restore put back, for the line that names the step. */
+export type Restored = {
+  what: 'diagram' | 'description' | 'decision' | 'project'
+  /** The thing's id; absent for the project. */
+  id?: string
+  /** What a person calls it; the project's name for a project. */
+  name: string
+  /** The snapshot's day, `yyyy-mm-dd`. */
+  asOf: string
+}
+
 export type CommandMeta = {
   /**
    * Two commands with the same key, one after the other, are one undo step.

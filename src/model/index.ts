@@ -27,7 +27,7 @@ export {
 } from './normalised'
 
 /** The one vocabulary for changing a model, and the one writer (ADR-0002). */
-export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch } from './commands'
+export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'
 export {
   transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands,
   fieldEdit,
@@ -37,6 +37,8 @@ export type { ApplyResult, CommandRefusal } from './reducer'
 export type { StepSummary } from './activity'
 export { summarise } from './activity'
 export { apply, applyAll } from './reducer'
+export type { RestoreRefusal, RestoreResult, RestoreSubject } from './restore'
+export { restoreCommand } from './restore'
 
 /**
  * The one definition of "this route row stores something". A row without it is

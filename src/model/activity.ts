@@ -19,7 +19,7 @@
  * is what the step is about and the rest is what that entailed.
  */
 import type { StringKey } from '../i18n/strings'
-import type { Command, CommandBody } from './commands'
+import type { Command, CommandBody, Restored } from './commands'
 import { decisionsOf } from './normalised'
 import type { Model } from './normalised'
 
@@ -30,12 +30,28 @@ export type StepSummary = {
   name?: string
   /** How many, where a step touched several. */
   count?: number
+  /** The day a restored version was taken, `yyyy-mm-dd` (ADR-0008). */
+  asOf?: string
 }
 
 /** A step nobody can name — the empty transaction, and nothing else. */
 const NOTHING: StepSummary = { key: 'activity.nothing' }
 
+const RESTORED: Record<Restored['what'], StringKey> = {
+  diagram: 'activity.diagramRestored',
+  description: 'activity.descriptionRestored',
+  decision: 'activity.decisionRestored',
+  project: 'activity.projectRestored',
+}
+
 export function summarise(commands: readonly Command[], before: Model): StepSummary {
+  // A restore says what it is before its members say what it took.
+  const restore = commands.find((c) => c.type === 'restore')
+  if (restore?.type === 'restore') {
+    const { what, name, asOf } = restore.restored
+    return { key: RESTORED[what], name, asOf }
+  }
+
   const flat = flatten(commands)
   const lead = flat[0]
   if (!lead) return NOTHING
@@ -103,6 +119,7 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
       return { key: 'activity.projectSettings' }
 
     case 'transaction':
+    case 'restore':
       // Unreachable: `flatten` has none left. Named so the switch is total.
       return NOTHING
   }
@@ -112,7 +129,7 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
 function flatten(commands: readonly Command[]): CommandBody[] {
   const out: CommandBody[] = []
   for (const command of commands) {
-    if (command.type === 'transaction') out.push(...flatten(command.commands))
+    if (command.type === 'transaction' || command.type === 'restore') out.push(...flatten(command.commands))
     else out.push(command)
   }
   return out

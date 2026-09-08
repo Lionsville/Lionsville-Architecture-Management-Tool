@@ -37,6 +37,10 @@ export const EN = {
   // --- what the one writer refuses (ADR-0002) ------------------------------
   'command.gone': 'That is no longer there',
   'command.lastLandscape': 'This is the last landscape; it cannot be deleted.',
+  // A restore that cannot be (ADR-0008). A refusal, never an exception.
+  'restore.absentThen': 'This was not in the project at that snapshot.',
+  'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',
+  'restore.locked': 'This decision has been accepted, rejected or superseded, and a locked record is not changed. Write a new one that supersedes it.',
   'logo.category.data': 'Data',
   'logo.category.integration': 'Integration',
   'logo.category.applications': 'Applications',
@@ -86,4 +90,8 @@ export const EN = {
   'activity.decisionChanged': 'Changed the decision {name}',
   'activity.decisionRemoved': 'Removed the decision {name}',
   'activity.projectSettings': 'Changed the project settings',
+  'activity.diagramRestored': 'Restored the diagram {name} as of {asOf}',
+  'activity.descriptionRestored': 'Restored the description of {name} as of {asOf}',
+  'activity.decisionRestored': 'Restored the decision {name} as of {asOf}',
+  'activity.projectRestored': 'Restored the whole project as of {asOf}',
 } as const

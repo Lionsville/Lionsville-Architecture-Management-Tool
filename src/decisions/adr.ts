@@ -28,9 +28,9 @@ import type { Translate } from '../i18n'
  * and a caller reasoning about decisions should not have to know the split.
  */
 import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../model/adr'
-import { ADR_STATUSES } from '../model/adr'
+import { ADR_STATUSES, isAdrLocked } from '../model/adr'
 export type { Adr, AdrSigner, AdrStatus, AdrVerdict }
-export { ADR_STATUSES }
+export { ADR_STATUSES, isAdrLocked }
 
 export function formatAdrNumber(number: number): string {
   return `ADR-${String(number).padStart(4, '0')}`
@@ -106,11 +106,6 @@ export function transitionsFrom(status: AdrStatus): readonly AdrStatus[] {
     case 'superseded':
       return []
   }
-}
-
-/** Accepted, rejected and superseded records are history: title, body and signers stay as they were. */
-export function isAdrLocked(adr: Pick<Adr, 'status'>): boolean {
-  return adr.status === 'accepted' || adr.status === 'rejected' || adr.status === 'superseded'
 }
 
 /** A record can be thrown away only while it is still being written. */

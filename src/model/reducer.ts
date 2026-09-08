@@ -383,6 +383,10 @@ export function apply(model: Model, command: Command): ApplyResult {
       return ok(row, { type: 'project.settings', patch: inverse as ProjectPatch })
     }
 
+    // --- a version put back (ADR-0008): a transaction that knows its name ---
+    case 'restore':
+      return apply(model, { ...meta, type: 'transaction', commands: command.commands })
+
     // --- several changes, one undo step -------------------------------------
     case 'transaction': {
       let next = model
