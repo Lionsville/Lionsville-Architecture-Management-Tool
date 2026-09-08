@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3059 tests** and one of every config. The
+One codebase, in modules, with **3083 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3059 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3083 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -106,9 +106,11 @@ it deliberately, not out of habit.
 ## The module map
 
 Read this before adding a file; it answers "where does this go" in one pass.
-Every module has an `index.ts` that is its public surface, pure files at its
-root, and a `ui/` folder for its React side where it has one. `editor/` is the
-exception: React through and through, so it keeps its subfolders.
+Every module has pure files at its root, a `ui/` folder for its React side
+where it has one, and an `index.ts` that says what it is for. `editor/` is the
+exception: React through and through, so it keeps its subfolders. The `index`
+is a reading aid, not a fence: cross-module imports name the file they want,
+and the boundary that is enforced is the matrix below, not the barrel.
 
 ```
 src/model/        What a landscape is made of, and the arithmetic over it.
@@ -126,6 +128,8 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · fromInterchange · toInterchange · containerDiagram
                     logo · logoRegistry · marks/    uploads, the icon registry
+                    documentImage     a picture a document may hold, and its limits
+                    clipboard · equality   what copies, and what counts as the same
                     diff              what changed, in the landscape's own terms
                     restore           going back as one command (ADR-0008)
                     textSearch        the one rule for "found"
@@ -181,6 +185,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       the File and View items said once as data
                     theme · workingSource · updateSettings · sync   facts two
                                       processes share (ADR-0005)
+                    updates           is this newer, which file is mine — the
+                                      desktop's update check, without its fetch
                     agentServer       the server's three states, and mcp.json's shape
 src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
@@ -203,6 +209,7 @@ src/app/          The shell around the editor.
                                       to the session, and the way in for a person
                     testing/          renderShell / renderApp: the shared harness
                     use*              the hooks: session, files, document, toasts
+                    usePlans          the roadmap, a plan and Replace…, wired
 electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel
                     git.ts            snapshots, through the machine's own git
@@ -376,6 +383,18 @@ The same holds for `PreferencesStore` and `DocumentGateway`.
   handler or a comment saying why not. Never toast a success you did not wait
   for. Log messages and keys, never model content — the desktop writes the
   trail to a file the user is invited to hand over.
+- **A page's wiring is a hook, not a stretch of the workspace.** What a page
+  may do, which of its screens is up, and where a person lands on leaving it
+  live in one `use*` hook with a test of its own (`useProjectHistory`,
+  `usePlans`); `ProjectWorkspace` composes them and renders. A page added as
+  three `useState`s and two `useMemo`s in the workspace is the pattern this
+  exists to stop.
+- **The desktop main process reads `platform`, and little else.** Arithmetic
+  main needs — the update check, a setting's shape — lives there so it is
+  written once and tested in node. Main also names the IPC channel's types in
+  `adapters/desktop/channel` and one path constant in `projects`; it never
+  imports `app`, which the matrix cannot see from `electron/`, so this line
+  has to.
 - **Component tests go through `ui/testing/renderShell.tsx`.** It supplies the
   theme and the language, and checks on every render that the theme reached the
   tree — which is how a doubled Emotion gets caught by every test rather than by
