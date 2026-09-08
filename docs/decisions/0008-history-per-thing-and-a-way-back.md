@@ -4,9 +4,17 @@
 * Date: 2026-09-08
 * Deciders: Wouter Simons
 
-**Accepted 8 September 2026, not yet built.** The last section is the
-order it is to be built in; the *Open questions* stand with their
-recommendations, which the implementer takes unless told otherwise.
+**Accepted 8 September 2026 and built the same day**, in the seven steps of
+the last section, one commit each. Every *Open question* was decided as
+recommended: one-thing restore and whole-project restore both shipped, the
+latter behind its own confirm; a restore offers the snapshot on the toast
+rather than taking it; labels always push with `--follow-tags`; a description's
+history is presented as the description's. One thing the build found that
+the record did not predict: measuring the restore (step 7) showed the
+reducer's `placement.set` copying its record once per row, so a one-diagram
+restore on the large landscape cost 254 ms. Made a single pass, it costs
+about one, and the drag-stop budget row fell with it — which is the perf step
+doing what ADR-0004 built it for.
 
 ## Context and Problem Statement
 

@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2753 tests** and one of every config. The
+One codebase, in modules, with **2808 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2753 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2808 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -122,6 +122,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     hostModel · fromInterchange · toInterchange · containerDiagram
                     logo · logoRegistry · marks/    uploads, the icon registry
                     diff              what changed, in the landscape's own terms
+                    restore           going back as one command (ADR-0008)
                     textSearch        the one rule for "found"
                     adr               what a decision record IS (rules: decisions/)
                     testing/          the generated landscape, and the budgets
@@ -152,6 +153,7 @@ src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.t
 src/projects/     A project: open, save, order, summarise, address, remember.
                     folderFormat      a project as files (ADR-0003); adrFile · fileText
                     workingFile       the .lvarch container: v3 is the folder, zipped
+                    historyPath       where one thing is filed, for its history
                     documentSession   dirty / saving / changed on disk / conflict
                     migration         out of browser storage, into the folder
 src/platform/     What the app runs inside, and what a failure looks like.
@@ -568,6 +570,23 @@ the desktop ships nothing from `node_modules`; the SDK's own client is what
 the tests and the smoke run connect with. The way in for a person is a glyph
 on the bar with the server's three states and a dialog that explains, switches
 and shows the recipe per client with the real port and token filled in.
+
+Then the history became **history a person can use** (`docs/decisions/0008`),
+on one property: it only ever grows, and every entry keeps meaning what it
+meant. `entries()` takes a scope — a project and the paths one thing is filed
+at, which `projects/historyPath.ts` says out loud from the format's own naming,
+a decision by its number prefix because its title is in the file name — and
+the desktop answers it with one `git log`. The page has a subject picker and
+opens prefiltered from a diagram's tab, the documentation page and a decision's
+page. A restore is one `Command` (`model/restore.ts`): the commands that make
+the thing, or the whole project, what the snapshot held, wrapped in a
+`restore` type so the Activity line names it, refused as a value for a locked
+decision or an element gone since, and offered a snapshot rather than given
+one — so the result is a new commit whose tree equals an old one, and ⌘Z still
+works until it is recorded. A label is an annotated tag named from the label's
+slug, beside the subject and never instead of it, pushed with `--follow-tags`.
+Measuring it found `placement.set` quadratic in its own rows; it is one pass
+now.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference

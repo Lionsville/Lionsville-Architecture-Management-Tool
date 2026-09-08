@@ -103,6 +103,28 @@ since it — applications added, removed and altered, connections drawn and cut,
 decisions taken — with the geometry as a count rather than a list, because a
 tidy pass is one sentence and four hundred changed lines.
 
+**The history of one thing.** The picker at the top of the History page
+narrows it to a diagram, a description or a decision: the list becomes the
+snapshots that touched it, and the changes the rows about it. The same page
+opens already narrowed from **History…** on a diagram's tab menu, on the
+documentation page, and on a decision's page.
+
+**Restore.** With a snapshot chosen, **Restore this version…** makes the
+diagram, description or decision what it was then; with the whole project
+shown, **Restore the whole project…** does the same for everything. A restore
+is a new change on top of everything that happened since, not a step back: the
+history keeps growing, the Activity list says *Restored the diagram Warehouse
+as of 3 Sep*, ⌘Z undoes it, and the next snapshot records it. The app offers
+that snapshot on the spot. A decision that has been accepted, rejected or
+superseded stays as it is — write a new one that supersedes it — and a
+restored diagram leaves out elements that no longer exist, and says how many.
+
+**Labels.** **Label…** on a chosen snapshot gives it a word of your own —
+"Shown to the board" — shown beside its message, never instead of it. A label
+travels with the history, so a colleague sees the same mark in the same place,
+in this app or in any git client. Two labels with the same name in one folder
+are refused; pick another word.
+
 Without git the app simply does not offer any of this, and everything else
 works as before.
 

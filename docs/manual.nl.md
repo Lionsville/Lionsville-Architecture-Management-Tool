@@ -108,6 +108,29 @@ getekend en doorgeknipt, besluiten genomen — met de geometrie als aantal in
 plaats van als lijst, want een Tidy-ronde is één zin en vierhonderd gewijzigde
 regels.
 
+**De geschiedenis van één ding.** De keuzelijst bovenaan de pagina beperkt
+haar tot een aanzicht, een beschrijving of een besluit: de lijst wordt de
+momentopnames die dat raakten, en de veranderingen de regels die erover gaan.
+Dezelfde pagina opent al beperkt via **Geschiedenis…** in het menu van een
+aanzicht-tab, op de documentatiepagina en op de pagina van een besluit.
+
+**Terugzetten.** Met een momentopname gekozen maakt **Deze versie
+terugzetten…** het aanzicht, de beschrijving of het besluit weer wat het toen
+was; met het hele project in beeld doet **Het hele project terugzetten…**
+hetzelfde voor alles. Terugzetten is een nieuwe wijziging bovenop alles wat
+sindsdien gebeurde, geen stap terug: de geschiedenis blijft groeien, de
+activiteitenlijst zegt *Aanzicht Warehouse teruggezet naar 3 sep*, ⌘Z maakt
+het ongedaan, en de volgende momentopname legt het vast. De app biedt die
+momentopname meteen aan. Een besluit dat aanvaard, afgewezen of vervangen is
+blijft zoals het is — schrijf een nieuw besluit dat het vervangt — en een
+teruggezet aanzicht laat elementen weg die niet meer bestaan, en zegt hoeveel.
+
+**Labels.** **Label…** bij een gekozen momentopname geeft haar een eigen woord
+— "Aan de directie getoond" — naast haar boodschap, nooit in plaats ervan. Een
+label reist mee met de geschiedenis, zodat een collega hetzelfde merkteken op
+dezelfde plek ziet, in deze app of in elke git-client. Twee labels met dezelfde
+naam in één map worden geweigerd; kies een ander woord.
+
 Zonder git biedt de app dit alles eenvoudigweg niet aan, en werkt de rest
 precies zoals eerst.
 
