@@ -45,4 +45,18 @@ export const EN = {
   /** The same, where the host can take a picture in (ADR-0009). */
   'doc.markdownImageHint': 'Markdown. [[Name]] links to another element; paste or drop a picture to add one.',
   'adr.mermaidFailed': 'This diagram could not be drawn.',
+
+  // The business-case block (ADR-0009). The words around it are translated;
+  // what is typed inside the fence is a format and stays English.
+  'doc.businessCaseLine': 'Line',
+  'doc.businessCaseNet': 'Net',
+  'doc.businessCaseCumulative': 'Cumulative',
+  'doc.businessCaseNpv': 'Net present value at {rate}',
+  'doc.businessCaseIrr': 'Internal rate of return',
+  'doc.businessCasePayback': 'Payback, in periods',
+  'doc.businessCaseRoi': 'Return on investment',
+  'doc.businessCaseRatio': 'Benefit-cost ratio',
+  'doc.businessCaseScore': 'Weighted score {total} out of {max}, scored 1 to {scale}.',
+  'doc.businessCaseUnreadable': 'This business case has no figures in it yet.',
+  'doc.insertBusinessCase': 'Add a business case',
 } as const

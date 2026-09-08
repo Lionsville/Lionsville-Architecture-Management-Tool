@@ -28,6 +28,7 @@ describe('blockNameOf', () => {
 describe('blockFor', () => {
   it('answers with a renderer for a name in the table', () => {
     expect(blockFor('language-mermaid')).toBe(BLOCKS.get('mermaid'))
+    expect(blockFor('language-business-case')).toBe(BLOCKS.get('business-case'))
   })
 
   it('answers with nothing for a fence this build cannot draw', () => {

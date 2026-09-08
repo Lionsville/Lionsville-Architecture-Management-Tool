@@ -43,4 +43,16 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.markdownHint': 'Markdown. [[Naam]] verwijst naar een ander element.',
   'doc.markdownImageHint': 'Markdown. [[Naam]] verwijst naar een ander element; plak of sleep een afbeelding om er een toe te voegen.',
   'adr.mermaidFailed': 'Dit diagram kon niet worden getekend.',
+
+  'doc.businessCaseLine': 'Regel',
+  'doc.businessCaseNet': 'Netto',
+  'doc.businessCaseCumulative': 'Cumulatief',
+  'doc.businessCaseNpv': 'Netto contante waarde bij {rate}',
+  'doc.businessCaseIrr': 'Interne rentabiliteit',
+  'doc.businessCasePayback': 'Terugverdientijd, in perioden',
+  'doc.businessCaseRoi': 'Rendement op investering',
+  'doc.businessCaseRatio': 'Baten-kostenverhouding',
+  'doc.businessCaseScore': 'Gewogen score {total} van {max}, beoordeeld van 1 tot {scale}.',
+  'doc.businessCaseUnreadable': 'Deze business case bevat nog geen cijfers.',
+  'doc.insertBusinessCase': 'Business case toevoegen',
 }

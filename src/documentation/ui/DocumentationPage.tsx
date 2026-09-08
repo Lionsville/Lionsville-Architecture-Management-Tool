@@ -46,6 +46,7 @@ import {
   outline,
 } from '../documentation';
 import { imageReference } from '../images';
+import { businessCaseTemplate } from '../businessCase';
 import { useStrings } from '../../i18n/LanguageContext';
 import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
@@ -384,6 +385,9 @@ export function DocumentationPage(props: DocumentationPageProps) {
                 <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
                   {props.onAddImage ? t('doc.markdownImageHint') : t('doc.markdownHint')}
                 </Typography>
+                <Button size="small" onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
+                  {t('doc.insertBusinessCase')}
+                </Button>
                 {!draft.trim() && (
                   <Button size="small" variant="outlined" onClick={insertTemplate}>
                     {t('doc.insertTemplate')}
