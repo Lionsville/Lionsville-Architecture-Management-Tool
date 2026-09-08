@@ -675,11 +675,12 @@ export const TOOLS = [
     name: 'diagram.inspect',
     tier: 'see',
     description:
-      'A layout report on a diagram, in geometry rather than pixels: the box around everything, '
+      'A layout report on a diagram, in geometry rather than pixels: the box around everything, on a '
+      + 'landscape the rectangle of every band and of every domain group with its members, '
       + 'cards that overlap and by how much, lines that cut through a card, cards drawn in another band '
       + 'than they are filed in, group members outside their group, cards off the board, cards nothing '
       + 'connects to, and how full each band is. Lists are capped; totals are whole. Read this before '
-      + 'and after moving anything.',
+      + 'and after moving anything, and read the band rectangles before choosing a coordinate.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -768,7 +769,8 @@ export const TOOLS = [
     tier: 'see',
     description:
       'Put an element beside another one on a diagram — to its right, left, above or below — with a gap, '
-      + 'in the same band and domain group. The way to place something without inventing a coordinate.',
+      + 'in the same band and domain group: kept inside the band, and the group\'s box grown to hold it. '
+      + 'The way to place something without inventing a coordinate.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -779,6 +781,64 @@ export const TOOLS = [
         diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
       },
       required: ['elementId', 'anchorId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'element.place',
+    tier: 'see',
+    description:
+      'Put an element at a spot on a diagram, in flow coordinates, and on a landscape file it in a band '
+      + 'or a domain group. A spot in another band than the one it is filed in is refused unless the band '
+      + 'is named too; a card put in a band is kept inside it; a group named grows its box to hold the card, '
+      + 'and null takes the card out of its group. With only a group given the card lands at a free slot inside its box.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('element'),
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+        x: { type: 'number', description: 'The left edge, in flow coordinates.' },
+        y: { type: 'number', description: 'The top edge, in flow coordinates.' },
+        zone: { type: 'string', description: 'On a landscape: the band to file it in.', enum: ZONES },
+        domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under; null for none.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'element.draw',
+    tier: 'see',
+    description:
+      'Draw an element that already exists on a diagram it is not on yet, the way dragging it from the '
+      + 'palette\'s existing list does. Lands in its kind\'s band, or where told. Answers with where it landed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('element'),
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+        x: { type: 'number', description: 'Where to draw it, in flow coordinates. Prefer placeNextTo afterwards over guessing.' },
+        y: { type: 'number', description: 'Where to draw it, in flow coordinates.' },
+        zone: { type: 'string', description: 'On a landscape: the band to draw it in. Default: the kind\'s own.', enum: ZONES },
+        domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'element.undraw',
+    tier: 'see',
+    description:
+      'Take an element off a diagram without removing it from the landscape: its card and its lines '
+      + 'leave that board and nothing else changes. element.remove is the other thing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('element'),
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
+      },
+      required: ['id'],
       additionalProperties: false,
     },
   },
@@ -796,6 +856,23 @@ export const TOOLS = [
         elementIds: { type: 'array', description: 'The elements to file under it.', items: { type: 'string' } },
         color: { type: 'string', description: 'The box\'s tint, as a hex colour like #2e86c1. The theme\'s neutral when absent.' },
         diagramId: { type: 'string', description: 'The landscape. Default: the one on screen.' },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'ungroup',
+    tier: 'see',
+    description:
+      'Take elements out of a domain group, or with no elements named, dissolve the group: its box goes '
+      + 'and every member is filed under none. The cards stay where they are either way.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'The group, by name.' },
+        elementIds: { type: 'array', description: 'Which members to take out. Absent: the whole group goes.', items: { type: 'string' } },
+        diagramId: { type: 'string', description: 'The diagram. Default: the one on screen.' },
       },
       required: ['name'],
       additionalProperties: false,

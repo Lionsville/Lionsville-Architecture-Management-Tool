@@ -62,6 +62,12 @@ describe('inspect', () => {
     expect(report.routes).toEqual({ stored: 0, floating: 3 })
   })
 
+  it('says where every band and every group box is, with the group’s members', () => {
+    expect(report.bands?.map((band) => band.zone)).toEqual(['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'])
+    expect(report.bands?.find((band) => band.zone === 'actors')?.rect).toMatchObject({ x: 0, y: 0 })
+    expect(report.groups).toEqual([{ name: 'Finance', rect: { x: 240, y: 160, width: 500, height: 300 }, members: ['a', 'b', 'f'] }])
+  })
+
   it('finds the two cards on top of each other, and says by how much', () => {
     expect(report.overlaps).toEqual({
       total: 1, some: [{ a: 'a', b: 'b', width: NODE_SIZES.application.width, height: 30 }],

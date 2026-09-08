@@ -18,6 +18,7 @@ import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { syntheticModel } from '../model/testing/synthetic'
 import { commandFor } from './commandFor'
+import { inspect } from './inspect'
 import type { Prepared, WriteView } from './commandFor'
 import type { AgentAnswer, ToolName } from './tools'
 
@@ -372,6 +373,94 @@ describe('a line’s window, and lines in bulk (ADR-0009)', () => {
     const after = roundTrip(two, commandFor('connections.remove', { ids: ['c1', other] }, view(two)))
     expect(after.order.connections).toEqual([])
     expect(commandFor('connections.remove', { ids: ['c1', 'c9'] }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+})
+
+describe('where a card goes (the placement fixes)', () => {
+  const model = fromArrays(host)
+  const boxed = fromArrays({
+    ...host,
+    diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ name: 'Finance', x: 60, y: 360, width: 300, height: 200 }] } }],
+  })
+  const applied = (m: Model, out: Prepared | AgentAnswer): Model => {
+    const result = apply(m, prepared(out).command)
+    if (!result.ok) throw new Error(result.reason)
+    return result.model
+  }
+
+  it('element.add with a group lands inside the group’s box, and draws the box when there is none', () => {
+    const inside = roundTrip(boxed, commandFor('element.add', { name: 'Ledger', domainGroup: 'Finance' }, view(boxed)))
+    const report = inspect(inside, inside.diagrams.l7)
+    expect(inside.diagrams.l7.placements.ledger.domainGroup).toBe('Finance')
+    expect(report.outsideGroup.total).toBe(0)
+    expect(report.overlaps.total).toBe(0)
+    expect(report.groups?.[0].members).toEqual(['billing', 'ledger'])
+    // No box yet: one is drawn around the card, so the next drag keeps it filed.
+    const drawn = roundTrip(model, commandFor('element.add', { name: 'Ledger', x: 900, y: 700, domainGroup: 'Ops' }, view(model)))
+    expect(drawn.diagrams.l7.layoutConfig?.domainGroups).toEqual([expect.objectContaining({ name: 'Ops' })])
+    expect(inspect(drawn, drawn.diagrams.l7).outsideGroup.some.map((one) => one.elementId)).not.toContain('ledger')
+    expect(commandFor('element.add', { name: 'x', zone: 'actors', domainGroup: 'Finance' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('placeNextTo keeps a card inside a side band, and grows the anchor’s group box to hold it', () => {
+    // Below the clerk, in the actors band, is outside the band; the card is kept in it.
+    const beside = commandFor('placeNextTo', { elementId: 'crm', anchorId: 'who', side: 'below', gap: 400 }, view(model))
+    expect(answerOf(beside)).toMatchObject({ zone: 'actors', clamped: true })
+    const report = inspect(applied(model, beside), applied(model, beside).diagrams.l7)
+    expect(report.outsideZone.some.map((one) => one.elementId)).not.toContain('crm')
+    // Sliding it back into the band would put it on the clerk; it takes a free slot instead.
+    expect(report.overlaps.total).toBe(0)
+    const grouped = roundTrip(boxed, commandFor('placeNextTo', { elementId: 'crm', anchorId: 'billing', side: 'right' }, view(boxed)))
+    expect(grouped.diagrams.l7.placements.crm.domainGroup).toBe('Finance')
+    expect(inspect(grouped, grouped.diagrams.l7).outsideGroup.total).toBe(0)
+  })
+
+  it('element.place sets a spot, refuses a spot in another band unless the band is named, and files under a group', () => {
+    const moved = roundTrip(model, commandFor('element.place', { id: 'crm', x: 600, y: 500 }, view(model)))
+    expect(moved.diagrams.l7.placements.crm).toMatchObject({ x: 600, y: 500, zone: 'landscape' })
+    expect(commandFor('element.place', { id: 'crm', x: 20, y: 20 }, view(model))).toMatchObject({
+      refusal: 'agent.badArguments', detail: '(20, 20) is in the actors band; say zone: actors to move it there',
+    })
+    const banded = roundTrip(model, commandFor('element.place', { id: 'crm', x: 300, y: 20, zone: 'actors' }, view(model)))
+    expect(banded.diagrams.l7.placements.crm).toMatchObject({ zone: 'actors', x: 300, y: 20 })
+    expect(inspect(banded, banded.diagrams.l7).outsideZone.some.map((one) => one.elementId)).not.toContain('crm')
+    // Into a group with no spot given: a free slot inside its box, and the box holds it.
+    const filed = roundTrip(boxed, commandFor('element.place', { id: 'crm', domainGroup: 'Finance' }, view(boxed)))
+    expect(filed.diagrams.l7.placements.crm.domainGroup).toBe('Finance')
+    expect(inspect(filed, filed.diagrams.l7)).toMatchObject({ outsideGroup: { total: 0 }, overlaps: { total: 0 } })
+    const unfiled = applied(filed, commandFor('element.place', { id: 'crm', domainGroup: null }, view(filed)))
+    expect(unfiled.diagrams.l7.placements.crm).not.toHaveProperty('domainGroup')
+  })
+
+  it('element.place refuses what it cannot do', () => {
+    expect(commandFor('element.place', { id: 'crm', domainGroup: 'Ops' }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('element.place', { id: 'api', x: 1, y: 1 }, view(model))).toMatchObject({ refusal: 'agent.notDrawn' })
+    expect(commandFor('element.place', { id: 'ghost', x: 1, y: 1 }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('element.place', { id: 'crm', x: 1 }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.place', { id: 'who', domainGroup: 'Finance' }, view(boxed))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('element.draw puts an existing element on a board and element.undraw takes it off, leaving the landscape alone', () => {
+    const drawn = roundTrip(model, commandFor('element.draw', { id: 'api', zone: 'management' }, view(model)))
+    expect(drawn.diagrams.l7.placements.api).toMatchObject({ zone: 'management' })
+    expect(commandFor('element.draw', { id: 'api' }, view(drawn))).toMatchObject({ refusal: 'agent.badArguments' })
+    const undrawn = roundTrip(drawn, commandFor('element.undraw', { id: 'api' }, view(drawn)))
+    expect(undrawn.diagrams.l7.placements.api).toBeUndefined()
+    expect(undrawn.elements.api).toBeDefined()
+    expect(commandFor('element.undraw', { id: 'api' }, view(undrawn))).toMatchObject({ refusal: 'agent.notDrawn' })
+  })
+
+  it('ungroup takes members out, or dissolves the group with its box', () => {
+    const two = roundTrip(boxed, commandFor('placeNextTo', { elementId: 'crm', anchorId: 'billing' }, view(boxed)))
+    const one = roundTrip(two, commandFor('ungroup', { name: 'Finance', elementIds: ['crm'] }, view(two)))
+    expect(one.diagrams.l7.placements.crm).not.toHaveProperty('domainGroup')
+    expect(one.diagrams.l7.placements.billing.domainGroup).toBe('Finance')
+    expect(one.diagrams.l7.layoutConfig?.domainGroups).toHaveLength(1)
+    const none = roundTrip(two, commandFor('ungroup', { name: 'Finance' }, view(two)))
+    expect(none.diagrams.l7.placements.billing).not.toHaveProperty('domainGroup')
+    expect(none.diagrams.l7.layoutConfig?.domainGroups).toEqual([])
+    expect(commandFor('ungroup', { name: 'Ops' }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('ungroup', { name: 'Finance', elementIds: ['who'] }, view(two))).toMatchObject({ refusal: 'agent.badArguments' })
   })
 })
 

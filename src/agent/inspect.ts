@@ -37,6 +37,10 @@ export type InspectReport = {
   bounds?: Rect
   /** A landscape's board, which the bands divide. */
   canvas?: Rect
+  /** Where each band is, so a coordinate can be chosen inside one rather than guessed. */
+  bands?: { zone: Layer7Zone; rect: Rect }[]
+  /** Every domain group's box, with the cards filed under it. */
+  groups?: { name: string; rect: Rect; members: ElementId[] }[]
   drawn: { elements: number; connections: number }
   /** Pairs of boxes that overlap, with how far. */
   overlaps: { total: number; some: { a: ElementId; b: ElementId; width: number; height: number }[] }
@@ -91,7 +95,11 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
   if (diagram.kind === 'layer7') {
     const canvas = canvasRect(diagram.layoutConfig)
     report.canvas = canvas
+    report.bands = ZONES.map((zone) => ({ zone, rect: zoneRect(zone, diagram.layoutConfig) }))
     const groups = domainGroupRectMap(diagram.layoutConfig)
+    report.groups = [...groups.entries()].map(([name, rect]) => ({
+      name, rect, members: diagram.order.placements.filter((id) => diagram.placements[id].domainGroup === name),
+    }))
     const perZone = new Map<Layer7Zone, { elements: number; area: number }>()
     for (const [id, rect] of rects) {
       const placement = diagram.placements[id]
