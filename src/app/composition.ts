@@ -268,6 +268,7 @@ export function inWorkingDirectory(
   }
 
   const folder = overFolder(shell, handle, directory.name)
+  const settings = folder.folderSettings
   const git = desktopHistory()
   return {
     ...folder,
@@ -283,10 +284,16 @@ export function inWorkingDirectory(
     // does not pick it up either. Best effort — the snapshot excludes it on
     // its own — and this is the one place that knows both the store and the
     // git, which is why the wrapping is here and not in either.
-    folderSettings: folder.folderSettings && {
-      ...folder.folderSettings,
+    //
+    // Delegated method by method, not spread: the store is a class, and a
+    // spread copies an instance's own fields and none of its prototype — which
+    // is how `readLocal` went missing from every desktop boot for a day.
+    folderSettings: settings && {
+      id: settings.id,
+      readFolder: () => settings.readFolder(),
+      readLocal: () => settings.readLocal(),
       writeLocal: async (patch) => {
-        await folder.folderSettings!.writeLocal(patch)
+        await settings.writeLocal(patch)
         await git?.excludeLocal(directory.root).catch(() => undefined)
       },
     },
