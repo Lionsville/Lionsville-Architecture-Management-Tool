@@ -103,6 +103,23 @@ when you want a second pair of eyes before it lands, or when it is going to sit
 half-finished for a while. That is a judgement call, not a default — reach for
 it deliberately, not out of habit.
 
+## Releasing
+
+A release is a GitHub release created from `main` with a `vX.Y.Z` tag; the
+workflow builds, signs and uploads the installers from it (`docs/release.md`).
+Run `npm run verify`, make sure everything is pushed, then create the release
+with `gh release create vX.Y.Z --target main`, titled `Version X.Y.Z - <what it
+brings>`, with notes covering everything since the previous stable release.
+
+**Never edit the README's download links by hand.** They name the installers
+by file, and those files exist only once the workflow has built and uploaded
+them. The workflow's last job points the README at the new version *after*
+the assets are published, and commits that to `main` itself. A hand edit made
+before then is not redundant, it is a README whose download buttons 404 for
+everyone who visits during the build — and the README is the first thing a
+visitor to a public repository sees. The same holds for any other document
+that names a release asset by version.
+
 ## The module map
 
 Read this before adding a file; it answers "where does this go" in one pass.
