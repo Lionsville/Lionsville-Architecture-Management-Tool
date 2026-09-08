@@ -47,6 +47,15 @@ describe('useGlobalErrors', () => {
     expect((entry.cause as Error).message).toBe('a timer fell over')
   })
 
+  it('ignores the resize observer notice, which is not a failure', () => {
+    const { diagnostics, notify } = mount()
+    window.dispatchEvent(new ErrorEvent('error', {
+      message: 'ResizeObserver loop completed with undelivered notifications.',
+    }))
+    expect(diagnostics.recent()).toEqual([])
+    expect(notify).not.toHaveBeenCalled()
+  })
+
   it('records an unhandled rejection too', () => {
     const { diagnostics } = mount()
     rejectWith(new Error('nobody caught this'))

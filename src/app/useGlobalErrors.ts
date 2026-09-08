@@ -24,6 +24,17 @@ import type { Notify } from './useToasts'
 /** How long a notice keeps the next one quiet. */
 export const ERROR_TOAST_THROTTLE_MS = 10_000
 
+/**
+ * Chromium's notice that a resize observer changed layout in the frame that
+ * observed it, so the next pass was deferred. It is delivered as a window
+ * error and is not one: nothing was thrown, nothing was skipped, and React
+ * Flow raises it every time it measures a board. Six hundred of these in two
+ * days, each one a toast in the corner of a screen where nothing was wrong.
+ */
+export function isBenignBrowserNotice(message: string): boolean {
+  return message.startsWith('ResizeObserver loop')
+}
+
 export function useGlobalErrors(deps: {
   diagnostics: { report(entry: Diagnostic): void }
   notify: Notify
@@ -49,8 +60,10 @@ export function useGlobalErrors(deps: {
       it.notify(it.s('shell.unexpectedError'), 'error')
     }
 
-    const onError = (event: ErrorEvent) =>
+    const onError = (event: ErrorEvent) => {
+      if (isBenignBrowserNotice(event.message)) return
       announce('window', 'uncaught error', event.error ?? event.message)
+    }
     const onRejection = (event: PromiseRejectionEvent) =>
       announce('window', 'unhandled rejection', event.reason)
 
