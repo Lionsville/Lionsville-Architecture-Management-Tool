@@ -528,6 +528,7 @@ export function ProjectWorkspace({
         subject={snapshots.subject}
         onSubjectChange={snapshots.setSubject}
         onRestore={snapshots.restore}
+        onLabel={snapshots.label}
         language={language}
         s={s}
         windowChrome={windowChrome}

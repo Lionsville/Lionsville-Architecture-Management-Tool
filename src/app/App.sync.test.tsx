@@ -48,6 +48,7 @@ function fakeHistory(answers: {
     snapshot: () => { calls.snapshots += 1; return Promise.resolve(true) },
     entries: () => Promise.resolve([]),
     projectAt: () => Promise.resolve(undefined),
+    label: () => Promise.resolve('done'),
     sync: {
       remote: () => Promise.resolve({ name: 'origin', branch: 'main' }),
       pull: () => Promise.resolve(answers.pull ?? 'done'),

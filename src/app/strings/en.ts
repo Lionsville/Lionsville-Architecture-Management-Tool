@@ -199,6 +199,15 @@ export const EN = {
   'history.restoredDropped': ' {count} placed elements no longer exist and were left out.',
   'history.restoredKept': ' {count} locked decisions were left as they are.',
   'history.snapshotNow': 'Snapshot',
+  'history.label': 'Label…',
+  'history.labelTitle': 'Label this snapshot',
+  'history.labelBody':
+    'A word for this version — “Shown to the board” — kept beside the message, never instead of it. It travels with the history, so a colleague sees the same mark in the same place.',
+  'history.labelField': 'Label',
+  'history.labelConfirm': 'Label',
+  'history.labelled': 'Labelled.',
+  'history.labelExists': 'This folder already has a label with that name. Pick another word.',
+  'history.labelUnnamed': 'A label needs a word in it.',
 
   // The sentences a change becomes. One per kind and subject, because "Added"
   // and "Added the diagram" are different facts and a shared word would make

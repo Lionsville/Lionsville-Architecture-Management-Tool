@@ -72,6 +72,7 @@ const history = (available: boolean): ProjectHistory => ({
   snapshot: () => Promise.resolve(true),
   entries: () => Promise.resolve([]),
   projectAt: () => Promise.resolve(undefined),
+  label: () => Promise.resolve('done'),
 })
 
 function show(over: Parameters<typeof renderApp>[0] = {}) {

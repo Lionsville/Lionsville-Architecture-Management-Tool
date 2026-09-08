@@ -13,8 +13,11 @@ import type { ProjectSnapshot } from '../../projects/project'
 import { refPath } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
 import type { HistoryEntry, HistoryScope, ProjectHistory } from '../../ports/ProjectHistory'
+import { labelSlug } from '../../platform/history'
+import type { LabelOutcome } from '../../platform/history'
 
-export type MemorySnapshot = HistoryEntry & {
+export type MemorySnapshot = Omit<HistoryEntry, 'labels'> & {
+  labels?: string[]
   /** Paths, relative to the root, that this snapshot changed. */
   touched?: readonly string[]
   /** The projects as they stood, by ref path. Absent means not in the folder then. */
@@ -63,8 +66,20 @@ export class InMemoryProjectHistory implements ProjectHistory {
     const listed = this.snapshots
       .filter((held) => !wanted || (held.touched ?? []).some((path) => wanted.some((pattern) => matches(pattern, path))))
       .slice(0, limit)
-      .map(({ id, subject, at, author }) => ({ id, subject, at, author }))
+      .map(({ id, subject, at, author, labels }) => ({ id, subject, at, author, labels: labels ?? [] }))
     return Promise.resolve(listed)
+  }
+
+  /** The same two refusals the desktop has, over the same slug. */
+  label(entry: string, name: string): Promise<LabelOutcome> {
+    const tag = labelSlug(name)
+    if (!tag) return Promise.resolve('unnamed')
+    if (this.snapshots.some((held) => (held.labels ?? []).some((known) => labelSlug(known) === tag))) {
+      return Promise.resolve('exists')
+    }
+    const held = this.snapshots.find((snapshot) => snapshot.id === entry)
+    if (held) held.labels = [...(held.labels ?? []), name.trim()]
+    return Promise.resolve('done')
   }
 
   projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined> {

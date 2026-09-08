@@ -87,6 +87,7 @@ const history: DesktopHistory = {
   snapshot: (root, message) => ipcRenderer.invoke('git:snapshot', root, message),
   history: (root, limit, paths) => ipcRenderer.invoke('git:history', root, limit, paths),
   filesAt: (root, sha, prefix) => ipcRenderer.invoke('git:filesAt', root, sha, prefix),
+  label: (root, sha, name) => ipcRenderer.invoke('git:label', root, sha, name),
   remote: (root) => ipcRenderer.invoke('git:remote', root),
   pull: (root) => ipcRenderer.invoke('git:pull', root),
   push: (root) => ipcRenderer.invoke('git:push', root),

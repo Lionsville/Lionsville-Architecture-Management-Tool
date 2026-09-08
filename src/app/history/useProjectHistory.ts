@@ -63,6 +63,8 @@ export type ProjectHistoryState = {
    * happens until the snapshot has been read; the page's button waits for it.
    */
   restore: () => void
+  /** Call the chosen snapshot something (ADR-0008). The list is read again when it took. */
+  label: (name: string) => void
 }
 
 export function useProjectHistory(deps: {
@@ -193,6 +195,19 @@ export function useProjectHistory(deps: {
     notify(message, 'success', { label: s('history.snapshotNow'), onClick: openDialog })
   }, [chosen, entries, subject, indexed, dispatch, notify, s, openDialog])
 
+  const label = useCallback((name: string) => {
+    if (!history || !chosen) return
+    void history.label(chosen.id, name).then((outcome) => {
+      switch (outcome) {
+        case 'done': notify(s('history.labelled'), 'success'); list(subject); break
+        case 'exists': notify(s('history.labelExists'), 'warning'); break
+        case 'unnamed': notify(s('history.labelUnnamed'), 'warning'); break
+      }
+    }, (cause: unknown) => {
+      notify(s('history.failed', { message: reasonOf(cause) }), 'error')
+    })
+  }, [history, chosen, subject, list, notify, s])
+
   const setSubject = useCallback((of: HistorySubject | undefined) => {
     // The chosen snapshot is dropped with the list: it may not be in the new one.
     setChosen(undefined)
@@ -217,5 +232,6 @@ export function useProjectHistory(deps: {
     choose,
     setSubject,
     restore,
+    label,
   }
 }

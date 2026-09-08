@@ -14,6 +14,7 @@
  */
 import type { ProjectSnapshot } from '../projects/project'
 import type { ProjectRef } from '../projects/projectRef'
+import type { LabelOutcome } from '../platform/history'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide } from '../platform/sync'
 
 /** One snapshot, as a person reads a list of them. */
@@ -25,6 +26,8 @@ export type HistoryEntry = {
   /** Epoch milliseconds. */
   at: number
   author: string
+  /** What people have called this version since (ADR-0008); usually none. */
+  labels: readonly string[]
 }
 
 /** One thing's worth of a project's history: the project, and its paths. */
@@ -67,6 +70,12 @@ export interface ProjectHistory {
    * how a landscape is compared.
    */
   projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined>
+  /**
+   * Call a snapshot something, afterwards (ADR-0008). A mark beside the
+   * subject, never a rewrite of it, and one the history carries to whoever
+   * else reads it. Refused as a value when the name is taken or is nothing.
+   */
+  label(entry: string, name: string): Promise<LabelOutcome>
   /**
    * The remote, where this history has one to talk to (ADR-0005). Absent
    * rather than answering "no" — a history that can be kept but not shared,

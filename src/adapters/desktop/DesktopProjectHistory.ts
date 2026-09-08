@@ -13,6 +13,7 @@ import type { ProjectSnapshot } from '../../projects/project'
 import { refPath } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
 import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
+import type { LabelOutcome } from '../../platform/history'
 import type { SyncSide } from '../../platform/sync'
 import type { DesktopHistory } from './channel'
 
@@ -57,7 +58,12 @@ export class DesktopProjectHistory implements ProjectHistory {
       subject: held.subject,
       at: held.at,
       author: held.author,
+      labels: held.labels,
     })))
+  }
+
+  label(entry: string, name: string): Promise<LabelOutcome> {
+    return this.git.label(this.root, entry, name)
   }
 
   async projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined> {

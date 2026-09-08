@@ -45,6 +45,8 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { LOCAL_SETTINGS_PATH } from '../../src/projects/folderSettings'
+import { labelSlug } from '../../src/platform/history'
+import type { LabelOutcome } from '../../src/platform/history'
 import { BEFORE_SYNC_BRANCH_PREFIX } from '../../src/platform/sync'
 import type {
   PullOutcome, PushOutcome, ResolveOutcome, SyncRefusal, SyncRemote, SyncSide,
@@ -59,6 +61,8 @@ export type GitCommit = {
   /** Epoch milliseconds, as `Date.now()` gives them. */
   at: number
   author: string
+  /** What people have called this version: the message of each tag on it (ADR-0008). */
+  labels: string[]
 }
 
 /** A file as it was at a commit. Text only — see `filesAt`. */
@@ -250,11 +254,66 @@ export async function history(root: string, limit = 50, paths: readonly string[]
     // nothing, which is a fact about git and not about this folder.
     return []
   }
+  const labels = await labelsByCommit(root)
   return out.split('\n').flatMap((line) => {
     const [sha, subject, at, author] = line.split(UNIT)
     if (!sha) return []
-    return [{ sha, subject: subject ?? '', at: Number(at) * 1000, author: author ?? '' }]
+    return [{ sha, subject: subject ?? '', at: Number(at) * 1000, author: author ?? '', labels: labels.get(sha) ?? [] }]
   })
+}
+
+/**
+ * Every tag in the folder, by the commit it marks, as the words it carries.
+ *
+ * One command for the whole list rather than `%D` per commit: `%D` gives tag
+ * NAMES, and the name is a slug — what the person typed is the annotated
+ * tag's message. A lightweight tag somebody made in a terminal has no message
+ * and is shown by its name, so a mark made anywhere is a mark shown here.
+ */
+async function labelsByCommit(root: string): Promise<Map<string, string[]>> {
+  const held = new Map<string, string[]>()
+  let out: string
+  try {
+    out = await git(root, [
+      'for-each-ref', 'refs/tags', '--sort=creatordate',
+      `--format=%(objectname)${UNIT}%(*objectname)${UNIT}%(refname:short)${UNIT}%(contents:subject)`,
+    ])
+  } catch {
+    return held
+  }
+  for (const line of out.split('\n')) {
+    const [object, target, name, subject] = line.split(UNIT)
+    if (!name) continue
+    // An annotated tag is its own object and points at the commit, and its
+    // subject is the label; a lightweight one IS the commit, and its
+    // "subject" would be the commit's, so it goes by its name.
+    const sha = target || object
+    const list = held.get(sha) ?? []
+    list.push((target && subject?.trim()) || name)
+    held.set(sha, list)
+  }
+  return held
+}
+
+/**
+ * Mark a snapshot with a label: an annotated tag named from the label's slug,
+ * with the label as its message, on that commit (ADR-0008). Never rewrites
+ * anything — a label is beside the subject, not instead of it — and never
+ * replaces a tag: the second "Board review" in a folder is refused, and the
+ * person picks another word.
+ */
+export async function label(root: string, sha: string, name: string): Promise<LabelOutcome> {
+  const tag = labelSlug(name)
+  if (!tag) return 'unnamed'
+  if (!await isRepository(root)) return 'unnamed'
+  try {
+    await git(root, ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`])
+    return 'exists'
+  } catch {
+    // No such tag, which is the ordinary case.
+  }
+  await git(root, [...await identityArgs(root), 'tag', '-a', tag, '-m', name.trim(), sha])
+  return 'done'
 }
 
 /**
@@ -392,7 +451,11 @@ export async function push(root: string): Promise<PushOutcome> {
   if (!target) return 'no-remote'
   if (!await hasCommits(root)) return 'done'
   try {
-    await git(root, ['push', '--no-verify', '-u', target.name, `HEAD:refs/heads/${target.branch}`], SYNC_TIMEOUT_MS)
+    // `--follow-tags`: the annotated tags reachable from what is pushed — every
+    // label this app makes — travel with the branch, so a mark made here is a
+    // mark a colleague sees (ADR-0008). Lightweight tags stay behind, which is
+    // git's own reading of "annotated means meant".
+    await git(root, ['push', '--no-verify', '--follow-tags', '-u', target.name, `HEAD:refs/heads/${target.branch}`], SYNC_TIMEOUT_MS)
     return 'done'
   } catch (error) {
     const text = String((error as GitError)?.stderr ?? '')

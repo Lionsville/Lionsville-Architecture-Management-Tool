@@ -174,6 +174,7 @@ describe('the overflow on the web', () => {
     snapshot: () => Promise.resolve(true),
     entries: () => Promise.resolve([]),
     projectAt: () => Promise.resolve(undefined),
+    label: () => Promise.resolve('done'),
   }
   const s = translator('en')
 

@@ -13,7 +13,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { filesAt, gitAvailable, history, initRepository, isRepository, snapshot } from './git'
+import { filesAt, gitAvailable, history, initRepository, isRepository, label, snapshot } from './git'
 
 const run = promisify(execFile)
 
@@ -109,6 +109,34 @@ describe.skipIf(!available)('git in a working directory', () => {
     expect(both.map((held) => held.subject)).toEqual(['The decision only', 'The model only', 'Both'])
     // A path nothing ever touched has no history rather than everybody's.
     expect(await history(root, 50, ['acme/landscape/nothing.md'])).toEqual([])
+  })
+
+  it('labels a snapshot, reads the label back beside it, and refuses the same word twice', async () => {
+    await initRepository(root)
+    await project('project.json', '{}')
+    const first = await snapshot(root, 'One')
+    await project('project.json', '{"n":2}')
+    const second = await snapshot(root, 'Two')
+
+    expect(await label(root, first!, 'Shown to the board')).toBe('done')
+    expect(await label(root, first!, 'Shown to the board!')).toBe('exists')
+    expect(await label(root, second!, '—')).toBe('unnamed')
+    expect(await label(root, second!, 'Release 1.2')).toBe('done')
+
+    const log = await history(root)
+    expect(log.map((held) => held.labels)).toEqual([['Release 1.2'], ['Shown to the board']])
+    // The tag is annotated and named from the slug: what any git client shows.
+    expect((await run('git', ['tag', '-l', '-n1'], { cwd: root })).stdout).toContain('shown-to-the-board Shown to the board')
+    // The subject was not touched: a label is beside it, never instead of it.
+    expect(log.map((held) => held.subject)).toEqual(['Two', 'One'])
+  })
+
+  it('shows a tag somebody made in a terminal by its name, having no words for it', async () => {
+    await initRepository(root)
+    await project('project.json', '{}')
+    await snapshot(root, 'One')
+    await run('git', ['tag', 'v1'], { cwd: root })
+    expect((await history(root))[0].labels).toEqual(['v1'])
   })
 
   it('reads an empty history as empty rather than as a failure', async () => {
@@ -276,6 +304,15 @@ describe.skipIf(!available)('the remote', () => {
     await colleagueCommits('project.json', '{"name":"Theirs"}')
     expect(await pull(root)).toBe('done')
     expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"name":"Theirs"}')
+  })
+
+  it('pushes a label with the branch, so a colleague sees the same mark', async () => {
+    await withRemote()
+    await project('project.json', '{"n":1}')
+    const sha = await snapshot(root, 'One')
+    await label(root, sha!, 'Shown to the board')
+    expect(await push(root)).toBe('done')
+    expect(await sh(bare, ['tag', '-l'])).toBe('shown-to-the-board')
   })
 
   it('fast-forwards when only they moved on', async () => {

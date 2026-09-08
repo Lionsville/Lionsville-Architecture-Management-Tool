@@ -24,7 +24,7 @@ import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
 import type { DesktopChange, DesktopDirectory } from '../../src/adapters/desktop/channel'
 import {
-  excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, pull, push, remote,
+  excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, label, pull, push, remote,
   resolve, snapshot,
 } from './git'
 import { log } from './log'
@@ -261,6 +261,13 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
       return []
     }
     return filesAt(root, sha, prefix)
+  })
+
+  ipcMain.handle('git:label', (_event, root: unknown, sha: unknown, name: unknown) => {
+    // A refusal, never a throw: the renderer shows the word.
+    if (!isGranted(root) || typeof sha !== 'string' || typeof name !== 'string') return 'unnamed'
+    if (!/^[0-9a-f]{7,40}$/.test(sha) || name.length > 200) return 'unnamed'
+    return label(root, sha, name)
   })
 
   // The remote (ADR-0005). The same rule again, and every answer is a value:

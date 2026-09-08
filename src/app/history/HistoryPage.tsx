@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
@@ -38,6 +39,7 @@ import type { HistoryEntry } from '../../ports/ProjectHistory'
 import type { HistorySubject } from '../../projects/historyPath'
 import { changeLine } from './changeLine'
 import { changesFor } from './changesFor'
+import { LabelDialog } from './LabelDialog'
 import { RestoreDialog } from './RestoreDialog'
 
 export type HistoryPageProps = {
@@ -55,6 +57,8 @@ export type HistoryPageProps = {
   onSubjectChange: (subject: HistorySubject | undefined) => void
   /** Make the subject, or the whole project, what the chosen snapshot held (ADR-0008). */
   onRestore: () => void
+  /** Call the chosen snapshot something (ADR-0008). */
+  onLabel: (name: string) => void
   language: Language
   s: Translate
   windowChrome?: WindowChrome
@@ -77,9 +81,12 @@ function when(at: number, language: Language): string {
 }
 
 export function HistoryPage(props: HistoryPageProps) {
-  const { open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, onRestore, language, s } = props
+  const {
+    open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, onRestore, onLabel, language, s,
+  } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const [confirming, setConfirming] = useState(false)
+  const [labelling, setLabelling] = useState(false)
 
   // What can be asked about: every diagram, every described element, every
   // decision — of the project as it is now, which is where the person stands.
@@ -202,6 +209,13 @@ export function HistoryPage(props: HistoryPageProps) {
                   sx={{ display: 'block', py: 1 }}
                 >
                   <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{entry.subject}</Typography>
+                  {entry.labels.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.5 }}>
+                      {entry.labels.map((held) => (
+                        <Chip key={held} size="small" color="primary" variant="outlined" label={held} sx={{ height: 20, fontSize: 11 }} />
+                      ))}
+                    </Box>
+                  )}
                   <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
                     {when(entry.at, language)} · {s('history.by', { author: entry.author })}
                   </Typography>
@@ -212,6 +226,13 @@ export function HistoryPage(props: HistoryPageProps) {
         </Box>
 
         <Box sx={{ overflowY: 'auto', p: 3 }} data-testid="history-diff">
+          {chosenEntry && (
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
+              <Typography sx={{ fontSize: 15, fontWeight: 600, minWidth: 0 }}>{chosenEntry.subject}</Typography>
+              <Box sx={{ flex: 1 }} />
+              <Button size="small" onClick={() => setLabelling(true)}>{s('history.label')}</Button>
+            </Box>
+          )}
           {chosen && !chosen.model && (
             <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('history.gone')}</Typography>
           )}
@@ -256,6 +277,12 @@ export function HistoryPage(props: HistoryPageProps) {
           )}
         </Box>
       </Box>
+      <LabelDialog
+        open={labelling}
+        onCancel={() => setLabelling(false)}
+        onLabel={(name) => { setLabelling(false); onLabel(name) }}
+        s={s}
+      />
       <RestoreDialog
         open={confirming}
         name={subjectName}

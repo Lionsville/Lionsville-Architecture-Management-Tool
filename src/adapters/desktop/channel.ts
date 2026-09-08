@@ -23,6 +23,7 @@
  */
 import type { AgentAnswer, AgentRequest } from '../../agent/tools'
 import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentServer'
+import type { LabelOutcome } from '../../platform/history'
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type {
@@ -42,7 +43,7 @@ export type DesktopDirectory = {
 export type DesktopEntry = { name: string; kind: 'file' | 'directory' }
 
 /** One snapshot in a folder's history, as git holds it. */
-export type DesktopCommit = { sha: string; subject: string; at: number; author: string }
+export type DesktopCommit = { sha: string; subject: string; at: number; author: string; labels: string[] }
 
 /**
  * Layer two of ADR-0003: history, using the git that is already on the machine.
@@ -64,6 +65,8 @@ export type DesktopHistory = {
   history(root: string, limit?: number, paths?: string[]): Promise<DesktopCommit[]>
   /** One project folder's text files as they were at a commit. */
   filesAt(root: string, sha: string, prefix: string): Promise<{ path: string; text: string }[]>
+  /** Mark a snapshot with a label: an annotated tag, never a rewrite (ADR-0008). */
+  label(root: string, sha: string, name: string): Promise<LabelOutcome>
 
   // --- the remote (ADR-0005). Each answers with a value, never an exception. ---
 

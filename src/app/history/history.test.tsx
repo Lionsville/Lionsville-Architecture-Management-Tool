@@ -75,6 +75,7 @@ function fakeHistory(over: Omit<Partial<ProjectHistory>, 'entries'> & { entries?
     snapshot: (message) => { calls.snapshots.push(message); return Promise.resolve(true) },
     entries: () => Promise.resolve(listed),
     projectAt: () => Promise.resolve(undefined),
+    label: () => Promise.resolve('done'),
     ...rest,
   }
   return { history, calls }
@@ -191,7 +192,7 @@ describe('taking a snapshot', () => {
 
 describe('reading one back', () => {
   const entry: HistoryEntry = {
-    id: 'abc1234', subject: 'Before the merger', at: 1_757_000_000_000, author: 'W. Simons',
+    id: 'abc1234', subject: 'Before the merger', at: 1_757_000_000_000, author: 'W. Simons', labels: [],
   }
 
   it('lists the snapshots and says what changed since the chosen one', async () => {
@@ -213,7 +214,7 @@ describe('reading one back', () => {
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))
 
-    expect(await screen.findByText('Before the merger')).toBeDefined()
+    expect(within(await screen.findByTestId('history-list')).getByText('Before the merger')).toBeDefined()
     // The element is in the snapshot and not on screen now, so it was removed
     // since — which is the direction somebody standing in a history reads in.
     expect(await screen.findByText('Removed Crews')).toBeDefined()
@@ -436,5 +437,52 @@ describe('going back, as going forward (ADR-0008)', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(`Restored the whole project as of ${asOf}.`)
     act(() => { fireEvent.click(screen.getByText('Activity')) })
     expect(screen.getAllByRole('menuitem')[0].textContent).toContain('Restored the whole project')
+  })
+})
+
+describe('a label on a snapshot (ADR-0008)', () => {
+  const at = 1_757_000_000_000
+  const twoSnapshots = () => new InMemoryProjectHistory([
+    { id: 'c2', subject: 'Two', at: at + 1000, author: 'W.', projects: [project()], labels: ['Shown to the board'] },
+    { id: 'c1', subject: 'One', at, author: 'W.', projects: [project()] },
+  ])
+
+  const openHistory = async () => {
+    await openSaveMenu()
+    await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
+    fireEvent.click(screen.getByText('History…'))
+    return screen.findByTestId('history-list')
+  }
+
+  it('shows a label beside the subject, never instead of it', async () => {
+    show(twoSnapshots())
+    const list = await openHistory()
+    expect(within(list).getByText('Two')).toBeDefined()
+    expect(within(list).getByText('Shown to the board')).toBeDefined()
+  })
+
+  it('labels the chosen snapshot and reads the list again', async () => {
+    const history = twoSnapshots()
+    show(history)
+    const list = await openHistory()
+    fireEvent.click(within(list).getByText('One'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Label…' }))
+    expect(await screen.findByText(/never instead of it/)).toBeDefined()
+    fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'Release 1.2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Label' }))
+
+    await waitFor(() => expect(within(screen.getByTestId('history-list')).getByText('Release 1.2')).toBeDefined())
+    expect((await screen.findByRole('alert', { hidden: true })).textContent).toContain('Labelled.')
+    expect(await history.entries()).toMatchObject([{ labels: ['Shown to the board'] }, { labels: ['Release 1.2'] }])
+  })
+
+  it('refuses a second label with the same name, and says so', async () => {
+    show(twoSnapshots())
+    const list = await openHistory()
+    fireEvent.click(within(list).getByText('One'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Label…' }))
+    fireEvent.change(await screen.findByLabelText('Label'), { target: { value: 'shown to the BOARD' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Label' }))
+    expect((await screen.findByRole('alert', { hidden: true })).textContent).toContain('already has a label with that name')
   })
 })

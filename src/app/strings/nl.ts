@@ -136,6 +136,15 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.restoredDropped': ' {count} geplaatste elementen bestaan niet meer en zijn weggelaten.',
   'history.restoredKept': ' {count} afgesloten besluiten zijn gelaten zoals ze zijn.',
   'history.snapshotNow': 'Momentopname',
+  'history.label': 'Label…',
+  'history.labelTitle': 'Deze momentopname een label geven',
+  'history.labelBody':
+    'Een woord voor deze versie — “Aan de directie getoond” — naast de boodschap, nooit in plaats ervan. Het reist mee met de geschiedenis, zodat een collega hetzelfde merkteken op dezelfde plek ziet.',
+  'history.labelField': 'Label',
+  'history.labelConfirm': 'Label',
+  'history.labelled': 'Label gegeven.',
+  'history.labelExists': 'Deze map heeft al een label met die naam. Kies een ander woord.',
+  'history.labelUnnamed': 'Een label heeft een woord nodig.',
 
   'change.elementAdded': '{name} toegevoegd',
   'change.elementRemoved': '{name} verwijderd',
