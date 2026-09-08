@@ -266,6 +266,26 @@ describe('plans.list (ADR-0010)', () => {
     )
   })
 
+  it('connections.list says when a line is valid and which plan dated it', () => {
+    const rows = (read('connections.list', {}, view(withPlan)) as { connections: Record<string, unknown>[] }).connections
+    // A dated line nothing pairs with shows its own dates and no plan.
+    expect(rows.find((c) => c.id === 'c-moved')).toMatchObject({ validFrom: '2027-05-01' })
+    expect(rows.find((c) => c.id === 'c-moved')).not.toHaveProperty('plan')
+    // A real port of c2 (billing ↔ warehouse) onto crm: the original closed
+    // the day before the twin starts, and both are the plan's.
+    const ported: HostModel = {
+      ...withPlan,
+      connections: [
+        ...host.connections.map((c) => (c.id === 'c2' ? { ...c, validUntil: '2027-04-30' } : c)),
+        { id: 'twin', sourceId: 'crm', targetId: 'wh', isBidirectional: true, validFrom: '2027-05-01' },
+      ],
+    }
+    const dated = (read('connections.list', {}, view(ported)) as { connections: Record<string, unknown>[] }).connections
+    expect(dated.find((c) => c.id === 'c2')).toMatchObject({ validUntil: '2027-04-30', planId: 'tr-1', plan: 'TR-0001' })
+    expect(dated.find((c) => c.id === 'twin')).toMatchObject({ validFrom: '2027-05-01', plan: 'TR-0001' })
+    expect(dated.find((c) => c.id === 'c3')).not.toHaveProperty('plan')
+  })
+
   it('plan.read answers one plan by id or by label, with what its business case computes', () => {
     const body = [
       '```business-case', 'currency: EUR', '',

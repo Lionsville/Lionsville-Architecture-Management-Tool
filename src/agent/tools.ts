@@ -85,6 +85,16 @@ const LINE_FIELDS = {
   lineStyle: { type: 'string', description: 'Solid, dashed or dotted. Solid when absent.', enum: LINE_STYLES },
 } as const satisfies Record<string, ArgumentSchema>
 
+/** What a line says and when it is there. Null clears any of them. */
+const CONNECTION_FIELDS = {
+  label: { type: 'string', description: 'What flows, in a few words.' },
+  protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
+  isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
+  validFrom: { type: 'string', description: 'The first day the line is there, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
+  validUntil: { type: 'string', description: 'The last day it is there, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },
+  ...LINE_FIELDS,
+} as const satisfies Record<string, ArgumentSchema>
+
 const ASPECT_STATUSES = ['managed', 'partial', 'none', 'atRisk'] as const
 
 /**
@@ -185,7 +195,8 @@ export const TOOLS = [
     name: 'connections.list',
     tier: 'read',
     description:
-      'The connections between elements: id, source, target, label and protocol. '
+      'The connections between elements: id, source, target, label, protocol, the days it is valid '
+      + 'where dated, and which plan dated it where a port did. '
       + 'Filter to those ending on one element, or to those drawn on one diagram.',
     inputSchema: {
       type: 'object',
@@ -333,16 +344,14 @@ export const TOOLS = [
   {
     name: 'connect',
     tier: 'write',
-    description: 'Draw a connection from one element to another. Answers with the connection\'s id.',
+    description:
+      'Draw a connection from one element to another, dated when the line is temporary. Answers with the connection\'s id.',
     inputSchema: {
       type: 'object',
       properties: {
         sourceId: ID('element the connection starts at'),
         targetId: ID('element it ends at'),
-        label: { type: 'string', description: 'What flows, in a few words.' },
-        protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
-        isBidirectional: { type: 'boolean', description: 'Whether it flows both ways. Default false.' },
-        ...LINE_FIELDS,
+        ...CONNECTION_FIELDS,
       },
       required: ['sourceId', 'targetId'],
       additionalProperties: false,
@@ -352,18 +361,38 @@ export const TOOLS = [
     name: 'connection.update',
     tier: 'write',
     description:
-      'Change a connection\'s label, protocol, direction, colour or line style. Colour a line by what '
-      + 'flows over it and a busy board reads again; "solid" and an empty colour give the theme back its line.',
+      'Change a connection\'s label, protocol, direction, validity, colour or line style; null clears a '
+      + 'field. Colour a line by what flows over it and a busy board reads again; "solid" and an empty '
+      + 'colour give the theme back its line.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('connection'), ...CONNECTION_FIELDS },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'connections.update',
+    tier: 'write',
+    description:
+      'connection.update for several lines at once, as one undo step: every change lands or none does. '
+      + 'Each item takes what connection.update takes.',
     inputSchema: {
       type: 'object',
       properties: {
-        id: ID('connection'),
-        label: { type: 'string', description: 'What flows, in a few words.' },
-        protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
-        isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
-        ...LINE_FIELDS,
+        items: {
+          type: 'array',
+          description: 'The changes, one per line.',
+          items: {
+            type: 'object',
+            description: 'One connection and what changes on it.',
+            properties: { id: ID('connection'), ...CONNECTION_FIELDS },
+            required: ['id'],
+            additionalProperties: false,
+          },
+        },
       },
-      required: ['id'],
+      required: ['items'],
       additionalProperties: false,
     },
   },
@@ -372,6 +401,17 @@ export const TOOLS = [
     tier: 'write',
     description: 'Cut a connection, and its route on every diagram.',
     inputSchema: { type: 'object', properties: { id: ID('connection') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'connections.remove',
+    tier: 'write',
+    description: 'Cut several connections as one undo step — a clean-up of duplicate twins in one call rather than twenty.',
+    inputSchema: {
+      type: 'object',
+      properties: { ids: { type: 'array', description: 'The connections to cut.', items: { type: 'string' } } },
+      required: ['ids'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'decision.propose',

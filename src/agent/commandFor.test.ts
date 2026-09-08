@@ -107,7 +107,10 @@ describe('every write, applied and undone', () => {
     ['connect', { sourceId: 'billing', targetId: 'crm', color: '#C0392B', lineStyle: 'dashed' }],
     ['connection.update', { id: 'c1', label: 'orders', isBidirectional: true }],
     ['connection.update', { id: 'c1', color: '#2e86c1', lineStyle: 'dotted' }],
+    ['connection.update', { id: 'c1', validFrom: '2027-01-01', validUntil: '2027-06-30' }],
+    ['connections.update', { items: [{ id: 'c1', label: 'orders', validUntil: '2027-06-30' }] }],
     ['connection.remove', { id: 'c1' }],
+    ['connections.remove', { ids: ['c1', 'c1'] }],
     ['decision.propose', { title: 'Move CRM to the cloud' }],
     ['decision.propose', { title: 'Split the API', applicationId: 'billing', body: '# Custom' }],
     ['decision.transition', { id: 'adr-1', status: 'reviewing' }],
@@ -278,6 +281,47 @@ describe('relational placement', () => {
     expect(aligned).toMatchObject({ moved: [{ elementId: 'billing', x: 20 }, { elementId: 'crm', x: 20 }] })
     const spaced = answerOf(commandFor('distribute', { elementIds: ['who', 'billing', 'crm'], axis: 'horizontal' }, view(model)))
     expect((spaced.moved as unknown[]).length).toBe(1)
+  })
+})
+
+describe('a line’s window, and lines in bulk (ADR-0009)', () => {
+  const model = fromArrays(host)
+
+  it('connect dates a temporary line, and connection.update clears a day with null', () => {
+    const drawn = roundTrip(model, commandFor('connect', { sourceId: 'billing', targetId: 'who', validFrom: '2027-01-01', validUntil: '2027-03-31', label: 'sync' }, view(model)))
+    const line = Object.values(drawn.connections).find((c) => c.id !== 'c1')!
+    expect(line).toMatchObject({ validFrom: '2027-01-01', validUntil: '2027-03-31', label: 'sync' })
+    const cleared = apply(drawn, prepared(commandFor('connection.update', { id: line.id, validUntil: null, label: null }, view(drawn))).command)
+    expect(cleared.ok && cleared.model.connections[line.id]).not.toHaveProperty('validUntil')
+    expect(cleared.ok && cleared.model.connections[line.id]).not.toHaveProperty('label')
+    expect(cleared.ok && cleared.model.connections[line.id].validFrom).toBe('2027-01-01')
+  })
+
+  it('refuses a window that runs backwards, against what the line keeps', () => {
+    const dated = roundTrip(model, commandFor('connection.update', { id: 'c1', validFrom: '2027-06-01' }, view(model)))
+    expect(commandFor('connection.update', { id: 'c1', validUntil: '2027-01-01' }, view(dated))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('connect', { sourceId: 'billing', targetId: 'who', validFrom: 'June' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('connections.update lands every change or none, and says which item was wrong', () => {
+    const two = roundTrip(model, commandFor('connect', { sourceId: 'billing', targetId: 'who' }, view(model)))
+    const other = Object.keys(two.connections).find((id) => id !== 'c1')!
+    const out = commandFor('connections.update', { items: [{ id: 'c1', protocol: 'REST' }, { id: other, isBidirectional: true }] }, view(two))
+    expect(answerOf(out)).toEqual({ updated: [{ id: 'c1', changed: ['protocol'] }, { id: other, changed: ['isBidirectional'] }] })
+    const after = roundTrip(two, out)
+    expect(after.connections.c1.protocol).toBe('REST')
+    expect(after.connections[other].isBidirectional).toBe(true)
+    expect(commandFor('connections.update', { items: [{ id: 'c1' }, { id: 'c9' }] }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('connections.update', { items: [{ id: 'c1' }, { id: other, validFrom: 'x' }] }, view(two)))
+      .toMatchObject({ refusal: 'agent.badArguments', detail: 'items[1]: validFrom must be yyyy-mm-dd' })
+  })
+
+  it('connections.remove cuts them all as one step, or none', () => {
+    const two = roundTrip(model, commandFor('connect', { sourceId: 'billing', targetId: 'who' }, view(model)))
+    const other = Object.keys(two.connections).find((id) => id !== 'c1')!
+    const after = roundTrip(two, commandFor('connections.remove', { ids: ['c1', other] }, view(two)))
+    expect(after.order.connections).toEqual([])
+    expect(commandFor('connections.remove', { ids: ['c1', 'c9'] }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
   })
 })
 

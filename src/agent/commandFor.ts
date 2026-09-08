@@ -100,17 +100,11 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const targetId = args.targetId as string
       for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
       if (sourceId === targetId) return refused('agent.badArguments', 'a connection needs two different elements')
-      const look = lineLook(args)
-      if ('ok' in look) return look
-      const connection: DesignConnection = {
-        id: view.ids.connection(),
-        sourceId,
-        targetId,
-        isBidirectional: args.isBidirectional === true,
-        ...strings(args, ['label', 'protocol']),
-        ...(look.color !== undefined ? { color: look.color } : {}),
-        ...(look.lineStyle !== undefined ? { lineStyle: look.lineStyle } : {}),
-      }
+      const bare: DesignConnection = { id: view.ids.connection(), sourceId, targetId, isBidirectional: false }
+      const patch = connectionPatch(args, bare)
+      if ('ok' in patch) return patch
+      const connection: DesignConnection = { ...bare, ...patch }
+      for (const key of Object.keys(patch) as (keyof DesignConnection)[]) if (connection[key] === undefined) delete connection[key]
       return {
         command: { type: 'connection.create', connection, origin: 'agent' },
         answer: json({ id: connection.id, sourceId, targetId }),
@@ -118,21 +112,42 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     }
     case 'connection.update': {
       const id = args.id as string
-      if (!model.connections[id]) return refused('agent.unknownId', `connection ${id}`)
-      const look = lineLook(args)
-      if ('ok' in look) return look
-      // Solid and an empty colour are asked for by name and land as deletions,
-      // so the line falls back to the theme rather than carrying a default.
-      const patch = { ...fieldsOf(args, ['label', 'protocol', 'isBidirectional']), ...look }
+      const held = model.connections[id]
+      if (!held) return refused('agent.unknownId', `connection ${id}`)
+      const patch = connectionPatch(args, held)
+      if ('ok' in patch) return patch
       return {
-        command: { type: 'connection.update', id, patch: patch as Partial<DesignConnection>, origin: 'agent' },
+        command: { type: 'connection.update', id, patch, origin: 'agent' },
         answer: json({ id, changed: Object.keys(patch) }),
       }
+    }
+    case 'connections.update': {
+      const items = args.items as Args[]
+      const commands: Command[] = []
+      const changed: { id: string; changed: string[] }[] = []
+      for (const [index, item] of items.entries()) {
+        const id = item.id as string
+        const held = model.connections[id]
+        if (!held) return refused('agent.unknownId', `connection ${id}`)
+        const patch = connectionPatch(item, held)
+        if ('ok' in patch) return withDetail(patch, `items[${index}]`)
+        commands.push({ type: 'connection.update', id, patch })
+        changed.push({ id, changed: Object.keys(patch) })
+      }
+      return { command: transaction(commands, { origin: 'agent' }), answer: json({ updated: changed }) }
     }
     case 'connection.remove': {
       const id = args.id as string
       if (!model.connections[id]) return refused('agent.unknownId', `connection ${id}`)
       return { command: { type: 'connection.delete', id, origin: 'agent' }, answer: json({ id, removed: true }) }
+    }
+    case 'connections.remove': {
+      const ids = [...new Set(args.ids as string[])]
+      for (const id of ids) if (!model.connections[id]) return refused('agent.unknownId', `connection ${id}`)
+      return {
+        command: transaction(ids.map((id) => ({ type: 'connection.delete' as const, id })), { origin: 'agent' }),
+        answer: json({ removed: ids }),
+      }
     }
     case 'decision.propose': return proposeDecision(args, view)
     case 'decision.transition': return transitionDecision(args, view)
@@ -783,12 +798,12 @@ function onDiagram(args: Args, view: ReadView): { diagram: Diagram; placements: 
   return { diagram, placements }
 }
 
-/** The named keys that were given, as a patch. A key not given is not touched. */
-function fieldsOf(args: Args, keys: readonly string[]): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const key of keys) if (args[key] !== undefined && args[key] !== null) out[key] = args[key]
-  return out
+/** A refusal, with where in a list it came from put in front of its detail. */
+function withDetail(answer: AgentAnswer, where: string): AgentAnswer {
+  if (answer.ok) return answer
+  return refused(answer.refusal, answer.detail === undefined ? where : `${where}: ${answer.detail}`)
 }
+
 
 /** A hex colour as the model keeps it, '' for "none", or false for something else. */
 function hexColour(value: unknown): string | '' | false {
@@ -796,6 +811,34 @@ function hexColour(value: unknown): string | '' | false {
   const trimmed = value.trim()
   if (trimmed === '') return ''
   return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed.toLowerCase() : false
+}
+
+/**
+ * What connect, connection.update and connections.update change on a line:
+ * the words, the direction, the window and the look. Null clears a field;
+ * the window has to be days and run forwards, checked against what the line
+ * keeps for the half that was not given.
+ */
+function connectionPatch(args: Args, held: DesignConnection): Partial<DesignConnection> | AgentAnswer {
+  const look = lineLook(args)
+  if ('ok' in look) return look
+  const patch: Partial<DesignConnection> = { ...look }
+  for (const key of ['label', 'protocol'] as const) {
+    if (args[key] === null || args[key] === '') patch[key] = undefined
+    else if (typeof args[key] === 'string') patch[key] = args[key] as string
+  }
+  if (typeof args.isBidirectional === 'boolean') patch.isBidirectional = args.isBidirectional
+  for (const key of ['validFrom', 'validUntil'] as const) {
+    const value = args[key]
+    if (value === undefined) continue
+    if (value === null || value === '') patch[key] = undefined
+    else if (isDay(value)) patch[key] = value
+    else return refused('agent.badArguments', `${key} must be yyyy-mm-dd`)
+  }
+  const from = 'validFrom' in patch ? patch.validFrom : held.validFrom
+  const until = 'validUntil' in patch ? patch.validUntil : held.validUntil
+  if (from && until && until < from) return refused('agent.badArguments', 'validUntil must not be before validFrom')
+  return patch
 }
 
 /**
@@ -813,8 +856,3 @@ function lineLook(args: Args): { color?: string; lineStyle?: EdgeLineStyle } | A
   return out
 }
 
-function strings(args: Args, keys: readonly string[]): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const key of keys) if (typeof args[key] === 'string' && args[key]) out[key] = args[key] as string
-  return out
-}

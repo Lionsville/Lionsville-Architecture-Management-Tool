@@ -116,13 +116,14 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         return refused('agent.unknownId', `element ${String(args.elementId)}`)
       }
       const rows: ReturnType<typeof connectionLine>[] = []
+      const dated = datedBy(model, view.current())
       let total = 0
       for (const id of model.order.connections) {
         const c = model.connections[id]
         if (args.elementId !== undefined && c.sourceId !== args.elementId && c.targetId !== args.elementId) continue
         if (diagram && !(diagram.placements[c.sourceId] && diagram.placements[c.targetId])) continue
         total += 1
-        if (rows.length < limit) rows.push(connectionLine(model, c))
+        if (rows.length < limit) rows.push(connectionLine(model, c, dated))
       }
       return json({ total, shown: rows.length, connections: rows })
     }
@@ -296,7 +297,25 @@ function elementLine(element: DesignElement) {
   }
 }
 
-function connectionLine(model: Model, c: DesignConnection) {
+/**
+ * Which plan dated each line, derived the way the plan page derives its
+ * table (ADR-0010): a port closes the original and opens the twin, so both
+ * are that plan's. Built once per answer, not once per line.
+ */
+function datedBy(model: Model, arrays: HostModel): Map<string, Transition> {
+  const out = new Map<string, Transition>()
+  for (const plan of transitionList(model)) {
+    for (const port of portsOf(arrays, plan)) {
+      if (port.on === undefined || !port.to) continue
+      out.set(port.from.id, plan)
+      out.set(port.to.id, plan)
+    }
+  }
+  return out
+}
+
+function connectionLine(model: Model, c: DesignConnection, dated?: Map<string, Transition>) {
+  const plan = dated?.get(c.id)
   return {
     id: c.id,
     sourceId: c.sourceId,
@@ -306,6 +325,9 @@ function connectionLine(model: Model, c: DesignConnection) {
     label: c.label,
     protocol: c.protocol,
     isBidirectional: c.isBidirectional,
+    validFrom: c.validFrom,
+    validUntil: c.validUntil,
+    ...(plan ? { planId: plan.id, plan: transitionLabel(plan) } : {}),
   }
 }
 
