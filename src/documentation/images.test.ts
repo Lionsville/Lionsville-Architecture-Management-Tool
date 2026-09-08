@@ -6,7 +6,7 @@
  * that slips through here is a network call in a tool that promises none.
  */
 import { describe, expect, it } from 'vitest'
-import { imageReference, imageSrcFile, imagesUsedIn } from './images'
+import { documentsUsing, imageReference, imageSrcFile, imagesUsedIn } from './images'
 
 describe('imageSrcFile', () => {
   it('reads the file off a reference, at any depth', () => {
@@ -74,5 +74,24 @@ describe('imagesUsedIn', () => {
 
   it('has nothing to say about a document with no pictures', () => {
     expect(imagesUsedIn('# Title\n\nA [link](../images/not-an-image.png) is not one.')).toEqual([])
+  })
+})
+
+describe('documentsUsing', () => {
+  const documents = [
+    { label: 'Order Management', text: 'See ![](../images/cutover-k1.png) and ![](../images/plan-k2.png).' },
+    { label: 'ADR-0003 Keep the queue', text: '![Cutover](../../images/cutover-k1.png)' },
+    { label: 'TR-0001 Warehouse', text: 'No pictures here.' },
+    // A picture somewhere else with the same name is not this project's.
+    { label: 'Billing', text: '![](https://example.org/images/cutover-k1.png)' },
+  ]
+
+  it('names every document that shows the picture, in the order given', () => {
+    expect(documentsUsing('cutover-k1.png', documents)).toEqual(['Order Management', 'ADR-0003 Keep the queue'])
+    expect(documentsUsing('plan-k2.png', documents)).toEqual(['Order Management'])
+  })
+
+  it('answers nothing for a picture nobody shows', () => {
+    expect(documentsUsing('unused-k3.png', documents)).toEqual([])
   })
 })

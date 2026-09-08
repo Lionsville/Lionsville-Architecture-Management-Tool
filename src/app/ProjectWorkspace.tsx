@@ -19,7 +19,9 @@ import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
-import { decisionsToCommands, transaction } from '../model'
+import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
+import { transitionLabel } from '../model/transition'
+import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { SearchHit } from '../search/search'
@@ -43,7 +45,7 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
-import { imageSrcFile } from '../documentation'
+import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
 import type { ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
@@ -193,6 +195,20 @@ export function ProjectWorkspace({
   const resolveImage = useCallback((src: string): string | undefined => {
     const file = imageSrcFile(src)
     return file ? session.currentImages().find((image) => image.file === file)?.url : undefined
+  }, [session])
+
+  /**
+   * Every document that shows a picture, by name — descriptions, decisions and
+   * plans alike, which is why this is answered here and not on the page that
+   * asks: the page knows one board, and the session knows the project.
+   */
+  const imageUsedBy = useCallback((file: string): readonly string[] => {
+    const model = session.indexed()
+    return documentsUsing(file, [
+      ...Object.values(model.elements).map((element) => ({ label: element.name, text: element.description ?? '' })),
+      ...Object.values(decisionsOf(model)).map((adr) => ({ label: `${formatAdrNumber(adr.number)} ${adr.title}`, text: adr.body })),
+      ...Object.values(transitionsOf(model)).map((plan) => ({ label: `${transitionLabel(plan)} ${plan.title}`, text: plan.body })),
+    ])
   }, [session])
 
   /** The shared renderer, with this project's pictures behind it. */
@@ -578,6 +594,7 @@ export function ProjectWorkspace({
           }}
           renderMarkdown={renderDocument}
           onAddImage={files.addImage}
+          images={{ library: session.imageLibrary, usedBy: imageUsedBy, onRemove: files.removeImage }}
           windowChrome={pageChrome}
           onForceSave={forceSave}
           onHandle={onEditorHandle}

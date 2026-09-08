@@ -56,6 +56,12 @@ export type ProjectFiles = {
    * `undefined` when it was refused — the refusal has already been shown.
    */
   addImage: (file: File) => Promise<string | undefined>
+  /**
+   * A picture out of the project. The file goes on the next save, because the
+   * store removes what the format no longer writes; the references to it stay
+   * where they are and render as their captions. Not undoable, like adding one.
+   */
+  removeImage: (file: string) => void
 }
 
 /**
@@ -182,5 +188,9 @@ export function useProjectFiles(deps: {
         return undefined
       }), [documents, session, notify, s])
 
-  return { saveWorkingFile, saveInterchange, openFile, openDocument, addLogo, addImage }
+  const removeImage = useCallback((file: string) => {
+    session.setImageLibrary((library) => library.filter((image) => image.file !== file))
+  }, [session])
+
+  return { saveWorkingFile, saveInterchange, openFile, openDocument, addLogo, addImage, removeImage }
 }

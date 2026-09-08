@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import { EyeIcon, FullscreenIcon, PencilIcon } from '../../widgets/icons';
 import { useStrings } from '../../i18n/LanguageContext';
 import type { MarkdownRenderOptions } from '../documentation';
+import { MarkdownHelp } from './MarkdownHelp';
 
 /**
  * Markdown description editor with a preview toggle. Rendering is host-
@@ -38,6 +39,7 @@ export function MarkdownField({
           {t('field.descriptionMarkdown')}
         </Typography>
         <Box sx={{ display: 'flex' }}>
+        <MarkdownHelp />
         {onOpenDocumentation && (
           <Tooltip title={t('field.openDocumentation')}>
             <IconButton size="small" aria-label={t('field.openDocumentation')} onClick={onOpenDocumentation}>

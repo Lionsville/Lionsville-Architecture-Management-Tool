@@ -1339,6 +1339,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           actions={state.actions}
           renderMarkdown={props.renderMarkdown}
           onAddImage={readOnly ? undefined : props.onAddImage}
+          images={readOnly ? undefined : props.images}
           renderInspector={(element, { readOnly: inspectorReadOnly }) => (
             <ElementInspector
               element={element}

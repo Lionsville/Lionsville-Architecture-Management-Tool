@@ -83,3 +83,22 @@ export function imagesUsedIn(markdown: string): string[] {
   }
   return found
 }
+
+/** A document, as the usage scan sees it: what to call it, and what it says. */
+export interface NamedDocument {
+  label: string
+  text: string
+}
+
+/**
+ * The documents that show this picture, by label — what a person is told
+ * before they delete it. Every document in the project is a caller's to
+ * gather, because the page that offers the delete only knows its own board and
+ * the descriptions, decisions and plans all hold markdown; the scan itself is
+ * one rule, {@link imagesUsedIn}, applied to each.
+ */
+export function documentsUsing(file: string, documents: readonly NamedDocument[]): string[] {
+  return documents
+    .filter((document) => imagesUsedIn(document.text).includes(file))
+    .map((document) => document.label)
+}

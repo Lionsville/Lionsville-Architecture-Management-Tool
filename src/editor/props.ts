@@ -15,7 +15,7 @@ import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
 import type {
-  DesignModel, DiagramSettings, ElementId,
+  DesignModel, DiagramSettings, DocumentImage, ElementId,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
@@ -332,6 +332,16 @@ export interface SolutionDesignEditorProps {
    * host with nowhere to put one, and the paste and drop affordances withdraw.
    */
   onAddImage?(file: File): Promise<string | undefined>;
+  /**
+   * The project's pictures, for the documentation page to list, put in again
+   * and take out (ADR-0009). `usedBy` is the host's because the decisions and
+   * plans that may show a picture are the host's. Absent = no list.
+   */
+  images?: {
+    library: readonly DocumentImage[];
+    usedBy(file: string): readonly string[];
+    onRemove(file: string): void;
+  };
   /**
    * What the host window paints over the top of a full-window view, and
    * whether that view's top bar has to double as the handle that moves the

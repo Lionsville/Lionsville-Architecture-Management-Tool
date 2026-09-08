@@ -331,3 +331,93 @@ describe('DocumentationPage', () => {
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'Unsaved words.' }, 'field:e1:description');
   });
 });
+
+describe('DocumentationPage — the pictures the project holds (ADR-0009)', () => {
+  const png = 'data:image/png;base64,AAAA';
+  const library = [
+    { file: 'cutover-k1.png', url: png },
+    { file: 'whiteboard-k2.jpg', url: png },
+  ];
+
+  function withPictures(overrides: Partial<DocumentationPageProps> = {}) {
+    const images = {
+      library,
+      usedBy: vi.fn((file: string) => (file === 'cutover-k1.png' ? ['Billing', 'ADR-0002 Keep the queue'] : [])),
+      onRemove: vi.fn(),
+    };
+    const view = setup({
+      element: element({ description: 'Shown: ![Cutover](../images/cutover-k1.png)' }),
+      onAddImage: vi.fn(async () => 'x.png'),
+      images,
+      ...overrides,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    return { ...view, images };
+  }
+
+  it('lists them on request, and says which this page already shows', () => {
+    withPictures();
+    expect(screen.queryByTestId('doc-pictures')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Pictures (2)' }));
+    const strip = within(screen.getByTestId('doc-pictures'));
+    expect(strip.getByText('cutover-k1.png')).toBeTruthy();
+    expect(strip.getByText('whiteboard-k2.jpg')).toBeTruthy();
+    expect(strip.getAllByText('Used on this page')).toHaveLength(1);
+  });
+
+  it('puts one into the text at the caret, by reference', () => {
+    withPictures();
+    fireEvent.click(screen.getByRole('button', { name: 'Pictures (2)' }));
+    const [, insertWhiteboard] = within(screen.getByTestId('doc-pictures')).getAllByRole('button', { name: 'Insert' });
+    act(() => { fireEvent.click(insertWhiteboard); });
+    expect(source()!.value).toContain('![whiteboard-k2](../images/whiteboard-k2.jpg)');
+  });
+
+  it('asks before deleting, naming every document that shows it', () => {
+    const { images } = withPictures();
+    fireEvent.click(screen.getByRole('button', { name: 'Pictures (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete picture cutover-k1.png' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete cutover-k1.png?' });
+    expect(dialog.textContent).toContain('Billing, ADR-0002 Keep the queue');
+    expect(images.onRemove).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(images.onRemove).not.toHaveBeenCalled();
+  });
+
+  it('removes it once confirmed, and says so plainly for one nobody shows', () => {
+    const { images } = withPictures();
+    fireEvent.click(screen.getByRole('button', { name: 'Pictures (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete picture whiteboard-k2.jpg' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete whiteboard-k2.jpg?' });
+    expect(dialog.textContent).toContain('No document shows it');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(images.onRemove).toHaveBeenCalledWith('whiteboard-k2.jpg');
+  });
+
+  it('offers no list to a host that has none', () => {
+    setup({ element: element({ description: 'x' }) });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.queryByRole('button', { name: /^Pictures/ })).toBeNull();
+  });
+});
+
+describe('DocumentationPage — help with the markdown', () => {
+  it('opens a table of what the page draws, with pictures when the host takes them', () => {
+    setup({ element: element({ description: 'x' }), onAddImage: vi.fn(async () => 'x.png') });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
+    const help = within(screen.getByTestId('markdown-help'));
+    expect(help.getByText('[[Order Management]]')).toBeTruthy();
+    expect(help.getByText('![caption](../images/file.png)')).toBeTruthy();
+    expect(help.getByText(/business case/i)).toBeTruthy();
+  });
+
+  it('withdraws the picture row on a host that cannot take one in', () => {
+    setup({ element: element({ description: 'x' }) });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
+    const help = within(screen.getByTestId('markdown-help'));
+    expect(help.queryByText('![caption](../images/file.png)')).toBeNull();
+    expect(help.getByText('[[Order Management]]')).toBeTruthy();
+  });
+});

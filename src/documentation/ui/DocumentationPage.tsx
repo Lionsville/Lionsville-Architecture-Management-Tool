@@ -34,13 +34,15 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, DocumentImage, ElementId } from '../../model/types';
 import { transitionLabel, transitionsForElement } from '../../model/transition';
 import type { Transition } from '../../model/transition';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
+import { ConfirmDialog } from '../../widgets/ConfirmDialog';
+import { MarkdownHelp } from './MarkdownHelp';
 import {
   documentTemplate,
   documentedElements,
@@ -48,10 +50,10 @@ import {
   linkElementRefs,
   outline,
 } from '../documentation';
-import { imageReference } from '../images';
+import { imageReference, imagesUsedIn } from '../images';
 import { businessCaseTemplate } from '../businessCase';
 import { useStrings } from '../../i18n/LanguageContext';
-import { DocGlyph } from '../../widgets/icons';
+import { DocGlyph, TrashIcon } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
 import { BackIcon } from '../../widgets/icons';
@@ -104,6 +106,17 @@ export interface DocumentationPageProps {
    * Absent = no way to add one, and neither affordance is offered.
    */
   onAddImage?(file: File): Promise<string | undefined>;
+  /**
+   * The pictures the project holds, so the writer can put one in again or
+   * take one out (ADR-0009). `usedBy` names every document that shows a
+   * file — the host knows the decisions and plans this page does not — and is
+   * what the delete confirmation says. Absent = no list.
+   */
+  images?: {
+    library: readonly DocumentImage[];
+    usedBy(file: string): readonly string[];
+    onRemove(file: string): void;
+  };
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
   /**
@@ -291,6 +304,21 @@ export function DocumentationPage(props: DocumentationPageProps) {
     addImages(files);
   };
 
+  // The strip of the project's pictures, and the one waiting to be deleted.
+  const [showPictures, setShowPictures] = useState(false);
+  const [deleting, setDeleting] = useState<string | undefined>(undefined);
+  const library = props.images?.library ?? [];
+  const usedHere = useMemo(() => new Set(imagesUsedIn(draft)), [draft]);
+  const deletingUsedBy = deleting ? props.images?.usedBy(deleting) ?? [] : [];
+
+  const insertPicture = (image: DocumentImage) =>
+    insertAtCaret(`\n\n${imageReference(image.file, image.file.replace(/\.[^.]+$/, ''))}\n\n`);
+
+  const confirmDelete = () => {
+    if (deleting) props.images?.onRemove(deleting);
+    setDeleting(undefined);
+  };
+
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
   const bar = barChromeFor(chrome)
@@ -394,18 +422,65 @@ export function DocumentationPage(props: DocumentationPageProps) {
           {mode === 'edit' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                {/* One line, however narrow the pane: the help button beside it says the rest. */}
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
                   {props.onAddImage ? t('doc.markdownImageHint') : t('doc.markdownHint')}
                 </Typography>
                 <Button size="small" onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
                   {t('doc.insertBusinessCase')}
                 </Button>
+                {props.images && (
+                  <Button
+                    size="small"
+                    variant={showPictures ? 'contained' : 'text'}
+                    disableElevation
+                    aria-pressed={showPictures}
+                    onClick={() => setShowPictures((open) => !open)}
+                  >
+                    {t('doc.pictures')} ({library.length})
+                  </Button>
+                )}
                 {!draft.trim() && (
                   <Button size="small" variant="outlined" onClick={insertTemplate}>
                     {t('doc.insertTemplate')}
                   </Button>
                 )}
+                <MarkdownHelp images={Boolean(props.onAddImage)} />
               </Box>
+              {props.images && showPictures && (
+                <Box
+                  data-testid="doc-pictures"
+                  sx={{ maxHeight: 220, overflow: 'auto', borderBottom: 1, borderColor: 'divider', px: 1.5, py: 1 }}
+                >
+                  {library.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">{t('doc.picturesNone')}</Typography>
+                  )}
+                  {library.map((image) => (
+                    <Box key={image.file} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                      <Box
+                        component="img"
+                        src={image.url}
+                        alt=""
+                        sx={{ width: 48, height: 36, objectFit: 'contain', borderRadius: 0.5, bgcolor: 'action.hover', flexShrink: 0 }}
+                      />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {image.file}
+                        </Typography>
+                        {usedHere.has(image.file) && (
+                          <Typography variant="caption" color="text.secondary">{t('doc.pictureUsedHere')}</Typography>
+                        )}
+                      </Box>
+                      <Button size="small" onClick={() => insertPicture(image)}>{t('doc.insertPicture')}</Button>
+                      <Tooltip title={t('doc.deletePicture')}>
+                        <IconButton size="small" aria-label={`${t('doc.deletePicture')} ${image.file}`} onClick={() => setDeleting(image.file)}>
+                          <TrashIcon size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  ))}
+                </Box>
+              )}
               <Box
                 component="textarea"
                 ref={textareaRef}
@@ -497,6 +572,19 @@ export function DocumentationPage(props: DocumentationPageProps) {
           {props.renderInspector?.(element, { readOnly: readOnly || mode === 'read' })}
         </Box>
       </Box>
+
+      {/* Deleting a picture is the one thing on this page ⌘Z cannot take back, so it asks. */}
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title={t('doc.deletePictureTitle', { file: deleting ?? '' })}
+        body={deletingUsedBy.length
+          ? t('doc.deletePictureUsedBy', { labels: deletingUsedBy.join(', ') })
+          : t('doc.deletePictureUnused')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onCancel={() => setDeleting(undefined)}
+        onConfirm={confirmDelete}
+      />
     </PageDialog>
   );
 }
