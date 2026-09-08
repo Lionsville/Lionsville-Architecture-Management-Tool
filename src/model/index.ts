@@ -9,7 +9,7 @@
  */
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
-  Lifecycle, DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting,
+  Lifecycle, LifecycleDates, DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramPlacement, DesignDiagram,
   DesignModel, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
@@ -25,6 +25,13 @@ export {
   fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf,
   elementList, connectionList, diagramList, decisionList, placementList, routeList,
 } from './normalised'
+
+/** Where a thing is on a given day (ADR-0009). */
+export {
+  connectionLiveAt, DATED_PHASES, datesIn, datesInOrder, hasDates, isDay, LIFECYCLE_ORDER,
+  phaseAt, today,
+} from './lifecycle'
+export type { DatedPhase } from './lifecycle'
 
 /** The one vocabulary for changing a model, and the one writer (ADR-0002). */
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'

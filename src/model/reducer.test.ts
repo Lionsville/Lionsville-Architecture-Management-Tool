@@ -458,3 +458,61 @@ describe('applyAll', () => {
     expect(ok(apply(step.model, step.inverse)).model).toStrictEqual(m)
   })
 })
+describe('lifecycle dates (ADR-0009)', () => {
+  it('takes dates that run forwards', () => {
+    const next = apply(sample(), {
+      type: 'element.update', id: 'a',
+      patch: { lifecycleDates: { live: '2027-04-01', retired: '2029-01-01' } },
+    })
+    expect(next.ok).toBe(true)
+  })
+
+  it('refuses dates that run backwards, with a key rather than a throw', () => {
+    // Refused in the reducer and not in the inspector, so the agent, a paste
+    // and an undo all get the same answer.
+    const next = apply(sample(), {
+      type: 'element.update', id: 'a',
+      patch: { lifecycleDates: { live: '2029-01-01', retired: '2027-04-01' } },
+    })
+    expect(next).toEqual({ ok: false, reason: 'command.datesOutOfOrder' })
+  })
+
+  it('judges the dates the element would END UP with, not the ones in the patch', () => {
+    const held = apply(sample(), {
+      type: 'element.update', id: 'a', patch: { lifecycleDates: { live: '2029-01-01' } },
+    })
+    expect(held.ok).toBe(true)
+    if (!held.ok) return
+    // On its own this retirement is fine; against the go-live already stored it
+    // is backwards, and a patch that names one key must still be judged whole.
+    expect(apply(held.model, {
+      type: 'element.update', id: 'a', patch: { lifecycleDates: { live: '2029-01-01', retired: '2028-01-01' } },
+    })).toEqual({ ok: false, reason: 'command.datesOutOfOrder' })
+  })
+
+  it('undoes a date the way it undoes any other field', () => {
+    const before = sample()
+    const dated = apply(before, {
+      type: 'element.update', id: 'a', patch: { lifecycleDates: { retired: '2029-01-01' } },
+    })
+    expect(dated.ok).toBe(true)
+    if (!dated.ok) return
+    const back = apply(dated.model, dated.inverse)
+    expect(back.ok).toBe(true)
+    if (!back.ok) return
+    expect(back.model).toEqual(before)
+  })
+
+  it('sets the day a diagram shows through the ordinary patch', () => {
+    const next = apply(sample(), { type: 'diagram.update', id: 'landscape', patch: { asOf: '2028-01-01' } })
+    expect(next.ok).toBe(true)
+    if (!next.ok) return
+    expect(next.model.diagrams.landscape.asOf).toBe('2028-01-01')
+    // And clearing it is a patch naming the key with nothing, as everywhere.
+    const cleared = apply(next.model, { type: 'diagram.update', id: 'landscape', patch: { asOf: undefined } })
+    expect(cleared.ok).toBe(true)
+    if (!cleared.ok) return
+    expect('asOf' in cleared.model.diagrams.landscape).toBe(false)
+  })
+})
+

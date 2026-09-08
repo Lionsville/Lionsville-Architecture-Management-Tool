@@ -62,6 +62,12 @@ export type Layer7Zone =
   | 'management';
 /** Element lifecycle stage — closed set, defaults to 'live' (see model-mapping). */
 export type Lifecycle = 'planned' | 'live' | 'retiring' | 'retired';
+/**
+ * When each phase begins. Declared here rather than imported, because this file
+ * imports nothing at all — it is the bottom of the model and stays there.
+ * `lifecycle.ts` re-exports the same shape and owns the arithmetic over it.
+ */
+export type LifecycleDates = Partial<Record<'live' | 'retiring' | 'retired', string>>;
 /** The key this element has in the file — see `keys.ts` for where it comes from. */
 export type ElementId = string;
 
@@ -92,6 +98,23 @@ export interface DesignElement {
   technology?: string;
   description?: string;
   lifecycle: Lifecycle;
+  /**
+   * When each phase begins, `yyyy-mm-dd` (ADR-0009). Absent throughout — which
+   * is the default and stays the default — means this element answers the same
+   * phase on every day, exactly as it did before dates existed. See
+   * {@link ./lifecycle}.
+   */
+  lifecycleDates?: LifecycleDates;
+  /** What replaces this when it retires. Feeds the roadmap's checks. */
+  successorId?: ElementId;
+  /**
+   * Who answers for this application.
+   *
+   * A field rather than a row in the documentation template, for the reason
+   * that template's own comment gives: a question with two places to answer it
+   * has two answers. The row left the template when this arrived.
+   */
+  owner?: string;
   isManaged: boolean;
   /** Keyed by aspect key (superset or custom slug). */
   aspects: Record<string, AspectEntry>;
@@ -134,6 +157,16 @@ export interface DesignConnection {
   targetId: ElementId;
   label?: string;
   protocol?: string;
+  /**
+   * The days this line is there, `yyyy-mm-dd` and inclusive (ADR-0009).
+   *
+   * Absent means it follows the elements it joins, which is what keeps a
+   * landscape where every line needs two dates from being a landscape nobody
+   * dates. The temporary lines of a hybrid phase — a sync, a façade, a double
+   * write — are what these are for.
+   */
+  validFrom?: string;
+  validUntil?: string;
   isBidirectional: boolean;
   /**
    * Per-edge presentation overrides (U4b). Each is absent-means-inherit: the
@@ -272,6 +305,17 @@ export interface DesignDiagram {
    * goes into a dated report and gets re-exported after a typo fix.
    */
   documentDate?: string;
+  /**
+   * The day this diagram shows (ADR-0009).
+   *
+   * Absent means today, and moves with the calendar. A date means the same
+   * single model as it stood then: elements drawn in the phase they were in,
+   * and the temporary lines of a hybrid phase present or gone according to
+   * their own windows. It is not in {@link DiagramSettings} on purpose — a
+   * date control on the bar changes it, and one mechanism cannot disagree
+   * with itself.
+   */
+  asOf?: string;
   /** Whether the exported PNG carries a title block at all. Absent = it does. */
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;

@@ -36,6 +36,7 @@ import type { Command, CommandMeta, DiagramPatch, ProjectPatch } from './command
 import type { Adr } from './adr'
 import type { ConnectionId, Diagram, DiagramId, Model, ModelOrder } from './normalised'
 import { decisionsOf, routesOf } from './normalised'
+import { datesInOrder } from './lifecycle'
 import type {
   DesignConnection, DesignElement, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId,
 } from './types'
@@ -45,13 +46,14 @@ import type {
  * closed set — anything that is not one of these is a bug in the caller, not a
  * refusal to show somebody.
  */
-export type CommandRefusal = 'command.gone' | 'command.lastLandscape'
+export type CommandRefusal = 'command.gone' | 'command.lastLandscape' | 'command.datesOutOfOrder'
 
 export type ApplyResult =
   | { ok: true; model: Model; inverse: Command }
   | { ok: false; reason: CommandRefusal }
 
 const gone = { ok: false, reason: 'command.gone' } as const
+const outOfOrder = { ok: false, reason: 'command.datesOutOfOrder' } as const
 
 // --- indexed collections, immutably -----------------------------------------
 
@@ -169,6 +171,10 @@ export function apply(model: Model, command: Command): ApplyResult {
       const held = model.elements[command.id]
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
+      // A lifecycle that runs backwards is not a landscape anybody can read,
+      // and refusing here rather than in the inspector means the agent, a
+      // paste and an undo all get the same answer (ADR-0009).
+      if (!datesInOrder(row.lifecycleDates)) return outOfOrder
       const rows = put(model.elements, model.order.elements, command.id, row)
       return ok(withElements(model, rows), { type: 'element.update', id: command.id, patch: inverse })
     }

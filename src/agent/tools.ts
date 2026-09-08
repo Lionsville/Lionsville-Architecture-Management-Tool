@@ -565,6 +565,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.noAnswer': 'The app did not answer in time.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
+  'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

@@ -325,6 +325,52 @@ describe('iconType', () => {
   })
 })
 
+describe('time on the facts (ADR-0009)', () => {
+  const dated: InterchangeDoc = {
+    formatVersion: '1',
+    design: { name: 'Hybrid' },
+    elements: [
+      {
+        key: 'wms-old', kind: 'application', name: 'Warehouse Management',
+        lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' },
+        successorKey: 'wms-new', owner: 'Logistics IT',
+      },
+      {
+        key: 'wms-new', kind: 'application', name: 'Warehouse Management (new)',
+        lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' },
+      },
+      { key: 'plain', kind: 'application', name: 'Says nothing about time' },
+    ],
+    connections: [
+      // The sync that only exists during the hybrid run.
+      { sourceKey: 'wms-old', targetKey: 'wms-new', label: 'sync', validFrom: '2027-04-01', validUntil: '2028-01-31' },
+      { sourceKey: 'plain', targetKey: 'wms-old' },
+    ],
+    diagrams: [
+      { key: 'l7', kind: 'layer7', name: 'Now', places: [{ elementKey: 'wms-old', zone: 'landscape' }] },
+      { key: 'after', kind: 'layer7', name: 'After the cutover', asOf: '2028-06-01', places: [] },
+    ],
+  }
+
+  it('round-trips deep-equal, dates, successor, owner, windows and all', () => {
+    expect(sortKeys(roundTrip(dated))).toEqual(sortKeys(dated))
+  })
+
+  it('says nothing about time for an element and a line that said nothing', () => {
+    // The whole phase is additive: a document written before ADR-0009 must come
+    // back byte for byte, with no keys invented for it.
+    const out = roundTrip(dated)
+    const plain = out.elements.find((e) => e.key === 'plain')!
+    expect('lifecycleDates' in plain).toBe(false)
+    expect('successorKey' in plain).toBe(false)
+    expect('owner' in plain).toBe(false)
+    const line = out.connections!.find((c) => c.sourceKey === 'plain')!
+    expect('validFrom' in line).toBe(false)
+    expect('validUntil' in line).toBe(false)
+    expect('asOf' in out.diagrams[0]).toBe(false)
+  })
+})
+
 describe('per-diagram presentation settings', () => {
   const base: InterchangeDoc = {
     formatVersion: '1',

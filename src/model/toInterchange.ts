@@ -87,6 +87,12 @@ export function toInterchange(model: HostModel): InterchangeDoc {
         technology: e.technology,
         description: e.description,
         lifecycle: ex.lifecycle || e.lifecycle !== 'live' ? e.lifecycle : undefined,
+        // No `explicitFields` entry for these three: they have no default to be
+        // silent about, so present means written and absent means absent, and a
+        // document that had none comes back with none (ADR-0009).
+        lifecycleDates: e.lifecycleDates,
+        successorKey: k(e.successorId),
+        owner: e.owner,
         isManaged: ex.isManaged || e.isManaged !== true ? e.isManaged : undefined,
         iconType: iconTypeFor(e.iconKey, ex.iconType ?? false),
         aspects: Object.keys(e.aspects ?? {}).length ? e.aspects : undefined,
@@ -98,6 +104,8 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       targetKey: k(c.targetId),
       label: c.label,
       protocol: c.protocol,
+      validFrom: c.validFrom,
+      validUntil: c.validUntil,
       isBidirectional: c.isBidirectional || undefined,
     })),
     diagrams: model.diagrams.map((d) => prune({
@@ -107,6 +115,7 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       author: d.author,
       client: d.client,
       documentDate: d.documentDate,
+      asOf: d.asOf,
       showTitleBlock: d.showTitleBlock,
       applicationKey: k(d.applicationElementId),
       // Written whole, empty included: an empty column set is somebody saying

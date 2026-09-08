@@ -33,6 +33,10 @@ type InterchangeElement = {
   technology?: string
   description?: string
   lifecycle?: DesignElement['lifecycle']
+  /** Optional throughout, and absent in every document written before ADR-0009. */
+  lifecycleDates?: DesignElement['lifecycleDates']
+  successorKey?: string
+  owner?: string
   isManaged?: boolean
   aspects?: DesignElement['aspects']
   /** Unknown, not string: an unrecognised key is kept and handed back (see below). */
@@ -45,6 +49,8 @@ type InterchangeConnection = {
   targetKey: string
   label?: string
   protocol?: string
+  validFrom?: string
+  validUntil?: string
   isBidirectional?: boolean
 }
 
@@ -61,6 +67,7 @@ type InterchangeDiagram = {
   author?: string
   client?: string
   documentDate?: string
+  asOf?: string
   showTitleBlock?: boolean
   applicationKey?: string
   places?: InterchangePlace[]
@@ -130,6 +137,9 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       technology: e.technology,
       description: e.description,
       lifecycle: e.lifecycle ?? 'live',
+      lifecycleDates: e.lifecycleDates,
+      successorId: e.successorKey,
+      owner: e.owner,
       isManaged: e.isManaged ?? true,
       aspects: e.aspects ?? {},
       parameters: {},
@@ -150,6 +160,8 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     targetId: c.targetKey,
     label: c.label,
     protocol: c.protocol,
+    validFrom: c.validFrom,
+    validUntil: c.validUntil,
     isBidirectional: c.isBidirectional ?? false,
   }))
 
@@ -168,6 +180,7 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       author: d.author,
       client: d.client,
       documentDate: d.documentDate,
+      asOf: d.asOf,
       showTitleBlock: d.showTitleBlock,
       applicationElementId: d.applicationKey,
       placements,

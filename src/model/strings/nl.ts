@@ -39,6 +39,7 @@ export const NL: Record<keyof typeof EN, string> = {
   // --- wat de enige schrijver weigert (ADR-0002) ---------------------------
   'command.gone': 'Dat is er niet meer',
   'command.lastLandscape': 'Dit is het laatste landschap; het kan niet worden verwijderd.',
+  'command.datesOutOfOrder': 'Deze datums lopen terug: een applicatie kan niet uitgefaseerd zijn voordat zij live gaat.',
   'restore.absentThen': 'Dit stond bij die momentopname niet in het project.',
   'restore.absentNow': 'Het element staat niet meer in het project; zet het hele project terug om het terug te halen.',
   'restore.locked': 'Dit besluit is aanvaard, afgewezen of vervangen, en een afgesloten record wordt niet gewijzigd. Schrijf een nieuw besluit dat het vervangt.',
