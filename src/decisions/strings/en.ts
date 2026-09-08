@@ -36,6 +36,7 @@ export const EN = {
   'adr.moveTo': 'Move to {status}',
   'adr.supersededBy': 'Superseded by {name}',
   'adr.supersedes': 'Supersedes {name}',
+  'adr.plans': 'Plans resting on this',
   'adr.supersedeTitle': 'Mark as superseded',
   'adr.supersedeBody': 'Which decision replaces this one? The record stays as it is, with a link to its successor.',
   'adr.successor': 'Successor',

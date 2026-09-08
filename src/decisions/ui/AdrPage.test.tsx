@@ -195,3 +195,25 @@ describe('AdrPage', () => {
     expect(css).toContain('-webkit-app-region:drag')
   })
 })
+
+describe('the plans that rest on a record (ADR-0010)', () => {
+  const plan = {
+    id: 'tr-1', number: 1, title: 'Replace the warehouse system', status: 'agreed' as const,
+    elements: [], decisions: ['l2'], milestones: [], body: '',
+  }
+
+  it('links back to each plan, and opens it through the host', () => {
+    const onOpenPlan = vi.fn()
+    const onClose = vi.fn()
+    mount({ model: { ...model, transitions: [plan] }, initialAdrId: 'l2', onOpenPlan, onClose })
+    const row = screen.getByTestId('adr-plans')
+    fireEvent.click(within(row).getByRole('button', { name: 'TR-0001 Replace the warehouse system' }))
+    expect(onOpenPlan).toHaveBeenCalledWith('tr-1')
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('shows no row when nothing rests on it, or the host cannot open a plan', () => {
+    mount({ model: { ...model, transitions: [plan] }, initialAdrId: 'l2' })
+    expect(screen.queryByTestId('adr-plans')).toBeNull()
+  })
+})

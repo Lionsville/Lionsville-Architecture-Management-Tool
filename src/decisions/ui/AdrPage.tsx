@@ -68,6 +68,8 @@ export type AdrPageProps = {
   onOpenElement?: (elementId: string) => void
   /** The host keeps a history and can show this record's (ADR-0008). Only a project's records have one. */
   onOpenHistory?: (adrId: string) => void
+  /** A plan resting on a record was followed; the page closes and the caller opens that plan (ADR-0010). */
+  onOpenPlan?: (transitionId: string) => void
   windowChrome?: WindowChrome
 }
 
@@ -359,6 +361,9 @@ export function AdrPage(props: AdrPageProps) {
                   if (target) chooseRecord(target, scopeOfRecord(target))
                 }}
                 onElementLink={followElement}
+                plans={props.onOpenPlan && scopeOfRecord(selected) !== 'group'
+                  ? { list: model.transitions ?? [], onOpen: (id) => { onClose(); props.onOpenPlan?.(id) } }
+                  : undefined}
               />
             ) : (
               <Box sx={{ p: 5, color: 'text.secondary' }}>

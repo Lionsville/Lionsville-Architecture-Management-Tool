@@ -37,6 +37,8 @@ import {
   formatAdrNumber, isAdrDeletable, isAdrLocked, transitionsFrom,
 } from '../adr'
 import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../adr'
+import { transitionLabel } from '../../model/transition'
+import type { Transition } from '../../model/transition'
 import { STATUS_COLOR, STATUS_LABEL, VERDICT_LABEL } from '../adrScope'
 
 /** How long the text must be quiet before a draft becomes a commit. */
@@ -62,6 +64,11 @@ export type AdrReaderProps = {
   /** Follow a superseded/supersedes link to another record in this list. */
   onSelect: (adrId: string) => void
   onElementLink?: (elementId: string) => void
+  /**
+   * The plans over the landscape (ADR-0010), so a record can say which plans
+   * rest on it — the link back from the one a plan carries. Absent: no row.
+   */
+  plans?: { list: readonly Transition[]; onOpen(transitionId: string): void }
 }
 
 type Mode = 'read' | 'edit'
@@ -118,6 +125,7 @@ export function AdrReader(props: AdrReaderProps) {
   const headings = useMemo(() => outline(text).filter((h) => h.level <= 3), [text])
   const successor = adr.supersededBy ? list.find((a) => a.id === adr.supersededBy) : undefined
   const predecessors = list.filter((a) => a.supersededBy === adr.id)
+  const restingPlans = (props.plans?.list ?? []).filter((plan) => plan.decisions.includes(adr.id))
   const moves = transitionsFrom(adr.status)
   const deciders = adr.signers.map((signer) => signer.name.trim()).filter(Boolean)
 
@@ -240,6 +248,21 @@ export function AdrReader(props: AdrReaderProps) {
                         {i > 0 && ', '}
                         <Link component="button" type="button" onClick={() => onSelect(p.id)} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>
                           {s('adr.supersedes', { name: nameOf(p.id) })}
+                        </Link>
+                      </Box>
+                    ))}
+                  </Box>
+                </>
+              )}
+              {restingPlans.length > 0 && (
+                <>
+                  <Term>{s('adr.plans')}</Term>
+                  <Box component="dd" sx={{ m: 0 }} data-testid="adr-plans">
+                    {restingPlans.map((plan, i) => (
+                      <Box component="span" key={plan.id}>
+                        {i > 0 && ', '}
+                        <Link component="button" type="button" onClick={() => props.plans?.onOpen(plan.id)} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>
+                          {transitionLabel(plan)} {plan.title}
                         </Link>
                       </Box>
                     ))}

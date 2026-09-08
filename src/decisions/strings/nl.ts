@@ -38,6 +38,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.moveTo': 'Naar {status}',
   'adr.supersededBy': 'Vervangen door {name}',
   'adr.supersedes': 'Vervangt {name}',
+  'adr.plans': 'Plannen die hierop steunen',
   'adr.supersedeTitle': 'Markeren als vervangen',
   'adr.supersedeBody': 'Welk besluit vervangt dit? De tekst blijft zoals hij is, met een verwijzing naar de opvolger.',
   'adr.successor': 'Opvolger',

@@ -777,6 +777,7 @@ export function ProjectWorkspace({
         onOpenHistory={snapshots.available
           ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
           : undefined}
+        onOpenPlan={(id) => setPlanId(id)}
         windowChrome={pageChrome}
       />
       <RoadmapPage
