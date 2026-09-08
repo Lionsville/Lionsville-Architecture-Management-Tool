@@ -18,7 +18,7 @@
  * A fullscreen dialog, and it takes `windowChrome` for the reason the others
  * do: the shell toolbar's drag strip stays live underneath it.
  */
-import { useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
@@ -98,7 +98,16 @@ export function PlanPage(props: PlanPageProps) {
   const bar = barChromeFor(chrome)
   const [mode, setMode] = useState<'read' | 'edit'>('read')
   const [deleting, setDeleting] = useState(false)
+  // The document alone, the facts and the interfaces out of the way. On by
+  // default while writing, because writing wants the room; a click brings the
+  // facts back without leaving edit.
+  const [fullPage, setFullPage] = useState(false)
+  const [interfacesHeight, setInterfacesHeight] = useState(INTERFACES_DEFAULT_HEIGHT)
   const editing = mode === 'edit' && !readOnly
+  const switchMode = (next: 'read' | 'edit') => {
+    setMode(next)
+    setFullPage(next === 'edit')
+  }
 
   return (
     <PageDialog
@@ -131,13 +140,18 @@ export function PlanPage(props: PlanPageProps) {
           </Typography>
         )}
         <Box sx={{ flex: 1 }} />
+        {plan && (
+          <Button size="small" onClick={() => setFullPage((on) => !on)}>
+            {fullPage ? t('plan.showFacts') : t('plan.fullPage')}
+          </Button>
+        )}
         {!readOnly && plan && (
           <>
             <ToggleButtonGroup
               size="small"
               exclusive
               value={mode}
-              onChange={(_event, next: 'read' | 'edit' | null) => { if (next) setMode(next) }}
+              onChange={(_event, next: 'read' | 'edit' | null) => { if (next) switchMode(next) }}
             >
               <ToggleButton value="read" sx={{ px: 1.5, py: 0.25, fontSize: 12 }}>{t('plan.read')}</ToggleButton>
               <ToggleButton value="edit" sx={{ px: 1.5, py: 0.25, fontSize: 12 }}>{t('plan.edit')}</ToggleButton>
@@ -148,12 +162,20 @@ export function PlanPage(props: PlanPageProps) {
       </Box>
 
       {plan && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-          <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} />
-          {/* The table scrolls inside a cap of its own, so a plan with forty
-              interfaces still leaves the document its half of the column. */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: fullPage ? 'minmax(0, 1fr)' : '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+          {!fullPage && (
+            <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} />
+          )}
+          {/* The table scrolls inside a height of its own, dragged from the
+              seam under it, so a plan with forty interfaces still leaves the
+              document room — and none of it while the document is full page. */}
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} />
+            {!fullPage && (
+              <>
+                <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} height={interfacesHeight} />
+                <SeamResizer height={interfacesHeight} onHeight={setInterfacesHeight} label={t('plan.resizeInterfaces')} />
+              </>
+            )}
             <Body plan={plan} editing={editing} renderMarkdown={props.renderMarkdown} onChange={(body) => actions.updateTransition(plan.id, { body })} />
           </Box>
         </Box>
@@ -436,6 +458,50 @@ function ElementDates({ element, readOnly, onChange }: {
   )
 }
 
+const INTERFACES_DEFAULT_HEIGHT = 320
+const INTERFACES_MIN_HEIGHT = 80
+
+/**
+ * The seam between the interfaces and the document, dragged up or down.
+ *
+ * Its own six pixels rather than the editor's `PanelResizer`, which this
+ * module may not import; the same idea — drag off the height the gesture
+ * started at, arrow keys for the keyboard, double-click to put it back.
+ */
+function SeamResizer({ height, onHeight, label }: { height: number; onHeight(next: number): void; label: string }) {
+  const start = useRef({ y: 0, height })
+  const clamp = (next: number) => Math.max(INTERFACES_MIN_HEIGHT, Math.min(next, Math.max(INTERFACES_MIN_HEIGHT, window.innerHeight - 200)))
+  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    start.current = { y: event.clientY, height }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }, [height])
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+    onHeight(clamp(start.current.height + (event.clientY - start.current.y)))
+  }
+  return (
+    <Box
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label={label}
+      aria-valuenow={Math.round(height)}
+      aria-valuemin={INTERFACES_MIN_HEIGHT}
+      tabIndex={0}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onDoubleClick={() => onHeight(INTERFACES_DEFAULT_HEIGHT)}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowUp') { event.preventDefault(); onHeight(clamp(height - 24)) }
+        if (event.key === 'ArrowDown') { event.preventDefault(); onHeight(clamp(height + 24)) }
+      }}
+      sx={{
+        height: 6, flexShrink: 0, cursor: 'row-resize', bgcolor: 'divider',
+        '&:hover, &:focus-visible': { bgcolor: 'primary.main', outline: 'none' },
+      }}
+    />
+  )
+}
+
 /**
  * The port table: one row per line on an element the plan moves from, with
  * where it goes and when. Derived from the lines themselves (`model/porting`),
@@ -443,12 +509,14 @@ function ElementDates({ element, readOnly, onChange }: {
  * shows here, and the table doubles as the status of the migration without a
  * status field anywhere.
  */
-function Interfaces({ plan, model, today, readOnly, actions }: {
+function Interfaces({ plan, model, today, readOnly, actions, height }: {
   plan: Transition
   model: DesignModel
   today: string
   readOnly: boolean
   actions: PlanActions
+  /** How tall the list may be, in px; the seam under it moves this. */
+  height: number
 }) {
   const { t } = useStrings()
   const ports = portsOf(model, plan)
@@ -466,7 +534,7 @@ function Interfaces({ plan, model, today, readOnly, actions }: {
 
   if (ports.length === 0) {
     return (
-      <Box sx={{ px: 3, pt: 1.5, pb: 1, flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ px: 3, pt: 1.5, pb: 1, flexShrink: 0 }}>
         <Heading>{t('plan.interfaces')}</Heading>
         <Typography variant="body2" color="text.secondary">{t('plan.noInterfaces')}</Typography>
       </Box>
@@ -482,7 +550,7 @@ function Interfaces({ plan, model, today, readOnly, actions }: {
   )
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '45%', flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: height, flexShrink: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', px: 3, pt: 1.5, pb: 0.5 }}>
         <Heading>{t('plan.interfaces')}</Heading>
         <Typography variant="caption" color="text.secondary">

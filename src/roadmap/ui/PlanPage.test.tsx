@@ -227,6 +227,34 @@ describe('the interfaces', () => {
 })
 
 describe('the body', () => {
+  it('takes the whole page while editing, and gives the facts back on request', () => {
+    setup()
+    expect(screen.getByDisplayValue('Logistics IT')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    // Full page: the facts and the interfaces are out of the way.
+    expect(screen.queryByDisplayValue('Logistics IT')).toBeNull()
+    expect(screen.queryByText('1 of 2 interfaces ported')).toBeNull()
+    expect(screen.getByLabelText('Plan source (markdown)')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Show the facts' }))
+    expect(screen.getByDisplayValue('Logistics IT')).toBeTruthy()
+    // Still editing.
+    expect(screen.getByLabelText('Plan source (markdown)')).toBeTruthy()
+    // And back to reading brings the facts regardless.
+    fireEvent.click(screen.getByRole('button', { name: 'Full page' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Read' }))
+    expect(screen.getByDisplayValue('Logistics IT')).toBeTruthy()
+  })
+
+  it('lets the interface list be resized from the seam under it', () => {
+    setup()
+    const seam = screen.getByRole('separator', { name: 'Resize the interface list' })
+    const before = Number(seam.getAttribute('aria-valuenow'))
+    fireEvent.keyDown(seam, { key: 'ArrowDown' })
+    expect(Number(seam.getAttribute('aria-valuenow'))).toBe(before + 24)
+    fireEvent.doubleClick(seam)
+    expect(Number(seam.getAttribute('aria-valuenow'))).toBe(before)
+  })
+
   it('renders the document and edits its source beside it', () => {
     const { actions } = setup()
     expect(screen.getByTestId('rendered').textContent).toContain('One warehouse system')
