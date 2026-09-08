@@ -270,9 +270,17 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       }
       const started = Date.now()
       button.click()
-      await ${waitFor("seen.some((b) => b.type === 'image/png') && 'arrived'", 'a PNG blob')}
+      ${'' /* The button opens a dialog with a preview, and the preview is a PNG
+              too — a small one, drawn by the same code. So press the dialog's
+              own Export, wait for the dialog to have left, and judge the largest
+              PNG that went by: the sheet, not the thumbnail. */}
+      const confirm = () => [...document.querySelectorAll('[role="dialog"] button')]
+        .find((b) => /^(Export|Export anyway|Exporteren|Toch exporteren)$/.test((b.textContent || '').trim()))
+      await ${waitFor("confirm() && 'open'", 'the export dialog')}
+      confirm().click()
+      await ${waitFor("!document.querySelector('[role=\"dialog\"]') && seen.some((b) => b.type === 'image/png') && 'arrived'", 'the export to leave')}
       URL.createObjectURL = createObjectURL
-      const png = seen.find((b) => b.type === 'image/png')
+      const png = seen.filter((b) => b.type === 'image/png').sort((a, b) => b.size - a.size)[0]
       const bitmap = await createImageBitmap(png)
       const elapsed = Date.now() - started
       if (Math.max(bitmap.width, bitmap.height) < 3000) {
