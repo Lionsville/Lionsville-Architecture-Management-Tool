@@ -6,7 +6,7 @@
  * without a browser.
  */
 import { describe, expect, it } from 'vitest'
-import { fractionOf, monthsFrom, rangeOf, roadmapOf, spansFor, within } from './timeline'
+import { fractionOf, monthsFrom, rangeOf, roadmapOf, shadowRunOf, spansFor, within } from './timeline'
 import type { DesignElement } from '../model/types'
 
 const TODAY = '2026-09-08'
@@ -178,5 +178,28 @@ describe('within', () => {
 
   it('keeps the plans that touch the window, and the ones that say nothing about time', () => {
     expect(cut.transitions.map((p) => p.id)).toEqual(['b', 'c', 'd'])
+  })
+})
+
+describe('shadowRunOf', () => {
+  const plan = (elements: { elementId: string; role: 'introduces' | 'retires' | 'changes' }[]) => ({
+    id: 'tr', number: 1, title: 'Replace', status: 'agreed' as const, elements, decisions: [], milestones: [], body: '',
+  })
+  const model = {
+    elements: [
+      element('old', { lifecycleDates: { retiring: '2027-03-01', retired: '2027-09-01' } }),
+      element('new', { lifecycle: 'planned', lifecycleDates: { live: '2027-03-01' } }),
+      element('undated'),
+    ],
+  }
+
+  it('runs from the new one going live to the old one being gone', () => {
+    expect(shadowRunOf(model, plan([{ elementId: 'old', role: 'retires' }, { elementId: 'new', role: 'introduces' }])))
+      .toEqual({ from: '2027-03-01', to: '2027-09-01' })
+  })
+
+  it('is absent when either end has no date, or the plan is not a replacement', () => {
+    expect(shadowRunOf(model, plan([{ elementId: 'undated', role: 'retires' }, { elementId: 'new', role: 'introduces' }]))).toBeUndefined()
+    expect(shadowRunOf(model, plan([{ elementId: 'old', role: 'changes' }, { elementId: 'new', role: 'introduces' }]))).toBeUndefined()
   })
 })

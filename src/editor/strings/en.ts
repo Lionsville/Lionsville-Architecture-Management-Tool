@@ -286,6 +286,7 @@ export const EN = {
   'field.successor': 'Replaced by',
   'field.owner': 'Owner',
   'field.replace': 'Replace…',
+  'edge.replaces': 'replaces',
   'field.validFrom': 'Line valid from',
   'field.validUntil': 'Line valid until',
   'field.managed': 'Managed',

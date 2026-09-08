@@ -450,6 +450,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
    * a four-thousand-element landscape on a timer.
    */
   const asOfDay = useMemo(() => props.diagram.asOf ?? today(), [props.diagram.asOf]);
+  const { t } = useStrings();
 
   const derivedNodes = useMemo(
     () => {
@@ -481,6 +482,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         draggingElementIds: props.autoRoute ? draggingElementIds : undefined,
         previewRoutes: props.autoRoute ? preview.previewRoutes : undefined,
         asOfDay,
+        showLifecycle: props.showLifecycle,
+        replacesLabel: t('edge.replaces'),
       }, lastEdges.current);
       lastEdges.current = next;
       return next;
@@ -496,6 +499,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       props.autoRoute,
       draggingElementIds,
       preview.previewRoutes,
+      props.showLifecycle,
+      t,
     ],
   );
 
@@ -894,7 +899,6 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
 
   // --- Context menus (see menuItems.ts for WHAT, useMenuActions.ts for HOW) ---
   const menu = useContextMenu();
-  const { t } = useStrings();
   const platform = useMemo(() => detectPlatform(), []);
   const containerRef = useRef<HTMLDivElement>(null);
   // When the pointer last went down inside the canvas — how the focus handler

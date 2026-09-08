@@ -20,6 +20,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'roadmap.windowFrom': 'Toon vanaf',
   'roadmap.windowTo': 'Toon tot',
   'roadmap.windowClear': 'Hele as',
+  'roadmap.shadowRun': 'Schaduwdraaien',
   'roadmap.owner': 'Eigenaar',
   'roadmap.milestones': 'Mijlpalen',
   'roadmap.touches': 'Wat het verandert',

@@ -24,6 +24,7 @@ export const EN = {
   'roadmap.windowFrom': 'Show from',
   'roadmap.windowTo': 'Show to',
   'roadmap.windowClear': 'Whole axis',
+  'roadmap.shadowRun': 'Shadow run',
   'roadmap.owner': 'Owner',
   'roadmap.milestones': 'Milestones',
   'roadmap.touches': 'What it changes',

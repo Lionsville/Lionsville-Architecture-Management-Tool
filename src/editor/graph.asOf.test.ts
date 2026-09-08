@@ -135,3 +135,32 @@ describe('identity', () => {
     expect(id(after, 'billing')).toBe(id(before, 'billing'))
   })
 })
+
+describe('the replaces mark (ADR-0010)', () => {
+  const withSuccessor: DesignModel = {
+    ...MODEL,
+    elements: MODEL.elements.map((e) => (e.id === 'wms-old' ? { ...e, successorId: 'wms-new' } : e)),
+  }
+  const args = (over: Partial<BuildGraphArgs> = {}): BuildGraphArgs => ({
+    model: withSuccessor, diagram: DIAGRAM, readOnly: false, edgeColor: '#888', replacesLabel: 'replaces', ...over,
+  })
+
+  it('draws a mark from an element to its successor when both are on the board', () => {
+    const mark = buildEdges(args()).find((edge) => edge.id === 'replaces:wms-old:wms-new')
+    expect(mark).toBeDefined()
+    expect(mark).toMatchObject({ source: 'wms-old', target: 'wms-new', selectable: false, reconnectable: false })
+    expect(mark?.data).toMatchObject({ label: 'replaces', lineStyle: 'dotted' })
+  })
+
+  it('draws nothing when the toggle is off, or when the successor is not on the board', () => {
+    expect(buildEdges(args({ showLifecycle: false })).some((edge) => edge.id.startsWith('replaces:'))).toBe(false)
+    const without = { ...DIAGRAM, placements: DIAGRAM.placements.filter((p) => p.elementId !== 'wms-new') }
+    expect(buildEdges(args({ diagram: without })).some((edge) => edge.id.startsWith('replaces:'))).toBe(false)
+  })
+
+  it('is not a connection: nothing else in the projection changes', () => {
+    const plain = buildEdges({ model: MODEL, diagram: DIAGRAM, readOnly: false, edgeColor: '#888' })
+    const marked = buildEdges(args()).filter((edge) => !edge.id.startsWith('replaces:'))
+    expect(marked.map((edge) => edge.id)).toEqual(plain.map((edge) => edge.id))
+  })
+})

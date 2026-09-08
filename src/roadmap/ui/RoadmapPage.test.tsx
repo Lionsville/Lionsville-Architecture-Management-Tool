@@ -101,6 +101,12 @@ describe('the axis', () => {
       .toHaveLength(1)
   })
 
+  it('hatches the shadow run on a replacement, read off the elements\' own dates', () => {
+    setup()
+    // The new one is live from 2027-04-01 and the old one gone on 2028-01-31.
+    expect(within(find('[data-testid="plan-tr-1"]') as HTMLElement).getByTestId('shadow-run')).toBeTruthy()
+  })
+
   it('says so plainly when nothing has a date yet', () => {
     setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
     expect(screen.getByText('Nothing here has a date yet.')).toBeTruthy()

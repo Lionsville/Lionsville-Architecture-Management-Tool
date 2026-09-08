@@ -37,7 +37,7 @@ import { BackIcon } from '../../widgets/icons'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
-import { fractionOf, roadmapOf, within } from '../timeline'
+import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
 
 /** The colour each phase is drawn in. The canvas's own tokens, said once here. */
 const PHASE_COLOUR: Record<Lifecycle, string> = {
@@ -228,6 +228,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
               )}
               {roadmap.transitions.map((plan) => {
                 const progress = portProgress(model, plan)
+                const shadow = shadowRunOf(model, plan)
                 return (
                 <Box key={plan.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <Box sx={{ minWidth: 0, cursor: 'pointer' }} onClick={() => actions.onOpenPlan(plan.id)}>
@@ -255,6 +256,20 @@ export function RoadmapPage(props: RoadmapPageProps) {
                           bgcolor: 'primary.main', opacity: 0.5, borderRadius: 1,
                         }}
                       />
+                    )}
+                    {shadow && (
+                      <Tooltip title={`${t('roadmap.shadowRun')} · ${shadow.from} – ${shadow.to}`}>
+                        <Box
+                          data-testid="shadow-run"
+                          sx={{
+                            position: 'absolute', top: 3, bottom: 3,
+                            left: at(shadow.from), right: `calc(100% - ${at(shadow.to)})`,
+                            borderRadius: 1,
+                            backgroundImage: `repeating-linear-gradient(135deg, ${theme.palette.primary.main} 0 3px, transparent 3px 7px)`,
+                            opacity: 0.6,
+                          }}
+                        />
+                      </Tooltip>
                     )}
                     {plan.milestones.filter((m) => isDay(m.date) && m.date >= roadmap.from && m.date <= roadmap.to).map((milestone, index) => (
                       <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>

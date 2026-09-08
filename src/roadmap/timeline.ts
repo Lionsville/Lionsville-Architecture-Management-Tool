@@ -13,7 +13,7 @@
  * belongs.
  */
 import { daysBetween, isDay, LIFECYCLE_ORDER, phaseAt } from '../model/lifecycle'
-import { transitionDays } from '../model/transition'
+import { elementsWithRole, transitionDays } from '../model/transition'
 import type { Transition } from '../model/transition'
 import type { DesignElement, DesignModel, Lifecycle } from '../model/types'
 
@@ -170,4 +170,25 @@ export function within(roadmap: Roadmap, from: string, to: string): Roadmap {
     return days.some(inside)
   })
   return { from, to, tracks, transitions }
+}
+
+/**
+ * The shadow run of a plan: from the day the first thing it introduces is
+ * live to the day the first thing it retires is gone — the stretch where
+ * both are there and the new one taps the old (ADR-0010). Read off the
+ * elements' own dates, so it moves when they do; absent when the plan is not
+ * a replacement or the dates do not make one.
+ */
+export function shadowRunOf(
+  model: Pick<DesignModel, 'elements'>,
+  plan: Transition,
+): { from: string; to: string } | undefined {
+  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  const days = (ids: string[], phase: 'live' | 'retired') => ids
+    .map((id) => byId.get(id)?.lifecycleDates?.[phase])
+    .filter(isDay)
+    .sort()
+  const from = days(elementsWithRole(plan, 'introduces'), 'live')[0]
+  const to = days(elementsWithRole(plan, 'retires'), 'retired')[0]
+  return from !== undefined && to !== undefined && from < to ? { from, to } : undefined
 }

@@ -275,6 +275,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.successor': 'Vervangen door',
   'field.owner': 'Eigenaar',
   'field.replace': 'Vervangen…',
+  'edge.replaces': 'vervangt',
   'field.validFrom': 'Koppeling geldig vanaf',
   'field.validUntil': 'Koppeling geldig tot',
   'field.managed': 'Beheerd',

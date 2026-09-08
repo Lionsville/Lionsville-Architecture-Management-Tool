@@ -32,11 +32,17 @@ export interface BuildGraphArgs {
   selectedConnectionIds?: ReadonlySet<string>;
   edgeColor: string;
   /**
-   * Toolbar toggle (U5): propagated onto every node's data for the badge.
-   * Node-only — `buildEdges` ignores it. Defaults to on (badges shown) when
-   * omitted, so edge-only call sites need not supply it.
+   * Toolbar toggle (U5): propagated onto every node's data for the badge, and
+   * — since ADR-0010 — what decides whether `buildEdges` draws the replaces
+   * mark between an element and its successor. Defaults to on when omitted,
+   * so edge-only call sites need not supply it.
    */
   showLifecycle?: boolean;
+  /**
+   * What the replaces mark says on its line (ADR-0010). Words are the host's;
+   * absent draws the mark without a label.
+   */
+  replacesLabel?: string;
   /**
    * Elements being dragged right now. Edges incident to one of them render as if
    * they had no stored route, so the line follows the cursor instead of hanging
@@ -264,6 +270,34 @@ export function buildEdges(
         ...routeSides(stored ?? route),
       },
     });
+  }
+  // The replaces mark (ADR-0010): from an element to its successor when both
+  // are on the board, under the lifecycle toggle with the badges, so a board
+  // with the toggle off looks exactly as it did. Not a connection — nothing
+  // in the model has its id — so it cannot be selected, reconnected or routed,
+  // and it takes no slot in the fan above.
+  if (args.showLifecycle ?? true) {
+    const stroke = args.edgeColor;
+    for (const element of args.model.elements) {
+      if (!element.successorId || !placed.has(element.id) || !placed.has(element.successorId)) continue;
+      edges.push({
+        id: `replaces:${element.id}:${element.successorId}`,
+        type: 'floating',
+        source: element.id,
+        target: element.successorId,
+        selectable: false,
+        focusable: false,
+        reconnectable: false,
+        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: stroke },
+        data: {
+          label: args.replacesLabel,
+          isBidirectional: false,
+          lineStyle: 'dotted',
+          waypoints: [],
+          routeSource: 'manual',
+        },
+      });
+    }
   }
   return keepingUnchanged(edges, previous, sameEdge);
 }
