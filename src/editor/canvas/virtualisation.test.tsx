@@ -107,23 +107,27 @@ describe('what the canvas asks React Flow to draw', () => {
   it('captures the whole board, not the part that happens to be drawn', async () => {
     renderEditor(big, 'landscape');
     await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
+    const downloads = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
 
-    // A board this size is tens of megapixels, so it asks first — and it asks
-    // before mounting anything, which is why the answer has to arrive before
-    // there is a capture to count.
+    // A board this size is tens of megapixels, so the dialog says so and its
+    // button asks to go anyway. The preview is the first capture, and it
+    // already has to see every box: it is drawn by the export's own code.
     const go = await screen.findByRole('button', { name: 'Export anyway' }, SLOWLY);
-    expect(captured).toHaveLength(0);
+    await waitFor(() => expect(captured.length).toBeGreaterThan(0), SLOWLY);
+    expect(downloads).not.toHaveBeenCalled();
     fireEvent.click(go);
 
-    await waitFor(() => expect(captured).toHaveLength(1), SLOWLY);
-    expect(captured[0]).toBe(big.diagrams[0].placements.length);
+    await waitFor(() => expect(downloads).toHaveBeenCalledTimes(1), SLOWLY);
+    expect(captured.every((count) => count === big.diagrams[0].placements.length)).toBe(true);
+    downloads.mockRestore();
   }, SLOWLY.timeout);
 
-  it('does not capture a board the user decided against', async () => {
+  it('does not export a board the user decided against', async () => {
     renderEditor(big, 'landscape');
     await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
+    const downloads = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }, SLOWLY));
@@ -133,6 +137,8 @@ describe('what the canvas asks React Flow to draw', () => {
         .toBe(false),
       SLOWLY,
     );
-    expect(captured).toHaveLength(0);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(downloads).not.toHaveBeenCalled();
+    downloads.mockRestore();
   }, SLOWLY.timeout);
 });

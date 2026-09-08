@@ -42,9 +42,11 @@ namespace is called where you work.
 - **Delete** removes the project: its folder on the desktop, its record in the
   browser. A working file you saved elsewhere is not touched.
 
-The **settings** of a group hold its name, a description and links: a wiki
-space, a ticket queue, a dashboard. Renaming a group relabels every project in
-it. On boot the app reopens the project you had open.
+The **settings** of a group hold its name, a client, a description and links:
+a wiki space, a ticket queue, a dashboard. The client is what an exported
+diagram is drawn for, when that is not simply the group's name; left empty,
+the group's name is used. Renaming a group relabels every project in it. On
+boot the app reopens the project you had open.
 
 ## Your projects folder (desktop)
 
@@ -54,7 +56,7 @@ everything you make lives there as files you can read:
 ```
 <your folder>/
   acme-logistics/                     the group
-    group.json                        its name, description and links
+    group.json                        its name, client, description and links
     warehouse-landscape/              the project
       project.json                    what it is called, and what it holds
       model.json                      the applications and the lines between them
@@ -331,12 +333,17 @@ Three ways out, for three purposes.
   moved on the canvas. A built-in icon travels as `iconType`; an uploaded logo
   does not. What this tool does not understand in a document survives a round
   trip untouched, and a document that uses no icons comes back word for word.
-- **PNG export** (the download button) renders the current diagram at print
-  size with the title block and the aspect legend. Lifecycle badges can be
-  switched off first for a clean picture. If a logo could not be embedded, the
-  bottom bar says which. A very large board is tens of megapixels and takes a
-  while to draw, so the app tells you how big the image will be and asks before
-  it starts.
+- **PNG export** (the download button) opens a dialog with a preview of the
+  picture as it will leave: in the light or the dark theme regardless of the
+  one on screen, with every line's label or only the bare lines, with or
+  without the title block along the bottom — client, author and date — and
+  with or without the legend under it, which says what the badge and lifecycle
+  colours mean. A container diagram's export carries its C4 corner in the
+  strip: the level, the application, a sentence and the date. Lifecycle badges
+  can be switched off first for a clean picture. If a logo could not be
+  embedded, the bottom bar says which. A very large board is tens of megapixels
+  and takes a while to draw, so the dialog says how big the image will be and
+  its button asks before it starts.
 
 ## Preferences
 

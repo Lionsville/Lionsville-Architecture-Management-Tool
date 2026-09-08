@@ -1,16 +1,20 @@
 import { toCanvas } from 'html-to-image';
 import type { Rect } from '../../model/types';
-import type { ExportDiagramPngOptions, ExportTitleBlock } from '../props';
+import type { ExportDiagramPngOptions, ExportLegend, ExportSwatch, ExportTitleBlock } from '../props';
+import type { ExportTokens } from '../theme/tokens';
 
 /**
  * Export the rendered diagram to a PNG Blob (ported from the POC, extended
- * with a title block). The title block — client / title / author / date,
- * engineering-drawing style, bottom-right — is composed onto the bitmap at
- * export time only; it never appears on the live canvas.
+ * with a title block). The title block — title / client / author / date and
+ * the aspect legend, engineering-drawing style — is a strip along the bottom
+ * of the sheet, composed onto the bitmap at export time only; it never appears
+ * on the live canvas. On a container diagram the C4 corner takes the title's
+ * place in it: the level, the subject, a sentence and the date.
  *
  * Colours: the canvas content is captured as rendered (the host passes the
- * theme background via `background`); the title block itself uses fixed ink
- * on white so it stays legible when the PNG lands in documents.
+ * theme background via `background`), and the strip is drawn in the tokens of
+ * the same theme (`palette`), so a dark export is dark to its bottom edge. A
+ * caller that passes no palette gets ink on white, the block it always had.
  */
 export async function exportDiagramPng(options: ExportDiagramPngOptions): Promise<Blob> {
   const viewport =
@@ -23,8 +27,11 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
   const bounds = options.bounds ?? measureNodeBounds(viewport);
   const padding = options.padding ?? 48;
   const background = options.background ?? '#ffffff';
+  const footer = exportFooterHeight(options.titleBlock);
   const width = Math.ceil(bounds.width + padding * 2);
-  const height = Math.ceil(bounds.height + padding * 2);
+  // The strip is below the drawing, not over it: the sheet is taller by its
+  // height and the capture paints background there for the strip to cover.
+  const height = Math.ceil(bounds.height + padding * 2) + footer;
   const pixelRatio = exportPixelRatio(width, height, options.pixelRatio);
 
   // The board is captured at its own size — one flow pixel is one CSS pixel —
@@ -72,7 +79,12 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
     // capture is whatever it is; refusing to hand it over as well would turn a
     // picture without a caption into no picture at all.
     const ctx = canvas.getContext('2d');
-    if (ctx) drawTitleBlock(ctx, canvas.width, canvas.height, options.titleBlock, pixelRatio);
+    if (ctx) {
+      drawTitleBlock(
+        ctx, canvas.width, canvas.height, options.titleBlock,
+        options.palette ?? INK_ON_WHITE, pixelRatio,
+      );
+    }
   }
   return canvasToBlob(canvas);
 }
@@ -87,10 +99,10 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
  * and it is here rather than in the caller so it cannot drift from it.
  */
 export function exportBitmapSize(
-  bounds: Rect, padding = 48, requested?: number,
+  bounds: Rect, padding = 48, requested?: number, footer = 0,
 ): { width: number; height: number; megapixels: number; pixelRatio: number } {
   const width = Math.ceil(bounds.width + padding * 2);
-  const height = Math.ceil(bounds.height + padding * 2);
+  const height = Math.ceil(bounds.height + padding * 2) + footer;
   const pixelRatio = exportPixelRatio(width, height, requested);
   const pixels = width * pixelRatio * height * pixelRatio;
   return {
@@ -244,8 +256,18 @@ function measureNodeBounds(viewport: HTMLElement): Rect {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
-const INK = '#1F2733';
-const INK_MUTED = '#6B7480';
+/**
+ * The colours a caller that passes no palette gets: ink on white, which is
+ * the block every existing host's PNG carried.
+ */
+const INK_ON_WHITE: ExportTokens = {
+  background: '#ffffff',
+  panel: '#ffffff',
+  ink: '#1F2733',
+  inkMuted: '#6B7480',
+  border: '#1F2733',
+  accent: '#1F2733',
+};
 
 /**
  * The captions a caller that passes none gets. English, and the same words the
@@ -259,46 +281,160 @@ const DEFAULT_TITLE_BLOCK_LABELS = {
   legend: 'ASPECTS',
 } as const;
 
+/** The strip's rows, in CSS pixels of the sheet: one line of cells, and a legend line when there is one. */
+const FOOTER_ROW = 60;
+const FOOTER_C4_ROW = 84;
+const FOOTER_LEGEND_ROW = 22;
+/** A cell for client, author or date; the title takes whatever is left. */
+const FOOTER_CELL = 200;
+const FOOTER_PAD = 16;
+
+/**
+ * How much taller the sheet is for its title block, in CSS pixels. Zero when
+ * there is none. Exported so a caller can size the bitmap before asking for it.
+ */
+export function exportFooterHeight(block: ExportTitleBlock | undefined): number {
+  if (!block) return 0;
+  return (block.c4 ? FOOTER_C4_ROW : FOOTER_ROW) + legendRows(block.legend).length * FOOTER_LEGEND_ROW;
+}
+
+type LegendRow = { label: string; text?: string; swatches?: ExportSwatch[] };
+
+/** The key's rows, one per kind of colour it explains; none for an empty key. */
+function legendRows(legend: ExportLegend | undefined): LegendRow[] {
+  if (!legend) return [];
+  const rows: LegendRow[] = [];
+  if (legend.aspects || legend.statuses?.length) {
+    rows.push({ label: legend.labels.aspects, text: legend.aspects, swatches: legend.statuses });
+  }
+  if (legend.lifecycle?.length) rows.push({ label: legend.labels.lifecycle, swatches: legend.lifecycle });
+  return rows;
+}
+
+type Cell = { label: string; value: string };
+
 function drawTitleBlock(
   ctx: CanvasRenderingContext2D,
   canvasWidth: number,
   canvasHeight: number,
   block: ExportTitleBlock,
+  palette: ExportTokens,
   scale: number,
 ): void {
   const labels = block.labels ?? DEFAULT_TITLE_BLOCK_LABELS;
-  const rows: [string, string][] = [
-    [labels.client, block.client],
-    [labels.title, block.title],
-  ];
-  if (block.author) rows.push([labels.author, block.author]);
-  rows.push([labels.date, block.date ?? new Date().toISOString().slice(0, 10)]);
-  if (block.legend) rows.push([labels.legend, block.legend]);
+  const footer = exportFooterHeight(block) * scale;
+  const top = canvasHeight - footer;
+  const pad = FOOTER_PAD * scale;
 
-  const width = 300 * scale;
-  const rowHeight = 26 * scale;
-  const padding = 12 * scale;
-  const height = rows.length * rowHeight + padding;
-  const x = canvasWidth - width - 20 * scale;
-  const y = canvasHeight - height - 20 * scale;
-
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = INK;
+  ctx.fillStyle = palette.panel;
+  ctx.fillRect(0, top, canvasWidth, footer);
+  ctx.strokeStyle = palette.border;
   ctx.lineWidth = 1.5 * scale;
+  ctx.beginPath();
+  ctx.moveTo(0, top);
+  ctx.lineTo(canvasWidth, top);
+  ctx.stroke();
+
+  const cells: Cell[] = [{ label: labels.client, value: block.client }];
+  if (block.author) cells.push({ label: labels.author, value: block.author });
+  cells.push({ label: labels.date, value: block.date ?? new Date().toISOString().slice(0, 10) });
+
+  const cellWidth = FOOTER_CELL * scale;
+  const titleWidth = Math.max(cellWidth, canvasWidth - cells.length * cellWidth);
+  const labelBaseline = top + pad + 9 * scale;
+  const valueBaseline = labelBaseline + 19 * scale;
+
+  // The title cell: the C4 corner on a container diagram, the plain caption
+  // on anything else.
+  if (block.c4) {
+    ctx.fillStyle = palette.accent;
+    ctx.font = `600 ${10 * scale}px sans-serif`;
+    ctx.fillText(fitText(ctx, block.c4.scope, titleWidth - pad * 2), pad, labelBaseline);
+    ctx.fillStyle = palette.ink;
+    ctx.font = `700 ${16 * scale}px sans-serif`;
+    ctx.fillText(fitText(ctx, block.c4.title, titleWidth - pad * 2), pad, labelBaseline + 21 * scale);
+    ctx.fillStyle = palette.inkMuted;
+    ctx.font = `${11 * scale}px sans-serif`;
+    ctx.fillText(
+      fitText(ctx, `${block.c4.description}  ${block.c4.date}`, titleWidth - pad * 2),
+      pad, labelBaseline + 40 * scale,
+    );
+  } else {
+    drawCell(ctx, { label: labels.title, value: block.title }, pad, titleWidth - pad * 2, labelBaseline, valueBaseline, palette, scale, true);
+  }
+
+  cells.forEach((cell, index) => {
+    const x = titleWidth + index * cellWidth;
+    ctx.strokeStyle = palette.border;
+    ctx.lineWidth = 1 * scale;
+    ctx.beginPath();
+    ctx.moveTo(x, top + pad / 2);
+    ctx.lineTo(x, top + (block.c4 ? FOOTER_C4_ROW : FOOTER_ROW) * scale - pad / 2);
+    ctx.stroke();
+    drawCell(ctx, cell, x + pad, cellWidth - pad * 2, labelBaseline, valueBaseline, palette, scale, false);
+  });
+
+  legendRows(block.legend).forEach((row, index) => {
+    const rowTop = top + ((block.c4 ? FOOTER_C4_ROW : FOOTER_ROW) + index * FOOTER_LEGEND_ROW) * scale;
+    const baseline = rowTop + 10 * scale;
+    ctx.fillStyle = palette.inkMuted;
+    ctx.font = `600 ${9 * scale}px sans-serif`;
+    ctx.fillText(row.label, pad, baseline);
+    let x = pad + ctx.measureText(row.label).width + 12 * scale;
+    if (row.text) {
+      ctx.fillStyle = palette.ink;
+      ctx.font = `${11 * scale}px sans-serif`;
+      const text = fitText(ctx, row.text, canvasWidth - x - pad);
+      ctx.fillText(text, x, baseline);
+      x += ctx.measureText(text).width + 20 * scale;
+    }
+    for (const swatch of row.swatches ?? []) {
+      if (x > canvasWidth - pad) break;
+      x = drawSwatch(ctx, swatch, x, baseline, palette, scale);
+    }
+  });
+}
+
+/** A badge-coloured chip with its meaning beside it; returns where the next one starts. */
+function drawSwatch(
+  ctx: CanvasRenderingContext2D,
+  swatch: ExportSwatch,
+  x: number,
+  baseline: number,
+  palette: ExportTokens,
+  scale: number,
+): number {
+  const width = 22 * scale;
+  const height = 11 * scale;
+  const y = baseline - 9 * scale;
+  ctx.fillStyle = swatch.token.bg;
+  ctx.strokeStyle = swatch.token.border;
+  ctx.lineWidth = 1 * scale;
   ctx.fillRect(x, y, width, height);
   ctx.strokeRect(x, y, width, height);
+  ctx.fillStyle = palette.ink;
+  ctx.font = `${11 * scale}px sans-serif`;
+  ctx.fillText(swatch.label, x + width + 5 * scale, baseline);
+  return x + width + 5 * scale + ctx.measureText(swatch.label).width + 16 * scale;
+}
 
-  const labelX = x + padding;
-  const valueX = x + 80 * scale;
-  rows.forEach(([label, value], index) => {
-    const baseline = y + padding / 2 + rowHeight * (index + 0.7);
-    ctx.fillStyle = INK_MUTED;
-    ctx.font = `600 ${10 * scale}px sans-serif`;
-    ctx.fillText(label, labelX, baseline);
-    ctx.fillStyle = INK;
-    ctx.font = `${index === 1 ? 700 : 400} ${13 * scale}px sans-serif`;
-    ctx.fillText(fitText(ctx, value, width - (valueX - x) - padding), valueX, baseline);
-  });
+function drawCell(
+  ctx: CanvasRenderingContext2D,
+  cell: Cell,
+  x: number,
+  width: number,
+  labelBaseline: number,
+  valueBaseline: number,
+  palette: ExportTokens,
+  scale: number,
+  bold: boolean,
+): void {
+  ctx.fillStyle = palette.inkMuted;
+  ctx.font = `600 ${9 * scale}px sans-serif`;
+  ctx.fillText(cell.label, x, labelBaseline);
+  ctx.fillStyle = palette.ink;
+  ctx.font = `${bold ? 700 : 400} ${13 * scale}px sans-serif`;
+  ctx.fillText(fitText(ctx, cell.value, width), x, valueBaseline);
 }
 
 function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {

@@ -43,8 +43,10 @@ ook heet.
 - **Verwijderen** haalt het project weg: op de desktop de map, in de browser het
   record. Een werkbestand dat je elders hebt bewaard blijft staan.
 
-De **instellingen** van een groep bevatten haar naam, een omschrijving en
-koppelingen: een wiki, een ticketwachtrij, een dashboard. Een groep hernoemen
+De **instellingen** van een groep bevatten haar naam, een klant, een
+omschrijving en koppelingen: een wiki, een ticketwachtrij, een dashboard. De
+klant is voor wie een geëxporteerd aanzicht getekend is, als dat niet gewoon de
+groepsnaam is; leeg gelaten geldt de groepsnaam. Een groep hernoemen
 hernoemt het label van elk project erin. Bij het starten opent de app het
 project dat je open had.
 
@@ -56,7 +58,7 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
 ```
 <jouw map>/
   acme-logistics/                     de groep
-    group.json                        naam, omschrijving en koppelingen
+    group.json                        naam, klant, omschrijving en koppelingen
     warehouse-landscape/              het project
       project.json                    hoe het heet, en wat erin zit
       model.json                      de applicaties en de lijnen ertussen
@@ -347,11 +349,17 @@ Drie uitgangen, voor drie doelen.
   `iconType`; een geüpload logo niet. Wat deze tool in een document niet kent
   overleeft een rondreis ongewijzigd, en een document zonder pictogrammen komt
   woordelijk gelijk terug.
-- **PNG-export** (de downloadknop) tekent het huidige diagram op drukformaat met
-  het titelblok en de aspectlegenda. Levenscyclusbadges kun je eerst uitzetten
+- **PNG-export** (de downloadknop) opent een dialoog met een voorbeeld van de
+  plaat zoals die vertrekt: in het lichte of het donkere thema, los van wat er
+  op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of
+  zonder het titelblok onderaan — klant, auteur en datum — en met of zonder de
+  legenda eronder, die zegt wat de badge- en levenscycluskleuren betekenen. De
+  export van een containerdiagram draagt zijn C4-hoek in de strook: het niveau,
+  de applicatie, een zin en de datum. Levenscyclusbadges kun je eerst uitzetten
   voor een schone plaat. Kon een logo niet worden ingebed, dan zegt de balk
   onderin welk. Een heel groot bord is tientallen megapixels en kost tijd om te
-  tekenen, dus de app zegt hoe groot de afbeelding wordt en vraagt het eerst.
+  tekenen, dus de dialoog zegt hoe groot de afbeelding wordt en de knop vraagt
+  het eerst.
 
 ## Voorkeuren
 

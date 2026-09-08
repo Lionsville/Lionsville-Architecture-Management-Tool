@@ -166,9 +166,11 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(screen.getByText('Read-only')).toBeDefined();
   });
 
-  it('shows the container breadcrumb when a container diagram is active', () => {
+  it('shows the container breadcrumb and the C4 corner when a container diagram is active', () => {
     renderEditor({ activeDiagramId: 'd2' });
-    expect(screen.getByText('Container view')).toBeDefined();
+    // The level is said once, in the corner, not again as a chip after the name.
+    expect(screen.queryByText('Container view')).toBeNull();
+    expect(screen.getByTestId('lv-c4-panel').textContent).toContain('[Container] Webshop');
     expect(screen.getByText('Webshop')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Component', expanded: false })).toBeDefined();
   });

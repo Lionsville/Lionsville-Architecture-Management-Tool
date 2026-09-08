@@ -19,7 +19,7 @@ const toCanvas = vi.fn(async () => fakeCanvas());
 vi.mock('html-to-image', () => ({ toCanvas: (...args: unknown[]) => toCanvas(...(args as [])) }));
 
 const {
-  exportBitmapSize, exportDiagramPng, exportPixelRatio, LARGE_EXPORT_MEGAPIXELS,
+  exportBitmapSize, exportDiagramPng, exportFooterHeight, exportPixelRatio, LARGE_EXPORT_MEGAPIXELS,
 } = await import('./exportPng');
 
 /**
@@ -245,3 +245,117 @@ describe('exportBitmapSize', () => {
       .toBeGreaterThan(LARGE_EXPORT_MEGAPIXELS);
   });
 })
+
+/**
+ * The title block is a strip below the drawing, in the colours of the theme
+ * the picture was made in. What can be checked without a rasteriser is what
+ * the strip asks of the sheet and of the brush: how much taller the sheet is,
+ * and which colours were put down.
+ */
+describe('exportDiagramPng — the strip along the bottom', () => {
+  type Painted = { fills: string[]; rects: [number, number, number, number][]; texts: string[] };
+
+  /** A canvas whose 2d context remembers every fill and every word. */
+  const paintingCanvas = (painted: Painted, width = 1096, height = 756) => ({
+    width,
+    height,
+    getContext: () => ({
+      set fillStyle(value: string) { painted.fills.push(value); },
+      set strokeStyle(_value: string) {},
+      set lineWidth(_value: number) {},
+      set font(_value: string) {},
+      fillRect: (...rect: [number, number, number, number]) => painted.rects.push(rect),
+      strokeRect: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      stroke: () => {},
+      fillText: (text: string) => painted.texts.push(text),
+      measureText: (text: string) => ({ width: text.length * 6 }),
+    }),
+    toBlob: (give: (blob: Blob | null) => void) => give(new Blob([], { type: 'image/png' })),
+  } as unknown as HTMLCanvasElement);
+
+  const block = { client: 'Acme', title: 'Landscape — L7', author: 'Grace', date: '2026-09-08' };
+
+  it('makes the sheet taller by the strip rather than drawing it over the board', async () => {
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+    await exportDiagramPng({
+      container, bounds: { x: 0, y: 0, width: 1000, height: 600 }, padding: 48, titleBlock: block,
+    });
+    const options = (toCanvas.mock.calls[0] as unknown as [HTMLElement, { height: number }])[1];
+    expect(options.height).toBe(696 + exportFooterHeight(block));
+  });
+
+  const swatch = (label: string) => ({ label, token: { bg: '#cfe', fg: '#000', border: '#9c9' } });
+  const legend = {
+    labels: { aspects: 'ASPECTS', lifecycle: 'LIFECYCLE' },
+    aspects: 'Platform · DR',
+    statuses: [swatch('Managed'), swatch('At risk')],
+  };
+
+  it('is taller for a C4 corner, and a row taller for each kind of key', () => {
+    expect(exportFooterHeight(undefined)).toBe(0);
+    const plain = exportFooterHeight(block);
+    const withAspects = exportFooterHeight({ ...block, legend });
+    expect(withAspects).toBeGreaterThan(plain);
+    expect(exportFooterHeight({ ...block, legend: { ...legend, lifecycle: [swatch('Live')] } }))
+      .toBeGreaterThan(withAspects);
+    // A key with nothing in it is no key.
+    expect(exportFooterHeight({ ...block, legend: { labels: legend.labels } })).toBe(plain);
+    expect(exportFooterHeight({
+      ...block, c4: { scope: 'L', title: '[Container] X', description: 'd', date: 'today' },
+    })).toBeGreaterThan(plain);
+  });
+
+  it('paints the strip in the palette it was handed, across the whole width', async () => {
+    const painted: Painted = { fills: [], rects: [], texts: [] };
+    toCanvas.mockImplementationOnce(async () => paintingCanvas(painted, 2192, 1512));
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+    await exportDiagramPng({
+      container, bounds: { x: 0, y: 0, width: 1000, height: 600 }, padding: 48, pixelRatio: 2,
+      titleBlock: { ...block, legend: { ...legend, lifecycle: [swatch('Live')] } },
+      palette: {
+        background: '#101418', panel: '#1b2027', ink: '#e6e9ee', inkMuted: '#9aa3ad',
+        border: '#3a424c', accent: '#8ab4f8',
+      },
+    });
+    // The strip's ground is the panel colour, the full width of the sheet, at
+    // the bottom — and no white anywhere, which is what a dark export lost to.
+    const footer = exportFooterHeight({ ...block, legend: { ...legend, lifecycle: [swatch('Live')] } }) * 2;
+    expect(painted.rects[0]).toEqual([0, 1512 - footer, 2192, footer]);
+    expect(painted.fills[0]).toBe('#1b2027');
+    expect(painted.fills).not.toContain('#ffffff');
+    expect(painted.texts).toEqual(expect.arrayContaining([
+      'TITLE', 'Landscape — L7', 'CLIENT', 'Acme', 'AUTHOR', 'Grace', 'DATE', '2026-09-08',
+      'ASPECTS', 'Platform · DR', 'Managed', 'At risk', 'LIFECYCLE', 'Live',
+    ]));
+    // The swatches are painted in the badge's own colours.
+    expect(painted.fills).toContain('#cfe');
+  });
+
+  it('puts the C4 corner where the title was', async () => {
+    const painted: Painted = { fills: [], rects: [], texts: [] };
+    toCanvas.mockImplementationOnce(async () => paintingCanvas(painted));
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+    await exportDiagramPng({
+      container, bounds: { x: 0, y: 0, width: 1000, height: 600 }, pixelRatio: 1,
+      titleBlock: {
+        ...block,
+        c4: { scope: 'Landscape · WMS [Application]', title: '[Container] WMS', description: 'Runs it.', date: 'Tuesday 8 September 2026' },
+      },
+    });
+    expect(painted.texts).toContain('[Container] WMS');
+    expect(painted.texts).toContain('Landscape · WMS [Application]');
+    expect(painted.texts).not.toContain('TITLE');
+    expect(painted.texts).toContain('Runs it.  Tuesday 8 September 2026');
+  });
+
+  it('keeps ink on white for a caller that names no palette', async () => {
+    const painted: Painted = { fills: [], rects: [], texts: [] };
+    toCanvas.mockImplementationOnce(async () => paintingCanvas(painted));
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+    await exportDiagramPng({ container, bounds: { x: 0, y: 0, width: 100, height: 100 }, titleBlock: block });
+    expect(painted.fills[0]).toBe('#ffffff');
+  });
+});

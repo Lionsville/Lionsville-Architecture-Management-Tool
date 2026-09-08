@@ -170,10 +170,23 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.fitView': 'Passend maken',
   'toolbar.exportPng': 'PNG exporteren',
   'toolbar.exportingPng': 'Bezig met PNG exporteren…',
-  'export.largeTitle': 'Dit grote aanzicht exporteren?',
+  'export.dialogTitle': 'PNG exporteren',
+  'export.theme': 'Thema',
+  'export.themeLight': 'Licht',
+  'export.themeDark': 'Donker',
+  'export.labels': 'Lijnlabels',
+  'export.labelsHelp': 'Elk label op de afbeelding, niet alleen die onder de muis.',
+  'export.titleBlock': 'Titelblok',
+  'export.titleBlockHelp': 'Klant, auteur en datum onderaan.',
+  'export.legend': 'Legenda',
+  'export.legendHelp': 'Wat de badgekleuren betekenen, onder het titelblok.',
+  'export.lifecycle': 'LEVENSCYCLUS',
+  'export.preview': 'Voorbeeld van de export',
+  'export.previewBusy': 'Voorbeeld wordt getekend…',
+  'export.size': '{width} × {height} pixels, ongeveer {megapixels} megapixels.',
   'export.largeBody':
-    'Dit bord levert een afbeelding van {width} bij {height}, ongeveer {megapixels} megapixels. '
-    + 'Tekenen kan even duren en het venster reageert intussen niet.',
+    'Dat is een grote afbeelding. Tekenen kan even duren en het venster reageert intussen niet.',
+  'export.confirm': 'Exporteren',
   'export.largeConfirm': 'Toch exporteren',
   'toolbar.lifecycleBadges': 'Levenscyclusbadges tonen of verbergen',
   'toolbar.shortcuts': 'Sneltoetsen',
@@ -469,6 +482,11 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.author': 'AUTEUR',
   'export.date': 'DATUM',
   'export.aspects': 'ASPECTEN',
+
+  // --- De C4-hoek van een containerdiagram ---------------------------------
+  'c4.containerTitle': '[Container] {name}',
+  'c4.containerDescription': 'Het containerdiagram van {name}.',
+  'c4.applicationTag': '{name} [Applicatie]',
 
   'menu.openDocumentation': 'Documentatie openen',
   'shortcut.open-documentation': 'Documentatie openen',

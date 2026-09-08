@@ -7,6 +7,8 @@
  * have to see any of that to read what an element is.
  */
 import type { ReactNode } from 'react';
+import type { C4PanelInfo } from './export/c4Panel';
+import type { AspectToken, ExportTokens } from './theme/tokens';
 import type { Command } from '../model/commands';
 import type { IdPolicy } from '../model/keys';
 import type { Language } from '../i18n/strings';
@@ -330,8 +332,34 @@ export interface ExportTitleBlock {
   author?: string;
   /** ISO date (yyyy-mm-dd); defaults to today. */
   date?: string;
-  /** Legend line (e.g. the configured aspect labels), drawn as an extra row. */
-  legend?: string;
+  /**
+   * The key under the strip: which maturity columns the badges stand for and
+   * what their colours mean, and the lifecycle colours when the board shows
+   * them. Colours arrive resolved, so the exporter draws without a theme.
+   */
+  legend?: ExportLegend;
+  /**
+   * The C4 corner of a container diagram, which takes the title's place in the
+   * strip: the level and the subject are the title, and the sentence and the
+   * date follow.
+   */
+  c4?: C4PanelInfo;
+}
+
+/** One swatch in the key: the badge's colours and the word beside it. */
+export interface ExportSwatch {
+  label: string;
+  token: AspectToken;
+}
+
+export interface ExportLegend {
+  /** The aspect columns, as words — `Platform · CI/CD · DR`. */
+  aspects?: string;
+  /** What each badge colour means, in the order the inspector lists them. */
+  statuses?: ExportSwatch[];
+  /** The lifecycle colours, when the board draws lifecycle badges. */
+  lifecycle?: ExportSwatch[];
+  labels: { aspects: string; lifecycle: string };
 }
 
 export interface ExportDiagramPngOptions {
@@ -339,8 +367,17 @@ export interface ExportDiagramPngOptions {
   container: HTMLElement;
   /** Flow-coordinate region to capture; defaults to the measured node bounds. */
   bounds?: Rect;
-  /** Drawn bottom-right on the exported image only — never on the canvas. */
+  /**
+   * Drawn as a strip along the bottom of the exported image only — never on
+   * the canvas. The sheet grows by the strip's height so it covers no drawing.
+   */
   titleBlock?: ExportTitleBlock;
+  /**
+   * The colours the strip is drawn in. Absent = ink on white, so a host that
+   * captures a light board and passes nothing gets what it always got. The
+   * editor passes the tokens of the theme the picture is made in.
+   */
+  palette?: ExportTokens;
   /**
    * Image pixels per CSS pixel of the board. Left out, the export picks one:
    * enough that type survives a large-format print, and never more than a

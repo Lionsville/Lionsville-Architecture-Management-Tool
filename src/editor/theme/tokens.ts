@@ -102,6 +102,33 @@ export interface NodeTokens {
   };
 }
 
+/**
+ * What the export draws with, beside the captured board: the footer strip and
+ * the C4 corner. Six colours, read off the theme the picture is made in, so a
+ * dark export gets a dark strip rather than a white card floating on a black
+ * sheet — which is what a fixed ink-on-white block was.
+ */
+export interface ExportTokens {
+  background: string;
+  panel: string;
+  ink: string;
+  inkMuted: string;
+  border: string;
+  accent: string;
+}
+
+export function getExportTokens(theme: Theme): ExportTokens {
+  const dark = theme.palette.mode === 'dark';
+  return {
+    background: theme.palette.background.default,
+    panel: theme.palette.background.paper,
+    ink: theme.palette.text.primary,
+    inkMuted: theme.palette.text.secondary,
+    border: dark ? alpha(theme.palette.common.white, 0.24) : alpha(theme.palette.common.black, 0.28),
+    accent: theme.palette.primary.main,
+  };
+}
+
 const cache = new WeakMap<Theme, NodeTokens>();
 
 export function getNodeTokens(theme: Theme): NodeTokens {

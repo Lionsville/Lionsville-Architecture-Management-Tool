@@ -3,8 +3,13 @@ import { getNodesBounds, ReactFlowProvider, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import type { DesignDiagram, ElementId, ElementKind, Rect, UploadedLogo } from '../model/types';
+import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
+import type {
+  AspectStatus, DesignDiagram, ElementId, ElementKind, Lifecycle, Rect, UploadedLogo,
+} from '../model/types';
+import type { Theme } from '@mui/material/styles';
+import type { StringKey, Translate } from '../i18n';
+import type { ExportLegend } from './props';
 import { EditorRefused } from './props';
 import type { EditorHandle, EditorRequests, SolutionDesignEditorProps } from './props';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
@@ -14,9 +19,10 @@ import { newDomainGroupRect } from './canvas/domainGroupPlacement';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
 import { type ClipboardPayload } from '../model/clipboard';
-import {
-  exportBitmapSize, exportDiagramPng, LARGE_EXPORT_MEGAPIXELS,
-} from './export/exportPng';
+import { exportBitmapSize, exportDiagramPng, exportFooterHeight } from './export/exportPng';
+import { ExportDialog, type ExportOptions } from './export/ExportDialog';
+import { c4PanelFor } from './export/c4Panel';
+import { getExportTokens, getNodeTokens } from './theme/tokens';
 import {
   tidyContainer,
   tidyGroup,
@@ -63,7 +69,6 @@ import { ElementInspector } from './ElementInspector';
 import { InspectorEmptyState, InspectorPanel } from './InspectorPanel';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { ShortcutsHelpDialog } from './ShortcutsHelpDialog';
-import { ConfirmDialog } from '../widgets';
 import { DocumentationPage } from '../documentation/ui/DocumentationPage';
 import {
   defaultElementNames,
@@ -121,7 +126,7 @@ interface ConfirmDeleteState {
 
 function EditorBody(props: SolutionDesignEditorProps) {
   const theme = useTheme();
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   // What the palette's name field shows when you leave it blank — and exactly
   // what `addElement` will then write into the model, in the same language.
   const defaultNames = useMemo(() => defaultElementNames(t), [t]);
@@ -139,15 +144,21 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // button they pressed, and no second export while the first rasterises.
   const [exporting, setExporting] = useState(false);
   /**
-   * The whole board is mounted for a capture. Separate from {@link exporting},
-   * which is only the button's spinner: mounting two thousand boxes is real work
-   * and must not happen while a dialog is asking whether to export at all.
+   * The whole board is mounted for a capture a host asked for (ADR-0007).
+   * Separate from {@link exporting}, which is only a spinner; the dialog's
+   * own capture mounts the board through {@link exportOptions} instead.
    */
   const [capturing, setCapturing] = useState(false);
-  /** A board large enough to be worth asking about, and the answer's way back. */
-  const [largeExport, setLargeExport] = useState<
-    { size: ReturnType<typeof exportBitmapSize>; decide(go: boolean): void } | undefined
-  >(undefined);
+  /**
+   * The export dialog is open, with these choices. While it is, the board is
+   * drawn the way the picture will be — under the chosen theme, with or without
+   * every label, every element mounted — so the capture, the preview and what
+   * shows behind the dialog are one thing.
+   */
+  const [exportOptions, setExportOptions] = useState<ExportOptions | undefined>(undefined);
+  /** An object URL of the last preview drawn, revoked when the next replaces it. */
+  const [exportPreview, setExportPreview] = useState<string | undefined>(undefined);
+  const [previewBusy, setPreviewBusy] = useState(false);
   /**
    * The view settings, seeded from the host and reported back on every change.
    *
@@ -788,82 +799,172 @@ function EditorBody(props: SolutionDesignEditorProps) {
     overCapReportedRef,
   });
 
-  const handleExport = useCallback(async () => {
-    if (!wrapperRef.current || !activeDiagram || exporting) return;
-    setExporting(true);
+  /**
+   * The theme the picture is made in. The board is rendered under it for as
+   * long as the dialog is open, which is what lets a dark window export a
+   * light sheet: every token the nodes and lines draw with comes off the theme
+   * they are rendered in, so there is nothing to translate afterwards. The
+   * same shape as the host's own (`createTheme({ palette: { mode } })`).
+   */
+  const exportMode = exportOptions?.theme;
+  const exportTheme = useMemo(
+    () => (exportMode && exportMode !== theme.palette.mode
+      ? createTheme({ palette: { mode: exportMode } })
+      : theme),
+    [exportMode, theme],
+  );
+
+  /** The region the export captures: the whole board, and on a landscape the sheet itself. */
+  const exportBounds = useCallback((): Rect => {
     const nodesBounds = getNodesBounds(getNodes());
-    const bounds: Rect =
-      activeDiagram.kind === 'layer7'
-        ? (unionRects([canvasRect(activeDiagram.layoutConfig), nodesBounds]) as Rect)
-        : nodesBounds;
+    return activeDiagram?.kind === 'layer7'
+      ? (unionRects([canvasRect(activeDiagram.layoutConfig), nodesBounds]) as Rect)
+      : nodesBounds;
+  }, [activeDiagram, getNodes]);
 
-    // Asked BEFORE anything is mounted or rasterised, because that is the only
-    // moment at which the answer can change what happens. The ratio is chosen
-    // for paper, so a landscape that already measures thousands of flow pixels
-    // becomes tens of megapixels — several seconds during which the browser
-    // draws on the main thread and nothing can interrupt it.
-    const size = exportBitmapSize(bounds);
-    if (size.megapixels > LARGE_EXPORT_MEGAPIXELS) {
-      const go = await new Promise<boolean>((decide) => setLargeExport({ size, decide }));
-      setLargeExport(undefined);
-      if (!go) return;
-    }
-
-    // The capture reads the DOM, and the canvas only keeps what is on screen in
-    // it. `capturing` is what turns that off; this waits for the browser to
-    // have laid the whole board out under the new flag before html-to-image
-    // looks at it. The bounds above come from React Flow's store rather than
-    // from the DOM, so they were never affected — but the picture would have
-    // been, and silently: a PNG of a two-thousand element landscape showing the
-    // thirty boxes that happened to be in view.
-    setCapturing(true);
-    await painted();
-    // The editor can be gone by the time that frame arrives — a diagram
-    // switched, a project closed, a window shut. There is nothing to capture
-    // and nothing to report.
-    const container = wrapperRef.current;
-    if (!container) return;
-    const blob = await exportDiagramPng({
-      container,
-      bounds,
-      background: theme.palette.background.default,
-      onImagesMissing: props.logos?.onExportImagesMissing,
-      // A diagram that says it carries no title block gets none; `titleBlock`
-      // has always been optional, so this needs nothing of the exporter.
-      titleBlock: activeDiagram.showTitleBlock === false ? undefined : {
-        // The title block follows the UI language: it is a caption on a picture
-        // for a reader, not a field name in a file format.
-        labels: {
-          client: t('export.client'),
-          title: t('export.title'),
-          author: t('export.author'),
-          date: t('export.date'),
-          legend: t('export.aspects'),
-        },
-        // The diagram's own answer wins over the host's. The host supplies a
-        // default — what it knows about the project as a whole — and somebody
-        // who opened this diagram's settings and typed a client was correcting
-        // exactly that default.
-        client:
-          activeDiagram.client
-          ?? props.exportTitleBlock?.client
-          ?? state.model.customerName,
-        title: `${state.model.name} — ${activeDiagram.name}`,
-        author: activeDiagram.author ?? props.exportTitleBlock?.author,
-        // Absent = the day of export, which is the exporter's own default.
-        date: activeDiagram.documentDate || undefined,
-        // The legend lists this diagram's configured aspect columns so badge
-        // codes stay readable on paper. A diagram with no columns gets no row.
-        legend:
-          activeDiagram.kind === 'layer7' && aspectConfigFor(activeDiagram).length > 0
-            ? aspectConfigFor(activeDiagram)
-                .map((entry) => entry.label)
-                .join(' · ')
-            : undefined,
+  /** The strip along the bottom, or nothing when the picture goes without one. */
+  const titleBlockFor = useCallback((options: ExportOptions) => {
+    if (!activeDiagram || !options.titleBlock) return undefined;
+    return {
+      // The title block follows the UI language: it is a caption on a picture
+      // for a reader, not a field name in a file format.
+      labels: {
+        client: t('export.client'),
+        title: t('export.title'),
+        author: t('export.author'),
+        date: t('export.date'),
+        legend: t('export.aspects'),
       },
+      // The diagram's own answer wins over the host's. The host supplies a
+      // default — what it knows about the project as a whole — and somebody
+      // who opened this diagram's settings and typed a client was correcting
+      // exactly that default.
+      client:
+        activeDiagram.client
+        ?? props.exportTitleBlock?.client
+        ?? state.model.customerName,
+      title: `${state.model.name} — ${activeDiagram.name}`,
+      author: activeDiagram.author ?? props.exportTitleBlock?.author,
+      // Absent = the day of export, which is the exporter's own default.
+      date: activeDiagram.documentDate || undefined,
+      legend: options.legend ? exportLegendFor(activeDiagram, exportTheme, showLifecycle, t) : undefined,
+      // A container diagram's corner, which takes the title's place.
+      c4: c4PanelFor(state.model, activeDiagram, t, language),
+    };
+  }, [activeDiagram, props.exportTitleBlock, state.model, t, language, exportTheme, showLifecycle]);
+
+  /**
+   * The picture, at a ratio: the export's own when none is named, a small one
+   * for the preview. One function for both, so the preview cannot show a
+   * picture the export would not make.
+   */
+  const renderExport = useCallback(async (options: ExportOptions, pixelRatio?: number) => {
+    const container = wrapperRef.current;
+    if (!container || !activeDiagram) return undefined;
+    return exportDiagramPng({
+      container,
+      bounds: exportBounds(),
+      pixelRatio,
+      background: exportTheme.palette.background.default,
+      palette: getExportTokens(exportTheme),
+      onImagesMissing: props.logos?.onExportImagesMissing,
+      titleBlock: titleBlockFor(options),
     });
-    downloadBlob(blob, pngFilename(state.model.customerName, activeDiagram));
-  }, [activeDiagram, exporting, getNodes, props.exportTitleBlock, state.model, theme, t]);
+  }, [activeDiagram, exportBounds, exportTheme, props.logos?.onExportImagesMissing, titleBlockFor]);
+  // Read through a ref by the preview effect, so the preview is drawn again
+  // when a CHOICE changes and not whenever a parent happens to render: the
+  // host hands over a fresh `exportTitleBlock` object every time it does.
+  const renderExportRef = useRef(renderExport);
+  renderExportRef.current = renderExport;
+
+  /** What the bitmap will measure, told to the dialog before it is made. */
+  const exportSize = useMemo(
+    () => (exportOptions
+      ? exportBitmapSize(exportBounds(), 48, undefined, exportFooterHeight(titleBlockFor(exportOptions)))
+      : undefined),
+    [exportOptions, exportBounds, titleBlockFor],
+  );
+
+  const openExport = useCallback(() => {
+    if (!activeDiagram || exporting) return;
+    setExportOptions({
+      theme: theme.palette.mode,
+      showLabels: showEdgeLabels,
+      titleBlock: activeDiagram.showTitleBlock !== false,
+      legend: true,
+    });
+  }, [activeDiagram, exporting, theme.palette.mode, showEdgeLabels]);
+
+  const closeExport = useCallback(() => {
+    setExportOptions(undefined);
+    setExportPreview((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return undefined;
+    });
+  }, []);
+
+  /**
+   * The preview, drawn again whenever a choice changes. It waits a beat for
+   * the board to be rendered under the new choice — the theme is a re-render,
+   * every element mounting is a bigger one — and then a paint, because the
+   * capture reads the DOM. A choice made while one is drawing cancels it: the
+   * picture arriving late would be of the wrong choice.
+   */
+  useEffect(() => {
+    if (!exportOptions) return;
+    // No object URLs is a test runtime; the dialog then shows its waiting line
+    // and everything else about it still works.
+    if (typeof URL.createObjectURL !== 'function') return;
+    let live = true;
+    setPreviewBusy(true);
+    const timer = setTimeout(() => {
+      void (async () => {
+        await painted();
+        if (!live) return;
+        const bounds = exportBounds();
+        const longEdge = Math.max(bounds.width, bounds.height, 1);
+        const blob = await renderExportRef.current(exportOptions, Math.min(1, PREVIEW_LONG_EDGE / longEdge));
+        if (!live || !blob) return;
+        setExportPreview((old) => {
+          if (old) URL.revokeObjectURL(old);
+          return URL.createObjectURL(blob);
+        });
+      })().catch((error: unknown) => {
+        reportLayoutError(t('error.export'), error);
+      }).finally(() => {
+        if (live) setPreviewBusy(false);
+      });
+    }, PREVIEW_DEBOUNCE_MS);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [exportOptions, exportBounds, reportLayoutError, t]);
+
+  /**
+   * The export itself, from the dialog. Rasterising a large board takes
+   * seconds; the dialog's button spins and its options hold still meanwhile.
+   * `finally` frees it either way — a failed export that left the dialog
+   * locked would be worse than the failure.
+   */
+  const confirmExport = useCallback(() => {
+    if (!exportOptions || !activeDiagram) return;
+    const diagram = activeDiagram;
+    setExporting(true);
+    void (async () => {
+      await painted();
+      const blob = await renderExportRef.current(exportOptions);
+      // The editor can be gone by the time that frame arrives — a diagram
+      // switched, a project closed, a window shut. Nothing to hand over.
+      if (!blob) return;
+      downloadBlob(blob, pngFilename(state.model.customerName, diagram));
+      closeExport();
+    })().catch((error: unknown) => {
+      reportLayoutError(t('error.export'), error);
+    }).finally(() => {
+      setExporting(false);
+    });
+  }, [exportOptions, activeDiagram, state.model.customerName, closeExport, reportLayoutError, t]);
 
   /**
    * The board as pixels for a host — an agent asking through the shell
@@ -913,20 +1014,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
     onHandle(handle);
     return () => onHandle(undefined);
   }, [onHandle, activeDiagram?.id, busy, handleTidy, handleRouteEdges, captureBoard]);
-
-  /**
-   * Rasterising a large board takes seconds; without a spinner the button looks
-   * dead and gets pressed again. `finally` frees it either way — a failed export
-   * that left the button disabled would be worse than the failure.
-   */
-  const runExport = useCallback(() => {
-    void handleExport().catch((error: unknown) => {
-      reportLayoutError(t('error.export'), error);
-    }).finally(() => {
-      setExporting(false);
-      setCapturing(false);
-    });
-  }, [handleExport, reportLayoutError, t]);
 
   const handleDoubleClick = useCallback(
     (elementId: ElementId) => {
@@ -1037,7 +1124,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onToggleAutoRoute={handleToggleAutoRoute}
         autoRouteNote={autoRouteNote}
         onFitView={() => fitView({ padding: 0.1, duration: 300 })}
-        onExport={runExport}
+        onExport={openExport}
         exportBusy={exporting}
         onOpenHelp={() => setHelpOpen(true)}
         showLifecycle={showLifecycle}
@@ -1087,6 +1174,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
             label={t('palette.resize')}
           />
         )}
+        {/* The board under the export's theme while the dialog is open, and
+            its own the rest of the time. Nested on purpose: the palette and
+            the inspector stay in the window's theme, the picture does not. */}
+        <ThemeProvider theme={exportTheme}>
         <CanvasForDiagram
           diagram={activeDiagram}
           state={state}
@@ -1098,8 +1189,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onToggleShowGrid={() => setShowGrid((on) => !on)}
           showLifecycle={showLifecycle}
           showMinimap={showMinimap}
-          showEdgeLabels={showEdgeLabels}
-          mountEveryElement={capturing}
+          showEdgeLabels={exportOptions ? exportOptions.showLabels : showEdgeLabels}
+          mountEveryElement={capturing || exportOptions !== undefined}
           onElementDoubleClick={handleDoubleClick}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
@@ -1119,6 +1210,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onRequestDeleteSelection={requestDeleteSelection}
           menuRequest={menuRequest}
         />
+        </ThemeProvider>
         {!inspectorCollapsed && (
           <PanelResizer
             kind="inspector"
@@ -1215,19 +1307,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
         />
       )}
       <ShortcutsHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <ConfirmDialog
-        open={largeExport !== undefined}
-        title={t('export.largeTitle')}
-        body={t('export.largeBody', {
-          width: largeExport?.size.width ?? 0,
-          height: largeExport?.size.height ?? 0,
-          megapixels: largeExport?.size.megapixels ?? 0,
-        })}
-        confirmLabel={t('export.largeConfirm')}
-        cancelLabel={t('common.cancel')}
-        onCancel={() => largeExport?.decide(false)}
-        onConfirm={() => largeExport?.decide(true)}
-      />
+      {exportOptions && exportSize && (
+        <ExportDialog
+          open
+          options={exportOptions}
+          onChange={setExportOptions}
+          preview={exportPreview}
+          previewBusy={previewBusy}
+          size={exportSize}
+          exporting={exporting}
+          onExport={confirmExport}
+          onClose={closeExport}
+        />
+      )}
       {documentationElement && (
         <DocumentationPage
           key={documentationElement.id}
@@ -1300,6 +1392,49 @@ function EditorBody(props: SolutionDesignEditorProps) {
  * one. Falls back to a task where there are no frames at all, which is a test
  * environment rather than a browser.
  */
+/**
+ * The key under the strip, in the export's own colours: the maturity columns
+ * and what the badge colours mean on a landscape, the lifecycle colours on
+ * any board that draws them. A board with nothing to explain gets no key.
+ */
+function exportLegendFor(
+  diagram: DesignDiagram,
+  theme: Theme,
+  showLifecycle: boolean,
+  t: Translate,
+): ExportLegend | undefined {
+  const tokens = getNodeTokens(theme);
+  const legend: ExportLegend = {
+    labels: { aspects: t('export.aspects'), lifecycle: t('export.lifecycle') },
+  };
+  if (diagram.kind === 'layer7' && diagram.showAspects !== false && aspectConfigFor(diagram).length > 0) {
+    legend.aspects = aspectConfigFor(diagram).map((entry) => entry.label).join(' · ');
+    legend.statuses = ASPECT_LEGEND.map(([status, key]) => ({ label: t(key), token: tokens.aspects[status] }));
+  }
+  if (showLifecycle) {
+    legend.lifecycle = LIFECYCLE_LEGEND.map(([stage, key]) => ({ label: t(key), token: tokens.lifecycle[stage] }));
+  }
+  return legend.statuses || legend.lifecycle ? legend : undefined;
+}
+
+const ASPECT_LEGEND: [AspectStatus, StringKey][] = [
+  ['managed', 'aspect.managed'], ['partial', 'aspect.partial'], ['atRisk', 'aspect.atRisk'], ['none', 'aspect.none'],
+];
+const LIFECYCLE_LEGEND: [Lifecycle, StringKey][] = [
+  ['planned', 'lifecycle.planned'], ['live', 'lifecycle.live'],
+  ['retiring', 'lifecycle.retiring'], ['retired', 'lifecycle.retired'],
+];
+
+/**
+ * The preview's long edge, in image pixels. Enough to judge a sheet, and a
+ * fraction of the export's cost: the ratio is what every dimension multiplies
+ * by, so a thousand-pixel preview of a six-thousand-pixel sheet is one
+ * thirty-sixth of the work.
+ */
+const PREVIEW_LONG_EDGE = 1000;
+/** How long a choice has to hold before the preview is drawn again. */
+const PREVIEW_DEBOUNCE_MS = 150;
+
 function painted(): Promise<void> {
   return new Promise((resolve) => {
     if (typeof requestAnimationFrame !== 'function') {

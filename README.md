@@ -165,8 +165,10 @@ Three ways out, for three different purposes:
 - **The interchange document** — topology and semantics only, no geometry and no
   styling. This is the form for review and for version control: a diff shows
   what changed about the architecture rather than what moved on the canvas.
-- **PNG export**, with a title block carrying client, title, author, date and
-  the aspect legend.
+- **PNG export**, from a dialog with a preview: light or dark, with or without
+  line labels, a title block along the bottom carrying client, title, author
+  and date, and a legend of the badge colours. A container diagram carries its
+  C4 corner on screen and on the sheet.
 
 Reading is broad and writing is narrow: a key this tool does not understand
 survives a round trip untouched, and files written by older builds keep opening

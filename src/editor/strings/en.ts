@@ -178,10 +178,24 @@ export const EN = {
   'toolbar.fitView': 'Fit view',
   'toolbar.exportPng': 'Export PNG',
   'toolbar.exportingPng': 'Exporting PNG…',
-  'export.largeTitle': 'Export this large diagram?',
+  'export.dialogTitle': 'Export PNG',
+  'export.theme': 'Theme',
+  'export.themeLight': 'Light',
+  'export.themeDark': 'Dark',
+  'export.labels': 'Line labels',
+  'export.labelsHelp': 'Every label on the picture, not only the ones under the pointer.',
+  'export.titleBlock': 'Title block',
+  'export.titleBlockHelp': 'Client, author and date along the bottom.',
+  'export.legend': 'Legend',
+  'export.legendHelp': 'What the badge colours mean, under the title block.',
+  'export.lifecycle': 'LIFECYCLE',
+  'export.preview': 'Preview of the export',
+  'export.previewBusy': 'Drawing the preview…',
+  'export.size': '{width} × {height} pixels, about {megapixels} megapixels.',
   'export.largeBody':
-    'This board makes a {width} by {height} image, about {megapixels} megapixels. '
-    + 'Drawing it can take a while, and the window will not respond until it is done.',
+    'That is a large image. Drawing it can take a while, and the window will not respond '
+    + 'until it is done.',
+  'export.confirm': 'Export',
   'export.largeConfirm': 'Export anyway',
   'toolbar.lifecycleBadges': 'Toggle lifecycle badges',
   'toolbar.shortcuts': 'Keyboard shortcuts',
@@ -479,6 +493,11 @@ export const EN = {
   'export.author': 'AUTHOR',
   'export.date': 'DATE',
   'export.aspects': 'ASPECTS',
+
+  // --- The C4 corner of a container diagram --------------------------------
+  'c4.containerTitle': '[Container] {name}',
+  'c4.containerDescription': 'The container diagram for {name}.',
+  'c4.applicationTag': '{name} [Application]',
 
   // The documentation page and its doors.
   'menu.openDocumentation': 'Open documentation',

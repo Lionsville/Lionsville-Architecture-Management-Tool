@@ -728,15 +728,11 @@ function Breadcrumb({
       <Typography color="text.disabled" sx={{ fontSize: 13 }}>
         /
       </Typography>
+      {/* No "Container view" chip after the name: the C4 corner of the board
+          says the level, and it says it larger. */}
       <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
         {application?.name ?? activeDiagram.name}
       </Typography>
-      <Chip
-        size="small"
-        variant="outlined"
-        label={t('toolbar.containerView')}
-        sx={{ ml: 0.5, height: 20, fontSize: 10 }}
-      />
     </Box>
   );
 }
