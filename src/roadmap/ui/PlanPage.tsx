@@ -21,7 +21,6 @@
 import { useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
@@ -41,10 +40,11 @@ import { formatAdrNumber } from '../../decisions'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
-import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
+import { PageDialog } from '../../widgets/PageDialog'
 
 const STATUS_LABEL: Record<TransitionStatus, StringKey> = {
   draft: 'plan.draft',
@@ -95,24 +95,24 @@ export function PlanPage(props: PlanPageProps) {
   const { plan, model, readOnly, actions } = props
   const { t } = useStrings()
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
+  const bar = barChromeFor(chrome)
   const [mode, setMode] = useState<'read' | 'edit'>('read')
   const [deleting, setDeleting] = useState(false)
   const editing = mode === 'edit' && !readOnly
 
   return (
-    <Dialog
+    <PageDialog
       open={props.open}
-      fullScreen
+      topInset={chrome.topInset}
       onClose={props.onClose}
       aria-label={t('plan.page')}
-      slotProps={{ paper: { sx: { bgcolor: 'background.default', display: 'flex', flexDirection: 'column' } } }}
     >
       <Box
         data-testid="plan-topbar"
         sx={{
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + chrome.controlsInset}px`,
-          WebkitAppRegion: chrome.draggable ? 'drag' : undefined,
+          pl: `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
         }}
@@ -172,7 +172,7 @@ export function PlanPage(props: PlanPageProps) {
           props.onClose()
         }}
       />
-    </Dialog>
+    </PageDialog>
   )
 }
 

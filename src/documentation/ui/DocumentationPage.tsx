@@ -25,7 +25,6 @@ import {
 } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -40,6 +39,8 @@ import { transitionLabel, transitionsForElement } from '../../model/transition';
 import type { Transition } from '../../model/transition';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
+import { barChromeFor } from '../../platform/windowChrome';
+import { PageDialog } from '../../widgets/PageDialog';
 import {
   documentTemplate,
   documentedElements,
@@ -292,18 +293,18 @@ export function DocumentationPage(props: DocumentationPageProps) {
 
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
+  const bar = barChromeFor(chrome)
 
   return (
-    <Dialog
+    <PageDialog
       open
-      fullScreen
+      topInset={chrome.topInset}
       onClose={(_event, reason) => {
         // Escape steps back before it steps out: out of Edit first, then closed.
         if (reason === 'escapeKeyDown' && mode === 'edit') switchMode('read');
         else close();
       }}
       aria-label={t('doc.title')}
-      slotProps={{ paper: { sx: { bgcolor: 'background.default', display: 'flex', flexDirection: 'column' } } }}
     >
       {/* ---- top bar ---- */}
       <Box
@@ -315,8 +316,8 @@ export function DocumentationPage(props: DocumentationPageProps) {
           // This bar covers the whole window, so it inherits the window's two
           // jobs: start after the controls painted over its corner, and move
           // the window when dragged — except where something is clickable.
-          pl: `${12 + chrome.controlsInset}px`,
-          WebkitAppRegion: chrome.draggable ? 'drag' : undefined,
+          pl: `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           minHeight: 48,
           borderBottom: 1,
@@ -496,6 +497,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
           {props.renderInspector?.(element, { readOnly: readOnly || mode === 'read' })}
         </Box>
       </Box>
-    </Dialog>
+    </PageDialog>
   );
 }

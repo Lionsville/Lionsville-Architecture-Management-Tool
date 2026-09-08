@@ -20,7 +20,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
@@ -38,9 +37,10 @@ import {
 } from '../adr'
 import type { Adr, AdrStatus } from '../adr'
 import type { HostModel } from '../../model/fromInterchange'
-import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
+import { PageDialog } from '../../widgets/PageDialog'
 import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
 import { AdrReader } from './AdrReader'
@@ -77,6 +77,7 @@ export function AdrPage(props: AdrPageProps) {
     initialAdrId, readOnly = false, s, today, makeId,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
+  const bar = barChromeFor(chrome)
   const projectDecisions = useMemo(() => model.decisions ?? [], [model.decisions])
 
   const [scope, setScope] = useState<ScopeKey>('landscape')
@@ -236,12 +237,11 @@ export function AdrPage(props: AdrPageProps) {
   )
 
   return (
-    <Dialog
+    <PageDialog
       open={open}
-      fullScreen
+      topInset={chrome.topInset}
       onClose={onClose}
       aria-label={s('adr.title')}
-      slotProps={{ paper: { sx: { bgcolor: 'background.default', display: 'flex', flexDirection: 'column' } } }}
     >
       <LanguageProvider language={props.language}>
         {/* ---- top bar: the window's, while this page is up ---- */}
@@ -249,8 +249,8 @@ export function AdrPage(props: AdrPageProps) {
           data-testid="adr-topbar"
           sx={{
             display: 'flex', alignItems: 'center', gap: 1, px: 1.5,
-            pl: `${12 + chrome.controlsInset}px`,
-            WebkitAppRegion: chrome.draggable ? 'drag' : undefined,
+            pl: `${12 + bar.controlsInset}px`,
+            WebkitAppRegion: bar.draggable ? 'drag' : undefined,
             '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
             minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
           }}
@@ -386,6 +386,6 @@ export function AdrPage(props: AdrPageProps) {
           onConfirm={() => deleting && remove(deleting)}
         />
       </LanguageProvider>
-    </Dialog>
+    </PageDialog>
   )
 }

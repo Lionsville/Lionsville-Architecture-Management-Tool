@@ -28,6 +28,7 @@ import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
+import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
 import type { WorkingSource } from '../platform/workingSource'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -374,6 +375,25 @@ export function ProjectWorkspace({
   const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
   const [roadmapOpen, setRoadmapOpen] = useState(false)
+  /**
+   * How tall the shell toolbar is, measured: every page opens below it, so
+   * Documentation, Decisions and Roadmap stay one click from each other while
+   * a page is up. Measured rather than declared, because the bar's height is
+   * its content's, and a constant here would drift the first time a button
+   * grew. Zero until measured — and in a test with no layout — which makes a
+   * page cover the window, as it did before the bar stayed.
+   */
+  const [toolbarHeight, setToolbarHeight] = useState(0)
+  const toolbarRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => setToolbarHeight(node.getBoundingClientRect().height))
+    observer.observe(node)
+    setToolbarHeight(node.getBoundingClientRect().height)
+  }, [])
+  const pageChrome = useMemo<WindowChrome>(
+    () => ({ ...(windowChrome ?? NO_WINDOW_CHROME), topInset: toolbarHeight }),
+    [windowChrome, toolbarHeight],
+  )
   // The plan being read on its own page (ADR-0010); over the roadmap, which
   // stays open underneath so closing the plan lands back on the axis.
   const [planId, setPlanId] = useState<string | undefined>(undefined)
@@ -389,7 +409,17 @@ export function ProjectWorkspace({
     setDocRequest((prev) => ({ elementId, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [session, notify, s])
 
-  const openDecisions = useCallback((adrId?: string) => setAdrPage({ open: true, adrId }), [])
+  // The toolbar's pages are one at a time: opening one closes the others, so
+  // the bar reads as tabs rather than stacking pages under each other.
+  const openDecisions = useCallback((adrId?: string) => {
+    setRoadmapOpen(false)
+    setPlanId(undefined)
+    setAdrPage({ open: true, adrId })
+  }, [])
+  const openRoadmap = useCallback(() => {
+    setAdrPage({ open: false })
+    setRoadmapOpen(true)
+  }, [])
 
   const chooseHit = useCallback((hit: SearchHit) => {
     switch (hit.kind) {
@@ -611,6 +641,7 @@ export function ProjectWorkspace({
 
   return (
     <>
+      <Box ref={toolbarRef} sx={{ flex: '0 0 auto' }}>
       <ShellToolbar
         source={source}
         designName={session.model.name}
@@ -624,13 +655,14 @@ export function ProjectWorkspace({
         onOpenSettings={openSettings}
         onOpenDocumentation={() => openDocumentation()}
         onOpenDecisions={() => openDecisions()}
-        onOpenRoadmap={() => setRoadmapOpen(true)}
+        onOpenRoadmap={openRoadmap}
         onOpenSearch={() => setSearchOpen(true)}
         activity={session.history}
         agent={agentBar}
         s={s}
         windowChrome={windowChrome}
       />
+      </Box>
       <DiskChangeNotice
         status={document.state.status}
         onTakeTheirs={document.takeTheirs}
@@ -687,7 +719,7 @@ export function ProjectWorkspace({
           }}
           renderMarkdown={renderDocument}
           onAddImage={files.addImage}
-          windowChrome={windowChrome}
+          windowChrome={pageChrome}
           onForceSave={forceSave}
           onHandle={onEditorHandle}
         />
@@ -715,7 +747,7 @@ export function ProjectWorkspace({
         onLabel={snapshots.label}
         language={language}
         s={s}
-        windowChrome={windowChrome}
+        windowChrome={pageChrome}
       />
       <ShellDialogs
         s={s}
@@ -745,7 +777,7 @@ export function ProjectWorkspace({
         onOpenHistory={snapshots.available
           ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
           : undefined}
-        windowChrome={windowChrome}
+        windowChrome={pageChrome}
       />
       <RoadmapPage
         open={roadmapOpen}
@@ -755,7 +787,7 @@ export function ProjectWorkspace({
         readOnly={false}
         actions={roadmapActions}
         onClose={() => setRoadmapOpen(false)}
-        windowChrome={windowChrome}
+        windowChrome={pageChrome}
       />
       <ReplaceDialog
         subject={replacing ? session.model.elements.find((e) => e.id === replacing) : undefined}
@@ -773,7 +805,7 @@ export function ProjectWorkspace({
         actions={planActions}
         renderMarkdown={renderDocument}
         onClose={() => setPlanId(undefined)}
-        windowChrome={windowChrome}
+        windowChrome={pageChrome}
       />
       <GlobalSearchDialog
         open={searchOpen}

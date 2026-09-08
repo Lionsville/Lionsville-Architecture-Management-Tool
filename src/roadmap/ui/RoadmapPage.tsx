@@ -34,7 +34,9 @@ import type { DesignModel, ElementId, Lifecycle } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon } from '../../widgets/icons'
+import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
+import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
@@ -103,21 +105,21 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const at = (day: string) => `${fractionOf(roadmap.from, roadmap.to, day) * 100}%`
   const scrubDay = props.asOf && isDay(props.asOf) ? props.asOf : today
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false }
+  const bar = barChromeFor(chrome)
   const empty = whole.tracks.length === 0 && whole.transitions.length === 0
 
   return (
-    <Dialog
+    <PageDialog
       open={props.open}
-      fullScreen
+      topInset={chrome.topInset}
       onClose={props.onClose}
       aria-label={t('roadmap.title')}
-      slotProps={{ paper: { sx: { bgcolor: 'background.default', display: 'flex', flexDirection: 'column' } } }}
     >
       <Box
         sx={{
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + chrome.controlsInset}px`,
-          WebkitAppRegion: chrome.draggable ? 'drag' : undefined,
+          pl: `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
         }}
@@ -347,7 +349,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
           </Box>
         </Box>
       </Dialog>
-    </Dialog>
+    </PageDialog>
   )
 }
 

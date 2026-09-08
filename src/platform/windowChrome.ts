@@ -21,10 +21,29 @@ export type WindowChrome = {
   controlsInset: number
   /** Whether the top bar must double as the handle that moves the window. */
   draggable: boolean
+  /**
+   * How much of the top of the window a full-window page must leave to the
+   * shell, in px: the height of the shell's own toolbar, which stays on
+   * screen above every page so Documentation, Decisions and Roadmap are one
+   * click away from each other. Absent or zero, a page covers the window.
+   */
+  topInset?: number
 }
 
 /** A browser tab draws its own frame around us; there, the page owns every pixel. */
 export const NO_WINDOW_CHROME: WindowChrome = { controlsInset: 0, draggable: false }
+
+/**
+ * What a page's own top bar must do about the window.
+ *
+ * Nothing, when the shell's toolbar stays above it: that bar already keeps
+ * clear of the traffic lights and is the handle that moves the window, and a
+ * second inset under it would be a strip of dead space. Only a page that
+ * covers the window takes both jobs over.
+ */
+export function barChromeFor(chrome: WindowChrome): WindowChrome {
+  return (chrome.topInset ?? 0) > 0 ? NO_WINDOW_CHROME : chrome
+}
 
 /**
  * Where the traffic lights end.

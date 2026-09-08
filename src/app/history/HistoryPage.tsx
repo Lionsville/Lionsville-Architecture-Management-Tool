@@ -22,7 +22,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
@@ -33,7 +32,8 @@ import { countChanges, diffModels } from '../../model/diff'
 import type { ModelChange } from '../../model/diff'
 import type { HostModel } from '../../model/fromInterchange'
 import type { Language, Translate } from '../../i18n'
-import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
+import { PageDialog } from '../../widgets/PageDialog'
+import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { HistoryEntry } from '../../ports/ProjectHistory'
 import type { HistorySubject } from '../../projects/historyPath'
@@ -85,6 +85,7 @@ export function HistoryPage(props: HistoryPageProps) {
     open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, onRestore, onLabel, language, s,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
+  const bar = barChromeFor(chrome)
   const [confirming, setConfirming] = useState(false)
   const [labelling, setLabelling] = useState(false)
 
@@ -127,20 +128,19 @@ export function HistoryPage(props: HistoryPageProps) {
   const chosenEntry = entries.find((entry) => entry.id === chosen?.id)
 
   return (
-    <Dialog
+    <PageDialog
       open={open}
-      fullScreen
+      topInset={chrome.topInset}
       onClose={onClose}
       aria-label={s('history.title')}
-      slotProps={{ paper: { sx: { bgcolor: 'background.default', display: 'flex', flexDirection: 'column' } } }}
     >
       {/* ---- top bar: the window's, while this page is up ---- */}
       <Box
         data-testid="history-topbar"
         sx={{
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5,
-          pl: `${12 + chrome.controlsInset}px`,
-          WebkitAppRegion: chrome.draggable ? 'drag' : undefined,
+          pl: `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           minHeight: 48, borderBottom: 1, borderColor: 'divider',
           bgcolor: 'background.paper', flexShrink: 0,
@@ -291,6 +291,6 @@ export function HistoryPage(props: HistoryPageProps) {
         onRestore={() => { setConfirming(false); onRestore() }}
         s={s}
       />
-    </Dialog>
+    </PageDialog>
   )
 }

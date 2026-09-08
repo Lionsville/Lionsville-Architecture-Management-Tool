@@ -7,3 +7,5 @@
  */
 export * from './icons'
 export { ConfirmDialog } from './ConfirmDialog'
+export { PageDialog } from './PageDialog'
+export type { PageDialogProps } from './PageDialog'
