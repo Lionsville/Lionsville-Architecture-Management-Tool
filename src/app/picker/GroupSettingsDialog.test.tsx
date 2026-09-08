@@ -48,6 +48,23 @@ describe('GroupSettingsDialog', () => {
     expect(screen.getByText(/The address \(acme\/rail\) does not change/)).toBeDefined()
   })
 
+  /**
+   * The dialog shows the name, the client, the description and the links. The
+   * decisions ride on the same record, unseen — and a save that rebuilt the
+   * record from the fields alone used to drop them.
+   */
+  it('keeps what it does not show, and takes a client apart from the name', () => {
+    const decisions = [{
+      id: 'g-1', number: 1, title: 'One tenant', status: 'proposed', date: '2026-09-01', body: '',
+    }] as unknown as GroupProfile['decisions']
+    const { onSave } = open({ decisions })
+    fireEvent.change(screen.getByLabelText('Client'), { target: { value: ' Acme Logistics BV ' } })
+    save()
+    expect(onSave).toHaveBeenCalledWith({
+      group: 'acme', name: 'Acme', client: 'Acme Logistics BV', decisions,
+    })
+  })
+
   it('hands back a trimmed profile under the group it was opened on', () => {
     const { onSave } = open()
     fireEvent.change(screen.getByLabelText('Group name'), { target: { value: '  Acme Rail  ' } })

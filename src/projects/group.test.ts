@@ -60,9 +60,25 @@ describe('normaliseGroupProfile', () => {
   it('leaves out an empty link list rather than storing one', () => {
     expect('links' in normaliseGroupProfile(profile({ links: [] }))).toBe(false)
   })
+
+  /**
+   * The client is what a drawing says it was made for. A blank one is not a
+   * client called nothing; it is the group's name, which the title block falls
+   * back to on its own.
+   */
+  it('keeps a client name and drops a blank one', () => {
+    expect(normaliseGroupProfile(profile({ client: '  Acme Logistics BV ' })).client)
+      .toBe('Acme Logistics BV')
+    expect('client' in normaliseGroupProfile(profile({ client: '   ' }))).toBe(false)
+  })
 })
 
 describe('isGroupProfile', () => {
+  it('accepts a client name, and refuses one that is not text', () => {
+    expect(isGroupProfile({ group: 'acme', name: 'Acme', client: 'Acme BV' })).toBe(true)
+    expect(isGroupProfile({ group: 'acme', name: 'Acme', client: 7 })).toBe(false)
+  })
+
   it('accepts the shapes this app writes', () => {
     expect(isGroupProfile({ group: 'acme', name: 'Acme' })).toBe(true)
     expect(isGroupProfile({

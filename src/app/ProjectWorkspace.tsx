@@ -133,6 +133,12 @@ export type ProjectWorkspaceProps = {
   groupDecisions: readonly Adr[]
   onGroupDecisionsChange: (next: Adr[]) => void
   /**
+   * Who the group's drawings are made for, from its record. Absent = the
+   * group's name, which is what the title block said before a group could say
+   * otherwise.
+   */
+  groupClient?: string
+  /**
    * For the boundary around the canvas. The editor is the largest thing in the
    * app and the likeliest to throw; catching it here is what keeps the toolbar,
    * the save menu and the pages beside it alive when it does.
@@ -155,6 +161,7 @@ export function ProjectWorkspace({
   project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
+  groupClient,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -476,7 +483,7 @@ export function ProjectWorkspace({
           // AUTHOR: <project name>; it is now the project's default author,
           // which is absent until somebody sets one.
           exportTitleBlock={{
-            client: groupNameOf(session.model),
+            client: groupClient ?? groupNameOf(session.model),
             author: session.model.defaultAuthor,
           }}
           renderMarkdown={renderMarkdown}

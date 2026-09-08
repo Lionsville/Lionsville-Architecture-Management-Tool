@@ -296,6 +296,8 @@ export const EN = {
   'group.openFor': 'Settings for {name}',
   'group.name': 'Group name',
   'group.nameHelp': 'Renaming relabels every project filed here. The address ({path}) does not change.',
+  'group.client': 'Client',
+  'group.clientHelp': 'Named on every exported diagram. Empty means the group name.',
   'group.description': 'Description',
   'group.descriptionPlaceholder': 'Who they are, what this landscape covers, who to ask.',
   'group.links': 'LINKS',

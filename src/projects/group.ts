@@ -37,6 +37,15 @@ export type GroupProfile = {
    * that survives when the last project moves out and comes back.
    */
   name: string
+  /**
+   * Who an exported diagram is drawn for, when that is not the group's name.
+   *
+   * A group is filed under whatever this environment calls it — `Rail`, a
+   * department, a programme — and the title block on a drawing wants the
+   * organisation's own name, which is often longer and sometimes different.
+   * Absent = the group's name, which is what the block always said.
+   */
+  client?: string
   description?: string
   links?: GroupLink[]
   /**
@@ -79,6 +88,8 @@ export function normaliseGroupProfile(profile: GroupProfile): GroupProfile {
     .filter((link) => isSafeGroupLinkUrl(link.url))
     .map((link) => ({ label: link.label || link.url, url: link.url }))
   const out: GroupProfile = { group: profile.group, name: profile.name.trim() }
+  const client = profile.client?.trim()
+  if (client) out.client = client
   const description = profile.description?.trim()
   if (description) out.description = description
   if (links.length > 0) out.links = links
@@ -92,6 +103,7 @@ export function isGroupProfile(value: unknown): value is GroupProfile {
   const held = value as GroupProfile
   if (typeof held.group !== 'string' || !held.group) return false
   if (typeof held.name !== 'string') return false
+  if (held.client !== undefined && typeof held.client !== 'string') return false
   if (held.description !== undefined && typeof held.description !== 'string') return false
   if (held.decisions !== undefined && !isAdrList(held.decisions)) return false
   if (held.links === undefined) return true

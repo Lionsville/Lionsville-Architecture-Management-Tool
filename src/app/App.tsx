@@ -706,6 +706,9 @@ export function App({
     () => (groupKey ? groupProfiles.find((p) => p.group === groupKey)?.decisions ?? [] : []),
     [groupProfiles, groupKey],
   )
+  const groupClient = groupKey
+    ? groupProfiles.find((p) => p.group === groupKey)?.client
+    : undefined
 
   const saveGroupDecisions = useCallback((next: Adr[]) => {
     if (!project) return
@@ -799,6 +802,7 @@ export function App({
             makeId={makeId}
             groupDecisions={groupDecisions}
             onGroupDecisionsChange={saveGroupDecisions}
+            groupClient={groupClient}
             diagnostics={diagnostics}
             hostControls={hostControls}
             windowChrome={windowChrome}

@@ -217,6 +217,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'group.openFor': 'Instellingen voor {name}',
   'group.name': 'Groepsnaam',
   'group.nameHelp': 'Hernoemen herlabelt elk project hieronder. Het adres ({path}) verandert niet.',
+  'group.client': 'Klant',
+  'group.clientHelp': 'Staat op elk geëxporteerd aanzicht. Leeg betekent de groepsnaam.',
   'group.description': 'Omschrijving',
   'group.descriptionPlaceholder': 'Wie ze zijn, wat dit landschap beslaat, wie je erover spreekt.',
   'group.links': 'LINKS',

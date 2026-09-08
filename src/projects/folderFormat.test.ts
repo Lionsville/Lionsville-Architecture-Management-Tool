@@ -284,6 +284,7 @@ describe('a group', () => {
   const profile = {
     group: 'acme-logistics',
     name: 'Acme Logistics',
+    client: 'Acme Logistics BV',
     description: 'The one with the warehouses.',
     links: [{ label: 'Wiki', url: 'https://wiki.test/acme' }],
     decisions: [{ ...DECISION, id: 'g-1', title: 'One tenant per group' }],

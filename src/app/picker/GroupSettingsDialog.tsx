@@ -43,6 +43,7 @@ type LinkDraft = GroupLink
 
 export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettingsDialogProps) {
   const [name, setName] = useState('')
+  const [client, setClient] = useState('')
   const [description, setDescription] = useState('')
   const [links, setLinks] = useState<LinkDraft[]>([])
 
@@ -50,6 +51,7 @@ export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettin
   useEffect(() => {
     if (!target) return
     setName(target.name)
+    setClient(target.client ?? '')
     setDescription(target.description ?? '')
     setLinks((target.links ?? []).map((link) => ({ ...link })))
   }, [target])
@@ -72,6 +74,15 @@ export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettin
             helperText={s('group.nameHelp', { path: target?.group ?? '' })}
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            label={s('group.client')}
+            placeholder={name.trim() || undefined}
+            helperText={s('group.clientHelp')}
+            value={client}
+            onChange={(e) => setClient(e.target.value)}
           />
           <TextField
             fullWidth
@@ -149,8 +160,10 @@ export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettin
           disabled={!ready}
           onClick={() => {
             if (!target) return
+            // Spread first: the record also carries the group's decisions,
+            // which this dialog does not show and must not throw away.
             onSave(normaliseGroupProfile({
-              group: target.group, name, description, links,
+              ...target, name, client, description, links,
             }))
           }}
         >

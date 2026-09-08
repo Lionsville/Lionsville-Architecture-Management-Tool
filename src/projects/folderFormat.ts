@@ -531,6 +531,7 @@ export function groupFiles(profile: GroupProfile): FolderFile[] {
     path: GROUP_FILE,
     text: stableJson({
       name: profile.name,
+      ...(profile.client !== undefined ? { client: profile.client } : {}),
       ...(profile.description !== undefined ? { description: profile.description } : {}),
       ...(profile.links !== undefined ? { links: profile.links } : {}),
     }),
@@ -562,6 +563,7 @@ export function groupFromFolder(
   return {
     group,
     name: typeof held?.name === 'string' ? held.name : '',
+    ...(typeof held?.client === 'string' ? { client: held.client } : {}),
     ...(typeof held?.description === 'string' ? { description: held.description } : {}),
     ...(links ? { links } : {}),
     ...(decisions.length ? { decisions } : {}),
