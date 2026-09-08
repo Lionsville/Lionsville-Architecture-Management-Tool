@@ -58,6 +58,17 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.noMilestones': 'Nog geen mijlpalen.',
   'plan.decision': 'Besluit',
   'plan.noDecisions': 'Steunt nog op geen vastgelegd besluit.',
+  'plan.interfaces': 'Koppelingen',
+  'plan.noInterfaces': 'Nog niets te verplaatsen: benoem wat het plan uitfaseert en wat het invoert, dan verschijnen de lijnen van het eerste hier.',
+  'plan.counterpart': 'Met',
+  'plan.protocol': 'Protocol',
+  'plan.movesTo': 'Gaat naar',
+  'plan.on': 'Op',
+  'plan.ported': 'Verplaatst',
+  'plan.planned': 'Gepland',
+  'plan.notPlanned': 'Nog niet gepland',
+  'plan.portAll': 'Rest overzetten',
+  'plan.unport': 'Terugnemen',
   'plan.template': `## Doel
 
 ## Scope

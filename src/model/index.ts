@@ -62,6 +62,8 @@ export { summarise } from './activity'
 export { apply, applyAll } from './reducer'
 export type { RestoreRefusal, RestoreResult, RestoreSubject } from './restore'
 export { restoreCommand } from './restore'
+export { lastDayBefore, portCommands, portProgress, portsOf, twinOf, unportCommands } from './porting'
+export type { Port } from './porting'
 
 /**
  * The one definition of "this route row stores something". A row without it is

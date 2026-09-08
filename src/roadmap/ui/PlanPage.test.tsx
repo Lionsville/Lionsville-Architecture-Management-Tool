@@ -37,7 +37,13 @@ const ADRS: Adr[] = [
 ]
 
 const MODEL = {
-  name: 'Acme', customerName: 'Acme', diagrams: [], connections: [],
+  name: 'Acme', customerName: 'Acme', diagrams: [],
+  connections: [
+    { id: 'c-orders', sourceId: 'wms-old', targetId: 'billing', isBidirectional: false, protocol: 'REST', label: 'orders' },
+    { id: 'c-stock', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, protocol: 'file' },
+    // The stock feed has moved already: a twin on the new end, dated.
+    { id: 'c-stock-2', sourceId: 'billing', targetId: 'wms-new', isBidirectional: false, protocol: 'file', validFrom: '2026-06-01' },
+  ],
   elements: [
     element('wms-old', 'Warehouse Management', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),
     element('wms-new', 'Warehouse Management (new)', { lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' } }),
@@ -51,6 +57,9 @@ function setup(over: Partial<PlanPageProps> = {}) {
     removeTransition: vi.fn(),
     shiftTransition: vi.fn(),
     updateElementDates: vi.fn(),
+    port: vi.fn(),
+    portAll: vi.fn(),
+    unport: vi.fn(),
     onOpenElement: vi.fn(),
     onOpenDecision: vi.fn(),
     ...over.actions,
@@ -61,6 +70,7 @@ function setup(over: Partial<PlanPageProps> = {}) {
       plan={PLAN}
       model={MODEL}
       decisions={ADRS}
+      today="2026-09-08"
       readOnly={false}
       onClose={vi.fn()}
       renderMarkdown={(md) => <div data-testid="rendered">{md}</div>}
@@ -167,6 +177,55 @@ describe('milestones and decisions', () => {
   })
 })
 
+describe('the interfaces', () => {
+  it('lists every line on what the plan retires, with where it has gone', () => {
+    setup()
+    expect(screen.getByText('1 of 2 interfaces ported')).toBeTruthy()
+    const orders = screen.getByTestId('port-c-orders')
+    expect(orders.textContent).toContain('Billing · orders')
+    expect(orders.textContent).toContain('Not yet planned')
+    // Its day has come: moved, not merely planned.
+    expect(screen.getByTestId('port-c-stock').textContent).toContain('Moved')
+  })
+
+  it('ports one line on a day, onto the only place it can go', () => {
+    const { actions } = setup()
+    fireEvent.change(screen.getByLabelText('Billing · orders: On'), { target: { value: '2027-03-01' } })
+    expect(actions.port).toHaveBeenCalledWith('tr-1', 'c-orders', 'wms-new', '2027-03-01')
+  })
+
+  it('ports everything remaining on one day as one step, defaulting to the plan\'s end', () => {
+    const { actions } = setup()
+    expect((screen.getByLabelText('Port all remaining: On') as HTMLInputElement).value).toBe('2028-01-31')
+    fireEvent.click(screen.getByRole('button', { name: 'Port all remaining' }))
+    expect(actions.portAll).toHaveBeenCalledWith('tr-1', 'wms-new', '2028-01-31')
+  })
+
+  it('takes a port back', () => {
+    const { actions } = setup()
+    fireEvent.click(within(screen.getByTestId('port-c-stock')).getByRole('button', { name: 'Take back' }))
+    expect(actions.unport).toHaveBeenCalledWith('tr-1', 'c-stock')
+  })
+
+  it('asks where each line goes when the plan introduces more than one thing', () => {
+    const { actions } = setup({
+      plan: { ...PLAN, elements: [...PLAN.elements, { elementId: 'billing-new', role: 'introduces' }] },
+      model: { ...MODEL, elements: [...MODEL.elements, element('billing-new', 'Billing (new)')] } as DesignModel,
+    })
+    // No target chosen yet for the orders line: its day cannot be set.
+    expect((screen.getByLabelText('Billing · orders: On') as HTMLInputElement).disabled).toBe(true)
+    fireEvent.mouseDown(within(screen.getByTestId('port-c-orders')).getByRole('combobox'))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse Management (new)' }))
+    fireEvent.change(screen.getByLabelText('Billing · orders: On'), { target: { value: '2027-03-01' } })
+    expect(actions.port).toHaveBeenCalledWith('tr-1', 'c-orders', 'wms-new', '2027-03-01')
+  })
+
+  it('says so when there is nothing to move', () => {
+    setup({ plan: { ...PLAN, elements: [] } })
+    expect(screen.getByText(/Nothing to move yet/)).toBeTruthy()
+  })
+})
+
 describe('the body', () => {
   it('renders the document and edits its source beside it', () => {
     const { actions } = setup()
@@ -196,6 +255,8 @@ describe('read-only', () => {
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Delete this plan' })).toBeNull()
     expect(screen.queryAllByRole('button', { name: 'Add' })).toEqual([])
+    expect(screen.queryByRole('button', { name: 'Port all remaining' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Take back' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Move by…' })).toBeNull()
     expect((screen.getByDisplayValue('Logistics IT') as HTMLInputElement).disabled).toBe(true)
   })

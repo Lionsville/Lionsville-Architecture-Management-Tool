@@ -29,7 +29,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
-import { addDays, daysBetween, isDay, transitionLabel } from '../../model'
+import { addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
 import type { DesignModel, ElementId, Lifecycle } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
@@ -226,14 +226,20 @@ export function RoadmapPage(props: RoadmapPageProps) {
               {roadmap.transitions.length === 0 && (
                 <Typography variant="body2" color="text.secondary">{t('roadmap.noPlans')}</Typography>
               )}
-              {roadmap.transitions.map((plan) => (
+              {roadmap.transitions.map((plan) => {
+                const progress = portProgress(model, plan)
+                return (
                 <Box key={plan.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography
-                    sx={{ fontSize: 12, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    onClick={() => actions.onOpenPlan(plan.id)}
-                  >
-                    {transitionLabel(plan)} {plan.title}
-                  </Typography>
+                  <Box sx={{ minWidth: 0, cursor: 'pointer' }} onClick={() => actions.onOpenPlan(plan.id)}>
+                    <Typography sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {transitionLabel(plan)} {plan.title}
+                    </Typography>
+                    {progress.total > 0 && (
+                      <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                        {t('roadmap.planPorted', { done: String(progress.done), total: String(progress.total) })}
+                      </Typography>
+                    )}
+                  </Box>
                   <Box
                     data-testid={`plan-${plan.id}`}
                     onClick={() => actions.onOpenPlan(plan.id)}
@@ -264,7 +270,8 @@ export function RoadmapPage(props: RoadmapPageProps) {
                     <Marker left={at(today)} colour={theme.palette.text.primary} label={t('roadmap.today')} />
                   </Box>
                 </Box>
-              ))}
+                )
+              })}
 
               <Box sx={{ mt: 3 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>

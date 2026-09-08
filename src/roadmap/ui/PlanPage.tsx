@@ -29,9 +29,11 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { DATED_PHASES, TRANSITION_STATUSES, transitionLabel, transitionStatusesFrom } from '../../model'
+import {
+  DATED_PHASES, TRANSITION_STATUSES, elementsWithRole, portsOf, transitionLabel, transitionStatusesFrom,
+} from '../../model'
 import type {
-  DesignElement, DesignModel, ElementId, LifecycleDates, Transition, TransitionRole,
+  DesignElement, DesignModel, ElementId, LifecycleDates, Port, Transition, TransitionRole,
   TransitionStatus,
 } from '../../model'
 import type { Adr } from '../../model/adr'
@@ -61,6 +63,12 @@ export type PlanActions = {
   shiftTransition(id: string, days: number): void
   /** The dates on an element the plan names; they are the element's own. */
   updateElementDates(id: ElementId, dates: LifecycleDates | undefined): void
+  /** Move one interface — the line with this id — onto an introduced element on a day. */
+  port(planId: string, connectionId: string, toId: ElementId, on: string): void
+  /** Every interface not yet planned, onto one element on one day, as one step. */
+  portAll(planId: string, toId: ElementId, on: string): void
+  /** Take a port back: the twin goes and the original is open-ended again. */
+  unport(planId: string, connectionId: string): void
   /** Show an element on the canvas. */
   onOpenElement(id: ElementId): void
   /** Open a decision record the plan rests on. */
@@ -74,6 +82,8 @@ export type PlanPageProps = {
   model: DesignModel
   /** The project's decision records, for the list of what the plan rests on. */
   decisions?: readonly Adr[]
+  /** The day "now" is, so a port whose day has come reads as done. */
+  today: string
   readOnly: boolean
   actions: PlanActions
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
@@ -140,7 +150,10 @@ export function PlanPage(props: PlanPageProps) {
       {plan && (
         <Box sx={{ display: 'grid', gridTemplateColumns: '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
           <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} />
-          <Body plan={plan} editing={editing} renderMarkdown={props.renderMarkdown} onChange={(body) => actions.updateTransition(plan.id, { body })} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto' }}>
+            <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} />
+            <Body plan={plan} editing={editing} renderMarkdown={props.renderMarkdown} onChange={(body) => actions.updateTransition(plan.id, { body })} />
+          </Box>
         </Box>
       )}
 
@@ -419,6 +432,147 @@ function ElementDates({ element, readOnly, onChange }: {
       ))}
     </Box>
   )
+}
+
+/**
+ * The port table: one row per line on an element the plan moves from, with
+ * where it goes and when. Derived from the lines themselves (`model/porting`),
+ * so a port written anywhere — here, by the agent, by hand in the inspector —
+ * shows here, and the table doubles as the status of the migration without a
+ * status field anywhere.
+ */
+function Interfaces({ plan, model, today, readOnly, actions }: {
+  plan: Transition
+  model: DesignModel
+  today: string
+  readOnly: boolean
+  actions: PlanActions
+}) {
+  const { t } = useStrings()
+  const ports = portsOf(model, plan)
+  const targets = elementsWithRole(plan, 'introduces')
+  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  const name = (id: ElementId) => byId.get(id)?.name ?? id
+  // Where a port goes when there is only one place it can: preselected, so a
+  // one-for-one replacement asks for a day and nothing else.
+  const only = targets.length === 1 ? targets[0] : undefined
+  const [allTo, setAllTo] = useState<string>(only ?? '')
+  const [allOn, setAllOn] = useState<string>(plan.to ?? '')
+  const [choice, setChoice] = useState<Record<string, string>>({})
+  const targetFor = (port: Port) => port.to?.[endOf(port)] ?? choice[port.from.id] ?? only ?? ''
+  const remaining = ports.filter((port) => port.on === undefined)
+
+  if (ports.length === 0) {
+    return (
+      <Box sx={{ px: 3, pt: 2 }}>
+        <Heading>{t('plan.interfaces')}</Heading>
+        <Typography variant="body2" color="text.secondary">{t('plan.noInterfaces')}</Typography>
+      </Box>
+    )
+  }
+
+  const arrow = (port: Port) => (port.from.isBidirectional ? '↔' : port.from.sourceId === port.fromElementId ? '→' : '←')
+  // What a row is called, for the fields in it: the counterpart and the label,
+  // because two lines to the same counterpart are two rows.
+  const rowName = (port: Port) => (port.from.label ? `${name(port.counterpartId)} · ${port.from.label}` : name(port.counterpartId))
+  const status = (port: Port) => (
+    port.on === undefined ? t('plan.notPlanned') : port.on <= today ? t('plan.ported') : t('plan.planned')
+  )
+
+  return (
+    <Box sx={{ px: 3, pt: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Heading>{t('plan.interfaces')}</Heading>
+        <Typography variant="caption" color="text.secondary">
+          {t('roadmap.planPorted', { done: String(ports.length - remaining.length), total: String(ports.length) })}
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        {!readOnly && remaining.length > 0 && (
+          <>
+            {targets.length > 1 && (
+              <TextField
+                select size="small" value={allTo} sx={{ width: 180 }} label={t('plan.movesTo')}
+                slotProps={{ htmlInput: { 'aria-label': t('plan.movesTo') } }}
+                onChange={(e) => setAllTo(e.target.value)}
+              >
+                {targets.map((id) => <MenuItem key={id} value={id}>{name(id)}</MenuItem>)}
+              </TextField>
+            )}
+            <TextField
+              type="date" size="small" value={allOn} sx={{ width: 160 }} label={t('plan.on')}
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${t('plan.portAll')}: ${t('plan.on')}` } }}
+              onChange={(e) => setAllOn(e.target.value)}
+            />
+            <Button
+              size="small" variant="outlined" disabled={!allTo || !allOn}
+              onClick={() => actions.portAll(plan.id, allTo, allOn)}
+            >
+              {t('plan.portAll')}
+            </Button>
+          </>
+        )}
+      </Box>
+      <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', my: 1, fontSize: 13, '& td, & th': { py: 0.5, pr: 1.5, textAlign: 'left', verticalAlign: 'middle' }, '& th': { fontSize: 11, color: 'text.secondary', fontWeight: 700 } }}>
+        <thead>
+          <tr>
+            <th>{t('plan.counterpart')}</th>
+            <th />
+            <th>{t('plan.protocol')}</th>
+            <th>{t('plan.movesTo')}</th>
+            <th>{t('plan.on')}</th>
+            <th>{t('roadmap.status')}</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {ports.map((port) => (
+            <tr key={port.from.id} data-testid={`port-${port.from.id}`}>
+              <td>{rowName(port)}</td>
+              <td>{arrow(port)}</td>
+              <td>{port.from.protocol ?? ''}</td>
+              <td>
+                {targets.length > 1 ? (
+                  <TextField
+                    select size="small" variant="standard" value={targetFor(port)} disabled={readOnly}
+                    slotProps={{ htmlInput: { 'aria-label': `${rowName(port)}: ${t('plan.movesTo')}` } }}
+                    onChange={(e) => {
+                      setChoice((c) => ({ ...c, [port.from.id]: e.target.value }))
+                      if (port.on) actions.port(plan.id, port.from.id, e.target.value, port.on)
+                    }}
+                  >
+                    {targets.map((id) => <MenuItem key={id} value={id}>{name(id)}</MenuItem>)}
+                  </TextField>
+                ) : name(targets[0])}
+              </td>
+              <td>
+                <TextField
+                  type="date" size="small" variant="standard" value={port.on ?? ''} disabled={readOnly || !targetFor(port)}
+                  slotProps={{ htmlInput: { 'aria-label': `${rowName(port)}: ${t('plan.on')}` } }}
+                  onChange={(e) => {
+                    if (e.target.value) actions.port(plan.id, port.from.id, targetFor(port), e.target.value)
+                    else if (port.to) actions.unport(plan.id, port.from.id)
+                  }}
+                />
+              </td>
+              <td>{status(port)}</td>
+              <td>
+                {/* Only a dated twin was written as a port. An undated line that
+                    happens to match is somebody's drawing, and not ours to delete. */}
+                {!readOnly && port.to && port.on && (
+                  <Button size="small" onClick={() => actions.unport(plan.id, port.from.id)}>{t('plan.unport')}</Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Box>
+    </Box>
+  )
+}
+
+/** Which end of the twin is the introduced element: the same end the original leaves from. */
+function endOf(port: Port): 'sourceId' | 'targetId' {
+  return port.from.sourceId === port.fromElementId ? 'sourceId' : 'targetId'
 }
 
 /** The document, and its source beside it while it is being written. */

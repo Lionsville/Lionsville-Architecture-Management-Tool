@@ -20,8 +20,8 @@ import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
 import {
-  addDays, decisionsToCommands, isDay, nextTransitionNumber, shiftDays, transaction,
-  transitionList, transitionsOf,
+  addDays, decisionsToCommands, isDay, nextTransitionNumber, portCommands, portsOf, shiftDays,
+  transaction, transitionList, transitionsOf, unportCommands,
 } from '../model'
 import type { Command } from '../model'
 import type { EditorPreferences } from '../editor'
@@ -513,6 +513,31 @@ export function ProjectWorkspace({
     updateElementDates(id, lifecycleDates) {
       session.dispatch({ type: 'element.update', id, patch: { lifecycleDates }, coalesce: `dates:${id}` })
     },
+    // A port is read off the live model at the moment it is written, so a
+    // twin drawn since — by the agent, by hand — is re-dated rather than
+    // doubled. Each is one transaction: the twin and the closed original.
+    port(planId, connectionId, toId, on) {
+      const model = session.indexed()
+      const plan = transitionsOf(model)[planId]
+      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
+      if (!port) return
+      session.dispatch(transaction(portCommands(port, toId, on, () => session.ids.connection())))
+    },
+    portAll(planId, toId, on) {
+      const model = session.indexed()
+      const plan = transitionsOf(model)[planId]
+      if (!plan) return
+      const remaining = portsOf(session.current(), plan).filter((one) => one.on === undefined)
+      if (remaining.length === 0) return
+      session.dispatch(transaction(remaining.flatMap((port) => portCommands(port, toId, on, () => session.ids.connection()))))
+    },
+    unport(planId, connectionId) {
+      const model = session.indexed()
+      const plan = transitionsOf(model)[planId]
+      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
+      if (!port) return
+      session.dispatch(transaction(unportCommands(port)))
+    },
     onOpenElement(id) {
       setPlanId(undefined)
       setRoadmapOpen(false)
@@ -700,6 +725,7 @@ export function ProjectWorkspace({
         plan={planId ? session.model.transitions?.find((one) => one.id === planId) : undefined}
         model={session.model}
         decisions={session.model.decisions}
+        today={todayDay}
         readOnly={false}
         actions={planActions}
         renderMarkdown={renderDocument}

@@ -70,6 +70,17 @@ export const EN = {
   'plan.noMilestones': 'No milestones yet.',
   'plan.decision': 'Decision',
   'plan.noDecisions': 'Rests on no recorded decision yet.',
+  'plan.interfaces': 'Interfaces',
+  'plan.noInterfaces': 'Nothing to move yet: name what the plan retires and what it introduces, and the lines on the first appear here.',
+  'plan.counterpart': 'With',
+  'plan.protocol': 'Protocol',
+  'plan.movesTo': 'Moves to',
+  'plan.on': 'On',
+  'plan.ported': 'Moved',
+  'plan.planned': 'Planned',
+  'plan.notPlanned': 'Not yet planned',
+  'plan.portAll': 'Port all remaining',
+  'plan.unport': 'Take back',
   'plan.template': `## Goal
 
 ## Scope
