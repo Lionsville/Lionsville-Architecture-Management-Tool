@@ -204,7 +204,7 @@ describe('reading one back', () => {
         model: model({
           elements: [{
             id: 'crews', kind: 'application', name: 'Crews',
-            lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
+            lifecycle: 'live', isManaged: true, aspects: {},
           }],
         }),
       }),
@@ -265,7 +265,7 @@ describe('the history of one thing (ADR-0008)', () => {
   const described = (): HostModel => model({
     elements: [{
       id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
-      aspects: {}, parameters: {}, description: 'Sends the invoices.',
+      aspects: {}, description: 'Sends the invoices.',
     }],
     decisions: [{
       id: 'adr-1', number: 1, title: 'One writer', status: 'proposed', date: '2026-09-01', body: 'Why.', signers: [],

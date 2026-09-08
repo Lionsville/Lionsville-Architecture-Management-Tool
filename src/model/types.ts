@@ -118,7 +118,6 @@ export interface DesignElement {
   isManaged: boolean;
   /** Keyed by aspect key (superset or custom slug). */
   aspects: Record<string, AspectEntry>;
-  parameters: DesignParameters;
   /**
    * Per-element presentation overrides (U6a). Each is absent-means-inherit: the
    * accent falls back to the theme category strip (card) / surface tint (others),
@@ -131,17 +130,6 @@ export interface DesignElement {
   iconKey?: string;
   /** See {@link NodeIconSize}; absent = `small` (the header mark). */
   iconSize?: NodeIconSize;
-}
-
-export interface DesignParameters {
-  complexity?: number;
-  maturity?: number;
-  cloudNativeness?: number;
-  coCreationFactor?: number;
-  serviceLevel?: string;
-  quantity?: number;
-  pricePerItem?: number;
-  period?: string;
 }
 
 /** Line dash style for a connection; absent = solid. */
@@ -336,8 +324,6 @@ export interface DesignDiagram {
    */
   showAspects?: boolean;
   layoutConfig?: DiagramLayoutConfig;
-  estimatedMonthlyCost?: number;
-  costEstimateNote?: string;
   /**
    * Live auto-routing for this diagram: while on, any geometry or topology change
    * re-routes the whole board. Absent = off, which is the default.

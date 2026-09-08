@@ -23,7 +23,7 @@ import type { AgentAnswer, ToolName } from './tools'
 
 const element = (id: string, name: string, over: Partial<HostModel['elements'][number]> = {}) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const,
-  isManaged: true, aspects: {}, parameters: {}, ...over,
+  isManaged: true, aspects: {}, ...over,
 })
 
 const decision = (id: string, number: number, title: string, status: Adr['status'] = 'proposed', applicationId?: string): Adr => ({

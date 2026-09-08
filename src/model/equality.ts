@@ -1,7 +1,6 @@
 import type {
   DesignConnection,
   DesignElement,
-  DesignParameters,
   DiagramLayoutConfig,
   DiagramPlacement,
   EdgeRoute,
@@ -20,17 +19,6 @@ import { routeSource } from './routes';
  * routing/arrowheads). Leaving those out would read a pending style edit as
  * already round-tripped and drop it, reverting the colour on the next save.
  */
-
-const PARAMETER_KEYS: (keyof DesignParameters)[] = [
-  'complexity',
-  'maturity',
-  'cloudNativeness',
-  'coCreationFactor',
-  'serviceLevel',
-  'quantity',
-  'pricePerItem',
-  'period',
-];
 
 const RESIZABLE_ZONES: ResizableZone[] = [
   'actors',
@@ -77,9 +65,6 @@ export function elementsEqual(a: DesignElement, b: DesignElement): boolean {
     !sameOptional(a.iconSize, b.iconSize)
   ) {
     return false;
-  }
-  for (const key of PARAMETER_KEYS) {
-    if (!sameOptional(a.parameters[key], b.parameters[key])) return false;
   }
   return true;
 }

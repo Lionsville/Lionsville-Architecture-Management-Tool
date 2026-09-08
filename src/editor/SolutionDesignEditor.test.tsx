@@ -32,7 +32,6 @@ function baseModel(): DesignModel {
         lifecycle: 'live',
         isManaged: true,
         aspects: {},
-        parameters: {},
       },
     ],
     connections: [],
@@ -308,7 +307,6 @@ function modelWithConnection(): DesignModel {
     lifecycle: 'live',
     isManaged: false,
     aspects: {},
-    parameters: {},
   });
   model.diagrams[0].placements.push({
     elementId: 'b1',
@@ -708,7 +706,6 @@ describe('SolutionDesignEditor — route connections only', () => {
       lifecycle: 'live',
       isManaged: true,
       aspects: {},
-      parameters: {},
     });
     model.connections.push({ id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false });
     const diagram = model.diagrams[0];

@@ -84,7 +84,6 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
       lifecycle: 'live',
       isManaged: true,
       aspects: {},
-      parameters: {},
     });
     const elements: DesignElement[] = [{ ...elt('blocker'), kind: 'application' }];
     const placements: DesignDiagram['placements'] = [

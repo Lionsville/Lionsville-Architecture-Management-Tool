@@ -28,7 +28,7 @@ import type { ProjectRef } from '../projects/projectRef'
 import type { ProjectStore } from './ProjectStore'
 
 function element(id: string, name: string): DesignElement {
-  return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} }
+  return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {} }
 }
 
 export const SAMPLE_REF: ProjectRef = { group: 'acme-logistics', project: 'landscape' }

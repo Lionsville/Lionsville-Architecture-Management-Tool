@@ -23,7 +23,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
       customerName: 'Acme Logistics',
       elements: [{
         id: 'crews', kind: 'application', name: 'Crews', description: 'Roster.',
-        lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
+        lifecycle: 'live', isManaged: true, aspects: {},
       }],
       connections: [],
       diagrams: [{ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [{ elementId: 'crews', x: 4, y: 8 }] }],

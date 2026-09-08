@@ -51,8 +51,7 @@ export type ProjectPatch = Partial<{
  * `diagram.rename` and `diagram.settings` — because they carry rules.
  */
 export type DiagramPatch = Partial<Pick<Diagram,
-  'autoRoute' | 'needsLayout' | 'estimatedMonthlyCost' | 'costEstimateNote' | 'applicationElementId'
-  | 'asOf'>>
+  'autoRoute' | 'needsLayout' | 'applicationElementId' | 'asOf'>>
 
 export type CommandBody =
   // --- elements ------------------------------------------------------------

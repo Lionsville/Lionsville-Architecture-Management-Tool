@@ -28,7 +28,7 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [],
     diagrams: [

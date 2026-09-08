@@ -57,7 +57,6 @@ function props(
         lifecycle: 'live',
         isManaged: false,
         aspects: {},
-        parameters: {},
         ...options.element,
       },
       placement: { elementId: 'e1', zone, x: 0, y: 0 },

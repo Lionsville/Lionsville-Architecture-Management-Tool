@@ -735,7 +735,7 @@ export function App({
     void projects.load(example.ref).then((existing) => {
       if (existing) { enter(existing); return }
       createAndEnter(
-        projectFromDocument(example.document, example.ref, example.groupName),
+        projectFromDocument(example.document, example.ref, example.groupName, example.transitions),
         s('shell.exampleCopied', { name: example.label }),
       )
     }, (cause: unknown) => {

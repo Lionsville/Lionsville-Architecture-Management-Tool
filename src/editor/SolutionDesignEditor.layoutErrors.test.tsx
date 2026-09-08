@@ -63,7 +63,6 @@ function model(): DesignModel {
     lifecycle: 'live' as const,
     isManaged: true,
     aspects: {},
-    parameters: {},
   });
   return {
     name: 'ACME Solution Design',

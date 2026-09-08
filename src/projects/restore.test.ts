@@ -11,7 +11,7 @@ import { projectFiles } from './folderFormat'
 import type { ProjectSnapshot } from './project'
 
 const element = (id: string, name: string, description?: string) => ({
-  id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, parameters: {},
+  id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {},
   ...(description !== undefined ? { description } : {}),
 })
 

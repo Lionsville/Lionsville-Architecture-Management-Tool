@@ -14,7 +14,7 @@ const TODAY = '2026-09-08'
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
     id, kind: 'application', name: id, lifecycle: 'live',
-    isManaged: true, aspects: {}, parameters: {}, ...over,
+    isManaged: true, aspects: {}, ...over,
   }
 }
 
@@ -45,6 +45,19 @@ describe('spansFor', () => {
     expect(spansFor(wms, '2026-01-01')).toEqual([
       { phase: 'live', from: '2026-01-01', to: '2028-01-31' },
       { phase: 'retired', from: '2028-01-31' },
+    ])
+  })
+
+  it('does not start a new span where the phase has not changed', () => {
+    // Stored as `retiring` AND dated `retiring`: one stretch of one colour, not
+    // two with a seam down the middle.
+    const wms = element('wms', {
+      lifecycle: 'retiring',
+      lifecycleDates: { retiring: '2026-04-01', retired: '2027-06-30' },
+    })
+    expect(spansFor(wms, '2026-03-01')).toEqual([
+      { phase: 'retiring', from: '2026-03-01', to: '2027-06-30' },
+      { phase: 'retired', from: '2027-06-30' },
     ])
   })
 

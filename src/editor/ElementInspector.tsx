@@ -127,7 +127,7 @@ function TabLabel({ text, dot }: { text: string; dot: boolean }) {
  * The header (kind + Name) and the Delete action stay outside the tabs, always
  * visible. Nothing persisted was dropped from the iteration-3 accordion; the
  * concerns were regrouped: identity/status/prose + layer7 placement in General,
- * the U6 colour/shape/logo controls in Appearance, and aspects/parameters plus
+ * the U6 colour/shape/logo controls in Appearance, and the aspects plus
  * Tab selection is per-selection in-memory state
  * and resets to General when the selected element id changes.
  */

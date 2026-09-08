@@ -29,7 +29,6 @@ function boardModel(): DesignModel {
     lifecycle: 'live' as const,
     isManaged: true,
     aspects: {},
-    parameters: {},
   }));
   return {
     name: 'ACME',

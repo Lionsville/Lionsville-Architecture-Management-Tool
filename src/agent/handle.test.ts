@@ -24,7 +24,7 @@ const host: HostModel = {
   customerName: 'Acme',
   elements: [{
     id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
-    aspects: {}, parameters: {}, description: 'Sends the invoices.',
+    aspects: {}, description: 'Sends the invoices.',
   }],
   connections: [],
   diagrams: [{ id: 'l7', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],

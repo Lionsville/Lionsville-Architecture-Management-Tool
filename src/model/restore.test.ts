@@ -15,7 +15,7 @@ import { summarise } from './activity'
 import type { DesignElement } from './types'
 
 const element = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
-  id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over,
+  id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, ...over,
 })
 
 const decision = (over: Partial<Adr> = {}): Adr => ({
@@ -61,7 +61,7 @@ function now(over: Partial<HostModel> = {}): HostModel {
     ],
     diagrams: [{
       id: 'd1', kind: 'layer7', name: 'A mess', client: 'Somebody',
-      estimatedMonthlyCost: 12,
+      asOf: '2028-01-01',
       placements: [{ elementId: 'billing', x: 500, y: 500 }, { elementId: 'wms', x: 0, y: 0 }],
       edgeRoutes: [{ connectionId: 'c#2', waypoints: [] }],
     }],

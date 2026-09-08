@@ -166,6 +166,37 @@ export const TOOLS = [
     inputSchema: { type: 'object', properties: { id: ID('decision record') }, required: ['id'], additionalProperties: false },
   },
   {
+    name: 'plans.list',
+    tier: 'read',
+    description:
+      'The plans for changing the landscape (ADR-0009): number, title, status, the window they '
+      + 'run over, who owns them, the elements they introduce, retire or change, the decisions '
+      + 'they rest on, and their milestones. The body is markdown and is returned in full.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          description: 'Only plans in this state.',
+          enum: ['draft', 'agreed', 'running', 'done', 'abandoned'],
+        },
+        elementId: { type: 'string', description: 'Only plans that touch this element.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'roadmap.check',
+    tier: 'read',
+    description:
+      'What the dates in this landscape contradict: a retirement with connections still live, a '
+      + 'successor that goes live after the thing it replaces is gone, a retirement with no '
+      + 'successor named, a connection valid after one of its ends has retired, and a plan past '
+      + 'the day it was due to finish. It reports contradictions only — it cannot tell you a '
+      + 'landscape is out of date.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
     name: 'search',
     tier: 'read',
     description:

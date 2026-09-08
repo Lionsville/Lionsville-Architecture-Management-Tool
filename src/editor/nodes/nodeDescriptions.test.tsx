@@ -46,7 +46,6 @@ function props(kind: ElementKind, description?: string): ElementNodeProps {
         lifecycle: 'live',
         isManaged: false,
         aspects: {},
-        parameters: {},
       },
       placement: { elementId: 'e1', zone: 'landscape', x: 0, y: 0 },
       resizeLimits: testResizeLimits(kind),

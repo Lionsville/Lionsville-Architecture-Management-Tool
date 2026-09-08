@@ -9,7 +9,7 @@
  */
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
-  Lifecycle, LifecycleDates, DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting,
+  Lifecycle, LifecycleDates, DesignElement, DesignConnection, EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramPlacement, DesignDiagram,
   DesignModel, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
@@ -34,6 +34,10 @@ export {
   LIFECYCLE_ORDER, phaseAt, today,
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'
+
+/** What the dates in a landscape contradict (ADR-0009). */
+export { findings } from './checks'
+export type { CheckContext, Finding, FindingKind, FindingSubject } from './checks'
 
 /** A plan for changing the landscape (ADR-0009). */
 export {

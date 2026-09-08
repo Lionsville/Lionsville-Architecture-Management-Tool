@@ -11,7 +11,7 @@ import {
 } from './containerDiagram'
 
 function el(id: string, kind: DesignElement['kind'], over: Partial<DesignElement> = {}): DesignElement {
-  return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over }
+  return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {}, ...over }
 }
 const link = (id: string, sourceId: string, targetId: string): DesignConnection =>
   ({ id, sourceId, targetId, isBidirectional: false })

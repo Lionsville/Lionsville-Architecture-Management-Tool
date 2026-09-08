@@ -335,6 +335,111 @@ titel, tekst en beoordelaars. De tekst is markdown, met dezelfde
 toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met het
 project bewaard, of met de groep voor de besluiten van de groep.
 
+## Tijd, en de dag die een bord toont
+
+Elke applicatie kan **levenscyclusdatums** dragen naast haar levenscyclus: de dag
+dat zij live gaat, de dag dat het uitfaseren begint, de dag dat zij weg is. Alle
+drie zijn optioneel, en een applicatie zonder datums gedraagt zich precies zoals
+altijd. Waar een datum verstreken is wint die van de opgeslagen levenscyclus: een
+landschap dat drie jaar na de livegang nog "gepland" zegt, is een landschap dat
+niemand heeft bijgewerkt.
+
+Een koppeling kan een eigen **venster** dragen, *geldig vanaf* en *geldig tot*.
+Vrijwel geen enkele heeft er een nodig: een lijn zonder venster bestaat zolang
+beide uiteinden bestaan. De lijnen die er wél een nodig hebben zijn de tijdelijke
+— een sync, een routeringsfaçade, een dubbele schrijfactie — en dat is precies de
+hybride fase van een vervanging.
+
+**Toont** op de diagrambalk zegt welke dag het bord tekent. Er staat *Vandaag*
+tot u een dag kiest; daarna staat die dag er, opgelicht, zodat een bord met 2028
+er niet uitziet als een bord van nu. Elke kaart tekent de fase waarin zij op die
+dag verkeert, en een lijn met een venster verschijnt alleen daarbinnen. De dag
+wijzigen is een gewone bewerking: één regel in Activiteit, en ⌘Z draait hem terug.
+
+Zo maakt u een toekomstig diagram. Klik met rechts op een tab, kies **Dupliceren
+per datum…**, kies een dag, en u heeft een tweede bord van hetzelfde landschap
+zoals het er dan bij staat. Er is maar één model, dus de twee kunnen niet uit
+elkaar lopen. Een geëxporteerde PNG van een gedateerd bord noemt de dag in de
+titel.
+
+**Vervangen door** benoemt de opvolger van een applicatie, en **Eigenaar** zegt
+wie ervoor tekent. Eigenaar was een regel in het documentatiesjabloon; het is nu
+een veld, zodat de controles van de roadmap een persoon kunnen noemen.
+
+## De roadmap
+
+**Roadmap** in de bovenbalk opent het landschap op een tijdas. Alleen wat een
+datum heeft krijgt een regel, dus een landschap van vierduizend applicaties met
+negen datums is een roadmap van een paar regels — de rest staat op het canvas,
+waar het thuishoort. Elke regel is een reeks gekleurde stukken: gepland, live,
+uitfaserend, weg. Een streep door elke regel markeert vandaag, en een tweede de
+dag die het bord achter de pagina toont.
+
+De schuifbalk bovenaan verplaatst dat bord. Sleep hem en het canvas erachter
+volgt, zodat de tekening en de as het niet oneens kunnen zijn over welke dag
+wordt besproken.
+
+### Plannen
+
+Een **plan** is hoe een verandering van het landschap wordt vastgelegd: een titel,
+een status, het venster waarin het loopt, wie het bezit, de applicaties die het
+invoert, uitfaseert of wijzigt, de besluiten waarop het steunt, de mijlpalen, en
+een tekst in markdown. Plannen verschijnen als banden onder de applicaties op de
+as, met een teken per mijlpaal. Kies er een en hij opent rechts.
+
+Een plan loopt **concept → akkoord → loopt → gereed**, en kan vanuit elk daarvan
+worden gestaakt. Anders dan bij een besluit kan elke stap terug, en een afgerond
+plan blijft bewerkbaar: een besluit legt een moment vast, een plan beschrijft
+werk. Wat het plan vorige maand zei staat in de historie van de map.
+
+**Verschuiven…** verplaatst een plan met een aantal dagen — het venster, elke
+mijlpaal, en de levenscyclusdatums van de applicaties die het invoert en
+uitfaseert — in één stap, want een plan dat uitloopt is één ding dat gebeurde.
+
+Elk plan is één markdownbestand in `transitions/` in uw projectmap, genummerd
+vanaf `TR-0001`.
+
+### De business case
+
+De tekst van een plan kan een **business case** bevatten: een blok waarvan de
+invoer een leesbare kasstroomtabel is, met de uitkomsten eronder uitgerekend.
+
+````markdown
+```business-case
+currency: EUR
+discount rate: 10%
+
+| Line       | Year 0   | Year 1 | Year 2  |
+| ---------- | -------- | ------ | ------- |
+| Investment | -415 000 |        |         |
+| Savings    |          | 25 000 | 125 000 |
+```
+````
+
+Een negatief getal is geld eruit, een positief geld erin, en een lege cel is nul.
+Daaronder berekent de app de netto en cumulatieve kasstroom, de netto contante
+waarde bij het opgegeven percentage, de interne rentabiliteit, de terugverdientijd
+in perioden, het rendement op de investering en de baten-kostenverhouding. Uw
+tabel wordt nooit herschreven.
+
+Een tweede tabel, `Criterion | Weight | Score`, geeft een gewogen score voor het
+deel dat geen geld is — beoordeeld van één tot vijf, van een maximum dat de app
+zelf afleidt in plaats van dat u het intypt. Alles daarbuiten hoort in een
+besluit, met de afwegingen en de opties die u tegen elkaar hebt gezet.
+
+**Business case toevoegen** in het bewerkvenster zet een leeg blok bij de cursor.
+
+### Waarover de datums het oneens zijn
+
+Onder de as staat een lijst met tegenstrijdigheden: een applicatie die uitfaseert
+terwijl er nog koppelingen live zijn, een opvolger die pas komt nadat wat hij
+vervangt weg is, een uitfasering zonder benoemde opvolger, een koppeling die nog
+geldig is nadat een van haar uiteinden is uitgefaseerd, en een plan dat over zijn
+einddatum heen is.
+
+Het toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap
+verouderd is — dat kan niets — en de pagina zegt dat onder de lijst.
+
 ## Zoeken
 
 **Zoeken** in de bovenbalk, of ⌘K, doorzoekt het hele project in één keer:

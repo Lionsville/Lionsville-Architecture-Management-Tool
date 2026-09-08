@@ -9,7 +9,7 @@ import { searchAll, snippet } from './search'
 
 function element(id: string, name: string, over: Partial<HostModel['elements'][number]> = {}): HostModel['elements'][number] {
   return {
-    id, name, kind: 'application', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over,
+    id, name, kind: 'application', lifecycle: 'live', isManaged: true, aspects: {}, ...over,
   } as HostModel['elements'][number]
 }
 

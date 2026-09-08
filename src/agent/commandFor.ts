@@ -214,7 +214,6 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
     lifecycle: (args.lifecycle as Lifecycle | undefined) ?? 'live',
     isManaged: kind !== 'externalSystem' && kind !== 'actor',
     aspects: {},
-    parameters: {},
     ...strings(args, ['description', 'category', 'vendor', 'technology']),
     ...(parentApplicationId !== undefined
       ? { parentApplicationId }

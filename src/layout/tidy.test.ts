@@ -99,7 +99,6 @@ function elt(id: string, kind: ElementKind, extra: Partial<DesignElement> = {}):
     lifecycle: 'live',
     isManaged: true,
     aspects: {},
-    parameters: {},
     ...extra,
   };
 }

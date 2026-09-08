@@ -23,7 +23,7 @@ function model(): DesignModel {
     customerName: 'ACME',
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'a1', zone: 'landscape', x: 100, y: 200 }] }],
     elements: [
-      { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [],
   };

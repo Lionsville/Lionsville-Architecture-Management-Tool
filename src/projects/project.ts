@@ -13,7 +13,7 @@
  * programme elsewhere. Mapping it here rather than carrying a second copy keeps
  * the export title block, the picker and the stored file from ever disagreeing.
  */
-import type { AspectConfigEntry, DocumentImage, UploadedLogo } from '../model'
+import type { AspectConfigEntry, DocumentImage, Transition, UploadedLogo } from '../model'
 import { fromInterchange } from '../model/fromInterchange'
 import type { HostModel, InterchangeDoc } from '../model/fromInterchange'
 import {
@@ -94,8 +94,11 @@ export function projectFromDocument(
   doc: InterchangeDoc,
   ref: ProjectRef,
   groupName: string,
+  /** Plans to open with, which the interchange format does not carry (ADR-0009). */
+  transitions?: readonly Transition[],
 ): ProjectSnapshot {
   const model = fromInterchange(doc, groupName)
+  if (transitions?.length) model.transitions = [...transitions]
   return { ref, model, activeDiagramId: resolveActive(model), logoLibrary: [] }
 }
 

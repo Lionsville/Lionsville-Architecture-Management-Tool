@@ -14,7 +14,7 @@ import { renderShell } from '../../app/testing/renderShell'
 afterEach(() => cleanup())
 
 const element = (id: string, name: string, over: Record<string, unknown> = {}) => ({
-  id, name, kind: 'application', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over,
+  id, name, kind: 'application', lifecycle: 'live', isManaged: true, aspects: {}, ...over,
 }) as HostModel['elements'][number]
 
 const model: HostModel = {

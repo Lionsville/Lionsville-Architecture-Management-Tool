@@ -35,7 +35,6 @@ const elt = (id: string, kind: ElementKind) => ({
   lifecycle: 'live' as const,
   isManaged: true,
   aspects: {},
-  parameters: {},
 });
 
 /** Two grouped applications on a layer7 board, plus a container view of one. */

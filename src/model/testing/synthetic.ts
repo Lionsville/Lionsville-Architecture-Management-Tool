@@ -147,7 +147,6 @@ function build(spec: SyntheticSpec): HostModel {
         lifecycle: 'live',
         isManaged: true,
         aspects: {},
-        parameters: {},
       }))
       zoneOf.set(id, entry.zone)
       if (entry.kind === 'application') applications.push(id)
@@ -172,7 +171,6 @@ function build(spec: SyntheticSpec): HostModel {
         lifecycle: 'live',
         isManaged: true,
         aspects: {},
-        parameters: {},
       }))
       ids.push(id)
     }
@@ -230,7 +228,6 @@ function describe(rng: Rng, spec: SyntheticSpec, element: DesignElement): Design
     for (const aspect of ASPECTS) {
       if (rng() > 0.4) out.aspects[aspect] = { status: pick(rng, ASPECT_STATUSES) }
     }
-    out.parameters = { complexity: between(rng, 1, 5), maturity: between(rng, 1, 5) }
   }
   return out
 }

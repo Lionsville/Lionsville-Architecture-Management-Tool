@@ -32,7 +32,6 @@ function boardModel(): DesignModel {
       lifecycle: 'live' as const,
       isManaged: true,
       aspects: {},
-      parameters: {},
     })),
     connections: [1, 2, 3, 4].map((n) => ({
       id: `c${n}`,

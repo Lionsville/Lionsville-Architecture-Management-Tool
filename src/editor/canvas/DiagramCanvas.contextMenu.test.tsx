@@ -37,8 +37,8 @@ function model(): DesignModel {
       { id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] },
     ],
     elements: [
-      { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {}, parameters: {} },
+      { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
     connections: [{ id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
   };

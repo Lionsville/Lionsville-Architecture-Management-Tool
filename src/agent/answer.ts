@@ -15,7 +15,10 @@
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf, placementList } from '../model/normalised'
+import { decisionsOf, placementList, transitionList } from '../model/normalised'
+import { today } from '../model/lifecycle'
+import { transitionLabel } from '../model/transition'
+import { findings } from '../model/checks'
 import { matchesQuery } from '../model/textSearch'
 import type { DesignConnection, DesignElement, ElementId } from '../model/types'
 import { searchAll } from '../search/search'
@@ -25,7 +28,7 @@ import { checkArguments, json, refused, toolSpec } from './tools'
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
-  | 'decisions.list' | 'decision.read' | 'search'>
+  | 'decisions.list' | 'decision.read' | 'plans.list' | 'roadmap.check' | 'search'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -125,6 +128,40 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       return json({
         diagrams: model.order.diagrams.map((id) => diagramLine(model.diagrams[id], view.activeDiagramId)),
       })
+
+    case 'plans.list': {
+      const wanted = args.status as string | undefined
+      const touching = args.elementId as string | undefined
+      const rows = transitionList(model)
+        .filter((plan) => (wanted === undefined || plan.status === wanted))
+        .filter((plan) => (
+          touching === undefined || plan.elements.some((one) => one.elementId === touching)
+        ))
+        .map((plan) => ({
+          id: plan.id,
+          label: transitionLabel(plan),
+          title: plan.title,
+          status: plan.status,
+          ...(plan.from ? { from: plan.from } : {}),
+          ...(plan.to ? { to: plan.to } : {}),
+          ...(plan.owner ? { owner: plan.owner } : {}),
+          elements: plan.elements,
+          decisions: plan.decisions,
+          milestones: plan.milestones,
+          body: plan.body,
+        }))
+      return json({ plans: rows })
+    }
+
+    case 'roadmap.check': {
+      const arrays = view.current()
+      return json({
+        findings: findings({ model: arrays, today: today() }),
+        // Said in the answer, not only in the tool's description: an agent that
+        // reads an empty list must not conclude the landscape is current.
+        note: 'These are contradictions between dates. They cannot tell you whether a landscape is out of date.',
+      })
+    }
 
     case 'decisions.list': {
       const scope = args.scope as 'group' | 'landscape' | 'application' | undefined

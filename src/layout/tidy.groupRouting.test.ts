@@ -36,7 +36,6 @@ const elt = (id: string, kind: ElementKind) => ({
   lifecycle: 'live' as const,
   isManaged: true,
   aspects: {},
-  parameters: {},
 });
 
 /** Two stacked members in the Core box, a loose card outside it, and a band node. */

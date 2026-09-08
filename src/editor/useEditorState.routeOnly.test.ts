@@ -16,9 +16,9 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'e3', kind: 'application', name: 'E3', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'e3', kind: 'application', name: 'E3', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [
       // Blocked by the 'Ops' box below → route-only detours it.

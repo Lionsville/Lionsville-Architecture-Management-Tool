@@ -20,7 +20,6 @@ function model(routes: EdgeRoute[] = []): DesignModel {
       lifecycle: 'live' as const,
       isManaged: true,
       aspects: {},
-      parameters: {},
     })),
     connections: [
       { id: 'c1', sourceId: 's', targetId: 't1', isBidirectional: false },

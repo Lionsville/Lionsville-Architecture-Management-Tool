@@ -20,7 +20,7 @@ import type { ProjectRef } from './projectRef'
 const REF: ProjectRef = { group: 'acme-logistics', project: 'landscape' }
 
 function element(id: string, name: string, over: Partial<DesignElement> = {}): DesignElement {
-  return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over }
+  return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, ...over }
 }
 
 const PLAN: Transition = {

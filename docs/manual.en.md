@@ -320,6 +320,109 @@ as documentation; **Formatting help** beside the source shows the syntax,
 mermaid diagrams included. Changes are saved with the project, or with the
 group for the group's records.
 
+## Time, and the day a board shows
+
+Every application can carry **lifecycle dates** beside its lifecycle: the day it
+goes live, the day it starts retiring, the day it is gone. All three are
+optional, and an application with none of them behaves exactly as it always
+did. Where a date has passed it wins over the stored lifecycle, because a
+landscape that still says "planned" three years after go-live is one nobody
+updated.
+
+A connection can carry a **window** of its own, *valid from* and *valid until*.
+Almost none need one: a line with no window is there as long as both the things
+it joins are there. The lines that do need one are the temporary ones — a sync,
+a routing façade, a double write — which is exactly the hybrid phase of a
+replacement.
+
+**Showing** on the diagram bar says which day the board is drawing. It reads
+*Today* until you name a day, and then reads that day and highlights itself, so
+a board showing 2028 does not look like a board showing now. Every card draws
+the phase it is in on that day, and a line with a window appears only inside it.
+Changing the day is an ordinary edit: it is one entry in Activity and ⌘Z takes
+it back.
+
+That is how a future diagram is made. Right-click a tab and choose **Duplicate
+as of…**, pick a day, and you have a second board of the same landscape as it
+will stand then. There is only ever one model, so the two cannot drift apart.
+An exported PNG of a dated board says the day in its title.
+
+**Replaced by** on an application names its successor, and **Owner** says who
+answers for it. Owner used to be a row in the documentation template; it is a
+field now, so the roadmap's checks can name a person.
+
+## The roadmap
+
+**Roadmap** in the top bar opens the landscape on a time axis. Only what has a
+date gets a row, so a landscape of four thousand applications with nine dates in
+it is a roadmap of a few lines — the rest is on the canvas, where it belongs.
+Each row is a run of coloured stretches: planned, live, retiring, gone. A line
+down every row marks today, and a second one marks the day the board behind the
+page is showing.
+
+The slider along the top moves that board. Drag it and the canvas behind follows,
+so the picture and the axis cannot disagree about which day is under discussion.
+
+### Plans
+
+A **plan** is how a change to the landscape gets written down: a title, a status,
+the window it runs over, who owns it, the applications it introduces, retires or
+changes, the decisions it rests on, its milestones, and a body in markdown. Plans
+appear as bands under the applications on the axis, with a mark per milestone.
+Pick one and it opens on the right.
+
+A plan runs **draft → agreed → running → done**, and can be abandoned from any of
+those. Unlike a decision record, every step can be taken back and a finished plan
+can still be edited: a decision records a moment, and a plan describes work. What
+the plan said last month is in the folder's history.
+
+**Move by…** shifts a plan by a number of days — its window, every milestone, and
+the lifecycle dates on the applications it introduces and retires — in a single
+step, because a plan slipping is one thing that happened.
+
+Each plan is one markdown file in `transitions/` in your project folder, numbered
+`TR-0001` upwards.
+
+### The business case
+
+A plan's body can hold a **business case**: a fenced block whose input is a
+cash-flow table you can read, with the figures worked out underneath it.
+
+````markdown
+```business-case
+currency: EUR
+discount rate: 10%
+
+| Line       | Year 0   | Year 1 | Year 2  |
+| ---------- | -------- | ------ | ------- |
+| Investment | -415 000 |        |         |
+| Savings    |          | 25 000 | 125 000 |
+```
+````
+
+A negative number is money out, a positive one is money in, and a blank cell is
+zero. Underneath, the app computes the net and cumulative cash flow, the net
+present value at the rate you gave, the internal rate of return, the payback in
+periods, the return on investment and the benefit-cost ratio. Your table is never
+rewritten.
+
+A second table, `Criterion | Weight | Score`, adds a weighted score for the part
+that is not money — scored one to five, out of a maximum the app works out rather
+than one you type. Everything beyond that belongs in a decision record, with its
+drivers and the options you weighed.
+
+**Add a business case** in the edit pane drops an empty block in at the cursor.
+
+### What the dates disagree about
+
+Under the axis is a list of contradictions: an application retiring with
+connections still live, a successor that does not arrive until after the thing it
+replaces is gone, a retirement with no successor named, a connection still valid
+after one of its ends has retired, and a plan past the day it was due to finish.
+
+It says where the dates contradict each other. It cannot tell you that a landscape
+is out of date — nothing can — and the page says so under the list.
+
 ## Search
 
 **Search** in the top bar, or ⌘K, searches the whole project at once: elements

@@ -40,7 +40,7 @@ vi.mock('../editor', async (importOriginal) => {
               type: 'element.create',
               element: {
                 id: 'warehouse', kind: 'application', name: 'Warehouse',
-                lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
+                lifecycle: 'live', isManaged: true, aspects: {},
               },
             },
             { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },

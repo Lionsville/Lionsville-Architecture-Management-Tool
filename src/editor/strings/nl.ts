@@ -329,7 +329,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'option.arrow': 'Pijl',
 
   'section.operationalAspects': 'OPERATIONELE ASPECTEN',
-  'section.parameters': 'PARAMETERS',
   'section.domainGroup': 'DOMEINGROEP',
   'section.tidyGroup': 'GROEP OPSCHONEN',
   'section.connection': 'Koppeling',

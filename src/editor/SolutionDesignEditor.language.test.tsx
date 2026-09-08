@@ -42,7 +42,6 @@ function model(): DesignModel {
         lifecycle: 'live',
         isManaged: true,
         aspects: {},
-        parameters: {},
       },
     ],
     connections: [],

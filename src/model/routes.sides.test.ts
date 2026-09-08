@@ -157,7 +157,7 @@ describe('sides travel with the row through the model layer', () => {
     return {
       name: 'ACME',
       customerName: 'ACME',
-      elements: ['a', 'b'].map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {}, parameters: {} })),
+      elements: ['a', 'b'].map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })),
       connections: [{ id: 'c1', sourceId: 'a', targetId: 'b', isBidirectional: false }],
       diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'a', x: 0, y: 0 }, { elementId: 'b', x: 500, y: 0 }], edgeRoutes: routes }],
     };

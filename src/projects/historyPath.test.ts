@@ -24,11 +24,11 @@ function model(over: Partial<HostModel> = {}): HostModel {
     elements: [
       {
         id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
-        aspects: {}, parameters: {}, description: 'Sends the invoices.',
+        aspects: {}, description: 'Sends the invoices.',
       },
       {
         id: 'ap#1', kind: 'application', name: 'Odd one', lifecycle: 'live', isManaged: true,
-        aspects: {}, parameters: {}, description: 'An id that cannot be a file name.',
+        aspects: {}, description: 'An id that cannot be a file name.',
       },
     ],
     connections: [],

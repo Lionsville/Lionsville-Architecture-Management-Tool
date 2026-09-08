@@ -69,7 +69,6 @@ function props(kind: ElementKind, over: Partial<DesignElement> = {}): ElementNod
         lifecycle: 'live',
         isManaged: false,
         aspects: {},
-        parameters: {},
         ...over,
       },
       placement: { elementId: 'e1', zone: 'landscape', x: 0, y: 0 },

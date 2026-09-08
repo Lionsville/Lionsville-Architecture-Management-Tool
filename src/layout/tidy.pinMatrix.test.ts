@@ -17,7 +17,6 @@ function landscape(): DesignModel {
     lifecycle: 'live' as const,
     isManaged: true,
     aspects: {},
-    parameters: {},
   });
   return {
     name: 'ACME',
@@ -176,10 +175,10 @@ function container(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'app', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'c1', kind: 'component', parentApplicationId: 'app', name: 'API', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'c2', kind: 'component', parentApplicationId: 'app', name: 'DB', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'ext', kind: 'externalSystem', name: 'PSP', lifecycle: 'live', isManaged: false, aspects: {}, parameters: {} },
+      { id: 'app', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'c1', kind: 'component', parentApplicationId: 'app', name: 'API', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'c2', kind: 'component', parentApplicationId: 'app', name: 'DB', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'ext', kind: 'externalSystem', name: 'PSP', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
     connections: [{ id: 'c1-ext', sourceId: 'c1', targetId: 'ext', isBidirectional: false }],
     diagrams: [

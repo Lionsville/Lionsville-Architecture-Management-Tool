@@ -24,7 +24,6 @@ function model(source: EdgeRouteSource): DesignModel {
       lifecycle: 'live' as const,
       isManaged: true,
       aspects: {},
-      parameters: {},
     })),
     connections: [
       { id: 'moving', sourceId: 'e1', targetId: 'e2', isBidirectional: false },

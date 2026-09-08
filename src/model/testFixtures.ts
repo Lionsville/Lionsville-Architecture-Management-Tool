@@ -16,7 +16,6 @@ export function element(id: string, overrides: Partial<DesignElement> = {}): Des
     lifecycle: 'live',
     isManaged: true,
     aspects: {},
-    parameters: {},
     ...overrides,
   };
 }

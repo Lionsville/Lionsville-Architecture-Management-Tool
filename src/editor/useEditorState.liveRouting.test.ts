@@ -20,8 +20,8 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [

@@ -22,7 +22,6 @@ function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
       lifecycle: 'live' as const,
       isManaged: true,
       aspects: {},
-      parameters: {},
     })),
     connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [

@@ -38,7 +38,6 @@ function props(element: Partial<DesignElement>): ElementNodeProps {
         lifecycle: 'live',
         isManaged: false,
         aspects: {},
-        parameters: {},
         ...element,
       },
       readOnly: false,

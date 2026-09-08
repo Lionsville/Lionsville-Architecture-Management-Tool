@@ -16,10 +16,10 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'm1', kind: 'application', name: 'M1', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'm2', kind: 'application', name: 'M2', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'other', kind: 'application', name: 'Other', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'loose', kind: 'application', name: 'Loose', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'm1', kind: 'application', name: 'M1', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'm2', kind: 'application', name: 'M2', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'other', kind: 'application', name: 'Other', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'loose', kind: 'application', name: 'Loose', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [],
     diagrams: [

@@ -340,7 +340,6 @@ export const EN = {
   'option.arrow': 'Arrow',
 
   'section.operationalAspects': 'OPERATIONAL ASPECTS',
-  'section.parameters': 'PARAMETERS',
   'section.domainGroup': 'DOMAIN GROUP',
   'section.tidyGroup': 'TIDY GROUP',
   'section.connection': 'Connection',

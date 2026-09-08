@@ -15,7 +15,7 @@ import type { DesignConnection, DesignElement, Lifecycle, LifecycleDates } from 
 function element(lifecycle: Lifecycle, lifecycleDates?: LifecycleDates): DesignElement {
   return {
     id: 'wms', kind: 'application', name: 'Warehouse Management',
-    lifecycle, lifecycleDates, isManaged: true, aspects: {}, parameters: {},
+    lifecycle, lifecycleDates, isManaged: true, aspects: {},
   }
 }
 

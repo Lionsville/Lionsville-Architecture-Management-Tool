@@ -19,7 +19,7 @@ import { renderShell } from '../../app/testing/renderShell'
 afterEach(() => cleanup())
 
 const element = (id: string, name: string, kind = 'application') => ({
-  id, name, kind, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
+  id, name, kind, lifecycle: 'live', isManaged: true, aspects: {},
 }) as HostModel['elements'][number]
 
 const adr = (over: Partial<Adr>): Adr => ({

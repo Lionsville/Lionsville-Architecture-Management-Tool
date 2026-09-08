@@ -22,7 +22,7 @@ const TODAY = '2026-09-08'
 function element(id: string, name: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
     id, kind: 'application', name, lifecycle: 'live',
-    isManaged: true, aspects: {}, parameters: {}, ...over,
+    isManaged: true, aspects: {}, ...over,
   }
 }
 

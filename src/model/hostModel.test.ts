@@ -17,7 +17,7 @@ import {
 function element(id: string, name: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
     id, kind: 'application', name, lifecycle: 'live', isManaged: true,
-    aspects: {}, parameters: {}, ...over,
+    aspects: {}, ...over,
   }
 }
 

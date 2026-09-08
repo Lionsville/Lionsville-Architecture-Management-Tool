@@ -43,7 +43,6 @@ function baseProps(overrides: Partial<ElementNodeProps> = {}): ElementNodeProps 
         lifecycle: 'live',
         isManaged: true,
         aspects: {},
-        parameters: {},
       },
       placement: { elementId: 'a1', zone: 'landscape', x: 0, y: 0 },
       resizeLimits: testResizeLimits('application'),

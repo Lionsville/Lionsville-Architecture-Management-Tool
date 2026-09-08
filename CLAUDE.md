@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2808 tests** and one of every config. The
+One codebase, in modules, with **2990 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2808 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 2990 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -114,6 +114,8 @@ exception: React through and through, so it keeps its subfolders.
 src/model/        What a landscape is made of, and the arithmetic over it.
                     types             the domain half; imports nothing at all
                     kinds · zones · placement · aspects · kindChange · deletion
+                    lifecycle · transition · checks   dates on the facts, a plan,
+                                      and what the dates contradict (ADR-0009)
                     keys              addressing, slugs, where a new id comes from
                     normalised        the model indexed by id; fromArrays/toArrays
                     commands · reducer  what a change IS, and the one writer
@@ -135,8 +137,13 @@ src/editor/       The canvas and everything docked to it. React.
 src/documentation/  Descriptions as documents.
                     documentation     outline, element links, the template
                     remember          caches with a bound and an eviction rule
-                    ui/               DocumentationPage, MarkdownField, mermaid
+                    images · businessCase   pictures a document holds, and the
+                                      block that computes (ADR-0009)
+                    ui/               DocumentationPage, MarkdownField, blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
+src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).
+                    timeline          rows and spans, in days rather than pixels
+                    ui/RoadmapPage    the axis, the plan you picked, the findings
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -151,7 +158,8 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
 src/projects/     A project: open, save, order, summarise, address, remember.
-                    folderFormat      a project as files (ADR-0003); adrFile · fileText
+                    folderFormat      a project as files (ADR-0003); adrFile ·
+                                      transitionFile · fileText
                     workingFile       the .lvarch container: v3 is the folder, zipped
                     historyPath       where one thing is filed, for its history
                     documentSession   dirty / saving / changed on disk / conflict
@@ -390,6 +398,11 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `decision.propose` `decision.transition` `diagram.create` |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `group` `align` `distribute` |
+| Agent tools, time (ADR-0009) | `plans.list` `roadmap.check` |
+| A plan for changing the landscape | a **transition**, `TR-0001` on screen |
+| Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
+| Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
+| The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |
 | Agent resources | `lvarch://element/<id>/description`, `lvarch://decision/<id>` |
 | Vendor / copyright | Lionsville Group BV |
 | Shipped example | a fictional organisation, never a real customer's landscape |
@@ -587,6 +600,29 @@ works until it is recorded. A label is an annotated tag named from the label's
 slug, beside the subject and never instead of it, pushed with `--follow-tags`.
 Measuring it found `placement.set` quadratic in its own rows; it is one pass
 now.
+
+Then a landscape acquired **time** (`docs/decisions/0009`). Documents came
+first: which fence names draw is a table rather than a class name compared
+twice, a picture is a file in `images/` referred to the way every markdown file
+refers to one (and the renderer draws only what the project holds — an `http`
+source in a description is alt text, never a request), and a business case is a
+```business-case fence whose input is a readable cash-flow table with the
+figures worked out beneath it. That block was designed down from a five-sheet
+workbook, two of whose headline numbers were wrong where nobody could see them,
+and the tests are written against that workbook's own cash flows.
+
+Then the landscape half. `lifecycle` is still one value, and it can now carry
+the dates it passes through; a connection can carry a window; a diagram carries
+`asOf` and draws the same single model as it stood on that day, which is how a
+future board is made rather than by forking the project. A **transition** is a
+plan as a numbered record — `transitions/NNNN-<slug>.md`, a window, milestones,
+what it introduces and retires, the decisions it rests on — and unlike a
+decision it does not lock when it ends, because work changes and ADR-0008
+already keeps what it said last week. `src/roadmap/` draws the axis, the plans
+over it and the four things the dates can contradict, with a scrubber that
+moves the board behind the page. Two fields that had survived from the
+application this editor was carved out of, `DesignParameters` and a diagram's
+cost estimate, were read by nothing and went.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference

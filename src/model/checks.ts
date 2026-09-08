@@ -17,11 +17,16 @@
  * Pure and node-tested, and deliberately not part of the reducer: a landscape
  * mid-edit disagrees with itself constantly, and a model that refused to hold a
  * contradiction would refuse the keystroke in the middle of typing a date.
+ *
+ * In `model/` and not in `roadmap/` beside the page that draws them, because
+ * the import matrix said so and was right: an agent asks for these too
+ * (`roadmap.check`), and `agent` may not see `roadmap`. They are arithmetic
+ * over a landscape, which is what this module is for.
  */
-import { connectionLiveAt, isDay, phaseAt } from '../model/lifecycle'
-import { isTransitionFinished } from '../model/transition'
-import type { Transition } from '../model/transition'
-import type { DesignConnection, DesignElement, DesignModel, ElementId } from '../model/types'
+import { connectionLiveAt, isDay, phaseAt } from './lifecycle'
+import { isTransitionFinished } from './transition'
+import type { Transition } from './transition'
+import type { DesignConnection, DesignElement, DesignModel, ElementId } from './types'
 
 export type FindingKind =
   /** Something retires while things are still connected to it. */

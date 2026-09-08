@@ -11,7 +11,7 @@ import type { HostModel } from './fromInterchange'
 import type { DesignElement } from './types'
 
 const element = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement =>
-  ({ id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {}, ...over })
+  ({ id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, ...over })
 
 function model(over: Partial<HostModel> = {}): HostModel {
   return {

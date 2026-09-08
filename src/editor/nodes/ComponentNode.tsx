@@ -8,8 +8,9 @@ import type { ElementNodeProps } from './nodeData';
 
 /**
  * Component: C4 container box with a technology line and description.
- * Carries the incomplete-parameters warning (OM values live here — intent
- * rule 8) and is resizable when selected.
+ * Resizable when selected. It once carried a warning about incomplete
+ * parameters; those fields never reached a screen and were removed with
+ * ADR-0009.
  *
  * Phase 3 lit its icon slot: a component is as likely to be "the Kafka one" or
  * "the Postgres one" as an application is, and the old three-kind vendor gate

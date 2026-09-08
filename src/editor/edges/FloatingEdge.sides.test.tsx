@@ -32,8 +32,8 @@ function model(route: EdgeRoute | undefined): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [{ id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [A, B], edgeRoutes: route ? [route] : [] }],

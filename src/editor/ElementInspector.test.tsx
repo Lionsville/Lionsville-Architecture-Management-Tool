@@ -26,7 +26,6 @@ function element(overrides: Partial<DesignElement> = {}): DesignElement {
     lifecycle: 'live',
     isManaged: false,
     aspects: {},
-    parameters: {},
     ...overrides,
   };
 }

@@ -151,7 +151,6 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       owner: e.owner,
       isManaged: e.isManaged ?? true,
       aspects: e.aspects ?? {},
-      parameters: {},
       // `iconType` (agreement 3): a closed vocabulary of the built-in keys. A
       // key this tool does not recognise is kept anyway, so it comes back on
       // export and a newer or different tool has not lost it — the element

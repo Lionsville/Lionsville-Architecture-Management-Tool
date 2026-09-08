@@ -9,14 +9,14 @@
 import { describe, expect, it } from 'vitest'
 import { findings } from './checks'
 import type { CheckContext } from './checks'
-import type { DesignConnection, DesignElement } from '../model/types'
+import type { DesignConnection, DesignElement } from './types'
 
 const TODAY = '2026-09-08'
 
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
     id, kind: 'application', name: id, lifecycle: 'live',
-    isManaged: true, aspects: {}, parameters: {}, ...over,
+    isManaged: true, aspects: {}, ...over,
   }
 }
 

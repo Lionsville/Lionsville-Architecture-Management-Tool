@@ -13,7 +13,7 @@ import type { HostModel } from './fromInterchange'
 
 const element = (id: string, name: string) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const,
-  isManaged: true, aspects: {}, parameters: {},
+  isManaged: true, aspects: {},
 })
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({

@@ -24,7 +24,7 @@ import { pathClearance, routedPath } from './routeTestSupport';
  */
 
 function elt(id: string, kind: ElementKind): DesignElement {
-  return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} };
+  return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {} };
 }
 
 const rectFor = (model: DesignModel, diagram: DesignDiagram, id: string): Rect => {

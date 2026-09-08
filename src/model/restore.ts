@@ -183,7 +183,7 @@ const SETTING_FIELDS = [
 ] as const satisfies readonly (keyof DiagramSettings)[]
 
 const PATCH_FIELDS = [
-  'autoRoute', 'needsLayout', 'estimatedMonthlyCost', 'costEstimateNote', 'applicationElementId',
+  'autoRoute', 'needsLayout', 'applicationElementId', 'asOf',
 ] as const satisfies readonly (keyof DiagramPatch)[]
 
 /**

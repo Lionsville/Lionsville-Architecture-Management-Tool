@@ -27,7 +27,7 @@ function model(elementName = 'Billing'): DesignModel {
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],
     elements: [{
       id: 'billing', kind: 'application', name: elementName,
-      lifecycle: 'live', isManaged: true, aspects: {}, parameters: {},
+      lifecycle: 'live', isManaged: true, aspects: {},
     }],
     connections: [],
   };

@@ -20,7 +20,7 @@ import { useModelSession } from './useModelSession'
 
 /** The full shape, so a test does not have to repeat five fields it never reads. */
 function element(id: string, name: string): DesignElement {
-  return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} }
+  return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {} }
 }
 
 const at = (elementId: string): DiagramPlacement => ({ elementId, x: 0, y: 0 })

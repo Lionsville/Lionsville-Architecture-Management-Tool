@@ -16,7 +16,7 @@ import type { DesignConnection, DesignDiagram, DesignElement, DesignModel } from
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
     id, kind: 'application', name: id, lifecycle: 'live',
-    isManaged: true, aspects: {}, parameters: {}, ...over,
+    isManaged: true, aspects: {}, ...over,
   }
 }
 

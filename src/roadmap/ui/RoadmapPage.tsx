@@ -38,8 +38,8 @@ import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon } from '../../widgets/icons'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { findings } from '../checks'
-import type { Finding } from '../checks'
+import { findings } from '../../model/checks'
+import type { Finding } from '../../model/checks'
 import { fractionOf, roadmapOf } from '../timeline'
 
 /** The colour each phase is drawn in. The canvas's own tokens, said once here. */

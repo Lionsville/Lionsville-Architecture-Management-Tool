@@ -16,9 +16,9 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'e1', kind: 'externalSystem', name: 'Payments', lifecycle: 'live', isManaged: false, aspects: {}, parameters: {} },
-      { id: 'e2', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
-      { id: 'c1', kind: 'component', name: 'Orders', parentApplicationId: 'e2', lifecycle: 'live', isManaged: true, aspects: {}, parameters: {} },
+      { id: 'e1', kind: 'externalSystem', name: 'Payments', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'e2', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'c1', kind: 'component', name: 'Orders', parentApplicationId: 'e2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     connections: [{ id: 'x1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [

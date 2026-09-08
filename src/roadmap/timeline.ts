@@ -68,7 +68,13 @@ export function spansFor(element: DesignElement, windowFrom: string): PhaseSpan[
   }
   // A phase that begins on the same day as the next one is a cutover, not a
   // span: keep the later of the two, which is where the element actually is.
-  const kept = starts.filter((one, at) => at === starts.length - 1 || one.from !== starts[at + 1].from)
+  // And a phase that begins again where it already was is not a new span — an
+  // element stored as `retiring` with a `retiring` date would otherwise draw
+  // the same colour twice with a seam down the middle.
+  const kept = starts.filter((one, at) => (
+    (at === starts.length - 1 || one.from !== starts[at + 1].from)
+    && (at === 0 || one.phase !== starts[at - 1].phase)
+  ))
   return kept.map((one, at) => ({
     phase: one.phase,
     from: one.from,

@@ -11,7 +11,7 @@ import { NODE_SIZES } from '../model/placement'
 import { boundsOf, inspect } from './inspect'
 
 const app = (id: string, name = id) => ({
-  id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, parameters: {},
+  id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {},
 })
 
 // The default board is 1680x1040; actors band 140 high, management 120,

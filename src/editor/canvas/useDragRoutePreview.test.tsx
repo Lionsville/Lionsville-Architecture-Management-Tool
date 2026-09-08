@@ -32,7 +32,6 @@ function board(connectionCount: number): DesignModel {
     lifecycle: 'live' as const,
     isManaged: true,
     aspects: {},
-    parameters: {},
   }));
   const diagram: DesignDiagram = {
     id: 'd1',
