@@ -22,7 +22,7 @@
 import type { StringKey, StringParams } from '../i18n'
 import type { DocumentImage } from '.'
 import { ShellError } from '../platform/errors'
-import { claimKey } from './keys'
+import { claimKey, slug } from './keys'
 
 /**
  * The limit for one image, well above a logo's 200 kB.
@@ -82,21 +82,50 @@ export function takenImageFiles(library: readonly DocumentImage[]): Set<string> 
 export type ImageFile = { name: string; type: string; size: number }
 
 /**
- * The file name an upload gets: the name it arrived with, slugged, with the
+ * How much of the name it arrived with survives. A slide exported from a deck
+ * arrives called after its title, and a title is a sentence; forty characters
+ * keeps the name readable in a folder listing and in the markdown.
+ */
+const STEM_LIMIT = 40
+
+/**
+ * The id a new file name carries: the moment it was taken in, in base 36, the
+ * way a connection id is minted. Sortable, short, and different on every
+ * machine that ever adds a picture — which is the property that matters, see
+ * {@link imageFileName}.
+ */
+export function imageId(now = Date.now()): string {
+  return now.toString(36)
+}
+
+/**
+ * The file name an upload gets: `<name>-<id>.<ext>` — the name it arrived
+ * with, slugged and cut to {@link STEM_LIMIT}; an {@link imageId}; and the
  * extension its **type** dictates rather than the one it claimed.
+ *
+ * The id is what keeps two pictures apart, and it is there for the case the
+ * library cannot see. Within one session `taken` already refuses a duplicate,
+ * but a folder is shared: two people who each add `slide1.png` on their own
+ * machine and then sync would otherwise arrive with one file name meaning two
+ * pictures, and the sync would keep one of them. The moment in the name makes
+ * that collision a matter of two uploads in the same millisecond. It also
+ * makes a reference greppable — `slide1-mfa1x2k4` is one picture, in the
+ * markdown and in the folder, where `slide1` would be whichever came last.
  *
  * The extension comes from the media type on purpose. A file called
  * `diagram.png` that is really a JPEG would be written as a `.png` nothing can
  * read, and the one thing a reader has to go on when it scans the folder later
  * is the extension.
  */
-export function imageFileName(name: string, type: string, taken: Set<string>): string {
+export function imageFileName(name: string, type: string, taken: Set<string>, id = imageId()): string {
   const extension = ALLOWED_TYPES[type]
-  const stem = name.replace(/\.[^.]+$/, '').trim() || 'image'
+  const given = name.replace(/\.[^.]+$/, '').trim()
+  // `slug` has its own fallback word, and it is the model's, not a picture's.
+  const stem = given ? slug(given).slice(0, STEM_LIMIT).replace(/-+$/, '') : 'image'
   // Claimed against the stems in use rather than the whole file names, so
   // `plan.png` and `plan.jpg` do not both become `plan` and collide.
   const stems = new Set([...taken].map((file) => file.replace(/\.[^.]+$/, '')))
-  return `${claimKey(stem, stems)}.${extension}`
+  return `${claimKey(`${stem || 'image'}-${id}`, stems)}.${extension}`
 }
 
 /**

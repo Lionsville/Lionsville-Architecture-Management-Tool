@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  ImageError, MAX_IMAGE_BYTES, imageFileName, imageMediaType, isImageFile, readImageFile,
+  ImageError, MAX_IMAGE_BYTES, imageFileName, imageId, imageMediaType, isImageFile, readImageFile,
   takenImageFiles,
 } from './documentImage'
 
@@ -31,37 +31,63 @@ describe('imageMediaType', () => {
 })
 
 describe('imageFileName', () => {
-  it('slugs the name it arrived with', () => {
-    expect(imageFileName('Cutover Routing.png', 'image/png', new Set())).toBe('cutover-routing.png')
+  const id = 'k1'
+
+  it('slugs the name it arrived with, and stamps it with the id', () => {
+    expect(imageFileName('Cutover Routing.png', 'image/png', new Set(), id)).toBe('cutover-routing-k1.png')
   })
 
   it('takes the extension from the type, not from the name', () => {
     // A JPEG called `.png` written as `.png` is a file nothing can read back:
     // the extension is all the folder reader has to go on.
-    expect(imageFileName('diagram.png', 'image/jpeg', new Set())).toBe('diagram.jpg')
+    expect(imageFileName('diagram.png', 'image/jpeg', new Set(), id)).toBe('diagram-k1.jpg')
   })
 
-  it('does not collide with a name already taken', () => {
-    const taken = new Set(['plan.png'])
-    const next = imageFileName('plan.png', 'image/png', taken)
-    expect(next).not.toBe('plan.png')
+  it('mints a different id for a different moment, so two machines do not collide', () => {
+    // Two people adding `slide1.png` each on their own machine share no
+    // library to claim against; the moment in the name is what keeps a sync
+    // from keeping one picture under the other's name.
+    const a = imageFileName('slide1.png', 'image/png', new Set(), imageId(1_000_000))
+    const b = imageFileName('slide1.png', 'image/png', new Set(), imageId(1_000_001))
+    expect(a).not.toBe(b)
+    expect(a).toMatch(/^slide1-[0-9a-z]+\.png$/)
+  })
+
+  it('still does not collide with a name already taken', () => {
+    const taken = new Set(['plan-k1.png'])
+    const next = imageFileName('plan.png', 'image/png', taken, id)
+    expect(next).not.toBe('plan-k1.png')
     expect(next.endsWith('.png')).toBe(true)
   })
 
   it('keeps two formats of one name apart', () => {
     // Claimed on the stem, so `plan.png` does not let `plan.jpg` through.
-    expect(imageFileName('plan.jpg', 'image/jpeg', new Set(['plan.png']))).not.toBe('plan.jpg')
+    expect(imageFileName('plan.jpg', 'image/jpeg', new Set(['plan-k1.png']), id)).not.toBe('plan-k1.jpg')
+  })
+
+  it('cuts a slide title down to something a folder listing can show', () => {
+    const long = 'Target state architecture after the warehouse consolidation programme, phase two.png'
+    const file = imageFileName(long, 'image/png', new Set(), id)
+    expect(file.length).toBeLessThanOrEqual(40 + 1 + id.length + 4)
+    expect(file).toMatch(/^target-state-architecture-after-the-ware-k1\.png$/)
   })
 
   it('has something to call a file with no usable name', () => {
-    expect(imageFileName('.png', 'image/png', new Set())).toBe('image.png')
+    expect(imageFileName('.png', 'image/png', new Set(), id)).toBe('image-k1.png')
+  })
+
+  it('mints the id from the moment, in base 36', () => {
+    expect(imageId(0)).toBe('0')
+    expect(imageId(36)).toBe('10')
+    expect(imageId()).toMatch(/^[0-9a-z]+$/)
   })
 })
 
 describe('readImageFile', () => {
   it('reads a file into an entry addressed by its name', async () => {
     const image = await readImageFile({ name: 'Cutover.png', type: 'image/png', size: 100 }, new Set(), read)
-    expect(image).toEqual({ file: 'cutover.png', url: png })
+    expect(image.url).toBe(png)
+    expect(image.file).toMatch(/^cutover-[0-9a-z]+\.png$/)
   })
 
   it('refuses a format it cannot write, as a key', async () => {
