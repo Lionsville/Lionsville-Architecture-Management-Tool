@@ -106,6 +106,12 @@ export function decisionList(model: Model): Adr[] {
   return model.order.decisions.map((id) => by[id])
 }
 
+/** The plans in the order the file had them (ADR-0009). */
+export function transitionList(model: Model): Transition[] {
+  const by = transitionsOf(model)
+  return model.order.transitions.map((id) => by[id])
+}
+
 export function placementList(diagram: Diagram): DiagramPlacement[] {
   return diagram.order.placements.map((id) => diagram.placements[id])
 }

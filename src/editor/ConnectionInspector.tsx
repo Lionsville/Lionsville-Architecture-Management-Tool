@@ -175,7 +175,9 @@ export function ConnectionInspector({
     setActiveTab(0);
   }
 
-  const generalHasValues = Boolean(connection.label || connection.protocol);
+  const generalHasValues = Boolean(
+    connection.label || connection.protocol || connection.validFrom || connection.validUntil,
+  );
   const appearanceHasValues = Boolean(
     connection.color ||
       connection.lineStyle ||
@@ -227,6 +229,29 @@ export function ConnectionInspector({
             placeholder={t('field.protocolPlaceholder')}
             onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
           />
+          {/* The days this line is there (ADR-0009). Empty on almost every
+              line: one with no window follows the elements it joins, and only
+              the temporary lines of a hybrid run need their own. */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              type="date"
+              label={t('field.validFrom')}
+              value={connection.validFrom ?? ''}
+              sx={{ flex: 1 }}
+              disabled={readOnly}
+              slotProps={{ inputLabel: { shrink: true } }}
+              onChange={(e) => update({ validFrom: e.target.value || undefined })}
+            />
+            <TextField
+              type="date"
+              label={t('field.validUntil')}
+              value={connection.validUntil ?? ''}
+              sx={{ flex: 1 }}
+              disabled={readOnly}
+              slotProps={{ inputLabel: { shrink: true } }}
+              onChange={(e) => update({ validUntil: e.target.value || undefined })}
+            />
+          </Box>
           <TextField
             select
             label={t('field.direction')}

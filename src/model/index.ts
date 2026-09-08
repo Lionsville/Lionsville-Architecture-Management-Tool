@@ -25,13 +25,13 @@ export type {
 } from './normalised'
 export {
   fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf,
-  elementList, connectionList, diagramList, decisionList, placementList, routeList,
+  elementList, connectionList, diagramList, decisionList, transitionList, placementList, routeList,
 } from './normalised'
 
 /** Where a thing is on a given day (ADR-0009). */
 export {
-  connectionLiveAt, DATED_PHASES, datesIn, datesInOrder, hasDates, isDay, LIFECYCLE_ORDER,
-  phaseAt, today,
+  connectionLiveAt, DATED_PHASES, datesIn, datesInOrder, daysBetween, hasDates, isDay,
+  LIFECYCLE_ORDER, phaseAt, today,
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'
 

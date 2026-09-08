@@ -19,7 +19,11 @@ import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
-import { decisionsToCommands, transaction } from '../model'
+import {
+  addDays, decisionsToCommands, isDay, nextTransitionNumber, shiftDays, transaction,
+  transitionList, transitionsOf,
+} from '../model'
+import type { Command } from '../model'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { SearchHit } from '../search/search'
@@ -41,6 +45,8 @@ import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
+import { RoadmapPage } from '../roadmap'
+import type { RoadmapActions } from '../roadmap'
 import { imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
@@ -367,6 +373,10 @@ export function ProjectWorkspace({
    */
   const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
+  const [roadmapOpen, setRoadmapOpen] = useState(false)
+  // The clock, read once per render of the workspace rather than per component:
+  // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
+  const todayDay = useMemo(() => today(), [today])
   const [searchOpen, setSearchOpen] = useState(false)
 
   const openDocumentation = useCallback((elementId?: string) => {
@@ -429,6 +439,65 @@ export function ProjectWorkspace({
    * the model. The page hands back the whole list; what actually moved becomes
    * one undo step, so ⌘Z puts back a record rather than a list.
    */
+  /**
+   * What the roadmap may do (ADR-0009).
+   *
+   * Every one of them is a command, so a plan written, moved or thrown away is
+   * one undo step and one Activity line, exactly like a node dragged. The shift
+   * is the only interesting one: it moves the plan's own window and the dates
+   * on the elements it introduces and retires, in one transaction, because a
+   * plan slipping is one thing that happened.
+   */
+  const roadmapActions = useMemo<RoadmapActions>(() => ({
+    addTransition(title) {
+      const model = session.indexed()
+      const list = transitionList(model)
+      const number = nextTransitionNumber(list)
+      session.dispatch({
+        type: 'transition.add',
+        transition: {
+          id: makeId('tr'), number, title, status: 'draft',
+          elements: [], decisions: [], milestones: [], body: '',
+        },
+      })
+    },
+    updateTransition(id, patch) {
+      session.dispatch({ type: 'transition.update', id, patch, coalesce: `plan:${id}` })
+    },
+    removeTransition(id) {
+      session.dispatch({ type: 'transition.remove', id })
+    },
+    shiftTransition(id, days) {
+      const model = session.indexed()
+      const plan = transitionsOf(model)[id]
+      if (!plan || !days) return
+      const moved = shiftDays(plan, days)
+      const commands: Command[] = [{ type: 'transition.update', id, patch: moved }]
+      // The dates on what it introduces and retires are the elements' own, so
+      // they move as element updates beside the plan rather than inside it.
+      for (const one of plan.elements) {
+        if (one.role === 'changes') continue
+        const element = model.elements[one.elementId]
+        const dates = element?.lifecycleDates
+        if (!element || !dates) continue
+        const shifted = Object.fromEntries(
+          Object.entries(dates).map(([phase, day]) => [phase, isDay(day) ? addDays(day, days) : day]),
+        )
+        commands.push({ type: 'element.update', id: one.elementId, patch: { lifecycleDates: shifted } })
+      }
+      session.dispatch(transaction(commands))
+    },
+    setAsOf(day) {
+      const id = session.currentActiveId()
+      if (!id) return
+      session.dispatch({ type: 'diagram.update', id, patch: { asOf: day }, coalesce: `asOf:${id}` })
+    },
+    onOpenElement(id) {
+      setRoadmapOpen(false)
+      setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
+    },
+  }), [session, makeId])
+
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {
     const commands = decisionsToCommands(session.indexed(), next)
     if (commands.length) session.dispatch(transaction(commands))
@@ -471,6 +540,7 @@ export function ProjectWorkspace({
         onOpenSettings={openSettings}
         onOpenDocumentation={() => openDocumentation()}
         onOpenDecisions={() => openDecisions()}
+        onOpenRoadmap={() => setRoadmapOpen(true)}
         onOpenSearch={() => setSearchOpen(true)}
         activity={session.history}
         agent={agentBar}
@@ -586,6 +656,16 @@ export function ProjectWorkspace({
         onOpenHistory={snapshots.available
           ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
           : undefined}
+        windowChrome={windowChrome}
+      />
+      <RoadmapPage
+        open={roadmapOpen}
+        model={session.model}
+        today={todayDay}
+        asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
+        readOnly={false}
+        actions={roadmapActions}
+        onClose={() => setRoadmapOpen(false)}
         windowChrome={windowChrome}
       />
       <GlobalSearchDialog

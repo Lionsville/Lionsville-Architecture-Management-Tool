@@ -15,6 +15,7 @@
 import { EN as adapters } from '../adapters/strings/en'
 import { EN as app } from '../app/strings/en'
 import { EN as decisions } from '../decisions/strings/en'
+import { EN as roadmap } from '../roadmap/strings/en'
 import { EN as documentation } from '../documentation/strings/en'
 import { EN as editor } from '../editor/strings/en'
 import { EN as common } from './strings/en'
@@ -27,6 +28,7 @@ export const EN = {
   ...adapters,
   ...app,
   ...decisions,
+  ...roadmap,
   ...documentation,
   ...editor,
   ...common,

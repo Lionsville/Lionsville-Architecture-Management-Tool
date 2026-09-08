@@ -120,6 +120,21 @@ export function today(now: Date = new Date()): string {
 }
 
 /**
+ * Whole days from one day to another; negative when the second is earlier.
+ *
+ * UTC, for the reason {@link ../model/transition#addDays} is: a calendar day is
+ * not an instant, and a local `Date` built from two of them across a
+ * daylight-saving change is 23 or 25 hours apart rather than 24.
+ */
+export function daysBetween(from: string, to: string): number {
+  const at = (day: string) => {
+    const [year, month, date] = day.split('-').map(Number)
+    return Date.UTC(year, month - 1, date)
+  }
+  return Math.round((at(to) - at(from)) / 86_400_000)
+}
+
+/**
  * Every day a model has an opinion about, sorted and deduplicated.
  *
  * What a roadmap's axis is drawn from, and what a "what changes between these

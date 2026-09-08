@@ -48,7 +48,7 @@ import tseslint from 'typescript-eslint'
  */
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions',
-  'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
+  'roadmap', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
 ]
 
 const MAY_IMPORT = {
@@ -59,7 +59,8 @@ const MAY_IMPORT = {
   widgets: ['i18n'],
   documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
-  search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
+  roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
+  search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'roadmap'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'ports'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'search'],
@@ -76,7 +77,8 @@ const WHY = {
   widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
-  search: 'search reads what it searches — the model, documentation, decisions — and nothing that draws them.',
+  roadmap: 'A roadmap is the model on a time axis, and the plans over it. It does not know how a landscape is drawn or where it is saved.',
+  search: 'search reads what it searches — the model, documentation, decisions, plans — and nothing that draws them.',
   projects: 'A project is what is saved and reopened: the model, its decisions, and the ports it is saved through.',
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
   agent: 'An agent asks about the landscape in the landscape\'s own terms. It does not know how the model is drawn or where it is saved.',

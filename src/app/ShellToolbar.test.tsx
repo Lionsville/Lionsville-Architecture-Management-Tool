@@ -29,6 +29,7 @@ const props = {
   onOpenSettings: () => {},
   onOpenDocumentation: () => {},
   onOpenDecisions: () => {},
+  onOpenRoadmap: () => {},
   onOpenSearch: () => {},
   activity: () => [],
   s: translator('en'),

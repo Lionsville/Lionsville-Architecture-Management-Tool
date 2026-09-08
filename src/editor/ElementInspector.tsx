@@ -11,6 +11,8 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
+import { DATED_PHASES } from '../model/lifecycle';
+import type { DatedPhase } from '../model/lifecycle';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor } from '../model/aspects';
 import { LogoGrid } from './nodes/LogoGrid';
@@ -129,6 +131,24 @@ function TabLabel({ text, dot }: { text: string; dot: boolean }) {
  * Tab selection is per-selection in-memory state
  * and resets to General when the selected element id changes.
  */
+/**
+ * A patch for one phase's date, with the whole object rebuilt.
+ *
+ * Rebuilt rather than mutated because the reducer judges the dates the element
+ * would END UP with, and it compares by value: clearing a field has to remove
+ * the key, not leave it present and empty.
+ */
+function withDate(
+  held: DesignElement['lifecycleDates'],
+  phase: DatedPhase,
+  day: string | undefined,
+): DesignElement['lifecycleDates'] {
+  const next = { ...held };
+  if (day) next[phase] = day;
+  else delete next[phase];
+  return Object.keys(next).length ? next : undefined;
+}
+
 export function ElementInspector(props: ElementInspectorProps) {
   const { element, readOnly, actions } = props;
   const { t } = useStrings();
@@ -286,6 +306,50 @@ export function ElementInspector(props: ElementInspectorProps) {
               label={<Typography variant="caption">{t('field.managed')}</Typography>}
             />
           </Box>
+
+          {/* The dates on the lifecycle above (ADR-0009). Optional throughout:
+              an element that says nothing about time behaves exactly as it did
+              before dates existed, and these three stay empty. */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {DATED_PHASES.map((phase) => (
+              <TextField
+                key={phase}
+                type="date"
+                label={t(`field.date.${phase}` as StringKey)}
+                value={element.lifecycleDates?.[phase] ?? ''}
+                sx={{ flex: 1 }}
+                disabled={readOnly}
+                slotProps={{ inputLabel: { shrink: true } }}
+                onChange={(e) => update({
+                  lifecycleDates: withDate(element.lifecycleDates, phase, e.target.value || undefined),
+                })}
+              />
+            ))}
+          </Box>
+
+          <TextField
+            select
+            label={t('field.successor')}
+            value={element.successorId ?? ''}
+            disabled={readOnly}
+            onChange={(e) => update({ successorId: e.target.value || undefined })}
+          >
+            <MenuItem value="">{t('field.notSet')}</MenuItem>
+            {props.model.elements
+              // Anything but itself: a successor is another thing in this
+              // landscape, and a self-reference would be a cycle in the checks.
+              .filter((other) => other.id !== element.id && other.kind === element.kind)
+              .map((other) => (
+                <MenuItem key={other.id} value={other.id}>{other.name}</MenuItem>
+              ))}
+          </TextField>
+
+          <TextField
+            label={t('field.owner')}
+            value={element.owner ?? ''}
+            disabled={readOnly}
+            onChange={(e) => typed('owner', { owner: e.target.value || undefined })}
+          />
 
           {!props.hideDescription && (
             <MarkdownField

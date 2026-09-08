@@ -410,6 +410,8 @@ export const EN = {
   'shell.noElements': 'There is nothing to document yet \u2014 add an element first.',
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
+  'shell.roadmap': 'Roadmap',
+  'shell.roadmapTip': 'The landscape on a time axis, the plans over it, and what the dates disagree about',
   'shell.activity': 'Activity',
   'shell.activityTip': 'What has changed in this project since you opened it',
   'shell.activityEmpty': 'Nothing yet',
