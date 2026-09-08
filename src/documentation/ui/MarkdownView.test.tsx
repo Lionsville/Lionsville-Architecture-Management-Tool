@@ -96,6 +96,38 @@ describe('MarkdownView', () => {
     expect(container.querySelector('pre')?.textContent).toContain('const x = 1')
   })
 
+  it('draws a picture the project holds, through the resolver', () => {
+    const { container } = renderShell(
+      <MarkdownView
+        markdown={'![Cutover](../images/cutover.png)'}
+        resolveImage={(src) => (src === '../images/cutover.png' ? 'data:image/png;base64,AQI=' : undefined)}
+      />,
+    )
+    const img = container.querySelector('img')
+    expect(img?.getAttribute('src')).toBe('data:image/png;base64,AQI=')
+    expect(img?.getAttribute('alt')).toBe('Cutover')
+  })
+
+  it('never fetches a remote image, whatever a description asks for', () => {
+    // The resolver is the allowlist. Anything it declines is drawn as its alt
+    // text, so a tracking pixel in somebody's markdown makes no request.
+    const resolveImage = vi.fn(() => undefined)
+    const { container } = renderShell(
+      <MarkdownView
+        markdown={'![Pixel](https://example.org/p.gif)\n\n![Gone](../images/missing.png)'}
+        resolveImage={resolveImage}
+      />,
+    )
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.textContent).toContain('Pixel')
+    expect(container.textContent).toContain('Gone')
+  })
+
+  it('draws nothing at all when no resolver was given', () => {
+    const { container } = renderShell(<MarkdownView markdown={'![x](../images/x.png)'} />)
+    expect(container.querySelector('img')).toBeNull()
+  })
+
   it('keeps the source on screen when the diagram cannot be drawn', async () => {
     const { container } = renderShell(
       <MarkdownView markdown={'```mermaid\nnot a diagram\n```'} renderMermaid={async () => { throw new Error('Parse error') }} />,

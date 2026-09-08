@@ -66,6 +66,10 @@ export const EN = {
   'shell.logoBadType': 'Only SVG and PNG files can be added as a logo.',
   'shell.logoTooBig': 'This logo is too big ({size} kB). The limit is {max} kB.',
   'shell.logoUnreadable': 'This file could not be read.',
+  /** The same three, for a picture in a document (ADR-0009). */
+  'shell.imageBadType': 'Only PNG, JPEG, SVG and WebP files can be added to a document.',
+  'shell.imageTooBig': 'This image is too big ({size} kB). The limit is {max} kB.',
+  'shell.imageUnreadable': 'This file could not be read.',
 
   // --- what a step is called, in the activity list (ADR-0002) ---------------
   'activity.nothing': 'Nothing',

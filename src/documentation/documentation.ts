@@ -336,4 +336,13 @@ export function documentTemplate(t: Translate): string {
  */
 export interface MarkdownRenderOptions {
   onElementLink?(elementId: string): void;
+  /**
+   * The picture behind an image source, when the project holds one (ADR-0009).
+   *
+   * Without it, and for any source it declines, the image is not drawn — this
+   * app does not fetch what a document asks it to. Must be stable across
+   * renders: the view memoises its components on it, and a new function every
+   * render remounts every block in the document.
+   */
+  resolveImage?(src: string): string | undefined;
 }

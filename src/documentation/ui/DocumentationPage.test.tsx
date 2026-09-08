@@ -101,6 +101,16 @@ function setup(overrides: Partial<DocumentationPageProps> = {}) {
 
 const source = () => screen.queryByLabelText('Documentation source (markdown)') as HTMLTextAreaElement | null;
 
+/** A pasted or dropped file, as the two events carry it. */
+function imageFile(name = 'Screenshot.png'): File {
+  return new File([new Uint8Array([1, 2])], name, { type: 'image/png' });
+}
+
+/** jsdom has no clipboard or drag payload; both events read the same two fields. */
+function transfer(files: File[], text = '') {
+  return { files, items: [], types: files.length ? ['Files'] : [], getData: () => text };
+}
+
 describe('DocumentationPage', () => {
   it('offers the description\'s history only where the host has one to show (ADR-0008)', () => {
     setup();
@@ -118,6 +128,72 @@ describe('DocumentationPage', () => {
     expect(screen.getByTestId('source').textContent).toBe('Holds every order until [Billing](element:e2) takes it.');
     expect(screen.getByRole('heading', { name: 'Order Management' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
+  });
+
+  it('takes a pasted picture in and writes the reference where the caret is', async () => {
+    const onAddImage = vi.fn(async () => 'screenshot.png');
+    setup({ element: element({ description: 'Before.' }), onAddImage });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    const area = source()!;
+    area.setSelectionRange(area.value.length, area.value.length);
+
+    await act(async () => {
+      fireEvent.paste(area, { clipboardData: transfer([imageFile()]) });
+    });
+
+    expect(onAddImage).toHaveBeenCalledTimes(1);
+    expect(source()!.value).toContain('![Screenshot](../images/screenshot.png)');
+  });
+
+  it('writes nothing when the host refuses the picture', async () => {
+    // The refusal has already been shown as a toast; a broken reference in the
+    // document on top of it would be the second bad thing to happen.
+    const onAddImage = vi.fn(async () => undefined);
+    setup({ element: element({ description: 'Before.' }), onAddImage });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    await act(async () => {
+      fireEvent.paste(source()!, { clipboardData: transfer([imageFile()]) });
+    });
+
+    expect(onAddImage).toHaveBeenCalled();
+    expect(source()!.value).toBe('Before.');
+  });
+
+  it('lets ordinary text through, even when a picture rides along with it', async () => {
+    // Copying from a rich document carries both; the words are what was meant.
+    const onAddImage = vi.fn(async () => 'x.png');
+    setup({ element: element({ description: 'Before.' }), onAddImage });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    await act(async () => {
+      fireEvent.paste(source()!, { clipboardData: transfer([imageFile()], 'some words') });
+    });
+
+    expect(onAddImage).not.toHaveBeenCalled();
+  });
+
+  it('takes a dropped picture the same way', async () => {
+    const onAddImage = vi.fn(async () => 'plan.png');
+    setup({ element: element({ description: '' }), onAddImage });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    await act(async () => {
+      fireEvent.drop(source()!, { dataTransfer: transfer([imageFile('Plan.png')]) });
+    });
+
+    expect(source()!.value).toContain('![Plan](../images/plan.png)');
+  });
+
+  it('offers no picture affordance to a host that cannot take one', async () => {
+    setup({ element: element({ description: 'Before.' }) });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    await act(async () => {
+      fireEvent.paste(source()!, { clipboardData: transfer([imageFile()]) });
+    });
+
+    expect(source()!.value).toBe('Before.');
   });
 
   it('offers no Edit to a read-only reader', () => {

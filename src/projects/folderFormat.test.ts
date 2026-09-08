@@ -54,6 +54,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
     ref: REF,
     activeDiagramId: 'l7',
     logoLibrary: [{ key: 'lib:own', label: 'Own', url: 'data:image/svg+xml;base64,PHN2Zy8+' }],
+    imageLibrary: [{ file: 'cutover.png', url: 'data:image/png;base64,AQI=' }],
     ...over,
     model,
   }
@@ -88,6 +89,7 @@ describe('projectFiles', () => {
       'diagrams/l7.json',
       'diagrams/l7.placements.json',
       'docs/crews.md',
+      'images/cutover.png',
       'logos/own.svg',
       'model.json',
       'project.json',
@@ -112,6 +114,34 @@ describe('projectFiles', () => {
 
   it('writes an uploaded mark as an image a person can open', () => {
     expect(textOf(projectFiles(project()), 'logos/own.svg')).toBe('<svg/>')
+  })
+
+  it('writes a document picture as the file its markdown names, and nothing in the header', () => {
+    const files = projectFiles(project())
+    const image = files.find((file) => file.path === 'images/cutover.png')
+    // Bytes, not base64 in a JSON string: the folder holds a real PNG.
+    expect(image && 'bytes' in image && [...image.bytes]).toEqual([1, 2])
+    // The file name IS the reference, so `project.json` has no list to drift.
+    expect(textOf(files, PROJECT_FILE)).not.toContain('cutover')
+  })
+
+  it('writes an SVG picture as text, so it diffs as the XML it is', () => {
+    const files = projectFiles(project({
+      imageLibrary: [{ file: 'flow.svg', url: 'data:image/svg+xml;base64,PHN2Zy8+' }],
+    }))
+    expect(textOf(files, 'images/flow.svg')).toBe('<svg/>')
+  })
+
+  it('will not write a picture whose name is not one it can read back', () => {
+    const files = projectFiles(project({
+      imageLibrary: [
+        { file: 'ok.png', url: 'data:image/png;base64,AQI=' },
+        { file: 'nested/x.png', url: 'data:image/png;base64,AQI=' },
+        { file: 'notes.md', url: 'data:image/png;base64,AQI=' },
+        { file: 'ok.png', url: 'data:image/png;base64,AwQ=' },
+      ],
+    }))
+    expect(paths(files).filter((path) => path.startsWith('images/'))).toEqual(['images/ok.png'])
   })
 
   it('names the format and the tool, so a folder says what it is', () => {
@@ -225,6 +255,31 @@ describe('projectFromFolder', () => {
       .toEqual(['l7', 'containers', 'extra'])
   })
 
+  it('reads the pictures back off the folder, which is their whole index', () => {
+    const back = projectFromFolder(projectFiles(project()), REF)
+    expect(back?.imageLibrary).toEqual([{ file: 'cutover.png', url: 'data:image/png;base64,AQI=' }])
+  })
+
+  it('picks up a picture somebody dropped in by hand, and ignores what is not one', () => {
+    const files = [
+      ...projectFiles(project()),
+      { path: 'images/whiteboard.jpg', bytes: new Uint8Array([3, 4]) },
+      { path: 'images/notes.md', text: 'not a picture' },
+      { path: 'images/nested/deep.png', bytes: new Uint8Array([5]) },
+    ]
+    expect(projectFromFolder(files, REF)?.imageLibrary).toEqual([
+      { file: 'cutover.png', url: 'data:image/png;base64,AQI=' },
+      { file: 'whiteboard.jpg', url: 'data:image/jpeg;base64,AwQ=' },
+    ])
+  })
+
+  it('says nothing rather than nothing-at-all for a project with no pictures', () => {
+    // Absent, not empty: there is no `images/` folder to write the difference
+    // into, so a round trip must not invent one.
+    const back = projectFromFolder(projectFiles(project({ imageLibrary: [] })), REF)
+    expect(back && 'imageLibrary' in back).toBe(false)
+  })
+
   it('picks up a mark somebody dropped in by hand', () => {
     const files = [...projectFiles(project()), { path: 'logos/Extra.png', bytes: new Uint8Array([1, 2]) }]
     expect(projectFromFolder(files, REF)?.logoLibrary).toContainEqual({
@@ -330,6 +385,7 @@ describe('isFormatPath', () => {
     for (const path of [
       'README.md', 'notes.txt', '.git/config', 'decisions/README.md', 'logos/source.ai',
       'diagrams/old/l7.json', 'budget.xlsx', 'docs/pictures/one.png', '../escape.json',
+      'images/source.psd', 'images/notes.md', 'images/nested/one.png',
     ]) {
       expect(isFormatPath(path), path).toBe(false)
     }

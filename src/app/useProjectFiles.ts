@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import type { Translate } from '../i18n'
 import { reasonOf } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
+import { readImageFile, takenImageFiles } from '../model/documentImage'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
 import { toInterchange } from '../model/toInterchange'
 import { refPath } from '../projects/projectRef'
@@ -50,6 +51,11 @@ export type ProjectFiles = {
    */
   openDocument: (name: string, bytes: Uint8Array) => void
   addLogo: (file: File) => void
+  /**
+   * A picture into the project, answering with the file name to refer to, or
+   * `undefined` when it was refused — the refusal has already been shown.
+   */
+  addImage: (file: File) => Promise<string | undefined>
 }
 
 /**
@@ -157,5 +163,24 @@ export function useProjectFiles(deps: {
       .catch((err: unknown) => notify(messageFor(err, s), 'error'))
   }, [documents, session, notify, s])
 
-  return { saveWorkingFile, saveInterchange, openFile, openDocument, addLogo }
+  /**
+   * Take a pasted, dropped or chosen picture into the project, and answer with
+   * the file name a document should refer to (ADR-0009).
+   *
+   * `undefined` on a refusal rather than a rejection: the caller is a caret in
+   * a textarea, and it wants to know whether to write a line — the reason has
+   * already been shown as a toast, here where the language is known.
+   */
+  const addImage = useCallback((file: File): Promise<string | undefined> =>
+    readImageFile(file, takenImageFiles(session.currentImages()), () => documents.readDataUrl(file))
+      .then((image) => {
+        session.setImageLibrary((library) => [...library, image])
+        return image.file
+      })
+      .catch((err: unknown) => {
+        notify(messageFor(err, s), 'error')
+        return undefined
+      }), [documents, session, notify, s])
+
+  return { saveWorkingFile, saveInterchange, openFile, openDocument, addLogo, addImage }
 }

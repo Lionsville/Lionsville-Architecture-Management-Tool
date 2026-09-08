@@ -355,6 +355,21 @@ export interface UploadedLogo {
   url: string;
 }
 
+/**
+ * A picture a document holds (ADR-0009).
+ *
+ * Addressed by its file name and nothing else — `images/<file>` in the project
+ * folder, `![](../images/<file>)` in the markdown — so the reference means the
+ * same thing to this app and to every other markdown reader. See
+ * {@link ./documentImage}.
+ */
+export interface DocumentImage {
+  /** The name inside `images/`, extension included. Unique in a project. */
+  file: string;
+  /** The bytes, as a data URL. The app never fetches one over the network. */
+  url: string;
+}
+
 /** Axis-aligned rectangle in flow coordinates. */
 export interface Rect {
   x: number;

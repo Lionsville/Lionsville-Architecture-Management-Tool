@@ -41,5 +41,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.insertTemplate': 'Begin met het sjabloon',
   'doc.emptyHint': 'Schakel naar Bewerken om te schrijven, of begin met het sjabloon.',
   'doc.markdownHint': 'Markdown. [[Naam]] verwijst naar een ander element.',
+  'doc.markdownImageHint': 'Markdown. [[Naam]] verwijst naar een ander element; plak of sleep een afbeelding om er een toe te voegen.',
   'adr.mermaidFailed': 'Dit diagram kon niet worden getekend.',
 }

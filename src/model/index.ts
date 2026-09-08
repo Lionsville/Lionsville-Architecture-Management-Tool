@@ -10,7 +10,7 @@
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
   Lifecycle, DesignElement, DesignParameters, DesignConnection, EdgeLineStyle, EdgeRouting,
-  EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DiagramPlacement, DesignDiagram,
+  EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramPlacement, DesignDiagram,
   DesignModel, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'

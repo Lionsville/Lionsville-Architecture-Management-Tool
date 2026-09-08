@@ -9,5 +9,11 @@ import type { MarkdownRenderOptions } from '../documentation'
 import { MarkdownView } from './MarkdownView'
 
 export function renderMarkdown(markdown: string, options?: MarkdownRenderOptions) {
-  return <MarkdownView markdown={markdown} onElementLink={options?.onElementLink} />
+  return (
+    <MarkdownView
+      markdown={markdown}
+      onElementLink={options?.onElementLink}
+      resolveImage={options?.resolveImage}
+    />
+  )
 }

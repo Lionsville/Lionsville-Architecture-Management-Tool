@@ -13,6 +13,7 @@
  * diagrams/<id>.placements.json     where its elements ended up
  * docs/<elementId>.md               an element's description, as prose
  * decisions/[<applicationId>/]NNNN-<slug>.md
+ * images/<file>.png | .jpg | .svg   pictures the documents show
  * logos/<key>.svg | .png            uploaded marks, as images
  * ```
  *
@@ -35,9 +36,10 @@
 import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
-  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, EdgeRoute,
-  UploadedLogo,
+  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramPlacement,
+  DocumentImage, EdgeRoute, UploadedLogo,
 } from '../model'
+import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { slug } from '../model/keys'
@@ -62,6 +64,7 @@ export const MODEL_FILE = 'model.json'
 export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
+export const IMAGES_FOLDER = 'images'
 export const GROUP_FILE = 'group.json'
 export { DECISIONS_FOLDER }
 
@@ -207,8 +210,53 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
     files.push({ path: adrPath(adr), text: adrFileText(adr) })
   }
 
+  files.push(...imageFiles(project.imageLibrary ?? []))
+
   files.push({ path: PROJECT_FILE, text: stableJson(header(project, files)) })
   return files.sort(byPath)
+}
+
+/**
+ * The pictures, as files.
+ *
+ * Unlike the marks, nothing in `project.json` names these: the file name IS the
+ * reference, because that is what the markdown holds (ADR-0009). So there is no
+ * list to keep in step with the folder, and a picture somebody drops into
+ * `images/` by hand is a picture their documents can use immediately.
+ *
+ * An SVG is written as text and everything else as bytes, which is the rule the
+ * marks already follow: an SVG is XML and should diff as XML.
+ */
+function imageFiles(library: readonly DocumentImage[]): FolderFile[] {
+  const files: FolderFile[] = []
+  const written = new Set<string>()
+  for (const image of library) {
+    // A name with a slash in it is not a file in `images/`, and a duplicate
+    // would be two entries fighting over one path.
+    if (!isImageFile(image.file) || image.file.includes('/') || written.has(image.file)) continue
+    const held = readDataUrl(image.url)
+    if (!held) continue
+    written.add(image.file)
+    const path = `${IMAGES_FOLDER}/${image.file}`
+    files.push(image.file.toLowerCase().endsWith('.svg')
+      ? { path, text: textFromBytes(held.bytes) }
+      : { path, bytes: held.bytes })
+  }
+  return files
+}
+
+/** Every picture in the folder, by name. The folder is the whole index. */
+function readImages(folder: Folder): DocumentImage[] {
+  const images: DocumentImage[] = []
+  for (const path of [...folder.keys()].sort()) {
+    if (!path.startsWith(`${IMAGES_FOLDER}/`)) continue
+    const file = path.slice(IMAGES_FOLDER.length + 1)
+    if (file.includes('/')) continue
+    const mediaType = imageMediaType(file)
+    if (!mediaType) continue
+    images.push({ file, url: markFor(folder.get(path)!, mediaType) })
+  }
+  return images
 }
 
 /**
@@ -288,6 +336,7 @@ export function isFormatPath(path: string): boolean {
   if (folder === DIAGRAMS_FOLDER) return rest.length === 1 && name.endsWith('.json')
   if (folder === DOCS_FOLDER) return rest.length === 1 && name.endsWith('.md')
   if (folder === LOGOS_FOLDER) return rest.length === 1 && /\.(svg|png)$/.test(name)
+  if (folder === IMAGES_FOLDER) return rest.length === 1 && isImageFile(name)
   if (folder === DECISIONS_FOLDER) return rest.length <= 2 && /^\d{1,6}-.*\.md$/.test(name)
   return false
 }
@@ -528,12 +577,17 @@ export function projectFromFolder(
     diagrams: ordered,
   }
 
+  // Absent rather than empty when there are none, so a project with no
+  // pictures round-trips to exactly the snapshot it came from.
+  const images = readImages(folder)
+
   return {
     ref,
     model,
     activeDiagramId: resolveActive(model, typeof held.activeDiagramId === 'string'
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
+    ...(images.length ? { imageLibrary: images } : {}),
   }
 }
 

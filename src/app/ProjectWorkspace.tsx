@@ -41,6 +41,8 @@ import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
+import { imageSrcFile } from '../documentation'
+import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
 import type { ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
@@ -173,6 +175,28 @@ export function ProjectWorkspace({
   // points with it too.
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | undefined>(undefined)
   const files = useProjectFiles({ session, documents, notify, s })
+
+  /**
+   * The picture behind an image source, or nothing — which is the whole of the
+   * "this app does not fetch" rule for documents (ADR-0009).
+   *
+   * Stable for the life of the workspace, deliberately: `MarkdownView` memoises
+   * its component table on this function, so a new one per render would remount
+   * every block in every document and redraw every mermaid diagram. It reads
+   * the library through the session instead, and a picture just added shows
+   * because adding one also writes a line into the document, which is what the
+   * view actually re-renders on.
+   */
+  const resolveImage = useCallback((src: string): string | undefined => {
+    const file = imageSrcFile(src)
+    return file ? session.currentImages().find((image) => image.file === file)?.url : undefined
+  }, [session])
+
+  /** The shared renderer, with this project's pictures behind it. */
+  const renderDocument = useCallback(
+    (md: string, options?: MarkdownRenderOptions) => renderMarkdown(md, { ...options, resolveImage }),
+    [resolveImage],
+  )
 
   /**
    * What the bar says about saving. Two pieces of state, not one: the last
@@ -502,7 +526,8 @@ export function ProjectWorkspace({
             client: groupClient ?? groupNameOf(session.model),
             author: session.model.defaultAuthor,
           }}
-          renderMarkdown={renderMarkdown}
+          renderMarkdown={renderDocument}
+          onAddImage={files.addImage}
           windowChrome={windowChrome}
           onForceSave={forceSave}
           onHandle={onEditorHandle}
@@ -556,7 +581,7 @@ export function ProjectWorkspace({
         language={language}
         makeId={makeId}
         today={today}
-        renderMarkdown={renderMarkdown}
+        renderMarkdown={renderDocument}
         onOpenElement={(elementId) => openDocumentation(elementId)}
         onOpenHistory={snapshots.available
           ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }

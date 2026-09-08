@@ -45,6 +45,11 @@ export type MarkdownViewProps = {
   onElementLink?: (elementId: string) => void
   /** How a ```mermaid fence is drawn. The default loads mermaid on first use; a test hands in a fake. */
   renderMermaid?: MermaidRenderer
+  /**
+   * The picture behind an image source. Anything it declines — and everything,
+   * without it — is drawn as its alt text instead. See the note on `img` below.
+   */
+  resolveImage?: (src: string) => string | undefined
 }
 
 /**
@@ -89,7 +94,11 @@ function heading(size: string, weight = 600) {
 
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
-function components(onElementLink: ((elementId: string) => void) | undefined, context: BlockContext): Components {
+function components(
+  onElementLink: ((elementId: string) => void) | undefined,
+  context: BlockContext,
+  resolveImage: ((src: string) => string | undefined) | undefined,
+): Components {
   return {
     h1: heading('1.6em'),
     h2: heading('1.35em'),
@@ -173,7 +182,26 @@ function components(onElementLink: ((elementId: string) => void) | undefined, co
         {children}
       </Box>
     ),
-    img: ({ src, alt }) => <Box component="img" src={src} alt={alt ?? ''} sx={{ maxWidth: '100%', borderRadius: 1 }} />,
+    /**
+     * A picture, and only ever one this project holds (ADR-0009).
+     *
+     * The resolver is the allowlist: it answers for a file in the project's
+     * `images/` folder and for nothing else, so an `http(s)` source in a
+     * description — a tracking pixel, or a picture that stops existing —
+     * is never fetched by a tool that promises no network. What is left is the
+     * alt text, which is what a reader of the markdown would have seen anyway.
+     */
+    img: ({ src, alt }) => {
+      const url = src ? resolveImage?.(src) : undefined
+      if (!url) {
+        return (
+          <Box component="span" data-testid="image-missing" data-src={src} sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+            {alt || ''}
+          </Box>
+        )
+      }
+      return <Box component="img" src={url} alt={alt ?? ''} sx={{ maxWidth: '100%', borderRadius: 1, my: '0.7em' }} />
+    },
     table: ({ children }) => (
       <TableContainer sx={{ my: '0.7em', overflowX: 'auto' }}>
         <Table size="small" sx={{ width: 'auto', minWidth: '50%', '& td, & th': { fontSize: 'inherit', border: 1, borderColor: 'divider' } }}>
@@ -204,12 +232,15 @@ function alignOf(style: { textAlign?: string | number } | undefined): 'left' | '
  * thing: React sees the identical element and leaves the subtree alone.
  */
 export const MarkdownView = memo(function MarkdownView(
-  { markdown, onElementLink, renderMermaid }: MarkdownViewProps,
+  { markdown, onElementLink, renderMermaid, resolveImage }: MarkdownViewProps,
 ) {
   // Memoised, because these are component TYPES: a fresh set on every render
   // would remount every block, and a mermaid block that remounts draws again.
   const context = useMemo<BlockContext>(() => ({ renderMermaid }), [renderMermaid])
-  const comps = useMemo(() => components(onElementLink, context), [onElementLink, context])
+  const comps = useMemo(
+    () => components(onElementLink, context, resolveImage),
+    [onElementLink, context, resolveImage],
+  )
   const document = useMemo(() => (
     <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={comps}>
       {markdown}

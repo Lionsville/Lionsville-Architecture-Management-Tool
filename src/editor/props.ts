@@ -263,11 +263,13 @@ export interface EditorEditing {
 /**
  * What the editor is handed.
  *
- * A dozen entries, and each of them names one thing the host owns: what is
- * open, how it may change, who manages the tabs, where the marks come from,
- * what to do with a request from outside, what to say about a layout pass,
- * where view settings live, which language to speak — and four single
- * capabilities that belong to nothing larger.
+ * Eight groups, and each of them names one thing the host owns: what is open,
+ * how it may change, who manages the tabs, where the marks come from, what to
+ * do with a request from outside, what to say about a layout pass, where view
+ * settings live, which language to speak — and beside them the single
+ * capabilities that belong to nothing larger: the export's title block, a
+ * markdown renderer, a way to take in a picture, the window's own chrome, a
+ * force-save hook and the handle an agent is answered through.
  */
 /**
  * Where the host keeps a history, and wants to be asked for one thing's worth of
@@ -303,6 +305,16 @@ export interface SolutionDesignEditorProps {
    * the text still call it with one argument.
    */
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode;
+  /**
+   * Take a picture into the project, and answer with the file name a document
+   * should refer to — `undefined` when the host refused it (ADR-0009).
+   *
+   * The host owns this for the same reason it owns `renderMarkdown` and the
+   * mark library: where a project keeps its files is not something the canvas
+   * knows. Absent = no way to add a picture, which is the right state for a
+   * host with nowhere to put one, and the paste and drop affordances withdraw.
+   */
+  onAddImage?(file: File): Promise<string | undefined>;
   /**
    * What the host window paints over the top of a full-window view, and
    * whether that view's top bar has to double as the handle that moves the

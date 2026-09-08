@@ -60,6 +60,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.logoBadType': 'Alleen SVG- en PNG-bestanden kunnen als logo worden toegevoegd.',
   'shell.logoTooBig': 'Dit logo is te groot ({size} kB). Maximaal {max} kB.',
   'shell.logoUnreadable': 'Dit bestand kon niet worden gelezen.',
+  'shell.imageBadType': 'Alleen PNG-, JPEG-, SVG- en WebP-bestanden kunnen in een document worden opgenomen.',
+  'shell.imageTooBig': 'Deze afbeelding is te groot ({size} kB). Maximaal {max} kB.',
+  'shell.imageUnreadable': 'Dit bestand kon niet worden gelezen.',
 
   'activity.nothing': 'Niets',
   'activity.elementAdded': '{name} toegevoegd',

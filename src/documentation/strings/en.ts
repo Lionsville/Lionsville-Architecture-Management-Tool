@@ -42,5 +42,7 @@ export const EN = {
   'doc.insertTemplate': 'Start from the template',
   'doc.emptyHint': 'Switch to Edit to write, or start from the template.',
   'doc.markdownHint': 'Markdown. [[Name]] links to another element.',
+  /** The same, where the host can take a picture in (ADR-0009). */
+  'doc.markdownImageHint': 'Markdown. [[Name]] links to another element; paste or drop a picture to add one.',
   'adr.mermaidFailed': 'This diagram could not be drawn.',
 } as const

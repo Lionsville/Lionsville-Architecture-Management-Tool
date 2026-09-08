@@ -13,7 +13,7 @@
  * programme elsewhere. Mapping it here rather than carrying a second copy keeps
  * the export title block, the picker and the stored file from ever disagreeing.
  */
-import type { AspectConfigEntry, UploadedLogo } from '../model'
+import type { AspectConfigEntry, DocumentImage, UploadedLogo } from '../model'
 import { fromInterchange } from '../model/fromInterchange'
 import type { HostModel, InterchangeDoc } from '../model/fromInterchange'
 import {
@@ -34,6 +34,14 @@ export type ProjectSnapshot = {
   model: HostModel
   activeDiagramId: string
   logoLibrary: UploadedLogo[]
+  /**
+   * The pictures the documents show (ADR-0009).
+   *
+   * Optional, and absent rather than empty: a project with no pictures has no
+   * `images/` folder, and there is nowhere to write the difference between the
+   * two — the same reasoning as a model carrying no decisions.
+   */
+  imageLibrary?: DocumentImage[]
   /** ISO timestamp of the last save. Absent until a store has written it once. */
   updatedAt?: string
 }
@@ -147,8 +155,8 @@ export type OpenResult =
  *
  * `into` is the project being replaced: the file supplies the content, the open
  * project supplies where it is filed and — for an interchange document, which
- * by agreement carries no marks — the mark library, which belongs to this
- * browser rather than to the document.
+ * by agreement carries neither marks nor pictures — the two libraries, which
+ * belong to this project rather than to the document.
  */
 export function openProjectDocument(
   parsed: unknown,
@@ -180,6 +188,7 @@ export function openProjectDocument(
         model,
         activeDiagramId: resolveActive(model),
         logoLibrary: [...into.logoLibrary],
+        ...(into.imageLibrary?.length ? { imageLibrary: [...into.imageLibrary] } : {}),
       },
     }
   }

@@ -19,7 +19,10 @@
  * of the editor's DOM, so the canvas's keyboard shortcuts — Delete, F2,
  * Cmd+D — cannot reach a reader who is only scrolling a page.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useCallback, useEffect, useMemo, useRef, useState,
+  type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode,
+} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -42,6 +45,7 @@ import {
   linkElementRefs,
   outline,
 } from '../documentation';
+import { imageReference } from '../images';
 import { useStrings } from '../../i18n/LanguageContext';
 import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
@@ -88,6 +92,14 @@ export interface DocumentationPageProps {
   onRequestLogoUpload?(): void;
   /** The host keeps a history and can show this description's (ADR-0008). Absent: no button. */
   onOpenHistory?(): void;
+  /**
+   * Take a pasted or dropped picture into the project, answering with the file
+   * name to refer to — or `undefined` when the host refused it, in which case
+   * nothing is written and the host has already said why (ADR-0009).
+   *
+   * Absent = no way to add one, and neither affordance is offered.
+   */
+  onAddImage?(file: File): Promise<string | undefined>;
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
 }
@@ -209,6 +221,63 @@ export function DocumentationPage(props: DocumentationPageProps) {
     }
   };
 
+  // --- pictures ---------------------------------------------------------------
+
+  /**
+   * Write text where the caret is, and leave the caret after it.
+   *
+   * Against the textarea's own value rather than `draft`, because a paste and a
+   * drop both land while the value is whatever the person has just typed, and
+   * the state may be one render behind.
+   */
+  const insertAtCaret = useCallback((text: string) => {
+    const area = textareaRef.current;
+    if (!area) return;
+    const { selectionStart: start, selectionEnd: end, value } = area;
+    const next = value.slice(0, start) + text + value.slice(end);
+    setDraft(next);
+    const caret = start + text.length;
+    requestAnimationFrame(() => {
+      area.focus();
+      area.setSelectionRange(caret, caret);
+    });
+  }, []);
+
+  const addImages = useCallback((files: readonly File[]) => {
+    const add = props.onAddImage;
+    if (!add || readOnly) return;
+    // One at a time and in order, so two pictures dropped together arrive in
+    // the document in the order they were dropped rather than in whichever
+    // order the reads happened to finish.
+    void files.reduce(
+      (queue, file) => queue.then(() => add(file).then((name) => {
+        if (name) insertAtCaret(`\n\n${imageReference(name, file.name.replace(/\.[^.]+$/, ''))}\n\n`);
+      })),
+      Promise.resolve(),
+    );
+  }, [props.onAddImage, readOnly, insertAtCaret]);
+
+  const imagesIn = (list: FileList | null | undefined): File[] =>
+    Array.from(list ?? []).filter((file) => file.type.startsWith('image/'));
+
+  const onSourcePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = imagesIn(event.clipboardData?.files);
+    if (!files.length || !props.onAddImage) return;
+    // Only when it IS a picture: a copied screenshot carries no text, but text
+    // copied from a rich document can carry an image alongside it, and the
+    // words are what the person meant.
+    if (event.clipboardData?.getData('text/plain')) return;
+    event.preventDefault();
+    addImages(files);
+  };
+
+  const onSourceDrop = (event: DragEvent<HTMLTextAreaElement>) => {
+    const files = imagesIn(event.dataTransfer?.files);
+    if (!files.length || !props.onAddImage) return;
+    event.preventDefault();
+    addImages(files);
+  };
+
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
 
@@ -313,7 +382,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
             <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
-                  {t('doc.markdownHint')}
+                  {props.onAddImage ? t('doc.markdownImageHint') : t('doc.markdownHint')}
                 </Typography>
                 {!draft.trim() && (
                   <Button size="small" variant="outlined" onClick={insertTemplate}>
@@ -330,6 +399,8 @@ export function DocumentationPage(props: DocumentationPageProps) {
                 onChange={(e: { target: { value: string } }) => setDraft(e.target.value)}
                 onBlur={commit}
                 onKeyDown={onSourceKeyDown}
+                onPaste={onSourcePaste}
+                onDrop={onSourceDrop}
                 sx={{
                   flex: 1,
                   minHeight: 0,

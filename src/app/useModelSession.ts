@@ -19,7 +19,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
-import type { Command, CommandMeta, Model, StepSummary, UploadedLogo } from '../model'
+import type { Command, CommandMeta, DocumentImage, Model, StepSummary, UploadedLogo } from '../model'
 import { apply, fromArrays, summarise, toArrays, transaction } from '../model'
 import { idPolicy } from '../model/keys'
 import type { IdPolicy } from '../model/keys'
@@ -83,6 +83,9 @@ export type ModelSession = {
   editorKey: number
   logoLibrary: UploadedLogo[]
   setLogoLibrary: React.Dispatch<React.SetStateAction<UploadedLogo[]>>
+  /** The pictures the documents show (ADR-0009). Shell state, like the marks. */
+  imageLibrary: DocumentImage[]
+  setImageLibrary: React.Dispatch<React.SetStateAction<DocumentImage[]>>
 
   // --- the one way in -------------------------------------------------------
   /**
@@ -111,6 +114,8 @@ export type ModelSession = {
   indexed: () => Model
   currentActiveId: () => string
   currentLibrary: () => UploadedLogo[]
+  /** The pictures as they stand now, without waiting for a render. */
+  currentImages: () => DocumentImage[]
   /** The project as it stands now, ready to be saved. */
   snapshot: () => ProjectSnapshot
   /** Take on an entirely different document: an opened file, or the shipped one. */
@@ -129,6 +134,7 @@ export function useModelSession(deps: {
   // The mark library is shell state, not model state: it belongs to this browser
   // and to the working file, not to the interchange document.
   const [logoLibrary, setLogoLibrary] = useState<UploadedLogo[]>(initialProject.logoLibrary)
+  const [imageLibrary, setImageLibrary] = useState<DocumentImage[]>(initialProject.imageLibrary ?? [])
   const [editorKey, setEditorKey] = useState(0)
 
   const modelRef = useRef(model)
@@ -137,6 +143,8 @@ export function useModelSession(deps: {
   activeRef.current = activeId
   const logoRef = useRef(logoLibrary)
   logoRef.current = logoLibrary
+  const imageRef = useRef(imageLibrary)
+  imageRef.current = imageLibrary
 
   /**
    * The arrays for one indexed model, kept until that model is replaced. Not a
@@ -286,6 +294,8 @@ export function useModelSession(deps: {
     setActiveDiagramId(project.activeDiagramId)
     logoRef.current = project.logoLibrary
     setLogoLibrary(project.logoLibrary)
+    imageRef.current = project.imageLibrary ?? []
+    setImageLibrary(project.imageLibrary ?? [])
     if (remount) setEditorKey((k) => k + 1)
   }, [setActiveDiagramId, asArrays])
 
@@ -301,12 +311,15 @@ export function useModelSession(deps: {
     model: toArrays(modelRef.current),
     activeDiagramId: activeRef.current,
     logoLibrary: logoRef.current,
+    // Absent rather than empty, so a project with no pictures is written back
+    // as the project it was read as — see `ProjectSnapshot.imageLibrary`.
+    ...(imageRef.current.length ? { imageLibrary: imageRef.current } : {}),
   }), [ref])
 
   return {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId,
     ids: ids.current,
-    editorKey, logoLibrary, setLogoLibrary,
+    editorKey, logoLibrary, setLogoLibrary, imageLibrary, setImageLibrary,
     dispatch, undo, redo,
     canUndo: past.current.length > 0,
     canRedo: future.current.length > 0,
@@ -316,6 +329,7 @@ export function useModelSession(deps: {
     indexed: () => modelRef.current,
     currentActiveId: () => activeRef.current,
     currentLibrary: () => logoRef.current,
+    currentImages: () => imageRef.current,
     snapshot, adopt,
   }
 }
