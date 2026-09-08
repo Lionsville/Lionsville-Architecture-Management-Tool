@@ -104,6 +104,22 @@ export function connectionLiveAt(
   return true
 }
 
+/**
+ * Whether a date says this element is gone on `day`.
+ *
+ * Only a *dated* retirement answers yes: `retired` names the day it is gone,
+ * so a board on or after that day does not draw it, or the lines to it. An
+ * element stored as `retired` with no day is a different statement — "this
+ * is retired, and we are still drawing it" — and keeps its dimmed card.
+ */
+export function isGoneOn(
+  element: { lifecycleDates?: LifecycleDates },
+  day: string,
+): boolean {
+  const gone = element.lifecycleDates?.retired
+  return isDay(gone) && day >= gone
+}
+
 /** Whether this element or connection says anything about time at all. */
 export function hasDates(
   held: { lifecycleDates?: LifecycleDates; validFrom?: string; validUntil?: string },

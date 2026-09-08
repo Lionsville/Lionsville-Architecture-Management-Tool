@@ -16,9 +16,10 @@
  *
  * During the shadow run the interfaces still terminate on the old
  * application; the new one sees the same data by tapping the old. So the tap
- * runs old → new, is one line rather than a twin per interface, and ends on
- * cutover whatever the port table says — by then the last interface has
- * moved and there is nothing left to tap.
+ * runs old → new, is one line rather than a twin per interface, and ends the
+ * day before cutover whatever the port table says — cutover is the day the
+ * old one is *gone*, and a line valid on a day its end is gone is the first
+ * thing the checks would report.
  *
  * The words — the plan's title, the tap's label, the milestones, the body —
  * come in as arguments, because this file is the model and the model knows
@@ -26,6 +27,7 @@
  */
 import type { Command } from './commands'
 import { placementRect } from './placement'
+import { addDays } from './transition'
 import type { Transition, TransitionRole } from './transition'
 import type { DesignConnection, DesignElement, DesignModel, DiagramPlacement, ElementId } from './types'
 
@@ -142,7 +144,7 @@ export function replacementCommands(
       isBidirectional: false,
       lineStyle: 'dashed',
       validFrom: request.shadowFrom,
-      validUntil: request.cutover,
+      validUntil: addDays(request.cutover, -1),
     }
     commands.push({ type: 'connection.create', connection: tap })
   }

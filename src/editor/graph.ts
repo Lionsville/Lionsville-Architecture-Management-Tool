@@ -15,7 +15,7 @@ import {
   unionRects,
 } from '../model/placement';
 import { isAutoRoute, routeSides, routeSource } from '../model/routes';
-import { connectionLiveAt, phaseAt } from '../model/lifecycle';
+import { connectionLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
 
 /**
  * Pure projection of (effective model + active diagram) onto React Flow
@@ -94,6 +94,9 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
   for (const placement of args.diagram.placements) {
     const element = elementsById.get(placement.elementId);
     if (!element) continue;
+    // Gone is gone: a board dated on or after the day an element's date says
+    // it is retired does not draw it (ADR-0010). Its lines follow, below.
+    if (args.asOfDay && isGoneOn(element, args.asOfDay)) continue;
     const isBoundary =
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
     const rect = isBoundary
@@ -161,7 +164,14 @@ export type FloatingEdgeModel = Edge<FloatingEdgeData>;
 export function buildEdges(
   args: BuildGraphArgs, previous?: readonly FloatingEdgeModel[],
 ): FloatingEdgeModel[] {
-  const placed = new Set(args.diagram.placements.map((p) => p.elementId));
+  const elementsById = new Map(args.model.elements.map((e) => [e.id, e]));
+  // What the board draws on this day: placed, and not gone (see buildNodes).
+  const placed = new Set(args.diagram.placements
+    .map((p) => p.elementId)
+    .filter((id) => {
+      const element = elementsById.get(id);
+      return element !== undefined && !(args.asOfDay && isGoneOn(element, args.asOfDay));
+    }));
   const routes = new Map(
     (args.diagram.edgeRoutes ?? []).map((route) => [route.connectionId, route]),
   );
@@ -169,7 +179,6 @@ export function buildEdges(
   // (boundary union → boundaryRect, otherwise the placement rect). Feeds the
   // anchor slotter so edges sharing a node side fan out; re-derived on every
   // commit — including drags — so the slots stay live.
-  const elementsById = new Map(args.model.elements.map((e) => [e.id, e]));
   const rectById = new Map<ElementId, Rect>();
   for (const placement of args.diagram.placements) {
     const element = elementsById.get(placement.elementId);

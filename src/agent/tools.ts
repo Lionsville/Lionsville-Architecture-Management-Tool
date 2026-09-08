@@ -346,7 +346,7 @@ export const TOOLS = [
     description:
       'Start replacing an application (ADR-0010), as one undo step: the new application in the image of '
       + 'the old, drawn beside it on every diagram the old is on; the dates on both; the successor; a '
-      + 'dashed tap from old to new for the shadow run, closing on cutover; and a plan naming all of it '
+      + 'dashed tap from old to new for the shadow run, closing the day before cutover; and a plan naming all of it '
       + 'with two milestones. Which interface moves when is not decided here — use plan.port afterwards. '
       + 'Answers with the plan\'s id and the new element\'s id.',
     inputSchema: {

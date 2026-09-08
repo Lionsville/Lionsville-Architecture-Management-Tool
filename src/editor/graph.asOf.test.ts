@@ -80,7 +80,11 @@ describe('a card draws the phase it is in on the day', () => {
   })
 
   it('after decommissioning: the old one is gone and the new one carries on', () => {
-    expect(phaseOf('2028-06-01', 'wms-old')).toBe('retired')
+    // On and after the day it is gone, it is not drawn at all (ADR-0010) —
+    // the day before, it is still there, retiring.
+    expect(phaseOf('2028-01-30', 'wms-old')).toBe('retiring')
+    expect(phaseOf('2028-06-01', 'wms-old')).toBeUndefined()
+    expect(buildNodes(args('2028-06-01')).some((node) => node.id === 'wms-old')).toBe(false)
     expect(phaseOf('2028-06-01', 'wms-new')).toBe('live')
   })
 
@@ -100,8 +104,11 @@ describe('a line is drawn inside its own window', () => {
     expect(edgeIds('2027-06-01')).toEqual(['c#billing', 'c#sync'])
   })
 
-  it('takes it away once the old system is decommissioned', () => {
-    expect(edgeIds('2028-06-01')).toEqual(['c#billing'])
+  it('takes it away once the old system is decommissioned — and the old system\'s own lines with it', () => {
+    // The sync closed with its window; billing's line to the old system has
+    // no window, but its end is gone on that day and so is the card (ADR-0010).
+    expect(edgeIds('2028-06-01')).toEqual([])
+    expect(edgeIds('2028-01-30')).toEqual(['c#billing', 'c#sync'])
   })
 })
 

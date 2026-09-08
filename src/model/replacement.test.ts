@@ -77,7 +77,7 @@ describe('one for one, with a new application', () => {
     expect((placements[0] as { placements: { x: number }[] }).placements[0].x).toBeGreaterThan(100)
   })
 
-  it('dates the old one, names its successor, and taps it', () => {
+  it('dates the old one, names its successor, and taps it until the day before it is gone', () => {
     expect(commands).toContainEqual({
       type: 'element.update', id: 'wms',
       patch: { lifecycleDates: { retiring: '2027-03-01', retired: '2027-09-01' }, successorId: 'wms-next' },
@@ -86,7 +86,7 @@ describe('one for one, with a new application', () => {
       type: 'connection.create',
       connection: {
         id: 'c-tap', sourceId: 'wms', targetId: 'wms-next', label: 'shadow tap', isBidirectional: false,
-        lineStyle: 'dashed', validFrom: '2027-03-01', validUntil: '2027-09-01',
+        lineStyle: 'dashed', validFrom: '2027-03-01', validUntil: '2027-08-31',
       },
     })
   })

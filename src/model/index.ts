@@ -30,7 +30,7 @@ export {
 
 /** Where a thing is on a given day (ADR-0009). */
 export {
-  connectionLiveAt, DATED_PHASES, datesIn, datesInOrder, daysBetween, hasDates, isDay,
+  connectionLiveAt, DATED_PHASES, datesIn, datesInOrder, daysBetween, hasDates, isDay, isGoneOn,
   LIFECYCLE_ORDER, phaseAt, today,
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'

@@ -99,7 +99,7 @@ export const EN = {
   'replace.alsoField': 'Another application that retires into it',
   'replace.shadowFrom': 'Shadow run from',
   'replace.cutover': 'Cutover',
-  'replace.help': 'From the shadow run the new one is live and taps the old for its data; the interfaces still land on the old one until each is moved. On cutover the old one is gone and the tap closes. Which interface moves when is set on the plan.',
+  'replace.help': 'From the shadow run the new one is live and taps the old for its data; the interfaces still land on the old one until each is moved. On cutover the old one is gone, and the tap has closed the day before. Which interface moves when is set on the plan.',
   'replace.start': 'Start the plan',
   'replace.planTitle': 'Replace {from} with {to}',
   'replace.tap': 'shadow tap',

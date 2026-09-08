@@ -14,8 +14,13 @@ departures from the text below:
 * **The tap is the shadow run's one line.** During the shadow run the
   interfaces still land on the old application and the new one taps it, old
   → new; only afterwards does each interface move, on its own day. The
-  gesture draws the tap dashed, from each retiring element, and it closes on
-  cutover whatever the port table says.
+  gesture draws the tap dashed, from each retiring element, and it closes the
+  day before cutover whatever the port table says — cutover names the day the
+  old one is gone, and the checks rightly report a line valid on that day.
+* **Gone is not drawn.** A board dated on or after the day an element's date
+  says it is retired draws neither the card nor its lines. Only a dated
+  retirement does this; an element stored as retired with no day keeps its
+  dimmed card, as before.
 * **Take back is offered only on a dated twin.** An undated line on the new
   element that happens to match is somebody's drawing, and not the page's to
   delete.

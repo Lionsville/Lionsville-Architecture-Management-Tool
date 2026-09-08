@@ -87,7 +87,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'replace.alsoField': 'Nog een applicatie die erin opgaat',
   'replace.shadowFrom': 'Schaduwdraaien vanaf',
   'replace.cutover': 'Cutover',
-  'replace.help': 'Vanaf het schaduwdraaien is de nieuwe live en tapt die de oude af voor zijn data; de koppelingen komen nog op de oude aan tot elk is verhuisd. Op de cutover is de oude weg en sluit de tap. Welke koppeling wanneer verhuist staat op het plan.',
+  'replace.help': 'Vanaf het schaduwdraaien is de nieuwe live en tapt die de oude af voor zijn data; de koppelingen komen nog op de oude aan tot elk is verhuisd. Op de cutover is de oude weg, en de tap is de dag ervoor gesloten. Welke koppeling wanneer verhuist staat op het plan.',
   'replace.start': 'Plan starten',
   'replace.planTitle': '{from} vervangen door {to}',
   'replace.tap': 'schaduwtap',

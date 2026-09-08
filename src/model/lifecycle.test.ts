@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  connectionLiveAt, datesIn, datesInOrder, hasDates, isDay, phaseAt, today,
+  connectionLiveAt, datesIn, datesInOrder, hasDates, isDay, isGoneOn, phaseAt, today,
 } from './lifecycle'
 import type { DesignConnection, DesignElement, Lifecycle, LifecycleDates } from './types'
 
@@ -169,5 +169,19 @@ describe('a landscape with no dates', () => {
 
   it('draws every line on every day there is', () => {
     for (const day of DAYS) expect(connectionLiveAt(connection(), day)).toBe(true)
+  })
+})
+
+describe('isGoneOn', () => {
+  it('is the day a date says it is gone, and every day after', () => {
+    const dated = { lifecycleDates: { retired: '2028-01-31' } }
+    expect(isGoneOn(dated, '2028-01-30')).toBe(false)
+    expect(isGoneOn(dated, '2028-01-31')).toBe(true)
+    expect(isGoneOn(dated, '2030-01-01')).toBe(true)
+  })
+
+  it('never says so for an element with no day, whatever its stored phase', () => {
+    expect(isGoneOn({}, '2030-01-01')).toBe(false)
+    expect(isGoneOn({ lifecycleDates: { retiring: '2020-01-01' } }, '2030-01-01')).toBe(false)
   })
 })
