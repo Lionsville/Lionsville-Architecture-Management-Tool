@@ -199,20 +199,31 @@ export function apply(model: Model, command: Command): ApplyResult {
     case 'placement.set': {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
-      let rows: Rows<DiagramPlacement> = { by: diagram.placements, order: diagram.order.placements }
+      // Built in one pass rather than one `put` per row: a whole-board set —
+      // a tidy pass, a restore — carries thousands, and a record copied per
+      // row is quadratic. The order array keeps its identity when nothing
+      // was inserted, which is what tells `withPlacements` nothing moved.
+      const by = { ...diagram.placements }
+      let order = diagram.order.placements
       const restore: DiagramPlacement[] = []
       const restoreAt: number[] = []
       const remove: ElementId[] = []
       command.placements.forEach((placement, i) => {
-        if (!model.elements[placement.elementId]) return
-        const held = rows.by[placement.elementId]
+        const id = placement.elementId
+        if (!model.elements[id]) return
+        const held = by[id]
         if (held) {
           restore.push(held)
-          restoreAt.push(rows.order.indexOf(placement.elementId))
-        } else remove.push(placement.elementId)
-        rows = put(rows.by, rows.order, placement.elementId, placement, command.at?.[i])
+          restoreAt.push(order.indexOf(id))
+        } else {
+          remove.push(id)
+          if (order === diagram.order.placements) order = [...order]
+          order.splice(command.at?.[i] ?? order.length, 0, id)
+        }
+        by[id] = placement
       })
       if (!restore.length && !remove.length) return ok(model, NOTHING)
+      const rows: Rows<DiagramPlacement> = { by, order }
       const undo: Command[] = []
       if (remove.length) undo.push({ type: 'placement.remove', diagramId: command.diagramId, elementIds: remove })
       if (restore.length) {
@@ -247,20 +258,28 @@ export function apply(model: Model, command: Command): ApplyResult {
     case 'route.set': {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
-      let rows: Rows<EdgeRoute> = { by: routesOf(diagram), order: diagram.order.routes }
+      // One pass, for the reason `placement.set` gives: a routing pass sets every line.
+      const by = { ...routesOf(diagram) }
+      let order = diagram.order.routes
       const restore: EdgeRoute[] = []
       const restoreAt: number[] = []
       const clear: ConnectionId[] = []
       command.routes.forEach((route, i) => {
-        if (!model.connections[route.connectionId]) return
-        const held = rows.by[route.connectionId]
+        const id = route.connectionId
+        if (!model.connections[id]) return
+        const held = by[id]
         if (held) {
           restore.push(held)
-          restoreAt.push(rows.order.indexOf(route.connectionId))
-        } else clear.push(route.connectionId)
-        rows = put(rows.by, rows.order, route.connectionId, route, command.at?.[i])
+          restoreAt.push(order.indexOf(id))
+        } else {
+          clear.push(id)
+          if (order === diagram.order.routes) order = [...order]
+          order.splice(command.at?.[i] ?? order.length, 0, id)
+        }
+        by[id] = route
       })
       if (!restore.length && !clear.length) return ok(model, NOTHING)
+      const rows: Rows<EdgeRoute> = { by, order }
       const undo: Command[] = []
       if (clear.length) undo.push({ type: 'route.clear', diagramId: command.diagramId, connectionIds: clear })
       if (restore.length) {
