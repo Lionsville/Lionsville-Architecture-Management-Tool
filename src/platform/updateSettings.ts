@@ -5,7 +5,7 @@
  * before any window exists, and before a folder has been chosen) and the
  * preferences dialog in the renderer is a client of it over `DesktopSettings`
  * (ADR-0005). The arithmetic of updating — is this newer, which file is mine —
- * stays in `app/updates.ts`.
+ * is `updates.ts` beside it, for the same reason.
  */
 /**
  * Which releases count (ADR-0006). `stable` is GitHub's `latest`: the newest

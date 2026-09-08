@@ -1,7 +1,7 @@
 /**
  * Where our File menu goes among Electron's own.
  *
- * Pure, and a file of its own, for the same reason `src/app/updates.ts` is
+ * Pure, and a file of its own, for the same reason `src/platform/updates.ts` is
  * separate from `electron/main/updates.ts`: the decision is worth a test, and
  * an `electron` import is what would stop one running in node.
  */

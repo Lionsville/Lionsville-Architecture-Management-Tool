@@ -16,15 +16,15 @@
  * A download link works on every platform, always, and asks first.
  */
 
-import type { UpdateSettings } from '../platform/updateSettings'
+import type { UpdateSettings } from './updateSettings'
 
 /**
- * The settings themselves moved to `platform/updateSettings.ts`, where both
- * processes can read them (ADR-0005). Re-exported so the arithmetic and the
- * shape are still one import for main.
+ * The settings themselves are `updateSettings.ts` beside this file, where both
+ * processes read them (ADR-0005). Re-exported so the arithmetic and the shape
+ * are still one import for main.
  */
-export { DEFAULT_UPDATE_SETTINGS, readUpdateSettings } from '../platform/updateSettings'
-export type { UpdateSettings } from '../platform/updateSettings'
+export { DEFAULT_UPDATE_SETTINGS, readUpdateSettings } from './updateSettings'
+export type { UpdateSettings } from './updateSettings'
 
 type Version = { readonly numbers: readonly number[]; readonly prerelease: string }
 
