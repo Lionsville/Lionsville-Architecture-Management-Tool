@@ -51,6 +51,32 @@ describe('workingFileBytes', () => {
       .toMatchObject({ type: WORKING_FILE_TYPE, formatVersion: 3 })
     expect(textFromBytes(entries['docs/crews.md'])).toBe('Roster.\n')
   })
+
+  it('carries every record the folder holds: decisions, plans, pictures and marks', () => {
+    const full = project({
+      imageLibrary: [{ file: 'cutover.png', url: 'data:image/png;base64,AQI=' }],
+      model: {
+        ...project().model,
+        decisions: [{
+          id: 'adr-1', number: 1, title: 'One writer', status: 'accepted', date: '2026-09-01',
+          signers: [], body: 'Because.',
+        }],
+        transitions: [{
+          id: 'tr-1', number: 1, title: 'Replace the warehouse system', status: 'draft',
+          elements: [], decisions: [], milestones: [], body: '',
+        }],
+      },
+    })
+    const entries = Object.keys(unzipSync(workingFileBytes(full)))
+    expect(entries).toContain('decisions/0001-one-writer.md')
+    expect(entries).toContain('transitions/0001-replace-the-warehouse-system.md')
+    expect(entries).toContain('images/cutover.png')
+    expect(entries).toContain('logos/own.png')
+    const back = openDocumentBytes(workingFileBytes(full), project())
+    expect(back.ok && back.project.model.decisions?.[0]?.title).toBe('One writer')
+    expect(back.ok && back.project.model.transitions?.[0]?.title).toBe('Replace the warehouse system')
+    expect(back.ok && back.project.imageLibrary?.[0]?.file).toBe('cutover.png')
+  })
 })
 
 describe('openDocumentBytes', () => {
