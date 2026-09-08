@@ -12,7 +12,7 @@ import { projectFromFolder } from '../../projects/folderFormat'
 import type { ProjectSnapshot } from '../../projects/project'
 import { refPath } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
-import type { HistoryEntry, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
+import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
 import type { SyncSide } from '../../platform/sync'
 import type { DesktopHistory } from './channel'
 
@@ -48,8 +48,11 @@ export class DesktopProjectHistory implements ProjectHistory {
     return Boolean(await this.git.snapshot(this.root, message))
   }
 
-  entries(limit?: number): Promise<HistoryEntry[]> {
-    return this.git.history(this.root, limit).then((commits) => commits.map((held) => ({
+  entries(limit?: number, of?: HistoryScope): Promise<HistoryEntry[]> {
+    // The scope's paths are relative to the project; git wants them relative
+    // to the root, which is the one thing this adapter knows and the seam does not.
+    const paths = of ? of.paths.map((path) => `${refPath(of.ref)}/${path}`) : undefined
+    return this.git.history(this.root, limit, paths).then((commits) => commits.map((held) => ({
       id: held.sha,
       subject: held.subject,
       at: held.at,

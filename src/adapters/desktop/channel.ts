@@ -60,7 +60,8 @@ export type DesktopHistory = {
   init(root: string): Promise<void>
   /** Commit everything under one message. `undefined` when nothing changed. */
   snapshot(root: string, message: string): Promise<string | undefined>
-  history(root: string, limit?: number): Promise<DesktopCommit[]>
+  /** The snapshots, newest first; with `paths`, only those that touched one (ADR-0008). */
+  history(root: string, limit?: number, paths?: string[]): Promise<DesktopCommit[]>
   /** One project folder's text files as they were at a commit. */
   filesAt(root: string, sha: string, prefix: string): Promise<{ path: string; text: string }[]>
 

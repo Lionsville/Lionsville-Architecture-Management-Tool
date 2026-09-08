@@ -27,6 +27,13 @@ export type HistoryEntry = {
   author: string
 }
 
+/** One thing's worth of a project's history: the project, and its paths. */
+export type HistoryScope = {
+  ref: ProjectRef
+  /** Relative to the project folder; a `*` matches within a name. */
+  paths: readonly string[]
+}
+
 export interface ProjectHistory {
   /** Can this machine keep a history at all? */
   available(): Promise<boolean>
@@ -42,8 +49,16 @@ export interface ProjectHistory {
    * genuinely have nothing between them.
    */
   snapshot(message: string): Promise<boolean>
-  /** The snapshots, newest first. */
-  entries(limit?: number): Promise<HistoryEntry[]>
+  /**
+   * The snapshots, newest first.
+   *
+   * With `of`, only the ones that touched one thing (ADR-0008): a project, and
+   * paths inside it as `projects/historyPath.ts` names them. The question is
+   * the adapter's to answer because only it knows how cheaply — a history that
+   * is git answers it in one command, and a history that is not may answer it
+   * by reading every entry, which is its business.
+   */
+  entries(limit?: number, of?: HistoryScope): Promise<HistoryEntry[]>
   /**
    * One project as it was at a snapshot, or `undefined` when it was not there.
    *

@@ -225,15 +225,26 @@ export async function snapshot(root: string, message: string): Promise<string | 
   return (await git(root, ['rev-parse', 'HEAD'])).trim()
 }
 
-/** The last `limit` snapshots, newest first. Empty for a repository with none. */
-export async function history(root: string, limit = 50): Promise<GitCommit[]> {
+/**
+ * The last `limit` snapshots, newest first. Empty for a repository with none.
+ *
+ * With `paths`, only the snapshots that touched one of them (ADR-0008): a
+ * pathspec each, relative to the root, and a `*` in one matches within a
+ * name — which is how a decision's history follows its number through every
+ * title it has had. Renames are not followed on purpose: the format keys a
+ * diagram and a description by id, so a moved file IS a different thing.
+ */
+export async function history(root: string, limit = 50, paths: readonly string[] = []): Promise<GitCommit[]> {
   // Not this folder's history if it is somebody else's: git walks up until it
   // finds a repository, so a folder that keeps none would otherwise be handed
   // the enclosing project's commits and show them as its own snapshots.
   if (!await isRepository(root)) return []
   let out: string
   try {
-    out = await git(root, ['log', `-n${Math.max(1, Math.trunc(limit))}`, `--format=%H${UNIT}%s${UNIT}%at${UNIT}%an`])
+    out = await git(root, [
+      'log', `-n${Math.max(1, Math.trunc(limit))}`, `--format=%H${UNIT}%s${UNIT}%at${UNIT}%an`,
+      ...(paths.length ? ['--', ...paths] : []),
+    ])
   } catch {
     // A repository with no commits yet: `git log` fails rather than saying
     // nothing, which is a fact about git and not about this folder.

@@ -88,6 +88,29 @@ describe.skipIf(!available)('git in a working directory', () => {
     expect(log[0].author).toBeTruthy()
   })
 
+  it('reads the history of one path, and of every name a numbered file has had', async () => {
+    await initRepository(root)
+    await project('model.json', '{}')
+    await project('0007-one-writer.md', '# One writer')
+    await snapshot(root, 'Both')
+    await project('model.json', '{"changed":true}')
+    await snapshot(root, 'The model only')
+    // Retitled: the file moves, the number stays.
+    await rm(join(root, 'acme/landscape/0007-one-writer.md'))
+    await project('0007-two-writers.md', '# Two writers')
+    await snapshot(root, 'The decision only')
+
+    const model = await history(root, 50, ['acme/landscape/model.json'])
+    expect(model.map((held) => held.subject)).toEqual(['The model only', 'Both'])
+    const decision = await history(root, 50, ['acme/landscape/0007-*.md'])
+    expect(decision.map((held) => held.subject)).toEqual(['The decision only', 'Both'])
+    // Several paths are one history: a diagram is two files.
+    const both = await history(root, 50, ['acme/landscape/model.json', 'acme/landscape/0007-*.md'])
+    expect(both.map((held) => held.subject)).toEqual(['The decision only', 'The model only', 'Both'])
+    // A path nothing ever touched has no history rather than everybody's.
+    expect(await history(root, 50, ['acme/landscape/nothing.md'])).toEqual([])
+  })
+
   it('reads an empty history as empty rather than as a failure', async () => {
     // git itself fails here, which is a fact about git and not about the folder.
     await initRepository(root)

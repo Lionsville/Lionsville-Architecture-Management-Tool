@@ -134,6 +134,15 @@ function isPath(path: unknown): path is string {
 }
 
 /**
+ * A path the history may be filtered by: what the format writes, relative to
+ * the root, with at most a `*` inside a name. Not an option (no leading `-`),
+ * not an escape (no `..`), not a pathspec with magic in it (no `:`).
+ */
+function isHistoryPath(path: string): boolean {
+  return /^[A-Za-z0-9_][A-Za-z0-9_\-./*]*$/.test(path) && !path.includes('..')
+}
+
+/**
  * Bytes, and really bytes.
  *
  * What arrives over IPC for a `Uint8Array` is a `Uint8Array`, and for anything
@@ -233,8 +242,16 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     return snapshot(root, message)
   })
 
-  ipcMain.handle('git:history', (_event, root: unknown, limit: unknown) =>
-    isGranted(root) ? history(root, typeof limit === 'number' ? limit : undefined) : [])
+  ipcMain.handle('git:history', (_event, root: unknown, limit: unknown, paths: unknown) => {
+    if (!isGranted(root)) return []
+    // A path is one the format writes, with at most a `*` in a name. Anything
+    // else — an option, a `..`, a `:(magic)` pathspec — is refused as a whole
+    // rather than trimmed, because a filter that quietly widened would show
+    // the wrong history without a word.
+    const filter = paths === undefined ? [] : Array.isArray(paths) ? paths : undefined
+    if (!filter || !filter.every((path) => typeof path === 'string' && isHistoryPath(path))) return []
+    return history(root, typeof limit === 'number' ? limit : undefined, filter)
+  })
 
   ipcMain.handle('git:filesAt', (_event, root: unknown, sha: unknown, prefix: unknown) => {
     if (!isGranted(root) || typeof sha !== 'string' || typeof prefix !== 'string') return []
