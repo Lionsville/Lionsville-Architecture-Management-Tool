@@ -308,3 +308,71 @@ describe('over the generated landscape', () => {
     roundTrip(model, commandFor('align', { elementIds: ['app-0001', 'app-0002', 'app-0003'], axis: 'centerY' }, held))
   })
 })
+
+describe('the plan tools (ADR-0010)', () => {
+  const plan = {
+    id: 'tr-1', number: 1, title: 'Replace billing', status: 'agreed' as const,
+    elements: [{ elementId: 'billing', role: 'retires' as const }, { elementId: 'crm', role: 'introduces' as const }],
+    decisions: [], milestones: [], body: '',
+  }
+  // c1 joins billing to crm — the introduced element — so it is the tap, not
+  // an interface that moves. c2 is one that does.
+  const withPlan = fromArrays({
+    ...host,
+    connections: [...host.connections, { id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST' }],
+    transitions: [plan],
+  })
+
+  it('plan.replace writes the whole gesture as one step, and undoes as one', () => {
+    const out = commandFor('plan.replace', { elementId: 'billing', newName: 'Billing next', shadowFrom: '2027-03-01', cutover: '2027-09-01' }, view(fromArrays(host)))
+    expect(answerOf(out)).toMatchObject({ planId: 'tr-new-1', toId: 'billing-next' })
+    const after = roundTrip(fromArrays(host), out)
+    expect(after.elements['billing-next']).toMatchObject({ lifecycle: 'planned', lifecycleDates: { live: '2027-03-01' } })
+    expect(after.elements.billing).toMatchObject({ successorId: 'billing-next', lifecycleDates: { retiring: '2027-03-01', retired: '2027-09-01' } })
+    expect(Object.keys(after.transitions ?? {})).toEqual(['tr-new-1'])
+    // Drawn beside the old one on the board the old one is on.
+    expect(after.diagrams.l7.placements['billing-next']).toMatchObject({ zone: 'landscape', domainGroup: 'Finance' })
+  })
+
+  it('plan.replace takes an existing successor, a split and a merge', () => {
+    const out = commandFor('plan.replace', {
+      elementId: 'billing', existingId: 'crm', stays: true, alsoRetiring: ['who'], shadowFrom: '2027-03-01', cutover: '2027-09-01',
+    }, view(fromArrays(host)))
+    const after = roundTrip(fromArrays(host), out)
+    const written = Object.values(after.transitions ?? {})[0]
+    expect(written.elements).toEqual([
+      { elementId: 'billing', role: 'changes' }, { elementId: 'who', role: 'retires' }, { elementId: 'crm', role: 'introduces' },
+    ])
+  })
+
+  it('plan.replace refuses what it cannot do', () => {
+    const refuse = (args: unknown) => commandFor('plan.replace', args, view(fromArrays(host)))
+    expect(refuse({ elementId: 'ghost', newName: 'x', shadowFrom: '2027-03-01', cutover: '2027-09-01' })).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(refuse({ elementId: 'billing', shadowFrom: '2027-03-01', cutover: '2027-09-01' })).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(refuse({ elementId: 'billing', existingId: 'billing', shadowFrom: '2027-03-01', cutover: '2027-09-01' })).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(refuse({ elementId: 'billing', newName: 'x', shadowFrom: '2027-09-01', cutover: '2027-03-01' })).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('plan.port moves one interface, or every one not yet planned, and undoes as one', () => {
+    const one = commandFor('plan.port', { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' }, view(withPlan))
+    expect(answerOf(one)).toMatchObject({ moved: ['c2'], toId: 'crm' })
+    const after = roundTrip(withPlan, one)
+    expect(after.connections.c2.validUntil).toBe('2027-04-30')
+    const twin = Object.values(after.connections).find((c) => c.id !== 'c1' && c.id !== 'c2')
+    expect(twin).toMatchObject({ sourceId: 'crm', targetId: 'who', protocol: 'REST', validFrom: '2027-05-01' })
+    // And all of them at once, when no line is named.
+    const all = commandFor('plan.port', { planId: 'tr-1', on: '2027-06-01' }, view(withPlan))
+    expect(answerOf(all)).toMatchObject({ moved: ['c2'] })
+    roundTrip(withPlan, all)
+  })
+
+  it('plan.port refuses an unknown plan or interface, and asks which target when there are several', () => {
+    const refuse = (args: unknown, model = withPlan) => commandFor('plan.port', args, view(model))
+    expect(refuse({ planId: 'tr-9', on: '2027-05-01' })).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(refuse({ planId: 'tr-1', connectionId: 'c9', on: '2027-05-01' })).toMatchObject({ refusal: 'agent.unknownId' })
+    // The tap is not an interface of the plan.
+    expect(refuse({ planId: 'tr-1', connectionId: 'c1', on: '2027-05-01' })).toMatchObject({ refusal: 'agent.unknownId' })
+    const two = fromArrays({ ...host, transitions: [{ ...plan, elements: [...plan.elements, { elementId: 'who', role: 'introduces' as const }] }] })
+    expect(refuse({ planId: 'tr-1', on: '2027-05-01' }, two)).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+})

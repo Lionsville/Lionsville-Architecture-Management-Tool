@@ -171,7 +171,8 @@ export const TOOLS = [
     description:
       'The plans for changing the landscape (ADR-0009): number, title, status, the window they '
       + 'run over, who owns them, the elements they introduce, retire or change, the decisions '
-      + 'they rest on, and their milestones. The body is markdown and is returned in full.',
+      + 'they rest on, their milestones, and their interfaces — every line on what they retire, with '
+      + 'where it has moved to and when (ADR-0010). The body is markdown and is returned in full.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -336,6 +337,50 @@ export const TOOLS = [
         supersededBy: { type: 'string', description: 'For superseded: the id of the record that replaces it.' },
       },
       required: ['id', 'status'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'plan.replace',
+    tier: 'write',
+    description:
+      'Start replacing an application (ADR-0010), as one undo step: the new application in the image of '
+      + 'the old, drawn beside it on every diagram the old is on; the dates on both; the successor; a '
+      + 'dashed tap from old to new for the shadow run, closing on cutover; and a plan naming all of it '
+      + 'with two milestones. Which interface moves when is not decided here — use plan.port afterwards. '
+      + 'Answers with the plan\'s id and the new element\'s id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        elementId: { type: 'string', description: 'The application being replaced.' },
+        newName: { type: 'string', description: 'The name of the new application to make. Give this or existingId.' },
+        existingId: { type: 'string', description: 'An element that already exists and becomes the successor. Give this or newName.' },
+        stays: { type: 'boolean', description: 'True for a split: part of it moves and the element stays. Default false: it goes on cutover.' },
+        alsoRetiring: { type: 'array', items: { type: 'string' }, description: 'For a merge: other elements that retire into the same successor.' },
+        shadowFrom: { type: 'string', description: 'The day the shadow run starts, yyyy-mm-dd: the new one is live and taps the old.' },
+        cutover: { type: 'string', description: 'The day the old one is gone and the tap closes, yyyy-mm-dd.' },
+      },
+      required: ['elementId', 'shadowFrom', 'cutover'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'plan.port',
+    tier: 'write',
+    description:
+      'Move an interface of a plan onto the element it introduces, on a day (ADR-0010): a twin of the line '
+      + 'on the new end valid from that day, and the original valid until the day before. Without a '
+      + 'connectionId, every interface of the plan not yet planned moves on that day, as one step. '
+      + 'plans.list shows the interfaces and where each has gone.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: ID('plan'),
+        connectionId: { type: 'string', description: 'The line on the retiring element to move. Absent: every one not yet planned.' },
+        toId: { type: 'string', description: 'Which introduced element it moves to. Needed only when the plan introduces more than one.' },
+        on: { type: 'string', description: 'The day it moves, yyyy-mm-dd.' },
+      },
+      required: ['planId', 'on'],
       additionalProperties: false,
     },
   },

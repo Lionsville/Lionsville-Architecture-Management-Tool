@@ -1,8 +1,35 @@
 # ADR-0010 — A replacement as one gesture, and the interfaces as the plan
 
-* Status: proposed
+* Status: accepted
 * Date: 2026-09-08
 * Deciders: Wouter Simons
+
+**Built, 8 September 2026**, in the five steps of the last section, with these
+departures from the text below:
+
+* **A twin needs no placing.** A diagram draws every line whose two ends it
+  holds, so the twin appears on every board the counterpart and the new
+  element share, and the open question about copying a route is moot: the
+  twin is routed fresh, like any line.
+* **The tap is the shadow run's one line.** During the shadow run the
+  interfaces still land on the old application and the new one taps it, old
+  → new; only afterwards does each interface move, on its own day. The
+  gesture draws the tap dashed, from each retiring element, and it closes on
+  cutover whatever the port table says.
+* **Take back is offered only on a dated twin.** An undated line on the new
+  element that happens to match is somebody's drawing, and not the page's to
+  delete.
+* **The plan opens directly**, rather than a toast offering to. The next
+  thing to do — which interface moves when — is on its page.
+* **The roadmap took a window as well**, asked for while this was built: both
+  ends set, it keeps what is there or changes inside the period and drops
+  what was gone before or arrives after (`within` in `roadmap/timeline.ts`).
+* **The successor-missing check accepts a plan** that retires the element and
+  introduces something, so a merge does not raise it once per source.
+* **The Acme example was not given a replacement.** Its one plan retires a
+  rater into an engine that already exists and is listed as changed, which is
+  a real shape and worth keeping as the worked example; a second plan would
+  say the same thing twice.
 
 ## Context and Problem Statement
 

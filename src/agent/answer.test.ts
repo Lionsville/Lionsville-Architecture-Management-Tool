@@ -239,3 +239,30 @@ describe('over the generated landscape', () => {
     expect(JSON.stringify(toArrays(held.model))).toBe(before)
   })
 })
+
+describe('plans.list (ADR-0010)', () => {
+  const plan = {
+    id: 'tr-1', number: 1, title: 'Replace billing', status: 'agreed' as const,
+    elements: [{ elementId: 'billing', role: 'retires' as const }, { elementId: 'crm', role: 'introduces' as const }],
+    decisions: [], milestones: [], body: '',
+  }
+  const withPlan: HostModel = {
+    ...host,
+    connections: [
+      ...host.connections,
+      { id: 'c-moved', sourceId: 'crm', targetId: 'crm', isBidirectional: false, validFrom: '2027-05-01' },
+    ],
+    transitions: [plan],
+  }
+
+  it('lists each plan with the interfaces it moves and where each has gone', () => {
+    const out = read('plans.list', {}, view(withPlan)) as { plans: { label: string; interfaces: unknown[] }[] }
+    expect(out.plans[0].label).toBe('TR-0001')
+    expect(out.plans[0].interfaces).toEqual(
+      host.connections
+        .filter((c) => c.sourceId === 'billing' || c.targetId === 'billing')
+        .filter((c) => !(c.sourceId === 'crm' || c.targetId === 'crm'))
+        .map((c) => expect.objectContaining({ connectionId: c.id, from: 'billing' })),
+    )
+  })
+})

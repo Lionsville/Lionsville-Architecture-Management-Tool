@@ -103,6 +103,21 @@ describe('a successor', () => {
   it('is not asked for at all when nothing retires', () => {
     expect(check([element('wms'), element('billing')])).toEqual([])
   })
+
+  it('is answered by a plan that retires it and introduces something (ADR-0010)', () => {
+    // A merge names one successor for three sources in the plan; the field on
+    // each source is the shorthand, not the only way to say it.
+    const list = check(
+      [element('wms', { lifecycleDates: { retired: '2028-01-31' } }), element('wms-new')],
+      [],
+      [{
+        id: 'tr', number: 1, title: 'Replace', status: 'agreed',
+        elements: [{ elementId: 'wms', role: 'retires' }, { elementId: 'wms-new', role: 'introduces' }],
+        decisions: [], milestones: [], body: '',
+      }],
+    )
+    expect(kinds(list)).not.toContain('successorMissing')
+  })
 })
 
 describe('a line that outlives one of its ends', () => {

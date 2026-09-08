@@ -118,7 +118,14 @@ export function findings({ model, today }: CheckContext): Finding[] {
     }
 
     const successor = element.successorId ? byId.get(element.successorId) : undefined
-    if (!element.successorId) {
+    // A plan that retires it and introduces something names a successor as
+    // well as the field does (ADR-0010) — a merge would otherwise raise this
+    // once per source, for a replacement the plan spells out.
+    const planned = (model.transitions ?? []).some((plan) => (
+      plan.elements.some((one) => one.elementId === element.id && one.role === 'retires')
+      && plan.elements.some((one) => one.role === 'introduces')
+    ))
+    if (!element.successorId && !planned) {
       found.push({ kind: 'successorMissing', subject: 'element', id: element.id, name: element.name, detail: gone })
     } else if (successor && phaseAt(successor, gone) === 'planned') {
       // Live strictly after the day the old one is gone: a same-day cutover is

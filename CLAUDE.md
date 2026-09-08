@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **2990 tests** and one of every config. The
+One codebase, in modules, with **3059 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 2990 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3059 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -116,6 +116,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     kinds · zones · placement · aspects · kindChange · deletion
                     lifecycle · transition · checks   dates on the facts, a plan,
                                       and what the dates contradict (ADR-0009)
+                    porting · replacement   which interface moved where, derived
+                                      from the lines; a replacement as one
+                                      transaction (ADR-0010)
                     keys              addressing, slugs, where a new id comes from
                     normalised        the model indexed by id; fromArrays/toArrays
                     commands · reducer  what a change IS, and the one writer
@@ -142,8 +145,13 @@ src/documentation/  Descriptions as documents.
                     ui/               DocumentationPage, MarkdownField, blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).
-                    timeline          rows and spans, in days rather than pixels
-                    ui/RoadmapPage    the axis, the plan you picked, the findings
+                    timeline          rows and spans, in days rather than pixels;
+                                      a window, and a plan's shadow run
+                    planTemplate      what a new plan's body starts as
+                    ui/RoadmapPage    the axis, the bands, the findings
+                    ui/PlanPage       one plan: its facts, its interfaces, its
+                                      document (ADR-0010)
+                    ui/ReplaceDialog  the three inputs a replacement needs
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -398,7 +406,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `decision.propose` `decision.transition` `diagram.create` |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `group` `align` `distribute` |
-| Agent tools, time (ADR-0009) | `plans.list` `roadmap.check` |
+| Agent tools, time (ADR-0009, ADR-0010) | `plans.list` `roadmap.check` `plan.replace` `plan.port` |
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
@@ -623,6 +631,22 @@ over it and the four things the dates can contradict, with a scrubber that
 moves the board behind the page. Two fields that had survived from the
 application this editor was carved out of, `DesignParameters` and a diagram's
 cost estimate, were read by nothing and went.
+
+Then a replacement became **one gesture** (`docs/decisions/0010`). The
+first use of ADR-0009 for the thing it was written for took six steps and a
+text editor, so *Replace…* on an application now asks for three things — what
+replaces it, whether it goes or only sheds part of itself, and the two days —
+and writes the rest as one transaction: the new application beside the old on
+every board, the dates on both, the successor, a tap from old to new for the
+shadow run, and the plan with its milestones and a body to put the business
+case in. A plan has a page of its own, and on it the **interfaces**: every
+line on what it retires, with where it has moved and when, derived from the
+lines themselves (`model/porting.ts`) rather than stored — a moved interface
+is a twin on the new end and the original closed the day before, which the
+model could already say. A split is the source staying; a merge is more
+sources retiring into the same thing. The roadmap takes a window, hatches a
+plan's shadow run, and counts its ports; the board draws a dotted *replaces*
+arrow under the lifecycle toggle.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference

@@ -23,7 +23,13 @@ import {
   defaultContainerPosition, defaultZonePosition, groupRectAround, placementRect, unionRects,
 } from '../model/placement'
 import { HOME_ZONE } from '../model/zones'
+import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
+import { portCommands, portsOf } from '../model/porting'
+import { replacementCommands } from '../model/replacement'
+import { nextTransitionNumber } from '../model/transition'
+import { transitionList, transitionsOf } from '../model/normalised'
+import { businessCaseTemplate } from '../documentation/businessCase'
 import type {
   DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId,
   ElementKind, Layer7Zone, Lifecycle,
@@ -126,6 +132,8 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'decision.propose': return proposeDecision(args, view)
     case 'decision.transition': return transitionDecision(args, view)
     case 'diagram.create': return createDiagram(args, view)
+    case 'plan.replace': return replace(args, view)
+    case 'plan.port': return port(args, view)
 
     case 'moveBy': {
       const placed = onDiagram(args, view)
@@ -229,6 +237,93 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
       { type: 'placement.set', diagramId: diagram.id, placements: [placement] },
     ], { origin: 'agent' }),
     answer: json({ id, name, kind, diagramId: diagram.id, x: placement.x, y: placement.y, zone: placement.zone }),
+  }
+}
+
+/**
+ * The words a replacement started by an agent carries. English, like the
+ * tool vocabulary: the agent is a client of the protocol, and what it writes
+ * into a plan is content it can rewrite the next moment.
+ */
+const REPLACE_WORDS = {
+  tapLabel: 'shadow tap',
+  shadowMilestone: 'Shadow run starts',
+  cutoverMilestone: 'Cutover',
+}
+
+function planBody(): string {
+  return ['## Goal', '', '## Scope', '', '## Approach and phases', '', '## Business case', '', businessCaseTemplate(), '', '## Risks', '', '## Rollback', ''].join('\n')
+}
+
+function replace(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const { model } = view
+  const elementId = args.elementId as string
+  const subject = model.elements[elementId]
+  if (!subject) return refused('agent.unknownId', `element ${elementId}`)
+  const newName = typeof args.newName === 'string' ? args.newName.trim() : ''
+  const existingId = args.existingId as string | undefined
+  if (!newName && !existingId) return refused('agent.badArguments', 'give newName or existingId')
+  if (newName && existingId) return refused('agent.badArguments', 'give newName or existingId, not both')
+  if (existingId !== undefined) {
+    if (!model.elements[existingId]) return refused('agent.unknownId', `element ${existingId}`)
+    if (existingId === elementId) return refused('agent.badArguments', 'an element cannot replace itself')
+  }
+  const also = (args.alsoRetiring as string[] | undefined) ?? []
+  for (const id of also) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
+  const shadowFrom = args.shadowFrom as string
+  const cutover = args.cutover as string
+  if (!isDay(shadowFrom) || !isDay(cutover)) return refused('agent.badArguments', 'shadowFrom and cutover must be yyyy-mm-dd')
+  if (cutover < shadowFrom) return refused('agent.badArguments', 'cutover must not be before shadowFrom')
+
+  const toName = existingId !== undefined ? model.elements[existingId].name : newName
+  const { commands, planId, toId } = replacementCommands(view.current(), {
+    from: [
+      { elementId, role: args.stays === true ? 'changes' : 'retires' },
+      ...also.map((id) => ({ elementId: id, role: 'retires' as const })),
+    ],
+    to: existingId !== undefined ? { elementId: existingId } : { name: newName },
+    shadowFrom,
+    cutover,
+    words: {
+      ...REPLACE_WORDS,
+      planTitle: `Replace ${subject.name} with ${toName}`,
+      body: planBody(),
+      ...(subject.owner ? { owner: subject.owner } : {}),
+    },
+  }, {
+    element: (name) => view.ids.element(name),
+    connection: () => view.ids.connection(),
+    transition: view.makeId('tr'),
+  }, nextTransitionNumber(transitionList(model)))
+  return {
+    command: transaction(commands, { origin: 'agent' }),
+    answer: json({ planId, toId, shadowFrom, cutover }),
+  }
+}
+
+function port(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const { model } = view
+  const planId = args.planId as string
+  const plan = transitionsOf(model)[planId]
+  if (!plan) return refused('agent.unknownId', `plan ${planId}`)
+  const on = args.on as string
+  if (!isDay(on)) return refused('agent.badArguments', 'on must be yyyy-mm-dd')
+  const targets = plan.elements.filter((one) => one.role === 'introduces').map((one) => one.elementId)
+  const toId = (args.toId as string | undefined) ?? (targets.length === 1 ? targets[0] : undefined)
+  if (toId === undefined) return refused('agent.badArguments', 'the plan introduces several elements: say which with toId')
+  if (!targets.includes(toId)) return refused('agent.badArguments', `${toId} is not something this plan introduces`)
+
+  const ports = portsOf(view.current(), plan)
+  const connectionId = args.connectionId as string | undefined
+  const chosen = connectionId === undefined
+    ? ports.filter((one) => one.on === undefined)
+    : ports.filter((one) => one.from.id === connectionId)
+  if (connectionId !== undefined && chosen.length === 0) return refused('agent.unknownId', `interface ${connectionId} of plan ${planId}`)
+  if (chosen.length === 0) return refused('agent.badArguments', 'every interface of this plan is planned already')
+  const commands = chosen.flatMap((one) => portCommands(one, toId, on, () => view.ids.connection()))
+  return {
+    command: transaction(commands, { origin: 'agent' }),
+    answer: json({ planId, toId, on, moved: chosen.map((one) => one.from.id) }),
   }
 }
 

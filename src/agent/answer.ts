@@ -19,6 +19,7 @@ import { decisionsOf, placementList, transitionList } from '../model/normalised'
 import { today } from '../model/lifecycle'
 import { transitionLabel } from '../model/transition'
 import { findings } from '../model/checks'
+import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
 import type { DesignConnection, DesignElement, ElementId } from '../model/types'
 import { searchAll } from '../search/search'
@@ -132,6 +133,8 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
     case 'plans.list': {
       const wanted = args.status as string | undefined
       const touching = args.elementId as string | undefined
+      const arrays = view.current()
+      const named = new Map(arrays.elements.map((element) => [element.id, element.name]))
       const rows = transitionList(model)
         .filter((plan) => (wanted === undefined || plan.status === wanted))
         .filter((plan) => (
@@ -148,6 +151,17 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
           elements: plan.elements,
           decisions: plan.decisions,
           milestones: plan.milestones,
+          // Derived from the lines, not stored (ADR-0010): what the plan page shows.
+          interfaces: portsOf(arrays, plan).map((port) => ({
+            connectionId: port.from.id,
+            from: port.fromElementId,
+            counterpart: named.get(port.counterpartId) ?? port.counterpartId,
+            counterpartId: port.counterpartId,
+            ...(port.from.label ? { label: port.from.label } : {}),
+            ...(port.from.protocol ? { protocol: port.from.protocol } : {}),
+            ...(port.to ? { to: port.to.sourceId === port.counterpartId ? port.to.targetId : port.to.sourceId } : {}),
+            ...(port.on ? { on: port.on } : {}),
+          })),
           body: plan.body,
         }))
       return json({ plans: rows })
