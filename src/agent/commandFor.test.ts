@@ -161,6 +161,64 @@ describe('element.add', () => {
   })
 })
 
+describe('an element’s dates, successor, owner and look (ADR-0009)', () => {
+  const model = fromArrays(host)
+
+  it('element.update writes the three dates as one field, clears one with null, and undoes', () => {
+    const dated = commandFor('element.update', {
+      id: 'billing', liveOn: '2026-01-01', retiringOn: '2027-03-01', retiredOn: '2027-09-01', successorId: 'crm', owner: 'Finance',
+    }, view(model))
+    expect(answerOf(dated)).toMatchObject({ changed: ['owner', 'successorId', 'lifecycleDates'] })
+    const after = roundTrip(model, dated)
+    expect(after.elements.billing).toMatchObject({
+      owner: 'Finance', successorId: 'crm', lifecycleDates: { live: '2026-01-01', retiring: '2027-03-01', retired: '2027-09-01' },
+    })
+    const cleared = commandFor('element.update', { id: 'billing', retiringOn: null, owner: null }, view(after))
+    const applied = apply(after, prepared(cleared).command)
+    if (!applied.ok) throw new Error(applied.reason)
+    expect(applied.model.elements.billing.lifecycleDates).toEqual({ live: '2026-01-01', retired: '2027-09-01' })
+    expect(applied.model.elements.billing).not.toHaveProperty('owner')
+    // The last date gone takes the field with it.
+    const none = commandFor('element.update', { id: 'billing', liveOn: null, retiredOn: null }, view(applied.model))
+    const emptied = apply(applied.model, prepared(none).command)
+    expect(emptied.ok && emptied.model.elements.billing).not.toHaveProperty('lifecycleDates')
+  })
+
+  it('leaves dates out of order to the reducer, and refuses what is not a day or not an element', () => {
+    const backwards = commandFor('element.update', { id: 'billing', liveOn: '2027-09-01', retiredOn: '2027-03-01' }, view(model))
+    expect(apply(model, prepared(backwards).command)).toMatchObject({ ok: false, reason: 'command.datesOutOfOrder' })
+    expect(commandFor('element.update', { id: 'billing', liveOn: 'soon' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.update', { id: 'billing', successorId: 'ghost' }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('element.update', { id: 'billing', successorId: 'billing' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('merges aspects, takes one off with null, and keeps a note the person wrote', () => {
+    const noted = fromArrays({
+      ...host,
+      elements: host.elements.map((e) => (e.id === 'billing' ? { ...e, aspects: { platform: { status: 'partial' as const, note: 'On the old VMs' }, dr: { status: 'none' as const } } } : e)),
+    })
+    const out = commandFor('element.update', { id: 'billing', aspects: { platform: 'managed', dr: null, cicd: 'atRisk' } }, view(noted))
+    const after = roundTrip(noted, out)
+    expect(after.elements.billing.aspects).toEqual({ platform: { status: 'managed', note: 'On the old VMs' }, cicd: { status: 'atRisk' } })
+    expect(commandFor('element.update', { id: 'billing', aspects: { platform: 'great' } }, view(noted))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('sets and clears the accent and the icon', () => {
+    const on = roundTrip(model, commandFor('element.update', { id: 'billing', accentColor: '#2E86C1', iconKey: 'postgres' }, view(model)))
+    expect(on.elements.billing).toMatchObject({ accentColor: '#2e86c1', iconKey: 'postgres' })
+    const off = apply(on, prepared(commandFor('element.update', { id: 'billing', accentColor: '', iconKey: null }, view(on))).command)
+    expect(off.ok && off.model.elements.billing).not.toHaveProperty('accentColor')
+    expect(off.ok && off.model.elements.billing).not.toHaveProperty('iconKey')
+    expect(commandFor('element.update', { id: 'billing', accentColor: 'blue' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('element.add takes the same fields', () => {
+    const out = commandFor('element.add', { name: 'Ledger', liveOn: '2027-01-01', lifecycle: 'planned', owner: 'Finance', aspects: { dr: 'managed' } }, view(model))
+    const after = roundTrip(model, out)
+    expect(after.elements.ledger).toMatchObject({ lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' }, owner: 'Finance', aspects: { dr: { status: 'managed' } } })
+  })
+})
+
 describe('the refusals before the reducer', () => {
   const model = fromArrays(host)
   const refuse = (tool: ToolName, args: unknown) => commandFor(tool, args, view(model))
@@ -364,6 +422,39 @@ describe('the plan tools (ADR-0010)', () => {
     const all = commandFor('plan.port', { planId: 'tr-1', on: '2027-06-01' }, view(withPlan))
     expect(answerOf(all)).toMatchObject({ moved: ['c2'] })
     roundTrip(withPlan, all)
+  })
+
+  it('plan.port leaves a line another plan closed alone, says so, and refuses it by name', () => {
+    // c2 was ported by some other plan onto `who`'s new neighbour: closed, with
+    // no twin on crm. c3 is this plan's to move.
+    const elsewhere = fromArrays({
+      ...host,
+      connections: [
+        ...host.connections,
+        { id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST', validUntil: '2027-02-28' },
+        { id: 'c3', sourceId: 'api', targetId: 'billing', isBidirectional: false },
+      ],
+      transitions: [plan],
+    })
+    const all = commandFor('plan.port', { planId: 'TR-0001', on: '2027-06-01' }, view(elsewhere))
+    expect(answerOf(all)).toMatchObject({ moved: ['c3'], skipped: [{ connectionId: 'c2', closedOn: '2027-02-28' }] })
+    const after = roundTrip(elsewhere, all)
+    expect(after.connections.c2.validUntil).toBe('2027-02-28')
+    expect(commandFor('plan.port', { planId: 'tr-1', connectionId: 'c2', on: '2027-06-01' }, view(elsewhere))).toMatchObject({ refusal: 'agent.planned' })
+    expect(commandFor('plan.port', { planId: 'tr-1', on: '2027-07-01' }, view(after))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('plan.unport takes a port back as one step, and refuses one that is not this plan’s', () => {
+    const ported = roundTrip(withPlan, commandFor('plan.port', { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' }, view(withPlan)))
+    const back = commandFor('plan.unport', { planId: 'TR-1', connectionId: 'c2' }, view(ported))
+    expect(answerOf(back)).toMatchObject({ connectionId: 'c2', unported: true })
+    const after = roundTrip(ported, back)
+    expect(Object.keys(after.connections)).toEqual(['c1', 'c2'])
+    expect(after.connections.c2).not.toHaveProperty('validUntil')
+    expect(commandFor('plan.unport', { planId: 'tr-1', connectionId: 'c2' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('plan.unport', { planId: 'tr-1', connectionId: 'c9' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
+    const closed = fromArrays({ ...toArrays(withPlan), connections: [...host.connections, { id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, validUntil: '2027-01-31' }] })
+    expect(commandFor('plan.unport', { planId: 'tr-1', connectionId: 'c2' }, view(closed))).toMatchObject({ refusal: 'agent.planned' })
   })
 
   it('plan.port refuses an unknown plan or interface, and asks which target when there are several', () => {

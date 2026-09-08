@@ -288,6 +288,9 @@ function elementLine(element: DesignElement) {
     category: element.category,
     vendor: element.vendor,
     technology: element.technology,
+    owner: element.owner,
+    lifecycleDates: element.lifecycleDates,
+    successorId: element.successorId,
     parentApplicationId: element.parentApplicationId,
     hasDescription: Boolean(element.description?.trim()),
   }

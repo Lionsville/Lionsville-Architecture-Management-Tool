@@ -85,7 +85,13 @@ const LINE_FIELDS = {
   lineStyle: { type: 'string', description: 'Solid, dashed or dotted. Solid when absent.', enum: LINE_STYLES },
 } as const satisfies Record<string, ArgumentSchema>
 
-/** The fields of an element an agent may set. Description is markdown, the element's page. */
+const ASPECT_STATUSES = ['managed', 'partial', 'none', 'atRisk'] as const
+
+/**
+ * The fields of an element an agent may set. Description is markdown, the
+ * element's page. Every optional field clears with null; the three dates land
+ * on the element's lifecycle dates (ADR-0009) and must run in order.
+ */
 const ELEMENT_FIELDS = {
   name: { type: 'string', description: 'The name.' },
   description: { type: 'string', description: 'The documentation, as markdown. The first paragraph is drawn on the card.' },
@@ -94,6 +100,19 @@ const ELEMENT_FIELDS = {
   technology: { type: 'string', description: 'What it is built on.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
+  owner: { type: 'string', description: 'Who answers for it.' },
+  liveOn: { type: 'string', description: 'The day it goes live, yyyy-mm-dd. Before it, planned.' },
+  retiringOn: { type: 'string', description: 'The day it starts retiring, yyyy-mm-dd.' },
+  retiredOn: { type: 'string', description: 'The day it is gone, yyyy-mm-dd. A board dated after it draws neither the card nor its lines.' },
+  successorId: { type: 'string', description: 'The id of what replaces it when it retires. The roadmap\'s checks read this.' },
+  aspects: {
+    type: 'object',
+    description: 'Maturity per aspect, keyed by aspect (platform, cicd, dr, security, monitoring, backup, compliance, cost, or a custom key): '
+      + 'managed, partial, none or atRisk. Only the keys given change; null takes an aspect off.',
+    additionalProperties: { type: 'string', enum: ASPECT_STATUSES },
+  },
+  accentColor: { type: 'string', description: 'The card\'s accent, as a hex colour like #2e86c1. Empty or null gives the theme\'s back.' },
+  iconKey: { type: 'string', description: 'The mark drawn on the card, by its key in the icon registry. Empty or null takes it off.' },
 } as const satisfies Record<string, ArgumentSchema>
 
 const PLAN_STATUSES = ['draft', 'agreed', 'running', 'done', 'abandoned'] as const
@@ -136,9 +155,9 @@ export const TOOLS = [
     name: 'elements.list',
     tier: 'read',
     description:
-      'The elements of the landscape, one line each: id, name, kind, lifecycle and the '
-      + 'category, vendor and technology where set. Filter by kind, by the diagram they are '
-      + 'drawn on, or by a free-text query over name, category, vendor and technology.',
+      'The elements of the landscape, one line each: id, name, kind, lifecycle, and the '
+      + 'category, vendor, technology, owner, lifecycle dates and successor where set. Filter by kind, '
+      + 'by the diagram they are drawn on, or by a free-text query over name, category, vendor and technology.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -276,13 +295,8 @@ export const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: ELEMENT_FIELDS.name,
+        ...ELEMENT_FIELDS,
         kind: { type: 'string', description: 'What kind of element. Default application.', enum: KINDS },
-        description: ELEMENT_FIELDS.description,
-        category: ELEMENT_FIELDS.category,
-        vendor: ELEMENT_FIELDS.vendor,
-        technology: ELEMENT_FIELDS.technology,
-        lifecycle: ELEMENT_FIELDS.lifecycle,
         parentApplicationId: { type: 'string', description: 'For a component: the application it is part of.' },
         diagramId: { type: 'string', description: 'The diagram to draw it on. Default: the one on screen.' },
         zone: { type: 'string', description: 'On a landscape: the band to draw it in. Default: the kind\'s own.', enum: ZONES },
@@ -297,7 +311,10 @@ export const TOOLS = [
   {
     name: 'element.update',
     tier: 'write',
-    description: 'Change an element\'s fields. Only the fields given change; the rest stay as they are.',
+    description:
+      'Change an element\'s fields. Only the fields given change; the rest stay as they are, and null '
+      + 'clears an optional one. The dates go live → retiring → retired and are refused out of order; '
+      + 'where a card sits on a diagram is element.place, not this.',
     inputSchema: {
       type: 'object',
       properties: { id: ID('element'), ...ELEMENT_FIELDS },
@@ -421,8 +438,9 @@ export const TOOLS = [
     description:
       'Move an interface of a plan onto the element it introduces, on a day (ADR-0010): a twin of the line '
       + 'on the new end valid from that day, and the original valid until the day before. Without a '
-      + 'connectionId, every interface of the plan not yet planned moves on that day, as one step. '
-      + 'plans.list shows the interfaces and where each has gone.',
+      + 'connectionId, every interface of the plan not yet planned moves on that day, as one step — and a '
+      + 'line another plan has already closed is skipped and listed, never re-dated. Naming such a line '
+      + 'is refused; plan.unport it under its own plan first. plan.read shows the interfaces and where each has gone.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -432,6 +450,22 @@ export const TOOLS = [
         on: { type: 'string', description: 'The day it moves, yyyy-mm-dd.' },
       },
       required: ['planId', 'on'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'plan.unport',
+    tier: 'write',
+    description:
+      'Take a port back: the twin goes and the original is open-ended again, as one undo step. Only a '
+      + 'line this plan dated; one closed by another plan is refused.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: PLAN_ID,
+        connectionId: { type: 'string', description: 'The line on the retiring element whose port to take back.' },
+      },
+      required: ['planId', 'connectionId'],
       additionalProperties: false,
     },
   },
@@ -769,6 +803,7 @@ export type AgentRefusal =
   | 'agent.busy'
   | 'agent.cancelled'
   | 'agent.noAnswer'
+  | 'agent.planned'
   | CommandRefusal
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
@@ -786,6 +821,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.cancelled': 'The person cancelled the layout pass.',
   'agent.windowHidden': 'The window is hidden or minimised, so nothing can be drawn. Bring it to the front.',
   'agent.noAnswer': 'The app did not answer in time.',
+  'agent.planned': 'That interface was already dated by another plan, or by hand. Take that port back first.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',

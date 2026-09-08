@@ -19,7 +19,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../i18n'
 import {
   addDays, isDay, nextTransitionNumber, portCommands, portsOf, replacementCommands, shiftDays,
-  transaction, transitionList, transitionsOf, unportCommands,
+  transaction, transitionList, transitionsOf, unplannedPorts, unportCommands,
 } from '../model'
 import type { Command, DesignElement, ElementId, Transition } from '../model'
 import type { MakeId } from '../model/keys'
@@ -151,7 +151,9 @@ export function usePlans(deps: {
     portAll(planId, toId, on) {
       const plan = transitionsOf(session.indexed())[planId]
       if (!plan) return
-      const remaining = portsOf(session.current(), plan).filter((one) => one.on === undefined)
+      // Not dated by this plan, and not closed by another one either: a
+      // line some other plan already moved is that plan's, and stays.
+      const remaining = unplannedPorts(portsOf(session.current(), plan))
       if (remaining.length === 0) return
       session.dispatch(transaction(remaining.flatMap((port) => portCommands(port, toId, on, () => session.ids.connection()))))
     },

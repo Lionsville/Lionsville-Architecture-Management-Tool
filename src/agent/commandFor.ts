@@ -25,17 +25,17 @@ import {
 import { HOME_ZONE } from '../model/zones'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { portCommands, portsOf } from '../model/porting'
+import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
 import {
   findTransition, nextTransitionNumber, transitionLabel, transitionsFrom as planTransitionsFrom,
 } from '../model/transition'
 import type { Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus } from '../model/transition'
-import { decisionsOf, transitionList, transitionsOf } from '../model/normalised'
+import { decisionsOf, transitionList } from '../model/normalised'
 import { businessCaseTemplate } from '../documentation/businessCase'
 import type {
   DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId,
-  ElementKind, Layer7Zone, Lifecycle,
+  AspectStatus, ElementKind, Layer7Zone,
 } from '../model/types'
 import type { AdrStatus } from '../model/adr'
 import { isAdrLocked, newAdr, nextAdrNumber, transitionAdr, transitionsFrom } from '../decisions/adr'
@@ -80,11 +80,12 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'element.add': return addElement(args, view)
     case 'element.update': {
       const id = args.id as string
-      if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
-      const patch = fieldsOf(args, ['name', 'description', 'category', 'vendor', 'technology', 'lifecycle', 'isManaged'])
-      if (typeof patch.name === 'string' && !patch.name.trim()) return refused('agent.badArguments', '"name" must not be blank')
+      const held = model.elements[id]
+      if (!held) return refused('agent.unknownId', `element ${id}`)
+      const patch = elementPatch(args, held, view)
+      if ('ok' in patch) return patch
       return {
-        command: { type: 'element.update', id, patch: patch as Partial<DesignElement>, origin: 'agent' },
+        command: { type: 'element.update', id, patch, origin: 'agent' },
         answer: json({ id, changed: Object.keys(patch) }),
       }
     }
@@ -138,6 +139,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'diagram.create': return createDiagram(args, view)
     case 'plan.replace': return replace(args, view)
     case 'plan.port': return port(args, view)
+    case 'plan.unport': return unport(args, view)
     case 'plan.create': return createPlan(args, view)
     case 'plan.update': return updatePlan(args, view)
     case 'plan.remove': {
@@ -233,20 +235,24 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   }
 
   const id = view.ids.element(name)
-  const element: DesignElement = {
+  const bare: DesignElement = {
     id,
     kind,
     name,
-    lifecycle: (args.lifecycle as Lifecycle | undefined) ?? 'live',
+    lifecycle: 'live',
     isManaged: kind !== 'externalSystem' && kind !== 'actor',
     aspects: {},
-    ...strings(args, ['description', 'category', 'vendor', 'technology']),
     ...(parentApplicationId !== undefined
       ? { parentApplicationId }
       : kind === 'component' && diagram.kind === 'container' && diagram.applicationElementId
         ? { parentApplicationId: diagram.applicationElementId }
         : {}),
   }
+  // The same fields, read the same way as an update, applied to the bare row.
+  const patch = elementPatch(args, bare, view)
+  if ('ok' in patch) return patch
+  const element: DesignElement = { ...bare, ...patch }
+  for (const key of Object.keys(patch) as (keyof DesignElement)[]) if (element[key] === undefined) delete element[key]
 
   const placement = seedPlacement(diagram, id, kind, args)
   return {
@@ -320,9 +326,8 @@ function replace(args: Args, view: WriteView): Prepared | AgentAnswer {
 }
 
 function port(args: Args, view: WriteView): Prepared | AgentAnswer {
-  const { model } = view
   const planId = args.planId as string
-  const plan = transitionsOf(model)[planId]
+  const plan = planOf(planId, view)
   if (!plan) return refused('agent.unknownId', `plan ${planId}`)
   const on = args.on as string
   if (!isDay(on)) return refused('agent.badArguments', 'on must be yyyy-mm-dd')
@@ -333,16 +338,106 @@ function port(args: Args, view: WriteView): Prepared | AgentAnswer {
 
   const ports = portsOf(view.current(), plan)
   const connectionId = args.connectionId as string | undefined
+  // A line another plan closed is not this plan's to date: "every interface
+  // not yet planned" leaves it alone and says so, and naming it is refused.
   const chosen = connectionId === undefined
-    ? ports.filter((one) => one.on === undefined)
+    ? unplannedPorts(ports)
     : ports.filter((one) => one.from.id === connectionId)
   if (connectionId !== undefined && chosen.length === 0) return refused('agent.unknownId', `interface ${connectionId} of plan ${planId}`)
-  if (chosen.length === 0) return refused('agent.badArguments', 'every interface of this plan is planned already')
+  if (connectionId !== undefined && chosen[0].closedOn !== undefined) {
+    return refused('agent.planned', `${connectionId} is closed on ${chosen[0].closedOn}`)
+  }
+  const skipped = connectionId === undefined
+    ? ports.filter((one) => one.closedOn !== undefined).map((one) => ({ connectionId: one.from.id, closedOn: one.closedOn }))
+    : []
+  if (chosen.length === 0) {
+    return refused('agent.badArguments', skipped.length
+      ? `every interface of this plan is planned already; ${skipped.length} closed by another plan or by hand`
+      : 'every interface of this plan is planned already')
+  }
   const commands = chosen.flatMap((one) => portCommands(one, toId, on, () => view.ids.connection()))
   return {
     command: transaction(commands, { origin: 'agent' }),
-    answer: json({ planId, toId, on, moved: chosen.map((one) => one.from.id) }),
+    answer: json({
+      planId: plan.id, toId, on, moved: chosen.map((one) => one.from.id),
+      ...(skipped.length ? { skipped, note: 'Skipped lines were closed by another plan or by hand; plan.unport them there first.' } : {}),
+    }),
   }
+}
+
+function unport(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const plan = planOf(args.planId, view)
+  if (!plan) return refused('agent.unknownId', `plan ${String(args.planId)}`)
+  const connectionId = args.connectionId as string
+  const port = portsOf(view.current(), plan).find((one) => one.from.id === connectionId)
+  if (!port) return refused('agent.unknownId', `interface ${connectionId} of plan ${transitionLabel(plan)}`)
+  if (port.closedOn !== undefined) return refused('agent.planned', `${connectionId} is closed on ${port.closedOn}`)
+  if (port.on === undefined) return refused('agent.badArguments', `${connectionId} has not been ported`)
+  return {
+    command: transaction(unportCommands(port), { origin: 'agent' }),
+    answer: json({ planId: plan.id, connectionId, unported: true, ...(port.to ? { twinRemoved: port.to.id } : {}) }),
+  }
+}
+
+// --- an element's fields ----------------------------------------------------------------
+
+const DATE_FIELDS = { liveOn: 'live', retiringOn: 'retiring', retiredOn: 'retired' } as const
+
+/**
+ * The patch an element.update or element.add asks for. Null clears an
+ * optional field; the reducer refuses dates out of order, so they are not
+ * checked here beyond being days. The three date arguments are one field on
+ * the element, merged with what it has, and gone altogether when nothing is
+ * left — a saved file should look hand-written.
+ */
+function elementPatch(args: Args, held: DesignElement, view: ReadView): Partial<DesignElement> | AgentAnswer {
+  const patch: Record<string, unknown> = {}
+  if (typeof args.name === 'string') {
+    if (!args.name.trim()) return refused('agent.badArguments', '"name" must not be blank')
+    patch.name = args.name.trim()
+  }
+  for (const key of ['description', 'category', 'vendor', 'technology', 'owner'] as const) {
+    if (args[key] === null || args[key] === '') patch[key] = undefined
+    else if (typeof args[key] === 'string') patch[key] = args[key]
+  }
+  if (typeof args.lifecycle === 'string') patch.lifecycle = args.lifecycle
+  if (typeof args.isManaged === 'boolean') patch.isManaged = args.isManaged
+  if (args.successorId === null || args.successorId === '') patch.successorId = undefined
+  else if (typeof args.successorId === 'string') {
+    if (!view.model.elements[args.successorId]) return refused('agent.unknownId', `element ${args.successorId}`)
+    if (args.successorId === held.id) return refused('agent.badArguments', 'an element cannot succeed itself')
+    patch.successorId = args.successorId
+  }
+
+  if (Object.keys(DATE_FIELDS).some((key) => args[key] !== undefined)) {
+    const dates: Record<string, string> = { ...held.lifecycleDates }
+    for (const [key, phase] of Object.entries(DATE_FIELDS)) {
+      const value = args[key]
+      if (value === undefined) continue
+      if (value === null || value === '') delete dates[phase]
+      else if (isDay(value)) dates[phase] = value
+      else return refused('agent.badArguments', `${key} must be yyyy-mm-dd`)
+    }
+    patch.lifecycleDates = Object.keys(dates).length ? dates : undefined
+  }
+
+  if (args.aspects !== undefined && args.aspects !== null) {
+    const aspects = { ...held.aspects }
+    for (const [key, status] of Object.entries(args.aspects as Record<string, string | null>)) {
+      if (status === null) delete aspects[key]
+      else aspects[key] = { ...aspects[key], status: status as AspectStatus }
+    }
+    patch.aspects = aspects
+  }
+  if (args.accentColor !== undefined) {
+    const color = args.accentColor === null ? '' : hexColour(args.accentColor)
+    if (color === false) return refused('agent.badArguments', '"accentColor" must be a hex colour like #2e86c1')
+    patch.accentColor = color === '' ? undefined : color
+  }
+  if (args.iconKey !== undefined) {
+    patch.iconKey = args.iconKey === null || args.iconKey === '' ? undefined : args.iconKey
+  }
+  return patch as Partial<DesignElement>
 }
 
 // --- plans as records (ADR-0009) -------------------------------------------------------
