@@ -19,11 +19,7 @@ import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
 import { groupNameOf } from '../projects/project'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
-import {
-  addDays, decisionsToCommands, isDay, nextTransitionNumber, portCommands, portsOf, replacementCommands,
-  shiftDays, transaction, transitionList, transitionsOf, unportCommands,
-} from '../model'
-import type { Command } from '../model'
+import { decisionsToCommands, transaction } from '../model'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { SearchHit } from '../search/search'
@@ -46,8 +42,7 @@ import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
-import { PlanPage, ReplaceDialog, RoadmapPage, planBodyTemplate } from '../roadmap'
-import type { PlanActions, ReplaceAnswer, RoadmapActions } from '../roadmap'
+import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
@@ -59,6 +54,7 @@ import { useDiagramActions } from './useDiagramActions'
 import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
 import { useModelSession } from './useModelSession'
+import { usePlans } from './usePlans'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
 import { useNearlyFullNotice } from './useStorageNotice'
@@ -374,7 +370,6 @@ export function ProjectWorkspace({
    */
   const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
-  const [roadmapOpen, setRoadmapOpen] = useState(false)
   /**
    * How tall the shell toolbar is, measured: every page opens below it, so
    * Documentation, Decisions and Roadmap stay one click from each other while
@@ -394,11 +389,6 @@ export function ProjectWorkspace({
     () => ({ ...(windowChrome ?? NO_WINDOW_CHROME), topInset: toolbarHeight }),
     [windowChrome, toolbarHeight],
   )
-  // The plan being read on its own page (ADR-0010); over the roadmap, which
-  // stays open underneath so closing the plan lands back on the axis.
-  const [planId, setPlanId] = useState<string | undefined>(undefined)
-  // The element a replacement is being started from (ADR-0010).
-  const [replacing, setReplacing] = useState<string | undefined>(undefined)
   // The clock, read once per render of the workspace rather than per component:
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
@@ -411,20 +401,27 @@ export function ProjectWorkspace({
 
   // The toolbar's pages are one at a time: opening one closes the others, so
   // the bar reads as tabs rather than stacking pages under each other.
-  const openDecisions = useCallback((adrId?: string) => {
-    setRoadmapOpen(false)
-    setPlanId(undefined)
-    setAdrPage({ open: true, adrId })
+  const focusElement = useCallback((id: string) => {
+    setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [])
+  const showDecision = useCallback((adrId?: string) => setAdrPage({ open: true, adrId }), [])
+  const plans = usePlans({
+    session, makeId, s,
+    navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
+  })
+  const openDecisions = useCallback((adrId?: string) => {
+    plans.closeAll()
+    showDecision(adrId)
+  }, [plans.closeAll, showDecision])
   const openRoadmap = useCallback(() => {
     setAdrPage({ open: false })
-    setRoadmapOpen(true)
-  }, [])
+    plans.openRoadmap()
+  }, [plans.openRoadmap])
 
   const chooseHit = useCallback((hit: SearchHit) => {
     switch (hit.kind) {
       case 'element':
-        setFocusRequest((prev) => ({ id: hit.elementId, nonce: (prev?.nonce ?? 0) + 1 }))
+        focusElement(hit.elementId)
         break
       case 'documentation':
         openDocumentation(hit.elementId)
@@ -433,7 +430,7 @@ export function ProjectWorkspace({
         openDecisions(hit.adrId)
         break
     }
-  }, [openDocumentation, openDecisions])
+  }, [focusElement, openDocumentation, openDecisions])
 
   // ⌘K / Ctrl+K from anywhere in the workspace. The editor's own ⌘F stays the
   // canvas finder; this is the wider one.
@@ -474,144 +471,6 @@ export function ProjectWorkspace({
    * the model. The page hands back the whole list; what actually moved becomes
    * one undo step, so ⌘Z puts back a record rather than a list.
    */
-  /**
-   * What the roadmap may do (ADR-0009).
-   *
-   * Every one of them is a command, so a plan written, moved or thrown away is
-   * one undo step and one Activity line, exactly like a node dragged. The shift
-   * is the only interesting one: it moves the plan's own window and the dates
-   * on the elements it introduces and retires, in one transaction, because a
-   * plan slipping is one thing that happened.
-   */
-  const roadmapActions = useMemo<RoadmapActions>(() => ({
-    addTransition(title) {
-      const model = session.indexed()
-      const list = transitionList(model)
-      const number = nextTransitionNumber(list)
-      const id = makeId('tr')
-      session.dispatch({
-        type: 'transition.add',
-        transition: {
-          id, number, title, status: 'draft',
-          elements: [], decisions: [], milestones: [], body: planBodyTemplate(s),
-        },
-      })
-      setPlanId(id)
-    },
-    onOpenPlan(id) { setPlanId(id) },
-    setAsOf(day) {
-      const id = session.currentActiveId()
-      if (!id) return
-      session.dispatch({ type: 'diagram.update', id, patch: { asOf: day }, coalesce: `asOf:${id}` })
-    },
-    onOpenElement(id) {
-      setRoadmapOpen(false)
-      setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
-    },
-  }), [session, makeId, s])
-
-  /**
-   * What a plan's page may do (ADR-0010). The dates on an element the plan
-   * introduces or retires are written to the element, not to the plan — the
-   * page is where they are set together, the element is where they live.
-   */
-  const planActions = useMemo<PlanActions>(() => ({
-    updateTransition(id, patch) {
-      session.dispatch({ type: 'transition.update', id, patch, coalesce: `plan:${id}` })
-    },
-    removeTransition(id) {
-      session.dispatch({ type: 'transition.remove', id })
-    },
-    shiftTransition(id, days) {
-      const model = session.indexed()
-      const plan = transitionsOf(model)[id]
-      if (!plan || !days) return
-      const moved = shiftDays(plan, days)
-      const commands: Command[] = [{ type: 'transition.update', id, patch: moved }]
-      // The dates on what it introduces and retires are the elements' own, so
-      // they move as element updates beside the plan rather than inside it.
-      for (const one of plan.elements) {
-        if (one.role === 'changes') continue
-        const element = model.elements[one.elementId]
-        const dates = element?.lifecycleDates
-        if (!element || !dates) continue
-        const shifted = Object.fromEntries(
-          Object.entries(dates).map(([phase, day]) => [phase, isDay(day) ? addDays(day, days) : day]),
-        )
-        commands.push({ type: 'element.update', id: one.elementId, patch: { lifecycleDates: shifted } })
-      }
-      session.dispatch(transaction(commands))
-    },
-    updateElementDates(id, lifecycleDates) {
-      session.dispatch({ type: 'element.update', id, patch: { lifecycleDates }, coalesce: `dates:${id}` })
-    },
-    // A port is read off the live model at the moment it is written, so a
-    // twin drawn since — by the agent, by hand — is re-dated rather than
-    // doubled. Each is one transaction: the twin and the closed original.
-    port(planId, connectionId, toId, on) {
-      const model = session.indexed()
-      const plan = transitionsOf(model)[planId]
-      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
-      if (!port) return
-      session.dispatch(transaction(portCommands(port, toId, on, () => session.ids.connection())))
-    },
-    portAll(planId, toId, on) {
-      const model = session.indexed()
-      const plan = transitionsOf(model)[planId]
-      if (!plan) return
-      const remaining = portsOf(session.current(), plan).filter((one) => one.on === undefined)
-      if (remaining.length === 0) return
-      session.dispatch(transaction(remaining.flatMap((port) => portCommands(port, toId, on, () => session.ids.connection()))))
-    },
-    unport(planId, connectionId) {
-      const model = session.indexed()
-      const plan = transitionsOf(model)[planId]
-      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
-      if (!port) return
-      session.dispatch(transaction(unportCommands(port)))
-    },
-    onOpenElement(id) {
-      setPlanId(undefined)
-      setRoadmapOpen(false)
-      setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
-    },
-    onOpenDecision(adrId) {
-      setPlanId(undefined)
-      setRoadmapOpen(false)
-      setAdrPage({ open: true, adrId })
-    },
-  }), [session])
-
-  /**
-   * Replace… answered (ADR-0010): the new element, the dates, the successor,
-   * the tap and the plan, as one transaction — then the plan's page, because
-   * the next thing to do is on it.
-   */
-  const startReplacement = useCallback((answer: ReplaceAnswer) => {
-    const current = session.current()
-    const from = current.elements.find((e) => e.id === answer.from[0]?.elementId)
-    const to = answer.to
-    const toName = 'name' in to ? to.name : current.elements.find((e) => e.id === to.elementId)?.name ?? ''
-    const { commands, planId: id } = replacementCommands(current, {
-      ...answer,
-      words: {
-        planTitle: s('replace.planTitle', { from: from?.name ?? '', to: toName }),
-        tapLabel: s('replace.tap'),
-        shadowMilestone: s('replace.shadowMilestone'),
-        cutoverMilestone: s('replace.cutoverMilestone'),
-        body: planBodyTemplate(s),
-        owner: from?.owner,
-      },
-    }, {
-      element: (name) => session.ids.element(name),
-      connection: () => session.ids.connection(),
-      transition: makeId('tr'),
-    }, nextTransitionNumber(transitionList(session.indexed())))
-    session.dispatch(transaction(commands))
-    setReplacing(undefined)
-    setPlanId(id)
-  }, [session, makeId, s])
-
   const onProjectDecisionsChange = useCallback((next: Adr[]) => {
     const commands = decisionsToCommands(session.indexed(), next)
     if (commands.length) session.dispatch(transaction(commands))
@@ -695,8 +554,8 @@ export function ProjectWorkspace({
           requests={{ focus: focusRequest, documentation: docRequest }}
           plans={{
             list: session.model.transitions ?? [],
-            onOpen: (id) => setPlanId(id),
-            onReplace: (elementId) => setReplacing(elementId),
+            onOpen: plans.openPlan,
+            onReplace: plans.startReplace,
           }}
           layout={{ onError: onLayoutError, onSettled: session.onLayoutSettled }}
           preferences={{ initial: editorPreferences, onChange: onEditorPreferencesChange }}
@@ -777,35 +636,35 @@ export function ProjectWorkspace({
         onOpenHistory={snapshots.available
           ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
           : undefined}
-        onOpenPlan={(id) => setPlanId(id)}
+        onOpenPlan={plans.openPlan}
         windowChrome={pageChrome}
       />
       <RoadmapPage
-        open={roadmapOpen}
+        open={plans.roadmapOpen}
         model={session.model}
         today={todayDay}
         asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
         readOnly={false}
-        actions={roadmapActions}
-        onClose={() => setRoadmapOpen(false)}
+        actions={plans.roadmapActions}
+        onClose={plans.closeRoadmap}
         windowChrome={pageChrome}
       />
       <ReplaceDialog
-        subject={replacing ? session.model.elements.find((e) => e.id === replacing) : undefined}
+        subject={plans.replacing}
         model={session.model}
-        onCancel={() => setReplacing(undefined)}
-        onConfirm={startReplacement}
+        onCancel={plans.cancelReplace}
+        onConfirm={plans.confirmReplace}
       />
       <PlanPage
-        open={planId !== undefined}
-        plan={planId ? session.model.transitions?.find((one) => one.id === planId) : undefined}
+        open={plans.planId !== undefined}
+        plan={plans.plan}
         model={session.model}
         decisions={session.model.decisions}
         today={todayDay}
         readOnly={false}
-        actions={planActions}
+        actions={plans.planActions}
         renderMarkdown={renderDocument}
-        onClose={() => setPlanId(undefined)}
+        onClose={plans.closePlan}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog
