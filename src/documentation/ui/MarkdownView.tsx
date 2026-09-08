@@ -33,7 +33,8 @@ import Typography from '@mui/material/Typography'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import type { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { MermaidBlock } from './MermaidBlock'
+import { blockFor } from './blocks'
+import type { BlockContext } from './blocks'
 import type { MermaidRenderer } from './MermaidBlock'
 
 export const ELEMENT_LINK_SCHEME = 'element:'
@@ -46,13 +47,15 @@ export type MarkdownViewProps = {
   renderMermaid?: MermaidRenderer
 }
 
-const MERMAID_CLASS = 'language-mermaid'
-
-/** Whether a `pre` holds nothing but a mermaid fence, which then draws itself. */
-function isMermaidFence(children: ReactNode): boolean {
+/**
+ * Whether a `pre` holds nothing but a fence that draws itself, in which case
+ * the `pre` gets out of the way — a drawn block brings its own frame, and a
+ * code block's grey box around a diagram is not what anybody meant.
+ */
+function isDrawnFence(children: ReactNode): boolean {
   return isValidElement<{ className?: unknown }>(children)
     && typeof children.props.className === 'string'
-    && children.props.className.split(' ').includes(MERMAID_CLASS)
+    && blockFor(children.props.className) !== undefined
 }
 
 /**
@@ -86,7 +89,7 @@ function heading(size: string, weight = 600) {
 
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
-function components(onElementLink?: (elementId: string) => void, renderMermaid?: MermaidRenderer): Components {
+function components(onElementLink: ((elementId: string) => void) | undefined, context: BlockContext): Components {
   return {
     h1: heading('1.6em'),
     h2: heading('1.35em'),
@@ -143,18 +146,22 @@ function components(onElementLink?: (elementId: string) => void, renderMermaid?:
       </Box>
     ),
     hr: () => <Box component="hr" sx={{ border: 0, borderTop: 1, borderColor: 'divider', my: '1em' }} />,
-    code: ({ children, className }) => (className ?? '').split(' ').includes(MERMAID_CLASS) ? (
-      <MermaidBlock code={String(children).replace(/\n$/, '')} render={renderMermaid} />
-    ) : (
-      <Box
-        component="code"
-        className={className}
-        sx={{ fontFamily: CODE_FONT, fontSize: '0.9em', bgcolor: 'action.hover', px: '0.35em', py: '0.1em', borderRadius: 1 }}
-      >
-        {children}
-      </Box>
-    ),
-    pre: ({ children }) => isMermaidFence(children) ? <>{children}</> : (
+    code: ({ children, className }) => {
+      const Block = blockFor(className)
+      // The parser leaves the fence's closing newline on the text; every block
+      // is handed the source as it was written, without it.
+      if (Block) return <Block code={String(children).replace(/\n$/, '')} context={context} />
+      return (
+        <Box
+          component="code"
+          className={className}
+          sx={{ fontFamily: CODE_FONT, fontSize: '0.9em', bgcolor: 'action.hover', px: '0.35em', py: '0.1em', borderRadius: 1 }}
+        >
+          {children}
+        </Box>
+      )
+    },
+    pre: ({ children }) => isDrawnFence(children) ? <>{children}</> : (
       <Box
         component="pre"
         sx={{
@@ -201,7 +208,8 @@ export const MarkdownView = memo(function MarkdownView(
 ) {
   // Memoised, because these are component TYPES: a fresh set on every render
   // would remount every block, and a mermaid block that remounts draws again.
-  const comps = useMemo(() => components(onElementLink, renderMermaid), [onElementLink, renderMermaid])
+  const context = useMemo<BlockContext>(() => ({ renderMermaid }), [renderMermaid])
+  const comps = useMemo(() => components(onElementLink, context), [onElementLink, context])
   const document = useMemo(() => (
     <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={comps}>
       {markdown}
