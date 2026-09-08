@@ -5,7 +5,7 @@ import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles'
 import { getNodeTokens } from '../theme/tokens';
 import { DESCRIPTION_TYPE, descriptionLineClamp } from '../../model/placement';
 import { shortDescription } from '../../documentation/documentation';
-import type { DesignElement, ElementKind } from '../../model/types';
+import type { DesignElement, ElementKind, Lifecycle } from '../../model/types';
 import { ElementResizer } from './ElementResizer';
 import { LifecycleBadge } from './LifecycleBadge';
 import { LogoMark, useResolvedLogo } from './logoRegistry';
@@ -39,6 +39,7 @@ import type { ElementNodeData } from './nodeData';
  */
 export function NodeShell({
   element,
+  phase,
   selected,
   readOnly,
   showLifecycle,
@@ -52,6 +53,8 @@ export function NodeShell({
   selected: boolean;
   readOnly: boolean;
   showLifecycle: boolean;
+  /** The phase on the day the board shows; absent = the element's stored one. */
+  phase?: Lifecycle;
   /** Absent = this node does not resize (the container-diagram boundary). */
   resizeLimits?: ElementNodeData['resizeLimits'];
   /** The node's own root-box styling. Applied last, so it wins. */
@@ -67,7 +70,10 @@ export function NodeShell({
   children: ReactNode;
 }) {
   const tokens = getNodeTokens(useTheme());
-  const dim = element.lifecycle === 'retired' && showLifecycle;
+  // The phase on the day the board shows, which is the element's stored one
+  // unless a date has moved it on (ADR-0009).
+  const shown = phase ?? element.lifecycle;
+  const dim = shown === 'retired' && showLifecycle;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <Box
@@ -99,7 +105,7 @@ export function NodeShell({
         )}
         <NodeHandles connectable={!readOnly} />
       </Box>
-      <LifecycleBadge lifecycle={element.lifecycle} show={showLifecycle} />
+      <LifecycleBadge lifecycle={shown} show={showLifecycle} />
     </Box>
   );
 }

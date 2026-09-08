@@ -1,5 +1,5 @@
 import type { Node, NodeProps } from '@xyflow/react';
-import type { AspectConfigEntry, DesignElement, DiagramPlacement } from '../../model/types';
+import type { AspectConfigEntry, DesignElement, DiagramPlacement, Lifecycle } from '../../model/types';
 
 /** Shared payload for every element node on the canvas. */
 export interface ElementNodeData extends Record<string, unknown> {
@@ -18,6 +18,15 @@ export interface ElementNodeData extends Record<string, unknown> {
   resizeLimits: { min: { width: number; height: number }; max: { width: number; height: number } };
   /** Toolbar toggle (U5): show the lifecycle badge and the retired dim. */
   showLifecycle: boolean;
+  /**
+   * The phase this element is in **on the day the diagram shows** (ADR-0009).
+   *
+   * A field beside the element rather than a rewritten `element.lifecycle`,
+   * because `sameNodeData` compares the element by identity: handing the card a
+   * fresh object every derive is what ADR-0004 measured and removed. A string
+   * costs one comparison.
+   */
+  phase: Lifecycle;
 }
 
 export type ElementNode = Node<ElementNodeData>;

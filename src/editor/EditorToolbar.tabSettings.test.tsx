@@ -50,6 +50,7 @@ function renderToolbar(props: {
         onOpenHelp={vi.fn()}
         showLifecycle
         onToggleLifecycle={vi.fn()}
+        onAsOfChange={vi.fn()}
         onUndo={vi.fn()}
         onRedo={vi.fn()}
         canUndo={false}

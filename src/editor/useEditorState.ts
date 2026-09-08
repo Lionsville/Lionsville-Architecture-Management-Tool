@@ -329,6 +329,15 @@ export interface EditorActions {
    * with content history.
    */
   setAutoRoute(on: boolean): void;
+  /**
+   * The day the active diagram shows (ADR-0009); `undefined` means today.
+   *
+   * Undoable, unlike the routing mode above, and coalesced per diagram: what a
+   * board shows IS content — a "after the cutover" view is a thing somebody
+   * made — and stepping a date control should leave one entry in Activity
+   * rather than one per day stepped through.
+   */
+  setAsOf(day: string | undefined): void;
 }
 
 export interface EditorState {
@@ -1150,6 +1159,15 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
           ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
         ]));
+      },
+
+      setAsOf(day) {
+        const diagram = currentDiagram();
+        if (!diagram || (diagram.asOf ?? undefined) === day) return;
+        dispatch({
+          type: 'diagram.update', id: diagram.id, patch: { asOf: day },
+          coalesce: `asOf:${diagram.id}`,
+        });
       },
 
       setAutoRoute(on) {

@@ -74,6 +74,7 @@ export type MenuActionId =
   | 'rename-diagram'
   | 'diagram-settings'
   | 'duplicate-diagram'
+  | 'duplicate-diagram-as-of'
   | 'delete-diagram'
   | 'diagram-history';
 
@@ -665,6 +666,9 @@ function tabItems(ctx: MenuContext): MenuItem[] {
   if (tab.canRename) items.push({ id: 'rename-diagram', label: t('menu.renameDiagram'), action: 'rename-diagram' });
   if (tab.canConfigure) items.push({ id: 'diagram-settings', label: t('menu.diagramSettings'), action: 'diagram-settings' });
   if (tab.canDuplicate) items.push({ id: 'duplicate-diagram', label: t('menu.duplicateDiagram'), action: 'duplicate-diagram' });
+  // A copy dated for a day the landscape has not reached yet — which is how a
+  // future diagram is made here, rather than by forking the project (ADR-0009).
+  if (tab.canDuplicate) items.push({ id: 'duplicate-diagram-as-of', label: t('menu.duplicateDiagramAsOf'), action: 'duplicate-diagram-as-of' });
   if (tab.canHistory) items.push({ id: 'diagram-history', label: t('common.history'), action: 'diagram-history' });
   if (tab.canDelete) {
     if (items.length > 0) items.push(sep('sep-delete'));

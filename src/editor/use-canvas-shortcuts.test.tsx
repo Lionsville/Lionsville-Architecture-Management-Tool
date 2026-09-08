@@ -37,6 +37,7 @@ function stubActions(): EditorActions {
   return {
     addElement: vi.fn(),
     setAutoRoute: vi.fn(),
+  setAsOf: vi.fn(),
     updateElement: vi.fn(),
     updateElements: vi.fn(),
     movePlacements: vi.fn(),

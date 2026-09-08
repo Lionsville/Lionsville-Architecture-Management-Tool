@@ -23,6 +23,7 @@ import { useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { buildEdges, buildNodes, type FloatingEdgeModel } from '../graph';
 import { domainGroupRectMap } from '../../model/placement';
+import { today } from '../../model/lifecycle';
 import {
   insertWaypointOnDrawn,
   routeFor,
@@ -439,6 +440,17 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const lastNodes = useRef<ElementNode[]>([]);
   const lastEdges = useRef<FloatingEdgeModel[]>([]);
 
+  /**
+   * The day this board shows (ADR-0009): the diagram's own, or today.
+   *
+   * Read once per diagram rather than per derive, so a board with no date is a
+   * stable dependency and does not re-derive because the clock moved a
+   * millisecond. A window left open across midnight keeps yesterday's board
+   * until something else changes, which is the right trade against re-deriving
+   * a four-thousand-element landscape on a timer.
+   */
+  const asOfDay = useMemo(() => props.diagram.asOf ?? today(), [props.diagram.asOf]);
+
   const derivedNodes = useMemo(
     () => {
       const next = buildNodes({
@@ -449,11 +461,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         selectedConnectionIds,
         edgeColor: tokens.edge.stroke,
         showLifecycle: props.showLifecycle,
+        asOfDay,
       }, lastNodes.current);
       lastNodes.current = next;
       return next;
     },
-    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle],
+    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay],
   );
   const derivedEdges = useMemo(
     () => {
@@ -467,6 +480,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         // Only while the mode is on — see `autoRoute` on the props.
         draggingElementIds: props.autoRoute ? draggingElementIds : undefined,
         previewRoutes: props.autoRoute ? preview.previewRoutes : undefined,
+        asOfDay,
       }, lastEdges.current);
       lastEdges.current = next;
       return next;
@@ -478,6 +492,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       selectedElementIds,
       selectedConnectionIds,
       tokens,
+      asOfDay,
       props.autoRoute,
       draggingElementIds,
       preview.previewRoutes,

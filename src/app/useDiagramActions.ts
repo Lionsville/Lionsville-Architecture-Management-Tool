@@ -8,7 +8,7 @@
 import { useCallback, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { DesignDiagram, DiagramSettings } from '../model'
-import { duplicateDiagram, toDiagram } from '../model'
+import { duplicateDiagram, toDiagram, transaction } from '../model'
 import { findContainerDiagram, seedContainerDiagram } from '../model/containerDiagram'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -22,7 +22,7 @@ export type DiagramActions = {
   onRenameDiagram: (diagramId: string, name: string) => void
   /** The editor's settings dialog, applied: name, title block, aspect columns. */
   onDiagramSettingsChange: (diagramId: string, settings: DiagramSettings) => void
-  onDuplicateDiagram: (diagramId: string) => void
+  onDuplicateDiagram: (diagramId: string, asOf?: string) => void
 
   /** The new landscape: its name is asked for in a dialog. */
   onCreateLayer7Diagram: () => void
@@ -74,12 +74,18 @@ export function useDiagramActions(deps: {
     session.dispatch({ type: 'diagram.settings', id: diagramId, settings })
   }, [session])
 
-  const onDuplicateDiagram = useCallback((diagramId: string) => {
+  const onDuplicateDiagram = useCallback((diagramId: string, asOf?: string) => {
     const source = session.indexed().diagrams[diagramId]
     if (!source) return
     const id = makeId(source.kind === 'layer7' ? 'l7' : 'cd')
-    const command = duplicateDiagram(
+    const copy = duplicateDiagram(
       session.indexed(), diagramId, id, (name) => s('shell.copyOf', { name }))
+    // The date rides in the same transaction as the copy (ADR-0009), so the
+    // pair is one undo step and one Activity line: nobody ends up with a
+    // duplicate they then have to remember to date.
+    const command = copy && asOf
+      ? transaction([copy, { type: 'diagram.update', id, patch: { asOf } }])
+      : copy
     if (!command || !session.dispatch(command, { activeDiagramId: id })) return
     notify(s('shell.duplicated', { name: source.name }), 'success')
   }, [session, notify, s, makeId])

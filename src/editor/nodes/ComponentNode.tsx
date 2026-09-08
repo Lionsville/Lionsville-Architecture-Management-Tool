@@ -30,6 +30,7 @@ export const ComponentNode = memo(function ComponentNode({
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       resizeLimits={data.resizeLimits}
       sx={{
         position: 'relative',

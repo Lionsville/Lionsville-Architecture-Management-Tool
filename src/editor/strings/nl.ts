@@ -114,6 +114,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.renameDiagram': 'Aanzicht hernoemen…',
   'menu.diagramSettings': 'Aanzichtinstellingen…',
   'menu.duplicateDiagram': 'Aanzicht dupliceren',
+  'menu.duplicateDiagramAsOf': 'Dupliceren per datum…',
   'menu.deleteDiagram': 'Aanzicht verwijderen…',
   'menu.lastLandscape': 'Het laatste landschap kan niet worden verwijderd',
   'menu.nodeLabel': 'Elementmenu',
@@ -189,6 +190,11 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.confirm': 'Exporteren',
   'export.largeConfirm': 'Toch exporteren',
   'toolbar.lifecycleBadges': 'Levenscyclusbadges tonen of verbergen',
+  'toolbar.asOf': 'Toont',
+  'toolbar.asOfToday': 'Vandaag',
+  'toolbar.asOfSet': 'Dit bord toont het landschap zoals het op {date} is.',
+  'toolbar.asOfHelp': 'Teken dit bord zoals het landschap er op een gekozen dag uitzag of uit zal zien.',
+  'toolbar.asOfClear': 'Toon vandaag',
   'toolbar.shortcuts': 'Sneltoetsen',
   'toolbar.search': 'Element zoeken',
   'toolbar.searchTip': 'Een element zoeken (⌘F)',
@@ -481,6 +487,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.title': 'TITEL',
   'export.author': 'AUTEUR',
   'export.date': 'DATUM',
+  'export.asOf': 'per {date}',
   'export.aspects': 'ASPECTEN',
 
   // --- De C4-hoek van een containerdiagram ---------------------------------

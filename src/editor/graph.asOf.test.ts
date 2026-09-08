@@ -1,0 +1,137 @@
+/**
+ * The board on a day (ADR-0009).
+ *
+ * The projection is where time reaches the canvas: a card draws the phase it is
+ * in on the day the diagram shows, and a line with a window of its own is drawn
+ * only inside it. Both are pure, so the hybrid phase this whole record exists
+ * for can be checked without a browser: old system live, new one planned, a
+ * sync between them, and three dates that tell three different stories about
+ * the same single model.
+ */
+import { describe, expect, it } from 'vitest'
+import { buildEdges, buildNodes } from './graph'
+import type { BuildGraphArgs } from './graph'
+import type { DesignConnection, DesignDiagram, DesignElement, DesignModel } from '../model/types'
+
+function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
+  return {
+    id, kind: 'application', name: id, lifecycle: 'live',
+    isManaged: true, aspects: {}, parameters: {}, ...over,
+  }
+}
+
+function connection(id: string, sourceId: string, targetId: string, over: Partial<DesignConnection> = {}): DesignConnection {
+  return { id, sourceId, targetId, isBidirectional: false, ...over }
+}
+
+/** The hybrid run: the old system retires as the new one arrives, with a sync between. */
+function model(): DesignModel {
+  return {
+    name: 'Acme', customerName: 'Acme',
+    elements: [
+      element('wms-old', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),
+      element('wms-new', { lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' } }),
+      element('billing'),
+    ],
+    connections: [
+      connection('c#sync', 'wms-old', 'wms-new', { validFrom: '2027-04-01', validUntil: '2028-01-31' }),
+      connection('c#billing', 'billing', 'wms-old'),
+    ],
+    diagrams: [],
+  }
+}
+
+function diagram(asOf?: string): DesignDiagram {
+  return {
+    id: 'l7', kind: 'layer7', name: 'Landscape', asOf,
+    placements: ['wms-old', 'wms-new', 'billing'].map((elementId) => ({ elementId, x: 0, y: 0 })),
+  }
+}
+
+/**
+ * One model and one diagram for the whole file, reused across days.
+ *
+ * Not a fresh pair per call: `sameNodeData` compares the element and the
+ * placement by identity — which is the optimisation the identity suite below
+ * is about — so a helper that rebuilt them would report every node as changed
+ * and prove nothing.
+ */
+const MODEL = model()
+const DIAGRAM = diagram()
+
+function args(asOfDay?: string): BuildGraphArgs {
+  return { model: MODEL, diagram: DIAGRAM, readOnly: false, edgeColor: '#000', asOfDay }
+}
+
+const phaseOf = (asOfDay: string, id: string) =>
+  buildNodes(args(asOfDay)).find((node) => node.id === id)?.data.phase
+
+const edgeIds = (asOfDay?: string) => buildEdges(args(asOfDay)).map((edge) => edge.id).sort()
+
+describe('a card draws the phase it is in on the day', () => {
+  it('before the cutover: the old one is live and the new one is still planned', () => {
+    expect(phaseOf('2026-09-08', 'wms-old')).toBe('live')
+    expect(phaseOf('2026-09-08', 'wms-new')).toBe('planned')
+  })
+
+  it('during the hybrid run: one retiring, one live', () => {
+    expect(phaseOf('2027-06-01', 'wms-old')).toBe('retiring')
+    expect(phaseOf('2027-06-01', 'wms-new')).toBe('live')
+  })
+
+  it('after decommissioning: the old one is gone and the new one carries on', () => {
+    expect(phaseOf('2028-06-01', 'wms-old')).toBe('retired')
+    expect(phaseOf('2028-06-01', 'wms-new')).toBe('live')
+  })
+
+  it('leaves an element that says nothing about time exactly as it was', () => {
+    for (const day of ['2026-09-08', '2027-06-01', '2028-06-01']) {
+      expect(phaseOf(day, 'billing'), day).toBe('live')
+    }
+  })
+})
+
+describe('a line is drawn inside its own window', () => {
+  it('holds the sync back until the hybrid run starts', () => {
+    expect(edgeIds('2026-09-08')).toEqual(['c#billing'])
+  })
+
+  it('draws it while the run is on', () => {
+    expect(edgeIds('2027-06-01')).toEqual(['c#billing', 'c#sync'])
+  })
+
+  it('takes it away once the old system is decommissioned', () => {
+    expect(edgeIds('2028-06-01')).toEqual(['c#billing'])
+  })
+})
+
+describe('a board with no day at all', () => {
+  it('draws every stored phase and every line, exactly as before dates existed', () => {
+    // `asOfDay` absent means no time is applied. This is what lets every test
+    // and every call site that is not about time carry on unchanged.
+    const nodes = buildNodes(args(undefined))
+    expect(nodes.find((n) => n.id === 'wms-new')?.data.phase).toBe('planned')
+    expect(nodes.find((n) => n.id === 'wms-old')?.data.phase).toBe('live')
+    expect(edgeIds(undefined)).toEqual(['c#billing', 'c#sync'])
+  })
+})
+
+describe('identity', () => {
+  it('reuses a node whose phase did not change', () => {
+    // The reason `phase` is a field beside the element rather than a rewritten
+    // element: the card compares the element by reference, and a fresh object
+    // per derive is what ADR-0004 measured and removed.
+    const first = buildNodes(args('2026-09-08'))
+    const again = buildNodes(args('2026-09-08'), first)
+    expect(again[0]).toBe(first[0])
+    expect(again[0].data.element).toBe(first[0].data.element)
+  })
+
+  it('replaces a node whose phase did change, and only that one', () => {
+    const before = buildNodes(args('2026-09-08'))
+    const after = buildNodes(args('2027-06-01'), before)
+    const id = (nodes: typeof before, key: string) => nodes.find((n) => n.id === key)!
+    expect(id(after, 'wms-old')).not.toBe(id(before, 'wms-old'))
+    expect(id(after, 'billing')).toBe(id(before, 'billing'))
+  })
+})

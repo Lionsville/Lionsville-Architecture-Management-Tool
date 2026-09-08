@@ -450,10 +450,13 @@ describe('menuItemsFor — tab', () => {
   const tab = (over: Partial<NonNullable<MenuContext['tab']>> = {}, more: Partial<MenuContext> = {}) =>
     ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, isLastLandscape: false, ...over }, ...more });
 
-  it('offers rename, settings, duplicate and delete when the host wired them all', () => {
+  // "Duplicate as of…" sits beside the plain duplicate (ADR-0009): a dated copy
+  // is how a future board is made here, so it belongs where copying already is.
+  it('offers rename, settings, both duplicates and delete when the host wired them all', () => {
     const items = menuItemsFor(TAB, tab());
     expect(ids(items)).toEqual([
-      'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'delete-diagram',
+      'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'duplicate-diagram-as-of',
+      'delete-diagram',
     ]);
     expect(items.filter((i) => i.divider)).toHaveLength(1);
     expect(byId(items, 'delete-diagram').danger).toBe(true);
@@ -461,9 +464,9 @@ describe('menuItemsFor — tab', () => {
 
   it('hides each entry whose host callback is absent', () => {
     expect(ids(menuItemsFor(TAB, tab({ canRename: false }))))
-      .toEqual(['diagram-settings', 'duplicate-diagram', 'delete-diagram']);
+      .toEqual(['diagram-settings', 'duplicate-diagram', 'duplicate-diagram-as-of', 'delete-diagram']);
     expect(ids(menuItemsFor(TAB, tab({ canConfigure: false }))))
-      .toEqual(['rename-diagram', 'duplicate-diagram', 'delete-diagram']);
+      .toEqual(['rename-diagram', 'duplicate-diagram', 'duplicate-diagram-as-of', 'delete-diagram']);
     expect(ids(menuItemsFor(TAB, tab({ canConfigure: false, canDuplicate: false, canDelete: false }))))
       .toEqual(['rename-diagram']);
     const onlyDelete = menuItemsFor(TAB, tab({ canRename: false, canConfigure: false, canDuplicate: false }));
@@ -480,7 +483,8 @@ describe('menuItemsFor — tab', () => {
     expect(ids(menuItemsFor(TAB, tab()))).not.toContain('diagram-history');
     const items = menuItemsFor(TAB, tab({ canHistory: true }));
     expect(ids(items)).toEqual([
-      'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'diagram-history', 'delete-diagram',
+      'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'duplicate-diagram-as-of',
+      'diagram-history', 'delete-diagram',
     ]);
     expect(byId(items, 'diagram-history').label).toBe('History…');
   });

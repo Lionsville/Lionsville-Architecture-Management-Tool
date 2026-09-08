@@ -41,6 +41,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       resizeLimits={data.resizeLimits}
       restingShadow={theme.shadows[1]}
       sx={{

@@ -119,6 +119,7 @@ export const EN = {
   'menu.renameDiagram': 'Rename diagram…',
   'menu.diagramSettings': 'Diagram settings…',
   'menu.duplicateDiagram': 'Duplicate diagram',
+  'menu.duplicateDiagramAsOf': 'Duplicate as of…',
   'menu.deleteDiagram': 'Delete diagram…',
   'menu.lastLandscape': 'The last landscape cannot be deleted',
   'menu.nodeLabel': 'Element menu',
@@ -198,6 +199,11 @@ export const EN = {
   'export.confirm': 'Export',
   'export.largeConfirm': 'Export anyway',
   'toolbar.lifecycleBadges': 'Toggle lifecycle badges',
+  'toolbar.asOf': 'Showing',
+  'toolbar.asOfToday': 'Today',
+  'toolbar.asOfSet': 'This board shows the landscape as it stands on {date}.',
+  'toolbar.asOfHelp': 'Draw this board as the landscape stood, or will stand, on a chosen day.',
+  'toolbar.asOfClear': 'Show today',
   'toolbar.shortcuts': 'Keyboard shortcuts',
   'toolbar.search': 'Find element',
   'toolbar.searchTip': 'Find an element (⌘F)',
@@ -492,6 +498,7 @@ export const EN = {
   'export.title': 'TITLE',
   'export.author': 'AUTHOR',
   'export.date': 'DATE',
+  'export.asOf': 'as of {date}',
   'export.aspects': 'ASPECTS',
 
   // --- The C4 corner of a container diagram --------------------------------

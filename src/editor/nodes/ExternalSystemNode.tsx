@@ -24,6 +24,7 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       resizeLimits={data.resizeLimits}
       sx={{
         display: 'flex',

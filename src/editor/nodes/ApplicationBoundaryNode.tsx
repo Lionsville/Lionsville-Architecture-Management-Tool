@@ -34,6 +34,7 @@ export const ApplicationBoundaryNode = memo(function ApplicationBoundaryNode({
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       selectionRing={false}
     >
       {/*

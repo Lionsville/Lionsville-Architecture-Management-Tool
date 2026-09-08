@@ -132,6 +132,19 @@ export function HelpIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** As of: a calendar leaf, for the day a board shows (ADR-0009). */
+export function AsOfIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect
+        x="3.5" y="5" width="17" height="15" rx="2"
+        stroke="currentColor" strokeWidth="2"
+      />
+      <path d="M3.5 10h17M8 3.5v3M16 3.5v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Lifecycle: stages along a line (planned → live → retiring → retired). */
 export function LifecycleIcon({ size = 18 }: IconProps) {
   return (

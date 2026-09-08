@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
@@ -11,6 +16,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Popover from '@mui/material/Popover';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -21,7 +27,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, type Language, type StringKey } from '../i18n/strings';
 
@@ -91,6 +97,13 @@ export interface EditorToolbarProps {
   /** Lifecycle-badge toggle state + handler (U5); default on. */
   showLifecycle: boolean;
   onToggleLifecycle(): void;
+  /**
+   * The day the board shows (ADR-0009); absent = today. Set it and the same
+   * single model is drawn as it stood then — which is how a future diagram is
+   * made, rather than by copying the project.
+   */
+  asOf?: string;
+  onAsOfChange(day: string | undefined): void;
   /** In-memory undo/redo (U7); buttons hidden under readOnly, gated on stack depth. */
   onUndo(): void;
   onRedo(): void;
@@ -105,7 +118,12 @@ export interface EditorToolbarProps {
   onRenameDiagram?(diagramId: string, name: string): void;
   /** Opens the diagram's settings dialog; the editor owns the dialog itself. */
   onOpenDiagramSettings?(diagramId: string): void;
-  onDuplicateDiagram?(diagramId: string): void;
+  /**
+   * Copy a diagram. `asOf` dates the copy in the same step (ADR-0009), which is
+   * what makes "the landscape after the cutover" one action rather than a
+   * duplicate followed by a setting somebody forgets.
+   */
+  onDuplicateDiagram?(diagramId: string, asOf?: string): void;
   onDeleteDiagram?(diagramId: string): void;
   /** "History…" on the tab menu; absent where the host keeps none (ADR-0008). */
   onDiagramHistory?(diagramId: string): void;
@@ -153,6 +171,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
   // Right-click on a Layer 7 tab: the diagram menu, built by the same pure
   // builder as the canvas menus and drawn by the same component.
   const [tabMenu, setTabMenu] = useState<{ diagramId: string; screen: Point } | null>(null);
+  const [duplicateAsOf, setDuplicateAsOf] = useState<{ diagramId: string; day: string } | null>(null);
   const platform = useMemo(() => detectPlatform(), []);
   const tabMenuItems = useMemo(
     () =>
@@ -197,6 +216,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
         return;
       case 'duplicate-diagram':
         props.onDuplicateDiagram?.(diagram.id);
+        return;
+      case 'duplicate-diagram-as-of':
+        setDuplicateAsOf({ diagramId: diagram.id, day: diagram.asOf ?? '' });
         return;
       case 'delete-diagram':
         props.onDeleteDiagram?.(diagram.id);
@@ -259,6 +281,37 @@ export function EditorToolbar(props: EditorToolbarProps) {
             onClose={() => setTabMenu(null)}
             ariaLabel={t('menu.tabLabel')}
           />
+          <Dialog open={duplicateAsOf !== null} onClose={() => setDuplicateAsOf(null)} maxWidth="xs" fullWidth>
+            <DialogTitle>{t('menu.duplicateDiagramAsOf')}</DialogTitle>
+            <DialogContent>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
+                {t('toolbar.asOfHelp')}
+              </Typography>
+              <TextField
+                type="date"
+                size="small"
+                fullWidth
+                autoFocus
+                label={t('toolbar.asOf')}
+                value={duplicateAsOf?.day ?? ''}
+                onChange={(e) => setDuplicateAsOf((held) => (held ? { ...held, day: e.target.value } : held))}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDuplicateAsOf(null)}>{t('common.cancel')}</Button>
+              <Button
+                variant="contained"
+                disabled={!duplicateAsOf?.day}
+                onClick={() => {
+                  if (duplicateAsOf?.day) props.onDuplicateDiagram?.(duplicateAsOf.diagramId, duplicateAsOf.day);
+                  setDuplicateAsOf(null);
+                }}
+              >
+                {t('menu.duplicateDiagram')}
+              </Button>
+            </DialogActions>
+          </Dialog>
           {!props.readOnly && (
             <Tooltip title={t('toolbar.newDiagram')}>
               <IconButton size="small" aria-label={t('toolbar.newDiagram')} onClick={props.onCreateLayer7Diagram}>
@@ -403,6 +456,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </IconButton>
         </span>
       </Tooltip>
+      <AsOfControl asOf={props.asOf} onChange={props.onAsOfChange} readOnly={props.readOnly} />
       <IconButton
         size="small"
         aria-label={t('toolbar.lifecycleBadges')}
@@ -740,6 +794,83 @@ function Breadcrumb({
         {application?.name ?? activeDiagram.name}
       </Typography>
     </Box>
+  );
+}
+
+/**
+ * What day the board shows (ADR-0009).
+ *
+ * A button that reads "Today" until somebody names a day, and reads the day —
+ * highlighted — once they have. The highlight is the point: a board showing
+ * 2028 looks exactly like a board showing now, and a person who has forgotten
+ * they set a date will otherwise read a future landscape as the present one.
+ *
+ * Clearing it is a first-class action rather than emptying the field, because
+ * "no date" and "an unfinished date" are different things and a date input
+ * cannot tell you which one it is holding.
+ */
+function AsOfControl(
+  { asOf, onChange, readOnly }: {
+    asOf?: string
+    onChange(day: string | undefined): void
+    readOnly: boolean
+  },
+) {
+  const { t } = useStrings();
+  const theme = useTheme();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const dated = Boolean(asOf);
+  return (
+    <>
+      <Tooltip title={dated ? t('toolbar.asOfSet', { date: asOf ?? '' }) : t('toolbar.asOfToday')}>
+        <Button
+          size="small"
+          aria-label={t('toolbar.asOf')}
+          onClick={(e) => setAnchor(e.currentTarget)}
+          startIcon={<AsOfIcon />}
+          sx={{
+            minWidth: 0,
+            textTransform: 'none',
+            fontSize: 12,
+            fontWeight: dated ? 700 : 500,
+            color: dated ? 'primary.main' : 'text.secondary',
+            backgroundColor: dated ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
+          }}
+        >
+          {asOf ?? t('toolbar.asOfToday')}
+        </Button>
+      </Tooltip>
+      <Popover
+        open={Boolean(anchor)}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, minWidth: 240 }}>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+            {t('toolbar.asOfHelp')}
+          </Typography>
+          <TextField
+            type="date"
+            size="small"
+            autoFocus
+            disabled={readOnly}
+            label={t('toolbar.asOf')}
+            value={asOf ?? ''}
+            onChange={(e) => onChange(e.target.value || undefined)}
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+          <Button
+            size="small"
+            disabled={readOnly || !dated}
+            onClick={() => { onChange(undefined); setAnchor(null); }}
+          >
+            {t('toolbar.asOfClear')}
+          </Button>
+        </Box>
+      </Popover>
+    </>
   );
 }
 

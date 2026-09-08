@@ -49,6 +49,7 @@ export const ActorNode = memo(function ActorNode({ data, selected, height }: Ele
         selected={selected}
         readOnly={data.readOnly}
         showLifecycle={data.showLifecycle}
+        phase={data.phase}
         resizeLimits={data.resizeLimits}
         sx={{
           display: 'flex',
@@ -83,6 +84,7 @@ export const ActorNode = memo(function ActorNode({ data, selected, height }: Ele
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       resizeLimits={data.resizeLimits}
       sx={{
         display: 'flex',

@@ -16,6 +16,7 @@ function node(id: string, x: number, y: number, width = 100, height = 50): Eleme
       readOnly: false,
       aspectConfig: [],
       showLifecycle: true,
+      phase: 'live',
       resizeLimits: {
         min: nodeMinSize('application'),
         max: nodeMaxSize('application', 'landscape'),

@@ -23,6 +23,7 @@ export const ManagementToolNode = memo(function ManagementToolNode({
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       resizeLimits={data.resizeLimits}
       sx={{
         display: 'flex',

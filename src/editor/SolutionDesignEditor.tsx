@@ -843,7 +843,12 @@ function EditorBody(props: SolutionDesignEditorProps) {
         activeDiagram.client
         ?? props.exportTitleBlock?.client
         ?? state.model.customerName,
-      title: `${state.model.name} — ${activeDiagram.name}`,
+      // A board dated for a day that is not today says so on the picture. An
+      // exported PNG travels without the app around it, and a future landscape
+      // that does not announce itself is read as the present one (ADR-0009).
+      title: activeDiagram.asOf
+        ? `${state.model.name} — ${activeDiagram.name} · ${t('export.asOf', { date: activeDiagram.asOf })}`
+        : `${state.model.name} — ${activeDiagram.name}`,
       author: activeDiagram.author ?? props.exportTitleBlock?.author,
       // Absent = the day of export, which is the exporter's own default.
       date: activeDiagram.documentDate || undefined,
@@ -1129,6 +1134,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onOpenHelp={() => setHelpOpen(true)}
         showLifecycle={showLifecycle}
         onToggleLifecycle={() => setShowLifecycle((on) => !on)}
+        asOf={activeDiagram.asOf}
+        onAsOfChange={state.actions.setAsOf}
         onUndo={state.undo}
         onRedo={state.redo}
         canUndo={state.canUndo}

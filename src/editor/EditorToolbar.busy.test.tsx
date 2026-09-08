@@ -42,6 +42,7 @@ function renderToolbar(overrides: Partial<EditorToolbarProps> = {}) {
     onOpenHelp: vi.fn(),
     showLifecycle: true,
     onToggleLifecycle: vi.fn(),
+    onAsOfChange: vi.fn(),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
     canUndo: false,

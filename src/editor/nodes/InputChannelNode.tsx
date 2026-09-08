@@ -31,6 +31,7 @@ export const InputChannelNode = memo(function InputChannelNode({
       selected={selected}
       readOnly={data.readOnly}
       showLifecycle={data.showLifecycle}
+      phase={data.phase}
       resizeLimits={data.resizeLimits}
       sx={{
         display: 'flex',

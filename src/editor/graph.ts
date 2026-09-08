@@ -15,6 +15,7 @@ import {
   unionRects,
 } from '../model/placement';
 import { isAutoRoute, routeSides, routeSource } from '../model/routes';
+import { connectionLiveAt, phaseAt } from '../model/lifecycle';
 
 /**
  * Pure projection of (effective model + active diagram) onto React Flow
@@ -59,6 +60,16 @@ export interface BuildGraphArgs {
    * everything behaves exactly as it did before the preview existed.
    */
   previewRoutes?: ReadonlyMap<string, EdgeRoute>;
+  /**
+   * The day this board shows (ADR-0009) — `diagram.asOf` where it has one, and
+   * today where it does not. The canvas always supplies it.
+   *
+   * Absent means **no time at all**: every element draws its stored phase and
+   * every line is drawn, which is precisely what this projection did before
+   * dates existed. That is what lets a test that is not about time call these
+   * two functions without naming a day.
+   */
+  asOfDay?: string;
 }
 
 const BOUNDARY_PADDING = 56;
@@ -104,6 +115,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
           max: nodeMaxSize(element.kind, placement.zone, args.diagram.layoutConfig),
         },
         showLifecycle: args.showLifecycle ?? true,
+        phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
       },
     });
   }
@@ -168,6 +180,11 @@ export function buildEdges(
   const drawn: { connection: (typeof args.model.connections)[number]; route: EdgeRoute | undefined; stored: EdgeRoute | undefined }[] = [];
   for (const connection of args.model.connections) {
     if (!placed.has(connection.sourceId) || !placed.has(connection.targetId)) continue;
+    // A line with a window of its own is drawn only inside it: the sync and the
+    // façade of a hybrid run are there for the months they are there for, and
+    // gone on a board dated after the cutover (ADR-0009). A line with no window
+    // follows its ends, which the `placed` check above already does.
+    if (args.asOfDay && !connectionLiveAt(connection, args.asOfDay)) continue;
     const stored = routes.get(connection.id);
     // Suppressed only for router output, and only while its node moves.
     //
@@ -318,6 +335,7 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
     held.aspectConfig === next.aspectConfig &&
     held.hasContainerDiagram === next.hasContainerDiagram &&
     held.showLifecycle === next.showLifecycle &&
+    held.phase === next.phase &&
     held.resizeLimits.min.width === next.resizeLimits.min.width &&
     held.resizeLimits.min.height === next.resizeLimits.min.height &&
     held.resizeLimits.max.width === next.resizeLimits.max.width &&
