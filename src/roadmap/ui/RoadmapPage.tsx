@@ -29,6 +29,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
+import type { Theme } from '@mui/material/styles'
 import { addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
 import type { DesignModel, ElementId, Lifecycle } from '../../model'
 import { useStrings } from '../../i18n'
@@ -41,12 +42,19 @@ import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
 
-/** The colour each phase is drawn in. The canvas's own tokens, said once here. */
-const PHASE_COLOUR: Record<Lifecycle, string> = {
-  planned: '#8a8f98',
-  live: '#2e7d32',
-  retiring: '#ed6c02',
-  retired: '#9e9e9e',
+/**
+ * The colour each phase is drawn in: the same semantic mapping the canvas's
+ * tokens make (planned → info, live → success, retiring → warning, retired →
+ * disabled), taken from the palette so both themes answer. Said here rather
+ * than imported, because this module may not know how the canvas draws.
+ */
+function phaseColours(theme: Theme): Record<Lifecycle, string> {
+  return {
+    planned: theme.palette.info.main,
+    live: theme.palette.success.main,
+    retiring: theme.palette.warning.main,
+    retired: theme.palette.text.disabled,
+  }
 }
 
 /**
@@ -95,6 +103,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const { model, today, readOnly, actions } = props
   const { t } = useStrings()
   const theme = useTheme()
+  const phaseColour = phaseColours(theme)
   const [newTitle, setNewTitle] = useState<string | null>(null)
   // The period a person chose to look at. Both ends or neither: one end alone
   // is half a question, and the natural axis answers it until the other is set.
@@ -220,7 +229,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                             position: 'absolute', top: 0, bottom: 0,
                             left: at(span_.from),
                             right: span_.to ? `calc(100% - ${at(span_.to)})` : 0,
-                            bgcolor: PHASE_COLOUR[span_.phase],
+                            bgcolor: phaseColour[span_.phase],
                             opacity: span_.phase === 'retired' ? 0.35 : 0.85,
                             borderRadius: 1,
                           }}

@@ -50,7 +50,8 @@ function model(over: Partial<DesignModel & { transitions: Transition[] }> = {}) 
   } as DesignModel & { transitions: Transition[] }
 }
 
-function setup(over: Partial<RoadmapPageProps> = {}) {
+function setup(over: Partial<RoadmapPageProps> & { mode?: 'light' | 'dark' } = {}) {
+  const { mode, ...props } = over
   const actions: RoadmapActions = {
     addTransition: vi.fn(),
     onOpenPlan: vi.fn(),
@@ -65,10 +66,11 @@ function setup(over: Partial<RoadmapPageProps> = {}) {
       today={TODAY}
       readOnly={false}
       onClose={vi.fn()}
-      {...over}
-      // After `over`: the fakes above already carry whatever a caller overrode.
+      {...props}
+      // After `props`: the fakes above already carry whatever a caller overrode.
       actions={actions}
     />,
+    { mode },
   )
   return { ...view, actions }
 }
@@ -78,6 +80,12 @@ function setup(over: Partial<RoadmapPageProps> = {}) {
  * than into the render container — so the DOM queries look at the document.
  */
 const find = (selector: string) => document.body.querySelector(selector)
+
+/** jsdom answers a hex colour in `rgb()`. */
+const rgb = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`
+}
 
 describe('the axis', () => {
   it('gives a row to what has a date and to nothing else', () => {
@@ -93,6 +101,17 @@ describe('the axis', () => {
     const track = find('[data-testid="track-wms-old"]')!
     expect([...track.querySelectorAll('[data-phase]')].map((el) => el.getAttribute('data-phase')))
       .toEqual(['live', 'retiring', 'retired'])
+  })
+
+  it('colours a phase from the palette, so both themes answer', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      cleanup()
+      const { theme } = setup({ mode })
+      const painted = (phase: string) =>
+        getComputedStyle(find(`[data-phase="${phase}"]`)!).backgroundColor
+      expect(painted('live')).toBe(rgb(theme.palette.success.main))
+      expect(painted('retiring')).toBe(rgb(theme.palette.warning.main))
+    }
   })
 
   it('draws a plan as a band with its milestones on it', () => {
