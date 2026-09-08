@@ -128,6 +128,23 @@ export function transitionLabel(transition: Pick<Transition, 'number'>): string 
   return `TR-${String(Math.max(0, Math.trunc(transition.number))).padStart(4, '0')}`
 }
 
+/**
+ * A plan by its id or by what people call it — `TR-3`, `tr-0003`, or the bare
+ * number — because the label is what a document names and what an agent is
+ * handed back by every list. The id wins when both would match.
+ */
+export function findTransition<T extends Pick<Transition, 'id' | 'number'>>(
+  list: readonly T[],
+  idOrLabel: string,
+): T | undefined {
+  const byId = list.find((one) => one.id === idOrLabel)
+  if (byId) return byId
+  const match = /^(?:tr-?)?0*(\d+)$/i.exec(idOrLabel.trim())
+  if (!match) return undefined
+  const number = Number(match[1])
+  return list.find((one) => one.number === number)
+}
+
 /** Oldest first, which is the order a plan of work reads in. */
 export function sortTransitions(list: readonly Transition[]): Transition[] {
   return [...list].sort((a, b) => a.number - b.number)

@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  addDays, elementsWithRole, isTransitionFinished, nextTransitionNumber, setTransitionStatus,
+  addDays, elementsWithRole, findTransition, isTransitionFinished, nextTransitionNumber, setTransitionStatus,
   shiftDays, sortTransitions, transitionDays, transitionLabel, transitionsForElement,
   transitionsFrom,
 } from './transition'
@@ -134,6 +134,24 @@ describe('a plan that slips', () => {
     // day without knowing plans exist. The caller moves those in the same
     // transaction; this function moving them would be writing where it reads.
     expect(shiftDays(plan(), 30).elements).toEqual(plan().elements)
+  })
+})
+
+describe('findTransition', () => {
+  const list = [plan(), plan({ id: 'tr-2', number: 12 })]
+
+  it('finds a plan by its id, or by what people call it', () => {
+    expect(findTransition(list, 'tr-2')?.number).toBe(12)
+    expect(findTransition(list, 'TR-0012')?.id).toBe('tr-2')
+    expect(findTransition(list, 'tr-12')?.id).toBe('tr-2')
+    expect(findTransition(list, '1')?.id).toBe('tr-1')
+  })
+
+  it('lets the id win, and finds nothing for a label nobody has', () => {
+    // 'tr-1' is an id here and the label of number 1 as well; the id is the answer either way.
+    expect(findTransition([plan({ id: 'tr-1', number: 5 })], 'tr-1')?.number).toBe(5)
+    expect(findTransition(list, 'TR-0003')).toBeUndefined()
+    expect(findTransition(list, 'ledger')).toBeUndefined()
   })
 })
 

@@ -347,6 +347,27 @@ export function computeBusinessCase(held: BusinessCase): BusinessCaseResult {
 }
 
 /**
+ * The contents of the first ```business-case fence in a document, or nothing.
+ *
+ * The renderer finds the fence through the markdown parser; a caller with
+ * only the text — the agent, answering what a plan's body computes — needs
+ * the same answer without one. The fence's opening line may carry trailing
+ * spaces and the closing one may be the end of the text, both of which a
+ * person typing one produces.
+ */
+export function businessCaseFence(markdown: string): string | undefined {
+  const lines = markdown.split(/\r?\n/)
+  const opened = lines.findIndex((line) => /^[ \t]*```business-case[ \t]*$/.test(line))
+  if (opened < 0) return undefined
+  const body: string[] = []
+  for (const line of lines.slice(opened + 1)) {
+    if (/^[ \t]*```[ \t]*$/.test(line)) break
+    body.push(line)
+  }
+  return body.join('\n')
+}
+
+/**
  * A block to start from, as the fence a document holds it in.
  *
  * English, like the keys and for the same reason: this is the format, and a

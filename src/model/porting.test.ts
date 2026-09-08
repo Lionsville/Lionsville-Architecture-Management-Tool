@@ -6,7 +6,7 @@
  * touch.
  */
 import { describe, expect, it } from 'vitest'
-import { portCommands, portProgress, portsOf, twinOf, unportCommands } from './porting'
+import { portCommands, portProgress, portsOf, twinOf, unplannedPorts, unportCommands } from './porting'
 import type { Transition } from './transition'
 import type { DesignConnection, DesignElement } from './types'
 
@@ -80,6 +80,24 @@ describe('portsOf', () => {
     const split = plan([{ elementId: 'old', role: 'changes' }, { elementId: 'new', role: 'introduces' }])
     const ports = portsOf({ elements: ELEMENTS, connections: [line('a', 'old', 'billing')] }, split)
     expect(ports.map((p) => p.from.id)).toEqual(['a'])
+  })
+
+  it('says when a line was closed by something other than this plan, and leaves it out of the unplanned', () => {
+    // Another plan ported this line onto `crm`; `new` has no twin of it, so
+    // this plan did not date it — and "every interface not yet planned" must
+    // not re-date what the other plan decided.
+    const ports = portsOf({
+      elements: ELEMENTS,
+      connections: [
+        line('l1', 'old', 'billing', { validUntil: '2027-04-30' }),
+        line('l1-twin', 'crm', 'billing', { validFrom: '2027-05-01' }),
+        line('l2', 'old', 'crm'),
+      ],
+    }, REPLACE)
+    expect(ports.map((port) => [port.from.id, port.on, port.closedOn])).toEqual([
+      ['l1', undefined, '2027-04-30'], ['l2', undefined, undefined],
+    ])
+    expect(unplannedPorts(ports).map((port) => port.from.id)).toEqual(['l2'])
   })
 
   it('has nothing to say for a plan that introduces nothing, or retires nothing', () => {

@@ -17,11 +17,13 @@ import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
 import { decisionsOf, placementList, transitionList } from '../model/normalised'
 import { today } from '../model/lifecycle'
-import { transitionLabel } from '../model/transition'
+import { findTransition, transitionLabel } from '../model/transition'
+import type { Transition } from '../model/transition'
 import { findings } from '../model/checks'
 import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
 import type { DesignConnection, DesignElement, ElementId } from '../model/types'
+import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { searchAll } from '../search/search'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -29,7 +31,7 @@ import { checkArguments, json, refused, toolSpec } from './tools'
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
-  | 'decisions.list' | 'decision.read' | 'plans.list' | 'roadmap.check' | 'search'>
+  | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -134,37 +136,19 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       const wanted = args.status as string | undefined
       const touching = args.elementId as string | undefined
       const arrays = view.current()
-      const named = new Map(arrays.elements.map((element) => [element.id, element.name]))
       const rows = transitionList(model)
         .filter((plan) => (wanted === undefined || plan.status === wanted))
         .filter((plan) => (
           touching === undefined || plan.elements.some((one) => one.elementId === touching)
         ))
-        .map((plan) => ({
-          id: plan.id,
-          label: transitionLabel(plan),
-          title: plan.title,
-          status: plan.status,
-          ...(plan.from ? { from: plan.from } : {}),
-          ...(plan.to ? { to: plan.to } : {}),
-          ...(plan.owner ? { owner: plan.owner } : {}),
-          elements: plan.elements,
-          decisions: plan.decisions,
-          milestones: plan.milestones,
-          // Derived from the lines, not stored (ADR-0010): what the plan page shows.
-          interfaces: portsOf(arrays, plan).map((port) => ({
-            connectionId: port.from.id,
-            from: port.fromElementId,
-            counterpart: named.get(port.counterpartId) ?? port.counterpartId,
-            counterpartId: port.counterpartId,
-            ...(port.from.label ? { label: port.from.label } : {}),
-            ...(port.from.protocol ? { protocol: port.from.protocol } : {}),
-            ...(port.to ? { to: port.to.sourceId === port.counterpartId ? port.to.targetId : port.to.sourceId } : {}),
-            ...(port.on ? { on: port.on } : {}),
-          })),
-          body: plan.body,
-        }))
+        .map((plan) => planEntry(plan, arrays))
       return json({ plans: rows })
+    }
+
+    case 'plan.read': {
+      const plan = findTransition(transitionList(model), args.id as string)
+      if (!plan) return refused('agent.unknownId', `plan ${String(args.id)}`)
+      return json(planEntry(plan, view.current()))
     }
 
     case 'roadmap.check': {
@@ -224,6 +208,75 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
 
 function nameOf(model: Model, id: ElementId): string | undefined {
   return model.elements[id]?.name
+}
+
+/**
+ * One plan as every plan-tool answers it: the record, the interfaces derived
+ * from the lines (ADR-0010), and the business case the body computes — so a
+ * caller that wrote a fence reads back what the page will show without
+ * opening the page.
+ */
+export function planEntry(plan: Transition, arrays: HostModel) {
+  const named = new Map(arrays.elements.map((element) => [element.id, element.name]))
+  return {
+    id: plan.id,
+    label: transitionLabel(plan),
+    title: plan.title,
+    status: plan.status,
+    ...(plan.from ? { from: plan.from } : {}),
+    ...(plan.to ? { to: plan.to } : {}),
+    ...(plan.owner ? { owner: plan.owner } : {}),
+    elements: plan.elements,
+    decisions: plan.decisions,
+    milestones: plan.milestones,
+    // Derived from the lines, not stored (ADR-0010): what the plan page shows.
+    interfaces: portsOf(arrays, plan).map((port) => ({
+      connectionId: port.from.id,
+      from: port.fromElementId,
+      counterpart: named.get(port.counterpartId) ?? port.counterpartId,
+      counterpartId: port.counterpartId,
+      ...(port.from.label ? { label: port.from.label } : {}),
+      ...(port.from.protocol ? { protocol: port.from.protocol } : {}),
+      ...(port.to ? { to: port.to.sourceId === port.counterpartId ? port.to.targetId : port.to.sourceId } : {}),
+      ...(port.on ? { on: port.on } : {}),
+      ...(port.closedOn ? { closedOn: port.closedOn } : {}),
+    })),
+    businessCase: businessCaseOf(plan.body),
+    body: plan.body,
+  }
+}
+
+/**
+ * What the body's ```business-case fence computes, or why it does not.
+ *
+ * The same reader and the same arithmetic as the page, so the numbers here are
+ * the numbers there. The shape is said back beside the result because a caller
+ * that got `noLines` is about to write the fence and needs to know that the
+ * first table is the money, one row per line and one column per period, and
+ * the second is the scorecard with a weight and a one-to-five score per row.
+ */
+function businessCaseOf(body: string) {
+  const fence = businessCaseFence(body)
+  if (fence === undefined) return { state: 'noFence' as const }
+  const held = readBusinessCase(fence)
+  if (!held.lines.length) {
+    return {
+      state: 'noLines' as const,
+      note: 'The fence has no money table. Keys first (currency, discount rate), then a table whose first column '
+        + 'names a line and whose other columns are periods, then a table of criteria with a weight and a score out of 5.',
+    }
+  }
+  const result = computeBusinessCase(held)
+  return {
+    state: 'computed' as const,
+    ...(held.currency ? { currency: held.currency } : {}),
+    ...(held.discountRate !== undefined ? { discountRate: held.discountRate } : {}),
+    periods: held.periods,
+    lines: held.lines,
+    criteria: held.criteria,
+    ...result,
+    ...(held.discountRate === undefined ? { note: 'No discount rate, so no net present value.' } : {}),
+  }
 }
 
 function elementLine(element: DesignElement) {

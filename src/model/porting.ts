@@ -46,6 +46,13 @@ export type Port = {
   to?: DesignConnection
   /** The day the twin starts; absent means not yet planned. */
   on?: string
+  /**
+   * The original's last day, when no twin of this plan's explains it: some
+   * other plan, or a hand, closed the line already. "Every interface not yet
+   * planned" leaves these alone, which is what keeps one plan's *port all*
+   * from re-dating what another plan decided.
+   */
+  closedOn?: string
 }
 
 type Landscape = {
@@ -75,6 +82,11 @@ function isTwin(line: DesignConnection, fromId: ElementId, twin: DesignConnectio
   if (otherEnd(twin, toId) !== otherEnd(line, fromId)) return false
   if (twin.isBidirectional !== line.isBidirectional) return false
   return (twin.protocol ?? '') === (line.protocol ?? '')
+}
+
+/** The interfaces of a plan still to be dated — and not dated by anybody else either. */
+export function unplannedPorts(ports: readonly Port[]): Port[] {
+  return ports.filter((port) => port.on === undefined && port.closedOn === undefined)
 }
 
 /**
@@ -109,6 +121,7 @@ export function portsOf(model: Landscape, plan: Transition): Port[] {
       counterpartId,
       ...(to ? { to } : {}),
       ...(to?.validFrom ? { on: to.validFrom } : {}),
+      ...(!to && line.validUntil ? { closedOn: line.validUntil } : {}),
     })
   }
   return ports

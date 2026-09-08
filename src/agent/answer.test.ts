@@ -265,4 +265,19 @@ describe('plans.list (ADR-0010)', () => {
         .map((c) => expect.objectContaining({ connectionId: c.id, from: 'billing' })),
     )
   })
+
+  it('plan.read answers one plan by id or by label, with what its business case computes', () => {
+    const body = [
+      '```business-case', 'currency: EUR', '',
+      '| Line | Y0 | Y1 |', '| --- | --- | --- |', '| Investment | -100 | |', '| Savings | | 150 |', '```',
+    ].join('\n')
+    const model: HostModel = { ...withPlan, transitions: [{ ...plan, body }] }
+    const byId = read('plan.read', { id: 'tr-1' }, view(model)) as { label: string; businessCase: Record<string, unknown> }
+    expect(byId.label).toBe('TR-0001')
+    expect(byId.businessCase).toMatchObject({ state: 'computed', currency: 'EUR', net: [-100, 150], roi: 0.5 })
+    expect(byId.businessCase).not.toHaveProperty('npv')
+    expect(read('plan.read', { id: 'TR-0001' }, view(model))).toEqual(byId)
+    expect(read('plan.read', { id: 'tr-1' }, view(withPlan))).toMatchObject({ businessCase: { state: 'noFence' } })
+    expect(answer('plan.read', { id: 'TR-0002' }, view(withPlan))).toMatchObject({ ok: false, refusal: 'agent.unknownId' })
+  })
 })

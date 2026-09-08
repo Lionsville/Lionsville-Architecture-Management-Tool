@@ -32,7 +32,29 @@ export type ArgumentSchema =
   | { readonly type: 'integer'; readonly description: string; readonly minimum?: number; readonly maximum?: number }
   | { readonly type: 'number'; readonly description: string }
   | { readonly type: 'boolean'; readonly description: string }
-  | { readonly type: 'array'; readonly description: string; readonly items: { readonly type: 'string' } }
+  | { readonly type: 'array'; readonly description: string; readonly items: { readonly type: 'string' } | RowSchema }
+  | RowSchema
+  | MapSchema
+
+/**
+ * A row: an object with named fields, the way a milestone or a signer is one.
+ * Rows are what the list-taking tools take a list of, and what `batch` takes
+ * one of per step.
+ */
+export type RowSchema = {
+  readonly type: 'object'
+  readonly description: string
+  readonly properties: Readonly<Record<string, ArgumentSchema>>
+  readonly required?: readonly string[]
+  readonly additionalProperties: false
+}
+
+/** A map from a name to one string: an element's aspects, keyed by aspect. */
+export type MapSchema = {
+  readonly type: 'object'
+  readonly description: string
+  readonly additionalProperties: { readonly type: 'string'; readonly enum?: readonly string[] }
+}
 
 export type InputSchema = {
   readonly type: 'object'
@@ -72,6 +94,26 @@ const ELEMENT_FIELDS = {
   technology: { type: 'string', description: 'What it is built on.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
+} as const satisfies Record<string, ArgumentSchema>
+
+const PLAN_STATUSES = ['draft', 'agreed', 'running', 'done', 'abandoned'] as const
+
+const PLAN_ID: ArgumentSchema = { type: 'string', description: 'The plan: its id, or its label such as TR-0003.' }
+
+/** A plan's scalar fields, beyond title and status. Null clears any of them. */
+const PLAN_FIELDS = {
+  from: { type: 'string', description: 'The day the work starts, yyyy-mm-dd.' },
+  to: { type: 'string', description: 'The day it is due to end, yyyy-mm-dd.' },
+  owner: { type: 'string', description: 'Who answers for it.' },
+  body: { type: 'string', description: 'The plan as markdown: goal, approach, phases, the ```business-case fence, risks, rollback.' },
+} as const satisfies Record<string, ArgumentSchema>
+
+/** What a plan names. Each list, when given, replaces that list whole. */
+const PLAN_LISTS = {
+  introduces: { type: 'array', description: 'The ids of the elements it brings in.', items: { type: 'string' } },
+  retires: { type: 'array', description: 'The ids of the elements it takes out.', items: { type: 'string' } },
+  changes: { type: 'array', description: 'The ids of the elements it changes without either.', items: { type: 'string' } },
+  decisionIds: { type: 'array', description: 'The ids of the decision records it rests on.', items: { type: 'string' } },
 } as const satisfies Record<string, ArgumentSchema>
 
 /**
@@ -185,6 +227,15 @@ export const TOOLS = [
       },
       additionalProperties: false,
     },
+  },
+  {
+    name: 'plan.read',
+    tier: 'read',
+    description:
+      'One plan in full, the same shape as a plans.list entry: fields, elements by role, decisions, '
+      + 'milestones, interfaces, body, and the business case computed from the ```business-case fence in '
+      + 'the body where there is one. The id may be the plan\'s label, TR-0003.',
+    inputSchema: { type: 'object', properties: { id: PLAN_ID }, required: ['id'], additionalProperties: false },
   },
   {
     name: 'roadmap.check',
@@ -381,6 +432,102 @@ export const TOOLS = [
         on: { type: 'string', description: 'The day it moves, yyyy-mm-dd.' },
       },
       required: ['planId', 'on'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'plan.create',
+    tier: 'write',
+    description:
+      'Add a plan that is not a replacement (ADR-0009): a migration, a platform move, an upgrade. Numbered '
+      + 'after the last one; draft unless said otherwise. Name the elements it touches by role and the '
+      + 'decisions it rests on; the body is markdown and starts from the template — headings and a '
+      + '```business-case fence — when left out. Answers with the id and the label.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'What the plan does, as a title.' },
+        status: { type: 'string', description: 'Where it starts. Default draft.', enum: PLAN_STATUSES },
+        ...PLAN_FIELDS,
+        ...PLAN_LISTS,
+      },
+      required: ['title'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'plan.update',
+    tier: 'write',
+    description:
+      'Change a plan\'s fields, its lists or its body in place. Only what is given changes; null clears '
+      + 'from, to and owner; a list given replaces that list whole. The status follows draft → agreed → '
+      + 'running → done, with abandoned reachable from any of the first three and every arrow reversible. '
+      + 'When the body holds a ```business-case fence the answer carries what it computes — read plan.read '
+      + 'for the fence\'s shape. The dates on the elements a plan introduces or retires are the elements\' '
+      + 'own: set them with element.update.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: PLAN_ID,
+        title: { type: 'string', description: 'A new title.' },
+        status: { type: 'string', description: 'The status to move to.', enum: PLAN_STATUSES },
+        ...PLAN_FIELDS,
+        ...PLAN_LISTS,
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'plan.remove',
+    tier: 'write',
+    description:
+      'Throw a plan away. Only the record goes: the elements, the dates on them and the twins a port drew '
+      + 'stay, because they are facts about the landscape rather than about the plan. One undo step puts it back.',
+    inputSchema: { type: 'object', properties: { id: PLAN_ID }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'milestone.add',
+    tier: 'write',
+    description: 'Add a milestone to a plan: a day and a name. Milestones are what the roadmap draws on the plan\'s band.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: PLAN_ID,
+        date: { type: 'string', description: 'The day, yyyy-mm-dd.' },
+        name: { type: 'string', description: 'What happens that day.' },
+      },
+      required: ['planId', 'date', 'name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'milestone.update',
+    tier: 'write',
+    description: 'Move or rename a milestone of a plan, found by its name.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: PLAN_ID,
+        name: { type: 'string', description: 'The milestone, by its current name.' },
+        date: { type: 'string', description: 'The new day, yyyy-mm-dd.' },
+        newName: { type: 'string', description: 'The new name.' },
+      },
+      required: ['planId', 'name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'milestone.remove',
+    tier: 'write',
+    description: 'Take a milestone off a plan, by its name.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: PLAN_ID,
+        name: { type: 'string', description: 'The milestone, by name.' },
+      },
+      required: ['planId', 'name'],
       additionalProperties: false,
     },
   },
@@ -668,7 +815,7 @@ export function json(value: unknown): AgentAnswer {
  * the schemas above use, and a check that understands exactly what the schemas
  * say cannot quietly accept what they do not.
  */
-export function checkArguments(schema: InputSchema, args: unknown): string | undefined {
+export function checkArguments(schema: InputSchema | RowSchema, args: unknown): string | undefined {
   if (args === undefined || args === null) args = {}
   if (typeof args !== 'object' || Array.isArray(args)) return 'arguments must be an object'
   const held = args as Record<string, unknown>
@@ -678,6 +825,8 @@ export function checkArguments(schema: InputSchema, args: unknown): string | und
   for (const [key, value] of Object.entries(held)) {
     const spec = schema.properties[key]
     if (!spec) return `"${key}" is not an argument of this tool`
+    // Null stands for "not given" here; the write tools that can clear a field
+    // read the null for themselves, because only they know which fields may go.
     if (value === undefined || value === null) continue
     const wrong = checkValue(spec, value)
     if (wrong) return `"${key}" ${wrong}`
@@ -700,9 +849,29 @@ function checkValue(spec: ArgumentSchema, value: unknown): string | undefined {
       return typeof value === 'number' && Number.isFinite(value) ? undefined : 'must be a number'
     case 'boolean':
       return typeof value === 'boolean' ? undefined : 'must be true or false'
-    case 'array':
-      return Array.isArray(value) && value.every((item) => typeof item === 'string')
-        ? undefined
-        : 'must be a list of strings'
+    case 'array': {
+      if (!Array.isArray(value)) return spec.items.type === 'string' ? 'must be a list of strings' : 'must be a list'
+      if (spec.items.type === 'string') {
+        return value.every((item) => typeof item === 'string') ? undefined : 'must be a list of strings'
+      }
+      for (const [index, item] of value.entries()) {
+        const wrong = checkValue(spec.items, item)
+        if (wrong) return `[${index}] ${wrong}`
+      }
+      return undefined
+    }
+    case 'object': {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return 'must be an object'
+      if ('properties' in spec) {
+        const wrong = checkArguments(spec, value)
+        return wrong === undefined ? undefined : `has a problem: ${wrong}`
+      }
+      for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+        if (item === null) continue
+        const wrong = checkValue({ ...spec.additionalProperties, description: '' }, item)
+        if (wrong) return `.${key} ${wrong}`
+      }
+      return undefined
+    }
   }
 }

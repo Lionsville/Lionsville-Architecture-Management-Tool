@@ -376,3 +376,105 @@ describe('the plan tools (ADR-0010)', () => {
     expect(refuse({ planId: 'tr-1', on: '2027-05-01' }, two)).toMatchObject({ refusal: 'agent.badArguments' })
   })
 })
+
+describe('a plan as a record an agent may write (ADR-0009)', () => {
+  const plan = {
+    id: 'tr-1', number: 1, title: 'Move the ledger', status: 'draft' as const,
+    from: '2027-01-01', to: '2027-06-30', owner: 'Finance IT',
+    elements: [{ elementId: 'billing', role: 'changes' as const }],
+    decisions: ['adr-1'], milestones: [{ date: '2027-03-01', name: 'Pilot' }], body: '## Goal\n',
+  }
+  const withPlan = fromArrays({ ...host, transitions: [plan] })
+
+  it('plan.create numbers the plan after the last, starts it from the template, and undoes as one', () => {
+    const out = commandFor('plan.create', {
+      title: 'Oracle to PostgreSQL', from: '2027-02-01', to: '2027-12-31', owner: 'Data', status: 'agreed',
+      changes: ['billing', 'crm'], decisionIds: ['adr-2', 'g-1'],
+    }, view(withPlan))
+    // The template's fence reads: two named lines with nothing in them yet.
+    expect(answerOf(out)).toMatchObject({ id: 'tr-new-1', label: 'TR-0002', status: 'agreed', businessCase: { state: 'computed', totalIn: 0 } })
+    const after = roundTrip(withPlan, out)
+    expect(after.transitions?.['tr-new-1']).toMatchObject({
+      number: 2, owner: 'Data', decisions: ['adr-2', 'g-1'],
+      elements: [{ elementId: 'billing', role: 'changes' }, { elementId: 'crm', role: 'changes' }],
+    })
+    expect(after.transitions?.['tr-new-1'].body).toContain('```business-case')
+  })
+
+  it('plan.create refuses an unknown element or decision, a double role, and a window that runs backwards', () => {
+    const refuse = (args: unknown) => commandFor('plan.create', args, view(withPlan))
+    expect(refuse({ title: 'x', introduces: ['ghost'] })).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(refuse({ title: 'x', decisionIds: ['adr-9'] })).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(refuse({ title: 'x', introduces: ['crm'], retires: ['crm'] })).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(refuse({ title: 'x', from: '2027-06-01', to: '2027-01-01' })).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(refuse({ title: '  ' })).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('plan.update changes only what is given, takes the label as the id, and clears with null', () => {
+    const out = commandFor('plan.update', { id: 'TR-1', title: 'Move the ledger, twice', to: null, owner: null }, view(withPlan))
+    expect(answerOf(out)).toMatchObject({ changed: ['title', 'to', 'owner'], from: '2027-01-01' })
+    // Deep-equal rather than byte-equal here: a cleared field comes back at
+    // the end of its row, which is the reducer's rule for every deletion.
+    const applied = apply(withPlan, prepared(out).command)
+    if (!applied.ok) throw new Error(applied.reason)
+    const after = applied.model
+    expect(after.transitions?.['tr-1']).toMatchObject({ title: 'Move the ledger, twice', from: '2027-01-01', status: 'draft' })
+    expect(after.transitions?.['tr-1']).not.toHaveProperty('to')
+    expect(after.transitions?.['tr-1']).not.toHaveProperty('owner')
+    const undone = apply(after, applied.inverse)
+    expect(undone.ok && toArrays(undone.model)).toEqual(toArrays(withPlan))
+  })
+
+  it('plan.update replaces one role list and leaves the others, and follows the status machine', () => {
+    const out = commandFor('plan.update', { id: 'tr-1', introduces: ['crm'], status: 'agreed' }, view(withPlan))
+    const after = roundTrip(withPlan, out)
+    expect(after.transitions?.['tr-1'].elements).toEqual([
+      { elementId: 'crm', role: 'introduces' }, { elementId: 'billing', role: 'changes' },
+    ])
+    expect(after.transitions?.['tr-1'].status).toBe('agreed')
+    expect(commandFor('plan.update', { id: 'tr-1', status: 'done' }, view(withPlan))).toMatchObject({
+      refusal: 'agent.badArguments', detail: 'draft can only move to agreed, abandoned',
+    })
+    expect(commandFor('plan.update', { id: 'tr-1', to: '2026-12-01' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('plan.update', { id: 'tr-7' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
+  it('plan.update answers with what the body’s business case computes', () => {
+    const body = [
+      '## Business case', '', '```business-case', 'currency: EUR', 'discount rate: 10%', '',
+      '| Line | Year 0 | Year 1 |', '| --- | --- | --- |', '| Investment | -100 | |', '| Savings | | 220 |', '```',
+    ].join('\n')
+    const out = commandFor('plan.update', { id: 'tr-1', body }, view(withPlan))
+    const answered = answerOf(out) as { businessCase: { state: string; npv: number; periods: string[] } }
+    expect(answered.businessCase.state).toBe('computed')
+    expect(answered.businessCase.periods).toEqual(['Year 0', 'Year 1'])
+    expect(answered.businessCase.npv).toBeCloseTo(-100 + 220 / 1.1, 6)
+  })
+
+  it('plan.remove takes the record and nothing else, and undoes', () => {
+    const out = commandFor('plan.remove', { id: 'tr-0001' }, view(withPlan))
+    expect(answerOf(out)).toMatchObject({ id: 'tr-1', label: 'TR-0001', removed: true })
+    const after = roundTrip(withPlan, out)
+    expect(after.transitions).toBeUndefined()
+    expect(after.elements.billing).toBeDefined()
+  })
+
+  it('milestones are added in date order, moved or renamed by name, and taken off', () => {
+    const added = commandFor('milestone.add', { planId: 'tr-1', date: '2027-02-01', name: 'Kick-off' }, view(withPlan))
+    let model = roundTrip(withPlan, added)
+    expect(model.transitions?.['tr-1'].milestones).toEqual([{ date: '2027-02-01', name: 'Kick-off' }, { date: '2027-03-01', name: 'Pilot' }])
+    const moved = commandFor('milestone.update', { planId: 'tr-1', name: 'Kick-off', date: '2027-04-01', newName: 'Start' }, view(model))
+    model = roundTrip(model, moved)
+    expect(model.transitions?.['tr-1'].milestones).toEqual([{ date: '2027-03-01', name: 'Pilot' }, { date: '2027-04-01', name: 'Start' }])
+    const removed = commandFor('milestone.remove', { planId: 'tr-1', name: 'Pilot' }, view(model))
+    model = roundTrip(model, removed)
+    expect(model.transitions?.['tr-1'].milestones).toEqual([{ date: '2027-04-01', name: 'Start' }])
+  })
+
+  it('milestones refuse a day that is not one, a name that is taken, and one that is not there', () => {
+    expect(commandFor('milestone.add', { planId: 'tr-1', date: 'March', name: 'x' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('milestone.add', { planId: 'tr-1', date: '2027-05-01', name: 'Pilot' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('milestone.update', { planId: 'tr-1', name: 'Go-live' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('milestone.remove', { planId: 'tr-9', name: 'Pilot' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+})

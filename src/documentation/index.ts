@@ -9,7 +9,7 @@ export { IMAGES_FOLDER, documentsUsing, imageReference, imageSrcFile, imagesUsed
 export type { NamedDocument } from './images'
 /** The business case a document computes, and the block it is written in (ADR-0009). */
 export {
-  businessCaseTemplate, computeBusinessCase, internalRateOfReturn, netPresentValue, readAmount,
-  readBusinessCase, SCORE_SCALE,
+  businessCaseFence, businessCaseTemplate, computeBusinessCase, internalRateOfReturn, netPresentValue,
+  readAmount, readBusinessCase, SCORE_SCALE,
 } from './businessCase'
 export type { BusinessCase, BusinessCaseResult, CashLine, Criterion } from './businessCase'

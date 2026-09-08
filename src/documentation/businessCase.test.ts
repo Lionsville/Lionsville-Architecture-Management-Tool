@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  computeBusinessCase, internalRateOfReturn, netPresentValue, readAmount, readBusinessCase,
+  businessCaseFence, computeBusinessCase, internalRateOfReturn, netPresentValue, readAmount, readBusinessCase,
 } from './businessCase'
 
 /**
@@ -197,5 +197,18 @@ describe('computeBusinessCase', () => {
 | Not yet weighted |  | 5 |
 `)
     expect(result.score).toEqual({ total: 8, max: 10, scale: 5 })
+  })
+})
+
+describe('businessCaseFence', () => {
+  it('finds the first fence, whether or not the closing line is there yet', () => {
+    expect(businessCaseFence('# Plan\n\n```business-case\ncurrency: EUR\n```\n\ntext')).toBe('currency: EUR')
+    expect(businessCaseFence('```business-case  \ncurrency: EUR\n| a | b |')).toBe('currency: EUR\n| a | b |')
+    expect(businessCaseFence('```business-case\n```')).toBe('')
+  })
+
+  it('answers nothing for a body without one, and ignores other fences', () => {
+    expect(businessCaseFence('## Goal\n\n```mermaid\ngraph TD\n```')).toBeUndefined()
+    expect(businessCaseFence('')).toBeUndefined()
   })
 })

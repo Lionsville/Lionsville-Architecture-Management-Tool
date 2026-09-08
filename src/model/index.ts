@@ -42,7 +42,7 @@ export type { CheckContext, Finding, FindingKind, FindingSubject } from './check
 /** A plan for changing the landscape (ADR-0009). */
 export {
   addDays, elementsWithRole, isTransitionFinished, nextTransitionNumber, setTransitionStatus,
-  shiftDays, sortTransitions, transitionDays, transitionLabel, TRANSITION_STATUSES,
+  findTransition, shiftDays, sortTransitions, transitionDays, transitionLabel, TRANSITION_STATUSES,
   transitionsForElement, transitionsFrom as transitionStatusesFrom,
 } from './transition'
 export type {
@@ -62,7 +62,7 @@ export { summarise } from './activity'
 export { apply, applyAll } from './reducer'
 export type { RestoreRefusal, RestoreResult, RestoreSubject } from './restore'
 export { restoreCommand } from './restore'
-export { lastDayBefore, portCommands, portProgress, portsOf, twinOf, unportCommands } from './porting'
+export { lastDayBefore, portCommands, portProgress, portsOf, twinOf, unplannedPorts, unportCommands } from './porting'
 export type { Port } from './porting'
 export { replacementCommands } from './replacement'
 export type { Replacement, ReplacementIds, ReplacementRequest } from './replacement'

@@ -27,8 +27,11 @@ import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
 import { portCommands, portsOf } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
-import { nextTransitionNumber } from '../model/transition'
-import { transitionList, transitionsOf } from '../model/normalised'
+import {
+  findTransition, nextTransitionNumber, transitionLabel, transitionsFrom as planTransitionsFrom,
+} from '../model/transition'
+import type { Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus } from '../model/transition'
+import { decisionsOf, transitionList, transitionsOf } from '../model/normalised'
 import { businessCaseTemplate } from '../documentation/businessCase'
 import type {
   DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId,
@@ -39,6 +42,7 @@ import { isAdrLocked, newAdr, nextAdrNumber, transitionAdr, transitionsFrom } fr
 import { alignNodes, distributeNodes } from '../layout/alignDistribute'
 import type { AlignAxis, DistributeAxis, NodeBounds } from '../layout/alignDistribute'
 import type { Translate } from '../i18n/strings'
+import { planEntry } from './answer'
 import type { ReadView } from './answer'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -134,6 +138,20 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'diagram.create': return createDiagram(args, view)
     case 'plan.replace': return replace(args, view)
     case 'plan.port': return port(args, view)
+    case 'plan.create': return createPlan(args, view)
+    case 'plan.update': return updatePlan(args, view)
+    case 'plan.remove': {
+      const plan = planOf(args.id, view)
+      if (!plan) return refused('agent.unknownId', `plan ${String(args.id)}`)
+      return {
+        command: { type: 'transition.remove', id: plan.id, origin: 'agent' },
+        answer: json({ id: plan.id, label: transitionLabel(plan), title: plan.title, removed: true }),
+      }
+    }
+    case 'milestone.add':
+    case 'milestone.update':
+    case 'milestone.remove':
+      return milestone(tool, args, view)
 
     case 'moveBy': {
       const placed = onDiagram(args, view)
@@ -324,6 +342,171 @@ function port(args: Args, view: WriteView): Prepared | AgentAnswer {
   return {
     command: transaction(commands, { origin: 'agent' }),
     answer: json({ planId, toId, on, moved: chosen.map((one) => one.from.id) }),
+  }
+}
+
+// --- plans as records (ADR-0009) -------------------------------------------------------
+
+function planOf(idOrLabel: unknown, view: ReadView): Transition | undefined {
+  return typeof idOrLabel === 'string' ? findTransition(transitionList(view.model), idOrLabel) : undefined
+}
+
+/**
+ * The element lists a plan names, as given. Each role given replaces that
+ * role's list whole; a role not given keeps what the plan had. An element may
+ * hold one role only — a thing a plan both introduces and retires is two
+ * plans, or a mistake — and every id has to exist.
+ */
+function planElements(args: Args, held: readonly TransitionElement[], view: ReadView): TransitionElement[] | AgentAnswer {
+  const roles = ['introduces', 'retires', 'changes'] as const
+  const out: TransitionElement[] = []
+  const seen = new Map<ElementId, TransitionRole>()
+  for (const role of roles) {
+    const given = args[role] as string[] | undefined | null
+    const ids = given ?? held.filter((one) => one.role === role).map((one) => one.elementId)
+    for (const elementId of ids) {
+      if (!view.model.elements[elementId]) return refused('agent.unknownId', `element ${elementId}`)
+      const already = seen.get(elementId)
+      if (already !== undefined && already !== role) {
+        return refused('agent.badArguments', `${elementId} cannot be both ${already} and ${role}`)
+      }
+      if (already !== undefined) continue
+      seen.set(elementId, role)
+      out.push({ elementId, role })
+    }
+  }
+  return out
+}
+
+function planDecisions(args: Args, view: ReadView): string[] | AgentAnswer | undefined {
+  const ids = args.decisionIds as string[] | undefined | null
+  if (ids === undefined || ids === null) return undefined
+  const own = decisionsOf(view.model)
+  for (const id of ids) {
+    if (!own[id] && !view.groupDecisions.some((adr) => adr.id === id)) return refused('agent.unknownId', `decision ${id}`)
+  }
+  return [...new Set(ids)]
+}
+
+/** The window as given: a day, or null to clear; anything else is refused. */
+function planDays(args: Args): { from?: string | null; to?: string | null } | AgentAnswer {
+  const out: { from?: string | null; to?: string | null } = {}
+  for (const key of ['from', 'to'] as const) {
+    const value = args[key]
+    if (value === undefined) continue
+    if (value === null) { out[key] = null; continue }
+    if (!isDay(value)) return refused('agent.badArguments', `${key} must be yyyy-mm-dd`)
+    out[key] = value
+  }
+  return out
+}
+
+function createPlan(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const title = (args.title as string).trim()
+  if (!title) return refused('agent.badArguments', '"title" must not be blank')
+  const elements = planElements(args, [], view)
+  if ('ok' in elements) return elements
+  const decisions = planDecisions(args, view)
+  if (decisions !== undefined && 'ok' in decisions) return decisions
+  const days = planDays(args)
+  if ('ok' in days) return days
+  if (days.from && days.to && days.to < days.from) return refused('agent.badArguments', 'to must not be before from')
+
+  const plan: Transition = {
+    id: view.makeId('tr'),
+    number: nextTransitionNumber(transitionList(view.model)),
+    title,
+    status: (args.status as TransitionStatus | undefined) ?? 'draft',
+    ...(days.from ? { from: days.from } : {}),
+    ...(days.to ? { to: days.to } : {}),
+    ...(typeof args.owner === 'string' && args.owner.trim() ? { owner: args.owner.trim() } : {}),
+    elements,
+    decisions: decisions ?? [],
+    milestones: [],
+    body: typeof args.body === 'string' && args.body.trim() ? args.body : planBody(),
+  }
+  return {
+    command: { type: 'transition.add', transition: plan, origin: 'agent' },
+    answer: json(planEntry(plan, toArrays(view.model))),
+  }
+}
+
+function updatePlan(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const held = planOf(args.id, view)
+  if (!held) return refused('agent.unknownId', `plan ${String(args.id)}`)
+  const patch: Partial<Transition> = {}
+  if (typeof args.title === 'string') {
+    if (!args.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
+    patch.title = args.title.trim()
+  }
+  if (typeof args.status === 'string' && args.status !== held.status) {
+    const allowed = planTransitionsFrom(held.status)
+    if (!allowed.includes(args.status as TransitionStatus)) {
+      return refused('agent.badArguments', `${held.status} can only move to ${allowed.join(', ')}`)
+    }
+    patch.status = args.status as TransitionStatus
+  }
+  const days = planDays(args)
+  if ('ok' in days) return days
+  const from = days.from === undefined ? held.from : days.from ?? undefined
+  const to = days.to === undefined ? held.to : days.to ?? undefined
+  if (from && to && to < from) return refused('agent.badArguments', 'to must not be before from')
+  if (days.from !== undefined) patch.from = days.from ?? undefined
+  if (days.to !== undefined) patch.to = days.to ?? undefined
+  if (args.owner === null) patch.owner = undefined
+  else if (typeof args.owner === 'string') patch.owner = args.owner.trim() || undefined
+  if (typeof args.body === 'string') patch.body = args.body
+  if (['introduces', 'retires', 'changes'].some((role) => Array.isArray(args[role]))) {
+    const elements = planElements(args, held.elements, view)
+    if ('ok' in elements) return elements
+    patch.elements = elements
+  }
+  const decisions = planDecisions(args, view)
+  if (decisions !== undefined) {
+    if ('ok' in decisions) return decisions
+    patch.decisions = decisions
+  }
+  const next = { ...held, ...patch }
+  for (const key of Object.keys(patch) as (keyof Transition)[]) if (next[key] === undefined) delete next[key]
+  return {
+    command: { type: 'transition.update', id: held.id, patch, origin: 'agent' },
+    answer: json({ changed: Object.keys(patch), ...planEntry(next, toArrays(view.model)) }),
+  }
+}
+
+/** A milestone is found by its name: a plan has a handful, and the name is what the roadmap shows. */
+function milestone(
+  tool: 'milestone.add' | 'milestone.update' | 'milestone.remove', args: Args, view: WriteView,
+): Prepared | AgentAnswer {
+  const plan = planOf(args.planId, view)
+  if (!plan) return refused('agent.unknownId', `plan ${String(args.planId)}`)
+  const name = typeof args.name === 'string' ? args.name.trim() : ''
+  if (!name) return refused('agent.badArguments', '"name" must not be blank')
+  const at = plan.milestones.findIndex((one) => one.name === name)
+  let milestones: TransitionMilestone[]
+  if (tool === 'milestone.add') {
+    if (!isDay(args.date)) return refused('agent.badArguments', 'date must be yyyy-mm-dd')
+    if (at >= 0) return refused('agent.badArguments', `plan ${transitionLabel(plan)} already has a milestone called ${name}`)
+    milestones = [...plan.milestones, { date: args.date, name }].sort((a, b) => a.date.localeCompare(b.date))
+  } else {
+    if (at < 0) return refused('agent.unknownId', `milestone ${name} of plan ${transitionLabel(plan)}`)
+    if (tool === 'milestone.remove') {
+      milestones = plan.milestones.filter((_one, index) => index !== at)
+    } else {
+      const held = plan.milestones[at]
+      if (args.date !== undefined && args.date !== null && !isDay(args.date)) return refused('agent.badArguments', 'date must be yyyy-mm-dd')
+      const newName = typeof args.newName === 'string' ? args.newName.trim() : ''
+      if (newName && newName !== name && plan.milestones.some((one) => one.name === newName)) {
+        return refused('agent.badArguments', `plan ${transitionLabel(plan)} already has a milestone called ${newName}`)
+      }
+      const moved: TransitionMilestone = { date: isDay(args.date) ? args.date : held.date, name: newName || held.name }
+      milestones = plan.milestones.map((one, index) => (index === at ? moved : one))
+        .sort((a, b) => a.date.localeCompare(b.date))
+    }
+  }
+  return {
+    command: { type: 'transition.update', id: plan.id, patch: { milestones }, origin: 'agent' },
+    answer: json({ planId: plan.id, label: transitionLabel(plan), milestones }),
   }
 }
 
