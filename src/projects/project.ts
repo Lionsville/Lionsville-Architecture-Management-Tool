@@ -14,6 +14,7 @@
  * the export title block, the picker and the stored file from ever disagreeing.
  */
 import type { AspectConfigEntry, DocumentImage, Transition, UploadedLogo } from '../model'
+import type { Adr } from '../model/adr'
 import { fromInterchange } from '../model/fromInterchange'
 import type { HostModel, InterchangeDoc } from '../model/fromInterchange'
 import {
@@ -96,9 +97,12 @@ export function projectFromDocument(
   groupName: string,
   /** Plans to open with, which the interchange format does not carry (ADR-0009). */
   transitions?: readonly Transition[],
+  /** Decision records, kept beside the document for the same reason. */
+  decisions?: readonly Adr[],
 ): ProjectSnapshot {
   const model = fromInterchange(doc, groupName)
   if (transitions?.length) model.transitions = [...transitions]
+  if (decisions?.length) model.decisions = [...decisions]
   return { ref, model, activeDiagramId: resolveActive(model), logoLibrary: [] }
 }
 

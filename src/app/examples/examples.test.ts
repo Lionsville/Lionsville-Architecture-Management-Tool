@@ -18,6 +18,7 @@ import { fromInterchange } from '../../model/fromInterchange'
 import { fromArrays, toArrays } from '../../model/normalised'
 import { projectFromDocument, toWorkingFile } from '../../projects/project'
 import { syntheticModel } from '../../model/testing/synthetic'
+import { computeBusinessCase, readBusinessCase } from '../../documentation/businessCase'
 
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
   const model = fromInterchange(example.document, example.groupName)
@@ -118,5 +119,44 @@ describe('the generated landscape against the shipped one', () => {
     expect(shipped.hubRatio).toBeGreaterThan(3)
     expect(generated.hubRatio).toBeGreaterThan(shipped.hubRatio)
     expect(generated.hubRatio).toBeLessThan(shipped.hubRatio * 4)
+  })
+})
+
+/**
+ * The example is the first plan, the first business case and the first
+ * accepted decision a new user sees, so each has to be whole: every name in a
+ * plan is an element or a record that exists, and every business case works
+ * out to an answer rather than to its own source.
+ */
+describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by example', (_key, example) => {
+  const model = fromInterchange(example.document, example.groupName)
+  const elementIds = new Set(model.elements.map((e) => e.id))
+  const decisionIds = new Set((example.decisions ?? []).map((d) => d.id))
+
+  it('ships at least one plan, one decision and one dated board', () => {
+    expect(example.transitions?.length ?? 0).toBeGreaterThan(0)
+    expect(example.decisions?.length ?? 0).toBeGreaterThan(0)
+    expect(model.diagrams.some((d) => d.asOf)).toBe(true)
+  })
+
+  it.each((example.transitions ?? []).map((plan) => [plan.title, plan] as const))('plan %s names only what exists', (_title, plan) => {
+    for (const { elementId } of plan.elements) expect(elementIds.has(elementId), elementId).toBe(true)
+    for (const id of plan.decisions) expect(decisionIds.has(id), id).toBe(true)
+  })
+
+  it.each((example.transitions ?? []).map((plan) => [plan.title, plan] as const))('plan %s carries a business case that computes', (_title, plan) => {
+    const fence = /```business-case\n([\s\S]*?)```/.exec(plan.body)
+    expect(fence, 'no business-case fence').toBeTruthy()
+    const held = readBusinessCase(fence![1])
+    expect(held.lines.length).toBeGreaterThan(0)
+    const result = computeBusinessCase(held)
+    expect(result.npv).toBeGreaterThan(0)
+    expect(result.score?.total).toBeGreaterThan(0)
+  })
+
+  it('opens with its decisions and plans on the model', () => {
+    const snapshot = projectFromDocument(example.document, example.ref, example.groupName, example.transitions, example.decisions)
+    expect(snapshot.model.transitions?.map((t) => t.id)).toEqual(example.transitions?.map((t) => t.id))
+    expect(snapshot.model.decisions?.map((d) => d.id)).toEqual(example.decisions?.map((d) => d.id))
   })
 })

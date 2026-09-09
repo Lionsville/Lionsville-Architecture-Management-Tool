@@ -18,7 +18,7 @@
  * A fullscreen dialog, and it takes `windowChrome` for the reason the others
  * do: the shell toolbar's drag strip stays live underneath it.
  */
-import { useCallback, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
@@ -37,6 +37,7 @@ import type {
 } from '../../model'
 import type { Adr } from '../../model/adr'
 import { formatAdrNumber } from '../../decisions'
+import { linkElementRefs } from '../../documentation/documentation'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
@@ -184,7 +185,9 @@ export function PlanPage(props: PlanPageProps) {
             )}
             <Body
               plan={plan}
+              model={model}
               editing={editing}
+              onOpenElement={actions.onOpenElement}
               renderMarkdown={props.renderMarkdown}
               onAddImage={props.onAddImage}
               images={props.images}
@@ -673,9 +676,11 @@ function endOf(port: Port): 'sourceId' | 'targetId' {
 }
 
 /** The document, and its source beside it while it is being written. */
-function Body({ plan, editing, renderMarkdown, onAddImage, images, onChange }: {
+function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChange, onOpenElement }: {
   plan: Transition
+  model: DesignModel
   editing: boolean
+  onOpenElement(id: ElementId): void
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
   onAddImage?(file: File): Promise<string | undefined>
   images?: DocumentImages
@@ -685,8 +690,11 @@ function Body({ plan, editing, renderMarkdown, onAddImage, images, onChange }: {
   // The rendered document beside the source, which a wide table wants out of the way.
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = !editing || previewShown
-  const rendered = plan.body.trim()
-    ? (renderMarkdown ? renderMarkdown(plan.body) : <pre style={{ whiteSpace: 'pre-wrap' }}>{plan.body}</pre>)
+  // `[[Name]]` becomes a link to the element, as it does on the other two
+  // pages that read markdown; a plan that names what it changes should say so.
+  const source = useMemo(() => linkElementRefs(plan.body, model.elements), [plan.body, model.elements])
+  const rendered = source.trim()
+    ? (renderMarkdown ? renderMarkdown(source, { onElementLink: onOpenElement }) : <pre style={{ whiteSpace: 'pre-wrap' }}>{source}</pre>)
     : <Typography color="text.secondary">{t('plan.bodyEmpty')}</Typography>
 
   return (

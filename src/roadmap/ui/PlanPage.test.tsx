@@ -291,6 +291,18 @@ describe('read-only', () => {
 })
 
 describe('the document', () => {
+  it('turns [[Name]] into a link to the element, followed through the actions', () => {
+    const { actions } = setup({
+      plan: { ...PLAN, body: 'Retire [[Warehouse Management]] for good.' },
+      renderMarkdown: (md, options) => (
+        <button data-testid="rendered" onClick={() => options?.onElementLink?.('wms-old')}>{md}</button>
+      ),
+    })
+    expect(screen.getByTestId('rendered').textContent).toContain('[Warehouse Management](element:wms-old)')
+    fireEvent.click(screen.getByTestId('rendered'))
+    expect(actions.onOpenElement).toHaveBeenCalledWith('wms-old')
+  })
+
   it('is written in the shared source pane, which takes a picture in', async () => {
     const onAddImage = vi.fn(async () => 'screenshot-k1.png')
     const { actions } = setup({ onAddImage })

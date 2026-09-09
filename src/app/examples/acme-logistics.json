@@ -865,6 +865,148 @@
       ]
     },
     {
+      "key": "landscape-2027",
+      "kind": "layer7",
+      "name": "Landscape in 2027",
+      "asOf": "2027-09-01",
+      "aspectConfig": [
+        {
+          "key": "monitoring",
+          "label": "Monitoring"
+        },
+        {
+          "key": "self-healing",
+          "label": "Self-healing"
+        },
+        {
+          "key": "security",
+          "label": "Security"
+        },
+        {
+          "key": "dr",
+          "label": "Disaster recovery"
+        }
+      ],
+      "places": [
+        {
+          "elementKey": "order-management",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "route-optimiser",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "dispatch",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "track-trace",
+          "zone": "landscape",
+          "domainGroup": "Order to delivery"
+        },
+        {
+          "elementKey": "planner",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "dispatcher",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "warehouse-lead",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "support-agent",
+          "zone": "actors"
+        },
+        {
+          "elementKey": "driver-app",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "customer-portal",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "edi-intake",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "scanners",
+          "zone": "inputChannels"
+        },
+        {
+          "elementKey": "wms",
+          "zone": "landscape",
+          "domainGroup": "Warehouse"
+        },
+        {
+          "elementKey": "slotting",
+          "zone": "landscape",
+          "domainGroup": "Warehouse"
+        },
+        {
+          "elementKey": "yard",
+          "zone": "landscape",
+          "domainGroup": "Warehouse"
+        },
+        {
+          "elementKey": "billing",
+          "zone": "landscape",
+          "domainGroup": "Billing"
+        },
+        {
+          "elementKey": "tariff-engine",
+          "zone": "landscape",
+          "domainGroup": "Billing"
+        },
+        {
+          "elementKey": "legacy-rating",
+          "zone": "landscape",
+          "domainGroup": "Billing"
+        },
+        {
+          "elementKey": "customer-master",
+          "zone": "landscape",
+          "domainGroup": "Master data"
+        },
+        {
+          "elementKey": "fleet-register",
+          "zone": "landscape",
+          "domainGroup": "Master data"
+        },
+        {
+          "elementKey": "customs",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "partner-carriers",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "payments",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "traffic-feed",
+          "zone": "externalSystems"
+        },
+        {
+          "elementKey": "observability",
+          "zone": "management"
+        },
+        {
+          "elementKey": "iam",
+          "zone": "management"
+        }
+      ]
+    },
+    {
       "key": "wms-containers",
       "kind": "container",
       "name": "Warehouse Management · containers",
