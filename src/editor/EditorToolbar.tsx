@@ -29,7 +29,7 @@ import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/type
 import { getNodeTokens } from './theme/tokens';
 import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
-import { LANGUAGES, type Language, type StringKey } from '../i18n/strings';
+import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
 
 /**
  * Which layout action is currently running. Both of them go through a WASM
@@ -149,12 +149,6 @@ const LIFECYCLE_LEGEND: { key: Lifecycle; labelKey: StringKey; noteKey: StringKe
   { key: 'retiring', labelKey: 'lifecycle.retiring', noteKey: 'lifecycleNote.retiring' },
   { key: 'retired', labelKey: 'lifecycle.retired', noteKey: 'lifecycleNote.retired' },
 ];
-
-/** What the NL/EN button shows and says, per language. */
-const LANGUAGE_NAME: Record<Language, StringKey> = {
-  nl: 'common.languageNl',
-  en: 'common.languageEn',
-};
 
 /**
  * Top bar: Layer 7 diagram tabs (breadcrumb when drilled into a container
@@ -502,13 +496,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
 }
 
 /**
- * The NL/EN switch.
+ * The language switch.
  *
- * A two-state button rather than a select: there are exactly two languages and a
- * dropdown for two options is a click too many. It shows the language you are
- * IN and switches to the other one — the same grammar as every other pressed
- * toggle in this bar, and the reason its tooltip names the current language
- * rather than the action.
+ * It was a two-state button while there were exactly two languages; with four,
+ * a button that cycles would make a person press it three times to get back,
+ * so it is a small menu. The button still shows the code of the language you
+ * are IN, the same grammar as every other pressed toggle in this bar, and the
+ * menu names each language the way it names itself.
  *
  * Visible in read-only too: which language you read a board in is not a mutation.
  */
@@ -520,18 +514,33 @@ function LanguageToggle({
   onChange(language: Language): void;
 }) {
   const { t } = useStrings();
-  const other = LANGUAGES.find((candidate) => candidate !== language) ?? 'en';
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   return (
-    <Tooltip title={t('toolbar.languageTip', { name: t(LANGUAGE_NAME[language]) })}>
-      <IconButton
-        size="small"
-        aria-label={t('common.language')}
-        onClick={() => onChange(other)}
-        sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary', px: 0.75 }}
-      >
-        {language.toUpperCase()}
-      </IconButton>
-    </Tooltip>
+    <>
+      <Tooltip title={t('toolbar.languageTip', { name: t(LANGUAGE_NAME[language]) })}>
+        <IconButton
+          size="small"
+          aria-label={t('common.language')}
+          aria-haspopup="menu"
+          onClick={(e) => setAnchor(e.currentTarget)}
+          sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'text.secondary', px: 0.75 }}
+        >
+          {language.toUpperCase()}
+        </IconButton>
+      </Tooltip>
+      <Menu open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)}>
+        {LANGUAGES.map((candidate) => (
+          <MenuItem
+            key={candidate}
+            dense
+            selected={candidate === language}
+            onClick={() => { setAnchor(null); if (candidate !== language) onChange(candidate); }}
+          >
+            {t(LANGUAGE_NAME[candidate])}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }
 

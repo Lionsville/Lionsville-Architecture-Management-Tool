@@ -18,6 +18,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'common.name': 'Naam',
   'common.language': 'Taal',
   'common.languageNl': 'Nederlands',
+  'common.languageFy': 'Frysk',
+  'common.languageDe': 'Deutsch',
   'common.languageEn': 'English',
   'common.empty': 'Nog niets geschreven.',
   'common.history': 'Geschiedenis…',

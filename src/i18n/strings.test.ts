@@ -1,12 +1,12 @@
 /**
  * The words themselves live one slice per module (`<module>/strings/en.ts`),
- * composed into the two tables by `strings.en.ts` and `strings.nl.ts`; this
+ * composed into one table per language by `strings.<lang>.ts`; this
  * suite checks that every registered language table is COMPLETE and consistent,
  * and that the composition itself is sound.
  *
- * Everything below loops over `STRINGS` rather than naming `en` and `nl`. That
- * is the point: adding `strings.de.ts` and one line in the registry brings it
- * under all of these checks without touching this file. TypeScript already
+ * Everything below loops over `STRINGS` rather than naming the languages. That
+ * is the point: adding `strings.<lang>.ts` and one line in the registry brings
+ * it under all of these checks without touching this file. TypeScript already
  * guarantees the key set (a table is typed `StringTable`); what it cannot see is
  * an empty value, a dropped `{placeholder}`, or a table that was copied from
  * English and never translated.
@@ -15,6 +15,8 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_TRANSLATE,
   LANGUAGES,
+  LANGUAGE_NAME,
+  LOCALE,
   STRINGS,
   detectBrowserLanguage,
   interpolate,
@@ -58,8 +60,25 @@ const placeholders = (value: string) =>
   (value.match(/\{(\w+)\}/g) ?? []).slice().sort().join(',');
 
 describe('the string registry', () => {
-  it('registers at least English and Dutch', () => {
-    expect(languages.sort()).toEqual(['en', 'nl']);
+  it('registers English, Dutch, Frisian and German', () => {
+    expect(languages.slice().sort()).toEqual(['de', 'en', 'fy', 'nl']);
+  });
+
+  it('names every registered language in the common vocabulary', () => {
+    for (const language of languages) {
+      expect(LANGUAGE_NAME[language], language).toBeDefined();
+      expect(LOCALE[language], language).toMatch(/^[a-z]{2}-[A-Z]{2}$/);
+    }
+  });
+
+  it('calls each language by its own name in every table', () => {
+    // A proper noun: "Deutsch" on a Dutch screen, so a German finds it.
+    for (const language of languages) {
+      const own = STRINGS[language][LANGUAGE_NAME[language]];
+      for (const other of languages) {
+        expect(STRINGS[other][LANGUAGE_NAME[language]]).toBe(own);
+      }
+    }
   });
 
   it('offers every registered language in the toggle', () => {
@@ -69,7 +88,7 @@ describe('the string registry', () => {
 
   it('recognises exactly the registered languages', () => {
     for (const language of languages) expect(isLanguage(language), language).toBe(true);
-    expect(isLanguage('de')).toBe(false);
+    expect(isLanguage('fr')).toBe(false);
   });
 });
 
@@ -122,7 +141,7 @@ describe('t', () => {
   });
 
   it('falls back to English for an unknown language', () => {
-    expect(t('de' as Language, 'common.cancel')).toBe('Cancel');
+    expect(t('fr' as Language, 'common.cancel')).toBe('Cancel');
   });
 
   it('returns the key itself when the key is unknown', () => {
@@ -169,16 +188,22 @@ describe('detectBrowserLanguage', () => {
     expect(detectBrowserLanguage(['NL-be'])).toBe('nl');
   });
 
+  it('picks Frisian and German for their tags', () => {
+    expect(detectBrowserLanguage(['fy-NL', 'nl'])).toBe('fy');
+    expect(detectBrowserLanguage(['de-DE', 'en'])).toBe('de');
+    expect(detectBrowserLanguage(['de-AT'])).toBe('de');
+  });
+
   it('picks English for anything else', () => {
     expect(detectBrowserLanguage(['en-US'])).toBe('en');
-    expect(detectBrowserLanguage(['de-DE', 'fr'])).toBe('en');
+    expect(detectBrowserLanguage(['fr-FR', 'it'])).toBe('en');
     expect(detectBrowserLanguage([])).toBe('en');
     expect(detectBrowserLanguage(undefined)).toBe('en');
   });
 
   it('honours order — the first understood tag wins', () => {
-    expect(detectBrowserLanguage(['de', 'nl', 'en'])).toBe('nl');
-    expect(detectBrowserLanguage(['de', 'en', 'nl'])).toBe('en');
+    expect(detectBrowserLanguage(['fr', 'nl', 'en'])).toBe('nl');
+    expect(detectBrowserLanguage(['fr', 'en', 'nl'])).toBe('en');
   });
 
   it('ignores non-string entries', () => {
@@ -190,7 +215,9 @@ describe('isLanguage', () => {
   it('accepts only registered languages', () => {
     expect(isLanguage('nl')).toBe(true);
     expect(isLanguage('en')).toBe(true);
-    expect(isLanguage('de')).toBe(false);
+    expect(isLanguage('fy')).toBe(true);
+    expect(isLanguage('de')).toBe(true);
+    expect(isLanguage('fr')).toBe(false);
     expect(isLanguage(undefined)).toBe(false);
     expect(isLanguage('toString')).toBe(false);
   });

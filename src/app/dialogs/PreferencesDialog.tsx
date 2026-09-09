@@ -31,16 +31,13 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
-import { LANGUAGES } from '../../i18n'
-import type { Language, StringKey, Translate } from '../../i18n'
+import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
+import type { Language, Translate } from '../../i18n'
 import { THEME_ITEMS } from '../../platform/menu'
 import type { ThemeMode } from '../../platform/theme'
 import type { UpdateChannel, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type { LocalSettingsPatch } from '../../projects/folderSettings'
 import type { ProjectOrder } from '../../projects/project'
-
-/** The two languages, as the common vocabulary names them. */
-const LANGUAGE_LABEL: Record<Language, StringKey> = { nl: 'common.languageNl', en: 'common.languageEn' }
 
 export type PreferencesDialogProps = {
   open: boolean
@@ -118,7 +115,7 @@ export function PreferencesDialog({
               >
                 {LANGUAGES.map((held) => (
                   <ToggleButton key={held} value={held} sx={{ fontSize: 11, px: 1.5 }}>
-                    {s(LANGUAGE_LABEL[held])}
+                    {s(LANGUAGE_NAME[held])}
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>

@@ -145,12 +145,23 @@ describe('SolutionDesignEditor — language', () => {
     expect(screen.getByPlaceholderText('Nieuwe groep')).toBeDefined();
   });
 
-  it('asks the host for the other language rather than switching itself', () => {
+  it('asks the host for the chosen language rather than switching itself', () => {
     const { onLanguageChange } = renderEditor({ language: 'nl' });
     fireEvent.click(screen.getByLabelText('Taal'));
+    // The menu names every language the way it names itself.
+    expect(screen.getByRole('menuitem', { name: 'Frysk' })).toBeDefined();
+    expect(screen.getByRole('menuitem', { name: 'Deutsch' })).toBeDefined();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'English' }));
     expect(onLanguageChange).toHaveBeenCalledWith('en');
     // Still Dutch: the editor does not own the value.
     expect(screen.getByLabelText('Passend maken')).toBeDefined();
+  });
+
+  it('does not ask for the language it is already in', () => {
+    const { onLanguageChange } = renderEditor({ language: 'nl' });
+    fireEvent.click(screen.getByLabelText('Taal'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Nederlands' }));
+    expect(onLanguageChange).not.toHaveBeenCalled();
   });
 
   it('offers no toggle when the host owns the language elsewhere', () => {

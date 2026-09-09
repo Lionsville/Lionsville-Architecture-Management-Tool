@@ -1,7 +1,7 @@
 /**
  * THE STRING REGISTRY — the machinery around the tables, not the words.
  *
- * The words live one file per language (`strings.en.ts`, `strings.nl.ts`); this
+ * The words live one file per language (`strings.en.ts`, `strings.nl.ts`, …); this
  * file only registers them and looks them up. That split is what keeps adding a
  * language small: a new table file, one line in `TABLES` below, and one entry in
  * `LANGUAGES`. Everything else here derives from `TABLES` — the `Language` type,
@@ -21,12 +21,16 @@
  * Placeholders are `{name}`. An unknown key returns the key itself rather than
  * throwing: a missing string is a blemish, never a blank editor.
  */
+import { DE } from './strings.de';
 import { EN } from './strings.en';
+import { FY } from './strings.fy';
 import { NL } from './strings.nl';
 import type { StringKey, StringParams, StringTable } from './table';
 
 export type { StringKey, StringParams, StringTable } from './table';
+export { DE } from './strings.de';
 export { EN } from './strings.en';
+export { FY } from './strings.fy';
 export { NL } from './strings.nl';
 
 /**
@@ -35,7 +39,7 @@ export { NL } from './strings.nl';
  * `satisfies` rather than an annotation on purpose: it checks each table without
  * widening the keys away, so `Language` below stays the exact union.
  */
-const TABLES = { en: EN, nl: NL } satisfies Record<string, StringTable>;
+const TABLES = { en: EN, nl: NL, fy: FY, de: DE } satisfies Record<string, StringTable>;
 
 /** Derived, so it can never disagree with the tables that actually exist. */
 export type Language = keyof typeof TABLES;
@@ -43,12 +47,43 @@ export type Language = keyof typeof TABLES;
 export const STRINGS: Record<Language, StringTable> = TABLES;
 
 /**
- * The languages in toggle order — a presentation choice, so it is written out
- * rather than derived from `TABLES` (whose order means nothing). `strings.test.ts`
- * checks it covers every registered language, so adding one and forgetting the
- * toggle fails a test rather than hiding a language from the UI.
+ * The languages in menu order — a presentation choice, so it is written out
+ * rather than derived from `TABLES` (whose order means nothing). Dutch first and
+ * Frisian beside it because that is where the tool comes from; then the two
+ * neighbours. `strings.test.ts` checks it covers every registered language, so
+ * adding one and forgetting the menu fails a test rather than hiding a language
+ * from the UI.
  */
-export const LANGUAGES: readonly Language[] = ['nl', 'en'];
+export const LANGUAGES: readonly Language[] = ['nl', 'fy', 'de', 'en'];
+
+/**
+ * How each language names itself, in the common vocabulary — a proper noun, so
+ * it reads the same in every table and a person looking for their own language
+ * finds it under the name they would use.
+ */
+export const LANGUAGE_NAME: Record<Language, StringKey> = {
+  nl: 'common.languageNl',
+  fy: 'common.languageFy',
+  de: 'common.languageDe',
+  en: 'common.languageEn',
+};
+
+/**
+ * The BCP 47 tag `Intl` formats dates, times and numbers in for each language.
+ *
+ * Frisian has a tag of its own (`fy-NL`), but Chromium's ICU carries no data
+ * for it, and `toLocale*` on an unknown tag falls back on the machine's own
+ * default — a 12-hour clock on an American laptop, in a Frisian interface.
+ * Frisian writes its dates, times and decimals exactly as Dutch does, so the
+ * Dutch locale is the honest answer: the format is right and it is the same on
+ * every machine. Only a written-out month name comes out Dutch.
+ */
+export const LOCALE: Record<Language, string> = {
+  nl: 'nl-NL',
+  fy: 'nl-NL',
+  de: 'de-DE',
+  en: 'en-GB',
+};
 
 /**
  * Fill `{placeholders}` from `params`. A placeholder with no matching param is

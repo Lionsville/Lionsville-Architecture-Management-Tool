@@ -20,6 +20,7 @@ import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import { LOCALE } from '../i18n'
 import type { Language, StringKey, Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
 import type { AgentServerStatus } from '../platform/agentServer'
@@ -42,7 +43,7 @@ import { OverflowMenu } from './OverflowMenu'
  * screen. The locale now follows the language choice — same button, same answer.
  */
 export function clockTime(at: Date, language: Language): string {
-  return at.toLocaleTimeString(language === 'nl' ? 'nl-NL' : 'en-GB', {
+  return at.toLocaleTimeString(LOCALE[language], {
     hour: '2-digit', minute: '2-digit',
   })
 }

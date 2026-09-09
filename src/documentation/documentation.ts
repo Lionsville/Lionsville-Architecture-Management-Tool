@@ -26,7 +26,12 @@ export const ELEMENT_LINK_SCHEME = 'element:';
  * rather than read from the string tables so that this module stays free of
  * them; `documentation.test.ts` checks the tables agree.
  */
-export const SHORT_DESCRIPTION_LABELS: readonly string[] = ['short description', 'korte omschrijving'];
+export const SHORT_DESCRIPTION_LABELS: readonly string[] = [
+  'short description',
+  'korte omschrijving',
+  'koarte beskriuwing',
+  'kurzbeschreibung',
+];
 
 // --- reading -------------------------------------------------------------------
 

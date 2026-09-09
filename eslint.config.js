@@ -110,16 +110,21 @@ const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*'
  * import, because `StringKey` is `keyof typeof EN` and a type cannot be built
  * from a runtime registration.
  *
- * Exempting the two files rather than widening the row to every module's
+ * Exempting the composing files rather than widening the row to every module's
  * strings folder, because a negated glob inside a `no-restricted-imports` group
  * does not narrow one in this ESLint — it is silently ignored, which would have
  * left the whole i18n row unenforced. Every other file in `i18n` knows nobody.
  */
-const COMPOSES_THE_TABLE = ['src/i18n/strings.en.ts', 'src/i18n/strings.nl.ts']
+const COMPOSES_THE_TABLE = [
+  'src/i18n/strings.en.ts',
+  'src/i18n/strings.nl.ts',
+  'src/i18n/strings.fy.ts',
+  'src/i18n/strings.de.ts',
+]
 
 /**
  * Files their own module's row does not apply to. `i18n` has both exceptions:
- * the two files that compose the table, and `LanguageContext` — a language needs
+ * the files that compose the tables, and `LanguageContext` — a language needs
  * a context to travel in, and it is the one screen-shaped file down here.
  */
 const EXEMPT = { i18n: ['src/i18n/LanguageContext.tsx', ...COMPOSES_THE_TABLE] }

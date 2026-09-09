@@ -24,6 +24,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { groupProfileFor } from '../../projects/group'
 import type { GroupProfile } from '../../projects/group'
@@ -117,7 +118,7 @@ function whenChanged(updatedAt: string | undefined, language: Language, s: Trans
   const at = new Date(updatedAt)
   if (Number.isNaN(at.getTime())) return s('picker.never')
   return s('picker.changed', {
-    when: at.toLocaleString(language === 'nl' ? 'nl-NL' : 'en-GB', {
+    when: at.toLocaleString(LOCALE[language], {
       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     }),
   })

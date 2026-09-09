@@ -158,10 +158,12 @@ en werkt de editor gewoon door; bewaar dan een werkbestand, want zonder opslag
 is het project weg als het tabblad sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
 die balk onderin.
 
-**Taal.** De knop **NL/EN** rechts in de werkbalk van de editor schakelt de
-hele interface om: menu's, dialogen, tooltips, bandnamen, foutmeldingen en het
-titelblok van een PNG-export. De eerste keer beslist de taal van de browser. Het
-ontwerp zelf verandert niet; namen van elementen zijn inhoud, geen interface.
+**Taal.** De taalknop rechts in de werkbalk van de editor (hij toont de code
+van de taal waarin je zit: NL, FY, DE of EN) opent een menu met de vier:
+Nederlands, Frysk, Deutsch en English. Een keuze schakelt de hele interface om:
+menu's, dialogen, tooltips, bandnamen, foutmeldingen en het titelblok van een
+PNG-export. De eerste keer beslist de taal van de browser. Het ontwerp zelf
+verandert niet; namen van elementen zijn inhoud, geen interface.
 
 ## Tekenen
 

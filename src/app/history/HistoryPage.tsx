@@ -31,6 +31,7 @@ import Typography from '@mui/material/Typography'
 import { countChanges, diffModels } from '../../model/diff'
 import type { ModelChange } from '../../model/diff'
 import type { HostModel } from '../../model/fromInterchange'
+import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { PageDialog } from '../../widgets/PageDialog'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -75,7 +76,7 @@ function decode(value: string): HistorySubject | undefined {
 }
 
 function when(at: number, language: Language): string {
-  return new Date(at).toLocaleString(language === 'nl' ? 'nl-NL' : 'en-GB', {
+  return new Date(at).toLocaleString(LOCALE[language], {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   })
 }

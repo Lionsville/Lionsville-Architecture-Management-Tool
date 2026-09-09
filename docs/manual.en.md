@@ -152,11 +152,13 @@ save a working file then, because without storage the project is gone when the
 tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
 
-**Language.** The **NL/EN** button at the right of the editor's toolbar
-switches the whole interface: menus, dialogs, tooltips, band names, error
-messages and the title block of a PNG export. The first time, the browser's
-language decides. The design itself does not change; element names are
-content, not interface.
+**Language.** The language button at the right of the editor's toolbar
+(it shows the code of the language you are in: NL, FY, DE or EN) opens a
+menu of the four: Nederlands, Frysk, Deutsch and English. Choosing one switches
+the whole interface: menus, dialogs, tooltips, band names, error messages and
+the title block of a PNG export. The first time, the browser's language
+decides. The design itself does not change; element names are content, not
+interface.
 
 ## Drawing
 

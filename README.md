@@ -189,11 +189,11 @@ for one channel — where it leaves your stored routes exactly as they are. A ve
 large **PNG export** asks first, with the size of the image, before it starts
 drawing.
 
-### Two languages, three themes
+### Four languages, three themes
 
-Dutch and English, switchable at any moment, covering menus, dialogs, band
-names, errors and the export title block — not a partial translation. Light,
-dark and system themes.
+Dutch, Frisian, German and English, switchable at any moment, covering menus,
+dialogs, band names, errors and the export title block — not a partial
+translation. Light, dark and system themes.
 
 ## Where your work is kept
 
@@ -257,7 +257,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3153 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3178 tests. Run it
 after every change; it is fast on purpose.
 
 ```bash

@@ -16,6 +16,8 @@ export const EN = {
   'common.name': 'Name',
   'common.language': 'Language',
   'common.languageNl': 'Nederlands',
+  'common.languageFy': 'Frysk',
+  'common.languageDe': 'Deutsch',
   'common.languageEn': 'English',
   'common.empty': 'Nothing written yet.',
   /** Three pages offer it — a diagram, a description, a decision — and it is the same word (ADR-0008). */

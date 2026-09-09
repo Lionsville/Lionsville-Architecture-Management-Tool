@@ -16,7 +16,7 @@ describe('readLanguage', () => {
   })
 
   it('returns nothing for a language we do not speak', () => {
-    expect(readLanguage({ language: 'de' })).toBeUndefined()
+    expect(readLanguage({ language: 'fr' })).toBeUndefined()
     expect(readLanguage({ language: 42 })).toBeUndefined()
     expect(readLanguage({})).toBeUndefined()
     expect(readLanguage(undefined)).toBeUndefined()

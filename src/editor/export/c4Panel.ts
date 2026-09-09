@@ -1,4 +1,5 @@
 import type { DesignDiagram, DesignModel } from '../../model/types';
+import { LOCALE } from '../../i18n';
 import type { Language, Translate } from '../../i18n';
 
 /**
@@ -21,8 +22,6 @@ export interface C4PanelInfo {
   /** The document date, or today, written out in the UI language. */
   date: string;
 }
-
-const LOCALE: Record<Language, string> = { en: 'en-GB', nl: 'nl-NL' };
 
 /**
  * The panel for a diagram, or nothing when the diagram is not a container

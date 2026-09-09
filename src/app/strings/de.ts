@@ -1,0 +1,328 @@
+/**
+ * German, for the shell around the editor: the picker, the toolbar, the dialogs, the toasts.
+ *
+ * Typed from the English slice beside it, so a missing translation is a compile
+ * error here rather than an English sentence on a German screen. `strings.test.ts`
+ * covers what the type cannot: empty values, and placeholders that were dropped
+ * or invented in translation.
+ */
+import type { EN } from './en'
+
+export const DE: Record<keyof typeof EN, string> = {
+  /** The rail pack's picker heading. The pack is registered in composition.ts. */
+  'logo.category.rail': 'Bahn',
+
+  'shell.saved': 'Gespeichert · {time}',
+  'shell.notSaved': 'Noch nicht gespeichert',
+  'shell.saveRefused': 'Nicht gespeichert — Speicher verweigert',
+  'shell.unsaved': 'Ungespeicherte Änderungen',
+  'shell.saving': 'Wird gespeichert…',
+  'shell.changedOnDisk': 'Auf der Festplatte geändert',
+  'shell.conflict': 'Hier und auf der Festplatte geändert',
+  'shell.diskChanged': 'Dieses Projekt wurde auf der Festplatte geändert. Hier ist nichts ungespeichert.',
+  'shell.diskConflict': 'Dieses Projekt wurde auf der Festplatte geändert, und hier gibt es ungespeicherte Änderungen.',
+  'shell.takeTheirs': 'Die von der Festplatte',
+  'shell.keepMine': 'Meine behalten',
+  'shell.saveACopy': 'Kopie speichern…',
+  'shell.storageFailed':
+    'Dieser Browser konnte den Entwurf nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Arbeitsdatei, sonst ist er beim Schließen des Tabs verloren.',
+  'shell.storageRecovered': 'Speichern in diesem Browser funktioniert wieder.',
+  'shell.storageNearlyFull':
+    'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
+    + 'oder einer Datei, bevor der Platz ausgeht — ein Browser hört ohne Nachfrage auf zu speichern.',
+  'shell.crashed': 'Auf diesem Bildschirm ist etwas schiefgegangen.',
+  'shell.crashedNote':
+    'Ihre Arbeit bis zum letzten Speichern ist noch da. Laden Sie neu, um weiterzumachen; die Diagnose sagt, was passiert ist.',
+  'shell.reload': 'Neu laden',
+  'shell.copyDiagnostics': 'Diagnose kopieren',
+  'shell.diagnosticsCopied': 'Kopiert',
+  'shell.copyFailed': 'Kopieren fehlgeschlagen',
+  'shell.bootFailed': 'Die App konnte nicht starten.',
+  'shell.bootFailedNote':
+    'Ihre Einstellungen oder das zuletzt geöffnete Projekt konnten nicht gelesen werden. Ein Start ohne dieses Projekt hilft meistens; es wird nichts gelöscht.',
+  'shell.startFresh': 'Ohne das letzte Projekt starten',
+  'shell.unexpectedError': 'Etwas Unerwartetes ist schiefgegangen. Laden Sie die Seite neu, wenn der Bildschirm nicht mehr reagiert.',
+  'shell.orphanOne':
+    'Containeransicht „{name}“ wurde entfernt: ihre Anwendung hat das Modell verlassen. Rückgängig bringt diese Ansicht nicht zurück.',
+  'shell.orphanOther':
+    '{count} Containeransichten wurden entfernt: ihre Anwendungen haben das Modell verlassen. Rückgängig bringt diese Ansichten nicht zurück.',
+  'shell.duplicated': '„{name}“ dupliziert.',
+  'shell.deleted': '„{name}“ gelöscht.',
+  'shell.savedInterchange':
+    'Interchange-Dokument gespeichert — Topologie und Semantik; Geometrie und Gestaltung reisen in der Arbeitsdatei mit.',
+  'shell.savedWorkingFile':
+    'Arbeitsdatei gespeichert — alles, einschließlich Geometrie, Gestaltung und eigener Logos.',
+  'shell.workingFileLoaded': 'Arbeitsdatei „{name}“ geladen.',
+  'shell.interchangeLoaded':
+    'Interchange-Dokument „{name}“ geladen; die Tafeln werden neu angeordnet.',
+  'shell.processFailed': 'Das Dokument konnte nicht verarbeitet werden: {message}',
+  'shell.saveFileFailed': 'Die Datei konnte nicht gespeichert werden: {message}',
+  'shell.moveLeftCopy': 'Verschoben — aber die Kopie in der alten Gruppe konnte nicht entfernt werden: {message}',
+  'shell.groupRenameIncomplete': 'Die Gruppe wurde umbenannt, aber diese Projekte tragen noch den alten Namen: {names}.',
+  'shell.newDiagram': 'Neue Landschaft',
+  'shell.add': 'Hinzufügen',
+  'shell.imagesMissing': 'PNG exportiert, aber diese Logos fehlen: {labels}.',
+  'shell.logoAdded': 'Logo „{name}“ zur eigenen Bibliothek hinzugefügt.',
+  'shell.copyOf': '{name} (Kopie)',
+  'shell.containerDiagram': '{name} · Container',
+  'shell.deleteDiagramTitle': 'Ansicht „{name}“ löschen?',
+  'shell.lastLandscape': 'Dies ist die letzte Landschaft; sie kann nicht gelöscht werden.',
+  'shell.deleteLandscapeBody':
+    'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containeransichten bleiben bestehen.',
+  'shell.deleteContainerBody':
+    'Die Platzierungen und Routen dieser Containeransicht gehen verloren. Die Elemente selbst bleiben im Modell.',
+  'shell.sourceFolder': 'Ordner · {name}',
+  'shell.sourceBrowser': 'In diesem Browser',
+  'shell.sourceMemory': 'Nirgends gespeichert',
+  'shell.sourceTip': 'Wo dieses Projekt aufbewahrt wird',
+  'shell.projects': 'Projekte…',
+  'shell.projectsTip': 'Zurück zur Projektliste',
+  'shell.projectCreated': 'Projekt „{name}“ erstellt.',
+  'shell.exampleCopied': 'Beispiel „{name}“ in ein eigenes Projekt kopiert.',
+
+  // --- projects and the picker ---------------------------------------------
+  'picker.title': 'Projekte',
+  'picker.subtitle': 'Machen Sie weiter, wo Sie aufgehört haben, oder beginnen Sie etwas Neues.',
+  'picker.empty': 'Hier ist noch nichts. Beginnen Sie mit einem Beispiel, oder erstellen Sie ein Projekt.',
+  'picker.yours': 'Ihre Projekte',
+  'picker.examples': 'Beispiele',
+  'picker.newProject': 'Neues Projekt',
+  'picker.open': 'Öffnen',
+  'picker.copy': 'In ein Projekt kopieren',
+  'picker.order': 'Reihenfolge',
+  'picker.orderName': 'Name',
+  'picker.orderUpdated': 'Zuletzt geändert',
+  'history.title': 'Verlauf',
+  'history.snapshot': 'Momentaufnahme…',
+  'history.snapshotNote': 'Das Projekt so festhalten, wie es jetzt ist, im Verlauf des Ordners selbst',
+  'history.open': 'Verlauf…',
+  'history.openNote': 'Jede Momentaufnahme dieses Ordners, und was sich geändert hat',
+  'history.start': 'Verlauf führen',
+  'history.startBody':
+    'Dieser Ordner führt noch keinen Verlauf. Ab jetzt wird jede Momentaufnahme im Ordner selbst '
+    + 'festgehalten, mit git — nichts verlässt diesen Rechner.',
+  'history.message': 'Was sich geändert hat',
+  'history.defaultMessage': 'Momentaufnahme',
+  'history.take': 'Festhalten',
+  'history.taken': 'Momentaufnahme festgehalten.',
+  'history.nothingToRecord': 'Seit der letzten Momentaufnahme hat sich nichts geändert.',
+  'history.failed': 'Die Momentaufnahme ist nicht gelungen: {message}',
+  'history.readFailed': 'Der Verlauf konnte nicht gelesen werden: {message}',
+  'history.none': 'Noch keine Momentaufnahmen.',
+  'history.unavailable':
+    'Auf diesem Rechner gibt es kein git, daher kann die App keinen Verlauf führen. Alles andere funktioniert wie gewohnt.',
+  'history.compare': 'Verglichen mit dem Projekt, wie es jetzt ist',
+  'history.unchanged': 'Seit dieser Momentaufnahme hat sich nichts geändert.',
+  'history.gone': 'Dieses Projekt war bei jener Momentaufnahme nicht im Ordner.',
+  'history.by': '{author}',
+  'history.subject': 'Verlauf anzeigen von',
+  'history.everything': 'Das ganze Projekt',
+  'history.diagrams': 'Diagramme',
+  'history.descriptions': 'Beschreibungen',
+  'history.decisions': 'Entscheidungen',
+  'history.noneFor': 'Noch keine Momentaufnahme hat dies berührt.',
+  'history.unchangedFor': 'Dies hat sich seit dieser Momentaufnahme nicht geändert.',
+  'history.restore': 'Diese Version wiederherstellen…',
+  'history.restoreProject': 'Das ganze Projekt wiederherstellen…',
+  'history.restoreTitle': '{name} auf den Stand vom {date} zurücksetzen?',
+  'history.restoreProjectTitle': 'Das ganze Projekt auf den Stand vom {date} zurücksetzen?',
+  'history.restoreBody':
+    'Dies macht {name} wieder zu dem, was es bei jener Momentaufnahme war, als neue Änderung — der Verlauf behält alles, was seither geschah, und dieser Schritt kommt obendrauf. Bis die nächste Momentaufnahme ihn festhält, lässt er sich mit ⌘Z rückgängig machen.',
+  'history.restoreProjectBody':
+    'Jedes Element, jede Verbindung, jedes Diagramm und jede Entscheidung wird wieder zu dem, was es bei jener Momentaufnahme war, als eine neue Änderung über allem, was seither geschah. Entscheidungen, die angenommen, abgelehnt oder abgelöst wurden, bleiben wie sie sind. Bis die nächste Momentaufnahme es festhält, lässt es sich mit ⌘Z rückgängig machen.',
+  'history.restoreConfirm': 'Wiederherstellen',
+  'history.restored': '{name} auf den Stand vom {date} zurückgesetzt.',
+  'history.restoredProject': 'Das ganze Projekt auf den Stand vom {date} zurückgesetzt.',
+  'history.restoredDropped': ' {count} platzierte Elemente existieren nicht mehr und wurden weggelassen.',
+  'history.restoredKept': ' {count} abgeschlossene Entscheidungen wurden gelassen, wie sie sind.',
+  'history.snapshotNow': 'Momentaufnahme',
+  'history.label': 'Beschriften…',
+  'history.labelTitle': 'Diese Momentaufnahme beschriften',
+  'history.labelBody':
+    'Ein Wort für diese Version — „Dem Vorstand gezeigt“ — neben der Nachricht, nie an ihrer Stelle. Es reist mit dem Verlauf mit, sodass ein Kollege dieselbe Markierung an derselben Stelle sieht.',
+  'history.labelField': 'Beschriftung',
+  'history.labelConfirm': 'Beschriften',
+  'history.labelled': 'Beschriftet.',
+  'history.labelExists': 'Dieser Ordner hat bereits eine Beschriftung mit diesem Namen. Wählen Sie ein anderes Wort.',
+  'history.labelUnnamed': 'Eine Beschriftung braucht ein Wort.',
+
+  'change.elementAdded': '{name} hinzugefügt',
+  'change.elementRemoved': '{name} entfernt',
+  'change.elementChanged': '{name} geändert ({fields})',
+  'change.connectionAdded': '{name} gezogen',
+  'change.connectionRemoved': '{name} gekappt',
+  'change.connectionChanged': '{name} geändert ({fields})',
+  'change.diagramAdded': 'Diagramm {name} hinzugefügt',
+  'change.diagramRemoved': 'Diagramm {name} gelöscht',
+  'change.diagramChanged': 'Diagramm {name} geändert ({fields})',
+  'change.decisionAdded': 'Entscheidung {name} hinzugefügt',
+  'change.decisionRemoved': 'Entscheidung {name} entfernt',
+  'change.decisionChanged': 'Entscheidung {name} geändert ({fields})',
+  'change.transitionAdded': 'Plan {name} hinzugefügt',
+  'change.transitionRemoved': 'Plan {name} entfernt',
+  'change.transitionChanged': 'Plan {name} geändert ({fields})',
+  'change.placement': '{count} verschoben auf {name}',
+
+  'folder.title': 'Wo sollen Ihre Projekte liegen?',
+  'folder.body':
+    'Wählen Sie einen Ordner; diese App bewahrt Ihre Projekte darin als Dateien auf, die Sie lesen, '
+    + 'sichern, synchronisieren und committen können. In der App selbst bleibt nichts.',
+  'folder.choose': 'Ordner wählen…',
+  'folder.recent': 'Zuletzt verwendet',
+  'picker.folder': 'Projektordner: {name}',
+  'picker.noFolder': 'Projekte liegen in der App selbst. Wählen Sie einen Ordner, um sie als Dateien aufzubewahren.',
+  'picker.chooseFolder': 'Ordner wählen…',
+  'picker.changeFolder': 'Ändern…',
+  'picker.never': 'Noch nicht gespeichert',
+  'picker.changed': 'Geändert {when}',
+  'picker.delete': 'Löschen',
+  'picker.deleteTitle': '„{name}“ löschen?',
+  'picker.deleteBody': 'Dies entfernt das Projekt aus diesem Browser. Eine anderswo gespeicherte Arbeitsdatei bleibt unberührt.',
+  'picker.group': 'Gruppe',
+  'picker.groupHelp': 'Ein Kunde, eine Abteilung, ein Programm — wie der Namensraum hier auch heißt.',
+  'picker.projectName': 'Projektname',
+  'picker.create': 'Erstellen',
+  'picker.loadFailed': 'Dieses Projekt konnte nicht geöffnet werden.',
+  'picker.listFailed': 'Ihre Projekte konnten nicht gelesen werden.',
+  'picker.deleteFailed': 'Dieses Projekt konnte nicht gelöscht werden.',
+  'picker.newGroup': 'Neue Gruppe',
+  'picker.addProject': 'Projekt zu {name} hinzufügen',
+  'picker.groupNewOption': 'Neue Gruppe…',
+  'picker.inGroup': 'In Gruppe',
+  'picker.firstProject': 'Erstes Projekt',
+  'picker.groupExists': 'Diese Gruppe gibt es schon — das Projekt kommt hinzu.',
+  'settings.title': 'Projekteinstellungen',
+  'settings.open': 'Einstellungen…',
+  'settings.projectName': 'Projektname',
+  'settings.group': 'Gruppe',
+  'settings.groupHelp': 'Ein Projekt zu verschieben legt es unter einer anderen Gruppe ab. Sein Inhalt bleibt unberührt.',
+  'settings.save': 'Speichern',
+  'settings.moved': 'Verschoben nach {name}.',
+  'settings.renamed': 'Umbenannt in „{name}“.',
+  'settings.defaults': 'STANDARDWERTE FÜR DIESES PROJEKT',
+  'settings.defaultsHelp':
+    'Worauf ein Diagramm in diesem Projekt zurückgreift. Eine Änderung hier schreibt nie ein bereits eingerichtetes Diagramm um.',
+  'settings.defaultAuthor': 'Autor',
+  'settings.defaultAuthorHelp': 'Wird auf einem exportierten Diagramm ohne eigenen Autor genannt.',
+  'settings.defaultColumns': 'Die Reifegradspalten, mit denen eine neue Landschaft beginnt.',
+
+  'prefs.title': 'Einstellungen',
+  'prefs.general': 'ALLGEMEIN',
+  'prefs.language': 'Sprache',
+  'prefs.theme': 'Design',
+  'prefs.projectOrder': 'Reihenfolge der Projektliste',
+  'prefs.updates': 'UPDATES',
+  'prefs.checkAutomatically': 'Automatisch nach Updates suchen',
+  'prefs.updatesNote':
+    'Sieht beim Start und alle sechs Stunden auf der Release-Seite nach. Ohne Nachfrage wird nichts heruntergeladen.',
+  'prefs.channel': 'Release-Kanal',
+  'prefs.channelStable': 'Stabil',
+  'prefs.channelBeta': 'Beta',
+  'prefs.channelNote':
+    'Betas sind Builds vor einem Release, auf dieselbe Weise signiert und veröffentlicht. Wer den Beta-Kanal verlässt, behält, was installiert ist.',
+  'prefs.thisMachine': 'DIESER ORDNER, AUF DIESEM RECHNER',
+  'prefs.thisMachineNote':
+    'Liegt in {path} und wird nicht geteilt — ein anderer Rechner, der diesen Ordner öffnet, entscheidet selbst.',
+  'prefs.pullOnOpen': 'Beim Öffnen dieses Ordners vom Remote holen',
+  'prefs.pushAfterSnapshot': 'Nach jeder Momentaufnahme pushen',
+  'prefs.writeFailed': 'Diese Einstellung konnte nicht gespeichert werden: {message}',
+  'history.beforeSync': 'Vor dem Synchronisieren',
+  'sync.diverged':
+    'Dieser Ordner und sein Remote sind beide weitergegangen. Es wird nichts zusammengeführt: wählen Sie, welche Version gilt. '
+    + 'Unsere bleibt in jedem Fall auf einem Branch erhalten.',
+  'sync.takeTheirs': 'Die vom Remote',
+  'sync.keepOurs': 'Unsere behalten',
+  'sync.pulled': 'Auf dem Stand des Remotes.',
+  'sync.pushed': 'Zum Remote gepusht.',
+  'sync.tookTheirs': 'Die Version des Remotes gilt; unsere liegt auf einem Branch.',
+  'sync.keptOurs': 'Unsere Version gilt, festgehalten als Merge.',
+  'sync.noRemote': 'Dieser Ordner hat kein Remote zum Synchronisieren.',
+  'sync.unreachable': 'Das Remote ist nicht erreichbar.',
+  'sync.credentials':
+    'Das Remote hat die Zugangsdaten dieses Rechners abgelehnt. Die App fragt nach keinen; melden Sie sich mit Ihrem git-Client an.',
+  'sync.timeout': 'Das Remote hat nicht rechtzeitig geantwortet.',
+  'sync.pullRefused': 'Der Ordner wurde nicht geholt: {reason}',
+  'sync.pushRefused': 'Die Momentaufnahme wurde nicht gepusht: {reason}',
+  'sync.resolveRefused': 'Es wurde nichts geändert: {reason}',
+
+  'group.title': 'Gruppeneinstellungen',
+  'group.open': 'Einstellungen…',
+  'group.openFor': 'Einstellungen für {name}',
+  'group.name': 'Gruppenname',
+  'group.nameHelp': 'Umbenennen beschriftet jedes hier abgelegte Projekt neu. Die Adresse ({path}) ändert sich nicht.',
+  'group.client': 'Auftraggeber',
+  'group.clientHelp': 'Steht auf jedem exportierten Diagramm. Leer bedeutet der Gruppenname.',
+  'group.description': 'Beschreibung',
+  'group.descriptionPlaceholder': 'Wer sie sind, was diese Landschaft umfasst, wen man fragt.',
+  'group.links': 'LINKS',
+  'group.linksHelp': 'Ein Wiki-Bereich, eine Ticket-Warteschlange, ein Dashboard. Nur http- und https-Adressen.',
+  'group.linkLabel': 'Beschriftung',
+  'group.linkUrl': 'Adresse',
+  'group.addLink': 'Link hinzufügen',
+  'group.removeLink': '{name} entfernen',
+  'group.badUrl': 'Muss mit http:// oder https:// beginnen',
+  'group.saved': '{name} gespeichert.',
+  'group.renamed': 'Gruppe umbenannt in „{name}“.',
+  'group.saveFailed': 'Diese Gruppe konnte nicht gespeichert werden.',
+  'agent.title': 'Einen Agenten verbinden',
+  'agent.tipOff': 'Einen Agenten verbinden…',
+  'agent.tipListening': 'Wartet auf einen Agenten an Port {port}',
+  'agent.tipConnected': '{name} verbunden',
+  'agent.what':
+    'Ihr Coding-Agent — Claude Code, Codex, Cursor oder ein anderer MCP-Client — kann diese Landschaft lesen, '
+    + 'Änderungen vorschlagen und Diagramme ansehen, während Sie arbeiten. Alles, was er tut, steht unter seinem '
+    + 'Namen in Aktivität und lässt sich mit ⌘Z rückgängig machen. Er verbindet sich über das Standard-Model-Context-Protocol, '
+    + 'nur auf diesem Rechner. Nichts verlässt den Computer.',
+  'agent.enable': 'Agentenverbindungen annehmen',
+  'agent.listening': 'Lauscht an Port {port}.',
+  'agent.connected': '{name} ist verbunden.',
+  'agent.moved':
+    'Port {from} war beim Start der App belegt, daher lauscht sie jetzt an {port}. Ein Agent, der mit dem alten Port eingerichtet ist, braucht die neue Adresse.',
+  'agent.desktopOnly':
+    'Einen Agenten zu verbinden braucht die Desktop-App — nur sie kann auf diesem Rechner lauschen. Öffnen Sie dieses Projekt dort, und der Schalter ist hier.',
+  'agent.recipes': 'IHREN CLIENT VERBINDEN',
+  'agent.recipesNote': 'Der Port und das Token unten gehören zu diesem Rechner. Wählen Sie Ihren Client und fügen Sie ein.',
+  'agent.tabClaude': 'Claude Code',
+  'agent.tabClaudeDesktop': 'Claude Desktop',
+  'agent.tabCodex': 'Codex',
+  'agent.tabCursor': 'Cursor',
+  'agent.tabOther': 'Andere',
+  'agent.recipeClaude': 'claude mcp add --transport http lvarch {endpoint} --header "Authorization: Bearer {token}"',
+  'agent.recipeClaudeDesktop':
+    '# Nicht der Bildschirm "Add custom connector": der ist für Server im Internet und kann diesen Rechner nicht erreichen.\n'
+    + '# Claude Desktop startet lokale Server über stdio, daher braucht es die mcp-remote-Brücke in seinen Entwicklereinstellungen.\n'
+    + '#\n'
+    + '# Am einfachsten: fügen Sie dies in Claude Code ein, das die Einstellungen schon kennt, und starten Sie dann Claude Desktop neu:\n'
+    + 'Add the MCP server "lvarch" to my Claude Desktop developer settings (claude_desktop_config.json): '
+    + 'command "npx", args ["-y", "mcp-remote", "{endpoint}", "--transport", "http-only", "--header", '
+    + '"Authorization: Bearer {token}"].\n'
+    + '#\n'
+    + '# Oder fügen Sie es selbst hinzu, in Claude Desktop unter Settings → Developer → Edit Config:\n'
+    + '{\n  "mcpServers": {\n    "lvarch": {\n      "command": "npx",\n'
+    + '      "args": ["-y", "mcp-remote", "{endpoint}", "--transport", "http-only", "--header", "Authorization: Bearer {token}"]\n'
+    + '    }\n  }\n}',
+  'agent.recipeCodex':
+    '# ~/.codex/config.toml\n[mcp_servers.lvarch]\nurl = "{endpoint}"\nhttp_headers = { Authorization = "Bearer {token}" }',
+  'agent.recipeCursor':
+    '// .cursor/mcp.json\n{\n  "mcpServers": {\n    "lvarch": {\n      "url": "{endpoint}",\n'
+    + '      "headers": { "Authorization": "Bearer {token}" }\n    }\n  }\n}',
+  'agent.recipeOther': 'Transport: Streamable HTTP\nEndpunkt: {endpoint}\nHeader: Authorization: Bearer {token}',
+  'agent.copy': 'Kopieren',
+  'agent.copied': 'Kopiert',
+  'agent.newToken': 'Neues Token',
+  'agent.newTokenNote': 'Jeder bisher eingerichtete Agent braucht das neue Token.',
+  'agent.changeFailed': 'Das konnte nicht geändert werden: {message}',
+  'shell.documentation': 'Dokumentation',
+  'shell.documentationTip': 'Die Dokumentationsseite des ausgewählten Elements öffnen',
+  'shell.noElements': 'Es gibt noch nichts zu dokumentieren — fügen Sie zuerst ein Element hinzu.',
+  'shell.decisions': 'Entscheidungen',
+  'shell.decisionsTip': 'Architekturentscheidungen — für die Gruppe, die Landschaft und jede Anwendung',
+  'shell.roadmap': 'Fahrplan',
+  'shell.roadmapTip': 'Die Landschaft auf einer Zeitachse, die Pläne darüber, und worüber die Daten uneins sind',
+  'shell.activity': 'Aktivität',
+  'shell.activityTip': 'Was sich an diesem Projekt seit dem Öffnen geändert hat',
+  'shell.activityEmpty': 'Noch nichts',
+  'shell.activityAgent': 'AGENT',
+  'shell.search': 'Suchen',
+  'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen (⌘K)',
+}
