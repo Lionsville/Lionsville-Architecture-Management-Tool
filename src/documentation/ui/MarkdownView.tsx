@@ -328,8 +328,10 @@ export const MarkdownView = memo(function MarkdownView(
       sx={{
         fontSize: 'inherit',
         wordBreak: 'break-word',
-        '& > *': { maxWidth: MEASURE, mx: 'auto' },
-        '& > [data-wide]': { maxWidth: '100%', width: 'fit-content', minWidth: 'min(var(--doc-measure, 100%), 100%)' },
+        // `:not(…)` rather than `*`: it carries the attribute's specificity,
+        // which is what beats Typography's own `margin: 0` on a paragraph.
+        '& > :not([data-wide])': { maxWidth: MEASURE, mx: 'auto' },
+        '& > [data-wide]': { maxWidth: '100%', width: 'fit-content', minWidth: 'min(var(--doc-measure, 100%), 100%)', mx: 'auto' },
       }}
     >
       {document}
