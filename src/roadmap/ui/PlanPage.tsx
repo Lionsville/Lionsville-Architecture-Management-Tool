@@ -38,6 +38,9 @@ import type {
 import type { Adr } from '../../model/adr'
 import { formatAdrNumber } from '../../decisions'
 import type { MarkdownRenderOptions } from '../../documentation'
+import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
+import { DocumentSource } from '../../documentation/ui/DocumentSource'
+import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -87,6 +90,9 @@ export type PlanPageProps = {
   readOnly: boolean
   actions: PlanActions
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
+  /** A picture into the project, and the project's pictures (ADR-0009). */
+  onAddImage?(file: File): Promise<string | undefined>
+  images?: DocumentImages
   onClose(): void
   windowChrome?: WindowChrome
 }
@@ -176,7 +182,14 @@ export function PlanPage(props: PlanPageProps) {
                 <SeamResizer height={interfacesHeight} onHeight={setInterfacesHeight} label={t('plan.resizeInterfaces')} />
               </>
             )}
-            <Body plan={plan} editing={editing} renderMarkdown={props.renderMarkdown} onChange={(body) => actions.updateTransition(plan.id, { body })} />
+            <Body
+              plan={plan}
+              editing={editing}
+              renderMarkdown={props.renderMarkdown}
+              onAddImage={props.onAddImage}
+              images={props.images}
+              onChange={(body) => actions.updateTransition(plan.id, { body })}
+            />
           </Box>
         </Box>
       )}
@@ -660,39 +673,41 @@ function endOf(port: Port): 'sourceId' | 'targetId' {
 }
 
 /** The document, and its source beside it while it is being written. */
-function Body({ plan, editing, renderMarkdown, onChange }: {
+function Body({ plan, editing, renderMarkdown, onAddImage, images, onChange }: {
   plan: Transition
   editing: boolean
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
+  onAddImage?(file: File): Promise<string | undefined>
+  images?: DocumentImages
   onChange(body: string): void
 }) {
   const { t } = useStrings()
+  // The rendered document beside the source, which a wide table wants out of the way.
+  const [previewShown, setPreviewShown] = useState(true)
+  const showPreview = !editing || previewShown
   const rendered = plan.body.trim()
     ? (renderMarkdown ? renderMarkdown(plan.body) : <pre style={{ whiteSpace: 'pre-wrap' }}>{plan.body}</pre>)
     : <Typography color="text.secondary">{t('plan.bodyEmpty')}</Typography>
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0, flex: 1 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: editing && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0, flex: 1 }}>
       {editing && (
-        <Box
-          component="textarea"
-          aria-label={t('plan.source')}
-          value={plan.body}
-          spellCheck={false}
-          onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
-          sx={{
-            minHeight: 0, resize: 'none', border: 0, outline: 'none', p: 2,
-            borderRight: 1, borderColor: 'divider',
-            bgcolor: 'background.paper', color: 'text.primary',
-            font: '13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', tabSize: 2,
-          }}
-        />
-      )}
-      <Box sx={{ overflow: 'auto', minHeight: 0 }}>
-        <Box sx={{ maxWidth: 820, mx: 'auto', px: editing ? 3 : 5, py: 3.5, fontSize: 14 }}>
-          {rendered}
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider' }}>
+          <DocumentSource
+            value={plan.body}
+            onChange={onChange}
+            label={t('plan.source')}
+            onAddImage={onAddImage}
+            images={images}
+            preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
+          />
         </Box>
-      </Box>
+      )}
+      {showPreview && (
+        <DocumentSheet dense={editing}>
+          <Box sx={{ fontSize: 14 }} data-document>{rendered}</Box>
+        </DocumentSheet>
+      )}
     </Box>
   )
 }

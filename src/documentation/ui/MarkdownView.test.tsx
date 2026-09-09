@@ -108,6 +108,40 @@ describe('MarkdownView', () => {
     expect(img?.getAttribute('alt')).toBe('Cutover')
   })
 
+  it('opens the same picture full size on a click, and closes it on the next', async () => {
+    renderShell(
+      <MarkdownView
+        markdown={'![Cutover](../images/cutover.png)'}
+        resolveImage={() => 'data:image/png;base64,AQI='}
+      />,
+    )
+    expect(screen.queryByTestId('lightbox')).toBeNull()
+    fireEvent.click(screen.getByRole('img', { name: 'Cutover' }))
+    const large = screen.getByTestId('lightbox')
+    // The file from disk, not a copy resized for the page.
+    expect(large.getAttribute('src')).toBe('data:image/png;base64,AQI=')
+    fireEvent.click(large)
+    await waitFor(() => expect(screen.queryByTestId('lightbox')).toBeNull())
+  })
+
+  it('marks the blocks that may run wider than the prose, and only those', () => {
+    const { container } = renderShell(
+      <MarkdownView
+        markdown={[
+          'A paragraph.',
+          '![Cutover](../images/cutover.png)',
+          '| a | b |\n|---|---|\n| 1 | 2 |',
+          '```\ncode\n```',
+          '```business-case\ncurrency: EUR\nperiods: 2026\nlines:\n  - Thing: -1\n```',
+        ].join('\n\n')}
+        resolveImage={() => 'data:image/png;base64,AQI='}
+      />,
+    )
+    const wide = Array.from(container.querySelectorAll('[data-wide]'))
+    expect(wide.map((el) => el.tagName.toLowerCase())).toEqual(['p', 'div', 'pre', 'div'])
+    expect(container.querySelector('p:not([data-wide])')?.textContent).toBe('A paragraph.')
+  })
+
   it('never fetches a remote image, whatever a description asks for', () => {
     // The resolver is the allowlist. Anything it declines is drawn as its alt
     // text, so a tracking pixel in somebody's markdown makes no request.

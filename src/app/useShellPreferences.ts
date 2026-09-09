@@ -9,8 +9,8 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { createTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
+import { shellTheme } from './theme'
 import { detectBrowserLanguage } from '../i18n'
 import type { EditorPreferences } from '../editor'
 import type { Language } from '../i18n'
@@ -111,7 +111,7 @@ export function useShellPreferences(deps: {
   // without a refresh.
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)')
   const mode: 'light' | 'dark' = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode
-  const theme = useMemo(() => createTheme({ palette: { mode } }), [mode])
+  const theme = useMemo(() => shellTheme(mode), [mode])
 
   return {
     preferences, language, themeMode, theme,

@@ -289,3 +289,27 @@ describe('read-only', () => {
     expect((screen.getByDisplayValue('Logistics IT') as HTMLInputElement).disabled).toBe(true)
   })
 })
+
+describe('the document', () => {
+  it('is written in the shared source pane, which takes a picture in', async () => {
+    const onAddImage = vi.fn(async () => 'screenshot-k1.png')
+    const { actions } = setup({ onAddImage })
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    const area = screen.getByLabelText('Plan source (markdown)') as HTMLTextAreaElement
+    const file = new File([new Uint8Array([1, 2])], 'Screenshot.png', { type: 'image/png' })
+    fireEvent.paste(area, { clipboardData: { files: [file], items: [], types: ['Files'], getData: () => '' } })
+    await vi.waitFor(() => expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', {
+      body: expect.stringContaining('![Screenshot](../images/screenshot-k1.png)'),
+    }))
+  })
+
+  it('sends the preview away while writing, and brings it back', () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByTestId('rendered')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Hide preview' }))
+    expect(screen.queryByTestId('rendered')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Show preview' }))
+    expect(screen.getByTestId('rendered')).toBeTruthy()
+  })
+})

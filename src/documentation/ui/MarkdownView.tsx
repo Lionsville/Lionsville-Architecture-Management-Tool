@@ -18,10 +18,11 @@
  * preview and on a full page at reading size, and it should scale with the
  * container rather than fight it.
  */
-import { isValidElement, memo, useMemo } from 'react'
+import { isValidElement, memo, useMemo, useState } from 'react'
 import type { ComponentProps, MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Checkbox from '@mui/material/Checkbox'
+import Dialog from '@mui/material/Dialog'
 import Link from '@mui/material/Link'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -30,8 +31,10 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
+import { alpha } from '@mui/material/styles'
+import type { Theme } from '@mui/material/styles'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
-import type { Components } from 'react-markdown'
+import type { Components, ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { blockFor } from './blocks'
 import type { BlockContext } from './blocks'
@@ -73,6 +76,75 @@ function urlTransform(url: string): string {
   return url.startsWith(ELEMENT_LINK_SCHEME) ? url : defaultUrlTransform(url)
 }
 
+/**
+ * A page sets `--doc-measure` — the width a line of prose is comfortable at —
+ * and this view keeps every top-level block to it, centred, except the ones
+ * marked wide: a table, a business case, a code block, a diagram, a picture on
+ * a line of its own. Those take the room the page has. A wide block never
+ * starts narrower than the measure, so a small table still lines up with the
+ * paragraph above it rather than floating in the middle of a wide sheet.
+ * Without the variable — the inspector's preview — nothing is capped and
+ * nothing is wide, which is what a 300px column wants.
+ */
+const MEASURE = 'var(--doc-measure, none)'
+const WIDE = { 'data-wide': '' } as const
+
+type HastNode = { type: string; tagName?: string; value?: string }
+
+/** A paragraph that is nothing but pictures: markdown wraps a lone image in one. */
+function isPictureParagraph(node: ExtraProps['node']): boolean {
+  const children = (node?.children ?? []) as HastNode[]
+  return children.some((child) => child.type === 'element' && child.tagName === 'img')
+    && children.every((child) =>
+      (child.type === 'element' && child.tagName === 'img')
+      || (child.type === 'text' && !(child.value ?? '').trim()))
+}
+
+/** A head row tinted with the accent rather than the hover grey, in both modes. */
+const HEAD_TINT = (theme: Theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.14 : 0.07)
+
+/**
+ * A picture in the page, and the same picture at full size on a click.
+ *
+ * The page shows it at the width it has and no taller than most of the
+ * window, so a tall screenshot does not take the page with it; the lightbox
+ * shows the same source, which is already the file from disk, as large as the
+ * window allows. Nothing is resized on the way.
+ */
+function Picture({ url, alt }: { url: string; alt: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Box
+        component="img"
+        src={url}
+        alt={alt}
+        onClick={() => setOpen(true)}
+        sx={{ display: 'block', maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 1, cursor: 'zoom-in' }}
+      />
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth={false}
+        aria-label={alt}
+        slotProps={{
+          backdrop: { sx: { bgcolor: 'rgba(0, 0, 0, 0.85)' } },
+          paper: { sx: { m: 0, bgcolor: 'transparent', boxShadow: 'none', maxWidth: '100vw', maxHeight: '100vh' } },
+        }}
+      >
+        <Box
+          component="img"
+          src={url}
+          alt={alt}
+          data-testid="lightbox"
+          onClick={() => setOpen(false)}
+          sx={{ display: 'block', maxWidth: '100vw', maxHeight: '100vh', objectFit: 'contain', cursor: 'zoom-out' }}
+        />
+      </Dialog>
+    </>
+  )
+}
+
 type HeadingProps = ComponentProps<'h1'>
 
 function heading(size: string, weight = 600) {
@@ -106,8 +178,12 @@ function components(
     h4: heading('1em'),
     h5: heading('0.95em'),
     h6: heading('0.9em', 500),
-    p: ({ children }) => (
-      <Typography component="p" sx={{ fontSize: 'inherit', lineHeight: 1.6, my: '0.7em', '&:first-child': { mt: 0 }, '&:last-child': { mb: 0 } }}>
+    p: ({ children, node }) => (
+      <Typography
+        component="p"
+        {...(isPictureParagraph(node) ? WIDE : {})}
+        sx={{ fontSize: 'inherit', lineHeight: 1.6, my: '0.7em', '&:first-child': { mt: 0 }, '&:last-child': { mb: 0 } }}
+      >
         {children}
       </Typography>
     ),
@@ -173,6 +249,7 @@ function components(
     pre: ({ children }) => isDrawnFence(children) ? <>{children}</> : (
       <Box
         component="pre"
+        {...WIDE}
         sx={{
           my: '0.7em', p: '0.8em', overflowX: 'auto', borderRadius: 1, bgcolor: 'action.hover',
           fontFamily: CODE_FONT, fontSize: '0.9em', lineHeight: 1.5,
@@ -200,16 +277,16 @@ function components(
           </Box>
         )
       }
-      return <Box component="img" src={url} alt={alt ?? ''} sx={{ maxWidth: '100%', borderRadius: 1, my: '0.7em' }} />
+      return <Picture url={url} alt={alt ?? ''} />
     },
     table: ({ children }) => (
-      <TableContainer sx={{ my: '0.7em', overflowX: 'auto' }}>
-        <Table size="small" sx={{ width: 'auto', minWidth: '50%', '& td, & th': { fontSize: 'inherit', border: 1, borderColor: 'divider' } }}>
+      <TableContainer {...WIDE} sx={{ my: '0.7em', overflowX: 'auto', borderRadius: 1, border: 1, borderColor: 'divider' }}>
+        <Table size="small" sx={{ width: '100%', '& td, & th': { fontSize: 'inherit', borderBottom: 1, borderColor: 'divider' }, '& tr:last-child td': { borderBottom: 0 } }}>
           {children}
         </Table>
       </TableContainer>
     ),
-    thead: ({ children }) => <TableHead sx={{ '& th': { fontWeight: 600, bgcolor: 'action.hover' } }}>{children}</TableHead>,
+    thead: ({ children }) => <TableHead sx={{ '& th': { fontWeight: 600, bgcolor: HEAD_TINT } }}>{children}</TableHead>,
     tbody: ({ children }) => <TableBody>{children}</TableBody>,
     tr: ({ children }) => <TableRow>{children}</TableRow>,
     th: ({ children, style }) => <TableCell component="th" align={alignOf(style)}>{children}</TableCell>,
@@ -246,5 +323,16 @@ export const MarkdownView = memo(function MarkdownView(
       {markdown}
     </Markdown>
   ), [markdown, comps])
-  return <Box sx={{ fontSize: 'inherit', wordBreak: 'break-word' }}>{document}</Box>
+  return (
+    <Box
+      sx={{
+        fontSize: 'inherit',
+        wordBreak: 'break-word',
+        '& > *': { maxWidth: MEASURE, mx: 'auto' },
+        '& > [data-wide]': { maxWidth: '100%', width: 'fit-content', minWidth: 'min(var(--doc-measure, 100%), 100%)' },
+      }}
+    >
+      {document}
+    </Box>
+  )
 })

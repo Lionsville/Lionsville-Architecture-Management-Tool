@@ -45,6 +45,9 @@ export const EN = {
   'doc.markdownHint': 'Markdown. [[Name]] links to another element.',
   /** The same, where the host can take a picture in (ADR-0009). */
   'doc.markdownImageHint': 'Markdown. [[Name]] links to another element; paste or drop a picture to add one.',
+  /** The rendered page beside the source, and the way to get it out of a wide table's way. */
+  'doc.showPreview': 'Show preview',
+  'doc.hidePreview': 'Hide preview',
   'adr.mermaidFailed': 'This diagram could not be drawn.',
 
   // The pictures a project holds, listed beside the source so one can be put

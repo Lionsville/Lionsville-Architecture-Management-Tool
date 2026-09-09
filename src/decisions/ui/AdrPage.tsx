@@ -41,6 +41,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
+import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
 import { AdrReader } from './AdrReader'
@@ -68,6 +69,9 @@ export type AdrPageProps = {
   onOpenElement?: (elementId: string) => void
   /** The host keeps a history and can show this record's (ADR-0008). Only a project's records have one. */
   onOpenHistory?: (adrId: string) => void
+  /** A picture into the project, and the project's pictures (ADR-0009); handed on to the record. */
+  onAddImage?: (file: File) => Promise<string | undefined>
+  images?: DocumentImages
   /** A plan resting on a record was followed; the page closes and the caller opens that plan (ADR-0010). */
   onOpenPlan?: (transitionId: string) => void
   windowChrome?: WindowChrome
@@ -348,6 +352,8 @@ export function AdrPage(props: AdrPageProps) {
                 today={today}
                 elements={scopeOfRecord(selected) === 'group' ? [] : model.elements}
                 renderMarkdown={props.renderMarkdown}
+                onAddImage={readOnly ? undefined : props.onAddImage}
+                images={props.images}
                 onUpdate={(patch) => update(selected, patch)}
                 onStatus={(next) => move(selected, next)}
                 onDelete={() => setDeleting(selected)}

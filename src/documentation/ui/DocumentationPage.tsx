@@ -19,10 +19,7 @@
  * of the editor's DOM, so the canvas's keyboard shortcuts — Delete, F2,
  * Cmd+D — cannot reach a reader who is only scrolling a page.
  */
-import {
-  useCallback, useEffect, useMemo, useRef, useState,
-  type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -34,15 +31,16 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import type { DesignDiagram, DesignElement, DesignModel, DocumentImage, ElementId } from '../../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
 import { transitionLabel, transitionsForElement } from '../../model/transition';
 import type { Transition } from '../../model/transition';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
-import { ConfirmDialog } from '../../widgets/ConfirmDialog';
-import { MarkdownHelp } from './MarkdownHelp';
+import { DocumentSource } from './DocumentSource';
+import type { DocumentImages } from './DocumentSource';
+import { DocumentSheet } from './DocumentSheet';
 import {
   documentTemplate,
   documentedElements,
@@ -50,10 +48,8 @@ import {
   linkElementRefs,
   outline,
 } from '../documentation';
-import { imageReference, imagesUsedIn } from '../images';
-import { businessCaseTemplate } from '../businessCase';
 import { useStrings } from '../../i18n/LanguageContext';
-import { DocGlyph, TrashIcon } from '../../widgets/icons';
+import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
 import { BackIcon } from '../../widgets/icons';
@@ -112,11 +108,7 @@ export interface DocumentationPageProps {
    * file — the host knows the decisions and plans this page does not — and is
    * what the delete confirmation says. Absent = no list.
    */
-  images?: {
-    library: readonly DocumentImage[];
-    usedBy(file: string): readonly string[];
-    onRemove(file: string): void;
-  };
+  images?: DocumentImages;
   /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
   windowChrome?: WindowChrome;
   /**
@@ -225,99 +217,9 @@ export function DocumentationPage(props: DocumentationPageProps) {
     textareaRef.current?.focus();
   };
 
-  // Cmd+B / Cmd+I wrap the selection; Tab indents rather than leaving the field.
-  const onSourceKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    const area = event.currentTarget;
-    const mod = event.metaKey || event.ctrlKey;
-    const wrap = (mark: string) => {
-      event.preventDefault();
-      const { selectionStart: start, selectionEnd: end, value } = area;
-      const inner = value.slice(start, end);
-      const nextValue = value.slice(0, start) + mark + inner + mark + value.slice(end);
-      setDraft(nextValue);
-      requestAnimationFrame(() => area.setSelectionRange(start + mark.length, end + mark.length));
-    };
-    if (mod && event.key.toLowerCase() === 'b') wrap('**');
-    else if (mod && event.key.toLowerCase() === 'i') wrap('_');
-    else if (event.key === 'Tab' && !mod) {
-      event.preventDefault();
-      const { selectionStart: start, selectionEnd: end, value } = area;
-      setDraft(value.slice(0, start) + '  ' + value.slice(end));
-      requestAnimationFrame(() => area.setSelectionRange(start + 2, start + 2));
-    }
-  };
-
-  // --- pictures ---------------------------------------------------------------
-
-  /**
-   * Write text where the caret is, and leave the caret after it.
-   *
-   * Against the textarea's own value rather than `draft`, because a paste and a
-   * drop both land while the value is whatever the person has just typed, and
-   * the state may be one render behind.
-   */
-  const insertAtCaret = useCallback((text: string) => {
-    const area = textareaRef.current;
-    if (!area) return;
-    const { selectionStart: start, selectionEnd: end, value } = area;
-    const next = value.slice(0, start) + text + value.slice(end);
-    setDraft(next);
-    const caret = start + text.length;
-    requestAnimationFrame(() => {
-      area.focus();
-      area.setSelectionRange(caret, caret);
-    });
-  }, []);
-
-  const addImages = useCallback((files: readonly File[]) => {
-    const add = props.onAddImage;
-    if (!add || readOnly) return;
-    // One at a time and in order, so two pictures dropped together arrive in
-    // the document in the order they were dropped rather than in whichever
-    // order the reads happened to finish.
-    void files.reduce(
-      (queue, file) => queue.then(() => add(file).then((name) => {
-        if (name) insertAtCaret(`\n\n${imageReference(name, file.name.replace(/\.[^.]+$/, ''))}\n\n`);
-      })),
-      Promise.resolve(),
-    );
-  }, [props.onAddImage, readOnly, insertAtCaret]);
-
-  const imagesIn = (list: FileList | null | undefined): File[] =>
-    Array.from(list ?? []).filter((file) => file.type.startsWith('image/'));
-
-  const onSourcePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
-    const files = imagesIn(event.clipboardData?.files);
-    if (!files.length || !props.onAddImage) return;
-    // Only when it IS a picture: a copied screenshot carries no text, but text
-    // copied from a rich document can carry an image alongside it, and the
-    // words are what the person meant.
-    if (event.clipboardData?.getData('text/plain')) return;
-    event.preventDefault();
-    addImages(files);
-  };
-
-  const onSourceDrop = (event: DragEvent<HTMLTextAreaElement>) => {
-    const files = imagesIn(event.dataTransfer?.files);
-    if (!files.length || !props.onAddImage) return;
-    event.preventDefault();
-    addImages(files);
-  };
-
-  // The strip of the project's pictures, and the one waiting to be deleted.
-  const [showPictures, setShowPictures] = useState(false);
-  const [deleting, setDeleting] = useState<string | undefined>(undefined);
-  const library = props.images?.library ?? [];
-  const usedHere = useMemo(() => new Set(imagesUsedIn(draft)), [draft]);
-  const deletingUsedBy = deleting ? props.images?.usedBy(deleting) ?? [] : [];
-
-  const insertPicture = (image: DocumentImage) =>
-    insertAtCaret(`\n\n${imageReference(image.file, image.file.replace(/\.[^.]+$/, ''))}\n\n`);
-
-  const confirmDelete = () => {
-    if (deleting) props.images?.onRemove(deleting);
-    setDeleting(undefined);
-  };
+  // The rendered page beside the source, which a wide table wants out of the way.
+  const [previewShown, setPreviewShown] = useState(true);
+  const showPreview = mode === 'read' || previewShown;
 
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
@@ -418,98 +320,27 @@ export function DocumentationPage(props: DocumentationPageProps) {
         </Box>
 
         {/* centre: the document, or the source beside it */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', minHeight: 0 }}>
           {mode === 'edit' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
-                {/* One line, however narrow the pane: the help button beside it says the rest. */}
-                <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
-                  {props.onAddImage ? t('doc.markdownImageHint') : t('doc.markdownHint')}
-                </Typography>
-                <Button size="small" onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
-                  {t('doc.insertBusinessCase')}
+            <DocumentSource
+              value={draft}
+              onChange={setDraft}
+              onBlur={commit}
+              label={t('doc.source')}
+              onAddImage={readOnly ? undefined : props.onAddImage}
+              images={props.images}
+              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
+              textareaRef={textareaRef}
+              extra={!draft.trim() && (
+                <Button size="small" variant="outlined" onClick={insertTemplate}>
+                  {t('doc.insertTemplate')}
                 </Button>
-                {props.images && (
-                  <Button
-                    size="small"
-                    variant={showPictures ? 'contained' : 'text'}
-                    disableElevation
-                    aria-pressed={showPictures}
-                    onClick={() => setShowPictures((open) => !open)}
-                  >
-                    {t('doc.pictures')} ({library.length})
-                  </Button>
-                )}
-                {!draft.trim() && (
-                  <Button size="small" variant="outlined" onClick={insertTemplate}>
-                    {t('doc.insertTemplate')}
-                  </Button>
-                )}
-                <MarkdownHelp images={Boolean(props.onAddImage)} />
-              </Box>
-              {props.images && showPictures && (
-                <Box
-                  data-testid="doc-pictures"
-                  sx={{ maxHeight: 220, overflow: 'auto', borderBottom: 1, borderColor: 'divider', px: 1.5, py: 1 }}
-                >
-                  {library.length === 0 && (
-                    <Typography variant="body2" color="text.secondary">{t('doc.picturesNone')}</Typography>
-                  )}
-                  {library.map((image) => (
-                    <Box key={image.file} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
-                      <Box
-                        component="img"
-                        src={image.url}
-                        alt=""
-                        sx={{ width: 48, height: 36, objectFit: 'contain', borderRadius: 0.5, bgcolor: 'action.hover', flexShrink: 0 }}
-                      />
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {image.file}
-                        </Typography>
-                        {usedHere.has(image.file) && (
-                          <Typography variant="caption" color="text.secondary">{t('doc.pictureUsedHere')}</Typography>
-                        )}
-                      </Box>
-                      <Button size="small" onClick={() => insertPicture(image)}>{t('doc.insertPicture')}</Button>
-                      <Tooltip title={t('doc.deletePicture')}>
-                        <IconButton size="small" aria-label={`${t('doc.deletePicture')} ${image.file}`} onClick={() => setDeleting(image.file)}>
-                          <TrashIcon size={16} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  ))}
-                </Box>
               )}
-              <Box
-                component="textarea"
-                ref={textareaRef}
-                aria-label={t('doc.source')}
-                value={draft}
-                spellCheck={false}
-                onChange={(e: { target: { value: string } }) => setDraft(e.target.value)}
-                onBlur={commit}
-                onKeyDown={onSourceKeyDown}
-                onPaste={onSourcePaste}
-                onDrop={onSourceDrop}
-                sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  resize: 'none',
-                  border: 0,
-                  outline: 'none',
-                  p: 2,
-                  bgcolor: 'transparent',
-                  color: 'text.primary',
-                  font: '13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                  tabSize: 2,
-                }}
-              />
-            </Box>
+            />
           )}
 
-          <Box sx={{ overflow: 'auto', minHeight: 0 }}>
-            <Box ref={contentRef} data-testid="doc-content" sx={{ maxWidth: 860, mx: 'auto', px: mode === 'edit' ? 3 : 5, py: 3.5 }}>
+          {showPreview && (
+            <DocumentSheet ref={contentRef} testId="doc-content" dense={mode === 'edit'}>
               <Typography variant="overline" color="text.secondary">
                 {kindLabel(element.kind, t)}
               </Typography>
@@ -548,9 +379,9 @@ export function DocumentationPage(props: DocumentationPageProps) {
                   ))}
                 </Box>
               )}
-              <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }}>{rendered}</Box>
-            </Box>
-          </Box>
+              <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }} data-document>{rendered}</Box>
+            </DocumentSheet>
+          )}
         </Box>
 
         {/* right: the plans that name it, then the element's own fields */}
@@ -573,18 +404,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
         </Box>
       </Box>
 
-      {/* Deleting a picture is the one thing on this page ⌘Z cannot take back, so it asks. */}
-      <ConfirmDialog
-        open={Boolean(deleting)}
-        title={t('doc.deletePictureTitle', { file: deleting ?? '' })}
-        body={deletingUsedBy.length
-          ? t('doc.deletePictureUsedBy', { labels: deletingUsedBy.join(', ') })
-          : t('doc.deletePictureUnused')}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        onCancel={() => setDeleting(undefined)}
-        onConfirm={confirmDelete}
-      />
     </PageDialog>
   );
 }

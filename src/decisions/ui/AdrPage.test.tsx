@@ -217,3 +217,20 @@ describe('the plans that rest on a record (ADR-0010)', () => {
     expect(screen.queryByTestId('adr-plans')).toBeNull()
   })
 })
+
+describe('AdrPage — pictures (ADR-0009)', () => {
+  it('takes a pasted picture into a record through the shared source pane', async () => {
+    const onAddImage = vi.fn(async () => 'screenshot-k1.png')
+    // A proposed record: an accepted one is locked and cannot be written into.
+    const { onProject } = mount({ onAddImage, initialAdrId: 'l1' })
+    fireEvent.click(within(screen.getByTestId('adr-reader')).getByRole('button', { name: 'Edit' }))
+    const area = screen.getByLabelText('Decision source (markdown)') as HTMLTextAreaElement
+    const file = new File([new Uint8Array([1, 2])], 'Screenshot.png', { type: 'image/png' })
+    fireEvent.paste(area, { clipboardData: { files: [file], items: [], types: ['Files'], getData: () => '' } })
+    await vi.waitFor(() => expect(area.value).toContain('![Screenshot](../images/screenshot-k1.png)'))
+    fireEvent.blur(area)
+    expect(onProject).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({ id: 'l1', body: expect.stringContaining('screenshot-k1.png') }),
+    ]))
+  })
+})

@@ -84,7 +84,7 @@ export function MermaidBlock({ code, render = renderWithMermaid }: MermaidBlockP
   if (result.svg) {
     return (
       <Box
-        data-testid="mermaid-block"
+        data-testid="mermaid-block" data-wide=""
         data-state="drawn"
         sx={{ my: '0.7em', overflowX: 'auto', '& svg': { maxWidth: '100%', height: 'auto' } }}
         dangerouslySetInnerHTML={{ __html: result.svg }}
@@ -92,7 +92,7 @@ export function MermaidBlock({ code, render = renderWithMermaid }: MermaidBlockP
     )
   }
   return (
-    <Box data-testid="mermaid-block" data-state={result.error ? 'failed' : 'pending'} sx={{ my: '0.7em' }}>
+    <Box data-testid="mermaid-block" data-wide="" data-state={result.error ? 'failed' : 'pending'} sx={{ my: '0.7em' }}>
       {result.error && (
         <Typography variant="caption" color="error" component="div" sx={{ mb: 0.5 }}>
           {t('adr.mermaidFailed')} {result.error}

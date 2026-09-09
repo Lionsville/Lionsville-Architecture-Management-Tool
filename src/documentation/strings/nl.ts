@@ -70,6 +70,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'docHelp.rule': 'Een horizontale lijn',
   'docHelp.imagesNote': 'Alleen afbeeldingen die in het project bewaard zijn worden getekend. Een webadres verschijnt als zijn bijschrift, en de app haalt nooit iets op.',
   'docHelp.htmlNote': 'HTML wordt als tekst getoond, niet weergegeven.',
+  'doc.showPreview': 'Voorbeeld tonen',
+  'doc.hidePreview': 'Voorbeeld verbergen',
   'adr.mermaidFailed': 'Dit diagram kon niet worden getekend.',
 
   'doc.businessCaseLine': 'Regel',

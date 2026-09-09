@@ -28,8 +28,9 @@ import { render } from '@testing-library/react'
 import type { RenderOptions, RenderResult } from '@testing-library/react'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
-import { ThemeProvider, createTheme } from '@mui/material/styles'
+import { ThemeProvider } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
+import { shellTheme } from '../theme'
 import { LanguageProvider, translator } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { InMemoryGroupStore } from '../../adapters/memory/InMemoryGroupStore'
@@ -70,7 +71,7 @@ export type ShellRender = RenderResult & {
 
 export function renderShell(node: ReactElement, options: ShellOptions = {}): ShellRender {
   const { language = 'en', mode = 'dark' } = options
-  const theme = createTheme({ palette: { mode } })
+  const theme = shellTheme(mode)
   const wrapper = ({ children }: { children: ReactNode }) =>
     <Surroundings theme={theme} language={language}>{children}</Surroundings>
 

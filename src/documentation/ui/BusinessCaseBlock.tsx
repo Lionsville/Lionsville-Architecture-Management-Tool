@@ -19,15 +19,13 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
-import { useStrings } from '../../i18n'
-import type { Language, Translate } from '../../i18n'
+import { alpha } from '@mui/material/styles'
+import { LOCALE, useStrings } from '../../i18n'
+import type { Translate } from '../../i18n'
 import { computeBusinessCase, readBusinessCase } from '../businessCase'
 import type { BusinessCase, BusinessCaseResult } from '../businessCase'
 
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
-
-/** The locale each language counts in — `1.200,50` against `1,200.50`. */
-const LOCALE: Record<Language, string> = { en: 'en-GB', nl: 'nl-NL' }
 
 /**
  * Money, in the block's own currency where it named one this runtime knows.
@@ -74,7 +72,7 @@ export function BusinessCaseBlock({ code, read = readBusinessCase }: BusinessCas
   // the text its author is typing.
   if (!held.lines.length) {
     return (
-      <Box data-testid="business-case" data-state="unreadable" sx={{ my: '0.7em' }}>
+      <Box data-testid="business-case" data-state="unreadable" data-wide="" sx={{ my: '0.7em' }}>
         <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.5 }}>
           {t('doc.businessCaseUnreadable')}
         </Typography>
@@ -88,10 +86,20 @@ export function BusinessCaseBlock({ code, read = readBusinessCase }: BusinessCas
   const figures = summaryFigures(result, held, locale, t)
 
   return (
-    <Box data-testid="business-case" data-state="computed" sx={{ my: '0.7em' }}>
-      <TableContainer sx={{ overflowX: 'auto' }}>
-        <Table size="small" sx={{ width: 'auto', minWidth: '60%', '& td, & th': { fontSize: 'inherit', border: 1, borderColor: 'divider', whiteSpace: 'nowrap' } }}>
-          <TableHead sx={{ '& th': { fontWeight: 600, bgcolor: 'action.hover' } }}>
+    <Box data-testid="business-case" data-state="computed" data-wide="" sx={{ my: '0.7em' }}>
+      {/* The head and the computed rows carry the accent, not the hover grey:
+          a tint that is a colour in both modes rather than a lighter black. */}
+      <TableContainer sx={{ overflowX: 'auto', borderRadius: 1, border: 1, borderColor: 'divider' }}>
+        <Table
+          size="small"
+          sx={{
+            width: '100%',
+            '& td, & th': { fontSize: 'inherit', borderBottom: 1, borderColor: 'divider', whiteSpace: 'nowrap' },
+            '& td:first-of-type, & th:first-of-type': { whiteSpace: 'normal', minWidth: '14em' },
+            '& tr:last-child td': { borderBottom: 0 },
+          }}
+        >
+          <TableHead sx={{ '& th': { fontWeight: 600, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.14 : 0.07) } }}>
             <TableRow>
               <TableCell component="th">{t('doc.businessCaseLine')}</TableCell>
               {held.periods.map((period, at) => (
@@ -112,7 +120,7 @@ export function BusinessCaseBlock({ code, read = readBusinessCase }: BusinessCas
             ))}
             {/* Computed, and marked as such: a reader has to be able to tell
                 which rows were typed and which were worked out. */}
-            <TableRow sx={{ '& td': { fontWeight: 600, borderTop: 2, borderTopColor: 'divider' } }}>
+            <TableRow sx={{ '& td': { fontWeight: 600, borderTop: 2, borderTopColor: 'divider', bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.08 : 0.04) } }}>
               <TableCell>{t('doc.businessCaseNet')}</TableCell>
               {result.net.map((amount, period) => (
                 <TableCell key={period} align="right" sx={{ color: amount < 0 ? 'error.main' : undefined }}>

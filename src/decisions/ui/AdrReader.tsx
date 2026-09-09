@@ -33,6 +33,9 @@ import Typography from '@mui/material/Typography'
 import { linkElementRefs, outline } from '../../documentation'
 import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
+import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
+import { DocumentSource } from '../../documentation/ui/DocumentSource'
+import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import {
   formatAdrNumber, isAdrDeletable, isAdrLocked, transitionsFrom,
 } from '../adr'
@@ -64,6 +67,10 @@ export type AdrReaderProps = {
   /** Follow a superseded/supersedes link to another record in this list. */
   onSelect: (adrId: string) => void
   onElementLink?: (elementId: string) => void
+  /** Take a picture into the project (ADR-0009); absent, a record cannot be given one. */
+  onAddImage?: (file: File) => Promise<string | undefined>
+  /** The project's pictures, to put in again or take out. */
+  images?: DocumentImages
   /**
    * The plans over the landscape (ADR-0010), so a record can say which plans
    * rest on it — the link back from the one a plan carries. Absent: no row.
@@ -79,7 +86,9 @@ export function AdrReader(props: AdrReaderProps) {
   const canEdit = !readOnly && !locked
   const [mode, setMode] = useState<Mode>('read')
   const [draft, setDraft] = useState({ title: adr.title, body: adr.body })
-  const [helpOpen, setHelpOpen] = useState(false)
+  // The rendered record beside the source, which a wide table wants out of the way.
+  const [previewShown, setPreviewShown] = useState(true)
+  const showPreview = mode === 'read' || previewShown
   const contentRef = useRef<HTMLDivElement>(null)
 
   // --- the draft and its commits --------------------------------------------
@@ -177,46 +186,33 @@ export function AdrReader(props: AdrReaderProps) {
       )}
 
       {/* ---- the body, or the source beside it ---- */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         {mode === 'edit' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
               <TextField
                 size="small"
+                fullWidth
                 label={s('adr.titleField')}
                 value={draft.title}
                 onChange={(event) => setDraft((d) => ({ ...d, title: event.target.value }))}
                 onBlur={commit}
-                sx={{ flex: 1 }}
               />
-              <Button size="small" variant={helpOpen ? 'contained' : 'outlined'} onClick={() => setHelpOpen((v) => !v)}>
-                {s('adr.formattingHelp')}
-              </Button>
             </Box>
-            {helpOpen ? (
-              <Box data-testid="adr-formatting-help" sx={{ overflow: 'auto', p: 2, fontSize: 13 }}>
-                {renderMarkdown(s('adr.markdownHelp'))}
-              </Box>
-            ) : (
-              <Box
-                component="textarea"
-                aria-label={s('adr.source')}
-                value={draft.body}
-                spellCheck={false}
-                onChange={(e: { target: { value: string } }) => setDraft((d) => ({ ...d, body: e.target.value }))}
-                onBlur={commit}
-                sx={{
-                  flex: 1, minHeight: 0, resize: 'none', border: 0, outline: 'none', p: 2,
-                  bgcolor: 'transparent', color: 'text.primary',
-                  font: '13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', tabSize: 2,
-                }}
-              />
-            )}
+            <DocumentSource
+              value={draft.body}
+              onChange={(body) => setDraft((d) => ({ ...d, body }))}
+              onBlur={commit}
+              label={s('adr.source')}
+              onAddImage={props.onAddImage}
+              images={props.images}
+              preview={{ shown: previewShown, onToggle: () => setPreviewShown((on) => !on) }}
+            />
           </Box>
         )}
 
-        <Box sx={{ overflow: 'auto', minHeight: 0 }}>
-          <Box ref={contentRef} sx={{ maxWidth: 820, mx: 'auto', px: mode === 'edit' ? 3 : 5, py: 3.5 }}>
+        {showPreview && (
+          <DocumentSheet ref={contentRef} dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{formatAdrNumber(adr.number)}</Typography>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
               {mode === 'edit' ? draft.title : adr.title}
@@ -291,7 +287,7 @@ export function AdrReader(props: AdrReaderProps) {
               </Box>
             )}
 
-            <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }}>{rendered}</Box>
+            <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }} data-document>{rendered}</Box>
 
             <SignersTable
               signers={adr.signers}
@@ -300,8 +296,8 @@ export function AdrReader(props: AdrReaderProps) {
               s={s}
               onChange={(signers) => onUpdate({ signers })}
             />
-          </Box>
-        </Box>
+          </DocumentSheet>
+        )}
       </Box>
     </Box>
   )

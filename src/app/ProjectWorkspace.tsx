@@ -687,6 +687,8 @@ export function ProjectWorkspace({
         readOnly={false}
         actions={plans.planActions}
         renderMarkdown={renderDocument}
+        onAddImage={files.addImage}
+        images={{ library: session.imageLibrary, usedBy: imageUsedBy, onRemove: files.removeImage }}
         onClose={plans.closePlan}
         windowChrome={pageChrome}
       />
