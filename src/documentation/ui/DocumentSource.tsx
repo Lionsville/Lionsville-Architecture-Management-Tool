@@ -157,7 +157,9 @@ export function DocumentSource(props: DocumentSourceProps) {
     insertAtCaret(`\n\n${imageReference(image.file, image.file.replace(/\.[^.]+$/, ''))}\n\n`)
 
   return (
-    <Box data-testid="document-source" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
+    // `flex: 1` because the pane sits in a column on two of its three pages
+    // and must take the height the page has left; a grid cell ignores it.
+    <Box data-testid="document-source" sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider' }}>
         {/* One line, however narrow the pane: the help button beside it says the rest. */}
         <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
