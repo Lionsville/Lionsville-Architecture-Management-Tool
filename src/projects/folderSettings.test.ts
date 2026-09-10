@@ -8,8 +8,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH, LOCAL_SETTINGS_VERSION,
-  localSettingsText, readFolderSettings, readLocalSettings,
+  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, FOLDER_SETTINGS_VERSION, LOCAL_SETTINGS_PATH,
+  LOCAL_SETTINGS_VERSION, folderSettingsText, localSettingsText, readFolderSettings,
+  readLocalSettings,
 } from './folderSettings'
 
 describe('where the files are', () => {
@@ -98,9 +99,73 @@ describe('localSettingsText', () => {
 })
 
 describe('readFolderSettings', () => {
-  it('has no keys yet, and tolerates an absent, empty or malformed file', () => {
+  it('tolerates an absent, empty or malformed file', () => {
     for (const text of [undefined, '', '{}', 'nonsense', '{"version":3,"remote":"x"}']) {
       expect(readFolderSettings(text), String(text)).toEqual({})
     }
+  })
+
+  it('reads the organisation, which is the first key this file has', () => {
+    const text = folderSettingsText(undefined, { organisation: { name: 'Acme Logistics' } })
+    expect(readFolderSettings(text)).toEqual({ organisation: { name: 'Acme Logistics' } })
+  })
+
+  /**
+   * A section this build cannot read is absent rather than fatal: an
+   * organisation nobody can name still opens, which is the whole point of
+   * reading key by key.
+   */
+  it('drops a section that is not a record this build understands', () => {
+    for (const held of ['{"organisation":"Acme"}', '{"organisation":{"name":7}}',
+      '{"organisation":{"name":"Acme","links":"lots"}}']) {
+      expect(readFolderSettings(held), held).toEqual({})
+    }
+  })
+})
+
+describe('folderSettingsText', () => {
+  it('stamps this build\'s version and writes the record normalised', () => {
+    const text = folderSettingsText(undefined, {
+      organisation: { name: '  Acme  ', description: '   ', links: [{ label: '', url: 'javascript:alert(1)' }] },
+    })
+    expect(JSON.parse(text)).toEqual({
+      version: FOLDER_SETTINGS_VERSION,
+      organisation: { name: 'Acme' },
+    })
+  })
+
+  /**
+   * This file is committed, so the newer build whose keys must survive an older
+   * one writing is routinely a colleague's.
+   */
+  it('keeps keys it does not know, and never lowers the version', () => {
+    const existing = '{"version":9,"somethingLater":{"kept":true}}'
+    const held = JSON.parse(folderSettingsText(existing, { organisation: { name: 'Acme' } }))
+    expect(held.version).toBe(9)
+    expect(held.somethingLater).toEqual({ kept: true })
+  })
+
+  it('leaves the organisation alone when the patch does not carry one', () => {
+    const existing = folderSettingsText(undefined, { organisation: { name: 'Acme' } })
+    expect(readFolderSettings(folderSettingsText(existing, {})).organisation?.name).toBe('Acme')
+  })
+
+  /**
+   * A section is replaced rather than merged: the form is saved whole, so a
+   * cleared field has to be distinguishable from an untouched one.
+   */
+  it('replaces the organisation rather than merging into it', () => {
+    const existing = folderSettingsText(undefined, {
+      organisation: { name: 'Acme', description: 'A haulier' },
+    })
+    const held = readFolderSettings(folderSettingsText(existing, { organisation: { name: 'Acme' } }))
+    expect(held.organisation).toEqual({ name: 'Acme' })
+  })
+
+  it('is stable JSON, so a settings change is one readable line in a diff', () => {
+    const once = folderSettingsText(undefined, { organisation: { name: 'Acme', client: 'Acme BV' } })
+    expect(folderSettingsText(undefined, {
+      organisation: { client: 'Acme BV', name: 'Acme' },
+    })).toBe(once)
   })
 })

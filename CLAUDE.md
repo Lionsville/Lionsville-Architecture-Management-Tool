@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3178 tests** and one of every config. The
+One codebase, in modules, with **3217 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3178 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3217 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -187,6 +187,10 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
 src/projects/     A project: open, save, order, summarise, address, remember.
+                    organisation      the working directory is one organisation:
+                                      its name, its client, its links (ADR-0012)
+                    group · links     a domain's record, and the one rule about
+                                      what may become an anchor
                     folderFormat      a project as files (ADR-0003); adrFile ·
                                       transitionFile · fileText
                     workingFile       the .lvarch container: v3 is the folder, zipped

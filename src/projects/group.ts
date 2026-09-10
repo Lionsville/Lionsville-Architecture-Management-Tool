@@ -19,12 +19,14 @@
 
 import { isAdrList } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
+import { isLinkList, isSafeLinkUrl, normaliseLinks } from './links'
+import type { RecordLink } from './links'
 
-/** One link on a group: a ticket queue, a wiki space, a dashboard. */
-export type GroupLink = {
-  label: string
-  url: string
-}
+/**
+ * One link on a group. The shared shape under its old name: callers and saved
+ * files both say `GroupLink`, and there is nothing group-specific about it.
+ */
+export type GroupLink = RecordLink
 
 export type GroupProfile = {
   /** The group's path — the address, `acme` or `acme/rail`. Never renamed. */
@@ -65,15 +67,7 @@ export type GroupProfile = {
  * app the moment the link is clicked. A protocol allowlist is the whole defence,
  * and it costs nothing anyone would miss.
  */
-export function isSafeGroupLinkUrl(url: string): boolean {
-  let parsed: URL
-  try {
-    parsed = new URL(url.trim())
-  } catch {
-    return false
-  }
-  return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-}
+export const isSafeGroupLinkUrl = isSafeLinkUrl
 
 /**
  * A profile on its way into storage: trimmed, with the empty fields left out
@@ -83,10 +77,7 @@ export function isSafeGroupLinkUrl(url: string): boolean {
  * helps nobody and the URL is at least true.
  */
 export function normaliseGroupProfile(profile: GroupProfile): GroupProfile {
-  const links = (profile.links ?? [])
-    .map((link) => ({ label: link.label.trim(), url: link.url.trim() }))
-    .filter((link) => isSafeGroupLinkUrl(link.url))
-    .map((link) => ({ label: link.label || link.url, url: link.url }))
+  const links = normaliseLinks(profile.links)
   const out: GroupProfile = { group: profile.group, name: profile.name.trim() }
   const client = profile.client?.trim()
   if (client) out.client = client
@@ -107,10 +98,7 @@ export function isGroupProfile(value: unknown): value is GroupProfile {
   if (held.description !== undefined && typeof held.description !== 'string') return false
   if (held.decisions !== undefined && !isAdrList(held.decisions)) return false
   if (held.links === undefined) return true
-  return Array.isArray(held.links)
-    && held.links.every((link) => link
-      && typeof (link as GroupLink).label === 'string'
-      && typeof (link as GroupLink).url === 'string')
+  return isLinkList(held.links)
 }
 
 /**
