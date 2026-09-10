@@ -11,7 +11,15 @@
  *
  * So this compares the two models and reports the changes as changes:
  * applications added, removed and altered, connections drawn and cut, decisions
- * taken, and — deliberately as a count rather than a list — the geometry.
+ * taken, what came onto a board and what left it, and — deliberately as a count
+ * rather than a list — the geometry.
+ *
+ * That last split is the one ADR-0012 §6 was written for. Membership and
+ * coordinates used to be one row, so "the WMS is on the roadmap board now" and
+ * "somebody pressed Tidy" arrived as the same kind of news and the second
+ * drowned the first. They are two files and two questions now, and this reads
+ * them as two: membership by name, one sentence each, and the geometry as a
+ * number.
  *
  * Pure, and no words in it. Each change names what and which; the sentence is
  * the caller's, in the caller's language.
@@ -19,28 +27,32 @@
 import type { HostModel } from './fromInterchange'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { DesignDiagram, DesignElement, PlacedNode, Relation } from './types'
-import { placedNodes } from './placement'
+import type { DesignDiagram, DesignElement, Relation } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
-  | 'element' | 'connection' | 'diagram' | 'decision' | 'transition' | 'placement'
+  | 'element' | 'connection' | 'diagram' | 'decision' | 'transition'
+  | 'membership' | 'geometry'
 
 export type ModelChange = {
   kind: ChangeKind
   what: ChangeSubject
-  /** The id it happened to; for a placement change, the diagram's. */
+  /** The id it happened to; for a geometry change, the view's. */
   id: string
   /**
    * What a person calls it, taken from whichever side still has it — a removed
    * application is only nameable from the version it was removed from.
    */
   name: string
+  /** Which view a membership change is on, by name. Only on a membership row. */
+  on?: string
+  /** That view's id, which is what files the row under it. Membership only. */
+  onId?: string
   /** Which fields differ. Only on a `changed` row, and never for geometry. */
   fields?: string[]
-  /** How many elements moved, arrived or left, on a placement row. */
+  /** How many boxes ended up somewhere else. Only on a geometry row. */
   count?: number
 }
 
@@ -73,27 +85,74 @@ function relationName(relation: Relation, model: HostModel): string {
 }
 
 /**
- * How the geometry differs, as three counts.
+ * How much of the geometry differs, as one number.
  *
  * Never as a list. A tidy pass moves every node on the board, and forty rows
  * saying "moved" is not information — it is the reason people stop reading a
- * change list at all.
+ * change list at all. Group boxes count too: resizing one is a drag like any
+ * other, and it is not news about the architecture either. The board's own
+ * size counts once, because a person who shrank the canvas did one thing.
+ *
+ * A row that only arrived or left does NOT count: it arrived because something
+ * was put on the view and left because something was taken off it, and
+ * `membershipChanges` below already says so by name. Counting it here as well
+ * would report one gesture twice, in two vocabularies. `needsLayout` is not
+ * counted at all — it is a note to the router, not a change to the picture.
  */
-function placementChange(
-  before: readonly PlacedNode[], after: readonly PlacedNode[],
-): { moved: number; placed: number; removed: number } {
-  const held = new Map(before.map((one) => [one.id, one]))
-  const now = new Map(after.map((one) => [one.id, one]))
+function geometryChange(before: DesignDiagram, after: DesignDiagram): number {
+  return rowsThatMoved(before.geometry?.nodes, after.geometry?.nodes)
+    + rowsThatMoved(before.geometry?.groups, after.geometry?.groups)
+    + differs(before.geometry?.canvas, after.geometry?.canvas)
+    + differs(before.geometry?.zones, after.geometry?.zones)
+}
+
+/** Rows both versions have, and that say something different in each. */
+function rowsThatMoved<T extends { id: string }>(
+  before: readonly T[] | undefined, after: readonly T[] | undefined,
+): number {
+  const held = new Map((before ?? []).map((one) => [one.id, one]))
   let moved = 0
-  for (const [id, one] of now) {
-    const was = held.get(id)
-    if (was && JSON.stringify(was) !== JSON.stringify(one)) moved += 1
+  for (const one of after ?? []) {
+    const was = held.get(one.id)
+    if (was) moved += differs(was, one)
   }
-  return {
-    moved,
-    placed: [...now.keys()].filter((id) => !held.has(id)).length,
-    removed: [...held.keys()].filter((id) => !now.has(id)).length,
+  return moved
+}
+
+function differs(before: unknown, after: unknown): number {
+  return JSON.stringify(before ?? null) === JSON.stringify(after ?? null) ? 0 : 1
+}
+
+/**
+ * What came onto a view and what left it, one row per element (ADR-0012 §6).
+ *
+ * By name and never by count, which is the opposite of the geometry above and
+ * for the same reason: putting the WMS on the roadmap board is a decision
+ * somebody made, and a number would say nothing about it.
+ */
+function membershipChanges(
+  before: DesignDiagram, after: DesignDiagram,
+  nameOf: (elementId: string) => string, elsewhere: ReadonlySet<string>,
+): ModelChange[] {
+  const held = new Map(before.members.map((one) => [one.id, one]))
+  const now = new Map(after.members.map((one) => [one.id, one]))
+  const changes: ModelChange[] = []
+  for (const elementId of [...new Set([...held.keys(), ...now.keys()])].sort()) {
+    // An element that arrived in or left the landscape itself is on or off
+    // every view as a consequence, and its own row already said so. Saying it
+    // again per board would make deleting one application five lines.
+    if (elsewhere.has(elementId)) continue
+    const was = held.get(elementId)
+    const is = now.get(elementId)
+    const row = {
+      what: 'membership' as const, id: elementId, name: nameOf(elementId),
+      on: after.name, onId: after.id,
+    }
+    if (!was) changes.push({ kind: 'added', ...row })
+    else if (!is) changes.push({ kind: 'removed', ...row })
+    else if (JSON.stringify(was) !== JSON.stringify(is)) changes.push({ kind: 'changed', ...row })
   }
+  return changes
 }
 
 function decisionsOf(model: HostModel): Map<string, Adr> {
@@ -127,6 +186,13 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
       (held) => relationName(held, now ? after : before)))
   }
 
+  // An element is named from whichever version still has it: one that was
+  // removed is only nameable from the version it was removed from.
+  const nameOfElement = (id: string) =>
+    nowElements.get(id)?.name ?? wasElements.get(id)?.name ?? id
+  const cameOrWent = new Set(
+    ids(wasElements, nowElements).filter((id) => !wasElements.has(id) || !nowElements.has(id)))
+
   const wasDiagrams = byId(before.diagrams)
   const nowDiagrams = byId(after.diagrams)
   for (const id of ids(wasDiagrams, nowDiagrams)) {
@@ -134,11 +200,9 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
     const now = nowDiagrams.get(id)
     changes.push(...compare<DesignDiagram>('diagram', id, was, now, (held) => held.name))
     if (!was || !now) continue
-    const geometry = placementChange(placedNodes(was), placedNodes(now))
-    const count = geometry.moved + geometry.placed + geometry.removed
-    if (count > 0) {
-      changes.push({ kind: 'changed', what: 'placement', id, name: now.name, count })
-    }
+    changes.push(...membershipChanges(was, now, nameOfElement, cameOrWent))
+    const count = geometryChange(was, now)
+    if (count > 0) changes.push({ kind: 'changed', what: 'geometry', id, name: now.name, count })
   }
 
   const wasDecisions = decisionsOf(before)
@@ -158,7 +222,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   }
 
   const order: ChangeSubject[] = [
-    'element', 'connection', 'diagram', 'decision', 'transition', 'placement',
+    'element', 'connection', 'diagram', 'decision', 'transition', 'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }
@@ -198,7 +262,7 @@ export function countChanges(changes: readonly ModelChange[]): {
 } {
   const tally = { added: 0, removed: 0, changed: 0, moved: 0 }
   for (const change of changes) {
-    if (change.what === 'placement') tally.moved += change.count ?? 0
+    if (change.what === 'geometry') tally.moved += change.count ?? 0
     else tally[change.kind] += 1
   }
   return tally

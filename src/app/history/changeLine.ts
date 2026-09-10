@@ -13,10 +13,10 @@ import type { StringKey, Translate } from '../../i18n'
  * Every subject the diff can name, times every kind — as a type, so that a
  * subject added to `diffModels` without a sentence here is a compile error and
  * not a page that throws the first time somebody opens the history of a
- * project with one in it. Placement is the exception: it is a count, not a
+ * project with one in it. Geometry is the exception: it is a count, not a
  * kind, and has its own line below.
  */
-type LineKey = `${Exclude<ChangeSubject, 'placement'>}:${ChangeKind}`
+type LineKey = `${Exclude<ChangeSubject, 'geometry'>}:${ChangeKind}`
 
 const KEYS: Record<LineKey, StringKey> = {
   'element:added': 'change.elementAdded',
@@ -34,15 +34,21 @@ const KEYS: Record<LineKey, StringKey> = {
   'transition:added': 'change.transitionAdded',
   'transition:removed': 'change.transitionRemoved',
   'transition:changed': 'change.transitionChanged',
+  // What came onto a board and what left it. Named, not counted: a card put on
+  // a view is a decision somebody made (ADR-0012 §6).
+  'membership:added': 'change.membershipAdded',
+  'membership:removed': 'change.membershipRemoved',
+  'membership:changed': 'change.membershipMoved',
 }
 
 export function changeLine(change: ModelChange, s: Translate): string {
-  if (change.what === 'placement') {
-    return s('change.placement', { count: change.count ?? 0, name: change.name })
+  if (change.what === 'geometry') {
+    return s('change.geometry', { count: change.count ?? 0, name: change.name })
   }
   const key = KEYS[`${change.what}:${change.kind}`]
   return s(key, {
     name: change.name,
+    on: change.on ?? '',
     // Field names are the model's own words and are not translated: they are
     // what somebody reading the file would see, which is the point of naming
     // them at all.

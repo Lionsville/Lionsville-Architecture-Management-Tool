@@ -161,7 +161,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'change.transitionAdded': 'Plan {name} toegevoegd',
   'change.transitionRemoved': 'Plan {name} verwijderd',
   'change.transitionChanged': 'Plan {name} gewijzigd ({fields})',
-  'change.placement': '{count} verplaatst op {name}',
+  'change.membershipAdded': '{name} op {on} gezet',
+  'change.membershipRemoved': '{name} van {on} gehaald',
+  'change.membershipMoved': '{name} op {on} verplaatst naar een andere band of groep',
+  'change.geometry': '{count} verplaatst op {name}',
 
   'folder.title': 'Waar horen je projecten te staan?',
   'folder.body':

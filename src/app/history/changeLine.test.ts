@@ -9,7 +9,7 @@ import { changeLine } from './changeLine'
 import { translator } from '../../i18n'
 import type { ChangeKind, ChangeSubject, ModelChange } from '../../model/diff'
 
-const SUBJECTS: ChangeSubject[] = ['element', 'connection', 'diagram', 'decision', 'transition', 'placement']
+const SUBJECTS: ChangeSubject[] = ['element', 'connection', 'diagram', 'decision', 'transition', 'membership', 'geometry']
 const KINDS: ChangeKind[] = ['added', 'removed', 'changed']
 
 describe('changeLine', () => {
@@ -23,6 +23,15 @@ describe('changeLine', () => {
         expect(line, `${what}:${kind}`).not.toMatch(/^change\./)
       }
     }
+  })
+
+  it('says what came onto which board, and where the geometry went as a number', () => {
+    const s = translator('en')
+    expect(changeLine(
+      { kind: 'added', what: 'membership', id: 'wms', name: 'Warehouse', on: 'Roadmap', onId: 'd1' }, s,
+    )).toBe('Put Warehouse on Roadmap')
+    expect(changeLine({ kind: 'changed', what: 'geometry', id: 'd1', name: 'Roadmap', count: 40 }, s))
+      .toBe('Moved 40 on Roadmap')
   })
 
   it('names a plan as a plan', () => {

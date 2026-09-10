@@ -1,9 +1,11 @@
 /**
  * What changed, in the landscape's own terms.
  *
- * The test that matters most is the last one: a tidy pass must not read like
- * forty decisions. Everything else here is the arithmetic that makes that
- * sentence possible.
+ * The test that matters most is the tidy pass: it must not read like forty
+ * decisions. The membership block beside it is the other half of the same
+ * point (ADR-0012 §6) — what came onto a board is news and gets a sentence,
+ * where it ended up is not and gets a number. Everything else here is the
+ * arithmetic that makes those two sentences possible.
  */
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
@@ -100,7 +102,7 @@ describe('diffModels', () => {
       })],
     })
     expect(diffModels(model(), tidied)).toEqual([
-      { kind: 'changed', what: 'placement', id: 'l7', name: 'Landschap', count: 2 },
+      { kind: 'changed', what: 'geometry', id: 'l7', name: 'Landschap', count: 2 },
     ])
   })
 
@@ -108,6 +110,88 @@ describe('diffModels', () => {
     const renamed = model({ diagrams: [{ ...model().diagrams[0], name: 'Landscape' }] })
     expect(diffModels(model(), renamed)).toEqual([
       { kind: 'changed', what: 'diagram', id: 'l7', name: 'Landscape', fields: ['name'] },
+    ])
+  })
+
+  it('names what left a board, and which board', () => {
+    // The element is still in the landscape: it was taken off this view, which
+    // is a decision somebody made and the reason membership is not a count.
+    const after = model({
+      diagrams: [laidOut({
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        placements: [{ id: 'crews', x: 0, y: 0 }],
+      })],
+    })
+    expect(diffModels(model(), after)).toEqual([
+      { kind: 'removed', what: 'membership', id: 'reisinfo', name: 'Reisinformatie', on: 'Landschap', onId: 'l7' },
+    ])
+  })
+
+  it('names what came onto one, and does not also count it as a move', () => {
+    const before = model({
+      diagrams: [laidOut({
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        placements: [{ id: 'crews', x: 0, y: 0 }],
+      })],
+    })
+    expect(diffModels(before, model())).toEqual([
+      { kind: 'added', what: 'membership', id: 'reisinfo', name: 'Reisinformatie', on: 'Landschap', onId: 'l7' },
+    ])
+  })
+
+  it('calls filing a card in another band a membership change, not a move', () => {
+    const after = model({
+      diagrams: [laidOut({
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        placements: [{ id: 'crews', x: 0, y: 0, zone: 'management' }, { id: 'reisinfo', x: 100, y: 0 }],
+      })],
+    })
+    expect(diffModels(model(), after)).toEqual([
+      { kind: 'changed', what: 'membership', id: 'crews', name: 'Crews', on: 'Landschap', onId: 'l7' },
+    ])
+  })
+
+  it('says nothing per board about an application that left the landscape', () => {
+    // Deleting one application would otherwise be one row plus a row per view
+    // it happened to be drawn on, which says the same thing five times.
+    const after = model({
+      elements: [element('crews', 'Crews')],
+      diagrams: [laidOut({
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        placements: [{ id: 'crews', x: 0, y: 0 }],
+      })],
+    })
+    expect(diffModels(model(), after)).toEqual([
+      { kind: 'removed', what: 'element', id: 'reisinfo', name: 'Reisinformatie' },
+    ])
+  })
+
+  it('reports a dashed group renamed as one line in the definition', () => {
+    const named = (name: string) => model({
+      diagrams: [laidOut({
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        groups: [{ id: 'g1', name }],
+        placements: [{ id: 'crews', x: 0, y: 0, group: 'g1' }, { id: 'reisinfo', x: 100, y: 0 }],
+      })],
+    })
+    expect(diffModels(named('Finance'), named('Ledger'))).toEqual([
+      { kind: 'changed', what: 'diagram', id: 'l7', name: 'Landschap', fields: ['groups'] },
+    ])
+  })
+
+  it('counts a group box dragged wider, and the board resized, as moves', () => {
+    const boxed = (width: number) => model({
+      diagrams: [laidOut({
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        placements: [{ id: 'crews', x: 0, y: 0 }, { id: 'reisinfo', x: 100, y: 0 }],
+        layoutConfig: {
+          canvas: { width, height: 600 },
+          domainGroups: [{ id: 'g1', x: 0, y: 0, width, height: 200 }],
+        },
+      })],
+    })
+    expect(diffModels(boxed(300), boxed(400))).toEqual([
+      { kind: 'changed', what: 'geometry', id: 'l7', name: 'Landschap', count: 2 },
     ])
   })
 
@@ -133,7 +217,9 @@ describe('countChanges', () => {
         placements: [{ id: 'crews', x: 9, y: 9 }],
       })],
     })
+    // Two rows differ in the placement file — one moved, one gone — but only
+    // the move is geometry now: the departure is the element's own removal.
     expect(countChanges(diffModels(model(), after)))
-      .toEqual({ added: 1, removed: 1, changed: 0, moved: 2 })
+      .toEqual({ added: 1, removed: 1, changed: 0, moved: 1 })
   })
 })

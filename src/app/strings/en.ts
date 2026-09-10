@@ -227,7 +227,10 @@ export const EN = {
   'change.transitionAdded': 'Added the plan {name}',
   'change.transitionRemoved': 'Removed the plan {name}',
   'change.transitionChanged': 'Changed the plan {name} ({fields})',
-  'change.placement': 'Moved {count} on {name}',
+  'change.membershipAdded': 'Put {name} on {on}',
+  'change.membershipRemoved': 'Took {name} off {on}',
+  'change.membershipMoved': 'Refiled {name} on {on}',
+  'change.geometry': 'Moved {count} on {name}',
 
   'folder.title': 'Where should your projects live?',
   'folder.body':

@@ -7,8 +7,9 @@ const changes: ModelChange[] = [
   { kind: 'changed', what: 'element', id: 'crm', name: 'CRM', fields: ['vendor'] },
   { kind: 'removed', what: 'element', id: 'crews', name: 'Crews' },
   { kind: 'changed', what: 'diagram', id: 'd1', name: 'Landscape', fields: ['name'] },
-  { kind: 'changed', what: 'placement', id: 'd1', name: 'Landscape', count: 12 },
-  { kind: 'changed', what: 'placement', id: 'd2', name: 'Billing view', count: 1 },
+  { kind: 'changed', what: 'geometry', id: 'd1', name: 'Landscape', count: 12 },
+  { kind: 'changed', what: 'geometry', id: 'd2', name: 'Billing view', count: 1 },
+  { kind: 'added', what: 'membership', id: 'billing', name: 'Billing', on: 'Landscape', onId: 'd1' },
   { kind: 'added', what: 'decision', id: 'adr-1', name: 'ADR-0001' },
 ]
 
@@ -17,9 +18,19 @@ describe('changesFor', () => {
     expect(changesFor(changes, undefined)).toEqual(changes)
   })
 
-  it('is a diagram\'s own row and its geometry', () => {
+  it('is a diagram\'s own row, its geometry and what came onto it', () => {
     expect(changesFor(changes, { what: 'diagram', id: 'd1' }).map((c) => c.what))
-      .toEqual(['diagram', 'placement'])
+      .toEqual(['diagram', 'geometry', 'membership'])
+  })
+
+  it('files membership under the view, not under the element it names', () => {
+    // The row's id is the element's, so filtering on it alone would put "put
+    // Billing on Landscape" on Billing's description page and nowhere near the
+    // board it happened to.
+    expect(changesFor(changes, { what: 'diagram', id: 'd2' }).map((c) => c.what))
+      .toEqual(['geometry'])
+    expect(changesFor(changes, { what: 'description', id: 'billing' }).map((c) => c.what))
+      .toEqual(['element'])
   })
 
   it('is an element\'s row only where the description is among what changed', () => {

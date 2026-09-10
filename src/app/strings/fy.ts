@@ -161,7 +161,10 @@ export const FY: Record<keyof typeof EN, string> = {
   'change.transitionAdded': 'Plan {name} tafoege',
   'change.transitionRemoved': 'Plan {name} fuortsmiten',
   'change.transitionChanged': 'Plan {name} wizige ({fields})',
-  'change.placement': '{count} ferpleatst op {name}',
+  'change.membershipAdded': '{name} op {on} set',
+  'change.membershipRemoved': '{name} fan {on} helle',
+  'change.membershipMoved': '{name} op {on} nei in oare bân of groep ferpleatst',
+  'change.geometry': '{count} ferpleatst op {name}',
 
   'folder.title': 'Wêr hearre dyn projekten te stean?',
   'folder.body':
