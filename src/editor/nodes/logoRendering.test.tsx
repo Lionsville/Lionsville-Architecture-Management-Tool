@@ -71,7 +71,7 @@ function props(kind: ElementKind, over: Partial<DesignElement> = {}): ElementNod
         aspects: {},
         ...over,
       },
-      placement: { elementId: 'e1', zone: 'landscape', x: 0, y: 0 },
+      placement: { id: 'e1', zone: 'landscape', x: 0, y: 0 },
       resizeLimits: testResizeLimits(kind),
       readOnly: false,
       aspectConfig: [],

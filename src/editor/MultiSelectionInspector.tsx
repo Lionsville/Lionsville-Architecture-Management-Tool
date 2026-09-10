@@ -1,4 +1,5 @@
 import Autocomplete from '@mui/material/Autocomplete';
+import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
@@ -82,7 +83,7 @@ export function MultiSelectionInspector({
   const landscapeIds =
     diagram?.kind === 'layer7'
       ? selection.elementIds.filter((id) => {
-          const placement = diagram.placements.find((p) => p.elementId === id);
+          const placement = placedNodes(diagram).find((p) => p.id === id);
           return placement !== undefined && (placement.zone ?? 'landscape') === 'landscape';
         })
       : [];

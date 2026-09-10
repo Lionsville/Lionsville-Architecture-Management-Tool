@@ -7,7 +7,8 @@
  * proved.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignElement, DiagramPlacement, Relation } from '.'
+import { laidOut } from '../model/testFixtures';
+import type { DesignElement, PlacedNode, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 import {
   isInterchange, isWorkingFile, needsRemount, workingFileLogoLibrary,
@@ -25,8 +26,8 @@ function connection(id: string, sourceId: string, targetId: string): Relation {
   return { id, type: 'flow', sourceId, targetId, isBidirectional: false }
 }
 
-function place(elementId: string, x = 0, y = 0): DiagramPlacement {
-  return { elementId, x, y }
+function place(id: string, x = 0, y = 0): PlacedNode {
+  return { id, x, y }
 }
 
 /** A model with two diagrams, so "this diagram only" is visible. */
@@ -37,8 +38,8 @@ function model(over: Partial<HostModel> = {}): HostModel {
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
     relations: [connection('c#1', 'crews', 'reisinfo')],
     diagrams: [
-      { id: 'l7', kind: 'layer7', name: 'Landschap', placements: [place('crews', 10, 20), place('reisinfo', 30, 40)] },
-      { id: 'cd', kind: 'container', name: 'Crews · containers', placements: [place('crews', 5, 5)] },
+      laidOut({ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [place('crews', 10, 20), place('reisinfo', 30, 40)] }),
+      laidOut({ id: 'cd', kind: 'container', name: 'Crews · containers', placements: [place('crews', 5, 5)] }),
     ],
     ...over,
   }

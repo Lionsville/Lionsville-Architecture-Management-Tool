@@ -9,6 +9,7 @@
  * disk while *keep ours* leaves it alone.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncSide } from '../platform/sync'
@@ -29,7 +30,7 @@ const project = (name = 'Landscape'): ProjectSnapshot => ({
   ref: { group: 'acme', project: 'landscape' },
   model: {
     name, customerName: 'Acme', elements: [], relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

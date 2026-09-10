@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { laidOut } from '../../model/testFixtures';
 import { translator } from '../../i18n';
 import type { DesignDiagram, DesignModel } from '../../model/types';
 import { c4PanelFor } from './c4Panel';
@@ -16,9 +17,9 @@ const model = {
   name: 'Application landscape', customerName: 'Acme', elements: [wms], connections: [], diagrams: [],
 } as unknown as DesignModel;
 
-const container = (over: Partial<DesignDiagram> = {}): DesignDiagram => ({
+const container = (over: Partial<DesignDiagram> = {}): DesignDiagram => (laidOut({
   id: 'c1', kind: 'container', name: 'WMS containers', applicationElementId: 'wms', placements: [], ...over,
-});
+}));
 
 describe('c4PanelFor', () => {
   it('says nothing on a landscape, which has a title block of its own', () => {

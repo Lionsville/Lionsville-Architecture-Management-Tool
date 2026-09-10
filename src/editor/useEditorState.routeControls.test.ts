@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel, EdgeRoute } from '../model/types';
-import { manualRouteIds } from '../model/routes';
+import { edgeRoutesOf, manualRouteIds } from '../model/routes';
 
 
 /**
@@ -22,18 +24,18 @@ function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         autoRoute,
         placements: [
           // e1: 100..300 × 100..230 (application 200×130), right-side centre y = 165.
-          { elementId: 'e1', zone: 'landscape', x: 100, y: 100 },
-          { elementId: 'e2', zone: 'landscape', x: 900, y: 400 },
+          { id: 'e1', zone: 'landscape', x: 100, y: 100 },
+          { id: 'e2', zone: 'landscape', x: 900, y: 400 },
         ],
         edgeRoutes: routes,
-      },
+      }),
     ],
   };
 }
@@ -44,7 +46,7 @@ const MANUAL: EdgeRoute = { ...AUTO, source: 'manual' };
 function render(initial: DesignModel) {
   const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
   const stored = () =>
-    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1');
+    edgeRoutesOf(result.current.model.diagrams[0])?.find((r) => r.relationId === 'c1');
   /** What the last step asked for, flattened — `route.set` or `route.clear`. */
   const asked = () => {
     const last = host.current.commands.at(-1);
@@ -187,38 +189,38 @@ describe('movePlacements — hand-drawn routes follow their nodes', () => {
     // e1's right side is at y 100..230; the first leg leaves it horizontally at
     // y = 165. Moving e1 down 50 must take that leg — and only its y — along.
     const { result, host, stored, asked } = render(model([MANUAL]));
-    act(() => result.current.actions.movePlacements([{ elementId: 'e1', x: 100, y: 150 }]));
+    act(() => result.current.actions.movePlacements([{ id: 'e1', x: 100, y: 150 }]));
 
     // One step, carrying the placement AND the route.
     expect(host.current.commands).toHaveLength(1);
-    expect(asked()).toEqual(['placement.set', 'route.set']);
+    expect(asked()).toEqual(['transaction', 'route.set']);
     expect(stored()?.waypoints).toEqual([{ x: 500, y: 215 }, { x: 500, y: 400 }]);
     expect(stored()?.source).toBe('manual');
-    expect(result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e1'))
+    expect(placedNodes(result.current.model.diagrams[0]).find((p) => p.id === 'e1'))
       .toMatchObject({ y: 150 });
 
     // One undo takes back both.
     act(() => result.current.undo());
     expect(stored()).toEqual(MANUAL);
-    expect(result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e1')).toMatchObject({ y: 100 });
+    expect(placedNodes(result.current.model.diagrams[0]).find((p) => p.id === 'e1')).toMatchObject({ y: 100 });
   });
 
   it('leaves router output alone — live routing recomputes it, or nobody asked', () => {
     const { result, stored } = render(model([AUTO]));
-    act(() => result.current.actions.movePlacements([{ elementId: 'e1', x: 100, y: 150 }]));
+    act(() => result.current.actions.movePlacements([{ id: 'e1', x: 100, y: 150 }]));
     expect(stored()).toEqual(AUTO);
   });
 
   it('follows a pinned bend-less row trivially (nothing to move) and a route at the target end', () => {
     const pinned: EdgeRoute = { relationId: 'c1', waypoints: [], source: 'manual', pinned: true };
     const { result, stored } = render(model([pinned]));
-    act(() => result.current.actions.movePlacements([{ elementId: 'e1', x: 120, y: 160 }]));
+    act(() => result.current.actions.movePlacements([{ id: 'e1', x: 120, y: 160 }]));
     expect(stored()).toEqual(pinned);
 
     // e2: 900..1100 × 400..530; the last leg (500,400)→(900,400)... enters e2's
     // left side horizontally at y = 400, so moving e2 down 40 moves that bend's y.
     const atTarget = render(model([MANUAL]));
-    act(() => atTarget.result.current.actions.movePlacements([{ elementId: 'e2', x: 900, y: 440 }]));
+    act(() => atTarget.result.current.actions.movePlacements([{ id: 'e2', x: 900, y: 440 }]));
     expect(atTarget.stored()?.waypoints).toEqual([{ x: 500, y: 165 }, { x: 500, y: 440 }]);
   });
 });

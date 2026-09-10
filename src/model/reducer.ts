@@ -32,14 +32,15 @@
  * difference; `decisionsOf` and `routesOf` answer the same either way.
  */
 import { transaction, reverse, NOTHING } from './commands'
-import type { Command, CommandMeta, DiagramPatch, ProjectPatch } from './commands'
+import type { BoardPatch, Command, CommandMeta, DiagramPatch, ProjectPatch } from './commands'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from './normalised'
-import { decisionsOf, groupsOf, routesOf, transitionsOf } from './normalised'
+import { boxesOf, decisionsOf, groupsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
 import type {
-  DesignElement, DiagramGroup, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId, Relation,
+  DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect, EdgeRoute,
+  ElementId, NodeGeometry, Relation,
 } from './types'
 
 /**
@@ -77,6 +78,18 @@ function drop<T>(by: Record<string, T>, order: string[], id: string): Rows<T> {
   const next = { ...by }
   delete next[id]
   return { by: next, order: order.filter((held) => held !== id) }
+}
+
+/**
+ * Two rows that say the same thing.
+ *
+ * Rows here are small, flat and built by one writer, so this is honest — and
+ * what it buys is identity: a drag that re-states the band a card is already
+ * in must not hand back a fresh object, or everything memoised below it
+ * re-renders and `diff.ts` reports a change nobody made.
+ */
+function same<T extends object>(a: T, b: T): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
 }
 
 // --- patches -----------------------------------------------------------------
@@ -142,23 +155,16 @@ function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {
   return { ...model, diagrams: { ...model.diagrams, [id]: diagram } }
 }
 
-function withPlacements(diagram: Diagram, rows: Rows<DiagramPlacement>): Diagram {
-  const order = rows.order === diagram.order.placements
+function withMembers(diagram: Diagram, rows: Rows<DiagramMember>): Diagram {
+  const order = rows.order === diagram.order.members
     ? diagram.order
-    : { ...diagram.order, placements: rows.order }
-  return { ...diagram, placements: rows.by, order }
+    : { ...diagram.order, members: rows.order }
+  return { ...diagram, members: rows.by, order }
 }
 
 /**
- * Emptied means gone in the FILE, and `fromDiagram` is where that happens — the
- * key is kept here, holding nothing.
- *
- * `edgeRoutes` deletes its key at this point; `groups` may not, and the reason
- * is key order. Deleting a key and putting it back appends it, so dissolving a
- * group and undoing gives back a document equal to the one you had but written
- * in a different order — and `JSON.stringify` does not sort (see the note at
- * the top of `normalised.ts`). Keeping the slot costs an empty record in memory
- * and nothing on disk.
+ * Emptied means gone in the FILE, and `fromDiagram` is where that happens —
+ * the record is kept here, holding nothing (see {@link Diagram.groups}).
  */
 function withGroups(diagram: Diagram, rows: Rows<DiagramGroup>): Diagram {
   const order = rows.order === diagram.order.groups
@@ -231,63 +237,170 @@ export function apply(model: Model, command: Command): ApplyResult {
     case 'relation.delete':
       return deleteRelation(model, command.id, meta)
 
-    // --- geometry -----------------------------------------------------------
-    case 'placement.set': {
+    // --- what is on a view (ADR-0012 §6) ------------------------------------
+    case 'member.set': {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
       // Built in one pass rather than one `put` per row: a whole-board set —
       // a tidy pass, a restore — carries thousands, and a record copied per
       // row is quadratic. The order array keeps its identity when nothing
-      // was inserted, which is what tells `withPlacements` nothing moved.
-      const by = { ...diagram.placements }
-      let order = diagram.order.placements
-      const restore: DiagramPlacement[] = []
+      // was inserted, which is what tells `withMembers` nothing moved.
+      const by = { ...diagram.members }
+      let order = diagram.order.members
+      const restore: DiagramMember[] = []
       const restoreAt: number[] = []
       const remove: ElementId[] = []
-      command.placements.forEach((placement, i) => {
-        const id = placement.elementId
+      let changed = false
+      command.members.forEach((member, i) => {
+        const id = member.id
         if (!model.elements[id]) return
         const held = by[id]
         if (held) {
+          // A drag re-states the band a card is already in; saying the same
+          // thing is not a change, and a fresh object would make it look like
+          // one to everything memoised below (and to `diff.ts`).
+          if (same(held, member)) return
           restore.push(held)
           restoreAt.push(order.indexOf(id))
         } else {
           remove.push(id)
-          if (order === diagram.order.placements) order = [...order]
+          if (order === diagram.order.members) order = [...order]
           order.splice(command.at?.[i] ?? order.length, 0, id)
         }
-        by[id] = placement
+        changed = true
+        by[id] = member
       })
-      if (!restore.length && !remove.length) return ok(model, NOTHING)
-      const rows: Rows<DiagramPlacement> = { by, order }
+      if (!changed) return ok(model, NOTHING)
       const undo: Command[] = []
-      if (remove.length) undo.push({ type: 'placement.remove', diagramId: command.diagramId, elementIds: remove })
+      if (remove.length) undo.push({ type: 'member.remove', diagramId: command.diagramId, elementIds: remove })
       if (restore.length) {
-        undo.push({ type: 'placement.set', diagramId: command.diagramId, placements: restore, at: restoreAt })
+        undo.push({ type: 'member.set', diagramId: command.diagramId, members: restore, at: restoreAt })
       }
       return ok(
-        setDiagram(model, command.diagramId, withPlacements(diagram, rows)),
+        setDiagram(model, command.diagramId, withMembers(diagram, { by, order })),
         transaction(undo, meta),
       )
     }
 
-    case 'placement.remove': {
+    case 'member.remove': {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
-      let rows: Rows<DiagramPlacement> = { by: diagram.placements, order: diagram.order.placements }
-      const restore: DiagramPlacement[] = []
+      let rows: Rows<DiagramMember> = { by: diagram.members, order: diagram.order.members }
+      const nodes = { ...diagram.nodes }
+      const restore: DiagramMember[] = []
       const restoreAt: number[] = []
+      const geometry: NodeGeometry[] = []
       // Ascending, so putting them back one at a time lands each on its own index.
-      for (const id of diagram.order.placements) {
+      for (const id of diagram.order.members) {
         if (!command.elementIds.includes(id)) continue
-        restore.push(diagram.placements[id])
-        restoreAt.push(diagram.order.placements.indexOf(id))
+        restore.push(diagram.members[id])
+        restoreAt.push(diagram.order.members.indexOf(id))
+        if (nodes[id]) geometry.push(nodes[id])
+        delete nodes[id]
         rows = drop(rows.by, rows.order, id)
       }
       if (!restore.length) return ok(model, NOTHING)
+      const undo: Command[] = [
+        { type: 'member.set', diagramId: command.diagramId, members: restore, at: restoreAt },
+      ]
+      if (geometry.length) undo.push({ type: 'node.set', diagramId: command.diagramId, nodes: geometry })
       return ok(
-        setDiagram(model, command.diagramId, withPlacements(diagram, rows)),
-        { type: 'placement.set', diagramId: command.diagramId, placements: restore, at: restoreAt },
+        setDiagram(model, command.diagramId, { ...withMembers(diagram, rows), nodes }),
+        transaction(undo, meta),
+      )
+    }
+
+    // --- where it ended up (ADR-0012 §6) ------------------------------------
+    case 'node.set': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const nodes = { ...diagram.nodes }
+      const restore: NodeGeometry[] = []
+      const clear: ElementId[] = []
+      for (const node of command.nodes) {
+        // A node is on a view because a MEMBER row says so; a coordinate for
+        // something that is not on it has nothing to be about.
+        if (!diagram.members[node.id]) continue
+        const held = nodes[node.id]
+        if (held && same(held, node)) continue
+        if (held) restore.push(held)
+        else clear.push(node.id)
+        nodes[node.id] = node
+      }
+      if (!restore.length && !clear.length) return ok(model, NOTHING)
+      const undo: Command[] = []
+      if (clear.length) undo.push({ type: 'node.remove', diagramId: command.diagramId, elementIds: clear })
+      if (restore.length) undo.push({ type: 'node.set', diagramId: command.diagramId, nodes: restore })
+      return ok(
+        setDiagram(model, command.diagramId, { ...diagram, nodes }),
+        transaction(undo, meta),
+      )
+    }
+
+    case 'node.remove': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const nodes = { ...diagram.nodes }
+      const restore: NodeGeometry[] = []
+      for (const id of command.elementIds) {
+        if (!nodes[id]) continue
+        restore.push(nodes[id])
+        delete nodes[id]
+      }
+      if (!restore.length) return ok(model, NOTHING)
+      return ok(
+        setDiagram(model, command.diagramId, { ...diagram, nodes }),
+        { type: 'node.set', diagramId: command.diagramId, nodes: restore },
+      )
+    }
+
+    case 'box.set': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const boxes = { ...boxesOf(diagram) }
+      const restore: DomainGroupRect[] = []
+      const clear: GroupId[] = []
+      for (const box of command.boxes) {
+        // A box is about a group the view holds; one for a group nobody names
+        // has no label to draw and no way to be renamed or recoloured.
+        if (!groupsOf(diagram)[box.id]) continue
+        const held = boxes[box.id]
+        if (held && same(held, box)) continue
+        if (held) restore.push(held)
+        else clear.push(box.id)
+        boxes[box.id] = box
+      }
+      if (!restore.length && !clear.length) return ok(model, NOTHING)
+      const undo: Command[] = []
+      if (clear.length) undo.push({ type: 'box.remove', diagramId: command.diagramId, groupIds: clear })
+      if (restore.length) undo.push({ type: 'box.set', diagramId: command.diagramId, boxes: restore })
+      return ok(setDiagram(model, command.diagramId, { ...diagram, boxes }), transaction(undo, meta))
+    }
+
+    case 'box.remove': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const boxes = { ...boxesOf(diagram) }
+      const restore: DomainGroupRect[] = []
+      for (const id of command.groupIds) {
+        if (!boxes[id]) continue
+        restore.push(boxes[id])
+        delete boxes[id]
+      }
+      if (!restore.length) return ok(model, NOTHING)
+      return ok(
+        setDiagram(model, command.diagramId, { ...diagram, boxes }),
+        { type: 'box.set', diagramId: command.diagramId, boxes: restore },
+      )
+    }
+
+    case 'board.set': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const { row, inverse } = patched(diagram, command.patch as Partial<Diagram>)
+      return ok(
+        setDiagram(model, command.diagramId, row),
+        { type: 'board.set', diagramId: command.diagramId, patch: inverse as BoardPatch },
       )
     }
 
@@ -344,16 +457,6 @@ export function apply(model: Model, command: Command): ApplyResult {
       )
     }
 
-    case 'layout.set': {
-      const diagram = model.diagrams[command.diagramId]
-      if (!diagram) return gone
-      const { row, inverse } = patched(diagram, { layoutConfig: command.layoutConfig })
-      return ok(
-        setDiagram(model, command.diagramId, row),
-        { type: 'layout.set', diagramId: command.diagramId, layoutConfig: inverse.layoutConfig },
-      )
-    }
-
     // --- dashed groups (ADR-0012 §6) ----------------------------------------
     case 'group.set': {
       const diagram = model.diagrams[command.diagramId]
@@ -392,19 +495,33 @@ export function apply(model: Model, command: Command): ApplyResult {
       if (!diagram) return gone
       const held = groupsOf(diagram)
       let rows: Rows<DiagramGroup> = { by: held, order: diagram.order.groups }
+      const boxes = { ...boxesOf(diagram) }
       const restore: DiagramGroup[] = []
       const restoreAt: number[] = []
+      const geometry: DomainGroupRect[] = []
       // Ascending, so putting them back one at a time lands each on its own index.
       for (const id of diagram.order.groups) {
         if (!command.groupIds.includes(id)) continue
         restore.push(held[id])
         restoreAt.push(diagram.order.groups.indexOf(id))
+        if (boxes[id]) geometry.push(boxes[id])
+        delete boxes[id]
         rows = drop(rows.by, rows.order, id)
       }
       if (!restore.length) return ok(model, NOTHING)
-      return ok(
-        setDiagram(model, command.diagramId, withGroups(diagram, rows)),
+      const undo: Command[] = [
         { type: 'group.set', diagramId: command.diagramId, groups: restore, at: restoreAt },
+      ]
+      if (geometry.length) undo.push({ type: 'box.set', diagramId: command.diagramId, boxes: geometry })
+      return ok(
+        setDiagram(
+          model,
+          command.diagramId,
+          geometry.length
+            ? { ...withGroups(diagram, rows), boxes }
+            : withGroups(diagram, rows),
+        ),
+        transaction(undo, meta),
       )
     }
 
@@ -542,8 +659,9 @@ export function applyAll(model: Model, commands: Command[], meta: CommandMeta = 
 
 /**
  * Deleting an element takes with it every relation that ends on it, its
- * placement on every diagram, the routes of those relations, and any container
- * view that was about it — which is exactly what the batch did, spelled out.
+ * membership and node on every diagram, the routes of those relations, and any
+ * container view that was about it — which is exactly what the batch did,
+ * spelled out.
  *
  * The inverse is a transaction that puts each of those back at the index it was
  * at, in the order that keeps the model referentially whole at every step:
@@ -589,15 +707,22 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
 
   for (const diagramId of next.order.diagrams) {
     const diagram = next.diagrams[diagramId]
-    if (!diagram.placements[id]) continue
+    if (!diagram.members[id]) continue
     undo.push({
-      type: 'placement.set',
+      type: 'member.set',
       diagramId,
-      placements: [diagram.placements[id]],
-      at: [diagram.order.placements.indexOf(id)],
+      members: [diagram.members[id]],
+      at: [diagram.order.members.indexOf(id)],
     })
-    next = setDiagram(
-      next, diagramId, withPlacements(diagram, drop(diagram.placements, diagram.order.placements, id)))
+    if (diagram.nodes[id]) {
+      undo.push({ type: 'node.set', diagramId, nodes: [diagram.nodes[id]] })
+    }
+    const nodes = { ...diagram.nodes }
+    delete nodes[id]
+    next = setDiagram(next, diagramId, {
+      ...withMembers(diagram, drop(diagram.members, diagram.order.members, id)),
+      nodes,
+    })
   }
 
   return { ok: true, model: next, inverse: transaction(undo, meta) }

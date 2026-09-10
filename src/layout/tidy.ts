@@ -2,8 +2,8 @@ import type {
   DesignDiagram,
   DesignElement,
   DesignModel,
-  DiagramLayoutConfig,
-  DiagramPlacement,
+  Geometry,
+  PlacedNode,
   DomainGroupRect,
   EdgeRoute,
   ElementId,
@@ -15,14 +15,49 @@ import {
   NODE_SIZES,
   domainGroupForPoint,
   domainGroupRectMap,
+  memberOf,
+  nodeGeometryOf,
+  placedNodes,
   placementSize,
 } from '../model/placement';
 import { canvasRect, clampCanvasSize, LAYER7_CANVAS, zoneRect, zoneSizes } from '../model/zones';
 import { layoutGraph, type ElkChild, type ElkEdgeSpec, type LayoutOptions } from './elkLayout';
 import { edgeLabelSize } from './edgeLabelSize';
 import { manualRouteIds } from '../model/routes';
+import type { BoardGeometry } from '../model/zones';
+
+/**
+ * What a layout pass reads off a view's geometry: the board, the bands, and
+ * the group boxes it re-hugs. Not the node positions — those arrive as
+ * placements, because a pass is given the board it is laying out.
+ */
+type BoardLayout = BoardGeometry & Pick<Geometry, 'groups'>;
 import type { SkippedTier } from './libavoidRouter';
 import { routeDiagramEdges } from './routeOnly';
+
+/**
+ * The board a routing pass should see: this view with a laid-out result on it.
+ *
+ * A tidy answers with placed nodes and group boxes, and the router wants a
+ * whole diagram — so this is where the answer is put back into the two halves
+ * ADR-0012 §6 keeps apart, in one place rather than at every call.
+ */
+function boardWith(
+  diagram: DesignDiagram,
+  placed: readonly PlacedNode[],
+  laid: { domainGroups?: DomainGroupRect[]; canvas?: { width: number; height: number } } = {},
+): DesignDiagram {
+  return {
+    ...diagram,
+    members: placed.map(memberOf),
+    geometry: {
+      ...diagram.geometry,
+      nodes: placed.map(nodeGeometryOf),
+      ...(laid.canvas !== undefined ? { canvas: laid.canvas } : {}),
+      ...(laid.domainGroups !== undefined ? { groups: laid.domainGroups } : {}),
+    },
+  };
+}
 
 /**
  * "Tidy" auto-layout. Zone grammar is preserved — bands re-flow as rows or
@@ -122,7 +157,7 @@ export const DEFAULT_TIDY_OPTIONS: TidyOptions = {
  * never disagree with them about whose line a route is.
  */
 export function preservedRouteIds(
-  diagram: Pick<DesignDiagram, 'edgeRoutes'>,
+  diagram: Pick<DesignDiagram, 'lines' | 'geometry'>,
   pinAnchorPoints: boolean,
 ): ReadonlySet<string> {
   if (!pinAnchorPoints) return EMPTY_PRESERVED;
@@ -178,13 +213,13 @@ function layoutOptionsFor(
  * What one Tidy run commits: element positions plus, for layer7, the landscape
  * domain-group rects re-sized to hug their laid-out members. `domainGroups` is
  * absent for container diagrams (their one boundary is an ordinary placement).
- * The rects are MERGED into `layoutConfig.domainGroups` by id (create-or-resize:
+ * The rects are MERGED into `geometry.groups` by id (create-or-resize:
  * an existing rect is resized in place, a new group's is appended) — see
  * `applyTidyResult`. Each rect is derived from its members' final bounds, so it
  * follows them even when ELK drops compound treatment for the group.
  */
 export interface TidyResult {
-  placements: DiagramPlacement[];
+  placements: PlacedNode[];
   domainGroups?: DomainGroupRect[];
   /**
    * Layer7 only: the board size the landscape needs. The canvas GROWS to fit a
@@ -266,44 +301,44 @@ export async function tidyLayer7(
   options: TidyOptions = DEFAULT_TIDY_OPTIONS,
 ): Promise<TidyResult> {
   const elementsById = new Map(model.elements.map((e) => [e.id, e]));
-  const byZone = new Map<Layer7Zone, DiagramPlacement[]>();
-  for (const placement of diagram.placements) {
-    if (!elementsById.has(placement.elementId)) continue;
+  const byZone = new Map<Layer7Zone, PlacedNode[]>();
+  for (const placement of placedNodes(diagram)) {
+    if (!elementsById.has(placement.id)) continue;
     const zone = placement.zone ?? 'landscape';
     const list = byZone.get(zone) ?? [];
     list.push(placement);
     byZone.set(zone, list);
   }
 
-  const layoutConfig = diagram.layoutConfig;
+  const geometry = diagram.geometry;
   const landscape = await tidyLandscape(
     model,
     byZone.get('landscape') ?? [],
     elementsById,
-    layoutConfig,
+    geometry,
     options,
   );
   // Lay the bands out against the GROWN canvas so they anchor to the new board
   // edges (zones.ts derives band rects from the canvas size).
-  const grownConfig = { ...(layoutConfig ?? {}), canvas: landscape.canvas };
+  const grownConfig = { ...(geometry ?? {}), canvas: landscape.canvas };
   // Position each band member at the barycentre (mean centre) of the LANDSCAPE
   // nodes it connects to, so an actor sits roughly above/beside the node it talks
-  // to instead of bunched at the band's start inset. `landscape.placements` carry
+  // to instead of bunched at the band's start inset. `placedNodes(landscape)` carry
   // FINAL canvas coords, so target centres and the band members share one
   // coordinate space. Ordering falls out of position (declump preserves it), except
   // where two members want the SAME position — see the tie-break in `flowBand`.
   const landscapePos = new Map<ElementId, { x: number; y: number; width: number; height: number }>();
   for (const p of landscape.placements) {
-    const element = elementsById.get(p.elementId);
+    const element = elementsById.get(p.id);
     if (!element) continue;
     const size = placementSize(element.kind, p);
-    landscapePos.set(p.elementId, { x: p.x, y: p.y, width: size.width, height: size.height });
+    landscapePos.set(p.id, { x: p.x, y: p.y, width: size.width, height: size.height });
   }
   const actors = byZone.get('actors') ?? [];
   const management = byZone.get('management') ?? [];
   const inputChannels = byZone.get('inputChannels') ?? [];
   const externalSystems = byZone.get('externalSystems') ?? [];
-  const placements: DiagramPlacement[] = [
+  const placements: PlacedNode[] = [
     ...flowBand('actors', actors, elementsById, 'row', grownConfig, bandTargets(model, actors, landscapePos, 'row')),
     ...flowBand('management', management, elementsById, 'row', grownConfig, bandTargets(model, management, landscapePos, 'row')),
     ...flowBand('inputChannels', inputChannels, elementsById, 'column', grownConfig, bandTargets(model, inputChannels, landscapePos, 'column')),
@@ -313,7 +348,7 @@ export async function tidyLayer7(
 
   // Route LAST, against the settled board: the placements the landscape pass and
   // the band re-flow just produced, and the group boxes this run is about to
-  // commit — not the stale ones still in `layoutConfig`.
+  // commit — not the stale ones still in `geometry`.
   //
   // `'clear'` is the load-bearing argument, and it is where Tidy MUST diverge from
   // route-only. Route-only keeps the stored route of an edge the router declines,
@@ -323,15 +358,7 @@ export async function tidyLayer7(
   // through a node that moved into it.
   const { edgeRoutes, routingError, skipped } = await routeOrDegrade(
     model,
-    {
-      ...diagram,
-      placements,
-      layoutConfig: {
-        ...(layoutConfig ?? {}),
-        canvas: landscape.canvas,
-        domainGroups: landscape.domainGroups,
-      },
-    },
+    boardWith(diagram, placements, landscape),
     'clear',
     undefined,
     // Item 5. `'clear'` above stays correct for the routes this pass owns; this
@@ -379,7 +406,7 @@ export interface BandTarget {
  */
 export function bandTargets(
   model: DesignModel,
-  placements: DiagramPlacement[],
+  placements: PlacedNode[],
   landscapePos: Map<ElementId, { x: number; y: number; width: number; height: number }>,
   direction: 'row' | 'column',
 ): Map<ElementId, BandTarget> {
@@ -405,7 +432,7 @@ export function bandTargets(
   for (const placement of placements) {
     const flow: number[] = [];
     const cross: number[] = [];
-    for (const otherId of neighbours.get(placement.elementId) ?? []) {
+    for (const otherId of neighbours.get(placement.id) ?? []) {
       const land = landscapePos.get(otherId);
       if (!land) continue;
       const centreX = land.x + land.width / 2;
@@ -414,7 +441,7 @@ export function bandTargets(
       cross.push(direction === 'row' ? centreY : centreX);
     }
     if (flow.length === 0) continue; // no landscape target — omit
-    targets.set(placement.elementId, { centre: mean(flow), crossCentre: mean(cross) });
+    targets.set(placement.id, { centre: mean(flow), crossCentre: mean(cross) });
   }
   return targets;
 }
@@ -439,22 +466,22 @@ const TARGET_TIE_EPSILON = 1;
  */
 function flowBand(
   zone: Layer7Zone,
-  placements: DiagramPlacement[],
+  placements: PlacedNode[],
   elementsById: Map<ElementId, DesignElement>,
   direction: 'row' | 'column',
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardLayout,
   targets?: Map<ElementId, BandTarget>,
-): DiagramPlacement[] {
-  const rect = zoneRect(zone, layoutConfig);
+): PlacedNode[] {
+  const rect = zoneRect(zone, geometry);
   const bandStart = direction === 'row' ? rect.x : rect.y;
   const bandLength = direction === 'row' ? rect.width : rect.height;
-  const fullSizeOf = (p: DiagramPlacement) => {
-    const element = elementsById.get(p.elementId) as DesignElement;
+  const fullSizeOf = (p: PlacedNode) => {
+    const element = elementsById.get(p.id) as DesignElement;
     const size = placementSize(element.kind, p);
     return direction === 'row' ? size.width : size.height;
   };
-  const crossAxis = (placement: DiagramPlacement, start: number): DiagramPlacement => {
-    const element = elementsById.get(placement.elementId) as DesignElement;
+  const crossAxis = (placement: PlacedNode, start: number): PlacedNode => {
+    const element = elementsById.get(placement.id) as DesignElement;
     const size = placementSize(element.kind, placement);
     return direction === 'row'
       ? { ...placement, x: start, y: rect.y + (rect.height - size.height) / 2 }
@@ -463,7 +490,7 @@ function flowBand(
 
   // Legacy pack path (no targets): current order, consecutive from the inset.
   if (!targets) {
-    const axis = (p: DiagramPlacement) => (direction === 'row' ? p.x : p.y);
+    const axis = (p: PlacedNode) => (direction === 'row' ? p.x : p.y);
     const sorted = [...placements].sort((a, b) => axis(a) - axis(b));
     let cursor = bandStart + BAND_INSET;
     return sorted.map((placement) => {
@@ -489,7 +516,7 @@ function flowBand(
     const full = fullSizeOf(placement);
     const half = full / 2;
     const currentCentre = (direction === 'row' ? placement.x : placement.y) + half;
-    const target = targets.get(placement.elementId);
+    const target = targets.get(placement.id);
     return {
       placement,
       full,
@@ -568,27 +595,27 @@ const INSET_Y = 32;
  */
 async function layoutGroupInPlace(
   model: DesignModel,
-  members: DiagramPlacement[],
+  members: PlacedNode[],
   elementsById: Map<ElementId, DesignElement>,
   groupId: string,
   box: Rect,
   options: TidyOptions,
 ): Promise<
   | {
-      placements: DiagramPlacement[];
+      placements: PlacedNode[];
       rect: DomainGroupRect;
     }
   | undefined
 > {
   if (members.length === 0) return undefined;
-  const sizeOf = (placement: DiagramPlacement) =>
-    placementSize((elementsById.get(placement.elementId) as DesignElement).kind, placement);
+  const sizeOf = (placement: PlacedNode) =>
+    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
 
   const children: ElkChild[] = members.map((placement) => ({
-    id: placement.elementId,
+    id: placement.id,
     ...sizeOf(placement),
   }));
-  const memberIds = new Set(members.map((placement) => placement.elementId));
+  const memberIds = new Set(members.map((placement) => placement.id));
   const edges: ElkEdgeSpec[] = model.relations
     .filter((c) => memberIds.has(c.sourceId) && memberIds.has(c.targetId))
     .map((c) => {
@@ -614,7 +641,7 @@ async function layoutGroupInPlace(
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const placement of members) {
-    const pos = positions.get(placement.elementId);
+    const pos = positions.get(placement.id);
     if (!pos) continue;
     const size = sizeOf(placement);
     minX = Math.min(minX, pos.x);
@@ -629,7 +656,7 @@ async function layoutGroupInPlace(
   // width/height follow the members.
   const offset = { x: box.x + GROUP_PAD.left - minX, y: box.y + GROUP_PAD.top - minY };
   const placements = members.map((placement) => {
-    const pos = positions.get(placement.elementId);
+    const pos = positions.get(placement.id);
     if (!pos) return placement;
     // Record the membership on the placement too — a node that visually sits in
     // the box but carried a stale or absent `group` is now stored as the
@@ -664,9 +691,9 @@ async function layoutGroupInPlace(
  */
 function tidyCanvas(
   needed: { width: number; height: number },
-  layoutConfig: DiagramLayoutConfig | undefined,
+  geometry: BoardLayout | undefined,
 ): { width: number; height: number } {
-  const board = canvasRect(layoutConfig);
+  const board = canvasRect(geometry);
   return clampCanvasSize({
     width: Math.max(needed.width, Math.min(LAYER7_CANVAS.width, board.width)),
     height: Math.max(needed.height, Math.min(LAYER7_CANVAS.height, board.height)),
@@ -745,7 +772,7 @@ export const SETTLE_ROUNDS = 32;
  */
 export function settleBoard(
   neededFor: (sizes: Record<ResizableZone, number>) => { width: number; height: number },
-  layoutConfig: DiagramLayoutConfig | undefined,
+  geometry: BoardLayout | undefined,
   path: string,
 ): {
   canvas: { width: number; height: number };
@@ -753,10 +780,10 @@ export function settleBoard(
   settled: boolean;
 } {
   const bandsOn = (canvas: { width: number; height: number }) =>
-    zoneSizes({ ...(layoutConfig ?? {}), canvas });
+    zoneSizes({ ...(geometry ?? {}), canvas });
   const roundFrom = (canvas: { width: number; height: number }) =>
-    tidyCanvas(neededFor(bandsOn(canvas)), layoutConfig);
-  const board = canvasRect(layoutConfig);
+    tidyCanvas(neededFor(bandsOn(canvas)), geometry);
+  const board = canvasRect(geometry);
   let canvas = { width: board.width, height: board.height };
   let settled = false;
   for (let round = 0; round < SETTLE_ROUNDS; round++) {
@@ -798,21 +825,21 @@ export function settleBoard(
  */
 async function tidyLandscapePinned(
   model: DesignModel,
-  placements: DiagramPlacement[],
+  placements: PlacedNode[],
   elementsById: Map<ElementId, DesignElement>,
-  layoutConfig: DiagramLayoutConfig | undefined,
+  geometry: BoardLayout | undefined,
   options: TidyOptions,
 ): Promise<{
-  placements: DiagramPlacement[];
+  placements: PlacedNode[];
   domainGroups: DomainGroupRect[];
   canvas: { width: number; height: number };
 }> {
-  const rects = domainGroupRectMap(layoutConfig);
-  const sizeOf = (placement: DiagramPlacement) =>
-    placementSize((elementsById.get(placement.elementId) as DesignElement).kind, placement);
+  const rects = domainGroupRectMap(geometry?.groups);
+  const sizeOf = (placement: PlacedNode) =>
+    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
 
-  const byGroup = new Map<string, DiagramPlacement[]>();
-  const result: DiagramPlacement[] = [];
+  const byGroup = new Map<string, PlacedNode[]>();
+  const result: PlacedNode[] = [];
   for (const placement of placements) {
     if (!placement.group) {
       result.push(placement); // loose node — stays exactly where it is
@@ -864,7 +891,7 @@ async function tidyLandscapePinned(
       width: maxX + sizes.externalSystems + INSET_X,
       height: maxY + sizes.management + INSET_Y,
     }),
-    layoutConfig,
+    geometry,
     // This board reaches the user, so an exhausted settle here IS the staircase
     // bug — but `neededFor` is monotone in the bands and the derived cap covers
     // it, so that would be a broken invariant to fix, not a case to branch on.
@@ -898,21 +925,21 @@ async function tidyLandscapePinned(
  */
 async function tidyLandscapeGroupsAsLeaves(
   model: DesignModel,
-  placements: DiagramPlacement[],
+  placements: PlacedNode[],
   elementsById: Map<ElementId, DesignElement>,
-  layoutConfig: DiagramLayoutConfig | undefined,
+  geometry: BoardLayout | undefined,
   options: TidyOptions,
 ): Promise<{
-  placements: DiagramPlacement[];
+  placements: PlacedNode[];
   domainGroups: DomainGroupRect[];
   canvas: { width: number; height: number };
 }> {
-  const sizeOf = (placement: DiagramPlacement) =>
-    placementSize((elementsById.get(placement.elementId) as DesignElement).kind, placement);
-  const rects = domainGroupRectMap(layoutConfig);
+  const sizeOf = (placement: PlacedNode) =>
+    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
+  const rects = domainGroupRectMap(geometry?.groups);
 
-  const byGroup = new Map<string, DiagramPlacement[]>();
-  const loose: DiagramPlacement[] = [];
+  const byGroup = new Map<string, PlacedNode[]>();
+  const loose: PlacedNode[] = [];
   for (const placement of placements) {
     if (!placement.group) {
       loose.push(placement);
@@ -924,7 +951,7 @@ async function tidyLandscapeGroupsAsLeaves(
   }
 
   /** The box a group occupies today: its stored rect, or its members' bounds padded. */
-  const currentBox = (name: string, members: DiagramPlacement[]): Rect => {
+  const currentBox = (name: string, members: PlacedNode[]): Rect => {
     const stored = rects.get(name);
     if (stored && stored.width > 0 && stored.height > 0) return stored;
     let minX = Infinity;
@@ -955,7 +982,7 @@ async function tidyLandscapeGroupsAsLeaves(
       width: box.width,
       height: box.height,
     })),
-    ...loose.map((placement) => ({ id: placement.elementId, ...sizeOf(placement) })),
+    ...loose.map((placement) => ({ id: placement.id, ...sizeOf(placement) })),
   ];
 
   // Edges are lifted to the LEAF that stands in for each member's group, so a
@@ -964,12 +991,12 @@ async function tidyLandscapeGroupsAsLeaves(
   // do with it, and the members it connects are not moving relative to each other.
   const groupOfMember = new Map<ElementId, string>();
   for (const [name, members] of byGroup) {
-    for (const member of members) groupOfMember.set(member.elementId, name);
+    for (const member of members) groupOfMember.set(member.id, name);
   }
   const nodeFor = (id: ElementId): string | undefined => {
     const group = groupOfMember.get(id);
     if (group) return `${GROUP_PREFIX}${group}`;
-    return loose.some((p) => p.elementId === id) ? id : undefined;
+    return loose.some((p) => p.id === id) ? id : undefined;
   };
   const edges: ElkEdgeSpec[] = [];
   for (const connection of model.relations) {
@@ -983,7 +1010,7 @@ async function tidyLandscapeGroupsAsLeaves(
   const { positions } = await layoutGraph(
     children,
     edges,
-    layoutOptionsFor(options, zoneRect('landscape', layoutConfig), children.length),
+    layoutOptionsFor(options, zoneRect('landscape', geometry), children.length),
   );
 
   // Centre the arranged block in the landscape zone, exactly as the (free, free)
@@ -1000,14 +1027,14 @@ async function tidyLandscapeGroupsAsLeaves(
     maxX = Math.max(maxX, pos.x + child.width);
     maxY = Math.max(maxY, pos.y + child.height);
   }
-  const sizes = zoneSizes(layoutConfig);
+  const sizes = zoneSizes(geometry);
   const blockWidth = Number.isFinite(minX) ? maxX - minX : 0;
   const blockHeight = Number.isFinite(minY) ? maxY - minY : 0;
   const estimate = clampCanvasSize({
     width: blockWidth + 2 * INSET_X + sizes.inputChannels + sizes.externalSystems,
     height: blockHeight + 2 * INSET_Y + sizes.actors + sizes.management,
   });
-  const zone = zoneRect('landscape', { ...(layoutConfig ?? {}), canvas: estimate });
+  const zone = zoneRect('landscape', { ...(geometry ?? {}), canvas: estimate });
   const offset = Number.isFinite(minX)
     ? {
         x: zone.x + Math.max((zone.width - blockWidth) / 2, INSET_X) - minX,
@@ -1015,7 +1042,7 @@ async function tidyLandscapeGroupsAsLeaves(
       }
     : { x: 0, y: 0 };
 
-  const result: DiagramPlacement[] = [];
+  const result: PlacedNode[] = [];
   const domainGroups: DomainGroupRect[] = [];
   for (const [name, members] of byGroup) {
     const box = boxes.get(name) as Rect;
@@ -1035,7 +1062,7 @@ async function tidyLandscapeGroupsAsLeaves(
     domainGroups.push({ id: name, x: box.x + dx, y: box.y + dy, width: box.width, height: box.height });
   }
   for (const placement of loose) {
-    const pos = positions.get(placement.elementId);
+    const pos = positions.get(placement.id);
     result.push(
       pos ? { ...placement, x: pos.x + offset.x, y: pos.y + offset.y } : placement,
     );
@@ -1069,16 +1096,16 @@ async function tidyLandscapeGroupsAsLeaves(
  * landscape: the bands re-flow against the canvas and every edge is re-routed.
  */
 function tidyLandscapeFullyPinned(
-  placements: DiagramPlacement[],
+  placements: PlacedNode[],
   elementsById: Map<ElementId, DesignElement>,
-  layoutConfig: DiagramLayoutConfig | undefined,
+  geometry: BoardLayout | undefined,
 ): {
-  placements: DiagramPlacement[];
+  placements: PlacedNode[];
   domainGroups: DomainGroupRect[];
   canvas: { width: number; height: number };
 } {
-  const sizes = zoneSizes(layoutConfig);
-  const domainGroups = [...domainGroupRectMap(layoutConfig).entries()].map(([id, rect]) => ({
+  const sizes = zoneSizes(geometry);
+  const domainGroups = [...domainGroupRectMap(geometry?.groups).entries()].map(([id, rect]) => ({
     id,
     ...rect,
   }));
@@ -1090,7 +1117,7 @@ function tidyLandscapeFullyPinned(
   }
   for (const placement of placements) {
     const size = placementSize(
-      (elementsById.get(placement.elementId) as DesignElement).kind,
+      (elementsById.get(placement.id) as DesignElement).kind,
       placement,
     );
     maxX = Math.max(maxX, placement.x + size.width);
@@ -1108,19 +1135,19 @@ function tidyLandscapeFullyPinned(
 
 async function tidyLandscape(
   model: DesignModel,
-  placements: DiagramPlacement[],
+  placements: PlacedNode[],
   elementsById: Map<ElementId, DesignElement>,
-  layoutConfig: DiagramLayoutConfig | undefined,
+  geometry: BoardLayout | undefined,
   options: TidyOptions,
 ): Promise<{
-  placements: DiagramPlacement[];
+  placements: PlacedNode[];
   domainGroups: DomainGroupRect[];
   canvas: { width: number; height: number };
 }> {
   // The four-cell matrix (see TidyOptions.pinGroupContents), resolved once here so
   // every path below knows exactly which cell it is in.
   if (options.pinGroups && options.pinGroupContents) {
-    const fixed = tidyLandscapeFullyPinned(placements, elementsById, layoutConfig);
+    const fixed = tidyLandscapeFullyPinned(placements, elementsById, geometry);
     return fixed;
   }
   if (options.pinGroups) {
@@ -1128,7 +1155,7 @@ async function tidyLandscape(
       model,
       placements,
       elementsById,
-      layoutConfig,
+      geometry,
       options,
     );
     return pinned;
@@ -1138,7 +1165,7 @@ async function tidyLandscape(
       model,
       placements,
       elementsById,
-      layoutConfig,
+      geometry,
       options,
     );
     return asLeaves;
@@ -1155,7 +1182,7 @@ async function tidyLandscape(
       domainGroups: [],
       // A constant `neededFor` is its own fixed point whatever the bands do, so
       // this call reaches it on round two and cannot exhaust.
-      canvas: settleBoard(() => ({ width: 0, height: 0 }), layoutConfig, 'tidyLandscape/empty')
+      canvas: settleBoard(() => ({ width: 0, height: 0 }), geometry, 'tidyLandscape/empty')
         .canvas,
     };
   }
@@ -1163,9 +1190,9 @@ async function tidyLandscape(
   const byGroup = new Map<string, ElkChild[]>();
   const loose: ElkChild[] = [];
   for (const placement of placements) {
-    const element = elementsById.get(placement.elementId) as DesignElement;
+    const element = elementsById.get(placement.id) as DesignElement;
     const size = placementSize(element.kind, placement);
-    const child: ElkChild = { id: placement.elementId, ...size };
+    const child: ElkChild = { id: placement.id, ...size };
     if (placement.group) {
       const members = byGroup.get(placement.group) ?? [];
       members.push(child);
@@ -1199,7 +1226,7 @@ async function tidyLandscape(
     ...loose,
   ];
 
-  const memberIds = new Set(placements.map((p) => p.elementId));
+  const memberIds = new Set(placements.map((p) => p.id));
   const edges: ElkEdgeSpec[] = model.relations
     .filter((c) => memberIds.has(c.sourceId) && memberIds.has(c.targetId))
     .map((c) => {
@@ -1217,7 +1244,7 @@ async function tidyLandscape(
   const { positions } = await layoutGraph(
     children,
     edges,
-    layoutOptionsFor(options, zoneRect('landscape', layoutConfig), placements.length),
+    layoutOptionsFor(options, zoneRect('landscape', geometry), placements.length),
   );
 
   type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
@@ -1229,8 +1256,8 @@ async function tidyLandscape(
     b.maxY = Math.max(b.maxY, y + h);
     return b;
   };
-  const sizeOf = (placement: DiagramPlacement) =>
-    placementSize((elementsById.get(placement.elementId) as DesignElement).kind, placement);
+  const sizeOf = (placement: PlacedNode) =>
+    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
 
   // Per-group member bounds in ELK's frame (pre-offset); loose nodes bound directly.
   // A group's box is member-derived (so a group still gets a box even when cross-
@@ -1238,7 +1265,7 @@ async function tidyLandscape(
   const elkGroupBounds = new Map<string, Bounds>();
   let block: Bounds | undefined;
   for (const placement of placements) {
-    const pos = positions.get(placement.elementId);
+    const pos = positions.get(placement.id);
     if (!pos) continue;
     const size = sizeOf(placement);
     const name = placement.group;
@@ -1270,13 +1297,13 @@ async function tidyLandscape(
       width: blockWidth + 2 * INSET_X + sizes.inputChannels + sizes.externalSystems,
       height: blockHeight + 2 * INSET_Y + sizes.actors + sizes.management,
     }),
-    layoutConfig,
+    geometry,
     // Only the bands on this board are used, to centre the block; the board the
     // caller gets is settled again below. Exhausting here misplaces the block,
     // it does not hand back a canvas that moves on the next press.
     'tidyLandscape/centring-estimate',
   );
-  const zone = zoneRect('landscape', { ...(layoutConfig ?? {}), canvas: estimate });
+  const zone = zoneRect('landscape', { ...(geometry ?? {}), canvas: estimate });
   const offset = block
     ? {
         x: zone.x + Math.max((zone.width - blockWidth) / 2, INSET_X) - block.minX,
@@ -1310,7 +1337,7 @@ async function tidyLandscape(
     maxY = Math.max(maxY, g.y + g.height);
   }
   for (const placement of placements) {
-    const pos = positions.get(placement.elementId);
+    const pos = positions.get(placement.id);
     if (!pos) continue;
     const size = sizeOf(placement);
     maxX = Math.max(maxX, pos.x + offset.x + size.width);
@@ -1321,7 +1348,7 @@ async function tidyLandscape(
       width: maxX + sizes.externalSystems + INSET_X,
       height: maxY + sizes.management + INSET_Y,
     }),
-    layoutConfig,
+    geometry,
     // The board the caller actually gets, and the same story as the pinned path:
     // monotone `neededFor` inside the cap, so `settled` is discarded rather than
     // branched on and the warning carries it.
@@ -1330,7 +1357,7 @@ async function tidyLandscape(
 
   return {
     placements: placements.map((placement) => {
-      const pos = positions.get(placement.elementId);
+      const pos = positions.get(placement.id);
       if (!pos) return placement;
       return { ...placement, x: pos.x + offset.x, y: pos.y + offset.y };
     }),
@@ -1358,13 +1385,13 @@ export async function tidyGroup(
   options: TidyOptions = DEFAULT_TIDY_OPTIONS,
 ): Promise<TidyResult> {
   const empty: TidyResult = { placements: [], partial: true };
-  const groups = domainGroupRectMap(diagram.layoutConfig);
+  const groups = domainGroupRectMap(diagram.geometry?.groups);
   const box = groups.get(groupId);
   if (!box) return empty;
 
   const elementsById = new Map(model.elements.map((e) => [e.id, e]));
-  const members = diagram.placements.filter((placement) => {
-    const element = elementsById.get(placement.elementId);
+  const members = placedNodes(diagram).filter((placement) => {
+    const element = elementsById.get(placement.id);
     if (!element || (placement.zone ?? 'landscape') !== 'landscape') return false;
     const size = placementSize(element.kind, placement);
     const centre = { x: placement.x + size.width / 2, y: placement.y + size.height / 2 };
@@ -1386,22 +1413,15 @@ export async function tidyGroup(
   // `memberIds`. Their inside endpoint moved, so a stored route may now look stale,
   // but a group tidy must not reach outside the box, and the result is `partial`, so
   // anything absent here is left untouched.
-  const memberIds = new Set(laid.placements.map((placement) => placement.elementId));
-  const laidById = new Map(laid.placements.map((placement) => [placement.elementId, placement]));
+  const memberIds = new Set(laid.placements.map((placement) => placement.id));
+  const laidById = new Map(laid.placements.map((placement) => [placement.id, placement]));
   const { edgeRoutes, routingError, skipped } = await routeOrDegrade(
     model,
-    {
-      ...diagram,
-      placements: diagram.placements.map(
-        (placement) => laidById.get(placement.elementId) ?? placement,
-      ),
-      layoutConfig: {
-        ...(diagram.layoutConfig ?? {}),
-        domainGroups: (diagram.layoutConfig?.domainGroups ?? []).map((g) =>
-          g.id === groupId ? rect : g,
-        ),
-      },
-    },
+    boardWith(
+      diagram,
+      placedNodes(diagram).map((placement) => laidById.get(placement.id) ?? placement),
+      { domainGroups: (diagram.geometry?.groups ?? []).map((g) => (g.id === groupId ? rect : g)) },
+    ),
     'clear',
     memberIds,
     preservedRouteIds(diagram, options.pinAnchorPoints),
@@ -1426,8 +1446,8 @@ export async function tidyContainer(
   const appId = diagram.applicationElementId;
   const components: ElkChild[] = [];
   const context: ElkChild[] = [];
-  for (const placement of diagram.placements) {
-    const element = elementsById.get(placement.elementId);
+  for (const placement of placedNodes(diagram)) {
+    const element = elementsById.get(placement.id);
     if (!element || element.id === appId) continue;
     const child: ElkChild = { id: element.id, ...placementSize(element.kind, placement) };
     if (element.kind === 'component' && element.parentApplicationId === appId) {
@@ -1444,7 +1464,7 @@ export async function tidyContainer(
   //     components inside keep their arrangement and only the surrounding context
   //     nodes are re-placed;
   //   otherwise → today's compound node, components laid out inside it.
-  const boundaryPlacement = diagram.placements.find((p) => p.elementId === appId);
+  const boundaryPlacement = placedNodes(diagram).find((p) => p.id === appId);
   const boundarySize = boundaryPlacement
     ? placementSize('application', boundaryPlacement)
     : { width: 0, height: 0 };
@@ -1465,7 +1485,7 @@ export async function tidyContainer(
     );
   }
 
-  const placedIds = new Set(diagram.placements.map((p) => p.elementId));
+  const placedIds = new Set(placedNodes(diagram).map((p) => p.id));
   // With the contents pinned the components are NOT in the graph — the boundary
   // is a single leaf — so an edge touching one has to be lifted to the boundary,
   // or ELK rejects the whole graph for referencing a shape that does not exist.
@@ -1506,22 +1526,22 @@ export async function tidyContainer(
       ? { x: boundaryPos.x - boundaryPlacement.x, y: boundaryPos.y - boundaryPlacement.y }
       : undefined;
   const componentIds = new Set(
-    diagram.placements
-      .map((p) => elementsById.get(p.elementId))
+    placedNodes(diagram)
+      .map((p) => elementsById.get(p.id))
       .filter((e) => e?.kind === 'component' && e.parentApplicationId === appId)
       .map((e) => (e as DesignElement).id),
   );
 
-  const placements = diagram.placements.map((placement) => {
-    if (pinnedDelta && componentIds.has(placement.elementId)) {
+  const placements = placedNodes(diagram).map((placement) => {
+    if (pinnedDelta && componentIds.has(placement.id)) {
       return { ...placement, x: placement.x + pinnedDelta.x, y: placement.y + pinnedDelta.y };
     }
-    const pos = positions.get(placement.elementId);
+    const pos = positions.get(placement.id);
     if (!pos) return placement;
-    if (placement.elementId === appId) {
+    if (placement.id === appId) {
       // Size kept verbatim when the contents are pinned; otherwise ELK's compound
       // size, which hugs the components it just laid out.
-      const size = options.pinGroupContents ? boundarySize : groupSizes.get(placement.elementId);
+      const size = options.pinGroupContents ? boundarySize : groupSizes.get(placement.id);
       return { ...placement, x: pos.x, y: pos.y, width: size?.width, height: size?.height };
     }
     return { ...placement, x: pos.x, y: pos.y };
@@ -1536,7 +1556,7 @@ export async function tidyContainer(
   // stored route for an edge the router declined is stale geometry.
   const { edgeRoutes, routingError, skipped } = await routeOrDegrade(
     model,
-    { ...diagram, placements },
+    boardWith(diagram, placements),
     'clear',
     undefined,
     preservedRouteIds(diagram, options.pinAnchorPoints),

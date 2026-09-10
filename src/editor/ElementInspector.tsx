@@ -1,4 +1,5 @@
 import Autocomplete from '@mui/material/Autocomplete';
+import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
@@ -188,7 +189,7 @@ export function ElementInspector(props: ElementInspectorProps) {
     nameRef.current?.select();
   }, [renameRequest, element.id, readOnly]);
 
-  const placement = props.diagram.placements.find((p) => p.elementId === element.id);
+  const placement = placedNodes(props.diagram).find((p) => p.id === element.id);
   const isLayer7Landscape = props.diagram.kind === 'layer7' && placement?.zone === 'landscape';
   const isLayer7Placement = Boolean(placement) && props.diagram.kind === 'layer7';
   // Names, not ids: this field is what a person types, and the action resolves

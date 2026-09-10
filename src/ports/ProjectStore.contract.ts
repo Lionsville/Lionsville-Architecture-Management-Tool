@@ -41,8 +41,11 @@ export function sampleProject(over: Partial<ProjectSnapshot> = {}): ProjectSnaps
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
     relations: [{ id: 'c#1', type: 'flow', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
     diagrams: [
-      { id: 'l7', kind: 'layer7', name: 'Landschap', placements: [{ elementId: 'crews', x: 10, y: 20 }] },
-      { id: 'cd', kind: 'container', name: 'Crews · containers', placements: [] },
+      {
+        id: 'l7', kind: 'layer7', name: 'Landschap',
+        members: [{ id: 'crews' }], geometry: { nodes: [{ id: 'crews', x: 10, y: 20 }] },
+      },
+      { id: 'cd', kind: 'container', name: 'Crews · containers', members: [], geometry: { nodes: [] } },
     ],
     ...(over.model ?? {}),
   }

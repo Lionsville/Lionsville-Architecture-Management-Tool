@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
@@ -72,17 +73,17 @@ function bulkActions() {
   };
 }
 
-const layer7 = {
+const layer7 = laidOut({
   id: 'd1',
   kind: 'layer7' as const,
   name: 'L7',
   groups: [{ id: 'core', name: 'Core' }],
   placements: [
-    { elementId: 'a1', x: 0, y: 0, zone: 'landscape' as const, group: 'core' },
-    { elementId: 'a2', x: 0, y: 0, zone: 'landscape' as const },
-    { elementId: 'a3', x: 0, y: 0, zone: 'actors' as const },
+    { id: 'a1', x: 0, y: 0, zone: 'landscape' as const, group: 'core' },
+    { id: 'a2', x: 0, y: 0, zone: 'landscape' as const },
+    { id: 'a3', x: 0, y: 0, zone: 'actors' as const },
   ],
-};
+});
 
 function renderBulk(overrides: {
   selection?: Selection;

@@ -15,7 +15,7 @@
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf, groupsOf, placementList, transitionList } from '../model/normalised'
+import { decisionsOf, groupsOf, placedList, placedOn, transitionList } from '../model/normalised'
 import { today } from '../model/lifecycle'
 import { findTransition, transitionLabel } from '../model/transition'
 import type { Transition } from '../model/transition'
@@ -75,7 +75,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       const limit = (args.limit as number | undefined) ?? 200
       const rows: ReturnType<typeof elementLine>[] = []
       let total = 0
-      for (const id of diagram ? diagram.order.placements : model.order.elements) {
+      for (const id of diagram ? diagram.order.members : model.order.elements) {
         const element = model.elements[id]
         if (!element) continue
         if (args.kind !== undefined && element.kind !== args.kind) continue
@@ -100,15 +100,18 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
           .map((c) => connectionLine(model, c)),
         drawnOn: model.order.diagrams.flatMap((diagramId) => {
           const diagram = model.diagrams[diagramId]
-          const placement = diagram.placements[element.id]
+          const placement = placedOn(diagram, element.id)!
           if (!placement) return []
           // A group goes out under its NAME: that is what `group` and
           // `element.place` take, and what a reader has seen on the board. The
           // id is the model's (ADR-0012 §6).
-          const { group, ...rest } = placement
+          const { id, group, ...rest } = placement
           return [{
             diagramId,
             name: diagram.name,
+            // `elementId`, not `id`: the answer is a published shape, and the
+            // id in it is the element's, not the row's.
+            elementId: id,
             ...rest,
             ...(group !== undefined
               ? { domainGroup: groupsOf(diagram)[group]?.name ?? group }
@@ -135,7 +138,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       for (const id of model.order.relations) {
         const c = model.relations[id]
         if (args.elementId !== undefined && c.sourceId !== args.elementId && c.targetId !== args.elementId) continue
-        if (diagram && !(diagram.placements[c.sourceId] && diagram.placements[c.targetId])) continue
+        if (diagram && !(placedOn(diagram, c.sourceId) && placedOn(diagram, c.targetId))) continue
         total += 1
         if (rows.length < limit) rows.push(connectionLine(model, c, dated))
       }
@@ -278,7 +281,7 @@ function exportMarkdown(model: Model, view: ReadView): string {
   lines.push('## Diagrams', '', ...table(
     ['id', 'name', 'kind', 'about', 'as of', 'elements'],
     model.order.diagrams.map((id) => model.diagrams[id])
-      .map((d) => [d.id, d.name, d.kind, d.applicationElementId ? name(d.applicationElementId) : '', d.asOf, placementList(d).length]),
+      .map((d) => [d.id, d.name, d.kind, d.applicationElementId ? name(d.applicationElementId) : '', d.asOf, placedList(d).length]),
   ))
 
   const plans = transitionList(model)
@@ -441,7 +444,7 @@ function diagramLine(diagram: Diagram, activeDiagramId: string) {
     name: diagram.name,
     kind: diagram.kind,
     applicationElementId: diagram.applicationElementId,
-    elements: placementList(diagram).length,
+    elements: placedList(diagram).length,
     active: diagram.id === activeDiagramId,
   }
 }

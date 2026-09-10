@@ -11,6 +11,7 @@
  * folder, so it must still offer everything else.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { ProjectSnapshot } from '../projects/project'
@@ -25,7 +26,7 @@ const project = (): ProjectSnapshot => ({
     customerName: 'Acme',
     elements: [],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

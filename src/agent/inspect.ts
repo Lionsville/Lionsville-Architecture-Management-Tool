@@ -18,9 +18,9 @@
  */
 import { drawnPolyline } from '../model/routes'
 import type { Diagram, Model } from '../model/normalised'
-import { groupsOf, routesOf } from '../model/normalised'
+import { boxList, groupsOf, placedOn, routesOf } from '../model/normalised'
 import { domainGroupForPoint, domainGroupRectMap, placementRect, rectCenter, unionRects } from '../model/placement'
-import type { DiagramPlacement, ElementId, Layer7Zone, Point, Rect } from '../model/types'
+import type { PlacedNode, ElementId, Layer7Zone, Point, Rect } from '../model/types'
 import { canvasRect, zoneForPoint, zoneRect } from '../model/zones'
 import { segmentIntersectsRect } from '../layout/geometry'
 
@@ -62,9 +62,9 @@ export type InspectReport = {
 
 export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): InspectReport {
   const rects = new Map<ElementId, Rect>()
-  for (const id of diagram.order.placements) {
+  for (const id of diagram.order.members) {
     const element = model.elements[id]
-    if (element) rects.set(id, placementRect(element.kind, diagram.placements[id]))
+    if (element) rects.set(id, placementRect(element.kind, placedOn(diagram, id)!))
   }
 
   const connections = model.order.relations
@@ -93,24 +93,24 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
   }
 
   if (diagram.kind === 'layer7') {
-    const canvas = canvasRect(diagram.layoutConfig)
+    const canvas = canvasRect(diagram)
     report.canvas = canvas
-    report.bands = ZONES.map((zone) => ({ zone, rect: zoneRect(zone, diagram.layoutConfig) }))
-    const groups = domainGroupRectMap(diagram.layoutConfig)
+    report.bands = ZONES.map((zone) => ({ zone, rect: zoneRect(zone, diagram) }))
+    const groups = domainGroupRectMap(boxList(diagram))
     // A group is answered by its NAME, which is what a person asked about and
     // what `group` takes; the id it is keyed by is the model's business.
     const nameOf = (groupId: string) => groupsOf(diagram)[groupId]?.name ?? groupId
     report.groups = [...groups.entries()].map(([groupId, rect]) => ({
       name: nameOf(groupId),
       rect,
-      members: diagram.order.placements.filter((id) => diagram.placements[id].group === groupId),
+      members: diagram.order.members.filter((id) => placedOn(diagram, id)!.group === groupId),
     }))
     const perZone = new Map<Layer7Zone, { elements: number; area: number }>()
     for (const [id, rect] of rects) {
-      const placement = diagram.placements[id]
+      const placement = placedOn(diagram, id)!
       const centre = rectCenter(rect)
       const zone = placement.zone ?? 'landscape'
-      const actually = zoneForPoint(centre, diagram.layoutConfig)
+      const actually = zoneForPoint(centre, diagram)
       if (actually !== zone) {
         report.outsideZone.total += 1
         if (report.outsideZone.some.length < limit) report.outsideZone.some.push({ elementId: id, zone, actually })
@@ -138,7 +138,7 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
       perZone.set(zone, tally)
     }
     report.density = ZONES.map((zone) => {
-      const band = zoneRect(zone, diagram.layoutConfig)
+      const band = zoneRect(zone, diagram)
       const tally = perZone.get(zone) ?? { elements: 0, area: 0 }
       const area = band.width * band.height
       return { zone, elements: tally.elements, fill: area > 0 ? round(tally.area / area) : 0 }
@@ -260,7 +260,7 @@ function orphans(
 export function boundsOf(model: Model, diagram: Diagram, elementIds: readonly ElementId[]): Rect | undefined {
   const rects: Rect[] = []
   for (const id of elementIds) {
-    const placement: DiagramPlacement | undefined = diagram.placements[id]
+    const placement: PlacedNode | undefined = placedOn(diagram, id)!
     const element = model.elements[id]
     if (placement && element) rects.push(placementRect(element.kind, placement))
   }

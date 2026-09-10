@@ -11,6 +11,8 @@
  * the host's undo, the host's redo, and what it is told about `canUndo`.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { placeOn } from '../model/commands';
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import { transaction } from '../model'
@@ -43,7 +45,7 @@ vi.mock('../editor', async (importOriginal) => {
                 lifecycle: 'live', isManaged: true, aspects: {},
               },
             },
-            { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },
+            placeOn('d1', [{ id: 'warehouse', x: 0, y: 0}]),
           ]))}
         >draw</button>
         <button data-testid="undo" onClick={() => props.editing.history.undo()}>undo</button>
@@ -62,7 +64,7 @@ const project = (): ProjectSnapshot => ({
     customerName: 'Acme',
     elements: [],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

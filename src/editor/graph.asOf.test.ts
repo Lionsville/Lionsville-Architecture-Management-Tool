@@ -9,6 +9,8 @@
  * the same single model.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
+import { placedNodes } from '../model/placement';
 import { buildEdges, buildNodes } from './graph'
 import type { BuildGraphArgs } from './graph'
 import type { DesignDiagram, DesignElement, DesignModel, Relation } from '../model/types'
@@ -42,10 +44,10 @@ function model(): DesignModel {
 }
 
 function diagram(asOf?: string): DesignDiagram {
-  return {
+  return laidOut({
     id: 'l7', kind: 'layer7', name: 'Landscape', asOf,
-    placements: ['wms-old', 'wms-new', 'billing'].map((elementId) => ({ elementId, x: 0, y: 0 })),
-  }
+    placements: ['wms-old', 'wms-new', 'billing'].map((id) => ({ id, x: 0, y: 0 })),
+  })
 }
 
 /**
@@ -161,7 +163,7 @@ describe('the replaces mark (ADR-0010)', () => {
 
   it('draws nothing when the toggle is off, or when the successor is not on the board', () => {
     expect(buildEdges(args({ showLifecycle: false })).some((edge) => edge.id.startsWith('replaces:'))).toBe(false)
-    const without = { ...DIAGRAM, placements: DIAGRAM.placements.filter((p) => p.elementId !== 'wms-new') }
+    const without = laidOut({ ...DIAGRAM, placements: placedNodes(DIAGRAM).filter((p) => p.id !== 'wms-new') })
     expect(buildEdges(args({ diagram: without })).some((edge) => edge.id.startsWith('replaces:'))).toBe(false)
   })
 

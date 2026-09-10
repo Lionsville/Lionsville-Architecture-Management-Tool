@@ -1,12 +1,12 @@
 import type {
   DesignDiagram,
   DesignModel,
-  DiagramPlacement,
+  PlacedNode,
   ElementId,
   ElementKind,
 } from './types';
 import type { StringKey } from '../i18n/strings';
-import { clampPlacementIntoZone, nodeMaxSize, nodeMinSize } from './placement';
+import { clampPlacementIntoZone, nodeMaxSize, nodeMinSize, placedNode } from './placement';
 import { HOME_ZONE } from './zones';
 
 /**
@@ -90,7 +90,7 @@ export function canChangeKind(
   const element = model.elements.find((e) => e.id === elementId);
   if (!element) return { ok: false, reason: 'kindChange.notOnThisDiagram' };
   if (element.kind === kind) return { ok: false, reason: 'kindChange.sameKind' };
-  if (!diagram.placements.some((p) => p.elementId === elementId)) {
+  if (!placedNode(diagram, elementId)) {
     return { ok: false, reason: 'kindChange.notOnThisDiagram' };
   }
   if (!allowedKindsOn(diagram).includes(kind)) {
@@ -138,34 +138,34 @@ export function changeableKinds(
  * a kind change never invents a stored size out of a default.
  */
 export function placementForKind(
-  placement: DiagramPlacement,
+  placement: PlacedNode,
   kind: ElementKind,
   diagram: DesignDiagram,
-): DiagramPlacement {
+): PlacedNode {
   if (diagram.kind !== 'layer7') return clampSize(placement, kind, diagram);
   const home = HOME_ZONE[kind];
   const zone = placement.zone ?? 'landscape';
   // The landscape holds every kind (that is what makes it the landscape); any
   // other band holds only the kinds whose home it is.
   const legal = zone === 'landscape' || zone === home;
-  const moved: DiagramPlacement = legal ? placement : { ...placement, zone: home };
+  const moved: PlacedNode = legal ? placement : { ...placement, zone: home };
   return clampSize(moved, kind, diagram);
 }
 
 function clampSize(
-  placement: DiagramPlacement,
+  placement: PlacedNode,
   kind: ElementKind,
   diagram: DesignDiagram,
-): DiagramPlacement {
+): PlacedNode {
   const min = nodeMinSize(kind);
-  const max = nodeMaxSize(kind, placement.zone, diagram.layoutConfig);
+  const max = nodeMaxSize(kind, placement.zone, diagram.geometry);
   const fit = (value: number | undefined, lo: number, hi: number) =>
     value === undefined ? undefined : Math.min(Math.max(value, lo), hi);
-  const sized: DiagramPlacement = {
+  const sized: PlacedNode = {
     ...placement,
     width: fit(placement.width, min.width, max.width),
     height: fit(placement.height, min.height, max.height),
   };
   // A band member must also still be inside its band after the resize.
-  return clampPlacementIntoZone(sized, kind, diagram.layoutConfig) ?? sized;
+  return clampPlacementIntoZone(sized, kind, diagram.geometry) ?? sized;
 }

@@ -4,6 +4,9 @@
  * matters is where the model lands, and what the command refused to do.
  */
 import { describe, expect, it } from 'vitest'
+import { edgeRoutesOf } from '../model/routes';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import type { Adr } from './adr'
 import type { HostModel } from './fromInterchange'
 import { fromArrays, toArrays } from './normalised'
@@ -33,13 +36,13 @@ function then(over: Partial<HostModel> = {}): HostModel {
       element('crm', 'CRM', { vendor: 'Someone' }),
     ],
     relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false, label: 'orders' }],
-    diagrams: [{
+    diagrams: [laidOut({
       id: 'd1', kind: 'layer7', name: 'Warehouse', author: 'W.', showAspects: false,
       autoRoute: true,
       layoutConfig: { algorithm: 'layered' } as never,
-      placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'crm', x: 100, y: 0 }],
+      placements: [{ id: 'billing', x: 0, y: 0 }, { id: 'crm', x: 100, y: 0 }],
       edgeRoutes: [{ relationId: 'c#1', waypoints: [{ x: 50, y: 10 }] }],
-    }],
+    })],
     decisions: [decision()],
     ...over,
   }
@@ -59,12 +62,12 @@ function now(over: Partial<HostModel> = {}): HostModel {
       { type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: true },
       { type: 'flow', id: 'c#2', sourceId: 'crm', targetId: 'wms', isBidirectional: false },
     ],
-    diagrams: [{
+    diagrams: [laidOut({
       id: 'd1', kind: 'layer7', name: 'A mess', client: 'Somebody',
       asOf: '2028-01-01',
-      placements: [{ elementId: 'billing', x: 500, y: 500 }, { elementId: 'wms', x: 0, y: 0 }],
+      placements: [{ id: 'billing', x: 500, y: 500 }, { id: 'wms', x: 0, y: 0 }],
       edgeRoutes: [{ relationId: 'c#2', waypoints: [] }],
-    }],
+    })],
     decisions: [decision({ title: 'Retitled', body: 'Changed.' })],
     ...over,
   })
@@ -94,14 +97,14 @@ describe('restoring one diagram', () => {
     const later = now({ elements: [element('billing', 'Billing')], relations: [] })
     const { after, dropped } = restored(then(), later, { what: 'diagram', id: 'd1' })
     expect(dropped).toBe(1)
-    expect(after.diagrams[0].placements.map((p) => p.elementId)).toEqual(['billing'])
+    expect(placedNodes(after.diagrams[0]).map((p) => p.id)).toEqual(['billing'])
     // The route of a connection that is gone is not brought back either.
-    expect(after.diagrams[0].edgeRoutes ?? []).toEqual([])
+    expect(edgeRoutesOf(after.diagrams[0]) ?? []).toEqual([])
     expect(after.elements.map((e) => e.id)).toEqual(['billing'])
   })
 
   it('creates the diagram again when it was deleted since', () => {
-    const later = now({ diagrams: [{ id: 'other', kind: 'layer7', name: 'Other', placements: [] }] })
+    const later = now({ diagrams: [laidOut({ id: 'other', kind: 'layer7', name: 'Other', placements: [] })] })
     const { after } = restored(then(), later, { what: 'diagram', id: 'd1' })
     expect(after.diagrams.map((d) => d.id)).toEqual(['other', 'd1'])
     expect(after.diagrams[1]).toEqual(then().diagrams[0])
@@ -138,7 +141,7 @@ describe('restoring one description', () => {
   })
 
   it('refuses when the element is gone now — that is a project restore', () => {
-    const later = now({ elements: [element('crm', 'CRM')], relations: [], diagrams: [{ id: 'd1', kind: 'layer7', name: 'x', placements: [] }] })
+    const later = now({ elements: [element('crm', 'CRM')], relations: [], diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'x', placements: [] })] })
     expect(restoreCommand(fromArrays(then()), fromArrays(later), { what: 'description', id: 'billing' }, '2026-09-03'))
       .toEqual({ ok: false, reason: 'restore.absentNow' })
   })
@@ -195,7 +198,7 @@ describe('restoring the whole project', () => {
   it('creates the diagram of a restored element before deleting today\'s, so a landscape is never the last', () => {
     // Today's only landscape is not the snapshot's; the snapshot's is created
     // first and today's deleted after, or the reducer would refuse.
-    const later = now({ diagrams: [{ id: 'today', kind: 'layer7', name: 'Today', placements: [] }] })
+    const later = now({ diagrams: [laidOut({ id: 'today', kind: 'layer7', name: 'Today', placements: [] })] })
     const { after } = restored(then(), later, undefined)
     expect(after.diagrams.map((d) => d.id)).toEqual(['d1'])
   })

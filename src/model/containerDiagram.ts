@@ -74,8 +74,9 @@ export function seedContainerDiagram(
     kind: 'container',
     name: make.name(app.name),
     applicationElementId: applicationId,
-    placements: containerDiagramMembers(model, applicationId)
-      .map((id) => ({ elementId: id, x: 0, y: 0 })),
-    needsLayout: true,
+    members: containerDiagramMembers(model, applicationId).map((id) => ({ id })),
+    // No coordinates at all: a machine put these on the view and nobody has
+    // looked yet, so the editor lays them out on first open (ADR-0012 §6).
+    geometry: { nodes: [], needsLayout: true },
   }
 }

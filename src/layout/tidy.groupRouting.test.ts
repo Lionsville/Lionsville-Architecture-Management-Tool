@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import type { DesignDiagram, DesignModel, ElementKind } from '../model/types';
 import { routeDiagramEdges } from './routeOnly';
 import { tidyGroup } from './tidy';
@@ -40,15 +42,15 @@ const elt = (id: string, kind: ElementKind) => ({
 
 /** Two stacked members in the Core box, a loose card outside it, and a band node. */
 function board(): { model: DesignModel; layer7: DesignDiagram } {
-  const layer7: DesignDiagram = {
+  const layer7: DesignDiagram = laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'L7',
     placements: [
-      { elementId: 'a1', zone: 'landscape', group: 'Core', x: 220, y: 220 },
-      { elementId: 'a2', zone: 'landscape', group: 'Core', x: 230, y: 230 },
-      { elementId: 'outside', zone: 'landscape', x: 700, y: 240 },
-      { elementId: 'actor', zone: 'actors', x: 100, y: 20 },
+      { id: 'a1', zone: 'landscape', group: 'Core', x: 220, y: 220 },
+      { id: 'a2', zone: 'landscape', group: 'Core', x: 230, y: 230 },
+      { id: 'outside', zone: 'landscape', x: 700, y: 240 },
+      { id: 'actor', zone: 'actors', x: 100, y: 20 },
     ],
     layoutConfig: {
       domainGroups: [
@@ -56,7 +58,7 @@ function board(): { model: DesignModel; layer7: DesignDiagram } {
         { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
       ],
     },
-  };
+  });
   return {
     model: {
       name: 'ACME',
@@ -89,7 +91,7 @@ describe('tidyGroup — the board the router is routing against', () => {
     const [, routed, whenDeclined, owned] = mockRoute.mock.calls[0];
     // The whole board reaches the router as obstacles — the loose card just outside
     // the box included, which is the one this tidy must not move but must dodge.
-    expect(routed.placements.map((p) => p.elementId).sort()).toEqual([
+    expect(placedNodes(routed).map((p) => p.id).sort()).toEqual([
       'a1',
       'a2',
       'actor',
@@ -109,16 +111,16 @@ describe('tidyGroup — the board the router is routing against', () => {
     const result = await tidyGroup(model, layer7, 'Core');
 
     const [, routed] = mockRoute.mock.calls[0];
-    const routedById = new Map(routed.placements.map((p) => [p.elementId, p]));
+    const routedById = new Map(placedNodes(routed).map((p) => [p.id, p]));
     for (const laid of result.placements) {
-      expect(routedById.get(laid.elementId)).toEqual(laid);
+      expect(routedById.get(laid.id)).toEqual(laid);
     }
     // Untouched placements are the originals, not reflowed copies.
     for (const id of ['outside', 'actor']) {
-      expect(routedById.get(id)).toEqual(layer7.placements.find((p) => p.elementId === id));
+      expect(routedById.get(id)).toEqual(placedNodes(layer7).find((p) => p.id === id));
     }
     // And the resized box, not the stale one still in `layoutConfig`.
-    expect(routed.layoutConfig!.domainGroups).toEqual([
+    expect(routed.geometry.groups).toEqual([
       result.domainGroups![0],
       { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
     ]);

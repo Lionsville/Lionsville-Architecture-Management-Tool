@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { edgeRoutesOf } from '../model/routes';
+import { laidOut } from '../model/testFixtures';
 import { edgeRoutesEqual } from './equality';
 import { fromArrays, toArrays } from './normalised';
 import { apply } from './reducer';
@@ -28,16 +30,16 @@ function model(routes?: EdgeRoute[]): DesignModel {
     })),
     relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'e1', zone: 'landscape', x: 100, y: 100 },
-          { elementId: 'e2', zone: 'landscape', x: 900, y: 100 },
+          { id: 'e1', zone: 'landscape', x: 100, y: 100 },
+          { id: 'e2', zone: 'landscape', x: 900, y: 100 },
         ],
         edgeRoutes: routes,
-      },
+      }),
     ],
   };
 }
@@ -62,7 +64,7 @@ describe('a pin through the one writer', () => {
     const pinned = apply(before, { type: 'route.set', diagramId: 'd1', routes: [PIN] });
     expect(pinned.ok).toBe(true);
     if (!pinned.ok) return;
-    expect(toArrays(pinned.model).diagrams[0].edgeRoutes).toEqual([PIN]);
+    expect(edgeRoutesOf(toArrays(pinned.model).diagrams[0])).toEqual([PIN]);
 
     const back = apply(pinned.model, pinned.inverse);
     expect(back.ok && toArrays(back.model)).toEqual(toArrays(before));
@@ -75,8 +77,8 @@ describe('a pin through the one writer', () => {
     expect(cleared.ok).toBe(true);
     if (!cleared.ok) return;
     // Not an empty list: a saved file should look like a hand-written one.
-    expect(toArrays(cleared.model).diagrams[0].edgeRoutes).toBeUndefined();
+    expect(toArrays(cleared.model).diagrams[0].geometry.routes).toBeUndefined();
     const back = apply(cleared.model, cleared.inverse);
-    expect(back.ok && toArrays(back.model).diagrams[0].edgeRoutes).toEqual([PIN]);
+    expect(back.ok && edgeRoutesOf(toArrays(back.model).diagrams[0])).toEqual([PIN]);
   });
 });

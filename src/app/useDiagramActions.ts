@@ -101,7 +101,7 @@ export function useDiagramActions(deps: {
     setNewDiagramName(null)
     const m = session.current()
     const diagram: DesignDiagram = {
-      id: makeId('l7'), kind: 'layer7', name, placements: [],
+      id: makeId('l7'), kind: 'layer7', name, members: [], geometry: { nodes: [] },
       // Copied, not referenced: this landscape's columns are now its own, and
       // changing the project's default later must not silently rewrite them.
       // Absent when the project has no default, which leaves the standard five.

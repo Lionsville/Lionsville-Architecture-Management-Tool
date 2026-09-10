@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
+import { placedNodes } from '../model/placement';
 import { useReactFlow } from '@xyflow/react';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { serializeSelection, type ClipboardPayload } from '../model/clipboard';
@@ -399,7 +400,7 @@ function nudgeMoves(
   dx: number,
   dy: number,
 ): PlacementMove[] {
-  const placementsById = new Map(diagram.placements.map((p) => [p.elementId, p]));
+  const placementsById = new Map(placedNodes(diagram).map((p) => [p.id, p]));
   const moves: PlacementMove[] = [];
   for (const elementId of selection.elementIds) {
     const placement = placementsById.get(elementId);
@@ -407,7 +408,7 @@ function nudgeMoves(
     // Preserve zone/group: a keyboard nudge shifts position without
     // re-resolving the layer7 band (that geometry lives in the canvas).
     moves.push({
-      elementId,
+      id: elementId,
       x: placement.x + dx,
       y: placement.y + dy,
       zone: placement.zone,

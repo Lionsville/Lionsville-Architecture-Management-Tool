@@ -7,6 +7,7 @@
  * as one step.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from './testFixtures'
 import { replacementCommands } from './replacement'
 import type { ReplacementRequest } from './replacement'
 import { apply } from './reducer'
@@ -24,10 +25,12 @@ function line(id: string, sourceId: string, targetId: string, over: Partial<Rela
   return { id, type: 'flow', sourceId, targetId, isBidirectional: false, ...over }
 }
 function diagram(id: string, placed: string[]): DesignDiagram {
-  return {
+  return laidOut({
     id, kind: 'layer7', name: id,
-    placements: placed.map((elementId, at) => ({ elementId, x: 100 + at * 300, y: 200, zone: 'landscape' as const, group: 'warehouse' })),
-  } as DesignDiagram
+    placements: placed.map((elementId, at) => ({
+      id: elementId, x: 100 + at * 300, y: 200, zone: 'landscape' as const, group: 'warehouse',
+    })),
+  })
 }
 
 const MODEL: DesignModel = {
@@ -67,14 +70,24 @@ describe('one for one, with a new application', () => {
   })
 
   it('draws it beside the old on every board the old is on, and nowhere else', () => {
-    const placements = commands.filter((c) => c.type === 'placement.set')
+    const placements = commands.filter((c) => c.type === 'transaction')
     expect(placements).toHaveLength(1)
     expect(placements[0]).toMatchObject({
-      diagramId: 'landscape',
-      placements: [{ elementId: 'wms-next', x: expect.any(Number), y: 200, zone: 'landscape', group: 'warehouse' }],
+      commands: [
+        {
+          type: 'member.set',
+          diagramId: 'landscape',
+          members: [{ id: 'wms-next', zone: 'landscape', group: 'warehouse' }],
+        },
+        {
+          type: 'node.set',
+          diagramId: 'landscape',
+          nodes: [{ id: 'wms-next', x: expect.any(Number), y: 200 }],
+        },
+      ],
     })
     // To the right of the original: past its width and the gap.
-    expect((placements[0] as { placements: { x: number }[] }).placements[0].x).toBeGreaterThan(100)
+    expect((placements[0] as unknown as { commands: { nodes: { x: number }[] }[] }).commands[1].nodes[0].x).toBeGreaterThan(100)
   })
 
   it('dates the old one, names its successor, and taps it until the day before it is gone', () => {
@@ -145,7 +158,7 @@ describe('the other shapes', () => {
     const { commands, toId } = replacementCommands(MODEL, { ...ONE_FOR_ONE, to: { elementId: 'billing' } }, IDS, 1)
     expect(toId).toBe('billing')
     expect(commands.find((c) => c.type === 'element.create')).toBeUndefined()
-    expect(commands.find((c) => c.type === 'placement.set')).toBeUndefined()
+    expect(commands.find((c) => c.type === 'transaction')).toBeUndefined()
     expect(commands).toContainEqual({ type: 'element.update', id: 'billing', patch: { lifecycleDates: { live: '2027-03-01' } } })
 
     const dated = { ...MODEL, elements: MODEL.elements.map((e) => (e.id === 'billing' ? { ...e, lifecycleDates: { live: '2026-01-01' } } : e)) }

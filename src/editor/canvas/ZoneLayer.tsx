@@ -12,7 +12,8 @@ import {
   zoneSizeFromPointer,
   zoneSizes,
 } from '../../model/zones';
-import type { DiagramLayoutConfig, Layer7Zone, Rect, ResizableZone } from '../../model/types';
+import type { BoardGeometry } from '../../model/zones';
+import type { Layer7Zone, Rect, ResizableZone } from '../../model/types';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
 
@@ -24,7 +25,7 @@ type CanvasEdge = 'right' | 'bottom' | 'corner';
 /**
  * The five fixed Layer 7 zones, rendered behind the nodes as subtle tinted
  * bands with uppercase labels. Band sizes come from the diagram's
- * layoutConfig; each band's inner edge carries a drag handle that persists
+ * geometry; each band's inner edge carries a drag handle that persists
  * the new size through `onZoneResize` (live preview while dragging). The
  * board itself grows for larger landscapes via the right/bottom border
  * handles → `onCanvasResize`.
@@ -35,13 +36,13 @@ type CanvasEdge = 'right' | 'bottom' | 'corner';
  * a board with a fixed zone grammar is the part that decides what you get.
  */
 export function ZoneLayer({
-  layoutConfig,
+  geometry,
   readOnly,
   dropZone,
   onZoneResize,
   onCanvasResize,
 }: {
-  layoutConfig?: DiagramLayoutConfig;
+  geometry?: BoardGeometry;
   readOnly: boolean;
   dropZone?: Layer7Zone | null;
   onZoneResize(zone: ResizableZone, size: number): void;
@@ -61,16 +62,16 @@ export function ZoneLayer({
     null,
   );
 
-  const effectiveConfig: DiagramLayoutConfig | undefined =
+  const effectiveConfig: BoardGeometry | undefined =
     preview || canvasPreview
       ? {
-          ...layoutConfig,
+          ...geometry,
           ...(canvasPreview ? { canvas: canvasPreview } : {}),
           zones: preview
-            ? { ...layoutConfig?.zones, [preview.zone]: { size: preview.size } }
-            : layoutConfig?.zones,
+            ? { ...geometry?.zones, [preview.zone]: { size: preview.size } }
+            : geometry?.zones,
         }
-      : layoutConfig;
+      : geometry;
 
   // Which handle the pointer grabbed, and the size it is currently previewing.
   // Both drags commit on pointer-up even when the pointer never moved: the
@@ -86,7 +87,7 @@ export function ZoneLayer({
     onStart: () => {
       const zone = pendingZone.current;
       if (!zone) return;
-      bandGesture.current = { zone, size: zoneSizes(layoutConfig)[zone] };
+      bandGesture.current = { zone, size: zoneSizes(geometry)[zone] };
     },
     onMove: (_delta, event) => {
       const live = bandGesture.current;
@@ -94,7 +95,7 @@ export function ZoneLayer({
       live.size = zoneSizeFromPointer(
         live.zone,
         screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-        layoutConfig,
+        geometry,
       );
       setPreview({ zone: live.zone, size: live.size });
     },
@@ -114,7 +115,7 @@ export function ZoneLayer({
     onStart: () => {
       const edge = pendingEdge.current;
       if (!edge) return;
-      const current = canvasRect(layoutConfig);
+      const current = canvasRect(geometry);
       boardGesture.current = { edge, size: { width: current.width, height: current.height } };
     },
     onMove: (_delta, event) => {
@@ -122,7 +123,7 @@ export function ZoneLayer({
       if (!live) return;
       live.size = canvasSizeFromPointer(
         screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-        layoutConfig,
+        geometry,
         live.edge,
       );
       setCanvasPreview(live.size);

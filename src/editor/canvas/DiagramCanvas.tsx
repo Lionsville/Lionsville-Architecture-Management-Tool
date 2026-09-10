@@ -22,7 +22,7 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { buildEdges, buildNodes, type FloatingEdgeModel } from '../graph';
-import { domainGroupRectMap } from '../../model/placement';
+import { placedNodes, domainGroupRectMap } from '../../model/placement';
 import { today } from '../../model/lifecycle';
 import {
   insertWaypointOnDrawn,
@@ -567,10 +567,10 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       // whole point being that the drop then changes nothing.
       const settled = positionChanges
         .filter((c) => c.position)
-        .map((c) => ({ elementId: c.id, x: c.position!.x, y: c.position!.y }));
+        .map((c) => ({ id: c.id, x: c.position!.x, y: c.position!.y }));
       const moving = positionChanges
         .filter((c) => c.dragging && c.position)
-        .map((c) => ({ elementId: c.id, x: c.position!.x, y: c.position!.y }));
+        .map((c) => ({ id: c.id, x: c.position!.x, y: c.position!.y }));
       if (moving.length > 0) previewRef.current.onDragPositions(moving);
       // The changes that report `dragging: false` carry the FINAL positions, which
       // is exactly what the handover needs one last pass against.
@@ -651,7 +651,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       const height = node.measured?.height ?? node.height ?? 0;
       const center = { x: node.position.x + width / 2, y: node.position.y + height / 2 };
       return {
-        elementId: node.id,
+        id: node.id,
         x: node.position.x,
         y: node.position.y,
         ...(resolveDrop ? resolveDrop(node.id, center) : {}),
@@ -693,7 +693,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       // started, so the geometry just previewed is for a position nothing is going
       // to commit, and holding it on screen would be a lie rather than a handover.
       previewRef.current.endDrag(
-        draggedNodes.map((n) => ({ elementId: n.id, x: n.position.x, y: n.position.y })),
+        draggedNodes.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y })),
         altDrag === null,
       );
       if (altDrag) {
@@ -847,7 +847,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   );
 
   // Align / distribute: computed here (the canvas layer) from the RF nodes'
-  // measured sizes — `DiagramPlacement.width/height` are only set for resized
+  // measured sizes — `PlacedNode.width/height` are only set for resized
   // nodes, so the overlay layer cannot do this geometry. The finished moves go
   // straight into `movePlacements` (one batched commit) with zone/group
   // re-resolved from the new centre exactly as a drag does.
@@ -860,20 +860,20 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   );
 
   const applyPositionUpdates = useCallback(
-    (updates: { elementId: string; x: number; y: number }[], bounds: NodeBounds[]) => {
+    (updates: { id: string; x: number; y: number }[], bounds: NodeBounds[]) => {
       if (updates.length === 0) return;
       const sizeById = new Map(bounds.map((b) => [b.id, b]));
       const moves: PlacementMove[] = updates.map((u) => {
-        const size = sizeById.get(u.elementId);
+        const size = sizeById.get(u.id);
         const center = {
           x: u.x + (size?.width ?? 0) / 2,
           y: u.y + (size?.height ?? 0) / 2,
         };
         return {
-          elementId: u.elementId,
+          id: u.id,
           x: u.x,
           y: u.y,
-          ...(resolveDrop ? resolveDrop(u.elementId, center) : {}),
+          ...(resolveDrop ? resolveDrop(u.id, center) : {}),
         };
       });
       actions.movePlacements(moves);
@@ -1000,7 +1000,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       };
       if (target.kind === 'node') {
         const element = model.elements.find((e) => e.id === target.elementId);
-        const placement = diagram.placements.find((p) => p.elementId === target.elementId);
+        const placement = placedNodes(diagram).find((p) => p.id === target.elementId);
         if (element) {
           ctx.element = {
             kind: element.kind,
@@ -1035,7 +1035,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           };
         }
       } else if (target.kind === 'selection') {
-        const placementsById = new Map(diagram.placements.map((p) => [p.elementId, p]));
+        const placementsById = new Map(placedNodes(diagram).map((p) => [p.id, p]));
         ctx.selection = {
           elementCount: target.elementIds.length,
           landscapeCount:
@@ -1284,13 +1284,13 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         );
         if (nodes.length > 0) return centreOf(getNodesBounds(nodes));
       } else if (target.kind === 'group') {
-        const rect = domainGroupRectMap(diagram.layoutConfig).get(target.groupId);
+        const rect = domainGroupRectMap(diagram.geometry?.groups).get(target.groupId);
         if (rect) return centreOf(rect);
       }
       const box = containerRef.current?.getBoundingClientRect();
       return box ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : { x: 0, y: 0 };
     },
-    [flowToScreenPosition, getNodes, getNodesBounds, model.relations, diagram.layoutConfig],
+    [flowToScreenPosition, getNodes, getNodesBounds, model.relations, diagram.geometry],
   );
 
   const { menuRequest } = props;

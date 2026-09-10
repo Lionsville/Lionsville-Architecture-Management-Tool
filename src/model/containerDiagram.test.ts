@@ -4,6 +4,7 @@
  * be checked by hand.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import type { DesignElement, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 import {
@@ -37,7 +38,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
       link('c1', 'crews-api', 'reisinfo-api'),
       link('c2', 'extern', 'crews'),
     ],
-    diagrams: [{ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [] }],
+    diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [] })],
     ...over,
   }
 }
@@ -114,13 +115,13 @@ describe('seedContainerDiagram', () => {
 
   it('asks for a layout — there are no coordinates yet', () => {
     const diagram = seedContainerDiagram(model(), 'crews', make)
-    expect(diagram?.needsLayout).toBe(true)
-    expect(diagram?.placements.every((p) => p.x === 0 && p.y === 0)).toBe(true)
+    expect(diagram?.geometry.needsLayout).toBe(true)
+    expect(diagram?.geometry.nodes).toEqual([])
   })
 
   it('places exactly the members, in the same order', () => {
     const diagram = seedContainerDiagram(model(), 'crews', make)
-    expect(diagram?.placements.map((p) => p.elementId))
+    expect(diagram?.members.map((m) => m.id))
       .toEqual(containerDiagramMembers(model(), 'crews'))
   })
 
@@ -132,8 +133,8 @@ describe('seedContainerDiagram', () => {
 describe('findContainerDiagram', () => {
   const withContainer = model({
     diagrams: [
-      { id: 'l7', kind: 'layer7', name: 'Landschap', placements: [] },
-      { id: 'cd', kind: 'container', name: 'Crews', applicationElementId: 'crews', placements: [] },
+      laidOut({ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [] }),
+      laidOut({ id: 'cd', kind: 'container', name: 'Crews', applicationElementId: 'crews', placements: [] }),
     ],
   })
 

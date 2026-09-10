@@ -6,6 +6,7 @@
  * silently emptying every per-thing history.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../decisions/adr'
 import type { HostModel } from '../model/fromInterchange'
 import { projectFiles } from './folderFormat'
@@ -33,9 +34,9 @@ function model(over: Partial<HostModel> = {}): HostModel {
     ],
     relations: [],
     diagrams: [
-      { id: 'landscape', kind: 'layer7', name: 'Landscape', placements: [] },
-      { id: 'Billing View', kind: 'container', name: 'Billing', placements: [], applicationElementId: 'billing' },
-      { id: 'billing-view', kind: 'container', name: 'Billing again', placements: [], applicationElementId: 'billing' },
+      laidOut({ id: 'landscape', kind: 'layer7', name: 'Landscape', placements: [] }),
+      laidOut({ id: 'Billing View', kind: 'container', name: 'Billing', placements: [], applicationElementId: 'billing' }),
+      laidOut({ id: 'billing-view', kind: 'container', name: 'Billing again', placements: [], applicationElementId: 'billing' }),
     ],
     decisions: [decision(), decision({ id: 'adr-app', number: 1, title: 'Inside billing', applicationId: 'billing' })],
     ...over,

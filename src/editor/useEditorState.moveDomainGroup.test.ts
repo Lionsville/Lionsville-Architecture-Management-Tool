@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
@@ -23,15 +25,15 @@ function model(): DesignModel {
     ],
     relations: [],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'm1', zone: 'landscape', group: 'G', x: 100, y: 100 },
-          { elementId: 'm2', zone: 'landscape', group: 'G', x: 160, y: 140 },
-          { elementId: 'other', zone: 'landscape', group: 'H', x: 500, y: 500 },
-          { elementId: 'loose', zone: 'landscape', x: 800, y: 800 },
+          { id: 'm1', zone: 'landscape', group: 'G', x: 100, y: 100 },
+          { id: 'm2', zone: 'landscape', group: 'G', x: 160, y: 140 },
+          { id: 'other', zone: 'landscape', group: 'H', x: 500, y: 500 },
+          { id: 'loose', zone: 'landscape', x: 800, y: 800 },
         ],
         layoutConfig: {
           domainGroups: [
@@ -39,7 +41,7 @@ function model(): DesignModel {
             { id: 'H', x: 480, y: 480, width: 120, height: 120 },
           ],
         },
-      },
+      }),
     ],
   };
 }
@@ -61,8 +63,8 @@ describe('moveDomainGroup (Piece A — rigid group move)', () => {
     expect(host.current.commands).toHaveLength(1);
 
     const diagram = () => result.current.model.diagrams[0];
-    const groups = () => new Map((diagram().layoutConfig?.domainGroups ?? []).map((g) => [g.id, g]));
-    const placements = () => new Map(diagram().placements.map((p) => [p.elementId, p]));
+    const groups = () => new Map((diagram().geometry?.groups ?? []).map((g) => [g.id, g]));
+    const placements = () => new Map(placedNodes(diagram()).map((p) => [p.id, p]));
 
     // Box G moved; box H untouched.
     expect(groups().get('G')).toEqual({ id: 'G', x: 120, y: 105, width: 200, height: 150 });

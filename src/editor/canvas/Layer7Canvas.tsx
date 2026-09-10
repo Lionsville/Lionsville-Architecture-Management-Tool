@@ -51,7 +51,8 @@ export function Layer7Canvas(
 ) {
   const { t } = useStrings();
   const { diagram, actions } = props;
-  const layoutConfig = diagram.layoutConfig;
+  const geometry = diagram.geometry;
+  const boxes = geometry?.groups;
   // The settings popover for one group — what "Tidy this group" opens. Anchored
   // at the same point the menu was, so it appears where the user clicked.
   const [groupSettings, setGroupSettings] = useState<
@@ -76,10 +77,10 @@ export function Layer7Canvas(
   // assigns membership on drop. Over open landscape the canvas's own menu opens.
   const resolvePaneMenuTarget = useCallback(
     (point: Point): MenuTarget | undefined => {
-      const groupId = domainGroupForPoint(point, domainGroupRectMap(layoutConfig));
+      const groupId = domainGroupForPoint(point, domainGroupRectMap(boxes));
       return groupId ? { kind: 'group', groupId } : undefined;
     },
-    [layoutConfig],
+    [geometry],
   );
 
   // The group actions that need THIS component's state — two popovers and the
@@ -118,25 +119,25 @@ export function Layer7Canvas(
   // Selection works in read-only too: it drives the inspector, not an edit.
   const resolvePaneClick = useCallback(
     (point: Point) => {
-      const name = domainGroupForPoint(point, domainGroupRectMap(layoutConfig));
+      const name = domainGroupForPoint(point, domainGroupRectMap(boxes));
       return name ? selectDomainGroup(name) : undefined;
     },
-    [layoutConfig],
+    [geometry],
   );
 
   const resolveDrop = useCallback(
     (_elementId: ElementId, center: Point) => {
-      const zone = zoneForPoint(center, layoutConfig);
+      const zone = zoneForPoint(center, geometry);
       if (zone !== 'landscape') return { zone, group: undefined };
-      const groups = domainGroupRectMap(layoutConfig);
+      const groups = domainGroupRectMap(boxes);
       return { zone, group: domainGroupForPoint(center, groups) };
     },
-    [layoutConfig],
+    [geometry],
   );
 
   const onAddByDrop = useCallback(
     (kind: ElementKind, position: Point, seed?: ElementSeedPatch) => {
-      const zone = zoneForPoint(position, layoutConfig);
+      const zone = zoneForPoint(position, geometry);
       actions.addElement({
         // The kind is whatever was dragged. The drop point decides *where* it
         // lands, never *what* it is — an Application dropped in the external
@@ -146,12 +147,12 @@ export function Layer7Canvas(
         zone,
         group:
           zone === 'landscape'
-            ? domainGroupForPoint(position, domainGroupRectMap(layoutConfig))
+            ? domainGroupForPoint(position, domainGroupRectMap(boxes))
             : undefined,
         ...seed,
       });
     },
-    [actions, layoutConfig],
+    [actions, geometry],
   );
 
   // A domain group dropped on the board: the box lands centred on the cursor,
@@ -170,9 +171,9 @@ export function Layer7Canvas(
   const [dropZone, setDropZone] = useState<Layer7Zone | null>(null);
   const handlePaletteDragOver = useCallback(
     (position: Point | null) => {
-      setDropZone(position ? zoneForPoint(position, layoutConfig) : null);
+      setDropZone(position ? zoneForPoint(position, geometry) : null);
     },
-    [layoutConfig],
+    [geometry],
   );
 
   return (
@@ -188,14 +189,14 @@ export function Layer7Canvas(
       resolvePaneClick={resolvePaneClick}
     >
       <ZoneLayer
-        layoutConfig={layoutConfig}
+        geometry={geometry}
         readOnly={props.readOnly}
         dropZone={dropZone}
         onZoneResize={actions.setZoneSize}
         onCanvasResize={actions.setCanvasSize}
       />
       <DomainGroupLayer
-        layoutConfig={layoutConfig}
+        geometry={geometry}
         readOnly={props.readOnly}
         selected={props.selection.domainGroups}
         onSelect={(name) => props.onSelectionChange(selectDomainGroup(name))}

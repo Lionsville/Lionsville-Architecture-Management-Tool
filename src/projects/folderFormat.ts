@@ -9,7 +9,7 @@
  * ```
  * project.json                      what it is called and what it holds
  * model.json                        elements and connections (the model's flows)
- * diagrams/<id>.json                what a diagram is
+ * diagrams/<id>.json                what a view is, and what is on it
  * diagrams/<id>.placements.json     where its elements ended up
  * docs/<elementId>.md               an element's description, as prose
  * decisions/[<applicationId>/]NNNN-<slug>.md
@@ -22,6 +22,14 @@
  * for. A drag rewrites one `.placements.json`; a rename rewrites one definition
  * and no coordinates; a deleted placement file means "not laid out yet" rather
  * than a broken project.
+ *
+ * ADR-0012 §6 took that split into the model as well — a view says what is on
+ * it (`members`, `groups`, `lines`) and its geometry says where it ended up —
+ * and format 3's two files do not line up with it: a placement row is a member
+ * AND a node, a group's box carries its name and colour, and a route row
+ * carries both its constraints and its waypoints. So the two shapes meet here,
+ * in {@link diagramFiles} and {@link readDiagram}, and the whole of that
+ * translation goes at format 4, where the files say what the model says.
  *
  * **What the format normalises, deliberately.** Elements, connections,
  * placements and routes are written in id order, because two people adding an
@@ -37,10 +45,12 @@
 import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
-  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramGroup,
-  DiagramLayoutConfig, DiagramPlacement, DocumentImage, DomainGroupRect, EdgeRoute, Relation,
-  UploadedLogo,
+  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramGroup, DiagramMember,
+  DocumentImage, DomainGroupRect, EdgeRoute, Geometry, NodeGeometry, Relation, UploadedLogo,
 } from '../model'
+import { edgeRoutesOf, splitRoutes } from '../model/routes'
+import { placedNodes } from '../model/placement'
+import type { PlacedNode } from '../model'
 import { asConnections, asRelations } from '../model/relations'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
@@ -160,20 +170,22 @@ type ProjectHeader = {
  * a file name.
  */
 export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderFile[] {
-  const { placements, edgeRoutes, needsLayout, groups, ...definition } = diagram
+  const { members, groups, lines, geometry, ...definition } = diagram
   const nameOf = new Map((groups ?? []).map((group) => [group.id, group]))
-  const asStoredGroup = (rect: DomainGroupRect): Record<string, unknown> => {
-    const { id, ...box } = rect
-    const held = nameOf.get(id)
-    return { name: held?.name ?? id, ...box, ...(held?.color !== undefined ? { color: held.color } : {}) }
+  const layoutConfig = {
+    ...(geometry?.zones !== undefined ? { zones: geometry.zones } : {}),
+    ...(geometry?.groups !== undefined
+      ? { domainGroups: geometry.groups.map((rect) => asStoredGroup(rect, nameOf)) }
+      : {}),
+    ...(geometry?.canvas !== undefined ? { canvas: geometry.canvas } : {}),
   }
-  const layoutConfig = definition.layoutConfig?.domainGroups
-    ? { ...definition.layoutConfig, domainGroups: definition.layoutConfig.domainGroups.map(asStoredGroup) }
-    : definition.layoutConfig
+  const hasRoutes = lines !== undefined || geometry?.routes !== undefined
   return [
     {
       path: `${DIAGRAMS_FOLDER}/${name}.json`,
-      text: stableJson(layoutConfig ? { ...definition, layoutConfig } : definition),
+      text: stableJson(
+        Object.keys(layoutConfig).length ? { ...definition, layoutConfig } : definition,
+      ),
     },
     // Always written, even empty: a diagram that has no placement file is one
     // whose file was deleted, and that has to mean "lay it out again" rather
@@ -181,13 +193,15 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
     {
       path: `${DIAGRAMS_FOLDER}/${name}.placements.json`,
       text: stableJson({
-        ...(needsLayout ? { needsLayout } : {}),
-        placements: [...placements]
-          .sort((a, b) => (a.elementId < b.elementId ? -1 : 1))
+        ...(geometry?.needsLayout ? { needsLayout: geometry.needsLayout } : {}),
+        placements: placedNodes(diagram)
+          .slice()
+          .sort((a, b) => (a.id < b.id ? -1 : 1))
           .map((placement) => asStoredPlacement(placement, nameOf)),
-        ...(edgeRoutes
+        ...(hasRoutes
           ? {
-            routes: [...edgeRoutes]
+            routes: edgeRoutesOf(diagram)
+              .slice()
               .sort((a, b) => (a.relationId < b.relationId ? -1 : 1))
               .map(asStoredRoute),
           }
@@ -239,12 +253,34 @@ function readGroups(
   return { groups, idOf }
 }
 
+/**
+ * One node, as format 3 files it: a placement row, which is its membership and
+ * its coordinates in one object (ADR-0012 §6 is what separates them).
+ *
+ * The keys are written in the order format 3 had them, so a file that goes
+ * through this build unchanged is the bytes that went in — `stableJson` sorts
+ * them anyway, and this keeps the two readable side by side.
+ */
 function asStoredPlacement(
-  placement: DiagramPlacement, nameOf: Map<string, DiagramGroup>,
+  placement: PlacedNode, nameOf: Map<string, DiagramGroup>,
 ): Record<string, unknown> {
-  if (placement.group === undefined) return { ...placement }
-  const { group, ...rest } = placement
-  return { ...rest, domainGroup: nameOf.get(group)?.name ?? group }
+  const { id, zone, group, ...rest } = placement
+  return {
+    elementId: id,
+    ...(zone !== undefined ? { zone } : {}),
+    ...(group !== undefined ? { domainGroup: nameOf.get(group)?.name ?? group } : {}),
+    ...rest,
+  }
+}
+
+function asStoredGroup(
+  rect: DomainGroupRect, nameOf: Map<string, DiagramGroup>,
+): Record<string, unknown> {
+  const { id, ...box } = rect
+  const held = nameOf.get(id)
+  return {
+    name: held?.name ?? id, ...box, ...(held?.color !== undefined ? { color: held.color } : {}),
+  }
 }
 
 /**
@@ -519,42 +555,51 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
   }
   const laid = jsonAt(folder, `${DIAGRAMS_FOLDER}/${name}.placements.json`)
   const rows = listOf(laid?.placements).filter((row) => typeof row.elementId === 'string')
-  const held = definition.layoutConfig as DiagramLayoutConfig | undefined
-  const rects = listOf((held as unknown as Record<string, unknown> | undefined)?.domainGroups)
+  const { layoutConfig, ...rest } = definition
+  const held = layoutConfig as Record<string, unknown> | undefined
+  const rects = listOf(held?.domainGroups)
   const { groups, idOf } = readGroups(rects, rows)
-  const placements = rows.map((row) => {
-    const { domainGroup, ...rest } = row
-    return (typeof domainGroup === 'string'
-      ? { ...rest, group: idOf.get(domainGroup) }
-      : rest) as unknown as DiagramPlacement
-  })
-  const routes = laid && 'routes' in laid
+
+  // A placement row is a member AND a node, and format 3 keeps them in one
+  // object; ADR-0012 §6 is what takes them apart.
+  const members: DiagramMember[] = rows.map((row) => ({
+    id: row.elementId as string,
+    ...(typeof row.zone === 'string' ? { zone: row.zone as DiagramMember['zone'] } : {}),
+    ...(typeof row.domainGroup === 'string' ? { group: idOf.get(row.domainGroup) } : {}),
+  }))
+  const nodes: NodeGeometry[] = rows.map((row) => ({
+    id: row.elementId as string,
+    x: typeof row.x === 'number' ? row.x : 0,
+    y: typeof row.y === 'number' ? row.y : 0,
+    ...(typeof row.width === 'number' ? { width: row.width } : {}),
+    ...(typeof row.height === 'number' ? { height: row.height } : {}),
+  }))
+  const stored = laid && 'routes' in laid
     ? listOf(laid.routes).filter((row) => typeof row.connectionId === 'string').map(asEdgeRoute)
     : undefined
+  const { lines, routes } = stored ? splitRoutes(stored) : { lines: undefined, routes: undefined }
+
+  const geometry: Geometry = { nodes }
+  // No placement file at all: somebody deleted it, or a hand-made folder never
+  // had one. Either way the geometry is not a decision anybody made yet.
+  if (laid?.needsLayout === true || !laid) geometry.needsLayout = true
+  if (held?.canvas !== undefined) geometry.canvas = held.canvas as Geometry['canvas']
+  if (held?.zones !== undefined) geometry.zones = held.zones as Geometry['zones']
+  if (rects.length) {
+    geometry.groups = rects.map(({ name: groupName, color: _color, ...box }) => ({
+      id: idOf.get(groupName as string)!, ...box,
+    })) as unknown as DomainGroupRect[]
+  }
+  // Present-versus-absent survives: an empty `routes` key in the file is a
+  // diagram somebody emptied, and comes back as one.
+  if (stored) geometry.routes = routes ?? []
+
   return {
-    ...(definition as unknown as Omit<DesignDiagram, 'placements'>),
-    ...(held
-      ? {
-        layoutConfig: {
-          ...held,
-          ...(rects.length
-            ? {
-              domainGroups: rects.map(({ name: groupName, color: _color, ...box }) => ({
-                id: idOf.get(groupName as string)!, ...box,
-              })) as unknown as DomainGroupRect[],
-            }
-            : {}),
-        },
-      }
-      : {}),
+    ...(rest as unknown as Omit<DesignDiagram, 'members' | 'geometry'>),
     ...(groups.length ? { groups } : {}),
-    // A missing placement file is a diagram nobody has laid out yet, not a
-    // broken one: the editor lays it out and saves the result.
-    placements,
-    ...(routes ? { edgeRoutes: routes } : {}),
-    // No file at all: somebody deleted it, or a hand-made folder never had
-    // one. Either way the geometry is not a decision anybody made yet.
-    ...(laid?.needsLayout === true || !laid ? { needsLayout: true } : {}),
+    ...(lines ? { lines } : {}),
+    members,
+    geometry,
   }
 }
 

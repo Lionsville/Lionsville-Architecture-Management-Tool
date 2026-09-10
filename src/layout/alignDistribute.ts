@@ -22,7 +22,7 @@ export interface NodeBounds {
 }
 
 export interface PositionUpdate {
-  elementId: ElementId;
+  id: ElementId;
   x: number;
   y: number;
 }
@@ -63,7 +63,7 @@ export function alignNodes(nodes: NodeBounds[], axis: AlignAxis): PositionUpdate
         y = boxCenterY - node.height / 2;
         break;
     }
-    if (x !== node.x || y !== node.y) updates.push({ elementId: node.id, x, y });
+    if (x !== node.x || y !== node.y) updates.push({ id: node.id, x, y });
   }
   return updates;
 }
@@ -96,8 +96,8 @@ export function distributeNodes(nodes: NodeBounds[], axis: DistributeAxis): Posi
     if (next === pos(node)) continue;
     updates.push(
       horizontal
-        ? { elementId: node.id, x: next, y: node.y }
-        : { elementId: node.id, x: node.x, y: next },
+        ? { id: node.id, x: next, y: node.y }
+        : { id: node.id, x: node.x, y: next },
     );
   }
   return updates;

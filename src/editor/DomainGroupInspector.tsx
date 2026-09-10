@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
@@ -46,7 +47,7 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
     setDraft(name);
   }
 
-  const members = diagram.placements.filter((p) => p.group === name).length;
+  const members = placedNodes(diagram).filter((p) => p.group === name).length;
   const commitRename = () => {
     if (draft.trim() === name) return;
     actions.renameDomainGroup(name, draft);

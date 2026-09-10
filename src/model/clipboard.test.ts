@@ -35,7 +35,7 @@ describe('serializeSelection', () => {
     const payload = serializeSelection(source, d1, ['10', '11', '12']);
     expect(payload).toBeDefined();
     expect(payload!.elements.map((e) => e.id).sort()).toEqual(['10', '11']);
-    expect(payload!.placements.map((p) => p.elementId).sort()).toEqual(['10', '11']);
+    expect(payload!.placements.map((p) => p.id).sort()).toEqual(['10', '11']);
     // Only 20 has both endpoints placed+selected; 21 touches the unplaced 12.
     expect(payload!.relations.map((c) => c.id)).toEqual(['20']);
   });
@@ -84,8 +84,8 @@ describe('remapClipboard', () => {
     });
     // Placements are offset and re-keyed; the known group survives.
     expect(out.placements).toEqual([
-      { elementId: 'tmp-e1', x: 110, y: 120, zone: 'landscape', group: 'Commerce' },
-      { elementId: 'tmp-e2', x: 150, y: 180, zone: undefined, group: undefined },
+      { id: 'tmp-e1', x: 110, y: 120, zone: 'landscape', group: 'Commerce' },
+      { id: 'tmp-e2', x: 150, y: 180, zone: undefined, group: undefined },
     ]);
   });
 
@@ -100,11 +100,11 @@ describe('remapClipboard', () => {
   });
 
   it('strips zone/group and repoints orphaned components when pasting into a container', () => {
-    const single: ClipboardPayload = {
+    const single: ClipboardPayload = ({
       elements: [element('comp', { kind: 'component', parentApplicationId: 'app' })],
       relations: [],
       placements: [placement('comp', { x: 5, y: 5, zone: 'landscape', group: 'X' })],
-    };
+    });
     const out = remapClipboard(single, {
       ...minters(),
       offset: { x: 0, y: 0 },
@@ -116,11 +116,11 @@ describe('remapClipboard', () => {
   });
 
   it('drops a parent reference that is neither copied nor a container adoption', () => {
-    const single: ClipboardPayload = {
+    const single: ClipboardPayload = ({
       elements: [element('a', { kind: 'application', parentApplicationId: 'gone' })],
       relations: [],
       placements: [placement('a')],
-    };
+    });
     const out = remapClipboard(single, {
       ...minters(),
       offset: { x: 0, y: 0 },
@@ -135,8 +135,8 @@ describe('pasteOffsetFor', () => {
     elements: [],
     relations: [],
     placements: [
-      { elementId: 'a', x: 300, y: 500 },
-      { elementId: 'b', x: 100, y: 700 },
+      { id: 'a', x: 300, y: 500 },
+      { id: 'b', x: 100, y: 700 },
     ],
   };
 

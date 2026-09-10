@@ -11,6 +11,7 @@
  * workspace, the history seam and the store.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryProjectHistory } from '../../adapters/memory/InMemoryProjectHistory'
 import { InMemoryProjectStore } from '../../adapters/memory/InMemoryProjectStore'
@@ -51,7 +52,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   customerName: 'Acme',
   elements: [],
   relations: [],
-  diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+  diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   ...over,
 })
 
@@ -288,7 +289,7 @@ describe('the history of one thing (ADR-0008)', () => {
     {
       id: 'c1', subject: 'Moved everything', at, author: 'W.',
       touched: ['acme/landscape/diagrams/d1.placements.json', 'acme/landscape/diagrams/d1.json'],
-      projects: [{ ...withDescribed(), model: { ...described(), diagrams: [{ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] }] } }],
+      projects: [{ ...withDescribed(), model: { ...described(), diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] })] } }],
     },
   ])
 
@@ -351,7 +352,7 @@ describe('going back, as going forward (ADR-0008)', () => {
   const before = (over: Partial<HostModel> = {}): ProjectSnapshot => ({
     ...project(),
     model: model({
-      diagrams: [{ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] })],
       decisions: [{ id: 'adr-1', number: 1, title: 'One writer', status: 'proposed', date: '2026-09-01', body: 'Why.', signers: [] }],
       ...over,
     }),

@@ -7,6 +7,7 @@
  * through the same navigation callback. Escape steps back before it steps out.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
@@ -36,12 +37,12 @@ const planner = element({ id: 'e3', kind: 'actor', name: 'Planner' });
 const offDiagram = element({ id: 'e4', name: 'Elsewhere' });
 
 function diagram(): DesignDiagram {
-  return {
+  return laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'Landscape',
-    placements: ['e1', 'e2', 'e3'].map((elementId) => ({ elementId, x: 0, y: 0 })),
-  };
+    placements: ['e1', 'e2', 'e3'].map((id) => ({ id, x: 0, y: 0 })),
+  });
 }
 
 function model(main: DesignElement): DesignModel {

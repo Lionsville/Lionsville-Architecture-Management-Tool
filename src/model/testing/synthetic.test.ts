@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { placedNodes } from '../../model/placement';
 import { SIZES, syntheticModel } from './synthetic'
 import type { SyntheticSpec } from './synthetic'
 import { fromArrays, toArrays } from '../normalised'
@@ -48,7 +49,7 @@ describe('the synthetic landscape', () => {
 
   it('places every landscape element on the landscape, and no component', () => {
     const model = syntheticModel({ ...tiny })
-    const placed = new Set(model.diagrams[0].placements.map((p) => p.elementId))
+    const placed = new Set(placedNodes(model.diagrams[0]).map((p) => p.id))
     const byId = new Map(model.elements.map((e) => [e.id, e]))
     for (const element of model.elements) {
       expect(placed.has(element.id)).toBe(element.kind !== 'component')

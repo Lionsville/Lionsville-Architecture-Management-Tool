@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { placedOn } from '../model/normalised';
 import {
   relationList, decisionList, decisionsOf, diagramList, elementList, fromArrays,
-  placementList, routeList, routesOf, toArrays,
+  memberList, routeList, routesOf, toArrays,
 } from './normalised'
 import type { Model } from './normalised'
 import type { HostModel } from './fromInterchange'
@@ -51,9 +52,9 @@ describe('fromArrays / toArrays', () => {
     }))
     const d = m.diagrams.one
 
-    expect(d.placements.b.x).toBe(1)
-    expect(d.order.placements).toEqual(['b', 'a'])
-    expect(placementList(d).map((p) => p.elementId)).toEqual(['b', 'a'])
+    expect(placedOn(d, 'b')!.x).toBe(1)
+    expect(d.order.members).toEqual(['b', 'a'])
+    expect(memberList(d).map((m) => m.id)).toEqual(['b', 'a'])
     expect(routesOf(d)['c#1'].waypoints).toHaveLength(1)
     expect(routeList(d).map((r) => r.relationId)).toEqual(['c#1'])
   })
@@ -81,7 +82,7 @@ describe('fromArrays / toArrays', () => {
     expect(empty.decisions).toEqual({})
     expect(empty.diagrams.one.edgeRoutes).toEqual({})
     expect(toArrays(empty).decisions).toEqual([])
-    expect(toArrays(empty).diagrams[0].edgeRoutes).toEqual([])
+    expect(toArrays(empty).diagrams[0].geometry.routes).toEqual([])
   })
 
   it('reads an absent list through the helpers without a default at each site', () => {

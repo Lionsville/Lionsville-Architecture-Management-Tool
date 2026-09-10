@@ -131,7 +131,7 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     const before = await stamps(root)
 
     const moved = sampleProject()
-    moved.model.diagrams[0].placements = [{ elementId: 'crews', x: 999, y: 20 }]
+    moved.model.diagrams[0].geometry.nodes = [{ id: 'crews', x: 999, y: 20 }]
     await store.save(moved)
 
     expect(await touched(before, await stamps(root)))

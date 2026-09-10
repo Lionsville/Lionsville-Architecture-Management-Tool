@@ -6,6 +6,7 @@
  * sentence possible.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { countChanges, diffModels, isUnchanged } from './diff'
 import type { HostModel } from './fromInterchange'
 import type { DesignElement } from './types'
@@ -19,10 +20,10 @@ function model(over: Partial<HostModel> = {}): HostModel {
     customerName: 'Acme',
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
     relations: [{ type: 'flow', id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
-    diagrams: [{
+    diagrams: [laidOut({
       id: 'l7', kind: 'layer7', name: 'Landschap',
-      placements: [{ elementId: 'crews', x: 0, y: 0 }, { elementId: 'reisinfo', x: 100, y: 0 }],
-    }],
+      placements: [{ id: 'crews', x: 0, y: 0 }, { id: 'reisinfo', x: 100, y: 0 }],
+    })],
     ...over,
   }
 }
@@ -93,10 +94,10 @@ describe('diffModels', () => {
     // The point of the file. Forty rows saying "moved" is not information; it
     // is why people stop reading a change list.
     const tidied = model({
-      diagrams: [{
+      diagrams: [laidOut({
         id: 'l7', kind: 'layer7', name: 'Landschap',
-        placements: [{ elementId: 'crews', x: 40, y: 40 }, { elementId: 'reisinfo', x: 240, y: 40 }],
-      }],
+        placements: [{ id: 'crews', x: 40, y: 40 }, { id: 'reisinfo', x: 240, y: 40 }],
+      })],
     })
     expect(diffModels(model(), tidied)).toEqual([
       { kind: 'changed', what: 'placement', id: 'l7', name: 'Landschap', count: 2 },
@@ -127,10 +128,10 @@ describe('countChanges', () => {
     // pass is the misreading this whole file exists to prevent.
     const after = model({
       elements: [element('crews', 'Crews'), element('planning', 'Planning')],
-      diagrams: [{
+      diagrams: [laidOut({
         id: 'l7', kind: 'layer7', name: 'Landschap',
-        placements: [{ elementId: 'crews', x: 9, y: 9 }],
-      }],
+        placements: [{ id: 'crews', x: 9, y: 9 }],
+      })],
     })
     expect(countChanges(diffModels(model(), after)))
       .toEqual({ added: 1, removed: 1, changed: 0, moved: 2 })

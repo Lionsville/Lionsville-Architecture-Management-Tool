@@ -1,8 +1,8 @@
 import type {
   Relation,
   DesignElement,
-  DiagramLayoutConfig,
-  DiagramPlacement,
+  Geometry,
+  PlacedNode,
   EdgeRoute,
   ResizableZone,
 } from './types';
@@ -92,9 +92,9 @@ function sameCoordinate(a: number, b: number): boolean {
   return Math.abs(a - b) < POSITION_EPSILON;
 }
 
-export function placementsEqual(a: DiagramPlacement, b: DiagramPlacement): boolean {
+export function placementsEqual(a: PlacedNode, b: PlacedNode): boolean {
   return (
-    a.elementId === b.elementId &&
+    a.id === b.id &&
     sameOptional(a.zone, b.zone) &&
     sameOptional(a.group, b.group) &&
     sameCoordinate(a.x, b.x) &&
@@ -136,8 +136,8 @@ export function edgeRoutesEqual(a: EdgeRoute, b: EdgeRoute): boolean {
 }
 
 export function layoutConfigsEqual(
-  a: DiagramLayoutConfig | undefined,
-  b: DiagramLayoutConfig | undefined,
+  a: Pick<Geometry, 'zones' | 'canvas' | 'groups'> | undefined,
+  b: Pick<Geometry, 'zones' | 'canvas' | 'groups'> | undefined,
 ): boolean {
   for (const zone of RESIZABLE_ZONES) {
     if (!sameOptional(a?.zones?.[zone]?.size, b?.zones?.[zone]?.size)) return false;
@@ -148,8 +148,8 @@ export function layoutConfigsEqual(
   ) {
     return false;
   }
-  const groupsA = a?.domainGroups ?? [];
-  const groupsB = b?.domainGroups ?? [];
+  const groupsA = a?.groups ?? [];
+  const groupsB = b?.groups ?? [];
   if (groupsA.length !== groupsB.length) return false;
   return groupsA.every((groupA, i) => {
     const groupB = groupsB[i];

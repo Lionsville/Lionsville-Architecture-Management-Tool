@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { placedNodes } from '../../model/placement';
 import { apply, fromArrays, restoreCommand } from '../../model'
 import { diffModels } from '../../model/diff'
 import type { HostModel } from '../../model/fromInterchange'
@@ -33,7 +34,7 @@ const now: HostModel = {
     ? { ...element, name: `${element.name} (renamed)`, description: `${element.description ?? ''}\n\nRewritten.` }
     : element)),
   diagrams: then.diagrams.map((diagram, i) => (i === 0
-    ? { ...diagram, name: 'A mess', placements: diagram.placements.map((p) => ({ ...p, x: p.x + 10, y: p.y + 10 })) }
+    ? { ...diagram, name: 'A mess', placements: placedNodes(diagram).map((p) => ({ ...p, x: p.x + 10, y: p.y + 10 })) }
     : diagram)),
   decisions: (then.decisions ?? []).map((adr, i) => (i === 0 ? { ...adr, title: `${adr.title}, retitled` } : adr)),
 }

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import type { DesignDiagram, DesignModel, ElementKind } from '../model/types';
 import { routeDiagramEdges } from './routeOnly';
 import { tidyContainer, tidyGroup, tidyLayer7 } from './tidy';
@@ -39,25 +40,25 @@ const elt = (id: string, kind: ElementKind) => ({
 
 /** Two grouped applications on a layer7 board, plus a container view of one. */
 function board(): { model: DesignModel; layer7: DesignDiagram; container: DesignDiagram } {
-  const layer7: DesignDiagram = {
+  const layer7: DesignDiagram = laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'L7',
     placements: [
-      { elementId: 'a', zone: 'landscape', x: 100, y: 400, group: 'Ops' },
-      { elementId: 'b', zone: 'landscape', x: 1200, y: 400, group: 'Ops' },
+      { id: 'a', zone: 'landscape', x: 100, y: 400, group: 'Ops' },
+      { id: 'b', zone: 'landscape', x: 1200, y: 400, group: 'Ops' },
     ],
-  };
-  const container: DesignDiagram = {
+  });
+  const container: DesignDiagram = laidOut({
     id: 'd2',
     kind: 'container',
     name: 'A',
     applicationElementId: 'a',
     placements: [
-      { elementId: 'a', zone: 'landscape', x: 80, y: 80 },
-      { elementId: 'c', zone: 'landscape', x: 140, y: 160 },
+      { id: 'a', zone: 'landscape', x: 80, y: 80 },
+      { id: 'c', zone: 'landscape', x: 140, y: 160 },
     ],
-  };
+  });
   return {
     model: {
       name: 'ACME',
@@ -107,7 +108,10 @@ describe('tidy — a router failure keeps the placements', () => {
   it('tidyGroup does the same, and stays partial', async () => {
     mockRoute.mockRejectedValue(wasmDown());
     const { model, layer7 } = board();
-    layer7.layoutConfig = { domainGroups: [{ id: 'Ops', x: 60, y: 350, width: 1400, height: 300 }] };
+    layer7.geometry = {
+      ...layer7.geometry,
+      groups: [{ id: 'Ops', x: 60, y: 350, width: 1400, height: 300 }],
+    };
 
     const result = await tidyGroup(model, layer7, 'Ops');
 

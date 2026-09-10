@@ -9,6 +9,7 @@
  * binding, not the canvas.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -72,7 +73,7 @@ const project: ProjectSnapshot = {
     customerName: 'Acme',
     elements: [{ id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} }],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

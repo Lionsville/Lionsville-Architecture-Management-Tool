@@ -5,6 +5,7 @@
  * commands are `commandFor.test.ts`.
  */
 import { describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { DEFAULT_TRANSLATE } from '../i18n/strings'
 import { LayoutRefused } from '../layout/elkLayout'
 import { summarise } from '../model/activity'
@@ -13,7 +14,7 @@ import type { Command } from '../model/commands'
 import type { HostModel } from '../model/fromInterchange'
 import type { DocumentImage } from '../model/types'
 import { idPolicy } from '../model/keys'
-import { fromArrays, toArrays } from '../model/normalised'
+import { placedOn, fromArrays, toArrays } from '../model/normalised'
 import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { handle } from './handle'
@@ -31,7 +32,7 @@ const host: HostModel = {
     aspects: {}, description: 'Sends the invoices.',
   }],
   relations: [],
-  diagrams: [{ id: 'l7', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],
+  diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })],
   decisions: [{ id: 'adr-1', number: 1, title: 'Keep the ledger', status: 'proposed', date: '2026-09-01', body: 'Because.', signers: [] }],
 }
 
@@ -138,7 +139,7 @@ describe('handle', () => {
     const out = await handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held)
     expect(out).toMatchObject({ ok: true })
     expect(held.model().elements['crm']).toMatchObject({ name: 'CRM', kind: 'application' })
-    expect(held.model().diagrams['l7'].placements['crm']).toMatchObject({ zone: 'landscape' })
+    expect(placedOn(held.model().diagrams['l7'], 'crm')).toMatchObject({ zone: 'landscape' })
   })
 
   it('refuses a write while the session is blocked, and changes nothing', async () => {

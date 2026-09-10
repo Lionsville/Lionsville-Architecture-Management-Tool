@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { edgeRoutesOf } from '../model/routes';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
@@ -31,17 +33,17 @@ function model(): DesignModel {
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', label: 'Orders', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'e1', zone: 'landscape', x: 100, y: 400 },
-          { elementId: 'e2', zone: 'landscape', x: 900, y: 400 },
+          { id: 'e1', zone: 'landscape', x: 100, y: 400 },
+          { id: 'e2', zone: 'landscape', x: 900, y: 400 },
         ],
         // Router output: no handles, larger radius, replaceable — until touched.
         edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 500, y: 400 }], source: 'auto' }],
-      },
+      }),
     ],
   };
 }
@@ -49,7 +51,7 @@ function model(): DesignModel {
 function render(initial: DesignModel = model()) {
   const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
   const stored = () =>
-    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1');
+    edgeRoutesOf(result.current.model.diagrams[0])?.find((r) => r.relationId === 'c1');
   return { result, host, stored };
 }
 
@@ -87,7 +89,7 @@ describe('a hand edit claims the route', () => {
     // Drawing the first bend on a plain floating edge. There is no row yet, so
     // nothing to inherit a source from, and it must not default to auto.
     const plain = model();
-    plain.diagrams[0].edgeRoutes = undefined;
+    plain.diagrams[0].geometry.routes = undefined;
     const { result, stored } = render(plain);
 
     act(() => {

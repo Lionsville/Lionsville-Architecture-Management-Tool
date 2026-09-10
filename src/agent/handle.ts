@@ -22,7 +22,7 @@ import type { HostModel } from '../model/fromInterchange'
 import type { IdPolicy, MakeId } from '../model/keys'
 import { idPolicy } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf, toArrays, transitionList } from '../model/normalised'
+import { decisionsOf, toArrays, transitionList, placedOn } from '../model/normalised'
 import { transitionLabel } from '../model/transition'
 import type { DocumentImage } from '../model/types'
 import { ShellError } from '../platform/errors'
@@ -444,19 +444,19 @@ async function render(
   if (Array.isArray(args.elementIds) && args.elementIds.length > 0) {
     for (const id of args.elementIds as string[]) {
       if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
-      if (!diagram.placements[id]) return refused('agent.notDrawn', id)
+      if (!placedOn(diagram, id)) return refused('agent.notDrawn', id)
     }
     const box = boundsOf(model, diagram, args.elementIds as string[])
     bounds = box && expandRect(box, CROP_MARGIN)
   } else if ([args.x, args.y, args.width, args.height].every((v) => typeof v === 'number')) {
     bounds = { x: args.x as number, y: args.y as number, width: args.width as number, height: args.height as number }
   } else {
-    const rects = diagram.order.placements
+    const rects = diagram.order.members
       .filter((id) => model.elements[id])
-      .map((id) => placementRect(model.elements[id].kind, diagram.placements[id]))
+      .map((id) => placementRect(model.elements[id].kind, placedOn(diagram, id)!))
     const drawn = unionRects(rects)
     bounds = diagram.kind === 'layer7'
-      ? unionRects([canvasRect(diagram.layoutConfig), ...(drawn ? [drawn] : [])])
+      ? unionRects([canvasRect(diagram), ...(drawn ? [drawn] : [])])
       : drawn
   }
   if (!bounds || bounds.width <= 0 || bounds.height <= 0) return refused('agent.notDrawn', 'nothing to draw')

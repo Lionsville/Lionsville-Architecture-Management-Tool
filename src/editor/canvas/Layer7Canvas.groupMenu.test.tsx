@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../../model/testFixtures';
 import { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ReactFlowProvider, useReactFlow, type ReactFlowInstance } from '@xyflow/react';
@@ -33,14 +34,14 @@ function model(): DesignModel {
     ],
     relations: [],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         groups: [NAMED],
-        placements: [{ elementId: 'a1', zone: 'landscape', group: 'core', x: 250, y: 250 }],
+        placements: [{ id: 'a1', zone: 'landscape', group: 'core', x: 250, y: 250 }],
         layoutConfig: { domainGroups: [GROUP] },
-      },
+      }),
     ],
   };
 }

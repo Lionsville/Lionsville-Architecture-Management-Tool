@@ -44,7 +44,7 @@ function baseProps(overrides: Partial<ElementNodeProps> = {}): ElementNodeProps 
         isManaged: true,
         aspects: {},
       },
-      placement: { elementId: 'a1', zone: 'landscape', x: 0, y: 0 },
+      placement: { id: 'a1', zone: 'landscape', x: 0, y: 0 },
       resizeLimits: testResizeLimits('application'),
       readOnly: false,
       aspectConfig: [],

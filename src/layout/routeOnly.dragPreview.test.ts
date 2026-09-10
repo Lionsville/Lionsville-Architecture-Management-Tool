@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { diagramWithRoutes } from '../model/routes';
+import { laidOut } from '../model/testFixtures';
 import { routeDiagramEdges } from './routeOnly';
 import { diagramWithLivePlacements } from '../model/placement';
 import { manualRouteIds } from '../model/routes';
@@ -41,20 +43,20 @@ function boardModel(): DesignModel {
       isBidirectional: false,
     })),
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         autoRoute: true,
         placements: [
           ...[1, 2, 3, 4].map((n) => ({
-            elementId: `s${n}`,
+            id: `s${n}`,
             zone: 'landscape' as const,
             x: 100,
             y: 100 + n * 160,
           })),
           ...[1, 2, 3, 4].map((n) => ({
-            elementId: `t${n}`,
+            id: `t${n}`,
             zone: 'landscape' as const,
             x: 1200,
             y: 100 + n * 160,
@@ -63,13 +65,13 @@ function boardModel(): DesignModel {
         layoutConfig: {
           domainGroups: [{ id: 'Wall', x: 600, y: 120, width: 120, height: 700 }],
         },
-      },
+      }),
     ],
   };
 }
 
 /** Exactly what `useDragRoutePreview` runs, minus React. */
-const preview = (model: DesignModel, moves: { elementId: string; x: number; y: number }[]) => {
+const preview = (model: DesignModel, moves: { id: string; x: number; y: number }[]) => {
   const diagram = model.diagrams[0];
   return routeDiagramEdges(
     model,
@@ -89,7 +91,7 @@ const dragEnd = (model: DesignModel) => {
 /** The model as it is once the drop has committed `moves`. */
 function committed(
   model: DesignModel,
-  moves: { elementId: string; x: number; y: number }[],
+  moves: { id: string; x: number; y: number }[],
 ): DesignModel {
   return {
     ...model,
@@ -100,7 +102,7 @@ function committed(
 describe('drag preview — the drop is a no-op', () => {
   it('previews exactly the geometry the drag-end pass then commits', async () => {
     const model = boardModel();
-    const moves = [{ elementId: 's3', x: 420, y: 700 }];
+    const moves = [{ id: 's3', x: 420, y: 700 }];
 
     const previewed = await preview(model, moves);
     const landed = await dragEnd(committed(model, moves));
@@ -115,8 +117,8 @@ describe('drag preview — the drop is a no-op', () => {
   it('holds for a multi-node drag', async () => {
     const model = boardModel();
     const moves = [
-      { elementId: 's2', x: 300, y: 300 },
-      { elementId: 't4', x: 980, y: 240 },
+      { id: 's2', x: 300, y: 300 },
+      { id: 't4', x: 980, y: 240 },
     ];
 
     expect((await preview(model, moves)).edgeRoutes).toEqual(
@@ -127,7 +129,7 @@ describe('drag preview — the drop is a no-op', () => {
   it('is not vacuous: moving a card DOES change the routes', async () => {
     const model = boardModel();
     const before = await dragEnd(model);
-    const after = await preview(model, [{ elementId: 's3', x: 420, y: 700 }]);
+    const after = await preview(model, [{ id: 's3', x: 420, y: 700 }]);
 
     // If this ever passes, the two assertions above are comparing a board with
     // itself and prove nothing at all.
@@ -143,9 +145,11 @@ describe('drag preview — the drop is a no-op', () => {
       labelPosition: { x: 640, y: 40 },
       source: 'manual' as const,
     };
-    diagram.edgeRoutes = [stored];
+    // Written through the split, so the constraint half lands in the
+    // definition and the waypoints in the geometry (ADR-0012 §6).
+    model.diagrams[0] = diagramWithRoutes(diagram, [stored]);
 
-    const moves = [{ elementId: 's3', x: 420, y: 700 }];
+    const moves = [{ id: 's3', x: 420, y: 700 }];
     const previewed = await preview(model, moves);
     const landed = await dragEnd(committed(model, moves));
 

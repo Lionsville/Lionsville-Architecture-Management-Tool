@@ -12,6 +12,7 @@
  * order alone and that a second round shifts nothing further.
  */
 import { describe, expect, it } from 'vitest'
+import { placedNodes } from '../model/placement';
 import doc from '../app/examples/acme-logistics.json'
 import { fromInterchange } from './fromInterchange'
 import type { InterchangeDoc } from './fromInterchange'
@@ -100,9 +101,9 @@ describe('fromInterchange → toInterchange on the shipped example', () => {
     const model = fromInterchange(source, GROUP_NAME)
 
     expect(model.customerName).toBe(GROUP_NAME)
-    expect(model.diagrams.every((d) => d.needsLayout)).toBe(true)
+    expect(model.diagrams.every((d) => d.geometry?.needsLayout)).toBe(true)
     // the document carries no geometry, so every placement starts at the origin
-    expect(model.diagrams.every((d) => d.placements.every((p) => p.x === 0 && p.y === 0))).toBe(true)
+    expect(model.diagrams.every((d) => placedNodes(d).every((p) => p.x === 0 && p.y === 0))).toBe(true)
   })
 })
 

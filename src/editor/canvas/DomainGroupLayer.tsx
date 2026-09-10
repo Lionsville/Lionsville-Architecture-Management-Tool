@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactFlow, ViewportPortal } from '@xyflow/react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
-import type {
-  DiagramGroup, DiagramLayoutConfig, DomainGroupRect, Point, Rect,
-} from '../../model/types';
+import type { DiagramGroup, DomainGroupRect, Geometry, Point, Rect } from '../../model/types';
 import { useCanvasMenu } from './CanvasMenuContext';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
@@ -49,7 +47,7 @@ interface Gesture {
 }
 
 export interface DomainGroupLayerProps {
-  layoutConfig?: DiagramLayoutConfig;
+  geometry?: Geometry;
   /**
    * What the groups are CALLED, by id (ADR-0012 §6). The boxes come from the
    * layout config; the label and the colour come from here, which is why a
@@ -78,7 +76,7 @@ export interface DomainGroupLayerProps {
 }
 
 /**
- * Explicit domain-group rectangles from the diagram's layoutConfig
+ * Explicit domain-group rectangles from the view's geometry
  * (iteration 2 — no longer derived from member bounding boxes). Click the box
  * (or its label) to select it like a node — the inspector then offers rename,
  * tidy and remove, and Delete removes it. Drag the label to move, drag the
@@ -158,7 +156,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
     },
   });
 
-  const boxes = props.layoutConfig?.domainGroups ?? [];
+  const boxes = props.geometry?.groups ?? [];
   const named = new Map(props.groups.map((group) => [group.id, group]));
   if (boxes.length === 0) return null;
 

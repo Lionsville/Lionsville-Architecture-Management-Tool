@@ -12,6 +12,7 @@
  * where it is pinned. What is here is only the editor's half of the bargain.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { useEditorState } from './useEditorState';
 import { renderEditorState, useEditorHost, hostedProps } from './testing/editorHost';
@@ -24,7 +25,7 @@ function model(elementName = 'Billing'): DesignModel {
   return {
     name: 'Landscape',
     customerName: 'ACME',
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })],
     elements: [{
       id: 'billing', kind: 'application', name: elementName,
       lifecycle: 'live', isManaged: true, aspects: {},
@@ -60,7 +61,8 @@ describe('useEditorState — the host owns the stack', () => {
     // An element and its placement, in one step: undo takes back the whole card.
     const step = host.current.commands[0];
     expect(step.type === 'transaction' && step.commands.map((c) => c.type))
-      .toEqual(['element.create', 'placement.set']);
+      // Placing something is membership AND geometry (ADR-0012 §6).
+      .toEqual(['element.create', 'transaction']);
   });
 
   it('sends nothing at all under readOnly', () => {
@@ -68,7 +70,7 @@ describe('useEditorState — the host owns the stack', () => {
 
     act(() => result.current.actions.addElement({ kind: 'application' }));
     act(() => result.current.actions.updateElement('billing', { name: 'Renamed' }));
-    act(() => result.current.actions.movePlacements([{ elementId: 'billing', x: 9, y: 9 }]));
+    act(() => result.current.actions.movePlacements([{ id: 'billing', x: 9, y: 9 }]));
 
     expect(host.current.commands).toEqual([]);
     expect(result.current.model.elements[0].name).toBe('Billing');
@@ -121,7 +123,7 @@ describe('useEditorState — the host swaps the document', () => {
     const second: DesignModel = {
       ...model('Second'),
       elements: [],
-      diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
     };
     const view = renderHook(
       (document: DesignModel) => {

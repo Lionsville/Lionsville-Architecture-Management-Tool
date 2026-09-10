@@ -287,7 +287,7 @@ export function useModelSession(deps: {
     // The flag is deleted rather than set to false — a saved file should look
     // like a hand-written one, and nothing reads the difference.
     dispatch({
-      type: 'diagram.update', id: diagramId, patch: { needsLayout: undefined }, undoable: false,
+      type: 'board.set', diagramId, patch: { needsLayout: undefined }, undoable: false,
     })
   }, [dispatch])
 

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { DiagramSettingsDialog } from './DiagramSettingsDialog';
 import { DEFAULT_ASPECT_CONFIG } from '../model/aspects';
@@ -7,9 +8,9 @@ import type { DesignDiagram, DiagramSettings } from '../model/types';
 
 afterEach(() => cleanup());
 
-const diagram = (over: Partial<DesignDiagram> = {}): DesignDiagram => ({
+const diagram = (over: Partial<DesignDiagram> = {}): DesignDiagram => (laidOut({
   id: 'd1', kind: 'layer7', name: 'Landscape', placements: [], ...over,
-});
+}));
 
 function open(over: Partial<DesignDiagram> = {}, client = 'Acme Logistics') {
   const onSave = vi.fn<(id: string, settings: DiagramSettings) => void>();

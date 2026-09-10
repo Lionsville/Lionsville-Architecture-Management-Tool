@@ -27,12 +27,13 @@ const LANDSCAPE = 'landscape'
 
 /** Ten cards picked off the landscape, moved a grid square down and right. */
 function dragTen(from: Model): Command {
-  const moved = from.diagrams[LANDSCAPE].order.placements.slice(100, 110)
+  const diagram = from.diagrams[LANDSCAPE]
+  const moved = diagram.order.members.slice(100, 110)
   return {
-    type: 'placement.set',
+    type: 'node.set',
     diagramId: LANDSCAPE,
-    placements: moved.map((id) => {
-      const held = from.diagrams[LANDSCAPE].placements[id]
+    nodes: moved.map((id) => {
+      const held = diagram.nodes[id]
       return { ...held, x: held.x + 40, y: held.y + 40 }
     }),
     coalesce: 'drag',

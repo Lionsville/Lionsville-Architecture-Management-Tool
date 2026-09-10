@@ -19,8 +19,8 @@ describe('alignNodes', () => {
     const moves = alignNodes([box('a', 30, 0), box('b', 10, 0), box('c', 50, 0)], 'left');
     // b is already at the min; a and c move to x=10.
     expect(moves).toEqual([
-      { elementId: 'a', x: 10, y: 0 },
-      { elementId: 'c', x: 10, y: 0 },
+      { id: 'a', x: 10, y: 0 },
+      { id: 'c', x: 10, y: 0 },
     ]);
   });
 
@@ -28,28 +28,28 @@ describe('alignNodes', () => {
     // widths differ so the resulting x differs per node.
     const moves = alignNodes([box('a', 0, 0, 100), box('b', 0, 0, 40)], 'right');
     // maxRight = 100; a stays (0+100), b -> 60.
-    expect(moves).toEqual([{ elementId: 'b', x: 60, y: 0 }]);
+    expect(moves).toEqual([{ id: 'b', x: 60, y: 0 }]);
   });
 
   it('aligns horizontal centres to the bounding-box centre', () => {
     // bbox: minLeft 0, maxRight 200 -> centreX 100.
     const moves = alignNodes([box('a', 0, 0, 100), box('b', 100, 0, 100)], 'centerX');
     expect(moves).toEqual([
-      { elementId: 'a', x: 50, y: 0 },
-      { elementId: 'b', x: 50, y: 0 },
+      { id: 'a', x: 50, y: 0 },
+      { id: 'b', x: 50, y: 0 },
     ]);
   });
 
   it('aligns top / bottom / vertical centres on the y axis', () => {
     expect(alignNodes([box('a', 0, 30), box('b', 0, 10)], 'top')).toEqual([
-      { elementId: 'a', x: 0, y: 10 },
+      { id: 'a', x: 0, y: 10 },
     ]);
     expect(alignNodes([box('a', 0, 0, 100, 50), box('b', 0, 0, 100, 20)], 'bottom')).toEqual([
-      { elementId: 'b', x: 0, y: 30 },
+      { id: 'b', x: 0, y: 30 },
     ]);
     expect(alignNodes([box('a', 0, 0, 100, 40), box('b', 0, 100, 100, 40)], 'centerY')).toEqual([
-      { elementId: 'a', x: 0, y: 50 },
-      { elementId: 'b', x: 0, y: 50 },
+      { id: 'a', x: 0, y: 50 },
+      { id: 'b', x: 0, y: 50 },
     ]);
   });
 
@@ -71,7 +71,7 @@ describe('distributeNodes', () => {
       [box('a', 0, 0, 100), box('c', 400, 0, 100), box('b', 150, 0, 100)],
       'horizontal',
     );
-    expect(moves).toEqual([{ elementId: 'b', x: 200, y: 0 }]);
+    expect(moves).toEqual([{ id: 'b', x: 200, y: 0 }]);
   });
 
   it('evens the vertical gaps', () => {
@@ -80,7 +80,7 @@ describe('distributeNodes', () => {
       'vertical',
     );
     // span 450, total height 150, gap = 300/2 = 150; middle b -> y = 50 + 150 = 200.
-    expect(moves).toEqual([{ elementId: 'b', x: 0, y: 200 }]);
+    expect(moves).toEqual([{ id: 'b', x: 0, y: 200 }]);
   });
 
   it('sorts by position before distributing (input order irrelevant)', () => {

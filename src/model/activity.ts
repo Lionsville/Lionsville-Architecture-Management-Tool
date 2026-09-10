@@ -84,20 +84,30 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'relation.delete':
       return { key: 'activity.relationDeleted' }
 
-    case 'placement.set': {
-      const count = flat.reduce(
-        (n, c) => n + (c.type === 'placement.set' ? c.placements.length : 0), 0)
+    // A card put on a view and a card dragged are one step to a reader, and
+    // two commands since ADR-0012 §6 — so both lead-ins count the same rows.
+    case 'member.set':
+    case 'node.set': {
+      const count = new Set(flat.flatMap((c) => (
+        c.type === 'member.set' ? c.members.map((m) => m.id)
+          : c.type === 'node.set' ? c.nodes.map((n) => n.id)
+            : []
+      ))).size
       return { key: count === 1 ? 'activity.movedOne' : 'activity.movedMany', count }
     }
-    case 'placement.remove': {
-      const count = flat.reduce(
-        (n, c) => n + (c.type === 'placement.remove' ? c.elementIds.length : 0), 0)
+    case 'member.remove':
+    case 'node.remove': {
+      const count = new Set(flat.flatMap((c) => (
+        c.type === 'member.remove' || c.type === 'node.remove' ? c.elementIds : []
+      ))).size
       return { key: count === 1 ? 'activity.removedOne' : 'activity.removedMany', count }
     }
     case 'route.set':
     case 'route.clear':
       return { key: 'activity.routeChanged' }
-    case 'layout.set':
+    case 'box.set':
+    case 'box.remove':
+    case 'board.set':
       return { key: 'activity.layoutChanged' }
     case 'group.set':
       return { key: 'activity.groupChanged', name: lead.groups[0]?.name }

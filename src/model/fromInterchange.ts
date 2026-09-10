@@ -2,7 +2,8 @@
  * solution-design/v1 interchange document -> the editor's model.
  *
  * The document carries topology and semantics and no geometry, exactly as the
- * format prescribes. Every placement starts at (0,0) with needsLayout set; the
+ * format prescribes. A view arrives with its members and an empty geometry
+ * marked `needsLayout`; the
  * editor lays the drawing out itself on opening.
  *
  * What the model does not need but the document does carry — the document
@@ -11,7 +12,7 @@
  * export can hand it back without phantom changes in the diff.
  */
 import type {
-  DesignDiagram, DesignElement, DesignModel, DiagramGroup, DiagramPlacement, Layer7Zone, Relation,
+  DesignDiagram, DesignElement, DesignModel, DiagramGroup, DiagramMember, Layer7Zone, Relation,
 } from '.'
 import { claimKey } from './keys'
 import type { Adr } from './adr'
@@ -196,12 +197,10 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       idOf.set(name, id)
       groups.push({ id, name })
     }
-    const placements: DiagramPlacement[] = (d.places ?? []).map((p) => ({
-      elementId: p.elementKey,
+    const members: DiagramMember[] = (d.places ?? []).map((p) => ({
+      id: p.elementKey,
       zone: p.zone,
       group: p.domainGroup === undefined ? undefined : idOf.get(p.domainGroup),
-      x: 0,
-      y: 0,
     }))
     return {
       id: d.key,
@@ -213,11 +212,16 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       asOf: d.asOf,
       showTitleBlock: d.showTitleBlock,
       applicationElementId: d.applicationKey,
-      ...(groups.length ? { groups } : {}),
-      placements,
       aspectConfig: d.aspectConfig,
       showAspects: d.showAspects,
-      needsLayout: true,
+      // The order `fromDiagram` writes: what a view IS, then what is on it,
+      // then where it ended up. Two writers of one shape have to agree, or a
+      // document that goes through the model comes back byte-different.
+      members,
+      ...(groups.length ? { groups } : {}),
+      // The document carries no coordinates at all, so the view arrives with
+      // its members and nothing else, to be laid out on first open.
+      geometry: { nodes: [], needsLayout: true },
     }
   })
 

@@ -20,11 +20,12 @@ import type { DesignDiagram } from '../../model/types';
 
 const landscape = zoneRect('landscape');
 
-function diagram(...names: string[]): Pick<DesignDiagram, 'groups' | 'layoutConfig'> {
+function diagram(...names: string[]): Pick<DesignDiagram, 'groups' | 'geometry'> {
   return {
     groups: names.map((name) => ({ id: name.toLowerCase().replace(/ /g, '-'), name })),
-    layoutConfig: {
-      domainGroups: names.map((name, index) => ({
+    geometry: {
+      nodes: [],
+      groups: names.map((name, index) => ({
         id: name.toLowerCase().replace(/ /g, '-'),
         x: index * 10,
         y: 0,

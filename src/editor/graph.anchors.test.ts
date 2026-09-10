@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { buildEdges } from './graph';
 import type { DesignModel, EdgeRoute } from '../model/types';
 
@@ -26,18 +27,18 @@ function model(routes: EdgeRoute[] = []): DesignModel {
       { type: 'flow', id: 'c2', sourceId: 's', targetId: 't2', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
           // s: 100..300 × 100..230, right-side centre y = 165.
-          { elementId: 's', zone: 'landscape', x: 100, y: 100 },
-          { elementId: 't1', zone: 'landscape', x: 600, y: 100 },
-          { elementId: 't2', zone: 'landscape', x: 600, y: 400 },
+          { id: 's', zone: 'landscape', x: 100, y: 100 },
+          { id: 't1', zone: 'landscape', x: 600, y: 100 },
+          { id: 't2', zone: 'landscape', x: 600, y: 400 },
         ],
         edgeRoutes: routes,
-      },
+      }),
     ],
   };
 }

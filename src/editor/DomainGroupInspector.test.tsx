@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../layout/tidy';
@@ -9,17 +10,17 @@ import { DomainGroupInspector } from './DomainGroupInspector';
 
 afterEach(() => cleanup());
 
-const diagram: DesignDiagram = {
+const diagram: DesignDiagram = laidOut({
   id: 'd1',
   kind: 'layer7',
   name: 'L7',
   placements: [
-    { elementId: 'm1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
-    { elementId: 'm2', zone: 'landscape', group: 'Core', x: 10, y: 10 },
-    { elementId: 'out', zone: 'landscape', x: 900, y: 900 },
+    { id: 'm1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+    { id: 'm2', zone: 'landscape', group: 'Core', x: 10, y: 10 },
+    { id: 'out', zone: 'landscape', x: 900, y: 900 },
   ],
   layoutConfig: { domainGroups: [{ id: 'Core', x: 0, y: 0, width: 300, height: 200 }] },
-};
+});
 
 function renderInspector(
   overrides: {

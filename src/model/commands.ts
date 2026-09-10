@@ -33,9 +33,10 @@ import type {
 } from './normalised'
 import { decisionsOf } from './normalised'
 import type {
-  DesignElement, DiagramGroup, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
-  EdgeRoute, ElementId, Relation,
+  DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
+  EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
 } from './types'
+import { memberOf, nodeGeometryOf } from './placement'
 
 /** The model's own scalars — everything a project's settings dialog edits. */
 export type ProjectPatch = Partial<{
@@ -53,7 +54,14 @@ export type ProjectPatch = Partial<{
  * `diagram.rename` and `diagram.settings` — because they carry rules.
  */
 export type DiagramPatch = Partial<Pick<Diagram,
-  'autoRoute' | 'needsLayout' | 'applicationElementId' | 'asOf'>>
+  'autoRoute' | 'applicationElementId' | 'asOf'>>
+
+/**
+ * The board's own numbers: how big it is, how wide its bands are, and whether
+ * a person has looked at the layout yet (ADR-0012 §6). A patch, with the same
+ * rule as every other: a key present with `undefined` clears it.
+ */
+export type BoardPatch = Partial<Pick<Geometry, 'canvas' | 'zones' | 'needsLayout'>>
 
 export type CommandBody =
   // --- elements ------------------------------------------------------------
@@ -68,18 +76,28 @@ export type CommandBody =
   /** Takes its routes on every diagram. */
   | { type: 'relation.delete'; id: RelationId }
 
-  // --- geometry, per diagram -----------------------------------------------
-  | { type: 'placement.set'; diagramId: DiagramId; placements: DiagramPlacement[]; at?: number[] }
-  | { type: 'placement.remove'; diagramId: DiagramId; elementIds: ElementId[] }
-  | { type: 'route.set'; diagramId: DiagramId; routes: EdgeRoute[]; at?: number[] }
-  | { type: 'route.clear'; diagramId: DiagramId; relationIds: RelationId[] }
-  | { type: 'layout.set'; diagramId: DiagramId; layoutConfig?: DiagramLayoutConfig }
-
-  // --- dashed groups: what they are called, per diagram (ADR-0012 §6) -------
-  /** Upsert by id. Renaming one is this command and nothing else. */
+  // --- what is on a view, per diagram (ADR-0012 §6) -------------------------
+  /** Upsert by element id: on this view, in this band, under this group. */
+  | { type: 'member.set'; diagramId: DiagramId; members: DiagramMember[]; at?: number[] }
+  /** Takes each member's node geometry with it. */
+  | { type: 'member.remove'; diagramId: DiagramId; elementIds: ElementId[] }
+  /** Upsert by id. Renaming a group is this command and nothing else. */
   | { type: 'group.set'; diagramId: DiagramId; groups: DiagramGroup[]; at?: number[] }
   /** Takes the group's box with it; the members it held are the caller's to unfile. */
   | { type: 'group.remove'; diagramId: DiagramId; groupIds: GroupId[] }
+  /** A route, both halves at once — the line's constraints and its waypoints. */
+  | { type: 'route.set'; diagramId: DiagramId; routes: EdgeRoute[]; at?: number[] }
+  | { type: 'route.clear'; diagramId: DiagramId; relationIds: RelationId[] }
+
+  // --- where it ended up, per diagram (ADR-0012 §6) -------------------------
+  /** Upsert by element id. A node that is not a member is ignored. */
+  | { type: 'node.set'; diagramId: DiagramId; nodes: NodeGeometry[] }
+  /** Back to "on the view, not laid out". The inverse of setting a node that had none. */
+  | { type: 'node.remove'; diagramId: DiagramId; elementIds: ElementId[] }
+  /** Upsert by group id. A box whose group is not on the view is ignored. */
+  | { type: 'box.set'; diagramId: DiagramId; boxes: DomainGroupRect[] }
+  | { type: 'box.remove'; diagramId: DiagramId; groupIds: GroupId[] }
+  | { type: 'board.set'; diagramId: DiagramId; patch: BoardPatch }
 
   // --- diagrams ------------------------------------------------------------
   | { type: 'diagram.create'; diagram: Diagram; at?: number }
@@ -176,6 +194,32 @@ export function fieldEdit(id: string, field: string): string {
 /** Several commands, one undo step. */
 export function transaction(commands: Command[], meta: CommandMeta = {}): Command {
   return { type: 'transaction', commands, ...meta }
+}
+
+/**
+ * Put elements on a view, at a spot: what it means to be on it, and where
+ * (ADR-0012 §6).
+ *
+ * The two halves are two commands because they are two questions — a drag
+ * writes only geometry, and a card told to join a group writes only
+ * membership. Placing something writes both, and almost every caller that
+ * does is placing exactly one card, so this is the one line that says so.
+ */
+export function placeOn(
+  diagramId: DiagramId,
+  placed: readonly PlacedNode[],
+  at?: number[],
+  meta: CommandMeta = {},
+): Command {
+  return transaction([
+    {
+      type: 'member.set',
+      diagramId,
+      members: placed.map(memberOf),
+      ...(at ? { at } : {}),
+    },
+    { type: 'node.set', diagramId, nodes: placed.map(nodeGeometryOf) },
+  ], meta)
 }
 
 /** A command that changed nothing — what the reducer returns as the inverse of one. */

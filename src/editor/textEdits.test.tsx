@@ -9,6 +9,7 @@
  * that says so; this is what it buys, through the real inspector.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
@@ -28,13 +29,13 @@ function model(): DesignModel {
       { id: 'b1', kind: 'application', name: 'Orders', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
-    diagrams: [{
+    diagrams: [laidOut({
       id: 'd1', kind: 'layer7', name: 'L7',
       placements: [
-        { elementId: 'a1', zone: 'landscape', x: 400, y: 300 },
-        { elementId: 'b1', zone: 'landscape', x: 800, y: 300 },
+        { id: 'a1', zone: 'landscape', x: 400, y: 300 },
+        { id: 'b1', zone: 'landscape', x: 800, y: 300 },
       ],
-    }],
+    })],
   };
 }
 

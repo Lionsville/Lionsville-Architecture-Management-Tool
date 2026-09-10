@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
@@ -20,14 +22,14 @@ function model(): DesignModel {
     ],
     relations: [],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         groups: [{ id: 'G', name: 'G' }, { id: 'H', name: 'H' }],
         placements: [
-          { elementId: 'm1', zone: 'landscape', group: 'G', x: 100, y: 100 },
-          { elementId: 'other', zone: 'landscape', group: 'H', x: 500, y: 500 },
+          { id: 'm1', zone: 'landscape', group: 'G', x: 100, y: 100 },
+          { id: 'other', zone: 'landscape', group: 'H', x: 500, y: 500 },
         ],
         layoutConfig: {
           domainGroups: [
@@ -35,7 +37,7 @@ function model(): DesignModel {
             { id: 'H', x: 480, y: 480, width: 120, height: 120 },
           ],
         },
-      },
+      }),
     ],
   };
 }
@@ -48,9 +50,9 @@ const nameOf = (
 function render() {
   const { result, host } = renderEditorState(model(), { activeDiagramId: 'd1' });
   const groups = () =>
-    (result.current.model.diagrams[0].layoutConfig?.domainGroups ?? []).map((g) => g.id);
+    (result.current.model.diagrams[0].geometry?.groups ?? []).map((g) => g.id);
   const placements = () =>
-    new Map(result.current.model.diagrams[0].placements.map((p) => [p.elementId, p]));
+    new Map(placedNodes(result.current.model.diagrams[0]).map((p) => [p.id, p]));
   return { result, host, groups, placements };
 }
 

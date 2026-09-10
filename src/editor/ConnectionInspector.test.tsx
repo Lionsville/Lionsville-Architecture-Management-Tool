@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ConnectionInspector } from './ConnectionInspector';
@@ -36,7 +37,7 @@ function model(): DesignModel {
 
 /** The active diagram, with whatever routes a test wants stored on it. */
 function diagram(edgeRoutes: EdgeRoute[] = []): DesignDiagram {
-  return { id: 'd1', kind: 'layer7', name: 'L7', placements: [], edgeRoutes };
+  return laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [], edgeRoutes });
 }
 
 function makeActions(): {

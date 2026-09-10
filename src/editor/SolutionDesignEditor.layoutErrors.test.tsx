@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
@@ -51,8 +53,8 @@ afterEach(() => {
 });
 
 const PLACEMENTS = [
-  { elementId: 'a1', zone: 'landscape' as const, x: 100, y: 400 },
-  { elementId: 'a2', zone: 'landscape' as const, x: 1200, y: 400 },
+  { id: 'a1', zone: 'landscape' as const, x: 100, y: 400 },
+  { id: 'a2', zone: 'landscape' as const, x: 1200, y: 400 },
 ];
 
 function model(): DesignModel {
@@ -67,7 +69,7 @@ function model(): DesignModel {
   return {
     name: 'ACME Solution Design',
     customerName: 'ACME',
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'Layer 7', placements: PLACEMENTS }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Layer 7', placements: PLACEMENTS })],
     elements: [element('a1', 'Webshop'), element('a2', 'Order Service')],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
   };
@@ -143,7 +145,7 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
     fireEvent.click(screen.getByLabelText('Tidy layout'));
 
     await waitFor(() => expect(host.current.commands).toHaveLength(1));
-    expect(host.current.model.diagrams[0].placements).toEqual(expect.arrayContaining(moved));
+    expect(placedNodes(host.current.model.diagrams[0])).toEqual(expect.arrayContaining(moved));
     // Reported all the same: the board is tidy but its edges are not routed, and
     // the user is the only one who can fix that by reloading.
     expect(onLayoutError).toHaveBeenCalledTimes(1);
@@ -367,7 +369,7 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
       const onLayoutError = vi.fn<(message: string) => void>();
     const onLayoutSettled = vi.fn<(diagramId: string) => void>();
     const pending = model();
-    pending.diagrams[0].needsLayout = true;
+    pending.diagrams[0].geometry.needsLayout = true;
     const host = { current: undefined as unknown as EditorHostState };
     const props: HostedEditorProps = {
       model: pending,

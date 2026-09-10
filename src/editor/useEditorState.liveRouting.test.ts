@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { edgeRoutesOf } from '../model/routes';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
@@ -25,15 +28,15 @@ function model(): DesignModel {
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'e1', zone: 'landscape', x: 100, y: 400 },
-          { elementId: 'e2', zone: 'landscape', x: 900, y: 400 },
+          { id: 'e1', zone: 'landscape', x: 100, y: 400 },
+          { id: 'e2', zone: 'landscape', x: 900, y: 400 },
         ],
-      },
+      }),
     ],
   };
 }
@@ -50,7 +53,7 @@ describe('geometryVersion — what makes live routing re-run', () => {
     const before = result.current.geometryVersion;
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e1', x: 200, y: 500 }]);
+      result.current.actions.movePlacements([{ id: 'e1', x: 200, y: 500 }]);
     });
 
     expect(result.current.geometryVersion).toBeGreaterThan(before);
@@ -90,7 +93,7 @@ describe('geometryVersion — what makes live routing re-run', () => {
     act(() => {
       result.current.actions.applyTidyResult({
         ...ROUTES,
-        placements: [{ elementId: 'e1', zone: 'landscape', x: 300, y: 300 }],
+        placements: [{ id: 'e1', zone: 'landscape', x: 300, y: 300 }],
       });
     });
 
@@ -107,7 +110,7 @@ describe('geometryVersion — what makes live routing re-run', () => {
     const { result } = render();
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e1', x: 200, y: 500 }]);
+      result.current.actions.movePlacements([{ id: 'e1', x: 200, y: 500 }]);
     });
     const token = result.current.commitToken;
     act(() => {
@@ -121,14 +124,14 @@ describe('geometryVersion — what makes live routing re-run', () => {
     expect(result.current.geometryVersion).toBe(afterMove);
     // Both halves of the gesture went back together, which is why no pass is due.
     const diagram = result.current.model.diagrams[0];
-    expect(diagram.placements.find((p) => p.elementId === 'e1')).toMatchObject({ x: 100, y: 400 });
-    expect(diagram.edgeRoutes).toBeUndefined();
+    expect(placedNodes(diagram).find((p) => p.id === 'e1')).toMatchObject({ x: 100, y: 400 });
+    expect(edgeRoutesOf(diagram)).toEqual([]);
 
     act(() => {
       result.current.redo();
     });
     expect(result.current.geometryVersion).toBe(afterMove);
-    expect(result.current.model.diagrams[0].edgeRoutes)
+    expect(edgeRoutesOf(result.current.model.diagrams[0]))
       .toEqual([{ relationId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' }]);
   });
 });
@@ -138,7 +141,7 @@ describe('one gesture, one undo step', () => {
     const { result, host } = render();
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e1', x: 200, y: 500 }]);
+      result.current.actions.movePlacements([{ id: 'e1', x: 200, y: 500 }]);
     });
     // Taken exactly as the live effect takes it: after the move, before the pass.
     const token = result.current.commitToken;
@@ -150,7 +153,7 @@ describe('one gesture, one undo step', () => {
 
     // The routes landed...
     expect(
-      result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1'),
+      edgeRoutesOf(result.current.model.diagrams[0])?.find((r) => r.relationId === 'c1'),
     ).toMatchObject({ waypoints: [{ x: 500, y: 300 }] });
 
     // ...and ONE undo takes back the move AND the routes together.
@@ -158,8 +161,8 @@ describe('one gesture, one undo step', () => {
       result.current.undo();
     });
     const diagram = result.current.model.diagrams[0];
-    expect(diagram.placements.find((p) => p.elementId === 'e1')).toMatchObject({ x: 100, y: 400 });
-    expect(diagram.edgeRoutes).toBeUndefined();
+    expect(placedNodes(diagram).find((p) => p.id === 'e1')).toMatchObject({ x: 100, y: 400 });
+    expect(edgeRoutesOf(diagram)).toEqual([]);
     expect(result.current.canUndo).toBe(false);
     expect(host.current.commands).toHaveLength(2);
   });
@@ -170,12 +173,12 @@ describe('one gesture, one undo step', () => {
     const { result } = render();
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e1', x: 200, y: 500 }]);
+      result.current.actions.movePlacements([{ id: 'e1', x: 200, y: 500 }]);
     });
     const token = result.current.commitToken;
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e2', x: 700, y: 200 }]);
+      result.current.actions.movePlacements([{ id: 'e2', x: 700, y: 200 }]);
     });
 
     act(() => {
@@ -186,10 +189,10 @@ describe('one gesture, one undo step', () => {
     act(() => {
       result.current.undo();
     });
-    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
+    expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual([]);
     // The second move is still applied — the undo above only took the routes.
     expect(
-      result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e2'),
+      placedNodes(result.current.model.diagrams[0]).find((p) => p.id === 'e2'),
     ).toMatchObject({ x: 700, y: 200 });
   });
 
@@ -201,7 +204,7 @@ describe('one gesture, one undo step', () => {
     const { result } = render();
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e1', x: 200, y: 500 }]);
+      result.current.actions.movePlacements([{ id: 'e1', x: 200, y: 500 }]);
     });
     const token = result.current.commitToken;
 
@@ -218,9 +221,9 @@ describe('one gesture, one undo step', () => {
     act(() => {
       result.current.undo();
     });
-    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
+    expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual([]);
     expect(
-      result.current.model.diagrams[0].placements.find((p) => p.elementId === 'e1'),
+      placedNodes(result.current.model.diagrams[0]).find((p) => p.id === 'e1'),
     ).toMatchObject({ x: 100, y: 400 });
   });
 });
@@ -251,7 +254,7 @@ describe('the auto-route toggle is a mode, not content', () => {
     expect(result.current.canUndo).toBe(false);
 
     act(() => {
-      result.current.actions.movePlacements([{ elementId: 'e1', x: 200, y: 500 }]);
+      result.current.actions.movePlacements([{ id: 'e1', x: 200, y: 500 }]);
     });
     act(() => {
       result.current.undo();
@@ -292,8 +295,8 @@ describe('auto-layout does not trigger a live reroute', () => {
       result.current.actions.applyTidyResult({
         edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' }],
         placements: [
-          { elementId: 'e1', zone: 'landscape', x: 300, y: 300 },
-          { elementId: 'e2', zone: 'landscape', x: 800, y: 300 },
+          { id: 'e1', zone: 'landscape', x: 300, y: 300 },
+          { id: 'e2', zone: 'landscape', x: 800, y: 300 },
         ],
       });
     });

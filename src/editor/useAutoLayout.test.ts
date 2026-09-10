@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
+import type { V3Diagram } from '../model/testFixtures';
+import { laidOut } from '../model/testFixtures';
 import { renderHook, waitFor } from '@testing-library/react';
 import { settlingOptions, useAutoLayout, type UseAutoLayoutArgs } from './useAutoLayout';
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../layout/tidy';
@@ -10,14 +12,14 @@ import type { DesignDiagram } from '../model/types';
  * when a diagram may be rearranged without being asked. Getting any of them wrong
  * means the tool moves a board somebody curated.
  */
-function diagram(over: Partial<DesignDiagram> = {}): DesignDiagram {
-  return {
+function diagram(over: Partial<V3Diagram> = {}): DesignDiagram {
+  return laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'L7',
-    placements: [{ elementId: 'e1', zone: 'landscape', x: 10, y: 20 }],
+    placements: [{ id: 'e1', zone: 'landscape', x: 10, y: 20 }],
     ...over,
-  };
+  });
 }
 
 function render(over: Partial<UseAutoLayoutArgs> = {}) {

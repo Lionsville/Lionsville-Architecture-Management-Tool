@@ -5,6 +5,7 @@
  * history's own currency — without anything having moved backwards.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { apply, fromArrays, restoreCommand, toArrays } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import { projectFiles } from './folderFormat'
@@ -19,11 +20,11 @@ const then: HostModel = {
   name: 'Landscape', customerName: 'Acme',
   elements: [element('billing', 'Billing', 'Invoices.'), element('crm', 'CRM')],
   relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
-  diagrams: [{
+  diagrams: [laidOut({
     id: 'd1', kind: 'layer7', name: 'Warehouse',
-    placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'crm', x: 100, y: 0 }],
+    placements: [{ id: 'billing', x: 0, y: 0 }, { id: 'crm', x: 100, y: 0 }],
     edgeRoutes: [{ relationId: 'c#1', waypoints: [{ x: 50, y: 10 }] }],
-  }],
+  })],
   decisions: [{ id: 'adr-1', number: 1, title: 'One writer', status: 'proposed', date: '2026-09-01', body: 'Why.', signers: [] }],
 }
 
@@ -32,8 +33,8 @@ const now: HostModel = {
   elements: [element('billing', 'Billing', 'Rewritten.'), element('wms', 'WMS')],
   relations: [{ type: 'flow', id: 'c#2', sourceId: 'billing', targetId: 'wms', isBidirectional: true }],
   diagrams: [
-    { id: 'd1', kind: 'layer7', name: 'A mess', placements: [{ elementId: 'wms', x: 9, y: 9 }] },
-    { id: 'd2', kind: 'container', name: 'WMS', applicationElementId: 'wms', placements: [] },
+    laidOut({ id: 'd1', kind: 'layer7', name: 'A mess', placements: [{ id: 'wms', x: 9, y: 9 }] }),
+    laidOut({ id: 'd2', kind: 'container', name: 'WMS', applicationElementId: 'wms', placements: [] }),
   ],
   decisions: [{ id: 'adr-1', number: 1, title: 'Two writers', status: 'reviewing', date: '2026-09-02', body: 'Changed.', signers: [] }],
 }

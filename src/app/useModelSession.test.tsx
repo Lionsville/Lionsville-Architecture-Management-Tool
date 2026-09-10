@@ -10,10 +10,13 @@
  * editor that will not lay out a document it has "already seen".
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { placedNodes } from '../model/placement';
+import { placeOn } from '../model/commands';
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import { transaction } from '../model'
-import type { DesignElement, DiagramPlacement } from '../model'
+import type { DesignElement, PlacedNode } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
 import { useModelSession } from './useModelSession'
@@ -24,7 +27,7 @@ function element(id: string, name: string): DesignElement {
   return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {} }
 }
 
-const at = (elementId: string): DiagramPlacement => ({ elementId, x: 0, y: 0 })
+const at = (id: string): PlacedNode => ({ id, x: 0, y: 0 })
 
 
 afterEach(() => cleanup())
@@ -35,8 +38,8 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   elements: [element('billing', 'Billing')],
   relations: [],
   diagrams: [
-    { id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] },
-    { id: 'd2', kind: 'layer7', name: 'Second', placements: [] },
+    laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] }),
+    laidOut({ id: 'd2', kind: 'layer7', name: 'Second', placements: [] }),
   ],
   ...over,
 })
@@ -97,8 +100,8 @@ describe('useModelSession — a container view whose application left', () => {
   const withContainer = () => project({
     model: model({
       diagrams: [
-        { id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] },
-        { id: 'cd1', kind: 'container', name: 'Billing · containers', applicationElementId: 'billing', placements: [] },
+        laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] }),
+        laidOut({ id: 'cd1', kind: 'container', name: 'Billing · containers', applicationElementId: 'billing', placements: [] }),
       ],
     }),
     activeDiagramId: 'cd1',
@@ -203,11 +206,11 @@ describe('useModelSession — where an id comes from', () => {
     act(() => {
       session().dispatch(transaction([
         { type: 'element.create', element: element(id, 'Warehouse') },
-        { type: 'placement.set', diagramId: 'd1', placements: [at(id)] },
+        placeOn('d1', [at(id)]),
       ]))
     })
     expect(session().current().elements.map((e) => e.id)).toEqual(['billing', 'warehouse'])
-    expect(session().current().diagrams[0].placements.map((p) => p.elementId))
+    expect(placedNodes(session().current().diagrams[0]).map((p) => p.id))
       .toEqual(['billing', 'warehouse'])
   })
 })
@@ -278,17 +281,17 @@ describe('useModelSession — undo and redo', () => {
   it('keeps a change that is not a user’s edit off the stack', () => {
     const { session } = mount(project({
       model: model({
-        diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [], needsLayout: true }],
+        diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [], needsLayout: true })],
       }),
     }))
     act(() => session().onLayoutSettled('d1'))
-    expect(session().current().diagrams[0].needsLayout).toBeUndefined()
+    expect(session().current().diagrams[0].geometry?.needsLayout).toBeUndefined()
     expect(session().canUndo).toBe(false)
   })
 
   it('says why a command was refused, and changes nothing', () => {
     const { session, notify } = mount(project({
-      model: model({ diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }] }),
+      model: model({ diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })] }),
     }))
     let accepted: unknown = 'unset'
     act(() => { accepted = session().dispatch({ type: 'diagram.delete', id: 'd1' }) })

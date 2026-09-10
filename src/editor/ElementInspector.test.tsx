@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { V3Diagram } from '../model/testFixtures';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementInspector } from './ElementInspector';
@@ -30,8 +32,8 @@ function element(overrides: Partial<DesignElement> = {}): DesignElement {
   };
 }
 
-function diagram(overrides: Partial<DesignDiagram> = {}): DesignDiagram {
-  return { id: 'd1', kind: 'layer7', name: 'Layer 7', placements: [], ...overrides };
+function diagram(overrides: Partial<V3Diagram> = {}): DesignDiagram {
+  return laidOut({ id: 'd1', kind: 'layer7', name: 'Layer 7', placements: [], ...overrides });
 }
 
 function model(el: DesignElement, dia: DesignDiagram): DesignModel {
@@ -110,7 +112,7 @@ describe('ElementInspector — tab structure (U7a)', () => {
   });
 
   it('General reaches the layer7 Placement block (zone read-out + domain group)', () => {
-    const dia = diagram({ placements: [{ elementId: 'e1', zone: 'landscape', x: 0, y: 0 }] });
+    const dia = diagram({ placements: [{ id: 'e1', zone: 'landscape', x: 0, y: 0 }] });
     renderInspector(element(), { dia });
     expect(screen.getByText(/Zone:/)).toBeDefined();
     expect(screen.getByLabelText('Domain group')).toBeDefined();

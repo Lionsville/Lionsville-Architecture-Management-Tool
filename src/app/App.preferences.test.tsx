@@ -9,6 +9,7 @@
  * scope this shell does not have is absent, not disabled.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { HostCommand } from '../platform/hostCommands'
@@ -32,7 +33,7 @@ const project = (): ProjectSnapshot => ({
   ref: { group: 'acme', project: 'landscape' },
   model: {
     name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

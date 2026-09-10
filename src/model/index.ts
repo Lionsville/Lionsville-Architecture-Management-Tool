@@ -11,8 +11,8 @@ export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
   Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType,
   EdgeLineStyle, EdgeRouting,
-  EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramPlacement, DesignDiagram,
-  DesignModel, DiagramGroup, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
+  EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramMember, NodeGeometry, PlacedNode, DesignDiagram,
+  DesignModel, DiagramGroup, DiagramLine, DiagramSettings, DomainGroupRect, Geometry, RouteGeometry,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'
 
@@ -26,7 +26,7 @@ export type {
 } from './normalised'
 export {
   fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf,
-  elementList, relationList, diagramList, decisionList, transitionList, placementList, routeList,
+  elementList, relationList, diagramList, decisionList, transitionList, memberList, routeList,
 } from './normalised'
 
 /** What a relation is, and the one type format 3 has a place for (ADR-0012 §5). */

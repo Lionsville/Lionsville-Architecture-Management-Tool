@@ -19,7 +19,8 @@
 import type { HostModel } from './fromInterchange'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { DesignDiagram, DesignElement, DiagramPlacement, Relation } from './types'
+import type { DesignDiagram, DesignElement, PlacedNode, Relation } from './types'
+import { placedNodes } from './placement'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
@@ -44,7 +45,7 @@ export type ModelChange = {
 }
 
 /** Fields that are not a change to the landscape, or are reported separately. */
-const NOT_A_FIELD = new Set(['id', 'placements', 'edgeRoutes'])
+const NOT_A_FIELD = new Set(['id', 'members', 'geometry'])
 
 function changedFields(before: object, after: object): string[] {
   const keys = new Set([...Object.keys(before), ...Object.keys(after)])
@@ -79,10 +80,10 @@ function relationName(relation: Relation, model: HostModel): string {
  * change list at all.
  */
 function placementChange(
-  before: readonly DiagramPlacement[], after: readonly DiagramPlacement[],
+  before: readonly PlacedNode[], after: readonly PlacedNode[],
 ): { moved: number; placed: number; removed: number } {
-  const held = new Map(before.map((one) => [one.elementId, one]))
-  const now = new Map(after.map((one) => [one.elementId, one]))
+  const held = new Map(before.map((one) => [one.id, one]))
+  const now = new Map(after.map((one) => [one.id, one]))
   let moved = 0
   for (const [id, one] of now) {
     const was = held.get(id)
@@ -133,7 +134,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
     const now = nowDiagrams.get(id)
     changes.push(...compare<DesignDiagram>('diagram', id, was, now, (held) => held.name))
     if (!was || !now) continue
-    const geometry = placementChange(was.placements, now.placements)
+    const geometry = placementChange(placedNodes(was), placedNodes(now))
     const count = geometry.moved + geometry.placed + geometry.removed
     if (count > 0) {
       changes.push({ kind: 'changed', what: 'placement', id, name: now.name, count })

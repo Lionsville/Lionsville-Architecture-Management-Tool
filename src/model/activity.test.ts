@@ -5,6 +5,8 @@
  * after the geometry the subject dragged along.
  */
 import { describe, expect, it } from 'vitest'
+import { placeOn } from '../model/commands';
+import { laidOut } from '../model/testFixtures';
 import { summarise } from './activity'
 import { transaction } from './commands'
 import type { Command } from './commands'
@@ -21,10 +23,10 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   customerName: 'Acme',
   elements: [element('billing', 'Billing'), element('crm', 'CRM')],
   relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
-  diagrams: [{
+  diagrams: [laidOut({
     id: 'd1', kind: 'layer7', name: 'L7',
-    placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'crm', x: 100, y: 0 }],
-  }],
+    placements: [{ id: 'billing', x: 0, y: 0 }, { id: 'crm', x: 100, y: 0 }],
+  })],
   ...over,
 })
 
@@ -58,7 +60,7 @@ describe('summarise', () => {
     // never "Moved one element".
     const drawn = transaction([
       { type: 'element.create', element: element('warehouse', 'Warehouse') },
-      { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },
+      placeOn('d1', [{ id: 'warehouse', x: 0, y: 0}]),
     ])
     expect(summarise([drawn], before()))
       .toMatchObject({ key: 'activity.elementAdded', name: 'Warehouse' })
@@ -66,13 +68,11 @@ describe('summarise', () => {
 
   it('counts a move, and reads the count across the whole step', () => {
     const moved = transaction([
-      { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'billing', x: 5, y: 5 }] },
-      { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'crm', x: 9, y: 9 }] },
+      placeOn('d1', [{ id: 'billing', x: 5, y: 5}]),
+      placeOn('d1', [{ id: 'crm', x: 9, y: 9}]),
     ])
     expect(summarise([moved], before())).toEqual({ key: 'activity.movedMany', count: 2 })
-    expect(summarise([{
-      type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'crm', x: 9, y: 9 }],
-    }], before())).toEqual({ key: 'activity.movedOne', count: 1 })
+    expect(summarise([placeOn('d1', [{ id: 'crm', x: 9, y: 9}])], before())).toEqual({ key: 'activity.movedOne', count: 1 })
   })
 
   it('names the diagram cases after the diagram', () => {
@@ -89,10 +89,17 @@ describe('summarise', () => {
       { type: 'relation.create', relation: { id: 'c#2', type: 'flow' as const, sourceId: 'billing', targetId: 'crm', isBidirectional: false } },
       { type: 'relation.update', id: 'c#1', patch: { label: 'x' } },
       { type: 'relation.delete', id: 'c#1' },
-      { type: 'placement.remove', diagramId: 'd1', elementIds: ['crm'] },
+      { type: 'member.set', diagramId: 'd1', members: [{ id: 'crm' }] },
+      { type: 'member.remove', diagramId: 'd1', elementIds: ['crm'] },
+      { type: 'node.set', diagramId: 'd1', nodes: [{ id: 'crm', x: 0, y: 0 }] },
+      { type: 'node.remove', diagramId: 'd1', elementIds: ['crm'] },
+      { type: 'group.set', diagramId: 'd1', groups: [{ id: 'g', name: 'G' }] },
+      { type: 'group.remove', diagramId: 'd1', groupIds: ['g'] },
+      { type: 'box.remove', diagramId: 'd1', groupIds: ['g'] },
       { type: 'route.set', diagramId: 'd1', routes: [{ relationId: 'c#1', waypoints: [] }] },
       { type: 'route.clear', diagramId: 'd1', relationIds: ['c#1'] },
-      { type: 'layout.set', diagramId: 'd1', layoutConfig: {} },
+      { type: 'box.set', diagramId: 'd1', boxes: [] },
+      { type: 'board.set', diagramId: 'd1', patch: { needsLayout: true } },
       { type: 'diagram.settings', id: 'd1', settings: { name: 'L7' } },
       { type: 'diagram.update', id: 'd1', patch: { autoRoute: true } },
       { type: 'project.settings', patch: { name: 'Other' } },

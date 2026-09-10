@@ -7,6 +7,7 @@
  * untouched, which is the one property worth stating about text.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import { fromArrays, toArrays } from '../model/normalised'
@@ -43,18 +44,18 @@ const host: HostModel = {
     { type: 'flow', id: 'c3', sourceId: 'billing', targetId: 'billing-api', isBidirectional: false },
   ],
   diagrams: [
-    {
+    laidOut({
       id: 'l7', kind: 'layer7', name: 'Landscape',
       placements: [
-        { elementId: 'billing', zone: 'landscape', group: 'Finance', x: 100, y: 200 },
-        { elementId: 'crm', zone: 'landscape', x: 400, y: 200 },
-        { elementId: 'who', zone: 'actors', x: 10, y: 10 },
+        { id: 'billing', zone: 'landscape', group: 'Finance', x: 100, y: 200 },
+        { id: 'crm', zone: 'landscape', x: 400, y: 200 },
+        { id: 'who', zone: 'actors', x: 10, y: 10 },
       ],
-    },
-    {
+    }),
+    laidOut({
       id: 'inside', kind: 'container', name: 'Inside billing', applicationElementId: 'billing',
-      placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'billing-api', x: 40, y: 60 }],
-    },
+      placements: [{ id: 'billing', x: 0, y: 0 }, { id: 'billing-api', x: 40, y: 60 }],
+    }),
   ],
   decisions: [
     decision('adr-1', 1, 'Keep the ledger'),

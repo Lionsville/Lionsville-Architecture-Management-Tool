@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { placedNodes } from '../../model/placement';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { VIRTUALISE_ABOVE, virtualising } from './DiagramCanvas';
@@ -89,7 +90,7 @@ const small = syntheticModel({
 describe('what the canvas asks React Flow to draw', () => {
   it('draws every box on a board anybody arranged by hand', async () => {
     renderEditor(small, 'landscape');
-    await waitFor(() => expect(drawn()).toBe(small.diagrams[0].placements.length), SLOWLY);
+    await waitFor(() => expect(drawn()).toBe(placedNodes(small.diagrams[0]).length), SLOWLY);
   }, SLOWLY.timeout);
 
   it('draws fewer than all of them once a board is past the threshold', async () => {
@@ -101,7 +102,7 @@ describe('what the canvas asks React Flow to draw', () => {
     // ones are on screen is React Flow's business and a browser's.
     renderEditor(big, 'landscape');
     await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
-    expect(drawn()).toBeLessThan(big.diagrams[0].placements.length);
+    expect(drawn()).toBeLessThan(placedNodes(big.diagrams[0]).length);
   }, SLOWLY.timeout);
 
   it('captures the whole board, not the part that happens to be drawn', async () => {
@@ -120,7 +121,7 @@ describe('what the canvas asks React Flow to draw', () => {
     fireEvent.click(go);
 
     await waitFor(() => expect(downloads).toHaveBeenCalledTimes(1), SLOWLY);
-    expect(captured.every((count) => count === big.diagrams[0].placements.length)).toBe(true);
+    expect(captured.every((count) => count === placedNodes(big.diagrams[0]).length)).toBe(true);
     downloads.mockRestore();
   }, SLOWLY.timeout);
 

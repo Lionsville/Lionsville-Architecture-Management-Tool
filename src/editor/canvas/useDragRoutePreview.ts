@@ -8,8 +8,8 @@ import {
 } from '../../layout/libavoidRouter';
 import { routeDiagramEdges } from '../../layout/routeOnly';
 import { createRoutePreviewChannel, type RoutePreviewChannel } from '../../layout/routePreviewChannel';
-import { diagramWithLivePlacements, type LivePlacement } from '../../model/placement';
-import { manualRouteIds, routeSource } from '../../model/routes';
+import { placedNodes, diagramWithLivePlacements, type LivePlacement } from '../../model/placement';
+import { edgeRoutesOf, manualRouteIds, routeSource } from '../../model/routes';
 
 /**
  * Route the whole board while a node is being dragged, and hand the canvas the
@@ -101,11 +101,11 @@ export function useDragRoutePreview(options: DragRoutePreviewOptions): DragRoute
    * model's total includes connections that live on other diagrams entirely.
    */
   const placedConnectionCount = useMemo(() => {
-    const placed = new Set(options.diagram.placements.map((p) => p.elementId));
+    const placed = new Set(placedNodes(options.diagram).map((p) => p.id));
     return options.model.relations.filter(
       (c) => placed.has(c.sourceId) && placed.has(c.targetId),
     ).length;
-  }, [options.model.relations, options.diagram.placements]);
+  }, [options.model.relations, placedNodes(options.diagram)]);
   const placedConnectionCountRef = useRef(placedConnectionCount);
   placedConnectionCountRef.current = placedConnectionCount;
 
@@ -229,10 +229,10 @@ export function useDragRoutePreview(options: DragRoutePreviewOptions): DragRoute
   // autosave round-trip — hands us a fresh `edgeRoutes` array with the same routes
   // in it, and treating that as "the pass landed" would drop the preview early and
   // show the stale bends for the rest of the wait.
-  const storedRoutes = options.diagram.edgeRoutes;
+  const storedRoutes = edgeRoutesOf(options.diagram);
   useEffect(() => {
     if (!handingOverRef.current || !previewRoutes) return;
-    const stored = new Map((storedRoutes ?? []).map((route) => [route.relationId, route]));
+    const stored = new Map(storedRoutes.map((route) => [route.relationId, route] as const));
     for (const [id, previewed] of previewRoutes) {
       if (!drawsTheSame(stored.get(id), previewed)) return;
     }

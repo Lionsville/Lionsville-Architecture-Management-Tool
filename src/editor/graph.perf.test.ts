@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { placeOn } from '../model/commands';
+import { placedOn } from '../model/normalised';
 import { apply, fromArrays, toArrays } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import { BUDGET, measure } from '../model/testing/measure'
@@ -41,21 +43,17 @@ const argsOf = (model: HostModel) => ({
 /** The model with one card moved — a different one on every run. */
 function moved(step: number): HostModel {
   const diagram = base.diagrams.landscape
-  const id = diagram.order.placements[step % diagram.order.placements.length]
-  const held = diagram.placements[id]
-  const result = apply(base, {
-    type: 'placement.set',
-    diagramId: 'landscape',
-    placements: [{ ...held, x: held.x + 40, y: held.y + 40 }],
-  })
+  const id = diagram.order.members[step % diagram.order.members.length]
+  const held = placedOn(diagram, id)!
+  const result = apply(base, placeOn('landscape', [{ ...held, x: held.x + 40, y: held.y + 40 }]))
   if (!result.ok) throw new Error(`the reducer refused: ${result.reason}`)
   return toArrays(result.model)
 }
 
 describe('deriving a board', () => {
   it('has the six hundred nodes the budget is written for', () => {
-    expect(base.diagrams.landscape.order.placements.length).toBeGreaterThan(550)
-    expect(base.diagrams.landscape.order.placements.length).toBeLessThan(650)
+    expect(base.diagrams.landscape.order.members.length).toBeGreaterThan(550)
+    expect(base.diagrams.landscape.order.members.length).toBeLessThan(650)
   })
 
   it('derives it cold, for the record', () => {

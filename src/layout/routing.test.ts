@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { PlacedNode } from '../model/types';
+import { laidOut } from '../model/testFixtures';
+import { placedNodes } from '../model/placement';
 import type {
   DesignConnection,
   Relation,
@@ -87,15 +90,15 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
       aspects: {},
     });
     const elements: DesignElement[] = [{ ...elt('blocker'), kind: 'application' }];
-    const placements: DesignDiagram['placements'] = [
-      { elementId: 'blocker', zone: 'landscape', x: 450, y: 250, width: 120, height: 400 },
+    const placements: PlacedNode[] = [
+      { id: 'blocker', zone: 'landscape', x: 450, y: 250, width: 120, height: 400 },
     ];
     const connections: Relation[] = [];
     for (let i = 0; i < LABELS.length; i++) {
       elements.push(elt(`s${i}`), elt(`t${i}`));
       placements.push(
-        { elementId: `s${i}`, zone: 'landscape', x: 0, y: 300 + i * 80 },
-        { elementId: `t${i}`, zone: 'landscape', x: 1000, y: 300 + i * 80 },
+        { id: `s${i}`, zone: 'landscape', x: 0, y: 300 + i * 80 },
+        { id: `t${i}`, zone: 'landscape', x: 1000, y: 300 + i * 80 },
       );
       connections.push({
         type: 'flow',
@@ -106,7 +109,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
         ...LABELS[i],
       });
     }
-    const diagram: DesignDiagram = { id: 'd1', kind: 'layer7', name: 'L7', placements };
+    const diagram: DesignDiagram = laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements });
     return { model: { name: 'ACME', customerName: 'ACME', elements, relations: connections, diagrams: [diagram] }, diagram };
   }
 
@@ -118,7 +121,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
     // genuinely competing for the same strip of board. Without this the test could
     // pass on a board where nothing was ever close.
     const channels = model.relations.map((c) => {
-      const waypoints = result.edgeRoutes!.find((r) => r.relationId === c.id)!.waypoints;
+      const waypoints = (result.edgeRoutes ?? [])!.find((r) => r.relationId === c.id)!.waypoints;
       expect(waypoints.length).toBeGreaterThan(0);
       return waypoints[0].y;
     });
@@ -126,7 +129,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
 
     // Every labelled edge got a pin (none fell back to auto-centring)…
     const chips = model.relations.map((c) => {
-      const at = result.edgeRoutes!.find((r) => r.relationId === c.id)!.labelPosition;
+      const at = (result.edgeRoutes ?? [])!.find((r) => r.relationId === c.id)!.labelPosition;
       expect(at, `${c.id} was not pinned`).toBeDefined();
       return { id: c.id, rect: chipRect(c, at!) };
     });
@@ -146,10 +149,10 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
     const shuffled = parallelChannelModel();
     shuffled.model.relations.reverse();
     shuffled.model.elements.reverse();
-    shuffled.diagram.placements.reverse();
+    placedNodes(shuffled.diagram).reverse();
 
     const pins = (result: Awaited<ReturnType<typeof routeDiagramEdges>>) =>
-      Object.fromEntries(result.edgeRoutes!.map((r) => [r.relationId, r.labelPosition]));
+      Object.fromEntries((result.edgeRoutes ?? [])!.map((r) => [r.relationId, r.labelPosition]));
 
     expect(pins(await routeDiagramEdges(shuffled.model, shuffled.diagram))).toEqual(
       pins(await routeDiagramEdges(forward.model, forward.diagram)),

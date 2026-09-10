@@ -1,6 +1,6 @@
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
 import type {
-  DiagramLayoutConfig,
+  Geometry,
   ElementKind,
   Layer7Zone,
   Point,
@@ -9,11 +9,21 @@ import type {
 } from './types';
 
 /**
+ * What the bands and the board size are, for the code that lays out.
+ *
+ * A slice of {@link Geometry} rather than the whole thing: nothing here needs
+ * to know where a node or a group box is, and a narrower type is one fewer
+ * thing a caller has to hand over (ADR-0012 §6 moved these off `layoutConfig`).
+ */
+export type BoardGeometry = Pick<Geometry, 'zones' | 'canvas'>;
+
+
+/**
  * Fixed Layer 7 zone grammar (intent invariant — docs/intent/solution-designs.md):
  * actors top, input channels left, external connections right, management
  * bottom, application landscape centre. The grammar never changes; since
  * iteration 2 the band *sizes* are adjustable per diagram via
- * `layoutConfig.zones` (height for top/bottom bands, width for side bands).
+ * `geometry.zones` (height for top/bottom bands, width for side bands).
  * Bands stay flush (no gaps) so hit-testing is total; visual insets are
  * applied at render time only.
  */
@@ -46,15 +56,15 @@ export function clampCanvasSize(size: { width: number; height: number }): {
   };
 }
 
-/** Effective Layer 7 board rect: the default, grown by layoutConfig.canvas. */
-export function canvasRect(layoutConfig?: DiagramLayoutConfig): Rect {
-  const configured = layoutConfig?.canvas;
+/** Effective Layer 7 board rect: the default, grown by geometry.canvas. */
+export function canvasRect(geometry?: BoardGeometry): Rect {
+  const configured = geometry?.canvas;
   if (!configured) return LAYER7_CANVAS;
   const size = clampCanvasSize(configured);
   return { x: LAYER7_CANVAS.x, y: LAYER7_CANVAS.y, width: size.width, height: size.height };
 }
 
-/** Default band sizes, used when the diagram has no layoutConfig override. */
+/** Default band sizes, used when the diagram has no geometry override. */
 export const DEFAULT_ZONE_SIZES: Record<ResizableZone, number> = {
   actors: 150,
   management: 160,
@@ -97,9 +107,9 @@ const ZONE_MAX_FRACTION: Record<ResizableZone, number> = {
 
 export function zoneSizeLimits(
   zone: ResizableZone,
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
 ): { min: number; max: number } {
-  const board = canvasRect(layoutConfig);
+  const board = canvasRect(geometry);
   const basis = zone === 'actors' || zone === 'management' ? board.height : board.width;
   return { min: ZONE_SIZE_MIN[zone], max: Math.round(basis * ZONE_MAX_FRACTION[zone]) };
 }
@@ -150,9 +160,9 @@ export const HOME_ZONE: Record<ElementKind, Layer7Zone> = {
 export function clampZoneSize(
   zone: ResizableZone,
   size: number,
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
 ): number {
-  const { min, max } = zoneSizeLimits(zone, layoutConfig);
+  const { min, max } = zoneSizeLimits(zone, geometry);
   return Math.min(Math.max(size, min), max);
 }
 
@@ -161,9 +171,9 @@ export function clampZoneSize(
  * Defaults are clamped too: since the maxima follow the board size, a band
  * left at its default must still yield to a deliberately shrunken canvas.
  */
-export function zoneSizes(layoutConfig?: DiagramLayoutConfig): Record<ResizableZone, number> {
+export function zoneSizes(geometry?: BoardGeometry): Record<ResizableZone, number> {
   const resolve = (zone: ResizableZone) =>
-    clampZoneSize(zone, layoutConfig?.zones?.[zone]?.size ?? DEFAULT_ZONE_SIZES[zone], layoutConfig);
+    clampZoneSize(zone, geometry?.zones?.[zone]?.size ?? DEFAULT_ZONE_SIZES[zone], geometry);
   return {
     actors: resolve('actors'),
     management: resolve('management'),
@@ -172,9 +182,9 @@ export function zoneSizes(layoutConfig?: DiagramLayoutConfig): Record<ResizableZ
   };
 }
 
-export function zoneRect(zone: Layer7Zone, layoutConfig?: DiagramLayoutConfig): Rect {
-  const { x, y, width, height } = canvasRect(layoutConfig);
-  const sizes = zoneSizes(layoutConfig);
+export function zoneRect(zone: Layer7Zone, geometry?: BoardGeometry): Rect {
+  const { x, y, width, height } = canvasRect(geometry);
+  const sizes = zoneSizes(geometry);
   const middleY = y + sizes.actors;
   const middleHeight = height - sizes.actors - sizes.management;
   switch (zone) {
@@ -218,9 +228,9 @@ function clamp(value: number, min: number, max: number): number {
  * - x >= width - externalSystems  → externalSystems
  * Top/bottom bands win over left/right bands in the corners.
  */
-export function zoneForPoint(point: Point, layoutConfig?: DiagramLayoutConfig): Layer7Zone {
-  const { x: cx, y: cy, width, height } = canvasRect(layoutConfig);
-  const sizes = zoneSizes(layoutConfig);
+export function zoneForPoint(point: Point, geometry?: BoardGeometry): Layer7Zone {
+  const { x: cx, y: cy, width, height } = canvasRect(geometry);
+  const sizes = zoneSizes(geometry);
   const x = clamp(point.x, cx, cx + width);
   const y = clamp(point.y, cy, cy + height);
   if (y < cy + sizes.actors) return 'actors';
@@ -239,18 +249,18 @@ export function zoneForPoint(point: Point, layoutConfig?: DiagramLayoutConfig): 
 export function zoneSizeFromPointer(
   zone: ResizableZone,
   point: Point,
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
 ): number {
-  const { x, y, width, height } = canvasRect(layoutConfig);
+  const { x, y, width, height } = canvasRect(geometry);
   switch (zone) {
     case 'actors':
-      return clampZoneSize(zone, point.y - y, layoutConfig);
+      return clampZoneSize(zone, point.y - y, geometry);
     case 'management':
-      return clampZoneSize(zone, y + height - point.y, layoutConfig);
+      return clampZoneSize(zone, y + height - point.y, geometry);
     case 'inputChannels':
-      return clampZoneSize(zone, point.x - x, layoutConfig);
+      return clampZoneSize(zone, point.x - x, geometry);
     case 'externalSystems':
-      return clampZoneSize(zone, x + width - point.x, layoutConfig);
+      return clampZoneSize(zone, x + width - point.x, geometry);
   }
 }
 
@@ -266,10 +276,10 @@ export function zoneSizeFromPointer(
  */
 export function canvasSizeFromPointer(
   point: Point,
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
   edge: 'right' | 'bottom' | 'corner' = 'corner',
 ): { width: number; height: number } {
-  const current = canvasRect(layoutConfig);
+  const current = canvasRect(geometry);
   return clampCanvasSize({
     width: edge === 'bottom' ? current.width : point.x - current.x,
     height: edge === 'right' ? current.height : point.y - current.y,

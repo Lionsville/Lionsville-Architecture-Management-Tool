@@ -7,6 +7,7 @@
  * wiring from the record to the export, not the drawing.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { cleanup, screen } from '@testing-library/react'
 import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
@@ -32,7 +33,7 @@ const project = (): ProjectSnapshot => ({
     customerName: 'Acme',
     elements: [],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

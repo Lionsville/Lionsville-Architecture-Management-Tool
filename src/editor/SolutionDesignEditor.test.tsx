@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { diagramWithRoutes, edgeRoutesOf } from '../model/routes';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -21,8 +24,8 @@ function baseModel(): DesignModel {
     name: 'ACME Solution Design',
     customerName: 'ACME',
     diagrams: [
-      { id: 'd1', kind: 'layer7', name: 'Layer 7 — EU', placements: [] },
-      { id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] },
+      laidOut({ id: 'd1', kind: 'layer7', name: 'Layer 7 — EU', placements: [] }),
+      laidOut({ id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] }),
     ],
     elements: [
       {
@@ -42,7 +45,8 @@ function baseModel(): DesignModel {
 function modelWithPlacement(diagramId: 'd1' | 'd2'): DesignModel {
   const model = baseModel();
   const diagram = model.diagrams.find((d) => d.id === diagramId) as DesignModel['diagrams'][0];
-  diagram.placements = [{ elementId: 'a1', zone: 'landscape', x: 400, y: 300 }];
+  diagram.members = [{ id: 'a1', zone: 'landscape' }];
+  diagram.geometry.nodes = [{ id: 'a1', x: 400, y: 300 }];
   return model;
 }
 
@@ -77,9 +81,9 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
       elements: m.elements,
       relations: m.relations,
       groups: diagram.groups,
-      placements: diagram.placements,
-      edgeRoutes: diagram.edgeRoutes ?? [],
-      layoutConfig: diagram.layoutConfig,
+      placements: placedNodes(diagram),
+      edgeRoutes: edgeRoutesOf(diagram) ?? [],
+      geometry: diagram.geometry,
     };
   };
   const sent = () => host.current.commands.length;
@@ -118,7 +122,7 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(created.id).toBe(slug(created.name));
     expect(created.kind).toBe('application');
     expect(created.isManaged).toBe(true);
-    const createdPlacement = landed().placements.find((p) => p.elementId === created.id);
+    const createdPlacement = landed().placements.find((p) => p.id === created.id);
     expect(createdPlacement?.zone).toBe('landscape');
 
     // The new element is auto-selected: the inspector shows its name field.
@@ -132,7 +136,7 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     const created = landed().elements.at(-1)!;
     expect(created.kind).toBe('actor');
     expect(created.isManaged).toBe(false);
-    expect(landed().placements.find((p) => p.elementId === created.id)?.zone).toBe('actors');
+    expect(landed().placements.find((p) => p.id === created.id)?.zone).toBe('actors');
   });
 
   it('editing the selected element name lands a change of its own', () => {
@@ -290,10 +294,10 @@ describe('SolutionDesignEditor — iteration 2', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
     expect(sent()).toBe(1);
-    expect(landed().layoutConfig?.domainGroups).toHaveLength(1);
+    expect(landed().geometry?.groups).toHaveLength(1);
     // The box points at the group's id; the name is in the definition beside it.
     expect(landed().groups).toEqual([{ id: 'new-group', name: 'New group' }]);
-    expect(landed().layoutConfig?.domainGroups?.[0].id).toBe('new-group');
+    expect(landed().geometry?.groups?.[0].id).toBe('new-group');
     expect(landed().edgeRoutes).toEqual([]);
   });
 });
@@ -311,12 +315,8 @@ function modelWithConnection(): DesignModel {
     isManaged: false,
     aspects: {},
   });
-  model.diagrams[0].placements.push({
-    elementId: 'b1',
-    zone: 'externalSystems',
-    x: 1500,
-    y: 400,
-  });
+  model.diagrams[0].members.push({ id: 'b1', zone: 'externalSystems' });
+  model.diagrams[0].geometry.nodes.push({ id: 'b1', x: 1500, y: 400 });
   model.relations = [
     { type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', protocol: 'EDI', isBidirectional: false },
   ];
@@ -367,7 +367,7 @@ describe('SolutionDesignEditor — edge labels', () => {
 
   it('right-click on a repositioned label offers "Reset label position"', async () => {
     const model = modelWithConnection();
-    model.diagrams[0].edgeRoutes = [
+    model.diagrams[0].geometry.routes = [
       { relationId: 'c1', waypoints: [], labelPosition: { x: 500, y: 200 } },
     ];
     const { landed } = renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
@@ -393,9 +393,9 @@ describe('SolutionDesignEditor — edge labels', () => {
 describe('SolutionDesignEditor — route provenance and handles', () => {
   const routedModel = (source: 'manual' | 'auto') => {
     const model = modelWithConnection();
-    model.diagrams[0].edgeRoutes = [
+    model.diagrams[0] = diagramWithRoutes(model.diagrams[0], [
       { relationId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source },
-    ];
+    ]);
     return model;
   };
   const selectEdge = async (id: string) => fireEvent.click(await screen.findByTestId(`rf__edge-${id}`));
@@ -431,7 +431,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // existing board's bends at the router's radius — and, before 2a, would have
     // stripped their handles.
     const model = modelWithConnection();
-    model.diagrams[0].edgeRoutes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
+    model.diagrams[0].geometry.routes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
     renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
     await screen.findByTestId('edge-label-c1');
     const path = document.getElementById('c1') as SVGPathElement | null;
@@ -485,7 +485,7 @@ describe('SolutionDesignEditor — paste cascade', () => {
     // not in the model to begin with.
     const pastedXs = () =>
       landed().placements
-        .filter((p) => p.elementId !== 'a1').map((p) => p.x).sort((a, b) => a - b);
+        .filter((p) => p.id !== 'a1').map((p) => p.x).sort((a, b) => a - b);
 
     copy();
     paste();
@@ -712,18 +712,19 @@ describe('SolutionDesignEditor — route connections only', () => {
     });
     model.relations.push({ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false });
     const diagram = model.diagrams[0];
-    diagram.placements = [
-      { elementId: 'a1', zone: 'landscape', x: 100, y: 400 },
-      { elementId: 'a2', zone: 'landscape', x: 1200, y: 400 },
-    ];
-    diagram.layoutConfig = { domainGroups: [{ id: 'Ops', x: 600, y: 350, width: 300, height: 260 }] };
+    diagram.groups = [{ id: 'ops', name: 'Ops' }];
+    diagram.members = [{ id: 'a1', zone: 'landscape' }, { id: 'a2', zone: 'landscape' }];
+    diagram.geometry = {
+      nodes: [{ id: 'a1', x: 100, y: 400 }, { id: 'a2', x: 1200, y: 400 }],
+      groups: [{ id: 'ops', x: 600, y: 350, width: 300, height: 260 }],
+    };
     return model;
   }
 
   it('routes the blocked edge and leaves every node where it was', async () => {
     const model = modelWithBlockedEdge();
-    const placements = model.diagrams[0].placements;
-    const layoutConfig = model.diagrams[0].layoutConfig;
+    const placements = placedNodes(model.diagrams[0]);
+    const geometry = model.diagrams[0].geometry;
     const { landed, sent } = renderEditor({ model });
 
     fireEvent.click(screen.getByLabelText('Route connections only'));
@@ -731,9 +732,11 @@ describe('SolutionDesignEditor — route connections only', () => {
     // The router is WASM, so the change lands a tick later — wait for it rather
     // than for a timeout, and assert it is still exactly ONE step.
     await waitFor(() => expect(sent()).toBe(1));
-    // Positions come back untouched, and the blocked edge gained a route.
+    // Positions and boxes come back untouched, and the blocked edge gained a
+    // route — which is the only thing in the geometry this pass may write.
     expect(landed().placements).toEqual(placements);
-    expect(landed().layoutConfig).toEqual(layoutConfig);
+    expect(landed().geometry?.nodes).toEqual(geometry.nodes);
+    expect(landed().geometry?.groups).toEqual(geometry.groups);
     const route = landed().edgeRoutes.find((r) => r.relationId === 'c1');
     expect(route?.waypoints.length).toBeGreaterThan(0);
   });
@@ -927,7 +930,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     expect(landed().groups).toEqual([
       { id: 'commerce', name: 'Commerce', color: '#2f6fdb' },
     ]);
-    expect(landed().layoutConfig?.domainGroups).toEqual([
+    expect(landed().geometry?.groups).toEqual([
       expect.objectContaining({ id: 'commerce' }),
     ]);
   });
@@ -949,7 +952,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     });
 
     expect(view.landed().groups).toEqual([{ id: 'commerce', name: 'Commerce', color: '#2f6fdb' }]);
-    const [group] = view.landed().layoutConfig?.domainGroups ?? [];
+    const [group] = view.landed().geometry?.groups ?? [];
     expect(group).toMatchObject({ id: 'commerce' });
     // And no element was created by the same gesture — a group is not an element.
     expect(view.landed().elements.map((e) => e.id)).toEqual(['a1']);
@@ -958,8 +961,9 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
   it('never hijacks an existing group by name', () => {
     const model = baseModel();
     model.diagrams[0].groups = [{ id: 'commerce', name: 'Commerce' }];
-    model.diagrams[0].layoutConfig = {
-      domainGroups: [{ id: 'commerce', x: 300, y: 300, width: 400, height: 300 }],
+    model.diagrams[0].geometry = {
+      nodes: [],
+      groups: [{ id: 'commerce', x: 300, y: 300, width: 400, height: 300 }],
     };
     const { landed } = renderEditor({ model });
 
@@ -970,7 +974,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
     expect((landed().groups ?? []).map((g) => g.name)).toEqual(['Commerce', 'Commerce 2']);
-    expect((landed().layoutConfig?.domainGroups ?? []).map((g) => g.id)).toEqual([
+    expect((landed().geometry?.groups ?? []).map((g) => g.id)).toEqual([
       'commerce',
       'commerce-2',
     ]);
@@ -1028,7 +1032,7 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
   /** Two landscapes, so Delete is not refused as "the last one". */
   function twoLandscapes(): DesignModel {
     const model = modelWithPlacement('d1');
-    model.diagrams.push({ id: 'd3', kind: 'layer7', name: 'Layer 7 — US', placements: [] });
+    model.diagrams.push(laidOut({ id: 'd3', kind: 'layer7', name: 'Layer 7 — US', placements: [] }));
     return model;
   }
 

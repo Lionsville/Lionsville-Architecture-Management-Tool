@@ -12,6 +12,7 @@
  * keeps an export without edits a clean diff.
  */
 import type { DesignModel } from '.'
+import { placedNodes } from './placement'
 import { isBuiltInLogoKey } from './logoRegistry'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
 import { KEY_RE, claimKey } from './keys'
@@ -130,8 +131,8 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       // A place goes out under its group's NAME, which is what the exchange
       // format has always carried and what another tool can read; the id is
       // this model's (ADR-0012 §6).
-      places: d.placements.map((p) => prune({
-        elementKey: k(p.elementId),
+      places: placedNodes(d).map((p) => prune({
+        elementKey: k(p.id),
         zone: d.kind === 'layer7' ? p.zone : undefined,
         domainGroup: d.kind === 'layer7' && p.group !== undefined
           ? (d.groups ?? []).find((group) => group.id === p.group)?.name ?? p.group

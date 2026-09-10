@@ -24,9 +24,13 @@
  *   working copy has, so there is nothing to put back.
  */
 import { isAdrLocked } from './adr'
-import type { Command, DiagramPatch, ProjectPatch, Restored } from './commands'
+import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
-import { decisionsOf, fromDiagram, routesOf, toDiagram } from './normalised'
+import {
+  boxesOf, decisionsOf, fromDiagram, groupList, groupsOf, routesOf, toDiagram,
+} from './normalised'
+import { memberOf, nodeGeometryOf, placedNodes } from './placement'
+import { edgeRoutesOf, splitRoutes } from './routes'
 import type { DiagramSettings, Relation } from './types'
 
 /** The same shape `projects/historyPath.ts` asks a history by; the model's own word for it. */
@@ -183,8 +187,13 @@ const SETTING_FIELDS = [
 ] as const satisfies readonly (keyof DiagramSettings)[]
 
 const PATCH_FIELDS = [
-  'autoRoute', 'needsLayout', 'applicationElementId', 'asOf',
+  'autoRoute', 'applicationElementId', 'asOf',
 ] as const satisfies readonly (keyof DiagramPatch)[]
+
+/** The board's own numbers — the geometry file's, minus the per-thing rows. */
+const BOARD_FIELDS = [
+  'canvas', 'zones', 'needsLayout',
+] as const satisfies readonly (keyof BoardPatch)[]
 
 /**
  * What brings `current` to `target`, or creates it when there is none.
@@ -195,15 +204,24 @@ function diagramCommands(
   target: Diagram, current: Diagram | undefined, against: Model,
 ): { commands: Command[]; dropped: number } {
   const wanted = fromDiagram(target)
-  const placements = wanted.placements.filter((placement) => against.elements[placement.elementId])
-  const dropped = wanted.placements.length - placements.length
-  const routes = (wanted.edgeRoutes ?? []).filter((route) => against.relations[route.relationId])
+  const placed = placedNodes(wanted).filter((node) => against.elements[node.id])
+  const dropped = wanted.members.length - placed.length
+  const routes = edgeRoutesOf(wanted).filter((route) => against.relations[route.relationId])
 
   if (!current) {
     const diagram = toDiagram({
       ...wanted,
-      placements,
-      ...(wanted.edgeRoutes !== undefined ? { edgeRoutes: routes } : {}),
+      members: placed.map(memberOf),
+      geometry: {
+        ...wanted.geometry,
+        nodes: placed.map(nodeGeometryOf),
+        ...(wanted.geometry.routes !== undefined || wanted.lines !== undefined
+          ? splitRoutes(routes)
+          : {}),
+      },
+      ...(wanted.lines !== undefined || wanted.geometry.routes !== undefined
+        ? { lines: splitRoutes(routes).lines }
+        : {}),
     })
     return { commands: [{ type: 'diagram.create', diagram }], dropped }
   }
@@ -217,14 +235,24 @@ function diagramCommands(
   const patch = differing(pick(current, PATCH_FIELDS), pick(target, PATCH_FIELDS)) as DiagramPatch
   if (Object.keys(patch).length) commands.push({ type: 'diagram.update', id, patch })
 
-  if (!same(current.layoutConfig, target.layoutConfig)) {
-    commands.push({ type: 'layout.set', diagramId: id, layoutConfig: target.layoutConfig })
-  }
+  const board = differing(pick(current, BOARD_FIELDS), pick(target, BOARD_FIELDS)) as BoardPatch
+  if (Object.keys(board).length) commands.push({ type: 'board.set', diagramId: id, patch: board })
 
-  const gone = current.order.placements.filter((elementId) => !target.placements[elementId])
-  if (gone.length) commands.push({ type: 'placement.remove', diagramId: id, elementIds: gone })
-  const moved = placements.filter((placement) => !same(current.placements[placement.elementId], placement))
-  if (moved.length) commands.push({ type: 'placement.set', diagramId: id, placements: moved })
+  const goneGroups = current.order.groups.filter((groupId) => !groupsOf(target)[groupId])
+  if (goneGroups.length) commands.push({ type: 'group.remove', diagramId: id, groupIds: goneGroups })
+  const groups = groupList(target).filter((group) => !same(groupsOf(current)[group.id], group))
+  if (groups.length) commands.push({ type: 'group.set', diagramId: id, groups })
+  const boxes = Object.values(boxesOf(target)).filter((box) => !same(boxesOf(current)[box.id], box))
+  if (boxes.length) commands.push({ type: 'box.set', diagramId: id, boxes })
+  const goneBoxes = Object.keys(boxesOf(current)).filter((groupId) => !boxesOf(target)[groupId])
+  if (goneBoxes.length) commands.push({ type: 'box.remove', diagramId: id, groupIds: goneBoxes })
+
+  const gone = current.order.members.filter((elementId) => !target.members[elementId])
+  if (gone.length) commands.push({ type: 'member.remove', diagramId: id, elementIds: gone })
+  const members = placed.map(memberOf).filter((member) => !same(current.members[member.id], member))
+  if (members.length) commands.push({ type: 'member.set', diagramId: id, members })
+  const nodes = placed.map(nodeGeometryOf).filter((node) => !same(current.nodes[node.id], node))
+  if (nodes.length) commands.push({ type: 'node.set', diagramId: id, nodes })
 
   const currentRoutes = routesOf(current)
   const targetRoutes = routesOf(target)

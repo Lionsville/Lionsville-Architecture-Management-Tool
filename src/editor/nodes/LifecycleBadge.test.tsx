@@ -92,7 +92,7 @@ function props(
         isManaged: false,
         aspects: {},
       },
-      placement: { elementId: 'e1', zone: 'landscape', x: 0, y: 0 },
+      placement: { id: 'e1', zone: 'landscape', x: 0, y: 0 },
       resizeLimits: testResizeLimits(
         (kind === 'applicationBoundary' ? 'application' : kind) as ElementKind,
       ),

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BoardGeometry } from '../model/zones';
 import { claimKey } from '../model/keys';
-import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, DiagramLayoutConfig, DiagramPlacement, DomainGroupRect, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
+import { placeOn } from '../model/commands';
+import { memberOf, nodeGeometryOf, placedNode } from '../model/placement';
+import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, PlacedNode, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
 import type { TidyResult } from '../layout/tidy';
@@ -9,14 +12,14 @@ import { idPolicy, idsIn } from '../model/keys';
 import type { IdPolicy } from '../model/keys';
 import { transaction } from '../model/commands';
 import type { Command } from '../model/commands';
-import {
+import { placedNodes,
   clampPlacementIntoZone,
   defaultContainerPosition,
   defaultZonePosition,
   placementRect,
 } from '../model/placement';
 import { edgeRoutesEqual } from '../model/equality';
-import {
+import { edgeRoutesOf,
   followNodeMove,
   hasFixedSide,
   hasPlacedContent,
@@ -106,9 +109,9 @@ export function selectDomainGroup(name: string): Selection {
  */
 export function selectAllContent(
   model: Pick<DesignModel, 'relations'>,
-  diagram: Pick<DesignDiagram, 'placements'>,
+  diagram: Pick<DesignDiagram, 'members' | 'geometry'>,
 ): Selection {
-  const elementIds = diagram.placements.map((p) => p.elementId);
+  const elementIds = placedNodes(diagram).map((p) => p.id);
   const placed = new Set(elementIds);
   const connectionIds = model.relations
     .filter((c) => placed.has(c.sourceId) && placed.has(c.targetId))
@@ -169,7 +172,7 @@ export type ElementSeedPatch = Pick<
 >;
 
 export interface PlacementMove {
-  elementId: ElementId;
+  id: ElementId;
   x: number;
   y: number;
   zone?: Layer7Zone;
@@ -207,7 +210,7 @@ export interface EditorActions {
    */
   changeElementKind(id: ElementId, kind: ElementKind): void;
   movePlacements(moves: PlacementMove[]): void;
-  setPlacements(placements: DiagramPlacement[]): void;
+  setPlacements(placements: PlacedNode[]): void;
   /**
    * Commit a Tidy run in ONE step: element positions plus, for layer7, the
    * re-sized landscape domain-group rects. Rects are merged into
@@ -593,7 +596,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const placement = seedPlacement(seed, diagram, id);
         geometry(transaction([
           { type: 'element.create', element },
-          { type: 'placement.set', diagramId: diagram.id, placements: [placement] },
+          placeOn(diagram.id, [placement]),
         ]));
         setSelection(selectElement(id));
       },
@@ -618,12 +621,12 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const model = currentModel();
         if (!canChangeKind(model, diagram, id, kind).ok) return;
         const element = model.elements.find((e) => e.id === id);
-        const placement = diagram.placements.find((p) => p.elementId === id);
+        const placement = placedNodes(diagram).find((p) => p.id === id);
         if (!element || !placement) return;
         const next = placementForKind(placement, kind, diagram);
         dispatch(transaction([
           { type: 'element.update', id, patch: { kind } },
-          { type: 'placement.set', diagramId: diagram.id, placements: [next] },
+          placeOn(diagram.id, [next]),
         ]));
       },
 
@@ -635,13 +638,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // Rects before and after, for the hand-drawn routes that hang off a moved
         // node (below). Size never changes in a move, so both come from the kind.
         const rects = new Map<ElementId, { before: Rect; after: Rect }>();
-        const placements: DiagramPlacement[] = [];
+        const placements: PlacedNode[] = [];
         for (const move of moves) {
-          const placement = diagram.placements.find((p) => p.elementId === move.elementId);
+          const placement = placedNodes(diagram).find((p) => p.id === move.id);
           if (!placement) continue;
-          const element = elementsById.get(move.elementId);
+          const element = elementsById.get(move.id);
           if (element) {
-            rects.set(move.elementId, {
+            rects.set(move.id, {
               before: placementRect(element.kind, placement),
               after: placementRect(element.kind, { ...placement, x: move.x, y: move.y }),
             });
@@ -660,7 +663,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // left alone — live routing recomputes them, and without live routing
         // they were never the user's geometry to keep attached.
         const followed: EdgeRoute[] = [];
-        for (const route of diagram.edgeRoutes ?? []) {
+        for (const route of edgeRoutesOf(diagram)) {
           if (isAutoRoute(route)) continue;
           const connection = model.relations.find((c) => c.id === route.relationId);
           if (!connection) continue;
@@ -673,7 +676,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         }
         if (placements.length === 0 && followed.length === 0) return;
         geometry(transaction([
-          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+          ...(placements.length ? [placeOn(diagram.id, placements)] : []),
           ...routeCommands(diagram.id, followed),
         ]));
       },
@@ -681,7 +684,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       setPlacements(placements) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        geometry({ type: 'placement.set', diagramId: diagram.id, placements });
+        geometry(placeOn(diagram.id, placements));
       },
 
       applyTidyResult(
@@ -692,7 +695,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (!diagram) return tokenRef.current;
         const commands: Command[] = [];
         if (placements.length > 0) {
-          commands.push({ type: 'placement.set', diagramId: diagram.id, placements });
+          commands.push(placeOn(diagram.id, placements));
         }
         // Layer7 only: write the group rects AND the grown canvas in ONE
         // layoutConfig object so they land in a single undo step. Group rects
@@ -703,24 +706,14 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // The canvas is written even when there are no domainGroups, so a
         // landscape with only loose apps still resizes/shrinks the board.
         if (diagram.kind === 'layer7') {
-          const current = diagram.layoutConfig ?? {};
-          let nextConfig = current;
+          // Boxes merge by id — create-OR-resize; a box for a group the board
+          // does not hold is ignored by the reducer. The canvas is written even
+          // when there are no boxes, so a landscape with only loose apps still
+          // resizes the board.
           if (domainGroups && domainGroups.length > 0) {
-            const tidyByName = new Map(domainGroups.map((g) => [g.id, g]));
-            const existing = current.domainGroups ?? [];
-            const existingNames = new Set(existing.map((g) => g.id));
-            const groups = [
-              ...existing.map((g) => tidyByName.get(g.id) ?? g),
-              ...domainGroups.filter((g) => !existingNames.has(g.id)),
-            ];
-            nextConfig = { ...nextConfig, domainGroups: groups };
+            commands.push({ type: 'box.set', diagramId: diagram.id, boxes: domainGroups });
           }
-          if (canvas) {
-            nextConfig = { ...nextConfig, canvas };
-          }
-          if (nextConfig !== current) {
-            commands.push({ type: 'layout.set', diagramId: diagram.id, layoutConfig: nextConfig });
-          }
+          if (canvas) commands.push({ type: 'board.set', diagramId: diagram.id, patch: { canvas } });
         }
         // U-edge-2: Tidy carries ELK's computed orthogonal edge routes, so
         // tidied edges route AROUND the relaid-out nodes instead of cutting
@@ -764,7 +757,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
               ...routeSides(r),
             });
           }
-          for (const route of diagram.edgeRoutes ?? []) {
+          for (const route of edgeRoutesOf(diagram)) {
             const r = routeById.get(route.relationId);
             if (r && sets(r)) continue; // already set above
             // A PARTIAL result (one group) reflowed only its own members, so
@@ -788,7 +781,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           // destroying what is there trades "routes are stale" for "routes are
           // gone", and pinning them would not have saved them either, since a
           // pass that produced nothing preserved nothing.
-          for (const route of diagram.edgeRoutes ?? []) rows.push(clearedRoute(route));
+          for (const route of edgeRoutesOf(diagram)) rows.push(clearedRoute(route));
         }
         commands.push(...routeCommands(diagram.id, rows));
         if (commands.length === 0) return tokenRef.current;
@@ -800,12 +793,12 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
 
       setDomainGroup(elementId, groupId) {
         const diagram = currentDiagram();
-        const placement = diagram?.placements.find((p) => p.elementId === elementId);
+        const placement = diagram && placedNode(diagram, elementId);
         if (!diagram || !placement) return;
         dispatch({
-          type: 'placement.set',
+          type: 'member.set',
           diagramId: diagram.id,
-          placements: [{ ...placement, group: groupId }],
+          members: [memberOf({ ...placement, group: groupId })],
         });
       },
 
@@ -813,11 +806,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const diagram = currentDiagram();
         if (!diagram) return;
         const placements = elementIds
-          .map((id) => diagram.placements.find((p) => p.elementId === id))
-          .filter((p): p is DiagramPlacement => Boolean(p))
+          .map((id) => placedNodes(diagram).find((p) => p.id === id))
+          .filter((p): p is PlacedNode => Boolean(p))
           .map((p) => ({ ...p, group: groupId }));
         if (placements.length === 0) return;
-        dispatch({ type: 'placement.set', diagramId: diagram.id, placements });
+        dispatch(placeOn(diagram.id, placements));
       },
 
       fileUnderGroupNamed(elementIds, name) {
@@ -833,13 +826,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           : undefined;
         const groupId = held?.id ?? made?.id;
         const placements = elementIds
-          .map((id) => diagram.placements.find((p) => p.elementId === id))
-          .filter((p): p is DiagramPlacement => Boolean(p))
+          .map((id) => placedNodes(diagram).find((p) => p.id === id))
+          .filter((p): p is PlacedNode => Boolean(p))
           .map((p) => ({ ...p, group: groupId }));
         if (placements.length === 0) return;
         dispatch(transaction([
           ...(made ? [{ type: 'group.set' as const, diagramId: diagram.id, groups: [made] }] : []),
-          { type: 'placement.set', diagramId: diagram.id, placements },
+          placeOn(diagram.id, placements),
         ]));
       },
 
@@ -902,13 +895,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             kind: diagram.kind,
             applicationElementId: diagram.applicationElementId,
             domainGroupNames: new Set(
-              (diagram.layoutConfig?.domainGroups ?? []).map((g) => g.id),
+              (diagram.geometry?.groups ?? []).map((g) => g.id),
             ),
           },
         });
         geometry(transaction([
           ...remapped.elements.map((element) => ({ type: 'element.create' as const, element })),
-          { type: 'placement.set', diagramId: diagram.id, placements: remapped.placements },
+          placeOn(diagram.id, remapped.placements),
           ...remapped.relations.map((relation) => ({
             type: 'relation.create' as const, relation,
           })),
@@ -961,7 +954,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       removeFromDiagram(elementId) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        geometry({ type: 'placement.remove', diagramId: diagram.id, elementIds: [elementId] });
+        geometry({ type: 'member.remove', diagramId: diagram.id, elementIds: [elementId] });
         setSelection(EMPTY_SELECTION);
       },
 
@@ -1087,18 +1080,15 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       setZoneSize(zone, size) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        const current = diagram.layoutConfig ?? {};
-        const next: DiagramLayoutConfig = {
-          ...current,
-          zones: { ...current.zones, [zone]: { size: clampZoneSize(zone, size, current) } },
-        };
-        dispatch({ type: 'layout.set', diagramId: diagram.id, layoutConfig: next });
+        const current = diagram.geometry ?? {};
+        const zones = { ...current.zones, [zone]: { size: clampZoneSize(zone, size, current) } };
+        dispatch({ type: 'board.set', diagramId: diagram.id, patch: { zones } });
       },
 
       setCanvasSize(size) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        const current = diagram.layoutConfig ?? {};
+        const current = diagram.geometry ?? {};
         const canvas = clampCanvasSize(size);
         // Band maxima are fractions of the board, so a smaller board means
         // shallower bands. Leaving the stored sizes alone and clamping them only
@@ -1112,31 +1102,33 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           if (stored === undefined) continue;
           zones[zone] = { size: clampZoneSize(zone, stored, { ...current, canvas }) };
         }
-        const next: DiagramLayoutConfig = { ...current, canvas, zones };
+        const next: BoardGeometry = { ...current, canvas, zones };
         const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
-        const placements: DiagramPlacement[] = [];
-        for (const placement of diagram.placements) {
-          const element = elementsById.get(placement.elementId);
+        const placements: PlacedNode[] = [];
+        for (const placement of placedNodes(diagram)) {
+          const element = elementsById.get(placement.id);
           if (!element || !placement.zone || placement.zone === 'landscape') continue;
           const moved = clampPlacementIntoZone(placement, element.kind, next);
           if (moved) placements.push(moved);
         }
         dispatch(transaction([
-          { type: 'layout.set', diagramId: diagram.id, layoutConfig: next },
-          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+          { type: 'board.set', diagramId: diagram.id, patch: { canvas, zones } },
+          ...(placements.length
+            ? [{ type: 'node.set' as const, diagramId: diagram.id, nodes: placements.map(nodeGeometryOf) }]
+            : []),
         ]));
       },
 
       resizePlacement(elementId, rect) {
         const diagram = currentDiagram();
-        const placement = diagram?.placements.find((p) => p.elementId === elementId);
+        const placement = diagram && placedNode(diagram, elementId);
         if (!diagram || !placement) return;
         geometry({
-          type: 'placement.set',
+          type: 'node.set',
           diagramId: diagram.id,
-          placements: [{
+          nodes: [nodeGeometryOf({
             ...placement, x: rect.x, y: rect.y, width: rect.width, height: rect.height,
-          }],
+          })],
         });
       },
 
@@ -1144,22 +1136,22 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
         const members = new Set(memberIds ?? []);
-        const placements = diagram.placements
-          .filter((p) => members.has(p.elementId) && p.group !== group.id)
+        const placements = placedNodes(diagram)
+          .filter((p) => members.has(p.id) && p.group !== group.id)
           .map((p) => ({ ...p, group: group.id }));
         // The group before its box before its members: `activity.ts` reads the
         // first command of a step to name it, and this step is about a group.
         geometry(transaction([
           { type: 'group.set', diagramId: diagram.id, groups: [group] },
-          groupBoxCommand(diagram, { id: group.id, ...box }),
-          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
+          { type: 'box.set', diagramId: diagram.id, boxes: [{ id: group.id, ...box }] },
+          ...(placements.length ? [placeOn(diagram.id, placements)] : []),
         ]));
       },
 
       setDomainGroupBox(groupId, box) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        geometry(groupBoxCommand(diagram, { id: groupId, ...box }));
+        geometry({ type: 'box.set', diagramId: diagram.id, boxes: [{ id: groupId, ...box }] });
       },
 
       setDomainGroupColor(groupId, color) {
@@ -1177,20 +1169,22 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       moveDomainGroup(groupId, dx, dy) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7' || (dx === 0 && dy === 0)) return;
-        const current = diagram.layoutConfig ?? {};
-        const groups = [...(current.domainGroups ?? [])];
+        const current = diagram.geometry ?? {};
+        const groups = [...(current.groups ?? [])];
         const index = groups.findIndex((g) => g.id === groupId);
         if (index < 0) return; // no such group — nothing to move
         const group = groups[index];
         // Rigid move: the box and its members share one absolute frame, so the
         // same (dx, dy) applies to both. Membership is untouched.
         groups[index] = { ...group, x: group.x + dx, y: group.y + dy };
-        const placements = diagram.placements
+        const placements = placedNodes(diagram)
           .filter((p) => p.group === groupId)
           .map((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
         geometry(transaction([
-          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
-          { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
+          ...(placements.length
+            ? [{ type: 'node.set' as const, diagramId: diagram.id, nodes: placements.map(nodeGeometryOf) }]
+            : []),
+          { type: 'box.set', diagramId: diagram.id, boxes: [groups[index]] },
         ]));
       },
 
@@ -1285,14 +1279,9 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
 
 function seedPlacement(
   seed: ElementSeed,
-  diagram: {
-    id: string;
-    kind: 'layer7' | 'container';
-    placements: DiagramPlacement[];
-    layoutConfig?: DiagramLayoutConfig;
-  },
+  diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry'>,
   elementId: ElementId,
-): DiagramPlacement {
+): PlacedNode {
   if (diagram.kind === 'layer7') {
     const zone = seed.zone ?? HOME_ZONE[seed.kind];
     const position =
@@ -1300,14 +1289,14 @@ function seedPlacement(
       defaultZonePosition(
         zone,
         seed.kind,
-        diagram.placements.filter((p) => (p.zone ?? 'landscape') === zone).length,
-        diagram.layoutConfig,
+        placedNodes(diagram).filter((p) => (p.zone ?? 'landscape') === zone).length,
+        diagram.geometry,
       );
-    return { elementId, zone, group: seed.group, ...position };
+    return { id: elementId, zone, group: seed.group, ...position };
   }
   const position =
-    seed.position ?? defaultContainerPosition(seed.kind, diagram.placements.length);
-  return { elementId, ...position };
+    seed.position ?? defaultContainerPosition(seed.kind, diagram.members.length);
+  return { id: elementId, ...position };
 }
 
 /**
@@ -1351,37 +1340,17 @@ function clearedRoute(route: EdgeRoute): EdgeRoute {
  * a data delete).
  */
 function groupRemovalCommands(diagram: DesignDiagram, groupIds: Set<string>): Command[] {
-  const current = diagram.layoutConfig ?? {};
+  // `group.remove` takes each group's box with it, so nothing else has to.
   const commands: Command[] = [
     { type: 'group.remove', diagramId: diagram.id, groupIds: [...groupIds] },
-    {
-      type: 'layout.set',
-      diagramId: diagram.id,
-      layoutConfig: {
-        ...current,
-        domainGroups: (current.domainGroups ?? []).filter((g) => !groupIds.has(g.id)),
-      },
-    },
   ];
-  const placements = diagram.placements
+  const members = placedNodes(diagram)
     .filter((p) => p.group !== undefined && groupIds.has(p.group))
-    .map((p) => ({ ...p, group: undefined }));
-  if (placements.length > 0) {
-    commands.push({ type: 'placement.set', diagramId: diagram.id, placements });
+    .map((p) => memberOf({ ...p, group: undefined }));
+  if (members.length > 0) {
+    commands.push({ type: 'member.set', diagramId: diagram.id, members });
   }
   return commands;
-}
-
-/** One group's box, upserted into the diagram's layout config. */
-function groupBoxCommand(diagram: DesignDiagram, box: DomainGroupRect): Command {
-  const current = diagram.layoutConfig ?? {};
-  const groups = [...(current.domainGroups ?? [])];
-  const index = groups.findIndex((g) => g.id === box.id);
-  if (index >= 0) groups[index] = box;
-  else groups.push(box);
-  return {
-    type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups },
-  };
 }
 
 /**
@@ -1398,7 +1367,7 @@ function pruneSelection(
   const connectionIds = new Set(model.relations.map((c) => c.id));
   const diagram = model.diagrams.find((d) => d.id === activeDiagramId);
   const groupNames = new Set(
-    (diagram?.layoutConfig?.domainGroups ?? []).map((g) => g.id),
+    (diagram?.geometry?.groups ?? []).map((g) => g.id),
   );
   const nextElements = selection.elementIds.filter((id) => elementIds.has(id));
   const nextConnections = selection.connectionIds.filter((id) => connectionIds.has(id));

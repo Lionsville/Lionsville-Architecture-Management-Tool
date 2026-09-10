@@ -13,6 +13,7 @@
  * thing anyone opens.
  */
 import { describe, expect, it } from 'vitest'
+import { placedNodes } from '../../model/placement';
 import { EXAMPLES } from '.'
 import { fromInterchange } from '../../model/fromInterchange'
 import { fromArrays, toArrays } from '../../model/normalised'
@@ -42,8 +43,8 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
       .filter((d) => d.kind === 'container')
       .map((d) => [d.name, d] as const),
   )('nests the components of container diagram %s inside its boundary', (_name, diagram) => {
-    const placed = diagram.placements
-      .map((p) => byId.get(p.elementId))
+    const placed = placedNodes(diagram)
+      .map((p) => byId.get(p.id))
       .filter((e) => e?.kind === 'component')
 
     expect(placed.length).toBeGreaterThan(0)

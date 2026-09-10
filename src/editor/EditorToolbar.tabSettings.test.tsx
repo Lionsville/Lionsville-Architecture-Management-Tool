@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import type { DesignDiagram, DesignModel } from '../model/types';
@@ -15,8 +16,8 @@ import { EditorToolbar } from './EditorToolbar';
 
 afterEach(() => cleanup());
 
-const diagram: DesignDiagram = { id: 'd1', kind: 'layer7', name: 'Landscape', placements: [] };
-const other: DesignDiagram = { id: 'd2', kind: 'layer7', name: 'Target', placements: [] };
+const diagram: DesignDiagram = laidOut({ id: 'd1', kind: 'layer7', name: 'Landscape', placements: [] });
+const other: DesignDiagram = laidOut({ id: 'd2', kind: 'layer7', name: 'Target', placements: [] });
 const model: DesignModel = {
   name: 'Design',
   customerName: 'Group',

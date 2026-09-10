@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { placedNodes } from '../model/placement';
 import { bestMatches, groupDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
 import { searchAll } from './search'
 import { searchElements, SEARCH_RESULT_LIMIT } from './elementSearch'
@@ -64,7 +65,7 @@ describe('the index', () => {
   it('says which diagram carries an element, and which one first', () => {
     const { places } = searchIndex(model)
     for (const diagram of model.diagrams) {
-      expect(places.carries.get(diagram.id)?.size).toBe(diagram.placements.length)
+      expect(places.carries.get(diagram.id)?.size).toBe(diagram.members.length)
     }
     const component = model.elements.find((e) => e.kind === 'component') as DesignElement
     expect(places.first.get(component.id)?.kind).toBe('container')
@@ -133,10 +134,10 @@ function naiveFinder(query: string, activeDiagramId: string): string[] {
     .filter((e) => matchesQuery(query, [e.name, e.category, e.vendor, e.technology]))
     .map((element) => {
       const onActive = model.diagrams.some(
-        (d) => d.id === activeDiagramId && d.placements.some((p) => p.elementId === element.id))
+        (d) => d.id === activeDiagramId && placedNodes(d).some((p) => p.id === element.id))
       const diagram = onActive
         ? model.diagrams.find((d) => d.id === activeDiagramId)
-        : model.diagrams.find((d) => d.placements.some((p) => p.elementId === element.id))
+        : model.diagrams.find((d) => placedNodes(d).some((p) => p.id === element.id))
       return { element, onActive, diagramId: diagram?.id }
     })
   const rank = (hit: (typeof hits)[number]) => {

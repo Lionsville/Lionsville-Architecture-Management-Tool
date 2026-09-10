@@ -19,12 +19,12 @@ const board = () =>
           placement('c1', { zone: 'landscape', x: 500, y: 300 }),
         ],
       }),
-      diagram('cd', {
+      diagram('cd', ({
         kind: 'container',
         name: 'App containers',
         applicationElementId: 'boundary',
         placements: [placement('c2')],
-      }),
+      })),
     ],
     elements: [
       element('a1', { kind: 'application' }),
@@ -78,7 +78,8 @@ describe('canChangeKind', () => {
 
   it('refuses an application that a container diagram is about', () => {
     const m = board();
-    m.diagrams[0].placements.push(placement('boundary', { zone: 'landscape' }));
+    m.diagrams[0].members.push({ id: 'boundary', zone: 'landscape' });
+    m.diagrams[0].geometry.nodes.push({ id: 'boundary', x: 0, y: 0 });
     expect(canChangeKind(m, m.diagrams[0], 'boundary', 'externalSystem')).toEqual({
       ok: false,
       reason: 'kindChange.hasContainerDiagram',

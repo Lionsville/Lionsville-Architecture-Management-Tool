@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { DesignDiagram, DesignModel, ElementId, ElementKind, Layer7Zone, Point, Rect } from '../../model/types';
+import type { PlacedNode, DesignDiagram, DesignModel, ElementId, ElementKind, Layer7Zone, Point, Rect } from '../../model/types';
 import {
   selectDomainGroup,
   selectAllContent,
@@ -8,7 +8,7 @@ import {
   type Selection,
 } from '../useEditorState';
 import { pasteOffsetFor, serializeSelection, type ClipboardPayload } from '../../model/clipboard';
-import {
+import { placedNodes,
   domainGroupRectMap,
   freeSlotIn,
   freeZonePosition,
@@ -307,9 +307,9 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     // --- group ----------------------------------------------------------------
     case 'select-members': {
       if (target.kind !== 'group') return;
-      const members = diagram.placements
+      const members = placedNodes(diagram)
         .filter((p) => p.group === target.groupId)
-        .map((p) => p.elementId);
+        .map((p) => p.id);
       host.setSelection({ elementIds: members, connectionIds: [], domainGroups: [] });
       return;
     }
@@ -343,7 +343,7 @@ function copy(host: MenuActionHost, elementIds: ElementId[]): boolean {
 function rectOf(host: MenuActionHost, elementId: ElementId): Rect | undefined {
   const measured = host.nodeBounds().find((n) => n.id === elementId);
   if (measured && measured.width > 0 && measured.height > 0) return measured;
-  const placement = host.diagram.placements.find((p) => p.elementId === elementId);
+  const placement = placedNodes(host.diagram).find((p) => p.id === elementId);
   const element = host.model.elements.find((e) => e.id === elementId);
   return placement && element ? placementRect(element.kind, placement) : undefined;
 }
@@ -352,13 +352,13 @@ function rectOf(host: MenuActionHost, elementId: ElementId): Rect | undefined {
 function occupiedRects(
   host: MenuActionHost,
   except: ElementId,
-  where: (placement: DesignDiagram['placements'][number]) => boolean,
+  where: (placement: PlacedNode) => boolean,
 ): Rect[] {
   const elementsById = new Map(host.model.elements.map((e) => [e.id, e]));
-  return host.diagram.placements
-    .filter((p) => p.elementId !== except && where(p))
+  return placedNodes(host.diagram)
+    .filter((p) => p.id !== except && where(p))
     .flatMap((p) => {
-      const element = elementsById.get(p.elementId);
+      const element = elementsById.get(p.id);
       return element ? [placementRect(element.kind, p)] : [];
     });
 }
@@ -370,15 +370,15 @@ function occupiedRects(
 function moveToZone(host: MenuActionHost, elementId: ElementId, zone: Layer7Zone): void {
   const { diagram, model, actions } = host;
   if (diagram.kind !== 'layer7') return;
-  const placement = diagram.placements.find((p) => p.elementId === elementId);
+  const placement = placedNodes(diagram).find((p) => p.id === elementId);
   const element = model.elements.find((e) => e.id === elementId);
   if (!placement || !element || (placement.zone ?? 'landscape') === zone) return;
   const occupied = occupiedRects(host, elementId, (p) => (p.zone ?? 'landscape') === zone);
-  const position = freeZonePosition(zone, element.kind, occupied, diagram.layoutConfig);
+  const position = freeZonePosition(zone, element.kind, occupied, diagram.geometry);
   const size = placementSize(element.kind, placement);
   const centre = { x: position.x + size.width / 2, y: position.y + size.height / 2 };
   actions.movePlacements([
-    { elementId, ...position, ...(host.resolveDrop?.(elementId, centre) ?? { zone, group: undefined }) },
+    { id: elementId, ...position, ...(host.resolveDrop?.(elementId, centre) ?? { zone, group: undefined }) },
   ]);
 }
 
@@ -393,8 +393,8 @@ function setDomainGroup(host: MenuActionHost, elementId: ElementId, name: string
     actions.setDomainGroup(elementId, undefined);
     return;
   }
-  const rect = domainGroupRectMap(diagram.layoutConfig).get(name);
-  const placement = diagram.placements.find((p) => p.elementId === elementId);
+  const rect = domainGroupRectMap(diagram.geometry?.groups).get(name);
+  const placement = placedNodes(diagram).find((p) => p.id === elementId);
   const element = model.elements.find((e) => e.id === elementId);
   if (!rect || !placement || !element) return;
   const size = placementSize(element.kind, placement);
@@ -406,7 +406,7 @@ function setDomainGroup(host: MenuActionHost, elementId: ElementId, name: string
   const occupied = occupiedRects(host, elementId, (p) => p.group === name);
   // Insets keep a moved-in card clear of the border and of the name pill on top.
   const position = freeSlotIn(rect, element.kind, occupied, { x: 24, y: 36 });
-  actions.movePlacements([{ elementId, ...position, zone: 'landscape', group: name }]);
+  actions.movePlacements([{ id: elementId, ...position, zone: 'landscape', group: name }]);
 }
 
 /**
@@ -416,7 +416,7 @@ function setDomainGroup(host: MenuActionHost, elementId: ElementId, name: string
 function groupIntoNewDomainGroup(host: MenuActionHost, elementIds: ElementId[]): void {
   const { diagram, actions } = host;
   if (diagram.kind !== 'layer7') return;
-  const placementsById = new Map(diagram.placements.map((p) => [p.elementId, p]));
+  const placementsById = new Map(placedNodes(diagram).map((p) => [p.id, p]));
   const members = elementIds.filter((id) => {
     const placement = placementsById.get(id);
     return placement !== undefined && (placement.zone ?? 'landscape') === 'landscape';

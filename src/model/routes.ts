@@ -1,4 +1,6 @@
-import type { AttachSide, DesignDiagram, EdgeRoute, EdgeRouteSource, Point, Rect } from './types';
+import type {
+  AttachSide, DesignDiagram, DiagramLine, EdgeRoute, EdgeRouteSource, Point, Rect, RouteGeometry,
+} from './types';
 import { routeEndAnchor, routeEndLeg } from './floatingEdgeMath';
 
 /**
@@ -8,11 +10,115 @@ import { routeEndAnchor, routeEndLeg } from './floatingEdgeMath';
  * "delete the stored route".
  */
 
+/**
+ * A view's routes as one row per relation — the two halves, joined.
+ *
+ * ADR-0012 §6 files a line's CONSTRAINTS with the definition and its
+ * coordinates with the geometry, because a review can skip the second. Nothing
+ * that reads or writes a route wants one half: the router honours a side and
+ * emits waypoints in the same pass, and a hand edit claims both at once. So
+ * this is where they meet, and {@link splitRoutes} is the way back.
+ *
+ * The order is the definition's, with any geometry the definition says nothing
+ * about after it — a line the router drew and nobody constrained.
+ */
+export function edgeRouteRows(
+  lines: readonly DiagramLine[] | undefined,
+  routes: readonly RouteGeometry[] | undefined,
+): EdgeRoute[] {
+  const geometry = new Map((routes ?? []).map((route) => [route.relationId, route]));
+  const rows: EdgeRoute[] = (lines ?? []).map((line) => {
+    const held = geometry.get(line.relationId);
+    geometry.delete(line.relationId);
+    return {
+      ...line,
+      waypoints: held?.waypoints ?? [],
+      ...(held?.labelPosition !== undefined ? { labelPosition: held.labelPosition } : {}),
+    };
+  });
+  for (const route of geometry.values()) {
+    rows.push({
+      relationId: route.relationId,
+      waypoints: route.waypoints,
+      ...(route.labelPosition !== undefined ? { labelPosition: route.labelPosition } : {}),
+    });
+  }
+  return rows;
+}
+
+/**
+ * The two halves again, or nothing where a half has nothing to say.
+ *
+ * A row with no constraint and some geometry writes only geometry; a row with
+ * a constraint and no bends writes only a line — a pinned straight line is a
+ * sentence in the definition and no coordinates at all. A row that is neither
+ * (the delete marker) writes a bare line, so that a document which holds one
+ * comes back holding it.
+ */
+export function splitRoutes(
+  rows: readonly EdgeRoute[],
+): { lines?: DiagramLine[]; routes?: RouteGeometry[] } {
+  const lines: DiagramLine[] = [];
+  const routes: RouteGeometry[] = [];
+  for (const row of rows) {
+    const { relationId, waypoints, labelPosition, ...line } = row;
+    const geometry = waypoints.length > 0 || labelPosition !== undefined;
+    if (geometry) {
+      routes.push({
+        relationId,
+        waypoints,
+        ...(labelPosition !== undefined ? { labelPosition } : {}),
+      });
+    }
+    if (Object.keys(line).length > 0 || !geometry) lines.push({ relationId, ...line });
+  }
+  return {
+    ...(lines.length ? { lines } : {}),
+    ...(routes.length ? { routes } : {}),
+  };
+}
+
+/**
+ * This view with `rows` standing in for its routes — the two halves rewritten
+ * from one list.
+ *
+ * For a caller that must route against the board AFTER its own edit, before
+ * React has re-rendered it: the routing pass wants a whole diagram, and the
+ * edit is one joined row.
+ */
+export function diagramWithRoutes<T extends Pick<DesignDiagram, 'lines' | 'geometry'>>(
+  diagram: T,
+  rows: readonly EdgeRoute[],
+): T {
+  const { lines, routes } = splitRoutes(rows);
+  const next = { ...diagram, geometry: { ...diagram.geometry, routes } };
+  if (lines) next.lines = lines;
+  else delete next.lines;
+  if (routes === undefined) delete next.geometry.routes;
+  return next;
+}
+
+/** Every route on this view, joined. Worked out once per diagram object. */
+export function edgeRoutesOf(
+  diagram: Pick<DesignDiagram, 'lines' | 'geometry'> | undefined,
+): EdgeRoute[] {
+  if (!diagram) return [];
+  const held = joined.get(diagram);
+  if (held) return held;
+  const rows = edgeRouteRows(diagram.lines, diagram.geometry?.routes);
+  joined.set(diagram, rows);
+  return rows;
+}
+
+// Safe because a diagram is never mutated: every writer returns a new one. The
+// same reasoning — and the same shape — as `fromDiagram`'s own cache.
+const joined = new WeakMap<object, EdgeRoute[]>();
+
 export function routeFor(
-  diagram: Pick<DesignDiagram, 'edgeRoutes'> | undefined,
+  diagram: Pick<DesignDiagram, 'lines' | 'geometry'> | undefined,
   relationId: string,
 ): EdgeRoute | undefined {
-  return diagram?.edgeRoutes?.find((r) => r.relationId === relationId);
+  return edgeRoutesOf(diagram).find((r) => r.relationId === relationId);
 }
 
 /** The two attach sides of a row — see `EdgeRoute.sourceSide`. */
@@ -102,7 +208,7 @@ export function routeWithSides(
  * diagram will hold once a commit of `row` lands — for a caller that must route
  * against the board after its own edit before React has re-rendered it.
  */
-export function withRouteRow(routes: EdgeRoute[] | undefined, row: EdgeRoute): EdgeRoute[] {
+export function withRouteRow(routes: readonly EdgeRoute[] | undefined, row: EdgeRoute): EdgeRoute[] {
   const current = routes ?? [];
   if (!hasRouteContent(row)) return current.filter((r) => r.relationId !== row.relationId);
   if (!current.some((r) => r.relationId === row.relationId)) return [...current, row];
@@ -164,11 +270,11 @@ export function isAutoRoute(route: Pick<EdgeRoute, 'source'> | undefined): boole
  * which is the bug the preview exists to remove, wearing a different hat. Two
  * expressions of one rule drift; one expression cannot.
  */
-export function manualRouteIds(diagram: Pick<DesignDiagram, 'edgeRoutes'>): Set<string> {
+export function manualRouteIds(diagram: Pick<DesignDiagram, 'lines' | 'geometry'>): Set<string> {
   // A pinned row is always written `manual`, so the second clause is belt and
   // braces: a pin must protect the line even if a row somehow lost its source.
   return new Set(
-    (diagram.edgeRoutes ?? [])
+    edgeRoutesOf(diagram)
       .filter((r) => !isAutoRoute(r) || r.pinned === true)
       .map((r) => r.relationId),
   );

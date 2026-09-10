@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel, EdgeRoute } from '../model/types';
-import { manualRouteIds } from '../model/routes';
+import { edgeRoutesOf, manualRouteIds } from '../model/routes';
 
 
 /**
@@ -25,18 +26,18 @@ function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
     })),
     relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         autoRoute,
         placements: [
-          { elementId: 'e1', zone: 'landscape', x: 100, y: 100 },
-          { elementId: 'e2', zone: 'landscape', x: 900, y: 400 },
-          { elementId: 'e3', zone: 'landscape', x: 900, y: 800 },
+          { id: 'e1', zone: 'landscape', x: 100, y: 100 },
+          { id: 'e2', zone: 'landscape', x: 900, y: 400 },
+          { id: 'e3', zone: 'landscape', x: 900, y: 800 },
         ],
         edgeRoutes: routes,
-      },
+      }),
     ],
   };
 }
@@ -47,7 +48,7 @@ const MANUAL: EdgeRoute = { ...AUTO, source: 'manual' };
 function render(initial: DesignModel) {
   const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
   const stored = (id = 'c1') =>
-    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === id);
+    edgeRoutesOf(result.current.model.diagrams[0])?.find((r) => r.relationId === id);
   /** What the last step asked for, flattened — `route.set` or `route.clear`. */
   const asked = () => {
     const last = host.current.commands.at(-1);
@@ -145,7 +146,7 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     expect(host.current.commands).toHaveLength(1);
     expect(result.current.model.relations.find((c) => c.id === id))
       .toMatchObject({ sourceId: 'e1', targetId: 'e3' });
-    expect(result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === id)).toEqual({
+    expect(edgeRoutesOf(result.current.model.diagrams[0])?.find((r) => r.relationId === id)).toEqual({
       relationId: id,
       waypoints: [],
       source: 'auto',
@@ -155,13 +156,13 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     // One undo takes both away.
     act(() => result.current.undo());
     expect(result.current.model.relations.some((c) => c.id === id)).toBe(false);
-    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
+    expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual([]);
   });
 
   it('connect without sides writes no route row, exactly as before', () => {
     const { result, host } = render(model());
     act(() => result.current.actions.connect('e1', 'e3'));
-    expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
+    expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual([]);
     expect(host.current.commands).toHaveLength(1);
     expect(result.current.actions.connect('e1', 'e1')).toBeUndefined();
   });

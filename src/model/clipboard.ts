@@ -1,19 +1,20 @@
 import type {
   DesignDiagram,
   DesignElement,
-  DiagramPlacement,
   ElementId,
   ElementKind,
+  PlacedNode,
   Point,
   Relation,
 } from './types';
+import { placedNodes } from './placement';
 
 /** In-memory paste snapshot: copied elements, their fully-internal
- * relations, and their placements on the source diagram. */
+ * relations, and where each sat on the source diagram. */
 export interface ClipboardPayload {
   elements: DesignElement[];
   relations: Relation[];
-  placements: DiagramPlacement[];
+  placements: PlacedNode[];
 }
 
 /**
@@ -41,8 +42,8 @@ export function serializeSelection(
   elementIds: readonly ElementId[],
 ): ClipboardPayload | undefined {
   const requested = new Set(elementIds);
-  const placements = diagram.placements.filter((p) => requested.has(p.elementId));
-  const placedIds = new Set(placements.map((p) => p.elementId));
+  const placements = placedNodes(diagram).filter((p) => requested.has(p.id));
+  const placedIds = new Set(placements.map((p) => p.id));
   if (placedIds.size === 0) return undefined;
 
   const elements = model.elements.filter((e) => placedIds.has(e.id));
@@ -60,7 +61,7 @@ export interface PasteTarget {
   kind: DesignDiagram['kind'];
   /** Container boundary application; the parent for pasted components. */
   applicationElementId?: ElementId;
-  /** Group names that exist on the target diagram (layer7). */
+  /** Group ids that exist on the target diagram (layer7). */
   domainGroupNames?: ReadonlySet<string>;
 }
 
@@ -125,17 +126,17 @@ function remapParent(
 }
 
 function remapPlacement(
-  placement: DiagramPlacement,
+  placement: PlacedNode,
   idMap: ReadonlyMap<ElementId, ElementId>,
   options: RemapOptions,
-): DiagramPlacement {
-  const base: DiagramPlacement = {
+): PlacedNode {
+  const base: PlacedNode = {
     ...placement,
-    elementId: idMap.get(placement.elementId) as ElementId,
+    id: idMap.get(placement.id) as ElementId,
     x: placement.x + options.offset.x,
     y: placement.y + options.offset.y,
   };
-  // zone / domainGroup only mean something on a layer7 diagram; drop them when
+  // zone / group only mean something on a layer7 diagram; drop them when
   // pasting into a container, and drop a group tag the target doesn't define.
   if (options.target.kind !== 'layer7') {
     return { ...base, zone: undefined, group: undefined };

@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { diagramWithRoutes, edgeRoutesOf } from '../../model/routes';
+import { placedNodes } from '../../model/placement';
+import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react';
 import { useDragRoutePreview, type DragRoutePreview } from './useDragRoutePreview';
 import { MAX_CONNECTIONS_FOR_DRAG_PREVIEW } from '../../layout/libavoidRouter';
@@ -33,19 +36,19 @@ function board(connectionCount: number): DesignModel {
     isManaged: true,
     aspects: {},
   }));
-  const diagram: DesignDiagram = {
+  const diagram: DesignDiagram = laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'L7',
     autoRoute: true,
     placements: elements.map((e, i) => ({
-      elementId: e.id,
+      id: e.id,
       zone: 'landscape' as const,
       x: i * 40,
       y: i * 30,
     })),
     edgeRoutes: [],
-  };
+  });
   return {
     name: 'ACME',
     customerName: 'ACME',
@@ -87,7 +90,7 @@ function mountOnDiagram(model: DesignModel, index: number) {
   return { handle, switchTo: (i: number) => view.rerender(<Probe i={i} />) };
 }
 
-const move = () => [{ elementId: 'e0', x: 500, y: 500 }];
+const move = () => [{ id: 'e0', x: 500, y: 500 }];
 
 describe('useDragRoutePreview', () => {
   beforeEach(() => {
@@ -148,10 +151,10 @@ describe('useDragRoutePreview', () => {
 
   it('routes with the SAME preserved set the drag-end pass uses', async () => {
     const model = board(5);
-    model.diagrams[0].edgeRoutes = [
+    model.diagrams[0] = diagramWithRoutes(model.diagrams[0], [
       { relationId: 'c1', waypoints: [{ x: 9, y: 9 }], source: 'manual' },
       { relationId: 'c2', waypoints: [{ x: 8, y: 8 }], source: 'auto' },
-    ];
+    ]);
     const { handle } = mount(model);
     await act(async () => {
       handle.current.onDragPositions(move());
@@ -169,12 +172,12 @@ describe('useDragRoutePreview', () => {
   it('routes the DROP position one last time, so the preview is not a pass stale', async () => {
     const { handle } = mount(board(5));
     await act(async () => {
-      handle.current.onDragPositions([{ elementId: 'e0', x: 100, y: 100 }]);
+      handle.current.onDragPositions([{ id: 'e0', x: 100, y: 100 }]);
       await vi.advanceTimersByTimeAsync(0);
     });
 
     await act(async () => {
-      handle.current.endDrag([{ elementId: 'e0', x: 999, y: 888 }]);
+      handle.current.endDrag([{ id: 'e0', x: 999, y: 888 }]);
       await vi.advanceTimersByTimeAsync(0);
     });
 
@@ -185,7 +188,7 @@ describe('useDragRoutePreview', () => {
     // expires on its timer 1.5 s after the drop instead.
     expect(routeDiagramEdges).toHaveBeenCalledTimes(2);
     const finalDiagram = routeDiagramEdges.mock.calls[1][1] as DesignDiagram;
-    expect(finalDiagram.placements.find((p) => p.elementId === 'e0')).toMatchObject({
+    expect(placedNodes(finalDiagram).find((p) => p.id === 'e0')).toMatchObject({
       x: 999,
       y: 888,
     });
@@ -211,10 +214,10 @@ describe('useDragRoutePreview', () => {
     const committed: DesignModel = {
       ...model,
       diagrams: [
-        {
+        laidOut({
           ...model.diagrams[0],
           edgeRoutes: [{ relationId: 'c0', waypoints: [{ x: 1, y: 2 }], source: 'auto' }],
-        },
+        }),
       ],
     };
     await act(async () => {
@@ -232,13 +235,13 @@ describe('useDragRoutePreview', () => {
     // waypoints therefore matched connections on the new diagram and were drawn
     // against rects belonging to the board the user had just left.
     const model = board(5);
-    model.diagrams.push({
+    model.diagrams.push(laidOut({
       ...model.diagrams[0],
       id: 'd2',
       name: 'Containers',
       kind: 'container',
-      placements: model.diagrams[0].placements.map((p) => ({ ...p, x: p.x + 900 })),
-    });
+      placements: placedNodes(model.diagrams[0]).map((p) => ({ ...p, x: p.x + 900 })),
+    }));
     const { handle, switchTo } = mountOnDiagram(model, 0);
 
     await act(async () => {
@@ -279,7 +282,7 @@ describe('useDragRoutePreview', () => {
     // is no handover to do: the previewed geometry is for a position nothing is
     // going to commit, and holding it on screen would be a lie rather than a wait.
     const model = board(5);
-    const routesBefore = model.diagrams[0].edgeRoutes;
+    const routesBefore = edgeRoutesOf(model.diagrams[0]);
     const { handle } = mount(model);
     await act(async () => {
       handle.current.onDragPositions(move());
@@ -294,9 +297,9 @@ describe('useDragRoutePreview', () => {
 
     expect(handle.current.previewRoutes).toBeUndefined();
     // And nothing was written anywhere: the hook has no way to commit, by design.
-    expect(model.diagrams[0].edgeRoutes).toBe(routesBefore);
-    expect(model.diagrams[0].placements[0]).toEqual({
-      elementId: 'e0',
+    expect(edgeRoutesOf(model.diagrams[0])).toBe(routesBefore);
+    expect(placedNodes(model.diagrams[0])[0]).toEqual({
+      id: 'e0',
       zone: 'landscape',
       x: 0,
       y: 0,
@@ -336,7 +339,7 @@ describe('useDragRoutePreview', () => {
 
     // Not walking back into the same wall for the rest of the gesture.
     await act(async () => {
-      handle.current.onDragPositions([{ elementId: 'e0', x: 700, y: 700 }]);
+      handle.current.onDragPositions([{ id: 'e0', x: 700, y: 700 }]);
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(routeDiagramEdges).toHaveBeenCalledTimes(1);

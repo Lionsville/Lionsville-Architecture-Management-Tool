@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../../model/testFixtures';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { Position } from '@xyflow/react';
@@ -20,8 +21,8 @@ beforeAll(() => installReactFlowMocks());
 afterEach(() => cleanup());
 
 // a1: 400..600 × 300..430 (top midpoint (500,300)); b1: 1000..1200 × 600..730.
-const A = { elementId: 'a1', zone: 'landscape' as const, x: 400, y: 300 };
-const B = { elementId: 'b1', zone: 'landscape' as const, x: 1000, y: 600 };
+const A = { id: 'a1', zone: 'landscape' as const, x: 400, y: 300 };
+const B = { id: 'b1', zone: 'landscape' as const, x: 1000, y: 600 };
 const BENDS: Point[] = [
   { x: 800, y: 365 },
   { x: 800, y: 665 },
@@ -36,7 +37,7 @@ function model(route: EdgeRoute | undefined): DesignModel {
       { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [A, B], edgeRoutes: route ? [route] : [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [A, B], edgeRoutes: route ? [route] : [] })],
   };
 }
 

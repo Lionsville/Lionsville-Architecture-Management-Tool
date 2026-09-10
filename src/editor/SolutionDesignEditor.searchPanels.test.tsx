@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
@@ -25,22 +26,22 @@ function model(): DesignModel {
     name: 'ACME Solution Design',
     customerName: 'ACME',
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'Layer 7 — EU',
         placements: [
-          { elementId: 'a1', zone: 'landscape', x: 400, y: 300 },
-          { elementId: 'a2', zone: 'landscape', x: 700, y: 300 },
+          { id: 'a1', zone: 'landscape', x: 400, y: 300 },
+          { id: 'a2', zone: 'landscape', x: 700, y: 300 },
         ],
-      },
-      {
+      }),
+      laidOut({
         id: 'd2',
         kind: 'container',
         name: 'Webshop containers',
         applicationElementId: 'a1',
-        placements: [{ elementId: 'a3', x: 0, y: 0 }],
-      },
+        placements: [{ id: 'a3', x: 0, y: 0 }],
+      }),
     ],
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },

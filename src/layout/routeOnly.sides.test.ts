@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import type { DesignDiagram, DesignModel, EdgeRoute } from '../model/types';
 import { manualRouteIds } from '../model/routes';
 import { routeDiagramEdges } from './routeOnly';
@@ -9,17 +10,17 @@ import { routeDiagramEdges } from './routeOnly';
  * routed, preserved or cleared — because a constraint outlives the geometry.
  */
 function fixture(routes: EdgeRoute[] = [], extraConnection?: DesignModel['relations'][number]) {
-  const diagram: DesignDiagram = {
+  const diagram: DesignDiagram = laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'L7',
     placements: [
       // a: 100..300 × 400..530 (application 200×130); b: 1200..1400 × 400..530.
-      { elementId: 'a', zone: 'landscape', x: 100, y: 400 },
-      { elementId: 'b', zone: 'landscape', x: 1200, y: 400 },
+      { id: 'a', zone: 'landscape', x: 100, y: 400 },
+      { id: 'b', zone: 'landscape', x: 1200, y: 400 },
     ],
     edgeRoutes: routes,
-  };
+  });
   const model: DesignModel = {
     name: 'ACME',
     customerName: 'ACME',

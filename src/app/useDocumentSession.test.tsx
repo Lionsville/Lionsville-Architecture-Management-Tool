@@ -13,6 +13,7 @@
  * is interrupted rather than mourned.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
 import type { ProjectSnapshot } from '../projects/project'
@@ -29,7 +30,7 @@ const project = (name = 'Landscape'): ProjectSnapshot => ({
     customerName: 'Acme',
     elements: [],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

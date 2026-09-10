@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { edgeRoutesOf } from '../model/routes';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import { renderEditorState } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
@@ -27,14 +30,14 @@ function model(): DesignModel {
       { type: 'flow', id: 'c2', sourceId: 'e1', targetId: 'e3', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'e1', zone: 'landscape', x: 100, y: 400 },
-          { elementId: 'e2', zone: 'landscape', x: 1200, y: 400 },
-          { elementId: 'e3', zone: 'landscape', x: 100, y: 800 },
+          { id: 'e1', zone: 'landscape', x: 100, y: 400 },
+          { id: 'e2', zone: 'landscape', x: 1200, y: 400 },
+          { id: 'e3', zone: 'landscape', x: 100, y: 800 },
         ],
         edgeRoutes: [
           { relationId: 'c1', waypoints: [{ x: 10, y: 20 }] },
@@ -44,7 +47,7 @@ function model(): DesignModel {
           canvas: { width: 2000, height: 1200 },
           domainGroups: [{ id: 'Ops', x: 600, y: 350, width: 300, height: 260 }],
         },
-      },
+      }),
     ],
   };
 }
@@ -58,8 +61,8 @@ describe('route-only through applyTidyResult', () => {
   it('is one undo step that re-routes edges and moves nothing', async () => {
     const { result, host } = render();
     const before = result.current.model.diagrams[0];
-    const placementsBefore = before.placements;
-    const layoutConfigBefore = before.layoutConfig;
+    const placementsBefore = placedNodes(before);
+    const boardBefore = { nodes: before.geometry.nodes, groups: before.geometry.groups };
 
     // The router is WASM, so the pass is async: await it OUTSIDE `act` and commit
     // the finished result inside, which keeps the commit a single React update.
@@ -78,22 +81,24 @@ describe('route-only through applyTidyResult', () => {
     expect(step.type === 'transaction' && step.commands.map((c) => c.type))
       .toEqual(['route.clear', 'route.set']);
 
-    // (b) Positions and layout config are untouched; the routes changed.
+    // (b) Positions and boxes are untouched; the routes changed — the only
+    // thing in the geometry this pass writes (ADR-0012 §6).
     const after = result.current.model.diagrams[0];
-    expect(after.placements).toEqual(placementsBefore);
-    expect(after.layoutConfig).toEqual(layoutConfigBefore);
-    const c1 = after.edgeRoutes!.find((r) => r.relationId === 'c1')!;
+    expect(placedNodes(after)).toEqual(placementsBefore);
+    expect(after.geometry.nodes).toEqual(boardBefore.nodes);
+    expect(after.geometry.groups).toEqual(boardBefore.groups);
+    const c1 = edgeRoutesOf(after)!.find((r) => r.relationId === 'c1')!;
     expect(c1.waypoints.length).toBeGreaterThan(0);
     expect(c1.waypoints).not.toEqual([{ x: 10, y: 20 }]); // the stale route is gone
     // c2's line is clear, so its stale label anchor is cleared back to default.
-    expect(after.edgeRoutes!.find((r) => r.relationId === 'c2')).toBeUndefined();
+    expect(edgeRoutesOf(after)!.find((r) => r.relationId === 'c2')).toBeUndefined();
 
     // (c) ONE undo restores every prior route verbatim.
     act(() => result.current.undo());
-    expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
+    expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual([
       { relationId: 'c1', waypoints: [{ x: 10, y: 20 }] },
       { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
-    expect(result.current.model.diagrams[0].placements).toEqual(placementsBefore);
+    expect(placedNodes(result.current.model.diagrams[0])).toEqual(placementsBefore);
   });
 });

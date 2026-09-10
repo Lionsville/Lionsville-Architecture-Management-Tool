@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { PlacedNode } from '../model/types';
+import type { V3Diagram } from '../model/testFixtures';
+import { laidOut } from '../model/testFixtures';
 import type {
   Relation,
   DesignDiagram,
@@ -9,7 +12,7 @@ import type {
   Rect,
   ResizableZone,
 } from '../model/types';
-import { placementSize } from '../model/placement';
+import { placedNodes, placementSize } from '../model/placement';
 import { CANVAS_SIZE_LIMITS, LAYER7_CANVAS, zoneRect, zoneSizeLimits, zoneSizes } from '../model/zones';
 import {
   bandTargets,
@@ -116,14 +119,14 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
       ],
       relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
-            { elementId: 'e3', zone: 'landscape', group: 'Edge', x: 0, y: 0 },
+            { id: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e3', zone: 'landscape', group: 'Edge', x: 0, y: 0 },
           ],
           layoutConfig: {
             domainGroups: [
@@ -131,7 +134,7 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
               { id: 'Edge', x: 5, y: 5, width: 10, height: 10 },
             ],
           },
-        },
+        }),
       ],
     };
     const diagram = model.diagrams[0];
@@ -152,11 +155,11 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     const rectByGroup = new Map(result.domainGroups!.map((g) => [g.id, g]));
     for (const placement of result.placements) {
-      const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)
+      const groupName = placedNodes(diagram).find((p) => p.id === placement.id)
         ?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
-      const size = placementSize(kindById.get(placement.elementId)!, placement);
+      const size = placementSize(kindById.get(placement.id)!, placement);
       expect(placement.x).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
@@ -186,19 +189,19 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
         { type: 'flow', id: 'c3', sourceId: 'a2', targetId: 'b2', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
-            { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
-            { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
-            { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
+            { id: 'a1', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { id: 'a2', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { id: 'b1', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
+            { id: 'b2', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
           ],
           // No pre-existing rects at all — Tidy must still emit one per group.
           layoutConfig: {},
-        },
+        }),
       ],
     };
     const diagram = model.diagrams[0];
@@ -213,11 +216,11 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     // Each member sits inside its group's rect (member-derived + padded bounds).
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     for (const placement of result.placements) {
-      const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)
+      const groupName = placedNodes(diagram).find((p) => p.id === placement.id)
         ?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
-      const size = placementSize(kindById.get(placement.elementId)!, placement);
+      const size = placementSize(kindById.get(placement.id)!, placement);
       expect(placement.x).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
@@ -241,21 +244,21 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
       elements: [elt('e1', 'application'), elt('e2', 'application')],
       relations: [connection],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', x: 0, y: 0 },
+            { id: 'e1', zone: 'landscape', x: 0, y: 0 },
+            { id: 'e2', zone: 'landscape', x: 0, y: 0 },
           ],
-        },
+        }),
       ],
     });
     // Horizontal gap between the two 200px-wide app rects.
     const horizontalGap = (result: Awaited<ReturnType<typeof tidyLayer7>>) => {
-      const p1 = result.placements.find((p) => p.elementId === 'e1')!;
-      const p2 = result.placements.find((p) => p.elementId === 'e2')!;
+      const p1 = result.placements.find((p) => p.id === 'e1')!;
+      const p2 = result.placements.find((p) => p.id === 'e2')!;
       return Math.abs(p2.x - p1.x) - 200;
     };
 
@@ -290,12 +293,12 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
       elements: [elt('e1', 'application')],
       relations: [],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
-          placements: [{ elementId: 'e1', zone: 'landscape', x: 0, y: 0 }],
-        },
+          placements: [{ id: 'e1', zone: 'landscape', x: 0, y: 0 }],
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -313,15 +316,15 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
   function chainedLandscape(
     groupCount: number,
     perGroup: number,
-    layoutConfig?: DesignDiagram['layoutConfig'],
+    layoutConfig?: V3Diagram['layoutConfig'],
   ): DesignModel {
     const ids: string[] = [];
-    const placements: DesignDiagram['placements'] = [];
+    const placements: PlacedNode[] = [];
     for (let g = 0; g < groupCount; g++) {
       for (let m = 0; m < perGroup; m++) {
         const id = `g${g}m${m}`;
         ids.push(id);
-        placements.push({ elementId: id, zone: 'landscape', group: `G${g}`, x: 0, y: 0 });
+        placements.push({ id: id, zone: 'landscape', group: `G${g}`, x: 0, y: 0 });
       }
     }
     const relations: Relation[] = [];
@@ -333,7 +336,7 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
       customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
       relations,
-      diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements, layoutConfig }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements, layoutConfig })],
     };
   }
 
@@ -342,7 +345,7 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
     const result = await tidyLayer7(model, model.diagrams[0]);
 
     expect(result.canvas).toBeDefined();
-    const zone = zoneRect('landscape', { ...model.diagrams[0].layoutConfig, canvas: result.canvas });
+    const zone = zoneRect('landscape', { ...model.diagrams[0].geometry, canvas: result.canvas });
     for (const rect of result.domainGroups ?? []) {
       expect(rect.x).toBeGreaterThanOrEqual(zone.x - 0.5);
       expect(rect.y).toBeGreaterThanOrEqual(zone.y - 0.5);
@@ -383,16 +386,16 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
       elements: [elt('e1', 'application')],
       relations: [],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
-          placements: [{ elementId: 'e1', zone: 'landscape', x: 0, y: 0 }],
+          placements: [{ id: 'e1', zone: 'landscape', x: 0, y: 0 }],
           layoutConfig: {
             canvas: { width: 840, height: 520 },
             zones: { inputChannels: { size: 120 }, externalSystems: { size: 120 } },
           },
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -414,11 +417,11 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
     const settled: DesignModel = {
       ...model,
       diagrams: [
-        {
+        laidOut({
           ...model.diagrams[0],
           placements: first.placements,
-          layoutConfig: { ...model.diagrams[0].layoutConfig, canvas: first.canvas },
-        },
+          layoutConfig: { ...model.diagrams[0].geometry, canvas: first.canvas },
+        }),
       ],
     };
     const second = await tidyLayer7(settled, settled.diagrams[0]);
@@ -435,7 +438,7 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
   it('keeps the landscape flush between the side bands after growth (no overlap)', async () => {
     const model = chainedLandscape(3, 2);
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const grown = { ...model.diagrams[0].layoutConfig, canvas: result.canvas };
+    const grown = { ...model.diagrams[0].geometry, canvas: result.canvas };
     const landscape = zoneRect('landscape', grown);
     const inputChannels = zoneRect('inputChannels', grown);
     const externalSystems = zoneRect('externalSystems', grown);
@@ -464,23 +467,23 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
         isBidirectional: false,
       })),
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           groups: [{ id: 'Core', name: 'Core' }],
           placements: ids.map((id) => ({
-            elementId: id,
+            id: id,
             zone: 'landscape' as const,
             group: 'Core',
             x: 0,
             y: 0,
           })),
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const zone = zoneRect('landscape', { ...model.diagrams[0].layoutConfig, canvas: result.canvas });
+    const zone = zoneRect('landscape', { ...model.diagrams[0].geometry, canvas: result.canvas });
     // Genuinely in the growth regime: the landscape grew taller than the default.
     expect(result.canvas!.height).toBeGreaterThan(LAYER7_CANVAS.height);
     // The group box stays inside the landscape zone on every side — crucially its
@@ -514,20 +517,20 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
       { type: 'flow', id: 'ac', sourceId: 'a', targetId: 'c', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'a', zone: 'landscape', x: 0, y: 0 },
-          { elementId: 'b', zone: 'landscape', x: 0, y: 0 },
-          { elementId: 'c', zone: 'landscape', x: 0, y: 0 },
+          { id: 'a', zone: 'landscape', x: 0, y: 0 },
+          { id: 'b', zone: 'landscape', x: 0, y: 0 },
+          { id: 'c', zone: 'landscape', x: 0, y: 0 },
         ],
-      },
+      }),
     ],
   };
   const rectOf = (result: Awaited<ReturnType<typeof tidyLayer7>>, id: string): Rect => {
-    const p = result.placements.find((pp) => pp.elementId === id)!;
+    const p = result.placements.find((pp) => pp.id === id)!;
     const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
     return { x: p.x, y: p.y, width: size.width, height: size.height };
   };
@@ -555,11 +558,11 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
         { type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           ...model.diagrams[0],
           // A route the user had stored for it, in coordinates from the old layout.
           edgeRoutes: [{ relationId: 'a-a', waypoints: [{ x: 4000, y: 4000 }] }],
-        },
+        }),
       ],
     };
     // Pins OFF explicitly: this test is about the declined-connection policy, and
@@ -595,10 +598,10 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
 
 describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-align)', () => {
   const posOf = (result: Awaited<ReturnType<typeof tidyLayer7>>, id: string) =>
-    result.placements.find((p) => p.elementId === id)!;
-  const centreX = (p: DesignDiagram['placements'][number], kind: ElementKind) =>
+    result.placements.find((p) => p.id === id)!;
+  const centreX = (p: PlacedNode, kind: ElementKind) =>
     p.x + placementSize(kind, p).width / 2;
-  const centreY = (p: DesignDiagram['placements'][number], kind: ElementKind) =>
+  const centreY = (p: PlacedNode, kind: ElementKind) =>
     p.y + placementSize(kind, p).height / 2;
 
   it('positions a band node above the app it connects to (not bunched at the left inset)', async () => {
@@ -618,17 +621,17 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         { type: 'flow', id: 'a', sourceId: 'actorA', targetId: 'appR', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'appL', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'appR', zone: 'landscape', x: 0, y: 0 },
+            { id: 'appL', zone: 'landscape', x: 0, y: 0 },
+            { id: 'appR', zone: 'landscape', x: 0, y: 0 },
             // Actor starts bunched at the far left (x=0).
-            { elementId: 'actorA', zone: 'actors', x: 0, y: 0 },
+            { id: 'actorA', zone: 'actors', x: 0, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -662,17 +665,17 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         { type: 'flow', id: 'y', sourceId: 'actorY', targetId: 'appR', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'appL', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'appR', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'actorX', zone: 'actors', x: 0, y: 0 },
-            { elementId: 'actorY', zone: 'actors', x: 0, y: 0 },
+            { id: 'appL', zone: 'landscape', x: 0, y: 0 },
+            { id: 'appR', zone: 'landscape', x: 0, y: 0 },
+            { id: 'actorX', zone: 'actors', x: 0, y: 0 },
+            { id: 'actorY', zone: 'actors', x: 0, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -682,7 +685,7 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
     // Separated by at least a full node width (150) — they don't overlap.
     expect(Math.abs(x.x - y.x)).toBeGreaterThanOrEqual(150);
     // Both stay inside the actors band.
-    const zone = zoneRect('actors', { ...model.diagrams[0].layoutConfig, canvas: result.canvas });
+    const zone = zoneRect('actors', { ...model.diagrams[0].geometry, canvas: result.canvas });
     for (const p of [x, y]) {
       const size = placementSize('actor', p);
       expect(p.x).toBeGreaterThanOrEqual(zone.x - 0.5);
@@ -711,19 +714,19 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         { type: 'flow', id: 'm2', sourceId: 'actorM', targetId: 'appR', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'appL', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'appR', zone: 'landscape', x: 0, y: 0 },
+            { id: 'appL', zone: 'landscape', x: 0, y: 0 },
+            { id: 'appR', zone: 'landscape', x: 0, y: 0 },
             // Listed M, R, L to prove position is not input order.
-            { elementId: 'actorM', zone: 'actors', x: 0, y: 0 },
-            { elementId: 'actorR', zone: 'actors', x: 200, y: 0 },
-            { elementId: 'actorL', zone: 'actors', x: 400, y: 0 },
+            { id: 'actorM', zone: 'actors', x: 0, y: 0 },
+            { id: 'actorR', zone: 'actors', x: 200, y: 0 },
+            { id: 'actorL', zone: 'actors', x: 400, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -752,24 +755,24 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         // `lonely` has no cross-zone connection at all.
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'appL', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'appR', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'actorC', zone: 'actors', x: 0, y: 0 },
-            { elementId: 'lonely', zone: 'actors', x: 200, y: 0 },
+            { id: 'appL', zone: 'landscape', x: 0, y: 0 },
+            { id: 'appR', zone: 'landscape', x: 0, y: 0 },
+            { id: 'actorC', zone: 'actors', x: 0, y: 0 },
+            { id: 'lonely', zone: 'actors', x: 200, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
 
     const lonely = posOf(result, 'lonely');
     const size = placementSize('actor', lonely);
-    const zone = zoneRect('actors', { ...model.diagrams[0].layoutConfig, canvas: result.canvas });
+    const zone = zoneRect('actors', { ...model.diagrams[0].geometry, canvas: result.canvas });
     // Sits fully within the actors band.
     expect(lonely.x).toBeGreaterThanOrEqual(zone.x - 0.5);
     expect(lonely.x + size.width).toBeLessThanOrEqual(zone.x + zone.width + 0.5);
@@ -799,18 +802,18 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         { type: 'flow', id: 'ib', sourceId: 'inB', targetId: 'app2', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'app0', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'app1', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'app2', zone: 'landscape', x: 0, y: 0 },
-            { elementId: 'inA', zone: 'inputChannels', x: 0, y: 0 },
-            { elementId: 'inB', zone: 'inputChannels', x: 0, y: 400 },
+            { id: 'app0', zone: 'landscape', x: 0, y: 0 },
+            { id: 'app1', zone: 'landscape', x: 0, y: 0 },
+            { id: 'app2', zone: 'landscape', x: 0, y: 0 },
+            { id: 'inA', zone: 'inputChannels', x: 0, y: 0 },
+            { id: 'inB', zone: 'inputChannels', x: 0, y: 400 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -830,7 +833,7 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
     const bottomChannel = posOf(result, topChannelId === 'inA' ? 'inB' : 'inA');
     expect(topChannel.y).toBeLessThan(bottomChannel.y);
     // Inside the left band, with x centred cross-axis.
-    const zone = zoneRect('inputChannels', { ...model.diagrams[0].layoutConfig, canvas: result.canvas });
+    const zone = zoneRect('inputChannels', { ...model.diagrams[0].geometry, canvas: result.canvas });
     const size = placementSize('inputChannel', topChannel);
     expect(topChannel.y).toBeGreaterThanOrEqual(zone.y - 0.5);
     expect(topChannel.y + size.height).toBeLessThanOrEqual(zone.y + zone.height + 0.5);
@@ -848,10 +851,10 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
   ) => {
     const rectByGroup = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     for (const placement of result.placements) {
-      const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)?.group;
+      const groupName = placedNodes(diagram).find((p) => p.id === placement.id)?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
-      const size = placementSize(kinds.get(placement.elementId)!, placement);
+      const size = placementSize(kinds.get(placement.id)!, placement);
       expect(placement.x).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
@@ -866,20 +869,20 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
       elements: [elt('e1', 'application'), elt('e2', 'application')],
       relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
           ],
           // A stale seed box: Tidy no longer honours its position — the box is
           // derived from where the members land in the single ELK pass.
           layoutConfig: {
             domainGroups: [{ id: 'Core', x: 1000, y: 600, width: 600, height: 400 }],
           },
-        },
+        }),
       ],
     };
     const diagram = model.diagrams[0];
@@ -903,20 +906,20 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
         { type: 'flow', id: 'c2', sourceId: 'e2', targetId: 'e3', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
-            { elementId: 'e3', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { id: 'e3', zone: 'landscape', group: 'Core', x: 0, y: 0 },
           ],
           // An absurd 20x20 seed: ignored — the box grows to hold three chained apps.
           layoutConfig: {
             domainGroups: [{ id: 'Core', x: 800, y: 500, width: 20, height: 20 }],
           },
-        },
+        }),
       ],
     };
     const diagram = model.diagrams[0];
@@ -943,15 +946,15 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
         { type: 'flow', id: 'cb', sourceId: 'b1', targetId: 'b2', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
-            { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
-            { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
-            { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
+            { id: 'a1', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { id: 'a2', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { id: 'b1', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
+            { id: 'b2', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
           ],
           // Seed positions are ignored; ELK lays the two groups out itself.
           layoutConfig: {
@@ -960,7 +963,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
               { id: 'Beta', x: 1800, y: 1100, width: 600, height: 400 },
             ],
           },
-        },
+        }),
       ],
     };
     const diagram = model.diagrams[0];
@@ -996,12 +999,12 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
         isBidirectional: false,
       })),
       diagrams: [
-        {
+        laidOut({
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
-          placements: ids.map((id) => ({ elementId: id, zone: 'landscape' as const, x: 0, y: 0 })),
-        },
+          placements: ids.map((id) => ({ id: id, zone: 'landscape' as const, x: 0, y: 0 })),
+        }),
       ],
     };
     const result = await tidyLayer7(model, model.diagrams[0]);
@@ -1009,13 +1012,13 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     // No groups → no boxes.
     expect(result.domainGroups).toEqual([]);
     // The chained loose block spread the nodes: distinct x positions, canvas grown.
-    const xs = ids.map((id) => result.placements.find((p) => p.elementId === id)!.x);
+    const xs = ids.map((id) => result.placements.find((p) => p.id === id)!.x);
     expect(new Set(xs).size).toBe(ids.length);
     expect(result.canvas!.width).toBeGreaterThan(LAYER7_CANVAS.width);
     // Loose nodes land inside the landscape zone of the grown canvas.
-    const zone = zoneRect('landscape', { ...model.diagrams[0].layoutConfig, canvas: result.canvas });
+    const zone = zoneRect('landscape', { ...model.diagrams[0].geometry, canvas: result.canvas });
     for (const id of ids) {
-      const p = result.placements.find((pp) => pp.elementId === id)!;
+      const p = result.placements.find((pp) => pp.id === id)!;
       const size = placementSize('application', p);
       expect(p.x).toBeGreaterThanOrEqual(zone.x - 0.5);
       expect(p.x + size.width).toBeLessThanOrEqual(zone.x + zone.width + 0.5);
@@ -1055,24 +1058,24 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
       { type: 'flow', id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'storeMgr', zone: 'actors', x: 0, y: 0 },
-          { elementId: 'shopper', zone: 'actors', x: 0, y: 0 },
-          { elementId: 'csa', zone: 'actors', x: 0, y: 0 },
-          { elementId: 'marketplace', zone: 'inputChannels', x: 0, y: 0 },
-          { elementId: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
-          { elementId: 'grafana', zone: 'management', x: 0, y: 0 },
-          { elementId: 'slack', zone: 'management', x: 0, y: 0 },
-          { elementId: 'sonar', zone: 'management', x: 0, y: 0 },
-          { elementId: 'gitlab', zone: 'management', x: 0, y: 0 },
+          { id: 'storeMgr', zone: 'actors', x: 0, y: 0 },
+          { id: 'shopper', zone: 'actors', x: 0, y: 0 },
+          { id: 'csa', zone: 'actors', x: 0, y: 0 },
+          { id: 'marketplace', zone: 'inputChannels', x: 0, y: 0 },
+          { id: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { id: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { id: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { id: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { id: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
+          { id: 'grafana', zone: 'management', x: 0, y: 0 },
+          { id: 'slack', zone: 'management', x: 0, y: 0 },
+          { id: 'sonar', zone: 'management', x: 0, y: 0 },
+          { id: 'gitlab', zone: 'management', x: 0, y: 0 },
         ],
         layoutConfig: {
           // Current persisted group dimensions from diagram 12.
@@ -1081,12 +1084,12 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
             { id: 'Commerce Operations', x: 1061, y: 229, width: 267, height: 474 },
           ],
         },
-      },
+      }),
     ],
   };
 
   const rectFor = (result: Awaited<ReturnType<typeof tidyLayer7>>, id: string) => {
-    const p = result.placements.find((pp) => pp.elementId === id)!;
+    const p = result.placements.find((pp) => pp.id === id)!;
     const el = model.elements.find((e) => e.id === id)!;
     const size = placementSize(el.kind, p);
     return { x: p.x, y: p.y, width: size.width, height: size.height };
@@ -1262,17 +1265,17 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
       ],
       relations: [],
       diagrams: [
-        {
+        laidOut({
           id: 'd2',
           kind: 'container',
           name: 'Container',
           applicationElementId: 'app',
           placements: [
-            { elementId: 'app', x: 0, y: 0 },
-            { elementId: 'c1', x: 0, y: 0 },
-            { elementId: 'c2', x: 0, y: 0 },
+            { id: 'app', x: 0, y: 0 },
+            { id: 'c1', x: 0, y: 0 },
+            { id: 'c2', x: 0, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const diagram: DesignDiagram = model.diagrams[0];
@@ -1280,7 +1283,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
     const result = await tidyContainer(model, diagram);
 
     expect(result.domainGroups).toBeUndefined();
-    const boundary = result.placements.find((p) => p.elementId === 'app');
+    const boundary = result.placements.find((p) => p.id === 'app');
     expect(boundary?.width).toBeGreaterThan(0);
     expect(boundary?.height).toBeGreaterThan(0);
   });
@@ -1306,19 +1309,19 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
         { type: 'flow', id: 'c2-ext', sourceId: 'c2', targetId: 'ext', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           id: 'd2',
           kind: 'container',
           name: 'Container',
           applicationElementId: 'app',
           placements: [
-            { elementId: 'app', x: 0, y: 0 },
-            { elementId: 'c1', x: 0, y: 0 },
-            { elementId: 'c2', x: 0, y: 0 },
-            { elementId: 'c3', x: 0, y: 0 },
-            { elementId: 'ext', x: 0, y: 0 },
+            { id: 'app', x: 0, y: 0 },
+            { id: 'c1', x: 0, y: 0 },
+            { id: 'c2', x: 0, y: 0 },
+            { id: 'c3', x: 0, y: 0 },
+            { id: 'ext', x: 0, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyContainer(model, model.diagrams[0]);
@@ -1330,7 +1333,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
     ]);
 
     const rectOf = (id: string): Rect => {
-      const p = result.placements.find((pp) => pp.elementId === id)!;
+      const p = result.placements.find((pp) => pp.id === id)!;
       const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
@@ -1387,25 +1390,25 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
       { type: 'flow', id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'adyen', zone: 'externalSystems', x: 0, y: 0 },
-          { elementId: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
+          { id: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { id: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { id: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { id: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { id: 'adyen', zone: 'externalSystems', x: 0, y: 0 },
+          { id: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
         ],
-      },
+      }),
     ],
   };
 
   it('orders the band by partner distance: the nearest partner takes the row-aligned slot', async () => {
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const yOf = (id: string) => result.placements.find((p) => p.elementId === id)!.y;
+    const yOf = (id: string) => result.placements.find((p) => p.id === id)!.y;
 
     // The premise: the flow-axis (y) barycentre really is a TIE, so the cross-axis
     // tie-break is what decides. Recomputed exactly as tidyLayer7 does. If ELK ever
@@ -1413,13 +1416,13 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
     // test has stopped exercising the tie.
     const landscapePos = new Map(
       ['akeneo', 'webshop', 'order', 'erp'].map((id) => {
-        const p = result.placements.find((pp) => pp.elementId === id)!;
+        const p = result.placements.find((pp) => pp.id === id)!;
         return [id, { x: p.x, y: p.y, ...placementSize('application', p) }] as const;
       }),
     );
     const targets = bandTargets(
       model,
-      model.diagrams[0].placements.filter((p) => p.zone === 'externalSystems'),
+      placedNodes(model.diagrams[0]).filter((p) => p.zone === 'externalSystems'),
       landscapePos,
       'column',
     );
@@ -1441,7 +1444,7 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
     // and the long one passes below everything without touching it.
     const result = await tidyLayer7(model, model.diagrams[0]);
     const rectOf = (id: string): Rect => {
-      const p = result.placements.find((pp) => pp.elementId === id)!;
+      const p = result.placements.find((pp) => pp.id === id)!;
       const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
@@ -1484,19 +1487,19 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
         { type: 'flow', id: 'feedNear-akeneo', sourceId: 'feedNear', targetId: 'akeneo', isBidirectional: false },
       ],
       diagrams: [
-        {
+        laidOut({
           ...model.diagrams[0],
           placements: [
-            ...model.diagrams[0].placements,
+            ...placedNodes(model.diagrams[0]),
             // Far partner FIRST again — the order the old stable sort passed through.
-            { elementId: 'feedFar', zone: 'inputChannels', x: 0, y: 0 },
-            { elementId: 'feedNear', zone: 'inputChannels', x: 0, y: 0 },
+            { id: 'feedFar', zone: 'inputChannels', x: 0, y: 0 },
+            { id: 'feedNear', zone: 'inputChannels', x: 0, y: 0 },
           ],
-        },
+        }),
       ],
     };
     const result = await tidyLayer7(leftModel, leftModel.diagrams[0]);
-    const yOf = (id: string) => result.placements.find((p) => p.elementId === id)!.y;
+    const yOf = (id: string) => result.placements.find((p) => p.id === id)!.y;
     expect(yOf('feedNear')).toBeLessThan(yOf('feedFar'));
   });
 });
@@ -1523,18 +1526,18 @@ describe('tidyGroup — one group in place', () => {
       { type: 'flow', id: 'elsewhere', sourceId: 'outside', targetId: 'actor', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
           // Both inside the Core box (stacked on top of each other — the mess
           // a per-group tidy is meant to sort out).
-          { elementId: 'a1', zone: 'landscape', group: 'Core', x: 220, y: 220 },
-          { elementId: 'a2', zone: 'landscape', group: 'Core', x: 230, y: 230 },
+          { id: 'a1', zone: 'landscape', group: 'Core', x: 220, y: 220 },
+          { id: 'a2', zone: 'landscape', group: 'Core', x: 230, y: 230 },
           // Outside every box, and a band node — neither may be touched.
-          { elementId: 'outside', zone: 'landscape', x: 900, y: 900 },
-          { elementId: 'actor', zone: 'actors', x: 100, y: 20 },
+          { id: 'outside', zone: 'landscape', x: 900, y: 900 },
+          { id: 'actor', zone: 'actors', x: 100, y: 20 },
         ],
         layoutConfig: {
           domainGroups: [
@@ -1542,7 +1545,7 @@ describe('tidyGroup — one group in place', () => {
             { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
           ],
         },
-      },
+      }),
     ],
   });
 
@@ -1552,7 +1555,7 @@ describe('tidyGroup — one group in place', () => {
 
     expect(result.partial).toBe(true);
     expect(result.canvas).toBeUndefined(); // a local tidy never resizes the board
-    expect(result.placements.map((p) => p.elementId).sort()).toEqual(['a1', 'a2']);
+    expect(result.placements.map((p) => p.id).sort()).toEqual(['a1', 'a2']);
     expect(result.domainGroups).toHaveLength(1);
 
     const box = result.domainGroups![0];
@@ -1564,7 +1567,7 @@ describe('tidyGroup — one group in place', () => {
     // Members no longer overlap and every one sits inside the resized box.
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     const rects = result.placements.map((p) => {
-      const size = placementSize(kindById.get(p.elementId)!, p);
+      const size = placementSize(kindById.get(p.id)!, p);
       return rect(p.x, p.y, size.width, size.height);
     });
     expect(rectIntersectsRect(rects[0], rects[1], 0)).toBe(false);
@@ -1606,15 +1609,16 @@ describe('tidyGroup — one group in place', () => {
     const diagram = model.diagrams[0];
     // Sits in the Core box but was never tagged (e.g. dropped before the group
     // existed) — the user sees it inside, so Tidy must lay it out and tag it.
-    diagram.placements.push({ elementId: 'outside', zone: 'landscape', x: 300, y: 300 });
-    diagram.placements.splice(
-      diagram.placements.findIndex((p) => p.elementId === 'outside' && p.x === 900),
+    diagram.members.push({ id: 'outside', zone: 'landscape' });
+    diagram.geometry.nodes.push({ id: 'outside', x: 300, y: 300 });
+    placedNodes(diagram).splice(
+      placedNodes(diagram).findIndex((p) => p.id === 'outside' && p.x === 900),
       1,
     );
 
     const result = await tidyGroup(model, diagram, 'Core');
 
-    expect(result.placements.map((p) => p.elementId).sort()).toEqual(['a1', 'a2', 'outside']);
+    expect(result.placements.map((p) => p.id).sort()).toEqual(['a1', 'a2', 'outside']);
     expect(result.placements.every((p) => p.group === 'Core')).toBe(true);
   });
 });
@@ -1634,17 +1638,17 @@ describe('tidy settings (direction / density)', () => {
       { type: 'flow', id: 'bc', sourceId: 'b', targetId: 'c', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'a', zone: 'landscape', x: 0, y: 0 },
-          { elementId: 'b', zone: 'landscape', x: 0, y: 0 },
-          { elementId: 'c', zone: 'landscape', x: 0, y: 0 },
+          { id: 'a', zone: 'landscape', x: 0, y: 0 },
+          { id: 'b', zone: 'landscape', x: 0, y: 0 },
+          { id: 'c', zone: 'landscape', x: 0, y: 0 },
         ],
         layoutConfig: {},
-      },
+      }),
     ],
   });
 
@@ -1687,7 +1691,7 @@ describe('tidy settings (direction / density)', () => {
     const runWith = async (canvas: { width: number; height: number }) => {
       const model = chain();
       const diagram = model.diagrams[0];
-      diagram.layoutConfig = { canvas };
+      diagram.geometry = { ...diagram.geometry, canvas };
       const result = await tidyLayer7(model, diagram, DEFAULT_TIDY_OPTIONS);
       const xs = result.placements.map((p) => p.x);
       const ys = result.placements.map((p) => p.y);
@@ -1719,24 +1723,24 @@ describe('density reaches inside a domain group', () => {
       { type: 'flow', id: 'a23', sourceId: 'a2', targetId: 'a3', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: ['a1', 'a2', 'a3'].map((id) => ({
-          elementId: id,
+          id: id,
           zone: 'landscape' as const,
           group: 'Alpha',
           x: 300,
           y: 300,
         })),
         layoutConfig: { domainGroups: [{ id: 'Alpha', x: 250, y: 250, width: 900, height: 300 }] },
-      },
+      }),
     ],
   });
 
   /** Gap between the two left-most members along the flow axis. */
-  const firstGap = (placements: { elementId: string; x: number }[]) => {
+  const firstGap = (placements: { id: string; x: number }[]) => {
     const width = placementSize('application', {} as never).width;
     const xs = placements.map((p) => p.x).sort((l, r) => l - r);
     return xs[1] - xs[0] - width;
@@ -1783,16 +1787,16 @@ describe('tidyLayer7 — pinGroups', () => {
       { type: 'flow', id: 'b12', sourceId: 'b1', targetId: 'b2', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 320, y: 320 },
-          { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 330, y: 330 },
-          { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 1220, y: 620 },
-          { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 1230, y: 630 },
-          { elementId: 'loose', zone: 'landscape', x: 800, y: 900 },
+          { id: 'a1', zone: 'landscape', group: 'Alpha', x: 320, y: 320 },
+          { id: 'a2', zone: 'landscape', group: 'Alpha', x: 330, y: 330 },
+          { id: 'b1', zone: 'landscape', group: 'Beta', x: 1220, y: 620 },
+          { id: 'b2', zone: 'landscape', group: 'Beta', x: 1230, y: 630 },
+          { id: 'loose', zone: 'landscape', x: 800, y: 900 },
         ],
         layoutConfig: {
           domainGroups: [
@@ -1800,7 +1804,7 @@ describe('tidyLayer7 — pinGroups', () => {
             { id: 'Beta', x: 1200, y: 600, width: 400, height: 300 },
           ],
         },
-      },
+      }),
     ],
   });
 
@@ -1814,7 +1818,7 @@ describe('tidyLayer7 — pinGroups', () => {
     expect(byName.get('Alpha')).toMatchObject({ x: 300, y: 300 });
     expect(byName.get('Beta')).toMatchObject({ x: 1200, y: 600 });
 
-    const loose = result.placements.find((p) => p.elementId === 'loose');
+    const loose = result.placements.find((p) => p.id === 'loose');
     expect(loose).toMatchObject({ x: 800, y: 900 });
   });
 
@@ -1825,12 +1829,12 @@ describe('tidyLayer7 — pinGroups', () => {
     const byName = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     for (const placement of result.placements) {
-      const groupName = model.diagrams[0].placements.find(
-        (p) => p.elementId === placement.elementId,
+      const groupName = placedNodes(model.diagrams[0]).find(
+        (p) => p.id === placement.id,
       )?.group;
       if (!groupName) continue;
       const box = byName.get(groupName)!;
-      const size = placementSize(kindById.get(placement.elementId)!, placement);
+      const size = placementSize(kindById.get(placement.id)!, placement);
       expect(placement.x).toBeGreaterThanOrEqual(box.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(box.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(box.x + box.width + 0.5);
@@ -1844,7 +1848,7 @@ describe('tidyLayer7 — pinGroups', () => {
 
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     const rects = ['a1', 'a2'].map((id) => {
-      const p = result.placements.find((pl) => pl.elementId === id)!;
+      const p = result.placements.find((pl) => pl.id === id)!;
       const size = placementSize(kindById.get(id)!, p);
       return rect(p.x, p.y, size.width, size.height);
     });
@@ -1872,14 +1876,14 @@ describe('tidyLayer7 — pinGroups', () => {
     const deep: DesignModel = {
       ...model,
       diagrams: [
-        {
+        laidOut({
           ...model.diagrams[0],
           layoutConfig: {
-            ...model.diagrams[0].layoutConfig,
+            ...model.diagrams[0].geometry,
             canvas: { width: 4800, height: 3200 },
             zones: { management: { size: 1100 } },
           },
-        },
+        }),
       ],
     };
 
@@ -1891,15 +1895,15 @@ describe('tidyLayer7 — pinGroups', () => {
     const settled: DesignModel = {
       ...deep,
       diagrams: [
-        {
+        laidOut({
           ...deep.diagrams[0],
           placements: first.placements,
           layoutConfig: {
-            ...deep.diagrams[0].layoutConfig,
+            ...deep.diagrams[0].geometry,
             canvas: first.canvas,
             domainGroups: first.domainGroups,
           },
-        },
+        }),
       ],
     };
     const second = await tidyLayer7(settled, settled.diagrams[0], options);
@@ -1925,19 +1929,19 @@ describe('tidy — a domain group keeps its colour, because tidy never sees it',
     elements: ['a1', 'a2'].map((id) => elt(id, 'application')),
     relations: [{ type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         groups: [{ id: 'alpha', name: 'Alpha', color: '#2f6fdb' }],
         placements: [
-          { elementId: 'a1', zone: 'landscape', group: 'alpha', x: 320, y: 320 },
-          { elementId: 'a2', zone: 'landscape', group: 'alpha', x: 420, y: 330 },
+          { id: 'a1', zone: 'landscape', group: 'alpha', x: 320, y: 320 },
+          { id: 'a2', zone: 'landscape', group: 'alpha', x: 420, y: 330 },
         ],
         layoutConfig: {
           domainGroups: [{ id: 'alpha', x: 300, y: 300, width: 400, height: 300 }],
         },
-      },
+      }),
     ],
   });
 

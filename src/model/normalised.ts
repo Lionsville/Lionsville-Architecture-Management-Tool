@@ -29,8 +29,10 @@
  *   {@link routesOf} rather than defaulting at each site.
  */
 import type {
-  DesignDiagram, DesignElement, DiagramGroup, DiagramPlacement, EdgeRoute, ElementId, Relation,
+  DesignDiagram, DesignElement, DiagramGroup, DiagramMember, DomainGroupRect, EdgeRoute,
+  ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
 } from './types'
+import { edgeRouteRows, splitRoutes } from './routes'
 import type { Adr } from './adr'
 import type { HostModel } from './fromInterchange'
 import type { Transition } from './transition'
@@ -53,17 +55,44 @@ export type ModelOrder = {
 
 /** A diagram's own lists, in the order the file had them. */
 export type DiagramOrder = {
-  placements: ElementId[]
+  members: ElementId[]
   routes: RelationId[]
   groups: GroupId[]
 }
 
-export type Diagram = Omit<DesignDiagram, 'placements' | 'edgeRoutes' | 'groups'> & {
-  placements: Record<ElementId, DiagramPlacement>
+/**
+ * A diagram, indexed — and FLAT.
+ *
+ * The file keeps a view's geometry in a document of its own (ADR-0012 §6), and
+ * `toDiagram`/`fromDiagram` are where the two are taken apart and put back
+ * together. In memory the reducer wants one path per thing it can change, so
+ * the geometry's own lists sit beside the definition's rather than under a
+ * `geometry` key: `nodes` beside `members`, `boxes` beside `groups`.
+ *
+ * The order arrays are the definition's. A node with no member and a box with
+ * no group are dropped on the way out — there is nothing on the view for
+ * either of them to be about.
+ */
+export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geometry'> & {
+  members: Record<ElementId, DiagramMember>
   /** Present exactly when the file carried the key; see the note at the top. */
   edgeRoutes?: Record<RelationId, EdgeRoute>
-  /** The dashed groups, by id. Absent exactly as `edgeRoutes` is. */
-  groups?: Record<GroupId, DiagramGroup>
+  /**
+   * The dashed groups and their boxes, by id — always present, possibly empty.
+   *
+   * Unlike `edgeRoutes` these carry no absent-versus-empty distinction in
+   * memory: a group added and then taken back must leave the model exactly as
+   * it was found (the reducer's reversibility property), and a key that comes
+   * and goes cannot do that. `fromDiagram` is where an empty one becomes an
+   * absent one in the document.
+   */
+  groups: Record<GroupId, DiagramGroup>
+  // --- the geometry file, indexed --------------------------------------------
+  nodes: Record<ElementId, NodeGeometry>
+  boxes: Record<GroupId, DomainGroupRect>
+  canvas?: Geometry['canvas']
+  zones?: Geometry['zones']
+  needsLayout?: boolean
   order: DiagramOrder
 }
 
@@ -93,9 +122,9 @@ export function routesOf(diagram: Diagram): Record<RelationId, EdgeRoute> {
   return diagram.edgeRoutes ?? {}
 }
 
-/** The dashed groups on this diagram, whether or not the file carried the key. */
+/** The dashed groups on this diagram. */
 export function groupsOf(diagram: Diagram): Record<GroupId, DiagramGroup> {
-  return diagram.groups ?? {}
+  return diagram.groups
 }
 
 export function groupList(diagram: Diagram): DiagramGroup[] {
@@ -127,8 +156,38 @@ export function transitionList(model: Model): Transition[] {
   return model.order.transitions.map((id) => by[id])
 }
 
-export function placementList(diagram: Diagram): DiagramPlacement[] {
-  return diagram.order.placements.map((id) => diagram.placements[id])
+export function memberList(diagram: Diagram): DiagramMember[] {
+  return diagram.order.members.map((id) => diagram.members[id])
+}
+
+/**
+ * One member with where it ended up, or nothing when it is not on this view.
+ *
+ * A member with no node row has not been laid out yet — a geometry file
+ * somebody deleted, or a view a machine seeded — so it answers (0, 0) and the
+ * board's `needsLayout` is what sends it through a layout pass.
+ */
+export function placedOn(diagram: Diagram, id: ElementId): PlacedNode | undefined {
+  const member = diagram.members[id]
+  if (!member) return undefined
+  const { id: _at, ...geometry } = diagram.nodes[id] ?? { id, x: 0, y: 0 }
+  return { ...member, ...geometry }
+}
+
+/** Every member of this view, with where it ended up, in the file's order. */
+export function placedList(diagram: Diagram): PlacedNode[] {
+  return diagram.order.members.map((id) => placedOn(diagram, id)!)
+}
+
+/** The group boxes on this diagram. */
+export function boxesOf(diagram: Diagram): Record<GroupId, DomainGroupRect> {
+  return diagram.boxes
+}
+
+/** The group boxes, in the order the groups are in. */
+export function boxList(diagram: Diagram): DomainGroupRect[] {
+  const by = boxesOf(diagram)
+  return diagram.order.groups.flatMap((id) => (by[id] ? [by[id]] : []))
 }
 
 export function routeList(diagram: Diagram): EdgeRoute[] {
@@ -161,22 +220,29 @@ function unindex<T>(by: Record<string, T>, order: readonly string[]): T[] {
 
 /** One diagram, indexed. Exported because a command carries whole diagrams. */
 export function toDiagram(diagram: DesignDiagram): Diagram {
-  const [placements, placementOrder] = index(diagram.placements ?? [], (p) => p.elementId)
-  const out = { ...diagram } as unknown as Diagram
-  out.placements = placements
+  const { members, groups, lines, geometry, ...definition } = diagram
+  const [byMember, memberOrder] = index(members ?? [], (m) => m.id)
+  const out = { ...definition } as unknown as Diagram
+  out.members = byMember
+  const [nodes] = index((geometry?.nodes ?? []).filter((node) => byMember[node.id]), (n) => n.id)
+  out.nodes = nodes
+  if (geometry?.canvas !== undefined) out.canvas = geometry.canvas
+  if (geometry?.zones !== undefined) out.zones = geometry.zones
+  if (geometry?.needsLayout !== undefined) out.needsLayout = geometry.needsLayout
+
+  const [byGroup, groupOrder] = index(groups ?? [], (g) => g.id)
+  out.groups = byGroup
+  const [boxes] = index((geometry?.groups ?? []).filter((box) => byGroup[box.id]), (b) => b.id)
+  out.boxes = boxes
+
   let routeOrder: RelationId[] = []
-  if (diagram.edgeRoutes !== undefined) {
-    const [routes, order] = index(diagram.edgeRoutes, (r) => r.relationId)
+  if (lines !== undefined || geometry?.routes !== undefined) {
+    const rows = edgeRouteRows(lines, geometry?.routes)
+    const [routes, order] = index(rows, (r) => r.relationId)
     out.edgeRoutes = routes
     routeOrder = order
   }
-  let groupOrder: GroupId[] = []
-  if (diagram.groups !== undefined) {
-    const [groups, order] = index(diagram.groups, (g) => g.id)
-    out.groups = groups
-    groupOrder = order
-  }
-  out.order = { placements: placementOrder, routes: routeOrder, groups: groupOrder }
+  out.order = { members: memberOrder, routes: routeOrder, groups: groupOrder }
   return out
 }
 
@@ -198,20 +264,30 @@ export function toDiagram(diagram: DesignDiagram): Diagram {
 export function fromDiagram(diagram: Diagram): DesignDiagram {
   const held = converted.get(diagram)
   if (held) return held
-  const out = { ...diagram } as unknown as DesignDiagram & { order?: DiagramOrder }
-  out.placements = unindex(diagram.placements, diagram.order.placements)
-  if (diagram.edgeRoutes !== undefined) {
-    out.edgeRoutes = unindex(diagram.edgeRoutes, diagram.order.routes)
+  const {
+    members, nodes, groups, boxes, edgeRoutes, canvas, zones, needsLayout, order, ...definition
+  } = diagram
+  const out = { ...definition } as unknown as DesignDiagram
+  out.members = unindex(members, order.members)
+  // Emptied means gone in the document: a view with no dashed group says
+  // nothing rather than saying nothing twice.
+  const groupList = unindex(groups, order.groups)
+  if (groupList.length) out.groups = groupList
+  const geometry: Geometry = { nodes: order.members.flatMap((id) => (nodes[id] ? [nodes[id]] : [])) }
+  if (needsLayout !== undefined) geometry.needsLayout = needsLayout
+  if (canvas !== undefined) geometry.canvas = canvas
+  if (zones !== undefined) geometry.zones = zones
+  const boxList = order.groups.flatMap((id) => (boxes[id] ? [boxes[id]] : []))
+  if (boxList.length) geometry.groups = boxList
+  if (edgeRoutes !== undefined) {
+    const split = splitRoutes(unindex(edgeRoutes, order.routes))
+    if (split.lines) out.lines = split.lines
+    if (split.routes) geometry.routes = split.routes
+    // The key was there and holds nothing — which is a thing a view can be,
+    // and is not the same as never having had one (see the note at the top).
+    else if (!split.lines) geometry.routes = []
   }
-  if (diagram.groups !== undefined) {
-    const groups = unindex(diagram.groups, diagram.order.groups)
-    // A diagram whose last group was dissolved keeps the key in memory so that
-    // putting one back lands it where it was (see `withGroups`); the document
-    // says nothing rather than saying nothing twice.
-    if (groups.length) out.groups = groups
-    else delete out.groups
-  }
-  delete out.order
+  out.geometry = geometry
   converted.set(diagram, out)
   return out
 }

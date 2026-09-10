@@ -11,6 +11,7 @@
  * an event within it.
  */
 import { afterEach, describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { cleanup, screen } from '@testing-library/react'
 import { renderApp } from './testing/renderShell'
 
@@ -42,7 +43,7 @@ describe('what the top bar says you are working from', () => {
     ref: { group: 'acme', project: 'landscape' },
     model: {
       name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
-      diagrams: [{ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
     },
     activeDiagramId: 'd1',
     logoLibrary: [],

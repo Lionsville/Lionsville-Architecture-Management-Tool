@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { routeWithLibavoidInProcess } from './libavoidRouter'
 import type { RouterConnection, RouterInput, RouterNode } from './libavoidRouter'
-import { placementSize } from '../model/placement'
+import { placedNodes, placementSize } from '../model/placement'
 import { measureAsync } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 import type { DesignElement, DomainGroupRect } from '../model/types'
@@ -26,18 +26,18 @@ function inputFor(size: 'small' | 'large'): RouterInput {
   const byId = new Map(model.elements.map((e) => [e.id, e] as const))
   const nodes: RouterNode[] = []
   const groupOf = new Map<string, string>()
-  for (const placement of landscape.placements) {
-    const element = byId.get(placement.elementId) as DesignElement | undefined
+  for (const placement of placedNodes(landscape)) {
+    const element = byId.get(placement.id) as DesignElement | undefined
     if (!element) continue
     const size = placementSize(element.kind, placement)
     nodes.push({
-      id: placement.elementId,
+      id: placement.id,
       rect: { x: placement.x, y: placement.y, width: size.width, height: size.height },
       group: placement.group,
     })
-    if (placement.group) groupOf.set(placement.elementId, placement.group)
+    if (placement.group) groupOf.set(placement.id, placement.group)
   }
-  const groups: DomainGroupRect[] = landscape.layoutConfig?.domainGroups ?? []
+  const groups: DomainGroupRect[] = landscape.geometry?.groups ?? []
   const placed = new Set(nodes.map((n) => n.id))
   const connections: RouterConnection[] = model.relations
     .filter((c) => placed.has(c.sourceId) && placed.has(c.targetId))

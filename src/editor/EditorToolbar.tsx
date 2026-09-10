@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -661,7 +662,7 @@ function TabLabel({
 }) {
   const { t } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const placed = new Set(diagram.placements.map((p) => p.elementId));
+  const placed = new Set(placedNodes(diagram).map((p) => p.id));
   const containers = model.diagrams.filter(
     (d) => d.kind === 'container' && d.applicationElementId && placed.has(d.applicationElementId),
   );
@@ -767,7 +768,7 @@ function Breadcrumb({
     model.diagrams.find(
       (d) =>
         d.kind === 'layer7' &&
-        d.placements.some((p) => p.elementId === activeDiagram.applicationElementId),
+        placedNodes(d).some((p) => p.id === activeDiagram.applicationElementId),
     ) ?? model.diagrams.find((d) => d.kind === 'layer7');
 
   return (

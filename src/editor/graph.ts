@@ -6,7 +6,7 @@ import type { EdgeAnchors } from '../model/floatingEdgeMath';
 import { aspectConfigFor } from '../model/aspects';
 import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
 import { assignEdgeAnchors } from '../model/floatingEdgeMath';
-import {
+import { placedNodes,
   expandRect,
   nodeMaxSize,
   nodeMinSize,
@@ -14,7 +14,7 @@ import {
   placementSize,
   unionRects,
 } from '../model/placement';
-import { isAutoRoute, routeSides, routeSource } from '../model/routes';
+import { edgeRoutesOf, isAutoRoute, routeSides, routeSource } from '../model/routes';
 import { relationLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
 
 /**
@@ -91,8 +91,8 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
 
   const aspectConfig = aspectConfigFor(args.diagram);
   const nodes: ElementNode[] = [];
-  for (const placement of args.diagram.placements) {
-    const element = elementsById.get(placement.elementId);
+  for (const placement of placedNodes(args.diagram)) {
+    const element = elementsById.get(placement.id);
     if (!element) continue;
     // Gone is gone: a board dated on or after the day an element's date says
     // it is retired does not draw it (ADR-0010). Its lines follow, below.
@@ -121,7 +121,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
           element.kind === 'application' && containerDiagramApps.has(element.id),
         resizeLimits: {
           min: nodeMinSize(element.kind),
-          max: nodeMaxSize(element.kind, placement.zone, args.diagram.layoutConfig),
+          max: nodeMaxSize(element.kind, placement.zone, args.diagram.geometry),
         },
         showLifecycle: args.showLifecycle ?? true,
         phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
@@ -141,16 +141,16 @@ export function boundaryRect(
   elementsById: Map<ElementId, DesignElement>,
 ): Rect {
   const appId = diagram.applicationElementId;
-  const appPlacement = diagram.placements.find((p) => p.elementId === appId);
+  const appPlacement = placedNodes(diagram).find((p) => p.id === appId);
   const stored: Rect = {
     x: appPlacement?.x ?? 0,
     y: appPlacement?.y ?? 0,
     width: appPlacement?.width ?? BOUNDARY_MIN.width,
     height: appPlacement?.height ?? BOUNDARY_MIN.height,
   };
-  const componentRects = diagram.placements
+  const componentRects = placedNodes(diagram)
     .filter((p) => {
-      const element = elementsById.get(p.elementId);
+      const element = elementsById.get(p.id);
       return element?.kind === 'component' && element.parentApplicationId === appId;
     })
     .map((p) => placementRect('component', p));
@@ -166,22 +166,22 @@ export function buildEdges(
 ): FloatingEdgeModel[] {
   const elementsById = new Map(args.model.elements.map((e) => [e.id, e]));
   // What the board draws on this day: placed, and not gone (see buildNodes).
-  const placed = new Set(args.diagram.placements
-    .map((p) => p.elementId)
+  const placed = new Set(placedNodes(args.diagram)
+    .map((p) => p.id)
     .filter((id) => {
       const element = elementsById.get(id);
       return element !== undefined && !(args.asOfDay && isGoneOn(element, args.asOfDay));
     }));
   const routes = new Map(
-    (args.diagram.edgeRoutes ?? []).map((route) => [route.relationId, route]),
+    edgeRoutesOf(args.diagram).map((route) => [route.relationId, route]),
   );
   // Live rects for every placed node, using the SAME geometry as buildNodes
   // (boundary union → boundaryRect, otherwise the placement rect). Feeds the
   // anchor slotter so edges sharing a node side fan out; re-derived on every
   // commit — including drags — so the slots stay live.
   const rectById = new Map<ElementId, Rect>();
-  for (const placement of args.diagram.placements) {
-    const element = elementsById.get(placement.elementId);
+  for (const placement of placedNodes(args.diagram)) {
+    const element = elementsById.get(placement.id);
     if (!element) continue;
     const isBoundary =
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
@@ -316,7 +316,7 @@ export function nodeSizeOf(element: DesignElement, diagram: DesignDiagram): {
   width: number;
   height: number;
 } {
-  const placement = diagram.placements.find((p) => p.elementId === element.id);
+  const placement = placedNodes(diagram).find((p) => p.id === element.id);
   return placementSize(element.kind, placement);
 }
 

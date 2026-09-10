@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { buildEdges, buildNodes } from './graph';
 import type { DesignDiagram, DesignModel } from '../model/types';
 
@@ -13,15 +14,15 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'Layer 7',
         placements: [
-          { elementId: 'a1', zone: 'landscape', x: 100, y: 100 },
-          { elementId: 'b1', zone: 'externalSystems', x: 400, y: 100 },
+          { id: 'a1', zone: 'landscape', x: 100, y: 100 },
+          { id: 'b1', zone: 'externalSystems', x: 400, y: 100 },
         ],
-      },
+      }),
     ],
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },

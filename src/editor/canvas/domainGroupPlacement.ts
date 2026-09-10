@@ -47,7 +47,7 @@ export function uniqueGroupName(
 }
 
 export interface NewDomainGroupOptions {
-  diagram?: Pick<DesignDiagram, 'groups' | 'layoutConfig'>;
+  diagram?: Pick<DesignDiagram, 'groups' | 'geometry'>;
   /** Where the drop landed, in flow coords. Absent = the cascading default spot. */
   center?: Point;
   name?: string;
@@ -86,7 +86,7 @@ export function newDomainGroup(
       name: chosen,
       ...(color ? { color } : {}),
     },
-    box: boxFor(zoneRect('landscape', diagram?.layoutConfig), held.length, center),
+    box: boxFor(zoneRect('landscape', diagram?.geometry), held.length, center),
   };
 }
 

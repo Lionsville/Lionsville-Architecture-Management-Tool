@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import type { DesignModel } from '../model/types';
 import { DEFAULT_ZONE_SIZES, HOME_ZONE } from '../model/zones';
-import { NODE_MAX_SIZE } from '../model/placement';
+import { placedNode, NODE_MAX_SIZE } from '../model/placement';
 import { renderEditorState } from './testing/editorHost';
 
 /**
@@ -22,24 +23,24 @@ function model(): DesignModel {
     ],
     relations: [{ type: 'flow', id: 'x1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
           // Deliberately oversized for anything but a landscape card, so the
           // re-clamp below has something to do.
-          { elementId: 'e1', zone: 'externalSystems', x: 1450, y: 300, width: 900, height: 900 },
-          { elementId: 'e2', zone: 'landscape', x: 400, y: 300 },
+          { id: 'e1', zone: 'externalSystems', x: 1450, y: 300, width: 900, height: 900 },
+          { id: 'e2', zone: 'landscape', x: 400, y: 300 },
         ],
-      },
-      {
+      }),
+      laidOut({
         id: 'd2',
         kind: 'container',
         name: 'Webshop containers',
         applicationElementId: 'e2',
-        placements: [{ elementId: 'c1', x: 0, y: 0 }],
-      },
+        placements: [{ id: 'c1', x: 0, y: 0 }],
+      }),
     ],
   };
 }
@@ -48,9 +49,10 @@ function render(initial: DesignModel, activeDiagramId = 'd1') {
   const { result, host } = renderEditorState(initial, { activeDiagramId });
   const element = (id: string) => result.current.model.elements.find((e) => e.id === id);
   const placement = (id: string) =>
-    result.current.model.diagrams
-      .find((d) => d.id === activeDiagramId)
-      ?.placements.find((p) => p.elementId === id);
+    (() => {
+      const diagram = result.current.model.diagrams.find((d) => d.id === activeDiagramId);
+      return diagram && placedNode(diagram, id);
+    })();
   const sent = () => host.current.commands;
   return { result, host, sent, element, placement };
 }
@@ -95,7 +97,9 @@ describe('changeElementKind', () => {
     const command = sent()[0];
     expect(command.type).toBe('transaction');
     expect(command.type === 'transaction' && command.commands.map((c) => c.type))
-      .toEqual(['element.update', 'placement.set']);
+      // Placing something is membership AND geometry (ADR-0012 §6), so the
+      // second half is itself a transaction of the two.
+      .toEqual(['element.update', 'transaction']);
   });
 
   it('is one undo step', () => {

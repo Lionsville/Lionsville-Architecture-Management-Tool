@@ -4,6 +4,8 @@
  * change to one thing changes one file.
  */
 import { describe, expect, it } from 'vitest'
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../decisions/adr'
 import { ShellError } from '../platform/errors'
 import type { DesignElement } from '../model'
@@ -50,16 +52,16 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
     ],
     relations: [{ type: 'flow', id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'l7', kind: 'layer7', name: 'Landschap',
         groups: [{ id: 'kern', name: 'Kern' }],
         placements: [
-          { elementId: 'crews', group: 'kern', x: 10, y: 20 },
-          { elementId: 'reisinfo', x: 200, y: 20 },
+          { id: 'crews', group: 'kern', x: 10, y: 20 },
+          { id: 'reisinfo', x: 200, y: 20 },
         ],
         edgeRoutes: [{ relationId: 'c-1', waypoints: [{ x: 1, y: 2 }] }],
-      },
-      { id: 'containers', kind: 'container', name: 'Crews · containers', placements: [] },
+      }),
+      laidOut({ id: 'containers', kind: 'container', name: 'Crews · containers', placements: [] }),
     ],
     decisions: [DECISION],
     transitions: [PLAN],
@@ -223,7 +225,7 @@ describe('what one change touches', () => {
 
   it('moving a node: the placement file, and nothing else', () => {
     const moved = project()
-    moved.model.diagrams[0].placements[0] = { elementId: 'crews', x: 44, y: 20 }
+    placedNodes(moved.model.diagrams[0])[0] = { id: 'crews', x: 44, y: 20 }
     expect(changed(before, projectFiles(moved))).toEqual(['diagrams/l7.placements.json'])
   })
 
@@ -266,7 +268,7 @@ describe('projectFromFolder', () => {
       logoLibrary: [],
       model: {
         name: 'Bare', customerName: 'Nobody', elements: [], relations: [],
-        diagrams: [{ id: 'l7', kind: 'layer7', name: 'One', placements: [] }],
+        diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'One', placements: [] })],
       },
     }
     expect(stableJson(projectFromFolder(projectFiles(plain), REF))).toBe(stableJson(plain))
@@ -281,7 +283,7 @@ describe('projectFromFolder', () => {
     const files = projectFiles(project())
       .filter((file) => file.path !== 'diagrams/l7.placements.json')
     const back = projectFromFolder(files, REF)
-    expect(back?.model.diagrams[0]).toMatchObject({ placements: [], needsLayout: true })
+    expect(back?.model.diagrams[0]).toMatchObject({ members: [], geometry: { nodes: [], needsLayout: true } })
     expect(back?.model.diagrams[0].name).toBe('Landschap')
   })
 
@@ -457,12 +459,46 @@ describe('dashed groups, across format 3', () => {
       { id: 'core-systems-2', name: 'Core Systems' },
       { id: 'nobody-drew-a-box', name: 'Nobody drew a box' },
     ])
-    expect(diagram.layoutConfig?.domainGroups).toEqual([
+    expect(diagram.geometry?.groups).toEqual([
       { id: 'core-systems', x: 10, y: 20, width: 300, height: 200 },
       { id: 'core-systems-2', x: 400, y: 20, width: 300, height: 200 },
     ])
-    expect(diagram.placements.map((p) => p.group))
+    expect(placedNodes(diagram).map((p) => p.group))
       .toEqual(['core-systems', 'core-systems-2', 'nobody-drew-a-box'])
+  })
+
+  it('files what is on the view apart from where it ended up', () => {
+    // ADR-0012 §6, at format 3: the placement file still holds both halves in
+    // one row, and the model does not — so this pins which half comes from
+    // where, and it is the same check that survives the format turning.
+    const diagram = diagramOf(v3())
+    expect(diagram.members).toEqual([
+      { id: 'a', group: 'core-systems' },
+      { id: 'b', group: 'core-systems-2' },
+      { id: 'c', group: 'nobody-drew-a-box' },
+    ])
+    expect(diagram.geometry.nodes).toEqual([
+      { id: 'a', x: 30, y: 40 },
+      { id: 'b', x: 420, y: 40 },
+      { id: 'c', x: 800, y: 40 },
+    ])
+    expect(diagram.geometry.canvas).toEqual({ width: 1680, height: 1040 })
+  })
+
+  it('moves a card in the geometry and says nothing about the definition', () => {
+    const project = projectFromFolder(v3(), REF)!
+    const before = projectFiles(project)
+    const diagram = project.model.diagrams[0]
+    project.model.diagrams[0] = {
+      ...diagram,
+      geometry: {
+        ...diagram.geometry,
+        nodes: diagram.geometry.nodes.map((node) =>
+          (node.id === 'a' ? { ...node, x: 999 } : node)),
+      },
+    }
+    expect(project.model.diagrams[0].members).toBe(diagram.members)
+    expect(changed(before, projectFiles(project))).toEqual(['diagrams/l7.placements.json'])
   })
 
   it('reads, then writes, the bytes it started with', () => {
@@ -516,7 +552,7 @@ describe('dashed groups, across format 3', () => {
       ...diagram,
       groups: diagram.groups!.map((g) => (g.id === 'core-systems' ? { ...g, name: 'Kern' } : g)),
     }
-    expect(project.model.diagrams[0].placements).toBe(diagram.placements)
+    expect(project.model.diagrams[0].members).toBe(diagram.members)
     const after = projectFiles(project)
     expect(changed(before, after)).toEqual(['diagrams/l7.json', 'diagrams/l7.placements.json'])
     // And what moved in the placements file is the name, nothing else.

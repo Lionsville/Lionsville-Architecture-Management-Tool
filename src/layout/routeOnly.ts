@@ -8,8 +8,8 @@ import type {
   Point,
   Rect,
 } from '../model/types';
-import { placementSize } from '../model/placement';
-import { routeSides } from '../model/routes';
+import { placedNodes, placementSize } from '../model/placement';
+import { edgeRoutesOf, routeSides } from '../model/routes';
 import { edgeLabelSize } from './edgeLabelSize';
 import { labelSpotFor, rectCentre, rectContainsPoint } from './routing';
 import { routeWithLibavoid, type RouterNode } from './libavoidRouter';
@@ -112,11 +112,11 @@ export async function routeDiagramEdges(
 ): Promise<TidyResult> {
   const elementsById = new Map(model.elements.map((e) => [e.id, e]));
   const rectById = new Map<ElementId, Rect>();
-  for (const placement of diagram.placements) {
-    const element = elementsById.get(placement.elementId);
+  for (const placement of placedNodes(diagram)) {
+    const element = elementsById.get(placement.id);
     if (!element) continue;
     const size = placementSize(element.kind, placement);
-    rectById.set(placement.elementId, {
+    rectById.set(placement.id, {
       x: placement.x,
       y: placement.y,
       width: size.width,
@@ -126,7 +126,7 @@ export async function routeDiagramEdges(
 
   // The boxes the ROUTER groups nodes into: a layer7 diagram's domain groups, or a
   // container diagram's application boundary standing in for itself (see 2. above).
-  const domainGroups: DomainGroupRect[] = diagram.layoutConfig?.domainGroups ?? [];
+  const domainGroups: DomainGroupRect[] = diagram.geometry?.groups ?? [];
   const boundaryId = diagram.kind === 'container' ? diagram.applicationElementId : undefined;
   const boundaryBox = boundaryId === undefined ? undefined : rectById.get(boundaryId);
   const routerGroups: DomainGroupRect[] =
@@ -149,7 +149,7 @@ export async function routeDiagramEdges(
       )
     : model.relations;
 
-  const storedRoutes = new Map((diagram.edgeRoutes ?? []).map((r) => [r.relationId, r]));
+  const storedRoutes = new Map(edgeRoutesOf(diagram).map((r) => [r.relationId, r] as const));
 
   // The attach sides ride along from the stored rows: they are constraints the
   // router honours (a pinned end), not geometry it replaces — so a row that holds

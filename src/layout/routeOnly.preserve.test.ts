@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { diagramWithRoutes, edgeRoutesOf } from '../model/routes';
+import { laidOut } from '../model/testFixtures';
 import { routeDiagramEdges } from './routeOnly';
 import { preservedRouteIds } from './tidy';
 import type { DesignModel } from '../model/types';
@@ -42,27 +44,27 @@ function boardModel(): DesignModel {
       isBidirectional: false,
     })),
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
           ...[1, 2, 3, 4].map((n) => ({
-            elementId: `s${n}`,
+            id: `s${n}`,
             zone: 'landscape' as const,
             x: 100,
             y: 100 + n * 160,
           })),
           ...[1, 2, 3, 4].map((n) => ({
-            elementId: `t${n}`,
+            id: `t${n}`,
             zone: 'landscape' as const,
             x: 1200,
             y: 100 + n * 160,
           })),
           // An obstacle squarely between the columns, so every edge has to detour
           // around it and they genuinely share a channel rather than running straight.
-          { elementId: 's1', zone: 'landscape' as const, x: 100, y: 260 },
-        ].filter((p, i, all) => all.findIndex((q) => q.elementId === p.elementId) === i),
+          { id: 's1', zone: 'landscape' as const, x: 100, y: 260 },
+        ].filter((p, i, all) => all.findIndex((q) => q.id === p.id) === i),
         layoutConfig: {
           domainGroups: [{ id: 'Wall', x: 600, y: 120, width: 120, height: 700 }],
         },
@@ -74,7 +76,7 @@ function boardModel(): DesignModel {
             source: 'manual' as const,
           },
         ],
-      },
+      }),
     ],
   };
 }
@@ -86,7 +88,7 @@ describe('routeDiagramEdges — preserveRoutesFor', () => {
   it('keeps a preserved route even on a pass that DOES route its connection', async () => {
     const model = boardModel();
     const diagram = model.diagrams[0];
-    const stored = diagram.edgeRoutes![0];
+    const stored = edgeRoutesOf(diagram)![0];
 
     // 'clear' is the policy a Tidy uses — it replaces everything it routes. The
     // preserved connection must survive it, which is what proves the exclusion is
@@ -166,16 +168,14 @@ describe('routeDiagramEdges — preserveRoutesFor', () => {
 });
 
 describe('preservedRouteIds', () => {
-  const diagram = {
-    edgeRoutes: [
-      { relationId: 'bends', waypoints: [{ x: 1, y: 2 }], source: 'manual' as const },
-      // The case the old waypoint-presence heuristic was blind to.
-      { relationId: 'chip', waypoints: [], labelPosition: { x: 9, y: 9 }, source: 'manual' as const },
-      { relationId: 'router', waypoints: [{ x: 3, y: 4 }], source: 'auto' as const },
-      // Pre-provenance row: absent source reads as manual.
-      { relationId: 'legacy', waypoints: [{ x: 5, y: 6 }] },
-    ],
-  };
+  const diagram = diagramWithRoutes({ members: [], geometry: { nodes: [] } }, [
+    { relationId: 'bends', waypoints: [{ x: 1, y: 2 }], source: 'manual' as const },
+    // The case the old waypoint-presence heuristic was blind to.
+    { relationId: 'chip', waypoints: [], labelPosition: { x: 9, y: 9 }, source: 'manual' as const },
+    { relationId: 'router', waypoints: [{ x: 3, y: 4 }], source: 'auto' as const },
+    // Pre-provenance row: absent source reads as manual.
+    { relationId: 'legacy', waypoints: [{ x: 5, y: 6 }] },
+  ]);
 
   it('protects every route a person placed, waypoints or not', () => {
     expect(preservedRouteIds(diagram, true)).toEqual(new Set(['bends', 'chip', 'legacy']));

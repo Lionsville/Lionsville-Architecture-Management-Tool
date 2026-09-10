@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX, type RefObject } from 'react';
+import { placedNodes } from '../model/placement';
 import { getNodesBounds, ReactFlowProvider, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Box from '@mui/material/Box';
@@ -30,7 +31,7 @@ import {
   type TidyOptions,
 } from '../layout/tidy';
 import { routeDiagramEdges } from '../layout/routeOnly';
-import {
+import { diagramWithRoutes, edgeRoutesOf,
   manualRouteIds,
   routeFor,
   routeSource,
@@ -317,7 +318,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const hostDoc = props.requests?.documentation;
   const hostDocRef = useRef<EditorRequests['documentation']>(undefined);
   const selectedForDoc = state.selectedElement?.id;
-  const firstPlaced = activeDiagram?.placements[0]?.elementId;
+  const firstPlaced = activeDiagram && placedNodes(activeDiagram)[0]?.id;
   const firstInModel = state.model.elements[0]?.id;
   useEffect(() => {
     if (!hostDoc) return;
@@ -721,10 +722,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
       if (!activeDiagram || readOnly || busy) return;
       const token = state.actions.resetEdgeRoute(connectionId);
       if (autoRoute) return;
-      await rerouteAfterRouteEdit(token, {
-        ...activeDiagram,
-        edgeRoutes: (activeDiagram.edgeRoutes ?? []).filter((r) => r.relationId !== connectionId),
-      });
+      await rerouteAfterRouteEdit(token, diagramWithRoutes(
+        activeDiagram,
+        edgeRoutesOf(activeDiagram).filter((r) => r.relationId !== connectionId),
+      ));
     },
     [activeDiagram, readOnly, busy, autoRoute, state.actions, rerouteAfterRouteEdit],
   );
@@ -741,10 +742,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
       const token = state.actions.setRouteSides(connectionId, sides);
       if (token === undefined || autoRoute) return;
       const row = routeWithSides(routeFor(activeDiagram, connectionId), connectionId, sides);
-      await rerouteAfterRouteEdit(token, {
-        ...activeDiagram,
-        edgeRoutes: withRouteRow(activeDiagram.edgeRoutes, row),
-      });
+      await rerouteAfterRouteEdit(
+        token,
+        diagramWithRoutes(activeDiagram, withRouteRow(edgeRoutesOf(activeDiagram), row)),
+      );
     },
     [activeDiagram, readOnly, busy, autoRoute, state.actions, rerouteAfterRouteEdit],
   );
@@ -776,8 +777,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
    */
   const needsReclassifying =
     autoRoute &&
-    (activeDiagram?.edgeRoutes?.length ?? 0) > 0 &&
-    (activeDiagram?.edgeRoutes ?? []).every((r) => routeSource(r) === 'manual');
+    edgeRoutesOf(activeDiagram).length > 0 &&
+    edgeRoutesOf(activeDiagram).every((r) => routeSource(r) === 'manual');
 
   const autoRouteNote = overCapReportedRef.current.has(activeDiagram?.id ?? '')
     ? t('note.overCap')
@@ -817,7 +818,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const exportBounds = useCallback((): Rect => {
     const nodesBounds = getNodesBounds(getNodes());
     return activeDiagram?.kind === 'layer7'
-      ? (unionRects([canvasRect(activeDiagram.layoutConfig), nodesBounds]) as Rect)
+      ? (unionRects([canvasRect(activeDiagram.geometry), nodesBounds]) as Rect)
       : nodesBounds;
   }, [activeDiagram, getNodes]);
 

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { diagramWithRoutes } from './routes';
+import { edgeRoutesOf } from '../model/routes';
+import { laidOut } from '../model/testFixtures';
 import type { DesignModel, EdgeRoute, Rect } from './types';
 import {
   drawnPolyline,
@@ -27,6 +30,8 @@ import { diagonalSegments } from '../layout/routeTestSupport';
 
 const row = (over: Partial<EdgeRoute> = {}): EdgeRoute => ({ relationId: 'c1', waypoints: [], ...over });
 
+const EMPTY_VIEW = { members: [], geometry: { nodes: [] } };
+
 describe('hasRouteContent / hasPlacedContent / hasFixedSide', () => {
   it('a set side is content, but not something a person placed', () => {
     expect(hasRouteContent(row({ sourceSide: 'top' }))).toBe(true);
@@ -51,7 +56,7 @@ describe('routeWithSides — what a side change leaves behind', () => {
   it('with nothing stored, a bend-less AUTO row: the router still owns the line, under the side', () => {
     const next = routeWithSides(undefined, 'c1', { sourceSide: 'top' });
     expect(next).toEqual({ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
-    expect(manualRouteIds({ edgeRoutes: [next] }).has('c1')).toBe(false);
+    expect(manualRouteIds(diagramWithRoutes(EMPTY_VIEW, [next])).has('c1')).toBe(false);
   });
 
   it('merges into a stored row, keeping bends, chip, pin and provenance', () => {
@@ -159,7 +164,7 @@ describe('sides travel with the row through the model layer', () => {
       customerName: 'ACME',
       elements: ['a', 'b'].map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })),
       relations: [{ type: 'flow', id: 'c1', sourceId: 'a', targetId: 'b', isBidirectional: false }],
-      diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'a', x: 0, y: 0 }, { elementId: 'b', x: 500, y: 0 }], edgeRoutes: routes }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'a', x: 0, y: 0 }, { id: 'b', x: 500, y: 0 }], edgeRoutes: routes })],
     };
   }
 
@@ -175,7 +180,7 @@ describe('sides travel with the row through the model layer', () => {
     const stored = apply(fromArrays(model([])), {
       type: 'route.set', diagramId: 'd1', routes: [sideOnly],
     });
-    expect(stored.ok && toArrays(stored.model).diagrams[0].edgeRoutes).toEqual([sideOnly]);
+    expect(stored.ok && edgeRoutesOf(toArrays(stored.model).diagrams[0])).toEqual([sideOnly]);
 
     // Freeing the last side leaves a row with nothing to say, which is what
     // `hasRouteContent` recognises and `route.clear` acts on.
@@ -184,7 +189,11 @@ describe('sides travel with the row through the model layer', () => {
     const gone = apply(fromArrays(model([sideOnly])), {
       type: 'route.clear', diagramId: 'd1', relationIds: ['c1'],
     });
-    expect(gone.ok && toArrays(gone.model).diagrams[0].edgeRoutes).toBeUndefined();
+    // Neither half is written: the definition says nothing about the line and
+    // the geometry holds nothing for it (ADR-0012 §6).
+    const back = gone.ok ? toArrays(gone.model).diagrams[0] : undefined;
+    expect(back?.lines).toBeUndefined();
+    expect(back?.geometry.routes).toBeUndefined();
   });
 
   it('a side change is one step, and its inverse puts the old side back', () => {
@@ -194,7 +203,7 @@ describe('sides travel with the row through the model layer', () => {
     });
     expect(changed.ok).toBe(true);
     if (!changed.ok) return;
-    expect(toArrays(changed.model).diagrams[0].edgeRoutes?.[0].sourceSide).toBe('left');
+    expect(edgeRoutesOf(toArrays(changed.model).diagrams[0])?.[0].sourceSide).toBe('left');
     const back = apply(changed.model, changed.inverse);
     expect(back.ok && toArrays(back.model)).toEqual(toArrays(before));
   });

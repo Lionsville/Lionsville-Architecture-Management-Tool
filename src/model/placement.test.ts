@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { laidOut } from './testFixtures';
 import {
+  placedNodes,
+  placedNode,
+  memberOf,
+  nodeGeometryOf,
   BAND_NODE_MIN,
   cascadeSlot,
   clampPlacementIntoZone,
@@ -21,7 +26,8 @@ import {
   unionRects,
 } from './placement';
 import { zoneRect } from './zones';
-import type { DiagramLayoutConfig, ElementKind, Rect } from './types';
+import type { BoardGeometry } from './zones';
+import type { DomainGroupRect, ElementKind, Rect } from './types';
 
 describe('placementSize', () => {
   it('uses kind defaults when the placement has no explicit size', () => {
@@ -73,27 +79,27 @@ describe('clampPlacementIntoZone', () => {
   // A board shrink makes the bands shallower. Their members have to come with
   // them, or a chip from a deep actors band draws inside the landscape while its
   // placement still says `actors`.
-  const shrunk: DiagramLayoutConfig = { canvas: { width: 840, height: 520 } };
+  const shrunk: BoardGeometry = { canvas: { width: 840, height: 520 } };
 
   it('slides a band member back inside its band', () => {
-    const stranded = { elementId: 'e1', zone: 'actors' as const, x: 20, y: 400 };
+    const stranded = { id: 'e1', zone: 'actors' as const, x: 20, y: 400 };
     expect(clampPlacementIntoZone(stranded, 'actor', shrunk)).toMatchObject({ x: 20, y: 102 });
   });
 
   it('gives up a size the user set, but never invents one', () => {
-    const tall = { elementId: 'e1', zone: 'actors' as const, x: 20, y: 0, height: 300 };
+    const tall = { id: 'e1', zone: 'actors' as const, x: 20, y: 0, height: 300 };
     expect(clampPlacementIntoZone(tall, 'actor', shrunk)?.height).toBe(150);
-    const canonical = { elementId: 'e1', zone: 'actors' as const, x: 20, y: 0 };
+    const canonical = { id: 'e1', zone: 'actors' as const, x: 20, y: 0 };
     expect(clampPlacementIntoZone(canonical, 'actor', shrunk)?.height).toBeUndefined();
   });
 
   it('leaves a placement that already fits, and every landscape node, alone', () => {
     expect(
-      clampPlacementIntoZone({ elementId: 'e1', zone: 'actors', x: 20, y: 20 }, 'actor', shrunk),
+      clampPlacementIntoZone({ id: 'e1', zone: 'actors', x: 20, y: 20 }, 'actor', shrunk),
     ).toBeUndefined();
     expect(
       clampPlacementIntoZone(
-        { elementId: 'e1', zone: 'landscape', x: 5000, y: 5000 },
+        { id: 'e1', zone: 'landscape', x: 5000, y: 5000 },
         'application',
         shrunk,
       ),
@@ -118,16 +124,16 @@ describe('nodeMaxSize', () => {
   });
 
   it('follows the band when it is resized', () => {
-    const deep: DiagramLayoutConfig = { zones: { actors: { size: 300 } } };
+    const deep: BoardGeometry = { zones: { actors: { size: 300 } } };
     expect(nodeMaxSize('actor', 'actors', deep).height).toBe(300);
-    const shallow: DiagramLayoutConfig = { zones: { actors: { size: 90 } } };
+    const shallow: BoardGeometry = { zones: { actors: { size: 90 } } };
     expect(nodeMaxSize('actor', 'actors', shallow).height).toBe(90);
   });
 
   it('never drops the ceiling under the node\'s own floor', () => {
     // The external-systems band bottoms out at 120, narrower than an external
     // system's 140 floor — a max below the min would break the resizer.
-    const narrow: DiagramLayoutConfig = { zones: { externalSystems: { size: 120 } } };
+    const narrow: BoardGeometry = { zones: { externalSystems: { size: 120 } } };
     const max = nodeMaxSize('externalSystem', 'externalSystems', narrow);
     expect(max.width).toBe(BAND_NODE_MIN.externalSystem.width);
     expect(max.width).toBeGreaterThanOrEqual(nodeMinSize('externalSystem').width);
@@ -172,20 +178,18 @@ describe('defaultZonePosition', () => {
   });
 });
 
-describe('domain groups (explicit layoutConfig rects)', () => {
-  const config: DiagramLayoutConfig = {
-    domainGroups: [
-      { id: 'Big', x: 0, y: 0, width: 1000, height: 1000 },
-      { id: 'Small', x: 100, y: 100, width: 200, height: 200 },
-    ],
-  };
+describe('domain groups (explicit boxes in the geometry)', () => {
+  const config: DomainGroupRect[] = [
+    { id: 'Big', x: 0, y: 0, width: 1000, height: 1000 },
+    { id: 'Small', x: 100, y: 100, width: 200, height: 200 },
+  ];
 
-  it('maps layoutConfig groups to a rect map', () => {
+  it('maps a view’s group boxes to a rect map', () => {
     const rects = domainGroupRectMap(config);
     expect(rects.get('Small')).toEqual({ x: 100, y: 100, width: 200, height: 200 });
     expect(rects.size).toBe(2);
     expect(domainGroupRectMap(undefined).size).toBe(0);
-    expect(domainGroupRectMap({}).size).toBe(0);
+    expect(domainGroupRectMap([]).size).toBe(0);
   });
 
   it('containment: a dropped centre point joins the smallest containing group', () => {
@@ -196,9 +200,7 @@ describe('domain groups (explicit layoutConfig rects)', () => {
   });
 
   it('containment is half-open: the far edge is outside', () => {
-    const groups = domainGroupRectMap({
-      domainGroups: [{ id: 'G', x: 0, y: 0, width: 100, height: 100 }],
-    });
+    const groups = domainGroupRectMap([{ id: 'G', x: 0, y: 0, width: 100, height: 100 }]);
     expect(domainGroupForPoint({ x: 0, y: 0 }, groups)).toBe('G');
     expect(domainGroupForPoint({ x: 100, y: 100 }, groups)).toBeUndefined();
   });
@@ -223,50 +225,52 @@ describe('rect helpers', () => {
 });
 
 describe('diagramWithLivePlacements', () => {
-  const diagram = {
+  const diagram = laidOut({
     id: 'd1',
     kind: 'layer7' as const,
     name: 'L7',
     placements: [
-      { elementId: 'a', zone: 'landscape' as const, x: 10, y: 20 },
-      { elementId: 'b', zone: 'landscape' as const, x: 30, y: 40 },
+      { id: 'a', zone: 'landscape' as const, x: 10, y: 20 },
+      { id: 'b', zone: 'landscape' as const, x: 30, y: 40 },
     ],
-  };
+  });
 
   it('moves only the named placements', () => {
-    const moved = diagramWithLivePlacements(diagram, [{ elementId: 'a', x: 111, y: 222 }]);
-    expect(moved.placements[0]).toEqual({ elementId: 'a', zone: 'landscape', x: 111, y: 222 });
-    expect(moved.placements[1]).toBe(diagram.placements[1]);
+    const moved = diagramWithLivePlacements(diagram, [{ id: 'a', x: 111, y: 222 }]);
+    expect(placedNodes(moved)[0]).toEqual({ id: 'a', zone: 'landscape', x: 111, y: 222 });
+    // Identity is the geometry ROW's: the joined view is worked out per
+    // diagram object, so what a memo downstream compares is the node.
+    expect(moved.geometry.nodes[1]).toBe(diagram.geometry.nodes[1]);
   });
 
   it('leaves the input untouched', () => {
     // The router is handed this diagram while the model still holds the pre-drag
     // positions. Mutating in place would commit a drag nobody dropped.
-    diagramWithLivePlacements(diagram, [{ elementId: 'a', x: 111, y: 222 }]);
-    expect(diagram.placements[0]).toEqual({ elementId: 'a', zone: 'landscape', x: 10, y: 20 });
+    diagramWithLivePlacements(diagram, [{ id: 'a', x: 111, y: 222 }]);
+    expect(placedNodes(diagram)[0]).toEqual({ id: 'a', zone: 'landscape', x: 10, y: 20 });
   });
 
   it('returns the SAME diagram when nothing actually moved', () => {
     // A gesture that has not left its start position must not invalidate a memo or
     // spend a routing pass.
     expect(diagramWithLivePlacements(diagram, [])).toBe(diagram);
-    expect(diagramWithLivePlacements(diagram, [{ elementId: 'a', x: 10, y: 20 }])).toBe(diagram);
+    expect(diagramWithLivePlacements(diagram, [{ id: 'a', x: 10, y: 20 }])).toBe(diagram);
   });
 
   it('ignores a move for an element that is not on this diagram', () => {
-    expect(diagramWithLivePlacements(diagram, [{ elementId: 'ghost', x: 1, y: 2 }])).toBe(diagram);
+    expect(diagramWithLivePlacements(diagram, [{ id: 'ghost', x: 1, y: 2 }])).toBe(diagram);
   });
 
   it('keeps everything else about the placement, size included', () => {
-    const sized = {
+    const sized = laidOut({
       ...diagram,
-      placements: [{ elementId: 'a', zone: 'landscape' as const, x: 0, y: 0, width: 300, height: 200 }],
-    };
-    const moved = diagramWithLivePlacements(sized, [{ elementId: 'a', x: 5, y: 6 }]);
+      placements: [{ id: 'a', zone: 'landscape' as const, x: 0, y: 0, width: 300, height: 200 }],
+    });
+    const moved = diagramWithLivePlacements(sized, [{ id: 'a', x: 5, y: 6 }]);
     // A drag changes position and never size, and `placementSize` still has to
     // resolve the rect the router blocks against.
-    expect(moved.placements[0]).toEqual({
-      elementId: 'a',
+    expect(placedNodes(moved)[0]).toEqual({
+      id: 'a',
       zone: 'landscape',
       x: 5,
       y: 6,
@@ -319,5 +323,59 @@ describe('cascadeSlot / freeSlotIn / freeZonePosition', () => {
     expect(spot.x).toBeGreaterThanOrEqual(band.x);
     expect(spot.y).toBeGreaterThanOrEqual(band.y);
     expect(spot.y + NODE_SIZES.managementTool.height).toBeLessThanOrEqual(band.y + band.height);
+  });
+});
+
+/**
+ * A view's two halves, joined (ADR-0012 §6).
+ *
+ * Membership is the definition's and coordinates are the geometry's, and every
+ * drawing, routing and hit-testing caller wants both at once. What is pinned
+ * here is the join itself — and its identity, because that is what `React.memo`
+ * downstream compares.
+ */
+describe('placedNodes', () => {
+  const view = laidOut({
+    id: 'l7',
+    kind: 'layer7',
+    name: 'L7',
+    placements: [
+      { id: 'a', zone: 'landscape', group: 'core', x: 10, y: 20, width: 300 },
+      { id: 'b', zone: 'actors', x: 30, y: 40 },
+    ],
+  });
+
+  it('joins each member to its node, in the definition’s order', () => {
+    expect(placedNodes(view)).toEqual([
+      { id: 'a', zone: 'landscape', group: 'core', x: 10, y: 20, width: 300 },
+      { id: 'b', zone: 'actors', x: 30, y: 40 },
+    ]);
+    expect(placedNode(view, 'b')).toEqual({ id: 'b', zone: 'actors', x: 30, y: 40 });
+    expect(placedNode(view, 'gone')).toBeUndefined();
+  });
+
+  it('answers (0, 0) for a member nobody has laid out', () => {
+    // A geometry file somebody deleted, or a view a machine seeded: the element
+    // is ON the view and has not been placed, which `needsLayout` is for.
+    const seeded = { ...view, geometry: { nodes: [], needsLayout: true as const } };
+    expect(placedNodes(seeded)).toEqual([
+      { id: 'a', zone: 'landscape', group: 'core', x: 0, y: 0 },
+      { id: 'b', zone: 'actors', x: 0, y: 0 },
+    ]);
+  });
+
+  it('hands back the row it had for a member and node that came through unchanged', () => {
+    // The property `React.memo` leans on: the reducer touches the row it names
+    // and copies nothing else, so an untouched card must not be a fresh object
+    // on the other side of a change that was nowhere near it.
+    const elsewhere = { ...view, name: 'Renamed' };
+    expect(placedNodes(elsewhere)[0]).toBe(placedNodes(view)[0]);
+    expect(placedNodes(view)).toBe(placedNodes(view));
+  });
+
+  it('takes a row apart again, into the halves that are stored', () => {
+    const [a] = placedNodes(view);
+    expect(memberOf(a)).toEqual({ id: 'a', zone: 'landscape', group: 'core' });
+    expect(nodeGeometryOf(a)).toEqual({ id: 'a', x: 10, y: 20, width: 300 });
   });
 });

@@ -18,14 +18,15 @@ import {
   ZONE_MENU_LABEL_KEYS,
 } from './zones';
 import { LANGUAGES, translator } from '../i18n/strings';
-import type { DiagramLayoutConfig, Layer7Zone } from './types';
+import type { Layer7Zone } from './types';
+import type { BoardGeometry } from './zones';
 
 const { width: W, height: H } = LAYER7_CANVAS;
 const TOP = DEFAULT_ZONE_SIZES.actors;
 const BOTTOM = DEFAULT_ZONE_SIZES.management;
 const SIDE = DEFAULT_ZONE_SIZES.inputChannels;
 
-const WIDE_CONFIG: DiagramLayoutConfig = {
+const WIDE_CONFIG: BoardGeometry = {
   zones: { actors: { size: 220 }, inputChannels: { size: 400 } },
 };
 
@@ -70,7 +71,7 @@ describe('zoneSizes / clampZoneSize', () => {
   });
 
   it('clamps configured sizes into the band limits', () => {
-    const config: DiagramLayoutConfig = {
+    const config: BoardGeometry = {
       zones: { actors: { size: 5 }, externalSystems: { size: 9999 } },
     };
     expect(zoneSizes(config).actors).toBe(zoneSizeLimits('actors', config).min);
@@ -91,14 +92,14 @@ describe('zoneSizes / clampZoneSize', () => {
   });
 
   it('band maxima scale with the board size', () => {
-    const grown: DiagramLayoutConfig = { canvas: { width: 2400, height: 1600 } };
+    const grown: BoardGeometry = { canvas: { width: 2400, height: 1600 } };
     expect(zoneSizeLimits('actors', grown)).toEqual({ min: 90, max: 560 });
     expect(zoneSizeLimits('externalSystems', grown)).toEqual({ min: 120, max: 816 });
-    const shrunk: DiagramLayoutConfig = { canvas: { width: 840, height: 520 } };
+    const shrunk: BoardGeometry = { canvas: { width: 840, height: 520 } };
     expect(zoneSizeLimits('management', shrunk)).toEqual({ min: 90, max: 182 });
     expect(zoneSizeLimits('inputChannels', shrunk)).toEqual({ min: 120, max: 286 });
     // A band configured deeper than a later, smaller board allows yields to it.
-    const config: DiagramLayoutConfig = { ...shrunk, zones: { actors: { size: 300 } } };
+    const config: BoardGeometry = { ...shrunk, zones: { actors: { size: 300 } } };
     expect(zoneSizes(config).actors).toBe(182);
   });
 });
@@ -169,7 +170,7 @@ describe('zoneForPoint', () => {
 
 // ── Iteration 3: growable canvas ─────────────────────────────────────────────
 
-const GROWN_CONFIG: DiagramLayoutConfig = { canvas: { width: 2400, height: 1600 } };
+const GROWN_CONFIG: BoardGeometry = { canvas: { width: 2400, height: 1600 } };
 
 describe('canvasRect / clampCanvasSize', () => {
   it('defaults to the fixed board and grows with layoutConfig.canvas', () => {
@@ -199,7 +200,7 @@ describe('canvasRect / clampCanvasSize', () => {
 });
 
 describe('shrunken canvas (flexible board, 2026-08) propagates through the zone math', () => {
-  const SHRUNK: DiagramLayoutConfig = { canvas: { width: 840, height: 520 } };
+  const SHRUNK: BoardGeometry = { canvas: { width: 840, height: 520 } };
 
   it('tiles the smaller board without gaps and keeps the grammar anchored', () => {
     const zones: Layer7Zone[] = [

@@ -98,10 +98,10 @@ export function useAutoLayout({
 
   useEffect(() => {
     if (!diagram || readOnly || busy !== undefined) return;
-    if (diagram.needsLayout !== true) return;
+    if (diagram.geometry?.needsLayout !== true) return;
     // An empty diagram has nothing to lay out. `tidyLayer7` returns [] for it
     // without throwing, so this is politeness rather than safety.
-    if (diagram.placements.length === 0) return;
+    if (diagram.members.length === 0) return;
     if (attemptedRef.current.has(diagram.id)) return;
 
     attemptedRef.current.add(diagram.id);

@@ -44,7 +44,7 @@ describe('opening a project', () => {
       if (opened.model.elements.length !== project.model.elements.length) {
         throw new Error('the folder read back a different landscape')
       }
-      if (nodes.length !== diagram.placements.length || edges.length === 0) {
+      if (nodes.length !== diagram.members.length || edges.length === 0) {
         throw new Error('the derive produced nothing to draw')
       }
     }, { runs: 5, warmup: 1 })

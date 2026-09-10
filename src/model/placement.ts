@@ -1,13 +1,88 @@
 import type {
   DesignDiagram,
-  DiagramLayoutConfig,
-  DiagramPlacement,
+  DiagramMember,
   ElementId,
   ElementKind,
+  DomainGroupRect,
   Layer7Zone,
+  NodeGeometry,
+  PlacedNode,
   Rect,
 } from './types';
 import { zoneRect, zoneSizes } from './zones';
+import type { BoardGeometry } from './zones';
+
+/**
+ * A view's members with where each ended up (ADR-0012 §6).
+ *
+ * The two halves are two files and two questions, and every drawing, routing
+ * and hit-testing caller wants both at once — so this is the one place they
+ * are put together, worked out once per diagram object rather than per read.
+ * A member with no node row answers (0, 0): it is on the view and has not been
+ * laid out, which is what `geometry.needsLayout` is for.
+ */
+export function placedNodes(diagram: Pick<DesignDiagram, 'members' | 'geometry'>): PlacedNode[] {
+  const held = placed.get(diagram);
+  if (held) return held;
+  const geometry = new Map((diagram.geometry?.nodes ?? []).map((node) => [node.id, node]));
+  const rows = (diagram.members ?? []).map((member) => joinOne(member, geometry.get(member.id)));
+  placed.set(diagram, rows);
+  return rows;
+}
+
+/**
+ * One member joined to its node, keeping the object it had.
+ *
+ * Cached against the MEMBER rather than against the view, because that is what
+ * carries identity: the reducer touches the row it names and copies nothing
+ * else, so a member and a node that came through unchanged are the same two
+ * objects on the other side — and the joined row they make has to be the same
+ * object too, or `React.memo` has nothing to compare and every box on the
+ * board repaints for a change that was nowhere near it.
+ */
+function joinOne(member: DiagramMember, node: NodeGeometry | undefined): PlacedNode {
+  let byNode = joined.get(member);
+  if (!byNode) {
+    byNode = new WeakMap();
+    joined.set(member, byNode);
+  }
+  const key = node ?? unplaced;
+  const held = byNode.get(key);
+  if (held) return held;
+  const { id: _at, ...rest } = node ?? { id: member.id, x: 0, y: 0 };
+  const row = { ...member, ...rest };
+  byNode.set(key, row);
+  return row;
+}
+
+/**
+ * Member × node, both weakly held, so that any PAIR that has been joined once
+ * keeps its object — an undo alternating between two node rows for the same
+ * member must not hand back a fresh row every time.
+ */
+const joined = new WeakMap<DiagramMember, WeakMap<object, PlacedNode>>();
+/** The stand-in key for a member nobody has laid out. */
+const unplaced = {};
+
+export function placedNode(
+  diagram: Pick<DesignDiagram, 'members' | 'geometry'>, id: ElementId,
+): PlacedNode | undefined {
+  return placedNodes(diagram).find((node) => node.id === id);
+}
+
+// Safe because a diagram is never mutated: every writer returns a new one.
+const placed = new WeakMap<object, PlacedNode[]>();
+
+/** The member and node rows a placed node is made of, for a caller that writes. */
+export function memberOf(node: PlacedNode): DiagramMember {
+  const { x: _x, y: _y, width: _w, height: _h, ...member } = node;
+  return member;
+}
+
+export function nodeGeometryOf(node: PlacedNode): NodeGeometry {
+  const { zone: _z, group: _g, ...geometry } = node;
+  return geometry;
+}
 
 /**
  * Canonical node sizes per kind, in flow pixels. Cards are fixed-size by
@@ -64,10 +139,10 @@ export function nodeMinSize(kind: ElementKind): { width: number; height: number 
 export function nodeMaxSize(
   kind: ElementKind,
   zone: Layer7Zone | undefined,
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
 ): { width: number; height: number } {
   if (zone === undefined || zone === 'landscape') return NODE_MAX_SIZE;
-  const band = zoneSizes(layoutConfig)[zone];
+  const band = zoneSizes(geometry)[zone];
   const min = nodeMinSize(kind);
   const acrossHeight = zone === 'actors' || zone === 'management';
   return {
@@ -112,13 +187,13 @@ export function descriptionLineClamp(kind: ElementKind, height: number | undefin
  * board never invents a stored size. Returns undefined when nothing moves.
  */
 export function clampPlacementIntoZone(
-  placement: DiagramPlacement,
+  placement: PlacedNode,
   kind: ElementKind,
-  layoutConfig?: DiagramLayoutConfig,
-): DiagramPlacement | undefined {
+  geometry?: BoardGeometry,
+): PlacedNode | undefined {
   if (placement.zone === undefined || placement.zone === 'landscape') return undefined;
-  const band = zoneRect(placement.zone, layoutConfig);
-  const max = nodeMaxSize(kind, placement.zone, layoutConfig);
+  const band = zoneRect(placement.zone, geometry);
+  const max = nodeMaxSize(kind, placement.zone, geometry);
   const width = placement.width === undefined ? undefined : Math.min(placement.width, max.width);
   const height = placement.height === undefined ? undefined : Math.min(placement.height, max.height);
   const size = placementSize(kind, { width, height });
@@ -136,7 +211,7 @@ export function clampPlacementIntoZone(
 
 export function placementSize(
   kind: ElementKind,
-  placement?: Pick<DiagramPlacement, 'width' | 'height'>,
+  placement?: Pick<NodeGeometry, 'width' | 'height'>,
 ): { width: number; height: number } {
   return {
     width: placement?.width ?? NODE_SIZES[kind].width,
@@ -144,7 +219,7 @@ export function placementSize(
   };
 }
 
-export function placementRect(kind: ElementKind, placement: DiagramPlacement): Rect {
+export function placementRect(kind: ElementKind, placement: Omit<NodeGeometry, 'id'>): Rect {
   const size = placementSize(kind, placement);
   return { x: placement.x, y: placement.y, width: size.width, height: size.height };
 }
@@ -228,9 +303,9 @@ export function defaultZonePosition(
   zone: Layer7Zone,
   kind: ElementKind,
   existingInZone: number,
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
 ): { x: number; y: number } {
-  return cascadeSlot(zoneRect(zone, layoutConfig), kind, existingInZone);
+  return cascadeSlot(zoneRect(zone, geometry), kind, existingInZone);
 }
 
 /**
@@ -262,9 +337,9 @@ export function freeZonePosition(
   zone: Layer7Zone,
   kind: ElementKind,
   occupied: readonly Rect[],
-  layoutConfig?: DiagramLayoutConfig,
+  geometry?: BoardGeometry,
 ): { x: number; y: number } {
-  return freeSlotIn(zoneRect(zone, layoutConfig), kind, occupied);
+  return freeSlotIn(zoneRect(zone, geometry), kind, occupied);
 }
 
 /**
@@ -320,9 +395,9 @@ export function groupRectAround(memberRects: readonly Rect[]): Rect | undefined 
  * the group's own id (ADR-0012 §6). Membership is assigned by containment when
  * an element is dragged.
  */
-export function domainGroupRectMap(layoutConfig?: DiagramLayoutConfig): Map<string, Rect> {
+export function domainGroupRectMap(boxes?: readonly DomainGroupRect[]): Map<string, Rect> {
   const result = new Map<string, Rect>();
-  for (const group of layoutConfig?.domainGroups ?? []) {
+  for (const group of boxes ?? []) {
     result.set(group.id, { x: group.x, y: group.y, width: group.width, height: group.height });
   }
   return result;
@@ -350,7 +425,7 @@ export function domainGroupForPoint(
 
 /** Where an element is RIGHT NOW, mid-gesture — not where the model says it is. */
 export interface LivePlacement {
-  elementId: ElementId;
+  id: ElementId;
   x: number;
   y: number;
 }
@@ -381,13 +456,13 @@ export function diagramWithLivePlacements(
   moves: readonly LivePlacement[],
 ): DesignDiagram {
   if (moves.length === 0) return diagram;
-  const byId = new Map(moves.map((move) => [move.elementId, move]));
+  const byId = new Map(moves.map((move) => [move.id, move]));
   let changed = false;
-  const placements = diagram.placements.map((placement) => {
-    const move = byId.get(placement.elementId);
-    if (!move || (placement.x === move.x && placement.y === move.y)) return placement;
+  const nodes = (diagram.geometry?.nodes ?? []).map((node) => {
+    const move = byId.get(node.id);
+    if (!move || (node.x === move.x && node.y === move.y)) return node;
     changed = true;
-    return { ...placement, x: move.x, y: move.y };
+    return { ...node, x: move.x, y: move.y };
   });
-  return changed ? { ...diagram, placements } : diagram;
+  return changed ? { ...diagram, geometry: { ...diagram.geometry, nodes } } : diagram;
 }

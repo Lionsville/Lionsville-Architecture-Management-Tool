@@ -14,6 +14,7 @@
  * the result of {@link linkElementRefs}.
  */
 import { readOnce } from './remember';
+import { placedNodes } from '../model/placement';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, ElementKind } from '../model/types';
 import type { Translate } from '../i18n/strings';
 
@@ -282,7 +283,7 @@ export interface DocumentedGroup {
  * next; a kind with nothing placed is left out rather than shown empty.
  */
 export function documentedElements(model: DesignModel, diagram: DesignDiagram): DocumentedGroup[] {
-  const placed = new Set(diagram.placements.map((p) => p.elementId));
+  const placed = new Set(placedNodes(diagram).map((p) => p.id));
   const byKind = new Map<ElementKind, DesignElement[]>();
   for (const element of model.elements) {
     if (!placed.has(element.id)) continue;

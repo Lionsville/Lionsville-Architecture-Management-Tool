@@ -210,16 +210,36 @@ export interface DesignConnection {
  */
 export type Relation = DesignConnection & { type: RelationType };
 
-export interface DiagramPlacement {
-  elementId: ElementId;
+/**
+ * One row of a view's membership: this element is ON it, and what that means
+ * from here (ADR-0012 §6).
+ *
+ * Present is the whole statement — an element is on a view because this row
+ * says so, not because a coordinate exists for it, which is why a view whose
+ * geometry file is deleted can be laid out again from a complete list.
+ */
+export interface DiagramMember {
+  id: ElementId;
   zone?: Layer7Zone;
   /** Which dashed group it sits in, by {@link DiagramGroup.id}; absent = open landscape. */
   group?: string;
+}
+
+/** Where one node ended up. Numbers, and the id they are about. */
+export interface NodeGeometry {
+  id: ElementId;
   x: number;
   y: number;
   width?: number;
   height?: number;
 }
+
+/**
+ * A member and its geometry, joined — what a canvas draws and a router routes
+ * against, and what every caller that needs both at once asks for
+ * (`model/placement.placedNodes`). Nothing stores one.
+ */
+export type PlacedNode = DiagramMember & Omit<NodeGeometry, 'id'>;
 
 /** A point in flow coordinates. */
 export interface Point {
@@ -231,11 +251,32 @@ export interface Point {
 export type AttachSide = 'top' | 'right' | 'bottom' | 'left';
 
 /**
+ * What a view asks of the router for one relation: which side each end
+ * attaches to, whether the line is left alone, and who drew what is stored
+ * (ADR-0012 §6).
+ *
+ * A CONSTRAINT, not geometry — which is why it lives in the definition and the
+ * waypoints live in {@link Geometry.routes}. Renaming nothing, moving nothing:
+ * a review can skip the geometry file and still read what a person asked for.
+ */
+export interface DiagramLine {
+  relationId: string;
+  sourceSide?: AttachSide;
+  targetSide?: AttachSide;
+  pinned?: boolean;
+  source?: EdgeRouteSource;
+}
+
+/**
  * Per-diagram presentation overrides for one relation: manual routing points
- * (ordered), a custom label anchor and/or the side each end attaches to. In a
- * batch upsert, an entry with no waypoints, no label position, no pin AND no
- * fixed side deletes the stored row — the one definition of "has content" is
- * `hasRouteContent` in `model/routes.ts`.
+ * (ordered), a custom label anchor and/or the side each end attaches to.
+ *
+ * **Nothing stores one.** It is the two halves — a {@link DiagramLine} in the
+ * definition and a {@link RouteGeometry} in the geometry — joined, because
+ * every caller that reads or writes a route wants both at once;
+ * `model/routes.ts` owns the join and the split. In a batch upsert, an entry
+ * with no waypoints, no label position, no pin AND no fixed side deletes the
+ * stored row — the one definition of "has content" is `hasRouteContent`.
  */
 export interface EdgeRoute {
   /**
@@ -331,14 +372,47 @@ export interface DomainGroupRect {
   height: number;
 }
 
-export interface DiagramLayoutConfig {
-  zones?: Partial<Record<ResizableZone, { size: number }>>;
-  domainGroups?: DomainGroupRect[];
+/** The stored half of a route: where the line was drawn to go. */
+export interface RouteGeometry {
+  relationId: string;
+  waypoints: Point[];
+  /** Custom label anchor (flow coords); absent = automatic path midpoint. */
+  labelPosition?: Point;
+}
+
+/**
+ * Where a view ended up (ADR-0012 §6): numbers, and the ids they are about.
+ *
+ * Regenerable, deletable, and — the point of the split — meaningless on its
+ * own. A diff of the definition says what changed on the drawing; a diff of
+ * this says how much moved, which `model/diff.ts` reduces to a count. Nothing
+ * here decides anything: what is on the view is {@link DesignDiagram.members},
+ * and what the router is told to honour is {@link DesignDiagram.lines}.
+ */
+export interface Geometry {
+  /**
+   * A machine wrote this and no person has accepted it yet, so the editor lays
+   * the view out once on first open (intent rule 12).
+   *
+   * Set by whoever WROTE the geometry — the container-diagram seed, an import —
+   * and cleared by the host once the settling pass has landed. Never inferred
+   * from the coordinates: a hand-built diagram and a machine-seeded one are
+   * indistinguishable by shape, and the two obvious heuristics are wrong in the
+   * dangerous direction. "Every node at (0,0)" fires on neither writer, since
+   * both seed a real grid; "no group boxes, so it was never tidied" is also
+   * true of a hand-built landscape whose author never made a domain group, and
+   * would rearrange their curated board the first time they opened it.
+   */
+  needsLayout?: boolean;
   /**
    * Layer 7 canvas size override for larger landscapes (iteration 3). Absent =
    * the default 1680×1040 board; never smaller than the default.
    */
   canvas?: { width: number; height: number };
+  zones?: Partial<Record<ResizableZone, { size: number }>>;
+  nodes: NodeGeometry[];
+  groups?: DomainGroupRect[];
+  routes?: RouteGeometry[];
 }
 
 export interface DesignDiagram {
@@ -376,14 +450,21 @@ export interface DesignDiagram {
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;
   /**
+   * What is ON this view (ADR-0012 §6), and what that means from here: which
+   * band an element sits in, and which dashed group it belongs to.
+   */
+  members: DiagramMember[];
+  /**
    * The dashed groups this view draws, by id (ADR-0012 §6). What they are
    * called and what colour they are; where their boxes sit is geometry, in
-   * {@link DiagramLayoutConfig.domainGroups}.
+   * {@link Geometry.groups}.
    */
   groups?: DiagramGroup[];
-  placements: DiagramPlacement[];
-  /** Per-diagram manual edge routes; absence/empty = default floating routing. */
-  edgeRoutes?: EdgeRoute[];
+  /**
+   * What the router is told to honour, per relation: fixed sides, a pin, and
+   * whose the stored route is. Absent = every line is the router's.
+   */
+  lines?: DiagramLine[];
   /**
    * Ordered aspect columns (layer7); falls back to the default five when
    * absent. An empty array is a decision, not an absence — see
@@ -397,7 +478,6 @@ export interface DesignDiagram {
    * audience must not throw away a mapping somebody spent an afternoon on.
    */
   showAspects?: boolean;
-  layoutConfig?: DiagramLayoutConfig;
   /**
    * Live auto-routing for this diagram: while on, any geometry or topology change
    * re-routes the whole board. Absent = off, which is the default.
@@ -407,22 +487,8 @@ export interface DesignDiagram {
    * silently forget it. Applies to container diagrams as well as layer7.
    */
   autoRoute?: boolean;
-  /**
-   * A machine wrote this diagram's geometry and no person has accepted it yet, so
-   * the editor lays it out once on first open (intent rule 12).
-   *
-   * Set by whoever WROTE the geometry — the container-diagram seed, an import —
-   * and cleared by the host once the settling pass has landed. Never inferred
-   * from the coordinates: a hand-built diagram and a machine-seeded one are
-   * indistinguishable by shape, and the two obvious heuristics are wrong in the
-   * dangerous direction. "Every placement at (0,0)" fires on neither writer,
-   * since both seed a real grid; "no layoutConfig, so it was never tidied" is
-   * also true of a hand-built landscape whose author never made a domain group,
-   * and would rearrange their curated board the first time they opened it.
-   *
-   * Plain data, no HAL types — the package stays host-agnostic by construction.
-   */
-  needsLayout?: boolean;
+  /** Where it all ended up. A separate file, and a separate question (§6). */
+  geometry: Geometry;
 }
 
 /**

@@ -6,6 +6,7 @@
  * tool, and the file that is none of those.
  */
 import { describe, expect, it } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { bytesFromText, stableJson, textFromBytes } from './fileText'
@@ -26,7 +27,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
         lifecycle: 'live', isManaged: true, aspects: {},
       }],
       relations: [],
-      diagrams: [{ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [{ elementId: 'crews', x: 4, y: 8 }] }],
+      diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [{ id: 'crews', x: 4, y: 8 }] })],
     },
     ...over,
   }

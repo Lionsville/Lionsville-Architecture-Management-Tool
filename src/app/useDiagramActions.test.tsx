@@ -9,9 +9,10 @@
  * has one are all silent, and all read as "it did nothing".
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
-import type { DesignElement, DiagramPlacement } from '../model'
+import type { DesignElement, PlacedNode } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
 import { useDiagramActions } from './useDiagramActions'
@@ -23,7 +24,7 @@ function element(id: string, name: string): DesignElement {
   return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {} }
 }
 
-const at = (elementId: string): DiagramPlacement => ({ elementId, x: 0, y: 0 })
+const at = (id: string): PlacedNode => ({ id, x: 0, y: 0 })
 
 
 beforeEach(() => vi.useFakeTimers())
@@ -35,8 +36,8 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   elements: [element('billing', 'Billing')],
   relations: [],
   diagrams: [
-    { id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] },
-    { id: 'd2', kind: 'layer7', name: 'Second', placements: [] },
+    laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] }),
+    laidOut({ id: 'd2', kind: 'layer7', name: 'Second', placements: [] }),
   ],
   ...over,
 })
@@ -152,7 +153,7 @@ describe('deleting', () => {
 
   it('refuses to lose the last landscape — nothing would be left to work on', () => {
     const view = mount(project(model({
-      diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
     })))
     act(() => view.actions().requestDeleteDiagram('d1'))
     expect(view.actions().isLastLandscape).toBe(true)

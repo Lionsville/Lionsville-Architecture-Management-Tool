@@ -13,6 +13,7 @@
  * suite of its own.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import type { UploadedLogo } from '../model'
@@ -32,7 +33,7 @@ const model = (): HostModel => ({
   customerName: 'Acme',
   elements: [],
   relations: [],
-  diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
+  diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
 })
 
 const snapshot = (): ProjectSnapshot => ({
@@ -149,7 +150,7 @@ describe('opening a file', () => {
       formatVersion: 1,
       elements: [{ id: 'e1', name: 'Thing', kind: 'application' }],
       connections: [],
-      diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'e1' }] }],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'e1', x: 0, y: 0 }] })],
     })
     const { files, session } = mount({ readBytes: () => Promise.resolve(bytes(document)) })
     act(() => files().openFile(file('x.json')))

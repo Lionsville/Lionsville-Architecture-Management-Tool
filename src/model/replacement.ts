@@ -25,11 +25,12 @@
  * come in as arguments, because this file is the model and the model knows
  * no language.
  */
+import { placeOn } from './commands'
 import type { Command } from './commands'
-import { placementRect } from './placement'
+import { placedNode, placementRect } from './placement'
 import { addDays } from './transition'
 import type { Transition, TransitionRole } from './transition'
-import type { DesignElement, DesignModel, DiagramPlacement, ElementId, Relation } from './types'
+import type { DesignElement, DesignModel, ElementId, PlacedNode, Relation } from './types'
 
 /** How far to the right of the original the new one is drawn. */
 const GAP = 40
@@ -107,17 +108,17 @@ export function replacementCommands(
     // zone and group, so it appears where a reader will look for it.
     if (seed) {
       for (const diagram of model.diagrams) {
-        const held = diagram.placements.find((p) => p.elementId === seed.id)
+        const held = placedNode(diagram, seed.id)
         if (!held) continue
         const rect = placementRect(seed.kind, held)
-        const placement: DiagramPlacement = {
-          elementId: toId,
+        const placement: PlacedNode = {
+          id: toId,
           x: rect.x + rect.width + GAP,
           y: rect.y,
           ...(held.zone !== undefined ? { zone: held.zone } : {}),
           ...(held.group !== undefined ? { group: held.group } : {}),
         }
-        commands.push({ type: 'placement.set', diagramId: diagram.id, placements: [placement] })
+        commands.push(placeOn(diagram.id, [placement]))
       }
     }
   }

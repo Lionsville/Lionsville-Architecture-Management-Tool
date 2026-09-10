@@ -9,6 +9,8 @@
  * the model compared at every step.
  */
 import { describe, expect, it } from 'vitest'
+import { placeOn } from '../model/commands';
+import { placedOn } from '../model/normalised';
 import { apply, applyAll } from './reducer'
 import type { ApplyResult } from './reducer'
 import { NOTHING, transaction } from './commands'
@@ -111,7 +113,7 @@ describe('apply — elements', () => {
 
     expect(gone.order.relations).toEqual([])
     expect(gone.order.diagrams).toEqual(['landscape'])
-    expect(gone.diagrams.landscape.order.placements).toEqual(['b'])
+    expect(gone.diagrams.landscape.order.members).toEqual(['b'])
     expect(gone.diagrams.landscape.edgeRoutes).toBeUndefined()
   })
 
@@ -173,13 +175,11 @@ describe('apply — relations', () => {
 describe('apply — geometry', () => {
   it('moves what is placed and adds what is not, reversibly', () => {
     const m = sample()
-    const moved = reversible(m, {
-      type: 'placement.set',
-      diagramId: 'landscape',
-      placements: [placement('a', { x: 40 }), placement('c', { x: 10 })],
-    })
-    expect(moved.diagrams.landscape.placements.a.x).toBe(40)
-    expect(moved.diagrams.landscape.order.placements).toEqual(['a', 'b', 'c'])
+    const moved = reversible(m, placeOn('landscape', [
+      placement('a', { x: 40 }), placement('c', { x: 10 }),
+    ]))
+    expect(placedOn(moved.diagrams.landscape, 'a')!.x).toBe(40)
+    expect(moved.diagrams.landscape.order.members).toEqual(['a', 'b', 'c'])
   })
 
   it('removes placements and puts each back on its own index', () => {
@@ -190,10 +190,10 @@ describe('apply — geometry', () => {
       })],
     })
     const removed = ok(apply(m, {
-      type: 'placement.remove', diagramId: 'landscape', elementIds: ['a', 'c'],
+      type: 'member.remove', diagramId: 'landscape', elementIds: ['a', 'c'],
     }))
-    expect(removed.model.diagrams.landscape.order.placements).toEqual(['b'])
-    expect(ok(apply(removed.model, removed.inverse)).model.diagrams.landscape.order.placements)
+    expect(removed.model.diagrams.landscape.order.members).toEqual(['b'])
+    expect(ok(apply(removed.model, removed.inverse)).model.diagrams.landscape.order.members)
       .toEqual(['a', 'b', 'c'])
   })
 
@@ -216,25 +216,23 @@ describe('apply — geometry', () => {
       .toEqual(['c#1', 'c#2'])
   })
 
-  it('sets and clears a layout config, reversibly', () => {
+  it('sets and clears the board, reversibly', () => {
     const m = sample()
     const laid = reversible(m, {
-      type: 'layout.set', diagramId: 'landscape', layoutConfig: { zones: { actors: { size: 90 } } },
+      type: 'board.set', diagramId: 'landscape', patch: { zones: { actors: { size: 90 } } },
     })
-    expect(laid.diagrams.landscape.layoutConfig?.zones?.actors?.size).toBe(90)
-    reversible(laid, { type: 'layout.set', diagramId: 'landscape' })
+    expect(laid.diagrams.landscape?.zones?.actors?.size).toBe(90)
+    reversible(laid, { type: 'board.set', diagramId: 'landscape', patch: { zones: undefined } })
   })
 
   it('refuses geometry for a diagram that is not there', () => {
-    expect(apply(sample(), { type: 'placement.set', diagramId: 'nope', placements: [] }))
+    expect(apply(sample(), placeOn('nope', [])))
       .toEqual({ ok: false, reason: 'command.gone' })
   })
 
   it('ignores a placement for an element the model does not hold', () => {
-    const result = ok(apply(sample(), {
-      type: 'placement.set', diagramId: 'landscape', placements: [placement('nope')],
-    }))
-    expect(result.model.diagrams.landscape.placements.nope).toBeUndefined()
+    const result = ok(apply(sample(), placeOn('landscape', [placement('nope')])))
+    expect(placedOn(result.model.diagrams.landscape, 'nope')).toBeUndefined()
     expect(result.inverse).toEqual(NOTHING)
   })
 })
@@ -244,6 +242,98 @@ describe('apply — geometry', () => {
  * where its box is are two commands. These pin the half that is the definition:
  * renaming touches one row and nothing else moves.
  */
+/**
+ * What is on a view, and where it ended up: two questions, two commands
+ * (ADR-0012 §6). What these pin is the seam — a drag writes geometry and
+ * nothing else, and a card told to join a group writes membership and nothing
+ * else — because that seam is what a review of the geometry file can skip.
+ */
+describe('apply — membership and geometry', () => {
+  it('a drag writes the node and leaves the member alone', () => {
+    const m = sample()
+    const before = m.diagrams.landscape.members.a
+    const moved = reversible(m, {
+      type: 'node.set', diagramId: 'landscape', nodes: [{ id: 'a', x: 40, y: 50 }],
+    })
+    expect(moved.diagrams.landscape.nodes.a).toEqual({ id: 'a', x: 40, y: 50 })
+    expect(moved.diagrams.landscape.members.a).toBe(before)
+  })
+
+  it('a card told to join a group writes the member and leaves the node alone', () => {
+    const m = sample({
+      elements: [element('a')],
+      diagrams: [diagram('landscape', {
+        groups: [{ id: 'core', name: 'Core' }],
+        placements: [placement('a', { x: 10, y: 20 })],
+      })],
+    })
+    const before = m.diagrams.landscape.nodes.a
+    const filed = reversible(m, {
+      type: 'member.set', diagramId: 'landscape', members: [{ id: 'a', group: 'core' }],
+    })
+    expect(filed.diagrams.landscape.members.a).toEqual({ id: 'a', group: 'core' })
+    expect(filed.diagrams.landscape.nodes.a).toBe(before)
+  })
+
+  it('saying the same thing is not a change', () => {
+    // A drag re-states the band a card is already in, and a routing pass
+    // re-emits a row it did not touch. A fresh object would look like a change
+    // to everything memoised below — and to `diff.ts`.
+    const m = sample()
+    expect(apply(m, {
+      type: 'member.set', diagramId: 'landscape', members: [{ ...m.diagrams.landscape.members.a }],
+    })).toEqual({ ok: true, model: m, inverse: NOTHING })
+    expect(apply(m, {
+      type: 'node.set', diagramId: 'landscape', nodes: [{ ...m.diagrams.landscape.nodes.a }],
+    })).toEqual({ ok: true, model: m, inverse: NOTHING })
+  })
+
+  it('ignores a node for something that is not on the view', () => {
+    // An element is on a view because a MEMBER row says so; a coordinate for
+    // something that is not on it has nothing to be about.
+    const m = sample()
+    expect(apply(m, { type: 'node.set', diagramId: 'landscape', nodes: [{ id: 'c', x: 1, y: 2 }] }))
+      .toEqual({ ok: true, model: m, inverse: NOTHING })
+  })
+
+  it('taking a member off takes its node with it, and undo brings both back', () => {
+    const m = sample()
+    const off = ok(apply(m, { type: 'member.remove', diagramId: 'landscape', elementIds: ['a'] }))
+    expect(off.model.diagrams.landscape.members.a).toBeUndefined()
+    expect(off.model.diagrams.landscape.nodes.a).toBeUndefined()
+    expect(ok(apply(off.model, off.inverse)).model).toStrictEqual(m)
+  })
+
+  it('ignores a box for a group the view does not hold, and takes one that it does', () => {
+    const m = sample({
+      elements: [element('a')],
+      diagrams: [diagram('landscape', {
+        groups: [{ id: 'core', name: 'Core' }],
+        placements: [placement('a')],
+      })],
+    })
+    expect(apply(m, {
+      type: 'box.set', diagramId: 'landscape', boxes: [{ id: 'nobody', x: 0, y: 0, width: 1, height: 1 }],
+    })).toEqual({ ok: true, model: m, inverse: NOTHING })
+    const boxed = reversible(m, {
+      type: 'box.set', diagramId: 'landscape', boxes: [{ id: 'core', x: 1, y: 2, width: 3, height: 4 }],
+    })
+    expect(boxed.diagrams.landscape.boxes.core).toEqual({ id: 'core', x: 1, y: 2, width: 3, height: 4 })
+  })
+
+  it('patches the board, and clearing a key is a key with nothing after it', () => {
+    const m = sample()
+    const sized = reversible(m, {
+      type: 'board.set', diagramId: 'landscape', patch: { canvas: { width: 2400, height: 1600 } },
+    })
+    expect(sized.diagrams.landscape.canvas).toEqual({ width: 2400, height: 1600 })
+    const cleared = ok(apply(sized, {
+      type: 'board.set', diagramId: 'landscape', patch: { canvas: undefined },
+    }))
+    expect('canvas' in cleared.model.diagrams.landscape).toBe(false)
+  })
+})
+
 describe('apply — dashed groups', () => {
   const grouped = () => sample({
     elements: [element('a'), element('b')],
@@ -255,13 +345,13 @@ describe('apply — dashed groups', () => {
 
   it('renames one group and leaves every member where it was', () => {
     const m = grouped()
-    const before = m.diagrams.landscape.placements
+    const before = m.diagrams.landscape.members
     const renamed = reversible(m, {
       type: 'group.set', diagramId: 'landscape', groups: [{ id: 'core', name: 'Kern' }],
     })
     expect(renamed.diagrams.landscape.groups?.core).toEqual({ id: 'core', name: 'Kern' })
     // The one property the id buys: the members point at it, so none of them moved.
-    expect(renamed.diagrams.landscape.placements).toBe(before)
+    expect(renamed.diagrams.landscape.members).toBe(before)
     expect(renamed.diagrams.landscape.order.groups).toEqual(['core', 'edge'])
   })
 
@@ -391,7 +481,7 @@ describe('apply — transactions', () => {
     const step = ok(apply(m, transaction([
       { type: 'element.create', element: element('d') },
       { type: 'relation.create', relation: connection('c#3', 'a', 'd') },
-      { type: 'placement.set', diagramId: 'landscape', placements: [placement('d')] },
+      placeOn('landscape', [placement('d')]),
     ])))
     expect(step.model.order.elements).toEqual(['a', 'b', 'c', 'd'])
     expect(ok(apply(step.model, step.inverse)).model).toStrictEqual(m)
@@ -429,9 +519,7 @@ describe('apply — transactions', () => {
 describe('apply — what it does not touch', () => {
   it('leaves every other diagram, element and order array alone', () => {
     const m = sample()
-    const next = ok(apply(m, {
-      type: 'placement.set', diagramId: 'landscape', placements: [placement('a', { x: 99 })],
-    })).model
+    const next = ok(apply(m, placeOn('landscape', [placement('a', { x: 99 })]))).model
 
     expect(next).not.toBe(m)
     expect(next.diagrams['inside-a']).toBe(m.diagrams['inside-a'])
@@ -454,7 +542,7 @@ describe('a session of twenty commands', () => {
   const script: Command[] = [
     { type: 'element.create', element: element('d', { name: 'Dispatch' }) },
     { type: 'element.create', element: element('e', { name: 'Billing' }) },
-    { type: 'placement.set', diagramId: 'landscape', placements: [placement('d'), placement('e')] },
+    placeOn('landscape', [placement('d'), placement('e')]),
     { type: 'relation.create', relation: connection('c#3', 'd', 'e') },
     { type: 'route.set', diagramId: 'landscape', routes: [route('c#3')] },
     { type: 'element.update', id: 'd', patch: { vendor: 'Acme' } },
@@ -463,12 +551,12 @@ describe('a session of twenty commands', () => {
     { type: 'diagram.rename', id: 'landscape', name: 'The landscape' },
     { type: 'diagram.settings', id: 'landscape', settings: { name: 'The landscape', author: 'W' } },
     { type: 'diagram.update', id: 'landscape', patch: { autoRoute: true } },
-    { type: 'layout.set', diagramId: 'landscape', layoutConfig: { zones: { actors: { size: 90 } } } },
+    { type: 'board.set', diagramId: 'landscape', patch: { zones: { actors: { size: 90 } } } },
     { type: 'decision.add', decision: adr('d1', 1) },
     { type: 'decision.update', id: 'd1', patch: { status: 'reviewing' } },
     { type: 'project.settings', patch: { name: 'Landscape of Acme' } },
     { type: 'diagram.create', diagram: toDiagram(diagram('second', { name: 'Second' })), at: 1 },
-    { type: 'placement.remove', diagramId: 'landscape', elementIds: ['b'] },
+    { type: 'member.remove', diagramId: 'landscape', elementIds: ['b'] },
     { type: 'route.clear', diagramId: 'landscape', relationIds: ['c#1'] },
     { type: 'element.delete', id: 'a' },
     { type: 'decision.remove', id: 'd1' },
@@ -520,8 +608,8 @@ describe('over a thousand elements', () => {
     ['element.delete', { type: 'element.delete', id: 'e500' }],
     ['relation.create', { type: 'relation.create', relation: connection('c#new', 'e1', 'e9') }],
     ['relation.delete', { type: 'relation.delete', id: 'c#7' }],
-    ['placement.set', { type: 'placement.set', diagramId: 'two', placements: [placement('e3', { x: 1 })] }],
-    ['placement.remove', { type: 'placement.remove', diagramId: 'two', elementIds: ['e3', 'e4'] }],
+    ['member.set', placeOn('two', [placement('e3', { x: 1 })])],
+    ['placement.remove', { type: 'member.remove', diagramId: 'two', elementIds: ['e3', 'e4'] }],
     ['route.set', { type: 'route.set', diagramId: 'two', routes: [route('c#14', { pinned: true })] }],
     ['route.clear', { type: 'route.clear', diagramId: 'two', relationIds: ['c#14'] }],
     ['diagram.rename', { type: 'diagram.rename', id: 'two', name: 'Two, renamed' }],
@@ -531,9 +619,7 @@ describe('over a thousand elements', () => {
   })
 
   it('leaves the diagrams it did not name alone', () => {
-    const next = ok(apply(m, {
-      type: 'placement.set', diagramId: 'two', placements: [placement('e3', { x: 1 })],
-    })).model
+    const next = ok(apply(m, placeOn('two', [placement('e3', { x: 1 })]))).model
     expect(next.diagrams.one).toBe(m.diagrams.one)
     expect(next.diagrams.three).toBe(m.diagrams.three)
   })

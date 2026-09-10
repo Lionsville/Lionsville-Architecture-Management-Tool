@@ -9,6 +9,8 @@
  * it exactly as it stays off the undo stack.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { placeOn } from '../model/commands';
+import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import { transaction } from '../model'
@@ -38,7 +40,7 @@ vi.mock('../editor', async (importOriginal) => {
                 lifecycle: 'live', isManaged: true, aspects: {},
               },
             },
-            { type: 'placement.set', diagramId: 'd1', placements: [{ elementId: 'warehouse', x: 0, y: 0 }] },
+            placeOn('d1', [{ id: 'warehouse', x: 0, y: 0}]),
           ]))}
         >draw</button>
         <button data-testid="settled" onClick={() => props.layout?.onSettled?.('d1')}>settled</button>
@@ -56,7 +58,7 @@ const project = (): ProjectSnapshot => ({
     customerName: 'Acme',
     elements: [],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [], needsLayout: true }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [], needsLayout: true })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

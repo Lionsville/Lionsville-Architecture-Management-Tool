@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { memberOf, nodeGeometryOf } from '../model/placement';
+import type { EdgeRoute } from '../model/types';
+import { laidOut } from '../model/testFixtures';
 import type {
   DesignConnection,
   Relation,
@@ -8,7 +11,7 @@ import type {
   ElementKind,
   Rect,
 } from '../model/types';
-import { placementSize } from '../model/placement';
+import { placedNodes, placementSize } from '../model/placement';
 import { routeDiagramEdges } from './routeOnly';
 import type { TidyResult } from './tidy';
 import { tidyLayer7 } from './tidy';
@@ -29,7 +32,7 @@ function elt(id: string, kind: ElementKind): DesignElement {
 }
 
 const rectFor = (model: DesignModel, diagram: DesignDiagram, id: string): Rect => {
-  const p = diagram.placements.find((pp) => pp.elementId === id)!;
+  const p = placedNodes(diagram).find((pp) => pp.id === id)!;
   const el = model.elements.find((e) => e.id === id)!;
   const size = placementSize(el.kind, p);
   return { x: p.x, y: p.y, width: size.width, height: size.height };
@@ -54,21 +57,21 @@ function twoNodeModel(options: {
   groups?: { id: string; x: number; y: number; width: number; height: number }[];
   extraNodes?: { id: string; x: number; y: number }[];
   extraConnections?: Relation[];
-  edgeRoutes?: DesignDiagram['edgeRoutes'];
+  edgeRoutes?: EdgeRoute[];
 }): { model: DesignModel; diagram: DesignDiagram } {
   const extras = options.extraNodes ?? [];
-  const diagram: DesignDiagram = {
+  const diagram: DesignDiagram = laidOut({
     id: 'd1',
     kind: 'layer7',
     name: 'L7',
     placements: [
-      { elementId: 'a', zone: 'landscape', x: 100, y: 400 },
-      { elementId: 'b', zone: 'landscape', x: 1200, y: 400 },
-      ...extras.map((n) => ({ elementId: n.id, zone: 'landscape' as const, x: n.x, y: n.y })),
+      { id: 'a', zone: 'landscape', x: 100, y: 400 },
+      { id: 'b', zone: 'landscape', x: 1200, y: 400 },
+      ...extras.map((n) => ({ id: n.id, zone: 'landscape' as const, x: n.x, y: n.y })),
     ],
-    edgeRoutes: options.edgeRoutes,
+    edgeRoutes: (options.edgeRoutes ?? []),
     layoutConfig: options.groups ? { domainGroups: options.groups } : undefined,
-  };
+  });
   const model: DesignModel = {
     name: 'ACME',
     customerName: 'ACME',
@@ -83,7 +86,7 @@ function twoNodeModel(options: {
 }
 
 const routeOf = (result: TidyResult, relationId: string) =>
-  result.edgeRoutes!.find((r) => r.relationId === relationId);
+  (result.edgeRoutes ?? [])!.find((r) => r.relationId === relationId);
 
 describe('routeDiagramEdges — route-only pass', () => {
   it('leaves a clear edge straight and commits no placements or layout config', async () => {
@@ -231,8 +234,8 @@ describe('routeDiagramEdges — route-only pass', () => {
     // edge would be drawn straight through it.
     const group = { id: 'Ops', x: 600, y: 350, width: 300, height: 260 };
     const { model, diagram } = twoNodeModel({ groups: [group] });
-    diagram.placements = diagram.placements.map((p) =>
-      p.elementId === 'a' ? { ...p, domainGroup: 'Ops' } : p,
+    diagram.geometry.nodes = placedNodes(diagram).map((p) =>
+      p.id === 'a' ? { ...p, domainGroup: 'Ops' } : p,
     );
 
     const route = routeOf(await routeDiagramEdges(model, diagram), 'a-b')!;
@@ -254,7 +257,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     const reversed = twoNodeModel({ groups: [narrow, wide], extraNodes: blocker });
 
     const first = await routeDiagramEdges(forward.model, forward.diagram);
-    expect(first.edgeRoutes).toEqual(
+    expect((first.edgeRoutes ?? [])).toEqual(
       (await routeDiagramEdges(reversed.model, reversed.diagram)).edgeRoutes,
     );
 
@@ -307,18 +310,18 @@ describe('routeDiagramEdges — route-only pass', () => {
   it('routes a container diagram: the application boundary is not an obstacle for its own components', async () => {
     // The boundary CONTAINS the component endpoint, so it must not be detoured
     // around; the loose context node between them must be.
-    const diagram: DesignDiagram = {
+    const diagram: DesignDiagram = laidOut({
       id: 'c1',
       kind: 'container',
       name: 'App',
       applicationElementId: 'app',
       placements: [
-        { elementId: 'app', x: 500, y: 300, width: 400, height: 300 },
-        { elementId: 'svc', x: 600, y: 400 },
-        { elementId: 'ext', x: 1200, y: 420 },
-        { elementId: 'blocker', x: 1000, y: 410 },
+        { id: 'app', x: 500, y: 300, width: 400, height: 300 },
+        { id: 'svc', x: 600, y: 400 },
+        { id: 'ext', x: 1200, y: 420 },
+        { id: 'blocker', x: 1000, y: 410 },
       ],
-    };
+    });
     const model: DesignModel = {
       name: 'ACME',
       customerName: 'ACME',
@@ -352,20 +355,20 @@ describe('routeDiagramEdges — route-only pass', () => {
     // outside the boundary, so their edge is an inter-group edge that must go
     // AROUND the whole box; `c1`/`c2` sit inside it, so their edge is an
     // intra-group edge that must dodge their sibling `mid` and nothing else.
-    const diagram: DesignDiagram = {
+    const diagram: DesignDiagram = laidOut({
       id: 'c1',
       kind: 'container',
       name: 'App',
       applicationElementId: 'app',
       placements: [
-        { elementId: 'app', x: 400, y: 200, width: 700, height: 500 },
-        { elementId: 'c1', x: 450, y: 250 },
-        { elementId: 'mid', x: 650, y: 400 },
-        { elementId: 'c2', x: 850, y: 550 },
-        { elementId: 'west', x: 100, y: 420 },
-        { elementId: 'east', x: 1300, y: 420 },
+        { id: 'app', x: 400, y: 200, width: 700, height: 500 },
+        { id: 'c1', x: 450, y: 250 },
+        { id: 'mid', x: 650, y: 400 },
+        { id: 'c2', x: 850, y: 550 },
+        { id: 'west', x: 100, y: 420 },
+        { id: 'east', x: 1300, y: 420 },
       ],
-    };
+    });
     const model: DesignModel = {
       name: 'ACME',
       customerName: 'ACME',
@@ -447,20 +450,20 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
       { type: 'flow', id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'storeMgr', zone: 'actors', x: 0, y: 0 },
-          { elementId: 'shopper', zone: 'actors', x: 0, y: 0 },
-          { elementId: 'csa', zone: 'actors', x: 0, y: 0 },
-          { elementId: 'marketplace', zone: 'inputChannels', x: 0, y: 0 },
-          { elementId: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
+          { id: 'storeMgr', zone: 'actors', x: 0, y: 0 },
+          { id: 'shopper', zone: 'actors', x: 0, y: 0 },
+          { id: 'csa', zone: 'actors', x: 0, y: 0 },
+          { id: 'marketplace', zone: 'inputChannels', x: 0, y: 0 },
+          { id: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { id: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { id: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { id: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { id: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
         ],
         layoutConfig: {
           domainGroups: [
@@ -468,7 +471,7 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
             { id: 'Commerce Operations', x: 1061, y: 229, width: 267, height: 474 },
           ],
         },
-      },
+      }),
     ],
   };
 
@@ -477,7 +480,7 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
     const tidied = await tidyLayer7(model, model.diagrams[0]);
     const groups = tidied.domainGroups ?? [];
     const rect = (id: string): Rect => {
-      const p = tidied.placements.find((pp) => pp.elementId === id)!;
+      const p = tidied.placements.find((pp) => pp.id === id)!;
       const el = model.elements.find((e) => e.id === id)!;
       const size = placementSize(el.kind, p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
@@ -487,12 +490,18 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
     // Drop the shopper actor squarely on the midpoint of the webshop→order line.
     const midX = (webshop.x + webshop.width + order.x) / 2;
     const midY = (webshop.y + webshop.height / 2 + order.y + order.height / 2) / 2;
+    const placed = tidied.placements.map((p) =>
+      p.id === 'shopper' ? { ...p, x: midX - 75, y: midY - 24 } : p,
+    );
     return {
       ...model.diagrams[0],
-      placements: tidied.placements.map((p) =>
-        p.elementId === 'shopper' ? { ...p, x: midX - 75, y: midY - 24 } : p,
-      ),
-      layoutConfig: { ...model.diagrams[0].layoutConfig, domainGroups: groups, canvas: tidied.canvas },
+      members: placed.map(memberOf),
+      geometry: {
+        ...model.diagrams[0].geometry,
+        nodes: placed.map(nodeGeometryOf),
+        groups,
+        canvas: tidied.canvas,
+      },
     };
   }
 
@@ -513,7 +522,7 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
 
     // The originally-reported case still holds: marketplace→order clears the
     // Customer Experience box it would otherwise cut through.
-    const cx = diagram.layoutConfig!.domainGroups!.find((g) => g.id === 'Customer Experience')!;
+    const cx = diagram.geometry.groups!.find((g) => g.id === 'Customer Experience')!;
     const mpOrder = routeOf(result, 'marketplace-order')!;
     const mpDrawn = routedPath(
       rectFor(model, diagram, 'marketplace'),

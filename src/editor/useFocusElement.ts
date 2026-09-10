@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { placedNode } from '../model/placement';
 import { useReactFlow } from '@xyflow/react';
 import type { DesignModel } from '../model/types';
 import type { EditorRequests } from './props';
@@ -31,10 +32,10 @@ export function useFocusElement(args: {
   useEffect(() => {
     if (!focusElement || handledNonceRef.current === focusElement.nonce) return;
 
-    const isPlacedOn = (diagramId: string) =>
-      model.diagrams
-        .find((d) => d.id === diagramId)
-        ?.placements.some((p) => p.elementId === focusElement.id) ?? false;
+    const isPlacedOn = (diagramId: string) => {
+      const diagram = model.diagrams.find((d) => d.id === diagramId);
+      return diagram !== undefined && placedNode(diagram, focusElement.id) !== undefined;
+    };
 
     if (isPlacedOn(activeDiagramId)) {
       handledNonceRef.current = focusElement.nonce;
@@ -53,7 +54,7 @@ export function useFocusElement(args: {
     }
 
     const target = model.diagrams.find((d) =>
-      d.placements.some((p) => p.elementId === focusElement.id),
+      placedNode(d, focusElement.id) !== undefined,
     );
     if (!target) {
       handledNonceRef.current = focusElement.nonce;

@@ -33,6 +33,7 @@
  * result.
  */
 import type { Adr } from '../decisions/adr'
+import { placedNodes } from '../model/placement';
 import type { DesignDiagram, DesignElement, ElementId } from '../model/types'
 import { fold } from '../model'
 
@@ -162,9 +163,9 @@ function build(model: IndexableModel): SearchIndex {
   const first = new Map<ElementId, DesignDiagram>()
   for (const diagram of model.diagrams) {
     const on = new Set<ElementId>()
-    for (const placement of diagram.placements) {
-      on.add(placement.elementId)
-      if (!first.has(placement.elementId)) first.set(placement.elementId, diagram)
+    for (const placement of placedNodes(diagram)) {
+      on.add(placement.id)
+      if (!first.has(placement.id)) first.set(placement.id, diagram)
     }
     carries.set(diagram.id, on)
   }

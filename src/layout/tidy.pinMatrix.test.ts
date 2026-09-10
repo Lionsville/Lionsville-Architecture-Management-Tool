@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { placedNodes } from '../model/placement';
+import { laidOut } from '../model/testFixtures';
 import { DEFAULT_TIDY_OPTIONS, tidyContainer, tidyLayer7, type TidyOptions } from './tidy';
-import type { DesignModel, DiagramPlacement } from '../model/types';
+import type { DesignModel, PlacedNode } from '../model/types';
 
 /**
  * The four cells of box-position × member-layout (feedback item 2).
@@ -27,16 +29,16 @@ function landscape(): DesignModel {
       { type: 'flow', id: 'a1-a2', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
     ],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 240, y: 300 },
-          { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 240, y: 460 },
-          { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 800, y: 300 },
-          { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 800, y: 460 },
-          { elementId: 'loose', zone: 'landscape', x: 1300, y: 700 },
+          { id: 'a1', zone: 'landscape', group: 'Alpha', x: 240, y: 300 },
+          { id: 'a2', zone: 'landscape', group: 'Alpha', x: 240, y: 460 },
+          { id: 'b1', zone: 'landscape', group: 'Beta', x: 800, y: 300 },
+          { id: 'b2', zone: 'landscape', group: 'Beta', x: 800, y: 460 },
+          { id: 'loose', zone: 'landscape', x: 1300, y: 700 },
         ],
         layoutConfig: {
           domainGroups: [
@@ -44,29 +46,29 @@ function landscape(): DesignModel {
             { id: 'Beta', x: 760, y: 250, width: 300, height: 400 },
           ],
         },
-      },
+      }),
     ],
   };
 }
 
 const options = (over: Partial<TidyOptions>): TidyOptions => ({ ...DEFAULT_TIDY_OPTIONS, ...over });
 
-const byId = (placements: DiagramPlacement[]) =>
-  new Map(placements.map((p) => [p.elementId, p]));
+const byId = (placements: PlacedNode[]) =>
+  new Map(placements.map((p) => [p.id, p]));
 
 /** Member positions relative to their own group's top-left — the "arrangement". */
-function interiorOf(result: { placements: DiagramPlacement[]; domainGroups?: { id: string; x: number; y: number }[] }, group: string) {
+function interiorOf(result: { placements: PlacedNode[]; domainGroups?: { id: string; x: number; y: number }[] }, group: string) {
   const box = result.domainGroups?.find((g) => g.id === group);
   const members = result.placements.filter((p) => p.group === group);
   return members
-    .map((m) => ({ id: m.elementId, dx: m.x - (box?.x ?? 0), dy: m.y - (box?.y ?? 0) }))
+    .map((m) => ({ id: m.id, dx: m.x - (box?.x ?? 0), dy: m.y - (box?.y ?? 0) }))
     .sort((a, b) => (a.id < b.id ? -1 : 1));
 }
 
 describe('Tidy — box position × member layout', () => {
   it('(free, free): ELK places everything', async () => {
     const model = landscape();
-    const before = byId(model.diagrams[0].placements);
+    const before = byId(placedNodes(model.diagrams[0]));
     const result = await tidyLayer7(model, model.diagrams[0], DEFAULT_TIDY_OPTIONS);
     const after = byId(result.placements);
     // Something moved, and the group boxes were rebuilt from member bounds.
@@ -125,7 +127,7 @@ describe('Tidy — box position × member layout', () => {
 
   it('(pinned box, pinned members): nothing in the landscape moves at all', async () => {
     const model = landscape();
-    const before = byId(model.diagrams[0].placements);
+    const before = byId(placedNodes(model.diagrams[0]));
     const result = await tidyLayer7(
       model,
       model.diagrams[0],
@@ -151,7 +153,7 @@ describe('Tidy — box position × member layout', () => {
     // once a Tidy or a drag wrote one. That is a normal state, not an edge case,
     // and a zero-sized leaf would collapse the group under ELK.
     const model = landscape();
-    model.diagrams[0].layoutConfig = { domainGroups: [] };
+    model.diagrams[0].geometry = { ...model.diagrams[0].geometry, groups: [] };
     const result = await tidyLayer7(model, model.diagrams[0], options({ pinGroupContents: true }));
 
     const alpha = result.domainGroups?.find((g) => g.id === 'Alpha');
@@ -184,18 +186,18 @@ function container(): DesignModel {
     ],
     relations: [{ type: 'flow', id: 'c1-ext', sourceId: 'c1', targetId: 'ext', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd2',
         kind: 'container',
         name: 'Webshop',
         applicationElementId: 'app',
         placements: [
-          { elementId: 'app', x: 160, y: 200, width: 640, height: 400 },
-          { elementId: 'c1', x: 200, y: 260 },
-          { elementId: 'c2', x: 400, y: 260 },
-          { elementId: 'ext', x: 160, y: 40 },
+          { id: 'app', x: 160, y: 200, width: 640, height: 400 },
+          { id: 'c1', x: 200, y: 260 },
+          { id: 'c2', x: 400, y: 260 },
+          { id: 'ext', x: 160, y: 40 },
         ],
-      },
+      }),
     ],
   };
 }

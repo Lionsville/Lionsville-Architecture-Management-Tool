@@ -9,6 +9,7 @@
  * filed at two addresses.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { ProjectLibrary } from './App'
@@ -25,7 +26,7 @@ const project = (key: string, name: string) => ({
     customerName: 'Acme',
     elements: [],
     relations: [],
-    diagrams: [{ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
   logoLibrary: [],

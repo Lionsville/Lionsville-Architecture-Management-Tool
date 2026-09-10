@@ -35,11 +35,12 @@
  */
 import type { Adr, AdrStatus } from '../adr'
 import type {
-  DesignDiagram, DesignElement, DiagramGroup, DiagramPlacement, DomainGroupRect, ElementId,
+  DesignDiagram, DesignElement, DiagramGroup, DomainGroupRect, ElementId, PlacedNode,
   Relation, Layer7Zone,
 } from '../types'
 import type { HostModel } from '../fromInterchange'
 import { slug } from '../keys'
+import { memberOf, nodeGeometryOf } from '../placement'
 
 export type SyntheticSpec = {
   /** Elements of every kind together, components included. */
@@ -331,7 +332,7 @@ function landscapeDiagram(
   groupOf: ReadonlyMap<ElementId, string>,
   domainGroups: readonly string[],
 ): DesignDiagram {
-  const placements: DiagramPlacement[] = []
+  const placements: PlacedNode[] = []
   const perZone = new Map<Layer7Zone, number>()
   const mapped = (name: string | undefined) => (name === undefined ? undefined : groupId(name))
   for (const element of elements) {
@@ -341,7 +342,7 @@ function landscapeDiagram(
     perZone.set(zone, index + 1)
     const columns = ZONE_COLUMNS[zone]
     placements.push({
-      elementId: element.id,
+      id: element.id,
       zone,
       group: mapped(groupOf.get(element.id)),
       x: ZONE_ORIGIN[zone].x + (index % columns) * (CARD.width + GAP),
@@ -369,8 +370,12 @@ function landscapeDiagram(
     name: 'Application landscape',
     author: 'The generator',
     groups,
-    placements,
-    layoutConfig: { canvas: { width: 4800, height: 3200 }, domainGroups: rects },
+    members: placements.map(memberOf),
+    geometry: {
+      canvas: { width: 4800, height: 3200 },
+      groups: rects,
+      nodes: placements.map(nodeGeometryOf),
+    },
   }
 }
 
@@ -391,10 +396,10 @@ const ZONE_ORIGIN: Record<Layer7Zone, { x: number; y: number }> = {
 }
 
 function containerDiagram(host: ElementId, components: readonly ElementId[], index: number): DesignDiagram {
-  const placements: DiagramPlacement[] = [
-    { elementId: host, x: 0, y: 0, width: 900, height: 620 },
+  const placements: PlacedNode[] = [
+    { id: host, x: 0, y: 0, width: 900, height: 620 },
     ...components.map((id, n) => ({
-      elementId: id,
+      id,
       x: 80 + (n % 3) * (CARD.width + GAP),
       y: 100 + Math.floor(n / 3) * (CARD.height + GAP),
     })),
@@ -404,7 +409,8 @@ function containerDiagram(host: ElementId, components: readonly ElementId[], ind
     kind: 'container',
     name: `Inside ${host}`,
     applicationElementId: host,
-    placements,
+    members: placements.map(memberOf),
+    geometry: { nodes: placements.map(nodeGeometryOf) },
   }
 }
 

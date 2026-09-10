@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../model/testFixtures';
 import { type RefObject } from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach } from 'vitest';
@@ -21,7 +22,7 @@ function model(): DesignModel {
   return {
     name: 'ACME',
     customerName: 'ACME',
-    diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'a1', zone: 'landscape', x: 100, y: 200 }] }],
+    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'a1', zone: 'landscape', x: 100, y: 200 }] })],
     elements: [
       { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
@@ -337,7 +338,7 @@ describe('useCanvasShortcuts — dispatch', () => {
     fireEvent.keyDown(node(view), { key: 'ArrowRight' });
     expect(actions.movePlacements).toHaveBeenCalledTimes(1);
     expect(actions.movePlacements).toHaveBeenCalledWith([
-      { elementId: 'a1', x: 100 + GRID_SIZE, y: 200, zone: 'landscape', domainGroup: undefined },
+      { id: 'a1', x: 100 + GRID_SIZE, y: 200, zone: 'landscape', domainGroup: undefined },
     ]);
   });
 
@@ -345,7 +346,7 @@ describe('useCanvasShortcuts — dispatch', () => {
     const { view, actions } = setup();
     fireEvent.keyDown(node(view), { key: 'ArrowUp', shiftKey: true });
     expect(actions.movePlacements).toHaveBeenCalledWith([
-      { elementId: 'a1', x: 100, y: 199, zone: 'landscape', domainGroup: undefined },
+      { id: 'a1', x: 100, y: 199, zone: 'landscape', domainGroup: undefined },
     ]);
   });
 

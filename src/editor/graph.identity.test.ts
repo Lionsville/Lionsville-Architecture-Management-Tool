@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { placeOn } from '../model/commands';
 import { apply, fromArrays, toArrays } from '../model';
 import type { HostModel } from '../model/fromInterchange';
 import { connection, diagram, element, model, placement } from '../model/testFixtures';
@@ -76,9 +77,7 @@ describe('deriving nodes twice', () => {
 
   it('replaces only the element that moved', () => {
     const nodes = buildNodes(argsOf(host));
-    const dragged = after({
-      type: 'placement.set', diagramId: 'landscape', placements: [{ elementId: 'c', x: 900, y: 60 }],
-    });
+    const dragged = after(placeOn('landscape', [{ id: 'c', x: 900, y: 60 }]));
     const next = buildNodes(argsOf(dragged), nodes);
     expect(next[0]).toBe(nodes[0]);
     expect(next[1]).toBe(nodes[1]);
@@ -123,9 +122,7 @@ describe('deriving edges twice', () => {
 
   it('replaces the edges whose anchors a move changed, and no others', () => {
     const edges = buildEdges(argsOf(host));
-    const dragged = after({
-      type: 'placement.set', diagramId: 'landscape', placements: [{ elementId: 'a', x: 0, y: 300 }],
-    });
+    const dragged = after(placeOn('landscape', [{ id: 'a', x: 0, y: 300 }]));
     const next = buildEdges(argsOf(dragged), edges);
     expect(next[0]).not.toBe(edges[0]);
     expect(next[1]).toBe(edges[1]);

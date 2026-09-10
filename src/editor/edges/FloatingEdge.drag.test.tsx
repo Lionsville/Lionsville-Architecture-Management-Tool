@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { laidOut } from '../../model/testFixtures';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from '../testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from '../testing/editorHost';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import { placementRect } from '../../model/placement';
-import { drawnPolyline, legAxis } from '../../model/routes';
+import { edgeRoutesOf, drawnPolyline, legAxis } from '../../model/routes';
 import type { DesignModel, Point } from '../../model/types';
 
 /**
@@ -28,8 +29,8 @@ afterEach(() => cleanup());
 
 // a1: 400..600 × 300..430 (application 200×130), right-side centre y = 365.
 // b1: 1000..1200 × 600..730, left-side centre y = 665.
-const A = { elementId: 'a1', zone: 'landscape' as const, x: 400, y: 300 };
-const B = { elementId: 'b1', zone: 'landscape' as const, x: 1000, y: 600 };
+const A = { id: 'a1', zone: 'landscape' as const, x: 400, y: 300 };
+const B = { id: 'b1', zone: 'landscape' as const, x: 1000, y: 600 };
 const A_RECT = placementRect('application', A);
 const B_RECT = placementRect('application', B);
 /** a1 right (600,365) → (800,365) → (800,665) → b1 left (1000,665): H, V, H. */
@@ -48,14 +49,14 @@ function model(): DesignModel {
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
         placements: [A, B],
         // Router output: the drag must claim it, and a click must NOT.
         edgeRoutes: [{ relationId: 'c1', waypoints: BENDS, source: 'auto' }],
-      },
+      }),
     ],
   };
 }
@@ -80,7 +81,7 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     </ThemeProvider>,
   );
   const lastRoute = () =>
-    host.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1');
+    edgeRoutesOf(host.current.model.diagrams[0])?.find((r) => r.relationId === 'c1');
   return { host, lastRoute };
 }
 
@@ -180,7 +181,7 @@ describe('FloatingEdge — segment drag', () => {
 
   it('makes an orthogonal jog out of a line that has no bends', async () => {
     const m = model();
-    m.diagrams[0].edgeRoutes = [];
+    m.diagrams[0].geometry.routes = [];
     const { host, lastRoute } = renderEditor({ model: m });
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     // A straight line shows exactly one segment handle.

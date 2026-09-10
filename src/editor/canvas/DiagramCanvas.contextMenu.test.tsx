@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { diagramWithRoutes, edgeRoutesOf } from '../../model/routes';
+import { placedNodes } from '../../model/placement';
+import { laidOut } from '../../model/testFixtures';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from '../testing/editorHost';
@@ -24,18 +27,18 @@ function model(): DesignModel {
     name: 'ACME Solution Design',
     customerName: 'ACME',
     diagrams: [
-      {
+      laidOut({
         id: 'd1',
         kind: 'layer7',
         name: 'Layer 7 — EU',
         placements: [
-          { elementId: 'a1', zone: 'landscape', x: 400, y: 300 },
-          { elementId: 'b1', zone: 'externalSystems', x: 1500, y: 400 },
+          { id: 'a1', zone: 'landscape', x: 400, y: 300 },
+          { id: 'b1', zone: 'externalSystems', x: 1500, y: 400 },
         ],
         groups: [{ id: 'core', name: 'Core' }],
         layoutConfig: { domainGroups: [{ id: 'core', x: 300, y: 250, width: 500, height: 400 }] },
-      },
-      { id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] },
+      }),
+      laidOut({ id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] }),
     ],
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
@@ -72,9 +75,9 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     return {
       elements: m.elements,
       relations: m.relations,
-      placements: diagram.placements,
-      edgeRoutes: diagram.edgeRoutes ?? [],
-      layoutConfig: diagram.layoutConfig,
+      placements: placedNodes(diagram),
+      edgeRoutes: edgeRoutesOf(diagram) ?? [],
+      geometry: diagram.geometry,
     };
   };
   const sent = () => host.current.commands.length;
@@ -174,7 +177,7 @@ describe('DiagramCanvas — element menu', () => {
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(openSubmenu(menu('Element menu'), 'Move to zone')).getByRole('menuitemcheckbox', { name: 'Actors' }));
 
-    const placement = landed().placements.find((p) => p.elementId === 'a1');
+    const placement = landed().placements.find((p) => p.id === 'a1');
     const band = zoneRect('actors');
     expect(placement?.zone).toBe('actors');
     expect(placement?.group).toBeUndefined();
@@ -186,7 +189,7 @@ describe('DiagramCanvas — element menu', () => {
     const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(openSubmenu(menu('Element menu'), 'Domain group')).getByRole('menuitemcheckbox', { name: 'Core' }));
-    const placement = landed().placements.find((p) => p.elementId === 'a1');
+    const placement = landed().placements.find((p) => p.id === 'a1');
     expect(placement).toMatchObject({ group: 'core', x: 400, y: 300 });
   });
 
@@ -233,7 +236,7 @@ describe('DiagramCanvas — element menu', () => {
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Remove from diagram'));
     // Off the diagram, still in the model — removing is a layout edit.
-    expect(landed().placements.map((p) => p.elementId)).toEqual(['b1']);
+    expect(landed().placements.map((p) => p.id)).toEqual(['b1']);
     expect(landed().elements.map((e) => e.id)).toEqual(['a1', 'b1']);
   });
 });
@@ -372,7 +375,9 @@ describe('DiagramCanvas — connection menu', () => {
 
   it('a bend handle offers "Remove bend point"', async () => {
     const m = model();
-    m.diagrams[0].edgeRoutes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source: 'manual' }];
+    m.diagrams[0] = diagramWithRoutes(m.diagrams[0], [
+      { relationId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source: 'manual' },
+    ]);
     const { landed } = renderEditor({ model: m });
     // Handles belong to the SELECTED line (routing phase 2a), so pick it up first.
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
@@ -400,7 +405,7 @@ describe('DiagramCanvas — canvas menu', () => {
     const batch = landed();
     const created = batch.elements.find((e) => e.id !== 'a1' && e.id !== 'b1');
     expect(created?.kind).toBe('application');
-    const placement = batch.placements.find((p) => p.elementId === created?.id);
+    const placement = batch.placements.find((p) => p.id === created?.id);
     const expected = flowPositionOf(client);
     expect(placement?.x).toBeCloseTo(expected.x, 3);
     expect(placement?.y).toBeCloseTo(expected.y, 3);
@@ -410,7 +415,7 @@ describe('DiagramCanvas — canvas menu', () => {
     const { landed } = renderEditor();
     fireEvent.contextMenu(pane(), { clientX: 500, clientY: 450 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Add domain group here'));
-    const groups = landed().layoutConfig?.domainGroups ?? [];
+    const groups = landed().geometry?.groups ?? [];
     expect(groups.map((g) => g.id)).toEqual(['core', 'new-group']);
   });
 
@@ -423,7 +428,7 @@ describe('DiagramCanvas — canvas menu', () => {
     fireEvent.contextMenu(pane(), { clientX: client.x, clientY: client.y });
     fireEvent.click(within(menu('Canvas menu')).getByText('Paste here'));
 
-    const pasted = landed().placements.find((p) => p.elementId !== 'a1' && p.elementId !== 'b1');
+    const pasted = landed().placements.find((p) => p.id !== 'a1' && p.id !== 'b1');
     const expected = flowPositionOf(client);
     expect(pasted?.x).toBeCloseTo(expected.x, 3);
     expect(pasted?.y).toBeCloseTo(expected.y, 3);
@@ -473,11 +478,11 @@ describe('DiagramCanvas — selection menu', () => {
 
     expect(sent()).toBe(before + 1);
     const batch = landed();
-    const group = batch.layoutConfig?.domainGroups?.find((g) => g.id === 'new-group');
+    const group = batch.geometry?.groups?.find((g) => g.id === 'new-group');
     expect(group).toBeDefined();
     // The landscape member joins; the band member is not a group member.
-    expect(batch.placements.find((p) => p.elementId === 'a1')?.group).toBe('new-group');
-    expect(batch.placements.find((p) => p.elementId === 'b1')?.group).toBeUndefined();
+    expect(batch.placements.find((p) => p.id === 'a1')?.group).toBe('new-group');
+    expect(batch.placements.find((p) => p.id === 'b1')?.group).toBeUndefined();
     // The box wraps the application card (200×130 at 400,300).
     expect(group!.x).toBeLessThan(400);
     expect(group!.y).toBeLessThan(300);

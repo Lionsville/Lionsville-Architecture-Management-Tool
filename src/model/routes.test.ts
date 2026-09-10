@@ -21,18 +21,24 @@ import {
   moveWaypoint,
   removeWaypoint,
   roundedPolylinePath,
+  diagramWithRoutes,
+  edgeRouteRows,
+  edgeRoutesOf,
   routeFor,
   routeRadius,
+  splitRoutes,
   routeSource,
   snapOrthogonal,
   waypointInsertionIndex,
 } from './routes';
 import { routeEndAnchor } from './floatingEdgeMath';
 import { LABEL_MARGIN, ROUTE_CLEARANCE } from '../layout/routing';
-import type { EdgeRoute, Point, Rect } from './types';
+import type { DesignDiagram, EdgeRoute, Point, Rect } from './types';
 
 const start: Point = { x: 0, y: 0 };
 const end: Point = { x: 300, y: 0 };
+
+const EMPTY_VIEW = { members: [], geometry: { nodes: [] } };
 
 describe('waypointInsertionIndex', () => {
   it('inserts on the only segment when there are no waypoints', () => {
@@ -93,9 +99,9 @@ describe('insert/move/remove waypoint', () => {
 
 describe('routeFor', () => {
   it('finds the route by connection id', () => {
-    const diagram = {
-      edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 2 }] }],
-    };
+    const diagram = diagramWithRoutes(EMPTY_VIEW, [
+      { relationId: 'c1', waypoints: [{ x: 1, y: 2 }] },
+    ]);
     expect(routeFor(diagram, 'c1')?.waypoints).toEqual([{ x: 1, y: 2 }]);
     expect(routeFor(diagram, 'c2')).toBeUndefined();
     expect(routeFor(undefined, 'c1')).toBeUndefined();
@@ -237,13 +243,11 @@ describe('hasRouteContent', () => {
 
 describe('manualRouteIds — pins', () => {
   it('protects a pinned row, whatever its source says', () => {
-    const diagram = {
-      edgeRoutes: [
+    const diagram = diagramWithRoutes(EMPTY_VIEW, [
         { relationId: 'pinned', waypoints: [], source: 'manual' as const, pinned: true },
         { relationId: 'odd', waypoints: [], source: 'auto' as const, pinned: true },
         { relationId: 'router', waypoints: [{ x: 1, y: 1 }], source: 'auto' as const },
-      ],
-    };
+    ]);
     expect(manualRouteIds(diagram)).toEqual(new Set(['pinned', 'odd']));
   });
 });
@@ -591,5 +595,85 @@ describe('followNodeMove', () => {
     r = followNodeMove(r, A, moved(A, 0, 20), true);
     r = followNodeMove(r, B, moved(B, 15, 0), false);
     expect(r.waypoints).toEqual([{ x: 515, y: 170 }]);
+  });
+});
+
+/**
+ * The two halves of a route, apart and together (ADR-0012 §6).
+ *
+ * A line's CONSTRAINTS are the view's business and its coordinates are the
+ * geometry's, and every caller that reads or writes one wants both — so the
+ * property that matters is that the split and the join are inverses, for every
+ * shape a row can be.
+ */
+describe('splitRoutes / edgeRouteRows', () => {
+  const rows: EdgeRoute[] = [
+    // Geometry only: the router drew it and nobody constrained it.
+    { relationId: 'drawn', waypoints: [{ x: 1, y: 2 }] },
+    // Both halves.
+    { relationId: 'both', waypoints: [{ x: 3, y: 4 }], labelPosition: { x: 5, y: 6 }, sourceSide: 'top', source: 'manual' },
+    // A constraint and no bends: a pinned straight line is a sentence in the
+    // definition and no coordinates at all.
+    { relationId: 'pinned', waypoints: [], pinned: true },
+  ];
+
+  it('files the constraints with the definition and the coordinates with the geometry', () => {
+    expect(splitRoutes(rows)).toEqual({
+      lines: [
+        { relationId: 'both', sourceSide: 'top', source: 'manual' },
+        { relationId: 'pinned', pinned: true },
+      ],
+      routes: [
+        { relationId: 'drawn', waypoints: [{ x: 1, y: 2 }] },
+        { relationId: 'both', waypoints: [{ x: 3, y: 4 }], labelPosition: { x: 5, y: 6 } },
+      ],
+    });
+  });
+
+  it('is exactly reversible, in the definition’s order', () => {
+    const { lines, routes } = splitRoutes(rows);
+    expect(edgeRouteRows(lines, routes)).toEqual([
+      { relationId: 'both', waypoints: [{ x: 3, y: 4 }], labelPosition: { x: 5, y: 6 }, sourceSide: 'top', source: 'manual' },
+      { relationId: 'pinned', pinned: true, waypoints: [] },
+      { relationId: 'drawn', waypoints: [{ x: 1, y: 2 }] },
+    ]);
+  });
+
+  it('keeps a row that says nothing at all, as a bare line', () => {
+    // The delete marker: `hasRouteContent` says it holds nothing, and a
+    // document that holds one comes back holding it.
+    const marker: EdgeRoute[] = [{ relationId: 'gone', waypoints: [] }];
+    expect(splitRoutes(marker)).toEqual({ lines: [{ relationId: 'gone' }] });
+    expect(edgeRouteRows([{ relationId: 'gone' }], undefined)).toEqual(marker);
+  });
+
+  it('says nothing about a view with no routes at all', () => {
+    expect(splitRoutes([])).toEqual({});
+    expect(edgeRouteRows(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe('diagramWithRoutes', () => {
+  const view: Pick<DesignDiagram, 'members' | 'lines' | 'geometry'> = {
+    members: [], geometry: { nodes: [] },
+  };
+
+  it('rewrites both halves from one list', () => {
+    const held = diagramWithRoutes(view, [
+      { relationId: 'c1', waypoints: [{ x: 1, y: 1 }], pinned: true },
+    ]);
+    expect(held.lines).toEqual([{ relationId: 'c1', pinned: true }]);
+    expect(held.geometry.routes).toEqual([{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }] }]);
+    expect(edgeRoutesOf(held)).toEqual([
+      { relationId: 'c1', pinned: true, waypoints: [{ x: 1, y: 1 }] },
+    ]);
+  });
+
+  it('takes both halves away for an empty list', () => {
+    const held = diagramWithRoutes(diagramWithRoutes(view, [
+      { relationId: 'c1', waypoints: [{ x: 1, y: 1 }] },
+    ]), []);
+    expect('lines' in held).toBe(false);
+    expect('routes' in held.geometry).toBe(false);
   });
 });
