@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3217 tests** and one of every config. The
+One codebase, in modules, with **3246 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3217 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3246 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -135,6 +135,8 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     kinds · zones · placement · aspects · kindChange · deletion
                     lifecycle · transition · checks   dates on the facts, a plan,
                                       and what the dates contradict (ADR-0009)
+                    relations         what a row between two elements MEANS, and
+                                      the one type format 3 holds (ADR-0012 §5)
                     porting · replacement   which interface moved where, derived
                                       from the lines; a replacement as one
                                       transaction (ADR-0010)
@@ -444,7 +446,8 @@ identifiers is still a list of a customer's identifiers.
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` |
-| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
+| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
+| What a row between two elements is (ADR-0012 §5) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned`; `connect` / `connection.*` are the `flow` ones |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -460,7 +463,12 @@ One thing deliberately does **not** change:
 
 - **The interchange format is not renamed.** It is an exchange format other
   tools read; its field names are a contract with them, not branding. The same
-  goes for `solution-design/v1` inside it, and for `DesignModel`'s field names.
+  goes for `solution-design/v1` inside it, and for `DesignModel`'s field names —
+  with the one exception ADR-0012 §5 makes, because the list stopped being what
+  it was called: `connections` became **`relations`**, holding a `Relation` per
+  row with a `type` on it. The interchange document and format 3 both still say
+  `connections` and both still hold flows only; `model/relations.ts` is where
+  the two names meet, and it refuses to write any other type until format 4.
 
 And one thing deliberately broke, once. Files written under the tool's previous
 name are **not** opened: `isWorkingFile` accepts only the
