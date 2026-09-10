@@ -82,11 +82,28 @@ const KINDS = ['actor', 'application', 'externalSystem', 'inputChannel', 'manage
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
+/**
+ * ADR-0012 §5. Written out here rather than imported from `model/relations`
+ * because a tool schema is a protocol contract: what a client is told and what
+ * {@link checkArguments} enforces have to be the same literal, and the model's
+ * list is free to grow a member this build has no tool for yet.
+ */
+const RELATION_TYPES = ['flow', 'supports', 'serves', 'realises', 'assigned'] as const
 
 /** How a line is drawn. Absent means the theme's own stroke and a solid line. */
 const LINE_FIELDS = {
   color: { type: 'string', description: 'The stroke, as a hex colour like #c0392b. The theme\'s own when absent.' },
   lineStyle: { type: 'string', description: 'Solid, dashed or dotted. Solid when absent.', enum: LINE_STYLES },
+} as const satisfies Record<string, ArgumentSchema>
+
+/**
+ * What every relation says and when it is there, whatever it means. Null
+ * clears any of them.
+ */
+const RELATION_FIELDS = {
+  label: { type: 'string', description: 'What the row says, in a few words.' },
+  validFrom: { type: 'string', description: 'The first day it holds, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
+  validUntil: { type: 'string', description: 'The last day it holds, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },
 } as const satisfies Record<string, ArgumentSchema>
 
 /** What a line says and when it is there. Null clears any of them. */
@@ -470,6 +487,49 @@ const SPECS = [
       required: ['ids'],
       additionalProperties: false,
     },
+  },
+  {
+    name: 'relation.add',
+    tier: 'write',
+    description:
+      'Join two elements with a typed relation (ADR-0012): supports (an application covers a '
+      + 'capability), serves, realises, or assigned (who is responsible). Dated when it only holds for '
+      + 'a while — the roadmap draws the window. For a flow between two applications use connect, which '
+      + 'also takes a protocol and a direction. Answers with the relation\'s id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', description: 'What the row means.', enum: RELATION_TYPES },
+        sourceId: ID('element the relation starts at'),
+        targetId: ID('element it ends at'),
+        ...RELATION_FIELDS,
+      },
+      required: ['type', 'sourceId', 'targetId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'relation.update',
+    tier: 'write',
+    description:
+      'Change what a relation means, what it says, or the days it holds; null clears a field. A flow\'s '
+      + 'protocol, direction and look are connection.update\'s, because only a flow has them.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('relation'),
+        type: { type: 'string', description: 'What the row means.', enum: RELATION_TYPES },
+        ...RELATION_FIELDS,
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'relation.remove',
+    tier: 'write',
+    description: 'Remove a relation of any type, and its route on every diagram.',
+    inputSchema: { type: 'object', properties: { id: ID('relation') }, required: ['id'], additionalProperties: false },
   },
   {
     name: 'decision.propose',

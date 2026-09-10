@@ -22,7 +22,7 @@ import type { Transition } from '../model/transition'
 import { findings } from '../model/checks'
 import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
-import type { DesignConnection, DesignElement, ElementId } from '../model/types'
+import type { DesignElement, ElementId, Relation } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { formatAdrNumber } from '../decisions/adr'
 import { SEARCH_LIMIT_PER_KIND, searchAll, snippet } from '../search/search'
@@ -257,9 +257,9 @@ function exportMarkdown(model: Model, view: ReadView): string {
   }
 
   lines.push('## Connections', '', ...table(
-    ['id', 'from', 'to', 'label', 'protocol', 'both ways', 'valid from', 'valid until'],
+    ['id', 'type', 'from', 'to', 'label', 'protocol', 'both ways', 'valid from', 'valid until'],
     model.order.relations.map((id) => model.relations[id])
-      .map((c) => [c.id, `${name(c.sourceId)} (${c.sourceId})`, `${name(c.targetId)} (${c.targetId})`, c.label, c.protocol, c.isBidirectional ? 'yes' : '', c.validFrom, c.validUntil]),
+      .map((c) => [c.id, c.type, `${name(c.sourceId)} (${c.sourceId})`, `${name(c.targetId)} (${c.targetId})`, c.label, c.protocol, c.isBidirectional ? 'yes' : '', c.validFrom, c.validUntil]),
   ))
 
   lines.push('## Diagrams', '', ...table(
@@ -402,10 +402,13 @@ function datedBy(model: Model, arrays: HostModel): Map<string, Transition> {
   return out
 }
 
-function connectionLine(model: Model, c: DesignConnection, dated?: Map<string, Transition>) {
+function connectionLine(model: Model, c: Relation, dated?: Map<string, Transition>) {
   const plan = dated?.get(c.id)
   return {
     id: c.id,
+    // What the row means (ADR-0012 §5). The list is still called `connections`
+    // because the tool that answers it is, and a tool name is published surface.
+    type: c.type,
     sourceId: c.sourceId,
     source: nameOf(model, c.sourceId),
     targetId: c.targetId,

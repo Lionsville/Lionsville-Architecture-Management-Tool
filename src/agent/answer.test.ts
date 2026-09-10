@@ -129,7 +129,9 @@ describe('element.describe', () => {
     expect(held).toMatchObject({ id: 'billing', description: 'Sends the **invoices**.' })
     expect((held.connections as { id: string }[]).map((c) => c.id)).toEqual(['c1', 'c2', 'c3'])
     expect(held.connections).toContainEqual({
-      id: 'c1', sourceId: 'crm', source: 'CRM', targetId: 'billing', target: 'Billing',
+      // The list keeps its name — a tool name is published surface — and every
+      // row now says what it means (ADR-0012 §5).
+      id: 'c1', type: 'flow', sourceId: 'crm', source: 'CRM', targetId: 'billing', target: 'Billing',
       label: 'orders', protocol: 'REST', isBidirectional: false,
     })
     expect(held.drawnOn).toEqual([
@@ -222,7 +224,7 @@ describe('project.export', () => {
     const doc = markdown.content[0].text
     expect(doc).toContain('# Warehouse landscape')
     expect(doc).toContain('| billing | Billing | live |')
-    expect(doc).toContain('| c1 | CRM (crm) | Billing (billing) | orders | REST |')
+    expect(doc).toContain('| c1 | flow | CRM (crm) | Billing (billing) | orders | REST |')
     expect(doc).toContain('| g-1 | ADR-0001 | group |')
     expect(doc).toMatch(/## Plans\n\n_None._/)
   })

@@ -112,6 +112,10 @@ describe('every write, applied and undone', () => {
     ['connections.update', { items: [{ id: 'c1', label: 'orders', validUntil: '2027-06-30' }] }],
     ['connection.remove', { id: 'c1' }],
     ['connections.remove', { ids: ['c1', 'c1'] }],
+    ['relation.add', { type: 'supports', sourceId: 'billing', targetId: 'crm', validFrom: '2027-03-01' }],
+    ['relation.add', { type: 'assigned', sourceId: 'who', targetId: 'billing' }],
+    ['relation.update', { id: 'c1', type: 'realises', label: 'how it is done' }],
+    ['relation.remove', { id: 'c1' }],
     ['decision.propose', { title: 'Move CRM to the cloud' }],
     ['decision.propose', { title: 'Split the API', applicationId: 'billing', body: '# Custom' }],
     ['decision.propose', { title: 'Sign it', signers: [{ name: 'Ada', role: 'CTO', verdict: 'approved', signedAt: '2026-09-01' }] }],
@@ -373,6 +377,48 @@ describe('a line’s window, and lines in bulk (ADR-0009)', () => {
     const after = roundTrip(two, commandFor('connections.remove', { ids: ['c1', other] }, view(two)))
     expect(after.order.relations).toEqual([])
     expect(commandFor('connections.remove', { ids: ['c1', 'c9'] }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+})
+
+/**
+ * The four types the business layer needs (ADR-0012 §5). `connect` and
+ * `connection.*` keep their names and mean `flow`, because a tool name is a
+ * client's configuration; these three are how everything else is said.
+ */
+describe('a typed relation', () => {
+  const model = fromArrays(host)
+
+  it('adds one with a window, and says what it made', () => {
+    const out = commandFor('relation.add', {
+      type: 'supports', sourceId: 'billing', targetId: 'crm', label: 'invoicing', validFrom: '2027-03-01',
+    }, view(model))
+    expect(answerOf(out)).toMatchObject({ type: 'supports', sourceId: 'billing', targetId: 'crm' })
+    const after = roundTrip(model, out)
+    const row = Object.values(after.relations).find((r) => r.id !== 'c1')!
+    expect(row).toMatchObject({ type: 'supports', label: 'invoicing', validFrom: '2027-03-01' })
+    // Nothing a flow means by itself is invented for a row that has no use for it.
+    expect(row).not.toHaveProperty('isBidirectional')
+    expect(row).not.toHaveProperty('protocol')
+  })
+
+  it('changes what a row means, and the days it holds', () => {
+    const after = roundTrip(model, commandFor('relation.update', { id: 'c1', type: 'serves', validUntil: '2028-01-31' }, view(model)))
+    expect(after.relations.c1).toMatchObject({ type: 'serves', validUntil: '2028-01-31' })
+  })
+
+  it('removes one, and refuses an id nobody holds', () => {
+    expect(roundTrip(model, commandFor('relation.remove', { id: 'c1' }, view(model))).order.relations).toEqual([])
+    expect(commandFor('relation.remove', { id: 'c9' }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('relation.update', { id: 'c9', label: 'x' }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
+  it('refuses an end nobody holds, a row that joins a thing to itself, and a window that runs backwards', () => {
+    expect(commandFor('relation.add', { type: 'supports', sourceId: 'billing', targetId: 'nope' }, view(model)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('relation.add', { type: 'supports', sourceId: 'billing', targetId: 'billing' }, view(model)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('relation.add', { type: 'supports', sourceId: 'billing', targetId: 'crm', validFrom: '2027-06-01', validUntil: '2027-01-01' }, view(model)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
   })
 })
 

@@ -36,6 +36,7 @@ import { decisionsOf, transitionList } from '../model/normalised'
 import { businessCaseTemplate } from '../documentation/businessCase'
 import type {
   DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId, Relation,
+  RelationType,
   AspectStatus, ElementKind, Layer7Zone, Rect,
 } from '../model/types'
 import type { AdrStatus } from '../model/adr'
@@ -140,6 +141,44 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'connection.remove': {
       const id = args.id as string
       if (!model.relations[id]) return refused('agent.unknownId', `connection ${id}`)
+      return { command: { type: 'relation.delete', id, origin: 'agent' }, answer: json({ id, removed: true }) }
+    }
+    /**
+     * The four types the business layer needs (ADR-0012 §5). A flow keeps
+     * `connect` and `connection.*`, which are published names and say more —
+     * a protocol, a direction, a colour — because only a flow has them.
+     */
+    case 'relation.add': {
+      const type = args.type as RelationType
+      const sourceId = args.sourceId as string
+      const targetId = args.targetId as string
+      for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
+      if (sourceId === targetId) return refused('agent.badArguments', 'a relation needs two different elements')
+      const bare: Relation = { id: view.ids.connection(), type, sourceId, targetId }
+      const patch = relationPatch(args, bare)
+      if ('ok' in patch) return patch
+      const relation: Relation = { ...bare, ...patch }
+      for (const key of Object.keys(patch) as (keyof Relation)[]) if (relation[key] === undefined) delete relation[key]
+      return {
+        command: { type: 'relation.create', relation, origin: 'agent' },
+        answer: json({ id: relation.id, type, sourceId, targetId }),
+      }
+    }
+    case 'relation.update': {
+      const id = args.id as string
+      const held = model.relations[id]
+      if (!held) return refused('agent.unknownId', `relation ${id}`)
+      const patch = relationPatch(args, held)
+      if ('ok' in patch) return patch
+      if (typeof args.type === 'string') patch.type = args.type as RelationType
+      return {
+        command: { type: 'relation.update', id, patch, origin: 'agent' },
+        answer: json({ id, changed: Object.keys(patch) }),
+      }
+    }
+    case 'relation.remove': {
+      const id = args.id as string
+      if (!model.relations[id]) return refused('agent.unknownId', `relation ${id}`)
       return { command: { type: 'relation.delete', id, origin: 'agent' }, answer: json({ id, removed: true }) }
     }
     case 'connections.remove': {
