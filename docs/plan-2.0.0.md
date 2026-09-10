@@ -47,7 +47,7 @@ this was all for is on screen first.*
   survives `apply` → undo; a `supports` row with a window shows on the
   roadmap as a hatched span.
 
-### 2. Views apart from geometry
+### 2. Views apart from geometry — landed 10 September 2026 (01222e1…5d40a67)
 
 `DesignDiagram` gains `members`, `groups` (with ids), `lines`; loses
 `placements[].zone`, `placements[].domainGroup`, `layoutConfig.domainGroups`.
@@ -65,6 +65,10 @@ this was all for is on screen first.*
   split the format was always meant to give history.
 - Done when: a rename of a dashed group is one line in the definition; a
   drag is one line in geometry; `describeProjectStore` passes unchanged.
+- Left standing for step 5: a group's colour is the one thing format 3
+  cannot carry for a group that has no box, because the format keeps the
+  colour on the rectangle. Nothing in the app can make one, and the fold
+  says so out loud rather than dropping it quietly.
 
 ### 3. The business layer
 
