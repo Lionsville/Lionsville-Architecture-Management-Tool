@@ -15,7 +15,7 @@
  *
  * It reads the FIRST command of a step deliberately. Every transaction the app
  * builds leads with its subject — the element before its placement, the
- * connection before its route, the group box before its members — so the lead
+ * relation before its route, the group box before its members — so the lead
  * is what the step is about and the rest is what that entailed.
  */
 import type { StringKey } from '../i18n/strings'
@@ -74,12 +74,15 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
         count: many('element.delete'),
       }
 
-    case 'connection.create':
-      return { key: 'activity.connectionAdded' }
-    case 'connection.update':
-      return { key: 'activity.connectionChanged' }
-    case 'connection.delete':
-      return { key: 'activity.connectionDeleted' }
+    // The words still say "connection", because every relation a person can
+    // draw in this build is one. They follow the type when the business layer
+    // can make the other four (ADR-0012 §4).
+    case 'relation.create':
+      return { key: 'activity.relationAdded' }
+    case 'relation.update':
+      return { key: 'activity.relationChanged' }
+    case 'relation.delete':
+      return { key: 'activity.relationDeleted' }
 
     case 'placement.set': {
       const count = flat.reduce(

@@ -8,9 +8,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  connectionLiveAt, datesIn, datesInOrder, hasDates, isDay, isGoneOn, phaseAt, today,
+  relationLiveAt, datesIn, datesInOrder, hasDates, isDay, isGoneOn, phaseAt, today,
 } from './lifecycle'
-import type { DesignConnection, DesignElement, Lifecycle, LifecycleDates } from './types'
+import type { DesignElement, Lifecycle, LifecycleDates, Relation } from './types'
 
 function element(lifecycle: Lifecycle, lifecycleDates?: LifecycleDates): DesignElement {
   return {
@@ -19,8 +19,8 @@ function element(lifecycle: Lifecycle, lifecycleDates?: LifecycleDates): DesignE
   }
 }
 
-function connection(over: Partial<DesignConnection> = {}): DesignConnection {
-  return { id: 'c1', sourceId: 'a', targetId: 'b', isBidirectional: false, ...over }
+function connection(over: Partial<Relation> = {}): Relation {
+  return { id: 'c1', type: 'flow', sourceId: 'a', targetId: 'b', isBidirectional: false, ...over }
 }
 
 describe('isDay', () => {
@@ -92,31 +92,31 @@ describe('datesInOrder', () => {
   })
 })
 
-describe('connectionLiveAt', () => {
+describe('relationLiveAt', () => {
   it('draws a line with no window on every day', () => {
-    expect(connectionLiveAt(connection(), '1999-01-01')).toBe(true)
-    expect(connectionLiveAt(connection(), '2099-01-01')).toBe(true)
+    expect(relationLiveAt(connection(), '1999-01-01')).toBe(true)
+    expect(relationLiveAt(connection(), '2099-01-01')).toBe(true)
   })
 
   it('holds a line back until it starts, inclusive', () => {
     const sync = connection({ validFrom: '2027-04-01' })
-    expect(connectionLiveAt(sync, '2027-03-31')).toBe(false)
-    expect(connectionLiveAt(sync, '2027-04-01')).toBe(true)
+    expect(relationLiveAt(sync, '2027-03-31')).toBe(false)
+    expect(relationLiveAt(sync, '2027-04-01')).toBe(true)
   })
 
   it('keeps a line on its last day and not after it', () => {
     // `validUntil` is the day it is switched off, which is the day a person
     // writing it down means.
     const sync = connection({ validUntil: '2028-01-31' })
-    expect(connectionLiveAt(sync, '2028-01-31')).toBe(true)
-    expect(connectionLiveAt(sync, '2028-02-01')).toBe(false)
+    expect(relationLiveAt(sync, '2028-01-31')).toBe(true)
+    expect(relationLiveAt(sync, '2028-02-01')).toBe(false)
   })
 
   it('draws the temporary lines of a hybrid run only while it runs', () => {
     const facade = connection({ validFrom: '2027-04-01', validUntil: '2028-01-31' })
-    expect(connectionLiveAt(facade, '2027-01-01')).toBe(false)
-    expect(connectionLiveAt(facade, '2027-09-01')).toBe(true)
-    expect(connectionLiveAt(facade, '2028-06-01')).toBe(false)
+    expect(relationLiveAt(facade, '2027-01-01')).toBe(false)
+    expect(relationLiveAt(facade, '2027-09-01')).toBe(true)
+    expect(relationLiveAt(facade, '2028-06-01')).toBe(false)
   })
 })
 
@@ -135,12 +135,12 @@ describe('hasDates and datesIn', () => {
         element('live', { retiring: '2027-04-01', retired: '2028-01-31' }),
         element('planned', { live: '2027-04-01' }),
       ],
-      connections: [connection({ validFrom: '2027-04-01', validUntil: '2028-01-31' })],
+      relations: [connection({ validFrom: '2027-04-01', validUntil: '2028-01-31' })],
     })).toEqual(['2027-04-01', '2028-01-31'])
   })
 
   it('has no days for a landscape that carries none', () => {
-    expect(datesIn({ elements: [element('live')], connections: [connection()] })).toEqual([])
+    expect(datesIn({ elements: [element('live')], relations: [connection()] })).toEqual([])
   })
 })
 
@@ -168,7 +168,7 @@ describe('a landscape with no dates', () => {
   })
 
   it('draws every line on every day there is', () => {
-    for (const day of DAYS) expect(connectionLiveAt(connection(), day)).toBe(true)
+    for (const day of DAYS) expect(relationLiveAt(connection(), day)).toBe(true)
   })
 })
 

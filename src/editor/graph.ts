@@ -15,7 +15,7 @@ import {
   unionRects,
 } from '../model/placement';
 import { isAutoRoute, routeSides, routeSource } from '../model/routes';
-import { connectionLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
+import { relationLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
 
 /**
  * Pure projection of (effective model + active diagram) onto React Flow
@@ -192,14 +192,14 @@ export function buildEdges(
   }
   // Resolve what each edge DRAWS first, because the slot fan below must only see
   // the edges that will use it.
-  const drawn: { connection: (typeof args.model.connections)[number]; route: EdgeRoute | undefined; stored: EdgeRoute | undefined }[] = [];
-  for (const connection of args.model.connections) {
+  const drawn: { connection: (typeof args.model.relations)[number]; route: EdgeRoute | undefined; stored: EdgeRoute | undefined }[] = [];
+  for (const connection of args.model.relations) {
     if (!placed.has(connection.sourceId) || !placed.has(connection.targetId)) continue;
     // A line with a window of its own is drawn only inside it: the sync and the
     // façade of a hybrid run are there for the months they are there for, and
     // gone on a board dated after the cutover (ADR-0009). A line with no window
     // follows its ends, which the `placed` check above already does.
-    if (args.asOfDay && !connectionLiveAt(connection, args.asOfDay)) continue;
+    if (args.asOfDay && !relationLiveAt(connection, args.asOfDay)) continue;
     const stored = routes.get(connection.id);
     // Suppressed only for router output, and only while its node moves.
     //

@@ -100,7 +100,7 @@ describe('the generated landscape against the shipped one', () => {
   const shipped = degrees((example.document.connections ?? []).map((c) => ({
     from: String(c.sourceKey), to: String(c.targetKey),
   })))
-  const generated = degrees(syntheticModel('small').connections.map((c) => ({
+  const generated = degrees(syntheticModel('small').relations.map((c) => ({
     from: c.sourceId, to: c.targetId,
   })))
 

@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildEdges, buildNodes } from './graph'
 import type { BuildGraphArgs } from './graph'
-import type { DesignConnection, DesignDiagram, DesignElement, DesignModel } from '../model/types'
+import type { DesignDiagram, DesignElement, DesignModel, Relation } from '../model/types'
 
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
@@ -20,8 +20,8 @@ function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   }
 }
 
-function connection(id: string, sourceId: string, targetId: string, over: Partial<DesignConnection> = {}): DesignConnection {
-  return { id, sourceId, targetId, isBidirectional: false, ...over }
+function connection(id: string, sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation {
+  return { id, type: 'flow', sourceId, targetId, isBidirectional: false, ...over }
 }
 
 /** The hybrid run: the old system retires as the new one arrives, with a sync between. */
@@ -33,7 +33,7 @@ function model(): DesignModel {
       element('wms-new', { lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' } }),
       element('billing'),
     ],
-    connections: [
+    relations: [
       connection('c#sync', 'wms-old', 'wms-new', { validFrom: '2027-04-01', validUntil: '2028-01-31' }),
       connection('c#billing', 'billing', 'wms-old'),
     ],

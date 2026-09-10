@@ -12,7 +12,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
-import type { DesignConnection, DesignElement, Transition } from '../model'
+import type { DesignElement, Relation, Transition } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
 import { useModelSession } from './useModelSession'
@@ -26,7 +26,7 @@ function element(id: string, name: string, over: Partial<DesignElement> = {}): D
   return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, ...over }
 }
 
-const LINE: DesignConnection = { id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }
+const LINE: Relation = { id: 'c1', type: 'flow', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }
 
 const PLAN: Transition = {
   id: 'tr-1', number: 1, title: 'Replace the warehouse system', status: 'agreed',
@@ -43,7 +43,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
     element('wms-old', 'Warehouse', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),
     element('wms-new', 'Warehouse (new)', { lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' } }),
   ],
-  connections: [LINE],
+  relations: [LINE],
   diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
   transitions: [PLAN],
   ...over,
@@ -134,21 +134,21 @@ describe('a plan', () => {
   it('ports an interface as a twin on the new end and the original closed, as one step', () => {
     const h = mount()
     act(() => h.plans().planActions.port('tr-1', 'c1', 'wms-new', '2027-04-01'))
-    const lines = h.model().connections
+    const lines = h.model().relations
     expect(lines).toHaveLength(2)
     expect(lines.find((c) => c.id === 'c1')?.validUntil).toBe('2027-03-31')
     expect(lines.find((c) => c.id !== 'c1')).toMatchObject({ sourceId: 'billing', targetId: 'wms-new', validFrom: '2027-04-01' })
     expect(h.steps()).toBe(1)
 
     act(() => h.plans().planActions.unport('tr-1', 'c1'))
-    expect(h.model().connections).toHaveLength(1)
-    expect(h.model().connections[0]?.validUntil).toBeUndefined()
+    expect(h.model().relations).toHaveLength(1)
+    expect(h.model().relations[0]?.validUntil).toBeUndefined()
   })
 
   it('ports every remaining interface in one step, and does nothing when none remain', () => {
     const h = mount()
     act(() => h.plans().planActions.portAll('tr-1', 'wms-new', '2027-04-01'))
-    expect(h.model().connections).toHaveLength(2)
+    expect(h.model().relations).toHaveLength(2)
     expect(h.steps()).toBe(1)
     act(() => h.plans().planActions.portAll('tr-1', 'wms-new', '2027-04-01'))
     expect(h.steps()).toBe(1)

@@ -37,8 +37,8 @@ function model(): DesignModel {
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
-    connections: [
-      { id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false },
     ],
   };
 }
@@ -95,7 +95,7 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
     fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
     confirm();
 
-    expect(host.current.model.connections).toEqual([]);
+    expect(host.current.model.relations).toEqual([]);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -140,7 +140,7 @@ describe('SolutionDesignEditor — confirming a multi-delete', () => {
     expect(host.current.commands).toHaveLength(1);
     expect(asked().map((c) => c.type)).toEqual(['element.delete', 'element.delete']);
     expect(host.current.model.elements).toEqual([]);
-    expect(host.current.model.connections).toEqual([]);
+    expect(host.current.model.relations).toEqual([]);
   });
 
   it('the selection menu reaches the same confirmation', () => {

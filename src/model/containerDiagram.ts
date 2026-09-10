@@ -47,7 +47,7 @@ export function containerDiagramMembers(model: HostModel, applicationId: string)
       : other.id
     if (hoisted && !inScope.has(hoisted)) context.add(hoisted)
   }
-  model.connections.forEach((c) => {
+  model.relations.forEach((c) => {
     if (inScope.has(c.sourceId) && !inScope.has(c.targetId)) addContext(c.targetId)
     if (inScope.has(c.targetId) && !inScope.has(c.sourceId)) addContext(c.sourceId)
   })

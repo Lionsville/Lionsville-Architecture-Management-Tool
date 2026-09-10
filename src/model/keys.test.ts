@@ -106,7 +106,7 @@ describe('idsIn', () => {
   it('is every id in the document, because they share one namespace', () => {
     expect(idsIn({
       elements: [{ id: 'a' }],
-      connections: [{ id: 'c#1' }],
+      relations: [{ id: 'c#1' }],
       diagrams: [{ id: 'landscape' }],
     })).toEqual(['a', 'c#1', 'landscape'])
   })

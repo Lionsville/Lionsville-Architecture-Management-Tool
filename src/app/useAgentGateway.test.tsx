@@ -71,7 +71,7 @@ const project: ProjectSnapshot = {
     name: 'Warehouse landscape',
     customerName: 'Acme',
     elements: [{ id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} }],
-    connections: [],
+    relations: [],
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],
   },
   activeDiagramId: 'd1',

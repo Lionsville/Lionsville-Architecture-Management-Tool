@@ -44,7 +44,7 @@ function model(): DesignModel {
         aspects: {},
       },
     ],
-    connections: [],
+    relations: [],
   };
 }
 

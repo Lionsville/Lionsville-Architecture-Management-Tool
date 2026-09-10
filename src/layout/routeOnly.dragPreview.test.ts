@@ -33,8 +33,9 @@ function boardModel(): DesignModel {
       isManaged: true,
       aspects: {},
     })),
-    connections: [1, 2, 3, 4].map((n) => ({
+    relations: [1, 2, 3, 4].map((n) => ({
       id: `c${n}`,
+      type: 'flow' as const,
       sourceId: `s${n}`,
       targetId: `t${n}`,
       isBidirectional: false,

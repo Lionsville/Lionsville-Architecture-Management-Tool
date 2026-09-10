@@ -40,7 +40,7 @@ function model(): DesignModel {
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
-    connections: [{ id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
   };
 }
 
@@ -70,7 +70,7 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     const diagram = m.diagrams.find((d) => d.id === (overrides.activeDiagramId ?? 'd1'))!;
     return {
       elements: m.elements,
-      connections: m.connections,
+      relations: m.relations,
       placements: diagram.placements,
       edgeRoutes: diagram.edgeRoutes ?? [],
       layoutConfig: diagram.layoutConfig,
@@ -196,7 +196,7 @@ describe('DiagramCanvas — element menu', () => {
     expect(screen.getByTestId('lv-connect-hint').textContent).toMatch(/Click a target element/);
 
     fireEvent.click(nodeEl('b1'));
-    const created = landed().connections.find((c) => c.id !== 'c1');
+    const created = landed().relations.find((c) => c.id !== 'c1');
     expect(created).toMatchObject({ sourceId: 'a1', targetId: 'b1' });
     expect(screen.queryByTestId('lv-connect-hint')).toBeNull();
     // Like a hand-drawn line, the new connection is what ends up selected.
@@ -254,21 +254,21 @@ describe('DiagramCanvas — connection menu', () => {
     const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Direction')).getByRole('menuitemcheckbox', { name: 'Reverse' }));
-    expect(landed().connections.find((c) => c.id === 'c1')).toMatchObject({ sourceId: 'b1', targetId: 'a1' });
+    expect(landed().relations.find((c) => c.id === 'c1')).toMatchObject({ sourceId: 'b1', targetId: 'a1' });
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Direction')).getByRole('menuitemcheckbox', { name: 'Two-way' }));
-    expect(landed().connections.find((c) => c.id === 'c1')?.isBidirectional).toBe(true);
+    expect(landed().relations.find((c) => c.id === 'c1')?.isBidirectional).toBe(true);
   });
 
   it('Line shape ▸ writes the routing token, Smooth clears it', () => {
     const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Line shape')).getByRole('menuitemcheckbox', { name: 'Orthogonal' }));
-    expect(landed().connections.find((c) => c.id === 'c1')?.routing).toBe('orthogonal');
+    expect(landed().relations.find((c) => c.id === 'c1')?.routing).toBe('orthogonal');
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Line shape')).getByRole('menuitemcheckbox', { name: 'Smooth' }));
-    expect(landed().connections.find((c) => c.id === 'c1')?.routing).toBeUndefined();
+    expect(landed().relations.find((c) => c.id === 'c1')?.routing).toBeUndefined();
   });
 
   it('"Edit label" opens the inline editor on the chip', async () => {

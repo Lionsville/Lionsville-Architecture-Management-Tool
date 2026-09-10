@@ -31,7 +31,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
         aspects: {}, description: 'An id that cannot be a file name.',
       },
     ],
-    connections: [],
+    relations: [],
     diagrams: [
       { id: 'landscape', kind: 'layer7', name: 'Landscape', placements: [] },
       { id: 'Billing View', kind: 'container', name: 'Billing', placements: [], applicationElementId: 'billing' },

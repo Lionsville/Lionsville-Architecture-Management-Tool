@@ -69,7 +69,7 @@ function model(): DesignModel {
     customerName: 'ACME',
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'Layer 7', placements: PLACEMENTS }],
     elements: [element('a1', 'Webshop'), element('a2', 'Order Service')],
-    connections: [{ id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
   };
 }
 

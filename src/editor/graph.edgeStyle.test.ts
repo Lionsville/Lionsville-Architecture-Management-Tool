@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MarkerType } from '@xyflow/react';
 import { buildEdges } from './graph';
-import type { DesignConnection, DesignDiagram, DesignModel } from '../model/types';
+import type { DesignDiagram, DesignModel, Relation } from '../model/types';
 
 /**
  * U4b: buildEdges resolves the stored edge style with the D1 NULL-inherit
@@ -10,7 +10,7 @@ import type { DesignConnection, DesignDiagram, DesignModel } from '../model/type
  * arrowhead.
  */
 
-function model(connection: DesignConnection): DesignModel {
+function model(connection: Relation): DesignModel {
   return {
     name: 'ACME',
     customerName: 'ACME',
@@ -29,19 +29,20 @@ function model(connection: DesignConnection): DesignModel {
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
-    connections: [connection],
+    relations: [connection],
   };
 }
 
-const conn = (overrides: Partial<DesignConnection> = {}): DesignConnection => ({
+const conn = (overrides: Partial<Relation> = {}): Relation => ({
   id: 'c1',
+  type: 'flow',
   sourceId: 'a1',
   targetId: 'b1',
   isBidirectional: false,
   ...overrides,
 });
 
-function edgeFor(connection: DesignConnection, edgeColor = '#theme') {
+function edgeFor(connection: Relation, edgeColor = '#theme') {
   const m = model(connection);
   const [edge] = buildEdges({
     model: m,

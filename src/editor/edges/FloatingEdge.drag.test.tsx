@@ -46,7 +46,7 @@ function model(): DesignModel {
       { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [{ id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
     diagrams: [
       {
         id: 'd1',

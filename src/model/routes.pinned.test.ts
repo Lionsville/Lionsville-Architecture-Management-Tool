@@ -26,7 +26,7 @@ function model(routes?: EdgeRoute[]): DesignModel {
       isManaged: true,
       aspects: {},
     })),
-    connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
       {
         id: 'd1',

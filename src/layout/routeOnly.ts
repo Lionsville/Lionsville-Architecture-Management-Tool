@@ -144,10 +144,10 @@ export async function routeDiagramEdges(
   // as well as out of the result: a connector we are not going to emit would still
   // nudge the ones we are.
   const owned = routeOnlyBetween
-    ? model.connections.filter(
+    ? model.relations.filter(
         (c) => routeOnlyBetween.has(c.sourceId) && routeOnlyBetween.has(c.targetId),
       )
-    : model.connections;
+    : model.relations;
 
   const storedRoutes = new Map((diagram.edgeRoutes ?? []).map((r) => [r.connectionId, r]));
 

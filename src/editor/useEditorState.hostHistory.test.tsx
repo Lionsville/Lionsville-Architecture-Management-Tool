@@ -29,7 +29,7 @@ function model(elementName = 'Billing'): DesignModel {
       id: 'billing', kind: 'application', name: elementName,
       lifecycle: 'live', isManaged: true, aspects: {},
     }],
-    connections: [],
+    relations: [],
   };
 }
 

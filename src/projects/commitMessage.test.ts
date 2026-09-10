@@ -33,7 +33,7 @@ describe('draftCommitMessage', () => {
     const message = draftCommitMessage([
       step('activity.elementAdded', { name: 'Crews' }),
       step('activity.elementAdded', { name: 'Planning' }),
-      step('activity.connectionAdded'),
+      step('activity.relationAdded'),
       step('activity.decisionAdded', { name: 'One writer' }),
     ], t)
 

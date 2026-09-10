@@ -27,7 +27,7 @@ function model(): DesignModel {
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'application', name: 'Orders', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [{ id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
     diagrams: [{
       id: 'd1', kind: 'layer7', name: 'L7',
       placements: [
@@ -137,9 +137,9 @@ describe('typing into a field', () => {
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
     type(within(inspector()).getByLabelText('Label'), 'Sends orders');
 
-    expect(host.current.model.connections[0].label).toBe('Sends orders');
+    expect(host.current.model.relations[0].label).toBe('Sends orders');
     act(() => host.current.history.undo());
-    expect(host.current.model.connections[0].label).toBeUndefined();
+    expect(host.current.model.relations[0].label).toBeUndefined();
     expect(host.current.history.canUndo).toBe(false);
   });
 });

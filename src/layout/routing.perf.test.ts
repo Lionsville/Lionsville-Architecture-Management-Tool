@@ -39,7 +39,7 @@ function inputFor(size: 'small' | 'large'): RouterInput {
   }
   const groups: DomainGroupRect[] = landscape.layoutConfig?.domainGroups ?? []
   const placed = new Set(nodes.map((n) => n.id))
-  const connections: RouterConnection[] = model.connections
+  const connections: RouterConnection[] = model.relations
     .filter((c) => placed.has(c.sourceId) && placed.has(c.targetId))
     .map((c) => ({ id: c.id, sourceId: c.sourceId, targetId: c.targetId }))
   return { nodes, groups, connections }

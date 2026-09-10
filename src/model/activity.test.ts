@@ -20,7 +20,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
   customerName: 'Acme',
   elements: [element('billing', 'Billing'), element('crm', 'CRM')],
-  connections: [{ id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
+  relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
   diagrams: [{
     id: 'd1', kind: 'layer7', name: 'L7',
     placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'crm', x: 100, y: 0 }],
@@ -86,9 +86,9 @@ describe('summarise', () => {
     // A step with no words is a step the list would show as blank, and the one
     // way that happens is a command nobody thought about here.
     const every = [
-      { type: 'connection.create', connection: { id: 'c#2', sourceId: 'billing', targetId: 'crm', isBidirectional: false } },
-      { type: 'connection.update', id: 'c#1', patch: { label: 'x' } },
-      { type: 'connection.delete', id: 'c#1' },
+      { type: 'relation.create', relation: { id: 'c#2', type: 'flow' as const, sourceId: 'billing', targetId: 'crm', isBidirectional: false } },
+      { type: 'relation.update', id: 'c#1', patch: { label: 'x' } },
+      { type: 'relation.delete', id: 'c#1' },
       { type: 'placement.remove', diagramId: 'd1', elementIds: ['crm'] },
       { type: 'route.set', diagramId: 'd1', routes: [{ connectionId: 'c#1', waypoints: [] }] },
       { type: 'route.clear', diagramId: 'd1', connectionIds: ['c#1'] },

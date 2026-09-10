@@ -19,7 +19,7 @@
 import type { HostModel } from './fromInterchange'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { DesignConnection, DesignDiagram, DesignElement, DiagramPlacement } from './types'
+import type { DesignDiagram, DesignElement, DiagramPlacement, Relation } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
@@ -65,10 +65,10 @@ function ids(before: Map<string, unknown>, after: Map<string, unknown>): string[
   return [...new Set([...before.keys(), ...after.keys()])].sort()
 }
 
-function connectionName(connection: DesignConnection, model: HostModel): string {
+function relationName(relation: Relation, model: HostModel): string {
   const name = (id: string) => model.elements.find((held) => held.id === id)?.name ?? id
-  return connection.label
-    || `${name(connection.sourceId)} → ${name(connection.targetId)}`
+  return relation.label
+    || `${name(relation.sourceId)} → ${name(relation.targetId)}`
 }
 
 /**
@@ -117,13 +117,13 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
     changes.push(...compare<DesignElement>('element', id, was, now, (held) => held.name))
   }
 
-  const wasConnections = byId(before.connections)
-  const nowConnections = byId(after.connections)
-  for (const id of ids(wasConnections, nowConnections)) {
-    const was = wasConnections.get(id)
-    const now = nowConnections.get(id)
-    changes.push(...compare<DesignConnection>('connection', id, was, now,
-      (held) => connectionName(held, now ? after : before)))
+  const wasRelations = byId(before.relations)
+  const nowRelations = byId(after.relations)
+  for (const id of ids(wasRelations, nowRelations)) {
+    const was = wasRelations.get(id)
+    const now = nowRelations.get(id)
+    changes.push(...compare<Relation>('connection', id, was, now,
+      (held) => relationName(held, now ? after : before)))
   }
 
   const wasDiagrams = byId(before.diagrams)

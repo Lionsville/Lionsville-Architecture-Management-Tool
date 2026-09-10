@@ -392,7 +392,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const requestDeleteConnection = useCallback(
     (connectionId: string) => {
       if (readOnly) return;
-      const connection = state.model.connections.find((c) => c.id === connectionId);
+      const connection = state.model.relations.find((c) => c.id === connectionId);
       const summary = deletionSummary(state.model, {
         elementIds: [],
         connectionIds: [connectionId],

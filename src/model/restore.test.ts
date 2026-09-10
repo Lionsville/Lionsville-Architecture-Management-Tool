@@ -32,7 +32,7 @@ function then(over: Partial<HostModel> = {}): HostModel {
       element('billing', 'Billing', { description: 'Sends the invoices.' }),
       element('crm', 'CRM', { vendor: 'Someone' }),
     ],
-    connections: [{ id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false, label: 'orders' }],
+    relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false, label: 'orders' }],
     diagrams: [{
       id: 'd1', kind: 'layer7', name: 'Warehouse', author: 'W.', showAspects: false,
       autoRoute: true,
@@ -55,9 +55,9 @@ function now(over: Partial<HostModel> = {}): HostModel {
       element('crm', 'CRM'),
       element('wms', 'Warehouse system'),
     ],
-    connections: [
-      { id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: true },
-      { id: 'c#2', sourceId: 'crm', targetId: 'wms', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: true },
+      { type: 'flow', id: 'c#2', sourceId: 'crm', targetId: 'wms', isBidirectional: false },
     ],
     diagrams: [{
       id: 'd1', kind: 'layer7', name: 'A mess', client: 'Somebody',
@@ -85,13 +85,13 @@ describe('restoring one diagram', () => {
     expect(dropped).toBe(0)
     // And nothing else moved: the elements, the connections and the decision are today's.
     expect(after.elements).toEqual(now().elements)
-    expect(after.connections).toEqual(now().connections)
+    expect(after.relations).toEqual(now().relations)
     expect(after.decisions).toEqual(now().decisions)
     expect(after.name).toBe('Landscape, renamed')
   })
 
   it('drops the placement of an element that no longer exists, and says how many', () => {
-    const later = now({ elements: [element('billing', 'Billing')], connections: [] })
+    const later = now({ elements: [element('billing', 'Billing')], relations: [] })
     const { after, dropped } = restored(then(), later, { what: 'diagram', id: 'd1' })
     expect(dropped).toBe(1)
     expect(after.diagrams[0].placements.map((p) => p.elementId)).toEqual(['billing'])
@@ -138,7 +138,7 @@ describe('restoring one description', () => {
   })
 
   it('refuses when the element is gone now — that is a project restore', () => {
-    const later = now({ elements: [element('crm', 'CRM')], connections: [], diagrams: [{ id: 'd1', kind: 'layer7', name: 'x', placements: [] }] })
+    const later = now({ elements: [element('crm', 'CRM')], relations: [], diagrams: [{ id: 'd1', kind: 'layer7', name: 'x', placements: [] }] })
     expect(restoreCommand(fromArrays(then()), fromArrays(later), { what: 'description', id: 'billing' }, '2026-09-03'))
       .toEqual({ ok: false, reason: 'restore.absentNow' })
   })
@@ -169,7 +169,7 @@ describe('restoring the whole project', () => {
     const sorted = (model: HostModel) => ({
       ...model,
       elements: [...model.elements].sort((a, b) => a.id.localeCompare(b.id)),
-      connections: [...model.connections].sort((a, b) => a.id.localeCompare(b.id)),
+      connections: [...model.relations].sort((a, b) => a.id.localeCompare(b.id)),
     })
     expect(sorted(after)).toEqual(sorted(then()))
     expect(dropped).toBe(0)

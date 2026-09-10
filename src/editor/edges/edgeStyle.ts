@@ -31,7 +31,8 @@ export function edgeDashArray(lineStyle: EdgeLineStyle | undefined): string | un
  * an arrow, the source end only on a bidirectional connection.
  */
 export function resolveArrowheads(conn: {
-  isBidirectional: boolean;
+  /** Absent means one-way — a relation that is not a flow never says otherwise. */
+  isBidirectional?: boolean;
   sourceArrowhead?: EdgeArrowhead;
   targetArrowhead?: EdgeArrowhead;
 }): { start: boolean; end: boolean } {

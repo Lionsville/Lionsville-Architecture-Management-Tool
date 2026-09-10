@@ -22,7 +22,7 @@ const host: HostModel = model({
     element('b', { name: 'Beta' }),
     element('c', { name: 'Gamma' }),
   ],
-  connections: [connection('a-b', 'a', 'b'), connection('b-c', 'b', 'c')],
+  relations: [connection('a-b', 'a', 'b'), connection('b-c', 'b', 'c')],
   diagrams: [
     diagram('landscape', {
       placements: [
@@ -114,7 +114,7 @@ describe('deriving edges twice', () => {
 
   it('replaces only the connection that was edited', () => {
     const edges = buildEdges(argsOf(host));
-    const relabelled = after({ type: 'connection.update', id: 'b-c', patch: { label: 'publishes' } });
+    const relabelled = after({ type: 'relation.update', id: 'b-c', patch: { label: 'publishes' } });
     const next = buildEdges(argsOf(relabelled), edges);
     expect(next[0]).toBe(edges[0]);
     expect(next[1]).not.toBe(edges[1]);

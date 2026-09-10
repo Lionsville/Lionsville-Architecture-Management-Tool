@@ -20,9 +20,9 @@ function model(routes: EdgeRoute[] = []): DesignModel {
       isManaged: true,
       aspects: {},
     })),
-    connections: [
-      { id: 'c1', sourceId: 's', targetId: 't1', isBidirectional: false },
-      { id: 'c2', sourceId: 's', targetId: 't2', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'c1', sourceId: 's', targetId: 't1', isBidirectional: false },
+      { type: 'flow', id: 'c2', sourceId: 's', targetId: 't2', isBidirectional: false },
     ],
     diagrams: [
       {

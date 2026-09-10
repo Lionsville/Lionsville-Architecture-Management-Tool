@@ -7,7 +7,7 @@
  * proved.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignConnection, DesignElement, DiagramPlacement } from '.'
+import type { DesignElement, DiagramPlacement, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 import {
   isInterchange, isWorkingFile, needsRemount, workingFileLogoLibrary,
@@ -21,8 +21,8 @@ function element(id: string, name: string, over: Partial<DesignElement> = {}): D
   }
 }
 
-function connection(id: string, sourceId: string, targetId: string): DesignConnection {
-  return { id, sourceId, targetId, isBidirectional: false }
+function connection(id: string, sourceId: string, targetId: string): Relation {
+  return { id, type: 'flow', sourceId, targetId, isBidirectional: false }
 }
 
 function place(elementId: string, x = 0, y = 0): DiagramPlacement {
@@ -35,7 +35,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
     name: 'Acme Logistics',
     customerName: 'Acme Logistics',
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
-    connections: [connection('c#1', 'crews', 'reisinfo')],
+    relations: [connection('c#1', 'crews', 'reisinfo')],
     diagrams: [
       { id: 'l7', kind: 'layer7', name: 'Landschap', placements: [place('crews', 10, 20), place('reisinfo', 30, 40)] },
       { id: 'cd', kind: 'container', name: 'Crews · containers', placements: [place('crews', 5, 5)] },

@@ -67,10 +67,10 @@ function board(): { model: DesignModel; layer7: DesignDiagram } {
         elt('outside', 'application'),
         elt('actor', 'actor'),
       ],
-      connections: [
-        { id: 'internal', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
-        { id: 'crossing', sourceId: 'a1', targetId: 'outside', isBidirectional: false },
-        { id: 'elsewhere', sourceId: 'outside', targetId: 'actor', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'internal', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
+        { type: 'flow', id: 'crossing', sourceId: 'a1', targetId: 'outside', isBidirectional: false },
+        { type: 'flow', id: 'elsewhere', sourceId: 'outside', targetId: 'actor', isBidirectional: false },
       ],
       diagrams: [layer7],
     },

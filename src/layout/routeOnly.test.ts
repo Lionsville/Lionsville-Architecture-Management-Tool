@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type {
   DesignConnection,
+  Relation,
   DesignDiagram,
   DesignElement,
   DesignModel,
@@ -52,7 +53,7 @@ function twoNodeModel(options: {
   connection?: Partial<DesignConnection>;
   groups?: { name: string; x: number; y: number; width: number; height: number }[];
   extraNodes?: { id: string; x: number; y: number }[];
-  extraConnections?: DesignConnection[];
+  extraConnections?: Relation[];
   edgeRoutes?: DesignDiagram['edgeRoutes'];
 }): { model: DesignModel; diagram: DesignDiagram } {
   const extras = options.extraNodes ?? [];
@@ -72,8 +73,8 @@ function twoNodeModel(options: {
     name: 'ACME',
     customerName: 'ACME',
     elements: [elt('a', 'application'), elt('b', 'application'), ...extras.map((n) => elt(n.id, 'application'))],
-    connections: [
-      { id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false, ...options.connection },
+    relations: [
+      { type: 'flow', id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false, ...options.connection },
       ...(options.extraConnections ?? []),
     ],
     diagrams: [diagram],
@@ -144,7 +145,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     // edge — asserted from the other side in `tidy.test.ts`. Do not unify them.
     const stored = [{ connectionId: 'a-a', waypoints: [{ x: 700, y: 900 }] }];
     const { model, diagram } = twoNodeModel({
-      extraConnections: [{ id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false }],
+      extraConnections: [{ type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false }],
       edgeRoutes: stored,
     });
 
@@ -158,7 +159,7 @@ describe('routeDiagramEdges — route-only pass', () => {
 
   it('omits an entry for an unroutable edge that has no stored route', async () => {
     const { model, diagram } = twoNodeModel({
-      extraConnections: [{ id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false }],
+      extraConnections: [{ type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false }],
     });
     expect(routeOf(await routeDiagramEdges(model, diagram), 'a-a')).toBeUndefined();
   });
@@ -173,7 +174,7 @@ describe('routeDiagramEdges — route-only pass', () => {
 
     const route = routeOf(result, 'a-b')!;
     expect(route.labelPosition).toBeDefined();
-    const labelRect = labelRectAt(model.connections[0], route.labelPosition!);
+    const labelRect = labelRectAt(model.relations[0], route.labelPosition!);
     expect(rectIntersectsRect(labelRect, group, LABEL_MARGIN)).toBe(false);
   });
 
@@ -193,7 +194,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     const route = routeOf(result, 'a-b')!;
     expect(route.labelPosition).toBeDefined();
     // Its own box is excused, but the members it runs between are not.
-    const labelRect = labelRectAt(model.connections[0], route.labelPosition!);
+    const labelRect = labelRectAt(model.relations[0], route.labelPosition!);
     for (const id of ['a', 'b']) {
       expect(rectIntersectsRect(labelRect, rectFor(model, diagram, id), LABEL_MARGIN)).toBe(false);
     }
@@ -210,7 +211,7 @@ describe('routeDiagramEdges — route-only pass', () => {
 
     const route = routeOf(await routeDiagramEdges(model, diagram), 'a-b')!;
     expect(route.labelPosition).toBeDefined();
-    const labelRect = labelRectAt(model.connections[0], route.labelPosition!);
+    const labelRect = labelRectAt(model.relations[0], route.labelPosition!);
     expect(rectIntersectsRect(labelRect, other, LABEL_MARGIN)).toBe(false);
   });
 
@@ -273,7 +274,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     // the board and must still push `a-b` aside.
     const { model, diagram } = twoNodeModel({
       extraNodes: [{ id: 'c', x: 650, y: 380 }],
-      extraConnections: [{ id: 'b-c', sourceId: 'b', targetId: 'c', isBidirectional: false }],
+      extraConnections: [{ type: 'flow', id: 'b-c', sourceId: 'b', targetId: 'c', isBidirectional: false }],
     });
     const a = rectFor(model, diagram, 'a');
     const b = rectFor(model, diagram, 'b');
@@ -292,7 +293,8 @@ describe('routeDiagramEdges — route-only pass', () => {
   it('skips a connection whose endpoint is not on this diagram', async () => {
     const { model, diagram } = twoNodeModel({});
     model.elements.push(elt('elsewhere', 'application'));
-    model.connections.push({
+    model.relations.push({
+      type: 'flow',
       id: 'a-elsewhere',
       sourceId: 'a',
       targetId: 'elsewhere',
@@ -326,7 +328,7 @@ describe('routeDiagramEdges — route-only pass', () => {
         elt('ext', 'externalSystem'),
         elt('blocker', 'application'),
       ],
-      connections: [{ id: 'svc-ext', sourceId: 'svc', targetId: 'ext', isBidirectional: false }],
+      relations: [{ type: 'flow', id: 'svc-ext', sourceId: 'svc', targetId: 'ext', isBidirectional: false }],
       diagrams: [diagram],
     };
 
@@ -375,9 +377,9 @@ describe('routeDiagramEdges — route-only pass', () => {
         elt('west', 'application'),
         elt('east', 'application'),
       ],
-      connections: [
-        { id: 'c1-c2', sourceId: 'c1', targetId: 'c2', isBidirectional: false },
-        { id: 'west-east', sourceId: 'west', targetId: 'east', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'c1-c2', sourceId: 'c1', targetId: 'c2', isBidirectional: false },
+        { type: 'flow', id: 'west-east', sourceId: 'west', targetId: 'east', isBidirectional: false },
       ],
       diagrams: [diagram],
     };
@@ -427,21 +429,22 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
       elt('erp', 'application'),
       elt('dynamics', 'externalSystem'),
     ],
-    connections: [
-      { id: 'order-erp', sourceId: 'order', targetId: 'erp', isBidirectional: false },
-      { id: 'shopper-webshop', sourceId: 'shopper', targetId: 'webshop', isBidirectional: false },
-      { id: 'akeneo-webshop', sourceId: 'akeneo', targetId: 'webshop', isBidirectional: false },
-      { id: 'storemgr-akeneo', sourceId: 'storeMgr', targetId: 'akeneo', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'order-erp', sourceId: 'order', targetId: 'erp', isBidirectional: false },
+      { type: 'flow', id: 'shopper-webshop', sourceId: 'shopper', targetId: 'webshop', isBidirectional: false },
+      { type: 'flow', id: 'akeneo-webshop', sourceId: 'akeneo', targetId: 'webshop', isBidirectional: false },
+      { type: 'flow', id: 'storemgr-akeneo', sourceId: 'storeMgr', targetId: 'akeneo', isBidirectional: false },
       {
+        type: 'flow',
         id: 'marketplace-order',
         sourceId: 'marketplace',
         targetId: 'order',
         label: 'imports marketplace orders',
         isBidirectional: false,
       },
-      { id: 'csa-order', sourceId: 'csa', targetId: 'order', isBidirectional: false },
-      { id: 'webshop-order', sourceId: 'webshop', targetId: 'order', label: 'places orders', isBidirectional: false },
-      { id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
+      { type: 'flow', id: 'csa-order', sourceId: 'csa', targetId: 'order', isBidirectional: false },
+      { type: 'flow', id: 'webshop-order', sourceId: 'webshop', targetId: 'order', label: 'places orders', isBidirectional: false },
+      { type: 'flow', id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
     ],
     diagrams: [
       {

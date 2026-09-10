@@ -35,7 +35,7 @@ const PLAN: Transition = {
 
 function model(over: Partial<DesignModel & { transitions: Transition[] }> = {}) {
   return {
-    name: 'Acme', customerName: 'Acme', diagrams: [], connections: [],
+    name: 'Acme', customerName: 'Acme', diagrams: [], relations: [],
     elements: [
       element('wms-old', 'Warehouse Management', {
         lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' }, successorId: 'wms-new',
@@ -136,7 +136,7 @@ describe('the checks', () => {
   it('reports what the dates disagree about', () => {
     setup({
       model: model({
-        connections: [{ id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }],
+        relations: [{ type: 'flow', id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }],
       }),
     })
     expect(screen.getByText(/Warehouse Management retires on 2028-01-31 with 1 connections still live/))

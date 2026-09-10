@@ -12,7 +12,7 @@ import type { ReplacementRequest } from './replacement'
 import { apply } from './reducer'
 import { fromArrays, toArrays, transitionList } from './normalised'
 import { transaction } from './commands'
-import type { DesignConnection, DesignDiagram, DesignElement, DesignModel } from './types'
+import type { DesignDiagram, DesignElement, DesignModel, Relation } from './types'
 
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
@@ -20,8 +20,8 @@ function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
     category: 'Logistics', ...over,
   }
 }
-function line(id: string, sourceId: string, targetId: string, over: Partial<DesignConnection> = {}): DesignConnection {
-  return { id, sourceId, targetId, isBidirectional: false, ...over }
+function line(id: string, sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation {
+  return { id, type: 'flow', sourceId, targetId, isBidirectional: false, ...over }
 }
 function diagram(id: string, placed: string[]): DesignDiagram {
   return {
@@ -33,7 +33,7 @@ function diagram(id: string, placed: string[]): DesignDiagram {
 const MODEL: DesignModel = {
   name: 'Acme', customerName: 'Acme',
   elements: [element('wms'), element('billing'), element('erp')],
-  connections: [line('a', 'wms', 'billing', { protocol: 'REST' }), line('b', 'erp', 'wms')],
+  relations: [line('a', 'wms', 'billing', { protocol: 'REST' }), line('b', 'erp', 'wms')],
   diagrams: [diagram('landscape', ['wms', 'billing']), diagram('other', ['billing'])],
 }
 
@@ -83,9 +83,10 @@ describe('one for one, with a new application', () => {
       patch: { lifecycleDates: { retiring: '2027-03-01', retired: '2027-09-01' }, successorId: 'wms-next' },
     })
     expect(commands).toContainEqual({
-      type: 'connection.create',
-      connection: {
-        id: 'c-tap', sourceId: 'wms', targetId: 'wms-next', label: 'shadow tap', isBidirectional: false,
+      type: 'relation.create',
+      relation: {
+        id: 'c-tap', type: 'flow',
+        sourceId: 'wms', targetId: 'wms-next', label: 'shadow tap', isBidirectional: false,
         lineStyle: 'dashed', validFrom: '2027-03-01', validUntil: '2027-08-31',
       },
     })
@@ -112,7 +113,7 @@ describe('one for one, with a new application', () => {
     if (!('model' in result)) return
     const after = toArrays(result.model)
     expect(after.elements.map((e) => e.id)).toContain('wms-next')
-    expect(after.connections).toHaveLength(3)
+    expect(after.relations).toHaveLength(3)
     expect(transitionList(result.model)).toHaveLength(1)
     const back = apply(result.model, result.inverse)
     expect('model' in back && toArrays(back.model)).toEqual(MODEL)
@@ -123,7 +124,7 @@ describe('the other shapes', () => {
   it('a split leaves the source undated and un-succeeded, but taps it and names it as changed', () => {
     const { commands } = replacementCommands(MODEL, { ...ONE_FOR_ONE, from: [{ elementId: 'wms', role: 'changes' }] }, IDS, 1)
     expect(commands.find((c) => c.type === 'element.update' && c.id === 'wms')).toBeUndefined()
-    expect(commands.filter((c) => c.type === 'connection.create')).toHaveLength(1)
+    expect(commands.filter((c) => c.type === 'relation.create')).toHaveLength(1)
     const plan = commands[commands.length - 1]
     expect(plan).toMatchObject({ transition: { elements: [{ elementId: 'wms', role: 'changes' }, { elementId: 'wms-next', role: 'introduces' }] } })
   })
@@ -134,7 +135,7 @@ describe('the other shapes', () => {
     const { commands } = replacementCommands(MODEL, {
       ...ONE_FOR_ONE, from: [{ elementId: 'wms', role: 'retires' }, { elementId: 'erp', role: 'retires' }],
     }, ids, 1)
-    expect(commands.filter((c) => c.type === 'connection.create').map((c) => (c as { connection: DesignConnection }).connection.sourceId))
+    expect(commands.filter((c) => c.type === 'relation.create').map((c) => (c as { relation: Relation }).relation.sourceId))
       .toEqual(['wms', 'erp'])
     expect(commands.filter((c) => c.type === 'element.update').map((c) => (c as { patch: Partial<DesignElement> }).patch.successorId))
       .toEqual(['wms-next', 'wms-next'])
@@ -154,7 +155,7 @@ describe('the other shapes', () => {
 
   it('ignores a source that is not in the landscape', () => {
     const { commands } = replacementCommands(MODEL, { ...ONE_FOR_ONE, from: [{ elementId: 'ghost', role: 'retires' }] }, IDS, 1)
-    expect(commands.filter((c) => c.type === 'connection.create')).toHaveLength(0)
+    expect(commands.filter((c) => c.type === 'relation.create')).toHaveLength(0)
     expect(commands[commands.length - 1]).toMatchObject({ transition: { elements: [{ elementId: 'wms-next', role: 'introduces' }] } })
   })
 })

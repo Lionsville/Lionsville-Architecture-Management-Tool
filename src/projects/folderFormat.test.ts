@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Adr } from '../decisions/adr'
+import { ShellError } from '../platform/errors'
 import type { DesignElement } from '../model'
 import type { Transition } from '../model/transition'
 import type { HostModel } from '../model/fromInterchange'
@@ -47,7 +48,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
       element('crews', 'Crews', { description: 'Roster and duties.' }),
       element('reisinfo', 'Reisinformatie', { vendor: 'Acme' }),
     ],
-    connections: [{ id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
     diagrams: [
       {
         id: 'l7', kind: 'layer7', name: 'Landschap',
@@ -186,6 +187,33 @@ describe('projectFiles', () => {
   })
 })
 
+/**
+ * The model gained four relation types before the file gained a place for them
+ * (ADR-0012 §5). A save that quietly wrote one into a list called `connections`
+ * would hand every 1.x build a line it reads as an interface between two
+ * applications, so the writer says no instead.
+ */
+describe('a relation format 3 has no place for', () => {
+  it('refuses the save, with a key rather than a sentence', () => {
+    const held = project()
+    const model: HostModel = {
+      ...held.model,
+      relations: [...held.model.relations, { id: 'r-1', type: 'supports', sourceId: 'crews', targetId: 'reisinfo' }],
+    }
+    expect(() => projectFiles({ ...held, model })).toThrow(ShellError)
+    try {
+      projectFiles({ ...held, model })
+    } catch (error) {
+      expect((error as ShellError).key).toBe('relation.notInThisFormat')
+    }
+  })
+
+  it('writes the flows it does have a place for exactly as it always did', () => {
+    expect(JSON.parse(textOf(projectFiles(project()), MODEL_FILE)).connections)
+      .toEqual([{ id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }])
+  })
+})
+
 describe('what one change touches', () => {
   const before = projectFiles(project())
 
@@ -233,7 +261,7 @@ describe('projectFromFolder', () => {
       activeDiagramId: 'l7',
       logoLibrary: [],
       model: {
-        name: 'Bare', customerName: 'Nobody', elements: [], connections: [],
+        name: 'Bare', customerName: 'Nobody', elements: [], relations: [],
         diagrams: [{ id: 'l7', kind: 'layer7', name: 'One', placements: [] }],
       },
     }

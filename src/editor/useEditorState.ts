@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramLayoutConfig, DiagramPlacement, DomainGroupRect, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, ResizableZone } from '../model/types';
+import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramLayoutConfig, DiagramPlacement, DomainGroupRect, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
 import type { TidyResult } from '../layout/tidy';
@@ -104,12 +104,12 @@ export function selectDomainGroup(name: string): Selection {
  * structure as well as its contents. Shared by the keymap and the pane menu.
  */
 export function selectAllContent(
-  model: Pick<DesignModel, 'connections'>,
+  model: Pick<DesignModel, 'relations'>,
   diagram: Pick<DesignDiagram, 'placements'>,
 ): Selection {
   const elementIds = diagram.placements.map((p) => p.elementId);
   const placed = new Set(elementIds);
-  const connectionIds = model.connections
+  const connectionIds = model.relations
     .filter((c) => placed.has(c.sourceId) && placed.has(c.targetId))
     .map((c) => c.id);
   return { elementIds, connectionIds, domainGroups: [] };
@@ -645,7 +645,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const followed: EdgeRoute[] = [];
         for (const route of diagram.edgeRoutes ?? []) {
           if (isAutoRoute(route)) continue;
-          const connection = model.connections.find((c) => c.id === route.connectionId);
+          const connection = model.relations.find((c) => c.id === route.connectionId);
           if (!connection) continue;
           let next = route;
           const source = rects.get(connection.sourceId);
@@ -809,14 +809,17 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const placed = (id: string) => model.elements.some((e) => e.id === id);
         if (!placed(sourceId) || !placed(targetId)) return undefined;
         const diagram = currentDiagram();
-        const connection: DesignConnection = {
+        // A line drawn on a canvas is a flow: the four other relation types
+        // (ADR-0012 §5) say what covers what and are not drawn here.
+        const connection: Relation = {
           id: ids.connection(),
+          type: 'flow',
           sourceId,
           targetId,
           isBidirectional: false,
         };
         geometry(transaction([
-          { type: 'connection.create', connection },
+          { type: 'relation.create', relation: connection },
           // Alt-connect: the side(s) dragged from/to, in the SAME step as the
           // line. A bend-less `auto` row — the router's to fill in, under the sides.
           ...(diagram && sides && hasFixedSide(sides)
@@ -835,11 +838,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       reconnect(id, endpoints, sides) {
         if (endpoints.sourceId === endpoints.targetId) return;
         const diagram = currentDiagram();
-        const connection = currentModel().connections.find((c) => c.id === id);
+        const connection = currentModel().relations.find((c) => c.id === id);
         if (!connection) return;
         const stored = diagram ? routeFor(diagram, id) : undefined;
         geometry(transaction([
-          { type: 'connection.update', id, patch: endpoints },
+          { type: 'relation.update', id, patch: endpoints },
           // Only the end(s) the drag fixed change; the other keeps whatever it had.
           ...(diagram && sides && hasFixedSide(sides)
             ? routeCommands(diagram.id, [routeWithSides(stored, id, routeSides(sides))])
@@ -853,7 +856,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (!diagram || payload.elements.length === 0) return;
         const remapped = remapClipboard(payload, {
           mintElementId: (name) => ids.element(name),
-          mintConnectionId: () => ids.connection(),
+          mintRelationId: () => ids.connection(),
           offset,
           target: {
             kind: diagram.kind,
@@ -866,25 +869,25 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         geometry(transaction([
           ...remapped.elements.map((element) => ({ type: 'element.create' as const, element })),
           { type: 'placement.set', diagramId: diagram.id, placements: remapped.placements },
-          ...remapped.connections.map((connection) => ({
-            type: 'connection.create' as const, connection,
+          ...remapped.relations.map((relation) => ({
+            type: 'relation.create' as const, relation,
           })),
         ]));
         setSelection({
           elementIds: remapped.elements.map((e) => e.id),
-          connectionIds: remapped.connections.map((c) => c.id),
+          connectionIds: remapped.relations.map((c) => c.id),
           domainGroups: [],
         });
       },
 
       updateConnection(id, patch, coalesce) {
-        if (!currentModel().connections.some((c) => c.id === id)) return;
-        dispatch({ type: 'connection.update', id, patch, ...(coalesce ? { coalesce } : {}) });
+        if (!currentModel().relations.some((c) => c.id === id)) return;
+        dispatch({ type: 'relation.update', id, patch, ...(coalesce ? { coalesce } : {}) });
       },
 
       deleteConnection(id) {
-        if (!currentModel().connections.some((c) => c.id === id)) return;
-        geometry({ type: 'connection.delete', id });
+        if (!currentModel().relations.some((c) => c.id === id)) return;
+        geometry({ type: 'relation.delete', id });
         setSelection(EMPTY_SELECTION);
       },
 
@@ -897,12 +900,12 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const gone = new Set(doomed);
         const commands: Command[] = doomed.map((id) => ({ type: 'element.delete' as const, id }));
         for (const id of selection.connectionIds) {
-          const connection = model.connections.find((c) => c.id === id);
+          const connection = model.relations.find((c) => c.id === id);
           // A line whose endpoint is on its way out goes with the endpoint.
           // Asking for it twice would refuse, and one refusal takes the whole
           // gesture with it.
           if (!connection || gone.has(connection.sourceId) || gone.has(connection.targetId)) continue;
-          commands.push({ type: 'connection.delete', id });
+          commands.push({ type: 'relation.delete', id });
         }
         // Groups ride along in the SAME step, so Delete over a mixed selection
         // stays one undo step. A layer7 diagram is never one of the diagrams an
@@ -1207,7 +1210,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       : undefined;
   const selectedConnection =
     soleKind === 'connection'
-      ? model.connections.find((c) => c.id === selection.connectionIds[0])
+      ? model.relations.find((c) => c.id === selection.connectionIds[0])
       : undefined;
   const selectedDomainGroup = soleKind === 'domainGroup' ? selection.domainGroups[0] : undefined;
 
@@ -1331,7 +1334,7 @@ function pruneSelection(
 ): Selection {
   if (isSelectionEmpty(selection)) return selection;
   const elementIds = new Set(model.elements.map((e) => e.id));
-  const connectionIds = new Set(model.connections.map((c) => c.id));
+  const connectionIds = new Set(model.relations.map((c) => c.id));
   const diagram = model.diagrams.find((d) => d.id === activeDiagramId);
   const groupNames = new Set(
     (diagram?.layoutConfig?.domainGroups ?? []).map((g) => g.name),

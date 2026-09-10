@@ -28,11 +28,11 @@
  */
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { AdrId, ConnectionId, Diagram, DiagramId, Model, TransitionId } from './normalised'
+import type { AdrId, RelationId, Diagram, DiagramId, Model, TransitionId } from './normalised'
 import { decisionsOf } from './normalised'
 import type {
-  DesignConnection, DesignElement, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
-  EdgeRoute, ElementId,
+  DesignElement, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
+  EdgeRoute, ElementId, Relation,
 } from './types'
 
 /** The model's own scalars — everything a project's settings dialog edits. */
@@ -57,20 +57,20 @@ export type CommandBody =
   // --- elements ------------------------------------------------------------
   | { type: 'element.create'; element: DesignElement; at?: number }
   | { type: 'element.update'; id: ElementId; patch: Partial<DesignElement> }
-  /** Takes its connections, its placements and any container view about it. */
+  /** Takes its relations, its placements and any container view about it. */
   | { type: 'element.delete'; id: ElementId }
 
-  // --- connections ---------------------------------------------------------
-  | { type: 'connection.create'; connection: DesignConnection; at?: number }
-  | { type: 'connection.update'; id: ConnectionId; patch: Partial<DesignConnection> }
+  // --- relations (ADR-0012 §5) ---------------------------------------------
+  | { type: 'relation.create'; relation: Relation; at?: number }
+  | { type: 'relation.update'; id: RelationId; patch: Partial<Relation> }
   /** Takes its routes on every diagram. */
-  | { type: 'connection.delete'; id: ConnectionId }
+  | { type: 'relation.delete'; id: RelationId }
 
   // --- geometry, per diagram -----------------------------------------------
   | { type: 'placement.set'; diagramId: DiagramId; placements: DiagramPlacement[]; at?: number[] }
   | { type: 'placement.remove'; diagramId: DiagramId; elementIds: ElementId[] }
   | { type: 'route.set'; diagramId: DiagramId; routes: EdgeRoute[]; at?: number[] }
-  | { type: 'route.clear'; diagramId: DiagramId; connectionIds: ConnectionId[] }
+  | { type: 'route.clear'; diagramId: DiagramId; connectionIds: RelationId[] }
   | { type: 'layout.set'; diagramId: DiagramId; layoutConfig?: DiagramLayoutConfig }
 
   // --- diagrams ------------------------------------------------------------

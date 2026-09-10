@@ -31,19 +31,20 @@
  * this and so does the agent, and `agent` may not see `roadmap`.
  */
 import type { Command } from './commands'
+import { flowsOf } from './relations'
 import { addDays } from './transition'
 import type { Transition } from './transition'
-import type { DesignConnection, DesignElement, ElementId } from './types'
+import type { DesignElement, ElementId, Relation } from './types'
 
 export type Port = {
   /** The line on the element the plan moves from. */
-  from: DesignConnection
+  from: Relation
   /** Which end of `from` is leaving. */
   fromElementId: ElementId
   /** The other end, which stays where it is. */
   counterpartId: ElementId
   /** Its twin on an introduced element, when one has been drawn. */
-  to?: DesignConnection
+  to?: Relation
   /** The day the twin starts; absent means not yet planned. */
   on?: string
   /**
@@ -57,7 +58,7 @@ export type Port = {
 
 type Landscape = {
   elements: readonly Pick<DesignElement, 'id'>[]
-  connections: readonly DesignConnection[]
+  relations: readonly Relation[]
 }
 
 function idsWithRole(plan: Transition, ...roles: Transition['elements'][number]['role'][]): Set<ElementId> {
@@ -65,18 +66,18 @@ function idsWithRole(plan: Transition, ...roles: Transition['elements'][number][
 }
 
 /** Which end of a line this element is, or nothing if it is neither. */
-function endOf(connection: DesignConnection, id: ElementId): 'source' | 'target' | undefined {
-  if (connection.sourceId === id) return 'source'
-  if (connection.targetId === id) return 'target'
+function endOf(relation: Relation, id: ElementId): 'source' | 'target' | undefined {
+  if (relation.sourceId === id) return 'source'
+  if (relation.targetId === id) return 'target'
   return undefined
 }
 
-function otherEnd(connection: DesignConnection, id: ElementId): ElementId {
-  return connection.sourceId === id ? connection.targetId : connection.sourceId
+function otherEnd(relation: Relation, id: ElementId): ElementId {
+  return relation.sourceId === id ? relation.targetId : relation.sourceId
 }
 
 /** Whether `twin` is `line` moved onto `toId`: same counterpart, same end, same direction, same protocol. */
-function isTwin(line: DesignConnection, fromId: ElementId, twin: DesignConnection, toId: ElementId): boolean {
+function isTwin(line: Relation, fromId: ElementId, twin: Relation, toId: ElementId): boolean {
   const end = endOf(line, fromId)
   if (!end || endOf(twin, toId) !== end) return false
   if (otherEnd(twin, toId) !== otherEnd(line, fromId)) return false
@@ -102,7 +103,9 @@ export function portsOf(model: Landscape, plan: Transition): Port[] {
   const known = new Set(model.elements.map((element) => element.id))
 
   const ports: Port[] = []
-  for (const line of model.connections) {
+  // An interface is a flow. The other relation types say what covers what
+  // (ADR-0012 §5); they are not lines anybody moves from one end to another.
+  for (const line of flowsOf(model.relations)) {
     const fromElementId = [line.sourceId, line.targetId].find((id) => leaving.has(id))
     if (fromElementId === undefined) continue
     const counterpartId = otherEnd(line, fromElementId)
@@ -111,7 +114,7 @@ export function portsOf(model: Landscape, plan: Transition): Port[] {
     if (arriving.has(counterpartId) || leaving.has(counterpartId)) continue
     if (!known.has(counterpartId)) continue
 
-    const to = model.connections.find((candidate) => (
+    const to = flowsOf(model.relations).find((candidate) => (
       candidate.id !== line.id
       && [...arriving].some((toId) => isTwin(line, fromElementId, candidate, toId))
     ))
@@ -141,7 +144,7 @@ export function portProgress(model: Landscape, plan: Transition): { done: number
  * read as a different one. Waypoints do not: they belong to a diagram's
  * routes, and the twin is routed fresh by whichever board draws it.
  */
-export function twinOf(port: Port, toId: ElementId, id: string, on: string): DesignConnection {
+export function twinOf(port: Port, toId: ElementId, id: string, on: string): Relation {
   const end = endOf(port.from, port.fromElementId)
   const { validFrom: _from, validUntil: _until, ...rest } = port.from
   void _from; void _until
@@ -166,21 +169,21 @@ export function lastDayBefore(on: string): string {
  * twice; `mintId` is asked only when one has to be drawn.
  */
 export function portCommands(port: Port, toId: ElementId, on: string, mintId: () => string): Command[] {
-  const close: Command = { type: 'connection.update', id: port.from.id, patch: { validUntil: lastDayBefore(on) } }
+  const close: Command = { type: 'relation.update', id: port.from.id, patch: { validUntil: lastDayBefore(on) } }
   if (port.to) {
     const end = endOf(port.from, port.fromElementId)
-    const moved: Partial<DesignConnection> = {
+    const moved: Partial<Relation> = {
       validFrom: on,
       ...(end === 'source' && port.to.sourceId !== toId ? { sourceId: toId } : {}),
       ...(end === 'target' && port.to.targetId !== toId ? { targetId: toId } : {}),
     }
-    return [{ type: 'connection.update', id: port.to.id, patch: moved }, close]
+    return [{ type: 'relation.update', id: port.to.id, patch: moved }, close]
   }
-  return [{ type: 'connection.create', connection: twinOf(port, toId, mintId(), on) }, close]
+  return [{ type: 'relation.create', relation: twinOf(port, toId, mintId(), on) }, close]
 }
 
 /** The inverse gesture: the twin goes, and the original is open-ended again. */
 export function unportCommands(port: Port): Command[] {
-  const reopen: Command = { type: 'connection.update', id: port.from.id, patch: { validUntil: undefined } }
-  return port.to ? [{ type: 'connection.delete', id: port.to.id }, reopen] : [reopen]
+  const reopen: Command = { type: 'relation.update', id: port.from.id, patch: { validUntil: undefined } }
+  return port.to ? [{ type: 'relation.delete', id: port.to.id }, reopen] : [reopen]
 }

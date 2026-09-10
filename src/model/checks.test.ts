@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { findings } from './checks'
 import type { CheckContext } from './checks'
-import type { DesignConnection, DesignElement } from './types'
+import type { DesignElement, Relation } from './types'
 
 const TODAY = '2026-09-08'
 
@@ -20,16 +20,16 @@ function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   }
 }
 
-function connection(id: string, sourceId: string, targetId: string, over: Partial<DesignConnection> = {}): DesignConnection {
-  return { id, sourceId, targetId, isBidirectional: false, ...over }
+function connection(id: string, sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation {
+  return { id, type: 'flow', sourceId, targetId, isBidirectional: false, ...over }
 }
 
 function check(
   elements: DesignElement[],
-  connections: DesignConnection[] = [],
+  relations: Relation[] = [],
   transitions: CheckContext['model']['transitions'] = [],
 ): ReturnType<typeof findings> {
-  return findings({ model: { elements, connections, transitions }, today: TODAY })
+  return findings({ model: { elements, relations, transitions }, today: TODAY })
 }
 
 const kinds = (list: ReturnType<typeof findings>) => list.map((one) => one.kind)

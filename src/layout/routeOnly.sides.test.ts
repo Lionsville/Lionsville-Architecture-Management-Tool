@@ -8,7 +8,7 @@ import { routeDiagramEdges } from './routeOnly';
  * into the router as pinned ends and come back on every row the pass emits —
  * routed, preserved or cleared — because a constraint outlives the geometry.
  */
-function fixture(routes: EdgeRoute[] = [], extraConnection?: DesignModel['connections'][number]) {
+function fixture(routes: EdgeRoute[] = [], extraConnection?: DesignModel['relations'][number]) {
   const diagram: DesignDiagram = {
     id: 'd1',
     kind: 'layer7',
@@ -24,7 +24,7 @@ function fixture(routes: EdgeRoute[] = [], extraConnection?: DesignModel['connec
     name: 'ACME',
     customerName: 'ACME',
     elements: ['a', 'b'].map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })),
-    connections: [{ id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false }, ...(extraConnection ? [extraConnection] : [])],
+    relations: [{ type: 'flow', id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false }, ...(extraConnection ? [extraConnection] : [])],
     diagrams: [diagram],
   };
   return { model, diagram };
@@ -60,7 +60,7 @@ describe('routeDiagramEdges — attach sides', () => {
     // A self-connection is the one shape the router declines. Its stored bends are
     // measured against nothing valid after a Tidy; its sides were never measured.
     const self: EdgeRoute = { connectionId: 'a-a', waypoints: [{ x: 1, y: 1 }], source: 'manual', sourceSide: 'left', targetSide: 'right' };
-    const { model, diagram } = fixture([self], { id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false });
+    const { model, diagram } = fixture([self], { type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false });
     const cleared = await routeDiagramEdges(model, diagram, 'clear');
     expect(rowOf(cleared.edgeRoutes, 'a-a')).toEqual({ connectionId: 'a-a', waypoints: [], source: 'auto', sourceSide: 'left', targetSide: 'right' });
   });

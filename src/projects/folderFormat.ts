@@ -8,7 +8,7 @@
  *
  * ```
  * project.json                      what it is called and what it holds
- * model.json                        elements and connections
+ * model.json                        elements and connections (the model's flows)
  * diagrams/<id>.json                what a diagram is
  * diagrams/<id>.placements.json     where its elements ended up
  * docs/<elementId>.md               an element's description, as prose
@@ -38,8 +38,9 @@ import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
   AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramPlacement,
-  DocumentImage, EdgeRoute, UploadedLogo,
+  DocumentImage, EdgeRoute, Relation, UploadedLogo,
 } from '../model'
+import { asConnections, asRelations } from '../model/relations'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
@@ -203,7 +204,11 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
 
   files.push({
     path: MODEL_FILE,
-    text: stableJson({ connections: byId(model.connections), elements }),
+    // `connections`, not `relations`: format 3 has one kind of line and this is
+    // the one place the two names meet (ADR-0012 §11). A relation of any other
+    // type is refused here rather than written into a list a 1.x build reads as
+    // connections — see `model/relations.ts`.
+    text: stableJson({ connections: byId(asConnections(model.relations)), elements }),
   })
 
   const stems = diagramStems(model.diagrams)
@@ -466,9 +471,10 @@ function readElements(folder: Folder): {
   }
 }
 
-function readConnections(folder: Folder): DesignConnection[] {
-  return listOf(jsonAt(folder, MODEL_FILE)?.connections)
-    .filter((row) => typeof row.id === 'string') as unknown as DesignConnection[]
+/** Every line the file holds, as what format 3 says it is: a flow. */
+function readRelations(folder: Folder): Relation[] {
+  return asRelations(listOf(jsonAt(folder, MODEL_FILE)?.connections)
+    .filter((row) => typeof row.id === 'string') as unknown as DesignConnection[])
 }
 
 /**
@@ -603,7 +609,7 @@ export function projectFromFolder(
     ...(transitions.length ? { transitions } : {}),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
-    connections: readConnections(folder),
+    relations: readRelations(folder),
     diagrams: ordered,
   }
 

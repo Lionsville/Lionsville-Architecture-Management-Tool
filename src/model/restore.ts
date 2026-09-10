@@ -27,7 +27,7 @@ import { isAdrLocked } from './adr'
 import type { Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
 import { decisionsOf, fromDiagram, routesOf, toDiagram } from './normalised'
-import type { DesignConnection, DiagramSettings } from './types'
+import type { DiagramSettings, Relation } from './types'
 
 /** The same shape `projects/historyPath.ts` asks a history by; the model's own word for it. */
 export type RestoreSubject = { what: 'diagram' | 'description' | 'decision'; id: string }
@@ -97,7 +97,7 @@ function restoreDecision(then: Model, now: Model, id: string, asOf: string): Res
 
 /**
  * Everything, in the order that keeps the model referentially whole at every
- * step: elements before the connections between them, both before the
+ * step: elements before the relations between them, both before the
  * diagrams that place them, deletions after the creations so a landscape is
  * never the last one at the wrong moment.
  */
@@ -118,28 +118,28 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
       if (Object.keys(patch).length) commands.push({ type: 'element.update', id, patch })
     }
   }
-  // Deleting an element takes its connections and any container view about
+  // Deleting an element takes its relations and any container view about
   // it along (the reducer's cascade), so those are not deleted twice.
   const deleted = new Set(now.order.elements.filter((id) => !then.elements[id]))
   for (const id of deleted) commands.push({ type: 'element.delete', id })
-  const cascaded = (connection: DesignConnection) =>
-    deleted.has(connection.sourceId) || deleted.has(connection.targetId)
+  const cascaded = (relation: Relation) =>
+    deleted.has(relation.sourceId) || deleted.has(relation.targetId)
 
-  for (const id of then.order.connections) {
-    const target = then.connections[id]
-    const current = now.connections[id]
-    if (!current) commands.push({ type: 'connection.create', connection: target })
+  for (const id of then.order.relations) {
+    const target = then.relations[id]
+    const current = now.relations[id]
+    if (!current) commands.push({ type: 'relation.create', relation: target })
     else {
       const patch = differing(current, target)
-      if (Object.keys(patch).length) commands.push({ type: 'connection.update', id, patch })
+      if (Object.keys(patch).length) commands.push({ type: 'relation.update', id, patch })
     }
   }
-  for (const id of now.order.connections) {
-    if (!then.connections[id] && !cascaded(now.connections[id])) commands.push({ type: 'connection.delete', id })
+  for (const id of now.order.relations) {
+    if (!then.relations[id] && !cascaded(now.relations[id])) commands.push({ type: 'relation.delete', id })
   }
 
   // Against `then` rather than `now`: by the time these run, the elements
-  // and connections are the snapshot's, so a placement is dropped only when
+  // and relations are the snapshot's, so a placement is dropped only when
   // the snapshot itself had one for an element it did not hold.
   for (const id of then.order.diagrams) {
     const held = diagramCommands(then.diagrams[id], now.diagrams[id], then)
@@ -197,7 +197,7 @@ function diagramCommands(
   const wanted = fromDiagram(target)
   const placements = wanted.placements.filter((placement) => against.elements[placement.elementId])
   const dropped = wanted.placements.length - placements.length
-  const routes = (wanted.edgeRoutes ?? []).filter((route) => against.connections[route.connectionId])
+  const routes = (wanted.edgeRoutes ?? []).filter((route) => against.relations[route.connectionId])
 
   if (!current) {
     const diagram = toDiagram({

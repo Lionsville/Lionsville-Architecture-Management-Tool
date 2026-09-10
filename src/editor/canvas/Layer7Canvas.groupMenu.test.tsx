@@ -30,7 +30,7 @@ function model(): DesignModel {
     elements: [
       { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
     diagrams: [
       {
         id: 'd1',

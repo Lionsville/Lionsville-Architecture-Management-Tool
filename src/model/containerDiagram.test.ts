@@ -4,7 +4,7 @@
  * be checked by hand.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignConnection, DesignElement } from '.'
+import type { DesignElement, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 import {
   containerDiagramMembers, findContainerDiagram, seedContainerDiagram,
@@ -13,8 +13,8 @@ import {
 function el(id: string, kind: DesignElement['kind'], over: Partial<DesignElement> = {}): DesignElement {
   return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {}, ...over }
 }
-const link = (id: string, sourceId: string, targetId: string): DesignConnection =>
-  ({ id, sourceId, targetId, isBidirectional: false })
+const link = (id: string, sourceId: string, targetId: string): Relation =>
+  ({ id, type: 'flow', sourceId, targetId, isBidirectional: false })
 
 /**
  * Crews (with two components) talks to Reisinfo (another application, through one
@@ -33,7 +33,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
       el('extern', 'externalSystem'),
       el('losstaand', 'application'),
     ],
-    connections: [
+    relations: [
       link('c1', 'crews-api', 'reisinfo-api'),
       link('c2', 'extern', 'crews'),
     ],
@@ -70,7 +70,7 @@ describe('containerDiagramMembers', () => {
 
   it('names nobody twice, not even with two connections to the same neighbour', () => {
     const m = model({
-      connections: [
+      relations: [
         link('c1', 'crews-api', 'reisinfo-api'),
         link('c2', 'crews-ui', 'reisinfo-api'),
         link('c3', 'crews', 'reisinfo'),
@@ -95,7 +95,7 @@ describe('containerDiagramMembers', () => {
   })
 
   it('ignores a connection to something that does not exist', () => {
-    const m = model({ connections: [link('c1', 'crews', 'spook')] })
+    const m = model({ relations: [link('c1', 'crews', 'spook')] })
     expect(containerDiagramMembers(m, 'crews')).toEqual(['crews', 'crews-api', 'crews-ui'])
   })
 })

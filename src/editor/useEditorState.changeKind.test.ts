@@ -20,7 +20,7 @@ function model(): DesignModel {
       { id: 'e2', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'c1', kind: 'component', name: 'Orders', parentApplicationId: 'e2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [{ id: 'x1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'x1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
       {
         id: 'd1',
@@ -67,7 +67,7 @@ describe('changeElementKind', () => {
   it('keeps the connections — that is the whole point of not redrawing it', () => {
     const { result } = render(model());
     act(() => result.current.actions.changeElementKind('e1', 'application'));
-    expect(result.current.model.connections).toHaveLength(1);
+    expect(result.current.model.relations).toHaveLength(1);
   });
 
   it('moves the placement to the new kind‘s home band', () => {

@@ -10,7 +10,7 @@
  * mentioned lifecycle/isManaged explicitly — travels along as HostExtras, so the
  * export can hand it back without phantom changes in the diff.
  */
-import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramPlacement, Layer7Zone } from '.'
+import type { DesignDiagram, DesignElement, DesignModel, DiagramPlacement, Layer7Zone, Relation } from '.'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 
@@ -160,10 +160,15 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     }
   })
 
+  // Every connection the document carries is a `flow` (ADR-0012 §5): the
+  // interchange format has only ever had the one kind of line, and it is not
+  // changed by this record.
+  //
   // A connection without a key of its own gets an id that is not a valid
   // interchange key (c#…), so the export knows it should not write a key back.
-  const connections: DesignConnection[] = (doc.connections ?? []).map((c, i) => ({
+  const relations: Relation[] = (doc.connections ?? []).map((c, i) => ({
     id: c.key ?? `c#${i + 1}`,
+    type: 'flow',
     sourceId: c.sourceKey,
     targetId: c.targetKey,
     label: c.label,
@@ -208,7 +213,7 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     defaultAspectConfig: doc.design?.aspectConfig,
     diagrams,
     elements,
-    connections,
+    relations,
     formatVersion: doc.formatVersion,
     description: doc.design?.description,
     adrLinks: doc.adrLinks,

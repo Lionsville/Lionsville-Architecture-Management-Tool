@@ -23,7 +23,7 @@ const model: HostModel = {
     element('billing', 'Billing', { technology: 'Kafka' }),
     element('crm', 'CRM', { description: 'Publishes customer events on Kafka.' }),
   ],
-  connections: [], diagrams: [],
+  relations: [], diagrams: [],
   decisions: [{ id: 'adr-1', number: 1, title: 'Use Kafka for events', status: 'accepted', date: '2026-09-01', body: '', signers: [] }],
 }
 const groupDecisions: Adr[] = [

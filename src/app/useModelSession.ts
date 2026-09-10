@@ -167,7 +167,7 @@ export function useModelSession(deps: {
   const ids = useRef<IdPolicy | null>(null)
   ids.current ??= idPolicy(() => [
     ...modelRef.current.order.elements,
-    ...modelRef.current.order.connections,
+    ...modelRef.current.order.relations,
     ...modelRef.current.order.diagrams,
   ])
 

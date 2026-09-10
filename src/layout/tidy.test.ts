@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type {
-  DesignConnection,
+  Relation,
   DesignDiagram,
   DesignElement,
   DesignModel,
@@ -113,7 +113,7 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
         elt('e2', 'application'),
         elt('e3', 'application'),
       ],
-      connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
+      relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
       diagrams: [
         {
           id: 'd1',
@@ -178,11 +178,11 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
         elt('b1', 'application'),
         elt('b2', 'application'),
       ],
-      connections: [
+      relations: [
         // Cross-group chain a1 → b1 → a2 → b2 weaves the two groups together.
-        { id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false },
-        { id: 'c2', sourceId: 'b1', targetId: 'a2', isBidirectional: false },
-        { id: 'c3', sourceId: 'a2', targetId: 'b2', isBidirectional: false },
+        { type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false },
+        { type: 'flow', id: 'c2', sourceId: 'b1', targetId: 'a2', isBidirectional: false },
+        { type: 'flow', id: 'c3', sourceId: 'a2', targetId: 'b2', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -234,11 +234,11 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     // Tidy discards ELK's ROUTES, and it is tempting to conclude the edges are dead
     // input — they are not: they are what makes ELK leave the channel and label room
     // libavoid then routes through. Stop passing them and this test goes red.
-    const twoNodes = (connection: DesignConnection): DesignModel => ({
+    const twoNodes = (connection: Relation): DesignModel => ({
       name: 'ACME',
       customerName: 'ACME',
       elements: [elt('e1', 'application'), elt('e2', 'application')],
-      connections: [connection],
+      relations: [connection],
       diagrams: [
         {
           id: 'd1',
@@ -258,8 +258,9 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
       return Math.abs(p2.x - p1.x) - 200;
     };
 
-    const bareModel = twoNodes({ id: 'c', sourceId: 'e1', targetId: 'e2', isBidirectional: false });
+    const bareModel = twoNodes({ type: 'flow', id: 'c', sourceId: 'e1', targetId: 'e2', isBidirectional: false });
     const wideModel = twoNodes({
+      type: 'flow',
       id: 'c',
       sourceId: 'e1',
       targetId: 'e2',
@@ -286,7 +287,7 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
       name: 'ACME',
       customerName: 'ACME',
       elements: [elt('e1', 'application')],
-      connections: [],
+      relations: [],
       diagrams: [
         {
           id: 'd1',
@@ -322,15 +323,15 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
         placements.push({ elementId: id, zone: 'landscape', domainGroup: `G${g}`, x: 0, y: 0 });
       }
     }
-    const connections: DesignConnection[] = [];
+    const relations: Relation[] = [];
     for (let i = 0; i < ids.length - 1; i++) {
-      connections.push({ id: `c${i}`, sourceId: ids[i], targetId: ids[i + 1], isBidirectional: false });
+      relations.push({ id: `c${i}`, type: 'flow', sourceId: ids[i], targetId: ids[i + 1], isBidirectional: false });
     }
     return {
       name: 'ACME',
       customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
-      connections,
+      relations,
       diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements, layoutConfig }],
     };
   }
@@ -379,7 +380,7 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
       name: 'ACME',
       customerName: 'ACME',
       elements: [elt('e1', 'application')],
-      connections: [],
+      relations: [],
       diagrams: [
         {
           id: 'd1',
@@ -454,8 +455,9 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
       name: 'ACME',
       customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
-      connections: targets.map((id, i) => ({
+      relations: targets.map((id, i) => ({
         id: `c${i}`,
+        type: 'flow' as const,
         sourceId: 'hub',
         targetId: id,
         isBidirectional: false,
@@ -502,12 +504,12 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
     name: 'ACME',
     customerName: 'ACME',
     elements: [elt('a', 'application'), elt('b', 'application'), elt('c', 'application')],
-    connections: [
-      { id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
-      { id: 'bc', sourceId: 'b', targetId: 'c', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
+      { type: 'flow', id: 'bc', sourceId: 'b', targetId: 'c', isBidirectional: false },
       // a → b → c chains, so ELK (direction RIGHT) places b in the layer between a
       // and c; this skip-a-layer edge then has b squarely in its way.
-      { id: 'ac', sourceId: 'a', targetId: 'c', isBidirectional: false },
+      { type: 'flow', id: 'ac', sourceId: 'a', targetId: 'c', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -546,9 +548,9 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
     // `routeOnly.test.ts`. Do not "unify" the two.
     const selfConnected: DesignModel = {
       ...model,
-      connections: [
-        ...model.connections,
-        { id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false },
+      relations: [
+        ...model.relations,
+        { type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -609,9 +611,9 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         elt('appR', 'application'),
         elt('actorA', 'actor'),
       ],
-      connections: [
-        { id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
-        { id: 'a', sourceId: 'actorA', targetId: 'appR', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
+        { type: 'flow', id: 'a', sourceId: 'actorA', targetId: 'appR', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -652,10 +654,10 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         elt('actorX', 'actor'),
         elt('actorY', 'actor'),
       ],
-      connections: [
-        { id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
-        { id: 'x', sourceId: 'actorX', targetId: 'appR', isBidirectional: false },
-        { id: 'y', sourceId: 'actorY', targetId: 'appR', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
+        { type: 'flow', id: 'x', sourceId: 'actorX', targetId: 'appR', isBidirectional: false },
+        { type: 'flow', id: 'y', sourceId: 'actorY', targetId: 'appR', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -699,12 +701,12 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         elt('actorR', 'actor'),
         elt('actorM', 'actor'),
       ],
-      connections: [
-        { id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
-        { id: 'l', sourceId: 'actorL', targetId: 'appL', isBidirectional: false },
-        { id: 'r', sourceId: 'actorR', targetId: 'appR', isBidirectional: false },
-        { id: 'm1', sourceId: 'actorM', targetId: 'appL', isBidirectional: false },
-        { id: 'm2', sourceId: 'actorM', targetId: 'appR', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
+        { type: 'flow', id: 'l', sourceId: 'actorL', targetId: 'appL', isBidirectional: false },
+        { type: 'flow', id: 'r', sourceId: 'actorR', targetId: 'appR', isBidirectional: false },
+        { type: 'flow', id: 'm1', sourceId: 'actorM', targetId: 'appL', isBidirectional: false },
+        { type: 'flow', id: 'm2', sourceId: 'actorM', targetId: 'appR', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -742,9 +744,9 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         elt('actorC', 'actor'),
         elt('lonely', 'actor'),
       ],
-      connections: [
-        { id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
-        { id: 'c', sourceId: 'actorC', targetId: 'appL', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'lr', sourceId: 'appL', targetId: 'appR', isBidirectional: false },
+        { type: 'flow', id: 'c', sourceId: 'actorC', targetId: 'appL', isBidirectional: false },
         // `lonely` has no cross-zone connection at all.
       ],
       diagrams: [
@@ -788,11 +790,11 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
         elt('inA', 'inputChannel'),
         elt('inB', 'inputChannel'),
       ],
-      connections: [
-        { id: 'e1', sourceId: 'app0', targetId: 'app1', isBidirectional: false },
-        { id: 'e2', sourceId: 'app0', targetId: 'app2', isBidirectional: false },
-        { id: 'ia', sourceId: 'inA', targetId: 'app1', isBidirectional: false },
-        { id: 'ib', sourceId: 'inB', targetId: 'app2', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'e1', sourceId: 'app0', targetId: 'app1', isBidirectional: false },
+        { type: 'flow', id: 'e2', sourceId: 'app0', targetId: 'app2', isBidirectional: false },
+        { type: 'flow', id: 'ia', sourceId: 'inA', targetId: 'app1', isBidirectional: false },
+        { type: 'flow', id: 'ib', sourceId: 'inB', targetId: 'app2', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -860,7 +862,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
       name: 'ACME',
       customerName: 'ACME',
       elements: [elt('e1', 'application'), elt('e2', 'application')],
-      connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
+      relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
       diagrams: [
         {
           id: 'd1',
@@ -894,9 +896,9 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
       name: 'ACME',
       customerName: 'ACME',
       elements: [elt('e1', 'application'), elt('e2', 'application'), elt('e3', 'application')],
-      connections: [
-        { id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
-        { id: 'c2', sourceId: 'e2', targetId: 'e3', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
+        { type: 'flow', id: 'c2', sourceId: 'e2', targetId: 'e3', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -934,9 +936,9 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
         elt('b1', 'application'),
         elt('b2', 'application'),
       ],
-      connections: [
-        { id: 'ca', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
-        { id: 'cb', sourceId: 'b1', targetId: 'b2', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'ca', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
+        { type: 'flow', id: 'cb', sourceId: 'b1', targetId: 'b2', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -984,8 +986,9 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
       name: 'ACME',
       customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
-      connections: ids.slice(1).map((id, i) => ({
+      relations: ids.slice(1).map((id, i) => ({
         id: `c${i}`,
+        type: 'flow' as const,
         sourceId: ids[i],
         targetId: id,
         isBidirectional: false,
@@ -1039,15 +1042,15 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
       elt('sonar', 'managementTool'),
       elt('gitlab', 'managementTool'),
     ],
-    connections: [
-      { id: 'order-erp', sourceId: 'order', targetId: 'erp', isBidirectional: false },
-      { id: 'shopper-webshop', sourceId: 'shopper', targetId: 'webshop', isBidirectional: false },
-      { id: 'akeneo-webshop', sourceId: 'akeneo', targetId: 'webshop', isBidirectional: false },
-      { id: 'storemgr-akeneo', sourceId: 'storeMgr', targetId: 'akeneo', isBidirectional: false },
-      { id: 'marketplace-order', sourceId: 'marketplace', targetId: 'order', label: 'imports marketplace orders', isBidirectional: false },
-      { id: 'csa-order', sourceId: 'csa', targetId: 'order', isBidirectional: false },
-      { id: 'webshop-order', sourceId: 'webshop', targetId: 'order', label: 'places orders', isBidirectional: false },
-      { id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'order-erp', sourceId: 'order', targetId: 'erp', isBidirectional: false },
+      { type: 'flow', id: 'shopper-webshop', sourceId: 'shopper', targetId: 'webshop', isBidirectional: false },
+      { type: 'flow', id: 'akeneo-webshop', sourceId: 'akeneo', targetId: 'webshop', isBidirectional: false },
+      { type: 'flow', id: 'storemgr-akeneo', sourceId: 'storeMgr', targetId: 'akeneo', isBidirectional: false },
+      { type: 'flow', id: 'marketplace-order', sourceId: 'marketplace', targetId: 'order', label: 'imports marketplace orders', isBidirectional: false },
+      { type: 'flow', id: 'csa-order', sourceId: 'csa', targetId: 'order', isBidirectional: false },
+      { type: 'flow', id: 'webshop-order', sourceId: 'webshop', targetId: 'order', label: 'places orders', isBidirectional: false },
+      { type: 'flow', id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -1098,7 +1101,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     // `getSmoothStepPath`, which bends for itself, and `routedPath` models it as the
     // two anchors joined directly.
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const routed = model.connections.filter(
+    const routed = model.relations.filter(
       (conn) => result.edgeRoutes!.find((r) => r.connectionId === conn.id)!.waypoints.length > 0,
     );
     expect(routed.length).toBeGreaterThan(0);
@@ -1146,7 +1149,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     // comfortably either way. The clearance loop earns its keep on the cross-zone
     // chips, which sit against a box unpinned.
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const labelled = model.connections.filter((c) => edgeLabelSize(c) !== undefined);
+    const labelled = model.relations.filter((c) => edgeLabelSize(c) !== undefined);
     expect(labelled.map((c) => c.id)).toContain('webshop-order');
 
     for (const conn of labelled) {
@@ -1184,7 +1187,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
       const c = centre(r);
       return c.x >= g.x && c.x <= g.x + g.width && c.y >= g.y && c.y <= g.y + g.height;
     };
-    for (const conn of model.connections) {
+    for (const conn of model.relations) {
       const source = rectFor(result, conn.sourceId);
       const target = rectFor(result, conn.targetId);
       const boxes = (result.domainGroups ?? []).filter(
@@ -1210,7 +1213,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     expect(route.waypoints).toEqual([]);
     expect(route.labelPosition).toBeDefined();
 
-    const label = edgeLabelSize(model.connections.find((c) => c.id === 'erp-dynamics')!)!;
+    const label = edgeLabelSize(model.relations.find((c) => c.id === 'erp-dynamics')!)!;
     const lp = route.labelPosition!;
     const labelRect = {
       x: lp.x - label.width / 2,
@@ -1231,7 +1234,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     expect(route.waypoints.length).toBeGreaterThan(0); // it went around
     expect(route.labelPosition).toBeDefined();
 
-    const label = edgeLabelSize(model.connections.find((c) => c.id === 'marketplace-order')!)!;
+    const label = edgeLabelSize(model.relations.find((c) => c.id === 'marketplace-order')!)!;
     const lp = route.labelPosition!;
     const labelRect = {
       x: lp.x - label.width / 2,
@@ -1255,7 +1258,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
         elt('c1', 'component', { parentApplicationId: 'app' }),
         elt('c2', 'component', { parentApplicationId: 'app' }),
       ],
-      connections: [],
+      relations: [],
       diagrams: [
         {
           id: 'd2',
@@ -1295,10 +1298,10 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
         elt('c3', 'component', { parentApplicationId: 'app' }),
         elt('ext', 'externalSystem'),
       ],
-      connections: [
-        { id: 'c1-c3', sourceId: 'c1', targetId: 'c3', isBidirectional: false },
-        { id: 'c1-c2', sourceId: 'c1', targetId: 'c2', isBidirectional: false },
-        { id: 'c2-ext', sourceId: 'c2', targetId: 'ext', isBidirectional: false },
+      relations: [
+        { type: 'flow', id: 'c1-c3', sourceId: 'c1', targetId: 'c3', isBidirectional: false },
+        { type: 'flow', id: 'c1-c2', sourceId: 'c1', targetId: 'c2', isBidirectional: false },
+        { type: 'flow', id: 'c2-ext', sourceId: 'c2', targetId: 'ext', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -1329,7 +1332,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
       const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
-    for (const conn of model.connections) {
+    for (const conn of model.relations) {
       const others = ['c1', 'c2', 'c3']
         .filter((id) => id !== conn.sourceId && id !== conn.targetId)
         .map(rectOf);
@@ -1374,12 +1377,12 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
       elt('adyen', 'externalSystem'),
       elt('dynamics', 'externalSystem'),
     ],
-    connections: [
-      { id: 'akeneo-webshop', sourceId: 'akeneo', targetId: 'webshop', isBidirectional: false },
-      { id: 'webshop-order', sourceId: 'webshop', targetId: 'order', isBidirectional: false },
-      { id: 'order-erp', sourceId: 'order', targetId: 'erp', isBidirectional: false },
-      { id: 'webshop-adyen', sourceId: 'webshop', targetId: 'adyen', label: 'authorizes payments', isBidirectional: false },
-      { id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'akeneo-webshop', sourceId: 'akeneo', targetId: 'webshop', isBidirectional: false },
+      { type: 'flow', id: 'webshop-order', sourceId: 'webshop', targetId: 'order', isBidirectional: false },
+      { type: 'flow', id: 'order-erp', sourceId: 'order', targetId: 'erp', isBidirectional: false },
+      { type: 'flow', id: 'webshop-adyen', sourceId: 'webshop', targetId: 'adyen', label: 'authorizes payments', isBidirectional: false },
+      { type: 'flow', id: 'erp-dynamics', sourceId: 'erp', targetId: 'dynamics', label: 'syncs orders & stock', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -1441,7 +1444,7 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
     const pathOf = (connId: string) => {
-      const conn = model.connections.find((c) => c.id === connId)!;
+      const conn = model.relations.find((c) => c.id === connId)!;
       const route = result.edgeRoutes!.find((r) => r.connectionId === connId)!;
       return routedPath(rectOf(conn.sourceId), rectOf(conn.targetId), route.waypoints);
     };
@@ -1473,10 +1476,10 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
         elt('feedFar', 'inputChannel'),
         elt('feedNear', 'inputChannel'),
       ],
-      connections: [
-        ...model.connections,
-        { id: 'feedFar-erp', sourceId: 'feedFar', targetId: 'erp', isBidirectional: false },
-        { id: 'feedNear-akeneo', sourceId: 'feedNear', targetId: 'akeneo', isBidirectional: false },
+      relations: [
+        ...model.relations,
+        { type: 'flow', id: 'feedFar-erp', sourceId: 'feedFar', targetId: 'erp', isBidirectional: false },
+        { type: 'flow', id: 'feedNear-akeneo', sourceId: 'feedNear', targetId: 'akeneo', isBidirectional: false },
       ],
       diagrams: [
         {
@@ -1512,10 +1515,10 @@ describe('tidyGroup — one group in place', () => {
       elt('outside', 'application'),
       elt('actor', 'actor'),
     ],
-    connections: [
-      { id: 'internal', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
-      { id: 'crossing', sourceId: 'a1', targetId: 'outside', isBidirectional: false },
-      { id: 'elsewhere', sourceId: 'outside', targetId: 'actor', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'internal', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
+      { type: 'flow', id: 'crossing', sourceId: 'a1', targetId: 'outside', isBidirectional: false },
+      { type: 'flow', id: 'elsewhere', sourceId: 'outside', targetId: 'actor', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -1624,9 +1627,9 @@ describe('tidy settings (direction / density)', () => {
     name: 'ACME',
     customerName: 'ACME',
     elements: [elt('a', 'application'), elt('b', 'application'), elt('c', 'application')],
-    connections: [
-      { id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
-      { id: 'bc', sourceId: 'b', targetId: 'c', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
+      { type: 'flow', id: 'bc', sourceId: 'b', targetId: 'c', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -1709,9 +1712,9 @@ describe('density reaches inside a domain group', () => {
     name: 'ACME',
     customerName: 'ACME',
     elements: ['a1', 'a2', 'a3'].map((id) => elt(id, 'application')),
-    connections: [
-      { id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
-      { id: 'a23', sourceId: 'a2', targetId: 'a3', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
+      { type: 'flow', id: 'a23', sourceId: 'a2', targetId: 'a3', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -1773,9 +1776,9 @@ describe('tidyLayer7 — pinGroups', () => {
     name: 'ACME',
     customerName: 'ACME',
     elements: ['a1', 'a2', 'b1', 'b2', 'loose'].map((id) => elt(id, 'application')),
-    connections: [
-      { id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
-      { id: 'b12', sourceId: 'b1', targetId: 'b2', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
+      { type: 'flow', id: 'b12', sourceId: 'b1', targetId: 'b2', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -1916,7 +1919,7 @@ describe('tidy — a domain group keeps its colour', () => {
     name: 'ACME',
     customerName: 'ACME',
     elements: ['a1', 'a2'].map((id) => elt(id, 'application')),
-    connections: [{ id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
     diagrams: [
       {
         id: 'd1',

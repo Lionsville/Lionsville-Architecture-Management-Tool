@@ -9,7 +9,8 @@
  */
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
-  Lifecycle, LifecycleDates, DesignElement, DesignConnection, EdgeLineStyle, EdgeRouting,
+  Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType,
+  EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramPlacement, DesignDiagram,
   DesignModel, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
@@ -21,16 +22,21 @@ export type {
  * line is the shape on disk, everything below it the shape in memory.
  */
 export type {
-  Model, Diagram, ModelOrder, DiagramOrder, ConnectionId, DiagramId, AdrId, TransitionId,
+  Model, Diagram, ModelOrder, DiagramOrder, RelationId, DiagramId, AdrId, TransitionId,
 } from './normalised'
 export {
   fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf,
-  elementList, connectionList, diagramList, decisionList, transitionList, placementList, routeList,
+  elementList, relationList, diagramList, decisionList, transitionList, placementList, routeList,
 } from './normalised'
+
+/** What a relation is, and the one type format 3 has a place for (ADR-0012 §5). */
+export {
+  RELATION_LABEL, RELATION_TYPES, asConnections, asRelations, flowsOf, isFlow, isRelationType,
+} from './relations'
 
 /** Where a thing is on a given day (ADR-0009). */
 export {
-  connectionLiveAt, DATED_PHASES, datesIn, datesInOrder, daysBetween, hasDates, isDay, isGoneOn,
+  relationLiveAt, DATED_PHASES, datesIn, datesInOrder, daysBetween, hasDates, isDay, isGoneOn,
   LIFECYCLE_ORDER, phaseAt, today,
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'

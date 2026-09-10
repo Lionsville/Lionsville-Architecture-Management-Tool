@@ -50,8 +50,9 @@ function board(connectionCount: number): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements,
-    connections: Array.from({ length: connectionCount }, (_, i) => ({
+    relations: Array.from({ length: connectionCount }, (_, i) => ({
       id: `c${i}`,
+      type: 'flow' as const,
       sourceId: `e${i}`,
       targetId: `e${i + 1}`,
       isBidirectional: false,

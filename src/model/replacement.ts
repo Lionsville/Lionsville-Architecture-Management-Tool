@@ -29,7 +29,7 @@ import type { Command } from './commands'
 import { placementRect } from './placement'
 import { addDays } from './transition'
 import type { Transition, TransitionRole } from './transition'
-import type { DesignConnection, DesignElement, DesignModel, DiagramPlacement, ElementId } from './types'
+import type { DesignElement, DesignModel, DiagramPlacement, ElementId, Relation } from './types'
 
 /** How far to the right of the original the new one is drawn. */
 const GAP = 40
@@ -136,8 +136,9 @@ export function replacementCommands(
         },
       })
     }
-    const tap: DesignConnection = {
+    const tap: Relation = {
       id: ids.connection(),
+      type: 'flow',
       sourceId: source.id,
       targetId: toId,
       label: request.words.tapLabel,
@@ -146,7 +147,7 @@ export function replacementCommands(
       validFrom: request.shadowFrom,
       validUntil: addDays(request.cutover, -1),
     }
-    commands.push({ type: 'connection.create', connection: tap })
+    commands.push({ type: 'relation.create', relation: tap })
   }
 
   // --- the plan ---------------------------------------------------------------

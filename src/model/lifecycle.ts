@@ -2,14 +2,14 @@
  * Where a thing is on a given day (ADR-0009).
  *
  * A landscape used to be able to say only what was true this morning:
- * `lifecycle` was one value with no date on it, and a connection knew nothing
+ * `lifecycle` was one value with no date on it, and a relation knew nothing
  * about time at all. So "what will this look like after the cutover" could only
  * be answered by copying the project and editing the copy, which is a second
  * brain and drifts the same afternoon.
  *
  * Time is therefore a property **of the facts that already exist**, not a copy
  * of them: optional dates on the lifecycle an element already had, an optional
- * window on a connection, and a date on a diagram saying when it is. One model,
+ * window on a relation, and a date on a diagram saying when it is. One model,
  * read at whatever moment you ask about.
  *
  * ## The rule
@@ -32,7 +32,7 @@
  * happens at an instant — an application goes live on a day, and which day it
  * is does not depend on where the reader is sitting.
  */
-import type { DesignConnection, DesignElement, Lifecycle, LifecycleDates } from './types'
+import type { DesignElement, Lifecycle, LifecycleDates, Relation } from './types'
 
 /** The phases a date can move an element into, in the order it moves through them. */
 export const DATED_PHASES = ['live', 'retiring', 'retired'] as const
@@ -83,22 +83,24 @@ export function phaseAt(
 }
 
 /**
- * Whether a connection's own window includes this day.
+ * Whether a relation's own window includes this day.
  *
- * A line with no window has none, and follows the elements it joins — which is
+ * A row with no window has none, and follows the elements it joins — which is
  * what keeps a landscape where every line needs two dates from being a
  * landscape nobody dates. Only the genuinely temporary lines of a hybrid
- * phase — the sync, the façade, the double write — say anything here.
+ * phase — the sync, the façade, the double write — and the dated statements of
+ * the business layer — "the WMS supports fulfilment from March" (ADR-0012 §5)
+ * — say anything here.
  *
  * `validUntil` is the last day it is there, not the first day it is gone: a
  * person writing down when a link is switched off writes the day they switch
  * it off.
  */
-export function connectionLiveAt(
-  connection: Pick<DesignConnection, 'validFrom' | 'validUntil'>,
+export function relationLiveAt(
+  relation: Pick<Relation, 'validFrom' | 'validUntil'>,
   day: string,
 ): boolean {
-  const { validFrom, validUntil } = connection
+  const { validFrom, validUntil } = relation
   if (isDay(validFrom) && day < validFrom) return false
   if (isDay(validUntil) && day > validUntil) return false
   return true
@@ -120,7 +122,7 @@ export function isGoneOn(
   return isDay(gone) && day >= gone
 }
 
-/** Whether this element or connection says anything about time at all. */
+/** Whether this element or relation says anything about time at all. */
 export function hasDates(
   held: { lifecycleDates?: LifecycleDates; validFrom?: string; validUntil?: string },
 ): boolean {
@@ -159,15 +161,15 @@ export function daysBetween(from: string, to: string): number {
  */
 export function datesIn(model: {
   elements: readonly (Pick<DesignElement, 'lifecycle'> & { lifecycleDates?: LifecycleDates })[]
-  connections: readonly Pick<DesignConnection, 'validFrom' | 'validUntil'>[]
+  relations: readonly Pick<Relation, 'validFrom' | 'validUntil'>[]
 }): string[] {
   const days = new Set<string>()
   for (const element of model.elements) {
     for (const entry of datesOf(element.lifecycleDates)) days.add(entry.day)
   }
-  for (const connection of model.connections) {
-    if (isDay(connection.validFrom)) days.add(connection.validFrom)
-    if (isDay(connection.validUntil)) days.add(connection.validUntil)
+  for (const relation of model.relations) {
+    if (isDay(relation.validFrom)) days.add(relation.validFrom)
+    if (isDay(relation.validUntil)) days.add(relation.validUntil)
   }
   return [...days].sort()
 }

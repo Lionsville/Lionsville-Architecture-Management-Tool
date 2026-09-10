@@ -21,7 +21,7 @@ const model: DesignModel = {
   name: 'Design',
   customerName: 'Group',
   elements: [],
-  connections: [],
+  relations: [],
   diagrams: [diagram, other],
 };
 

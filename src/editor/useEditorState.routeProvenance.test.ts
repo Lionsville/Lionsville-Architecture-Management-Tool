@@ -29,7 +29,7 @@ function model(): DesignModel {
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', label: 'Orders', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', label: 'Orders', isBidirectional: false }],
     diagrams: [
       {
         id: 'd1',

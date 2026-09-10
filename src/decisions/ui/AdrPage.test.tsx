@@ -29,7 +29,7 @@ const adr = (over: Partial<Adr>): Adr => ({
 const model: HostModel = {
   name: 'Warehouse landscape', customerName: 'Acme Logistics',
   elements: [element('crm', 'Customer CRM'), element('wms', 'Warehouse system'), element('kafka', 'Kafka', 'component')],
-  connections: [], diagrams: [],
+  relations: [], diagrams: [],
   decisions: [
     adr({ id: 'l1', number: 1, title: 'Event-driven integration', status: 'proposed' }),
     adr({ id: 'l2', number: 2, title: 'One warehouse system', status: 'accepted' }),

@@ -76,7 +76,7 @@ describe('the cost of a change', () => {
       if (id !== LANDSCAPE) expect(after.diagrams[id]).toBe(model.diagrams[id])
     }
     expect(after.elements).toBe(model.elements)
-    expect(after.connections).toBe(model.connections)
+    expect(after.relations).toBe(model.relations)
   })
 
   it('undoes and redoes one step', () => {

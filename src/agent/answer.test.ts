@@ -37,10 +37,10 @@ const host: HostModel = {
     element('who', 'Clerk', { kind: 'actor' }),
     element('billing-api', 'Billing API', { kind: 'component', parentApplicationId: 'billing' }),
   ],
-  connections: [
-    { id: 'c1', sourceId: 'crm', targetId: 'billing', label: 'orders', protocol: 'REST', isBidirectional: false },
-    { id: 'c2', sourceId: 'billing', targetId: 'wh', isBidirectional: true },
-    { id: 'c3', sourceId: 'billing', targetId: 'billing-api', isBidirectional: false },
+  relations: [
+    { type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', label: 'orders', protocol: 'REST', isBidirectional: false },
+    { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'wh', isBidirectional: true },
+    { type: 'flow', id: 'c3', sourceId: 'billing', targetId: 'billing-api', isBidirectional: false },
   ],
   diagrams: [
     {
@@ -264,9 +264,9 @@ describe('plans.list (ADR-0010)', () => {
   }
   const withPlan: HostModel = {
     ...host,
-    connections: [
-      ...host.connections,
-      { id: 'c-moved', sourceId: 'crm', targetId: 'crm', isBidirectional: false, validFrom: '2027-05-01' },
+    relations: [
+      ...host.relations,
+      { type: 'flow', id: 'c-moved', sourceId: 'crm', targetId: 'crm', isBidirectional: false, validFrom: '2027-05-01' },
     ],
     transitions: [plan],
   }
@@ -275,7 +275,7 @@ describe('plans.list (ADR-0010)', () => {
     const out = read('plans.list', {}, view(withPlan)) as { plans: { label: string; interfaces: unknown[] }[] }
     expect(out.plans[0].label).toBe('TR-0001')
     expect(out.plans[0].interfaces).toEqual(
-      host.connections
+      host.relations
         .filter((c) => c.sourceId === 'billing' || c.targetId === 'billing')
         .filter((c) => !(c.sourceId === 'crm' || c.targetId === 'crm'))
         .map((c) => expect.objectContaining({ connectionId: c.id, from: 'billing' })),
@@ -291,9 +291,9 @@ describe('plans.list (ADR-0010)', () => {
     // the day before the twin starts, and both are the plan's.
     const ported: HostModel = {
       ...withPlan,
-      connections: [
-        ...host.connections.map((c) => (c.id === 'c2' ? { ...c, validUntil: '2027-04-30' } : c)),
-        { id: 'twin', sourceId: 'crm', targetId: 'wh', isBidirectional: true, validFrom: '2027-05-01' },
+      relations: [
+        ...host.relations.map((c) => (c.id === 'c2' ? { ...c, validUntil: '2027-04-30' } : c)),
+        { type: 'flow', id: 'twin', sourceId: 'crm', targetId: 'wh', isBidirectional: true, validFrom: '2027-05-01' },
       ],
     }
     const dated = (read('connections.list', {}, view(ported)) as { connections: Record<string, unknown>[] }).connections

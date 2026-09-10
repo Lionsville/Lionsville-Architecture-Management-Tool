@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type {
   DesignConnection,
+  Relation,
   DesignDiagram,
   DesignElement,
   DesignModel,
@@ -89,7 +90,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
     const placements: DesignDiagram['placements'] = [
       { elementId: 'blocker', zone: 'landscape', x: 450, y: 250, width: 120, height: 400 },
     ];
-    const connections: DesignConnection[] = [];
+    const connections: Relation[] = [];
     for (let i = 0; i < LABELS.length; i++) {
       elements.push(elt(`s${i}`), elt(`t${i}`));
       placements.push(
@@ -97,6 +98,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
         { elementId: `t${i}`, zone: 'landscape', x: 1000, y: 300 + i * 80 },
       );
       connections.push({
+        type: 'flow',
         id: `e${i}`,
         sourceId: `s${i}`,
         targetId: `t${i}`,
@@ -105,7 +107,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
       });
     }
     const diagram: DesignDiagram = { id: 'd1', kind: 'layer7', name: 'L7', placements };
-    return { model: { name: 'ACME', customerName: 'ACME', elements, connections, diagrams: [diagram] }, diagram };
+    return { model: { name: 'ACME', customerName: 'ACME', elements, relations: connections, diagrams: [diagram] }, diagram };
   }
 
   it('pins every chip clear of every other by LABEL_MARGIN', async () => {
@@ -115,15 +117,15 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
     // Sanity: the edges really were nudged into distinct channels, so the chips are
     // genuinely competing for the same strip of board. Without this the test could
     // pass on a board where nothing was ever close.
-    const channels = model.connections.map((c) => {
+    const channels = model.relations.map((c) => {
       const waypoints = result.edgeRoutes!.find((r) => r.connectionId === c.id)!.waypoints;
       expect(waypoints.length).toBeGreaterThan(0);
       return waypoints[0].y;
     });
-    expect(new Set(channels).size).toBe(model.connections.length);
+    expect(new Set(channels).size).toBe(model.relations.length);
 
     // Every labelled edge got a pin (none fell back to auto-centring)…
-    const chips = model.connections.map((c) => {
+    const chips = model.relations.map((c) => {
       const at = result.edgeRoutes!.find((r) => r.connectionId === c.id)!.labelPosition;
       expect(at, `${c.id} was not pinned`).toBeDefined();
       return { id: c.id, rect: chipRect(c, at!) };
@@ -142,7 +144,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
   it('is deterministic — the greedy pass is ordered by connection id, not array order', async () => {
     const forward = parallelChannelModel();
     const shuffled = parallelChannelModel();
-    shuffled.model.connections.reverse();
+    shuffled.model.relations.reverse();
     shuffled.model.elements.reverse();
     shuffled.diagram.placements.reverse();
 

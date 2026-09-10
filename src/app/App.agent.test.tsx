@@ -24,7 +24,7 @@ afterEach(() => cleanup())
 const project: ProjectSnapshot = {
   ref: { group: 'acme', project: 'landscape' },
   model: {
-    name: 'Landscape', customerName: 'Acme', elements: [], connections: [],
+    name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
   },
   activeDiagramId: 'd1',

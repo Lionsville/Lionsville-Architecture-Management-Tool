@@ -41,7 +41,7 @@ describe('what the top bar says you are working from', () => {
   const project = {
     ref: { group: 'acme', project: 'landscape' },
     model: {
-      name: 'Landscape', customerName: 'Acme', elements: [], connections: [],
+      name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
       diagrams: [{ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] }],
     },
     activeDiagramId: 'd1',

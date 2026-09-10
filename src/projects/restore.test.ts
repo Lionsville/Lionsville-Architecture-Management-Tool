@@ -18,7 +18,7 @@ const element = (id: string, name: string, description?: string) => ({
 const then: HostModel = {
   name: 'Landscape', customerName: 'Acme',
   elements: [element('billing', 'Billing', 'Invoices.'), element('crm', 'CRM')],
-  connections: [{ id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
+  relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
   diagrams: [{
     id: 'd1', kind: 'layer7', name: 'Warehouse',
     placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'crm', x: 100, y: 0 }],
@@ -30,7 +30,7 @@ const then: HostModel = {
 const now: HostModel = {
   name: 'Renamed', customerName: 'Acme', description: 'Added since.',
   elements: [element('billing', 'Billing', 'Rewritten.'), element('wms', 'WMS')],
-  connections: [{ id: 'c#2', sourceId: 'billing', targetId: 'wms', isBidirectional: true }],
+  relations: [{ type: 'flow', id: 'c#2', sourceId: 'billing', targetId: 'wms', isBidirectional: true }],
   diagrams: [
     { id: 'd1', kind: 'layer7', name: 'A mess', placements: [{ elementId: 'wms', x: 9, y: 9 }] },
     { id: 'd2', kind: 'container', name: 'WMS', applicationElementId: 'wms', placements: [] },

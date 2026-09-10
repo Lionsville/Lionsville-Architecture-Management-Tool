@@ -183,7 +183,7 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     // --- line -----------------------------------------------------------------
     case 'add-bend': {
       if (!connectionId) return;
-      const connection = model.connections.find((c) => c.id === connectionId);
+      const connection = model.relations.find((c) => c.id === connectionId);
       if (!connection) return;
       const route = routeFor(diagram, connectionId);
       const waypoints = route?.waypoints ?? [];
@@ -233,7 +233,7 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
       if (args.direction === 'one-way') actions.updateConnection(connectionId, { isBidirectional: false });
       else if (args.direction === 'two-way') actions.updateConnection(connectionId, { isBidirectional: true });
       else if (args.direction === 'reverse') {
-        const connection = model.connections.find((c) => c.id === connectionId);
+        const connection = model.relations.find((c) => c.id === connectionId);
         if (connection) {
           actions.updateConnection(connectionId, {
             sourceId: connection.targetId,

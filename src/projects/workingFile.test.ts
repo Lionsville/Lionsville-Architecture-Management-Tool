@@ -25,7 +25,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
         id: 'crews', kind: 'application', name: 'Crews', description: 'Roster.',
         lifecycle: 'live', isManaged: true, aspects: {},
       }],
-      connections: [],
+      relations: [],
       diagrams: [{ id: 'l7', kind: 'layer7', name: 'Landschap', placements: [{ elementId: 'crews', x: 4, y: 8 }] }],
     },
     ...over,

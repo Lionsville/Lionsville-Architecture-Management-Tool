@@ -24,11 +24,11 @@ const host: HostModel = {
     app('a'), app('b'), app('c'), app('d'), app('e'), app('f'), app('g'),
     { ...app('who', 'Clerk'), kind: 'actor' },
   ],
-  connections: [
+  relations: [
     // a → c runs level through d, which sits between them.
-    { id: 'ac', sourceId: 'a', targetId: 'c', isBidirectional: false },
-    { id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
-    { id: 'ef', sourceId: 'e', targetId: 'f', isBidirectional: false },
+    { type: 'flow', id: 'ac', sourceId: 'a', targetId: 'c', isBidirectional: false },
+    { type: 'flow', id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
+    { type: 'flow', id: 'ef', sourceId: 'e', targetId: 'f', isBidirectional: false },
   ],
   diagrams: [{
     id: 'l7', kind: 'layer7', name: 'Landscape',

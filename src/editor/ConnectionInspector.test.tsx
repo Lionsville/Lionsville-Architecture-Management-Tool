@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ConnectionInspector } from './ConnectionInspector';
 import type { EditorActions } from './useEditorState';
-import type { DesignConnection, DesignDiagram, DesignModel, EdgeRoute } from '../model/types';
+import type { DesignDiagram, DesignModel, EdgeRoute, Relation } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
 
 /**
@@ -17,8 +17,8 @@ import type { AttachSidesPatch } from '../model/routes';
 
 afterEach(() => cleanup());
 
-function connection(overrides: Partial<DesignConnection> = {}): DesignConnection {
-  return { id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false, ...overrides };
+function connection(overrides: Partial<Relation> = {}): Relation {
+  return { id: 'c1', type: 'flow', sourceId: 'a1', targetId: 'b1', isBidirectional: false, ...overrides };
 }
 
 function model(): DesignModel {
@@ -30,7 +30,7 @@ function model(): DesignModel {
       { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: false, aspects: {} },
       { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
-    connections: [],
+    relations: [],
   };
 }
 
@@ -61,7 +61,7 @@ type ResetRouteSpy = Mock<(connectionId: string) => void>;
 type SetRouteSidesSpy = Mock<(connectionId: string, sides: AttachSidesPatch) => void>;
 
 function renderInspector(
-  conn: DesignConnection,
+  conn: Relation,
   opts: {
     readOnly?: boolean;
     routes?: EdgeRoute[];

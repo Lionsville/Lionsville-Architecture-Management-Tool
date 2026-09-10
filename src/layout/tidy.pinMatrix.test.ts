@@ -22,9 +22,9 @@ function landscape(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: ['a1', 'a2', 'b1', 'b2', 'loose'].map(element),
-    connections: [
-      { id: 'a1-b1', sourceId: 'a1', targetId: 'b1', isBidirectional: false },
-      { id: 'a1-a2', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'a1-b1', sourceId: 'a1', targetId: 'b1', isBidirectional: false },
+      { type: 'flow', id: 'a1-a2', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -180,7 +180,7 @@ function container(): DesignModel {
       { id: 'c2', kind: 'component', parentApplicationId: 'app', name: 'DB', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'ext', kind: 'externalSystem', name: 'PSP', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
-    connections: [{ id: 'c1-ext', sourceId: 'c1', targetId: 'ext', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1-ext', sourceId: 'c1', targetId: 'ext', isBidirectional: false }],
     diagrams: [
       {
         id: 'd2',

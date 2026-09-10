@@ -23,10 +23,10 @@
  * (`roadmap.check`), and `agent` may not see `roadmap`. They are arithmetic
  * over a landscape, which is what this module is for.
  */
-import { connectionLiveAt, isDay, phaseAt } from './lifecycle'
+import { relationLiveAt, isDay, phaseAt } from './lifecycle'
 import { isTransitionFinished } from './transition'
 import type { Transition } from './transition'
-import type { DesignConnection, DesignElement, DesignModel, ElementId } from './types'
+import type { DesignElement, DesignModel, ElementId, Relation } from './types'
 
 export type FindingKind =
   /** Something retires while things are still connected to it. */
@@ -56,7 +56,7 @@ export type Finding = {
 }
 
 export type CheckContext = {
-  model: Pick<DesignModel, 'elements' | 'connections'> & { transitions?: Transition[] }
+  model: Pick<DesignModel, 'elements' | 'relations'> & { transitions?: Transition[] }
   /** The day "now" is, so a test is not at the mercy of the clock. */
   today: string
 }
@@ -69,13 +69,13 @@ function retiredOn(element: DesignElement): string | undefined {
 
 /** Whether this line is drawn on this day, ends and window together. */
 function liveOn(
-  connection: DesignConnection,
+  relation: Relation,
   day: string,
   byId: Map<ElementId, DesignElement>,
 ): boolean {
-  if (!connectionLiveAt(connection, day)) return false
-  const source = byId.get(connection.sourceId)
-  const target = byId.get(connection.targetId)
+  if (!relationLiveAt(relation, day)) return false
+  const source = byId.get(relation.sourceId)
+  const target = byId.get(relation.targetId)
   if (!source || !target) return false
   return phaseAt(source, day) !== 'retired' && phaseAt(target, day) !== 'retired'
 }
@@ -96,13 +96,13 @@ export function findings({ model, today }: CheckContext): Finding[] {
 
     // Who is still talking to it the day after it goes. Counted on the day
     // itself plus one, because `retired` names the day it is gone.
-    const dependants = model.connections.filter((connection) => {
-      const other = connection.sourceId === element.id ? connection.targetId
-        : connection.targetId === element.id ? connection.sourceId : undefined
+    const dependants = model.relations.filter((relation) => {
+      const other = relation.sourceId === element.id ? relation.targetId
+        : relation.targetId === element.id ? relation.sourceId : undefined
       if (other === undefined) return false
-      // A line with its own window that closes in time is the correct answer to
+      // A row with its own window that closes in time is the correct answer to
       // this problem, not an instance of it.
-      if (!connectionLiveAt(connection, gone)) return false
+      if (!relationLiveAt(relation, gone)) return false
       const neighbour = byId.get(other)
       return Boolean(neighbour) && phaseAt(neighbour!, gone) !== 'retired'
     })
@@ -140,13 +140,13 @@ export function findings({ model, today }: CheckContext): Finding[] {
     }
   }
 
-  for (const connection of model.connections) {
-    const { validUntil } = connection
-    // Only a line that says when it ends can outlive an end: one with no window
+  for (const relation of model.relations) {
+    const { validUntil } = relation
+    // Only a row that says when it ends can outlive an end: one with no window
     // follows its ends by definition and cannot contradict them.
     if (!isDay(validUntil)) continue
-    const source = byId.get(connection.sourceId)
-    const target = byId.get(connection.targetId)
+    const source = byId.get(relation.sourceId)
+    const target = byId.get(relation.targetId)
     if (!source || !target) continue
     const dead = [source, target].find((element) => {
       const gone = retiredOn(element)
@@ -156,8 +156,8 @@ export function findings({ model, today }: CheckContext): Finding[] {
       found.push({
         kind: 'lineOutlivesEnd',
         subject: 'connection',
-        id: connection.id,
-        name: connection.label || `${source.name} → ${target.name}`,
+        id: relation.id,
+        name: relation.label || `${source.name} → ${target.name}`,
         detail: dead.name,
       })
     }
@@ -186,5 +186,5 @@ export function findings({ model, today }: CheckContext): Finding[] {
   return found.sort((a, b) => severity[a.kind] - severity[b.kind] || a.name.localeCompare(b.name))
 }
 
-/** Whether a connection is drawn on a day, for a caller that wants one answer. */
-export { liveOn as connectionDrawnOn }
+/** Whether a relation is drawn on a day, for a caller that wants one answer. */
+export { liveOn as relationDrawnOn }

@@ -27,7 +27,7 @@ function model(): DesignModel {
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
-    connections: [{ id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', isBidirectional: false }],
   };
 }
 

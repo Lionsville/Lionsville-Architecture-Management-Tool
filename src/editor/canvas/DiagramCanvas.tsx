@@ -1022,12 +1022,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           };
         }
       } else if (target.kind === 'edge' || target.kind === 'edgeHandle') {
-        const connection = model.connections.find((c) => c.id === target.connectionId);
+        const connection = model.relations.find((c) => c.id === target.connectionId);
         const route = routeFor(diagram, target.connectionId);
         if (connection) {
           ctx.connection = {
             routing: connection.routing,
-            isBidirectional: connection.isBidirectional,
+            isBidirectional: connection.isBidirectional ?? false,
             waypointCount: route?.waypoints.length ?? 0,
             hasLabelPosition: route?.labelPosition !== undefined,
             route: route ? routeSource(route) : 'none',
@@ -1278,7 +1278,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         const nodes = getNodes().filter((n) => ids.has(n.id));
         if (nodes.length > 0) return centreOf(getNodesBounds(nodes));
       } else if (target.kind === 'edge' || target.kind === 'edgeHandle') {
-        const connection = model.connections.find((c) => c.id === target.connectionId);
+        const connection = model.relations.find((c) => c.id === target.connectionId);
         const nodes = getNodes().filter(
           (n) => n.id === connection?.sourceId || n.id === connection?.targetId,
         );
@@ -1290,7 +1290,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       const box = containerRef.current?.getBoundingClientRect();
       return box ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : { x: 0, y: 0 };
     },
-    [flowToScreenPosition, getNodes, getNodesBounds, model.connections, diagram.layoutConfig],
+    [flowToScreenPosition, getNodes, getNodesBounds, model.relations, diagram.layoutConfig],
   );
 
   const { menuRequest } = props;

@@ -33,7 +33,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
   customerName: 'Acme',
   elements: [element('billing', 'Billing')],
-  connections: [],
+  relations: [],
   diagrams: [
     { id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] },
     { id: 'd2', kind: 'layer7', name: 'Second', placements: [] },

@@ -24,7 +24,7 @@ const project = (key: string, name: string) => ({
     name,
     customerName: 'Acme',
     elements: [],
-    connections: [],
+    relations: [],
     diagrams: [{ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] }],
   },
   activeDiagramId: 'd1',

@@ -50,7 +50,7 @@ function model(main: DesignElement): DesignModel {
     customerName: 'Acme',
     diagrams: [diagram()],
     elements: [main, billing, planner, offDiagram],
-    connections: [],
+    relations: [],
   };
 }
 

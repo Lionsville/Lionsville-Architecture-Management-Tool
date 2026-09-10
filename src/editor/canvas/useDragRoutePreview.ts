@@ -102,10 +102,10 @@ export function useDragRoutePreview(options: DragRoutePreviewOptions): DragRoute
    */
   const placedConnectionCount = useMemo(() => {
     const placed = new Set(options.diagram.placements.map((p) => p.elementId));
-    return options.model.connections.filter(
+    return options.model.relations.filter(
       (c) => placed.has(c.sourceId) && placed.has(c.targetId),
     ).length;
-  }, [options.model.connections, options.diagram.placements]);
+  }, [options.model.relations, options.diagram.placements]);
   const placedConnectionCountRef = useRef(placedConnectionCount);
   placedConnectionCountRef.current = placedConnectionCount;
 

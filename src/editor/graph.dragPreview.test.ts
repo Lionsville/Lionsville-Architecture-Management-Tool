@@ -25,9 +25,9 @@ function model(source: EdgeRouteSource): DesignModel {
       isManaged: true,
       aspects: {},
     })),
-    connections: [
-      { id: 'moving', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
-      { id: 'still', sourceId: 'e2', targetId: 'e3', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'moving', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
+      { type: 'flow', id: 'still', sourceId: 'e2', targetId: 'e3', isBidirectional: false },
     ],
     diagrams: [
       {

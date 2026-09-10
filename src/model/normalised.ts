@@ -2,7 +2,7 @@
  * The model, indexed.
  *
  * The same landscape the working file holds, with its four identified lists —
- * elements, connections, diagrams, decisions — turned from arrays into records
+ * elements, relations, diagrams, decisions — turned from arrays into records
  * keyed by id, and the order the file had them in kept beside them. Diagrams do
  * the same for their placements and routes.
  *
@@ -29,13 +29,13 @@
  *   {@link routesOf} rather than defaulting at each site.
  */
 import type {
-  DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, EdgeRoute, ElementId,
+  DesignDiagram, DesignElement, DiagramPlacement, EdgeRoute, ElementId, Relation,
 } from './types'
 import type { Adr } from './adr'
 import type { HostModel } from './fromInterchange'
 import type { Transition } from './transition'
 
-export type ConnectionId = string
+export type RelationId = string
 export type DiagramId = string
 export type AdrId = string
 export type TransitionId = string
@@ -43,7 +43,7 @@ export type TransitionId = string
 /** What the file's array order encoded implicitly, said out loud. */
 export type ModelOrder = {
   elements: ElementId[]
-  connections: ConnectionId[]
+  relations: RelationId[]
   diagrams: DiagramId[]
   decisions: AdrId[]
   transitions: TransitionId[]
@@ -52,19 +52,19 @@ export type ModelOrder = {
 /** A diagram's own two lists, in the order the file had them. */
 export type DiagramOrder = {
   placements: ElementId[]
-  routes: ConnectionId[]
+  routes: RelationId[]
 }
 
 export type Diagram = Omit<DesignDiagram, 'placements' | 'edgeRoutes'> & {
   placements: Record<ElementId, DiagramPlacement>
   /** Present exactly when the file carried the key; see the note at the top. */
-  edgeRoutes?: Record<ConnectionId, EdgeRoute>
+  edgeRoutes?: Record<RelationId, EdgeRoute>
   order: DiagramOrder
 }
 
-export type Model = Omit<HostModel, 'elements' | 'connections' | 'diagrams' | 'decisions' | 'transitions'> & {
+export type Model = Omit<HostModel, 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions'> & {
   elements: Record<ElementId, DesignElement>
-  connections: Record<ConnectionId, DesignConnection>
+  relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
   /** Present exactly when the file carried the key; see the note at the top. */
   decisions?: Record<AdrId, Adr>
@@ -84,7 +84,7 @@ export function transitionsOf(model: Model): Record<TransitionId, Transition> {
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
-export function routesOf(diagram: Diagram): Record<ConnectionId, EdgeRoute> {
+export function routesOf(diagram: Diagram): Record<RelationId, EdgeRoute> {
   return diagram.edgeRoutes ?? {}
 }
 
@@ -93,8 +93,8 @@ export function elementList(model: Model): DesignElement[] {
   return model.order.elements.map((id) => model.elements[id])
 }
 
-export function connectionList(model: Model): DesignConnection[] {
-  return model.order.connections.map((id) => model.connections[id])
+export function relationList(model: Model): Relation[] {
+  return model.order.relations.map((id) => model.relations[id])
 }
 
 export function diagramList(model: Model): Diagram[] {
@@ -149,7 +149,7 @@ export function toDiagram(diagram: DesignDiagram): Diagram {
   const [placements, placementOrder] = index(diagram.placements ?? [], (p) => p.elementId)
   const out = { ...diagram } as unknown as Diagram
   out.placements = placements
-  let routeOrder: ConnectionId[] = []
+  let routeOrder: RelationId[] = []
   if (diagram.edgeRoutes !== undefined) {
     const [routes, order] = index(diagram.edgeRoutes, (r) => r.connectionId)
     out.edgeRoutes = routes
@@ -192,11 +192,11 @@ const converted = new WeakMap<Diagram, DesignDiagram>()
 /** The model as it comes off disk, indexed. */
 export function fromArrays(host: HostModel): Model {
   const [elements, elementOrder] = index(host.elements ?? [], (e) => e.id)
-  const [connections, connectionOrder] = index(host.connections ?? [], (c) => c.id)
+  const [relations, relationOrder] = index(host.relations ?? [], (r) => r.id)
   const [diagrams, diagramOrder] = index(host.diagrams ?? [], (d) => d.id)
   const out = { ...host } as unknown as Model
   out.elements = elements
-  out.connections = connections
+  out.relations = relations
   out.diagrams = Object.fromEntries(
     Object.entries(diagrams).map(([id, d]) => [id, toDiagram(d)]))
   let decisionOrder: AdrId[] = []
@@ -213,7 +213,7 @@ export function fromArrays(host: HostModel): Model {
   }
   out.order = {
     elements: elementOrder,
-    connections: connectionOrder,
+    relations: relationOrder,
     diagrams: diagramOrder,
     decisions: decisionOrder,
     transitions: transitionOrder,
@@ -225,7 +225,7 @@ export function fromArrays(host: HostModel): Model {
 export function toArrays(model: Model): HostModel {
   const out = { ...model } as unknown as HostModel & { order?: ModelOrder }
   out.elements = unindex(model.elements, model.order.elements)
-  out.connections = unindex(model.connections, model.order.connections)
+  out.relations = unindex(model.relations, model.order.relations)
   out.diagrams = model.order.diagrams.map((id) => fromDiagram(model.diagrams[id]))
   if (model.decisions !== undefined) {
     out.decisions = unindex(model.decisions, model.order.decisions)

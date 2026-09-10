@@ -23,7 +23,7 @@ function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
       isManaged: true,
       aspects: {},
     })),
-    connections: [{ id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [
       {
         id: 'd1',
@@ -143,7 +143,7 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     });
     expect(id).toBeDefined();
     expect(host.current.commands).toHaveLength(1);
-    expect(result.current.model.connections.find((c) => c.id === id))
+    expect(result.current.model.relations.find((c) => c.id === id))
       .toMatchObject({ sourceId: 'e1', targetId: 'e3' });
     expect(result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === id)).toEqual({
       connectionId: id,
@@ -154,7 +154,7 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     });
     // One undo takes both away.
     act(() => result.current.undo());
-    expect(result.current.model.connections.some((c) => c.id === id)).toBe(false);
+    expect(result.current.model.relations.some((c) => c.id === id)).toBe(false);
     expect(result.current.model.diagrams[0].edgeRoutes).toBeUndefined();
   });
 
@@ -171,7 +171,7 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     const before = result.current.geometryVersion;
     act(() => result.current.actions.reconnect('c1', { sourceId: 'e1', targetId: 'e3' }, { targetSide: 'left' }));
     expect(host.current.commands).toHaveLength(1);
-    expect(result.current.model.connections[0]).toMatchObject({ id: 'c1', sourceId: 'e1', targetId: 'e3' });
+    expect(result.current.model.relations[0]).toMatchObject({ id: 'c1', sourceId: 'e1', targetId: 'e3' });
     expect(stored()).toEqual({ ...AUTO, sourceSide: 'bottom', targetSide: 'left' });
     expect(result.current.geometryVersion).toBeGreaterThan(before);
   });

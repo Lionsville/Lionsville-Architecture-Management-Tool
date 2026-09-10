@@ -11,7 +11,10 @@
  * types, and none of them drags React in by doing so.
  *
  * The field names here are also the interchange format's, which is a contract
- * with other tools rather than branding. They do not get renamed.
+ * with other tools rather than branding. They do not get renamed — with the
+ * one exception ADR-0012 §5 makes: `connections` became `relations`, because
+ * the list stopped being only connections. The interchange document keeps the
+ * old name (`fromInterchange.ts` owns its own shapes), and so does format 3.
  */
 
 /** The Lionsville aspect superset; element aspect keys may also be custom slugs. */
@@ -132,30 +135,58 @@ export interface DesignElement {
   iconSize?: NodeIconSize;
 }
 
-/** Line dash style for a connection; absent = solid. */
+/** Line dash style for a relation; absent = solid. */
 export type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';
-/** Path shape for a connection; absent = smooth (today's smooth-step default). */
+/** Path shape for a relation; absent = smooth (today's smooth-step default). */
 export type EdgeRouting = 'smooth' | 'orthogonal' | 'straight' | 'curved';
 /** Per-end arrowhead; absent = derive from `isBidirectional`. */
 export type EdgeArrowhead = 'none' | 'arrow';
 
+/**
+ * What one row joining two elements MEANS (ADR-0012 §5).
+ *
+ * A closed set, and deliberately a short one: five words carry the business
+ * layer and the application layer both, where a relation per pair of kinds
+ * would carry neither. `flow` is the line this tool has always drawn — an
+ * interface between two applications — and every other member is a statement
+ * about coverage rather than about traffic.
+ */
+export type RelationType = 'flow' | 'supports' | 'serves' | 'realises' | 'assigned';
+
+/**
+ * A line's own fields, with nothing said about what it means.
+ *
+ * The shape format 3 writes under `connections` and the interchange format
+ * calls a connection, and — because only a `flow` is ever drawn on a canvas —
+ * the shape `layout/` routes. A {@link Relation} is one of these with its type
+ * said out loud; the two are one row in the file until format 4 renames the
+ * key (ADR-0012 §11).
+ */
 export interface DesignConnection {
   id: string;
   sourceId: ElementId;
   targetId: ElementId;
   label?: string;
+  /** `flow` only: what travels over the line. Ignored on any other type. */
   protocol?: string;
   /**
-   * The days this line is there, `yyyy-mm-dd` and inclusive (ADR-0009).
+   * The days this line is there, `yyyy-mm-dd` and inclusive (ADR-0009, and on
+   * every relation type since ADR-0012 §5).
    *
    * Absent means it follows the elements it joins, which is what keeps a
    * landscape where every line needs two dates from being a landscape nobody
    * dates. The temporary lines of a hybrid phase — a sync, a façade, a double
-   * write — are what these are for.
+   * write — are what these are for, and so is "the WMS supports fulfilment
+   * from March".
    */
   validFrom?: string;
   validUntil?: string;
-  isBidirectional: boolean;
+  /**
+   * `flow` only: the interface runs both ways. Absent means it does not, which
+   * is why nothing has to write `false` on a relation that could not be
+   * bidirectional if it wanted to be.
+   */
+  isBidirectional?: boolean;
   /**
    * Per-edge presentation overrides (U4b). Each is absent-means-inherit: the
    * stroke falls back to the theme edge token, the line to solid, the path to
@@ -168,6 +199,16 @@ export interface DesignConnection {
   sourceArrowhead?: EdgeArrowhead;
   targetArrowhead?: EdgeArrowhead;
 }
+
+/**
+ * One row of the model's `relations` list: two ends, a type, and — on any type
+ * — the days it holds (ADR-0012 §5).
+ *
+ * Written as an intersection rather than restated, so a field added to a line
+ * is added once and `layout/`, the file format and the interchange all keep
+ * agreeing with it by construction.
+ */
+export type Relation = DesignConnection & { type: RelationType };
 
 export interface DiagramPlacement {
   elementId: ElementId;
@@ -371,7 +412,12 @@ export interface DesignModel {
   customerName: string;
   diagrams: DesignDiagram[];
   elements: DesignElement[];
-  connections: DesignConnection[];
+  /**
+   * Every row that joins two elements, of whatever type (ADR-0012 §5). The
+   * file still calls the flows among them `connections`, and does so until
+   * format 4 — `projects/folderFormat.ts` is where the two names meet.
+   */
+  relations: Relation[];
 }
 
 /**

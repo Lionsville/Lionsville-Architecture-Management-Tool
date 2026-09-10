@@ -15,6 +15,7 @@ import type { DesignModel } from '.'
 import { isBuiltInLogoKey } from './logoRegistry'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
 import { KEY_RE, claimKey } from './keys'
+import { flowsOf } from './relations'
 import { UPLOADED_KEY_PREFIX } from './logo'
 
 /**
@@ -98,7 +99,10 @@ export function toInterchange(model: HostModel): InterchangeDoc {
         aspects: Object.keys(e.aspects ?? {}).length ? e.aspects : undefined,
       })
     }),
-    connections: model.connections.map((c) => prune({
+    // Flows only. The interchange format is a contract with other tools and
+    // has one kind of line; a relation of any other type is this tool's own
+    // and stays behind (ADR-0012 §11).
+    connections: flowsOf(model.relations).map((c) => prune({
       key: KEY_RE.test(c.id) ? c.id : undefined,
       sourceKey: k(c.sourceId),
       targetKey: k(c.targetId),

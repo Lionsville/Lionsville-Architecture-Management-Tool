@@ -20,7 +20,7 @@ const model: DesignModel = {
   name: 'ACME',
   customerName: 'ACME',
   elements: [],
-  connections: [],
+  relations: [],
   diagrams: [diagram],
 };
 

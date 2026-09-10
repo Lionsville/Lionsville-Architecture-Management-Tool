@@ -34,7 +34,7 @@ function baseModel(): DesignModel {
         aspects: {},
       },
     ],
-    connections: [],
+    relations: [],
   };
 }
 
@@ -75,7 +75,7 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     const diagram = m.diagrams.find((d) => d.id === (overrides.activeDiagramId ?? 'd1'))!;
     return {
       elements: m.elements,
-      connections: m.connections,
+      relations: m.relations,
       placements: diagram.placements,
       edgeRoutes: diagram.edgeRoutes ?? [],
       layoutConfig: diagram.layoutConfig,
@@ -314,8 +314,8 @@ function modelWithConnection(): DesignModel {
     x: 1500,
     y: 400,
   });
-  model.connections = [
-    { id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', protocol: 'EDI', isBidirectional: false },
+  model.relations = [
+    { type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', protocol: 'EDI', isBidirectional: false },
   ];
   return model;
 }
@@ -325,7 +325,7 @@ function modelWithConnection(): DesignModel {
 describe('SolutionDesignEditor — edge labels', () => {
   it('stacks the technology below the description in ONE chip, honouring newlines', async () => {
     const model = modelWithConnection();
-    model.connections[0].label = 'Sends orders\nand invoices';
+    model.relations[0].label = 'Sends orders\nand invoices';
     renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
 
     const chip = await screen.findByTestId('edge-label-c1');
@@ -345,7 +345,7 @@ describe('SolutionDesignEditor — edge labels', () => {
     fireEvent.change(textarea, { target: { value: 'Sends orders\nand credit notes' } });
     fireEvent.blur(textarea);
 
-    expect(landed().connections.find((c) => c.id === 'c1')?.label).toBe(
+    expect(landed().relations.find((c) => c.id === 'c1')?.label).toBe(
       'Sends orders\nand credit notes',
     );
   });
@@ -442,7 +442,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // The routing token used to be read only by the waypoint-less branch, so a
     // line with bends always drew rounded whatever the user picked.
     const model = routedModel('manual');
-    model.connections[0].routing = 'orthogonal';
+    model.relations[0].routing = 'orthogonal';
     renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
     await screen.findByTestId('edge-label-c1');
     const d = document.getElementById('c1')?.getAttribute('d') ?? '';
@@ -707,7 +707,7 @@ describe('SolutionDesignEditor — route connections only', () => {
       isManaged: true,
       aspects: {},
     });
-    model.connections.push({ id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false });
+    model.relations.push({ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'a2', isBidirectional: false });
     const diagram = model.diagrams[0];
     diagram.placements = [
       { elementId: 'a1', zone: 'landscape', x: 100, y: 400 },

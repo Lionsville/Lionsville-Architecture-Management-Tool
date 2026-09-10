@@ -41,7 +41,7 @@ const host: HostModel = {
     element('api', 'Billing API', { kind: 'component', parentApplicationId: 'billing' }),
     element('who', 'Clerk', { kind: 'actor' }),
   ],
-  connections: [{ id: 'c1', sourceId: 'crm', targetId: 'billing', isBidirectional: false }],
+  relations: [{ type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', isBidirectional: false }],
   diagrams: [
     {
       id: 'l7', kind: 'layer7', name: 'L7',
@@ -66,7 +66,7 @@ function view(model: Model, over: Partial<WriteView> = {}): WriteView {
     current: () => toArrays(model),
     activeDiagramId: 'l7',
     groupDecisions: [decision('g-1', 1, 'One identity provider')],
-    ids: idPolicy(() => [...model.order.elements, ...model.order.connections, ...model.order.diagrams]),
+    ids: idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams]),
     makeId: (prefix) => `${prefix}-new-${++counter}`,
     today: () => '2026-09-07',
     translate: DEFAULT_TRANSLATE,
@@ -340,12 +340,12 @@ describe('a line’s window, and lines in bulk (ADR-0009)', () => {
 
   it('connect dates a temporary line, and connection.update clears a day with null', () => {
     const drawn = roundTrip(model, commandFor('connect', { sourceId: 'billing', targetId: 'who', validFrom: '2027-01-01', validUntil: '2027-03-31', label: 'sync' }, view(model)))
-    const line = Object.values(drawn.connections).find((c) => c.id !== 'c1')!
+    const line = Object.values(drawn.relations).find((c) => c.id !== 'c1')!
     expect(line).toMatchObject({ validFrom: '2027-01-01', validUntil: '2027-03-31', label: 'sync' })
     const cleared = apply(drawn, prepared(commandFor('connection.update', { id: line.id, validUntil: null, label: null }, view(drawn))).command)
-    expect(cleared.ok && cleared.model.connections[line.id]).not.toHaveProperty('validUntil')
-    expect(cleared.ok && cleared.model.connections[line.id]).not.toHaveProperty('label')
-    expect(cleared.ok && cleared.model.connections[line.id].validFrom).toBe('2027-01-01')
+    expect(cleared.ok && cleared.model.relations[line.id]).not.toHaveProperty('validUntil')
+    expect(cleared.ok && cleared.model.relations[line.id]).not.toHaveProperty('label')
+    expect(cleared.ok && cleared.model.relations[line.id].validFrom).toBe('2027-01-01')
   })
 
   it('refuses a window that runs backwards, against what the line keeps', () => {
@@ -356,12 +356,12 @@ describe('a line’s window, and lines in bulk (ADR-0009)', () => {
 
   it('connections.update lands every change or none, and says which item was wrong', () => {
     const two = roundTrip(model, commandFor('connect', { sourceId: 'billing', targetId: 'who' }, view(model)))
-    const other = Object.keys(two.connections).find((id) => id !== 'c1')!
+    const other = Object.keys(two.relations).find((id) => id !== 'c1')!
     const out = commandFor('connections.update', { items: [{ id: 'c1', protocol: 'REST' }, { id: other, isBidirectional: true }] }, view(two))
     expect(answerOf(out)).toEqual({ updated: [{ id: 'c1', changed: ['protocol'] }, { id: other, changed: ['isBidirectional'] }] })
     const after = roundTrip(two, out)
-    expect(after.connections.c1.protocol).toBe('REST')
-    expect(after.connections[other].isBidirectional).toBe(true)
+    expect(after.relations.c1.protocol).toBe('REST')
+    expect(after.relations[other].isBidirectional).toBe(true)
     expect(commandFor('connections.update', { items: [{ id: 'c1' }, { id: 'c9' }] }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
     expect(commandFor('connections.update', { items: [{ id: 'c1' }, { id: other, validFrom: 'x' }] }, view(two)))
       .toMatchObject({ refusal: 'agent.badArguments', detail: 'items[1]: validFrom must be yyyy-mm-dd' })
@@ -369,9 +369,9 @@ describe('a line’s window, and lines in bulk (ADR-0009)', () => {
 
   it('connections.remove cuts them all as one step, or none', () => {
     const two = roundTrip(model, commandFor('connect', { sourceId: 'billing', targetId: 'who' }, view(model)))
-    const other = Object.keys(two.connections).find((id) => id !== 'c1')!
+    const other = Object.keys(two.relations).find((id) => id !== 'c1')!
     const after = roundTrip(two, commandFor('connections.remove', { ids: ['c1', other] }, view(two)))
-    expect(after.order.connections).toEqual([])
+    expect(after.order.relations).toEqual([])
     expect(commandFor('connections.remove', { ids: ['c1', 'c9'] }, view(two))).toMatchObject({ refusal: 'agent.unknownId' })
   })
 })
@@ -469,17 +469,17 @@ describe('the look of a line', () => {
 
   it('keeps a colour as the model does, and leaves the theme its line when nothing is asked', () => {
     const drawn = prepared(commandFor('connect', { sourceId: 'billing', targetId: 'crm', color: '#C0392B', lineStyle: 'dashed' }, view(model))).command
-    if (drawn.type !== 'connection.create') throw new Error(drawn.type)
-    expect(drawn.connection).toMatchObject({ color: '#c0392b', lineStyle: 'dashed' })
+    if (drawn.type !== 'relation.create') throw new Error(drawn.type)
+    expect(drawn.relation).toMatchObject({ color: '#c0392b', lineStyle: 'dashed' })
     const plain = prepared(commandFor('connect', { sourceId: 'billing', targetId: 'crm' }, view(model))).command
-    if (plain.type !== 'connection.create') throw new Error(plain.type)
-    expect('color' in plain.connection).toBe(false)
-    expect('lineStyle' in plain.connection).toBe(false)
+    if (plain.type !== 'relation.create') throw new Error(plain.type)
+    expect('color' in plain.relation).toBe(false)
+    expect('lineStyle' in plain.relation).toBe(false)
   })
 
   it('takes solid and an empty colour as deletions, so the line falls back to the theme', () => {
     const out = prepared(commandFor('connection.update', { id: 'c1', color: '', lineStyle: 'solid' }, view(model))).command
-    if (out.type !== 'connection.update') throw new Error(out.type)
+    if (out.type !== 'relation.update') throw new Error(out.type)
     expect(Object.keys(out.patch)).toEqual(['color', 'lineStyle'])
     expect(out.patch.color).toBeUndefined()
     expect(out.patch.lineStyle).toBeUndefined()
@@ -560,7 +560,7 @@ describe('the plan tools (ADR-0010)', () => {
   // an interface that moves. c2 is one that does.
   const withPlan = fromArrays({
     ...host,
-    connections: [...host.connections, { id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST' }],
+    relations: [...host.relations, { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST' }],
     transitions: [plan],
   })
 
@@ -598,8 +598,8 @@ describe('the plan tools (ADR-0010)', () => {
     const one = commandFor('plan.port', { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' }, view(withPlan))
     expect(answerOf(one)).toMatchObject({ moved: ['c2'], toId: 'crm' })
     const after = roundTrip(withPlan, one)
-    expect(after.connections.c2.validUntil).toBe('2027-04-30')
-    const twin = Object.values(after.connections).find((c) => c.id !== 'c1' && c.id !== 'c2')
+    expect(after.relations.c2.validUntil).toBe('2027-04-30')
+    const twin = Object.values(after.relations).find((c) => c.id !== 'c1' && c.id !== 'c2')
     expect(twin).toMatchObject({ sourceId: 'crm', targetId: 'who', protocol: 'REST', validFrom: '2027-05-01' })
     // And all of them at once, when no line is named.
     const all = commandFor('plan.port', { planId: 'tr-1', on: '2027-06-01' }, view(withPlan))
@@ -612,17 +612,17 @@ describe('the plan tools (ADR-0010)', () => {
     // no twin on crm. c3 is this plan's to move.
     const elsewhere = fromArrays({
       ...host,
-      connections: [
-        ...host.connections,
-        { id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST', validUntil: '2027-02-28' },
-        { id: 'c3', sourceId: 'api', targetId: 'billing', isBidirectional: false },
+      relations: [
+        ...host.relations,
+        { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST', validUntil: '2027-02-28' },
+        { type: 'flow', id: 'c3', sourceId: 'api', targetId: 'billing', isBidirectional: false },
       ],
       transitions: [plan],
     })
     const all = commandFor('plan.port', { planId: 'TR-0001', on: '2027-06-01' }, view(elsewhere))
     expect(answerOf(all)).toMatchObject({ moved: ['c3'], skipped: [{ connectionId: 'c2', closedOn: '2027-02-28' }] })
     const after = roundTrip(elsewhere, all)
-    expect(after.connections.c2.validUntil).toBe('2027-02-28')
+    expect(after.relations.c2.validUntil).toBe('2027-02-28')
     expect(commandFor('plan.port', { planId: 'tr-1', connectionId: 'c2', on: '2027-06-01' }, view(elsewhere))).toMatchObject({ refusal: 'agent.planned' })
     expect(commandFor('plan.port', { planId: 'tr-1', on: '2027-07-01' }, view(after))).toMatchObject({ refusal: 'agent.badArguments' })
   })
@@ -632,11 +632,11 @@ describe('the plan tools (ADR-0010)', () => {
     const back = commandFor('plan.unport', { planId: 'TR-1', connectionId: 'c2' }, view(ported))
     expect(answerOf(back)).toMatchObject({ connectionId: 'c2', unported: true })
     const after = roundTrip(ported, back)
-    expect(Object.keys(after.connections)).toEqual(['c1', 'c2'])
-    expect(after.connections.c2).not.toHaveProperty('validUntil')
+    expect(Object.keys(after.relations)).toEqual(['c1', 'c2'])
+    expect(after.relations.c2).not.toHaveProperty('validUntil')
     expect(commandFor('plan.unport', { planId: 'tr-1', connectionId: 'c2' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
     expect(commandFor('plan.unport', { planId: 'tr-1', connectionId: 'c9' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
-    const closed = fromArrays({ ...toArrays(withPlan), connections: [...host.connections, { id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, validUntil: '2027-01-31' }] })
+    const closed = fromArrays({ ...toArrays(withPlan), relations: [...host.relations, { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, validUntil: '2027-01-31' }] })
     expect(commandFor('plan.unport', { planId: 'tr-1', connectionId: 'c2' }, view(closed))).toMatchObject({ refusal: 'agent.planned' })
   })
 

@@ -116,7 +116,7 @@ export function emptyProject(
     name: names.design,
     customerName: groupName,
     elements: [],
-    connections: [],
+    relations: [],
     diagrams: [{ id: 'landscape', kind: 'layer7', name: names.diagram, placements: [] }],
   }
   return { ref, model, activeDiagramId: 'landscape', logoLibrary: [] }

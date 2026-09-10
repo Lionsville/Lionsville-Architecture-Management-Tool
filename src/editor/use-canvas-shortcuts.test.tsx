@@ -25,7 +25,7 @@ function model(): DesignModel {
     elements: [
       { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
   };
 }
 
@@ -295,7 +295,7 @@ describe('useCanvasShortcuts — dispatch', () => {
 
   it('Mod+V pastes the clipboard with a cascading offset', () => {
     const { view, actions, clipboardRef, pasteCountRef } = setup();
-    clipboardRef.current = { elements: [], connections: [], placements: [] };
+    clipboardRef.current = { elements: [], relations: [], placements: [] };
     fireEvent.keyDown(node(view), { key: 'v', ...MOD });
     expect(actions.pasteClipboard).toHaveBeenCalledWith(clipboardRef.current, {
       x: GRID_SIZE,

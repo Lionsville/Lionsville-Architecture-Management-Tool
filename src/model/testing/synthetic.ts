@@ -35,7 +35,7 @@
  */
 import type { Adr, AdrStatus } from '../adr'
 import type {
-  DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, ElementId,
+  DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, ElementId, Relation,
   Layer7Zone,
 } from '../types'
 import type { HostModel } from '../fromInterchange'
@@ -184,7 +184,7 @@ function build(spec: SyntheticSpec): HostModel {
   }
 
   const landscapeIds = elements.filter((e) => e.kind !== 'component').map((e) => e.id)
-  const connections = connect(rng, spec.connections, landscapeIds, componentsOf)
+  const relations = connect(rng, spec.connections, landscapeIds, componentsOf)
 
   const diagrams: DesignDiagram[] = [
     landscapeDiagram(rng, elements, zoneOf, groupOf, domainGroups),
@@ -196,7 +196,7 @@ function build(spec: SyntheticSpec): HostModel {
     customerName: 'Northwind Group',
     description: 'A generated landscape. Nobody works here.',
     elements,
-    connections,
+    relations,
     diagrams,
     decisions: decisions(rng, spec, applications),
   }
@@ -252,8 +252,8 @@ function connect(
   wanted: number,
   landscape: readonly ElementId[],
   componentsOf: ReadonlyMap<ElementId, readonly ElementId[]>,
-): DesignConnection[] {
-  const connections: DesignConnection[] = []
+): Relation[] {
+  const connections: Relation[] = []
   const seen = new Set<string>()
   const add = (source: ElementId, target: ElementId) => {
     if (source === target) return false
@@ -262,6 +262,7 @@ function connect(
     seen.add(key)
     connections.push({
       id: `conn-${String(connections.length + 1).padStart(5, '0')}`,
+      type: 'flow',
       sourceId: source,
       targetId: target,
       label: rng() > 0.5 ? pick(rng, VERBS) : undefined,

@@ -20,11 +20,11 @@ function model(): DesignModel {
       { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'e3', kind: 'application', name: 'E3', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [
+    relations: [
       // Blocked by the 'Ops' box below → route-only detours it.
-      { id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
+      { type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
       // Clear line → route-only straightens it, clearing the stale manual route.
-      { id: 'c2', sourceId: 'e1', targetId: 'e3', isBidirectional: false },
+      { type: 'flow', id: 'c2', sourceId: 'e1', targetId: 'e3', isBidirectional: false },
     ],
     diagrams: [
       {

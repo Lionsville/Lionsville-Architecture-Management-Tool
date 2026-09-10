@@ -47,7 +47,7 @@ function model(): DesignModel {
       { id: 'a2', kind: 'application', name: 'Betaalplatform', vendor: 'Adyen', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'a3', kind: 'component', name: 'Orderservice', parentApplicationId: 'a1', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
   };
 }
 

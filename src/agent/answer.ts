@@ -63,7 +63,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         group: model.customerName,
         description: model.description,
         elements: model.order.elements.length,
-        connections: model.order.connections.length,
+        connections: model.order.relations.length,
         diagrams: model.order.diagrams.map((id) => diagramLine(model.diagrams[id], view.activeDiagramId)),
         decisions: model.order.decisions.length + view.groupDecisions.length,
         activeDiagramId: view.activeDiagramId,
@@ -94,8 +94,8 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         ...element,
         parentApplication: element.parentApplicationId
           ? nameOf(model, element.parentApplicationId) : undefined,
-        connections: model.order.connections
-          .map((id) => model.connections[id])
+        connections: model.order.relations
+          .map((id) => model.relations[id])
           .filter((c) => c.sourceId === element.id || c.targetId === element.id)
           .map((c) => connectionLine(model, c)),
         drawnOn: model.order.diagrams.flatMap((diagramId) => {
@@ -119,8 +119,8 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       const rows: ReturnType<typeof connectionLine>[] = []
       const dated = datedBy(model, view.current())
       let total = 0
-      for (const id of model.order.connections) {
-        const c = model.connections[id]
+      for (const id of model.order.relations) {
+        const c = model.relations[id]
         if (args.elementId !== undefined && c.sourceId !== args.elementId && c.targetId !== args.elementId) continue
         if (diagram && !(diagram.placements[c.sourceId] && diagram.placements[c.targetId])) continue
         total += 1
@@ -258,7 +258,7 @@ function exportMarkdown(model: Model, view: ReadView): string {
 
   lines.push('## Connections', '', ...table(
     ['id', 'from', 'to', 'label', 'protocol', 'both ways', 'valid from', 'valid until'],
-    model.order.connections.map((id) => model.connections[id])
+    model.order.relations.map((id) => model.relations[id])
       .map((c) => [c.id, `${name(c.sourceId)} (${c.sourceId})`, `${name(c.targetId)} (${c.targetId})`, c.label, c.protocol, c.isBidirectional ? 'yes' : '', c.validFrom, c.validUntil]),
   ))
 

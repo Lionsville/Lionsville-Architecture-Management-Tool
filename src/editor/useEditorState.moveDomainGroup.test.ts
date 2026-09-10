@@ -21,7 +21,7 @@ function model(): DesignModel {
       { id: 'other', kind: 'application', name: 'Other', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'loose', kind: 'application', name: 'Loose', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
     diagrams: [
       {
         id: 'd1',

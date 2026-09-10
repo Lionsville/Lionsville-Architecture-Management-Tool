@@ -35,11 +35,11 @@ import { transaction, reverse, NOTHING } from './commands'
 import type { Command, CommandMeta, DiagramPatch, ProjectPatch } from './commands'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { ConnectionId, Diagram, DiagramId, Model, ModelOrder } from './normalised'
+import type { RelationId, Diagram, DiagramId, Model, ModelOrder } from './normalised'
 import { decisionsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
 import type {
-  DesignConnection, DesignElement, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId,
+  DesignElement, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId, Relation,
 } from './types'
 
 /**
@@ -108,8 +108,8 @@ function withElements(model: Model, rows: Rows<DesignElement>): Model {
   return { ...model, elements: rows.by, order: withOrder(model, 'elements', rows.order) }
 }
 
-function withConnections(model: Model, rows: Rows<DesignConnection>): Model {
-  return { ...model, connections: rows.by, order: withOrder(model, 'connections', rows.order) }
+function withRelations(model: Model, rows: Rows<Relation>): Model {
+  return { ...model, relations: rows.by, order: withOrder(model, 'relations', rows.order) }
 }
 
 function withDiagrams(model: Model, rows: Rows<Diagram>): Model {
@@ -194,24 +194,24 @@ export function apply(model: Model, command: Command): ApplyResult {
     case 'element.delete':
       return deleteElement(model, command.id, meta)
 
-    // --- connections --------------------------------------------------------
-    case 'connection.create': {
-      const { connection, at } = command
-      if (!model.elements[connection.sourceId] || !model.elements[connection.targetId]) return gone
-      const rows = put(model.connections, model.order.connections, connection.id, connection, at)
-      return ok(withConnections(model, rows), { type: 'connection.delete', id: connection.id })
+    // --- relations ----------------------------------------------------------
+    case 'relation.create': {
+      const { relation, at } = command
+      if (!model.elements[relation.sourceId] || !model.elements[relation.targetId]) return gone
+      const rows = put(model.relations, model.order.relations, relation.id, relation, at)
+      return ok(withRelations(model, rows), { type: 'relation.delete', id: relation.id })
     }
 
-    case 'connection.update': {
-      const held = model.connections[command.id]
+    case 'relation.update': {
+      const held = model.relations[command.id]
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
-      const rows = put(model.connections, model.order.connections, command.id, row)
-      return ok(withConnections(model, rows), { type: 'connection.update', id: command.id, patch: inverse })
+      const rows = put(model.relations, model.order.relations, command.id, row)
+      return ok(withRelations(model, rows), { type: 'relation.update', id: command.id, patch: inverse })
     }
 
-    case 'connection.delete':
-      return deleteConnection(model, command.id, meta)
+    case 'relation.delete':
+      return deleteRelation(model, command.id, meta)
 
     // --- geometry -----------------------------------------------------------
     case 'placement.set': {
@@ -281,10 +281,10 @@ export function apply(model: Model, command: Command): ApplyResult {
       let order = diagram.order.routes
       const restore: EdgeRoute[] = []
       const restoreAt: number[] = []
-      const clear: ConnectionId[] = []
+      const clear: RelationId[] = []
       command.routes.forEach((route, i) => {
         const id = route.connectionId
-        if (!model.connections[id]) return
+        if (!model.relations[id]) return
         const held = by[id]
         if (held) {
           restore.push(held)
@@ -469,13 +469,13 @@ export function applyAll(model: Model, commands: Command[], meta: CommandMeta = 
 }
 
 /**
- * Deleting an element takes with it every connection that ends on it, its
- * placement on every diagram, the routes of those connections, and any container
+ * Deleting an element takes with it every relation that ends on it, its
+ * placement on every diagram, the routes of those relations, and any container
  * view that was about it — which is exactly what the batch did, spelled out.
  *
  * The inverse is a transaction that puts each of those back at the index it was
  * at, in the order that keeps the model referentially whole at every step:
- * the element, then its connections, then the diagrams, then the geometry.
+ * the element, then its relations, then the diagrams, then the geometry.
  */
 function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyResult {
   const element = model.elements[id]
@@ -500,19 +500,19 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
 
   // Indices are read off the ORIGINAL order, and pushed in ascending order, so
   // putting them back one at a time lands each on the index it came from.
-  model.order.connections.forEach((connectionId, at) => {
-    const connection = model.connections[connectionId]
-    if (connection.sourceId !== id && connection.targetId !== id) return
-    undo.push({ type: 'connection.create', connection, at })
+  model.order.relations.forEach((relationId, at) => {
+    const relation = model.relations[relationId]
+    if (relation.sourceId !== id && relation.targetId !== id) return
+    undo.push({ type: 'relation.create', relation, at })
     for (const diagramId of next.order.diagrams) {
       const diagram = model.diagrams[diagramId]
-      const route = routesOf(diagram)[connectionId]
+      const route = routesOf(diagram)[relationId]
       if (!route) continue
       undo.push({
-        type: 'route.set', diagramId, routes: [route], at: [diagram.order.routes.indexOf(connectionId)],
+        type: 'route.set', diagramId, routes: [route], at: [diagram.order.routes.indexOf(relationId)],
       })
     }
-    next = removeConnection(next, connectionId)
+    next = removeRelation(next, relationId)
   })
 
   for (const diagramId of next.order.diagrams) {
@@ -531,13 +531,13 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
   return { ok: true, model: next, inverse: transaction(undo, meta) }
 }
 
-/** A connection's own delete: the row, and its route on every diagram. */
-function deleteConnection(model: Model, id: ConnectionId, meta: CommandMeta): ApplyResult {
-  if (!model.connections[id]) return gone
+/** A relation's own delete: the row, and its route on every diagram. */
+function deleteRelation(model: Model, id: RelationId, meta: CommandMeta): ApplyResult {
+  if (!model.relations[id]) return gone
   const undo: Command[] = [{
-    type: 'connection.create',
-    connection: model.connections[id],
-    at: model.order.connections.indexOf(id),
+    type: 'relation.create',
+    relation: model.relations[id],
+    at: model.order.relations.indexOf(id),
   }]
   for (const diagramId of model.order.diagrams) {
     const diagram = model.diagrams[diagramId]
@@ -547,12 +547,12 @@ function deleteConnection(model: Model, id: ConnectionId, meta: CommandMeta): Ap
       type: 'route.set', diagramId, routes: [route], at: [diagram.order.routes.indexOf(id)],
     })
   }
-  return { ok: true, model: removeConnection(model, id), inverse: transaction(undo, meta) }
+  return { ok: true, model: removeRelation(model, id), inverse: transaction(undo, meta) }
 }
 
-/** The connection and its geometry, gone from the model and from every diagram. */
-function removeConnection(model: Model, id: ConnectionId): Model {
-  let next = withConnections(model, drop(model.connections, model.order.connections, id))
+/** The relation and its geometry, gone from the model and from every diagram. */
+function removeRelation(model: Model, id: RelationId): Model {
+  let next = withRelations(model, drop(model.relations, model.order.relations, id))
   for (const diagramId of next.order.diagrams) {
     const diagram = next.diagrams[diagramId]
     if (!routesOf(diagram)[id]) continue

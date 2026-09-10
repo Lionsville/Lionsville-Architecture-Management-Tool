@@ -30,7 +30,7 @@ const host: HostModel = {
     id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
     aspects: {}, description: 'Sends the invoices.',
   }],
-  connections: [],
+  relations: [],
   diagrams: [{ id: 'l7', kind: 'layer7', name: 'L7', placements: [{ elementId: 'billing', x: 0, y: 0 }] }],
   decisions: [{ id: 'adr-1', number: 1, title: 'Keep the ledger', status: 'proposed', date: '2026-09-01', body: 'Because.', signers: [] }],
 }
@@ -78,7 +78,7 @@ function session(over: Partial<SessionView> = {}): SessionView & { model: () => 
       revision += 1
       return toArrays(model)
     },
-    ids: idPolicy(() => [...model.order.elements, ...model.order.connections, ...model.order.diagrams]),
+    ids: idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams]),
     makeId: (prefix) => `${prefix}-new-${++counter}`,
     today: () => '2026-09-07',
     translate: DEFAULT_TRANSLATE,
@@ -268,7 +268,7 @@ describe('batch', () => {
     expect(held.history()).toHaveLength(1)
     expect(held.history()[0].origin).toBe('agent')
     expect(Object.keys(held.model().elements)).toEqual(['billing', 'crm', 'crm-2'])
-    expect(Object.values(held.model().connections)[0]).toMatchObject({ sourceId: 'crm', targetId: 'billing', label: 'orders' })
+    expect(Object.values(held.model().relations)[0]).toMatchObject({ sourceId: 'crm', targetId: 'billing', label: 'orders' })
   })
 
   it('lands nothing when a step is refused, and says which', async () => {

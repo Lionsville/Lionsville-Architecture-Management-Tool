@@ -36,7 +36,7 @@ const nodeTypes: NodeTypes = { application: CountingNode };
 
 const host: HostModel = model({
   elements: [element('a', { name: 'Alpha' }), element('b', { name: 'Beta' }), element('c', { name: 'Gamma' })],
-  connections: [connection('a-b', 'a', 'b')],
+  relations: [connection('a-b', 'a', 'b')],
   diagrams: [diagram('landscape', {
     placements: [
       placement('a', { x: 0, y: 0 }),

@@ -9,7 +9,7 @@ import {
 
 const board = model({
   elements: [element('e1'), element('e2'), element('e3')],
-  connections: [connection('c1', 'e1', 'e2'), connection('c2', 'e2', 'e3')],
+  relations: [connection('c1', 'e1', 'e2'), connection('c2', 'e2', 'e3')],
 });
 
 const summary = (overrides: Partial<DeletionSummary> = {}): DeletionSummary => ({

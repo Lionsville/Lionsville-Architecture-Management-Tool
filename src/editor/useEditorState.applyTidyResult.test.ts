@@ -25,7 +25,7 @@ function model(): DesignModel {
     elements: [
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
     diagrams: [
       {
         id: 'd1',
@@ -62,9 +62,9 @@ function modelWithRoutes(): DesignModel {
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [
-      { id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
-      { id: 'c2', sourceId: 'e2', targetId: 'e1', isBidirectional: false },
+    relations: [
+      { type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
+      { type: 'flow', id: 'c2', sourceId: 'e2', targetId: 'e1', isBidirectional: false },
     ],
     diagrams: [
       {
@@ -152,7 +152,7 @@ function modelWithCanvas(): DesignModel {
     elements: [
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
     diagrams: [
       {
         id: 'd1',

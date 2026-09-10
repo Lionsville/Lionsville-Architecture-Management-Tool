@@ -3,7 +3,7 @@
  * document. Shared by the interchange export and by the id policy below, which
  * is where every new id in the app comes from.
  */
-import type { ConnectionId } from './normalised'
+import type { RelationId } from './normalised'
 import type { ElementId } from './types'
 export const KEY_RE = /^[a-z0-9-]+$/
 
@@ -47,7 +47,7 @@ export type IdPolicy = {
   /** The key this name would have had in the file. */
   element(name: string): ElementId
   /** Connections carry no key in the interchange format, so they get a serial. */
-  connection(): ConnectionId
+  connection(): RelationId
 }
 
 export function idPolicy(taken: () => Iterable<string>): IdPolicy {
@@ -86,12 +86,12 @@ export function idPolicy(taken: () => Iterable<string>): IdPolicy {
  */
 export function idsIn(model: {
   elements: readonly { id: string }[]
-  connections: readonly { id: string }[]
+  relations: readonly { id: string }[]
   diagrams: readonly { id: string }[]
 }): string[] {
   return [
     ...model.elements.map((e) => e.id),
-    ...model.connections.map((c) => c.id),
+    ...model.relations.map((r) => r.id),
     ...model.diagrams.map((d) => d.id),
   ]
 }

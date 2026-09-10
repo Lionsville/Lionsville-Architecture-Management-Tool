@@ -24,7 +24,7 @@ const model: HostModel = {
     element('billing', 'Billing', { technology: 'Kafka' }),
     element('warehouse', 'Warehouse', { description: 'Stock levels per site. Talks to [[Billing]] nightly.' }),
   ],
-  connections: [],
+  relations: [],
   diagrams: [],
   decisions: [
     adr('adr-l', 'Use Kafka for events', { body: 'Every domain publishes events.' }),

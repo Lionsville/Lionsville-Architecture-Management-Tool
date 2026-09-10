@@ -16,6 +16,8 @@ import type { Command } from './commands'
 import { fromArrays, toDiagram } from './normalised'
 import type { Model } from './normalised'
 import type { HostModel } from './fromInterchange'
+import { RELATION_TYPES } from './relations'
+import type { Relation } from './types'
 import { connection, diagram, element, placement } from './testFixtures'
 import type { Adr } from './adr'
 import type { EdgeRoute } from './types'
@@ -37,7 +39,7 @@ function sample(overrides: Partial<HostModel> = {}): Model {
     name: 'Design',
     customerName: 'ACME',
     elements: [element('a'), element('b'), element('c', { kind: 'component', parentApplicationId: 'a' })],
-    connections: [connection('c#1', 'a', 'b'), connection('c#2', 'b', 'a')],
+    relations: [connection('c#1', 'a', 'b'), connection('c#2', 'b', 'a')],
     diagrams: [
       diagram('landscape', {
         placements: [placement('a'), placement('b')],
@@ -107,7 +109,7 @@ describe('apply — elements', () => {
     const m = sample()
     const gone = ok(apply(m, { type: 'element.delete', id: 'a' })).model
 
-    expect(gone.order.connections).toEqual([])
+    expect(gone.order.relations).toEqual([])
     expect(gone.order.diagrams).toEqual(['landscape'])
     expect(gone.diagrams.landscape.order.placements).toEqual(['b'])
     expect(gone.diagrams.landscape.edgeRoutes).toBeUndefined()
@@ -126,25 +128,45 @@ describe('apply — elements', () => {
   })
 })
 
-describe('apply — connections', () => {
+describe('apply — relations', () => {
   it('creates, updates and deletes, each reversibly', () => {
     const m = sample()
-    reversible(m, { type: 'connection.create', connection: connection('c#3', 'a', 'c') })
-    reversible(m, { type: 'connection.update', id: 'c#1', patch: { label: 'reads' } })
-    reversible(m, { type: 'connection.delete', id: 'c#1' })
+    reversible(m, { type: 'relation.create', relation: connection('c#3', 'a', 'c') })
+    reversible(m, { type: 'relation.update', id: 'c#1', patch: { label: 'reads' } })
+    reversible(m, { type: 'relation.delete', id: 'c#1' })
   })
 
   it('takes its geometry off every diagram, and gives it back', () => {
     const m = sample()
-    const gone = ok(apply(m, { type: 'connection.delete', id: 'c#1' }))
+    const gone = ok(apply(m, { type: 'relation.delete', id: 'c#1' }))
     expect(gone.model.diagrams.landscape.order.routes).toEqual(['c#2'])
     expect(ok(apply(gone.model, gone.inverse)).model.diagrams.landscape.order.routes)
       .toEqual(['c#1', 'c#2'])
   })
 
   it('refuses a line to an element that is not there', () => {
-    expect(apply(sample(), { type: 'connection.create', connection: connection('c#9', 'a', 'nope') }))
+    expect(apply(sample(), { type: 'relation.create', relation: connection('c#9', 'a', 'nope') }))
       .toEqual({ ok: false, reason: 'command.gone' })
+  })
+
+  /**
+   * The reducer is the model's writer, and the model is what ADR-0012 §5
+   * widened — not the file. Every type it can hold has to land and come back,
+   * whether or not this build's file format has a place for it yet.
+   */
+  it.each(RELATION_TYPES)('lands a %s row and gives it back on undo, window and all', (type) => {
+    const m = sample()
+    const row: Relation = {
+      id: `r-${type}`, type, sourceId: 'a', targetId: 'c',
+      validFrom: '2027-03-01', validUntil: '2027-12-31',
+    }
+    const landed = ok(apply(m, { type: 'relation.create', relation: row }))
+    expect(landed.model.relations[row.id]).toEqual(row)
+    expect(ok(apply(landed.model, landed.inverse)).model.relations[row.id]).toBeUndefined()
+
+    const dated = ok(apply(landed.model, { type: 'relation.update', id: row.id, patch: { validUntil: '2028-06-30' } }))
+    expect(dated.model.relations[row.id].validUntil).toBe('2028-06-30')
+    expect(ok(apply(dated.model, dated.inverse)).model.relations[row.id]).toEqual(row)
   })
 })
 
@@ -298,7 +320,7 @@ describe('apply — transactions', () => {
     const m = sample()
     const step = ok(apply(m, transaction([
       { type: 'element.create', element: element('d') },
-      { type: 'connection.create', connection: connection('c#3', 'a', 'd') },
+      { type: 'relation.create', relation: connection('c#3', 'a', 'd') },
       { type: 'placement.set', diagramId: 'landscape', placements: [placement('d')] },
     ])))
     expect(step.model.order.elements).toEqual(['a', 'b', 'c', 'd'])
@@ -344,7 +366,7 @@ describe('apply — what it does not touch', () => {
     expect(next).not.toBe(m)
     expect(next.diagrams['inside-a']).toBe(m.diagrams['inside-a'])
     expect(next.elements).toBe(m.elements)
-    expect(next.connections).toBe(m.connections)
+    expect(next.relations).toBe(m.relations)
     expect(next.order).toBe(m.order)
     expect(next.diagrams.landscape.order).toBe(m.diagrams.landscape.order)
   })
@@ -363,11 +385,11 @@ describe('a session of twenty commands', () => {
     { type: 'element.create', element: element('d', { name: 'Dispatch' }) },
     { type: 'element.create', element: element('e', { name: 'Billing' }) },
     { type: 'placement.set', diagramId: 'landscape', placements: [placement('d'), placement('e')] },
-    { type: 'connection.create', connection: connection('c#3', 'd', 'e') },
+    { type: 'relation.create', relation: connection('c#3', 'd', 'e') },
     { type: 'route.set', diagramId: 'landscape', routes: [route('c#3')] },
     { type: 'element.update', id: 'd', patch: { vendor: 'Acme' } },
     { type: 'element.update', id: 'd', patch: { vendor: undefined } },
-    { type: 'connection.update', id: 'c#3', patch: { label: 'invoices' } },
+    { type: 'relation.update', id: 'c#3', patch: { label: 'invoices' } },
     { type: 'diagram.rename', id: 'landscape', name: 'The landscape' },
     { type: 'diagram.settings', id: 'landscape', settings: { name: 'The landscape', author: 'W' } },
     { type: 'diagram.update', id: 'landscape', patch: { autoRoute: true } },
@@ -417,7 +439,7 @@ describe('over a thousand elements', () => {
       placements: elements.map((e, i) => placement(e.id, { x: i * 10, y: i * 4 })),
       edgeRoutes: connections.filter((_, i) => i % 7 === 0).map((c) => route(c.id)),
     }))
-    return fromArrays({ name: 'Big', customerName: 'ACME', elements, connections, diagrams })
+    return fromArrays({ name: 'Big', customerName: 'ACME', elements, relations: connections, diagrams })
   }
 
   const m = big(1000)
@@ -426,8 +448,8 @@ describe('over a thousand elements', () => {
     ['element.create', { type: 'element.create', element: element('new') }],
     ['element.update', { type: 'element.update', id: 'e500', patch: { name: 'Renamed' } }],
     ['element.delete', { type: 'element.delete', id: 'e500' }],
-    ['connection.create', { type: 'connection.create', connection: connection('c#new', 'e1', 'e9') }],
-    ['connection.delete', { type: 'connection.delete', id: 'c#7' }],
+    ['relation.create', { type: 'relation.create', relation: connection('c#new', 'e1', 'e9') }],
+    ['relation.delete', { type: 'relation.delete', id: 'c#7' }],
     ['placement.set', { type: 'placement.set', diagramId: 'two', placements: [placement('e3', { x: 1 })] }],
     ['placement.remove', { type: 'placement.remove', diagramId: 'two', elementIds: ['e3', 'e4'] }],
     ['route.set', { type: 'route.set', diagramId: 'two', routes: [route('c#14', { pinned: true })] }],

@@ -34,8 +34,9 @@ function boardModel(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements,
-    connections: [1, 2, 3, 4].map((n) => ({
+    relations: [1, 2, 3, 4].map((n) => ({
       id: `c${n}`,
+      type: 'flow' as const,
       sourceId: `s${n}`,
       targetId: `t${n}`,
       isBidirectional: false,
@@ -132,7 +133,7 @@ describe('routeDiagramEdges — preserveRoutesFor', () => {
     const model = boardModel();
     const diagram = model.diagrams[0];
     // Give every connection a label, so each one competes for chip space.
-    for (const c of model.connections) c.label = 'Sends orders';
+    for (const c of model.relations) c.label = 'Sends orders';
 
     const result = await routeDiagramEdges(model, diagram, 'clear', undefined, new Set(['c2']));
 

@@ -18,7 +18,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
     name: 'Landscape',
     customerName: 'Acme',
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
-    connections: [{ id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
+    relations: [{ type: 'flow', id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
     diagrams: [{
       id: 'l7', kind: 'layer7', name: 'Landschap',
       placements: [{ elementId: 'crews', x: 0, y: 0 }, { elementId: 'reisinfo', x: 100, y: 0 }],
@@ -53,7 +53,7 @@ describe('diffModels', () => {
   })
 
   it('names a connection by its ends when it has no label', () => {
-    const after = model({ connections: [] })
+    const after = model({ relations: [] })
     expect(diffModels(model(), after)).toEqual([
       { kind: 'removed', what: 'connection', id: 'c-1', name: 'Crews → Reisinformatie' },
     ])
@@ -113,7 +113,7 @@ describe('diffModels', () => {
   it('reads in one order however the models were built', () => {
     const after = model({
       elements: [element('crews', 'Crews'), element('planning', 'Planning')],
-      connections: [],
+      relations: [],
       diagrams: [{ ...model().diagrams[0], name: 'Board' }],
     })
     expect(diffModels(model(), after).map((change) => change.what))

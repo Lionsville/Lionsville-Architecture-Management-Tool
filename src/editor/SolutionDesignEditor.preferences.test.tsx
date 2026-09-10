@@ -33,7 +33,7 @@ function model(): DesignModel {
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
-    connections: [],
+    relations: [],
   };
 }
 

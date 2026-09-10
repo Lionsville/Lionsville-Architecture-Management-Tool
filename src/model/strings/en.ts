@@ -14,6 +14,19 @@ export const EN = {
   'kind.inputChannel': 'Input channel',
   'kind.managementTool': 'Management tool',
 
+  // --- what a relation MEANS (ADR-0012 §5) ---------------------------------
+  'relation.flow': 'Flow',
+  'relation.supports': 'Supports',
+  'relation.serves': 'Serves',
+  'relation.realises': 'Realises',
+  'relation.assigned': 'Assigned to',
+  /**
+   * The model can say more than format 3 can hold. Said as a refusal rather
+   * than a silent drop, because the alternative is a file an older build reads
+   * as a line it cannot understand.
+   */
+  'relation.notInThisFormat': 'A {type} relation cannot be saved in this file format yet. Only flows can.',
+
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',
   'zone.inputChannels': 'INPUT CHANNELS',
@@ -77,9 +90,9 @@ export const EN = {
   'activity.elementAdded': 'Added {name}',
   'activity.elementChanged': 'Changed {name}',
   'activity.elementDeleted': 'Deleted {name}',
-  'activity.connectionAdded': 'Drew a connection',
-  'activity.connectionChanged': 'Changed a connection',
-  'activity.connectionDeleted': 'Deleted a connection',
+  'activity.relationAdded': 'Drew a connection',
+  'activity.relationChanged': 'Changed a connection',
+  'activity.relationDeleted': 'Deleted a connection',
   'activity.movedOne': 'Moved one element',
   'activity.movedMany': 'Moved {count} elements',
   'activity.removedOne': 'Took one element off the diagram',

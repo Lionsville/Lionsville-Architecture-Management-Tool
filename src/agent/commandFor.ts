@@ -35,7 +35,7 @@ import type { Transition, TransitionElement, TransitionMilestone, TransitionRole
 import { decisionsOf, transitionList } from '../model/normalised'
 import { businessCaseTemplate } from '../documentation/businessCase'
 import type {
-  DesignConnection, DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId,
+  DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, EdgeLineStyle, ElementId, Relation,
   AspectStatus, ElementKind, Layer7Zone, Rect,
 } from '../model/types'
 import type { AdrStatus } from '../model/adr'
@@ -101,24 +101,24 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const targetId = args.targetId as string
       for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
       if (sourceId === targetId) return refused('agent.badArguments', 'a connection needs two different elements')
-      const bare: DesignConnection = { id: view.ids.connection(), sourceId, targetId, isBidirectional: false }
-      const patch = connectionPatch(args, bare)
+      const bare: Relation = { id: view.ids.connection(), type: 'flow', sourceId, targetId, isBidirectional: false }
+      const patch = relationPatch(args, bare)
       if ('ok' in patch) return patch
-      const connection: DesignConnection = { ...bare, ...patch }
-      for (const key of Object.keys(patch) as (keyof DesignConnection)[]) if (connection[key] === undefined) delete connection[key]
+      const relation: Relation = { ...bare, ...patch }
+      for (const key of Object.keys(patch) as (keyof Relation)[]) if (relation[key] === undefined) delete relation[key]
       return {
-        command: { type: 'connection.create', connection, origin: 'agent' },
-        answer: json({ id: connection.id, sourceId, targetId }),
+        command: { type: 'relation.create', relation, origin: 'agent' },
+        answer: json({ id: relation.id, sourceId, targetId }),
       }
     }
     case 'connection.update': {
       const id = args.id as string
-      const held = model.connections[id]
+      const held = model.relations[id]
       if (!held) return refused('agent.unknownId', `connection ${id}`)
-      const patch = connectionPatch(args, held)
+      const patch = relationPatch(args, held)
       if ('ok' in patch) return patch
       return {
-        command: { type: 'connection.update', id, patch, origin: 'agent' },
+        command: { type: 'relation.update', id, patch, origin: 'agent' },
         answer: json({ id, changed: Object.keys(patch) }),
       }
     }
@@ -128,25 +128,25 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const changed: { id: string; changed: string[] }[] = []
       for (const [index, item] of items.entries()) {
         const id = item.id as string
-        const held = model.connections[id]
+        const held = model.relations[id]
         if (!held) return refused('agent.unknownId', `connection ${id}`)
-        const patch = connectionPatch(item, held)
+        const patch = relationPatch(item, held)
         if ('ok' in patch) return withDetail(patch, `items[${index}]`)
-        commands.push({ type: 'connection.update', id, patch })
+        commands.push({ type: 'relation.update', id, patch })
         changed.push({ id, changed: Object.keys(patch) })
       }
       return { command: transaction(commands, { origin: 'agent' }), answer: json({ updated: changed }) }
     }
     case 'connection.remove': {
       const id = args.id as string
-      if (!model.connections[id]) return refused('agent.unknownId', `connection ${id}`)
-      return { command: { type: 'connection.delete', id, origin: 'agent' }, answer: json({ id, removed: true }) }
+      if (!model.relations[id]) return refused('agent.unknownId', `connection ${id}`)
+      return { command: { type: 'relation.delete', id, origin: 'agent' }, answer: json({ id, removed: true }) }
     }
     case 'connections.remove': {
       const ids = [...new Set(args.ids as string[])]
-      for (const id of ids) if (!model.connections[id]) return refused('agent.unknownId', `connection ${id}`)
+      for (const id of ids) if (!model.relations[id]) return refused('agent.unknownId', `connection ${id}`)
       return {
-        command: transaction(ids.map((id) => ({ type: 'connection.delete' as const, id })), { origin: 'agent' }),
+        command: transaction(ids.map((id) => ({ type: 'relation.delete' as const, id })), { origin: 'agent' }),
         answer: json({ removed: ids }),
       }
     }
@@ -1108,10 +1108,10 @@ function hexColour(value: unknown): string | '' | false {
  * the window has to be days and run forwards, checked against what the line
  * keeps for the half that was not given.
  */
-function connectionPatch(args: Args, held: DesignConnection): Partial<DesignConnection> | AgentAnswer {
+function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAnswer {
   const look = lineLook(args)
   if ('ok' in look) return look
-  const patch: Partial<DesignConnection> = { ...look }
+  const patch: Partial<Relation> = { ...look }
   for (const key of ['label', 'protocol'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string

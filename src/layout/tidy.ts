@@ -396,7 +396,7 @@ export function bandTargets(
     if (held) held.push(to);
     else neighbours.set(from, [to]);
   };
-  for (const conn of model.connections) {
+  for (const conn of model.relations) {
     link(conn.sourceId, conn.targetId);
     // A line from an element to itself was one neighbour to the loop this
     // replaces — the first branch matched and the second never ran.
@@ -589,7 +589,7 @@ async function layoutGroupInPlace(
     ...sizeOf(placement),
   }));
   const memberIds = new Set(members.map((placement) => placement.elementId));
-  const edges: ElkEdgeSpec[] = model.connections
+  const edges: ElkEdgeSpec[] = model.relations
     .filter((c) => memberIds.has(c.sourceId) && memberIds.has(c.targetId))
     .map((c) => {
       const label = edgeLabelSize(c);
@@ -1001,7 +1001,7 @@ async function tidyLandscapeGroupsAsLeaves(
     return loose.some((p) => p.elementId === id) ? id : undefined;
   };
   const edges: ElkEdgeSpec[] = [];
-  for (const connection of model.connections) {
+  for (const connection of model.relations) {
     const source = nodeFor(connection.sourceId);
     const target = nodeFor(connection.targetId);
     if (!source || !target || source === target) continue;
@@ -1229,7 +1229,7 @@ async function tidyLandscape(
   ];
 
   const memberIds = new Set(placements.map((p) => p.elementId));
-  const edges: ElkEdgeSpec[] = model.connections
+  const edges: ElkEdgeSpec[] = model.relations
     .filter((c) => memberIds.has(c.sourceId) && memberIds.has(c.targetId))
     .map((c) => {
       const label = edgeLabelSize(c);
@@ -1505,7 +1505,7 @@ export async function tidyContainer(
   );
   const graphNodeFor = (id: ElementId): ElementId =>
     options.pinGroupContents && appId && componentIdSet.has(id) ? appId : id;
-  const edges: ElkEdgeSpec[] = model.connections
+  const edges: ElkEdgeSpec[] = model.relations
     .filter((c) => placedIds.has(c.sourceId) && placedIds.has(c.targetId))
     .map((c) => {
       const label = edgeLabelSize(c);

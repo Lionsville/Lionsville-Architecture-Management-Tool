@@ -39,7 +39,7 @@ export function sampleProject(over: Partial<ProjectSnapshot> = {}): ProjectSnaps
     name: 'Application landscape',
     customerName: 'Acme Logistics',
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
-    connections: [{ id: 'c#1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
+    relations: [{ id: 'c#1', type: 'flow', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
     diagrams: [
       { id: 'l7', kind: 'layer7', name: 'Landschap', placements: [{ elementId: 'crews', x: 10, y: 20 }] },
       { id: 'cd', kind: 'container', name: 'Crews · containers', placements: [] },

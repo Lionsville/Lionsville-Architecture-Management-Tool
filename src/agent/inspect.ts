@@ -67,8 +67,8 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
     if (element) rects.set(id, placementRect(element.kind, diagram.placements[id]))
   }
 
-  const connections = model.order.connections
-    .map((id) => model.connections[id])
+  const connections = model.order.relations
+    .map((id) => model.relations[id])
     .filter((c) => rects.has(c.sourceId) && rects.has(c.targetId))
 
   const report: InspectReport = {
@@ -181,7 +181,7 @@ function overlaps(rects: Map<ElementId, Rect>, limit: number): InspectReport['ov
 function crossings(
   diagram: Diagram,
   rects: Map<ElementId, Rect>,
-  connections: readonly Model['connections'][string][],
+  connections: readonly Model['relations'][string][],
   limit: number,
 ): InspectReport['crossings'] {
   const out: InspectReport['crossings'] = { total: 0, some: [] }
@@ -230,7 +230,7 @@ function lowerBound(sorted: readonly number[], value: number): number {
 
 function orphans(
   rects: Map<ElementId, Rect>,
-  connections: readonly Model['connections'][string][],
+  connections: readonly Model['relations'][string][],
   limit: number,
 ): InspectReport['orphans'] {
   const connected = new Set<ElementId>()

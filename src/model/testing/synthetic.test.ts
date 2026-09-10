@@ -30,7 +30,7 @@ describe('the synthetic landscape', () => {
   it('builds the sizes it advertises', () => {
     const model = syntheticModel({ ...tiny })
     expect(model.elements).toHaveLength(tiny.elements)
-    expect(model.connections).toHaveLength(tiny.connections)
+    expect(model.relations).toHaveLength(tiny.connections)
     expect(model.diagrams).toHaveLength(tiny.diagrams)
     expect(model.decisions).toHaveLength(tiny.decisions)
   })
@@ -68,7 +68,7 @@ describe('the synthetic landscape', () => {
   it('wires a long tail and a few hubs rather than a uniform degree', () => {
     const model = syntheticModel('small')
     const degree = new Map<string, number>()
-    for (const c of model.connections) {
+    for (const c of model.relations) {
       degree.set(c.sourceId, (degree.get(c.sourceId) ?? 0) + 1)
       degree.set(c.targetId, (degree.get(c.targetId) ?? 0) + 1)
     }
@@ -82,7 +82,7 @@ describe('the synthetic landscape', () => {
   it('never connects an element to itself, and never twice the same way', () => {
     const model = syntheticModel({ ...tiny })
     const seen = new Set<string>()
-    for (const c of model.connections) {
+    for (const c of model.relations) {
       expect(c.sourceId).not.toBe(c.targetId)
       const key = `${c.sourceId} ${c.targetId}`
       expect(seen.has(key)).toBe(false)

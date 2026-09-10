@@ -1,18 +1,18 @@
 import type {
-  DesignConnection,
   DesignDiagram,
   DesignElement,
   DiagramPlacement,
   ElementId,
   ElementKind,
   Point,
+  Relation,
 } from './types';
 
 /** In-memory paste snapshot: copied elements, their fully-internal
- * connections, and their placements on the source diagram. */
+ * relations, and their placements on the source diagram. */
 export interface ClipboardPayload {
   elements: DesignElement[];
-  connections: DesignConnection[];
+  relations: Relation[];
   placements: DiagramPlacement[];
 }
 
@@ -20,9 +20,9 @@ export interface ClipboardPayload {
  * COPY / PASTE (U4a)
  * ------------------
  * An in-memory, diagram-agnostic snapshot of a selection plus its placements
- * and fully-internal connections. Paste reuses the tempId → reconcile path
+ * and fully-internal relations. Paste reuses the tempId → reconcile path
  * (see reconcile.ts): every copied id is minted a fresh temp id, and every
- * reference (`parentApplicationId`, connection endpoints, placement elementId)
+ * reference (`parentApplicationId`, relation endpoints, placement elementId)
  * is remapped through the old→new map. The save round-trip assigns real ids
  * and reconciliation re-keys via the host's alias maps — paste introduces no
  * new persistence concept, and always creates NEW elements (it never silently
@@ -31,12 +31,12 @@ export interface ClipboardPayload {
 
 /**
  * Serialize the given elements — plus their placements on `diagram` and any
- * connection whose *both* endpoints are among them — into a paste payload.
+ * relation whose *both* endpoints are among them — into a paste payload.
  * Only elements actually placed on `diagram` are captured (you copy what is
  * on the canvas). Returns undefined when none of the ids are placed here.
  */
 export function serializeSelection(
-  model: { elements: DesignElement[]; connections: DesignConnection[] },
+  model: { elements: DesignElement[]; relations: Relation[] },
   diagram: DesignDiagram,
   elementIds: readonly ElementId[],
 ): ClipboardPayload | undefined {
@@ -46,12 +46,12 @@ export function serializeSelection(
   if (placedIds.size === 0) return undefined;
 
   const elements = model.elements.filter((e) => placedIds.has(e.id));
-  const connections = model.connections.filter(
-    (c) => placedIds.has(c.sourceId) && placedIds.has(c.targetId),
+  const relations = model.relations.filter(
+    (r) => placedIds.has(r.sourceId) && placedIds.has(r.targetId),
   );
   return {
     elements: elements.map((e) => structuredClone(e)),
-    connections: connections.map((c) => ({ ...c })),
+    relations: relations.map((r) => ({ ...r })),
     placements: placements.map((p) => ({ ...p })),
   };
 }
@@ -67,7 +67,7 @@ export interface PasteTarget {
 export interface RemapOptions {
   /** The key a pasted element gets; derived from its name, like any other. */
   mintElementId(name: string): ElementId;
-  mintConnectionId(): string;
+  mintRelationId(): string;
   /** Flow-coordinate shift applied to every pasted placement. */
   offset: Point;
   target: PasteTarget;
@@ -75,7 +75,7 @@ export interface RemapOptions {
 
 /**
  * Produce a fresh, remapped payload ready to commit onto the target diagram:
- * new temp ids for every element/connection, references rewired through the
+ * new temp ids for every element/relation, references rewired through the
  * old→new map, placements offset and scoped to the target diagram kind.
  */
 export function remapClipboard(
@@ -91,20 +91,20 @@ export function remapClipboard(
     parentApplicationId: remapParent(element.parentApplicationId, element.kind, idMap, options.target),
   }));
 
-  const connections: DesignConnection[] = payload.connections.map((connection) => ({
-    ...connection,
-    id: options.mintConnectionId(),
-    // Serialize kept only connections whose both endpoints were copied, so
+  const relations: Relation[] = payload.relations.map((relation) => ({
+    ...relation,
+    id: options.mintRelationId(),
+    // Serialize kept only relations whose both endpoints were copied, so
     // both ids are always in the map.
-    sourceId: idMap.get(connection.sourceId) as ElementId,
-    targetId: idMap.get(connection.targetId) as ElementId,
+    sourceId: idMap.get(relation.sourceId) as ElementId,
+    targetId: idMap.get(relation.targetId) as ElementId,
   }));
 
   const placements = payload.placements.map((placement) =>
     remapPlacement(placement, idMap, options),
   );
 
-  return { elements, connections, placements };
+  return { elements, relations, placements };
 }
 
 /**

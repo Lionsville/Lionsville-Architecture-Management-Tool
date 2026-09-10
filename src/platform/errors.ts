@@ -13,7 +13,10 @@
  * ordinary answer is better as a value than as a throw, and `openProjectDocument`
  * has three of those.
  */
-import type { StringKey, StringParams } from '../i18n'
+// The file, not the barrel: `i18n/index.ts` re-exports the language provider,
+// which is a .tsx the desktop main process's tsconfig has no --jsx for. Every
+// pure module that wants a key names this file (`model/kinds`, `model/zones`).
+import type { StringKey, StringParams } from '../i18n/strings'
 
 export class ShellError extends Error {
   readonly key: StringKey

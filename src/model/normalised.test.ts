@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  connectionList, decisionList, decisionsOf, diagramList, elementList, fromArrays,
+  relationList, decisionList, decisionsOf, diagramList, elementList, fromArrays,
   placementList, routeList, routesOf, toArrays,
 } from './normalised'
 import type { Model } from './normalised'
@@ -17,7 +17,7 @@ function adr(id: string, number: number, overrides: Partial<Adr> = {}): Adr {
 
 function host(overrides: Partial<HostModel> = {}): HostModel {
   return {
-    name: 'Design', customerName: 'ACME', elements: [], connections: [], diagrams: [],
+    name: 'Design', customerName: 'ACME', elements: [], relations: [], diagrams: [],
     ...overrides,
   }
 }
@@ -26,18 +26,18 @@ describe('fromArrays / toArrays', () => {
   it('indexes the four lists by id and remembers the order', () => {
     const m = fromArrays(host({
       elements: [element('b'), element('a')],
-      connections: [connection('c#2', 'b', 'a'), connection('c#1', 'a', 'b')],
+      relations: [connection('c#2', 'b', 'a'), connection('c#1', 'a', 'b')],
       diagrams: [diagram('two'), diagram('one')],
       decisions: [adr('d2', 2), adr('d1', 1)],
     }))
 
     expect(m.elements.a.id).toBe('a')
     expect(m.order.elements).toEqual(['b', 'a'])
-    expect(m.order.connections).toEqual(['c#2', 'c#1'])
+    expect(m.order.relations).toEqual(['c#2', 'c#1'])
     expect(m.order.diagrams).toEqual(['two', 'one'])
     expect(m.order.decisions).toEqual(['d2', 'd1'])
     expect(elementList(m).map((e) => e.id)).toEqual(['b', 'a'])
-    expect(connectionList(m).map((c) => c.id)).toEqual(['c#2', 'c#1'])
+    expect(relationList(m).map((c) => c.id)).toEqual(['c#2', 'c#1'])
     expect(diagramList(m).map((d) => d.id)).toEqual(['two', 'one'])
     expect(decisionList(m).map((d) => d.id)).toEqual(['d2', 'd1'])
   })
@@ -120,7 +120,7 @@ describe('fromArrays / toArrays', () => {
     const before = host({
       description: 'A landscape',
       elements: [element('a'), element('b', { parentApplicationId: 'a' })],
-      connections: [connection('c#1', 'a', 'b')],
+      relations: [connection('c#1', 'a', 'b')],
       decisions: [adr('d1', 1)],
       diagrams: [
         diagram('one', {
@@ -146,7 +146,7 @@ describe('fromArrays / toArrays', () => {
   it('is total over a model whose optional lists are missing entirely', () => {
     const bare = { name: 'D', customerName: 'C' } as unknown as HostModel
     const m: Model = fromArrays(bare)
-    expect(m.order).toEqual({ elements: [], connections: [], diagrams: [], decisions: [], transitions: [] })
+    expect(m.order).toEqual({ elements: [], relations: [], diagrams: [], decisions: [], transitions: [] })
     expect(toArrays(m).elements).toEqual([])
   })
 })

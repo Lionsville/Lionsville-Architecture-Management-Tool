@@ -8,7 +8,7 @@ function minters() {
   let c = 0;
   return {
     mintElementId: () => `tmp-e${(e += 1)}`,
-    mintConnectionId: () => `tmp-c${(c += 1)}`,
+    mintRelationId: () => `tmp-c${(c += 1)}`,
   };
 }
 
@@ -24,7 +24,7 @@ describe('serializeSelection', () => {
       }),
     ],
     elements: [element('10'), element('11'), element('12')],
-    connections: [
+    relations: [
       connection('20', '10', '11', { label: 'uses' }),
       connection('21', '11', '12'), // 12 not selected → excluded
     ],
@@ -37,7 +37,7 @@ describe('serializeSelection', () => {
     expect(payload!.elements.map((e) => e.id).sort()).toEqual(['10', '11']);
     expect(payload!.placements.map((p) => p.elementId).sort()).toEqual(['10', '11']);
     // Only 20 has both endpoints placed+selected; 21 touches the unplaced 12.
-    expect(payload!.connections.map((c) => c.id)).toEqual(['20']);
+    expect(payload!.relations.map((c) => c.id)).toEqual(['20']);
   });
 
   it('returns undefined when no requested element is placed on the diagram', () => {
@@ -58,7 +58,7 @@ describe('remapClipboard', () => {
       element('app', { kind: 'application', name: 'Webshop' }),
       element('comp', { kind: 'component', name: 'API', parentApplicationId: 'app' }),
     ],
-    connections: [connection('c-int', 'app', 'comp', { label: 'hosts' })],
+    relations: [connection('c-int', 'app', 'comp', { label: 'hosts' })],
     placements: [
       placement('app', { x: 100, y: 100, zone: 'landscape', domainGroup: 'Commerce' }),
       placement('comp', { x: 140, y: 160 }),
@@ -76,7 +76,7 @@ describe('remapClipboard', () => {
     // The copied component keeps pointing at the copied parent's NEW id.
     expect(out.elements[1].parentApplicationId).toBe('tmp-e1');
     // Connection endpoints follow the same map; the connection id is fresh.
-    expect(out.connections[0]).toMatchObject({
+    expect(out.relations[0]).toMatchObject({
       id: 'tmp-c1',
       sourceId: 'tmp-e1',
       targetId: 'tmp-e2',
@@ -102,7 +102,7 @@ describe('remapClipboard', () => {
   it('strips zone/group and repoints orphaned components when pasting into a container', () => {
     const single: ClipboardPayload = {
       elements: [element('comp', { kind: 'component', parentApplicationId: 'app' })],
-      connections: [],
+      relations: [],
       placements: [placement('comp', { x: 5, y: 5, zone: 'landscape', domainGroup: 'X' })],
     };
     const out = remapClipboard(single, {
@@ -118,7 +118,7 @@ describe('remapClipboard', () => {
   it('drops a parent reference that is neither copied nor a container adoption', () => {
     const single: ClipboardPayload = {
       elements: [element('a', { kind: 'application', parentApplicationId: 'gone' })],
-      connections: [],
+      relations: [],
       placements: [placement('a')],
     };
     const out = remapClipboard(single, {
@@ -133,7 +133,7 @@ describe('remapClipboard', () => {
 describe('pasteOffsetFor', () => {
   const payload: ClipboardPayload = {
     elements: [],
-    connections: [],
+    relations: [],
     placements: [
       { elementId: 'a', x: 300, y: 500 },
       { elementId: 'b', x: 100, y: 700 },
@@ -151,7 +151,7 @@ describe('pasteOffsetFor', () => {
   });
 
   it('is a no-op offset for an empty payload', () => {
-    expect(pasteOffsetFor({ elements: [], connections: [], placements: [] }, { x: 5, y: 5 })).toEqual({
+    expect(pasteOffsetFor({ elements: [], relations: [], placements: [] }, { x: 5, y: 5 })).toEqual({
       x: 0,
       y: 0,
     });

@@ -1,5 +1,5 @@
 import type {
-  DesignConnection,
+  Relation,
   DesignElement,
   DiagramLayoutConfig,
   DiagramPlacement,
@@ -15,7 +15,7 @@ import { routeSource } from './routes';
  * that normalise empty strings/nulls do not keep entries alive forever.
  *
  * Every persisted field participates, including the U6a element style
- * (accentColor/shapeVariant/iconKey/iconSize) and U4b connection style (color/lineStyle/
+ * (accentColor/shapeVariant/iconKey/iconSize) and U4b relation style (color/lineStyle/
  * routing/arrowheads). Leaving those out would read a pending style edit as
  * already round-tripped and drop it, reverting the colour on the next save.
  */
@@ -69,14 +69,15 @@ export function elementsEqual(a: DesignElement, b: DesignElement): boolean {
   return true;
 }
 
-export function connectionsEqual(a: DesignConnection, b: DesignConnection): boolean {
+export function relationsEqual(a: Relation, b: Relation): boolean {
   return (
     a.id === b.id &&
+    a.type === b.type &&
     a.sourceId === b.sourceId &&
     a.targetId === b.targetId &&
     sameOptional(a.label, b.label) &&
     sameOptional(a.protocol, b.protocol) &&
-    a.isBidirectional === b.isBidirectional &&
+    sameOptional(a.isBidirectional, b.isBidirectional) &&
     sameOptional(a.color, b.color) &&
     sameOptional(a.lineStyle, b.lineStyle) &&
     sameOptional(a.routing, b.routing) &&

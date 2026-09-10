@@ -353,7 +353,7 @@ function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer
   if (steps.length === 0) return refused('agent.badArguments', 'a batch needs at least one step')
   let model = session.indexed()
   // Ids over the trial model, so what one step mints the next cannot mint again.
-  const ids = idPolicy(() => [...model.order.elements, ...model.order.connections, ...model.order.diagrams])
+  const ids = idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams])
   const commands: Command[] = []
   const answers: unknown[] = []
   let activeDiagramId: string | undefined

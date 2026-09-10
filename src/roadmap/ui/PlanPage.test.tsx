@@ -38,11 +38,11 @@ const ADRS: Adr[] = [
 
 const MODEL = {
   name: 'Acme', customerName: 'Acme', diagrams: [],
-  connections: [
-    { id: 'c-orders', sourceId: 'wms-old', targetId: 'billing', isBidirectional: false, protocol: 'REST', label: 'orders' },
-    { id: 'c-stock', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, protocol: 'file' },
+  relations: [
+    { id: 'c-orders', type: 'flow', sourceId: 'wms-old', targetId: 'billing', isBidirectional: false, protocol: 'REST', label: 'orders' },
+    { id: 'c-stock', type: 'flow', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, protocol: 'file' },
     // The stock feed has moved already: a twin on the new end, dated.
-    { id: 'c-stock-2', sourceId: 'billing', targetId: 'wms-new', isBidirectional: false, protocol: 'file', validFrom: '2026-06-01' },
+    { id: 'c-stock-2', type: 'flow', sourceId: 'billing', targetId: 'wms-new', isBidirectional: false, protocol: 'file', validFrom: '2026-06-01' },
   ],
   elements: [
     element('wms-old', 'Warehouse Management', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),

@@ -31,7 +31,7 @@ const model = (): HostModel => ({
   name: 'Landscape',
   customerName: 'Acme',
   elements: [],
-  connections: [],
+  relations: [],
   diagrams: [{ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }],
 })
 

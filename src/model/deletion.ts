@@ -33,7 +33,7 @@ export interface DeletionSummary {
 export function deletionSummary(model: DesignModel, selection: DeletionSelection): DeletionSummary {
   const elementIds = new Set(selection.elementIds);
   const explicit = new Set(selection.connectionIds);
-  const cascading = model.connections.filter(
+  const cascading = model.relations.filter(
     (c) => !explicit.has(c.id) && (elementIds.has(c.sourceId) || elementIds.has(c.targetId)),
   );
   return {
