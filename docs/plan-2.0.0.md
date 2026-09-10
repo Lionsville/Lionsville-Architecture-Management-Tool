@@ -27,7 +27,7 @@ times.
 what the model can say. Ships the business sheet, on one scope, so the thing
 this was all for is on screen first.*
 
-### 1. Relations with a type
+### 1. Relations with a type — landed 10 September 2026 (4f4615f…5d2a3d6)
 
 `DesignConnection` → `Relation` (`model/types.ts`): `type: 'flow' | 'supports'
 | 'serves' | 'realises' | 'assigned'`, `validFrom`/`validUntil` on every row,
