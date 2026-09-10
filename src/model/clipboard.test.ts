@@ -60,7 +60,7 @@ describe('remapClipboard', () => {
     ],
     relations: [connection('c-int', 'app', 'comp', { label: 'hosts' })],
     placements: [
-      placement('app', { x: 100, y: 100, zone: 'landscape', domainGroup: 'Commerce' }),
+      placement('app', { x: 100, y: 100, zone: 'landscape', group: 'Commerce' }),
       placement('comp', { x: 140, y: 160 }),
     ],
   });
@@ -84,8 +84,8 @@ describe('remapClipboard', () => {
     });
     // Placements are offset and re-keyed; the known group survives.
     expect(out.placements).toEqual([
-      { elementId: 'tmp-e1', x: 110, y: 120, zone: 'landscape', domainGroup: 'Commerce' },
-      { elementId: 'tmp-e2', x: 150, y: 180, zone: undefined, domainGroup: undefined },
+      { elementId: 'tmp-e1', x: 110, y: 120, zone: 'landscape', group: 'Commerce' },
+      { elementId: 'tmp-e2', x: 150, y: 180, zone: undefined, group: undefined },
     ]);
   });
 
@@ -95,7 +95,7 @@ describe('remapClipboard', () => {
       offset: { x: 0, y: 0 },
       target: { kind: 'layer7', domainGroupNames: new Set() },
     });
-    expect(out.placements[0].domainGroup).toBeUndefined();
+    expect(out.placements[0].group).toBeUndefined();
     expect(out.placements[0].zone).toBe('landscape');
   });
 
@@ -103,7 +103,7 @@ describe('remapClipboard', () => {
     const single: ClipboardPayload = {
       elements: [element('comp', { kind: 'component', parentApplicationId: 'app' })],
       relations: [],
-      placements: [placement('comp', { x: 5, y: 5, zone: 'landscape', domainGroup: 'X' })],
+      placements: [placement('comp', { x: 5, y: 5, zone: 'landscape', group: 'X' })],
     };
     const out = remapClipboard(single, {
       ...minters(),
@@ -112,7 +112,7 @@ describe('remapClipboard', () => {
     });
     // Parent wasn't copied → adopt the container's boundary application.
     expect(out.elements[0].parentApplicationId).toBe('boundary-app');
-    expect(out.placements[0]).toMatchObject({ zone: undefined, domainGroup: undefined });
+    expect(out.placements[0]).toMatchObject({ zone: undefined, group: undefined });
   });
 
   it('drops a parent reference that is neither copied nor a container adoption', () => {

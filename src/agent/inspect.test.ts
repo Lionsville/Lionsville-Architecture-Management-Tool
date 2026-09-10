@@ -32,18 +32,18 @@ const host: HostModel = {
   ],
   diagrams: [{
     id: 'l7', kind: 'layer7', name: 'Landscape',
-    layoutConfig: { domainGroups: [{ name: 'Finance', x: 240, y: 160, width: 500, height: 300 }] },
+    layoutConfig: { domainGroups: [{ id: 'Finance', x: 240, y: 160, width: 500, height: 300 }] },
     placements: [
-      { elementId: 'a', zone: 'landscape', domainGroup: 'Finance', x: 260, y: 200 },
+      { elementId: 'a', zone: 'landscape', group: 'Finance', x: 260, y: 200 },
       // b overlaps a: the full width, and thirty high.
-      { elementId: 'b', zone: 'landscape', domainGroup: 'Finance', x: 260, y: 300 },
+      { elementId: 'b', zone: 'landscape', group: 'Finance', x: 260, y: 300 },
       // d sits on the level line from a's centre to c's centre.
       { elementId: 'd', zone: 'landscape', x: 700, y: 200 },
       { elementId: 'c', zone: 'landscape', x: 1100, y: 200 },
       // e says landscape and is drawn in the actors band.
       { elementId: 'e', zone: 'landscape', x: 1300, y: 20 },
       // f is filed under Finance and drawn outside its box.
-      { elementId: 'f', zone: 'landscape', domainGroup: 'Finance', x: 1200, y: 800 },
+      { elementId: 'f', zone: 'landscape', group: 'Finance', x: 1200, y: 800 },
       // g is off the board, and connected to nothing.
       { elementId: 'g', zone: 'landscape', x: 1700, y: 500 },
       { elementId: 'who', zone: 'actors', x: 20, y: 20 },

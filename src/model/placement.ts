@@ -316,35 +316,36 @@ export function groupRectAround(memberRects: readonly Rect[]): Rect | undefined 
 
 /**
  * Domain groups are explicit rectangles stored in the diagram's layoutConfig
- * (iteration 2 — they used to be derived from member bounding boxes).
- * Membership is assigned by containment when an element is dragged.
+ * (iteration 2 — they used to be derived from member bounding boxes), keyed by
+ * the group's own id (ADR-0012 §6). Membership is assigned by containment when
+ * an element is dragged.
  */
 export function domainGroupRectMap(layoutConfig?: DiagramLayoutConfig): Map<string, Rect> {
   const result = new Map<string, Rect>();
   for (const group of layoutConfig?.domainGroups ?? []) {
-    result.set(group.name, { x: group.x, y: group.y, width: group.width, height: group.height });
+    result.set(group.id, { x: group.x, y: group.y, width: group.width, height: group.height });
   }
   return result;
 }
 
 /**
- * Which domain group a dropped point joins. With overlapping groups the
- * smallest containing rectangle wins (ties broken by name) so the result is
+ * Which domain group a dropped point joins, by id. With overlapping groups the
+ * smallest containing rectangle wins (ties broken by id) so the result is
  * deterministic. Returns undefined when the point is in open landscape.
  */
 export function domainGroupForPoint(
   point: { x: number; y: number },
   groupRects: Map<string, Rect>,
 ): string | undefined {
-  let best: { name: string; area: number } | undefined;
-  for (const [name, rect] of groupRects) {
+  let best: { id: string; area: number } | undefined;
+  for (const [id, rect] of groupRects) {
     if (!rectContains(rect, point)) continue;
     const area = rect.width * rect.height;
-    if (!best || area < best.area || (area === best.area && name < best.name)) {
-      best = { name, area };
+    if (!best || area < best.area || (area === best.area && id < best.id)) {
+      best = { id, area };
     }
   }
-  return best?.name;
+  return best?.id;
 }
 
 /** Where an element is RIGHT NOW, mid-gesture — not where the model says it is. */

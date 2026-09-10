@@ -51,8 +51,8 @@ import { ROUTE_CLEARANCE, rectCentre } from './routing';
 export interface RouterNode {
   id: ElementId;
   rect: Rect;
-  /** Domain group this node belongs to, by {@link DomainGroupRect.name}. */
-  domainGroup?: string;
+  /** Domain group this node belongs to, by {@link DomainGroupRect.id}. */
+  group?: string;
 }
 
 /** One connection to route, identified the way the model identifies it. */
@@ -596,7 +596,7 @@ const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 
 /** Groups sort by name; the rect breaks ties so the order stays total even if two
  *  boxes somehow share a name. */
 const compareGroups = (a: DomainGroupRect, b: DomainGroupRect): number =>
-  compareText(a.name, b.name) ||
+  compareText(a.id, b.id) ||
   a.x - b.x ||
   a.y - b.y ||
   a.width - b.width ||
@@ -729,12 +729,12 @@ function planTiers(input: RouterInput): RoutingPlan {
   // ignores such a shape as an obstacle regardless. Only x/y = NaN would abort.)
   const groups = input.groups.filter((g) => isSafeRect(rectOf(g))).sort(compareGroups);
   const safeNodes = input.nodes.filter((n) => isSafeRect(n.rect));
-  const groupNames = new Set(groups.map((g) => g.name));
+  const groupNames = new Set(groups.map((g) => g.id));
   const nodes = new Map(safeNodes.map((n) => [n.id, n]));
-  // A `domainGroup` with no box on the diagram cannot stand in for its members,
+  // A `group` with no box on the diagram cannot stand in for its members,
   // so those nodes count as ungrouped and go into tier 1 as their own obstacles.
   const groupOf = (id: ElementId): string | undefined => {
-    const group = nodes.get(id)?.domainGroup;
+    const group = nodes.get(id)?.group;
     return group !== undefined && groupNames.has(group) ? group : undefined;
   };
   const centreOf = (id: ElementId): Point => rectCentre(nodes.get(id)!.rect);
@@ -796,12 +796,12 @@ function planTiers(input: RouterInput): RoutingPlan {
   // member nor is contained by one.
   for (const group of groups) {
     const intraGroup = routable.filter(
-      (c) => groupOf(c.sourceId) === group.name && groupOf(c.targetId) === group.name,
+      (c) => groupOf(c.sourceId) === group.id && groupOf(c.targetId) === group.id,
     );
     if (intraGroup.length === 0) continue;
-    const members = safeNodes.filter((n) => groupOf(n.id) === group.name).sort(byId);
+    const members = safeNodes.filter((n) => groupOf(n.id) === group.id).sort(byId);
     const outside = [
-      ...groups.filter((g) => g.name !== group.name).map(boxOf),
+      ...groups.filter((g) => g.id !== group.id).map(boxOf),
       ...ungrouped.map(asObstacle),
     ];
     tiers.push({

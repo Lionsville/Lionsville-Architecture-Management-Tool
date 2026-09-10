@@ -18,7 +18,7 @@
  */
 import { drawnPolyline } from '../model/routes'
 import type { Diagram, Model } from '../model/normalised'
-import { routesOf } from '../model/normalised'
+import { groupsOf, routesOf } from '../model/normalised'
 import { domainGroupForPoint, domainGroupRectMap, placementRect, rectCenter, unionRects } from '../model/placement'
 import type { DiagramPlacement, ElementId, Layer7Zone, Point, Rect } from '../model/types'
 import { canvasRect, zoneForPoint, zoneRect } from '../model/zones'
@@ -97,8 +97,13 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
     report.canvas = canvas
     report.bands = ZONES.map((zone) => ({ zone, rect: zoneRect(zone, diagram.layoutConfig) }))
     const groups = domainGroupRectMap(diagram.layoutConfig)
-    report.groups = [...groups.entries()].map(([name, rect]) => ({
-      name, rect, members: diagram.order.placements.filter((id) => diagram.placements[id].domainGroup === name),
+    // A group is answered by its NAME, which is what a person asked about and
+    // what `group` takes; the id it is keyed by is the model's business.
+    const nameOf = (groupId: string) => groupsOf(diagram)[groupId]?.name ?? groupId
+    report.groups = [...groups.entries()].map(([groupId, rect]) => ({
+      name: nameOf(groupId),
+      rect,
+      members: diagram.order.placements.filter((id) => diagram.placements[id].group === groupId),
     }))
     const perZone = new Map<Layer7Zone, { elements: number; area: number }>()
     for (const [id, rect] of rects) {
@@ -110,12 +115,16 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
         report.outsideZone.total += 1
         if (report.outsideZone.some.length < limit) report.outsideZone.some.push({ elementId: id, zone, actually })
       }
-      if (placement.domainGroup !== undefined) {
+      if (placement.group !== undefined) {
         const inside = domainGroupForPoint(centre, groups)
-        if (inside !== placement.domainGroup) {
+        if (inside !== placement.group) {
           report.outsideGroup.total += 1
           if (report.outsideGroup.some.length < limit) {
-            report.outsideGroup.some.push({ elementId: id, domainGroup: placement.domainGroup, actually: inside })
+            report.outsideGroup.some.push({
+              elementId: id,
+              domainGroup: nameOf(placement.group),
+              ...(inside !== undefined ? { actually: nameOf(inside) } : {}),
+            })
           }
         }
       }

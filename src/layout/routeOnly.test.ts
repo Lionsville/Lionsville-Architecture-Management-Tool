@@ -51,7 +51,7 @@ const labelRectAt = (conn: DesignConnection, at: { x: number; y: number }): Rect
  */
 function twoNodeModel(options: {
   connection?: Partial<DesignConnection>;
-  groups?: { name: string; x: number; y: number; width: number; height: number }[];
+  groups?: { id: string; x: number; y: number; width: number; height: number }[];
   extraNodes?: { id: string; x: number; y: number }[];
   extraConnections?: Relation[];
   edgeRoutes?: DesignDiagram['edgeRoutes'];
@@ -98,7 +98,7 @@ describe('routeDiagramEdges — route-only pass', () => {
   });
 
   it('detours around a domain-group box sitting between the endpoints', async () => {
-    const group = { name: 'Ops', x: 600, y: 350, width: 300, height: 260 };
+    const group = { id: 'Ops', x: 600, y: 350, width: 300, height: 260 };
     const { model, diagram } = twoNodeModel({ groups: [group] });
     const a = rectFor(model, diagram, 'a');
     const b = rectFor(model, diagram, 'b');
@@ -125,9 +125,9 @@ describe('routeDiagramEdges — route-only pass', () => {
 
   it('does not treat a group box CONTAINING an endpoint as an obstacle', async () => {
     // A box wrapping node `a`: it straddles the straight line, but it is `a`'s own
-    // container (geometrically — `a` has no domainGroup field at all), so the edge
+    // container (geometrically — `a` has no group field at all), so the edge
     // must stay straight rather than bow around it.
-    const own = { name: 'Home', x: 60, y: 360, width: 300, height: 220 };
+    const own = { id: 'Home', x: 60, y: 360, width: 300, height: 220 };
     const { model, diagram } = twoNodeModel({ groups: [own] });
     const result = await routeDiagramEdges(model, diagram);
 
@@ -165,7 +165,7 @@ describe('routeDiagramEdges — route-only pass', () => {
   });
 
   it('pins the label clear of every group box', async () => {
-    const group = { name: 'Ops', x: 600, y: 350, width: 300, height: 260 };
+    const group = { id: 'Ops', x: 600, y: 350, width: 300, height: 260 };
     const { model, diagram } = twoNodeModel({
       groups: [group],
       connection: { label: 'syncs orders & stock' },
@@ -184,7 +184,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     // unpinned: free to auto-centre onto a member card, and invisible to the
     // chip-vs-chip pass that keeps neighbouring labels apart. On a grouped layer7
     // board most edges are intra-group, so that is the common case, not the corner.
-    const group = { name: 'Ops', x: 60, y: 350, width: 1400, height: 300 };
+    const group = { id: 'Ops', x: 60, y: 350, width: 1400, height: 300 };
     const { model, diagram } = twoNodeModel({
       groups: [group],
       connection: { label: 'syncs orders & stock' },
@@ -201,9 +201,9 @@ describe('routeDiagramEdges — route-only pass', () => {
   });
 
   it('keeps pinning an intra-group label clear of OTHER group boxes', async () => {
-    const home = { name: 'Home', x: 60, y: 350, width: 1400, height: 300 };
+    const home = { id: 'Home', x: 60, y: 350, width: 1400, height: 300 };
     // A second box overlapping the run between `a` and `b`, holding neither of them.
-    const other = { name: 'Other', x: 600, y: 360, width: 300, height: 280 };
+    const other = { id: 'Other', x: 600, y: 360, width: 300, height: 280 };
     const { model, diagram } = twoNodeModel({
       groups: [home, other],
       connection: { label: 'syncs orders & stock' },
@@ -217,19 +217,19 @@ describe('routeDiagramEdges — route-only pass', () => {
 
   it('is deterministic — two runs on identical input give identical routes', async () => {
     const { model, diagram } = twoNodeModel({
-      groups: [{ name: 'Ops', x: 600, y: 350, width: 300, height: 260 }],
+      groups: [{ id: 'Ops', x: 600, y: 350, width: 300, height: 260 }],
       connection: { label: 'places orders' },
       extraNodes: [{ id: 'c', x: 650, y: 700 }],
     });
     expect(await routeDiagramEdges(model, diagram)).toEqual(await routeDiagramEdges(model, diagram));
   });
 
-  it('groups a node by its POSITION, not by its stale domainGroup field', async () => {
+  it('groups a node by its POSITION, not by its stale group field', async () => {
     // The board a hand-nudge leaves behind: `a` still claims to be in Ops (group
     // boxes are only recomputed by a full Tidy) but sits well outside it. Treating
     // the field as truth would make Ops stand in for `a`, hiding the box, and the
     // edge would be drawn straight through it.
-    const group = { name: 'Ops', x: 600, y: 350, width: 300, height: 260 };
+    const group = { id: 'Ops', x: 600, y: 350, width: 300, height: 260 };
     const { model, diagram } = twoNodeModel({ groups: [group] });
     diagram.placements = diagram.placements.map((p) =>
       p.elementId === 'a' ? { ...p, domainGroup: 'Ops' } : p,
@@ -247,8 +247,8 @@ describe('routeDiagramEdges — route-only pass', () => {
     // Picking by ARRAY ORDER would put both in Wide for one of these two orderings,
     // making the edge intra-group, and `c` — not a member — would stop being an
     // obstacle at all: the edge would be drawn straight through it.
-    const wide = { name: 'Wide', x: 50, y: 440, width: 1400, height: 50 };
-    const narrow = { name: 'Narrow', x: 60, y: 450, width: 400, height: 30 };
+    const wide = { id: 'Wide', x: 50, y: 440, width: 1400, height: 50 };
+    const narrow = { id: 'Narrow', x: 60, y: 450, width: 400, height: 30 };
     const blocker = [{ id: 'c', x: 650, y: 455 }];
     const forward = twoNodeModel({ groups: [wide, narrow], extraNodes: blocker });
     const reversed = twoNodeModel({ groups: [narrow, wide], extraNodes: blocker });
@@ -456,16 +456,16 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
           { elementId: 'shopper', zone: 'actors', x: 0, y: 0 },
           { elementId: 'csa', zone: 'actors', x: 0, y: 0 },
           { elementId: 'marketplace', zone: 'inputChannels', x: 0, y: 0 },
-          { elementId: 'akeneo', zone: 'landscape', domainGroup: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'webshop', zone: 'landscape', domainGroup: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'order', zone: 'landscape', domainGroup: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'erp', zone: 'landscape', domainGroup: 'Commerce Operations', x: 0, y: 0 },
+          { elementId: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { elementId: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { elementId: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { elementId: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
           { elementId: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
         ],
         layoutConfig: {
           domainGroups: [
-            { name: 'Customer Experience', x: 241, y: 223, width: 686, height: 215 },
-            { name: 'Commerce Operations', x: 1061, y: 229, width: 267, height: 474 },
+            { id: 'Customer Experience', x: 241, y: 223, width: 686, height: 215 },
+            { id: 'Commerce Operations', x: 1061, y: 229, width: 267, height: 474 },
           ],
         },
       },
@@ -513,7 +513,7 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
 
     // The originally-reported case still holds: marketplace→order clears the
     // Customer Experience box it would otherwise cut through.
-    const cx = diagram.layoutConfig!.domainGroups!.find((g) => g.name === 'Customer Experience')!;
+    const cx = diagram.layoutConfig!.domainGroups!.find((g) => g.id === 'Customer Experience')!;
     const mpOrder = routeOf(result, 'marketplace-order')!;
     const mpDrawn = routedPath(
       rectFor(model, diagram, 'marketplace'),

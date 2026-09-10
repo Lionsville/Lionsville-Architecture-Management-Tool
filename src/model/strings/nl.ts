@@ -85,6 +85,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.removedMany': '{count} elementen van het diagram gehaald',
   'activity.routeChanged': 'Lijnverloop gewijzigd',
   'activity.layoutChanged': 'Indeling gewijzigd',
+  'activity.groupChanged': 'Groep {name} gewijzigd',
+  'activity.groupRemoved': 'Groep {name} verwijderd',
   'activity.diagramAdded': 'Diagram {name} toegevoegd',
   'activity.diagramRenamed': 'Diagram hernoemd naar {name}',
   'activity.diagramSettings': 'Instellingen van {name} gewijzigd',

@@ -10,7 +10,10 @@
  * mentioned lifecycle/isManaged explicitly — travels along as HostExtras, so the
  * export can hand it back without phantom changes in the diff.
  */
-import type { DesignDiagram, DesignElement, DesignModel, DiagramPlacement, Layer7Zone, Relation } from '.'
+import type {
+  DesignDiagram, DesignElement, DesignModel, DiagramGroup, DiagramPlacement, Layer7Zone, Relation,
+} from '.'
+import { claimKey } from './keys'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 
@@ -179,10 +182,24 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
   }))
 
   const diagrams: DesignDiagram[] = (doc.diagrams ?? []).map((d) => {
+    // The exchange format files a place under its group's NAME, because that is
+    // what another tool can read. A group's id is this model's (ADR-0012 §6),
+    // so it is minted here, per diagram, in the order the places name them —
+    // the same rule `folderFormat` follows for a format-3 folder.
+    const taken = new Set<string>()
+    const idOf = new Map<string, string>()
+    const groups: DiagramGroup[] = []
+    for (const place of d.places ?? []) {
+      const name = place.domainGroup
+      if (name === undefined || idOf.has(name)) continue
+      const id = claimKey(name, taken)
+      idOf.set(name, id)
+      groups.push({ id, name })
+    }
     const placements: DiagramPlacement[] = (d.places ?? []).map((p) => ({
       elementId: p.elementKey,
       zone: p.zone,
-      domainGroup: p.domainGroup,
+      group: p.domainGroup === undefined ? undefined : idOf.get(p.domainGroup),
       x: 0,
       y: 0,
     }))
@@ -196,6 +213,7 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
       asOf: d.asOf,
       showTitleBlock: d.showTitleBlock,
       applicationElementId: d.applicationKey,
+      ...(groups.length ? { groups } : {}),
       placements,
       aspectConfig: d.aspectConfig,
       showAspects: d.showAspects,

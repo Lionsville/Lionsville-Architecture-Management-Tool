@@ -64,7 +64,7 @@ function boardModel(): DesignModel {
           { elementId: 's1', zone: 'landscape' as const, x: 100, y: 260 },
         ].filter((p, i, all) => all.findIndex((q) => q.elementId === p.elementId) === i),
         layoutConfig: {
-          domainGroups: [{ name: 'Wall', x: 600, y: 120, width: 120, height: 700 }],
+          domainGroups: [{ id: 'Wall', x: 600, y: 120, width: 120, height: 700 }],
         },
         edgeRoutes: [
           {

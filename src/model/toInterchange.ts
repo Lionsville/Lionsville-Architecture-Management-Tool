@@ -127,10 +127,15 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       // default five.
       aspectConfig: d.aspectConfig,
       showAspects: d.showAspects,
+      // A place goes out under its group's NAME, which is what the exchange
+      // format has always carried and what another tool can read; the id is
+      // this model's (ADR-0012 §6).
       places: d.placements.map((p) => prune({
         elementKey: k(p.elementId),
         zone: d.kind === 'layer7' ? p.zone : undefined,
-        domainGroup: d.kind === 'layer7' ? p.domainGroup : undefined,
+        domainGroup: d.kind === 'layer7' && p.group !== undefined
+          ? (d.groups ?? []).find((group) => group.id === p.group)?.name ?? p.group
+          : undefined,
       })),
     })),
     adrLinks: (model.adrLinks as InterchangeDoc['adrLinks'])?.length ? model.adrLinks : undefined,

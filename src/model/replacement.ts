@@ -115,7 +115,7 @@ export function replacementCommands(
           x: rect.x + rect.width + GAP,
           y: rect.y,
           ...(held.zone !== undefined ? { zone: held.zone } : {}),
-          ...(held.domainGroup !== undefined ? { domainGroup: held.domainGroup } : {}),
+          ...(held.group !== undefined ? { group: held.group } : {}),
         }
         commands.push({ type: 'placement.set', diagramId: diagram.id, placements: [placement] })
       }

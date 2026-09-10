@@ -6,6 +6,7 @@ import {
   type MenuItem,
   type MenuTarget,
 } from './menuItems';
+import type { DiagramGroup } from '../../model/types';
 
 /**
  * The menu builder is a pure table: target × context in, items out. These tests
@@ -19,7 +20,7 @@ function ctx(overrides: Partial<MenuContext> = {}): MenuContext {
     readOnly: false,
     platform: 'mac',
     diagramKind: 'layer7',
-    domainGroups: [],
+    groups: [],
     clipboardHasContent: false,
     allowedKinds: ['application', 'actor'],
     showGrid: true,
@@ -29,6 +30,11 @@ function ctx(overrides: Partial<MenuContext> = {}): MenuContext {
     canTidyGroup: true,
     ...overrides,
   };
+}
+
+/** A dashed group, whose id is the slug of its name — as `newDomainGroup` mints one. */
+function group(name: string): DiagramGroup {
+  return { id: name.toLowerCase(), name };
 }
 
 function app(overrides: Partial<ElementMenuFacts> = {}): ElementMenuFacts {
@@ -54,7 +60,7 @@ describe('menuItemsFor — node', () => {
   const NODE = { kind: 'node', elementId: 'a1' } as const;
 
   it('offers the full editing menu for an application on the landscape', () => {
-    const items = menuItemsFor(NODE, ctx({ element: app(), domainGroups: ['Core'] }));
+    const items = menuItemsFor(NODE, ctx({ element: app(), groups: [group('Core')] }));
     expect(ids(items)).toEqual([
       'open-documentation',
       'open-container',
@@ -150,20 +156,25 @@ describe('menuItemsFor — node', () => {
   });
 
   it('Domain group submenu: existing groups then None, current checked; hidden when there is nothing to choose', () => {
-    const items = menuItemsFor(NODE, ctx({ element: app({ domainGroup: 'Core' }), domainGroups: ['Core', 'Ops'] }));
-    const group = byId(items, 'domain-group');
-    expect(group.children?.map((c) => c.label)).toEqual(['Core', 'Ops', 'None']);
-    expect(checkedIds(group.children ?? [])).toEqual(['group-Core']);
-    expect(byId(group.children ?? [], 'group-none').args).toEqual({ domainGroup: undefined });
+    const items = menuItemsFor(NODE, ctx({
+      element: app({ group: 'core' }), groups: [group('Core'), group('Ops')],
+    }));
+    const submenu = byId(items, 'domain-group');
+    expect(submenu.children?.map((c) => c.label)).toEqual(['Core', 'Ops', 'None']);
+    // The entries are labelled with the name and act on the id (ADR-0012 §6).
+    expect(checkedIds(submenu.children ?? [])).toEqual(['group-core']);
+    expect(byId(submenu.children ?? [], 'group-none').args).toEqual({ group: undefined });
 
     // No groups on the board and none on the element: nothing to offer.
     expect(ids(menuItemsFor(NODE, ctx({ element: app() })))).not.toContain('domain-group');
     // A stale membership still offers "None" so it can be cleared.
-    const stale = menuItemsFor(NODE, ctx({ element: app({ domainGroup: 'Gone' }) }));
+    const stale = menuItemsFor(NODE, ctx({ element: app({ group: 'gone' }) }));
     expect(byId(stale, 'domain-group').children?.map((c) => c.label)).toEqual(['None']);
     // Band nodes are not group members.
     expect(
-      ids(menuItemsFor(NODE, ctx({ element: app({ kind: 'actor', zone: 'actors' }), domainGroups: ['Core'] }))),
+      ids(menuItemsFor(NODE, ctx({
+        element: app({ kind: 'actor', zone: 'actors' }), groups: [group('Core')],
+      }))),
     ).not.toContain('domain-group');
   });
 
@@ -428,7 +439,7 @@ describe('menuItemsFor — selection', () => {
 });
 
 describe('menuItemsFor — group', () => {
-  const GROUP = { kind: 'group', name: 'Core' } as const;
+  const GROUP = { kind: 'group', groupId: 'core' } as const;
 
   it('offers rename, tidy, colour, select members and remove', () => {
     const items = menuItemsFor(GROUP, ctx());
@@ -505,12 +516,12 @@ describe('menuItemsFor — invariants', () => {
   const everyMenu = (): MenuItem[][] => {
     const connection = { isBidirectional: true, waypointCount: 1, hasLabelPosition: true, route: 'auto' as const };
     return [
-      menuItemsFor({ kind: 'node', elementId: 'a' }, ctx({ element: app(), domainGroups: ['Core'] })),
+      menuItemsFor({ kind: 'node', elementId: 'a' }, ctx({ element: app(), groups: [group('Core')] })),
       menuItemsFor({ kind: 'edge', connectionId: 'c' }, ctx({ connection })),
       menuItemsFor({ kind: 'edgeHandle', connectionId: 'c', index: 0 }, ctx({ connection })),
       menuItemsFor({ kind: 'pane' }, ctx({ clipboardHasContent: true })),
       menuItemsFor({ kind: 'selection', elementIds: ['a', 'b', 'c'] }, ctx({ selection: { elementCount: 3, landscapeCount: 3 } })),
-      menuItemsFor({ kind: 'group', name: 'Core' }, ctx()),
+      menuItemsFor({ kind: 'group', groupId: 'core' }, ctx()),
       menuItemsFor(
         { kind: 'tab', diagramId: 'd' },
         ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, isLastLandscape: false } }),

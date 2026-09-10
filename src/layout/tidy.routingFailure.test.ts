@@ -44,8 +44,8 @@ function board(): { model: DesignModel; layer7: DesignDiagram; container: Design
     kind: 'layer7',
     name: 'L7',
     placements: [
-      { elementId: 'a', zone: 'landscape', x: 100, y: 400, domainGroup: 'Ops' },
-      { elementId: 'b', zone: 'landscape', x: 1200, y: 400, domainGroup: 'Ops' },
+      { elementId: 'a', zone: 'landscape', x: 100, y: 400, group: 'Ops' },
+      { elementId: 'b', zone: 'landscape', x: 1200, y: 400, group: 'Ops' },
     ],
   };
   const container: DesignDiagram = {
@@ -107,7 +107,7 @@ describe('tidy — a router failure keeps the placements', () => {
   it('tidyGroup does the same, and stays partial', async () => {
     mockRoute.mockRejectedValue(wasmDown());
     const { model, layer7 } = board();
-    layer7.layoutConfig = { domainGroups: [{ name: 'Ops', x: 60, y: 350, width: 1400, height: 300 }] };
+    layer7.layoutConfig = { domainGroups: [{ id: 'Ops', x: 60, y: 350, width: 1400, height: 300 }] };
 
     const result = await tidyGroup(model, layer7, 'Ops');
 

@@ -20,6 +20,7 @@ import {
   tidyGroup,
   tidyLayer7,
   type TidyOptions,
+  type TidyResult,
 } from './tidy';
 import { edgeLabelSize } from './edgeLabelSize';
 import { pathHitsObstacles, rectIntersectsRect } from './geometry';
@@ -120,14 +121,14 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-            { elementId: 'e3', zone: 'landscape', domainGroup: 'Edge', x: 0, y: 0 },
+            { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { elementId: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { elementId: 'e3', zone: 'landscape', group: 'Edge', x: 0, y: 0 },
           ],
           layoutConfig: {
             domainGroups: [
-              { name: 'Core', x: 5, y: 5, width: 10, height: 10 },
-              { name: 'Edge', x: 5, y: 5, width: 10, height: 10 },
+              { id: 'Core', x: 5, y: 5, width: 10, height: 10 },
+              { id: 'Edge', x: 5, y: 5, width: 10, height: 10 },
             ],
           },
         },
@@ -137,8 +138,8 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
 
     const result = await tidyLayer7(model, diagram);
 
-    const core = result.domainGroups?.find((g) => g.name === 'Core');
-    const edge = result.domainGroups?.find((g) => g.name === 'Edge');
+    const core = result.domainGroups?.find((g) => g.id === 'Core');
+    const edge = result.domainGroups?.find((g) => g.id === 'Edge');
     expect(core).toBeDefined();
     expect(edge).toBeDefined();
 
@@ -149,10 +150,10 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     // Every member sits inside its group's rect (ELK padding keeps them clear
     // of the border; the rect and members share the same centring offset).
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
-    const rectByGroup = new Map(result.domainGroups!.map((g) => [g.name, g]));
+    const rectByGroup = new Map(result.domainGroups!.map((g) => [g.id, g]));
     for (const placement of result.placements) {
       const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)
-        ?.domainGroup;
+        ?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
       const size = placementSize(kindById.get(placement.elementId)!, placement);
@@ -190,10 +191,10 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'a1', zone: 'landscape', domainGroup: 'Alpha', x: 0, y: 0 },
-            { elementId: 'a2', zone: 'landscape', domainGroup: 'Alpha', x: 0, y: 0 },
-            { elementId: 'b1', zone: 'landscape', domainGroup: 'Beta', x: 0, y: 0 },
-            { elementId: 'b2', zone: 'landscape', domainGroup: 'Beta', x: 0, y: 0 },
+            { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
+            { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
           ],
           // No pre-existing rects at all — Tidy must still emit one per group.
           layoutConfig: {},
@@ -205,7 +206,7 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     const result = await tidyLayer7(model, diagram);
 
     // A rect exists for EVERY group with members, even with no seed rects.
-    const rectByGroup = new Map((result.domainGroups ?? []).map((g) => [g.name, g]));
+    const rectByGroup = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     expect(rectByGroup.has('Alpha')).toBe(true);
     expect(rectByGroup.has('Beta')).toBe(true);
 
@@ -213,7 +214,7 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     for (const placement of result.placements) {
       const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)
-        ?.domainGroup;
+        ?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
       const size = placementSize(kindById.get(placement.elementId)!, placement);
@@ -320,7 +321,7 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
       for (let m = 0; m < perGroup; m++) {
         const id = `g${g}m${m}`;
         ids.push(id);
-        placements.push({ elementId: id, zone: 'landscape', domainGroup: `G${g}`, x: 0, y: 0 });
+        placements.push({ elementId: id, zone: 'landscape', group: `G${g}`, x: 0, y: 0 });
       }
     }
     const relations: Relation[] = [];
@@ -467,10 +468,11 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
           id: 'd1',
           kind: 'layer7',
           name: 'L7',
+          groups: [{ id: 'Core', name: 'Core' }],
           placements: ids.map((id) => ({
             elementId: id,
             zone: 'landscape' as const,
-            domainGroup: 'Core',
+            group: 'Core',
             x: 0,
             y: 0,
           })),
@@ -483,7 +485,7 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
     expect(result.canvas!.height).toBeGreaterThan(LAYER7_CANVAS.height);
     // The group box stays inside the landscape zone on every side — crucially its
     // TOP does not cross up into the actors band.
-    const core = result.domainGroups!.find((g) => g.name === 'Core')!;
+    const core = result.domainGroups!.find((g) => g.id === 'Core')!;
     expect(core.y).toBeGreaterThanOrEqual(zone.y - 0.5);
     expect(core.x).toBeGreaterThanOrEqual(zone.x - 0.5);
     expect(core.x + core.width).toBeLessThanOrEqual(zone.x + zone.width + 0.5);
@@ -844,9 +846,9 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     diagram: DesignDiagram,
     kinds: Map<string, ElementKind>,
   ) => {
-    const rectByGroup = new Map((result.domainGroups ?? []).map((g) => [g.name, g]));
+    const rectByGroup = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     for (const placement of result.placements) {
-      const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)?.domainGroup;
+      const groupName = diagram.placements.find((p) => p.elementId === placement.elementId)?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
       const size = placementSize(kinds.get(placement.elementId)!, placement);
@@ -869,13 +871,13 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
+            { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { elementId: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
           ],
           // A stale seed box: Tidy no longer honours its position — the box is
           // derived from where the members land in the single ELK pass.
           layoutConfig: {
-            domainGroups: [{ name: 'Core', x: 1000, y: 600, width: 600, height: 400 }],
+            domainGroups: [{ id: 'Core', x: 1000, y: 600, width: 600, height: 400 }],
           },
         },
       ],
@@ -883,7 +885,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     const diagram = model.diagrams[0];
     const result = await tidyLayer7(model, diagram);
 
-    const core = result.domainGroups!.find((g) => g.name === 'Core')!;
+    const core = result.domainGroups!.find((g) => g.id === 'Core')!;
     // A real box hugging both 200-wide apps (bigger than the seed would allow if
     // it were still constraining), with the members inside it.
     expect(core.width).toBeGreaterThan(200);
@@ -906,13 +908,13 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-            { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-            { elementId: 'e3', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
+            { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { elementId: 'e2', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+            { elementId: 'e3', zone: 'landscape', group: 'Core', x: 0, y: 0 },
           ],
           // An absurd 20x20 seed: ignored — the box grows to hold three chained apps.
           layoutConfig: {
-            domainGroups: [{ name: 'Core', x: 800, y: 500, width: 20, height: 20 }],
+            domainGroups: [{ id: 'Core', x: 800, y: 500, width: 20, height: 20 }],
           },
         },
       ],
@@ -920,7 +922,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     const diagram = model.diagrams[0];
     const result = await tidyLayer7(model, diagram);
 
-    const core = result.domainGroups!.find((g) => g.name === 'Core')!;
+    const core = result.domainGroups!.find((g) => g.id === 'Core')!;
     expect(core.width).toBeGreaterThan(20);
     expect(core.height).toBeGreaterThan(20);
     membersInside(result, diagram, kindById(model));
@@ -946,16 +948,16 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
           kind: 'layer7',
           name: 'L7',
           placements: [
-            { elementId: 'a1', zone: 'landscape', domainGroup: 'Alpha', x: 0, y: 0 },
-            { elementId: 'a2', zone: 'landscape', domainGroup: 'Alpha', x: 0, y: 0 },
-            { elementId: 'b1', zone: 'landscape', domainGroup: 'Beta', x: 0, y: 0 },
-            { elementId: 'b2', zone: 'landscape', domainGroup: 'Beta', x: 0, y: 0 },
+            { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 0, y: 0 },
+            { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
+            { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 0, y: 0 },
           ],
           // Seed positions are ignored; ELK lays the two groups out itself.
           layoutConfig: {
             domainGroups: [
-              { name: 'Alpha', x: 400, y: 300, width: 600, height: 400 },
-              { name: 'Beta', x: 1800, y: 1100, width: 600, height: 400 },
+              { id: 'Alpha', x: 400, y: 300, width: 600, height: 400 },
+              { id: 'Beta', x: 1800, y: 1100, width: 600, height: 400 },
             ],
           },
         },
@@ -964,8 +966,8 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     const diagram = model.diagrams[0];
     const result = await tidyLayer7(model, diagram);
 
-    const alpha = result.domainGroups!.find((g) => g.name === 'Alpha')!;
-    const beta = result.domainGroups!.find((g) => g.name === 'Beta')!;
+    const alpha = result.domainGroups!.find((g) => g.id === 'Alpha')!;
+    const beta = result.domainGroups!.find((g) => g.id === 'Beta')!;
     // Two real boxes, each holding its members, laid out clear of one another.
     const overlaps =
       alpha.x < beta.x + beta.width &&
@@ -1062,10 +1064,10 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
           { elementId: 'shopper', zone: 'actors', x: 0, y: 0 },
           { elementId: 'csa', zone: 'actors', x: 0, y: 0 },
           { elementId: 'marketplace', zone: 'inputChannels', x: 0, y: 0 },
-          { elementId: 'akeneo', zone: 'landscape', domainGroup: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'webshop', zone: 'landscape', domainGroup: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'order', zone: 'landscape', domainGroup: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'erp', zone: 'landscape', domainGroup: 'Commerce Operations', x: 0, y: 0 },
+          { elementId: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { elementId: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { elementId: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { elementId: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
           { elementId: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
           { elementId: 'grafana', zone: 'management', x: 0, y: 0 },
           { elementId: 'slack', zone: 'management', x: 0, y: 0 },
@@ -1075,8 +1077,8 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
         layoutConfig: {
           // Current persisted group dimensions from diagram 12.
           domainGroups: [
-            { name: 'Customer Experience', x: 241, y: 223, width: 686, height: 215 },
-            { name: 'Commerce Operations', x: 1061, y: 229, width: 267, height: 474 },
+            { id: 'Customer Experience', x: 241, y: 223, width: 686, height: 215 },
+            { id: 'Commerce Operations', x: 1061, y: 229, width: 267, height: 474 },
           ],
         },
       },
@@ -1166,7 +1168,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
       for (const g of result.domainGroups ?? []) {
         expect(
           rectIntersectsRect(labelRect, g, LABEL_MARGIN),
-          `${conn.id} overlaps ${g.name}`,
+          `${conn.id} overlaps ${g.id}`,
         ).toBe(false);
       }
     }
@@ -1221,7 +1223,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
       width: label.width,
       height: label.height,
     };
-    const ops = result.domainGroups!.find((g) => g.name === 'Commerce Operations')!;
+    const ops = result.domainGroups!.find((g) => g.id === 'Commerce Operations')!;
     expect(rectIntersectsRect(labelRect, ops, 8)).toBe(false);
     const dynRect = rectFor(result, 'dynamics');
     expect(rectIntersectsRect(labelRect, dynRect, 8)).toBe(false);
@@ -1390,10 +1392,10 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'akeneo', zone: 'landscape', domainGroup: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'webshop', zone: 'landscape', domainGroup: 'Customer Experience', x: 0, y: 0 },
-          { elementId: 'order', zone: 'landscape', domainGroup: 'Commerce Operations', x: 0, y: 0 },
-          { elementId: 'erp', zone: 'landscape', domainGroup: 'Commerce Operations', x: 0, y: 0 },
+          { elementId: 'akeneo', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { elementId: 'webshop', zone: 'landscape', group: 'Customer Experience', x: 0, y: 0 },
+          { elementId: 'order', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
+          { elementId: 'erp', zone: 'landscape', group: 'Commerce Operations', x: 0, y: 0 },
           { elementId: 'adyen', zone: 'externalSystems', x: 0, y: 0 },
           { elementId: 'dynamics', zone: 'externalSystems', x: 0, y: 0 },
         ],
@@ -1528,16 +1530,16 @@ describe('tidyGroup — one group in place', () => {
         placements: [
           // Both inside the Core box (stacked on top of each other — the mess
           // a per-group tidy is meant to sort out).
-          { elementId: 'a1', zone: 'landscape', domainGroup: 'Core', x: 220, y: 220 },
-          { elementId: 'a2', zone: 'landscape', domainGroup: 'Core', x: 230, y: 230 },
+          { elementId: 'a1', zone: 'landscape', group: 'Core', x: 220, y: 220 },
+          { elementId: 'a2', zone: 'landscape', group: 'Core', x: 230, y: 230 },
           // Outside every box, and a band node — neither may be touched.
           { elementId: 'outside', zone: 'landscape', x: 900, y: 900 },
           { elementId: 'actor', zone: 'actors', x: 100, y: 20 },
         ],
         layoutConfig: {
           domainGroups: [
-            { name: 'Core', x: 200, y: 200, width: 400, height: 300 },
-            { name: 'Other', x: 1200, y: 200, width: 200, height: 200 },
+            { id: 'Core', x: 200, y: 200, width: 400, height: 300 },
+            { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
           ],
         },
       },
@@ -1554,7 +1556,7 @@ describe('tidyGroup — one group in place', () => {
     expect(result.domainGroups).toHaveLength(1);
 
     const box = result.domainGroups![0];
-    expect(box.name).toBe('Core');
+    expect(box.id).toBe('Core');
     // Anchored: the box keeps the top-left the user placed it at.
     expect(box.x).toBe(200);
     expect(box.y).toBe(200);
@@ -1613,7 +1615,7 @@ describe('tidyGroup — one group in place', () => {
     const result = await tidyGroup(model, diagram, 'Core');
 
     expect(result.placements.map((p) => p.elementId).sort()).toEqual(['a1', 'a2', 'outside']);
-    expect(result.placements.every((p) => p.domainGroup === 'Core')).toBe(true);
+    expect(result.placements.every((p) => p.group === 'Core')).toBe(true);
   });
 });
 
@@ -1724,11 +1726,11 @@ describe('density reaches inside a domain group', () => {
         placements: ['a1', 'a2', 'a3'].map((id) => ({
           elementId: id,
           zone: 'landscape' as const,
-          domainGroup: 'Alpha',
+          group: 'Alpha',
           x: 300,
           y: 300,
         })),
-        layoutConfig: { domainGroups: [{ name: 'Alpha', x: 250, y: 250, width: 900, height: 300 }] },
+        layoutConfig: { domainGroups: [{ id: 'Alpha', x: 250, y: 250, width: 900, height: 300 }] },
       },
     ],
   });
@@ -1786,16 +1788,16 @@ describe('tidyLayer7 — pinGroups', () => {
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'a1', zone: 'landscape', domainGroup: 'Alpha', x: 320, y: 320 },
-          { elementId: 'a2', zone: 'landscape', domainGroup: 'Alpha', x: 330, y: 330 },
-          { elementId: 'b1', zone: 'landscape', domainGroup: 'Beta', x: 1220, y: 620 },
-          { elementId: 'b2', zone: 'landscape', domainGroup: 'Beta', x: 1230, y: 630 },
+          { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 320, y: 320 },
+          { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 330, y: 330 },
+          { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 1220, y: 620 },
+          { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 1230, y: 630 },
           { elementId: 'loose', zone: 'landscape', x: 800, y: 900 },
         ],
         layoutConfig: {
           domainGroups: [
-            { name: 'Alpha', x: 300, y: 300, width: 400, height: 300 },
-            { name: 'Beta', x: 1200, y: 600, width: 400, height: 300 },
+            { id: 'Alpha', x: 300, y: 300, width: 400, height: 300 },
+            { id: 'Beta', x: 1200, y: 600, width: 400, height: 300 },
           ],
         },
       },
@@ -1808,7 +1810,7 @@ describe('tidyLayer7 — pinGroups', () => {
     const model = pinned();
     const result = await tidyLayer7(model, model.diagrams[0], options);
 
-    const byName = new Map((result.domainGroups ?? []).map((g) => [g.name, g]));
+    const byName = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     expect(byName.get('Alpha')).toMatchObject({ x: 300, y: 300 });
     expect(byName.get('Beta')).toMatchObject({ x: 1200, y: 600 });
 
@@ -1820,12 +1822,12 @@ describe('tidyLayer7 — pinGroups', () => {
     const model = pinned();
     const result = await tidyLayer7(model, model.diagrams[0], options);
 
-    const byName = new Map((result.domainGroups ?? []).map((g) => [g.name, g]));
+    const byName = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
     for (const placement of result.placements) {
       const groupName = model.diagrams[0].placements.find(
         (p) => p.elementId === placement.elementId,
-      )?.domainGroup;
+      )?.group;
       if (!groupName) continue;
       const box = byName.get(groupName)!;
       const size = placementSize(kindById.get(placement.elementId)!, placement);
@@ -1853,7 +1855,7 @@ describe('tidyLayer7 — pinGroups', () => {
     const model = pinned();
     const result = await tidyLayer7(model, model.diagrams[0], DEFAULT_TIDY_OPTIONS);
 
-    const alpha = (result.domainGroups ?? []).find((g) => g.name === 'Alpha')!;
+    const alpha = (result.domainGroups ?? []).find((g) => g.id === 'Alpha')!;
     expect([alpha.x, alpha.y]).not.toEqual([300, 300]);
   });
 
@@ -1906,15 +1908,17 @@ describe('tidyLayer7 — pinGroups', () => {
 });
 
 /**
- * A group's colour must survive Tidy.
+ * A group's colour cannot be lost by Tidy, and now it is structural.
  *
  * Every path through Tidy REBUILDS the group rects from their members' bounds, so
- * the rect that comes back is a fresh object. Before `keepGroupColors`, the first
- * Tidy after colouring a group silently reverted it to neutral — the colour
- * survived saving, reloading and dragging, and died on the button people press
- * most. All three paths are covered because all three rebuild.
+ * the rect that comes back is a fresh object — and before ADR-0012 §6 the colour
+ * was ON that rect, so the first Tidy after colouring a group silently reverted
+ * it to neutral. `keepGroupColors` put it back and is gone with the field: the
+ * colour is the group's, in the definition, and a pass that only ever answers
+ * with geometry has nothing to drop. These pin that the answer carries no
+ * colour at all rather than that it carries the right one.
  */
-describe('tidy — a domain group keeps its colour', () => {
+describe('tidy — a domain group keeps its colour, because tidy never sees it', () => {
   const coloured = (): DesignModel => ({
     name: 'ACME',
     customerName: 'ACME',
@@ -1925,48 +1929,38 @@ describe('tidy — a domain group keeps its colour', () => {
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
+        groups: [{ id: 'alpha', name: 'Alpha', color: '#2f6fdb' }],
         placements: [
-          { elementId: 'a1', zone: 'landscape', domainGroup: 'Alpha', x: 320, y: 320 },
-          { elementId: 'a2', zone: 'landscape', domainGroup: 'Alpha', x: 420, y: 330 },
+          { elementId: 'a1', zone: 'landscape', group: 'alpha', x: 320, y: 320 },
+          { elementId: 'a2', zone: 'landscape', group: 'alpha', x: 420, y: 330 },
         ],
         layoutConfig: {
-          domainGroups: [
-            { name: 'Alpha', x: 300, y: 300, width: 400, height: 300, color: '#2f6fdb' },
-          ],
+          domainGroups: [{ id: 'alpha', x: 300, y: 300, width: 400, height: 300 }],
         },
       },
     ],
   });
 
-  const colorOf = (result: { domainGroups?: { name: string; color?: string }[] }) =>
-    (result.domainGroups ?? []).find((g) => g.name === 'Alpha')?.color;
+  const alphaOf = (result: TidyResult) =>
+    (result.domainGroups ?? []).find((g) => g.id === 'alpha')!;
 
   it('through the full board tidy', async () => {
     const model = coloured();
-    expect(colorOf(await tidyLayer7(model, model.diagrams[0], DEFAULT_TIDY_OPTIONS))).toBe(
-      '#2f6fdb',
-    );
+    const alpha = alphaOf(await tidyLayer7(model, model.diagrams[0], DEFAULT_TIDY_OPTIONS));
+    expect('color' in alpha).toBe(false);
+    expect(model.diagrams[0].groups).toEqual([{ id: 'alpha', name: 'Alpha', color: '#2f6fdb' }]);
   });
 
   it('through a pinned-groups tidy', async () => {
     const model = coloured();
     const options: TidyOptions = { ...DEFAULT_TIDY_OPTIONS, pinGroups: true };
-    expect(colorOf(await tidyLayer7(model, model.diagrams[0], options))).toBe('#2f6fdb');
+    expect('color' in alphaOf(await tidyLayer7(model, model.diagrams[0], options))).toBe(false);
   });
 
   it('through a single-group tidy', async () => {
     const model = coloured();
-    expect(colorOf(await tidyGroup(model, model.diagrams[0], 'Alpha', DEFAULT_TIDY_OPTIONS))).toBe(
-      '#2f6fdb',
-    );
-  });
-
-  it('and an uncoloured group stays uncoloured rather than gaining a key', async () => {
-    const model = coloured();
-    delete model.diagrams[0].layoutConfig!.domainGroups![0].color;
-    const result = await tidyLayer7(model, model.diagrams[0], DEFAULT_TIDY_OPTIONS);
-    const alpha = (result.domainGroups ?? []).find((g) => g.name === 'Alpha')!;
-    expect('color' in alpha).toBe(false);
+    const result = await tidyGroup(model, model.diagrams[0], 'alpha', DEFAULT_TIDY_OPTIONS);
+    expect('color' in alphaOf(result)).toBe(false);
   });
 });
 

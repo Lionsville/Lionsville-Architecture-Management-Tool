@@ -45,8 +45,9 @@ const host: HostModel = {
   diagrams: [
     {
       id: 'l7', kind: 'layer7', name: 'L7',
+      groups: [{ id: 'finance', name: 'Finance' }],
       placements: [
-        { elementId: 'billing', zone: 'landscape', domainGroup: 'Finance', x: 100, y: 400 },
+        { elementId: 'billing', zone: 'landscape', group: 'finance', x: 100, y: 400 },
         { elementId: 'crm', zone: 'landscape', x: 400, y: 400 },
         { elementId: 'who', zone: 'actors', x: 20, y: 20 },
       ],
@@ -426,7 +427,7 @@ describe('where a card goes (the placement fixes)', () => {
   const model = fromArrays(host)
   const boxed = fromArrays({
     ...host,
-    diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ name: 'Finance', x: 60, y: 360, width: 300, height: 200 }] } }],
+    diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ id: 'finance', x: 60, y: 360, width: 300, height: 200 }] } }],
   })
   const applied = (m: Model, out: Prepared | AgentAnswer): Model => {
     const result = apply(m, prepared(out).command)
@@ -437,13 +438,14 @@ describe('where a card goes (the placement fixes)', () => {
   it('element.add with a group lands inside the group’s box, and draws the box when there is none', () => {
     const inside = roundTrip(boxed, commandFor('element.add', { name: 'Ledger', domainGroup: 'Finance' }, view(boxed)))
     const report = inspect(inside, inside.diagrams.l7)
-    expect(inside.diagrams.l7.placements.ledger.domainGroup).toBe('Finance')
+    expect(inside.diagrams.l7.placements.ledger.group).toBe('finance')
     expect(report.outsideGroup.total).toBe(0)
     expect(report.overlaps.total).toBe(0)
     expect(report.groups?.[0].members).toEqual(['billing', 'ledger'])
     // No box yet: one is drawn around the card, so the next drag keeps it filed.
     const drawn = roundTrip(model, commandFor('element.add', { name: 'Ledger', x: 900, y: 700, domainGroup: 'Ops' }, view(model)))
-    expect(drawn.diagrams.l7.layoutConfig?.domainGroups).toEqual([expect.objectContaining({ name: 'Ops' })])
+    expect(drawn.diagrams.l7.layoutConfig?.domainGroups).toEqual([expect.objectContaining({ id: 'ops' })])
+    expect(drawn.diagrams.l7.groups?.ops).toEqual({ id: 'ops', name: 'Ops' })
     expect(inspect(drawn, drawn.diagrams.l7).outsideGroup.some.map((one) => one.elementId)).not.toContain('ledger')
     expect(commandFor('element.add', { name: 'x', zone: 'actors', domainGroup: 'Finance' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
   })
@@ -457,7 +459,7 @@ describe('where a card goes (the placement fixes)', () => {
     // Sliding it back into the band would put it on the clerk; it takes a free slot instead.
     expect(report.overlaps.total).toBe(0)
     const grouped = roundTrip(boxed, commandFor('placeNextTo', { elementId: 'crm', anchorId: 'billing', side: 'right' }, view(boxed)))
-    expect(grouped.diagrams.l7.placements.crm.domainGroup).toBe('Finance')
+    expect(grouped.diagrams.l7.placements.crm.group).toBe('finance')
     expect(inspect(grouped, grouped.diagrams.l7).outsideGroup.total).toBe(0)
   })
 
@@ -472,7 +474,7 @@ describe('where a card goes (the placement fixes)', () => {
     expect(inspect(banded, banded.diagrams.l7).outsideZone.some.map((one) => one.elementId)).not.toContain('crm')
     // Into a group with no spot given: a free slot inside its box, and the box holds it.
     const filed = roundTrip(boxed, commandFor('element.place', { id: 'crm', domainGroup: 'Finance' }, view(boxed)))
-    expect(filed.diagrams.l7.placements.crm.domainGroup).toBe('Finance')
+    expect(filed.diagrams.l7.placements.crm.group).toBe('finance')
     expect(inspect(filed, filed.diagrams.l7)).toMatchObject({ outsideGroup: { total: 0 }, overlaps: { total: 0 } })
     const unfiled = applied(filed, commandFor('element.place', { id: 'crm', domainGroup: null }, view(filed)))
     expect(unfiled.diagrams.l7.placements.crm).not.toHaveProperty('domainGroup')
@@ -500,7 +502,7 @@ describe('where a card goes (the placement fixes)', () => {
     const two = roundTrip(boxed, commandFor('placeNextTo', { elementId: 'crm', anchorId: 'billing' }, view(boxed)))
     const one = roundTrip(two, commandFor('ungroup', { name: 'Finance', elementIds: ['crm'] }, view(two)))
     expect(one.diagrams.l7.placements.crm).not.toHaveProperty('domainGroup')
-    expect(one.diagrams.l7.placements.billing.domainGroup).toBe('Finance')
+    expect(one.diagrams.l7.placements.billing.group).toBe('finance')
     expect(one.diagrams.l7.layoutConfig?.domainGroups).toHaveLength(1)
     const none = roundTrip(two, commandFor('ungroup', { name: 'Finance' }, view(two)))
     expect(none.diagrams.l7.placements.billing).not.toHaveProperty('domainGroup')
@@ -545,31 +547,39 @@ describe('group', () => {
     const out = commandFor('group', { name: 'Sales', elementIds: ['crm'], color: '#2E86C1' }, view(model))
     expect(answerOf(out)).toMatchObject({ name: 'Sales', created: true, box: groupRectAround([crm]), members: ['crm'] })
     const after = roundTrip(model, out)
-    expect(after.diagrams.l7.placements.crm.domainGroup).toBe('Sales')
-    expect(after.diagrams.l7.layoutConfig?.domainGroups).toEqual([{ name: 'Sales', ...groupRectAround([crm]), color: '#2e86c1' }])
+    expect(after.diagrams.l7.placements.crm.group).toBe('sales')
+    expect(after.diagrams.l7.groups?.sales).toEqual({ id: 'sales', name: 'Sales', color: '#2e86c1' })
+    expect(after.diagrams.l7.layoutConfig?.domainGroups).toEqual([{ id: 'sales', ...groupRectAround([crm]) }])
   })
 
   it('grows an existing box to take a member in, never moving or shrinking it', () => {
     const boxed = fromArrays({
       ...host,
-      diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ name: 'Finance', x: 40, y: 300, width: 300, height: 200, color: '#111111' }] } }],
+      diagrams: [{
+        ...host.diagrams[0],
+        groups: [{ id: 'finance', name: 'Finance', color: '#111111' }],
+        layoutConfig: { domainGroups: [{ id: 'finance', x: 40, y: 300, width: 300, height: 200 }] },
+      }],
     })
     const out = commandFor('group', { name: 'Finance', elementIds: ['crm'] }, view(boxed))
     const grown = unionRects([{ x: 40, y: 300, width: 300, height: 200 }, groupRectAround([crm])!])
     expect(answerOf(out)).toMatchObject({ name: 'Finance', created: false, box: grown })
     const after = roundTrip(boxed, out)
-    expect(after.diagrams.l7.layoutConfig?.domainGroups).toEqual([{ name: 'Finance', ...grown, color: '#111111' }])
-    // The name is the key: no second Finance.
+    expect(after.diagrams.l7.layoutConfig?.domainGroups).toEqual([{ id: 'finance', ...grown }])
+    expect(after.diagrams.l7.groups?.finance).toEqual({ id: 'finance', name: 'Finance', color: '#111111' })
+    // The name finds the group it already has: no second Finance.
     expect(after.diagrams.l7.layoutConfig?.domainGroups?.length).toBe(1)
   })
 
   it('recolours an existing box on its own, and wants a member for a new one', () => {
     const boxed = fromArrays({
       ...host,
-      diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ name: 'Finance', x: 40, y: 300, width: 300, height: 200 }] } }],
+      diagrams: [{ ...host.diagrams[0], layoutConfig: { domainGroups: [{ id: 'finance', x: 40, y: 300, width: 300, height: 200 }] } }],
     })
     const after = roundTrip(boxed, commandFor('group', { name: 'Finance', color: '#aa0000' }, view(boxed)))
-    expect(after.diagrams.l7.layoutConfig?.domainGroups?.[0]).toMatchObject({ x: 40, y: 300, width: 300, height: 200, color: '#aa0000' })
+    // The box is untouched; the colour is the group's, one file over.
+    expect(after.diagrams.l7.layoutConfig?.domainGroups?.[0]).toEqual({ id: 'finance', x: 40, y: 300, width: 300, height: 200 })
+    expect(after.diagrams.l7.groups?.finance).toMatchObject({ name: 'Finance', color: '#aa0000' })
     expect(commandFor('group', { name: 'Fresh' }, view(boxed))).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
   })
 
@@ -618,7 +628,7 @@ describe('the plan tools (ADR-0010)', () => {
     expect(after.elements.billing).toMatchObject({ successorId: 'billing-next', lifecycleDates: { retiring: '2027-03-01', retired: '2027-09-01' } })
     expect(Object.keys(after.transitions ?? {})).toEqual(['tr-new-1'])
     // Drawn beside the old one on the board the old one is on.
-    expect(after.diagrams.l7.placements['billing-next']).toMatchObject({ zone: 'landscape', domainGroup: 'Finance' })
+    expect(after.diagrams.l7.placements['billing-next']).toMatchObject({ zone: 'landscape', group: 'finance' })
   })
 
   it('plan.replace takes an existing successor, a split and a merge', () => {

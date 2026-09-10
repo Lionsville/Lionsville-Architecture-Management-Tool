@@ -99,6 +99,13 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
       return { key: 'activity.routeChanged' }
     case 'layout.set':
       return { key: 'activity.layoutChanged' }
+    case 'group.set':
+      return { key: 'activity.groupChanged', name: lead.groups[0]?.name }
+    case 'group.remove':
+      return {
+        key: 'activity.groupRemoved',
+        name: before.diagrams[lead.diagramId]?.groups?.[lead.groupIds[0]]?.name,
+      }
 
     case 'diagram.create':
       return { key: 'activity.diagramAdded', name: lead.diagram.name }

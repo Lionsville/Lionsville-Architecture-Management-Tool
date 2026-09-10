@@ -1,4 +1,6 @@
-import type { AttachSide, EdgeRouting, ElementId, ElementKind, Layer7Zone, Lifecycle } from '../../model/types';
+import type {
+  AttachSide, DiagramGroup, EdgeRouting, ElementId, ElementKind, Layer7Zone, Lifecycle,
+} from '../../model/types';
 import { formatShortcut, type Platform } from '../keymap';
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
 import { zoneMenuLabel } from '../../model/zones';
@@ -82,8 +84,8 @@ export type MenuActionId =
 export interface MenuActionArgs {
   zone?: Layer7Zone;
   lifecycle?: Lifecycle;
-  /** `undefined` on the "None" entry — leaves the group. */
-  domainGroup?: string;
+  /** A dashed group's id; `undefined` on the "None" entry — leaves the group. */
+  group?: string;
   kind?: ElementKind;
   /** "Change kind ▸": what the element should become. */
   newKind?: ElementKind;
@@ -123,7 +125,7 @@ export type MenuTarget =
   | { kind: 'edge'; connectionId: string }
   | { kind: 'edgeHandle'; connectionId: string; index: number }
   | { kind: 'pane' }
-  | { kind: 'group'; name: string }
+  | { kind: 'group'; groupId: string }
   | { kind: 'selection'; elementIds: ElementId[] }
   | { kind: 'tab'; diagramId: string };
 
@@ -132,7 +134,8 @@ export interface ElementMenuFacts {
   lifecycle: Lifecycle;
   iconKey?: string;
   zone?: Layer7Zone;
-  domainGroup?: string;
+  /** Which dashed group it is filed under, by id. */
+  group?: string;
   hasContainerDiagram: boolean;
   /** The application a container diagram is about — cannot leave its own diagram. */
   isBoundaryApplication: boolean;
@@ -190,8 +193,8 @@ export interface MenuContext {
    */
   t?: Translate;
   diagramKind: 'layer7' | 'container';
-  /** Domain-group names on the active diagram (layer7). */
-  domainGroups?: string[];
+  /** The dashed groups on the active diagram (layer7) — ids to act on, names to read. */
+  groups?: readonly DiagramGroup[];
   clipboardHasContent?: boolean;
   /** Element kinds the palette offers on this diagram — the "Add here" list. */
   allowedKinds?: ElementKind[];
@@ -321,25 +324,25 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
         args: { zone: z },
       })),
     });
-    const groups = ctx.domainGroups ?? [];
-    if (zone === 'landscape' && (groups.length > 0 || el.domainGroup)) {
+    const groups = ctx.groups ?? [];
+    if (zone === 'landscape' && (groups.length > 0 || el.group)) {
       items.push({
         id: 'domain-group',
         label: t('menu.domainGroup'),
         children: [
-          ...groups.map((name) => ({
-            id: `group-${name}`,
-            label: name,
-            checked: el.domainGroup === name,
+          ...groups.map((group) => ({
+            id: `group-${group.id}`,
+            label: group.name,
+            checked: el.group === group.id,
             action: 'set-domain-group' as const,
-            args: { domainGroup: name },
+            args: { group: group.id },
           })),
           {
             id: 'group-none',
             label: t('common.none'),
-            checked: !el.domainGroup,
+            checked: !el.group,
             action: 'set-domain-group',
-            args: { domainGroup: undefined },
+            args: { group: undefined },
           },
         ],
       });

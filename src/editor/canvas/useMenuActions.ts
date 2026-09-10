@@ -24,7 +24,7 @@ import {
   routeSides,
   type AttachSidesPatch,
 } from '../../model/routes';
-import { defaultGroupName, groupRectAround, uniqueGroupName } from './domainGroupPlacement';
+import { groupRectAround, newDomainGroup } from './domainGroupPlacement';
 import type { Translate } from '../../i18n/strings';
 import type { AlignAxis, DistributeAxis, NodeBounds } from '../../layout/alignDistribute';
 import type { MenuItem, MenuTarget } from './menuItems';
@@ -52,7 +52,7 @@ export interface MenuActionHost {
   addElementAt(kind: ElementKind, position: Point): void;
   addDomainGroupAt?(position: Point): void;
   /** What a drop at `center` would assign (layer7 zone + group); mirrors the drag rules. */
-  resolveDrop?(elementId: ElementId, center: Point): Pick<PlacementMove, 'zone' | 'domainGroup'>;
+  resolveDrop?(elementId: ElementId, center: Point): Pick<PlacementMove, 'zone' | 'group'>;
   /** The double-click path: open or create the application's container diagram. */
   openApplication?(elementId: ElementId): void;
   /** "Open documentation": the editor shows the element's page. */
@@ -158,7 +158,7 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
       if (elementId && args.newKind) actions.changeElementKind(elementId, args.newKind);
       return;
     case 'set-domain-group':
-      if (elementId) setDomainGroup(host, elementId, args.domainGroup);
+      if (elementId) setDomainGroup(host, elementId, args.group);
       return;
     case 'duplicate': {
       const payload = serializeSelection(model, diagram, elementIds);
@@ -308,13 +308,13 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     case 'select-members': {
       if (target.kind !== 'group') return;
       const members = diagram.placements
-        .filter((p) => p.domainGroup === target.name)
+        .filter((p) => p.group === target.groupId)
         .map((p) => p.elementId);
       host.setSelection({ elementIds: members, connectionIds: [], domainGroups: [] });
       return;
     }
     case 'remove-group':
-      if (target.kind === 'group') actions.removeDomainGroup(target.name);
+      if (target.kind === 'group') actions.removeDomainGroup(target.groupId);
       return;
     case 'rename-group':
     case 'tidy-group':
@@ -378,7 +378,7 @@ function moveToZone(host: MenuActionHost, elementId: ElementId, zone: Layer7Zone
   const size = placementSize(element.kind, placement);
   const centre = { x: position.x + size.width / 2, y: position.y + size.height / 2 };
   actions.movePlacements([
-    { elementId, ...position, ...(host.resolveDrop?.(elementId, centre) ?? { zone, domainGroup: undefined }) },
+    { elementId, ...position, ...(host.resolveDrop?.(elementId, centre) ?? { zone, group: undefined }) },
   ]);
 }
 
@@ -403,10 +403,10 @@ function setDomainGroup(host: MenuActionHost, elementId: ElementId, name: string
     actions.setDomainGroup(elementId, name);
     return;
   }
-  const occupied = occupiedRects(host, elementId, (p) => p.domainGroup === name);
+  const occupied = occupiedRects(host, elementId, (p) => p.group === name);
   // Insets keep a moved-in card clear of the border and of the name pill on top.
   const position = freeSlotIn(rect, element.kind, occupied, { x: 24, y: 36 });
-  actions.movePlacements([{ elementId, ...position, zone: 'landscape', domainGroup: name }]);
+  actions.movePlacements([{ elementId, ...position, zone: 'landscape', group: name }]);
 }
 
 /**
@@ -427,8 +427,7 @@ function groupIntoNewDomainGroup(host: MenuActionHost, elementIds: ElementId[]):
   });
   const box = groupRectAround(rects);
   if (!box || members.length === 0) return;
-  const existing = (diagram.layoutConfig?.domainGroups ?? []).map((g) => g.name);
-  const name = uniqueGroupName(defaultGroupName(host.translate), existing, host.translate);
-  actions.upsertDomainGroup({ name, ...box }, members);
-  host.setSelection(selectDomainGroup(name));
+  const { group } = newDomainGroup({ diagram, translate: host.translate });
+  actions.addDomainGroup(group, box, members);
+  host.setSelection(selectDomainGroup(group.id));
 }

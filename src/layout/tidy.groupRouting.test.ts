@@ -45,15 +45,15 @@ function board(): { model: DesignModel; layer7: DesignDiagram } {
     kind: 'layer7',
     name: 'L7',
     placements: [
-      { elementId: 'a1', zone: 'landscape', domainGroup: 'Core', x: 220, y: 220 },
-      { elementId: 'a2', zone: 'landscape', domainGroup: 'Core', x: 230, y: 230 },
+      { elementId: 'a1', zone: 'landscape', group: 'Core', x: 220, y: 220 },
+      { elementId: 'a2', zone: 'landscape', group: 'Core', x: 230, y: 230 },
       { elementId: 'outside', zone: 'landscape', x: 700, y: 240 },
       { elementId: 'actor', zone: 'actors', x: 100, y: 20 },
     ],
     layoutConfig: {
       domainGroups: [
-        { name: 'Core', x: 200, y: 200, width: 400, height: 300 },
-        { name: 'Other', x: 1200, y: 200, width: 200, height: 200 },
+        { id: 'Core', x: 200, y: 200, width: 400, height: 300 },
+        { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
       ],
     },
   };
@@ -120,7 +120,7 @@ describe('tidyGroup — the board the router is routing against', () => {
     // And the resized box, not the stale one still in `layoutConfig`.
     expect(routed.layoutConfig!.domainGroups).toEqual([
       result.domainGroups![0],
-      { name: 'Other', x: 1200, y: 200, width: 200, height: 200 },
+      { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
     ]);
   });
 });

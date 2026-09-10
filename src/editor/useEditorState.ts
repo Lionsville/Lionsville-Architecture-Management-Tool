@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramLayoutConfig, DiagramPlacement, DomainGroupRect, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
+import { claimKey } from '../model/keys';
+import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, DiagramLayoutConfig, DiagramPlacement, DomainGroupRect, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
 import type { TidyResult } from '../layout/tidy';
@@ -139,7 +140,8 @@ export interface ElementSeed {
   kind: ElementKind;
   position?: { x: number; y: number };
   zone?: Layer7Zone;
-  domainGroup?: string;
+  /** The dashed group's id (ADR-0012 §6). */
+  group?: string;
   // Optional pre-seed style (U7c/D10 quick-style-from-palette). Absent = inherit,
   // exactly as before. These are the SAME fields the inspector Appearance tab
   // edits — one source of truth, no new columns, no migration.
@@ -171,7 +173,8 @@ export interface PlacementMove {
   x: number;
   y: number;
   zone?: Layer7Zone;
-  domainGroup?: string;
+  /** The dashed group's id (ADR-0012 §6). */
+  group?: string;
 }
 
 export interface EditorActions {
@@ -214,13 +217,20 @@ export interface EditorActions {
    * groups) are preserved.
    */
   applyTidyResult(result: TidyResult, amend?: CommitToken): CommitToken;
-  setDomainGroup(elementId: ElementId, domainGroup: string | undefined): void;
+  setDomainGroup(elementId: ElementId, groupId: string | undefined): void;
   /**
    * The same, for a whole selection, in ONE step — so bulk-assigning a domain
    * group is one undo step rather than one per element. Elements with no
    * placement on the active diagram are skipped.
    */
-  setDomainGroups(elementIds: readonly ElementId[], domainGroup: string | undefined): void;
+  setDomainGroups(elementIds: readonly ElementId[], groupId: string | undefined): void;
+  /**
+   * File cards under the group with this NAME, making the group when the board
+   * has none by that name — what the inspectors' free-text group field needs,
+   * because a person types a name and a placement points at an id
+   * (ADR-0012 §6). Blank or absent clears the membership.
+   */
+  fileUnderGroupNamed(elementIds: readonly ElementId[], name: string | undefined): void;
   /**
    * Draw a new connection. With `sides` (an Alt-connect from or to a specific
    * side handle) the attach sides land in the SAME step as the line, as a
@@ -304,21 +314,28 @@ export interface EditorActions {
   /** Commit a card resize (NodeResizer end): position + explicit size on the placement. */
   resizePlacement(elementId: ElementId, rect: { x: number; y: number; width: number; height: number }): void;
   /**
-   * Create or update a domain-group rectangle. With `memberIds`, those
-   * placements join the group in the same step — how "Group into new domain
-   * group" makes one undo step out of a box and its membership.
+   * Create a domain group: its record and its box, in one step. With
+   * `memberIds`, those placements join it in the same step — how "Group into
+   * new domain group" makes one undo step out of a box and its membership.
    */
-  upsertDomainGroup(rect: DomainGroupRect, memberIds?: readonly ElementId[]): void;
+  addDomainGroup(group: DiagramGroup, box: Rect, memberIds?: readonly ElementId[]): void;
+  /** Move or resize a group's box. Geometry only — nothing about the group changes. */
+  setDomainGroupBox(groupId: string, box: Rect): void;
   /**
    * Rigid-move a domain group: translate its box rect AND every member
    * placement by (dx, dy) in ONE step (one undo step). Membership is
-   * preserved — no `domainGroup` value changes.
+   * preserved — no `group` value changes.
    */
-  moveDomainGroup(name: string, dx: number, dy: number): void;
-  /** Rename a group; member placements follow. */
-  renameDomainGroup(oldName: string, newName: string): void;
-  /** Remove a group rect; member placements lose their domainGroup. */
-  removeDomainGroup(name: string): void;
+  moveDomainGroup(groupId: string, dx: number, dy: number): void;
+  /**
+   * Rename a group. One line in the definition, and nothing else: the members
+   * point at the id, so none of them is touched (ADR-0012 §6).
+   */
+  renameDomainGroup(groupId: string, name: string): void;
+  /** Recolour a group, or clear the colour back to the theme's neutral. */
+  setDomainGroupColor(groupId: string, color: string | undefined): void;
+  /** Remove a group and its box; member placements lose their `group`. */
+  removeDomainGroup(groupId: string): void;
   /**
    * Turn live auto-routing on or off for the active diagram.
    *
@@ -634,7 +651,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             x: move.x,
             y: move.y,
             zone: diagram.kind === 'layer7' ? move.zone : placement.zone,
-            domainGroup: diagram.kind === 'layer7' ? move.domainGroup : placement.domainGroup,
+            group: diagram.kind === 'layer7' ? move.group : placement.group,
           });
         }
         // Hand-drawn routes follow their nodes (Phase 2e): the bend next to a
@@ -689,12 +706,12 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           const current = diagram.layoutConfig ?? {};
           let nextConfig = current;
           if (domainGroups && domainGroups.length > 0) {
-            const tidyByName = new Map(domainGroups.map((g) => [g.name, g]));
+            const tidyByName = new Map(domainGroups.map((g) => [g.id, g]));
             const existing = current.domainGroups ?? [];
-            const existingNames = new Set(existing.map((g) => g.name));
+            const existingNames = new Set(existing.map((g) => g.id));
             const groups = [
-              ...existing.map((g) => tidyByName.get(g.name) ?? g),
-              ...domainGroups.filter((g) => !existingNames.has(g.name)),
+              ...existing.map((g) => tidyByName.get(g.id) ?? g),
+              ...domainGroups.filter((g) => !existingNames.has(g.id)),
             ];
             nextConfig = { ...nextConfig, domainGroups: groups };
           }
@@ -781,26 +798,49 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         return dispatch(transaction(commands), amend === undefined ? undefined : { amend });
       },
 
-      setDomainGroup(elementId, domainGroup) {
+      setDomainGroup(elementId, groupId) {
         const diagram = currentDiagram();
         const placement = diagram?.placements.find((p) => p.elementId === elementId);
         if (!diagram || !placement) return;
         dispatch({
           type: 'placement.set',
           diagramId: diagram.id,
-          placements: [{ ...placement, domainGroup }],
+          placements: [{ ...placement, group: groupId }],
         });
       },
 
-      setDomainGroups(elementIds, domainGroup) {
+      setDomainGroups(elementIds, groupId) {
         const diagram = currentDiagram();
         if (!diagram) return;
         const placements = elementIds
           .map((id) => diagram.placements.find((p) => p.elementId === id))
           .filter((p): p is DiagramPlacement => Boolean(p))
-          .map((p) => ({ ...p, domainGroup }));
+          .map((p) => ({ ...p, group: groupId }));
         if (placements.length === 0) return;
         dispatch({ type: 'placement.set', diagramId: diagram.id, placements });
+      },
+
+      fileUnderGroupNamed(elementIds, name) {
+        const diagram = currentDiagram();
+        if (!diagram) return;
+        const trimmed = name?.trim();
+        const held = trimmed ? (diagram.groups ?? []).find((g) => g.name === trimmed) : undefined;
+        // A name nobody has used yet makes the group — which is what typing one
+        // into this field has always meant. It gets no box: a group nobody has
+        // drawn a rectangle for is still a group its members are filed under.
+        const made = trimmed && !held
+          ? { id: claimKey(trimmed, new Set((diagram.groups ?? []).map((g) => g.id))), name: trimmed }
+          : undefined;
+        const groupId = held?.id ?? made?.id;
+        const placements = elementIds
+          .map((id) => diagram.placements.find((p) => p.elementId === id))
+          .filter((p): p is DiagramPlacement => Boolean(p))
+          .map((p) => ({ ...p, group: groupId }));
+        if (placements.length === 0) return;
+        dispatch(transaction([
+          ...(made ? [{ type: 'group.set' as const, diagramId: diagram.id, groups: [made] }] : []),
+          { type: 'placement.set', diagramId: diagram.id, placements },
+        ]));
       },
 
       connect(sourceId, targetId, sides) {
@@ -862,7 +902,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             kind: diagram.kind,
             applicationElementId: diagram.applicationElementId,
             domainGroupNames: new Set(
-              (diagram.layoutConfig?.domainGroups ?? []).map((g) => g.name),
+              (diagram.layoutConfig?.domainGroups ?? []).map((g) => g.id),
             ),
           },
         });
@@ -1100,37 +1140,53 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         });
       },
 
-      upsertDomainGroup(rect, memberIds) {
+      addDomainGroup(group, box, memberIds) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        const current = diagram.layoutConfig ?? {};
-        const groups = [...(current.domainGroups ?? [])];
-        const index = groups.findIndex((g) => g.name === rect.name);
-        if (index >= 0) groups[index] = rect;
-        else groups.push(rect);
         const members = new Set(memberIds ?? []);
         const placements = diagram.placements
-          .filter((p) => members.has(p.elementId) && p.domainGroup !== rect.name)
-          .map((p) => ({ ...p, domainGroup: rect.name }));
+          .filter((p) => members.has(p.elementId) && p.group !== group.id)
+          .map((p) => ({ ...p, group: group.id }));
+        // The group before its box before its members: `activity.ts` reads the
+        // first command of a step to name it, and this step is about a group.
         geometry(transaction([
-          { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
+          { type: 'group.set', diagramId: diagram.id, groups: [group] },
+          groupBoxCommand(diagram, { id: group.id, ...box }),
           ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
         ]));
       },
 
-      moveDomainGroup(name, dx, dy) {
+      setDomainGroupBox(groupId, box) {
+        const diagram = currentDiagram();
+        if (!diagram || diagram.kind !== 'layer7') return;
+        geometry(groupBoxCommand(diagram, { id: groupId, ...box }));
+      },
+
+      setDomainGroupColor(groupId, color) {
+        const diagram = currentDiagram();
+        const held = (diagram?.groups ?? []).find((g) => g.id === groupId);
+        if (!diagram || !held) return;
+        const { color: _dropped, ...rest } = held;
+        dispatch({
+          type: 'group.set',
+          diagramId: diagram.id,
+          groups: [color ? { ...rest, color } : rest],
+        });
+      },
+
+      moveDomainGroup(groupId, dx, dy) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7' || (dx === 0 && dy === 0)) return;
         const current = diagram.layoutConfig ?? {};
         const groups = [...(current.domainGroups ?? [])];
-        const index = groups.findIndex((g) => g.name === name);
+        const index = groups.findIndex((g) => g.id === groupId);
         if (index < 0) return; // no such group — nothing to move
         const group = groups[index];
         // Rigid move: the box and its members share one absolute frame, so the
         // same (dx, dy) applies to both. Membership is untouched.
         groups[index] = { ...group, x: group.x + dx, y: group.y + dy };
         const placements = diagram.placements
-          .filter((p) => p.domainGroup === name)
+          .filter((p) => p.group === groupId)
           .map((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
         geometry(transaction([
           ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
@@ -1138,29 +1194,18 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         ]));
       },
 
-      renameDomainGroup(oldName, newName) {
+      renameDomainGroup(groupId, name) {
         const diagram = currentDiagram();
-        const trimmed = newName.trim();
-        if (!diagram || diagram.kind !== 'layer7' || !trimmed || trimmed === oldName) return;
-        const current = diagram.layoutConfig ?? {};
-        if (current.domainGroups?.some((g) => g.name === trimmed)) return; // names are keys
-        const groups = (current.domainGroups ?? []).map((g) =>
-          g.name === oldName ? { ...g, name: trimmed } : g,
-        );
-        // A selected group is selected BY NAME, so the rename has to carry the
-        // selection with it or the inspector would go blank on its own edit.
-        setSelection((s) =>
-          s.domainGroups.includes(oldName)
-            ? { ...s, domainGroups: s.domainGroups.map((n) => (n === oldName ? trimmed : n)) }
-            : s,
-        );
-        const placements = diagram.placements
-          .filter((p) => p.domainGroup === oldName)
-          .map((p) => ({ ...p, domainGroup: trimmed }));
-        dispatch(transaction([
-          { type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups } },
-          ...(placements.length ? [{ type: 'placement.set' as const, diagramId: diagram.id, placements }] : []),
-        ]));
+        const trimmed = name.trim();
+        const held = (diagram?.groups ?? []).find((g) => g.id === groupId);
+        if (!diagram || !held || !trimmed || trimmed === held.name) return;
+        // Two groups with one name is a board nobody can read, and format 3
+        // writes a group under its name until the format turns — see
+        // `uniqueGroupName`.
+        if (diagram.groups?.some((g) => g.id !== groupId && g.name === trimmed)) return;
+        dispatch({
+          type: 'group.set', diagramId: diagram.id, groups: [{ ...held, name: trimmed }],
+        });
       },
 
       setAsOf(day) {
@@ -1182,13 +1227,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         });
       },
 
-      removeDomainGroup(name) {
+      removeDomainGroup(groupId) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        geometry(transaction(groupRemovalCommands(diagram, new Set([name]))));
+        geometry(transaction(groupRemovalCommands(diagram, new Set([groupId]))));
         setSelection((s) =>
-          s.domainGroups.includes(name)
-            ? { ...s, domainGroups: s.domainGroups.filter((n) => n !== name) }
+          s.domainGroups.includes(groupId)
+            ? { ...s, domainGroups: s.domainGroups.filter((id) => id !== groupId) }
             : s,
         );
       },
@@ -1258,7 +1303,7 @@ function seedPlacement(
         diagram.placements.filter((p) => (p.zone ?? 'landscape') === zone).length,
         diagram.layoutConfig,
       );
-    return { elementId, zone, domainGroup: seed.domainGroup, ...position };
+    return { elementId, zone, group: seed.group, ...position };
   }
   const position =
     seed.position ?? defaultContainerPosition(seed.kind, diagram.placements.length);
@@ -1299,28 +1344,44 @@ function clearedRoute(route: EdgeRoute): EdgeRoute {
 }
 
 /**
- * Drop domain-group rects by name and clear their members' membership — the
- * shared body of `removeDomainGroup` and the group half of `deleteSelection`,
- * so both stay a single step. The member ELEMENTS survive; they just stop
- * belonging to a group (removing a box is a layout edit, never a data delete).
+ * Drop domain groups by id — their record, their box and their members'
+ * membership — the shared body of `removeDomainGroup` and the group half of
+ * `deleteSelection`, so both stay a single step. The member ELEMENTS survive;
+ * they just stop belonging to a group (removing a box is a layout edit, never
+ * a data delete).
  */
-function groupRemovalCommands(diagram: DesignDiagram, names: Set<string>): Command[] {
+function groupRemovalCommands(diagram: DesignDiagram, groupIds: Set<string>): Command[] {
   const current = diagram.layoutConfig ?? {};
-  const commands: Command[] = [{
-    type: 'layout.set',
-    diagramId: diagram.id,
-    layoutConfig: {
-      ...current,
-      domainGroups: (current.domainGroups ?? []).filter((g) => !names.has(g.name)),
+  const commands: Command[] = [
+    { type: 'group.remove', diagramId: diagram.id, groupIds: [...groupIds] },
+    {
+      type: 'layout.set',
+      diagramId: diagram.id,
+      layoutConfig: {
+        ...current,
+        domainGroups: (current.domainGroups ?? []).filter((g) => !groupIds.has(g.id)),
+      },
     },
-  }];
+  ];
   const placements = diagram.placements
-    .filter((p) => p.domainGroup !== undefined && names.has(p.domainGroup))
-    .map((p) => ({ ...p, domainGroup: undefined }));
+    .filter((p) => p.group !== undefined && groupIds.has(p.group))
+    .map((p) => ({ ...p, group: undefined }));
   if (placements.length > 0) {
     commands.push({ type: 'placement.set', diagramId: diagram.id, placements });
   }
   return commands;
+}
+
+/** One group's box, upserted into the diagram's layout config. */
+function groupBoxCommand(diagram: DesignDiagram, box: DomainGroupRect): Command {
+  const current = diagram.layoutConfig ?? {};
+  const groups = [...(current.domainGroups ?? [])];
+  const index = groups.findIndex((g) => g.id === box.id);
+  if (index >= 0) groups[index] = box;
+  else groups.push(box);
+  return {
+    type: 'layout.set', diagramId: diagram.id, layoutConfig: { ...current, domainGroups: groups },
+  };
 }
 
 /**
@@ -1337,7 +1398,7 @@ function pruneSelection(
   const connectionIds = new Set(model.relations.map((c) => c.id));
   const diagram = model.diagrams.find((d) => d.id === activeDiagramId);
   const groupNames = new Set(
-    (diagram?.layoutConfig?.domainGroups ?? []).map((g) => g.name),
+    (diagram?.layoutConfig?.domainGroups ?? []).map((g) => g.id),
   );
   const nextElements = selection.elementIds.filter((id) => elementIds.has(id));
   const nextConnections = selection.connectionIds.filter((id) => connectionIds.has(id));

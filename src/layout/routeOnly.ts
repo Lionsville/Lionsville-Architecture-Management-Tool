@@ -47,7 +47,7 @@ export type DeclinedPolicy = 'keep-stored' | 'clear';
  * Two translation decisions are load-bearing:
  *
  * 1. **Group membership is GEOMETRIC, not by element domain.** A node belongs to
- *    the group box that contains its centre, whatever its `domainGroup` field
+ *    the group box that contains its centre, whatever its `group` field
  *    says. That matches what the user actually sees: group boxes are only
  *    recomputed by a full Tidy, so after a manual nudge a node's domain field and
  *    its on-screen position can disagree — and route-only exists precisely to run
@@ -130,14 +130,14 @@ export async function routeDiagramEdges(
   const boundaryId = diagram.kind === 'container' ? diagram.applicationElementId : undefined;
   const boundaryBox = boundaryId === undefined ? undefined : rectById.get(boundaryId);
   const routerGroups: DomainGroupRect[] =
-    boundaryId !== undefined && boundaryBox ? [{ name: boundaryId, ...boundaryBox }] : domainGroups;
+    boundaryId !== undefined && boundaryBox ? [{ id: boundaryId, ...boundaryBox }] : domainGroups;
 
   const nodes: RouterNode[] = [];
   for (const [id, rect] of rectById) {
     // The boundary is represented by its synthetic group, never also as a node —
     // an obstacle enclosing its own members breaks both tiers at once.
     if (id === boundaryId) continue;
-    nodes.push({ id, rect, domainGroup: groupContaining(routerGroups, rect)?.name });
+    nodes.push({ id, rect, group: groupContaining(routerGroups, rect)?.id });
   }
 
   // The connections this pass owns (see `routeOnlyBetween`). Kept out of the router
@@ -182,7 +182,7 @@ export async function routeDiagramEdges(
   const nodeRects: Rect[] = [...rectById.values()];
   const groupRects: Rect[] = domainGroups.map(rectOf);
   const groupOfNode = new Map<ElementId, string | undefined>();
-  for (const [id, rect] of rectById) groupOfNode.set(id, groupContaining(domainGroups, rect)?.name);
+  for (const [id, rect] of rectById) groupOfNode.set(id, groupContaining(domainGroups, rect)?.id);
   // Cached per owning group: the board has a handful of groups and potentially many
   // connections, and the rect lists do not depend on the connection.
   const labelRefsByOwner = new Map<string | undefined, { clearOf: Rect[]; gapRefs: Rect[] }>();
@@ -192,7 +192,7 @@ export async function routeDiagramEdges(
       const gapRefs =
         owner === undefined
           ? groupRects
-          : domainGroups.filter((g) => g.name !== owner).map(rectOf);
+          : domainGroups.filter((g) => g.id !== owner).map(rectOf);
       refs = { gapRefs, clearOf: [...gapRefs, ...nodeRects] };
       labelRefsByOwner.set(owner, refs);
     }
@@ -358,7 +358,7 @@ function groupContaining(groups: DomainGroupRect[], rect: Rect): DomainGroupRect
   let found: DomainGroupRect | undefined;
   for (const group of groups) {
     if (!rectContainsPoint(rectOf(group), centre)) continue;
-    if (found === undefined || group.name < found.name) found = group;
+    if (found === undefined || group.id < found.id) found = group;
   }
   return found;
 }

@@ -46,7 +46,7 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
     setDraft(name);
   }
 
-  const members = diagram.placements.filter((p) => p.domainGroup === name).length;
+  const members = diagram.placements.filter((p) => p.group === name).length;
   const commitRename = () => {
     if (draft.trim() === name) return;
     actions.renameDomainGroup(name, draft);

@@ -42,7 +42,7 @@ function model(): DesignModel {
         ],
         layoutConfig: {
           canvas: { width: 2000, height: 1200 },
-          domainGroups: [{ name: 'Ops', x: 600, y: 350, width: 300, height: 260 }],
+          domainGroups: [{ id: 'Ops', x: 600, y: 350, width: 300, height: 260 }],
         },
       },
     ],

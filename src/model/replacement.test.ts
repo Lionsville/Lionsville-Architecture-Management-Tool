@@ -26,7 +26,7 @@ function line(id: string, sourceId: string, targetId: string, over: Partial<Rela
 function diagram(id: string, placed: string[]): DesignDiagram {
   return {
     id, kind: 'layer7', name: id,
-    placements: placed.map((elementId, at) => ({ elementId, x: 100 + at * 300, y: 200, zone: 'landscape' as const, domainGroup: 'Warehouse' })),
+    placements: placed.map((elementId, at) => ({ elementId, x: 100 + at * 300, y: 200, zone: 'landscape' as const, group: 'warehouse' })),
   } as DesignDiagram
 }
 
@@ -71,7 +71,7 @@ describe('one for one, with a new application', () => {
     expect(placements).toHaveLength(1)
     expect(placements[0]).toMatchObject({
       diagramId: 'landscape',
-      placements: [{ elementId: 'wms-next', x: expect.any(Number), y: 200, zone: 'landscape', domainGroup: 'Warehouse' }],
+      placements: [{ elementId: 'wms-next', x: expect.any(Number), y: 200, zone: 'landscape', group: 'warehouse' }],
     })
     // To the right of the original: past its width and the gap.
     expect((placements[0] as { placements: { x: number }[] }).placements[0].x).toBeGreaterThan(100)

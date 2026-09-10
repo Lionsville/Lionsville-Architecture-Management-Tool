@@ -178,8 +178,8 @@ function layoutOptionsFor(
  * What one Tidy run commits: element positions plus, for layer7, the landscape
  * domain-group rects re-sized to hug their laid-out members. `domainGroups` is
  * absent for container diagrams (their one boundary is an ordinary placement).
- * The rects are MERGED into `layoutConfig.domainGroups` by name (create-or-resize:
- * an existing rect is resized in place, a new group name is appended) — see
+ * The rects are MERGED into `layoutConfig.domainGroups` by id (create-or-resize:
+ * an existing rect is resized in place, a new group's is appended) — see
  * `applyTidyResult`. Each rect is derived from its members' final bounds, so it
  * follows them even when ELK drops compound treatment for the group.
  */
@@ -570,7 +570,7 @@ async function layoutGroupInPlace(
   model: DesignModel,
   members: DiagramPlacement[],
   elementsById: Map<ElementId, DesignElement>,
-  groupName: string,
+  groupId: string,
   box: Rect,
   options: TidyOptions,
 ): Promise<
@@ -632,11 +632,11 @@ async function layoutGroupInPlace(
     const pos = positions.get(placement.elementId);
     if (!pos) return placement;
     // Record the membership on the placement too — a node that visually sits in
-    // the box but carried a stale or absent `domainGroup` is now stored as the
+    // the box but carried a stale or absent `group` is now stored as the
     // member it is drawn as.
     return {
       ...placement,
-      domainGroup: groupName,
+      group: groupId,
       x: pos.x + offset.x,
       y: pos.y + offset.y,
     };
@@ -645,7 +645,7 @@ async function layoutGroupInPlace(
   return {
     placements,
     rect: {
-      name: groupName,
+      id: groupId,
       x: box.x,
       y: box.y,
       width: maxX - minX + GROUP_PAD.left + GROUP_PAD.right,
@@ -814,13 +814,13 @@ async function tidyLandscapePinned(
   const byGroup = new Map<string, DiagramPlacement[]>();
   const result: DiagramPlacement[] = [];
   for (const placement of placements) {
-    if (!placement.domainGroup) {
+    if (!placement.group) {
       result.push(placement); // loose node — stays exactly where it is
       continue;
     }
-    const members = byGroup.get(placement.domainGroup) ?? [];
+    const members = byGroup.get(placement.group) ?? [];
     members.push(placement);
-    byGroup.set(placement.domainGroup, members);
+    byGroup.set(placement.group, members);
   }
 
   const domainGroups: DomainGroupRect[] = [];
@@ -876,35 +876,6 @@ async function tidyLandscapePinned(
 }
 
 /**
- * Re-attach each group's colour by name.
- *
- * Every path through Tidy REBUILDS the group rects from their members' bounds,
- * so a rect that comes back out of the layout is a fresh object that never had
- * the user's colour on it. Without this, the first Tidy after colouring a group
- * silently reverted it to neutral — the colour survived saving, reloading and
- * dragging, and died on the one button people press most.
- *
- * Matching on the name is safe here because Tidy never renames a group: the
- * names going in are the names coming out.
- */
-function keepGroupColors(
-  groups: DomainGroupRect[],
-  layoutConfig: DiagramLayoutConfig | undefined,
-): DomainGroupRect[] {
-  const colors = new Map(
-    (layoutConfig?.domainGroups ?? [])
-      .filter((group) => group.color)
-      .map((group) => [group.name, group.color as string]),
-  );
-  if (colors.size === 0) return groups;
-  return groups.map((group) => {
-    const color = colors.get(group.name);
-    return color ? { ...group, color } : group;
-  });
-}
-
-
-/**
  * The (box free, members pinned) cell of the matrix — item 2's new code, and the
  * most useful of the four.
  *
@@ -943,13 +914,13 @@ async function tidyLandscapeGroupsAsLeaves(
   const byGroup = new Map<string, DiagramPlacement[]>();
   const loose: DiagramPlacement[] = [];
   for (const placement of placements) {
-    if (!placement.domainGroup) {
+    if (!placement.group) {
       loose.push(placement);
       continue;
     }
-    const members = byGroup.get(placement.domainGroup) ?? [];
+    const members = byGroup.get(placement.group) ?? [];
     members.push(placement);
-    byGroup.set(placement.domainGroup, members);
+    byGroup.set(placement.group, members);
   }
 
   /** The box a group occupies today: its stored rect, or its members' bounds padded. */
@@ -1051,7 +1022,7 @@ async function tidyLandscapeGroupsAsLeaves(
     const pos = positions.get(`${GROUP_PREFIX}${name}`);
     if (!pos) {
       result.push(...members);
-      domainGroups.push({ name, ...box });
+      domainGroups.push({ id: name, ...box });
       continue;
     }
     // The rigid translate. Member positions are never recomputed — the interior
@@ -1061,7 +1032,7 @@ async function tidyLandscapeGroupsAsLeaves(
     for (const member of members) {
       result.push({ ...member, x: member.x + dx, y: member.y + dy });
     }
-    domainGroups.push({ name, x: box.x + dx, y: box.y + dy, width: box.width, height: box.height });
+    domainGroups.push({ id: name, x: box.x + dx, y: box.y + dy, width: box.width, height: box.height });
   }
   for (const placement of loose) {
     const pos = positions.get(placement.elementId);
@@ -1107,8 +1078,8 @@ function tidyLandscapeFullyPinned(
   canvas: { width: number; height: number };
 } {
   const sizes = zoneSizes(layoutConfig);
-  const domainGroups = [...domainGroupRectMap(layoutConfig).entries()].map(([name, rect]) => ({
-    name,
+  const domainGroups = [...domainGroupRectMap(layoutConfig).entries()].map(([id, rect]) => ({
+    id,
     ...rect,
   }));
   let maxX = -Infinity;
@@ -1150,7 +1121,7 @@ async function tidyLandscape(
   // every path below knows exactly which cell it is in.
   if (options.pinGroups && options.pinGroupContents) {
     const fixed = tidyLandscapeFullyPinned(placements, elementsById, layoutConfig);
-    return { ...fixed, domainGroups: keepGroupColors(fixed.domainGroups, layoutConfig) };
+    return fixed;
   }
   if (options.pinGroups) {
     const pinned = await tidyLandscapePinned(
@@ -1160,9 +1131,9 @@ async function tidyLandscape(
       layoutConfig,
       options,
     );
-    return { ...pinned, domainGroups: keepGroupColors(pinned.domainGroups, layoutConfig) };
+    return pinned;
   }
-  if (options.pinGroupContents && placements.some((p) => p.domainGroup)) {
+  if (options.pinGroupContents && placements.some((p) => p.group)) {
     const asLeaves = await tidyLandscapeGroupsAsLeaves(
       model,
       placements,
@@ -1170,7 +1141,7 @@ async function tidyLandscape(
       layoutConfig,
       options,
     );
-    return { ...asLeaves, domainGroups: keepGroupColors(asLeaves.domainGroups, layoutConfig) };
+    return asLeaves;
   }
 
   // Waarom: the canvas is LANDSCAPE-driven — it grows/shrinks to fit the laid-out
@@ -1195,10 +1166,10 @@ async function tidyLandscape(
     const element = elementsById.get(placement.elementId) as DesignElement;
     const size = placementSize(element.kind, placement);
     const child: ElkChild = { id: placement.elementId, ...size };
-    if (placement.domainGroup) {
-      const members = byGroup.get(placement.domainGroup) ?? [];
+    if (placement.group) {
+      const members = byGroup.get(placement.group) ?? [];
       members.push(child);
-      byGroup.set(placement.domainGroup, members);
+      byGroup.set(placement.group, members);
     } else {
       loose.push(child);
     }
@@ -1270,7 +1241,7 @@ async function tidyLandscape(
     const pos = positions.get(placement.elementId);
     if (!pos) continue;
     const size = sizeOf(placement);
-    const name = placement.domainGroup;
+    const name = placement.group;
     if (name) {
       elkGroupBounds.set(name, grow(elkGroupBounds.get(name), pos.x, pos.y, size.width, size.height));
     } else {
@@ -1320,7 +1291,7 @@ async function tidyLandscape(
     const b = elkGroupBounds.get(name);
     if (!b) continue;
     domainGroups.push({
-      name,
+      id: name,
       x: b.minX + offset.x - GROUP_PAD.left,
       y: b.minY + offset.y - GROUP_PAD.top,
       width: b.maxX - b.minX + GROUP_PAD.left + GROUP_PAD.right,
@@ -1363,7 +1334,7 @@ async function tidyLandscape(
       if (!pos) return placement;
       return { ...placement, x: pos.x + offset.x, y: pos.y + offset.y };
     }),
-    domainGroups: keepGroupColors(domainGroups, layoutConfig),
+    domainGroups,
     canvas,
   };
 }
@@ -1383,12 +1354,12 @@ async function tidyLandscape(
 export async function tidyGroup(
   model: DesignModel,
   diagram: DesignDiagram,
-  groupName: string,
+  groupId: string,
   options: TidyOptions = DEFAULT_TIDY_OPTIONS,
 ): Promise<TidyResult> {
   const empty: TidyResult = { placements: [], partial: true };
   const groups = domainGroupRectMap(diagram.layoutConfig);
-  const box = groups.get(groupName);
+  const box = groups.get(groupId);
   if (!box) return empty;
 
   const elementsById = new Map(model.elements.map((e) => [e.id, e]));
@@ -1397,13 +1368,13 @@ export async function tidyGroup(
     if (!element || (placement.zone ?? 'landscape') !== 'landscape') return false;
     const size = placementSize(element.kind, placement);
     const centre = { x: placement.x + size.width / 2, y: placement.y + size.height / 2 };
-    return domainGroupForPoint(centre, groups) === groupName;
+    return domainGroupForPoint(centre, groups) === groupId;
   });
 
-  const laid = await layoutGroupInPlace(model, members, elementsById, groupName, box, options);
+  const laid = await layoutGroupInPlace(model, members, elementsById, groupId, box, options);
   if (!laid) return empty;
   // The re-laid rect is a fresh object; carry the group's colour across.
-  const rect = keepGroupColors([laid.rect], diagram.layoutConfig)[0];
+  const rect = laid.rect;
 
   // Route against the WHOLE board, but own only the edges INSIDE the group. The two
   // must stay separate: the placements are the router's obstacle set, so cutting them
@@ -1427,7 +1398,7 @@ export async function tidyGroup(
       layoutConfig: {
         ...(diagram.layoutConfig ?? {}),
         domainGroups: (diagram.layoutConfig?.domainGroups ?? []).map((g) =>
-          g.name === groupName ? rect : g,
+          g.id === groupId ? rect : g,
         ),
       },
     },

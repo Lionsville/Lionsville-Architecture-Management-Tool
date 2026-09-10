@@ -37,15 +37,16 @@
 import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
-  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramPlacement,
-  DocumentImage, EdgeRoute, Relation, UploadedLogo,
+  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramGroup,
+  DiagramLayoutConfig, DiagramPlacement, DocumentImage, DomainGroupRect, EdgeRoute, Relation,
+  UploadedLogo,
 } from '../model'
 import { asConnections, asRelations } from '../model/relations'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
-import { slug } from '../model/keys'
+import { claimKey, slug } from '../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
   TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
@@ -159,9 +160,21 @@ type ProjectHeader = {
  * a file name.
  */
 export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderFile[] {
-  const { placements, edgeRoutes, needsLayout, ...definition } = diagram
+  const { placements, edgeRoutes, needsLayout, groups, ...definition } = diagram
+  const nameOf = new Map((groups ?? []).map((group) => [group.id, group]))
+  const asStoredGroup = (rect: DomainGroupRect): Record<string, unknown> => {
+    const { id, ...box } = rect
+    const held = nameOf.get(id)
+    return { name: held?.name ?? id, ...box, ...(held?.color !== undefined ? { color: held.color } : {}) }
+  }
+  const layoutConfig = definition.layoutConfig?.domainGroups
+    ? { ...definition.layoutConfig, domainGroups: definition.layoutConfig.domainGroups.map(asStoredGroup) }
+    : definition.layoutConfig
   return [
-    { path: `${DIAGRAMS_FOLDER}/${name}.json`, text: stableJson(definition) },
+    {
+      path: `${DIAGRAMS_FOLDER}/${name}.json`,
+      text: stableJson(layoutConfig ? { ...definition, layoutConfig } : definition),
+    },
     // Always written, even empty: a diagram that has no placement file is one
     // whose file was deleted, and that has to mean "lay it out again" rather
     // than "it has no placements", which is a thing a diagram can genuinely be.
@@ -169,7 +182,9 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
       path: `${DIAGRAMS_FOLDER}/${name}.placements.json`,
       text: stableJson({
         ...(needsLayout ? { needsLayout } : {}),
-        placements: [...placements].sort((a, b) => (a.elementId < b.elementId ? -1 : 1)),
+        placements: [...placements]
+          .sort((a, b) => (a.elementId < b.elementId ? -1 : 1))
+          .map((placement) => asStoredPlacement(placement, nameOf)),
         ...(edgeRoutes
           ? {
             routes: [...edgeRoutes]
@@ -180,6 +195,56 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
       }),
     },
   ]
+}
+
+/**
+ * A dashed group's two identities, and where they meet.
+ *
+ * ADR-0012 §6 gives a group an id of its own, so that renaming one is a line in
+ * the definition rather than a rewrite of every row that named it. Format 3 has
+ * no such field: the NAME is the key there, on the rectangle and on every
+ * placement filed under it. So the ids are **minted on read and folded back on
+ * write**, and a file that goes through this build unchanged comes out byte for
+ * byte the file that went in.
+ *
+ * Minted with {@link claimKey}, over the names in the order the file has them —
+ * rectangles first, then any name a placement uses that has no rectangle, which
+ * format 3 allows and this build still does. The same name therefore always
+ * yields the same id, and two names that slug alike are told apart by which
+ * came first, exactly as {@link diagramStems} tells two diagram ids apart.
+ *
+ * **This pair is deleted at format 4**, where a group is written with its id
+ * and neither half has anything to do.
+ */
+function readGroups(
+  rects: readonly Record<string, unknown>[], placements: readonly Record<string, unknown>[],
+): { groups: DiagramGroup[]; idOf: Map<string, string> } {
+  const taken = new Set<string>()
+  const idOf = new Map<string, string>()
+  const groups: DiagramGroup[] = []
+  const claim = (groupName: string, color?: unknown) => {
+    if (idOf.has(groupName)) return
+    const id = claimKey(groupName, taken)
+    idOf.set(groupName, id)
+    groups.push({
+      id, name: groupName, ...(typeof color === 'string' ? { color } : {}),
+    })
+  }
+  for (const rect of rects) {
+    if (typeof rect.name === 'string') claim(rect.name, rect.color)
+  }
+  for (const placement of placements) {
+    if (typeof placement.domainGroup === 'string') claim(placement.domainGroup)
+  }
+  return { groups, idOf }
+}
+
+function asStoredPlacement(
+  placement: DiagramPlacement, nameOf: Map<string, DiagramGroup>,
+): Record<string, unknown> {
+  if (placement.group === undefined) return { ...placement }
+  const { group, ...rest } = placement
+  return { ...rest, domainGroup: nameOf.get(group)?.name ?? group }
 }
 
 /**
@@ -453,13 +518,36 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
     return undefined
   }
   const laid = jsonAt(folder, `${DIAGRAMS_FOLDER}/${name}.placements.json`)
-  const placements = listOf(laid?.placements)
-    .filter((row) => typeof row.elementId === 'string') as unknown as DiagramPlacement[]
+  const rows = listOf(laid?.placements).filter((row) => typeof row.elementId === 'string')
+  const held = definition.layoutConfig as DiagramLayoutConfig | undefined
+  const rects = listOf((held as unknown as Record<string, unknown> | undefined)?.domainGroups)
+  const { groups, idOf } = readGroups(rects, rows)
+  const placements = rows.map((row) => {
+    const { domainGroup, ...rest } = row
+    return (typeof domainGroup === 'string'
+      ? { ...rest, group: idOf.get(domainGroup) }
+      : rest) as unknown as DiagramPlacement
+  })
   const routes = laid && 'routes' in laid
     ? listOf(laid.routes).filter((row) => typeof row.connectionId === 'string').map(asEdgeRoute)
     : undefined
   return {
     ...(definition as unknown as Omit<DesignDiagram, 'placements'>),
+    ...(held
+      ? {
+        layoutConfig: {
+          ...held,
+          ...(rects.length
+            ? {
+              domainGroups: rects.map(({ name: groupName, color: _color, ...box }) => ({
+                id: idOf.get(groupName as string)!, ...box,
+              })) as unknown as DomainGroupRect[],
+            }
+            : {}),
+        },
+      }
+      : {}),
+    ...(groups.length ? { groups } : {}),
     // A missing placement file is a diagram nobody has laid out yet, not a
     // broken one: the editor lays it out and saves the result.
     placements,

@@ -76,6 +76,7 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     return {
       elements: m.elements,
       relations: m.relations,
+      groups: diagram.groups,
       placements: diagram.placements,
       edgeRoutes: diagram.edgeRoutes ?? [],
       layoutConfig: diagram.layoutConfig,
@@ -290,7 +291,9 @@ describe('SolutionDesignEditor — iteration 2', () => {
 
     expect(sent()).toBe(1);
     expect(landed().layoutConfig?.domainGroups).toHaveLength(1);
-    expect(landed().layoutConfig?.domainGroups?.[0].name).toBe('New group');
+    // The box points at the group's id; the name is in the definition beside it.
+    expect(landed().groups).toEqual([{ id: 'new-group', name: 'New group' }]);
+    expect(landed().layoutConfig?.domainGroups?.[0].id).toBe('new-group');
     expect(landed().edgeRoutes).toEqual([]);
   });
 });
@@ -713,7 +716,7 @@ describe('SolutionDesignEditor — route connections only', () => {
       { elementId: 'a1', zone: 'landscape', x: 100, y: 400 },
       { elementId: 'a2', zone: 'landscape', x: 1200, y: 400 },
     ];
-    diagram.layoutConfig = { domainGroups: [{ name: 'Ops', x: 600, y: 350, width: 300, height: 260 }] };
+    diagram.layoutConfig = { domainGroups: [{ id: 'Ops', x: 600, y: 350, width: 300, height: 260 }] };
     return model;
   }
 
@@ -921,8 +924,11 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
+    expect(landed().groups).toEqual([
+      { id: 'commerce', name: 'Commerce', color: '#2f6fdb' },
+    ]);
     expect(landed().layoutConfig?.domainGroups).toEqual([
-      expect.objectContaining({ name: 'Commerce', color: '#2f6fdb' }),
+      expect.objectContaining({ id: 'commerce' }),
     ]);
   });
 
@@ -942,16 +948,18 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
       },
     });
 
+    expect(view.landed().groups).toEqual([{ id: 'commerce', name: 'Commerce', color: '#2f6fdb' }]);
     const [group] = view.landed().layoutConfig?.domainGroups ?? [];
-    expect(group).toMatchObject({ name: 'Commerce', color: '#2f6fdb' });
+    expect(group).toMatchObject({ id: 'commerce' });
     // And no element was created by the same gesture — a group is not an element.
     expect(view.landed().elements.map((e) => e.id)).toEqual(['a1']);
   });
 
   it('never hijacks an existing group by name', () => {
     const model = baseModel();
+    model.diagrams[0].groups = [{ id: 'commerce', name: 'Commerce' }];
     model.diagrams[0].layoutConfig = {
-      domainGroups: [{ name: 'Commerce', x: 300, y: 300, width: 400, height: 300 }],
+      domainGroups: [{ id: 'commerce', x: 300, y: 300, width: 400, height: 300 }],
     };
     const { landed } = renderEditor({ model });
 
@@ -961,9 +969,10 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add domain group' }));
 
-    expect((landed().layoutConfig?.domainGroups ?? []).map((g) => g.name)).toEqual([
-      'Commerce',
-      'Commerce 2',
+    expect((landed().groups ?? []).map((g) => g.name)).toEqual(['Commerce', 'Commerce 2']);
+    expect((landed().layoutConfig?.domainGroups ?? []).map((g) => g.id)).toEqual([
+      'commerce',
+      'commerce-2',
     ]);
   });
 });

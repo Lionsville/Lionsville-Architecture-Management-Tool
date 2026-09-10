@@ -68,7 +68,7 @@ describe('MultiSelectionInspector', () => {
 function bulkActions() {
   return {
     updateElements: vi.fn(),
-    setDomainGroups: vi.fn(),
+    fileUnderGroupNamed: vi.fn(),
   };
 }
 
@@ -76,8 +76,9 @@ const layer7 = {
   id: 'd1',
   kind: 'layer7' as const,
   name: 'L7',
+  groups: [{ id: 'core', name: 'Core' }],
   placements: [
-    { elementId: 'a1', x: 0, y: 0, zone: 'landscape' as const, domainGroup: 'Core' },
+    { elementId: 'a1', x: 0, y: 0, zone: 'landscape' as const, group: 'core' },
     { elementId: 'a2', x: 0, y: 0, zone: 'landscape' as const },
     { elementId: 'a3', x: 0, y: 0, zone: 'actors' as const },
   ],
@@ -138,7 +139,8 @@ describe('MultiSelectionInspector — bulk edit', () => {
     fireEvent.mouseDown(field);
     fireEvent.click(within(screen.getByRole('listbox')).getByText('Core'));
     // 'a3' sits in the actors band, where a domain group means nothing.
-    expect(actions.setDomainGroups).toHaveBeenCalledWith(['a1', 'a2'], 'Core');
+    // The field is a name; the action resolves it to the group's id.
+    expect(actions.fileUnderGroupNamed).toHaveBeenCalledWith(['a1', 'a2'], 'Core');
   });
 
   it('offers no domain group on a container diagram — there are none there', () => {

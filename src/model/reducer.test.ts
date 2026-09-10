@@ -13,7 +13,7 @@ import { apply, applyAll } from './reducer'
 import type { ApplyResult } from './reducer'
 import { NOTHING, transaction } from './commands'
 import type { Command } from './commands'
-import { fromArrays, toDiagram } from './normalised'
+import { fromArrays, toArrays, toDiagram } from './normalised'
 import type { Model } from './normalised'
 import type { HostModel } from './fromInterchange'
 import { RELATION_TYPES } from './relations'
@@ -236,6 +236,76 @@ describe('apply — geometry', () => {
     }))
     expect(result.model.diagrams.landscape.placements.nope).toBeUndefined()
     expect(result.inverse).toEqual(NOTHING)
+  })
+})
+
+/**
+ * A dashed group is a thing with an id (ADR-0012 §6), so what it is CALLED and
+ * where its box is are two commands. These pin the half that is the definition:
+ * renaming touches one row and nothing else moves.
+ */
+describe('apply — dashed groups', () => {
+  const grouped = () => sample({
+    elements: [element('a'), element('b')],
+    diagrams: [diagram('landscape', {
+      groups: [{ id: 'core', name: 'Core' }, { id: 'edge', name: 'Edge' }],
+      placements: [placement('a', { group: 'core' }), placement('b', { group: 'edge' })],
+    })],
+  })
+
+  it('renames one group and leaves every member where it was', () => {
+    const m = grouped()
+    const before = m.diagrams.landscape.placements
+    const renamed = reversible(m, {
+      type: 'group.set', diagramId: 'landscape', groups: [{ id: 'core', name: 'Kern' }],
+    })
+    expect(renamed.diagrams.landscape.groups?.core).toEqual({ id: 'core', name: 'Kern' })
+    // The one property the id buys: the members point at it, so none of them moved.
+    expect(renamed.diagrams.landscape.placements).toBe(before)
+    expect(renamed.diagrams.landscape.order.groups).toEqual(['core', 'edge'])
+  })
+
+  it('adds a group at the end, and its inverse takes exactly that one back', () => {
+    const m = grouped()
+    const added = reversible(m, {
+      type: 'group.set', diagramId: 'landscape', groups: [{ id: 'ops', name: 'Ops', color: '#123456' }],
+    })
+    expect(added.diagrams.landscape.order.groups).toEqual(['core', 'edge', 'ops'])
+  })
+
+  it('removes groups and puts each back on its own index', () => {
+    const m = grouped()
+    const removed = ok(apply(m, { type: 'group.remove', diagramId: 'landscape', groupIds: ['core'] }))
+    expect(removed.model.diagrams.landscape.order.groups).toEqual(['edge'])
+    const back = ok(apply(removed.model, removed.inverse)).model
+    expect(back.diagrams.landscape.order.groups).toEqual(['core', 'edge'])
+    expect(back).toStrictEqual(m)
+  })
+
+  /**
+   * Dissolving the last group and undoing must give back the document you had,
+   * written the way you had it — which is why the key keeps its slot rather
+   * than being deleted and re-appended (`withGroups`).
+   */
+  it('survives losing its last group as an exact round trip', () => {
+    const m = sample({
+      elements: [element('a')],
+      diagrams: [diagram('landscape', {
+        groups: [{ id: 'core', name: 'Core' }],
+        placements: [placement('a', { group: 'core' })],
+      })],
+    })
+    const before = JSON.stringify(toArrays(m))
+    const removed = ok(apply(m, { type: 'group.remove', diagramId: 'landscape', groupIds: ['core'] }))
+    expect(toArrays(removed.model).diagrams[0].groups).toBeUndefined()
+    expect(JSON.stringify(toArrays(ok(apply(removed.model, removed.inverse)).model))).toBe(before)
+  })
+
+  it('refuses a diagram that is not there', () => {
+    expect(apply(grouped(), { type: 'group.set', diagramId: 'gone', groups: [] }))
+      .toEqual({ ok: false, reason: 'command.gone' })
+    expect(apply(grouped(), { type: 'group.remove', diagramId: 'gone', groupIds: ['core'] }))
+      .toEqual({ ok: false, reason: 'command.gone' })
   })
 })
 

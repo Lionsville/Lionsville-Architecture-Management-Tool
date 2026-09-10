@@ -35,10 +35,11 @@
  */
 import type { Adr, AdrStatus } from '../adr'
 import type {
-  DesignDiagram, DesignElement, DiagramPlacement, DomainGroupRect, ElementId, Relation,
-  Layer7Zone,
+  DesignDiagram, DesignElement, DiagramGroup, DiagramPlacement, DomainGroupRect, ElementId,
+  Relation, Layer7Zone,
 } from '../types'
 import type { HostModel } from '../fromInterchange'
+import { slug } from '../keys'
 
 export type SyntheticSpec = {
   /** Elements of every kind together, components included. */
@@ -315,6 +316,14 @@ function shuffle<T>(rng: Rng, rows: readonly T[]): T[] {
 const CARD = { width: 200, height: 130 }
 const GAP = 40
 
+/**
+ * A generated group's id. The names are unique by construction here, so the
+ * slug is enough and nothing has to be claimed against a set.
+ */
+function groupId(name: string): string {
+  return slug(name)
+}
+
 function landscapeDiagram(
   rng: Rng,
   elements: readonly DesignElement[],
@@ -324,6 +333,7 @@ function landscapeDiagram(
 ): DesignDiagram {
   const placements: DiagramPlacement[] = []
   const perZone = new Map<Layer7Zone, number>()
+  const mapped = (name: string | undefined) => (name === undefined ? undefined : groupId(name))
   for (const element of elements) {
     const zone = zoneOf.get(element.id)
     if (!zone) continue
@@ -333,7 +343,7 @@ function landscapeDiagram(
     placements.push({
       elementId: element.id,
       zone,
-      domainGroup: groupOf.get(element.id),
+      group: mapped(groupOf.get(element.id)),
       x: ZONE_ORIGIN[zone].x + (index % columns) * (CARD.width + GAP),
       y: ZONE_ORIGIN[zone].y + Math.floor(index / columns) * (CARD.height + GAP),
     })
@@ -342,19 +352,23 @@ function landscapeDiagram(
   // Rectangles wide enough to hold their share of the cards, in two columns, so
   // the group layer has real geometry to hit-test against.
   const rects: DomainGroupRect[] = domainGroups.map((name, index) => ({
-    name,
+    id: groupId(name),
     x: 40 + (index % 2) * 1200,
     y: 400 + Math.floor(index / 2) * 520,
     width: 1120,
     height: 460,
-    color: rng() > 0.6 ? pick(rng, COLORS) : undefined,
   }))
+  const groups: DiagramGroup[] = domainGroups.map((name) => {
+    const color = rng() > 0.6 ? pick(rng, COLORS) : undefined
+    return { id: groupId(name), name, ...(color ? { color } : {}) }
+  })
 
   return {
     id: 'landscape',
     kind: 'layer7',
     name: 'Application landscape',
     author: 'The generator',
+    groups,
     placements,
     layoutConfig: { canvas: { width: 4800, height: 3200 }, domainGroups: rects },
   }

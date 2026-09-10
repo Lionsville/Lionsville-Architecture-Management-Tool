@@ -86,13 +86,9 @@ export function MultiSelectionInspector({
           return placement !== undefined && (placement.zone ?? 'landscape') === 'landscape';
         })
       : [];
-  const knownGroups = Array.from(
-    new Set(
-      (diagram?.placements ?? [])
-        .map((p) => p.domainGroup)
-        .filter((name): name is string => Boolean(name)),
-    ),
-  ).sort();
+  // The names the board already uses. A group is picked and made BY NAME here
+  // — that is what a person types — and the action resolves it to an id.
+  const knownGroups = (diagram?.groups ?? []).map((group) => group.name).sort();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 1 }}>
@@ -158,7 +154,7 @@ export function MultiSelectionInspector({
               options={knownGroups}
               value=""
               onChange={(_event, value) =>
-                actions.setDomainGroups(landscapeIds, (value ?? '').trim() || undefined)
+                actions.fileUnderGroupNamed(landscapeIds, value ?? undefined)
               }
               renderInput={(params) => (
                 <TextField {...params} size="small" label={t('inspector.bulkDomainGroup')} />

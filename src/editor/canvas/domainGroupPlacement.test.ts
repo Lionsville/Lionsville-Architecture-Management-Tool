@@ -5,29 +5,33 @@ import {
   GROUP_AROUND_PADDING,
   GROUP_LABEL_ROOM,
   groupRectAround,
-  newDomainGroupRect,
+  newDomainGroup,
   uniqueGroupName,
 } from './domainGroupPlacement';
-import type { DiagramLayoutConfig } from '../../model/types';
+import type { DesignDiagram } from '../../model/types';
 
 /**
- * How a new domain group is positioned and named. Both ways of creating one — the
- * palette's Place button and a drop on the board — come through here, and the
- * name rule is load-bearing: `upsertDomainGroup` keys on the name, so handing
- * back one that exists would resize somebody else's group.
+ * How a new domain group is named, given an id and positioned. Both ways of
+ * creating one — the palette's Place button and a drop on the board — come
+ * through here. The name is no longer the key (ADR-0012 §6), but two groups
+ * with one name is still a board nobody can read and a format-3 save that
+ * folds them into one, so the counting-up rule stays.
  */
 
 const landscape = zoneRect('landscape');
 
-function config(...names: string[]): DiagramLayoutConfig {
+function diagram(...names: string[]): Pick<DesignDiagram, 'groups' | 'layoutConfig'> {
   return {
-    domainGroups: names.map((name, index) => ({
-      name,
-      x: index * 10,
-      y: 0,
-      width: 100,
-      height: 100,
-    })),
+    groups: names.map((name) => ({ id: name.toLowerCase().replace(/ /g, '-'), name })),
+    layoutConfig: {
+      domainGroups: names.map((name, index) => ({
+        id: name.toLowerCase().replace(/ /g, '-'),
+        x: index * 10,
+        y: 0,
+        width: 100,
+        height: 100,
+      })),
+    },
   };
 }
 
@@ -47,26 +51,32 @@ describe('uniqueGroupName', () => {
   });
 });
 
-describe('newDomainGroupRect', () => {
+describe('newDomainGroup', () => {
   it('cascades from the landscape corner when there is no drop point', () => {
-    const first = newDomainGroupRect();
-    expect(first).toEqual({
-      name: 'New group',
+    const first = newDomainGroup();
+    expect(first.group).toEqual({ id: 'new-group', name: 'New group' });
+    expect(first.box).toEqual({
       x: landscape.x + 48,
       y: landscape.y + 48,
       ...DEFAULT_GROUP_SIZE,
     });
 
-    const second = newDomainGroupRect({ layoutConfig: config('New group') });
-    expect(second.name).toBe('New group 2');
-    expect(second.x).toBe(landscape.x + 48 + 36);
+    const second = newDomainGroup({ diagram: diagram('New group') });
+    expect(second.group.name).toBe('New group 2');
+    expect(second.box.x).toBe(landscape.x + 48 + 36);
+  });
+
+  it('mints an id from the name, and never one that is taken', () => {
+    const { group } = newDomainGroup({ diagram: diagram('Commerce'), name: 'Commerce' });
+    // The name counts up, and the id it is minted from follows it.
+    expect(group).toEqual({ id: 'commerce-2', name: 'Commerce 2' });
   });
 
   it('centres the box on the drop point', () => {
     const center = { x: landscape.x + 600, y: landscape.y + 400 };
-    const rect = newDomainGroupRect({ center });
-    expect(rect.x).toBe(center.x - DEFAULT_GROUP_SIZE.width / 2);
-    expect(rect.y).toBe(center.y - DEFAULT_GROUP_SIZE.height / 2);
+    const { box } = newDomainGroup({ center });
+    expect(box.x).toBe(center.x - DEFAULT_GROUP_SIZE.width / 2);
+    expect(box.y).toBe(center.y - DEFAULT_GROUP_SIZE.height / 2);
   });
 
   /**
@@ -74,30 +84,20 @@ describe('newDomainGroupRect', () => {
    * a stripe hiding behind it. Clamping keeps a sloppy drop useful.
    */
   it('clamps a drop outside the landscape back inside it', () => {
-    const rect = newDomainGroupRect({ center: { x: -5000, y: -5000 } });
-    expect(rect.x).toBe(landscape.x);
-    expect(rect.y).toBe(landscape.y);
+    const { box } = newDomainGroup({ center: { x: -5000, y: -5000 } });
+    expect(box.x).toBe(landscape.x);
+    expect(box.y).toBe(landscape.y);
 
-    const far = newDomainGroupRect({ center: { x: 99_999, y: 99_999 } });
+    const far = newDomainGroup({ center: { x: 99_999, y: 99_999 } }).box;
     expect(far.x + far.width).toBe(landscape.x + landscape.width);
     expect(far.y + far.height).toBe(landscape.y + landscape.height);
   });
 
   it('carries the seed name and colour, and omits an absent colour entirely', () => {
-    const coloured = newDomainGroupRect({ name: 'Commerce', color: '#2f6fdb' });
-    expect(coloured.name).toBe('Commerce');
-    expect(coloured.color).toBe('#2f6fdb');
+    const { group } = newDomainGroup({ name: 'Commerce', color: '#2f6fdb' });
+    expect(group).toEqual({ id: 'commerce', name: 'Commerce', color: '#2f6fdb' });
     // Absent, not present-and-undefined: the mapper serialises what is there.
-    expect('color' in newDomainGroupRect({ name: 'Commerce' })).toBe(false);
-  });
-
-  it('renames a dropped group that would have collided', () => {
-    const rect = newDomainGroupRect({
-      layoutConfig: config('Commerce'),
-      center: { x: landscape.x + 300, y: landscape.y + 300 },
-      name: 'Commerce',
-    });
-    expect(rect.name).toBe('Commerce 2');
+    expect('color' in newDomainGroup({ name: 'Commerce' }).group).toBe(false);
   });
 });
 

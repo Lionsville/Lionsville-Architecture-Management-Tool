@@ -213,7 +213,8 @@ export type Relation = DesignConnection & { type: RelationType };
 export interface DiagramPlacement {
   elementId: ElementId;
   zone?: Layer7Zone;
-  domainGroup?: string;
+  /** Which dashed group it sits in, by {@link DiagramGroup.id}; absent = open landscape. */
+  group?: string;
   x: number;
   y: number;
   width?: number;
@@ -293,13 +294,20 @@ export type EdgeRouteSource = 'manual' | 'auto';
 /** Resizable band sizes: height for actors/management, width for the side bands. */
 export type ResizableZone = 'actors' | 'inputChannels' | 'externalSystems' | 'management';
 
-/** Explicit, movable/resizable domain-group rectangle (landscape). */
-export interface DomainGroupRect {
+/**
+ * A dashed group on a view: an id of its own, a name and a colour (ADR-0012 §6).
+ *
+ * The id is what a member points at, so **renaming a group is one line** —
+ * before this the name WAS the key, and changing it rewrote every placement
+ * that named it as well as the rectangle. Minted from the name the first time
+ * a group is made ({@link ../model/keys.claimKey}), and never rewritten after.
+ *
+ * A group is per diagram, so the id has only to be unique on the diagram it is
+ * drawn on; it shares no namespace with elements.
+ */
+export interface DiagramGroup {
+  id: string;
   name: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
   /**
    * Group colour as a hex, absent-means-inherit — the same NULL-inherit contract
    * as {@link DesignElement.accentColor}. Absent draws the theme's neutral
@@ -308,6 +316,19 @@ export interface DomainGroupRect {
    * anything, so a group that loses it still groups.
    */
   color?: string;
+}
+
+/**
+ * Where a dashed group's box IS: numbers, and the id of the group they are
+ * about. What it is CALLED is {@link DiagramGroup}, one file over — resize it
+ * and the geometry changes, rename it and the geometry does not.
+ */
+export interface DomainGroupRect {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface DiagramLayoutConfig {
@@ -354,6 +375,12 @@ export interface DesignDiagram {
   /** Whether the exported PNG carries a title block at all. Absent = it does. */
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;
+  /**
+   * The dashed groups this view draws, by id (ADR-0012 §6). What they are
+   * called and what colour they are; where their boxes sit is geometry, in
+   * {@link DiagramLayoutConfig.domainGroups}.
+   */
+  groups?: DiagramGroup[];
   placements: DiagramPlacement[];
   /** Per-diagram manual edge routes; absence/empty = default floating routing. */
   edgeRoutes?: EdgeRoute[];

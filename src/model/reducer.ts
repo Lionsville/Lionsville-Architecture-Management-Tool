@@ -35,11 +35,11 @@ import { transaction, reverse, NOTHING } from './commands'
 import type { Command, CommandMeta, DiagramPatch, ProjectPatch } from './commands'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { RelationId, Diagram, DiagramId, Model, ModelOrder } from './normalised'
-import { decisionsOf, routesOf, transitionsOf } from './normalised'
+import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from './normalised'
+import { decisionsOf, groupsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
 import type {
-  DesignElement, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId, Relation,
+  DesignElement, DiagramGroup, DiagramPlacement, DiagramSettings, EdgeRoute, ElementId, Relation,
 } from './types'
 
 /**
@@ -147,6 +147,24 @@ function withPlacements(diagram: Diagram, rows: Rows<DiagramPlacement>): Diagram
     ? diagram.order
     : { ...diagram.order, placements: rows.order }
   return { ...diagram, placements: rows.by, order }
+}
+
+/**
+ * Emptied means gone in the FILE, and `fromDiagram` is where that happens — the
+ * key is kept here, holding nothing.
+ *
+ * `edgeRoutes` deletes its key at this point; `groups` may not, and the reason
+ * is key order. Deleting a key and putting it back appends it, so dissolving a
+ * group and undoing gives back a document equal to the one you had but written
+ * in a different order — and `JSON.stringify` does not sort (see the note at
+ * the top of `normalised.ts`). Keeping the slot costs an empty record in memory
+ * and nothing on disk.
+ */
+function withGroups(diagram: Diagram, rows: Rows<DiagramGroup>): Diagram {
+  const order = rows.order === diagram.order.groups
+    ? diagram.order
+    : { ...diagram.order, groups: rows.order }
+  return { ...diagram, groups: rows.by, order }
 }
 
 function withRoutes(diagram: Diagram, rows: Rows<EdgeRoute>): Diagram {
@@ -333,6 +351,60 @@ export function apply(model: Model, command: Command): ApplyResult {
       return ok(
         setDiagram(model, command.diagramId, row),
         { type: 'layout.set', diagramId: command.diagramId, layoutConfig: inverse.layoutConfig },
+      )
+    }
+
+    // --- dashed groups (ADR-0012 §6) ----------------------------------------
+    case 'group.set': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const by = { ...groupsOf(diagram) }
+      let order = diagram.order.groups
+      const restore: DiagramGroup[] = []
+      const restoreAt: number[] = []
+      const remove: GroupId[] = []
+      command.groups.forEach((group, i) => {
+        const held = by[group.id]
+        if (held) {
+          restore.push(held)
+          restoreAt.push(order.indexOf(group.id))
+        } else {
+          remove.push(group.id)
+          if (order === diagram.order.groups) order = [...order]
+          order.splice(command.at?.[i] ?? order.length, 0, group.id)
+        }
+        by[group.id] = group
+      })
+      if (!restore.length && !remove.length) return ok(model, NOTHING)
+      const undo: Command[] = []
+      if (remove.length) undo.push({ type: 'group.remove', diagramId: command.diagramId, groupIds: remove })
+      if (restore.length) {
+        undo.push({ type: 'group.set', diagramId: command.diagramId, groups: restore, at: restoreAt })
+      }
+      return ok(
+        setDiagram(model, command.diagramId, withGroups(diagram, { by, order })),
+        transaction(undo, meta),
+      )
+    }
+
+    case 'group.remove': {
+      const diagram = model.diagrams[command.diagramId]
+      if (!diagram) return gone
+      const held = groupsOf(diagram)
+      let rows: Rows<DiagramGroup> = { by: held, order: diagram.order.groups }
+      const restore: DiagramGroup[] = []
+      const restoreAt: number[] = []
+      // Ascending, so putting them back one at a time lands each on its own index.
+      for (const id of diagram.order.groups) {
+        if (!command.groupIds.includes(id)) continue
+        restore.push(held[id])
+        restoreAt.push(diagram.order.groups.indexOf(id))
+        rows = drop(rows.by, rows.order, id)
+      }
+      if (!restore.length) return ok(model, NOTHING)
+      return ok(
+        setDiagram(model, command.diagramId, withGroups(diagram, rows)),
+        { type: 'group.set', diagramId: command.diagramId, groups: restore, at: restoreAt },
       )
     }
 

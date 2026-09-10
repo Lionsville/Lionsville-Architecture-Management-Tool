@@ -12,7 +12,7 @@ export type {
   Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType,
   EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramPlacement, DesignDiagram,
-  DesignModel, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
+  DesignModel, DiagramGroup, DiagramLayoutConfig, DiagramSettings, DomainGroupRect,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'
 
@@ -22,7 +22,7 @@ export type {
  * line is the shape on disk, everything below it the shape in memory.
  */
 export type {
-  Model, Diagram, ModelOrder, DiagramOrder, RelationId, DiagramId, AdrId, TransitionId,
+  Model, Diagram, ModelOrder, DiagramOrder, RelationId, DiagramId, GroupId, AdrId, TransitionId,
 } from './normalised'
 export {
   fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf,

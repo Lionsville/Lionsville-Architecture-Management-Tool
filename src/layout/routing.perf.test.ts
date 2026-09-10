@@ -33,9 +33,9 @@ function inputFor(size: 'small' | 'large'): RouterInput {
     nodes.push({
       id: placement.elementId,
       rect: { x: placement.x, y: placement.y, width: size.width, height: size.height },
-      domainGroup: placement.domainGroup,
+      group: placement.group,
     })
-    if (placement.domainGroup) groupOf.set(placement.elementId, placement.domainGroup)
+    if (placement.group) groupOf.set(placement.elementId, placement.group)
   }
   const groups: DomainGroupRect[] = landscape.layoutConfig?.domainGroups ?? []
   const placed = new Set(nodes.map((n) => n.id))

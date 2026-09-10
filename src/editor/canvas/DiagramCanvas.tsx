@@ -269,7 +269,7 @@ export interface DiagramCanvasProps {
   resolveDrop?(
     elementId: ElementId,
     position: { x: number; y: number },
-  ): Pick<PlacementMove, 'zone' | 'domainGroup'>;
+  ): Pick<PlacementMove, 'zone' | 'group'>;
   onAddByDrop(kind: ElementKind, position: { x: number; y: number }, seed?: ElementSeedPatch): void;
   /**
    * A domain group was dropped on the board, at `position` (flow coords).
@@ -987,7 +987,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         platform,
         t,
         diagramKind: diagram.kind,
-        domainGroups: (diagram.layoutConfig?.domainGroups ?? []).map((g) => g.name),
+        groups: diagram.groups ?? [],
         clipboardHasContent: Boolean(clipboardRef?.current),
         allowedKinds: diagram.kind === 'layer7' ? LAYER7_PALETTE : CONTAINER_PALETTE,
         showGrid,
@@ -1007,7 +1007,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
             lifecycle: element.lifecycle,
             iconKey: element.iconKey,
             zone: placement?.zone,
-            domainGroup: placement?.domainGroup,
+            group: placement?.group,
             hasContainerDiagram: model.diagrams.some(
               (d) => d.kind === 'container' && d.applicationElementId === element.id,
             ),
@@ -1264,7 +1264,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     if (sel.connectionIds.length === 1 && sel.elementIds.length === 0) {
       return { kind: 'edge', connectionId: sel.connectionIds[0] };
     }
-    if (sel.domainGroups.length === 1) return { kind: 'group', name: sel.domainGroups[0] };
+    if (sel.domainGroups.length === 1) return { kind: 'group', groupId: sel.domainGroups[0] };
     return { kind: 'pane' };
   }, [props.selection]);
 
@@ -1284,7 +1284,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         );
         if (nodes.length > 0) return centreOf(getNodesBounds(nodes));
       } else if (target.kind === 'group') {
-        const rect = domainGroupRectMap(diagram.layoutConfig).get(target.name);
+        const rect = domainGroupRectMap(diagram.layoutConfig).get(target.groupId);
         if (rect) return centreOf(rect);
       }
       const box = containerRef.current?.getBoundingClientRect();

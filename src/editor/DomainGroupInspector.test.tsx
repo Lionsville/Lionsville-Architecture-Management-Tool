@@ -14,11 +14,11 @@ const diagram: DesignDiagram = {
   kind: 'layer7',
   name: 'L7',
   placements: [
-    { elementId: 'm1', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-    { elementId: 'm2', zone: 'landscape', domainGroup: 'Core', x: 10, y: 10 },
+    { elementId: 'm1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+    { elementId: 'm2', zone: 'landscape', group: 'Core', x: 10, y: 10 },
     { elementId: 'out', zone: 'landscape', x: 900, y: 900 },
   ],
-  layoutConfig: { domainGroups: [{ name: 'Core', x: 0, y: 0, width: 300, height: 200 }] },
+  layoutConfig: { domainGroups: [{ id: 'Core', x: 0, y: 0, width: 300, height: 200 }] },
 };
 
 function renderInspector(

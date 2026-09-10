@@ -175,8 +175,8 @@ describe('defaultZonePosition', () => {
 describe('domain groups (explicit layoutConfig rects)', () => {
   const config: DiagramLayoutConfig = {
     domainGroups: [
-      { name: 'Big', x: 0, y: 0, width: 1000, height: 1000 },
-      { name: 'Small', x: 100, y: 100, width: 200, height: 200 },
+      { id: 'Big', x: 0, y: 0, width: 1000, height: 1000 },
+      { id: 'Small', x: 100, y: 100, width: 200, height: 200 },
     ],
   };
 
@@ -197,7 +197,7 @@ describe('domain groups (explicit layoutConfig rects)', () => {
 
   it('containment is half-open: the far edge is outside', () => {
     const groups = domainGroupRectMap({
-      domainGroups: [{ name: 'G', x: 0, y: 0, width: 100, height: 100 }],
+      domainGroups: [{ id: 'G', x: 0, y: 0, width: 100, height: 100 }],
     });
     expect(domainGroupForPoint({ x: 0, y: 0 }, groups)).toBe('G');
     expect(domainGroupForPoint({ x: 100, y: 100 }, groups)).toBeUndefined();

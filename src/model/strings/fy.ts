@@ -85,6 +85,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'activity.removedMany': '{count} eleminten fan it diagram helle',
   'activity.routeChanged': 'Lineferrin wizige',
   'activity.layoutChanged': 'Yndieling wizige',
+  'activity.groupChanged': 'Groep {name} wizige',
+  'activity.groupRemoved': 'Groep {name} fuortsmiten',
   'activity.diagramAdded': 'Diagram {name} tafoege',
   'activity.diagramRenamed': 'Diagram omneamd nei {name}',
   'activity.diagramSettings': 'Ynstellingen fan {name} wizige',

@@ -118,10 +118,10 @@ describe('routeWithLibavoid — pinned ends leave from the requested side', () =
     // shape of A to pin. The end lands on A's top midpoint all the same.
     const input: RouterInput = {
       nodes: [
-        { id: 'a', rect: A, domainGroup: 'G' },
+        { id: 'a', rect: A, group: 'G' },
         { id: 'b', rect: B },
       ],
-      groups: [{ name: 'G', x: 60, y: 60, width: 180, height: 180 }],
+      groups: [{ id: 'G', x: 60, y: 60, width: 180, height: 180 }],
       connections: [{ id: 'a-b', sourceId: 'a', targetId: 'b', sourceSide: 'top' }],
     };
     const route = await routeOf(input);

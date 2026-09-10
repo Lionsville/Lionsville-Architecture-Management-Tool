@@ -52,7 +52,11 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
     diagrams: [
       {
         id: 'l7', kind: 'layer7', name: 'Landschap',
-        placements: [{ elementId: 'crews', x: 10, y: 20 }, { elementId: 'reisinfo', x: 200, y: 20 }],
+        groups: [{ id: 'kern', name: 'Kern' }],
+        placements: [
+          { elementId: 'crews', group: 'kern', x: 10, y: 20 },
+          { elementId: 'reisinfo', x: 200, y: 20 },
+        ],
         edgeRoutes: [{ relationId: 'c-1', waypoints: [{ x: 1, y: 2 }] }],
       },
       { id: 'containers', kind: 'container', name: 'Crews · containers', placements: [] },
@@ -389,6 +393,135 @@ describe('projectSummaryFrom', () => {
     expect(projectSummaryFrom(textOf(projectFiles(empty), PROJECT_FILE), REF)).toBeUndefined()
     expect(projectSummaryFrom('{}', REF)).toBeUndefined()
     expect(projectSummaryFrom('half a fi', REF)).toBeUndefined()
+  })
+})
+
+/**
+ * The shim that carries a dashed group's id across format 3 (ADR-0012 §6).
+ *
+ * The file has no field for an id: it files a group under its NAME, on the
+ * rectangle and on every placement. So the ids are minted on read and folded
+ * back on write, and the property that has to hold is that a folder which goes
+ * through this build unchanged comes out as the bytes that went in — a 1.x
+ * build still reads it, and a save is not a diff.
+ *
+ * All of this goes at format 4, where a group is written with its id.
+ */
+describe('dashed groups, across format 3', () => {
+  const v3 = (): FolderFile[] => [
+    {
+      path: 'project.json',
+      text: stableJson({
+        type: 'lionsville-architecture', formatVersion: 3, name: 'L', groupName: 'G',
+        activeDiagramId: 'l7', diagrams: ['l7'],
+      }),
+    },
+    { path: 'model.json', text: stableJson({ connections: [], elements: [element('a', 'A'), element('b', 'B'), element('c', 'C')] }) },
+    {
+      path: 'diagrams/l7.json',
+      text: stableJson({
+        id: 'l7',
+        kind: 'layer7',
+        name: 'Landscape',
+        layoutConfig: {
+          canvas: { width: 1680, height: 1040 },
+          domainGroups: [
+            { name: 'Core systems', x: 10, y: 20, width: 300, height: 200, color: '#2f6fdb' },
+            { name: 'Core Systems', x: 400, y: 20, width: 300, height: 200 },
+          ],
+        },
+      }),
+    },
+    {
+      path: 'diagrams/l7.placements.json',
+      text: stableJson({
+        placements: [
+          { elementId: 'a', domainGroup: 'Core systems', x: 30, y: 40 },
+          { elementId: 'b', domainGroup: 'Core Systems', x: 420, y: 40 },
+          // A name no rectangle claims — format 3 allows it, and so does this.
+          { elementId: 'c', domainGroup: 'Nobody drew a box', x: 800, y: 40 },
+        ],
+      }),
+    },
+  ]
+
+  const diagramOf = (files: readonly FolderFile[]) =>
+    projectFromFolder(files, REF)!.model.diagrams[0]
+
+  it('mints an id per name, in the order the file has them, and files the members under it', () => {
+    const diagram = diagramOf(v3())
+    // Two names that slug alike are told apart by which came first, the way
+    // `diagramStems` tells two diagram ids apart.
+    expect(diagram.groups).toEqual([
+      { id: 'core-systems', name: 'Core systems', color: '#2f6fdb' },
+      { id: 'core-systems-2', name: 'Core Systems' },
+      { id: 'nobody-drew-a-box', name: 'Nobody drew a box' },
+    ])
+    expect(diagram.layoutConfig?.domainGroups).toEqual([
+      { id: 'core-systems', x: 10, y: 20, width: 300, height: 200 },
+      { id: 'core-systems-2', x: 400, y: 20, width: 300, height: 200 },
+    ])
+    expect(diagram.placements.map((p) => p.group))
+      .toEqual(['core-systems', 'core-systems-2', 'nobody-drew-a-box'])
+  })
+
+  it('reads, then writes, the bytes it started with', () => {
+    const files = v3()
+    const written = projectFiles(projectFromFolder(files, REF)!)
+    for (const file of files) {
+      expect(textOf(written, file.path)).toBe(textOf(files, file.path))
+    }
+  })
+
+  it('writes no id and no groups list into a format-3 file', () => {
+    const written = projectFiles(projectFromFolder(v3(), REF)!)
+    expect(textOf(written, 'diagrams/l7.json')).not.toContain('"groups"')
+    expect(textOf(written, 'diagrams/l7.placements.json')).not.toContain('"group"')
+  })
+
+  /**
+   * The one thing the fold cannot carry, said out loud.
+   *
+   * Format 3 keeps a group's colour ON its rectangle, so a group that has a
+   * colour and no box has nowhere to put it. Nothing in the app makes one —
+   * the colour is picked from the box's own menu — and it goes at format 4,
+   * where the group's record holds both.
+   */
+  it('cannot carry the colour of a group that has no box', () => {
+    const project = projectFromFolder(v3(), REF)!
+    const diagram = project.model.diagrams[0]
+    project.model.diagrams[0] = {
+      ...diagram,
+      groups: diagram.groups!.map((g) =>
+        (g.id === 'nobody-drew-a-box' ? { ...g, color: '#aa0000' } : g)),
+    }
+    const back = projectFromFolder(projectFiles(project), REF)!
+    expect(back.model.diagrams[0].groups).toEqual(diagram.groups)
+  })
+
+  /**
+   * A rename is one line in the MODEL, and format 3 is what still spreads it.
+   *
+   * The members point at the id, so nothing but the group's own row changes in
+   * the document — which is the whole point of ADR-0012 §6. On disk, format 3
+   * has only the name to file a member under, so the placements file follows;
+   * the coordinates in it are untouched. That second line goes at format 4,
+   * and this pins that it is the format's doing and not the model's.
+   */
+  it('renames a group in one row of the model, and only the name moves on disk', () => {
+    const project = projectFromFolder(v3(), REF)!
+    const before = projectFiles(project)
+    const diagram = project.model.diagrams[0]
+    project.model.diagrams[0] = {
+      ...diagram,
+      groups: diagram.groups!.map((g) => (g.id === 'core-systems' ? { ...g, name: 'Kern' } : g)),
+    }
+    expect(project.model.diagrams[0].placements).toBe(diagram.placements)
+    const after = projectFiles(project)
+    expect(changed(before, after)).toEqual(['diagrams/l7.json', 'diagrams/l7.placements.json'])
+    // And what moved in the placements file is the name, nothing else.
+    expect(textOf(after, 'diagrams/l7.placements.json'))
+      .toBe(textOf(before, 'diagrams/l7.placements.json').replaceAll('Core systems"', 'Kern"'))
   })
 })
 

@@ -15,7 +15,7 @@ import type { EditorHandle, EditorRequests, SolutionDesignEditorProps } from './
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
-import { newDomainGroupRect } from './canvas/domainGroupPlacement';
+import { newDomainGroup } from './canvas/domainGroupPlacement';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
 import { type ClipboardPayload } from '../model/clipboard';
@@ -441,9 +441,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // board has to end up identical to one placed from the tray apart from where.
   const addDomainGroup = useCallback(
     (seed?: DomainGroupSeed) => {
-      state.actions.upsertDomainGroup(
-        newDomainGroupRect({ layoutConfig: activeDiagram?.layoutConfig, translate: t, ...seed }),
-      );
+      const { group, box } = newDomainGroup({ diagram: activeDiagram, translate: t, ...seed });
+      state.actions.addDomainGroup(group, box);
     },
     [activeDiagram, state.actions],
   );

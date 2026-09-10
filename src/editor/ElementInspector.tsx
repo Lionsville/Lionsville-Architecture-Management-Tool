@@ -191,7 +191,11 @@ export function ElementInspector(props: ElementInspectorProps) {
   const placement = props.diagram.placements.find((p) => p.elementId === element.id);
   const isLayer7Landscape = props.diagram.kind === 'layer7' && placement?.zone === 'landscape';
   const isLayer7Placement = Boolean(placement) && props.diagram.kind === 'layer7';
-  const knownGroups = (props.diagram.layoutConfig?.domainGroups ?? []).map((g) => g.name);
+  // Names, not ids: this field is what a person types, and the action resolves
+  // a name to the group it belongs to (ADR-0012 §6).
+  const groups = props.diagram.groups ?? [];
+  const knownGroups = groups.map((group) => group.name);
+  const groupName = groups.find((group) => group.id === placement?.group)?.name ?? '';
   const aspectConfig = aspectConfigFor(props.diagram);
   const knownCategories = [
     ...new Set(props.model.elements.map((e) => e.category).filter((c): c is string => Boolean(c))),
@@ -208,7 +212,7 @@ export function ElementInspector(props: ElementInspectorProps) {
       element.technology ||
       element.category ||
       element.isManaged ||
-      placement?.domainGroup,
+      placement?.group,
   );
   const appearanceHasValues = Boolean(
     element.accentColor || element.shapeVariant || element.iconKey || element.iconSize,
@@ -392,10 +396,10 @@ export function ElementInspector(props: ElementInspectorProps) {
                 <Autocomplete
                   freeSolo
                   options={knownGroups}
-                  value={placement?.domainGroup ?? ''}
+                  value={groupName}
                   disabled={readOnly}
                   onInputChange={(_e, value) =>
-                    actions.setDomainGroup(element.id, value || undefined)
+                    actions.fileUnderGroupNamed([element.id], value || undefined)
                   }
                   renderInput={(params) => (
                     <TextField

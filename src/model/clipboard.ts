@@ -138,13 +138,13 @@ function remapPlacement(
   // zone / domainGroup only mean something on a layer7 diagram; drop them when
   // pasting into a container, and drop a group tag the target doesn't define.
   if (options.target.kind !== 'layer7') {
-    return { ...base, zone: undefined, domainGroup: undefined };
+    return { ...base, zone: undefined, group: undefined };
   }
   return {
     ...base,
-    domainGroup:
-      placement.domainGroup && options.target.domainGroupNames?.has(placement.domainGroup)
-        ? placement.domainGroup
+    group:
+      placement.group && options.target.domainGroupNames?.has(placement.group)
+        ? placement.group
         : undefined,
   };
 }

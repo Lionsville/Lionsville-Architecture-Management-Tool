@@ -61,7 +61,7 @@ function boardModel(): DesignModel {
           })),
         ],
         layoutConfig: {
-          domainGroups: [{ name: 'Wall', x: 600, y: 120, width: 120, height: 700 }],
+          domainGroups: [{ id: 'Wall', x: 600, y: 120, width: 120, height: 700 }],
         },
       },
     ],

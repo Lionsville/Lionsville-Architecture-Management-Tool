@@ -31,11 +31,11 @@ function model(): DesignModel {
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 }],
         layoutConfig: {
           domainGroups: [
-            { name: 'Core', x: 0, y: 0, width: 10, height: 10 },
-            { name: 'Empty', x: 500, y: 500, width: 40, height: 40 },
+            { id: 'Core', x: 0, y: 0, width: 10, height: 10 },
+            { id: 'Empty', x: 500, y: 500, width: 40, height: 40 },
           ],
         },
       },
@@ -72,8 +72,8 @@ function modelWithRoutes(): DesignModel {
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 0, y: 0 },
-          { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 50, y: 50 },
+          { elementId: 'e1', zone: 'landscape', group: 'Core', x: 0, y: 0 },
+          { elementId: 'e2', zone: 'landscape', group: 'Core', x: 50, y: 50 },
         ],
         edgeRoutes: [
           // waypoints-only route
@@ -104,8 +104,8 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
     act(() => {
       result.current.actions.applyTidyResult({
         placements: [
-          { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 },
-          { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 400, y: 400 },
+          { elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 },
+          { elementId: 'e2', zone: 'landscape', group: 'Core', x: 400, y: 400 },
         ],
         domainGroups: [],
       });
@@ -131,8 +131,8 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
 
     act(() => {
       result.current.actions.applyTidyResult({
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 100, y: 120 }],
-        domainGroups: [{ name: 'Core', x: 60, y: 70, width: 300, height: 200 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 100, y: 120 }],
+        domainGroups: [{ id: 'Core', x: 60, y: 70, width: 300, height: 200 }],
       });
     });
 
@@ -217,8 +217,8 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
     act(() => {
       result.current.actions.applyTidyResult({
         placements: [
-          { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 },
-          { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 400, y: 400 },
+          { elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 },
+          { elementId: 'e2', zone: 'landscape', group: 'Core', x: 400, y: 400 },
         ],
         domainGroups: [],
         edgeRoutes: [
@@ -261,8 +261,8 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
     act(() => {
       result.current.actions.applyTidyResult({
         placements: [
-          { elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 },
-          { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 400, y: 400 },
+          { elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 },
+          { elementId: 'e2', zone: 'landscape', group: 'Core', x: 400, y: 400 },
         ],
         domainGroups: [],
         edgeRoutes: [{ relationId: 'c2', waypoints: [], labelPosition: { x: 12, y: 34 } }],
@@ -281,27 +281,27 @@ describe('applyTidyResult (QF4 / U2)', () => {
 
     act(() => {
       result.current.actions.applyTidyResult({
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 100, y: 120 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 100, y: 120 }],
         domainGroups: [
           // Existing group, re-sized → geometry updated in place.
-          { name: 'Core', x: 60, y: 70, width: 300, height: 200 },
+          { id: 'Core', x: 60, y: 70, width: 300, height: 200 },
           // New group name with no existing rect → must now be CREATED (U2).
-          { name: 'Ghost', x: 0, y: 0, width: 999, height: 999 },
+          { id: 'Ghost', x: 0, y: 0, width: 999, height: 999 },
         ],
       });
     });
 
     const groups =
       result.current.model.diagrams[0].layoutConfig?.domainGroups ?? [];
-    const byName = new Map(groups.map((g) => [g.name, g]));
+    const byName = new Map(groups.map((g) => [g.id, g]));
 
     // Core resized in place.
-    expect(byName.get('Core')).toEqual({ name: 'Core', x: 60, y: 70, width: 300, height: 200 });
+    expect(byName.get('Core')).toEqual({ id: 'Core', x: 60, y: 70, width: 300, height: 200 });
     // Empty (member-less, not in the tidy result) preserved untouched.
-    expect(byName.get('Empty')).toEqual({ name: 'Empty', x: 500, y: 500, width: 40, height: 40 });
+    expect(byName.get('Empty')).toEqual({ id: 'Empty', x: 500, y: 500, width: 40, height: 40 });
     // Ghost is now created (appended) — U2 reversed the old never-create rule so
     // a member-bearing group that lacked a rect gets one.
-    expect(byName.get('Ghost')).toEqual({ name: 'Ghost', x: 0, y: 0, width: 999, height: 999 });
+    expect(byName.get('Ghost')).toEqual({ id: 'Ghost', x: 0, y: 0, width: 999, height: 999 });
     expect(groups).toHaveLength(3);
 
     // The placement landed too, and the whole thing is ONE step.
@@ -324,8 +324,8 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
 
     act(() => {
       result.current.actions.applyTidyResult({
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 }],
-        domainGroups: [{ name: 'Core', x: 60, y: 70, width: 300, height: 200 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 }],
+        domainGroups: [{ id: 'Core', x: 60, y: 70, width: 300, height: 200 }],
         edgeRoutes: [{ relationId: 'c1', waypoints: [] }],
         partial: true,
       });
@@ -352,7 +352,7 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
 
     act(() => {
       result.current.actions.applyTidyResult({
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 }],
         partial: true,
       });
     });
@@ -377,7 +377,7 @@ describe('applyTidyResult (no second preserve filter)', () => {
 
     act(() => {
       result.current.actions.applyTidyResult({
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 }],
         edgeRoutes: [
           // What a pass with c1 preserved emits: c1's stored geometry unchanged,
           // c2 freshly routed. The apply step cannot tell them apart, and does
@@ -426,7 +426,7 @@ describe('applyTidyResult (no second preserve filter)', () => {
 
     act(() => {
       result.current.actions.applyTidyResult({
-        placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 }],
+        placements: [{ elementId: 'e1', zone: 'landscape', group: 'Core', x: 200, y: 200 }],
         routingError: new Error('wasm 404'),
       });
     });

@@ -20,7 +20,7 @@ import {
  * always routes the same way.
  */
 
-const node = (id: string, rect: Rect, domainGroup?: string) => ({ id, rect, domainGroup });
+const node = (id: string, rect: Rect, group?: string) => ({ id, rect, group });
 const card = (x: number, y: number): Rect => ({ x, y, width: 200, height: 130 });
 const chip = (x: number, y: number): Rect => ({ x, y, width: 160, height: 56 });
 const actor = (x: number, y: number): Rect => ({ x, y, width: 150, height: 48 });
@@ -48,8 +48,8 @@ function eCommerceBoard(): RouterInput {
       node('erp', card(1337, 460), 'Commerce Operations'),
     ],
     groups: [
-      { name: 'Customer Experience', x: 380, y: 412, width: 476, height: 206 },
-      { name: 'Commerce Operations', x: 1089, y: 412, width: 476, height: 206 },
+      { id: 'Customer Experience', x: 380, y: 412, width: 476, height: 206 },
+      { id: 'Commerce Operations', x: 1089, y: 412, width: 476, height: 206 },
     ],
     connections: [
       { id: 'order-erp', sourceId: 'order', targetId: 'erp' },
@@ -93,8 +93,8 @@ function reportedLandscape(): RouterInput {
       node('7', card(1587, y), 'Commerce Operations'),
     ],
     groups: [
-      { name: 'Customer Experience', x: 350, y: 412.85263523898476, width: 622, height: 206 },
-      { name: 'Commerce Operations', x: 1205, y: 412.85263523898476, width: 610, height: 206 },
+      { id: 'Customer Experience', x: 350, y: 412.85263523898476, width: 622, height: 206 },
+      { id: 'Commerce Operations', x: 1205, y: 412.85263523898476, width: 610, height: 206 },
     ],
     connections: [
       { id: '1', sourceId: '1', targetId: '4' },
@@ -127,7 +127,7 @@ function parallelChannelBoard(): RouterInput {
 
 const nodeOf = (input: RouterInput, id: string) => input.nodes.find((n) => n.id === id)!;
 const groupRect = (input: RouterInput, name: string): Rect => {
-  const group = input.groups.find((g) => g.name === name)!;
+  const group = input.groups.find((g) => g.id === name)!;
   return { x: group.x, y: group.y, width: group.width, height: group.height };
 };
 const contains = (rect: Rect, p: Point): boolean =>
@@ -145,9 +145,9 @@ const drawnPath = (input: RouterInput, connection: RouterConnection, waypoints: 
 function genuineObstacles(input: RouterInput, connection: RouterConnection): Rect[] {
   const source = nodeOf(input, connection.sourceId);
   const target = nodeOf(input, connection.targetId);
-  const sameGroup = source.domainGroup !== undefined && source.domainGroup === target.domainGroup;
+  const sameGroup = source.group !== undefined && source.group === target.group;
   const boxes = input.groups
-    .map((g) => groupRect(input, g.name))
+    .map((g) => groupRect(input, g.id))
     .filter((box) => !contains(box, rectCentre(source.rect)) && !contains(box, rectCentre(target.rect)));
   const others = input.nodes.filter((n) => n.id !== source.id && n.id !== target.id);
   // An intra-group edge dodges its siblings AND everything outside its box (the
@@ -156,9 +156,9 @@ function genuineObstacles(input: RouterInput, connection: RouterConnection): Rec
   // inter-group edge sees grouped members only through their box.
   const nodes = sameGroup
     ? others.filter(
-        (n) => n.domainGroup === source.domainGroup || n.domainGroup === undefined,
+        (n) => n.group === source.group || n.group === undefined,
       )
-    : others.filter((n) => n.domainGroup === undefined);
+    : others.filter((n) => n.group === undefined);
   return [...boxes, ...nodes.map((n) => n.rect)];
 }
 
@@ -425,9 +425,9 @@ describe('routeWithLibavoid — the two tiers', () => {
         node('m3', card(600, 810), 'Middle'),
       ],
       groups: [
-        { name: 'Left', x: 60, y: 390, width: 280, height: 210 },
-        { name: 'Right', x: 1160, y: 390, width: 280, height: 210 },
-        { name: 'Middle', x: 560, y: 390, width: 280, height: 590 },
+        { id: 'Left', x: 60, y: 390, width: 280, height: 210 },
+        { id: 'Right', x: 1160, y: 390, width: 280, height: 210 },
+        { id: 'Middle', x: 560, y: 390, width: 280, height: 590 },
       ],
       connections: [
         { id: 'a-b', sourceId: 'a', targetId: 'b' },
@@ -475,7 +475,7 @@ describe('routeWithLibavoid — the two tiers', () => {
         node('m2', card(100, 430), 'A'),
         node('outsider', { x: -140, y: 180, width: 140, height: 240 }),
       ],
-      groups: [{ name: 'A', x: 0, y: 0, width: 400, height: 600 }],
+      groups: [{ id: 'A', x: 0, y: 0, width: 400, height: 600 }],
       connections: [{ id: 'm1-m2', sourceId: 'm1', targetId: 'm2' }],
     };
   }
@@ -497,7 +497,7 @@ describe('routeWithLibavoid — the two tiers', () => {
     // loose card. Tier 2 sees it as one opaque rect, exactly as tier 1 would.
     board.nodes = board.nodes.filter((n) => n.id !== 'outsider');
     board.nodes.push(node('n1', { x: -120, y: 220, width: 100, height: 160 }, 'B'));
-    board.groups.push({ name: 'B', x: -140, y: 180, width: 140, height: 240 });
+    board.groups.push({ id: 'B', x: -140, y: 180, width: 140, height: 240 });
     const neighbour = groupRect(board, 'B');
 
     const waypoints = (await routedMap(board)).get('m1-m2')!;
@@ -512,14 +512,14 @@ describe('routeWithLibavoid — the two tiers', () => {
     // be absurd — the edge starts inside it.
     const board: RouterInput = {
       nodes: [node('a', card(100, 400), 'Home'), node('b', card(1200, 400))],
-      groups: [{ name: 'Home', x: 60, y: 360, width: 300, height: 220 }],
+      groups: [{ id: 'Home', x: 60, y: 360, width: 300, height: 220 }],
       connections: [{ id: 'a-b', sourceId: 'a', targetId: 'b' }],
     };
     expect((await routedMap(board)).get('a-b')).toEqual([]);
   });
 
   it('treats a node whose domain group has no box on the diagram as its own obstacle', async () => {
-    // Tier 1 hides grouped members behind their box; a `domainGroup` with no box
+    // Tier 1 hides grouped members behind their box; a `group` with no box
     // has nothing to hide behind, so the member must still block on its own.
     const board: RouterInput = {
       nodes: [node('a', card(100, 400)), node('b', card(1200, 400)), node('ghost', actor(650, 440), 'Nowhere')],
@@ -624,7 +624,7 @@ describe('routeWithLibavoid — unsafe geometry never reaches the WASM module', 
     it(`drops a group box with ${label} and still routes the rest`, async () => {
       const routes = await routedMap({
         nodes: [node('a', card(100, 400)), node('b', card(1200, 400))],
-        groups: [{ name: 'Bad', ...rect }],
+        groups: [{ id: 'Bad', ...rect }],
         connections: [{ id: 'a-b', sourceId: 'a', targetId: 'b' }],
       });
       expect([...routes.keys()]).toEqual(['a-b']);
@@ -679,8 +679,8 @@ describe('routeWithLibavoid — a contained obstacle must not blind its containe
     const board: RouterInput = {
       nodes: endpoints,
       groups: [
-        { name: 'Inner', ...nested },
-        { name: 'Outer', ...outer },
+        { id: 'Inner', ...nested },
+        { id: 'Outer', ...outer },
       ],
       connections: [edge],
     };
@@ -692,8 +692,8 @@ describe('routeWithLibavoid — a contained obstacle must not blind its containe
     const board: RouterInput = {
       nodes: endpoints,
       groups: [
-        { name: 'Alpha', ...outer },
-        { name: 'Zulu', ...nested },
+        { id: 'Alpha', ...outer },
+        { id: 'Zulu', ...nested },
       ],
       connections: [edge],
     };
@@ -719,7 +719,7 @@ describe('routeWithLibavoid — a contained obstacle must not blind its containe
         node('big', outer, 'Team'),
         node('small', nested, 'Team'),
       ],
-      groups: [{ name: 'Team', x: 0, y: 250, width: 1300, height: 500 }],
+      groups: [{ id: 'Team', x: 0, y: 250, width: 1300, height: 500 }],
       connections: [{ id: 'm1-m2', sourceId: 'm1', targetId: 'm2' }],
     };
     const waypoints = (await routedMap(board)).get('m1-m2')!;
@@ -821,7 +821,7 @@ describe('routeWithLibavoid — the per-tier connector cap', () => {
       node('m2', card(2000, 190), 'Middle'),
       node('m3', card(2000, 380), 'Middle'),
     );
-    board.groups.push({ name: 'Middle', x: 1960, y: -40, width: 280, height: 590 });
+    board.groups.push({ id: 'Middle', x: 1960, y: -40, width: 280, height: 590 });
     board.connections.push({ id: 'm1-m3', sourceId: 'm1', targetId: 'm3' });
 
     const routes = await routedMap(board);
@@ -865,7 +865,7 @@ describe('routeWithLibavoid — the per-tier connector cap', () => {
       node('m2', card(2000, 190), 'Middle'),
       node('m3', card(2000, 380), 'Middle'),
     );
-    board.groups.push({ name: 'Middle', x: 1960, y: -40, width: 280, height: 590 });
+    board.groups.push({ id: 'Middle', x: 1960, y: -40, width: 280, height: 590 });
     board.connections.push({ id: 'm1-m3', sourceId: 'm1', targetId: 'm3' });
 
     const { routes, skipped } = await routeWithLibavoid(board);

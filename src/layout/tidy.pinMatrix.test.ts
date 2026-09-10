@@ -32,16 +32,16 @@ function landscape(): DesignModel {
         kind: 'layer7',
         name: 'L7',
         placements: [
-          { elementId: 'a1', zone: 'landscape', domainGroup: 'Alpha', x: 240, y: 300 },
-          { elementId: 'a2', zone: 'landscape', domainGroup: 'Alpha', x: 240, y: 460 },
-          { elementId: 'b1', zone: 'landscape', domainGroup: 'Beta', x: 800, y: 300 },
-          { elementId: 'b2', zone: 'landscape', domainGroup: 'Beta', x: 800, y: 460 },
+          { elementId: 'a1', zone: 'landscape', group: 'Alpha', x: 240, y: 300 },
+          { elementId: 'a2', zone: 'landscape', group: 'Alpha', x: 240, y: 460 },
+          { elementId: 'b1', zone: 'landscape', group: 'Beta', x: 800, y: 300 },
+          { elementId: 'b2', zone: 'landscape', group: 'Beta', x: 800, y: 460 },
           { elementId: 'loose', zone: 'landscape', x: 1300, y: 700 },
         ],
         layoutConfig: {
           domainGroups: [
-            { name: 'Alpha', x: 200, y: 250, width: 300, height: 400 },
-            { name: 'Beta', x: 760, y: 250, width: 300, height: 400 },
+            { id: 'Alpha', x: 200, y: 250, width: 300, height: 400 },
+            { id: 'Beta', x: 760, y: 250, width: 300, height: 400 },
           ],
         },
       },
@@ -55,9 +55,9 @@ const byId = (placements: DiagramPlacement[]) =>
   new Map(placements.map((p) => [p.elementId, p]));
 
 /** Member positions relative to their own group's top-left — the "arrangement". */
-function interiorOf(result: { placements: DiagramPlacement[]; domainGroups?: { name: string; x: number; y: number }[] }, group: string) {
-  const box = result.domainGroups?.find((g) => g.name === group);
-  const members = result.placements.filter((p) => p.domainGroup === group);
+function interiorOf(result: { placements: DiagramPlacement[]; domainGroups?: { id: string; x: number; y: number }[] }, group: string) {
+  const box = result.domainGroups?.find((g) => g.id === group);
+  const members = result.placements.filter((p) => p.group === group);
   return members
     .map((m) => ({ id: m.elementId, dx: m.x - (box?.x ?? 0), dy: m.y - (box?.y ?? 0) }))
     .sort((a, b) => (a.id < b.id ? -1 : 1));
@@ -71,14 +71,14 @@ describe('Tidy — box position × member layout', () => {
     const after = byId(result.placements);
     // Something moved, and the group boxes were rebuilt from member bounds.
     expect(after.get('a1')).not.toEqual(before.get('a1'));
-    expect(result.domainGroups?.map((g) => g.name).sort()).toEqual(['Alpha', 'Beta']);
+    expect(result.domainGroups?.map((g) => g.id).sort()).toEqual(['Alpha', 'Beta']);
   });
 
   it('(pinned box, free members): the box keeps its top-left, members reflow inside', async () => {
     const model = landscape();
     const result = await tidyLayer7(model, model.diagrams[0], options({ pinGroups: true }));
 
-    const alpha = result.domainGroups?.find((g) => g.name === 'Alpha');
+    const alpha = result.domainGroups?.find((g) => g.id === 'Alpha');
     expect(alpha).toMatchObject({ x: 200, y: 250 });
     // The interior was re-laid-out, so it is NOT the arrangement we started with.
     expect(interiorOf(result, 'Alpha')).not.toEqual([
@@ -104,12 +104,12 @@ describe('Tidy — box position × member layout', () => {
       { id: 'b2', dx: 40, dy: 210 },
     ]);
     // ...and the box sizes are kept, not re-derived from members.
-    expect(result.domainGroups?.find((g) => g.name === 'Alpha')).toMatchObject({
+    expect(result.domainGroups?.find((g) => g.id === 'Alpha')).toMatchObject({
       width: 300,
       height: 400,
     });
     // The boxes themselves DID move — otherwise this cell would be the next one.
-    expect(result.domainGroups?.find((g) => g.name === 'Alpha')).not.toMatchObject({
+    expect(result.domainGroups?.find((g) => g.id === 'Alpha')).not.toMatchObject({
       x: 200,
       y: 250,
     });
@@ -136,7 +136,7 @@ describe('Tidy — box position × member layout', () => {
     for (const id of ['a1', 'a2', 'b1', 'b2', 'loose']) {
       expect(after.get(id)).toMatchObject({ x: before.get(id)!.x, y: before.get(id)!.y });
     }
-    expect(result.domainGroups?.find((g) => g.name === 'Alpha')).toMatchObject({
+    expect(result.domainGroups?.find((g) => g.id === 'Alpha')).toMatchObject({
       x: 200,
       y: 250,
       width: 300,
@@ -154,7 +154,7 @@ describe('Tidy — box position × member layout', () => {
     model.diagrams[0].layoutConfig = { domainGroups: [] };
     const result = await tidyLayer7(model, model.diagrams[0], options({ pinGroupContents: true }));
 
-    const alpha = result.domainGroups?.find((g) => g.name === 'Alpha');
+    const alpha = result.domainGroups?.find((g) => g.id === 'Alpha');
     expect(alpha!.width).toBeGreaterThan(0);
     expect(alpha!.height).toBeGreaterThan(0);
     // Still rigid: the interior arrangement is preserved even with a derived box.
@@ -162,11 +162,13 @@ describe('Tidy — box position × member layout', () => {
     expect(interior[1].dy - interior[0].dy).toBe(160);
   });
 
-  it('keeps a group’s colour through a pinned-contents pass', async () => {
+  it('answers with the box and nothing about the group, colour included', async () => {
+    // The colour is the group's, in the definition (ADR-0012 §6); a pass that
+    // answers with geometry has nothing to lose and nothing to carry.
     const model = landscape();
-    model.diagrams[0].layoutConfig!.domainGroups![0].color = '#ff8800';
     const result = await tidyLayer7(model, model.diagrams[0], options({ pinGroupContents: true }));
-    expect(result.domainGroups?.find((g) => g.name === 'Alpha')?.color).toBe('#ff8800');
+    const alpha = (result.domainGroups ?? []).find((g) => g.id === 'Alpha')!;
+    expect(Object.keys(alpha).sort()).toEqual(['height', 'id', 'width', 'x', 'y']);
   });
 });
 
@@ -225,8 +227,8 @@ describe('Tidy — hybrid direction', () => {
   it('flows the group boxes across and the members down inside each one', async () => {
     const model = landscape();
     const result = await tidyLayer7(model, model.diagrams[0], options({ direction: 'hybrid' }));
-    const alpha = result.domainGroups!.find((g) => g.name === 'Alpha')!;
-    const beta = result.domainGroups!.find((g) => g.name === 'Beta')!;
+    const alpha = result.domainGroups!.find((g) => g.id === 'Alpha')!;
+    const beta = result.domainGroups!.find((g) => g.id === 'Beta')!;
     const after = byId(result.placements);
 
     // ACROSS: the root flow is RIGHT, so the box at the target end of the

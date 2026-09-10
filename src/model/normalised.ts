@@ -29,13 +29,15 @@
  *   {@link routesOf} rather than defaulting at each site.
  */
 import type {
-  DesignDiagram, DesignElement, DiagramPlacement, EdgeRoute, ElementId, Relation,
+  DesignDiagram, DesignElement, DiagramGroup, DiagramPlacement, EdgeRoute, ElementId, Relation,
 } from './types'
 import type { Adr } from './adr'
 import type { HostModel } from './fromInterchange'
 import type { Transition } from './transition'
 
 export type RelationId = string
+/** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
+export type GroupId = string
 export type DiagramId = string
 export type AdrId = string
 export type TransitionId = string
@@ -49,16 +51,19 @@ export type ModelOrder = {
   transitions: TransitionId[]
 }
 
-/** A diagram's own two lists, in the order the file had them. */
+/** A diagram's own lists, in the order the file had them. */
 export type DiagramOrder = {
   placements: ElementId[]
   routes: RelationId[]
+  groups: GroupId[]
 }
 
-export type Diagram = Omit<DesignDiagram, 'placements' | 'edgeRoutes'> & {
+export type Diagram = Omit<DesignDiagram, 'placements' | 'edgeRoutes' | 'groups'> & {
   placements: Record<ElementId, DiagramPlacement>
   /** Present exactly when the file carried the key; see the note at the top. */
   edgeRoutes?: Record<RelationId, EdgeRoute>
+  /** The dashed groups, by id. Absent exactly as `edgeRoutes` is. */
+  groups?: Record<GroupId, DiagramGroup>
   order: DiagramOrder
 }
 
@@ -86,6 +91,16 @@ export function transitionsOf(model: Model): Record<TransitionId, Transition> {
 /** The routes on this diagram, whether or not the file carried the key. */
 export function routesOf(diagram: Diagram): Record<RelationId, EdgeRoute> {
   return diagram.edgeRoutes ?? {}
+}
+
+/** The dashed groups on this diagram, whether or not the file carried the key. */
+export function groupsOf(diagram: Diagram): Record<GroupId, DiagramGroup> {
+  return diagram.groups ?? {}
+}
+
+export function groupList(diagram: Diagram): DiagramGroup[] {
+  const by = groupsOf(diagram)
+  return diagram.order.groups.map((id) => by[id])
 }
 
 /** The elements in order — for the code that still wants a list. */
@@ -155,7 +170,13 @@ export function toDiagram(diagram: DesignDiagram): Diagram {
     out.edgeRoutes = routes
     routeOrder = order
   }
-  out.order = { placements: placementOrder, routes: routeOrder }
+  let groupOrder: GroupId[] = []
+  if (diagram.groups !== undefined) {
+    const [groups, order] = index(diagram.groups, (g) => g.id)
+    out.groups = groups
+    groupOrder = order
+  }
+  out.order = { placements: placementOrder, routes: routeOrder, groups: groupOrder }
   return out
 }
 
@@ -181,6 +202,14 @@ export function fromDiagram(diagram: Diagram): DesignDiagram {
   out.placements = unindex(diagram.placements, diagram.order.placements)
   if (diagram.edgeRoutes !== undefined) {
     out.edgeRoutes = unindex(diagram.edgeRoutes, diagram.order.routes)
+  }
+  if (diagram.groups !== undefined) {
+    const groups = unindex(diagram.groups, diagram.order.groups)
+    // A diagram whose last group was dissolved keeps the key in memory so that
+    // putting one back lands it where it was (see `withGroups`); the document
+    // says nothing rather than saying nothing twice.
+    if (groups.length) out.groups = groups
+    else delete out.groups
   }
   delete out.order
   converted.set(diagram, out)

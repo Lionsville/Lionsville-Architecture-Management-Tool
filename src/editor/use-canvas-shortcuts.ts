@@ -404,14 +404,14 @@ function nudgeMoves(
   for (const elementId of selection.elementIds) {
     const placement = placementsById.get(elementId);
     if (!placement) continue;
-    // Preserve zone/domainGroup: a keyboard nudge shifts position without
+    // Preserve zone/group: a keyboard nudge shifts position without
     // re-resolving the layer7 band (that geometry lives in the canvas).
     moves.push({
       elementId,
       x: placement.x + dx,
       y: placement.y + dy,
       zone: placement.zone,
-      domainGroup: placement.domainGroup,
+      group: placement.group,
     });
   }
   return moves;

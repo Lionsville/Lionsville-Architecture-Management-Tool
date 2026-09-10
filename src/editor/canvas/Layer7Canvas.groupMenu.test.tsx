@@ -21,7 +21,8 @@ import { Layer7Canvas } from './Layer7Canvas';
 beforeAll(() => installReactFlowMocks());
 afterEach(() => cleanup());
 
-const GROUP = { name: 'Core', x: 200, y: 200, width: 400, height: 300 };
+const GROUP = { id: 'core', x: 200, y: 200, width: 400, height: 300 };
+const NAMED = { id: 'core', name: 'Core' };
 
 function model(): DesignModel {
   return {
@@ -36,7 +37,8 @@ function model(): DesignModel {
         id: 'd1',
         kind: 'layer7',
         name: 'L7',
-        placements: [{ elementId: 'a1', zone: 'landscape', domainGroup: 'Core', x: 250, y: 250 }],
+        groups: [NAMED],
+        placements: [{ elementId: 'a1', zone: 'landscape', group: 'core', x: 250, y: 250 }],
         layoutConfig: { domainGroups: [GROUP] },
       },
     ],
@@ -70,17 +72,16 @@ function renderCanvas(
 ) {
   const design = model();
   if (overrides.groupColor) {
-    design.diagrams[0].layoutConfig!.domainGroups![0] = {
-      ...GROUP,
-      color: overrides.groupColor,
-    };
+    design.diagrams[0].groups = [{ ...NAMED, color: overrides.groupColor }];
   }
   const diagram = design.diagrams[0] as DesignDiagram;
   const onSelectionChange = vi.fn();
   let flow: ReactFlowInstance | undefined;
   const actions = {
     addElement: vi.fn(),
-    upsertDomainGroup: vi.fn(),
+    addDomainGroup: vi.fn(),
+    setDomainGroupBox: vi.fn(),
+    setDomainGroupColor: vi.fn(),
     moveDomainGroup: vi.fn(),
     renameDomainGroup: vi.fn(),
     removeDomainGroup: vi.fn(),
@@ -167,7 +168,7 @@ describe('Layer7Canvas — domain-group context menu', () => {
     fireEvent.click(screen.getByText('Tidy this group'));
     expect(onTidyGroup).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Tidy Core', { selector: 'button' }));
-    expect(onTidyGroup).toHaveBeenCalledWith('Core');
+    expect(onTidyGroup).toHaveBeenCalledWith('core');
   });
 
   it('opens the canvas menu, not the group menu, over open landscape', () => {
@@ -203,7 +204,7 @@ describe('Layer7Canvas — domain-group context menu', () => {
     fireEvent.contextMenu(screen.getByLabelText('Domain group Core'));
 
     fireEvent.click(screen.getByText('Remove group'));
-    expect(actions.removeDomainGroup).toHaveBeenCalledWith('Core');
+    expect(actions.removeDomainGroup).toHaveBeenCalledWith('core');
   });
 
   it('offers no Tidy entry when the editor supplies no handler', () => {
@@ -248,7 +249,7 @@ describe('Layer7Canvas — domain-group context menu', () => {
     expect(input.value).toBe('Core');
     fireEvent.change(input, { target: { value: 'Kern' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(actions.renameDomainGroup).toHaveBeenCalledWith('Core', 'Kern');
+    expect(actions.renameDomainGroup).toHaveBeenCalledWith('core', 'Kern');
   });
 
   it('shows the settings in the panel it opens, naming the group', () => {
@@ -309,7 +310,7 @@ describe('Layer7Canvas — group colour', () => {
       target: { value: '#2f6fdb' },
     });
 
-    expect(actions.upsertDomainGroup).toHaveBeenCalledWith({ ...GROUP, color: '#2f6fdb' });
+    expect(actions.setDomainGroupColor).toHaveBeenCalledWith('core', '#2f6fdb');
   });
 
   it('shows the colour the group already has', () => {
@@ -322,20 +323,17 @@ describe('Layer7Canvas — group colour', () => {
   });
 
   /**
-   * Clearing must leave the key ABSENT, not present-and-undefined: the mapper
-   * turns a present `color` into a DTO null, and absent-means-inherit is what
-   * makes the group fall back to the theme.
+   * Clearing asks for `undefined`, and the action deletes the key rather than
+   * writing an empty one: absent-means-inherit is what makes the group fall
+   * back to the theme.
    */
-  it('clears back to inherit without leaving an empty colour behind', () => {
+  it('clears back to inherit', () => {
     const { actions, rightClickAt } = renderCanvas({ groupColor: '#2f6fdb' });
     openColorPicker(rightClickAt);
 
     fireEvent.click(screen.getByLabelText('Clear group colour'));
 
-    expect(actions.upsertDomainGroup).toHaveBeenCalledWith(GROUP);
-    const [written] = (actions.upsertDomainGroup as unknown as ReturnType<typeof vi.fn>).mock
-      .calls[0] as [Record<string, unknown>];
-    expect('color' in written).toBe(false);
+    expect(actions.setDomainGroupColor).toHaveBeenCalledWith('core', undefined);
   });
 
   it('tints the box and its label, and leaves an uncoloured group neutral', () => {
@@ -382,7 +380,7 @@ describe('Layer7Canvas — domain-group selection', () => {
     expect(onSelectionChange).toHaveBeenCalledWith({
       elementIds: [],
       connectionIds: [],
-      domainGroups: ['Core'],
+      domainGroups: ['core'],
     });
   });
 
@@ -412,7 +410,7 @@ describe('Layer7Canvas — domain-group selection', () => {
     expect(onSelectionChange).toHaveBeenCalledWith({
       elementIds: [],
       connectionIds: [],
-      domainGroups: ['Core'],
+      domainGroups: ['core'],
     });
   });
 
@@ -424,7 +422,7 @@ describe('Layer7Canvas — domain-group selection', () => {
     expect(onSelectionChange).toHaveBeenCalledWith({
       elementIds: [],
       connectionIds: [],
-      domainGroups: ['Core'],
+      domainGroups: ['core'],
     });
   });
 
@@ -434,7 +432,7 @@ describe('Layer7Canvas — domain-group selection', () => {
 
   it('marks the selected group on its label', () => {
     renderCanvas({
-      selection: { elementIds: [], connectionIds: [], domainGroups: ['Core'] },
+      selection: { elementIds: [], connectionIds: [], domainGroups: ['core'] },
     });
 
     expect(screen.getByLabelText('Domain group Core').getAttribute('aria-pressed')).toBe('true');

@@ -2,7 +2,8 @@ import { DEFAULT_TRANSLATE, type Translate } from '../../i18n/strings';
 import { MIN_GROUP_SIZE } from '../../model/placement';
 export { GROUP_AROUND_PADDING, GROUP_LABEL_ROOM, groupRectAround } from '../../model/placement';
 import { zoneRect } from '../../model/zones';
-import type { DiagramLayoutConfig, DomainGroupRect, Point } from '../../model/types';
+import { claimKey } from '../../model/keys';
+import type { DesignDiagram, DiagramGroup, Point, Rect } from '../../model/types';
 
 /** A new group's box. Big enough to drop two or three cards into straight away. */
 export const DEFAULT_GROUP_SIZE = { width: 420, height: 280 } as const;
@@ -10,23 +11,26 @@ export const DEFAULT_GROUP_SIZE = { width: 420, height: 280 } as const;
 /**
  * Fallback name, and the base every auto-numbered name counts up from.
  *
- * A function of the language, not a constant: a group's name is its KEY and its
- * caption — it goes into the model and onto the board — so an editor set to
- * Dutch must not silently create a box called "New group". English is the
- * default, which keeps every caller that passes nothing (and every test that
- * reads the fallback) saying exactly what it said before.
+ * A function of the language, not a constant: a group's name is its caption and
+ * the id is minted from it — it goes into the model and onto the board — so an
+ * editor set to Dutch must not silently create a box called "New group".
+ * English is the default, which keeps every caller that passes nothing (and
+ * every test that reads the fallback) saying exactly what it said before.
  */
 export function defaultGroupName(translate: Translate = DEFAULT_TRANSLATE): string {
   return translate('newName.domainGroup');
 }
 
 /**
- * A group name that is not taken yet. Names are the group's KEY — `upsertDomainGroup`
- * matches on them — so handing back a name that already exists would silently
- * move and resize somebody else's group instead of creating one. That makes this
- * load-bearing rather than cosmetic, and it is why the palette's own name field
- * runs through here too: someone typing "Commerce" when a "Commerce" already
- * exists gets "Commerce 2", not a hijacked box.
+ * A group name that is not taken yet.
+ *
+ * The name stopped being the group's key when a group got an id (ADR-0012 §6),
+ * so a duplicate no longer hijacks somebody else's box — but two groups called
+ * the same thing are still a board nobody can read, and format 3 has only the
+ * name to write them under until the format turns, so a duplicate would fold
+ * two groups into one on save. Both reasons say the same thing: keep them
+ * distinct. Someone typing "Commerce" when a "Commerce" already exists gets
+ * "Commerce 2".
  */
 export function uniqueGroupName(
   base: string,
@@ -43,7 +47,7 @@ export function uniqueGroupName(
 }
 
 export interface NewDomainGroupOptions {
-  layoutConfig?: DiagramLayoutConfig;
+  diagram?: Pick<DesignDiagram, 'groups' | 'layoutConfig'>;
   /** Where the drop landed, in flow coords. Absent = the cascading default spot. */
   center?: Point;
   name?: string;
@@ -53,10 +57,14 @@ export interface NewDomainGroupOptions {
 }
 
 /**
- * Build the rect for a new domain group, for BOTH ways of creating one: the
- * palette's Place button (no `center` — the box cascades from the landscape's
- * top-left so repeated adds do not stack) and a palette drop (`center` — the box
- * lands where the cursor was).
+ * A new domain group — what it is called, and where its box goes — for BOTH
+ * ways of creating one: the palette's Place button (no `center` — the box
+ * cascades from the landscape's top-left so repeated adds do not stack) and a
+ * palette drop (`center` — the box lands where the cursor was).
+ *
+ * The two halves come back separately because that is what they are (ADR-0012
+ * §6): the name and the colour go into the definition, the box into the
+ * geometry.
  *
  * A dropped box is clamped into the landscape zone. Groups are a landscape
  * concept and the boxes draw at `zIndex: -1`, so a group dropped in the actors
@@ -64,16 +72,22 @@ export interface NewDomainGroupOptions {
  * gesture forgiving instead of letting it produce something broken. Shrinking
  * before shifting matters for a narrow landscape: fit first, then place.
  */
-export function newDomainGroupRect(options: NewDomainGroupOptions = {}): DomainGroupRect {
-  const { layoutConfig, center, name, color, translate } = options;
-  const existing = (layoutConfig?.domainGroups ?? []).map((group) => group.name);
-  const landscape = zoneRect('landscape', layoutConfig);
-  const rect: DomainGroupRect = {
-    name: uniqueGroupName(name ?? defaultGroupName(translate), existing, translate),
-    ...boxFor(landscape, existing.length, center),
-    ...(color ? { color } : {}),
+export function newDomainGroup(
+  options: NewDomainGroupOptions = {},
+): { group: DiagramGroup; box: Rect } {
+  const { diagram, center, name, color, translate } = options;
+  const held = diagram?.groups ?? [];
+  const chosen = uniqueGroupName(
+    name ?? defaultGroupName(translate), held.map((group) => group.name), translate,
+  );
+  return {
+    group: {
+      id: claimKey(chosen, new Set(held.map((group) => group.id))),
+      name: chosen,
+      ...(color ? { color } : {}),
+    },
+    box: boxFor(zoneRect('landscape', diagram?.layoutConfig), held.length, center),
   };
-  return rect;
 }
 
 function boxFor(

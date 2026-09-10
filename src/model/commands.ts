@@ -28,10 +28,12 @@
  */
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { AdrId, RelationId, Diagram, DiagramId, Model, TransitionId } from './normalised'
+import type {
+  AdrId, RelationId, Diagram, DiagramId, GroupId, Model, TransitionId,
+} from './normalised'
 import { decisionsOf } from './normalised'
 import type {
-  DesignElement, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
+  DesignElement, DiagramGroup, DiagramLayoutConfig, DiagramPlacement, DiagramSettings,
   EdgeRoute, ElementId, Relation,
 } from './types'
 
@@ -72,6 +74,12 @@ export type CommandBody =
   | { type: 'route.set'; diagramId: DiagramId; routes: EdgeRoute[]; at?: number[] }
   | { type: 'route.clear'; diagramId: DiagramId; relationIds: RelationId[] }
   | { type: 'layout.set'; diagramId: DiagramId; layoutConfig?: DiagramLayoutConfig }
+
+  // --- dashed groups: what they are called, per diagram (ADR-0012 §6) -------
+  /** Upsert by id. Renaming one is this command and nothing else. */
+  | { type: 'group.set'; diagramId: DiagramId; groups: DiagramGroup[]; at?: number[] }
+  /** Takes the group's box with it; the members it held are the caller's to unfile. */
+  | { type: 'group.remove'; diagramId: DiagramId; groupIds: GroupId[] }
 
   // --- diagrams ------------------------------------------------------------
   | { type: 'diagram.create'; diagram: Diagram; at?: number }

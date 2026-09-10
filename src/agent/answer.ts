@@ -15,7 +15,7 @@
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf, placementList, transitionList } from '../model/normalised'
+import { decisionsOf, groupsOf, placementList, transitionList } from '../model/normalised'
 import { today } from '../model/lifecycle'
 import { findTransition, transitionLabel } from '../model/transition'
 import type { Transition } from '../model/transition'
@@ -99,8 +99,21 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
           .filter((c) => c.sourceId === element.id || c.targetId === element.id)
           .map((c) => connectionLine(model, c)),
         drawnOn: model.order.diagrams.flatMap((diagramId) => {
-          const placement = model.diagrams[diagramId].placements[element.id]
-          return placement ? [{ diagramId, name: model.diagrams[diagramId].name, ...placement }] : []
+          const diagram = model.diagrams[diagramId]
+          const placement = diagram.placements[element.id]
+          if (!placement) return []
+          // A group goes out under its NAME: that is what `group` and
+          // `element.place` take, and what a reader has seen on the board. The
+          // id is the model's (ADR-0012 §6).
+          const { group, ...rest } = placement
+          return [{
+            diagramId,
+            name: diagram.name,
+            ...rest,
+            ...(group !== undefined
+              ? { domainGroup: groupsOf(diagram)[group]?.name ?? group }
+              : {}),
+          }]
         }),
         decisions: model.order.decisions
           .map((id) => decisionsOf(model)[id])

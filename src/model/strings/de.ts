@@ -85,6 +85,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.removedMany': '{count} Elemente vom Diagramm genommen',
   'activity.routeChanged': 'Linienführung geändert',
   'activity.layoutChanged': 'Anordnung geändert',
+  'activity.groupChanged': 'Gruppe {name} geändert',
+  'activity.groupRemoved': 'Gruppe {name} entfernt',
   'activity.diagramAdded': 'Diagramm {name} hinzugefügt',
   'activity.diagramRenamed': 'Diagramm umbenannt in {name}',
   'activity.diagramSettings': 'Einstellungen von {name} geändert',

@@ -32,7 +32,8 @@ function model(): DesignModel {
           { elementId: 'a1', zone: 'landscape', x: 400, y: 300 },
           { elementId: 'b1', zone: 'externalSystems', x: 1500, y: 400 },
         ],
-        layoutConfig: { domainGroups: [{ name: 'Core', x: 300, y: 250, width: 500, height: 400 }] },
+        groups: [{ id: 'core', name: 'Core' }],
+        layoutConfig: { domainGroups: [{ id: 'core', x: 300, y: 250, width: 500, height: 400 }] },
       },
       { id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] },
     ],
@@ -176,7 +177,7 @@ describe('DiagramCanvas — element menu', () => {
     const placement = landed().placements.find((p) => p.elementId === 'a1');
     const band = zoneRect('actors');
     expect(placement?.zone).toBe('actors');
-    expect(placement?.domainGroup).toBeUndefined();
+    expect(placement?.group).toBeUndefined();
     expect(placement!.y).toBeGreaterThanOrEqual(band.y);
     expect(placement!.y).toBeLessThan(band.y + band.height);
   });
@@ -186,7 +187,7 @@ describe('DiagramCanvas — element menu', () => {
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(openSubmenu(menu('Element menu'), 'Domain group')).getByRole('menuitemcheckbox', { name: 'Core' }));
     const placement = landed().placements.find((p) => p.elementId === 'a1');
-    expect(placement).toMatchObject({ domainGroup: 'Core', x: 400, y: 300 });
+    expect(placement).toMatchObject({ group: 'core', x: 400, y: 300 });
   });
 
   it('"Start connection to…" enters connect mode; the next node click connects, Escape cancels', () => {
@@ -410,7 +411,7 @@ describe('DiagramCanvas — canvas menu', () => {
     fireEvent.contextMenu(pane(), { clientX: 500, clientY: 450 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Add domain group here'));
     const groups = landed().layoutConfig?.domainGroups ?? [];
-    expect(groups.map((g) => g.name)).toEqual(['Core', 'New group']);
+    expect(groups.map((g) => g.id)).toEqual(['core', 'new-group']);
   });
 
   it('Copy on an element then "Paste here" pastes the copy with its corner at the click point', () => {
@@ -472,11 +473,11 @@ describe('DiagramCanvas — selection menu', () => {
 
     expect(sent()).toBe(before + 1);
     const batch = landed();
-    const group = batch.layoutConfig?.domainGroups?.find((g) => g.name === 'New group');
+    const group = batch.layoutConfig?.domainGroups?.find((g) => g.id === 'new-group');
     expect(group).toBeDefined();
     // The landscape member joins; the band member is not a group member.
-    expect(batch.placements.find((p) => p.elementId === 'a1')?.domainGroup).toBe('New group');
-    expect(batch.placements.find((p) => p.elementId === 'b1')?.domainGroup).toBeUndefined();
+    expect(batch.placements.find((p) => p.elementId === 'a1')?.group).toBe('new-group');
+    expect(batch.placements.find((p) => p.elementId === 'b1')?.group).toBeUndefined();
     // The box wraps the application card (200×130 at 400,300).
     expect(group!.x).toBeLessThan(400);
     expect(group!.y).toBeLessThan(300);

@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactFlow, ViewportPortal } from '@xyflow/react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
-import type { DiagramLayoutConfig, DomainGroupRect, Point } from '../../model/types';
+import type {
+  DiagramGroup, DiagramLayoutConfig, DomainGroupRect, Point, Rect,
+} from '../../model/types';
 import { useCanvasMenu } from './CanvasMenuContext';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
@@ -48,24 +50,31 @@ interface Gesture {
 
 export interface DomainGroupLayerProps {
   layoutConfig?: DiagramLayoutConfig;
+  /**
+   * What the groups are CALLED, by id (ADR-0012 §6). The boxes come from the
+   * layout config; the label and the colour come from here, which is why a
+   * rename moves no geometry.
+   */
+  groups: readonly DiagramGroup[];
   readOnly: boolean;
-  /** Names of the currently selected groups (drawn solid + accented). */
+  /** Ids of the currently selected groups (drawn solid + accented). */
   selected: string[];
   /**
    * Select a group. Fired by a click (or the start of a drag/resize) on the
    * label; clicking the box interior is resolved by the canvas's pane-click
    * hit-test, since the box itself is click-through.
    */
-  onSelect(name: string): void;
-  onUpsert(rect: DomainGroupRect): void;
+  onSelect(groupId: string): void;
+  /** Commit a resized box. Geometry only. */
+  onResize(groupId: string, box: Rect): void;
   /** Rigid-move a group: translate the box AND its members by (dx, dy). */
-  onMove(name: string, dx: number, dy: number): void;
-  onRename(oldName: string, newName: string): void;
+  onMove(groupId: string, dx: number, dy: number): void;
+  onRename(groupId: string, name: string): void;
   /**
    * Start the inline rename of one group from outside (the group menu's
    * "Rename", F2 on a selected group). Handled once per nonce.
    */
-  renameRequest?: { name: string; nonce: number };
+  renameRequest?: { groupId: string; nonce: number };
 }
 
 /**
@@ -86,15 +95,16 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
   const { screenToFlowPosition } = useReactFlow();
   const menu = useCanvasMenu();
   const [preview, setPreview] = useState<DomainGroupRect | null>(null);
-  const [renaming, setRenaming] = useState<{ name: string; value: string } | null>(null);
-  const { renameRequest, readOnly } = props;
+  const [renaming, setRenaming] = useState<{ groupId: string; value: string } | null>(null);
+  const { renameRequest, readOnly, groups } = props;
   const handledRenameNonce = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (!renameRequest || handledRenameNonce.current === renameRequest.nonce) return;
     handledRenameNonce.current = renameRequest.nonce;
     if (readOnly) return;
-    setRenaming({ name: renameRequest.name, value: renameRequest.name });
-  }, [renameRequest, readOnly]);
+    const held = groups.find((group) => group.id === renameRequest.groupId);
+    setRenaming({ groupId: renameRequest.groupId, value: held?.name ?? renameRequest.groupId });
+  }, [renameRequest, readOnly, groups]);
   // What the pointer grabbed, promoted to `gesture` once the drag really starts.
   const pending = useRef<{ group: DomainGroupRect; mode: 'move' | 'resize' } | null>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -136,9 +146,10 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
       // A move carries the group's members along (rigid translate); a resize
       // touches the box alone.
       if (live.mode === 'move') {
-        props.onMove(live.group.name, live.current.x - live.group.x, live.current.y - live.group.y);
+        props.onMove(live.group.id, live.current.x - live.group.x, live.current.y - live.group.y);
       } else {
-        props.onUpsert(live.current);
+        const { id, ...box } = live.current;
+        props.onResize(id, box);
       }
     },
     onCancel: () => {
@@ -147,8 +158,9 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
     },
   });
 
-  const groups = props.layoutConfig?.domainGroups ?? [];
-  if (groups.length === 0) return null;
+  const boxes = props.layoutConfig?.domainGroups ?? [];
+  const named = new Map(props.groups.map((group) => [group.id, group]));
+  if (boxes.length === 0) return null;
 
   const beginGesture =
     (group: DomainGroupRect, mode: 'move' | 'resize') =>
@@ -157,24 +169,26 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
       // Select first, drag second — the label stops propagation, so the pane
       // click that would otherwise select the group never fires. Selection is
       // allowed read-only (it only drives the inspector); the gesture is not.
-      props.onSelect(group.name);
+      props.onSelect(group.id);
       if (props.readOnly) return;
       pending.current = { group, mode };
       drag.onPointerDown(event);
     };
 
   const commitRename = () => {
-    if (renaming) props.onRename(renaming.name, renaming.value);
+    if (renaming) props.onRename(renaming.groupId, renaming.value);
     setRenaming(null);
   };
 
   return (
     <>
       <ViewportPortal>
-        {groups.map((group) => {
-          const rect = preview && preview.name === group.name ? preview : group;
-          const colors = groupColors(tokens, theme.palette.mode === 'dark', group.color);
-          const isSelected = props.selected.includes(group.name);
+        {boxes.map((group) => {
+          const rect = preview && preview.id === group.id ? preview : group;
+          const held = named.get(group.id);
+          const label = held?.name ?? group.id;
+          const colors = groupColors(tokens, theme.palette.mode === 'dark', held?.color);
+          const isSelected = props.selected.includes(group.id);
           // Selected reads like a selected node: the dashes go solid and a soft
           // ring lifts the box off the band behind it. The group's own colour
           // still owns the border and the wash — selection is a state on top of
@@ -184,9 +198,9 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
             : `1.5px dashed ${colors.border}`;
           return (
             <div
-              key={group.name}
+              key={group.id}
               data-testid="lv-domain-group"
-              data-group={group.name}
+              data-group={group.id}
               style={{
                 position: 'absolute',
                 left: rect.x,
@@ -201,13 +215,13 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                 zIndex: -1,
               }}
             >
-              {renaming?.name === group.name ? (
+              {renaming?.groupId === group.id ? (
                 <input
                   autoFocus
                   className="nodrag nopan"
                   aria-label={t('canvas.groupName')}
                   value={renaming.value}
-                  onChange={(e) => setRenaming({ name: group.name, value: e.target.value })}
+                  onChange={(e) => setRenaming({ groupId: group.id, value: e.target.value })}
                   onBlur={commitRename}
                   onKeyDown={(e) => {
                     // Cancel/commit the rename here first; don't let these keys
@@ -237,16 +251,16 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                 <span
                   className="nodrag nopan"
                   role="button"
-                  aria-label={t('canvas.groupNamed', { name: group.name })}
+                  aria-label={t('canvas.groupNamed', { name: label })}
                   aria-pressed={isSelected}
                   onPointerDown={beginGesture(group, 'move')}
                   onDoubleClick={() =>
-                    !props.readOnly && setRenaming({ name: group.name, value: group.name })
+                    !props.readOnly && setRenaming({ groupId: group.id, value: label })
                   }
                   onContextMenu={(event) => {
                     if (props.readOnly) return;
                     event.stopPropagation();
-                    menu.open({ kind: 'group', name: group.name }, event);
+                    menu.open({ kind: 'group', groupId: group.id }, event);
                   }}
                   style={{
                     position: 'absolute',
@@ -266,13 +280,13 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                     pointerEvents: 'all',
                   }}
                 >
-                  {group.name}
+                  {label}
                 </span>
               )}
               {!props.readOnly && (
                 <div
                   className="nodrag nopan"
-                  aria-label={t('canvas.resizeGroup', { name: group.name })}
+                  aria-label={t('canvas.resizeGroup', { name: label })}
                   onPointerDown={beginGesture(group, 'resize')}
                   style={{
                     position: 'absolute',

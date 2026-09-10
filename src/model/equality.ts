@@ -96,7 +96,7 @@ export function placementsEqual(a: DiagramPlacement, b: DiagramPlacement): boole
   return (
     a.elementId === b.elementId &&
     sameOptional(a.zone, b.zone) &&
-    sameOptional(a.domainGroup, b.domainGroup) &&
+    sameOptional(a.group, b.group) &&
     sameCoordinate(a.x, b.x) &&
     sameCoordinate(a.y, b.y) &&
     sameOptional(a.width, b.width) &&
@@ -154,7 +154,7 @@ export function layoutConfigsEqual(
   return groupsA.every((groupA, i) => {
     const groupB = groupsB[i];
     return (
-      groupA.name === groupB.name &&
+      groupA.id === groupB.id &&
       sameCoordinate(groupA.x, groupB.x) &&
       sameCoordinate(groupA.y, groupB.y) &&
       sameCoordinate(groupA.width, groupB.width) &&

@@ -46,7 +46,7 @@ const host: HostModel = {
     {
       id: 'l7', kind: 'layer7', name: 'Landscape',
       placements: [
-        { elementId: 'billing', zone: 'landscape', domainGroup: 'Finance', x: 100, y: 200 },
+        { elementId: 'billing', zone: 'landscape', group: 'Finance', x: 100, y: 200 },
         { elementId: 'crm', zone: 'landscape', x: 400, y: 200 },
         { elementId: 'who', zone: 'actors', x: 10, y: 10 },
       ],

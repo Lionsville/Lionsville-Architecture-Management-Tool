@@ -9,7 +9,7 @@ import { TidySettingsPanel } from '../TidySettingsPanel';
 import type { DesignDiagram, DesignModel, ElementId, ElementKind, Layer7Zone, Point } from '../../model/types';
 import { selectDomainGroup, type ElementSeedPatch } from '../useEditorState';
 import { DiagramCanvas, type DiagramCanvasProps } from './DiagramCanvas';
-import { newDomainGroupRect } from './domainGroupPlacement';
+import { newDomainGroup } from './domainGroupPlacement';
 import type { DomainGroupSeed } from './ElementPalette';
 import { DomainGroupLayer } from './DomainGroupLayer';
 import type { MenuItem, MenuTarget } from './menuItems';
@@ -39,7 +39,7 @@ export function Layer7Canvas(
     model: DesignModel;
     diagram: DesignDiagram;
     /** Right-click → "Tidy this group": re-lay-out one group's members in place. */
-    onTidyGroup?(name: string): void;
+    onTidyGroup?(groupId: string): void;
     /**
      * Settings for the per-group tidy. Held by the editor but kept SEPARATE
      * from the toolbar's board settings, so a group can be tidied tight and
@@ -54,17 +54,17 @@ export function Layer7Canvas(
   const layoutConfig = diagram.layoutConfig;
   // The settings popover for one group — what "Tidy this group" opens. Anchored
   // at the same point the menu was, so it appears where the user clicked.
-  const [groupSettings, setGroupSettings] = useState<{ name: string; position: Point } | null>(
-    null,
-  );
+  const [groupSettings, setGroupSettings] = useState<
+    { groupId: string; name: string; position: Point } | null
+  >(null);
   // The colour popover for one group, anchored the same way.
-  const [groupColor, setGroupColor] = useState<{ name: string; position: Point } | null>(null);
+  const [groupColor, setGroupColor] = useState<{ groupId: string; position: Point } | null>(null);
   const colorOfGroup = groupColor
-    ? (layoutConfig?.domainGroups ?? []).find((g) => g.name === groupColor.name)?.color
+    ? (diagram.groups ?? []).find((g) => g.id === groupColor.groupId)?.color
     : undefined;
   // "Rename" from the group menu (or F2): hands the group to the layer's inline
   // editor, the same one a double-click on the label opens.
-  const [groupRename, setGroupRename] = useState<{ name: string; nonce: number } | undefined>(
+  const [groupRename, setGroupRename] = useState<{ groupId: string; nonce: number } | undefined>(
     undefined,
   );
   const renameNonce = useRef(0);
@@ -76,8 +76,8 @@ export function Layer7Canvas(
   // assigns membership on drop. Over open landscape the canvas's own menu opens.
   const resolvePaneMenuTarget = useCallback(
     (point: Point): MenuTarget | undefined => {
-      const name = domainGroupForPoint(point, domainGroupRectMap(layoutConfig));
-      return name ? { kind: 'group', name } : undefined;
+      const groupId = domainGroupForPoint(point, domainGroupRectMap(layoutConfig));
+      return groupId ? { kind: 'group', groupId } : undefined;
     },
     [layoutConfig],
   );
@@ -87,26 +87,29 @@ export function Layer7Canvas(
   // through the shared dispatcher like any other item.
   const handleMenuAction = useCallback((item: MenuItem, state: ContextMenuState): boolean => {
     if (state.target.kind !== 'group') return false;
-    const { name } = state.target;
+    const { groupId } = state.target;
     switch (item.action) {
-      case 'tidy-group':
+      case 'tidy-group': {
         // Opens the settings panel rather than tidying on the spot — the panel
-        // carries the Apply button that runs it.
-        setGroupSettings({ name, position: state.screen });
+        // carries the Apply button that runs it. It shows the group's NAME,
+        // which is why this carries both.
+        const name = (diagram.groups ?? []).find((g) => g.id === groupId)?.name ?? groupId;
+        setGroupSettings({ groupId, name, position: state.screen });
         return true;
+      }
       case 'group-color':
         // A colour picked in the palette must be changeable afterwards, or the
         // first wrong guess is permanent.
-        setGroupColor({ name, position: state.screen });
+        setGroupColor({ groupId, position: state.screen });
         return true;
       case 'rename-group':
         renameNonce.current += 1;
-        setGroupRename({ name, nonce: renameNonce.current });
+        setGroupRename({ groupId, nonce: renameNonce.current });
         return true;
       default:
         return false;
     }
-  }, []);
+  }, [diagram.groups]);
 
   // Left-click inside a group box selects it — same click-through, same
   // containment hit-test as the right-click menu above. Clicking a node still
@@ -124,9 +127,9 @@ export function Layer7Canvas(
   const resolveDrop = useCallback(
     (_elementId: ElementId, center: Point) => {
       const zone = zoneForPoint(center, layoutConfig);
-      if (zone !== 'landscape') return { zone, domainGroup: undefined };
+      if (zone !== 'landscape') return { zone, group: undefined };
       const groups = domainGroupRectMap(layoutConfig);
-      return { zone, domainGroup: domainGroupForPoint(center, groups) };
+      return { zone, group: domainGroupForPoint(center, groups) };
     },
     [layoutConfig],
   );
@@ -141,7 +144,7 @@ export function Layer7Canvas(
         kind,
         position,
         zone,
-        domainGroup:
+        group:
           zone === 'landscape'
             ? domainGroupForPoint(position, domainGroupRectMap(layoutConfig))
             : undefined,
@@ -156,11 +159,10 @@ export function Layer7Canvas(
   // a dropped group and a placed group differ only in where they end up.
   const onAddDomainGroupByDrop = useCallback(
     (position: Point, seed?: DomainGroupSeed) => {
-      actions.upsertDomainGroup(
-        newDomainGroupRect({ layoutConfig, center: position, translate: t, ...seed }),
-      );
+      const { group, box } = newDomainGroup({ diagram, center: position, translate: t, ...seed });
+      actions.addDomainGroup(group, box);
     },
-    [actions, layoutConfig],
+    [actions, diagram],
   );
 
   // Which band a palette drag would land in, for the drop outline. Flow
@@ -197,7 +199,8 @@ export function Layer7Canvas(
         readOnly={props.readOnly}
         selected={props.selection.domainGroups}
         onSelect={(name) => props.onSelectionChange(selectDomainGroup(name))}
-        onUpsert={actions.upsertDomainGroup}
+        groups={diagram.groups ?? []}
+        onResize={actions.setDomainGroupBox}
         onMove={actions.moveDomainGroup}
         onRename={actions.renameDomainGroup}
         renameRequest={groupRename}
@@ -216,17 +219,12 @@ export function Layer7Canvas(
           ariaLabel={t('palette.groupColour')}
           value={colorOfGroup}
           readOnly={false}
-          // Writes the whole rect back: `upsertDomainGroup` keys on the name, so
-          // it replaces this group's box and nothing else. Clearing writes the
-          // rect WITHOUT a colour, which is what absent-means-inherit needs —
-          // a `color: undefined` left on the object would serialise as a null.
+          // The colour is the group's, not its box's (ADR-0012 §6), so this is
+          // one line in the definition. Clearing writes the record WITHOUT a
+          // colour, which is what absent-means-inherit needs — a
+          // `color: undefined` left on the object would serialise as a null.
           onChange={(value) => {
-            const rect = groupColor
-              ? (layoutConfig?.domainGroups ?? []).find((g) => g.name === groupColor.name)
-              : undefined;
-            if (!rect) return;
-            const { color: _dropped, ...rest } = rect;
-            actions.upsertDomainGroup(value ? { ...rest, color: value } : rest);
+            if (groupColor) actions.setDomainGroupColor(groupColor.groupId, value || undefined);
           }}
         />
       </Popover>
@@ -250,7 +248,7 @@ export function Layer7Canvas(
               : t('group.tidyApplyAny')
           }
           onApply={() => {
-            if (groupSettings) props.onTidyGroup?.(groupSettings.name);
+            if (groupSettings) props.onTidyGroup?.(groupSettings.groupId);
             setGroupSettings(null);
           }}
         />
