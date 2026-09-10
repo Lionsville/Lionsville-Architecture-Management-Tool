@@ -104,9 +104,11 @@ Three sentences carry the whole thing:
    root is the organisation; a domain is a scope under it; a landscape is a
    scope under that. The ref is the path.
 2. **Identity is organisation-wide and thin.** An id names one thing everywhere
-   in the tree. The highest scope that defines it *names* it; the deepest
-   scope that defines it *details* it; every other scope that draws it holds
-   a stand-in, which may carry that scope's own account of it.
+   in the tree. The deepest scope that defines it holds its **master record**
+   — the name and the detail; a definition above that is a declaration that
+   yields to it; every other scope that draws it holds a stand-in, which may
+   carry that scope's own account of it. A master is always created; it is
+   not always drawn.
 3. **A view says what is on it and what that means; geometry is numbers.** A
    diagram definition holds membership and semantics; its geometry file holds
    coordinates and nothing else, and may be deleted, regenerated, or ignored
@@ -194,39 +196,44 @@ same thing on the same afternoon — resolved by making one of them a stand-in.
 A tool that refused the second definition would refuse the state every real
 merge goes through.
 
-**Who names it, who details it.** For any id, look at every scope in the
-tree that holds a *definition* of it (a record without `ref`, §3):
+**The master is the deepest definition.** For any id, look at every scope
+in the tree that holds a *definition* of it (a record without `ref`, §3):
 
 | question | answer | derived from |
 |---|---|---|
-| what is it called | the **highest** definition's `name` | tree depth |
-| who owns it — whose account is the account | the **deepest** definition's scope | tree depth |
+| what is it called, and whose account is the account | the **deepest** definition — the master | tree depth |
+| what is a definition above the master | a **declaration**: a placeholder that yields | tree depth |
 | who else draws it | every scope holding a stand-in | `ref` |
 | is it in conflict | two definitions at the same depth | depth ties |
-| is it stale | a stand-in's cached `name` ≠ the name above | drift check |
+| is it stale | a stand-in's or a declaration's cached `name` ≠ the master's | drift check |
 | is it dangling | a stand-in with no definition anywhere | drift check |
 
-One rule for two opposite directions of authority, which is the point:
+One rule serves two opposite directions of authority, which is the point:
 
 * **Business functions are top-down.** The organisation defines
-  `fulfilment`; it is the highest *and* the deepest definition, so it names and
-  details it. A domain refines it by holding a stand-in and putting children
-  under it. A domain that defines a function of its own that the organisation
-  never named has made a *proposal* — the organisation sheet shows it as not
+  `fulfilment` and nobody below defines it — a domain refines it by holding a
+  *stand-in* and putting children under it — so the organisation's record
+  stays the deepest, and the name is the organisation's. A domain that
+  defines a function of its own that the organisation never named has made a
+  *proposal*: a master of a new id, shown on the organisation sheet as not
   yet modelled at that level.
-* **Applications are bottom-up.** Retail defines `erp`; it is the deepest
-  definition, so it details it. The organisation *may* also hold a thin
-  definition — `{ id, kind, name }` and nothing else — in which case the
-  organisation names it and retail's `name` is a cached copy. If the
-  organisation holds nothing, retail names it and the register still lists it,
-  derived. That is *first layer, just id and name; second layer, the owner's
-  detail* — without the first layer having to be written before the second.
+* **Applications are bottom-up.** Retail defines `erp`; that is the master,
+  and a rename there is retail's to make. The organisation *may* hold a thin
+  record — `{ id, kind, name }` — as a declaration: it names the thing until
+  someone deeper takes it, and after that it is a cached copy the drift check
+  watches and a refresh rewrites. If the organisation holds nothing, the
+  register lists `erp` anyway, derived. That is *first layer, just id and
+  name; second layer, the owner's detail* — without the first layer having to
+  be written before the second, and without the first layer ever overruling
+  the second.
 
-The rules do not force where a definition sits. An organisation that wants
-every application defined at the domain scope and only drawn in landscapes
-does that as a convention, with *promote* and *demote* gestures (§10) to move
-a definition up or down the tree — and the checks say when the convention
-has not been followed.
+A function's name and an application's name have nothing to do with each
+other. A function is *covered by* 0..n applications (`supports`, §5), and by
+people (`assigned`); a function that is only people doing things is a
+complete answer, not a gap.
+
+The rules do not force which scope holds a master. Where one lands, and how
+it moves, is §10.
 
 **The register is derived.** There is no register file. The register is
 *every definition of an application in the tree, keyed by id*, computed once
@@ -251,7 +258,7 @@ one record shape serves every case:
 type Element = {
   id: ElementId                 // organisation-wide
   kind: Kind                    // §4
-  name: string                  // authoritative on the highest definition; cached elsewhere
+  name: string                  // authoritative on the master; a cache on a declaration or a stand-in
 
   /**
    * Present = this record is a STAND-IN: the thing is defined elsewhere, and this
@@ -292,9 +299,10 @@ type Element = {
 **Three things one record can be**, told apart by what it carries, not by a
 `type` field:
 
-* A **definition**: no `ref`. This scope answers for it. If it carries only
-  `id`, `kind`, `name`, it is a *declaration* — the thin first layer — and
-  the detail is expected deeper down.
+* A **definition**: no `ref`. The deepest one in the tree is the **master
+  record** — this scope answers for it. A definition above the master is a
+  *declaration*: the thin first layer, `id`, `kind`, `name`, standing in for
+  a master that is expected deeper down and yielding to it when it arrives.
 * A **stand-in**: `ref` present. Drawn here, defined there. Its `name` and
   `ref` are caches; its `description` is **this scope's perspective** — what
   the ERP means to the warehouse, which is a different page from what the
@@ -383,10 +391,10 @@ type Relation = {
 | type | from → to | reads as |
 |---|---|---|
 | `flow` | application → application | an interface; today's connection, unchanged |
-| `supports` | application → function \| step \| process | "supported by" — the line the enterprise map is made of |
+| `supports` | application → function \| step \| process | "covered by" — 0..n per function; the line the enterprise map is made of |
 | `serves` | function → step | which capabilities a journey step draws on |
 | `realises` | process → function | this process is how that capability is done |
-| `assigned` | actor → function \| step | who is responsible |
+| `assigned` | actor → function \| step | who is responsible — and, with no `supports` beside it, that the function is people doing things |
 
 Containment is **not** a relation: `parentId` is one parent, always, and a
 field is what a tree wants. Replacement stays a field (`successorId`) for the
@@ -516,6 +524,8 @@ refreshed by the watcher, and each has a place it is drawn.
 | drift — a stand-in's `name` or `ref` disagrees with the tree | the index | a finding on the scope; a *refresh* command rewrites the caches as one undo step |
 | dangling — a stand-in nobody defines, or a relation end nobody holds | the index | a finding; drawn as a stub |
 | unmapped function — no `scopes`, no stand-in below | §3 | the organisation sheet, in its own band |
+| uncovered function — no `supports` and no `assigned` | relations | the map; a function with `assigned` only is *manual*, which is an answer and not a finding |
+| a master drawn nowhere | views | the register page, as information; a thing can be real and not yet on a board |
 | proposal — a domain function with no definition above | §2 | the organisation sheet, marked |
 | unattributed — `outside` with no `partyId` | the record | the register, the landscape |
 | the enterprise map — `supports` rolled up under each function across domains | relations, the index | the `map` view |
@@ -524,6 +534,13 @@ A finding is a value with a key (`platform/errors.ts` style), never a refusal,
 and never a reason a save fails.
 
 ### 10. Sessions and editing
+
+**A master record and a drawing are two acts.** *New application* creates
+the master in the open scope's model, and may — or may not — put it on the
+active view; placing an existing thing on a view creates a member, never a
+record. A master with no view is ordinary (§9). A drawing with no master
+anywhere is a dangling stand-in, and *link* is how it gets one. The record is
+never a by-product of the picture.
 
 **A session opens one scope.** It holds that scope's model on its command
 stack, and it holds the index read-only. Everything a keystroke or an agent
@@ -554,6 +571,45 @@ team wants it enforced upstream, `CODEOWNERS`.
 Write the *other* scope first, then this one — the same ordering as a group
 move today, for the same reason: failing halfway must leave a duplicate, never
 a hole.
+
+### 11. From today's folder to this one
+
+The folder format goes from 3 to 4 and the working file with it. **Opening
+an old folder transforms it**, the way versions 1 and 2 of the working file
+open today and version 3 is what gets written — except that this one is a
+whole tree rather than a file, so it is an explicit pass rather than a quiet
+rewrite on save: a snapshot first where the folder has git (ADR-0008 keeps
+what it looked like), every scope rewritten, the superseded files —
+`project.json`, `group.json`, `.placements.json` — removed by the migration
+itself, because the store's own rule is to remove only what the format
+writes and the format no longer writes these. A browser tab does the same
+pass over its keys. An older build opening a migrated folder sees no projects
+in it, which is the honest answer and the same one `isWorkingFile` gives a
+file it does not know. Every step is mechanical and has a clear inverse:
+
+| today | tomorrow |
+|---|---|
+| `project.json` | `scope.json` (`kind: 'landscape'`) |
+| `group.json` + its `decisions/` | the domain's `scope.json` and `decisions/` |
+| `.lionsville-architecture/folder.json` → `organisation` | the root's `scope.json` |
+| `model.customerName` | the root scope's `name`; dropped from the model |
+| `connections` | `relations`, every row `type: 'flow'` |
+| `externalSystem` | `application` + `outside: true` |
+| `inputChannel` / `managementTool` | `application`; the element's zone on each view it was on |
+| `parentApplicationId` | `parentId` |
+| `placements[].zone`, `.domainGroup` | `members[]` on the definition; groups get ids |
+| `layoutConfig.domainGroups` rects, `canvas`, `zones` | the geometry file |
+| `<id>.placements.json` | `<id>.geometry.json` |
+| `Adr.applicationId` | `subjectId` |
+| ids unique per project | ids unique per tree — a collision on migration is a *conflict finding*, not a stop |
+
+**The interchange format does not change.** It is a contract with other
+tools and an export of *one scope*: stand-ins go out as elements with their
+cached names, relations of type `flow` go out as connections, and everything
+else is a new optional field an older reader ignores. `solution-design/v1`
+keeps its name, and the round trip that pins a byte-for-byte v1 import →
+export keeps passing, because a landscape with no stand-ins and only flows
+is the format it always was.
 
 ## Consequences
 
@@ -613,15 +669,13 @@ format before the format turns.
 
 ## Open questions
 
-* **Where definitions should sit by convention** — every application at its
-  domain, or where it was first drawn. The rules serve both; the checks say
-  when the convention slips. The default is *where first drawn*, because it
-  is the one that costs a new user nothing.
-* **Whether the organisation's declaration is a lock.** If the root holds a
-  thin `erp`, retail's rename becomes a cached copy that drifts. The answer
-  above: the check says so and refresh fixes it. A stricter answer — refuse
-  the rename at the domain — is one line in `mayEdit` and a decision about
-  how much friction an architect wants.
+* **Which scope a new master lands in.** The open scope, by the rules — and
+  that is right when a domain draws its own boards and wrong when a landscape
+  three levels down sketches an application the domain should hold. *Promote*
+  fixes it after the fact; a folder-wide setting naming the scope masters go
+  to (`folder.json`, the shared scope of ADR-0005) would fix it before, at
+  the cost of *New application* writing two scopes. Not decided; the check
+  that says "a master below its domain" is enough to start with.
 * **Nested domains and the sheet chain.** `acme/rail/rolling-stock` gives
   `rail` a sheet refining `acme`'s and `rolling-stock` refining `rail`'s. The
   rules generalise; whether the pages should draw three levels or two is a
