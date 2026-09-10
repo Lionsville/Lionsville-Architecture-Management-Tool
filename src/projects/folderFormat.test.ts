@@ -53,7 +53,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
       {
         id: 'l7', kind: 'layer7', name: 'Landschap',
         placements: [{ elementId: 'crews', x: 10, y: 20 }, { elementId: 'reisinfo', x: 200, y: 20 }],
-        edgeRoutes: [{ connectionId: 'c-1', waypoints: [{ x: 1, y: 2 }] }],
+        edgeRoutes: [{ relationId: 'c-1', waypoints: [{ x: 1, y: 2 }] }],
       },
       { id: 'containers', kind: 'container', name: 'Crews · containers', placements: [] },
     ],

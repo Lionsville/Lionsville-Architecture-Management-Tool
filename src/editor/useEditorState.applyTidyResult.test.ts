@@ -77,9 +77,9 @@ function modelWithRoutes(): DesignModel {
         ],
         edgeRoutes: [
           // waypoints-only route
-          { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
+          { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
           // label-anchor-only route
-          { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+          { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
         ],
       },
     ],
@@ -97,8 +97,8 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
 
     // Sanity: both manual routes are live before Tidy.
     expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
-      { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
-      { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+      { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
+      { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
 
     act(() => {
@@ -121,8 +121,8 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
     // (b) One undo restores the original routes verbatim.
     act(() => result.current.undo());
     expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
-      { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
-      { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+      { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
+      { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
   });
 
@@ -223,9 +223,9 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
         domainGroups: [],
         edgeRoutes: [
           // ELK routed c1 with bends → its waypoints must be SET.
-          { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
+          { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
           // ELK routed c2 straight (empty) and it had a content route → CLEARED.
-          { connectionId: 'c2', waypoints: [] },
+          { relationId: 'c2', waypoints: [] },
         ],
       });
     });
@@ -237,9 +237,9 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
 
     // The diagram after it: c1 routed, c2 gone.
     const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
-    const byConn = new Map(routes.map((r) => [r.connectionId, r]));
+    const byConn = new Map(routes.map((r) => [r.relationId, r]));
     expect(byConn.get('c1')).toEqual({
-      connectionId: 'c1',
+      relationId: 'c1',
       waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }],
     });
     expect(byConn.has('c2')).toBe(false);
@@ -247,8 +247,8 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
     // One undo restores BOTH original routes verbatim.
     act(() => result.current.undo());
     expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
-      { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
-      { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+      { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
+      { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
   });
 
@@ -265,13 +265,13 @@ describe('applyTidyResult (U-edge-2 — ELK routes set, the rest cleared)', () =
           { elementId: 'e2', zone: 'landscape', domainGroup: 'Core', x: 400, y: 400 },
         ],
         domainGroups: [],
-        edgeRoutes: [{ connectionId: 'c2', waypoints: [], labelPosition: { x: 12, y: 34 } }],
+        edgeRoutes: [{ relationId: 'c2', waypoints: [], labelPosition: { x: 12, y: 34 } }],
       });
     });
 
     const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
-    const c2 = routes.find((r) => r.connectionId === 'c2');
-    expect(c2).toEqual({ connectionId: 'c2', waypoints: [], labelPosition: { x: 12, y: 34 } });
+    const c2 = routes.find((r) => r.relationId === 'c2');
+    expect(c2).toEqual({ relationId: 'c2', waypoints: [], labelPosition: { x: 12, y: 34 } });
   });
 });
 
@@ -326,17 +326,17 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
       result.current.actions.applyTidyResult({
         placements: [{ elementId: 'e1', zone: 'landscape', domainGroup: 'Core', x: 200, y: 200 }],
         domainGroups: [{ name: 'Core', x: 60, y: 70, width: 300, height: 200 }],
-        edgeRoutes: [{ connectionId: 'c1', waypoints: [] }],
+        edgeRoutes: [{ relationId: 'c1', waypoints: [] }],
         partial: true,
       });
     });
 
     const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
     // c1 was listed with empty waypoints → cleared.
-    expect(routes.find((r) => r.connectionId === 'c1')).toBeUndefined();
+    expect(routes.find((r) => r.relationId === 'c1')).toBeUndefined();
     // c2 was never listed → its manual label anchor survives untouched.
-    expect(routes.find((r) => r.connectionId === 'c2')).toEqual({
-      connectionId: 'c2',
+    expect(routes.find((r) => r.relationId === 'c2')).toEqual({
+      relationId: 'c2',
       waypoints: [],
       labelPosition: { x: 99, y: 88 },
     });
@@ -358,8 +358,8 @@ describe('applyTidyResult (partial — per-group tidy)', () => {
     });
 
     expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
-      { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
-      { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+      { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }] },
+      { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
   });
 });
@@ -382,18 +382,18 @@ describe('applyTidyResult (no second preserve filter)', () => {
           // What a pass with c1 preserved emits: c1's stored geometry unchanged,
           // c2 freshly routed. The apply step cannot tell them apart, and does
           // not need to — writing the preserved one back is a no-op.
-          { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }], source: 'manual' },
-          { connectionId: 'c2', waypoints: [{ x: 77, y: 88 }], source: 'auto' },
+          { relationId: 'c1', waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }], source: 'manual' },
+          { relationId: 'c2', waypoints: [{ x: 77, y: 88 }], source: 'auto' },
         ],
       });
     });
 
     const routes = result.current.model.diagrams[0].edgeRoutes ?? [];
-    expect(routes.find((r) => r.connectionId === 'c1')).toMatchObject({
+    expect(routes.find((r) => r.relationId === 'c1')).toMatchObject({
       waypoints: [{ x: 10, y: 20 }, { x: 30, y: 40 }],
       source: 'manual',
     });
-    expect(routes.find((r) => r.connectionId === 'c2')).toMatchObject({
+    expect(routes.find((r) => r.relationId === 'c2')).toMatchObject({
       waypoints: [{ x: 77, y: 88 }],
       source: 'auto',
     });
@@ -407,12 +407,12 @@ describe('applyTidyResult (no second preserve filter)', () => {
     act(() => {
       result.current.actions.applyTidyResult({
         placements: [],
-        edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 500, y: 500 }], source: 'auto' }],
+        edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 500, y: 500 }], source: 'auto' }],
       });
     });
 
     expect(
-      result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1'),
+      result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1'),
     ).toMatchObject({ waypoints: [{ x: 500, y: 500 }], source: 'auto' });
   });
 

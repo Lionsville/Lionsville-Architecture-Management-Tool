@@ -40,7 +40,7 @@ function model(): DesignModel {
           { elementId: 'e2', zone: 'landscape', x: 900, y: 400 },
         ],
         // Router output: no handles, larger radius, replaceable — until touched.
-        edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 500, y: 400 }], source: 'auto' }],
+        edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 500, y: 400 }], source: 'auto' }],
       },
     ],
   };
@@ -49,7 +49,7 @@ function model(): DesignModel {
 function render(initial: DesignModel = model()) {
   const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
   const stored = () =>
-    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1');
+    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1');
   return { result, host, stored };
 }
 

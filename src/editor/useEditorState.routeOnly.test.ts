@@ -37,8 +37,8 @@ function model(): DesignModel {
           { elementId: 'e3', zone: 'landscape', x: 100, y: 800 },
         ],
         edgeRoutes: [
-          { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }] },
-          { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+          { relationId: 'c1', waypoints: [{ x: 10, y: 20 }] },
+          { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
         ],
         layoutConfig: {
           canvas: { width: 2000, height: 1200 },
@@ -82,17 +82,17 @@ describe('route-only through applyTidyResult', () => {
     const after = result.current.model.diagrams[0];
     expect(after.placements).toEqual(placementsBefore);
     expect(after.layoutConfig).toEqual(layoutConfigBefore);
-    const c1 = after.edgeRoutes!.find((r) => r.connectionId === 'c1')!;
+    const c1 = after.edgeRoutes!.find((r) => r.relationId === 'c1')!;
     expect(c1.waypoints.length).toBeGreaterThan(0);
     expect(c1.waypoints).not.toEqual([{ x: 10, y: 20 }]); // the stale route is gone
     // c2's line is clear, so its stale label anchor is cleared back to default.
-    expect(after.edgeRoutes!.find((r) => r.connectionId === 'c2')).toBeUndefined();
+    expect(after.edgeRoutes!.find((r) => r.relationId === 'c2')).toBeUndefined();
 
     // (c) ONE undo restores every prior route verbatim.
     act(() => result.current.undo());
     expect(result.current.model.diagrams[0].edgeRoutes).toEqual([
-      { connectionId: 'c1', waypoints: [{ x: 10, y: 20 }] },
-      { connectionId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
+      { relationId: 'c1', waypoints: [{ x: 10, y: 20 }] },
+      { relationId: 'c2', waypoints: [], labelPosition: { x: 99, y: 88 } },
     ]);
     expect(result.current.model.diagrams[0].placements).toEqual(placementsBefore);
   });

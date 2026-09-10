@@ -151,7 +151,7 @@ export function toDiagram(diagram: DesignDiagram): Diagram {
   out.placements = placements
   let routeOrder: RelationId[] = []
   if (diagram.edgeRoutes !== undefined) {
-    const [routes, order] = index(diagram.edgeRoutes, (r) => r.connectionId)
+    const [routes, order] = index(diagram.edgeRoutes, (r) => r.relationId)
     out.edgeRoutes = routes
     routeOrder = order
   }

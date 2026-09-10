@@ -41,13 +41,13 @@ function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
   };
 }
 
-const AUTO: EdgeRoute = { connectionId: 'c1', waypoints: [{ x: 500, y: 165 }, { x: 500, y: 400 }], source: 'auto' };
+const AUTO: EdgeRoute = { relationId: 'c1', waypoints: [{ x: 500, y: 165 }, { x: 500, y: 400 }], source: 'auto' };
 const MANUAL: EdgeRoute = { ...AUTO, source: 'manual' };
 
 function render(initial: DesignModel) {
   const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
   const stored = (id = 'c1') =>
-    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === id);
+    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === id);
   /** What the last step asked for, flattened — `route.set` or `route.clear`. */
   const asked = () => {
     const last = host.current.commands.at(-1);
@@ -66,7 +66,7 @@ describe('setRouteSides', () => {
     });
     expect(host.current.commands).toHaveLength(1);
     expect(asked()).toEqual(['route.set']);
-    expect(stored()).toEqual({ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
+    expect(stored()).toEqual({ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
     expect(manualRouteIds(result.current.model.diagrams[0]).has('c1')).toBe(false);
     expect(token).toBe(result.current.commitToken);
   });
@@ -100,7 +100,7 @@ describe('setRouteSides', () => {
   });
 
   it('freeing the last side of a side-only row forgets the row', () => {
-    const { result, stored, asked } = render(model([{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' }]));
+    const { result, stored, asked } = render(model([{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' }]));
     act(() => result.current.actions.setRouteSides('c1', { sourceSide: undefined }));
     expect(stored()).toBeUndefined();
     expect(asked()).toEqual(['route.clear']);
@@ -116,7 +116,7 @@ describe('setRouteSides', () => {
     expect(result.current.geometryVersion).toBe(before); // nothing queues a live pass; the caller runs one
     act(() => {
       result.current.actions.applyTidyResult(
-        { placements: [], edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 200, y: 100 }, { x: 200, y: 60 }], source: 'auto', sourceSide: 'top' }] },
+        { placements: [], edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 200, y: 100 }, { x: 200, y: 60 }], source: 'auto', sourceSide: 'top' }] },
         token,
       );
     });
@@ -145,8 +145,8 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
     expect(host.current.commands).toHaveLength(1);
     expect(result.current.model.relations.find((c) => c.id === id))
       .toMatchObject({ sourceId: 'e1', targetId: 'e3' });
-    expect(result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === id)).toEqual({
-      connectionId: id,
+    expect(result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === id)).toEqual({
+      relationId: id,
       waypoints: [],
       source: 'auto',
       sourceSide: 'right',
@@ -183,7 +183,7 @@ describe('the other route actions carry sides', () => {
   it('removing every bend of a hand-drawn row with sides leaves a side-only AUTO row, not a claim', () => {
     const { result, stored } = render(model([SIDED]));
     act(() => result.current.actions.setEdgeRoute('c1', []));
-    expect(stored()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
+    expect(stored()).toEqual({ relationId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
     expect(manualRouteIds(result.current.model.diagrams[0]).has('c1')).toBe(false);
   });
 
@@ -196,7 +196,7 @@ describe('the other route actions carry sides', () => {
   });
 
   it('resetting the chip of a row that then holds only sides hands the line back to the router', () => {
-    const { result, stored } = render(model([{ connectionId: 'c1', waypoints: [], labelPosition: { x: 1, y: 2 }, source: 'manual', sourceSide: 'top' }]));
+    const { result, stored } = render(model([{ relationId: 'c1', waypoints: [], labelPosition: { x: 1, y: 2 }, source: 'manual', sourceSide: 'top' }]));
     act(() => result.current.actions.setEdgeLabelPosition('c1', undefined));
     expect(stored()).toMatchObject({ waypoints: [], source: 'auto', sourceSide: 'top' });
   });
@@ -217,7 +217,7 @@ describe('the other route actions carry sides', () => {
     act(() =>
       result.current.actions.applyTidyResult({
         placements: [],
-        edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 200, y: 60 }], source: 'auto', sourceSide: 'top' }],
+        edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 200, y: 60 }], source: 'auto', sourceSide: 'top' }],
       }),
     );
     expect(stored()).toMatchObject({ waypoints: [{ x: 200, y: 60 }], sourceSide: 'top' });
@@ -226,6 +226,6 @@ describe('the other route actions carry sides', () => {
     // bends gone, side kept, row the router's.
     const cleared = render(model([{ ...MANUAL, sourceSide: 'top' }]));
     act(() => cleared.result.current.actions.applyTidyResult({ placements: [], edgeRoutes: [] }));
-    expect(cleared.stored()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
+    expect(cleared.stored()).toEqual({ relationId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
   });
 });

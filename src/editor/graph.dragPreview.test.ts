@@ -40,8 +40,8 @@ function model(source: EdgeRouteSource): DesignModel {
           { elementId: 'e3', zone: 'landscape', x: 1500, y: 400 },
         ],
         edgeRoutes: [
-          { connectionId: 'moving', waypoints: [{ x: 500, y: 250 }], labelPosition: { x: 500, y: 230 }, source },
-          { connectionId: 'still', waypoints: [{ x: 1200, y: 250 }], source },
+          { relationId: 'moving', waypoints: [{ x: 500, y: 250 }], labelPosition: { x: 500, y: 230 }, source },
+          { relationId: 'still', waypoints: [{ x: 1200, y: 250 }], source },
         ],
       },
     ],
@@ -66,7 +66,7 @@ const edgesWhileDragging = (
 
 /** What a preview pass produces for `moving`: router output, therefore `auto`. */
 const previewed: EdgeRoute = {
-  connectionId: 'moving',
+  relationId: 'moving',
   waypoints: [{ x: 700, y: 610 }],
   labelPosition: { x: 700, y: 590 },
   source: 'auto',

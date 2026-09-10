@@ -118,7 +118,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
     // genuinely competing for the same strip of board. Without this the test could
     // pass on a board where nothing was ever close.
     const channels = model.relations.map((c) => {
-      const waypoints = result.edgeRoutes!.find((r) => r.connectionId === c.id)!.waypoints;
+      const waypoints = result.edgeRoutes!.find((r) => r.relationId === c.id)!.waypoints;
       expect(waypoints.length).toBeGreaterThan(0);
       return waypoints[0].y;
     });
@@ -126,7 +126,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
 
     // Every labelled edge got a pin (none fell back to auto-centring)…
     const chips = model.relations.map((c) => {
-      const at = result.edgeRoutes!.find((r) => r.connectionId === c.id)!.labelPosition;
+      const at = result.edgeRoutes!.find((r) => r.relationId === c.id)!.labelPosition;
       expect(at, `${c.id} was not pinned`).toBeDefined();
       return { id: c.id, rect: chipRect(c, at!) };
     });
@@ -149,7 +149,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
     shuffled.diagram.placements.reverse();
 
     const pins = (result: Awaited<ReturnType<typeof routeDiagramEdges>>) =>
-      Object.fromEntries(result.edgeRoutes!.map((r) => [r.connectionId, r.labelPosition]));
+      Object.fromEntries(result.edgeRoutes!.map((r) => [r.relationId, r.labelPosition]));
 
     expect(pins(await routeDiagramEdges(shuffled.model, shuffled.diagram))).toEqual(
       pins(await routeDiagramEdges(forward.model, forward.diagram)),

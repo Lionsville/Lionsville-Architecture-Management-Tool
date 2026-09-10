@@ -58,7 +58,7 @@ describe('buildEdges — the slot fan sees waypoint-less edges only', () => {
   });
 
   it('leaves a straight edge on the side centre when its neighbour is routed', () => {
-    const anchors = anchorsOf(model([{ connectionId: 'c2', waypoints: [{ x: 450, y: 465 }], source: 'auto' }]));
+    const anchors = anchorsOf(model([{ relationId: 'c2', waypoints: [{ x: 450, y: 465 }], source: 'auto' }]));
     expect(anchors.get('c1')!.sourceY).toBe(165);
     // The routed edge gets no slot at all — it would never read one.
     expect(anchors.get('c2')).toBeUndefined();
@@ -67,7 +67,7 @@ describe('buildEdges — the slot fan sees waypoint-less edges only', () => {
   it('counts a suppressed auto route as straight while its node drags', () => {
     // Suppression draws the edge bend-less for the duration, so it is back in the
     // fan for exactly that long — the same rule, applied to what is DRAWN.
-    const m = model([{ connectionId: 'c2', waypoints: [{ x: 450, y: 465 }], source: 'auto' }]);
+    const m = model([{ relationId: 'c2', waypoints: [{ x: 450, y: 465 }], source: 'auto' }]);
     const anchors = new Map(
       buildEdges({
         model: m,

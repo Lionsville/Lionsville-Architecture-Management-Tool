@@ -532,7 +532,7 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
 
   it('returns a route for every connection on the diagram', async () => {
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const ids = (result.edgeRoutes ?? []).map((r) => r.connectionId).sort();
+    const ids = (result.edgeRoutes ?? []).map((r) => r.relationId).sort();
     expect(ids).toEqual(['ab', 'ac', 'bc']);
   });
 
@@ -556,7 +556,7 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
         {
           ...model.diagrams[0],
           // A route the user had stored for it, in coordinates from the old layout.
-          edgeRoutes: [{ connectionId: 'a-a', waypoints: [{ x: 4000, y: 4000 }] }],
+          edgeRoutes: [{ relationId: 'a-a', waypoints: [{ x: 4000, y: 4000 }] }],
         },
       ],
     };
@@ -568,7 +568,7 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
       pinAnchorPoints: false,
     });
 
-    const declined = result.edgeRoutes!.find((r) => r.connectionId === 'a-a');
+    const declined = result.edgeRoutes!.find((r) => r.relationId === 'a-a');
     expect(declined).toBeDefined(); // an entry, so `applyTidyResult` acts on it
     expect(declined!.waypoints).toEqual([]); // …and the stale waypoint is gone
   });
@@ -581,7 +581,7 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
     // Sanity: b really is on the straight run, so "clears it" is not free.
     expect(pathHitsObstacles(routedPath(a, c, []), [b], ROUTE_CLEARANCE)).toBeGreaterThan(0);
 
-    const route = result.edgeRoutes!.find((r) => r.connectionId === 'ac')!;
+    const route = result.edgeRoutes!.find((r) => r.relationId === 'ac')!;
     expect(route.waypoints.length).toBeGreaterThan(0);
     // A DISTANCE, not a hit count: a route grazing b's edge would still pass
     // `pathHitsObstacles` at this margin (see `pathClearance`).
@@ -1090,7 +1090,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     return { x: p.x, y: p.y, width: size.width, height: size.height };
   };
   const pathFor = (result: Awaited<ReturnType<typeof tidyLayer7>>, connId: string, sourceId: string, targetId: string) => {
-    const route = result.edgeRoutes!.find((r) => r.connectionId === connId)!;
+    const route = result.edgeRoutes!.find((r) => r.relationId === connId)!;
     return routedPath(rectFor(result, sourceId), rectFor(result, targetId), route.waypoints);
   };
 
@@ -1102,7 +1102,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     // two anchors joined directly.
     const result = await tidyLayer7(model, model.diagrams[0]);
     const routed = model.relations.filter(
-      (conn) => result.edgeRoutes!.find((r) => r.connectionId === conn.id)!.waypoints.length > 0,
+      (conn) => result.edgeRoutes!.find((r) => r.relationId === conn.id)!.waypoints.length > 0,
     );
     expect(routed.length).toBeGreaterThan(0);
     for (const conn of routed) {
@@ -1129,7 +1129,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     // it dead straight through both side centres (axis-aligned rects bypass the slot
     // fan). The rendered path is a single horizontal line.
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const route = result.edgeRoutes!.find((r) => r.connectionId === 'webshop-order')!;
+    const route = result.edgeRoutes!.find((r) => r.relationId === 'webshop-order')!;
     expect(route.waypoints).toEqual([]); // no injected waypoint → no draggable handle
     const path = pathFor(result, 'webshop-order', 'webshop', 'order');
     const ys = path.map((p) => p.y);
@@ -1153,7 +1153,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     expect(labelled.map((c) => c.id)).toContain('webshop-order');
 
     for (const conn of labelled) {
-      const route = result.edgeRoutes!.find((r) => r.connectionId === conn.id)!;
+      const route = result.edgeRoutes!.find((r) => r.relationId === conn.id)!;
       expect(route.labelPosition, `${conn.id} was not pinned`).toBeDefined();
       const label = edgeLabelSize(conn)!;
       const lp = route.labelPosition!;
@@ -1207,7 +1207,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
     // the source group box, and the gap is narrow. Tidy must pin the label clear of
     // BOTH the Commerce Operations box and the Dynamics node (the reported case).
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const route = result.edgeRoutes!.find((r) => r.connectionId === 'erp-dynamics')!;
+    const route = result.edgeRoutes!.find((r) => r.relationId === 'erp-dynamics')!;
     // Straight cross-zone edge: EMPTY waypoints (no handle), but the label is still
     // pinned clear — the pin survives on a waypoint-less route.
     expect(route.waypoints).toEqual([]);
@@ -1230,7 +1230,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
   it('places the marketplace→order label clear of the Customer Experience group box', async () => {
     // The route runs around the groups; its label must not sit against a group box.
     const result = await tidyLayer7(model, model.diagrams[0]);
-    const route = result.edgeRoutes!.find((r) => r.connectionId === 'marketplace-order')!;
+    const route = result.edgeRoutes!.find((r) => r.relationId === 'marketplace-order')!;
     expect(route.waypoints.length).toBeGreaterThan(0); // it went around
     expect(route.labelPosition).toBeDefined();
 
@@ -1321,7 +1321,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
     };
     const result = await tidyContainer(model, model.diagrams[0]);
 
-    expect((result.edgeRoutes ?? []).map((r) => r.connectionId).sort()).toEqual([
+    expect((result.edgeRoutes ?? []).map((r) => r.relationId).sort()).toEqual([
       'c1-c2',
       'c1-c3',
       'c2-ext',
@@ -1336,7 +1336,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
       const others = ['c1', 'c2', 'c3']
         .filter((id) => id !== conn.sourceId && id !== conn.targetId)
         .map(rectOf);
-      const route = result.edgeRoutes!.find((r) => r.connectionId === conn.id)!;
+      const route = result.edgeRoutes!.find((r) => r.relationId === conn.id)!;
       const drawn = routedPath(rectOf(conn.sourceId), rectOf(conn.targetId), route.waypoints);
       expect(
         pathClearance(drawn, others),
@@ -1445,7 +1445,7 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
     };
     const pathOf = (connId: string) => {
       const conn = model.relations.find((c) => c.id === connId)!;
-      const route = result.edgeRoutes!.find((r) => r.connectionId === connId)!;
+      const route = result.edgeRoutes!.find((r) => r.relationId === connId)!;
       return routedPath(rectOf(conn.sourceId), rectOf(conn.targetId), route.waypoints);
     };
 
@@ -1578,7 +1578,7 @@ describe('tidyGroup — one group in place', () => {
     const model = groupModel();
     const result = await tidyGroup(model, model.diagrams[0], 'Core');
 
-    const byId = new Map((result.edgeRoutes ?? []).map((r) => [r.connectionId, r]));
+    const byId = new Map((result.edgeRoutes ?? []).map((r) => [r.relationId, r]));
     expect(byId.has('internal')).toBe(true);
     // An edge crossing the box keeps whatever route it had — a group tidy must
     // not reach outside, and `partial` means anything unlisted is left alone.

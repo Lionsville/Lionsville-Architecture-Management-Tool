@@ -149,7 +149,7 @@ export async function routeDiagramEdges(
       )
     : model.relations;
 
-  const storedRoutes = new Map((diagram.edgeRoutes ?? []).map((r) => [r.connectionId, r]));
+  const storedRoutes = new Map((diagram.edgeRoutes ?? []).map((r) => [r.relationId, r]));
 
   // The attach sides ride along from the stored rows: they are constraints the
   // router honours (a pinned end), not geometry it replaces — so a row that holds
@@ -225,7 +225,7 @@ export async function routeDiagramEdges(
     const stored = storedRoutes.get(conn.id);
     if (!stored) return false;
     edgeRoutes.push({
-      connectionId: conn.id,
+      relationId: conn.id,
       waypoints: stored.waypoints,
       labelPosition: stored.labelPosition,
       source: stored.source,
@@ -278,7 +278,7 @@ export async function routeDiagramEdges(
         // The bends go; the attach sides stay, because they were never measured
         // against a position — a constraint survives the reflow that voids the geometry.
         edgeRoutes.push({
-          connectionId: conn.id,
+          relationId: conn.id,
           waypoints: [],
           source: 'auto',
           ...routeSides(storedRoutes.get(conn.id)),
@@ -312,7 +312,7 @@ export async function routeDiagramEdges(
     // larger radius, and replaceable by the next automatic pass. The sides it was
     // routed under come back with it, or the next pass would route it free.
     edgeRoutes.push({
-      connectionId: conn.id,
+      relationId: conn.id,
       waypoints,
       labelPosition,
       source: 'auto',

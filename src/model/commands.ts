@@ -70,7 +70,7 @@ export type CommandBody =
   | { type: 'placement.set'; diagramId: DiagramId; placements: DiagramPlacement[]; at?: number[] }
   | { type: 'placement.remove'; diagramId: DiagramId; elementIds: ElementId[] }
   | { type: 'route.set'; diagramId: DiagramId; routes: EdgeRoute[]; at?: number[] }
-  | { type: 'route.clear'; diagramId: DiagramId; connectionIds: RelationId[] }
+  | { type: 'route.clear'; diagramId: DiagramId; relationIds: RelationId[] }
   | { type: 'layout.set'; diagramId: DiagramId; layoutConfig?: DiagramLayoutConfig }
 
   // --- diagrams ------------------------------------------------------------

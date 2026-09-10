@@ -38,13 +38,13 @@ function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
   };
 }
 
-const AUTO: EdgeRoute = { connectionId: 'c1', waypoints: [{ x: 500, y: 165 }, { x: 500, y: 400 }], source: 'auto' };
+const AUTO: EdgeRoute = { relationId: 'c1', waypoints: [{ x: 500, y: 165 }, { x: 500, y: 400 }], source: 'auto' };
 const MANUAL: EdgeRoute = { ...AUTO, source: 'manual' };
 
 function render(initial: DesignModel) {
   const { result, host } = renderEditorState(initial, { activeDiagramId: 'd1' });
   const stored = () =>
-    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1');
+    result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1');
   /** What the last step asked for, flattened — `route.set` or `route.clear`. */
   const asked = () => {
     const last = host.current.commands.at(-1);
@@ -62,7 +62,7 @@ describe('setRouteSource — Pin and Unpin', () => {
 
     expect(host.current.commands).toHaveLength(1);
     expect(stored()).toEqual({
-      connectionId: 'c1',
+      relationId: 'c1',
       waypoints: [],
       labelPosition: undefined,
       source: 'manual',
@@ -86,7 +86,7 @@ describe('setRouteSource — Pin and Unpin', () => {
     expect(stored()).toMatchObject({ waypoints: MANUAL.waypoints, source: 'auto' });
     expect(stored()?.pinned).toBeUndefined();
 
-    const bare = render(model([{ connectionId: 'c1', waypoints: [], source: 'manual', pinned: true }]));
+    const bare = render(model([{ relationId: 'c1', waypoints: [], source: 'manual', pinned: true }]));
     act(() => bare.result.current.actions.setRouteSource('c1', 'auto'));
     // Nothing left to say about a straight, unpinned line: the row is gone.
     expect(bare.stored()).toBeUndefined();
@@ -127,7 +127,7 @@ describe('resetEdgeRoute — Reset to automatic', () => {
     // What the editor does next: route, then apply against the reset's token.
     act(() => {
       result.current.actions.applyTidyResult(
-        { placements: [], edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 600, y: 165 }, { x: 600, y: 400 }], source: 'auto' }] },
+        { placements: [], edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 600, y: 165 }, { x: 600, y: 400 }], source: 'auto' }] },
         token,
       );
     });
@@ -164,7 +164,7 @@ describe('setEdgeRoute — removing every bend', () => {
   it('keeps the label anchor the user placed, as a label-only manual row', () => {
     const { result, stored } = render(model([{ ...MANUAL, labelPosition: { x: 400, y: 150 } }]));
     act(() => result.current.actions.setEdgeRoute('c1', []));
-    expect(stored()).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: { x: 400, y: 150 }, source: 'manual', pinned: undefined });
+    expect(stored()).toEqual({ relationId: 'c1', waypoints: [], labelPosition: { x: 400, y: 150 }, source: 'manual', pinned: undefined });
   });
 
   it('keeps the pin: a pinned line with its bends removed is straight AND still pinned', () => {
@@ -210,7 +210,7 @@ describe('movePlacements — hand-drawn routes follow their nodes', () => {
   });
 
   it('follows a pinned bend-less row trivially (nothing to move) and a route at the target end', () => {
-    const pinned: EdgeRoute = { connectionId: 'c1', waypoints: [], source: 'manual', pinned: true };
+    const pinned: EdgeRoute = { relationId: 'c1', waypoints: [], source: 'manual', pinned: true };
     const { result, stored } = render(model([pinned]));
     act(() => result.current.actions.movePlacements([{ elementId: 'e1', x: 120, y: 160 }]));
     expect(stored()).toEqual(pinned);

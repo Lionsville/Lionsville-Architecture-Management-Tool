@@ -120,13 +120,13 @@ describe('tidy — a router failure keeps the placements', () => {
   it('carries no routingError when the router succeeds', async () => {
     mockRoute.mockResolvedValue({
       placements: [],
-      edgeRoutes: [{ connectionId: 'a-b', waypoints: [] }],
+      edgeRoutes: [{ relationId: 'a-b', waypoints: [] }],
     });
     const { model, layer7 } = board();
 
     const result = await tidyLayer7(model, layer7);
 
     expect(result.routingError).toBeUndefined();
-    expect(result.edgeRoutes).toEqual([{ connectionId: 'a-b', waypoints: [] }]);
+    expect(result.edgeRoutes).toEqual([{ relationId: 'a-b', waypoints: [] }]);
   });
 });

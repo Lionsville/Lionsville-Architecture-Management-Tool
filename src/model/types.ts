@@ -230,14 +230,20 @@ export interface Point {
 export type AttachSide = 'top' | 'right' | 'bottom' | 'left';
 
 /**
- * Per-diagram presentation overrides for one connection: manual routing points
+ * Per-diagram presentation overrides for one relation: manual routing points
  * (ordered), a custom label anchor and/or the side each end attaches to. In a
  * batch upsert, an entry with no waypoints, no label position, no pin AND no
  * fixed side deletes the stored row — the one definition of "has content" is
  * `hasRouteContent` in `model/routes.ts`.
  */
 export interface EdgeRoute {
-  connectionId: string;
+  /**
+   * The relation this row is about. Named for the list it points into
+   * (`DesignModel.relations`, ADR-0012 §5) rather than for the one kind of
+   * relation that can be drawn today, which is what ADR-0012 §6's
+   * `Geometry.routes` calls it.
+   */
+  relationId: string;
   waypoints: Point[];
   /** Custom label anchor (flow coords); absent = automatic path midpoint. */
   labelPosition?: Point;

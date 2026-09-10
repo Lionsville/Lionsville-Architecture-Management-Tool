@@ -365,7 +365,7 @@ describe('SolutionDesignEditor — edge labels', () => {
   it('right-click on a repositioned label offers "Reset label position"', async () => {
     const model = modelWithConnection();
     model.diagrams[0].edgeRoutes = [
-      { connectionId: 'c1', waypoints: [], labelPosition: { x: 500, y: 200 } },
+      { relationId: 'c1', waypoints: [], labelPosition: { x: 500, y: 200 } },
     ];
     const { landed } = renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
 
@@ -391,7 +391,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
   const routedModel = (source: 'manual' | 'auto') => {
     const model = modelWithConnection();
     model.diagrams[0].edgeRoutes = [
-      { connectionId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source },
+      { relationId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source },
     ];
     return model;
   };
@@ -428,7 +428,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // existing board's bends at the router's radius — and, before 2a, would have
     // stripped their handles.
     const model = modelWithConnection();
-    model.diagrams[0].edgeRoutes = [{ connectionId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
+    model.diagrams[0].edgeRoutes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
     renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
     await screen.findByTestId('edge-label-c1');
     const path = document.getElementById('c1') as SVGPathElement | null;
@@ -457,7 +457,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
 
     fireEvent.doubleClick(await screen.findByTestId('rf__edge-c1'));
 
-    const route = landed().edgeRoutes.find((r) => r.connectionId === 'c1');
+    const route = landed().edgeRoutes.find((r) => r.relationId === 'c1');
     // One step: the new bend AND the claim, so a single undo puts both back.
     expect(route?.source).toBe('manual');
     expect(route?.waypoints.length).toBe(3);
@@ -731,7 +731,7 @@ describe('SolutionDesignEditor — route connections only', () => {
     // Positions come back untouched, and the blocked edge gained a route.
     expect(landed().placements).toEqual(placements);
     expect(landed().layoutConfig).toEqual(layoutConfig);
-    const route = landed().edgeRoutes.find((r) => r.connectionId === 'c1');
+    const route = landed().edgeRoutes.find((r) => r.relationId === 'c1');
     expect(route?.waypoints.length).toBeGreaterThan(0);
   });
 

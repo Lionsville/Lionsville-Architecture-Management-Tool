@@ -177,7 +177,7 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
   it('says nothing when Tidy routed cleanly', async () => {
     mockTidy.mockResolvedValue({
       placements: PLACEMENTS,
-      edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 700, y: 300 }] }],
+      edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 700, y: 300 }] }],
     });
     const { host, onLayoutError } = renderEditor();
 

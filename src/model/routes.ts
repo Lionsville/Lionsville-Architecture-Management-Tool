@@ -2,7 +2,7 @@ import type { AttachSide, DesignDiagram, EdgeRoute, EdgeRouteSource, Point, Rect
 import { routeEndAnchor, routeEndLeg } from './floatingEdgeMath';
 
 /**
- * Pure waypoint/route operations. Routes are per (diagram, connection) and
+ * Pure waypoint/route operations. Routes are per (diagram, relation) and
  * hold an ordered waypoint list; a row with no content (see
  * {@link hasRouteContent}) means "no manual route" and — in a batch upsert —
  * "delete the stored route".
@@ -10,9 +10,9 @@ import { routeEndAnchor, routeEndLeg } from './floatingEdgeMath';
 
 export function routeFor(
   diagram: Pick<DesignDiagram, 'edgeRoutes'> | undefined,
-  connectionId: string,
+  relationId: string,
 ): EdgeRoute | undefined {
-  return diagram?.edgeRoutes?.find((r) => r.connectionId === connectionId);
+  return diagram?.edgeRoutes?.find((r) => r.relationId === relationId);
 }
 
 /** The two attach sides of a row — see `EdgeRoute.sourceSide`. */
@@ -81,10 +81,10 @@ export interface AttachSidesPatch {
  */
 export function routeWithSides(
   stored: EdgeRoute | undefined,
-  connectionId: string,
+  relationId: string,
   patch: AttachSidesPatch,
 ): EdgeRoute {
-  const next: EdgeRoute = { ...(stored ?? { connectionId, waypoints: [], source: 'auto' }) };
+  const next: EdgeRoute = { ...(stored ?? { relationId, waypoints: [], source: 'auto' }) };
   if ('sourceSide' in patch) {
     if (patch.sourceSide === undefined) delete next.sourceSide;
     else next.sourceSide = patch.sourceSide;
@@ -93,7 +93,7 @@ export function routeWithSides(
     if (patch.targetSide === undefined) delete next.targetSide;
     else next.targetSide = patch.targetSide;
   }
-  return hasRouteContent(next) ? next : { connectionId, waypoints: [], labelPosition: undefined };
+  return hasRouteContent(next) ? next : { relationId, waypoints: [], labelPosition: undefined };
 }
 
 /**
@@ -104,9 +104,9 @@ export function routeWithSides(
  */
 export function withRouteRow(routes: EdgeRoute[] | undefined, row: EdgeRoute): EdgeRoute[] {
   const current = routes ?? [];
-  if (!hasRouteContent(row)) return current.filter((r) => r.connectionId !== row.connectionId);
-  if (!current.some((r) => r.connectionId === row.connectionId)) return [...current, row];
-  return current.map((r) => (r.connectionId === row.connectionId ? row : r));
+  if (!hasRouteContent(row)) return current.filter((r) => r.relationId !== row.relationId);
+  if (!current.some((r) => r.relationId === row.relationId)) return [...current, row];
+  return current.map((r) => (r.relationId === row.relationId ? row : r));
 }
 
 /**
@@ -170,7 +170,7 @@ export function manualRouteIds(diagram: Pick<DesignDiagram, 'edgeRoutes'>): Set<
   return new Set(
     (diagram.edgeRoutes ?? [])
       .filter((r) => !isAutoRoute(r) || r.pinned === true)
-      .map((r) => r.connectionId),
+      .map((r) => r.relationId),
   );
 }
 

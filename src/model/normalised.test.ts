@@ -46,7 +46,7 @@ describe('fromArrays / toArrays', () => {
     const m = fromArrays(host({
       diagrams: [diagram('one', {
         placements: [placement('b', { x: 1 }), placement('a')],
-        edgeRoutes: [{ connectionId: 'c#1', waypoints: [{ x: 1, y: 2 }] }],
+        edgeRoutes: [{ relationId: 'c#1', waypoints: [{ x: 1, y: 2 }] }],
       })],
     }))
     const d = m.diagrams.one
@@ -55,7 +55,7 @@ describe('fromArrays / toArrays', () => {
     expect(d.order.placements).toEqual(['b', 'a'])
     expect(placementList(d).map((p) => p.elementId)).toEqual(['b', 'a'])
     expect(routesOf(d)['c#1'].waypoints).toHaveLength(1)
-    expect(routeList(d).map((r) => r.connectionId)).toEqual(['c#1'])
+    expect(routeList(d).map((r) => r.relationId)).toEqual(['c#1'])
   })
 
   /**
@@ -126,7 +126,7 @@ describe('fromArrays / toArrays', () => {
         diagram('one', {
           aspectConfig: [{ key: 'dr', label: 'Disaster recovery' }],
           placements: [placement('a', { zone: 'landscape' }), placement('b')],
-          edgeRoutes: [{ connectionId: 'c#1', waypoints: [], pinned: true }],
+          edgeRoutes: [{ relationId: 'c#1', waypoints: [], pinned: true }],
           layoutConfig: { zones: { actors: { size: 120 } } },
         }),
         diagram('two', { kind: 'container', applicationElementId: 'a' }),

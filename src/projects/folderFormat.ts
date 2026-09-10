@@ -171,11 +171,34 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
         ...(needsLayout ? { needsLayout } : {}),
         placements: [...placements].sort((a, b) => (a.elementId < b.elementId ? -1 : 1)),
         ...(edgeRoutes
-          ? { routes: [...edgeRoutes].sort((a, b) => (a.connectionId < b.connectionId ? -1 : 1)) }
+          ? {
+            routes: [...edgeRoutes]
+              .sort((a, b) => (a.relationId < b.relationId ? -1 : 1))
+              .map(asStoredRoute),
+          }
           : {}),
       }),
     },
   ]
+}
+
+/**
+ * A route row's two names for the same thing.
+ *
+ * The model calls a line's row `relationId`, because that is the list it points
+ * into (ADR-0012 §5) and what §6's geometry file will call it. Format 3 called
+ * it `connectionId` and a 1.x build still reads it that way, so the name is
+ * translated here — the same seam `asConnections` occupies for the model's own
+ * list, one file down. Both halves go at format 4.
+ */
+function asStoredRoute(route: EdgeRoute): Record<string, unknown> {
+  const { relationId, ...rest } = route
+  return { connectionId: relationId, ...rest }
+}
+
+function asEdgeRoute(row: Record<string, unknown>): EdgeRoute {
+  const { connectionId, ...rest } = row
+  return { relationId: connectionId as string, ...rest } as unknown as EdgeRoute
 }
 
 /**
@@ -433,7 +456,7 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
   const placements = listOf(laid?.placements)
     .filter((row) => typeof row.elementId === 'string') as unknown as DiagramPlacement[]
   const routes = laid && 'routes' in laid
-    ? listOf(laid.routes).filter((row) => typeof row.connectionId === 'string') as unknown as EdgeRoute[]
+    ? listOf(laid.routes).filter((row) => typeof row.connectionId === 'string').map(asEdgeRoute)
     : undefined
   return {
     ...(definition as unknown as Omit<DesignDiagram, 'placements'>),

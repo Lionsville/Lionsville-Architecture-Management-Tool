@@ -245,7 +245,7 @@ describe('DiagramCanvas — connection menu', () => {
     expect(within(root).getByText('Remove all bend points').closest('[role="menuitem"]')?.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(within(root).getByText('Add bend point here'));
 
-    const route = landed().edgeRoutes.find((r) => r.connectionId === 'c1');
+    const route = landed().edgeRoutes.find((r) => r.relationId === 'c1');
     expect(route?.waypoints).toHaveLength(1);
     expect(route?.source).toBe('manual');
   });
@@ -289,7 +289,7 @@ describe('DiagramCanvas — connection menu', () => {
     const asked = () => host.current.commands
       .flatMap((c) => (c.type === 'transaction' ? c.commands : [c]))
       .flatMap((c) => (c.type === 'route.set' ? c.routes : []))
-      .filter((r) => r.connectionId === 'c1');
+      .filter((r) => r.relationId === 'c1');
     const someRow = (matches: (route: EdgeRoute) => boolean) => asked().some(matches);
     fireEvent.contextMenu(await screen.findByTestId('edge-label-c1'));
     const root = menu('Connection menu');
@@ -344,8 +344,8 @@ describe('DiagramCanvas — connection menu', () => {
     const { landed } = renderEditor();
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Pin route'));
-    expect(landed().edgeRoutes.find((r) => r.connectionId === 'c1')).toEqual({
-      connectionId: 'c1',
+    expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')).toEqual({
+      relationId: 'c1',
       waypoints: [],
       labelPosition: undefined,
       source: 'manual',
@@ -357,7 +357,7 @@ describe('DiagramCanvas — connection menu', () => {
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Unpin route'));
     // A pin-only row that loses its pin has nothing left: the row is forgotten.
-    expect(landed().edgeRoutes.find((r) => r.connectionId === 'c1')).toBeUndefined();
+    expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')).toBeUndefined();
     expect(screen.getByTestId('route-badge').textContent).toBe('None');
   });
 
@@ -371,13 +371,13 @@ describe('DiagramCanvas — connection menu', () => {
 
   it('a bend handle offers "Remove bend point"', async () => {
     const m = model();
-    m.diagrams[0].edgeRoutes = [{ connectionId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source: 'manual' }];
+    m.diagrams[0].edgeRoutes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }, { x: 900, y: 420 }], source: 'manual' }];
     const { landed } = renderEditor({ model: m });
     // Handles belong to the SELECTED line (routing phase 2a), so pick it up first.
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     fireEvent.contextMenu(await screen.findByTestId('waypoint-c1-1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Remove bend point'));
-    expect(landed().edgeRoutes.find((r) => r.connectionId === 'c1')?.waypoints).toEqual([{ x: 900, y: 320 }]);
+    expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')?.waypoints).toEqual([{ x: 900, y: 320 }]);
   });
 });
 

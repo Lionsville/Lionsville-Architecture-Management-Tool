@@ -68,7 +68,7 @@ function boardModel(): DesignModel {
         },
         edgeRoutes: [
           {
-            connectionId: 'c2',
+            relationId: 'c2',
             waypoints: [{ x: 640, y: 60 }],
             labelPosition: { x: 640, y: 40 },
             source: 'manual' as const,
@@ -80,7 +80,7 @@ function boardModel(): DesignModel {
 }
 
 const routeOf = (result: Awaited<ReturnType<typeof routeDiagramEdges>>, id: string) =>
-  result.edgeRoutes?.find((r) => r.connectionId === id);
+  result.edgeRoutes?.find((r) => r.relationId === id);
 
 describe('routeDiagramEdges — preserveRoutesFor', () => {
   it('keeps a preserved route even on a pass that DOES route its connection', async () => {
@@ -168,12 +168,12 @@ describe('routeDiagramEdges — preserveRoutesFor', () => {
 describe('preservedRouteIds', () => {
   const diagram = {
     edgeRoutes: [
-      { connectionId: 'bends', waypoints: [{ x: 1, y: 2 }], source: 'manual' as const },
+      { relationId: 'bends', waypoints: [{ x: 1, y: 2 }], source: 'manual' as const },
       // The case the old waypoint-presence heuristic was blind to.
-      { connectionId: 'chip', waypoints: [], labelPosition: { x: 9, y: 9 }, source: 'manual' as const },
-      { connectionId: 'router', waypoints: [{ x: 3, y: 4 }], source: 'auto' as const },
+      { relationId: 'chip', waypoints: [], labelPosition: { x: 9, y: 9 }, source: 'manual' as const },
+      { relationId: 'router', waypoints: [{ x: 3, y: 4 }], source: 'auto' as const },
       // Pre-provenance row: absent source reads as manual.
-      { connectionId: 'legacy', waypoints: [{ x: 5, y: 6 }] },
+      { relationId: 'legacy', waypoints: [{ x: 5, y: 6 }] },
     ],
   };
 

@@ -115,7 +115,7 @@ describe('inspect', () => {
       diagrams: [{
         ...host.diagrams[0],
         edgeRoutes: [{
-          connectionId: 'ac',
+          relationId: 'ac',
           waypoints: [{ x: 600, y: 265 }, { x: 600, y: 450 }, { x: 1000, y: 450 }, { x: 1000, y: 265 }],
         }],
       }],

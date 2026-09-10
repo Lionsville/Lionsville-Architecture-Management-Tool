@@ -197,7 +197,7 @@ function diagramCommands(
   const wanted = fromDiagram(target)
   const placements = wanted.placements.filter((placement) => against.elements[placement.elementId])
   const dropped = wanted.placements.length - placements.length
-  const routes = (wanted.edgeRoutes ?? []).filter((route) => against.relations[route.connectionId])
+  const routes = (wanted.edgeRoutes ?? []).filter((route) => against.relations[route.relationId])
 
   if (!current) {
     const diagram = toDiagram({
@@ -229,8 +229,8 @@ function diagramCommands(
   const currentRoutes = routesOf(current)
   const targetRoutes = routesOf(target)
   const cleared = current.order.routes.filter((connectionId) => !targetRoutes[connectionId])
-  if (cleared.length) commands.push({ type: 'route.clear', diagramId: id, connectionIds: cleared })
-  const rerouted = routes.filter((route) => !same(currentRoutes[route.connectionId], route))
+  if (cleared.length) commands.push({ type: 'route.clear', diagramId: id, relationIds: cleared })
+  const rerouted = routes.filter((route) => !same(currentRoutes[route.relationId], route))
   if (rerouted.length) commands.push({ type: 'route.set', diagramId: id, routes: rerouted })
 
   return { commands, dropped }

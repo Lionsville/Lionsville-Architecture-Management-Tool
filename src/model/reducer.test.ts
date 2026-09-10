@@ -30,7 +30,7 @@ function adr(id: string, number: number, overrides: Partial<Adr> = {}): Adr {
 }
 
 function route(connectionId: string, overrides: Partial<EdgeRoute> = {}): EdgeRoute {
-  return { connectionId, waypoints: [{ x: 1, y: 2 }], ...overrides }
+  return { relationId: connectionId, waypoints: [{ x: 1, y: 2 }], ...overrides }
 }
 
 /** Two applications, a line between them, on a landscape and a container view. */
@@ -202,14 +202,14 @@ describe('apply — geometry', () => {
     reversible(m, {
       type: 'route.set', diagramId: 'landscape', routes: [route('c#1', { pinned: true })],
     })
-    reversible(m, { type: 'route.clear', diagramId: 'landscape', connectionIds: ['c#1'] })
+    reversible(m, { type: 'route.clear', diagramId: 'landscape', relationIds: ['c#1'] })
   })
 
   /** An emptied optional list loses its key — see the note on the reducer. */
   it('drops the routes key when the last route goes, and brings it back', () => {
     const m = sample()
     const cleared = ok(apply(m, {
-      type: 'route.clear', diagramId: 'landscape', connectionIds: ['c#1', 'c#2'],
+      type: 'route.clear', diagramId: 'landscape', relationIds: ['c#1', 'c#2'],
     }))
     expect('edgeRoutes' in cleared.model.diagrams.landscape).toBe(false)
     expect(ok(apply(cleared.model, cleared.inverse)).model.diagrams.landscape.order.routes)
@@ -399,7 +399,7 @@ describe('a session of twenty commands', () => {
     { type: 'project.settings', patch: { name: 'Landscape of Acme' } },
     { type: 'diagram.create', diagram: toDiagram(diagram('second', { name: 'Second' })), at: 1 },
     { type: 'placement.remove', diagramId: 'landscape', elementIds: ['b'] },
-    { type: 'route.clear', diagramId: 'landscape', connectionIds: ['c#1'] },
+    { type: 'route.clear', diagramId: 'landscape', relationIds: ['c#1'] },
     { type: 'element.delete', id: 'a' },
     { type: 'decision.remove', id: 'd1' },
   ]
@@ -453,7 +453,7 @@ describe('over a thousand elements', () => {
     ['placement.set', { type: 'placement.set', diagramId: 'two', placements: [placement('e3', { x: 1 })] }],
     ['placement.remove', { type: 'placement.remove', diagramId: 'two', elementIds: ['e3', 'e4'] }],
     ['route.set', { type: 'route.set', diagramId: 'two', routes: [route('c#14', { pinned: true })] }],
-    ['route.clear', { type: 'route.clear', diagramId: 'two', connectionIds: ['c#14'] }],
+    ['route.clear', { type: 'route.clear', diagramId: 'two', relationIds: ['c#14'] }],
     ['diagram.rename', { type: 'diagram.rename', id: 'two', name: 'Two, renamed' }],
     ['diagram.delete', { type: 'diagram.delete', id: 'two' }],
   ] as const satisfies readonly (readonly [string, Command])[])('%s is exactly reversible', (_name, command) => {

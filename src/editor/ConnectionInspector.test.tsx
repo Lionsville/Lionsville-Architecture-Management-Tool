@@ -237,7 +237,7 @@ describe('ConnectionInspector — Route section', () => {
 
   it('reads Automatic for router output, with its bend count, and offers Pin', () => {
     renderInspector(connection(), {
-      routes: [{ connectionId: 'c1', waypoints: [{ x: 1, y: 1 }, { x: 2, y: 2 }], source: 'auto' }],
+      routes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }, { x: 2, y: 2 }], source: 'auto' }],
     });
     expect(badge()).toBe('Automatic');
     expect(bends()).toBe('2 bends');
@@ -247,7 +247,7 @@ describe('ConnectionInspector — Route section', () => {
 
   it('reads Hand-drawn for a manual route and offers Unpin instead of Pin', () => {
     const { setRouteSource } = renderInspector(connection(), {
-      routes: [{ connectionId: 'c1', waypoints: [{ x: 1, y: 1 }], source: 'manual' }],
+      routes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }], source: 'manual' }],
     });
     expect(badge()).toBe('Hand-drawn');
     expect(bends()).toBe('1 bend');
@@ -259,8 +259,8 @@ describe('ConnectionInspector — Route section', () => {
   it('says so when the row is an explicit pin, and reads another connection’s route as None', () => {
     renderInspector(connection(), {
       routes: [
-        { connectionId: 'c1', waypoints: [], source: 'manual', pinned: true },
-        { connectionId: 'other', waypoints: [{ x: 1, y: 1 }], source: 'manual' },
+        { relationId: 'c1', waypoints: [], source: 'manual', pinned: true },
+        { relationId: 'other', waypoints: [{ x: 1, y: 1 }], source: 'manual' },
       ],
     });
     expect(badge()).toBe('Hand-drawn');
@@ -268,7 +268,7 @@ describe('ConnectionInspector — Route section', () => {
 
     cleanup();
     renderInspector(connection(), {
-      routes: [{ connectionId: 'other', waypoints: [{ x: 1, y: 1 }], source: 'manual' }],
+      routes: [{ relationId: 'other', waypoints: [{ x: 1, y: 1 }], source: 'manual' }],
     });
     expect(badge()).toBe('None');
   });
@@ -276,7 +276,7 @@ describe('ConnectionInspector — Route section', () => {
   it('hides every route button in read-only mode, and Reset when the editor wired none', () => {
     renderInspector(connection(), {
       readOnly: true,
-      routes: [{ connectionId: 'c1', waypoints: [{ x: 1, y: 1 }], source: 'auto' }],
+      routes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }], source: 'auto' }],
     });
     expect(badge()).toBe('Automatic'); // the facts still show
     expect(button('Pin')).toBeNull();
@@ -312,7 +312,7 @@ describe('ConnectionInspector — Leaves from / Arrives at', () => {
 
   it('shows the stored sides, and Automatic frees an end with an explicit undefined', () => {
     const { onSetRouteSides } = renderInspector(connection(), {
-      routes: [{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'right', targetSide: 'bottom' }],
+      routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'right', targetSide: 'bottom' }],
     });
     expect(leaves().textContent).toContain('Right');
     expect(arrives().textContent).toContain('Bottom');
@@ -323,7 +323,7 @@ describe('ConnectionInspector — Leaves from / Arrives at', () => {
   });
 
   it('is hidden in read-only mode and when the editor wired no callback — but a stored side is still stated', () => {
-    renderInspector(connection(), { readOnly: true, routes: [{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'right' }] });
+    renderInspector(connection(), { readOnly: true, routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'right' }] });
     expect(screen.queryByLabelText('Leaves from')).toBeNull();
     expect(screen.queryByLabelText('Arrives at')).toBeNull();
     // The line honours the side, so the viewer is told about it.
@@ -338,7 +338,7 @@ describe('ConnectionInspector — Leaves from / Arrives at', () => {
 
   it('never states the sides while the selects are there to show them', () => {
     renderInspector(connection(), {
-      routes: [{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top', targetSide: 'left' }],
+      routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top', targetSide: 'left' }],
     });
     expect(screen.queryByTestId('route-sides')).toBeNull();
   });

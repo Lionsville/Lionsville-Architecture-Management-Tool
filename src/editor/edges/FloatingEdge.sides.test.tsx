@@ -89,7 +89,7 @@ describe('a side, as React Flow says it', () => {
 });
 
 describe('FloatingEdge — fixed side on a routed line', () => {
-  const routed: EdgeRoute = { connectionId: 'c1', waypoints: BENDS, source: 'manual', sourceSide: 'top' };
+  const routed: EdgeRoute = { relationId: 'c1', waypoints: BENDS, source: 'manual', sourceSide: 'top' };
 
   it('marks the fixed side while selected, at the point the line leaves it, and only then', async () => {
     renderEditor(routed);
@@ -125,7 +125,7 @@ describe('FloatingEdge — fixed side on a routed line', () => {
 
 describe('FloatingEdge — handles keep their screen size', () => {
   it('counter-scales every handle and marker by 1 / zoom', async () => {
-    renderEditor({ connectionId: 'c1', waypoints: BENDS, source: 'auto', targetSide: 'left' });
+    renderEditor({ relationId: 'c1', waypoints: BENDS, source: 'auto', targetSide: 'left' });
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     const bend = await screen.findByTestId('waypoint-c1-0');
     const expected = 1 / zoom();

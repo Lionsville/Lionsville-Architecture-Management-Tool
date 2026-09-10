@@ -96,7 +96,7 @@ describe('useDragRoutePreview', () => {
     terminateLibavoidWorker.mockReset();
     routeDiagramEdges.mockResolvedValue({
       placements: [],
-      edgeRoutes: [{ connectionId: 'c0', waypoints: [{ x: 1, y: 2 }], source: 'auto' }],
+      edgeRoutes: [{ relationId: 'c0', waypoints: [{ x: 1, y: 2 }], source: 'auto' }],
     });
   });
   afterEach(() => {
@@ -149,8 +149,8 @@ describe('useDragRoutePreview', () => {
   it('routes with the SAME preserved set the drag-end pass uses', async () => {
     const model = board(5);
     model.diagrams[0].edgeRoutes = [
-      { connectionId: 'c1', waypoints: [{ x: 9, y: 9 }], source: 'manual' },
-      { connectionId: 'c2', waypoints: [{ x: 8, y: 8 }], source: 'auto' },
+      { relationId: 'c1', waypoints: [{ x: 9, y: 9 }], source: 'manual' },
+      { relationId: 'c2', waypoints: [{ x: 8, y: 8 }], source: 'auto' },
     ];
     const { handle } = mount(model);
     await act(async () => {
@@ -213,7 +213,7 @@ describe('useDragRoutePreview', () => {
       diagrams: [
         {
           ...model.diagrams[0],
-          edgeRoutes: [{ connectionId: 'c0', waypoints: [{ x: 1, y: 2 }], source: 'auto' }],
+          edgeRoutes: [{ relationId: 'c0', waypoints: [{ x: 1, y: 2 }], source: 'auto' }],
         },
       ],
     };

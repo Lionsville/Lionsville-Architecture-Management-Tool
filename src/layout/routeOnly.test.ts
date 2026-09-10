@@ -82,8 +82,8 @@ function twoNodeModel(options: {
   return { model, diagram };
 }
 
-const routeOf = (result: TidyResult, connectionId: string) =>
-  result.edgeRoutes!.find((r) => r.connectionId === connectionId);
+const routeOf = (result: TidyResult, relationId: string) =>
+  result.edgeRoutes!.find((r) => r.relationId === relationId);
 
 describe('routeDiagramEdges — route-only pass', () => {
   it('leaves a clear edge straight and commits no placements or layout config', async () => {
@@ -143,7 +143,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     // This is the `keep-stored` half of `DeclinedPolicy`, and it is right ONLY because
     // this pass moves no node. Tidy moves them all and must therefore CLEAR the same
     // edge — asserted from the other side in `tidy.test.ts`. Do not unify them.
-    const stored = [{ connectionId: 'a-a', waypoints: [{ x: 700, y: 900 }] }];
+    const stored = [{ relationId: 'a-a', waypoints: [{ x: 700, y: 900 }] }];
     const { model, diagram } = twoNodeModel({
       extraConnections: [{ type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false }],
       edgeRoutes: stored,
@@ -151,7 +151,7 @@ describe('routeDiagramEdges — route-only pass', () => {
 
     const result = await routeDiagramEdges(model, diagram);
     expect(routeOf(result, 'a-a')).toEqual({
-      connectionId: 'a-a',
+      relationId: 'a-a',
       waypoints: [{ x: 700, y: 900 }],
       labelPosition: undefined,
     });

@@ -11,8 +11,8 @@ import type { DesignModel, EdgeRoute } from './types';
  * tests pin the fact that a bend-less, label-less row carrying `pinned: true`
  * is content, and that an unpinned one just like it is not.
  */
-const PIN: EdgeRoute = { connectionId: 'c1', waypoints: [], source: 'manual', pinned: true };
-const MARKER: EdgeRoute = { connectionId: 'c1', waypoints: [], labelPosition: undefined };
+const PIN: EdgeRoute = { relationId: 'c1', waypoints: [], source: 'manual', pinned: true };
+const MARKER: EdgeRoute = { relationId: 'c1', waypoints: [], labelPosition: undefined };
 
 function model(routes?: EdgeRoute[]): DesignModel {
   return {
@@ -70,7 +70,7 @@ describe('a pin through the one writer', () => {
 
   it('is forgotten rather than stored empty when the pin is the last thing on it', () => {
     const cleared = apply(fromArrays(model([PIN])), {
-      type: 'route.clear', diagramId: 'd1', connectionIds: ['c1'],
+      type: 'route.clear', diagramId: 'd1', relationIds: ['c1'],
     });
     expect(cleared.ok).toBe(true);
     if (!cleared.ok) return;

@@ -263,9 +263,9 @@ export interface EditorActions {
    * hands the line back to the router — "remove all bend points" must not leave
    * behind an empty row that every automatic pass then steps around.
    */
-  setEdgeRoute(connectionId: string, waypoints: Point[]): void;
+  setEdgeRoute(relationId: string, waypoints: Point[]): void;
   /** Move (or reset, with undefined) a connection's label anchor on the active diagram. */
-  setEdgeLabelPosition(connectionId: string, position: Point | undefined): void;
+  setEdgeLabelPosition(relationId: string, position: Point | undefined): void;
   /**
    * Pin (`manual`) or unpin (`auto`) a connection's route without touching its
    * geometry — one step, one undo step. Pinning a line that has no stored row
@@ -273,7 +273,7 @@ export interface EditorActions {
    * such a row forgets it. Nothing is re-routed here: Unpin only hands the line
    * to the next automatic pass, and `resetEdgeRoute` is the action that asks for one.
    */
-  setRouteSource(connectionId: string, source: EdgeRouteSource): void;
+  setRouteSource(relationId: string, source: EdgeRouteSource): void;
   /**
    * Forget everything stored for a connection's route on the active diagram —
    * bends, label anchor, pin, provenance, attach sides — so the router gets it
@@ -282,7 +282,7 @@ export interface EditorActions {
    * token; with it off, the caller runs the routing pass itself and passes the
    * token to `applyTidyResult`, to the same effect: one undo puts the old route back.
    */
-  resetEdgeRoute(connectionId: string): CommitToken;
+  resetEdgeRoute(relationId: string): CommitToken;
   /**
    * Tell one or both ends of a connection's route which side of its node to
    * attach to on the active diagram (`EdgeRoute.sourceSide`); a key present with
@@ -296,7 +296,7 @@ export interface EditorActions {
    * off, one undo step either way. Returns `undefined` when nothing changed, so
    * the caller runs no pass for a no-op.
    */
-  setRouteSides(connectionId: string, sides: AttachSidesPatch): CommitToken | undefined;
+  setRouteSides(relationId: string, sides: AttachSidesPatch): CommitToken | undefined;
   /** Resize one zone band (persists via layoutConfig). */
   setZoneSize(zone: ResizableZone, size: number): void;
   /** Grow/shrink the Layer 7 board (persists via layoutConfig, clamped). */
@@ -645,7 +645,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const followed: EdgeRoute[] = [];
         for (const route of diagram.edgeRoutes ?? []) {
           if (isAutoRoute(route)) continue;
-          const connection = model.relations.find((c) => c.id === route.connectionId);
+          const connection = model.relations.find((c) => c.id === route.relationId);
           if (!connection) continue;
           let next = route;
           const source = rects.get(connection.sourceId);
@@ -716,7 +716,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // Tidy stays one undo step.
         const rows: EdgeRoute[] = [];
         if (edgeRoutes) {
-          const routeById = new Map(edgeRoutes.map((r) => [r.connectionId, r]));
+          const routeById = new Map(edgeRoutes.map((r) => [r.relationId, r]));
           // An entry SETS content when it has waypoints, a pinned label — which
           // covers a straight (waypoint-less) cross-zone edge whose chip must
           // clear a group box — or an explicit pin re-emitted by the pass.
@@ -732,7 +732,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           for (const r of edgeRoutes) {
             if (!sets(r)) continue;
             rows.push({
-              connectionId: r.connectionId,
+              relationId: r.relationId,
               waypoints: r.waypoints,
               // Tidy may pin a routed edge's label clear of a group box; otherwise
               // reset (undefined) so the chip re-centres on the new polyline.
@@ -748,7 +748,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             });
           }
           for (const route of diagram.edgeRoutes ?? []) {
-            const r = routeById.get(route.connectionId);
+            const r = routeById.get(route.relationId);
             if (r && sets(r)) continue; // already set above
             // A PARTIAL result (one group) reflowed only its own members, so
             // it may only clear the routes it explicitly listed — every other
@@ -824,7 +824,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           // line. A bend-less `auto` row — the router's to fill in, under the sides.
           ...(diagram && sides && hasFixedSide(sides)
             ? routeCommands(diagram.id, [{
-              connectionId: connection.id,
+              relationId: connection.id,
               waypoints: [],
               source: 'auto',
               ...routeSides(sides),
@@ -931,12 +931,12 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         setSelection(EMPTY_SELECTION);
       },
 
-      setEdgeRoute(connectionId, waypoints) {
+      setEdgeRoute(relationId, waypoints) {
         const diagram = currentDiagram();
         if (!diagram) return;
         // Waypoints, the label anchor, the pin and the attach sides live on the
         // same route row; changing one must not clobber the others.
-        const stored = routeFor(diagram, connectionId);
+        const stored = routeFor(diagram, relationId);
         const labelPosition = stored?.labelPosition;
         const pinned = stored?.pinned;
         const sides = routeSides(stored);
@@ -945,24 +945,24 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             // step as the waypoints, so nudging one auto line and keeping it is
             // a single undo step in either direction — and from here on no
             // automatic pass may replace it.
-            { connectionId, waypoints, labelPosition, source: 'manual', pinned, ...sides }
+            { relationId: relationId, waypoints, labelPosition, source: 'manual', pinned, ...sides }
           : hasFixedSide(sides)
             ? // Nothing a person PLACED is left, only where the line attaches. The
               // row stays for its sides, but as the router's: a manual side-only
               // row would be preserved straight by every pass, for ever.
-              { connectionId, waypoints: [], labelPosition: undefined, source: 'auto', ...sides }
+              { relationId: relationId, waypoints: [], labelPosition: undefined, source: 'auto', ...sides }
             : // The last bend went and nothing else was ever stored: the row is
               // forgotten, so the line is a plain floating edge again and the
               // router may have it. Stamping THIS `manual` would leave a
               // label-less, bend-less row that every automatic pass preserves.
-              { connectionId, waypoints: [], labelPosition: undefined };
+              { relationId: relationId, waypoints: [], labelPosition: undefined };
         dispatch(transaction(routeCommands(diagram.id, [row])));
       },
 
-      setEdgeLabelPosition(connectionId, position) {
+      setEdgeLabelPosition(relationId, position) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        const stored = routeFor(diagram, connectionId);
+        const stored = routeFor(diagram, relationId);
         const waypoints = stored?.waypoints ?? [];
         const pinned = stored?.pinned;
         const sides = routeSides(stored);
@@ -972,7 +972,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // Resetting the chip of a row that then holds only its sides hands the
         // line back to the router (see `setEdgeRoute`).
         dispatch(transaction(routeCommands(diagram.id, [{
-          connectionId,
+          relationId: relationId,
           waypoints,
           labelPosition: position,
           source:
@@ -984,10 +984,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         }])));
       },
 
-      setRouteSource(connectionId, source) {
+      setRouteSource(relationId, source) {
         const diagram = currentDiagram();
         if (!diagram) return;
-        const stored = routeFor(diagram, connectionId);
+        const stored = routeFor(diagram, relationId);
         if (!stored) {
           // Nothing stored and nothing to unpin.
           if (source === 'auto') return;
@@ -995,7 +995,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             type: 'route.set',
             diagramId: diagram.id,
             routes: [{
-              connectionId, waypoints: [], labelPosition: undefined, source: 'manual', pinned: true,
+              relationId: relationId, waypoints: [], labelPosition: undefined, source: 'manual', pinned: true,
             }],
           });
           return;
@@ -1007,7 +1007,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
               // the row is forgotten — a straight line that is no longer pinned
               // has nothing left to say.
               {
-                connectionId,
+                relationId,
                 waypoints: stored.waypoints,
                 labelPosition: stored.labelPosition,
                 source: 'auto',
@@ -1017,11 +1017,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         dispatch(transaction(routeCommands(diagram.id, [next])));
       },
 
-      setRouteSides(connectionId, sides) {
+      setRouteSides(relationId, sides) {
         const diagram = currentDiagram();
         if (!diagram) return undefined;
-        const stored = routeFor(diagram, connectionId);
-        const row = routeWithSides(stored, connectionId, sides);
+        const stored = routeFor(diagram, relationId);
+        const row = routeWithSides(stored, relationId, sides);
         // A no-op — the side it already had, or Automatic on a line with no row —
         // changes nothing, so it costs no undo step and queues no pass.
         if (stored ? edgeRoutesEqual(stored, row) : !hasRouteContent(row)) return undefined;
@@ -1032,11 +1032,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         return diagram.autoRoute ? geometry(command) : dispatch(command);
       },
 
-      resetEdgeRoute(connectionId) {
+      resetEdgeRoute(relationId) {
         const diagram = currentDiagram();
         if (!diagram) return tokenRef.current;
         const command: Command = {
-          type: 'route.clear', diagramId: diagram.id, connectionIds: [connectionId],
+          type: 'route.clear', diagramId: diagram.id, relationIds: [relationId],
         };
         // With live routing on, the geometry bump is what queues the reroute that
         // brings the line back routed; off, the caller runs that pass itself and
@@ -1275,9 +1275,9 @@ function seedPlacement(
  */
 function routeCommands(diagramId: string, rows: readonly EdgeRoute[]): Command[] {
   const routes = rows.filter((r) => hasRouteContent(r));
-  const connectionIds = rows.filter((r) => !hasRouteContent(r)).map((r) => r.connectionId);
+  const relationIds = rows.filter((r) => !hasRouteContent(r)).map((r) => r.relationId);
   const commands: Command[] = [];
-  if (connectionIds.length > 0) commands.push({ type: 'route.clear', diagramId, connectionIds });
+  if (relationIds.length > 0) commands.push({ type: 'route.clear', diagramId, relationIds });
   if (routes.length > 0) commands.push({ type: 'route.set', diagramId, routes });
   return commands;
 }
@@ -1291,7 +1291,7 @@ function routeCommands(diagramId: string, rows: readonly EdgeRoute[]): Command[]
  */
 function clearedRoute(route: EdgeRoute): EdgeRoute {
   return {
-    connectionId: route.connectionId,
+    relationId: route.relationId,
     waypoints: [],
     labelPosition: undefined,
     ...(hasFixedSide(route) ? { source: 'auto' as const, ...routeSides(route) } : {}),

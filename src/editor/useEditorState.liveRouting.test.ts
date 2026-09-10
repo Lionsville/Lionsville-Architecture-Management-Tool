@@ -42,7 +42,7 @@ function render(initial: DesignModel = model()) {
   return renderEditorState(initial, { activeDiagramId: 'd1' });
 }
 
-const ROUTES = { placements: [], edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' as const }] };
+const ROUTES = { placements: [], edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' as const }] };
 
 describe('geometryVersion — what makes live routing re-run', () => {
   it('bumps when a node moves', () => {
@@ -129,7 +129,7 @@ describe('geometryVersion — what makes live routing re-run', () => {
     });
     expect(result.current.geometryVersion).toBe(afterMove);
     expect(result.current.model.diagrams[0].edgeRoutes)
-      .toEqual([{ connectionId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' }]);
+      .toEqual([{ relationId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' }]);
   });
 });
 
@@ -150,7 +150,7 @@ describe('one gesture, one undo step', () => {
 
     // The routes landed...
     expect(
-      result.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1'),
+      result.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1'),
     ).toMatchObject({ waypoints: [{ x: 500, y: 300 }] });
 
     // ...and ONE undo takes back the move AND the routes together.
@@ -290,7 +290,7 @@ describe('auto-layout does not trigger a live reroute', () => {
     // What a settling pass lands: placements, group rects and routes in one go.
     act(() => {
       result.current.actions.applyTidyResult({
-        edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' }],
+        edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 500, y: 300 }], source: 'auto' }],
         placements: [
           { elementId: 'e1', zone: 'landscape', x: 300, y: 300 },
           { elementId: 'e2', zone: 'landscape', x: 800, y: 300 },

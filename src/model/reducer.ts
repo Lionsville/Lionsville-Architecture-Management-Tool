@@ -283,7 +283,7 @@ export function apply(model: Model, command: Command): ApplyResult {
       const restoreAt: number[] = []
       const clear: RelationId[] = []
       command.routes.forEach((route, i) => {
-        const id = route.connectionId
+        const id = route.relationId
         if (!model.relations[id]) return
         const held = by[id]
         if (held) {
@@ -299,7 +299,7 @@ export function apply(model: Model, command: Command): ApplyResult {
       if (!restore.length && !clear.length) return ok(model, NOTHING)
       const rows: Rows<EdgeRoute> = { by, order }
       const undo: Command[] = []
-      if (clear.length) undo.push({ type: 'route.clear', diagramId: command.diagramId, connectionIds: clear })
+      if (clear.length) undo.push({ type: 'route.clear', diagramId: command.diagramId, relationIds: clear })
       if (restore.length) {
         undo.push({ type: 'route.set', diagramId: command.diagramId, routes: restore, at: restoreAt })
       }
@@ -314,7 +314,7 @@ export function apply(model: Model, command: Command): ApplyResult {
       const restore: EdgeRoute[] = []
       const restoreAt: number[] = []
       for (const id of diagram.order.routes) {
-        if (!command.connectionIds.includes(id)) continue
+        if (!command.relationIds.includes(id)) continue
         restore.push(held[id])
         restoreAt.push(diagram.order.routes.indexOf(id))
         rows = drop(rows.by, rows.order, id)

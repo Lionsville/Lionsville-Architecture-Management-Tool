@@ -51,7 +51,7 @@ const edgesOf = (m: DesignModel, extra: Partial<Parameters<typeof buildEdges>[0]
 
 describe('buildEdges — attach sides', () => {
   it('puts the stored sides on the edge data, and nothing when none are stored', () => {
-    const data = edgesOf(model([{ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'bottom', targetSide: 'left' }]));
+    const data = edgesOf(model([{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'bottom', targetSide: 'left' }]));
     expect(data.get('c1')).toMatchObject({ sourceSide: 'bottom', targetSide: 'left' });
     expect('sourceSide' in data.get('c2')!).toBe(false);
   });
@@ -59,8 +59,8 @@ describe('buildEdges — attach sides', () => {
   it('fans two straight lines fixed to the same side out along that side', () => {
     const data = edgesOf(
       model([
-        { connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'bottom' },
-        { connectionId: 'c2', waypoints: [], source: 'auto', sourceSide: 'bottom' },
+        { relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'bottom' },
+        { relationId: 'c2', waypoints: [], source: 'auto', sourceSide: 'bottom' },
       ]),
     );
     const c1 = data.get('c1')!.anchors!;
@@ -75,8 +75,8 @@ describe('buildEdges — attach sides', () => {
   });
 
   it('keeps the stored sides while a preview route stands in for the stored one', () => {
-    const stored: EdgeRoute = { connectionId: 'c1', waypoints: [{ x: 450, y: 165 }], source: 'auto', sourceSide: 'top' };
-    const preview: EdgeRoute = { connectionId: 'c1', waypoints: [{ x: 450, y: 180 }], source: 'auto' };
+    const stored: EdgeRoute = { relationId: 'c1', waypoints: [{ x: 450, y: 165 }], source: 'auto', sourceSide: 'top' };
+    const preview: EdgeRoute = { relationId: 'c1', waypoints: [{ x: 450, y: 180 }], source: 'auto' };
     const data = edgesOf(model([stored]), { previewRoutes: new Map([['c1', preview]]) });
     expect(data.get('c1')).toMatchObject({ waypoints: preview.waypoints, sourceSide: 'top' });
   });

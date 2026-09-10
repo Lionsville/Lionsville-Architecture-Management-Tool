@@ -205,7 +205,7 @@ export function useDragRoutePreview(options: DragRoutePreviewOptions): DragRoute
             return result.edgeRoutes ?? [];
           },
           onResult: (routes) => {
-            setPreviewRoutes(new Map(routes.map((route) => [route.connectionId, route])));
+            setPreviewRoutes(new Map(routes.map((route) => [route.relationId, route])));
           },
           watchdogMs: PREVIEW_WATCHDOG_MS,
           onStuck: () => {
@@ -232,7 +232,7 @@ export function useDragRoutePreview(options: DragRoutePreviewOptions): DragRoute
   const storedRoutes = options.diagram.edgeRoutes;
   useEffect(() => {
     if (!handingOverRef.current || !previewRoutes) return;
-    const stored = new Map((storedRoutes ?? []).map((route) => [route.connectionId, route]));
+    const stored = new Map((storedRoutes ?? []).map((route) => [route.relationId, route]));
     for (const [id, previewed] of previewRoutes) {
       if (!drawsTheSame(stored.get(id), previewed)) return;
     }

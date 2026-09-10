@@ -105,7 +105,7 @@ export function placementsEqual(a: DiagramPlacement, b: DiagramPlacement): boole
 }
 
 export function edgeRoutesEqual(a: EdgeRoute, b: EdgeRoute): boolean {
-  if (a.connectionId !== b.connectionId) return false;
+  if (a.relationId !== b.relationId) return false;
   // Provenance is persisted, so a route whose ONLY change is who owns it still
   // has to reach the server. This comparison decides whether `diffToOverlay`
   // emits an upsert at all, and leaving it out would silently drop exactly the

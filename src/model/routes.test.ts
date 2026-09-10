@@ -94,7 +94,7 @@ describe('insert/move/remove waypoint', () => {
 describe('routeFor', () => {
   it('finds the route by connection id', () => {
     const diagram = {
-      edgeRoutes: [{ connectionId: 'c1', waypoints: [{ x: 1, y: 2 }] }],
+      edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 1, y: 2 }] }],
     };
     expect(routeFor(diagram, 'c1')?.waypoints).toEqual([{ x: 1, y: 2 }]);
     expect(routeFor(diagram, 'c2')).toBeUndefined();
@@ -239,9 +239,9 @@ describe('manualRouteIds — pins', () => {
   it('protects a pinned row, whatever its source says', () => {
     const diagram = {
       edgeRoutes: [
-        { connectionId: 'pinned', waypoints: [], source: 'manual' as const, pinned: true },
-        { connectionId: 'odd', waypoints: [], source: 'auto' as const, pinned: true },
-        { connectionId: 'router', waypoints: [{ x: 1, y: 1 }], source: 'auto' as const },
+        { relationId: 'pinned', waypoints: [], source: 'manual' as const, pinned: true },
+        { relationId: 'odd', waypoints: [], source: 'auto' as const, pinned: true },
+        { relationId: 'router', waypoints: [{ x: 1, y: 1 }], source: 'auto' as const },
       ],
     };
     expect(manualRouteIds(diagram)).toEqual(new Set(['pinned', 'odd']));
@@ -537,7 +537,7 @@ describe('followNodeMove', () => {
   const A: Rect = { x: 100, y: 100, width: 200, height: 100 };
   const moved = (r: Rect, dx: number, dy: number): Rect => ({ ...r, x: r.x + dx, y: r.y + dy });
   const route = (waypoints: Point[], labelPosition?: Point): EdgeRoute => ({
-    connectionId: 'c1',
+    relationId: 'c1',
     waypoints,
     labelPosition,
     source: 'manual',

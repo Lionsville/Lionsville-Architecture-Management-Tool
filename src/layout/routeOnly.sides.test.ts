@@ -30,11 +30,11 @@ function fixture(routes: EdgeRoute[] = [], extraConnection?: DesignModel['relati
   return { model, diagram };
 }
 
-const rowOf = (routes: EdgeRoute[] | undefined, id: string) => routes?.find((r) => r.connectionId === id);
+const rowOf = (routes: EdgeRoute[] | undefined, id: string) => routes?.find((r) => r.relationId === id);
 
 describe('routeDiagramEdges — attach sides', () => {
   it('routes a side-only row out of its side, and hands the side back on the routed row', async () => {
-    const sideOnly: EdgeRoute = { connectionId: 'a-b', waypoints: [], source: 'auto', sourceSide: 'top' };
+    const sideOnly: EdgeRoute = { relationId: 'a-b', waypoints: [], source: 'auto', sourceSide: 'top' };
     const { model, diagram } = fixture([sideOnly]);
     // A side is not a claim: the row is the router's, so the live pass re-routes it.
     expect(manualRouteIds(diagram).has('a-b')).toBe(false);
@@ -50,7 +50,7 @@ describe('routeDiagramEdges — attach sides', () => {
   });
 
   it('re-emits a preserved hand-drawn route with its sides', async () => {
-    const manual: EdgeRoute = { connectionId: 'a-b', waypoints: [{ x: 700, y: 465 }], source: 'manual', targetSide: 'bottom' };
+    const manual: EdgeRoute = { relationId: 'a-b', waypoints: [{ x: 700, y: 465 }], source: 'manual', targetSide: 'bottom' };
     const { model, diagram } = fixture([manual]);
     const result = await routeDiagramEdges(model, diagram, 'keep-stored', undefined, manualRouteIds(diagram));
     expect(rowOf(result.edgeRoutes, 'a-b')).toEqual(manual);
@@ -59,15 +59,15 @@ describe('routeDiagramEdges — attach sides', () => {
   it('keeps the sides, and only the sides, of a declined connection under the clear policy', async () => {
     // A self-connection is the one shape the router declines. Its stored bends are
     // measured against nothing valid after a Tidy; its sides were never measured.
-    const self: EdgeRoute = { connectionId: 'a-a', waypoints: [{ x: 1, y: 1 }], source: 'manual', sourceSide: 'left', targetSide: 'right' };
+    const self: EdgeRoute = { relationId: 'a-a', waypoints: [{ x: 1, y: 1 }], source: 'manual', sourceSide: 'left', targetSide: 'right' };
     const { model, diagram } = fixture([self], { type: 'flow', id: 'a-a', sourceId: 'a', targetId: 'a', isBidirectional: false });
     const cleared = await routeDiagramEdges(model, diagram, 'clear');
-    expect(rowOf(cleared.edgeRoutes, 'a-a')).toEqual({ connectionId: 'a-a', waypoints: [], source: 'auto', sourceSide: 'left', targetSide: 'right' });
+    expect(rowOf(cleared.edgeRoutes, 'a-a')).toEqual({ relationId: 'a-a', waypoints: [], source: 'auto', sourceSide: 'left', targetSide: 'right' });
   });
 
   it('emits no side keys for a connection whose row has none', async () => {
     const { model, diagram } = fixture();
     const route = rowOf((await routeDiagramEdges(model, diagram)).edgeRoutes, 'a-b')!;
-    expect(Object.keys(route).sort()).toEqual(['connectionId', 'labelPosition', 'source', 'waypoints']);
+    expect(Object.keys(route).sort()).toEqual(['labelPosition', 'relationId', 'source', 'waypoints']);
   });
 });

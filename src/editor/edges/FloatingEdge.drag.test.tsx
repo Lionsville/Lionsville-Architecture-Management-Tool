@@ -54,7 +54,7 @@ function model(): DesignModel {
         name: 'L7',
         placements: [A, B],
         // Router output: the drag must claim it, and a click must NOT.
-        edgeRoutes: [{ connectionId: 'c1', waypoints: BENDS, source: 'auto' }],
+        edgeRoutes: [{ relationId: 'c1', waypoints: BENDS, source: 'auto' }],
       },
     ],
   };
@@ -80,7 +80,7 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     </ThemeProvider>,
   );
   const lastRoute = () =>
-    host.current.model.diagrams[0].edgeRoutes?.find((r) => r.connectionId === 'c1');
+    host.current.model.diagrams[0].edgeRoutes?.find((r) => r.relationId === 'c1');
   return { host, lastRoute };
 }
 

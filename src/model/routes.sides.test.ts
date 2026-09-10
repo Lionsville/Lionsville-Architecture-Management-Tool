@@ -25,7 +25,7 @@ import { diagonalSegments } from '../layout/routeTestSupport';
  * but sides stays the router's), and every place that carries a row carries it.
  */
 
-const row = (over: Partial<EdgeRoute> = {}): EdgeRoute => ({ connectionId: 'c1', waypoints: [], ...over });
+const row = (over: Partial<EdgeRoute> = {}): EdgeRoute => ({ relationId: 'c1', waypoints: [], ...over });
 
 describe('hasRouteContent / hasPlacedContent / hasFixedSide', () => {
   it('a set side is content, but not something a person placed', () => {
@@ -50,7 +50,7 @@ describe('hasRouteContent / hasPlacedContent / hasFixedSide', () => {
 describe('routeWithSides — what a side change leaves behind', () => {
   it('with nothing stored, a bend-less AUTO row: the router still owns the line, under the side', () => {
     const next = routeWithSides(undefined, 'c1', { sourceSide: 'top' });
-    expect(next).toEqual({ connectionId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
+    expect(next).toEqual({ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' });
     expect(manualRouteIds({ edgeRoutes: [next] }).has('c1')).toBe(false);
   });
 
@@ -65,19 +65,19 @@ describe('routeWithSides — what a side change leaves behind', () => {
 
   it('freeing the last thing the row had to say yields the delete marker', () => {
     const stored = row({ source: 'auto', sourceSide: 'top' });
-    expect(routeWithSides(stored, 'c1', { sourceSide: undefined })).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined });
-    expect(routeWithSides(undefined, 'c1', { sourceSide: undefined })).toEqual({ connectionId: 'c1', waypoints: [], labelPosition: undefined });
+    expect(routeWithSides(stored, 'c1', { sourceSide: undefined })).toEqual({ relationId: 'c1', waypoints: [], labelPosition: undefined });
+    expect(routeWithSides(undefined, 'c1', { sourceSide: undefined })).toEqual({ relationId: 'c1', waypoints: [], labelPosition: undefined });
   });
 });
 
 describe('withRouteRow', () => {
-  const a = row({ connectionId: 'a', sourceSide: 'top' });
-  const b = row({ connectionId: 'b', waypoints: [{ x: 1, y: 1 }] });
+  const a = row({ relationId: 'a', sourceSide: 'top' });
+  const b = row({ relationId: 'b', waypoints: [{ x: 1, y: 1 }] });
   it('replaces in place, appends when new, removes on the delete marker', () => {
     expect(withRouteRow([a, b], { ...a, sourceSide: 'left' })).toEqual([{ ...a, sourceSide: 'left' }, b]);
     expect(withRouteRow([a], b)).toEqual([a, b]);
     expect(withRouteRow(undefined, b)).toEqual([b]);
-    expect(withRouteRow([a, b], row({ connectionId: 'a' }))).toEqual([b]);
+    expect(withRouteRow([a, b], row({ relationId: 'a' }))).toEqual([b]);
   });
 });
 
@@ -182,7 +182,7 @@ describe('sides travel with the row through the model layer', () => {
     const freed = routeWithSides(sideOnly, 'c1', { sourceSide: undefined });
     expect(hasRouteContent(freed)).toBe(false);
     const gone = apply(fromArrays(model([sideOnly])), {
-      type: 'route.clear', diagramId: 'd1', connectionIds: ['c1'],
+      type: 'route.clear', diagramId: 'd1', relationIds: ['c1'],
     });
     expect(gone.ok && toArrays(gone.model).diagrams[0].edgeRoutes).toBeUndefined();
   });

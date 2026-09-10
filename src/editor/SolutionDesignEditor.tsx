@@ -724,7 +724,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       if (autoRoute) return;
       await rerouteAfterRouteEdit(token, {
         ...activeDiagram,
-        edgeRoutes: (activeDiagram.edgeRoutes ?? []).filter((r) => r.connectionId !== connectionId),
+        edgeRoutes: (activeDiagram.edgeRoutes ?? []).filter((r) => r.relationId !== connectionId),
       });
     },
     [activeDiagram, readOnly, busy, autoRoute, state.actions, rerouteAfterRouteEdit],

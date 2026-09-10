@@ -173,7 +173,7 @@ export function buildEdges(
       return element !== undefined && !(args.asOfDay && isGoneOn(element, args.asOfDay));
     }));
   const routes = new Map(
-    (args.diagram.edgeRoutes ?? []).map((route) => [route.connectionId, route]),
+    (args.diagram.edgeRoutes ?? []).map((route) => [route.relationId, route]),
   );
   // Live rects for every placed node, using the SAME geometry as buildNodes
   // (boundary union → boundaryRect, otherwise the placement rect). Feeds the

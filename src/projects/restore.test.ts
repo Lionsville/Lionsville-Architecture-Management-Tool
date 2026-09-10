@@ -22,7 +22,7 @@ const then: HostModel = {
   diagrams: [{
     id: 'd1', kind: 'layer7', name: 'Warehouse',
     placements: [{ elementId: 'billing', x: 0, y: 0 }, { elementId: 'crm', x: 100, y: 0 }],
-    edgeRoutes: [{ connectionId: 'c#1', waypoints: [{ x: 50, y: 10 }] }],
+    edgeRoutes: [{ relationId: 'c#1', waypoints: [{ x: 50, y: 10 }] }],
   }],
   decisions: [{ id: 'adr-1', number: 1, title: 'One writer', status: 'proposed', date: '2026-09-01', body: 'Why.', signers: [] }],
 }

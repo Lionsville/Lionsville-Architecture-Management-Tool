@@ -138,7 +138,7 @@ describe('drag preview — the drop is a no-op', () => {
     const model = boardModel();
     const diagram = model.diagrams[0];
     const stored = {
-      connectionId: 'c2',
+      relationId: 'c2',
       waypoints: [{ x: 640, y: 60 }],
       labelPosition: { x: 640, y: 40 },
       source: 'manual' as const,
@@ -151,8 +151,8 @@ describe('drag preview — the drop is a no-op', () => {
 
     // A manual route rerouted mid-drag but preserved on drop would snap BACK on
     // release — the same bug this feature removes, wearing a different hat.
-    expect(previewed.edgeRoutes!.find((r) => r.connectionId === 'c2')).toEqual(stored);
-    expect(landed.edgeRoutes!.find((r) => r.connectionId === 'c2')).toEqual(stored);
+    expect(previewed.edgeRoutes!.find((r) => r.relationId === 'c2')).toEqual(stored);
+    expect(landed.edgeRoutes!.find((r) => r.relationId === 'c2')).toEqual(stored);
     expect(previewed.edgeRoutes).toEqual(landed.edgeRoutes);
   });
 });
