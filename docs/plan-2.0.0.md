@@ -92,9 +92,16 @@ until format 4 (the same shim rule as step 2).
   marketplace partner that fulfils — nine areas, the functions the existing
   applications support, a stakeholder tree with two `outside` branches, one
   manual function, one uncovered one.
+- **The export says what it leaves out.** `toInterchange` carries `flow`
+  rows only (the interchange is a contract with tools that know nothing of
+  the business layer), so from this step on a scope can hold rows an export
+  does not. The interchange export — the dialog, and `project.export` for
+  an agent — reports the count and kinds of relations left out, as a value
+  the caller renders; never silently, never as a refusal. Pinned by a test.
 - Done when: the sheet renders the example on one screen with no geometry
   file; `diagram.render` produces it for an agent; the roadmap hatches a
-  `supports` window.
+  `supports` window; an export of the example says it left out its
+  `supports` rows.
 
 ### 4. Strings, manual, screenshots
 
