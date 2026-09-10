@@ -1,6 +1,6 @@
 # ADR-0012 — A federated model: scopes, one identity, and views apart from geometry
 
-* Status: proposed
+* Status: accepted
 * Date: 2026-09-10
 * Deciders: Wouter Simons
 
