@@ -120,7 +120,7 @@ describe('fromArrays / toArrays', () => {
   it('round-trips a full model byte for byte', () => {
     const before = host({
       description: 'A landscape',
-      elements: [element('a'), element('b', { parentApplicationId: 'a' })],
+      elements: [element('a'), element('b', { parentId: 'a' })],
       relations: [connection('c#1', 'a', 'b')],
       decisions: [adr('d1', 1)],
       diagrams: [

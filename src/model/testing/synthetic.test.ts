@@ -62,7 +62,7 @@ describe('the synthetic landscape', () => {
     const hosts = new Set(model.diagrams.map((d) => d.applicationElementId))
     for (const element of model.elements) {
       if (element.kind !== 'component') continue
-      expect(hosts.has(element.parentApplicationId)).toBe(true)
+      expect(hosts.has(element.parentId)).toBe(true)
     }
   })
 

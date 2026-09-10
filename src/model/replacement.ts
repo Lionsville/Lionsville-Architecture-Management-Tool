@@ -101,7 +101,7 @@ export function replacementCommands(
       isManaged: seed?.isManaged ?? true,
       aspects: {},
       ...(seed?.category !== undefined ? { category: seed.category } : {}),
-      ...(seed?.parentApplicationId !== undefined ? { parentApplicationId: seed.parentApplicationId } : {}),
+      ...(seed?.parentId !== undefined ? { parentId: seed.parentId } : {}),
     }
     commands.push({ type: 'element.create', element })
     // Beside the original on every board the original is on, in the same

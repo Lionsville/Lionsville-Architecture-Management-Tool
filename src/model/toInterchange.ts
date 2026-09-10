@@ -82,7 +82,7 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       return prune({
         key: k(e.id),
         kind: e.kind,
-        parentKey: k(e.parentApplicationId),
+        parentKey: k(e.parentId),
         name: e.name,
         category: e.category,
         vendor: e.vendor,

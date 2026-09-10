@@ -151,7 +151,7 @@ export function boundaryRect(
   const componentRects = placedNodes(diagram)
     .filter((p) => {
       const element = elementsById.get(p.id);
-      return element?.kind === 'component' && element.parentApplicationId === appId;
+      return element?.kind === 'component' && element.parentId === appId;
     })
     .map((p) => placementRect('component', p));
   if (componentRects.length === 0) return stored;

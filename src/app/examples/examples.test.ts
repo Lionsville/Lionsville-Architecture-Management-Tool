@@ -2,7 +2,7 @@
  * The shipped examples, checked as data.
  *
  * A container diagram nests its components inside the application boundary, and
- * the one thing that makes that happen is `parentApplicationId` — Tidy builds the
+ * the one thing that makes that happen is `parentId` — Tidy builds the
  * boundary as a compound node whose children are exactly the components parented
  * to it (`tidyContainer`), and everything else on the diagram is context placed
  * around it. A component that names no parent is therefore not "missing a
@@ -30,7 +30,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(components.length).toBeGreaterThan(0)
     for (const component of components) {
       expect(
-        byId.get(component.parentApplicationId ?? '')?.kind,
+        byId.get(component.parentId ?? '')?.kind,
         `${component.id} has no parent application`,
       ).toBe('application')
     }
@@ -50,7 +50,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(placed.length).toBeGreaterThan(0)
     for (const component of placed) {
       expect(
-        component!.parentApplicationId,
+        component!.parentId,
         `${component!.id} would be laid out beside the boundary, not in it`,
       ).toBe(diagram.applicationElementId)
     }

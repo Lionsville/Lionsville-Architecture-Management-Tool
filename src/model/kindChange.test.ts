@@ -30,7 +30,7 @@ const board = () =>
       element('a1', { kind: 'application' }),
       element('a2', { kind: 'externalSystem' }),
       element('c1', { kind: 'externalSystem' }),
-      element('c2', { kind: 'component', parentApplicationId: 'boundary' }),
+      element('c2', { kind: 'component', parentId: 'boundary' }),
       element('boundary', { kind: 'application' }),
     ],
   });
@@ -87,14 +87,14 @@ describe('canChangeKind', () => {
   });
 
   it('refuses an application that still has components, container view or not', () => {
-    // The other half of `parentApplicationId`. `a1` has no container diagram —
+    // The other half of `parentId`. `a1` has no container diagram —
     // its component was placed straight onto the landscape (or the view was
     // deleted and left the component behind), so the container-diagram refusal
     // does not fire and only this one stands between the model and a component
     // parented to an external system.
     const m = board();
     m.elements = m.elements.map((e) =>
-      e.id === 'c1' ? { ...e, kind: 'component' as const, parentApplicationId: 'a1' } : e,
+      e.id === 'c1' ? { ...e, kind: 'component' as const, parentId: 'a1' } : e,
     );
     expect(canChangeKind(m, m.diagrams[0], 'a1', 'externalSystem')).toEqual({
       ok: false,
@@ -111,7 +111,7 @@ describe('canChangeKind', () => {
   it('leaves an application with components nothing to change into', () => {
     const m = board();
     m.elements = m.elements.map((e) =>
-      e.id === 'c1' ? { ...e, kind: 'component' as const, parentApplicationId: 'a1' } : e,
+      e.id === 'c1' ? { ...e, kind: 'component' as const, parentId: 'a1' } : e,
     );
     expect(changeableKinds(m, m.diagrams[0], 'a1')).toEqual([]);
   });
@@ -126,7 +126,7 @@ describe('canChangeKind', () => {
   it('allows a parentless component to become something else', () => {
     const m = board();
     m.elements = m.elements.map((e) =>
-      e.id === 'c2' ? { ...e, parentApplicationId: undefined } : e,
+      e.id === 'c2' ? { ...e, parentId: undefined } : e,
     );
     expect(canChangeKind(m, m.diagrams[1], 'c2', 'actor')).toEqual({ ok: true });
   });

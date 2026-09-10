@@ -34,7 +34,7 @@ export function findContainerDiagram(
  */
 export function containerDiagramMembers(model: HostModel, applicationId: string): string[] {
   const componentIds = model.elements
-    .filter((e) => e.kind === 'component' && e.parentApplicationId === applicationId)
+    .filter((e) => e.kind === 'component' && e.parentId === applicationId)
     .map((e) => e.id)
   const inScope = new Set([applicationId, ...componentIds])
 
@@ -42,8 +42,8 @@ export function containerDiagramMembers(model: HostModel, applicationId: string)
   const addContext = (id: string) => {
     const other = model.elements.find((e) => e.id === id)
     if (!other) return
-    const hoisted = other.kind === 'component' && other.parentApplicationId !== applicationId
-      ? other.parentApplicationId
+    const hoisted = other.kind === 'component' && other.parentId !== applicationId
+      ? other.parentId
       : other.id
     if (hoisted && !inScope.has(hoisted)) context.add(hoisted)
   }

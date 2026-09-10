@@ -66,7 +66,7 @@ function board(): { model: DesignModel; layer7: DesignDiagram; container: Design
       elements: [
         elt('a', 'application'),
         elt('b', 'application'),
-        { ...elt('c', 'component'), parentApplicationId: 'a' },
+        { ...elt('c', 'component'), parentId: 'a' },
       ],
       relations: [{ type: 'flow', id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false }],
       diagrams: [layer7, container],

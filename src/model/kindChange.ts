@@ -28,12 +28,12 @@ import { HOME_ZONE } from './zones';
  *   Demoting the application would leave a diagram about something that is no
  *   longer an application. Delete the container view first, deliberately.
  * - **An application with components.** The other half of the same reference:
- *   `parentApplicationId` can point at an application that has no container
+ *   `parentId` can point at an application that has no container
  *   diagram at all (its components were placed straight onto a landscape, or
  *   the view was deleted and its components left behind). Demoting it would
  *   leave components parented to an external system, and `model/graph` would
  *   go on drawing them as its children. Re-parent or delete them first.
- * - **A component with a parent.** `parentApplicationId` is what makes it a
+ * - **A component with a parent.** `parentId` is what makes it a
  *   component; every other kind ignores the field, so changing the kind would
  *   silently orphan the reference. Detach it first.
  *
@@ -104,11 +104,11 @@ export function canChangeKind(
   }
   if (
     element.kind === 'application' &&
-    model.elements.some((e) => e.parentApplicationId === elementId)
+    model.elements.some((e) => e.parentId === elementId)
   ) {
     return { ok: false, reason: 'kindChange.hasComponents' };
   }
-  if (element.kind === 'component' && element.parentApplicationId) {
+  if (element.kind === 'component' && element.parentId) {
     return { ok: false, reason: 'kindChange.hasParent' };
   }
   return { ok: true };

@@ -19,7 +19,7 @@ function model(): DesignModel {
     elements: [
       { id: 'e1', kind: 'externalSystem', name: 'Payments', lifecycle: 'live', isManaged: false, aspects: {} },
       { id: 'e2', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
-      { id: 'c1', kind: 'component', name: 'Orders', parentApplicationId: 'e2', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'c1', kind: 'component', name: 'Orders', parentId: 'e2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     relations: [{ type: 'flow', id: 'x1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
     diagrams: [

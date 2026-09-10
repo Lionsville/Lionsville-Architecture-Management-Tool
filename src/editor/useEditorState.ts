@@ -581,7 +581,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           lifecycle: 'live',
           isManaged: DEFAULT_MANAGED[seed.kind],
           aspects: {},
-          parentApplicationId:
+          parentId:
             seed.kind === 'component' && diagram.kind === 'container'
               ? diagram.applicationElementId
               : undefined,

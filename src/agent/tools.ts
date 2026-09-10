@@ -383,7 +383,7 @@ const SPECS = [
       properties: {
         ...ELEMENT_FIELDS,
         kind: { type: 'string', description: 'What kind of element. Default application.', enum: KINDS },
-        parentApplicationId: { type: 'string', description: 'For a component: the application it is part of.' },
+        parentId: { type: 'string', description: 'For a component: the application it is part of.' },
         diagramId: { type: 'string', description: 'The diagram to draw it on. Default: the one on screen.' },
         zone: { type: 'string', description: 'On a landscape: the band to draw it in. Default: the kind\'s own.', enum: ZONES },
         domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under.' },

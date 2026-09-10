@@ -27,10 +27,10 @@ function model(over: Partial<HostModel> = {}): HostModel {
     customerName: 'Acme Logistics',
     elements: [
       el('crews', 'application'),
-      el('crews-api', 'component', { parentApplicationId: 'crews' }),
-      el('crews-ui', 'component', { parentApplicationId: 'crews' }),
+      el('crews-api', 'component', { parentId: 'crews' }),
+      el('crews-ui', 'component', { parentId: 'crews' }),
       el('reisinfo', 'application'),
-      el('reisinfo-api', 'component', { parentApplicationId: 'reisinfo' }),
+      el('reisinfo-api', 'component', { parentId: 'reisinfo' }),
       el('extern', 'externalSystem'),
       el('losstaand', 'application'),
     ],

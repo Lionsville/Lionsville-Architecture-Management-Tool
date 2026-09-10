@@ -1291,7 +1291,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             activeDiagram.applicationElementId === deleteElement.id
           }
           hasComponents={state.model.elements.some(
-            (e) => e.parentApplicationId === deleteElement.id,
+            (e) => e.parentId === deleteElement.id,
           )}
           onRemoveFromDiagram={() => {
             state.actions.removeFromDiagram(deleteElement.id);

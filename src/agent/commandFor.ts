@@ -328,9 +328,9 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const kind = (args.kind as ElementKind | undefined) ?? 'application'
   const diagram = diagramOf(args, view)
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
-  const parentApplicationId = args.parentApplicationId as string | undefined
-  if (parentApplicationId !== undefined && !model.elements[parentApplicationId]) {
-    return refused('agent.unknownId', `element ${parentApplicationId}`)
+  const parentId = args.parentId as string | undefined
+  if (parentId !== undefined && !model.elements[parentId]) {
+    return refused('agent.unknownId', `element ${parentId}`)
   }
 
   const id = view.ids.element(name)
@@ -341,10 +341,10 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
     lifecycle: 'live',
     isManaged: kind !== 'externalSystem' && kind !== 'actor',
     aspects: {},
-    ...(parentApplicationId !== undefined
-      ? { parentApplicationId }
+    ...(parentId !== undefined
+      ? { parentId }
       : kind === 'component' && diagram.kind === 'container' && diagram.applicationElementId
-        ? { parentApplicationId: diagram.applicationElementId }
+        ? { parentId: diagram.applicationElementId }
         : {}),
   }
   // The same fields, read the same way as an update, applied to the bare row.

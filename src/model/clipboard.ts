@@ -23,7 +23,7 @@ export interface ClipboardPayload {
  * An in-memory, diagram-agnostic snapshot of a selection plus its placements
  * and fully-internal relations. Paste reuses the tempId → reconcile path
  * (see reconcile.ts): every copied id is minted a fresh temp id, and every
- * reference (`parentApplicationId`, relation endpoints, placement elementId)
+ * reference (`parentId`, relation endpoints, placement elementId)
  * is remapped through the old→new map. The save round-trip assigns real ids
  * and reconciliation re-keys via the host's alias maps — paste introduces no
  * new persistence concept, and always creates NEW elements (it never silently
@@ -89,7 +89,7 @@ export function remapClipboard(
   const elements: DesignElement[] = payload.elements.map((element) => ({
     ...structuredClone(element),
     id: idMap.get(element.id) as ElementId,
-    parentApplicationId: remapParent(element.parentApplicationId, element.kind, idMap, options.target),
+    parentId: remapParent(element.parentId, element.kind, idMap, options.target),
   }));
 
   const relations: Relation[] = payload.relations.map((relation) => ({

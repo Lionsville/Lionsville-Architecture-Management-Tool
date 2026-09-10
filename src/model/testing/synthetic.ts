@@ -168,7 +168,7 @@ function build(spec: SyntheticSpec): HostModel {
       elements.push(describe(rng, spec, {
         id,
         kind: 'component',
-        parentApplicationId: host,
+        parentId: host,
         name: `${pick(rng, COMPONENT_WORDS)} ${pick(rng, PARTS)}`,
         lifecycle: 'live',
         isManaged: true,

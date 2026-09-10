@@ -143,7 +143,7 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     return {
       id: e.key,
       kind: e.kind,
-      parentApplicationId: e.parentKey,
+      parentId: e.parentKey,
       name: e.name,
       category: e.category,
       vendor: e.vendor,

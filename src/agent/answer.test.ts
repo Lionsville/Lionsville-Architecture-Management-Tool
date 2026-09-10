@@ -36,7 +36,7 @@ const host: HostModel = {
     element('crm', 'CRM', { technology: 'Java' }),
     element('wh', 'Warehouse', { kind: 'externalSystem' }),
     element('who', 'Clerk', { kind: 'actor' }),
-    element('billing-api', 'Billing API', { kind: 'component', parentApplicationId: 'billing' }),
+    element('billing-api', 'Billing API', { kind: 'component', parentId: 'billing' }),
   ],
   relations: [
     { type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', label: 'orders', protocol: 'REST', isBidirectional: false },
@@ -100,7 +100,7 @@ describe('elements.list', () => {
     expect(held.total).toBe(5)
     expect(held.elements[0]).toEqual({
       id: 'billing', name: 'Billing', kind: 'application', lifecycle: 'live',
-      category: 'Finance', vendor: 'Kestrel', technology: undefined, parentApplicationId: undefined,
+      category: 'Finance', vendor: 'Kestrel', technology: undefined, parentId: undefined,
       hasDescription: true,
     })
     expect(held.elements.find((e) => e.id === 'crm')).toMatchObject({ hasDescription: false })

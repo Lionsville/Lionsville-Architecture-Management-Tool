@@ -94,7 +94,17 @@ export type NodeIconSize = 'small' | 'large';
 export interface DesignElement {
   id: ElementId;
   kind: ElementKind;
-  parentApplicationId?: ElementId;
+  /**
+   * The one thing this sits inside (ADR-0012 §3).
+   *
+   * It was `parentApplicationId` while a component inside an application was
+   * the only containment there was. The business layer needs the same field to
+   * say a function's area, a step's phase and an actor's group of actors, and
+   * one parent is what a tree wants — so the field lost the word that named
+   * only one of its uses. Format 3 still writes the old spelling
+   * (`projects/folderFormat.ts`), and stops at format 4.
+   */
+  parentId?: ElementId;
   name: string;
   category?: string;
   vendor?: string;

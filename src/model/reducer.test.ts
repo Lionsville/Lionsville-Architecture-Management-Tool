@@ -40,7 +40,7 @@ function sample(overrides: Partial<HostModel> = {}): Model {
   return fromArrays({
     name: 'Design',
     customerName: 'ACME',
-    elements: [element('a'), element('b'), element('c', { kind: 'component', parentApplicationId: 'a' })],
+    elements: [element('a'), element('b'), element('c', { kind: 'component', parentId: 'a' })],
     relations: [connection('c#1', 'a', 'b'), connection('c#2', 'b', 'a')],
     diagrams: [
       diagram('landscape', {

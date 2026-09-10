@@ -46,7 +46,7 @@ function model(): DesignModel {
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'a2', kind: 'application', name: 'Betaalplatform', vendor: 'Adyen', lifecycle: 'live', isManaged: true, aspects: {} },
-      { id: 'a3', kind: 'component', name: 'Orderservice', parentApplicationId: 'a1', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'a3', kind: 'component', name: 'Orderservice', parentId: 'a1', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
     relations: [],
   };

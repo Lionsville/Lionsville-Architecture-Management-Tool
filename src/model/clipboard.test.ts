@@ -56,7 +56,7 @@ describe('remapClipboard', () => {
   const payload = (): ClipboardPayload => ({
     elements: [
       element('app', { kind: 'application', name: 'Webshop' }),
-      element('comp', { kind: 'component', name: 'API', parentApplicationId: 'app' }),
+      element('comp', { kind: 'component', name: 'API', parentId: 'app' }),
     ],
     relations: [connection('c-int', 'app', 'comp', { label: 'hosts' })],
     placements: [
@@ -74,7 +74,7 @@ describe('remapClipboard', () => {
 
     expect(out.elements.map((e) => e.id)).toEqual(['tmp-e1', 'tmp-e2']);
     // The copied component keeps pointing at the copied parent's NEW id.
-    expect(out.elements[1].parentApplicationId).toBe('tmp-e1');
+    expect(out.elements[1].parentId).toBe('tmp-e1');
     // Connection endpoints follow the same map; the connection id is fresh.
     expect(out.relations[0]).toMatchObject({
       id: 'tmp-c1',
@@ -101,7 +101,7 @@ describe('remapClipboard', () => {
 
   it('strips zone/group and repoints orphaned components when pasting into a container', () => {
     const single: ClipboardPayload = ({
-      elements: [element('comp', { kind: 'component', parentApplicationId: 'app' })],
+      elements: [element('comp', { kind: 'component', parentId: 'app' })],
       relations: [],
       placements: [placement('comp', { x: 5, y: 5, zone: 'landscape', group: 'X' })],
     });
@@ -111,13 +111,13 @@ describe('remapClipboard', () => {
       target: { kind: 'container', applicationElementId: 'boundary-app' },
     });
     // Parent wasn't copied → adopt the container's boundary application.
-    expect(out.elements[0].parentApplicationId).toBe('boundary-app');
+    expect(out.elements[0].parentId).toBe('boundary-app');
     expect(out.placements[0]).toMatchObject({ zone: undefined, group: undefined });
   });
 
   it('drops a parent reference that is neither copied nor a container adoption', () => {
     const single: ClipboardPayload = ({
-      elements: [element('a', { kind: 'application', parentApplicationId: 'gone' })],
+      elements: [element('a', { kind: 'application', parentId: 'gone' })],
       relations: [],
       placements: [placement('a')],
     });
@@ -126,7 +126,7 @@ describe('remapClipboard', () => {
       offset: { x: 0, y: 0 },
       target: { kind: 'layer7' },
     });
-    expect(out.elements[0].parentApplicationId).toBeUndefined();
+    expect(out.elements[0].parentId).toBeUndefined();
   });
 });
 

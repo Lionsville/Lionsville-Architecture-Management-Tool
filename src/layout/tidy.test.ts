@@ -1260,8 +1260,8 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
       customerName: 'ACME',
       elements: [
         elt('app', 'application'),
-        elt('c1', 'component', { parentApplicationId: 'app' }),
-        elt('c2', 'component', { parentApplicationId: 'app' }),
+        elt('c1', 'component', { parentId: 'app' }),
+        elt('c2', 'component', { parentId: 'app' }),
       ],
       relations: [],
       diagrams: [
@@ -1298,9 +1298,9 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
       customerName: 'ACME',
       elements: [
         elt('app', 'application'),
-        elt('c1', 'component', { parentApplicationId: 'app' }),
-        elt('c2', 'component', { parentApplicationId: 'app' }),
-        elt('c3', 'component', { parentApplicationId: 'app' }),
+        elt('c1', 'component', { parentId: 'app' }),
+        elt('c2', 'component', { parentId: 'app' }),
+        elt('c3', 'component', { parentId: 'app' }),
         elt('ext', 'externalSystem'),
       ],
       relations: [

@@ -39,7 +39,7 @@ const host: HostModel = {
   elements: [
     element('billing', 'Billing'),
     element('crm', 'CRM'),
-    element('api', 'Billing API', { kind: 'component', parentApplicationId: 'billing' }),
+    element('api', 'Billing API', { kind: 'component', parentId: 'billing' }),
     element('who', 'Clerk', { kind: 'actor' }),
   ],
   relations: [{ type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', isBidirectional: false }],
@@ -171,7 +171,7 @@ describe('element.add', () => {
     const held = view(withContainer, { activeDiagramId: 'cd-new-1' })
     const out = commandFor('element.add', { name: 'Queue', kind: 'component' }, held)
     const after = roundTrip(withContainer, out)
-    expect(after.elements['queue']).toMatchObject({ parentApplicationId: 'billing' })
+    expect(after.elements['queue']).toMatchObject({ parentId: 'billing' })
   })
 })
 

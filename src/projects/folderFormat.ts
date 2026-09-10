@@ -303,6 +303,30 @@ function asEdgeRoute(row: Record<string, unknown>): EdgeRoute {
 }
 
 /**
+ * What an element is contained BY, under format 3's name for it.
+ *
+ * ADR-0012 §3 gave containment one field for every kind — a component's
+ * application, a function's area, a step's phase, an actor's group — so the
+ * name lost the word that described only the first of them. Format 3 knows only
+ * `parentApplicationId`, and a 1.x build reads nothing else, so the spelling is
+ * translated here: the same seam the dashed groups and the route rows occupy,
+ * one function each way, and a folder that goes through this build unchanged
+ * comes out byte for byte the folder that went in.
+ *
+ * **Both halves are deleted at format 4**, where the file says what the model
+ * says.
+ */
+function asStoredParent(element: Record<string, unknown>): Record<string, unknown> {
+  const { parentId, ...rest } = element
+  return parentId === undefined ? rest : { ...rest, parentApplicationId: parentId }
+}
+
+function readStoredParent(row: Record<string, unknown>): Record<string, unknown> {
+  const { parentApplicationId, ...rest } = row
+  return parentApplicationId === undefined ? rest : { ...rest, parentId: parentApplicationId }
+}
+
+/**
  * The project, as files, sorted by path so two saves of the same project are
  * the same list in the same order.
  */
@@ -320,10 +344,10 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
       files.push({ path: page, text: markdownFile(description) })
     }
     const { description: _filed, ...rest } = element
-    return {
+    return asStoredParent({
       ...(filed.has(element.id) ? rest : element),
       ...(explicit ? { explicit } : {}),
-    }
+    })
   })
 
   files.push({
@@ -617,7 +641,7 @@ function readElements(folder: Folder): {
     }
     const prose = textAt(folder, `${DOCS_FOLDER}/${row.id}.md`)
     return [{
-      ...(rest as unknown as DesignElement),
+      ...(readStoredParent(rest) as unknown as DesignElement),
       ...(prose !== undefined ? { description: markdownBody(prose) } : {}),
     }]
   })

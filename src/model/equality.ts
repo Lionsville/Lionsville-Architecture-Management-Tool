@@ -47,7 +47,7 @@ function aspectsEqual(a: DesignElement['aspects'], b: DesignElement['aspects']):
 
 export function elementsEqual(a: DesignElement, b: DesignElement): boolean {
   if (a.id !== b.id || a.kind !== b.kind || a.name !== b.name) return false;
-  if (!sameOptional(a.parentApplicationId, b.parentApplicationId)) return false;
+  if (!sameOptional(a.parentId, b.parentId)) return false;
   if (
     !sameOptional(a.category, b.category) ||
     !sameOptional(a.vendor, b.vendor) ||

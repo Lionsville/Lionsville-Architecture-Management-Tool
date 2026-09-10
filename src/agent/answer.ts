@@ -92,8 +92,8 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       if (!element) return refused('agent.unknownId', `element ${String(args.id)}`)
       return json({
         ...element,
-        parentApplication: element.parentApplicationId
-          ? nameOf(model, element.parentApplicationId) : undefined,
+        parentApplication: element.parentId
+          ? nameOf(model, element.parentId) : undefined,
         connections: model.order.relations
           .map((id) => model.relations[id])
           .filter((c) => c.sourceId === element.id || c.targetId === element.id)
@@ -268,7 +268,7 @@ function exportMarkdown(model: Model, view: ReadView): string {
     if (rows.length === 0) continue
     lines.push(`### ${kind}`, '', ...table(
       ['id', 'name', 'lifecycle', 'dates', 'successor', 'owner', 'category', 'vendor', 'technology', 'parent'],
-      rows.map((e) => [e.id, e.name, e.lifecycle, dates(e), e.successorId, e.owner, e.category, e.vendor, e.technology, e.parentApplicationId]),
+      rows.map((e) => [e.id, e.name, e.lifecycle, dates(e), e.successorId, e.owner, e.category, e.vendor, e.technology, e.parentId]),
     ))
   }
 
@@ -396,7 +396,7 @@ function elementLine(element: DesignElement) {
     owner: element.owner,
     lifecycleDates: element.lifecycleDates,
     successorId: element.successorId,
-    parentApplicationId: element.parentApplicationId,
+    parentId: element.parentId,
     hasDescription: Boolean(element.description?.trim()),
   }
 }

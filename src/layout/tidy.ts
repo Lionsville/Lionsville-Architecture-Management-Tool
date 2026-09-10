@@ -1450,7 +1450,7 @@ export async function tidyContainer(
     const element = elementsById.get(placement.id);
     if (!element || element.id === appId) continue;
     const child: ElkChild = { id: element.id, ...placementSize(element.kind, placement) };
-    if (element.kind === 'component' && element.parentApplicationId === appId) {
+    if (element.kind === 'component' && element.parentId === appId) {
       components.push(child);
     } else {
       context.push(child);
@@ -1492,7 +1492,7 @@ export async function tidyContainer(
   // An edge between two components then has both ends on the boundary and is
   // dropped: it is a self-loop, and neither end is moving relative to the other.
   const componentIdSet = new Set(
-    model.elements.filter((e) => e.kind === 'component' && e.parentApplicationId === appId).map((e) => e.id),
+    model.elements.filter((e) => e.kind === 'component' && e.parentId === appId).map((e) => e.id),
   );
   const graphNodeFor = (id: ElementId): ElementId =>
     options.pinGroupContents && appId && componentIdSet.has(id) ? appId : id;
@@ -1528,7 +1528,7 @@ export async function tidyContainer(
   const componentIds = new Set(
     placedNodes(diagram)
       .map((p) => elementsById.get(p.id))
-      .filter((e) => e?.kind === 'component' && e.parentApplicationId === appId)
+      .filter((e) => e?.kind === 'component' && e.parentId === appId)
       .map((e) => (e as DesignElement).id),
   );
 
