@@ -126,6 +126,31 @@ describe('the axis', () => {
     expect(within(find('[data-testid="plan-tr-1"]') as HTMLElement).getByTestId('shadow-run')).toBeTruthy()
   })
 
+  /**
+   * ADR-0012 §5: a window belongs to the row, not to the type. "The WMS
+   * supports fulfilment from March" is a stretch that is true for a while,
+   * and it wears the hatch a shadow run wears for the same reason.
+   */
+  it('hatches a relation that carries a window, whatever the relation means', () => {
+    setup({
+      model: model({
+        relations: [
+          { id: 'r1', type: 'supports', sourceId: 'wms-new', targetId: 'billing', validFrom: '2027-04-01' },
+          { id: 'r2', type: 'flow', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false },
+        ],
+      }),
+    })
+    // The undated flow says nothing about time and gets no row.
+    expect(document.querySelector('[data-testid="relation-r2"]')).toBeNull()
+    const row = find('[data-testid="relation-r1"]') as HTMLElement
+    const span = within(row).getByTestId('relation-window')
+    expect(span.getAttribute('data-relation-type')).toBe('supports')
+    expect(getComputedStyle(span).backgroundImage).toContain('repeating-linear-gradient')
+    // Named by its two ends, and by what the row means.
+    expect(screen.getByText('Warehouse Management (new) → Billing')).toBeTruthy()
+    expect(screen.getByText('Supports')).toBeTruthy()
+  })
+
   it('says so plainly when nothing has a date yet', () => {
     setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
     expect(screen.getByText('Nothing here has a date yet.')).toBeTruthy()

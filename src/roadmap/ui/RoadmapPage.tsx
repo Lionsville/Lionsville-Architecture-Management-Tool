@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
-import { addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
+import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
 import type { DesignModel, ElementId, Lifecycle } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
@@ -125,7 +125,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const scrubDay = props.asOf && isDay(props.asOf) ? props.asOf : today
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false }
   const bar = barChromeFor(chrome)
-  const empty = whole.tracks.length === 0 && whole.transitions.length === 0
+  const empty = whole.tracks.length === 0 && whole.relations.length === 0 && whole.transitions.length === 0
 
   return (
     <PageDialog
@@ -243,6 +243,50 @@ export function RoadmapPage(props: RoadmapPageProps) {
                   </Box>
                 </Box>
               ))}
+
+              {roadmap.relations.length > 0 && (
+                <>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 2, mb: 0.5 }}>
+                    {t('roadmap.relations')}
+                  </Typography>
+                  {roadmap.relations.map(({ relation, sourceName, targetName }) => {
+                    // An end left open is drawn to the edge of the axis, which is
+                    // what "and onwards" looks like on a page with two edges.
+                    const opens = isDay(relation.validFrom) ? relation.validFrom! : roadmap.from
+                    const closes = isDay(relation.validUntil) ? relation.validUntil! : roadmap.to
+                    return (
+                      <Box key={relation.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {relation.label || `${sourceName} → ${targetName}`}
+                          </Typography>
+                          <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                            {t(RELATION_LABEL[relation.type])}
+                          </Typography>
+                        </Box>
+                        <Box data-testid={`relation-${relation.id}`} sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}>
+                          <Tooltip title={`${sourceName} → ${targetName} · ${opens} – ${isDay(relation.validUntil) ? relation.validUntil : '…'}`}>
+                            <Box
+                              data-testid="relation-window"
+                              data-relation-type={relation.type}
+                              sx={{
+                                position: 'absolute', top: 3, bottom: 3,
+                                left: at(opens), right: `calc(100% - ${at(closes)})`,
+                                borderRadius: 1,
+                                // The same hatch a shadow run wears: a stretch
+                                // that is true for a while and then is not.
+                                backgroundImage: `repeating-linear-gradient(135deg, ${theme.palette.primary.main} 0 3px, transparent 3px 7px)`,
+                                opacity: 0.6,
+                              }}
+                            />
+                          </Tooltip>
+                          <Marker left={at(today)} colour={theme.palette.text.primary} label={t('roadmap.today')} />
+                        </Box>
+                      </Box>
+                    )
+                  })}
+                </>
+              )}
 
               <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 2, mb: 0.5 }}>
                 {t('roadmap.plans')}

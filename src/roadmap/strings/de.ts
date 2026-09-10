@@ -10,6 +10,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'roadmap.today': 'Heute',
   'roadmap.showing': 'Zeigt',
   'roadmap.applications': 'Anwendungen',
+  'roadmap.relations': 'Relationen',
   'roadmap.plans': 'Pläne',
   'roadmap.newPlan': 'Neuer Plan',
   'roadmap.newPlanTitle': 'Wie heißt der Plan?',

@@ -15,7 +15,7 @@
 import { daysBetween, isDay, LIFECYCLE_ORDER, phaseAt } from '../model/lifecycle'
 import { elementsWithRole, transitionDays } from '../model/transition'
 import type { Transition } from '../model/transition'
-import type { DesignElement, DesignModel, Lifecycle } from '../model/types'
+import type { DesignElement, DesignModel, Lifecycle, Relation } from '../model/types'
 
 /** One stretch of one phase. `to` absent means "and onwards". */
 export type PhaseSpan = {
@@ -30,11 +30,31 @@ export type ElementTrack = {
   spans: PhaseSpan[]
 }
 
+/**
+ * One relation that says something about time (ADR-0012 §5).
+ *
+ * A window on a row, whatever the row means: the temporary sync of a hybrid
+ * run, and "the WMS supports fulfilment from March" alike. The two ends are
+ * carried by name because that is the whole of the row's label and the page
+ * has no other way to look them up in days.
+ *
+ * Either end of the window may be absent, and absent means the axis's own —
+ * an interface that opens in March and is never dated shut is drawn to the
+ * edge of the page, which is what "and onwards" looks like.
+ */
+export type RelationTrack = {
+  relation: Relation
+  sourceName: string
+  targetName: string
+}
+
 export type Roadmap = {
   /** The window the axis covers, inclusive. */
   from: string
   to: string
   tracks: ElementTrack[]
+  /** The relations with a window of their own, first day first. */
+  relations: RelationTrack[]
   transitions: Transition[]
 }
 
@@ -113,18 +133,20 @@ export function monthsFrom(day: string, months: number): string {
  * the page and forwards in time.
  */
 export function roadmapOf(
-  model: Pick<DesignModel, 'elements'> & { transitions?: Transition[] },
+  model: Pick<DesignModel, 'elements' | 'relations'> & { transitions?: Transition[] },
   today: string,
 ): Roadmap {
   const transitions = model.transitions ?? []
   const dated = model.elements.filter((element) => (
     LIFECYCLE_ORDER.some((phase) => phase !== 'planned' && isDay(element.lifecycleDates?.[phase]))
   ))
+  const windowed = model.relations.filter(hasWindow)
 
   const days = [
     ...dated.flatMap((element) => LIFECYCLE_ORDER
       .map((phase) => (phase === 'planned' ? undefined : element.lifecycleDates?.[phase]))
       .filter(isDay)),
+    ...windowed.flatMap((relation) => [relation.validFrom, relation.validUntil].filter(isDay)),
     ...transitions.flatMap(transitionDays),
   ]
   const { from, to } = rangeOf(days, today)
@@ -133,7 +155,29 @@ export function roadmapOf(
     .map((element) => ({ element, spans: spansFor(element, from) }))
     .sort((a, b) => firstMark(a) .localeCompare(firstMark(b)) || a.element.name.localeCompare(b.element.name))
 
-  return { from, to, tracks, transitions }
+  const named = new Map(model.elements.map((element) => [element.id, element.name]))
+  const relations = windowed
+    .map((relation) => ({
+      relation,
+      // A dangling end keeps its id rather than going blank: a row that says
+      // nothing is worse than one that says which id nobody holds.
+      sourceName: named.get(relation.sourceId) ?? relation.sourceId,
+      targetName: named.get(relation.targetId) ?? relation.targetId,
+    }))
+    .sort((a, b) => opensAt(a.relation).localeCompare(opensAt(b.relation))
+      || a.relation.id.localeCompare(b.relation.id))
+
+  return { from, to, tracks, relations, transitions }
+}
+
+/** Whether this row says anything about time at all. */
+function hasWindow(relation: Relation): boolean {
+  return isDay(relation.validFrom) || isDay(relation.validUntil)
+}
+
+/** The first day a row has an opinion about, for ordering. */
+function opensAt(relation: Relation): string {
+  return isDay(relation.validFrom) ? relation.validFrom! : relation.validUntil!
 }
 
 /** The first day a track actually changes, for ordering. */
@@ -163,13 +207,20 @@ export function within(roadmap: Roadmap, from: string, to: string): Roadmap {
       return changes || (opening !== 'retired' && opening !== 'planned')
     })
     .map(({ element }) => ({ element, spans: spansFor(element, from) }))
+  // A row stays if its window overlaps the period at all. An end left open is
+  // open, not absent: a line dated from March and never dated shut is there
+  // for every window after March.
+  const relations = roadmap.relations.filter(({ relation }) => (
+    (!isDay(relation.validFrom) || relation.validFrom! <= to)
+    && (!isDay(relation.validUntil) || relation.validUntil! >= from)
+  ))
   const transitions = roadmap.transitions.filter((plan) => {
     const days = transitionDays(plan)
     if (days.length === 0) return true
     if (isDay(plan.from) && isDay(plan.to)) return plan.from <= to && plan.to >= from
     return days.some(inside)
   })
-  return { from, to, tracks, transitions }
+  return { from, to, tracks, relations, transitions }
 }
 
 /**

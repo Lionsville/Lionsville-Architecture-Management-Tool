@@ -10,6 +10,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'roadmap.today': 'Hjoed',
   'roadmap.showing': 'Toant',
   'roadmap.applications': 'Applikaasjes',
+  'roadmap.relations': 'Relaasjes',
   'roadmap.plans': 'Plannen',
   'roadmap.newPlan': 'Nij plan',
   'roadmap.newPlanTitle': 'Hoe hjit it plan?',

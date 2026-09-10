@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { fractionOf, monthsFrom, rangeOf, roadmapOf, shadowRunOf, spansFor, within } from './timeline'
-import type { DesignElement } from '../model/types'
+import type { DesignElement, Relation } from '../model/types'
 
 const TODAY = '2026-09-08'
 
@@ -111,6 +111,7 @@ describe('roadmapOf', () => {
       element('wms-old', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),
       element('wms-new', { lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' } }),
     ],
+    relations: [],
     transitions: [{
       id: 'tr-1', number: 1, title: 'Replace it', status: 'agreed' as const,
       from: '2027-01-15', to: '2028-01-31', elements: [], decisions: [],
@@ -136,9 +137,49 @@ describe('roadmapOf', () => {
   })
 
   it('has no rows at all for a landscape with no dates', () => {
-    const bare = roadmapOf({ elements: [element('a'), element('b')] }, TODAY)
+    const bare = roadmapOf({ elements: [element('a'), element('b')], relations: [] }, TODAY)
     expect(bare.tracks).toEqual([])
     expect(bare.from).toBe('2026-03-08')
+  })
+})
+
+/**
+ * A relation carries a window whatever it means (ADR-0012 §5), so the axis has
+ * to draw "the WMS supports fulfilment from March" the same way it draws the
+ * temporary sync of a hybrid run.
+ */
+describe('roadmapOf — the relations with a window', () => {
+  const relation = (id: string, type: Relation['type'], over: Partial<Relation> = {}): Relation =>
+    ({ id, type, sourceId: 'wms', targetId: 'fulfilment', ...over })
+
+  const model = {
+    elements: [element('wms'), element('fulfilment')],
+    relations: [
+      relation('undated', 'flow'),
+      relation('supports', 'supports', { validFrom: '2027-03-01' }),
+      relation('sync', 'flow', { validFrom: '2026-06-01', validUntil: '2027-02-28', label: 'sync' }),
+    ],
+  }
+
+  it('gives a row to the rows that say something about time, and to no others', () => {
+    expect(roadmapOf(model, TODAY).relations.map((r) => r.relation.id)).toEqual(['sync', 'supports'])
+  })
+
+  it('carries both ends by name, so the row has a label without a second lookup', () => {
+    const [first] = roadmapOf(model, TODAY).relations
+    expect(first).toMatchObject({ sourceName: 'wms', targetName: 'fulfilment' })
+  })
+
+  it('keeps an id nobody holds rather than drawing a blank row', () => {
+    const dangling = { elements: [], relations: [relation('r', 'supports', { validFrom: '2027-03-01' })] }
+    expect(roadmapOf(dangling, TODAY).relations[0])
+      .toMatchObject({ sourceName: 'wms', targetName: 'fulfilment' })
+  })
+
+  it('widens the axis to reach a window nothing else covers', () => {
+    const { from, to } = roadmapOf(model, TODAY)
+    expect(from <= '2026-06-01').toBe(true)
+    expect(to >= '2027-03-01').toBe(true)
   })
 })
 
@@ -149,6 +190,7 @@ describe('within', () => {
       element('late', { lifecycle: 'planned', lifecycleDates: { live: '2029-06-01' } }),
       element('long', { lifecycleDates: { retiring: '2025-01-01', retired: '2030-01-01' } }),
     ],
+    relations: [],
     transitions: [
       { id: 'a', number: 1, title: 'Before', status: 'done' as const, from: '2025-01-01', to: '2025-12-31', elements: [], decisions: [], milestones: [], body: '' },
       { id: 'b', number: 2, title: 'During', status: 'agreed' as const, from: '2027-01-01', to: '2027-12-31', elements: [], decisions: [], milestones: [], body: '' },
@@ -174,6 +216,20 @@ describe('within', () => {
     // And its spans start at the frame, not at the natural axis start.
     const late = arriving.tracks.find((t) => t.element.id === 'late')!
     expect(late.spans[0]).toEqual({ phase: 'planned', from: '2029-01-01', to: '2029-06-01' })
+  })
+
+  it('keeps a relation whose window overlaps, and an open end is open', () => {
+    const model_ = {
+      elements: [],
+      relations: [
+        { id: 'before', type: 'flow' as const, sourceId: 'a', targetId: 'b', validFrom: '2025-01-01', validUntil: '2025-12-31' },
+        { id: 'during', type: 'supports' as const, sourceId: 'a', targetId: 'b', validFrom: '2027-06-01', validUntil: '2027-12-31' },
+        { id: 'onwards', type: 'supports' as const, sourceId: 'a', targetId: 'b', validFrom: '2026-01-01' },
+        { id: 'after', type: 'flow' as const, sourceId: 'a', targetId: 'b', validFrom: '2030-01-01' },
+      ],
+    }
+    const window_ = within(roadmapOf(model_, TODAY), '2027-01-01', '2028-12-31')
+    expect(window_.relations.map((r) => r.relation.id)).toEqual(['onwards', 'during'])
   })
 
   it('keeps the plans that touch the window, and the ones that say nothing about time', () => {
