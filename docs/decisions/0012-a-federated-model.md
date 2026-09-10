@@ -271,6 +271,7 @@ type Element = {
   // Structure — model, not geometry (§6)
   parentId?: ElementId          // one parent: a function's area, a step's phase, a component's application, an actor's group
   order?: number                // among siblings, only where order is a decision (a journey reads left to right)
+  lane?: ElementId              // a step only: the actor whose own path this is; absent = the common row (§4)
 
   // The account — on a definition, the owner's; on a stand-in, THIS scope's perspective
   description?: string          // filed as docs/<id>.md in this scope
@@ -368,6 +369,20 @@ band; at depth 1 a grouping, the white box; at depth 2 a capability, the leaf.
 A `step` at depth 0 is the journey itself; 1 a phase; 2 a step. The sheet
 renders by depth and the model does not know the words.
 
+**A lane is who travels it.** One journey is rarely one path: a key account
+on a project runs differently from a customer who orders directly, and a
+marketplace partner that handles fulfilment runs differently again. A step
+may therefore name a `lane` — the `actor` whose own path it is — and the
+sheet draws one row per lane under the same phases, the common row first.
+Everything else is derived: a lane's *fork* and *join* are the first and last
+phase in which it has a step; a phase inside that span with no step of its
+own is *as the row above*, drawn as a pass-through; outside the span nothing
+is drawn. A step somebody outside does — *partner fulfils* — is a step
+`assigned` to an outside actor, not a hole, so the map can say that phase is
+covered by nobody inside. What a lane is not is a decision inside one path;
+that is a process, and lives in its ```bpmn fence. *(Added 10 September
+2026, after the record was accepted; the only change to it.)*
+
 ### 5. Relations: typed, dated, and few
 
 Today's `connection` is one relation type — a flow between two applications.
@@ -429,6 +444,7 @@ type Diagram = {
 
   subjectId?: ElementId         // container: the application opened up
   journeyId?: ElementId         // sheet: the step tree drawn across the top
+  lanes?: ElementId[]           // sheet: which actors get a row of their own, in which order (§4)
   areas?: ElementId[]           // sheet: which function roots, in which order
   showActors?: boolean          // sheet: the rail
 

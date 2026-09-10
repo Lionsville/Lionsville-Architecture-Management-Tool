@@ -76,8 +76,10 @@ until format 4 (the same shim rule as step 2).
 
 - `src/business/` — a new module beside `roadmap/`, pure at the root:
   `tree.ts` (children, depth, order, the refuse-a-cycle check), `sheet.ts`
-  (the laid-out page: journey band, area columns, the unmapped band, in
-  geometry not pixels — the roadmap's *days not pixels* rule), `coverage.ts`
+  (the laid-out page: journey band with one row per lane and the fork, join
+  and pass-throughs derived from where a lane has steps; area columns; the
+  unmapped band — in geometry not pixels, the roadmap's *days not pixels*
+  rule), `coverage.ts`
   (0..n `supports`, `assigned` only = manual, neither = uncovered).
   `ui/SheetPage.tsx` draws it; `ui/FunctionInspector.tsx` edits one.
 - `editor/` learns to *not* place a business kind on a landscape, and to
@@ -85,10 +87,11 @@ until format 4 (the same shim rule as step 2).
 - The palette offers *application* and the view offers *where*.
 - Import matrix: `business` may import `model`, `i18n`, `widgets`,
   `documentation` (a process's page); never `editor`, `projects`, `app`.
-- `src/app/examples/acme-logistics.json`: a journey (*Ship a consignment*),
-  nine areas, the functions the existing applications support, a
-  stakeholder tree with two `outside` branches, one manual function, one
-  uncovered one.
+- `src/app/examples/acme-logistics.json`: a journey (*Ship a consignment*)
+  with two lanes beside the common row — a key account on a project, and a
+  marketplace partner that fulfils — nine areas, the functions the existing
+  applications support, a stakeholder tree with two `outside` branches, one
+  manual function, one uncovered one.
 - Done when: the sheet renders the example on one screen with no geometry
   file; `diagram.render` produces it for an agent; the roadmap hatches a
   `supports` window.
