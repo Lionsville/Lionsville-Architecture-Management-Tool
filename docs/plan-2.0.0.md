@@ -477,16 +477,61 @@ a value; the inspector shows the owning scope and offers to open it.
   checks; a shipped example that contradicts itself is the tool teaching the
   wrong thing on the first screen.
 
-### 10. The register page and the four gestures
+### 10. The register page and the four gestures — landed 12 September 2026 (4252ccf…e0d1e54)
 
 The register page at the root (derived, with the findings); *link*,
 *promote*, *demote*, *transfer* — the other scope written first, confirmed,
 and the stack refusing to undo past a two-scope step.
 
-### 11. History across scopes
+**Landed**, and seven things the next stretch should know:
+
+- **A move re-addresses first.** `projects/readdress.ts` is the arithmetic and
+  `app/carryRefs.ts` the pass; both places that move a scope call it — the
+  organisation screen's settings dialog and the open workspace's. The order is
+  the design and is pinned by a test: the scopes outside the subtree, then the
+  subtree at its new addresses, then the removal.
+- **A plan, not a procedure.** `planGesture` answers with an ordered list of
+  writes and one `Command`, so "the other scope first" is a property of a pure
+  function rather than of the sequence of `await`s in a hook. The hook
+  (`app/useGestures.ts`) holds only what cannot be pure: the confirmation, the
+  store, and reading the index again afterwards.
+- **The barrier is the session's, not the reducer's.** `CommandMeta.barrier`
+  carries the reason key; the reducer neither reads nor keeps it, because
+  applying a command is the same act either way and it is the stack above that
+  refuses. The agent's `undo` stops at the same step and answers
+  `gesture.barrier`.
+- **The register page is `app/organisation/`, not `projects/ui/`.** `projects`
+  may not import React, and that is what lets `scopeIndex`, `checks`,
+  `gestures` and `readdress` be tested in node with plain objects. The
+  arithmetic behind the page is `app/organisation/register.ts`, pure and tested
+  the same way.
+- **The index carries `outside` and `partyId`** off the master's record, so the
+  register draws both without a second read per row — the load per card
+  ADR-0004 keeps catching.
+- **A gesture needs a session**, so the register's *Link…* opens the scope that
+  should yield and asks there. `InitialPage` gained `element` and `link` for
+  it; the second is not a page, and says so.
+- **What a stand-in may carry is `model/standIn.ts`** now, because three places
+  need one list: the checks report those fields, `mayEdit` refuses them, and
+  `element.link` drops them.
+
+### 11. History across scopes — landed 12 September 2026 (5b5d3ee)
 
 `historyPath` for an id is the union of its files across the tree; the
 history page's subject picker offers *everywhere this is drawn*.
+
+**Landed**, and three things the next stretch should know:
+
+- **`HistoryScope` is a list of places** — `{ scope, paths }` each — which was
+  the smaller change at both ends: `historyPath` already answered per scope and
+  the desktop adapter already knew how to prefix one, so it flattens the list
+  and runs the one `git log` it ran before.
+- **The owning scope's `model.json` is deliberately left out.** Every element
+  there shares that file, and a history of one id that listed every commit
+  touching any record in the scope would be the scope's history wearing the
+  element's name.
+- **A restore stays per scope**, because it is one `Command` on one session. The
+  page says so under the picker, beside the list of scopes it is reading.
 
 **Cut 2.0.0-beta.3.**
 

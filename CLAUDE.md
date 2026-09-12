@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3758 tests** and one of every config. The
+One codebase, in modules, with **3829 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3758 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3829 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -137,6 +137,8 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       and what the dates contradict (ADR-0009)
                     relations         what a row between two elements MEANS, and
                                       the one type a canvas draws (ADR-0012 §5)
+                    standIn           what a stand-in may carry, and the record a
+                                      *link* leaves behind (ADR-0012 §3, §10)
                     porting · replacement   which interface moved where, derived
                                       from the lines; a replacement as one
                                       transaction (ADR-0010)
@@ -210,6 +212,10 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       values with keys — never a refusal (§9)
                     mayEdit           what one scope may change about one record;
                                       the owner's detail refused as a value (§10)
+                    gestures          link · promote · demote · transfer, as an
+                                      ordered plan and a refusal with a key (§10)
+                    readdress         a ref is an address, and a move carries the
+                                      ones pointing into it (§3)
                     scopePath · scopeLabel   the address, and what to call the
                                       organisation a scope sits in
                     links             the one rule about what may become an anchor
@@ -218,7 +224,9 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                     migrate3to4 · migrate4to5   the last readers of the two
                                       formats before this one (ADR-0012 §11)
                     workingFile       the .lvarch container: v5 is the folder, zipped
-                    historyPath       where one thing is filed, for its history
+                    historyPath       where one thing is filed, for its history —
+                                      and, for an element's page, everywhere in
+                                      the tree it is filed (§7)
                     documentSession   dirty / saving / changed on disk / conflict
                     migration         out of browser storage into the folder, and
                                       out of an older format into this one
@@ -258,6 +266,15 @@ src/app/          The shell around the editor.
                                       OrganisationScreen · OrganisationCards ·
                                       ScopeTree · useOrganisation · the four
                                       dialogs every screen asks a scope about
+                                      register · RegisterPage   every application
+                                      in the tree, derived (ADR-0012 §2); a page
+                                      here rather than under `projects/ui/`,
+                                      which may not import React
+                    useGestures · dialogs/MoveRecordDialog   the four gestures
+                                      applied: the other scope first, the
+                                      confirm, and the barrier on the stack (§10)
+                    carryRefs         the pass a move makes over the refs
+                                      pointing into it (§3)
                     dialogs/ · examples/ · iconPacks/ · history/
                     OverflowMenu      the menu, on a host that has no menu bar
                     SyncNotice · useSync   the folder and its remote disagree
@@ -316,20 +333,27 @@ If you find yourself writing `localStorage`, `fetch`, `FileReader` or
 
 ## Decisions (ADRs)
 
-Three lists, one shape (`decisions/adr.ts` for the rules, `model/adr.ts` for the
-record). The **group's** records are the records of the scope ABOVE this one,
-read up the tree (ADR-0012 §7) and written back to that scope; the
-**landscape's** and every **application's** live on this scope's
-`model.decisions`, told apart by `applicationId`. The three lists collapse into
-one `subjectId` in beta 3; until then `groupDecisions` keeps its name through
-the editor, the search and the agent, because renaming them without changing
-what they mean is churn. The body is MADR markdown;
-title, status, date and signers are fields. The status is a state machine —
-proposed → reviewing → accepted | rejected, accepted → superseded (with the
-successor's id) — and the three end states lock the record: `updateAdr` and
-`removeAdr` refuse them. Numbers are per list and never reused. A record is one
-markdown file with front matter (`projects/adrFile.ts`), and an application's go
-in a folder of their own because numbers are per list.
+**One list, one shape** (`decisions/adr.ts` for the rules, `model/adr.ts` for
+the record). A scope's records live on its own `model.decisions`, and each is
+about whatever its **`subjectId`** names — any element the scope knows, or, with
+none, the scope itself (ADR-0012 §7). That field was `applicationId` while an
+application was the only thing a record could be about; `projects/adrFile.ts`
+reads the old spelling and writes only the new one, and **format 6 drops the
+alias**. The agent takes `subjectId` and accepts `applicationId` for one beta,
+which `agent/tools.ts` says out loud.
+
+The scopes **above** this one have lists of their own, read up the tree and
+shown on the page as a *From <ancestor>* section each — **read-only there**,
+because a record is edited where it lives, which is the same rule `mayEdit`
+applies to an element. There is no "group" list and no `groupDecisions`.
+
+The body is MADR markdown; title, status, date and signers are fields. The
+status is a state machine — proposed → reviewing → accepted | rejected,
+accepted → superseded (with the successor's id) — and the three end states lock
+the record: `updateAdr` and `removeAdr` refuse them. Numbers are per scope's
+list and never reused. A record is one markdown file with front matter
+(`projects/adrFile.ts`), and a record about one element goes in a folder of its
+own because numbers are per list.
 
 ## Scopes
 
@@ -512,6 +536,8 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned`; `connect` / `connection.*` are the `flow` ones |
+| What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
+| The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
 | Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
 | What one scope's folder holds | `scope.json` · `model.json` · the six folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
@@ -878,3 +904,37 @@ stand-in of one of them"), because the rail is one tree on the organisation's
 own page. Counting what covers a capability therefore crosses scopes:
 `coverageOf` and `sheetPage` take a second list of rows, handed in from the
 index because `business` sits below `projects` and may not reach for it.
+
+Then the tree became something a person can **change their mind about**
+(`docs/plan-2.0.0.md`, steps 10 and 11). A ref is an address, so a move carries
+every one pointing into the subtree it moves — the other scopes first, then the
+subtree at its new addresses, then the old folder removed, because writing the
+subtree first and failing would remove the folder before the rest of the tree
+had heard where it went. The **register** is the index filtered to
+applications, drawn on a page of its own and counted on the organisation
+screen's fourth card; `outside` and `partyId` ride on the index's entry so the
+page needs no second read.
+
+The **four gestures** are one pure plan each (`projects/gestures.ts`): an
+ordered list of writes and one `Command`, so the order that matters is pinned
+by a node test rather than by a sequence of `await`s. *Link* is one scope and
+undoes like anything else, which is what makes it the repair for a conflict;
+the other three write two scopes, are confirmed first, and leave a **barrier**
+on the session's stack — ⌘Z stops there with the reason, and the agent's `undo`
+meets the same wall, because only half of such a step is on any stack. A
+failure after the other scope was written leaves a duplicate, never a hole.
+
+Two things came out of it that are worth knowing. What a stand-in may carry is
+`model/standIn.ts` now, because three places need the same list — the checks
+report those fields, `mayEdit` refuses them, and `element.link` drops them. And
+the register's *Link…* cannot apply a gesture where it stands: a gesture ends in
+a `Command` at the session that holds the scope, so it opens that scope and asks
+there, which is what `InitialPage`'s last two variants are for.
+
+The decisions became **one list** as well. `Adr.subjectId` says what a record is
+about — any element the scope knows, or the scope itself — and the scopes above
+appear as a *From …* section each, read here and edited where they live. The
+history followed: an element's page is filed in every scope that holds the id,
+so `historyPaths` gained `historyPlaces` beside it and `HistoryScope` became a
+list of places, which the desktop adapter flattens into the one `git log` it ran
+before.

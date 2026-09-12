@@ -48,10 +48,10 @@ named yet asks for a name here instead of showing a heading.
 areas, functions and stakeholders the organisation itself holds and says how
 many functions nobody has handed to a domain yet; **Decisions** counts its
 records by status and names the newest; **Roadmap** counts its plans and shows
-the first thing their dates disagree about. **Register** — every application
-across the whole organisation — is not built yet, and its card says so rather
-than showing a number nothing derived. Each of the first three opens the
-organisation on that page; closing the page brings you back here.
+the first thing their dates disagree about. **Register** counts every
+application in the whole folder, how many a domain answers for and how many are
+somebody else's, and says what the register disagrees about. Each card opens
+what it counts; closing the page brings you back here.
 
 **The tree**, beneath: one row per scope, the children indented, with a chevron
 to fold a domain shut. A row says how much is inside it — landscapes and
@@ -79,9 +79,11 @@ under a new scope of its own. Either way it is yours from that moment, and
 nothing you do runs against the example itself.
 
 Renaming a scope relabels it and nothing else — where it is filed is its
-address, and renaming is not moving. Moving one changes the address of the scope
-and of everything under it, and leaves the content untouched. On boot the app
-reopens the scope you had open.
+address, and renaming is not moving. Moving one changes the address of the
+scope and of everything under it, and leaves the content untouched: every
+stand-in elsewhere in the folder that pointed into it is carried over to the
+new address in the same step, so a move never leaves a trail of stale copies
+behind it. On boot the app reopens the scope you had open.
 
 Six names are refused, because a scope's own folders use them already:
 `diagrams`, `docs`, `decisions`, `transitions`, `images` and `logos`.
@@ -144,6 +146,57 @@ One thing on the list is **information rather than a fault**: a record no board
 in its own scope draws. A thing can be real, owned and documented without being
 on anybody's picture yet, so it is counted apart and never coloured like a
 finding.
+
+### The register
+
+**Register** on the organisation screen is every application in the whole
+folder, on one page. Nothing writes it: it is read from the scopes themselves
+every time the folder is read, so it cannot drift from what the folders say and
+there is no list for two domains to edit at once.
+
+Each row says what the application is called, **which scope answers for it**,
+whether it is somebody else's and whose, **how many scopes draw it** (hover the
+count for their names), and the findings about it as small chips. The filter box
+searches the name, the key and the scope; **By name** and **By scope** are the
+two orders. **Open** enters the scope that answers for the application with the
+card selected, which is where its detail can be changed.
+
+A row that says two scopes both write the name down offers **Link…**: it opens
+the scope whose record should give way and asks there, because a record is only
+ever changed by the scope that holds it.
+
+### Moving a record between scopes
+
+Where a thing is written down is a decision you can change afterwards. Select
+the card and press **Move…** in the inspector; the dialog offers whichever of
+the four apply.
+
+- **Link** — give up this scope's record and stand in for one another scope
+  already holds. This is what settles a conflict, and what a card drawn before
+  anybody wrote the real record needs. This scope keeps its own description,
+  its colours and where the card sits on its boards; it gives up the detail,
+  which the other scope answers for from then on.
+- **Promote** — move the record up to a scope this one is filed under, and
+  leave a stand-in here. What an application drawn in a landscape needs when the
+  domain above should be the one answering for it.
+- **Demote** — the reverse: move it down to a scope filed under this one.
+- **Transfer** — move it to any other scope. **Keep a stand-in here** is ticked
+  by default; untick it and this scope stops drawing the thing altogether.
+
+The last three write **two scopes**, so they ask first. The scope it is going to
+is written before this one changes, which is deliberate: if something goes wrong
+halfway you are left with the record in *both* places — a conflict you can see
+and settle with **Link** — rather than in neither.
+
+That is also why **undo stops there**. ⌘Z takes back everything you have done
+since, and then refuses that step with a line saying why: only half of it is on
+this window's stack, and the other half is a file in a scope nothing here speaks
+for. To put it back, move the record again the other way.
+
+A move is refused, with the reason, when the scope it would go to already
+answers for the name, when a promotion names a scope this one is not filed
+under, and when removing the record would leave things filed under it with
+nothing to sit in.
 
 ## Your working folder (desktop)
 
@@ -216,6 +269,13 @@ narrows it to a diagram, a description or a decision: the list becomes the
 snapshots that touched it, and the changes the rows about it. The same page
 opens already narrowed from **History…** on a diagram's tab menu, on the
 documentation page, and on a decision's page.
+
+A description is the one subject that is not one scope's business: a name means
+the same thing everywhere in the folder, so an element's page is written where
+it is defined *and* wherever a scope draws it and says what it means there. The
+history of that element is the union of those pages, and a line under the picker
+names the scopes it is reading. Restoring one stays this scope's: it puts back
+what this scope's page said, and the others are theirs to restore.
 
 **Restore.** With a snapshot chosen, **Restore this version…** makes the
 diagram, description or decision what it was then; with the whole project
@@ -404,11 +464,19 @@ block marked `mermaid` in any page is drawn as a diagram.
 
 **Decisions** in the top bar opens the architecture decision records: a tree
 down the left, the records of the selected node in the middle, and the record
-you are reading on the right. There are three levels. The **group's** decisions
-are the records of the scope above this one — they hold for everything filed
-under it, and are kept with it. The **landscapes'** decisions belong to this
-scope as a whole. Each **application** has a list of its own. An application that has left the model
-keeps its records under *Removed applications*.
+you are reading on the right.
+
+This scope's records are **one list**. A record either belongs to the scope as
+a whole, or it is about one thing in it — an application, a capability, a
+journey step — and the tree has a node for each thing that has records, with
+every application listed whether or not it has any yet. Something that has left
+the model keeps its records under *Removed applications*.
+
+Under that come the scopes **above** this one, as a section each: *From Acme
+Logistics*, *From Retail*. Their records are read here and **changed where they
+live** — the reader shows them without an Edit button and offers to open that
+scope instead. Numbering is per scope, so ADR-0001 of the domain and ADR-0001 of
+the landscape are two records and always were.
 
 A record follows the MADR format: context and problem statement, decision
 drivers, the options considered, the outcome and its consequences, the pros and
@@ -425,10 +493,10 @@ accepted record can later be **superseded**, which asks for the record that
 replaces it and shows the link both ways. Review can be sent back to proposed.
 
 The search field above the list searches every record in the tree at once —
-title, body and reviewers. Bodies are markdown, with the same `[[Name]]` links
-as documentation; **Formatting help** beside the source shows the syntax,
-mermaid diagrams included. Changes are saved with this scope, or with the scope
-above it for its records.
+title, body and reviewers, this scope's and the ones above. Bodies are markdown,
+with the same `[[Name]]` links as documentation; **Formatting help** beside the
+source shows the syntax, mermaid diagrams included. Changes are saved with this
+scope.
 
 ## Time, and the day a board shows
 

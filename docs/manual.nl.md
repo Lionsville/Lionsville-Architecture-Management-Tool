@@ -50,9 +50,9 @@ klantreizen, gebieden, functies en belanghebbenden die de organisatie zelf
 heeft, en zegt hoeveel functies nog aan geen enkel domein zijn toegewezen;
 **Besluiten** telt de vastleggingen per status en noemt de nieuwste; **Roadmap**
 telt de plannen en toont het eerste waarover hun datums het oneens zijn.
-**Register** — elke applicatie in de hele organisatie — is nog niet gebouwd, en
-die kaart zegt dat, in plaats van een getal te tonen dat nergens uit is afgeleid.
-De eerste drie openen de organisatie op die pagina; als je de pagina sluit ben je
+**Register** telt elke applicatie in de hele map, hoeveel er door een domein
+worden beheerd en hoeveel van iemand anders zijn, en zegt waarover het register
+het niet eens is. Elke kaart opent wat hij telt; als je de pagina sluit ben je
 weer hier.
 
 **De boom**, eronder: één regel per onderdeel, de kinderen ingesprongen, met een
@@ -85,8 +85,10 @@ van jou, en niets wat je doet raakt het voorbeeld zelf.
 
 Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
 hernoemen is niet verplaatsen. Verplaatsen verandert het adres van het onderdeel
-en van alles eronder, en laat de inhoud ongemoeid. Bij het starten opent de app
-het onderdeel dat je open had.
+en van alles eronder, en laat de inhoud ongemoeid: elke verwijzing elders in de
+map die naar iets in die tak wees, gaat in dezelfde stap mee naar het nieuwe
+adres, zodat een verplaatsing geen spoor van verouderde kopieën achterlaat. Bij
+het starten opent de app het onderdeel dat je open had.
 
 Zes namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
 `diagrams`, `docs`, `decisions`, `transitions`, `images` en `logos`.
@@ -149,6 +151,62 @@ Eén ding op die lijst is **informatie en geen fout**: een record dat geen enkel
 bord in zijn eigen onderdeel tekent. Iets kan echt, beheerd en beschreven zijn
 zonder al op iemands plaat te staan, dus het wordt apart geteld en nooit als
 bevinding gekleurd.
+
+### Het register
+
+**Register** op het organisatiescherm is elke applicatie in de hele map, op één
+pagina. Niets schrijft hem: hij wordt telkens uit de onderdelen zelf afgeleid
+wanneer de map gelezen wordt, dus hij kan niet afwijken van wat de mappen zeggen
+en er is geen lijst die twee domeinen tegelijk bewerken.
+
+Elke regel zegt hoe de applicatie heet, **welk onderdeel haar beheert**, of ze
+van iemand anders is en van wie, **in hoeveel onderdelen ze getekend is** (houd
+de muis op het aantal voor de namen), en de bevindingen erover als kleine chips.
+Het filterveld doorzoekt de naam, de sleutel en het onderdeel; **Op naam** en
+**Op niveau** zijn de twee volgordes. **Openen** gaat naar het onderdeel dat de
+applicatie beheert, met de kaart geselecteerd — daar kunnen haar details worden
+gewijzigd.
+
+Een regel waar twee onderdelen dezelfde naam vastleggen biedt **Koppelen…**: dat
+opent het onderdeel waarvan de vastlegging moet wijken en vraagt het dáár, want
+een vastlegging wordt alleen gewijzigd door het onderdeel dat haar heeft.
+
+### Een vastlegging naar een ander onderdeel verplaatsen
+
+Waar iets is vastgelegd is een keuze die je achteraf kunt wijzigen. Kies de kaart
+en druk op **Verplaatsen…** in de inspector; het venster biedt aan welke van de
+vier van toepassing zijn.
+
+- **Koppelen** — de eigen vastlegging opgeven en verwijzen naar die van een
+  ander onderdeel. Dit lost een conflict op, en het is wat een kaart nodig heeft
+  die getekend is voordat iemand de echte vastlegging schreef. Dit onderdeel
+  houdt zijn eigen beschrijving, zijn kleuren en waar de kaart op zijn borden
+  staat; het geeft de details op, waar het andere onderdeel vanaf dan voor
+  instaat.
+- **Omhoog** — de vastlegging naar een onderdeel hierboven verplaatsen en hier
+  een verwijzing achterlaten. Dat is wat een applicatie in een landschap nodig
+  heeft als het domein erboven degene hoort te zijn die haar beheert.
+- **Omlaag** — het omgekeerde: naar een onderdeel hieronder.
+- **Overdragen** — naar elk ander onderdeel. **Hier een verwijzing achterlaten**
+  staat standaard aan; zet je het uit, dan tekent dit onderdeel het ding
+  helemaal niet meer.
+
+De laatste drie schrijven **twee onderdelen**, dus ze vragen het eerst. Het
+onderdeel waar het naartoe gaat wordt geschreven vóór dit onderdeel verandert, en
+dat is met opzet: gaat er halverwege iets mis, dan staat de vastlegging op
+*beide* plaatsen — een conflict dat je ziet en met **Koppelen** oplost — en niet
+op geen van beide.
+
+Daarom **stopt ongedaan maken daar**. ⌘Z neemt alles terug wat je sindsdien deed
+en weigert dan die stap, met een regel die zegt waarom: maar de helft ervan staat
+op de stapel van dit venster, en de andere helft is een bestand in een onderdeel
+waar hier niemand voor spreekt. Verplaats de vastlegging opnieuw, de andere kant
+op, om het terug te zetten.
+
+Een verplaatsing wordt geweigerd, met de reden, als het onderdeel waar het
+naartoe zou gaan de naam al beheert, als een verplaatsing omhoog een onderdeel
+noemt waar dit niet onder valt, en als het verwijderen van de vastlegging dingen
+die eronder vallen zonder ouder zou achterlaten.
 
 ## Je werkmap (desktop)
 
@@ -225,6 +283,14 @@ haar tot een aanzicht, een beschrijving of een besluit: de lijst wordt de
 momentopnames die dat raakten, en de veranderingen de regels die erover gaan.
 Dezelfde pagina opent al beperkt via **Geschiedenis…** in het menu van een
 aanzicht-tab, op de documentatiepagina en op de pagina van een besluit.
+
+Een beschrijving is het enige onderwerp dat niet van één onderdeel is: een naam
+betekent overal in de map hetzelfde, dus de pagina van een element staat waar
+het is vastgelegd én overal waar een onderdeel het tekent en zegt wat het daar
+betekent. De geschiedenis van dat element is de optelsom van die pagina's, en
+een regel onder de keuzelijst noemt de onderdelen die gelezen worden.
+Terugzetten blijft van dit onderdeel: het zet terug wat de pagina van dit
+onderdeel zei, de andere horen bij die onderdelen.
 
 **Terugzetten.** Met een momentopname gekozen maakt **Deze versie
 terugzetten…** het aanzicht, de beschrijving of het besluit weer wat het toen
@@ -421,11 +487,20 @@ codeblok gemarkeerd als `mermaid` wordt op elke pagina als diagram getekend.
 
 **Besluiten** in de bovenbalk opent de architectuurbesluiten (ADR's): een boom
 links, de besluiten van het gekozen knooppunt in het midden, en het besluit dat
-u leest rechts. Er zijn drie niveaus. De besluiten van de **groep** zijn die van
-het onderdeel erboven — ze gelden voor alles wat eronder valt en worden daar
-bewaard. De besluiten van de **landschappen** horen bij dit onderdeel als
-geheel. Elke **applicatie** heeft een eigen lijst. Een applicatie die uit het model is verdwenen houdt haar
-besluiten onder *Verwijderde applicaties*.
+u leest rechts.
+
+De besluiten van dit onderdeel zijn **één lijst**. Een besluit hoort óf bij het
+onderdeel als geheel, óf het gaat over één ding erin — een applicatie, een
+capability, een stap in een klantreis — en de boom heeft een knooppunt voor elk
+ding met besluiten, met elke applicatie erbij, of ze er nu al heeft of niet. Iets
+dat uit het model is verdwenen houdt zijn besluiten onder *Verwijderde
+applicaties*.
+
+Daaronder komen de onderdelen **erboven**, elk als een eigen kopje: *Van Acme
+Logistics*, *Van Retail*. Hun besluiten worden hier gelezen en **gewijzigd waar
+ze thuishoren** — de lezer toont ze zonder knop om te bewerken en biedt aan dat
+onderdeel te openen. De nummering is per onderdeel, dus ADR-0001 van het domein
+en ADR-0001 van het landschap zijn twee besluiten, en dat waren ze altijd al.
 
 Een besluit volgt het MADR-formaat: context en probleemstelling,
 beslisfactoren, de overwogen opties, de uitkomst en haar gevolgen, de voor- en
@@ -446,8 +521,8 @@ richtingen. Een beoordeling kan terug naar voorgesteld.
 Het zoekveld boven de lijst doorzoekt alle besluiten in de boom tegelijk —
 titel, tekst en beoordelaars. De tekst is markdown, met dezelfde
 `[[Naam]]`-verwijzingen als documentatie; **Hulp bij opmaak** naast de bron
-toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met het
-onderdeel bewaard, of met het onderdeel erboven voor diens besluiten.
+toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met dit
+onderdeel bewaard.
 
 ## Tijd, en de dag die een bord toont
 
