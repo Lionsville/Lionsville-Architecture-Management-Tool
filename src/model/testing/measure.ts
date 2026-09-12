@@ -37,6 +37,10 @@
  * | history: one snapshot looked at, for one diagram | 17 ms | 1500 ms |
  * | history: restore one diagram | 1.2 ms | 50 ms |
  * | history: restore the whole project | 18 ms | 500 ms |
+ * | the index over twenty scopes of the large fixture | 7.6 ms | 500 ms |
+ *
+ * The last row was measured 12 September 2026 (ADR-0012 §2), on the same
+ * machine, over twenty copies of the `large` fixture under twenty paths.
  *
  * The three history rows were measured 8 September 2026 (ADR-0008), on the
  * same machine and fixture. Measuring them is what found `placement.set`
@@ -82,6 +86,23 @@ export const BUDGET = {
   restoreDiagram: 50,
   /** The whole project brought back — every element, connection, diagram and decision. */
   restoreProject: 500,
+  /**
+   * The organisation-wide index (ADR-0012 §2), over twenty scopes of a few
+   * thousand elements each — forty thousand records and a hundred thousand
+   * rows, which is a large organisation rather than a large landscape.
+   *
+   * It is one pass per list into three maps, with the depth worked out once
+   * per scope rather than once per record, so tens of milliseconds is what
+   * the record predicts and what this is written against. The budget is the
+   * usual multiple of that for an ordinary laptop: what it is watching for is
+   * a pass that became quadratic in the tree — an ancestor walk per element,
+   * or a `find` over the entries — because that is the shape this arithmetic
+   * invites and it would not show at all on one scope.
+   *
+   * Paid on every open and again whenever the watcher says the folder
+   * changed, and never on a keystroke.
+   */
+  index: 500,
   /** Megabytes the heap may grow over five hundred undo steps. */
   undoHeapMb: 50,
   /**

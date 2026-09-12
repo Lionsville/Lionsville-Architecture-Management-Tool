@@ -5,6 +5,7 @@
  * projects filed under it, because there is nowhere to keep an empty one.
  */
 export * from './scope'
+export * from './scopeIndex'
 export * from './scopePath'
 export * from './scopeLabel'
 export * from './preferences'

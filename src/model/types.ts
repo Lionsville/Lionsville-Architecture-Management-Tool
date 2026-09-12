@@ -119,6 +119,28 @@ export interface DesignElement {
   id: ElementId;
   kind: ElementKind;
   /**
+   * Present = this record is a **stand-in**: the thing is defined in another
+   * scope, and this one only draws it and says what it means from here
+   * (ADR-0012 §3).
+   *
+   * The value is the path of the scope where the owning definition was last
+   * seen — a cache, watched for drift exactly as `name` is, and rewritten by a
+   * refresh rather than by a person. Absent = this record is a **definition**,
+   * and the deepest definition in the tree is the one that answers for the
+   * thing (`projects/scopeIndex.ts`).
+   *
+   * What a stand-in may carry besides its two caches is its `description` —
+   * this scope's own account of the thing, which is a different page from what
+   * the thing IS and is allowed to be — and its presentation. Everything under
+   * *the owner's detail* below is ignored on a stand-in and reported if
+   * present, and `projects/mayEdit.ts` is the one function that says so.
+   *
+   * A plain string rather than a typed path, like `scopes` below and for the
+   * same reason: this file imports nothing at all, and what a scope IS belongs
+   * to `projects/`.
+   */
+  ref?: string;
+  /**
    * The one thing this sits inside (ADR-0012 §3).
    *
    * It was `parentApplicationId` while a component inside an application was
