@@ -420,7 +420,10 @@ function CapabilityCard({ capability, onSelect, t }: {
       data-testid={`sheet-capability-${capability.element.id}`}
       onClick={() => onSelect(capability.element.id)}
       sx={{
-        appearance: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit', width: '100%',
+        // `font: inherit` does not bring the colour with it: a button's text is
+        // the browser's `buttontext`, black in every theme, which on the dark
+        // ground is a card with a coverage line and no name.
+        appearance: 'none', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', width: '100%',
         // A refinement of a capability sits one step in, so the tree is
         // readable without a second kind of card for it.
         ml: (capability.depth - 1) * 1.5,
@@ -469,7 +472,8 @@ function UnmappedBand({ elements, onSelect, t }: {
             data-testid={`sheet-unmapped-${element.id}`}
             onClick={() => onSelect(element.id)}
             sx={{
-              appearance: 'none', cursor: 'pointer', font: 'inherit',
+              // The same `buttontext` trap as the capability card: inherit the colour too.
+              appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
               bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: 0.75,
               px: 1, py: 0.5, fontSize: 11.5,
             }}
