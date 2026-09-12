@@ -78,7 +78,16 @@ const NO_ARGUMENTS: InputSchema = { type: 'object', properties: {}, additionalPr
 
 const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `The id of the ${what}.` })
 
-const KINDS = ['actor', 'application', 'externalSystem', 'inputChannel', 'managementTool', 'component'] as const
+/**
+ * What a thing IS (ADR-0012 §4), which stopped being the same question as how
+ * it is drawn. `externalSystem`, `inputChannel` and `managementTool` were the
+ * drawing and are gone from the vocabulary: say `outside` for a system nobody
+ * here owns, and `zone` for the band a card sits in.
+ *
+ * The four business kinds are records rather than boxes — a sheet is laid out
+ * from the tree, not dragged — so `element.add` makes one and draws nothing.
+ */
+const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component'] as const
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
@@ -131,7 +140,11 @@ const ELEMENT_FIELDS = {
   technology: { type: 'string', description: 'What it is built on.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
-  owner: { type: 'string', description: 'Who answers for it.' },
+  owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the folder.' },
+  outside: { type: 'boolean', description: 'True when nobody in this organisation owns it. What the externalSystem kind used to say, as the fact it always was.' },
+  partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said. Only meaningful with outside.' },
+  order: { type: 'number', description: 'Where it sits among its siblings, low first. Only say it where the order is a decision — a journey reads left to right.' },
+  lane: { type: 'string', description: 'A step only: the id of the actor whose own path this step is. Absent means the row every lane shares.' },
   liveOn: { type: 'string', description: 'The day it goes live, yyyy-mm-dd. Before it, planned.' },
   retiringOn: { type: 'string', description: 'The day it starts retiring, yyyy-mm-dd.' },
   retiredOn: { type: 'string', description: 'The day it is gone, yyyy-mm-dd. A board dated after it draws neither the card nor its lines.' },
@@ -375,15 +388,17 @@ const SPECS = [
     name: 'element.add',
     tier: 'write',
     description:
-      'Add an element to the landscape and draw it on a diagram (the one on screen unless said otherwise). '
-      + 'It gets the id the file would give it, derived from the name, and lands in its kind\'s own band '
-      + 'unless a zone or a spot is named. Answers with the id.',
+      'Add an element to the landscape, and draw it on a diagram (the one on screen unless said otherwise) '
+      + 'where its kind is one a board can draw. It gets the id the file would give it, derived from the '
+      + 'name, and lands in its kind\'s own band unless a zone or a spot is named. A business kind — a step, '
+      + 'a function, a process — is a record and is drawn nowhere: a sheet is laid out from the tree rather '
+      + 'than dragged. Answers with the id, and with whether it was drawn.',
     inputSchema: {
       type: 'object',
       properties: {
         ...ELEMENT_FIELDS,
         kind: { type: 'string', description: 'What kind of element. Default application.', enum: KINDS },
-        parentId: { type: 'string', description: 'For a component: the application it is part of.' },
+        parentId: { type: 'string', description: 'What contains it: a component\'s application, a function\'s area, a step\'s phase, an actor\'s group.' },
         diagramId: { type: 'string', description: 'The diagram to draw it on. Default: the one on screen.' },
         zone: { type: 'string', description: 'On a landscape: the band to draw it in. Default: the kind\'s own.', enum: ZONES },
         domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under.' },

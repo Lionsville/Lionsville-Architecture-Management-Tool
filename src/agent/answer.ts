@@ -20,6 +20,7 @@ import { today } from '../model/lifecycle'
 import { findTransition, transitionLabel } from '../model/transition'
 import type { Transition } from '../model/transition'
 import { findings } from '../model/checks'
+import { ELEMENT_KINDS } from '../model/kinds'
 import { portsOf } from '../model/porting'
 import { matchesQuery } from '../model/textSearch'
 import type { DesignElement, ElementId, Relation } from '../model/types'
@@ -92,8 +93,10 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       if (!element) return refused('agent.unknownId', `element ${String(args.id)}`)
       return json({
         ...element,
-        parentApplication: element.parentId
-          ? nameOf(model, element.parentId) : undefined,
+        // `parent`, not `parentApplication`: one field says what a thing sits
+        // inside whatever kind it is (ADR-0012 §3) — a component's
+        // application, a function's area, a step's phase, an actor's group.
+        parent: element.parentId ? nameOf(model, element.parentId) : undefined,
         connections: model.order.relations
           .map((id) => model.relations[id])
           .filter((c) => c.sourceId === element.id || c.targetId === element.id)
@@ -261,7 +264,9 @@ function exportMarkdown(model: Model, view: ReadView): string {
   const lines: string[] = [`# ${model.name}`, '', `Group: ${model.customerName}`, '']
   if (model.description) lines.push(model.description, '')
 
-  const kinds = ['actor', 'inputChannel', 'application', 'component', 'externalSystem', 'managementTool'] as const
+  // Every kind, so nothing the model can hold is left out of a document meant
+  // for diffing against one somebody wrote (ADR-0012 §4).
+  const kinds = ELEMENT_KINDS
   lines.push('## Elements', '')
   for (const kind of kinds) {
     const rows = model.order.elements.map((id) => model.elements[id]).filter((e) => e.kind === kind)

@@ -142,8 +142,10 @@ describe('element.describe', () => {
     expect((held.decisions as { id: string }[]).map((d) => d.id)).toEqual(['adr-2'])
   })
 
-  it('names a component’s parent', () => {
-    expect(read('element.describe', { id: 'billing-api' })).toMatchObject({ parentApplication: 'Billing' })
+  it('names what contains it, whatever kind that is', () => {
+    // `parent`, not `parentApplication`: one field says what a thing sits
+    // inside, for every kind (ADR-0012 §3).
+    expect(read('element.describe', { id: 'billing-api' })).toMatchObject({ parent: 'Billing' })
   })
 
   it('refuses an id nothing has', () => {

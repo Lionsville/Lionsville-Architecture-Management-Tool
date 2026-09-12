@@ -103,7 +103,12 @@ describe('every write, applied and undone', () => {
   const model = fromArrays(host)
   const cases: [ToolName, unknown][] = [
     ['element.add', { name: 'Warehouse', vendor: 'Kestrel' }],
-    ['element.add', { name: 'Ops console', kind: 'managementTool', zone: 'management' }],
+    // A management tool is an application in a band (ADR-0012 §4): the kind is
+    // the thing, the zone is the drawing.
+    ['element.add', { name: 'Ops console', zone: 'management' }],
+    ['element.add', { name: 'Carrier', outside: true }],
+    // A record, drawn nowhere — a sheet is laid out from the tree (§6).
+    ['element.add', { name: 'Fulfilment', kind: 'function' }],
     ['element.update', { id: 'billing', description: 'Sends the invoices.', lifecycle: 'retiring' }],
     ['element.remove', { id: 'billing' }],
     ['connect', { sourceId: 'billing', targetId: 'crm', label: 'invoices', protocol: 'REST' }],
