@@ -39,7 +39,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
-import type { Finding } from '../../model/checks'
+import { CHECK_SENTENCE } from '../labels'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
 
 /**
@@ -65,14 +65,6 @@ function phaseColours(theme: Theme): Record<Lifecycle, string> {
 export function defaultWindow(today: string): { from: string; to: string } {
   const year = Number(today.slice(0, 4))
   return { from: `${year - 3}-01-01`, to: `${year + 3}-12-31` }
-}
-
-const CHECK_SENTENCE: Record<Finding['kind'], StringKey> = {
-  retiresWithDependants: 'check.retiresWithDependants',
-  successorTooLate: 'check.successorTooLate',
-  successorMissing: 'check.successorMissing',
-  lineOutlivesEnd: 'check.lineOutlivesEnd',
-  planOverdue: 'check.planOverdue',
 }
 
 export type RoadmapActions = {

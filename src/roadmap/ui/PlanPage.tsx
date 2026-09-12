@@ -49,14 +49,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
-
-const STATUS_LABEL: Record<TransitionStatus, StringKey> = {
-  draft: 'plan.draft',
-  agreed: 'plan.agreed',
-  running: 'plan.running',
-  done: 'plan.done',
-  abandoned: 'plan.abandoned',
-}
+import { PLAN_STATUS_LABEL as STATUS_LABEL } from '../labels'
 
 const ROLES: readonly TransitionRole[] = ['introduces', 'retires', 'changes']
 

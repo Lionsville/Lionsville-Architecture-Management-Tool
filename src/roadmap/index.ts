@@ -7,6 +7,7 @@
 export { fractionOf, monthsFrom, rangeOf, roadmapOf, spansFor, within } from './timeline'
 export type { ElementTrack, PhaseSpan, Roadmap } from './timeline'
 export { planBodyTemplate } from './planTemplate'
+export { CHECK_SENTENCE, PLAN_STATUS_LABEL } from './labels'
 export { RoadmapPage } from './ui/RoadmapPage'
 export type { RoadmapActions, RoadmapPageProps } from './ui/RoadmapPage'
 export { PlanPage } from './ui/PlanPage'
