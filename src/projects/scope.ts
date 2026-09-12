@@ -16,7 +16,9 @@
  * Everything here is arithmetic without an outside world: no storage, no React,
  * no `File`. What arrives has already been read and already `JSON.parse`d.
  */
-import type { AspectConfigEntry, DocumentImage, Transition, UploadedLogo } from '../model'
+import type {
+  AspectConfigEntry, DesignElement, DocumentImage, Relation, Transition, UploadedLogo,
+} from '../model'
 import type { Adr } from '../model/adr'
 import { fromInterchange } from '../model/fromInterchange'
 import type { HostModel, InterchangeDoc } from '../model/fromInterchange'
@@ -110,6 +112,29 @@ export type ScopeSummary = {
   /** The scopes filed directly under it, in the order the store listed them. */
   children: ScopeSummary[]
   updatedAt?: string
+}
+
+/**
+ * What one scope's `model.json` holds, and where that scope is (ADR-0012 §2).
+ *
+ * The index's input, and deliberately the thinnest thing that will answer it:
+ * the records a scope holds and the rows between them, with no descriptions, no
+ * views, no decisions and no geometry. Reading a whole `ScopeSnapshot` per scope
+ * to work out who owns `erp` would be twenty folders read in full to answer a
+ * question one file per folder answers — which is the shape ADR-0004 keeps
+ * catching.
+ *
+ * Structural rather than a named model type, so a `HostModel` satisfies it: a
+ * store that already holds whole snapshots (memory, browser storage) answers
+ * this by handing its models over, and only the folder stores have anything to
+ * do.
+ */
+export type ScopeModel = {
+  path: ScopePath
+  model: {
+    elements: readonly DesignElement[]
+    relations: readonly Relation[]
+  }
 }
 
 /** One scope's own summary, with nothing under it. A store fills in the tree. */

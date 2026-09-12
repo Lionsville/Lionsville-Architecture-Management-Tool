@@ -546,6 +546,37 @@ export function scopeSummaryFrom(
   }
 }
 
+/**
+ * The records and the rows, from `model.json`'s text alone — what the index
+ * reads (ADR-0012 §2).
+ *
+ * One file per scope, deliberately: the index asks who owns an id and who else
+ * draws it, and both are answered by `elements` and `relations`. A description
+ * is a file of its own and is not read, so an element comes back here without
+ * the prose {@link openScopeFolder} would have folded back into it — which is
+ * exactly the difference between reading a tree to index it and reading a scope
+ * to open it.
+ *
+ * Text that is not a model is an empty pair rather than a refusal. A folder
+ * with a `scope.json` and no `model.json` is an ordinary domain, and a
+ * half-written file is somebody else's save in progress.
+ */
+export function modelListsFrom(
+  text: string | undefined,
+): { elements: DesignElement[]; relations: Relation[] } {
+  const parsed = text === undefined ? undefined : parseJson(text)
+  const held = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? parsed as Record<string, unknown>
+    : undefined
+  return {
+    elements: listOf(held?.elements)
+      .filter((row) => typeof row.id === 'string')
+      .map(({ explicit: _held, ...rest }) => rest as unknown as DesignElement),
+    relations: listOf(held?.relations)
+      .filter((row) => typeof row.id === 'string') as unknown as Relation[],
+  }
+}
+
 function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
   const definition = jsonAt(folder, `${DIAGRAMS_FOLDER}/${name}.json`)
   if (!definition || typeof definition.id !== 'string' || typeof definition.name !== 'string') {

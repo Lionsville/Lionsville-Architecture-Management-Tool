@@ -32,8 +32,9 @@
  * than a flat list because the nesting IS the structure — flattening it only to
  * group it again is how two orderings come to disagree.
  */
-import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
+
 
 export interface ScopeStore {
   /**
@@ -112,9 +113,31 @@ export interface ScopeStore {
    * "nothing of mine is old", which is the honest answer in both cases.
    */
   outdated?(): Promise<ScopePath[]>
+
+  /**
+   * Every scope's records and rows, and nothing else — what the index is built
+   * from (ADR-0012 §2).
+   *
+   * An id names one thing across the whole organisation, so the questions
+   * "who owns this" and "who else draws it" are questions about the tree
+   * rather than about the scope that is open. They are asked once per open and
+   * again whenever the watcher says the folder changed, over every scope
+   * `list()` can see — which makes the cost of this the cost of opening
+   * anything at all, and is why it reads **one file per scope** and never a
+   * description, a view, a decision or a geometry.
+   *
+   * Optional, like {@link ScopeStore.outdated}, and for the same kind of
+   * reason: a store that keeps whole snapshots has nothing cheaper to offer
+   * than `load()`, and the index falls back to loading each scope rather than
+   * going without. Absent therefore costs correctness nothing and costs an
+   * open a little more, which is the right way round for something a backend
+   * may not be able to do.
+   */
+  models?(): Promise<ScopeModel[]>
 }
 
-/** How much of what a store will hold is already held. Characters, not bytes. */
+/** How much
+ of what a store will hold is already held. Characters, not bytes. */
 export type StoragePressure = {
   used: number
   budget: number

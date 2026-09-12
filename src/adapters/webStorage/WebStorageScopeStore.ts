@@ -21,7 +21,7 @@
 import { ShellError } from '../../platform/errors'
 import { isBeforeFormat4, migrateModel } from '../../projects/migrate3to4'
 import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
-import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { isSafeScopePath, isWithinScope, pathOfOldRef, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeStore, StoragePressure } from '../../ports/ScopeStore'
@@ -224,6 +224,34 @@ export class WebStorageScopeStore implements ScopeStore {
     // that is a presentation choice, not a storage one.
     const root = scopeTree(found)
     return Promise.resolve({ ...root, children: sortScopes(root.children) })
+  }
+
+  /**
+   * See {@link ScopeStore.models}. A record here is a whole snapshot under one
+   * key, so there is no cheaper read than the one the listing already makes —
+   * this is the same pass with the models kept instead of thrown away.
+   *
+   * A record under the old prefix answers too, addressed by the path it always
+   * meant: an index that could not see a scope the pass has not yet moved
+   * would call every stand-in of it dangling for as long as the move took.
+   */
+  models(): Promise<ScopeModel[]> {
+    let keys: string[]
+    try {
+      keys = this.ourKeys()
+    } catch {
+      return Promise.resolve([])
+    }
+    const found = new Map<ScopePath, ScopeModel>()
+    for (const key of keys) {
+      const scope = this.read(key)
+      // The current prefix wins, the way `load` makes it win: a record the
+      // pass has already moved is the one this app is now writing to.
+      if (scope && !(found.has(scope.path) && key.startsWith(LEGACY_PROJECT_PREFIX))) {
+        found.set(scope.path, { path: scope.path, model: scope.model })
+      }
+    }
+    return Promise.resolve([...found.values()])
   }
 
   load(path: ScopePath): Promise<ScopeSnapshot | undefined> {

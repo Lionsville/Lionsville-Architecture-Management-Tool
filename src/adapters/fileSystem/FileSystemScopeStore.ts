@@ -39,13 +39,14 @@
  * tested without a filesystem at all.
  */
 import {
-  DECISIONS_FOLDER, folderFormatVersion, isFormatPath, SCOPE_FILE, SCOPE_FOLDERS,
-  SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
+  DECISIONS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE,
+  SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
 } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { scopeTree, sortScopes } from '../../projects/scope'
-import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+
 import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
 } from '../../projects/scopePath'
@@ -234,6 +235,32 @@ export class FileSystemScopeStore implements ScopeStore {
     } catch {
       // Unreadable is not old: an empty answer leaves the folder alone, which
       // is the safe direction for something that rewrites files.
+      return []
+    }
+    return found
+  }
+
+  /**
+   * See {@link ScopeStore.models}. One `model.json` per scope, and no other
+   * file: the same walk the listing does, reading the one document the index
+   * is built from instead of a whole folder each.
+   *
+   * A scope whose model will not read is left out rather than answered with an
+   * empty one. An empty model is a claim — "this scope defines nothing" — and
+   * a half-written file is not evidence for it; leaving the scope out says
+   * "unknown", which is what a drift check should do nothing about.
+   */
+  async models(): Promise<ScopeModel[]> {
+    const found: ScopeModel[] = []
+    try {
+      await this.walk(this.root, [], async ({ folder, path }) => {
+        const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
+        if (!handle) return
+        const text = await (await handle.getFile().catch(() => undefined))?.text().catch(() => undefined)
+        if (text === undefined) return
+        found.push({ path, model: modelListsFrom(text) })
+      })
+    } catch {
       return []
     }
     return found

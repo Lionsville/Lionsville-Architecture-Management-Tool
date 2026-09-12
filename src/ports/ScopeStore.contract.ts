@@ -82,6 +82,15 @@ function stableJson(value: unknown): string {
   })
 }
 
+/**
+ * One element without its description — what {@link ScopeStore.models} is
+ * allowed not to have read, because prose is a file of its own.
+ */
+function withoutProse(element: DesignElement): Omit<DesignElement, 'description'> {
+  const { description: _filed, ...rest } = element
+  return rest
+}
+
 /** Every path the listing holds, root first. */
 async function paths(store: ScopeStore): Promise<ScopePath[]> {
   return flattenScopes(await store.list()).map((scope) => scope.path)
@@ -322,6 +331,38 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
       }]
       await store.save(scope)
       expect((await store.load('acme'))?.model.decisions).toEqual(scope.model.decisions)
+    })
+
+    /**
+     * The clause about {@link ScopeStore.models} (ADR-0012 §2): a store that
+     * can answer it must answer for every scope it lists, with the same
+     * records and rows `load()` gives.
+     *
+     * Both halves matter and they fail differently. A scope missing from this
+     * is a scope whose definitions the index cannot see, so every stand-in of
+     * them reads as dangling and the register loses a domain's applications; a
+     * model that disagrees with `load()` is worse, because it is a drift
+     * finding about a difference that only exists inside the store.
+     *
+     * Descriptions are the one thing deliberately left out — they are a file
+     * per element and the index never reads one — so the comparison is of the
+     * records without their prose.
+     */
+    it('answers for every scope it lists, with the models load() gives', async () => {
+      const store = create()
+      await store.save(bareScope(ROOT_SCOPE, 'Acme Logistics', 'organisation'))
+      await store.save(bareScope('acme-logistics', 'Acme', 'domain'))
+      await store.save(sampleScope())
+      if (!store.models) return
+
+      const models = await store.models()
+      expect([...models.map((held) => held.path)].sort()).toEqual((await paths(store)).sort())
+      for (const held of models) {
+        const loaded = await store.load(held.path)
+        expect(stableJson(held.model.elements.map(withoutProse)))
+          .toBe(stableJson((loaded?.model.elements ?? []).map(withoutProse)))
+        expect(stableJson(held.model.relations)).toBe(stableJson(loaded?.model.relations ?? []))
+      }
     })
 
     it('names itself, so a message can say where it went wrong', () => {

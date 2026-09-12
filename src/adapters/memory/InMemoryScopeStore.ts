@@ -10,7 +10,7 @@
  */
 import { ShellError } from '../../platform/errors'
 import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
-import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeStore } from '../../ports/ScopeStore'
@@ -28,6 +28,19 @@ export class InMemoryScopeStore implements ScopeStore {
     // Alphabetical: see the note in WebStorageScopeStore.
     const root = scopeTree(found)
     return Promise.resolve({ ...root, children: sortScopes(root.children) })
+  }
+
+  /**
+   * See {@link ScopeStore.models}. This store holds whole snapshots, so there
+   * is nothing cheaper to read than what it already has — the saving is in not
+   * copying them, which is why the models go out by reference where a `load`
+   * clones. Nothing writes to an index, and a test that mutates one of these
+   * is mutating the store, which is a bug either way.
+   */
+  models(): Promise<ScopeModel[]> {
+    const found = [...this.held.values()].filter(isStoredScope)
+      .map((scope) => ({ path: scope.path, model: scope.model }))
+    return Promise.resolve(found)
   }
 
   load(path: ScopePath): Promise<ScopeSnapshot | undefined> {
