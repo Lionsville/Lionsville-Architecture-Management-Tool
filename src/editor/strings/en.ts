@@ -151,7 +151,7 @@ export const EN = {
   'palette.noMatches': 'Nothing matches “{query}”',
   'palette.section.systems': 'Applications & components',
   'palette.section.people': 'People & context',
-  'paletteDescription.application': 'A system the customer runs or buys',
+  'paletteDescription.application': 'A system the organisation runs or buys',
   'paletteDescription.component': 'A part inside one application',
   'paletteDescription.actor': 'A person or role using the landscape',
   'paletteDescription.domainGroup': 'A labelled area grouping the landscape',

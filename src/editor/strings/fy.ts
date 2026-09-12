@@ -143,7 +143,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'palette.noMatches': 'Neat komt oerien mei “{query}”',
   'palette.section.systems': 'Applikaasjes & komponinten',
   'palette.section.people': 'Minsken & kontekst',
-  'paletteDescription.application': 'In systeem dat de klant draait of ôfnimt',
+  'paletteDescription.application': 'In systeem dat de organisaasje draait of ôfnimt',
   'paletteDescription.component': 'In ûnderdiel binnen ien applikaasje',
   'paletteDescription.actor': 'In persoan of rol dy’t it lânskip brûkt',
   'paletteDescription.domainGroup': 'In beneamd flak dat it lânskip groepearret',

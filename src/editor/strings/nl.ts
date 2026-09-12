@@ -143,7 +143,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'palette.noMatches': 'Niets komt overeen met “{query}”',
   'palette.section.systems': 'Applicaties & componenten',
   'palette.section.people': 'Mensen & context',
-  'paletteDescription.application': 'Een systeem dat de klant draait of afneemt',
+  'paletteDescription.application': 'Een systeem dat de organisatie draait of afneemt',
   'paletteDescription.component': 'Een onderdeel binnen één applicatie',
   'paletteDescription.actor': 'Een persoon of rol die het landschap gebruikt',
   'paletteDescription.domainGroup': 'Een benoemd vlak dat het landschap groepeert',
