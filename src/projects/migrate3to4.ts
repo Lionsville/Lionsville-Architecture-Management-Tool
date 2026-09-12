@@ -322,3 +322,17 @@ export function migrateModel(model: HostModel): HostModel {
 export function migrateSnapshot(project: ProjectSnapshot): ProjectSnapshot {
   return { ...project, model: migrateModel(project.model) }
 }
+
+/**
+ * Was this model stored before the format said it this way?
+ *
+ * The question a store that keeps a whole snapshot has to answer for
+ * {@link ../ports/ProjectStore.outdated}, and it is answered off the two fields
+ * that changed name rather than off a version, because there is none to read.
+ * {@link migrateModel} leaves exactly the models this says `false` about alone.
+ */
+export function isBeforeFormat4(model: HostModel): boolean {
+  const held = model as unknown as Record<string, unknown>
+  if (!Array.isArray(held.relations)) return true
+  return rows(held.diagrams).some((view) => !Array.isArray(view.members) || !view.geometry)
+}

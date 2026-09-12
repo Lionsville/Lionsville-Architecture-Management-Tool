@@ -236,6 +236,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'prefs.pushAfterSnapshot': 'Nach jeder Momentaufnahme pushen',
   'prefs.writeFailed': 'Diese Einstellung konnte nicht gespeichert werden: {message}',
   'history.beforeSync': 'Vor dem Synchronisieren',
+  'history.beforeUpgrade': 'Vor der Aktualisierung des Dateiformats',
   'sync.diverged':
     'Dieser Ordner und sein Remote sind beide weitergegangen. Es wird nichts zusammengeführt: wählen Sie, welche Version gilt. '
     + 'Unsere bleibt in jedem Fall auf einem Branch erhalten.',

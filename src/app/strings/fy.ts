@@ -236,6 +236,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'prefs.pushAfterSnapshot': 'Nei elke momintopname pushe',
   'prefs.writeFailed': 'Dy ynstelling koe net bewarre wurde: {message}',
   'history.beforeSync': 'Foar it syngronisearjen',
+  'history.beforeUpgrade': 'Foar it bywurkjen fan it bestânsformaat',
   'sync.diverged':
     'Dizze map en de remote binne beide fierdergien. Der wurdt neat gearfoege: kies hokker ferzje bliuwt. '
     + 'Dy fan ús bliuwt hoe dan ek op in branch bewarre.',

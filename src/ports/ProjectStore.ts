@@ -77,6 +77,21 @@ export interface ProjectStore {
    * An estimate, and said to be one. Nothing exposes the real limit.
    */
   pressure?(): StoragePressure | undefined
+
+  /**
+   * The projects this store holds in a form an older version of this tool
+   * wrote, if it can tell.
+   *
+   * The storage format is the store's business and nobody else's, so this is
+   * the one question the migration cannot answer for itself (ADR-0012 §11 and
+   * `projects/migrate3to4.ts`). It is asked on every open and is almost always
+   * empty, so it is written to be cheap: one header per project, no content.
+   *
+   * Optional because a store need not have a past. An in-memory one has none,
+   * and a backend written after the format turned has none either; absent means
+   * "nothing of mine is old", which is the honest answer in both cases.
+   */
+  outdated?(): Promise<ProjectRef[]>
 }
 
 /** How much of what a store will hold is already held. Characters, not bytes. */

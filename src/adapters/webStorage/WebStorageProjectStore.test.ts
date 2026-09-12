@@ -121,6 +121,56 @@ describe('WebStorageProjectStore', () => {
  * anybody finds out the hard way. The number is an estimate and is meant to be
  * a floor: it counts what this store holds, not what the rest of the origin does.
  */
+/**
+ * A record written before ADR-0012 said the model this way.
+ *
+ * There is no version on a key here, so the store answers both questions off
+ * the model itself: whether it is old, and — on every read — what it says now.
+ */
+describe('WebStorageProjectStore — a record from before format 4', () => {
+  const beforeAdr0012 = JSON.stringify({
+    ref: { group: 'acme', project: 'old' },
+    activeDiagramId: 'l7',
+    logoLibrary: [],
+    model: {
+      name: 'Landscape',
+      customerName: 'Acme',
+      connections: [{ id: 'c-1', sourceId: 'portal', targetId: 'wms', isBidirectional: false }],
+      elements: [
+        { id: 'portal', kind: 'inputChannel', name: 'Portal' },
+        { id: 'wms', kind: 'application', name: 'WMS' },
+      ],
+      diagrams: [{
+        id: 'l7',
+        kind: 'layer7',
+        name: 'Landschap',
+        placements: [{ elementId: 'portal', zone: 'inputChannels', x: 1, y: 2 }],
+      }],
+    },
+  })
+
+  it('names it as one to upgrade, and stops once it has been written back', async () => {
+    const storage = fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 })
+    const store = new WebStorageProjectStore(storage)
+
+    expect(await store.outdated()).toEqual([{ group: 'acme', project: 'old' }])
+    await store.save((await store.load({ group: 'acme', project: 'old' }))!)
+    expect(await store.outdated()).toEqual([])
+  })
+
+  it('reads it as the model says it now, whether or not it has been written back', async () => {
+    const store = new WebStorageProjectStore(fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 }))
+    const held = await store.load({ group: 'acme', project: 'old' })
+
+    expect(held?.model.relations).toEqual([
+      { id: 'c-1', type: 'flow', sourceId: 'portal', targetId: 'wms', isBidirectional: false },
+    ])
+    expect(held?.model.elements[0]).toMatchObject({ kind: 'application' })
+    expect(held?.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
+    expect(held?.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
+  })
+})
+
 describe('WebStorageProjectStore — how full it is', () => {
   it('counts what it holds, and nothing else on the origin', async () => {
     const storage = fakeStorage({ 'something.else': 'x'.repeat(1_000) })

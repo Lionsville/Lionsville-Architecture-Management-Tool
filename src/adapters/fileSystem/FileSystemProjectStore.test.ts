@@ -66,11 +66,13 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
       placements: [{ elementId: 'portal', zone: 'inputChannels', x: 10, y: 20 }],
     }))
 
+    expect(await store.outdated()).toEqual([ref])
     const opened = await store.load(ref)
     expect(opened?.model.elements[0]).toMatchObject({ kind: 'application' })
     expect(opened?.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
 
     await store.save(opened!)
+    expect(await store.outdated()).toEqual([])
     expect(root.paths()).toEqual([
       'acme-logistics/landscape/diagrams/l7.geometry.json',
       'acme-logistics/landscape/diagrams/l7.json',

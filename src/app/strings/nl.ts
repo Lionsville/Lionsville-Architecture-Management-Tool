@@ -236,6 +236,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.pushAfterSnapshot': 'Na elke momentopname pushen',
   'prefs.writeFailed': 'Die instelling kon niet worden bewaard: {message}',
   'history.beforeSync': 'Voor het synchroniseren',
+  'history.beforeUpgrade': 'Voor het bijwerken van het bestandsformaat',
   'sync.diverged':
     'Deze map en de remote zijn allebei verdergegaan. Er wordt niets samengevoegd: kies welke versie blijft. '
     + 'De onze blijft hoe dan ook op een branch bewaard.',

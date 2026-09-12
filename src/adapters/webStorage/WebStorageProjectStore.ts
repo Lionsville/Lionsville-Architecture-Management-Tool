@@ -18,7 +18,7 @@
  * and somebody needs to know.
  */
 import { ShellError } from '../../platform/errors'
-import { migrateModel } from '../../projects/migrate3to4'
+import { isBeforeFormat4, migrateModel } from '../../projects/migrate3to4'
 import { isUsableProject, sortProjects, summarise } from '../../projects/project'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
 import { isProjectRef, refPath } from '../../projects/projectRef'
@@ -137,6 +137,28 @@ export class WebStorageProjectStore implements ProjectStore {
       logoLibrary: Array.isArray(held.logoLibrary) ? held.logoLibrary : [],
       updatedAt: typeof held.updatedAt === 'string' ? held.updatedAt : undefined,
     }
+  }
+
+  /**
+   * See {@link ProjectStore.outdated}. A record here is a whole snapshot under
+   * one key with no version on it, so the question is asked of the model.
+   */
+  outdated(): Promise<ProjectRef[]> {
+    const found: ProjectRef[] = []
+    for (const key of this.ourKeys()) {
+      let parsed: unknown
+      try {
+        const raw = this.storage.getItem(key)
+        if (!raw) continue
+        parsed = JSON.parse(raw)
+      } catch {
+        continue
+      }
+      if (!isUsableProject(parsed)) continue
+      const held = parsed as ProjectSnapshot
+      if (isProjectRef(held.ref) && isBeforeFormat4(held.model)) found.push(held.ref)
+    }
+    return Promise.resolve(found)
   }
 
   list(): Promise<ProjectSummary[]> {

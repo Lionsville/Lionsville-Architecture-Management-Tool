@@ -10,8 +10,10 @@ import { describe, expect, it } from 'vitest'
 import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import { projectAt, sampleProject } from '../ports/ProjectStore.contract'
-import { copyGroupsInto, copyProjectsInto, migrated, migrateInto } from './migration'
+import { copyGroupsInto, copyProjectsInto, migrated, migrateInto, upgradeProjects } from './migration'
+import type { UpgradeTarget } from './migration'
 import type { ProjectSnapshot } from './project'
+import type { ProjectRef } from './projectRef'
 
 const named = (group: string, project: string, name: string): ProjectSnapshot =>
   projectAt({ group, project }, name)
@@ -106,5 +108,75 @@ describe('migrateInto', () => {
     )
 
     expect(migrated(tally)).toBe(false)
+  })
+})
+
+/**
+ * The pass that rewrites what an older version of this tool wrote.
+ *
+ * Eager, because only a save takes the superseded files off disk — and narrow,
+ * because the store is the one that knows which of its projects are old.
+ */
+describe('upgradeProjects', () => {
+  const outdated = (store: InMemoryProjectStore, refs: ProjectRef[]): UpgradeTarget =>
+    Object.assign(Object.create(store) as InMemoryProjectStore, {
+      outdated: () => Promise.resolve(refs),
+    })
+
+  it('reads each old project and writes it back', async () => {
+    const store = new InMemoryProjectStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
+    const written: string[] = []
+    const target = outdated(store, [{ group: 'acme', project: 'one' }])
+    target.save = async (project) => { written.push(project.ref.project); await store.save(project) }
+
+    expect(await upgradeProjects(target)).toMatchObject({ upgraded: 1, failed: 0 })
+    // The one that was already current is not touched, which is what keeps a
+    // migration out of everybody's `git status` and off every timestamp.
+    expect(written).toEqual(['one'])
+  })
+
+  it('does nothing at all for a store with nothing old in it', async () => {
+    const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
+    expect(await upgradeProjects(outdated(store, []))).toEqual({
+      upgraded: 0, failed: 0, recorded: 'nothing to record',
+    })
+  })
+
+  it('does nothing for a store that has no older format to have written', async () => {
+    // An in-memory store, or any backend newer than the format: absent means
+    // "nothing of mine is old" rather than "ask me again".
+    expect(await upgradeProjects(new InMemoryProjectStore([sampleProject()])))
+      .toMatchObject({ upgraded: 0 })
+  })
+
+  it('records what the folder looked like before it rewrites anything', async () => {
+    const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
+    const order: string[] = []
+    const target = outdated(store, [{ group: 'acme', project: 'one' }])
+    target.save = async (project) => { order.push('save'); await store.save(project) }
+
+    const tally = await upgradeProjects(target, () => {
+      order.push('record')
+      return Promise.resolve(true)
+    })
+    expect(tally.recorded).toBe('taken')
+    expect(order).toEqual(['record', 'save'])
+  })
+
+  it('migrates anyway when there is nothing to record it with', async () => {
+    // No git, no repository, or a snapshot that refused. Refusing to migrate
+    // for want of one would leave a project nobody can open.
+    const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
+    const target = outdated(store, [{ group: 'acme', project: 'one' }])
+
+    expect(await upgradeProjects(target, () => Promise.reject(new Error('no git'))))
+      .toEqual({ upgraded: 1, failed: 0, recorded: 'unavailable' })
+  })
+
+  it('counts the one that will not read and upgrades the rest', async () => {
+    const store = new InMemoryProjectStore([named('acme', 'two', 'Two')])
+    const target = outdated(store, [{ group: 'acme', project: 'gone' }, { group: 'acme', project: 'two' }])
+
+    expect(await upgradeProjects(target)).toEqual({ upgraded: 1, failed: 1, recorded: 'unavailable' })
   })
 })

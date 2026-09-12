@@ -29,7 +29,8 @@
  * tested without a filesystem at all.
  */
 import {
-  isFormatPath, PROJECT_FILE, projectFiles, projectSummaryFrom,
+  folderFormatVersion, isFormatPath, PROJECT_FILE, PROJECT_FORMAT_VERSION, projectFiles,
+  projectSummaryFrom,
 } from '../../projects/folderFormat'
 import { openProjectFolder } from '../../projects/migrate3to4'
 import type { FolderFile } from '../../projects/folderFormat'
@@ -189,6 +190,51 @@ export class FileSystemProjectStore implements ProjectStore {
     }
 
     for (const child of children) await this.walk(child, [...segments, child.name], found)
+  }
+
+  /**
+   * The same walk, asking a smaller question: which headers say a version this
+   * build is newer than.
+   *
+   * Separate from {@link walk} on purpose. That one reads every file of every
+   * project to date it, which is right for a picker and wrong for something
+   * that runs on every open and almost always answers with nothing.
+   */
+  private async walkVersions(
+    folder: DirectoryHandleLike, segments: string[], found: ProjectRef[],
+  ): Promise<void> {
+    const children: DirectoryHandleLike[] = []
+    let header: FileHandleLike | undefined
+    for await (const entry of folder.values()) {
+      if (entry.kind === 'directory') children.push(entry)
+      else if (entry.name === PROJECT_FILE) header = entry
+    }
+
+    if (header && segments.length >= 2) {
+      const text = await (await header.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      const version = text === undefined ? undefined : folderFormatVersion(text)
+      if (version !== undefined && version < PROJECT_FORMAT_VERSION) {
+        found.push({
+          group: segments.slice(0, -1).join('/'), project: segments[segments.length - 1],
+        })
+      }
+      return
+    }
+
+    for (const child of children) await this.walkVersions(child, [...segments, child.name], found)
+  }
+
+  /** See {@link ProjectStore.outdated}. */
+  async outdated(): Promise<ProjectRef[]> {
+    const found: ProjectRef[] = []
+    try {
+      await this.walkVersions(this.root, [], found)
+    } catch {
+      // Unreadable is not old: an empty answer leaves the folder alone, which
+      // is the safe direction for something that rewrites files.
+      return []
+    }
+    return found
   }
 
   async list(): Promise<ProjectSummary[]> {

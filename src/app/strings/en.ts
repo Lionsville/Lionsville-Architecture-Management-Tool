@@ -316,6 +316,7 @@ export const EN = {
   // --- git sync (ADR-0005) --------------------------------------------------
   /** The snapshot a sync begins with, when this session has no log to draft from. */
   'history.beforeSync': 'Before syncing',
+  'history.beforeUpgrade': 'Before upgrading the file format',
   /**
    * The folder and its remote have both moved on. The same two answers the
    * disk-change notice offers for one file, scaled up; both keep everything.

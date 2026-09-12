@@ -54,7 +54,7 @@ import {
   readLanguage, readLastProject, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
   withoutLastProject, withWorkingDirectory,
 } from '../projects/preferences'
-import { migrated, migrateInto } from '../projects/migration'
+import { migrated, migrateInto, upgradeProjects } from '../projects/migration'
 import type { PullOutcome } from '../platform/sync'
 import type { ProjectSnapshot } from '../projects/project'
 import { EXAMPLES } from './examples'
@@ -180,6 +180,7 @@ function chooseWorkingDirectory(): void {
       stored = kept
       await shell.preferences.write(kept).catch(() => undefined)
       shell = inFolder
+      await upgradeFormat()
       renderApp(kept, undefined)
     }, (cause: unknown) => {
       shell.diagnostics.report({
@@ -239,7 +240,10 @@ async function workIn(chosen: DesktopDirectory): Promise<void> {
       })
     })
     shell = inFolder
-    renderApp(kept, undefined, await pullOnOpen())
+    // After the pull, so what is migrated is what the remote just handed over.
+    const initialSync = await pullOnOpen()
+    await upgradeFormat()
+    renderApp(kept, undefined, initialSync)
 }
 
 /**
@@ -303,6 +307,43 @@ async function moveInto(folder: Shell, root: string): Promise<boolean> {
   // has been migrated, and asking again every time is how a folder acquires
   // projects somebody threw away.
   return migrated(tally) || tally.failed === 0
+}
+
+/**
+ * Every project in this source, in the format this build writes.
+ *
+ * ADR-0012 §11: an older folder is transformed rather than quietly half-read,
+ * and the transformation is a pass rather than a rewrite on save, because the
+ * files the format has stopped writing only leave the folder when a project is
+ * written back. It asks the store first and almost always gets nothing, so it
+ * needs no preference to remember it has run — the folder itself is the record.
+ *
+ * The snapshot comes first where there is one to take (ADR-0008 keeps what the
+ * folder looked like), and where there is not — a browser tab, a folder with no
+ * git — it migrates anyway and says so in the trail. Refusing to open somebody's
+ * work for want of a commit would be the worse answer.
+ */
+async function upgradeFormat(): Promise<void> {
+  const { history, diagnostics } = shell
+  const s = translator(readLanguage(stored)
+    ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
+  const tally = await upgradeProjects(shell.projects, history && (async () => {
+    if (!await history.available() || !await history.keeping()) return false
+    return history.snapshot(s('history.beforeUpgrade'))
+  })).catch((cause: unknown) => {
+    diagnostics.report({
+      level: 'error', where: 'formatUpgrade', message: 'upgrading the file format failed', cause,
+    })
+    return undefined
+  })
+  // Counts, never names: this line goes to a log file the user is invited to
+  // hand over. Silent when there was nothing to do, which is almost always.
+  if (!tally || (tally.upgraded === 0 && tally.failed === 0)) return
+  diagnostics.report({
+    level: tally.failed ? 'warn' : 'info',
+    where: 'formatUpgrade',
+    message: `upgraded ${tally.upgraded} projects, failed ${tally.failed}, snapshot ${tally.recorded}`,
+  })
 }
 
 /**
@@ -391,6 +432,8 @@ void shell.preferences.read()
     await rememberedDirectory(storedPreferences)
     // After the folder, before the project: see `pullOnOpen`.
     const initialSync = await pullOnOpen()
+    // And before the project is read, so what opens is already this format.
+    await upgradeFormat()
     // Not on a desktop with no folder yet: there is nothing to reopen, because
     // the only place a project could be is the app's own storage, which is
     // exactly what ADR-0003 retired. The first-run screen asks instead.

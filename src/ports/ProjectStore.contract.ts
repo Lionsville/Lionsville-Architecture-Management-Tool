@@ -107,6 +107,19 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       expect(back?.model).toEqual(project.model)
     })
 
+    /**
+     * What this build wrote is not something an older build wrote.
+     *
+     * The one clause about {@link ProjectStore.outdated} that every store has
+     * to satisfy, whether or not it can answer at all: a store that called its
+     * own freshest write outdated would rewrite the folder on every open.
+     */
+    it('does not call what it has just written outdated', async () => {
+      const store = create()
+      await store.save(sampleProject())
+      await expect(store.outdated?.() ?? Promise.resolve([])).resolves.toEqual([])
+    })
+
     it('does not answer for a ref that was never saved', async () => {
       const store = create()
       await store.save(sampleProject())
