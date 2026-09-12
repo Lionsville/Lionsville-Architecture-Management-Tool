@@ -4,6 +4,20 @@
 * Date: 2026-09-06
 * Deciders: Wouter Simons
 
+**Built, and the format turned once since. 12 September 2026:** the folder is
+version 4, and what that changed is that the file says what the model says —
+`model.json` holds `elements` and `relations` with a type on every row,
+`diagrams/<id>.json` holds `members`, `groups` and `lines`, and
+`diagrams/<id>.geometry.json` holds numbers (ADR-0012 §5 and §6). Everything
+this record decided is unchanged: one document per thing that changes
+independently, layout apart from meaning, the format as pure functions, and a
+store that removes only what the format writes. Version 3 is read by one file,
+`projects/migrate3to4.ts`, which is run over a folder when it is opened and
+whose output is the version that gets written; nothing else in the tree knows
+the old spelling. That is the rule 2.x works under (`docs/plan-2.0.0.md`): the
+format may break as often as the model needs it to, as long as every older
+version opens and migrates.
+
 ## Context and Problem Statement
 
 A landscape is a document about an organisation that a team argues over for

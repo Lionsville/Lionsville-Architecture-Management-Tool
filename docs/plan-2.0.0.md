@@ -138,7 +138,7 @@ until format 4 (the same shim rule as step 2).
   `supports` window; an export of the example says it left out its
   `supports` rows.
 
-### 4. Format 4 — the model's own shape, written
+### 4. Format 4 — the model's own shape, written — landed 12 September 2026 (6691380…ccf5de7)
 
 The file says what the model says. The three folds in
 `projects/folderFormat.ts` and `model/relations.ts` — connections ↔ typed
@@ -167,6 +167,28 @@ band — go, and with them every "refuses to write at format 3" refusal.
 - Done when: a v3 fixture opens, migrates, and writes format 4; a format-4
   folder round-trips byte-for-byte; the `.lvarch` v1–v4 fixtures all open;
   `describeProjectStore` passes; no fold remains in `folderFormat.ts`.
+
+**Landed**, and four things the next stretch should know:
+
+- **The migration is a pass, and it needs no preference to remember it.**
+  `ProjectStore` gained one optional clause — `outdated()`, beside
+  `pressure()` — because which of its projects an older build wrote is a
+  question only a store can answer. The folder store reads one header per
+  project; the browser store asks the model, since a key there has no version.
+  An empty answer is the whole guard, so a v3 project dropped into the folder
+  in a month is migrated in a month. Beta 2's format 4 → 5 pass hangs off the
+  same seam: `upgradeProjects(store, record)` in `projects/migration.ts`.
+- **Two behaviours flipped, deliberately.** A deleted geometry file means "lay
+  it out again" over a membership list that is still whole, where at format 3
+  it emptied the board; and restoring one diagram to a snapshot changes both
+  of its files, because what is on a view is the definition's now.
+- **The example is the folder, as JSON by path** — an object per `.json`, an
+  array of lines per `.md` — with its plans and decisions inside it as files
+  rather than beside it in TypeScript. Its content is unchanged; step 3's
+  second half fills in the business layer by editing that file.
+- **The interchange round trip kept its document.** The old example moved to
+  `model/testing/interchange-sample.json`, because a test that another tool's
+  format survives a round trip must not be fed by our own export.
 
 ### 5. Strings, manual, screenshots
 

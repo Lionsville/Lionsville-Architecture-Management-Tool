@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3343 tests** and one of every config. The
+One codebase, in modules, with **3367 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3343 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3367 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -136,7 +136,7 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     lifecycle · transition · checks   dates on the facts, a plan,
                                       and what the dates contradict (ADR-0009)
                     relations         what a row between two elements MEANS, and
-                                      the one type format 3 holds (ADR-0012 §5)
+                                      the one type a canvas draws (ADR-0012 §5)
                     porting · replacement   which interface moved where, derived
                                       from the lines; a replacement as one
                                       transaction (ADR-0010)
@@ -202,10 +202,12 @@ src/projects/     A project: open, save, order, summarise, address, remember.
                                       what may become an anchor
                     folderFormat      a project as files (ADR-0003); adrFile ·
                                       transitionFile · fileText
-                    workingFile       the .lvarch container: v3 is the folder, zipped
+                    migrate3to4       the last reader of format 3 (ADR-0012 §11)
+                    workingFile       the .lvarch container: v4 is the folder, zipped
                     historyPath       where one thing is filed, for its history
                     documentSession   dirty / saving / changed on disk / conflict
-                    migration         out of browser storage, into the folder
+                    migration         out of browser storage into the folder, and
+                                      out of an older format into this one
 src/platform/     What the app runs inside, and what a failure looks like.
                     errors            ShellError: a refusal as a key, never a sentence
                     diagnostics       what a failure entry is, and how a trail reads
@@ -455,6 +457,8 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned`; `connect` / `connection.*` are the `flow` ones |
+| Working-folder format | **4** — `PROJECT_FORMAT_VERSION`, and the `.lvarch`'s version with it |
+| What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -473,17 +477,25 @@ One thing deliberately does **not** change:
   goes for `solution-design/v1` inside it, and for `DesignModel`'s field names —
   with the one exception ADR-0012 §5 makes, because the list stopped being what
   it was called: `connections` became **`relations`**, holding a `Relation` per
-  row with a `type` on it. The interchange document and format 3 both still say
-  `connections` and both still hold flows only; `model/relations.ts` is where
-  the two names meet, and it refuses to write any other type until format 4.
+  row with a `type` on it. The interchange document still says `connections` and
+  still holds flows only, and says what it left out; the working format followed
+  the model at version 4 and says `relations`.
 
 And one thing deliberately broke, once. Files written under the tool's previous
 name are **not** opened: `isWorkingFile` accepts only the
 `lionsville-architecture` tag, and `model/hostModel.test.ts` pins the refusal
 with its reasoning. The working file was redefined rather than extended, at a
-moment when nobody had one worth keeping. Versions 1 and 2 of the current file
-both open, and version 3 — the project folder in a zip — is what is written
-now. `docs/decisions/0001` and `0003` have the long version.
+moment when nobody had one worth keeping. Every version since opens: 1 and 2 are
+a JSON document, 3 and 4 are the project folder in a zip, and 4 is what is
+written now. `docs/decisions/0001` and `0003` have the long version.
+
+**2.x may break the file format as often as the model needs**, as long as every
+older version opens and migrates (`docs/plan-2.0.0.md`). A 1.x build meeting a
+2.x file sees no project in it, which is the honest answer and the same one
+`isWorkingFile` gives a file it does not know. No shim is kept for an older
+build's sake: a shim exists only until the format that makes it unnecessary is
+written, and then the read half of it moves into `projects/migrate3to4.ts` and
+the write half goes.
 
 ## State of play
 
@@ -551,7 +563,8 @@ origin. Now `<group>/<project>/` holds `project.json`, `model.json`, a
 definition and a placement file per diagram, a markdown file per description
 and per decision, and the marks as images — so a moved node is one small diff
 and a rewritten paragraph is a readable one. The single `.lvarch` stays as the
-export container and is version 3: that folder, zipped, reproducibly.
+export container: that folder, zipped, reproducibly — version 3 then, and
+version 4 now.
 
 What that took, in the order it was built: the format as pure functions with
 the round trip and the byte stability pinned; `FileSystemProjectStore` and
@@ -715,6 +728,27 @@ too: every mutation answers with a `revision` and takes `ifRevision`, the
 Activity list is a read, `undo` takes back the agent's own newest steps and
 stops at a person's, `project.save` writes now, and `batch` lands several
 changes as one step or none.
+
+Then the format turned, for the first time since it existed
+(`docs/plan-2.0.0.md`, step 4). The model had been able to say more than the
+file could hold since the first step of 2.0.0 — a relation with a type, a view
+whose membership is not its geometry, a capability that is not an application —
+and each disagreement was a fold with a refusal behind it. **Format 4 is the
+file saying what the model says**: `model.json` holds `elements` and
+`relations`, `diagrams/<id>.json` holds `members`, `groups` and `lines`, and
+`diagrams/<id>.geometry.json` holds numbers. The rule that made it cheap is
+written at the top of the plan — 2.x breaks the format as often as the model
+needs, as long as every older version opens and migrates — so the three folds
+did not disappear, their read halves moved into `projects/migrate3to4.ts`, the
+one file that still knows the old spelling. Opening an older folder transforms
+it: a snapshot first where there is git, then every project rewritten, and the
+superseded placement files leave under the store's own removal rule. Which
+projects are old is a question only a store can answer, so `outdated()` joined
+`pressure()` as an optional clause on `ProjectStore` — which is also why the
+pass needs no preference to remember it has run. The shipped example stopped
+being an interchange document and became the folder the format writes, because
+the interchange is a contract with other tools and has nowhere to put a plan, a
+decision or a business layer.
 
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
