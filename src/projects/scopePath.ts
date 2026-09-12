@@ -119,6 +119,23 @@ export function isWithinScope(path: ScopePath, within: ScopePath): boolean {
  * The root passes. It is a scope, it can be saved, and a store that refused its
  * own root would have nowhere to put the organisation.
  */
+/**
+ * The path a record from before scopes was filed at.
+ *
+ * A build before format 5 addressed a project as a ref — a group and a key —
+ * and wrote that ref into two places a path now goes: the last-project
+ * preference, and every record in browser storage. Neither carries a version,
+ * so the ref is read wherever it may still be and folded into the path it
+ * always meant. Anything else is not an address.
+ */
+export function pathOfOldRef(value: unknown): ScopePath | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const held = value as { group?: unknown; project?: unknown }
+  return typeof held.group === 'string' && typeof held.project === 'string'
+    ? `${held.group}/${held.project}`
+    : undefined
+}
+
 export function isSafeScopePath(value: unknown): value is ScopePath {
   if (typeof value !== 'string') return false
   if (value.startsWith('/') || value.includes('\\')) return false

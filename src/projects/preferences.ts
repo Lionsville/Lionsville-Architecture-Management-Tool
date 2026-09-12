@@ -18,7 +18,7 @@ import { isLanguage } from '../i18n'
 import { isThemeMode } from '../platform/theme'
 import type { ThemeMode } from '../platform/theme'
 import type { Language } from '../i18n'
-import { isSafeScopePath } from './scopePath'
+import { isSafeScopePath, pathOfOldRef } from './scopePath'
 import type { ScopePath } from './scopePath'
 
 export type { ThemeMode } from '../platform/theme'
@@ -65,14 +65,6 @@ export function readLastScope(stored: unknown): ScopePath | undefined {
   const held = stored as Record<string, unknown>
   const raw = held.lastScope ?? pathOfOldRef(held.lastProject)
   return isSafeScopePath(raw) && raw !== '' ? raw : undefined
-}
-
-function pathOfOldRef(value: unknown): string | undefined {
-  if (!value || typeof value !== 'object') return undefined
-  const held = value as { group?: unknown; project?: unknown }
-  return typeof held.group === 'string' && typeof held.project === 'string'
-    ? `${held.group}/${held.project}`
-    : undefined
 }
 
 /**

@@ -22,7 +22,7 @@ import { ShellError } from '../../platform/errors'
 import { isBeforeFormat4, migrateModel } from '../../projects/migrate3to4'
 import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
-import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
+import { isSafeScopePath, isWithinScope, pathOfOldRef, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeStore, StoragePressure } from '../../ports/ScopeStore'
 import type { KeyValueStorage } from './KeyValueStorage'
@@ -150,16 +150,21 @@ export class WebStorageScopeStore implements ScopeStore {
       return undefined
     }
     if (!isStoredScope(parsed)) return undefined
-    const held = parsed as ScopeSnapshot
-    // A record whose path is missing or malformed cannot be addressed again, so
-    // it is not a scope as far as this store is concerned.
-    if (!isSafeScopePath(held.path)) return undefined
+    const held = parsed as ScopeSnapshot & { ref?: unknown }
+    // A record written before scopes said where it was as a ref — a group and
+    // a key — and never as a path. That is the 4 → 5 fold for a key: the
+    // address it always meant, and the name that left the model. A record with
+    // neither a path nor a ref cannot be addressed again, so it is not a scope
+    // as far as this store is concerned.
+    const path = held.path ?? pathOfOldRef(held.ref)
+    if (!isSafeScopePath(path)) return undefined
+    const { customerName: _gone, ...model } = held.model as typeof held.model & { customerName?: unknown }
     return {
-      path: held.path,
+      path,
       // There is no version on a record kept here — it is a whole snapshot
       // under one key — so the fold is run over every read and is written to
       // be safe on a model that is already this shape (`migrate3to4.ts`).
-      model: migrateModel(held.model),
+      model: migrateModel(model),
       activeDiagramId: held.activeDiagramId ?? held.model.diagrams[0]?.id ?? '',
       // Additive field: a record written before the mark library lacks it and
       // yields an empty library, not a broken scope.

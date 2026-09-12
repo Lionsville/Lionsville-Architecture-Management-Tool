@@ -251,7 +251,17 @@ describe('WebStorageScopeStore — how full it is', () => {
  */
 describe('WebStorageScopeStore — keys from before scopes', () => {
   const legacyKey = `${LEGACY_PROJECT_PREFIX}acme/landscape`
-  const stored = () => JSON.stringify({ ...sampleScope(), path: 'acme/landscape' })
+  // What a build before scopes actually wrote: a ref, never a path, and the
+  // organisation's name on the model. A fixture in the new shape under the old
+  // key passed every test here while a real record stayed invisible.
+  const stored = () => {
+    const { path: _address, ...scope } = sampleScope()
+    return JSON.stringify({
+      ...scope,
+      ref: { group: 'acme', project: 'landscape' },
+      model: { ...scope.model, customerName: 'Acme' },
+    })
+  }
 
   it('names an old key as one to move, and stops once it has been written back', async () => {
     const storage = fakeStorage({ [legacyKey]: stored() })
@@ -271,6 +281,12 @@ describe('WebStorageScopeStore — keys from before scopes', () => {
 
     expect(storage.keys()).toEqual([`${SCOPE_PREFIX}acme/landscape`])
     expect((await store.load('acme/landscape'))?.model.name).toBe('Application landscape')
+    // Written back as a scope: addressed by its path, and the name that left
+    // the model in format 5 is not carried along.
+    const written = JSON.parse(storage.getItem(`${SCOPE_PREFIX}acme/landscape`)!)
+    expect(written.path).toBe('acme/landscape')
+    expect(written.ref).toBeUndefined()
+    expect('customerName' in written.model).toBe(false)
   })
 
   it('lists it, so a tab that has not been through the pass still shows the work', async () => {
