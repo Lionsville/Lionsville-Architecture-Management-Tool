@@ -316,6 +316,35 @@ export interface EditorPlans {
   onReplace?(elementId: ElementId): void;
 }
 
+/**
+ * Which records on this board another scope answers for (ADR-0012 §10).
+ *
+ * The editor may not know that a scope tree exists — a canvas that knew what a
+ * project was could not be mounted in a test with two plain objects — so the
+ * whole of federation reaches it as this one question, asked per element and
+ * answered by the host from `projects/mayEdit.ts`.
+ *
+ * Absent is the ordinary case and means what it has always meant: this
+ * document answers for everything in it.
+ */
+export interface EditorOwnership {
+  /**
+   * Who answers for this element, or nothing when this scope does.
+   *
+   * `fields` is the list of field names the owning scope answers for
+   * (`projects/checks.OWNER_DETAIL`), handed in rather than known here so that
+   * a field greyed out on this panel and a field an agent is refused cannot
+   * drift apart.
+   */
+  ownerOf(elementId: ElementId): {
+    /** What to call the owning scope on screen: its path, or the word for the root. */
+    label: string;
+    fields: readonly string[];
+    /** Open that scope. Absent where the host cannot — a test, a read-only shell. */
+    onOpen?(): void;
+  } | undefined;
+}
+
 export interface SolutionDesignEditorProps {
   document: EditorDocument;
   editing: EditorEditing;
@@ -323,6 +352,8 @@ export interface SolutionDesignEditorProps {
   history?: EditorHistoryRequests;
   requests?: EditorRequests;
   plans?: EditorPlans;
+  /** See {@link EditorOwnership}. Absent = this document answers for everything. */
+  ownership?: EditorOwnership;
   layout?: EditorLayoutReports;
   preferences?: EditorPreferencesSeam;
   language?: EditorLanguage;

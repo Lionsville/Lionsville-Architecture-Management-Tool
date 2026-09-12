@@ -62,6 +62,23 @@ export type WriteView = ReadView & {
   readonly translate: Translate
   /** What a container view is called, after its application. The shell owns the words. */
   readonly containerName: (applicationName: string) => string
+  /**
+   * Does another scope answer for the fields this patch touches (ADR-0012 §10)?
+   *
+   * Answers with the owning scope's path — the empty string being the
+   * organisation — when the write must be refused, and `undefined` when it may
+   * go ahead. The refusal is the same one the inspector greys a field out for,
+   * so an agent cannot write what a person is shown as read-only.
+   *
+   * Handed in rather than worked out here: `agent` may not import `projects`
+   * and has no business learning what a scope tree is. The workspace wires
+   * `projects/mayEdit.ts` to it. Absent means nothing is refused, which is what
+   * a node test with two plain objects in the session wants and what a session
+   * opened before the tree was read honestly knows.
+   */
+  readonly ownedElsewhere?: (
+    id: ElementId, patch: Partial<DesignElement>,
+  ) => { owner?: string } | undefined
 }
 
 /** A command, and what to say once it has landed. */
@@ -89,6 +106,10 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       if (!held) return refused('agent.unknownId', `element ${id}`)
       const patch = elementPatch(args, held, view)
       if ('ok' in patch) return patch
+      // A stand-in's owner's detail belongs to the scope that defines it, and
+      // the refusal carries that scope so a client can go and open it.
+      const owned = view.ownedElsewhere?.(id, patch)
+      if (owned) return refused('check.ownedElsewhere', owned.owner ?? '')
       return {
         command: { type: 'element.update', id, patch, origin: 'agent' },
         answer: json({ id, changed: Object.keys(patch) }),

@@ -544,6 +544,27 @@ export function App({
   })
   refreshTree.current = organisation.refresh
 
+  /**
+   * Open another scope by its path — what *Open …* beside a field another
+   * scope answers for does (ADR-0012 §10).
+   *
+   * Here rather than in the workspace because opening a scope is the shell's
+   * act: reading it, making it the one that is open, and remembering it. A
+   * path that names nothing is a refreshed tree and nothing else — somebody
+   * removed the scope between the index being read and the button being
+   * pressed, and there is nothing useful to say about that beyond showing what
+   * is there now.
+   */
+  const openScopeAt = useCallback((path: ScopePath) => {
+    void projects.load(path).then(
+      (found) => {
+        if (found) enter(found)
+        else refreshTree.current()
+      },
+      (cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'),
+    )
+  }, [projects, enter])
+
   const leaveProject = useCallback(() => {
     setProject(undefined)
     setInitialPage(undefined)
@@ -782,6 +803,7 @@ export function App({
             editorPreferences={prefs.preferences}
             onEditorPreferencesChange={prefs.savePreferences}
             onLeave={leaveProject}
+            onOpenScope={openScopeAt}
             scopes={organisation.tree}
             onOpenSettings={organisation.refresh}
             onApplySettings={applyProjectSettings}

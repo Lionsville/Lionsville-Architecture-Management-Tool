@@ -143,6 +143,20 @@ export type FunctionInspectorProps = {
   /** Something was deleted from here, so nothing is chosen any more. */
   onRemoved?(): void
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
+  /**
+   * Another scope answers for the record that is chosen (ADR-0012 §10): it is
+   * a stand-in, drawn on this sheet and defined there.
+   *
+   * The same shape the canvas's inspector takes, and for the same reason:
+   * `business` may not know what a scope tree is, so the fields and the words
+   * are handed in. Asked per element rather than given as a value, because the
+   * page keeps one inspector and the selection moves under it.
+   */
+  ownerOf?(id: ElementId): {
+    label: string
+    fields: readonly string[]
+    onOpen?(): void
+  } | undefined
 }
 
 const WIDTH = 300
@@ -150,6 +164,9 @@ const WIDTH = 300
 export function FunctionInspector(props: FunctionInspectorProps) {
   const { element, model, readOnly, actions } = props
   const { t } = useStrings()
+  const owner = element ? props.ownerOf?.(element.id) : undefined
+  /** Is this field the owning scope's? See the canvas inspector's twin of this. */
+  const owned = (field: string) => owner?.fields.includes(field) ?? false
   const name = useRef<HTMLInputElement | null>(null)
   const nameFocus = props.nameFocus
   useEffect(() => {
@@ -181,11 +198,26 @@ export function FunctionInspector(props: FunctionInspectorProps) {
         </Typography>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Drawn here, defined there (ADR-0012 §3). Above the fields, since
+              everything below it that is greyed out is greyed out for this. */}
+          {owner && (
+            <Box data-testid="owned-elsewhere" sx={{ bgcolor: 'action.hover', borderRadius: 1, px: 1, py: 0.75 }}>
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                {t('standIn.definedIn', { scope: owner.label })}
+              </Typography>
+              {owner.onOpen && (
+                <Button size="small" sx={{ mt: 0.5 }} onClick={owner.onOpen}>
+                  {t('standIn.open', { scope: owner.label })}
+                </Button>
+              )}
+            </Box>
+          )}
+
           <TextField
             size="small" fullWidth
             label={t('common.name')}
             value={element.name}
-            disabled={readOnly}
+            disabled={readOnly || owned('name')}
             inputRef={name}
             onChange={(e) => actions.updateElement(
               element.id, { name: e.target.value }, `sheet.name:${element.id}`,
@@ -205,7 +237,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
                 <Checkbox
                   size="small"
                   checked={element.outside === true}
-                  disabled={readOnly}
+                  disabled={readOnly || owned('outside')}
                   inputProps={{ 'aria-label': t('sheet.outsideOrganisation') }}
                   onChange={(e) => actions.updateElement(
                     element.id, { outside: e.target.checked ? true : undefined },
@@ -222,7 +254,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
             select size="small" fullWidth
             label={t('sheet.lifecycle')}
             value={element.lifecycle}
-            disabled={readOnly}
+            disabled={readOnly || owned('lifecycle')}
             onChange={(e) => actions.updateElement(element.id, { lifecycle: e.target.value as Lifecycle })}
           >
             {LIFECYCLE_ORDER.map((phase) => (
@@ -237,7 +269,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
                 type="date" size="small" fullWidth
                 label={t(`sheet.date.${phase}` as StringKey)}
                 value={element.lifecycleDates?.[phase] ?? ''}
-                disabled={readOnly}
+                disabled={readOnly || owned('lifecycleDates')}
                 slotProps={{
                   inputLabel: { shrink: true },
                   htmlInput: { 'aria-label': `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}` },

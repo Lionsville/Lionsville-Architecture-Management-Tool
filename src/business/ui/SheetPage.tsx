@@ -47,7 +47,7 @@ import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, S
 import type { SheetShot } from './captureSheet'
 import { captureSheet } from './captureSheet'
 import { FunctionInspector } from './FunctionInspector'
-import type { NewLane, SheetActions } from './FunctionInspector'
+import type { FunctionInspectorProps, NewLane, SheetActions } from './FunctionInspector'
 import { LaneDialog } from './LaneDialog'
 import { SheetSettingsDialog } from './SheetSettingsDialog'
 
@@ -66,6 +66,12 @@ export type SheetPageProps = {
    * workspace its own handle. Absent = nothing can ask for a picture.
    */
   onHandle?(handle: SheetHandle | undefined): void
+  /**
+   * Who answers for a record on this page, where it is not this scope
+   * (ADR-0012 §10). Passed straight to the inspector; see it for the shape and
+   * for why `business` is handed the answer rather than working it out.
+   */
+  ownerOf?: FunctionInspectorProps['ownerOf']
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
@@ -261,6 +267,7 @@ export function SheetPage(props: SheetPageProps) {
           actions={actions}
           nameFocus={nameFocus}
           onRemoved={() => setSelectedId(undefined)}
+          ownerOf={props.ownerOf}
         />
       </Box>
 

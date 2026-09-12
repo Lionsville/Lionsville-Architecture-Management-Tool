@@ -30,6 +30,7 @@
  * That is the same rule the index follows in the other direction, and it keeps
  * this module testable with two plain arrays.
  */
+import type { StringKey } from '../i18n'
 import type { DesignElement, ElementId } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ScopeIndex } from './scopeIndex'
@@ -65,6 +66,31 @@ export type CheckKey =
   | 'check.unmapped'
   /** A function with no `supports` and no `assigned`: nothing and nobody does it. */
   | 'check.uncovered'
+
+/**
+ * The sentence for each finding, published as a table (ADR-0012 §9).
+ *
+ * Every module that draws a finding — the organisation screen, a card on a
+ * board, a sheet's inspector — reads this rather than naming a key of its own,
+ * which is the rule `decisions` publishes `STATUS_LABEL` for. A `Record` so a
+ * finding added without words is a compile error here rather than a blank line
+ * on somebody's screen; the key and the string key are the same word because
+ * there is nothing for a second name to add.
+ *
+ * Every sentence takes `{name}` and, where it names another scope, `{scope}`.
+ */
+export const CHECK_LABEL: Record<CheckKey, StringKey> = {
+  'check.conflict': 'check.conflict',
+  'check.drift': 'check.drift',
+  'check.dangling': 'check.dangling',
+  'check.danglingEnd': 'check.danglingEnd',
+  'check.proposal': 'check.proposal',
+  'check.ownedElsewhere': 'check.ownedElsewhere',
+  'check.unattributed': 'check.unattributed',
+  'check.notDrawn': 'check.notDrawn',
+  'check.unmapped': 'check.unmapped',
+  'check.uncovered': 'check.uncovered',
+}
 
 /**
  * One finding: what it is, where, and about what.

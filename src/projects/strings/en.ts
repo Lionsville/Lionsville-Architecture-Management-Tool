@@ -14,4 +14,34 @@ export const EN = {
    * subject line should name. The body below it lists every one.
    */
   'git.andMore': ' and {count} more',
+
+  // --- one identity across the organisation (ADR-0012 §2, §3, §9) ----------
+  /**
+   * The findings, keyed by the finding's own key: `checks.ts` produces
+   * `check.conflict` and this is the sentence for it, so nothing has to keep a
+   * second table mapping one to the other. `{name}` is what the thing is
+   * called and `{scope}` the other scope the finding names — the organisation
+   * itself where the path is the root's, which is the empty string.
+   */
+  'check.conflict': '{name} is also defined in {scope}',
+  'check.drift': 'The name here is not what {scope} calls it any more',
+  'check.dangling': 'Nothing in this organisation defines {name}',
+  'check.danglingEnd': 'A row on {name} ends on something nothing holds',
+  'check.proposal': '{name} is not a capability the organisation has named',
+  'check.ownedElsewhere': '{scope} answers for this',
+  'check.unattributed': 'Nobody has said whose {name} is',
+  'check.notDrawn': '{name} is on no board in this scope',
+  'check.unmapped': '{name} is assigned to nobody and claimed by nobody',
+  'check.uncovered': 'Nothing and nobody does {name}',
+
+  /**
+   * What a stand-in says about itself, on the three surfaces that draw one: the
+   * card on a board, the inspector beside it, and the sheet's own inspector.
+   * The words live here because `projects/` is where a stand-in is defined —
+   * every other module is handed the sentence rather than the key.
+   */
+  'standIn.definedIn': 'Defined in {scope} — its detail is answered for there.',
+  'standIn.open': 'Open {scope}',
+  /** Under a stand-in's name on a card, small: where the thing really lives. */
+  'standIn.from': 'from {scope}',
 } as const

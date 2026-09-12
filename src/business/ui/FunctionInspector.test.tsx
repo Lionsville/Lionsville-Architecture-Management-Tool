@@ -24,7 +24,12 @@ function model(): DesignModel {
 
 const held = (id: string): DesignElement => model().elements.find((e) => e.id === id)!
 
-function open(id: string, readOnly = false, onRemoved = vi.fn()) {
+function open(
+  id: string,
+  readOnly = false,
+  onRemoved = vi.fn(),
+  ownerOf?: (id: string) => { label: string; fields: readonly string[]; onOpen?: () => void } | undefined,
+) {
   const actions: SheetActions = {
     updateElement: vi.fn(),
     moveElement: vi.fn(),
@@ -40,7 +45,7 @@ function open(id: string, readOnly = false, onRemoved = vi.fn()) {
   const result = renderShell(
     <FunctionInspector
       element={held(id)} model={model()} readOnly={readOnly} actions={actions}
-      onRemoved={onRemoved}
+      onRemoved={onRemoved} ownerOf={ownerOf}
     />,
   )
   return { ...result, actions, onRemoved }
@@ -252,5 +257,38 @@ describe('deleting', () => {
   it('is not offered under readOnly', () => {
     open('packing', true)
     expect(screen.queryByRole('button', { name: 'Delete Packing' })).toBeNull()
+  })
+})
+
+/**
+ * A refinement (ADR-0012 §3): a capability the organisation defines, drawn on
+ * a domain's sheet as a stand-in with the domain's own functions under it. Its
+ * detail is the organisation's; its description here is the domain's.
+ */
+describe('a capability another scope answers for', () => {
+  const owned = {
+    label: 'the organisation',
+    fields: ['name', 'ref', 'lifecycle', 'lifecycleDates', 'outside'],
+  }
+
+  it('says where it is defined, and offers to open that scope', () => {
+    const onOpen = vi.fn()
+    open('picking', false, vi.fn(), () => ({ ...owned, onOpen }))
+    expect(screen.getByTestId('owned-elsewhere').textContent).toContain('the organisation')
+    fireEvent.click(screen.getByRole('button', { name: 'Open the organisation' }))
+    expect(onOpen).toHaveBeenCalled()
+  })
+
+  it('locks the cached name and the owner\'s dates, and leaves the account of it', () => {
+    open('picking', false, vi.fn(), () => owned)
+    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByLabelText('Picking: Live from') as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByLabelText('Description') as HTMLTextAreaElement).disabled).toBe(false)
+  })
+
+  it('says nothing about a record this scope defines', () => {
+    open('picking')
+    expect(screen.queryByTestId('owned-elsewhere')).toBeNull()
+    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false)
   })
 })

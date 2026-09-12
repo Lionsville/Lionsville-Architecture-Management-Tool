@@ -98,6 +98,58 @@ async function twoScopes() {
   return { wire, scopes: held }
 }
 
+describe('an agent is refused the owner\'s detail, as a person is', () => {
+  /**
+   * One rule, wherever the write arrives from (ADR-0012 §10). The refusal
+   * carries the owning scope so a client can go and open it, and the record's
+   * own description — this scope's perspective — is still writable.
+   */
+  async function withStandIn() {
+    const wire = fakeGateway()
+    const open: ScopeSnapshot = {
+      ...scope('acme/finance'),
+      model: {
+        ...scope('acme/finance').model,
+        elements: [{ ...element('erp', 'Retail ERP'), ref: 'acme/retail' }],
+      },
+    }
+    const held = new InMemoryScopeStore([
+      scope(''),
+      scope('acme/retail', [element('erp', 'Retail ERP')]),
+      open,
+    ])
+    let read = 0
+    renderApp({
+      scopes: {
+        list: () => held.list(),
+        load: (path: string) => held.load(path),
+        save: (given: ScopeSnapshot) => held.save(given),
+        remove: (path: string) => held.remove(path),
+        models: () => { read += 1; return held.models() },
+      },
+      initialProject: open,
+      agent: wire.gateway,
+    })
+    await waitFor(() => expect(read).toBeGreaterThan(0))
+    await act(async () => {})
+    return wire
+  }
+
+  it('refuses a field the defining scope answers for, and says which scope', async () => {
+    const wire = await withStandIn()
+    const answer = await wire.call('element.update', { id: 'erp', vendor: 'Somebody' })
+    expect(answer.ok).toBe(false)
+    expect(!answer.ok && answer.refusal).toBe('check.ownedElsewhere')
+    expect(!answer.ok && answer.detail).toBe('acme/retail')
+  })
+
+  it('lets it write this scope\'s own account of the thing', async () => {
+    const wire = await withStandIn()
+    const answer = await wire.call('element.update', { id: 'erp', description: 'What it means here.' })
+    expect(said(answer)).toMatchObject({ id: 'erp', changed: ['description'] })
+  })
+})
+
 describe('the shell hands the tree the id policy reads', () => {
   it('does not let one scope mint an id a sibling already defines', async () => {
     const { wire } = await twoScopes()

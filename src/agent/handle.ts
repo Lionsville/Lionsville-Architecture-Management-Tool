@@ -25,7 +25,7 @@ import { idPolicy } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
 import { decisionsOf, toArrays, transitionList, placedOn } from '../model/normalised'
 import { transitionLabel } from '../model/transition'
-import type { DocumentImage } from '../model/types'
+import type { DesignElement, DocumentImage, ElementId } from '../model/types'
 import { ShellError } from '../platform/errors'
 import { documentsUsing, imageReference } from '../documentation/images'
 import type { NamedDocument } from '../documentation/images'
@@ -78,6 +78,12 @@ export type SessionView = {
   translate: Translate
   /** What a container view is called, after its application. */
   containerName(applicationName: string): string
+  /**
+   * See {@link WriteView.ownedElsewhere} (ADR-0012 §10): does another scope
+   * answer for the fields a patch touches? Absent where there is no tree to
+   * ask, and then nothing is refused on this ground.
+   */
+  ownedElsewhere?(id: ElementId, patch: Partial<DesignElement>): { owner?: string } | undefined
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
   /**
@@ -199,6 +205,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     today: session.today,
     translate: session.translate,
     containerName: session.containerName,
+    ...(session.ownedElsewhere ? { ownedElsewhere: session.ownedElsewhere } : {}),
     ...over,
   }
 }

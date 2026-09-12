@@ -13,13 +13,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import { EditorRefused, SolutionDesignEditor } from '../editor'
-import type { EditorHandle } from '../editor'
+import type { EditorHandle, EditorOwnership } from '../editor'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
 import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
+import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
+import type { DesignElement } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
@@ -131,6 +134,16 @@ export type ProjectWorkspaceProps = {
 
   /** Leave this scope and go back to the picker. */
   onLeave: () => void
+  /**
+   * Open another scope by its path — *Open …* beside a field another scope
+   * answers for (ADR-0012 §10).
+   *
+   * The shell's, because opening a scope is the shell's: it reads it, makes it
+   * the one that is open, and remembers it. This workspace neither loads nor
+   * lists. Absent where there is nowhere to go, and the button is then not
+   * drawn rather than drawn and dead.
+   */
+  onOpenScope?: (path: ScopePath) => void
   /** The tree as it stands, for the settings dialog's "filed under" select. */
   scopes: ScopeSummary
   /** Called when the dialog opens, so the caller can refresh that list. */
@@ -198,7 +211,8 @@ function localToday(): string {
 export function ProjectWorkspace({
   project, projects, index, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
-  onLeave, scopes, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
+  onLeave, onOpenScope, scopes, onOpenSettings, onApplySettings, makeId, groupDecisions,
+  onGroupDecisionsChange,
   groupName, groupClient,
   diagnostics, hostControls, today = localToday, initialPage, windowChrome,
 }: ProjectWorkspaceProps) {
@@ -398,6 +412,14 @@ export function ProjectWorkspace({
     today,
     translate: s,
     containerName: (name: string) => s('shell.containerDiagram', { name }),
+    // ADR-0012 §10, as the agent's half of the one rule: what the inspector
+    // greys out is what an `element.update` is refused for. Read through the
+    // ref so a rebuilt index reaches a request arriving between two renders.
+    ownedElsewhere: (id: string, patch: Partial<DesignElement>) => {
+      const held = session.indexed().elements[id]
+      const answer = mayApplyPatch(patch, id, project.path, indexRef.current, held)
+      return answer === true ? undefined : { owner: answer.owner }
+    },
     renderer,
     revision: session.revision,
     history: session.history,
@@ -406,6 +428,34 @@ export function ProjectWorkspace({
     addImage: (image) => session.setImageLibrary((library) => [...library, image]),
     save: forceSave,
   }), [session, project.path, groupDecisions, documentStatus, makeId, today, s, renderer, forceSave]))
+
+  /**
+   * Who answers for each record on this board (ADR-0012 §10).
+   *
+   * The whole of federation, as far as the editor is concerned: one question,
+   * asked per element. The editor may not know a scope tree exists, so the
+   * list of fields and the words come from `projects/` and the way out comes
+   * from `App` — which is the one thing that knows how to open a scope.
+   */
+  const ownership = useMemo<EditorOwnership>(() => ({
+    ownerOf: (elementId) => {
+      const held = session.indexed().elements[elementId]
+      const rights = mayEdit(elementId, project.path, index, held)
+      if (rights.all) return undefined
+      const label = rights.owner === undefined
+        ? s('common.organisation')
+        : rights.owner || s('common.organisation')
+      return {
+        label,
+        fields: FIXED_ON_A_STANDIN,
+        // A dangling stand-in has nowhere to go, and offering to open the
+        // organisation instead would be offering the wrong scope.
+        ...(rights.owner !== undefined && onOpenScope
+          ? { onOpen: () => onOpenScope(rights.owner!) }
+          : {}),
+      }
+    },
+  }), [session, project.path, index, onOpenScope, s])
 
   const snapshots = useProjectHistory({
     history: projectHistory,
@@ -692,6 +742,7 @@ export function ProjectWorkspace({
             onOpen: plans.openPlan,
             onReplace: plans.startReplace,
           }}
+          ownership={ownership}
           layout={{ onError: onLayoutError, onSettled: session.onLayoutSettled }}
           preferences={{ initial: editorPreferences, onChange: onEditorPreferencesChange }}
           // No `onChange`: the language is chosen in the preferences dialog
@@ -813,6 +864,7 @@ export function ProjectWorkspace({
         actions={sheets.actions}
         onClose={() => { sheets.close(); leaveIfNothingToDraw() }}
         onHandle={onSheetHandle}
+        ownerOf={ownership.ownerOf}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog

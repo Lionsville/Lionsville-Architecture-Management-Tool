@@ -7,6 +7,7 @@
 export * from './scope'
 export * from './scopeIndex'
 export * from './checks'
+export * from './mayEdit'
 export * from './scopePath'
 export * from './scopeLabel'
 export * from './preferences'

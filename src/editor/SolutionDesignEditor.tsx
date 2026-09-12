@@ -1248,6 +1248,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
               onOpenDocumentation={openDocumentation}
               onReplace={readOnly ? undefined : props.plans?.onReplace}
+              owned={props.ownership?.ownerOf(state.selectedElement.id)}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector
@@ -1357,6 +1358,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               renderMarkdown={props.renderMarkdown}
               onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
               onReplace={readOnly ? undefined : props.plans?.onReplace}
+              owned={props.ownership?.ownerOf(element.id)}
               layout="stacked"
               hideDescription
             />

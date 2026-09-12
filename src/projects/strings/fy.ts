@@ -12,5 +12,20 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.workingFileNoDiagrams': 'Dit wurkbestân hat gjin oansichten.',
   'shell.interchangeNoDiagrams': 'Dit dokumint hat gjin oansichten.',
   'git.andMore': ' en noch {count}',
+
+  'check.conflict': '{name} wurdt ek yn {scope} definiearre',
+  'check.drift': 'De namme hjir is net mear hoe\'t {scope} it neamt',
+  'check.dangling': 'Neat yn dizze organisaasje definiearret {name}',
+  'check.danglingEnd': 'In rigel op {name} einiget op wat nimmen hat',
+  'check.proposal': '{name} is gjin capability dy\'t de organisaasje neamd hat',
+  'check.ownedElsewhere': '{scope} behearret dit',
+  'check.unattributed': 'Nimmen hat sein fan wa\'t {name} is',
+  'check.notDrawn': '{name} stiet op gjin inkelde plaat yn dizze scope',
+  'check.unmapped': '{name} is oan nimmen tawiisd en troch nimmen oppakt',
+  'check.uncovered': 'Neat en nimmen docht {name}',
+
+  'standIn.definedIn': 'Definiearre yn {scope} — de details wurde dêr behearre.',
+  'standIn.open': '{scope} iepenje',
+  'standIn.from': 'út {scope}',
   'shell.unknownFile': 'Dit bestân is gjin interchange-dokumint en gjin wurkbestân.',
 }

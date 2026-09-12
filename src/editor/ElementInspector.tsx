@@ -105,6 +105,25 @@ export interface ElementInspectorProps {
    * documentation page, where it is height that is plentiful.
    */
   layout?: 'tabs' | 'stacked';
+  /**
+   * Another scope answers for this record (ADR-0012 §10): a stand-in, drawn
+   * here and defined there.
+   *
+   * The fields it names are shown read-only with a line saying where they are
+   * answered for and a way to go there. Which fields those are is handed in
+   * rather than known here — the editor may not know a scope tree exists, and
+   * a list kept in two places is a field greyed out on this panel that an
+   * agent is allowed to write.
+   *
+   * Absent is the ordinary case and means this scope answers for everything.
+   */
+  owned?: {
+    /** What to call the owning scope: its path, or the word for the organisation. */
+    label: string;
+    fields: readonly string[];
+    /** Open it. Absent where the host cannot — a test, or a page with nowhere to go. */
+    onOpen?(): void;
+  };
 }
 
 /**
@@ -166,6 +185,12 @@ function withDate(
 export function ElementInspector(props: ElementInspectorProps) {
   const { element, readOnly, actions } = props;
   const { t } = useStrings();
+  /**
+   * Is this field the owning scope's to answer for? A stand-in's caches and
+   * the owner's detail both come through `owned.fields`, so this panel greys
+   * out exactly what a write from anywhere else would be refused.
+   */
+  const owned = (field: string) => props.owned?.fields.includes(field) ?? false;
   const update = (patch: Partial<Omit<DesignElement, 'id' | 'kind'>>) =>
     actions.updateElement(element.id, patch);
   /**
@@ -246,11 +271,34 @@ export function ElementInspector(props: ElementInspectorProps) {
           label={t('field.name')}
           value={element.name}
           fullWidth
-          disabled={readOnly}
+          disabled={readOnly || owned('name')}
           inputRef={nameRef}
           onChange={(e) => typed('name', { name: e.target.value })}
         />
       </Box>
+
+      {/* Drawn here, defined there (ADR-0012 §3). Above the tabs, because it
+          is about the whole record rather than about one of its groups, and
+          because everything below it that is greyed out is greyed out for
+          this reason. */}
+      {props.owned && (
+        <Box
+          data-testid="owned-elsewhere"
+          sx={{
+            display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap',
+            px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+            {t('standIn.definedIn', { scope: props.owned.label })}
+          </Typography>
+          {props.owned.onOpen && (
+            <Button size="small" onClick={props.owned.onOpen}>
+              {t('standIn.open', { scope: props.owned.label })}
+            </Button>
+          )}
+        </Box>
+      )}
 
       {!stacked && <Tabs
         value={activeTab}
@@ -271,7 +319,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               freeSolo
               options={knownCategories}
               value={element.category ?? ''}
-              disabled={readOnly}
+              disabled={readOnly || owned('category')}
               onInputChange={(_e, value) => update({ category: value || undefined })}
               renderInput={(params) => <TextField {...params} label={t('field.category')} />}
             />
@@ -282,7 +330,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               label={t('field.vendor')}
               value={element.vendor ?? ''}
               fullWidth
-              disabled={readOnly}
+              disabled={readOnly || owned('vendor')}
               onChange={(e) => typed('vendor', { vendor: e.target.value || undefined })}
             />
           )}
@@ -292,7 +340,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               label={t('field.technology')}
               value={element.technology ?? ''}
               fullWidth
-              disabled={readOnly}
+              disabled={readOnly || owned('technology')}
               onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
             />
           )}
@@ -303,7 +351,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               label={t('field.lifecycle')}
               value={element.lifecycle}
               sx={{ flex: 1 }}
-              disabled={readOnly}
+              disabled={readOnly || owned('lifecycle')}
               onChange={(e) => update({ lifecycle: e.target.value as DesignElement['lifecycle'] })}
             >
               {LIFECYCLES.map((lifecycle) => (
@@ -317,7 +365,7 @@ export function ElementInspector(props: ElementInspectorProps) {
                 <Switch
                   size="small"
                   checked={element.isManaged}
-                  disabled={readOnly}
+                  disabled={readOnly || owned('isManaged')}
                   onChange={(e) => update({ isManaged: e.target.checked })}
                 />
               }
@@ -336,7 +384,7 @@ export function ElementInspector(props: ElementInspectorProps) {
                 label={t(`field.date.${phase}` as StringKey)}
                 value={element.lifecycleDates?.[phase] ?? ''}
                 sx={{ flex: 1 }}
-                disabled={readOnly}
+                disabled={readOnly || owned('lifecycleDates')}
                 slotProps={{ inputLabel: { shrink: true } }}
                 onChange={(e) => update({
                   lifecycleDates: withDate(element.lifecycleDates, phase, e.target.value || undefined),
@@ -350,7 +398,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               select
               label={t('field.successor')}
               value={element.successorId ?? ''}
-              disabled={readOnly}
+              disabled={readOnly || owned('successorId')}
               sx={{ flex: 1 }}
               onChange={(e) => update({ successorId: e.target.value || undefined })}
             >
@@ -366,7 +414,7 @@ export function ElementInspector(props: ElementInspectorProps) {
             {/* The gesture that sets this field and everything around it
                 (ADR-0010). Beside the field rather than under it, so "replaced
                 by" and "replace…" read as one question. */}
-            {!readOnly && props.onReplace && (
+            {!readOnly && !owned('successorId') && props.onReplace && (
               <Button size="small" variant="outlined" onClick={() => props.onReplace?.(element.id)}>
                 {t('field.replace')}
               </Button>
@@ -376,7 +424,7 @@ export function ElementInspector(props: ElementInspectorProps) {
           <TextField
             label={t('field.owner')}
             value={element.owner ?? ''}
-            disabled={readOnly}
+            disabled={readOnly || owned('owner')}
             onChange={(e) => typed('owner', { owner: e.target.value || undefined })}
           />
 

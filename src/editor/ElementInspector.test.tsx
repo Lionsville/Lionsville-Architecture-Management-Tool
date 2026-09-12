@@ -61,7 +61,12 @@ function makeActions(): {
 
 function renderInspector(
   el: DesignElement,
-  opts: { readOnly?: boolean; dia?: DesignDiagram; onReplace?: (id: string) => void } = {},
+  opts: {
+    readOnly?: boolean;
+    dia?: DesignDiagram;
+    onReplace?: (id: string) => void;
+    owned?: { label: string; fields: readonly string[]; onOpen?: () => void };
+  } = {},
 ) {
   const dia = opts.dia ?? diagram();
   const { actions, updateElement, setDomainGroup } = makeActions();
@@ -75,6 +80,7 @@ function renderInspector(
         actions={actions}
         onRequestDelete={vi.fn()}
         onReplace={opts.onReplace}
+        owned={opts.owned}
       />
     </ThemeProvider>,
   );
@@ -375,5 +381,63 @@ describe('ElementInspector — Replace… (ADR-0010)', () => {
     cleanup();
     renderInspector(element(), { readOnly: true, onReplace: vi.fn() });
     expect(screen.queryByRole('button', { name: 'Replace…' })).toBeNull();
+  });
+});
+
+/**
+ * A stand-in: drawn on this board, defined in another scope (ADR-0012 §3, §10).
+ *
+ * The list of fields is handed in rather than known here, so what this panel
+ * greys out and what an agent's `element.update` is refused for are the same
+ * list. The test therefore passes the real one — the point of it is that a
+ * field added to `projects/mayEdit.FIXED_ON_A_STANDIN` locks here with no
+ * change to the editor.
+ */
+describe('ElementInspector — a record another scope answers for', () => {
+  const owned = {
+    label: 'acme/retail',
+    fields: ['name', 'ref', 'lifecycle', 'lifecycleDates', 'vendor', 'technology', 'category', 'owner', 'isManaged', 'successorId', 'aspects', 'outside', 'partyId', 'scopes'],
+  };
+
+  it('says where it is defined, and offers to open that scope', () => {
+    const onOpen = vi.fn();
+    renderInspector(element(), { owned: { ...owned, onOpen } });
+    expect(screen.getByTestId('owned-elsewhere').textContent).toContain('acme/retail');
+    fireEvent.click(screen.getByRole('button', { name: 'Open acme/retail' }));
+    expect(onOpen).toHaveBeenCalled();
+  });
+
+  it('draws no way out when there is nowhere to go', () => {
+    renderInspector(element(), { owned });
+    expect(screen.getByTestId('owned-elsewhere')).toBeDefined();
+    expect(screen.queryByRole('button', { name: /^Open / })).toBeNull();
+  });
+
+  it('shows the owner\'s detail read-only, and the cached name with it', () => {
+    renderInspector(element({ vendor: 'Someone' }), { owned });
+    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText('Vendor') as HTMLInputElement).disabled).toBe(true);
+    expect(selectDisabled('Lifecycle')).toBe(true);
+    expect((screen.getByLabelText('Owner') as HTMLInputElement).disabled).toBe(true);
+  });
+
+  /**
+   * The one field a stand-in may say for itself: what the thing means from
+   * here, which is a different page from what it IS and is allowed to be.
+   */
+  it('leaves this scope\'s own account of it writable', () => {
+    const { updateElement } = renderInspector(element(), { owned });
+    const description = screen.getByLabelText('Description') as HTMLTextAreaElement;
+    expect(description.disabled).toBe(false);
+    fireEvent.change(description, { target: { value: 'What it means to us.' } });
+    expect(updateElement).toHaveBeenCalledWith(
+      'e1', { description: 'What it means to us.' }, expect.any(String),
+    );
+  });
+
+  it('says nothing at all about a record this scope defines', () => {
+    renderInspector(element());
+    expect(screen.queryByTestId('owned-elsewhere')).toBeNull();
+    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false);
   });
 });

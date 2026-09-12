@@ -1189,6 +1189,13 @@ export type AgentRefusal =
   | 'agent.stale'
   | 'agent.notYours'
   | 'agent.saveFailed'
+  /**
+   * A field on a stand-in that the scope defining the thing answers for
+   * (ADR-0012 §10). A `check.` key rather than an `agent.` one because it is
+   * the same refusal the inspector greys a field out for — one rule, said in
+   * one word, wherever a write arrives from.
+   */
+  | 'check.ownedElsewhere'
   | CommandRefusal
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
@@ -1210,6 +1217,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
+  'check.ownedElsewhere': 'This record is a stand-in: the scope named in the detail defines the thing and answers for its lifecycle, dates, owner, vendor, technology, aspects and category. Its description here is this scope\'s own and can be changed.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',
