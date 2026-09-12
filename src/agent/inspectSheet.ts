@@ -13,6 +13,11 @@
  * area the groupings and their capabilities are whole, because an area with
  * more capabilities than a cap is a modelling problem the report should show
  * rather than hide.
+ *
+ * An area carries its own leaves beside its groupings, for the same reason
+ * the page draws them: a capability with nothing under it is a capability
+ * wherever it hangs, and a report that listed only the grouped ones would not
+ * see the one a person had just made.
  */
 import { sheetPage } from '../business'
 import type { Coverage } from '../business'
@@ -61,15 +66,10 @@ export type SheetReport = {
       groupings: {
         id: ElementId
         name: string
-        capabilities: {
-          id: ElementId
-          name: string
-          depth: number
-          coverage: Coverage
-          supportedBy: ElementId[]
-          assignedTo: ElementId[]
-        }[]
+        capabilities: SheetCapabilityReport[]
       }[]
+      /** The area's own capabilities: the ones in no grouping. */
+      capabilities: SheetCapabilityReport[]
     }[]
   }
   /** Function roots no domain has been given and this sheet does not draw (§9). */
@@ -84,12 +84,37 @@ export type SheetReport = {
   }
 }
 
+/** One capability, and what covers it. */
+export type SheetCapabilityReport = {
+  id: ElementId
+  name: string
+  depth: number
+  coverage: Coverage
+  supportedBy: ElementId[]
+  assignedTo: ElementId[]
+}
+
 export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT): SheetReport {
   const arrays = toArrays(model)
   const page = sheetPage(arrays, diagram)
 
-  const capabilities = page.areas.flatMap((area) =>
-    area.groupings.flatMap((group) => group.capabilities))
+  const said = (capability: {
+    element: { id: ElementId; name: string }
+    depth: number
+    coverage: { coverage: Coverage; supportedBy: ElementId[]; assignedTo: ElementId[] }
+  }): SheetCapabilityReport => ({
+    id: capability.element.id,
+    name: capability.element.name,
+    depth: capability.depth,
+    coverage: capability.coverage.coverage,
+    supportedBy: capability.coverage.supportedBy,
+    assignedTo: capability.coverage.assignedTo,
+  })
+
+  const capabilities = page.areas.flatMap((area) => [
+    ...area.groupings.flatMap((group) => group.capabilities),
+    ...area.capabilities,
+  ])
 
   return {
     diagramId: diagram.id,
@@ -129,15 +154,9 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
         groupings: area.groupings.map((group) => ({
           id: group.element.id,
           name: group.element.name,
-          capabilities: group.capabilities.map((capability) => ({
-            id: capability.element.id,
-            name: capability.element.name,
-            depth: capability.depth,
-            coverage: capability.coverage.coverage,
-            supportedBy: capability.coverage.supportedBy,
-            assignedTo: capability.coverage.assignedTo,
-          })),
+          capabilities: group.capabilities.map(said),
         })),
+        capabilities: area.capabilities.map(said),
       })),
     },
     unmapped: {

@@ -129,6 +129,36 @@ describe('diagram.inspect on a sheet', () => {
     expect(report.counts).toMatchObject({ capabilities: 4, uncovered: 1, phases: 4 })
   })
 
+  it('carries a capability made straight under an area, which is where a person makes one', async () => {
+    const scope = host()
+    const with3c: HostModel = {
+      ...scope,
+      elements: [...scope.elements, {
+        id: 'tracking',
+        kind: 'function',
+        name: 'Track a consignment',
+        parentId: 'fulfilment',
+        lifecycle: 'live',
+        isManaged: false,
+        aspects: {},
+      }],
+    }
+    const indexed = fromArrays(with3c)
+    const out = await handle(
+      { id: '1', tool: 'diagram.inspect', args: { diagramId: 'sh-1' } },
+      session({ indexed: () => indexed, current: () => toArrays(indexed) }),
+    )
+    const report = parsed(out) as never as {
+      areas: { some: { id: string; capabilities: { id: string; coverage: string }[] }[] }
+      counts: Record<string, number>
+    }
+    const fulfilment = report.areas.some.find((area) => area.id === 'fulfilment')!
+    expect(fulfilment.capabilities.map((c) => c.id)).toEqual(['tracking'])
+    expect(fulfilment.capabilities[0].coverage).toBe('uncovered')
+    // And it is counted: five now, one more uncovered.
+    expect(report.counts).toMatchObject({ capabilities: 5, uncovered: 2 })
+  })
+
   it('still answers the geometry report for a board', async () => {
     const out = await handle({ id: '1', tool: 'diagram.inspect', args: { diagramId: 'l7' } }, session())
     expect(parsed(out)).toMatchObject({ kind: 'layer7' })

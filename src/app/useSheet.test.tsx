@@ -9,7 +9,9 @@
  * first.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { SheetPage } from '../business'
+import { renderShell } from './testing/renderShell'
 import { laidOut } from '../model/testFixtures'
 import { translator } from '../i18n'
 import { shippingScope } from '../business/testFixtures'
@@ -456,5 +458,120 @@ describe('coverage, ticked', () => {
     expect(rows(host, 'dunning', 'supports')).toEqual([])
     host.undo()
     expect(rows(host, 'dunning', 'supports')).toHaveLength(2)
+  })
+})
+
+/**
+ * The whole thing, by clicking and typing (step 3c's own "done when").
+ *
+ * The page over the real session, on a project with a landscape and nothing
+ * else: a journey, an area, a capability and what covers it, each one named
+ * by typing over what it was made as, and ⌘Z walking back one step at a time.
+ * The two halves are pinned apart above and in `SheetPage.test.tsx`; this is
+ * the one test that says they add up to the gesture a person makes.
+ */
+describe('from nothing to a covered capability', () => {
+  const landscapeOnly = () => project(model({
+    elements: [{
+      id: 'wms',
+      kind: 'application',
+      name: 'Warehouse system',
+      lifecycle: 'live',
+      isManaged: true,
+      aspects: {},
+    }],
+    relations: [],
+    diagrams: [laidOut({
+      id: 'd1', kind: 'layer7', name: 'Landscape', placements: [{ id: 'wms', x: 0, y: 0 }],
+    })],
+  }))
+
+  function page() {
+    let sheets!: Sheets
+    let session!: ModelSession
+    function Host() {
+      session = useModelSession({
+        initialProject: landscapeOnly(), notify: vi.fn(), s: translator('en'),
+      })
+      sheets = useSheet({
+        session,
+        makeId: (p) => `${p}-1`,
+        s: translator('en'),
+        notify: vi.fn(),
+        toElement: vi.fn(),
+        toDocumentation: vi.fn(),
+      })
+      return sheets.sheet ? (
+        <SheetPage
+          open
+          model={session.model}
+          sheet={sheets.sheet}
+          readOnly={false}
+          actions={sheets.actions}
+          onClose={sheets.close}
+        />
+      ) : null
+    }
+    renderShell(<Host />)
+    act(() => sheets.create())
+    return {
+      model: () => session.current(),
+      steps: () => session.history().length,
+      undo: () => act(() => session.undo()),
+    }
+  }
+
+  /** Type over what the thing was made as — the cursor is already in the box. */
+  const rename = (to: string) => {
+    const field = within(screen.getByTestId('sheet-inspector')).getByLabelText('Name')
+    expect(document.activeElement).toBe(field)
+    fireEvent.change(field, { target: { value: to } })
+  }
+
+  it('makes one by clicking and typing, and ⌘Z walks it back', () => {
+    const host = page()
+
+    fireEvent.click(screen.getByLabelText('New journey'))
+    rename('Ship a consignment')
+    expect(screen.getByTestId('sheet-phase-start').textContent).toBe('Start')
+
+    fireEvent.click(screen.getByLabelText('New area'))
+    rename('Fulfilment')
+
+    fireEvent.click(screen.getByLabelText('Add a capability to Fulfilment'))
+    rename('Picking')
+
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse system' }))
+
+    // One covered capability, drawn as a card in the area it was made in.
+    const card = screen.getByTestId('sheet-capability-new-capability')
+    expect(within(card).getByText('Picking')).toBeTruthy()
+    expect(screen.getByTestId('sheet-coverage-new-capability').textContent).toBe('1 app')
+    expect(host.model().elements.map((e) => e.name)).toEqual(
+      ['Warehouse system', 'Ship a consignment', 'Start', 'Fulfilment', 'Picking'],
+    )
+
+    // Back out, one decision at a time: the row, the name, the capability.
+    host.undo()
+    expect(host.model().relations).toEqual([])
+    host.undo()
+    expect(host.model().elements.find((e) => e.id === 'new-capability')?.name)
+      .toBe('New capability')
+    host.undo()
+    expect(host.model().elements.some((e) => e.id === 'new-capability')).toBe(false)
+  })
+
+  it('leaves the journey and the area behind when it is walked all the way back', () => {
+    const host = page()
+    fireEvent.click(screen.getByLabelText('New journey'))
+    fireEvent.click(screen.getByLabelText('New area'))
+    expect(host.steps()).toBe(3)
+
+    host.undo()
+    host.undo()
+    expect(host.model().elements.map((e) => e.id)).toEqual(['wms'])
+    // The sheet itself is the step before, and it is still there.
+    expect(host.model().diagrams.some((d) => d.kind === 'sheet')).toBe(true)
   })
 })
