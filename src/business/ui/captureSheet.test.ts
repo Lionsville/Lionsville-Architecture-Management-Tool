@@ -97,3 +97,21 @@ describe('captureSheet', () => {
     await expect(captureSheet(page(), { maxPixels: 4_000_000 })).rejects.toThrow(/no image/)
   })
 })
+
+describe('what the picture leaves out', () => {
+  it('skips the authoring controls, and keeps everything else', async () => {
+    // A drawing handed to somebody else should show the architecture rather
+    // than eleven copies of "+ phase".
+    const node = page()
+    await captureSheet(node, { maxPixels: 4_000_000 })
+    const [, options] = toCanvas.mock.calls[0] as unknown as
+      [Node, { filter(node: Node): boolean }]
+
+    const add = document.createElement('button')
+    add.dataset.sheetAdd = ''
+    const card = document.createElement('div')
+    expect(options.filter(add)).toBe(false)
+    expect(options.filter(card)).toBe(true)
+    expect(options.filter(document.createTextNode('Picking'))).toBe(true)
+  })
+})

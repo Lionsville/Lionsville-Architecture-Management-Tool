@@ -310,6 +310,9 @@ function Add({ label, title, onClick, sx }: {
       type="button"
       aria-label={title}
       title={title}
+      // A picture of the page leaves these out (`captureSheet`): an exported
+      // business architecture should show the architecture, not the tool.
+      data-sheet-add
       onClick={onClick}
       sx={{
         // The same `buttontext` trap the cards fell into: `font: inherit` does

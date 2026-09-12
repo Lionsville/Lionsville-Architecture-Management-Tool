@@ -12,6 +12,11 @@
  * picture of the visible third of a business architecture would be worse than
  * none. The clone is given `overflow: visible` and the node's full scroll
  * size, which is what makes the whole page come out.
+ *
+ * What it leaves out is the authoring controls. Every *+* on the page carries
+ * `data-sheet-add`, and a picture of a business architecture with *+ phase*
+ * printed eleven times across it is a picture of the tool rather than of the
+ * architecture — the one thing a drawing handed to somebody else must not be.
  */
 import { toCanvas } from 'html-to-image'
 
@@ -47,6 +52,7 @@ export async function captureSheet(
     height,
     // The page scrolls; the picture does not.
     style: { overflow: 'visible', width: `${width}px`, height: `${height}px` },
+    filter: (held) => !(held instanceof HTMLElement) || held.dataset.sheetAdd === undefined,
   })
   const blob = await blobOf(canvas)
   return {
