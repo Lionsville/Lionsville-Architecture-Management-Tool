@@ -58,7 +58,7 @@ export type SessionView = {
   /** Where this scope is in the tree (ADR-0012 §1); the empty string is the root. */
   scopePath(): string
   /** The records of the scope above this one, which are not on this model. */
-  groupDecisions(): readonly Adr[]
+  ancestorDecisions(): readonly Adr[]
   /**
    * Why nothing may change right now, or nothing: the person is resolving a
    * conflict, or the project is read-only. A read still answers.
@@ -136,10 +136,10 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
     current: session.current,
     activeDiagramId: session.activeDiagramId(),
     scopePath: session.scopePath(),
-    groupDecisions: session.groupDecisions(),
+    ancestorDecisions: session.ancestorDecisions(),
   }
-  if (request.tool === RESOURCE_LIST) return listResources(view.model, view.groupDecisions)
-  if (request.tool === RESOURCE_READ) return readResource(view.model, view.groupDecisions, request.args)
+  if (request.tool === RESOURCE_LIST) return listResources(view.model, view.ancestorDecisions)
+  if (request.tool === RESOURCE_READ) return readResource(view.model, view.ancestorDecisions, request.args)
 
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const spec = toolSpec(request.tool)
@@ -206,7 +206,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     current: session.current,
     activeDiagramId: session.activeDiagramId(),
     scopePath: session.scopePath(),
-    groupDecisions: session.groupDecisions(),
+    ancestorDecisions: session.ancestorDecisions(),
     ids: session.ids,
     makeId: session.makeId,
     today: session.today,
@@ -578,7 +578,7 @@ async function render(
 
 // --- MCP resources: descriptions and decisions, readable without a call ---------------
 
-function listResources(model: Model, groupDecisions: readonly Adr[]): AgentAnswer {
+function listResources(model: Model, ancestorDecisions: readonly Adr[]): AgentAnswer {
   const resources: { uri: string; name: string; mimeType: string; description: string }[] = []
   for (const id of model.order.elements) {
     const element = model.elements[id]
@@ -592,8 +592,8 @@ function listResources(model: Model, groupDecisions: readonly Adr[]): AgentAnswe
   }
   const own = decisionsOf(model)
   const decisions = [
-    ...groupDecisions.map((adr) => ({ adr, scope: 'group' })),
-    ...model.order.decisions.map((id) => ({ adr: own[id], scope: own[id].applicationId ? 'application' : 'landscape' })),
+    ...ancestorDecisions.map((adr) => ({ adr, scope: 'group' })),
+    ...model.order.decisions.map((id) => ({ adr: own[id], scope: own[id].subjectId ? 'application' : 'landscape' })),
   ]
   for (const { adr, scope } of decisions) {
     resources.push({
@@ -606,7 +606,7 @@ function listResources(model: Model, groupDecisions: readonly Adr[]): AgentAnswe
   return json({ resources })
 }
 
-function readResource(model: Model, groupDecisions: readonly Adr[], args: unknown): AgentAnswer {
+function readResource(model: Model, ancestorDecisions: readonly Adr[], args: unknown): AgentAnswer {
   const uri = (args as { uri?: unknown } | undefined)?.uri
   if (typeof uri !== 'string' || !uri.startsWith(RESOURCE_SCHEME)) return refused('agent.unknownId', String(uri))
   const path = uri.slice(RESOURCE_SCHEME.length).split('/')
@@ -616,7 +616,7 @@ function readResource(model: Model, groupDecisions: readonly Adr[], args: unknow
     return json({ contents: [{ uri, mimeType: 'text/markdown', text: element.description ?? '' }] })
   }
   if (path[0] === 'decision') {
-    const adr = decisionsOf(model)[path[1]] ?? groupDecisions.find((held) => held.id === path[1])
+    const adr = decisionsOf(model)[path[1]] ?? ancestorDecisions.find((held) => held.id === path[1])
     if (!adr) return refused('agent.unknownId', uri)
     const head = `# ${adr.title}\n\n*${formatAdrNumber(adr.number)} · ${adr.status} · ${adr.date}*\n\n`
     return json({ contents: [{ uri, mimeType: 'text/markdown', text: head + adr.body }] })

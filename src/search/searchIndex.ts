@@ -131,11 +131,13 @@ export function searchIndex(model: IndexableModel): SearchIndex {
 }
 
 /**
- * The group's records, indexed. Separate because they arrive separately — they
- * belong to the group profile and not to the project — and because the list
+ * An ancestor's records, indexed (ADR-0012 §7).
+ *
+ * Separate because they arrive separately — they belong to a scope above this
+ * one, read up the tree rather than held on this model — and because the list
  * usually outlives several models.
  */
-export function groupDecisionIndex(decisions: readonly Adr[]): readonly AdrEntry[] {
+export function ancestorDecisionIndex(decisions: readonly Adr[]): readonly AdrEntry[] {
   const held = groupIndexes.get(decisions)
   if (held) return held
   const built = decisions.map((adr) => adrEntry(adr, 'group'))
@@ -173,7 +175,7 @@ function build(model: IndexableModel): SearchIndex {
   return {
     elements,
     decisions: (model.decisions ?? []).map((adr) =>
-      adrEntry(adr, adr.applicationId ? 'application' : 'landscape')),
+      adrEntry(adr, adr.subjectId ? 'application' : 'landscape')),
     names: new Map(model.elements.map((e) => [e.id, e.name])),
     places: { carries, first },
   }

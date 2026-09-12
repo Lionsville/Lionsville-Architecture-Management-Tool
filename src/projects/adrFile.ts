@@ -26,7 +26,7 @@ import {
   readFrontMatter,
 } from './fileText'
 
-/** The folder a project's or a group's records live in. */
+/** The folder a scope's records live in. */
 export const DECISIONS_FOLDER = 'decisions'
 
 function numberPrefix(number: number): string {
@@ -34,13 +34,13 @@ function numberPrefix(number: number): string {
 }
 
 /**
- * Where a record is filed, relative to the project (or group) folder.
+ * Where a record is filed, relative to the scope's folder.
  *
- * An application's records go in a folder of their own because **numbers are
- * per list**: the landscape's ADR-0007 and an application's ADR-0007 are two
- * records, and two records may not be one file. The `applicationId` is written
- * in the front matter as well, so a file dragged out of its folder still says
- * whose decision it is.
+ * A record about one element goes in a folder of its own because **numbers are
+ * per list**: the scope's ADR-0007 and an application's ADR-0007 are two
+ * records, and two records may not be one file. The `subjectId` is written in
+ * the front matter as well, so a file dragged out of its folder still says
+ * what it is about.
  */
 export function adrPath(adr: Adr): string {
   const name = `${numberPrefix(adr.number)}-${adr.title.trim() ? slug(adr.title) : 'decision'}.md`
@@ -54,15 +54,15 @@ export function adrPath(adr: Adr): string {
  * is the part that stays. A history of the record (ADR-0008) is a history of
  * `decisions/0007-*.md`, whatever the record was called at the time.
  */
-export function adrPathPattern(adr: Pick<Adr, 'number' | 'applicationId'>): string {
+export function adrPathPattern(adr: Pick<Adr, 'number' | 'subjectId'>): string {
   return `${adrFolder(adr)}/${numberPrefix(adr.number)}-*.md`
 }
 
-function adrFolder(adr: Pick<Adr, 'applicationId'>): string {
+function adrFolder(adr: Pick<Adr, 'subjectId'>): string {
   // A folder name is only ever an id we minted. Anything else — an id from an
   // imported document, say — stays flat rather than becoming a path.
-  const application = adr.applicationId && KEY_RE.test(adr.applicationId) ? adr.applicationId : undefined
-  return application ? `${DECISIONS_FOLDER}/${application}` : DECISIONS_FOLDER
+  const subject = adr.subjectId && KEY_RE.test(adr.subjectId) ? adr.subjectId : undefined
+  return subject ? `${DECISIONS_FOLDER}/${subject}` : DECISIONS_FOLDER
 }
 
 function signerRows(signers: readonly AdrSigner[]): Record<string, string>[] {
@@ -89,7 +89,7 @@ export function adrFileText(adr: Adr): string {
     number: adr.number,
     status: adr.status,
     date: adr.date,
-    applicationId: adr.applicationId,
+    subjectId: adr.subjectId,
     supersededBy: adr.supersededBy,
     signers: signerRows(adr.signers),
   })
@@ -131,9 +131,16 @@ function numberFromName(path: string): number | undefined {
  * A record back out of a file, or `undefined` when the file is not one.
  *
  * `path` is where the file was found, and it is a source of two things the
- * front matter may not carry: the number (from the name) and the application
- * (from the folder). The front matter wins where both speak — a record is what
- * it says it is, and a file can be moved by anyone.
+ * front matter may not carry: the number (from the name) and the subject (from
+ * the folder). The front matter wins where both speak — a record is what it
+ * says it is, and a file can be moved by anyone.
+ *
+ * **`applicationId` is read as `subjectId`.** The field was renamed when the
+ * three decision lists became one (ADR-0012 §7), and every folder written
+ * before that says the old word. This is a read-time alias inside the same
+ * format rather than a migration, because nothing about the file changed but
+ * the name of one field: what is written is always `subjectId`, and a folder
+ * re-saved once stops saying the old word. **Format 6 drops the alias.**
  */
 export function adrFromFile(text: string, path: string): Adr | undefined {
   const { fields, body } = readFrontMatter(text)
@@ -148,17 +155,19 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     .trim()
 
   const folder = /(?:^|\/)decisions\/([^/]+)\//.exec(path)?.[1]
-  const applicationId = frontMatterString(fields, 'applicationId') ?? folder
+  const subjectId = frontMatterString(fields, 'subjectId')
+    ?? frontMatterString(fields, 'applicationId')
+    ?? folder
   const supersededBy = frontMatterString(fields, 'supersededBy')
 
   return {
-    id: frontMatterString(fields, 'id') || `adr-${applicationId ? `${applicationId}-` : ''}${number}`,
+    id: frontMatterString(fields, 'id') || `adr-${subjectId ? `${subjectId}-` : ''}${number}`,
     number,
     title,
     status: statusOf(frontMatterString(fields, 'status')),
     date: frontMatterString(fields, 'date') ?? '',
     body: markdownBody(headingEnd === -1 ? rest : rest.slice(headingEnd + 1).replace(/^\n/, '')),
-    ...(applicationId ? { applicationId } : {}),
+    ...(subjectId ? { subjectId } : {}),
     ...(supersededBy ? { supersededBy } : {}),
     signers: signersFrom(frontMatterRows(fields, 'signers')),
   }

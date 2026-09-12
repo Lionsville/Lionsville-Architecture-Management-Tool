@@ -18,8 +18,8 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '../i18n'
 import type { StringKey } from '../i18n'
-import type { Adr } from '../decisions/adr'
 import type { ElementId } from '../model'
+import type { AncestorRecords } from '../decisions/adrScope'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
 import {
@@ -755,10 +755,21 @@ export function App({
     return () => { live = false }
   }, [openPathForAncestors, readAncestors])
 
-  /** The nearest scope above this one, which is where a group's records went. */
-  const parent = ancestors[0]
-  const groupDecisions = useMemo<readonly Adr[]>(
-    () => parent?.model.decisions ?? [], [parent],
+  /**
+   * The records of every scope above this one, nearest first (ADR-0012 §7).
+   *
+   * One list, read up the tree: the decisions page shows this scope's own and
+   * a *From …* section per ancestor that has any. Read-only there — a record
+   * is edited where it lives, which is the same rule `mayEdit` applies to an
+   * element — so nothing here writes them back any more.
+   */
+  const ancestorDecisions = useMemo<readonly AncestorRecords[]>(
+    () => ancestors.map((scope) => ({
+      path: scope.path,
+      name: scope.model.name,
+      decisions: scope.model.decisions ?? [],
+    })),
+    [ancestors],
   )
 
   /**
@@ -792,27 +803,6 @@ export function App({
     onTitle?.(project ? groupName : organisation.tree.name, project?.model.name)
   }, [onTitle, project, groupName, organisation.tree.name])
 
-  /**
-   * The ancestor's decisions, written back to the scope they belong to.
-   *
-   * Refused rather than invented when there is no scope above this one: the
-   * root's records are the root's, and a landscape at the top of the tree has
-   * nowhere to put a record that is not its own.
-   */
-  const saveGroupDecisions = useCallback((next: Adr[]) => {
-    if (!parent) return
-    const updated: ScopeSnapshot = { ...parent, model: { ...parent.model, decisions: next } }
-    // Optimistic: the page shows the change at once, and a failed write puts
-    // the old record back along with the message.
-    setAncestors((held) => held.map((scope) => (scope.path === parent.path ? updated : scope)))
-    void projects.save(updated).then(
-      undefined,
-      (cause: unknown) => {
-        failed('saveGroupDecisions', cause, 'group.saveFailed')
-        setAncestors((held) => held.map((scope) => (scope.path === parent.path ? parent : scope)))
-      },
-    )
-  }, [parent, projects, failed])
 
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
@@ -874,8 +864,7 @@ export function App({
             onTreeChanged={treeChanged}
             onApplySettings={applyProjectSettings}
             makeId={makeId}
-            groupDecisions={groupDecisions}
-            onGroupDecisionsChange={saveGroupDecisions}
+            ancestorDecisions={ancestorDecisions}
             groupName={groupName}
             groupClient={groupClient}
             diagnostics={diagnostics}

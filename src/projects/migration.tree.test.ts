@@ -152,7 +152,7 @@ describe('a format-4 working directory', () => {
     const warehouse = (await store.load('acme/warehouse'))!
     expect(warehouse.model.name).toBe('Warehouse landscape')
     expect(warehouse.kind).toBe('landscape')
-    expect(warehouse.model.decisions?.[0]).toMatchObject({ applicationId: 'wms' })
+    expect(warehouse.model.decisions?.[0]).toMatchObject({ subjectId: 'wms' })
     expect(warehouse.model.transitions?.[0].title).toBe('Replace the rater')
     expect(warehouse.model.diagrams[0].geometry.nodes).toEqual([{ id: 'wms', x: 10, y: 20 }])
   })

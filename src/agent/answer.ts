@@ -52,7 +52,7 @@ export type ReadView = {
    */
   readonly scopePath: string
   /** The records of the scope above this one, which are not on this model. */
-  readonly groupDecisions: readonly Adr[]
+  readonly ancestorDecisions: readonly Adr[]
 }
 
 type Args = Record<string, unknown>
@@ -72,7 +72,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         elements: model.order.elements.length,
         connections: model.order.relations.length,
         diagrams: model.order.diagrams.map((id) => diagramLine(model.diagrams[id], view.activeDiagramId)),
-        decisions: model.order.decisions.length + view.groupDecisions.length,
+        decisions: model.order.decisions.length + view.ancestorDecisions.length,
         activeDiagramId: view.activeDiagramId,
       })
 
@@ -133,7 +133,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         }),
         decisions: model.order.decisions
           .map((id) => decisionsOf(model)[id])
-          .filter((adr) => adr.applicationId === element.id)
+          .filter((adr) => adr.subjectId === element.id)
           .map((adr) => decisionLine(adr, 'application')),
       })
     }
@@ -196,15 +196,15 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       const scope = args.scope as 'group' | 'landscape' | 'application' | undefined
       const rows: ReturnType<typeof decisionLine>[] = []
       if (scope === undefined || scope === 'group') {
-        if (args.applicationId === undefined) {
-          for (const adr of view.groupDecisions) rows.push(decisionLine(adr, 'group'))
+        if (args.subjectId === undefined) {
+          for (const adr of view.ancestorDecisions) rows.push(decisionLine(adr, 'group'))
         }
       }
       for (const id of model.order.decisions) {
         const adr = decisionsOf(model)[id]
-        const own = adr.applicationId ? 'application' : 'landscape'
+        const own = adr.subjectId ? 'application' : 'landscape'
         if (scope !== undefined && scope !== own) continue
-        if (args.applicationId !== undefined && adr.applicationId !== args.applicationId) continue
+        if (args.subjectId !== undefined && adr.subjectId !== args.subjectId) continue
         rows.push(decisionLine(adr, own))
       }
       return json({ decisions: rows })
@@ -213,14 +213,14 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
     case 'decision.read': {
       const id = args.id as string
       const own = decisionsOf(model)[id]
-      const adr = own ?? view.groupDecisions.find((held) => held.id === id)
+      const adr = own ?? view.ancestorDecisions.find((held) => held.id === id)
       if (!adr) return refused('agent.unknownId', `decision ${id}`)
-      const scope = own ? (adr.applicationId ? 'application' : 'landscape') : 'group'
+      const scope = own ? (adr.subjectId ? 'application' : 'landscape') : 'group'
       return json({
         ...adr,
         label: formatAdrNumber(adr.number),
         scope,
-        application: adr.applicationId ? nameOf(model, adr.applicationId) : undefined,
+        application: adr.subjectId ? nameOf(model, adr.subjectId) : undefined,
       })
     }
 
@@ -238,7 +238,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         }))
       return json({
         hits: [
-          ...searchAll({ model: view.current(), groupDecisions: view.groupDecisions, query, limitPerKind: limit }),
+          ...searchAll({ model: view.current(), ancestorDecisions: view.ancestorDecisions, query, limitPerKind: limit }),
           ...plans,
         ],
       })
@@ -314,12 +314,12 @@ function exportMarkdown(model: Model, view: ReadView): string {
 
   const own = decisionsOf(model)
   const decisions = [
-    ...view.groupDecisions.map((adr) => ({ adr, scope: 'group' })),
-    ...model.order.decisions.map((id) => ({ adr: own[id], scope: own[id].applicationId ? 'application' : 'landscape' })),
+    ...view.ancestorDecisions.map((adr) => ({ adr, scope: 'group' })),
+    ...model.order.decisions.map((id) => ({ adr: own[id], scope: own[id].subjectId ? 'application' : 'landscape' })),
   ]
   lines.push('## Decisions', '', ...table(
     ['id', 'label', 'scope', 'application', 'title', 'status', 'date', 'supersedes by'],
-    decisions.map(({ adr, scope }) => [adr.id, formatAdrNumber(adr.number), scope, adr.applicationId ? name(adr.applicationId) : '', adr.title, adr.status, adr.date, adr.supersededBy]),
+    decisions.map(({ adr, scope }) => [adr.id, formatAdrNumber(adr.number), scope, adr.subjectId ? name(adr.subjectId) : '', adr.title, adr.status, adr.date, adr.supersededBy]),
   ))
   return lines.join('\n')
 }
@@ -473,6 +473,6 @@ function decisionLine(adr: Adr, scope: 'group' | 'landscape' | 'application') {
     status: adr.status,
     date: adr.date,
     scope,
-    applicationId: adr.applicationId,
+    subjectId: adr.subjectId,
   }
 }

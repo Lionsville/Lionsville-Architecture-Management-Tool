@@ -3,12 +3,16 @@
  * the left, the records of the chosen place in the middle, the one you are
  * reading on the right — a reading pane, the way a mail client is laid out.
  *
- * Three levels, two lists. The group's records arrive as their own list and go
- * back as one (`onGroupDecisionsChange`), because they are kept with the group
- * rather than with any project. The landscape's and every application's are
- * one list on the model, told apart by `applicationId`, and go back whole
- * (`onProjectDecisionsChange`) so the caller commits one model change. The
- * page never writes anywhere itself.
+ * **One list** (ADR-0012 §7). This scope's records are one array on its model,
+ * told apart by `subjectId` — absent means the record is about the scope
+ * itself, and any element it knows may be the subject of one — and they go
+ * back whole (`onProjectDecisionsChange`) so the caller commits one model
+ * change. What used to be a second list, the group's, is now a section per
+ * ancestor: read up the tree, read-only here, with a way to open the scope
+ * that holds them. **A record is edited where it lives**, which is the same
+ * rule `mayEdit` applies to an element.
+ *
+ * The page never writes anywhere itself.
  *
  * A fullscreen dialog for the same two reasons as the documentation page: it
  * portals out of the editor's DOM so the canvas's shortcuts cannot reach a
@@ -45,16 +49,24 @@ import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
 import { AdrReader } from './AdrReader'
-import { STATUS_COLOR, STATUS_LABEL, appScope, projectScopeOf, scopeApplicationId } from '../adrScope'
-import type { ScopeKey } from '../adrScope'
+import {
+  STATUS_COLOR, STATUS_LABEL, fromScope, projectScopeOf, scopeFromPath, scopeSubjectId, subjectScope,
+} from '../adrScope'
+import type { AncestorRecords, ScopeKey } from '../adrScope'
 
 export type AdrPageProps = {
   open: boolean
   onClose: () => void
   model: HostModel
   groupName: string
-  groupDecisions: readonly Adr[]
-  onGroupDecisionsChange: (next: Adr[]) => void
+  /**
+   * The scopes above this one and the records they hold, nearest first
+   * (ADR-0012 §7). Read-only here; {@link AdrPageProps.onOpenScope} is how a
+   * person gets to where one can be edited.
+   */
+  ancestors?: readonly AncestorRecords[]
+  /** Open one of those scopes. Absent where the host cannot — a test, a page with nowhere to go. */
+  onOpenScope?: (path: string) => void
   onProjectDecisionsChange: (next: Adr[]) => void
   /** Open straight onto this record — from the search. */
   initialAdrId?: string
@@ -79,7 +91,7 @@ export type AdrPageProps = {
 
 export function AdrPage(props: AdrPageProps) {
   const {
-    open, onClose, model, groupName, groupDecisions, onGroupDecisionsChange, onProjectDecisionsChange,
+    open, onClose, model, groupName, ancestors = [], onOpenScope, onProjectDecisionsChange,
     initialAdrId, readOnly = false, s, today, makeId,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
@@ -95,45 +107,80 @@ export function AdrPage(props: AdrPageProps) {
 
   // --- where things are ---------------------------------------------------------
 
-  const applications = useMemo(
-    () => model.elements.filter((e) => e.kind === 'application').sort((a, b) => a.name.localeCompare(b.name)),
-    [model.elements],
-  )
-  const applicationIds = useMemo(() => new Set(applications.map((a) => a.id)), [applications])
-  // Records filed under an application that has since left the model. They
-  // are history and stay findable; hiding them would be losing them quietly.
+  /**
+   * What a record here can be ABOUT (ADR-0012 §7): every application, because
+   * that is where one is usually filed and the tree is the place to make one —
+   * plus anything else that already has a record, because a decision about a
+   * capability or a journey step is now an ordinary thing to write.
+   */
+  const subjects = useMemo(() => {
+    const withRecords = new Set(projectDecisions
+      .map((adr) => adr.subjectId)
+      .filter((id): id is string => Boolean(id)))
+    return model.elements
+      .filter((e) => e.kind === 'application' || withRecords.has(e.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [model.elements, projectDecisions])
+  const subjectIds = useMemo(() => new Set(subjects.map((one) => one.id)), [subjects])
+  // Records about something that has since left the model. They are history
+  // and stay findable; hiding them would be losing them quietly.
   const orphanIds = useMemo(
-    () => [...new Set(projectDecisions.map((a) => a.applicationId).filter((id): id is string => Boolean(id) && !applicationIds.has(id!)))],
-    [projectDecisions, applicationIds],
+    () => [...new Set(projectDecisions.map((a) => a.subjectId).filter((id): id is string => Boolean(id) && !subjectIds.has(id!)))],
+    [projectDecisions, subjectIds],
   )
 
+  /** An ancestor's list by path, or nothing where the key is not one. */
+  const ancestorAt = useCallback(
+    (key: ScopeKey): AncestorRecords | undefined => {
+      const path = scopeFromPath(key)
+      return path === undefined ? undefined : ancestors.find((one) => one.path === path)
+    },
+    [ancestors],
+  )
   const owningList = useCallback(
-    (key: ScopeKey): readonly Adr[] => (key === 'group' ? groupDecisions : projectDecisions),
-    [groupDecisions, projectDecisions],
+    (key: ScopeKey): readonly Adr[] => ancestorAt(key)?.decisions ?? projectDecisions,
+    [ancestorAt, projectDecisions],
   )
   const scopedList = useCallback(
-    (key: ScopeKey): Adr[] => (key === 'group' ? [...groupDecisions] : adrsFor(projectDecisions, scopeApplicationId(key))),
-    [groupDecisions, projectDecisions],
+    (key: ScopeKey): Adr[] => {
+      const held = ancestorAt(key)
+      return held ? [...held.decisions] : adrsFor(projectDecisions, scopeSubjectId(key))
+    },
+    [ancestorAt, projectDecisions],
   )
   const scopeOfRecord = useCallback(
-    (adr: Adr): ScopeKey => (groupDecisions.some((g) => g.id === adr.id) ? 'group' : projectScopeOf(adr)),
-    [groupDecisions],
+    (adr: Adr): ScopeKey => {
+      const from = ancestors.find((one) => one.decisions.some((held) => held.id === adr.id))
+      return from ? fromScope(from.path) : projectScopeOf(adr)
+    },
+    [ancestors],
   )
+  /**
+   * A record is edited where it lives (ADR-0012 §7), so an ancestor's is
+   * read-only here and there is nothing to commit for it — the page offers to
+   * open that scope instead.
+   */
   const commitList = useCallback((key: ScopeKey, next: Adr[]) => {
-    if (key === 'group') onGroupDecisionsChange(next)
-    else onProjectDecisionsChange(next)
-  }, [onGroupDecisionsChange, onProjectDecisionsChange])
+    if (scopeFromPath(key) !== undefined) return
+    onProjectDecisionsChange(next)
+  }, [onProjectDecisionsChange])
 
   const scopeLabel = (key: ScopeKey): string => {
-    if (key === 'group') return groupName || s('adr.scopeGroup')
+    const from = ancestorAt(key)
+    if (from) return from.name || from.path || groupName || s('adr.scopeGroup')
     if (key === 'landscape') return model.name || s('adr.scopeLandscape')
-    const id = scopeApplicationId(key)!
-    return applications.find((a) => a.id === id)?.name ?? id
+    const id = scopeSubjectId(key)!
+    return subjects.find((one) => one.id === id)?.name ?? id
   }
+  /** An ancestor's records are not this scope's to change. */
+  const lockedAt = (key: ScopeKey): boolean => readOnly || scopeFromPath(key) !== undefined
 
   // --- selection -------------------------------------------------------------------
 
-  const allRecords = useMemo(() => [...groupDecisions, ...projectDecisions], [groupDecisions, projectDecisions])
+  const allRecords = useMemo(
+    () => [...ancestors.flatMap((one) => one.decisions), ...projectDecisions],
+    [ancestors, projectDecisions],
+  )
   const selected = selectedId ? allRecords.find((a) => a.id === selectedId) : undefined
 
   // Each opening starts on the landscape's newest record — unless the search
@@ -184,7 +231,7 @@ export function AdrPage(props: AdrPageProps) {
     const list = owningList(scope)
     const fresh = newAdr({
       id: makeId('adr'), number: nextAdrNumber(list), title, date: today(), t: s,
-      applicationId: scopeApplicationId(scope),
+      subjectId: scopeSubjectId(scope),
     })
     commitList(scope, [...list, fresh])
     setCreating(false)
@@ -283,18 +330,34 @@ export function AdrPage(props: AdrPageProps) {
           {/* the tree */}
           <Box component="nav" data-testid="adr-tree" sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto' }}>
             <List dense disablePadding>
-              <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeGroup')}</ListSubheader>
-              {node('group', groupName || s('adr.scopeGroup'), s('adr.scopeGroupNote'))}
+              {/* This scope first: its own records, then one node per subject
+                  a record here is about (ADR-0012 §7). */}
               <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeLandscape')}</ListSubheader>
               {node('landscape', model.name, s('adr.scopeLandscapeNote'))}
               <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeApplications')}</ListSubheader>
-              {applications.map((app) => node(appScope(app.id), app.name, app.category, 1))}
+              {subjects.map((one) => node(subjectScope(one.id), one.name, one.category, 1))}
               {orphanIds.length > 0 && (
                 <>
                   <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeRemoved')}</ListSubheader>
-                  {orphanIds.map((id) => node(appScope(id), id, undefined, 1))}
+                  {orphanIds.map((id) => node(subjectScope(id), id, undefined, 1))}
                 </>
               )}
+              {/* Then the scopes above, read up the tree and read-only here:
+                  a record is edited where it lives. A scope with no records is
+                  not drawn — a heading over nothing is a heading about
+                  nothing. */}
+              {ancestors.filter((one) => one.decisions.length > 0).map((one) => (
+                <Box key={one.path}>
+                  <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
+                    {s('adr.scopeFrom', { scope: one.name || one.path || s('adr.scopeGroup') })}
+                  </ListSubheader>
+                  {node(
+                    fromScope(one.path),
+                    one.name || one.path || s('adr.scopeGroup'),
+                    s('adr.scopeFromNote'),
+                  )}
+                </Box>
+              ))}
             </List>
           </Box>
 
@@ -341,25 +404,53 @@ export function AdrPage(props: AdrPageProps) {
           </Box>
 
           {/* the record */}
-          <Box sx={{ minHeight: 0, minWidth: 0 }}>
+          <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Read here, edited where it lives (ADR-0012 §7) — the same
+                sentence a stand-in's inspector says about a field another
+                scope answers for, and the same way out. */}
+            {selected && ancestorAt(scopeOfRecord(selected)) && (
+              <Box
+                data-testid="adr-from-ancestor"
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1,
+                  bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider',
+                }}
+              >
+                <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                  {s('adr.fromAncestor', { scope: scopeLabel(scopeOfRecord(selected)) })}
+                </Typography>
+                {onOpenScope && (
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      const path = scopeFromPath(scopeOfRecord(selected))
+                      if (path !== undefined) { onClose(); onOpenScope(path) }
+                    }}
+                  >
+                    {s('adr.openScope', { scope: scopeLabel(scopeOfRecord(selected)) })}
+                  </Button>
+                )}
+              </Box>
+            )}
             {selected ? (
               <AdrReader
                 key={selected.id}
                 adr={selected}
                 list={owningList(scopeOfRecord(selected))}
-                readOnly={readOnly}
+                readOnly={lockedAt(scopeOfRecord(selected))}
                 s={s}
                 today={today}
-                elements={scopeOfRecord(selected) === 'group' ? [] : model.elements}
+                elements={ancestorAt(scopeOfRecord(selected)) ? [] : model.elements}
                 renderMarkdown={props.renderMarkdown}
-                onAddImage={readOnly ? undefined : props.onAddImage}
+                onAddImage={lockedAt(scopeOfRecord(selected)) ? undefined : props.onAddImage}
                 images={props.images}
                 onUpdate={(patch) => update(selected, patch)}
                 onStatus={(next) => move(selected, next)}
                 onDelete={() => setDeleting(selected)}
-                // A group's records are kept in the group's own file, which no
-                // project's history covers; only a project's have one to show.
-                onHistory={props.onOpenHistory && scopeOfRecord(selected) !== 'group'
+                // An ancestor's records are files in another scope's folder,
+                // which this scope's history does not cover; only this scope's
+                // own have one to show from here.
+                onHistory={props.onOpenHistory && !ancestorAt(scopeOfRecord(selected))
                   ? () => props.onOpenHistory?.(selected.id)
                   : undefined}
                 onSelect={(id) => {
@@ -367,7 +458,7 @@ export function AdrPage(props: AdrPageProps) {
                   if (target) chooseRecord(target, scopeOfRecord(target))
                 }}
                 onElementLink={followElement}
-                plans={props.onOpenPlan && scopeOfRecord(selected) !== 'group'
+                plans={props.onOpenPlan && !ancestorAt(scopeOfRecord(selected))
                   ? { list: model.transitions ?? [], onOpen: (id) => { onClose(); props.onOpenPlan?.(id) } }
                   : undefined}
               />

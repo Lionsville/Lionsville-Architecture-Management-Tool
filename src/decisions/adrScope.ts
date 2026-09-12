@@ -1,28 +1,60 @@
 /**
  * The page's idea of WHERE a decision lives, as one string a tree node and a
- * list can be keyed by: the group, the landscape level, or one application.
+ * list can be keyed by: this scope, one subject in it, or a scope above.
  *
- * Deliberately not in `core`: the three lists exist there as two arrays and an
- * `applicationId`, which is all a store needs. The scope key is the page's
+ * **One list, not three** (ADR-0012 §7). A record is about any element the
+ * scope knows — an application, a capability, a journey step — or about the
+ * scope itself; and a scope ABOVE this one has records of its own, read up the
+ * tree and read-only here, because a record is edited where it lives. What
+ * used to be `group | landscape | app:<id>` is therefore
+ * `landscape | subject:<id> | from:<path>`, and the one that changed meaning
+ * is the last: it is a scope's path rather than "the group", and there can be
+ * several.
+ *
+ * Deliberately not in `model/`: the lists exist there as one array and a
+ * `subjectId`, which is all a store needs. The scope key is the page's
  * navigation state, and the labels beside it are screen words.
  */
 import type { StringKey } from '../i18n'
 import type { Adr, AdrStatus, AdrVerdict } from './adr'
 
-export type ScopeKey = 'group' | 'landscape' | `app:${string}`
+export type ScopeKey = 'landscape' | `subject:${string}` | `from:${string}`
 
-export function appScope(applicationId: string): ScopeKey {
-  return `app:${applicationId}`
+/**
+ * One scope above this one, and what it holds (ADR-0012 §7).
+ *
+ * A plain `string` path rather than a `ScopePath`: `decisions` may not import
+ * `projects`, and what a path IS belongs there. Nearest ancestor first, which
+ * is the order the tree draws them in.
+ */
+export type AncestorRecords = {
+  path: string
+  /** What that scope is called, for the section heading. */
+  name: string
+  decisions: readonly Adr[]
 }
 
-/** The application an `app:` scope names; nothing for the other two. */
-export function scopeApplicationId(key: ScopeKey): string | undefined {
-  return key.startsWith('app:') ? key.slice(4) : undefined
+export function subjectScope(subjectId: string): ScopeKey {
+  return `subject:${subjectId}`
 }
 
-/** Which scope a record filed in a project list belongs to. */
-export function projectScopeOf(adr: Pick<Adr, 'applicationId'>): ScopeKey {
-  return adr.applicationId ? appScope(adr.applicationId) : 'landscape'
+/** The element a `subject:` scope names; nothing for the others. */
+export function scopeSubjectId(key: ScopeKey): string | undefined {
+  return key.startsWith('subject:') ? key.slice('subject:'.length) : undefined
+}
+
+export function fromScope(path: string): ScopeKey {
+  return `from:${path}`
+}
+
+/** The scope a `from:` key names — the empty string is the organisation. */
+export function scopeFromPath(key: ScopeKey): string | undefined {
+  return key.startsWith('from:') ? key.slice('from:'.length) : undefined
+}
+
+/** Which scope a record filed in THIS scope's list belongs to. */
+export function projectScopeOf(adr: Pick<Adr, 'subjectId'>): ScopeKey {
+  return adr.subjectId ? subjectScope(adr.subjectId) : 'landscape'
 }
 
 /**

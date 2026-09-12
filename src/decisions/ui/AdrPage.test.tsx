@@ -33,23 +33,28 @@ const model: HostModel = {
   decisions: [
     adr({ id: 'l1', number: 1, title: 'Event-driven integration', status: 'proposed' }),
     adr({ id: 'l2', number: 2, title: 'One warehouse system', status: 'accepted' }),
-    adr({ id: 'c1', number: 3, title: 'CRM stays system of record', applicationId: 'crm', status: 'reviewing' }),
+    adr({ id: 'c1', number: 3, title: 'CRM stays system of record', subjectId: 'crm', status: 'reviewing' }),
   ],
 }
-const groupDecisions: Adr[] = [adr({ id: 'g1', number: 1, title: 'One identity provider', body: 'Every project logs in the same way.' })]
+/** One scope above this one, as the page is handed it (ADR-0012 §7). */
+const ancestors = [{
+  path: 'acme',
+  name: 'Acme Logistics',
+  decisions: [adr({ id: 'g1', number: 1, title: 'One identity provider', body: 'Every project logs in the same way.' })],
+}]
 
 let ids = 0
 function mount(over: Partial<AdrPageProps> = {}) {
-  const onGroup = vi.fn()
   const onProject = vi.fn()
+  const onOpenScope = vi.fn()
   const utils = renderShell(
     <AdrPage
       open
       onClose={() => {}}
       model={model}
       groupName="Acme Logistics"
-      groupDecisions={groupDecisions}
-      onGroupDecisionsChange={onGroup}
+      ancestors={ancestors}
+      onOpenScope={onOpenScope}
       onProjectDecisionsChange={onProject}
       s={translator('en')}
       language="en"
@@ -59,11 +64,11 @@ function mount(over: Partial<AdrPageProps> = {}) {
       {...over}
     />,
   )
-  return { ...utils, onGroup, onProject }
+  return { ...utils, onProject, onOpenScope }
 }
 
 describe('AdrPage', () => {
-  it('shows the group, the landscape and each application in the tree, and opens on the landscape', () => {
+  it('shows this scope, each subject and the scope above, and opens on this scope', () => {
     mount()
     const tree = screen.getByTestId('adr-tree')
     expect(within(tree).getByText('Acme Logistics')).toBeTruthy()
@@ -80,7 +85,7 @@ describe('AdrPage', () => {
 
   it('files a new record under the chosen application with the next number', () => {
     const { onProject } = mount()
-    fireEvent.click(screen.getByTestId('adr-scope-app:crm'))
+    fireEvent.click(screen.getByTestId('adr-scope-subject:crm'))
     fireEvent.click(screen.getByRole('button', { name: /New decision/ }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Retire the legacy sync' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
@@ -88,26 +93,37 @@ describe('AdrPage', () => {
     const next: Adr[] = onProject.mock.calls[0][0]
     expect(next).toHaveLength(4)
     expect(next[3]).toMatchObject({
-      title: 'Retire the legacy sync', applicationId: 'crm', number: 4, status: 'proposed', date: '2026-09-05',
+      title: 'Retire the legacy sync', subjectId: 'crm', number: 4, status: 'proposed', date: '2026-09-05',
     })
     expect(next[3].body).toContain('## Decision Outcome')
   })
 
-  it('sends a group record back through the group handler, numbered within the group', () => {
-    const { onGroup, onProject } = mount()
-    fireEvent.click(screen.getByTestId('adr-scope-group'))
-    fireEvent.click(screen.getByRole('button', { name: /New decision/ }))
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'One ticket queue' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+  /**
+   * A record is edited where it lives (ADR-0012 §7): an ancestor's is readable
+   * here, locked here, and one click from the scope that holds it.
+   */
+  it('shows an ancestor’s records read-only, and offers to open that scope', () => {
+    const { onProject, onOpenScope } = mount({ initialAdrId: 'g1' })
+    expect(screen.getByTestId('adr-from-ancestor')).toBeTruthy()
+    const reader = screen.getByTestId('adr-reader')
+    expect(within(reader).queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(within(reader).queryByRole('button', { name: /Move to/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Open Acme Logistics' }))
+    expect(onOpenScope).toHaveBeenCalledExactlyOnceWith('acme')
     expect(onProject).not.toHaveBeenCalled()
-    const next: Adr[] = onGroup.mock.calls[0][0]
-    expect(next.map((a) => a.number)).toEqual([1, 2])
-    expect(next[1].applicationId).toBeUndefined()
   })
 
-  it('offers a project record\'s history, and never a group record\'s (ADR-0008)', () => {
-    // A group's records are kept in the group's own file, outside any
-    // project's folder, so no project history has them.
+  /** A section per ancestor, and none for a scope that holds nothing. */
+  it('draws a From section only for an ancestor with records', () => {
+    mount({ ancestors: [...ancestors, { path: '', name: 'Globex', decisions: [] }] })
+    const tree = screen.getByTestId('adr-tree')
+    expect(within(tree).getByText('From Acme Logistics')).toBeTruthy()
+    expect(within(tree).queryByText('From Globex')).toBeNull()
+  })
+
+  it('offers this scope\'s record a history, and never an ancestor\'s (ADR-0008)', () => {
+    // An ancestor's records are files in another scope's folder, which this
+    // scope's history does not cover.
     const onOpenHistory = vi.fn()
     mount({ initialAdrId: 'l1', onOpenHistory })
     fireEvent.click(within(screen.getByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
@@ -152,7 +168,7 @@ describe('AdrPage', () => {
     rerender(
       <AdrPage
         open onClose={() => {}} model={{ ...model, decisions: next }} groupName="Acme Logistics"
-        groupDecisions={groupDecisions} onGroupDecisionsChange={() => {}} onProjectDecisionsChange={() => {}}
+        ancestors={ancestors} onProjectDecisionsChange={() => {}}
         initialAdrId="l2" s={translator('en')} language="en" makeId={(p) => p} today={() => 'd'}
         renderMarkdown={(md) => <MarkdownView markdown={md} />}
       />,

@@ -6,8 +6,8 @@
  * is where you want to be if you are changing behaviour rather than reading a
  * field.
  *
- * The split is not tidiness: a project's decisions live on its model
- * (`model.decisions`, told apart by `applicationId`), so the model has to be
+ * The split is not tidiness: a scope's decisions live on its model
+ * (`model.decisions`, told apart by `subjectId`), so the model has to be
  * able to say what it holds without importing the module that decides what may
  * happen to one.
  */
@@ -49,10 +49,16 @@ export type Adr = {
   /** The MADR body, markdown. Title, status, date and signers are fields, not text. */
   body: string
   /**
-   * Which application this decision belongs to. Absent on a project record
-   * means the landscape level; a group's records never carry it.
+   * What this decision is ABOUT: any element the scope knows — an application,
+   * a capability, a journey step — or, absent, the scope itself (ADR-0012 §7).
+   *
+   * It was `applicationId` while an application was the only thing a record
+   * could be about and a group's records were a list of their own. The three
+   * lists are one list now, and the field says what it always meant: which
+   * subject. `projects/adrFile.ts` still READS the old spelling, and format 6
+   * drops that alias.
    */
-  applicationId?: string
+  subjectId?: string
   /** Set with the `superseded` status: the record that replaced this one. */
   supersededBy?: string
   signers: AdrSigner[]

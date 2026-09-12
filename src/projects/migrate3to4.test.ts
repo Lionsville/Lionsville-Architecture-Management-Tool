@@ -34,7 +34,7 @@ const DECISION: Adr = {
 }
 
 const PER_APPLICATION: Adr = {
-  ...DECISION, id: 'adr-2', title: 'The WMS keeps its own stock', applicationId: 'wms',
+  ...DECISION, id: 'adr-2', title: 'The WMS keeps its own stock', subjectId: 'wms',
 }
 
 const PLAN: Transition = {

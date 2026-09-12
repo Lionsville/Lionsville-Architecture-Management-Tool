@@ -108,7 +108,7 @@ describe('the synthetic landscape', () => {
     const model = syntheticModel({ ...tiny })
     const perList = new Map<string, number[]>()
     for (const adr of model.decisions ?? []) {
-      const list = adr.applicationId ?? 'landscape'
+      const list = adr.subjectId ?? 'landscape'
       perList.set(list, [...(perList.get(list) ?? []), adr.number])
     }
     for (const numbers of perList.values()) {

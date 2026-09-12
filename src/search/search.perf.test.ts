@@ -40,23 +40,23 @@ describe('the cost of a keystroke in a search field', () => {
 
   it('answers a prefix most names do not have', () => {
     const ms = measure('search: one keystroke, a name prefix', () => {
-      searchAll({ model, groupDecisions: [], query: 'billing gate' })
+      searchAll({ model, ancestorDecisions: [], query: 'billing gate' })
     })
     expect(ms).toBeLessThan(BUDGET.search)
   })
 
   it('answers a letter half the landscape contains', () => {
     const ms = measure('search: one keystroke, a single letter', () => {
-      searchAll({ model, groupDecisions: [], query: 'e' })
+      searchAll({ model, ancestorDecisions: [], query: 'e' })
     })
     expect(ms).toBeLessThan(BUDGET.search)
   })
 
   it('answers a word that only the prose has', () => {
-    const hits = searchAll({ model, groupDecisions: [], query: 'reconciles nightly' })
+    const hits = searchAll({ model, ancestorDecisions: [], query: 'reconciles nightly' })
     expect(hits.some((hit) => hit.kind === 'documentation')).toBe(true)
     const ms = measure('search: one keystroke, prose only', () => {
-      searchAll({ model, groupDecisions: [], query: 'reconciles nightly' })
+      searchAll({ model, ancestorDecisions: [], query: 'reconciles nightly' })
     })
     expect(ms).toBeLessThan(BUDGET.search)
   })
@@ -74,7 +74,7 @@ describe('the cost of a keystroke in a search field', () => {
           ...held,
           elements: held.elements.map((e, at) => (at === n ? { ...e, name: `Renamed ${n}` } : e)),
         }
-        searchAll({ model: held, groupDecisions: [], query: 'renamed' })
+        searchAll({ model: held, ancestorDecisions: [], query: 'renamed' })
       }
     })
     expect(grown).toBeLessThan(BUDGET.cacheHeapMb)

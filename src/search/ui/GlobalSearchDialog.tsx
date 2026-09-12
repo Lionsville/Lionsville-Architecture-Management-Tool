@@ -31,7 +31,7 @@ import { STATUS_LABEL } from '../../decisions/adrScope'
 export type GlobalSearchDialogProps = {
   open: boolean
   model: HostModel
-  groupDecisions: readonly Adr[]
+  ancestorDecisions: readonly Adr[]
   onClose: () => void
   onChoose: (hit: SearchHit) => void
   s: Translate
@@ -43,7 +43,7 @@ const KIND_LABEL: Record<SearchHit['kind'], StringKey> = {
   adr: 'gsearch.decisions',
 }
 
-export function GlobalSearchDialog({ open, model, groupDecisions, onClose, onChoose, s }: GlobalSearchDialogProps) {
+export function GlobalSearchDialog({ open, model, ancestorDecisions, onClose, onChoose, s }: GlobalSearchDialogProps) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -65,8 +65,8 @@ export function GlobalSearchDialog({ open, model, groupDecisions, onClose, onCho
   const asked = useDeferredValue(query)
 
   const hits = useMemo(
-    () => (open ? searchAll({ model, groupDecisions, query: asked }) : []),
-    [open, model, groupDecisions, asked],
+    () => (open ? searchAll({ model, ancestorDecisions, query: asked }) : []),
+    [open, model, ancestorDecisions, asked],
   )
   // Keyed on the query the list was built from, not on the one being typed: the
   // highlight resets when the rows it points into change.

@@ -476,10 +476,10 @@ function decisions(rng: Rng, spec: SyntheticSpec, applications: readonly Element
   // application's, which is the rule `decisions/adr.ts` enforces.
   const nextNumber = new Map<string, number>()
   for (let n = 0; n < spec.decisions; n++) {
-    const applicationId = n % 3 === 0 && applications.length > 0
+    const subjectId = n % 3 === 0 && applications.length > 0
       ? applications[(n * 7) % applications.length]
       : undefined
-    const list = applicationId ?? 'landscape'
+    const list = subjectId ?? 'landscape'
     const number = (nextNumber.get(list) ?? 0) + 1
     nextNumber.set(list, number)
     out.push({
@@ -489,7 +489,7 @@ function decisions(rng: Rng, spec: SyntheticSpec, applications: readonly Element
       status: pick(rng, STATUSES),
       date: `2026-0${between(rng, 1, 9)}-1${between(rng, 0, 9)}`,
       body: markdown(rng, 1200, 'Context and Problem Statement'),
-      applicationId,
+      subjectId,
       signers: [{ name: pick(rng, PEOPLE), role: pick(rng, TEAMS), verdict: 'approved' }],
     })
   }

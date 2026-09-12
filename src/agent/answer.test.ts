@@ -22,9 +22,9 @@ const element = (id: string, name: string, over: Partial<HostModel['elements'][n
   isManaged: true, aspects: {}, ...over,
 })
 
-const decision = (id: string, number: number, title: string, applicationId?: string): Adr => ({
+const decision = (id: string, number: number, title: string, subjectId?: string): Adr => ({
   id, number, title, status: 'proposed', date: '2026-09-01', body: `# ${title}\n\nBecause.`, signers: [],
-  ...(applicationId ? { applicationId } : {}),
+  ...(subjectId ? { subjectId } : {}),
 })
 
 const host: HostModel = {
@@ -66,7 +66,7 @@ const group: Adr[] = [decision('g-1', 1, 'One group, one identity provider')]
 
 function view(model: HostModel = host, activeDiagramId = 'l7'): ReadView {
   const indexed = fromArrays(model)
-  return { model: indexed, current: () => model, activeDiagramId, scopePath: 'acme/landscape', groupDecisions: group }
+  return { model: indexed, current: () => model, activeDiagramId, scopePath: 'acme/landscape', ancestorDecisions: group }
 }
 
 /** The JSON out of an answer, or the refusal, as a test wants to read it. */
@@ -195,7 +195,7 @@ describe('decisions.list and decision.read', () => {
   it('narrows to a scope or an application', () => {
     expect(ids({ scope: 'landscape' }).map((d) => d.id)).toEqual(['adr-1'])
     expect(ids({ scope: 'group' }).map((d) => d.id)).toEqual(['g-1'])
-    expect(ids({ applicationId: 'billing' }).map((d) => d.id)).toEqual(['adr-2'])
+    expect(ids({ subjectId: 'billing' }).map((d) => d.id)).toEqual(['adr-2'])
   })
 
   it('reads a record whole, from either list, with its scope named', () => {

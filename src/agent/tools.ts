@@ -284,7 +284,8 @@ const SPECS = [
       type: 'object',
       properties: {
         scope: { type: 'string', description: 'Only records of this scope.', enum: ['group', 'landscape', 'application'] },
-        applicationId: { type: 'string', description: 'Only records about this application.' },
+        subjectId: { type: 'string', description: 'Only records about this element.' },
+        applicationId: { type: 'string', description: 'The old name for subjectId. Accepted for one beta; use subjectId.' },
       },
       additionalProperties: false,
     },
@@ -563,7 +564,8 @@ const SPECS = [
       properties: {
         title: { type: 'string', description: 'What was decided, as a title.' },
         body: { type: 'string', description: 'The record as MADR markdown. Title, status, date and signers are fields, not text.' },
-        applicationId: { type: 'string', description: 'The application the decision is about. Absent: the landscape.' },
+        subjectId: { type: 'string', description: 'The element the decision is about \u2014 an application, a capability, a journey step. Absent: the scope itself.' },
+        applicationId: { type: 'string', description: 'The old name for subjectId. Accepted for one beta; use subjectId.' },
         signers: SIGNERS,
         planIds: { type: 'array', description: 'Plans that rest on this decision; each is linked to it.', items: { type: 'string' } },
       },

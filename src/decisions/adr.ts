@@ -13,7 +13,7 @@
  * "decision-makers" made explicit.
  *
  * Three lists carry records: a group's (its profile), a project's landscapes
- * (the model, no `applicationId`) and each application's (the model, with one).
+ * (the model, no `subjectId`) and each application's (the model, with one).
  * The shape is the same in all three; only where the list lives differs.
  *
  * Pure. Dates arrive as `yyyy-mm-dd` strings and ids from outside, so nothing
@@ -75,7 +75,7 @@ export function newAdr(fields: {
   title: string
   date: string
   t: Translate
-  applicationId?: string
+  subjectId?: string
 }): Adr {
   const adr: Adr = {
     id: fields.id,
@@ -86,7 +86,7 @@ export function newAdr(fields: {
     body: madrTemplate(fields.t),
     signers: [],
   }
-  if (fields.applicationId) adr.applicationId = fields.applicationId
+  if (fields.subjectId) adr.subjectId = fields.subjectId
   return adr
 }
 
@@ -182,8 +182,8 @@ function withoutSuccessor(adr: Adr): Adr {
 }
 
 /** The records of one scope: the landscape level, or one application's. */
-export function adrsFor(list: readonly Adr[], applicationId: string | undefined): Adr[] {
-  return list.filter((adr) => (adr.applicationId ?? undefined) === applicationId)
+export function adrsFor(list: readonly Adr[], subjectId: string | undefined): Adr[] {
+  return list.filter((adr) => (adr.subjectId ?? undefined) === subjectId)
 }
 
 /** Newest first: what a list of decisions is opened for. */
@@ -211,7 +211,7 @@ export function isAdr(value: unknown): value is Adr {
     && ADR_STATUSES.includes(a.status)
     && typeof a.date === 'string'
     && typeof a.body === 'string'
-    && (a.applicationId === undefined || typeof a.applicationId === 'string')
+    && (a.subjectId === undefined || typeof a.subjectId === 'string')
     && (a.supersededBy === undefined || typeof a.supersededBy === 'string')
     && Array.isArray(a.signers) && a.signers.every(isSigner)
 }

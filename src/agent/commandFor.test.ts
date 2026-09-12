@@ -28,9 +28,9 @@ const element = (id: string, name: string, over: Partial<HostModel['elements'][n
   isManaged: true, aspects: {}, ...over,
 })
 
-const decision = (id: string, number: number, title: string, status: Adr['status'] = 'proposed', applicationId?: string): Adr => ({
+const decision = (id: string, number: number, title: string, status: Adr['status'] = 'proposed', subjectId?: string): Adr => ({
   id, number, title, status, date: '2026-09-01', body: '# body', signers: [],
-  ...(applicationId ? { applicationId } : {}),
+  ...(subjectId ? { subjectId } : {}),
 })
 
 const host: HostModel = {
@@ -67,7 +67,7 @@ function view(model: Model, over: Partial<WriteView> = {}): WriteView {
     current: () => toArrays(model),
     activeDiagramId: 'l7',
     scopePath: 'acme/landscape',
-    groupDecisions: [decision('g-1', 1, 'One identity provider')],
+    ancestorDecisions: [decision('g-1', 1, 'One identity provider')],
     ids: idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams]),
     makeId: (prefix) => `${prefix}-new-${++counter}`,
     today: () => '2026-09-07',
@@ -124,7 +124,7 @@ describe('every write, applied and undone', () => {
     ['relation.update', { id: 'c1', type: 'realises', label: 'how it is done' }],
     ['relation.remove', { id: 'c1' }],
     ['decision.propose', { title: 'Move CRM to the cloud' }],
-    ['decision.propose', { title: 'Split the API', applicationId: 'billing', body: '# Custom' }],
+    ['decision.propose', { title: 'Split the API', subjectId: 'billing', body: '# Custom' }],
     ['decision.propose', { title: 'Sign it', signers: [{ name: 'Ada', role: 'CTO', verdict: 'approved', signedAt: '2026-09-01' }] }],
     ['decision.update', { id: 'adr-1', title: 'Keep the ledger, for now', body: '# Revised', date: '2026-09-05' }],
     ['decision.update', { id: 'adr-1', signers: [{ name: 'Ada' }] }],
@@ -313,7 +313,7 @@ describe('the refusals before the reducer', () => {
 
   it('numbers a decision after the last one in its own list', () => {
     expect(answerOf(refuse('decision.propose', { title: 'Landscape-level' }))).toMatchObject({ number: 3 })
-    expect(answerOf(refuse('decision.propose', { title: 'About billing', applicationId: 'billing' }))).toMatchObject({ number: 2 })
+    expect(answerOf(refuse('decision.propose', { title: 'About billing', subjectId: 'billing' }))).toMatchObject({ number: 2 })
   })
 
   it('refuses to move what is not drawn on the diagram', () => {

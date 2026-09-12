@@ -28,6 +28,7 @@ import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
+import type { AncestorRecords } from '../decisions/adrScope'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
@@ -178,12 +179,14 @@ export type ProjectWorkspaceProps = {
   ) => Promise<ScopeSnapshot | undefined>
   makeId: MakeId
   /**
-   * The group's own decision records, and how to write them back. They are
-   * kept with the group, not with this project, so they arrive and leave as a
-   * list rather than living on the model like the project's own.
+   * The records of every scope above this one, nearest first (ADR-0012 §7).
+   *
+   * One list, read up the tree. They are not this scope's to change — a record
+   * is edited where it lives — so they arrive and nothing goes back: the
+   * decisions page shows them in a *From …* section and offers to open the
+   * scope that holds them.
    */
-  groupDecisions: readonly Adr[]
-  onGroupDecisionsChange: (next: Adr[]) => void
+  ancestorDecisions: readonly AncestorRecords[]
   /**
    * What the organisation this scope sits in is called, walked up the tree
    * (`projects/scopeLabel.ts`). Shown on the bar and above a description.
@@ -231,11 +234,22 @@ export function ProjectWorkspace({
   project, projects, index, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, onOpenScope, scopes, models, onOpenSettings, onTreeChanged = () => {},
-  onApplySettings, makeId, groupDecisions,
-  onGroupDecisionsChange,
+  onApplySettings, makeId, ancestorDecisions,
   groupName, groupClient,
   diagnostics, hostControls, today = localToday, initialPage, windowChrome,
 }: ProjectWorkspaceProps) {
+  /**
+   * Every ancestor's records as one list — what the search and the agent read.
+   *
+   * Flat, because neither of them asks WHICH scope above: the search says a
+   * record is from a scope above this one, and the agent answers for the
+   * session (its `scope` on a record is step 13's). The page beside them keeps
+   * the sections, because a person needs to know where to go to edit one.
+   */
+  const ancestorRecords = useMemo(
+    () => ancestorDecisions.flatMap((one) => one.decisions),
+    [ancestorDecisions],
+  )
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
   // The index by reference, for the callbacks that must not be rebuilt when it
@@ -424,7 +438,7 @@ export function ProjectWorkspace({
     current: session.current,
     activeDiagramId: session.currentActiveId,
     scopePath: () => project.path,
-    groupDecisions: () => groupDecisions,
+    ancestorDecisions: () => ancestorRecords,
     blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
     dispatch: session.dispatch,
     ids: session.ids,
@@ -447,7 +461,7 @@ export function ProjectWorkspace({
     images: session.currentImages,
     addImage: (image) => session.setImageLibrary((library) => [...library, image]),
     save: forceSave,
-  }), [session, project.path, groupDecisions, documentStatus, makeId, today, s, renderer, forceSave]))
+  }), [session, project.path, ancestorRecords, documentStatus, makeId, today, s, renderer, forceSave]))
 
   /**
    * Who answers for each record on this board (ADR-0012 §10).
@@ -936,8 +950,8 @@ export function ProjectWorkspace({
         onClose={() => { setAdrPage({ open: false }); leaveIfNothingToDraw() }}
         model={session.model}
         groupName={groupName}
-        groupDecisions={groupDecisions}
-        onGroupDecisionsChange={onGroupDecisionsChange}
+        ancestors={ancestorDecisions}
+        {...(onOpenScope ? { onOpenScope } : {})}
         onProjectDecisionsChange={onProjectDecisionsChange}
         initialAdrId={adrPage.adrId}
         s={s}
@@ -997,7 +1011,7 @@ export function ProjectWorkspace({
       <GlobalSearchDialog
         open={searchOpen}
         model={session.model}
-        groupDecisions={groupDecisions}
+        ancestorDecisions={ancestorRecords}
         onClose={() => setSearchOpen(false)}
         onChoose={chooseHit}
         s={s}

@@ -28,24 +28,24 @@ const model: HostModel = {
   diagrams: [],
   decisions: [
     adr('adr-l', 'Use Kafka for events', { body: 'Every domain publishes events.' }),
-    adr('adr-c', 'Keep the CRM as system of record', { number: 2, applicationId: 'crm', body: 'The pipeline lives in one place.' }),
+    adr('adr-c', 'Keep the CRM as system of record', { number: 2, subjectId: 'crm', body: 'The pipeline lives in one place.' }),
   ],
 }
-const groupDecisions = [adr('adr-g', 'One identity provider for the group', { body: 'Kafka is not involved.' })]
+const ancestorDecisions = [adr('adr-g', 'One identity provider for the group', { body: 'Kafka is not involved.' })]
 
 describe('searchAll', () => {
   it('returns nothing for a blank query', () => {
-    expect(searchAll({ model, groupDecisions, query: '   ' })).toEqual([])
+    expect(searchAll({ model, ancestorDecisions, query: '   ' })).toEqual([])
   })
 
   it('finds elements by name, vendor and technology, names first', () => {
-    const hits = searchAll({ model, groupDecisions, query: 'kafka' })
+    const hits = searchAll({ model, ancestorDecisions, query: 'kafka' })
     const elements = hits.filter((h) => h.kind === 'element')
     expect(elements).toEqual([expect.objectContaining({ elementId: 'billing', detail: 'Kafka' })])
   })
 
   it('finds documentation by its prose and says where the words were', () => {
-    const hits = searchAll({ model, groupDecisions, query: 'pipeline' })
+    const hits = searchAll({ model, ancestorDecisions, query: 'pipeline' })
     const docs = hits.filter((h) => h.kind === 'documentation')
     expect(docs).toHaveLength(1)
     expect(docs[0]).toMatchObject({ elementId: 'crm', name: 'Customer CRM' })
@@ -55,26 +55,26 @@ describe('searchAll', () => {
   })
 
   it('finds decisions at all three levels and labels the scope', () => {
-    const hits = searchAll({ model, groupDecisions, query: 'kafka' }).filter((h) => h.kind === 'adr')
+    const hits = searchAll({ model, ancestorDecisions, query: 'kafka' }).filter((h) => h.kind === 'adr')
     expect(hits.map((h) => (h as { scope: string }).scope)).toEqual(['group', 'landscape'])
     expect(hits[0]).toMatchObject({ adrId: 'adr-g', scope: 'group' })
-    const app = searchAll({ model, groupDecisions, query: 'system of record' }).filter((h) => h.kind === 'adr')
-    expect(app[0]).toMatchObject({ scope: 'application', applicationId: 'crm', applicationName: 'Customer CRM' })
+    const app = searchAll({ model, ancestorDecisions, query: 'system of record' }).filter((h) => h.kind === 'adr')
+    expect(app[0]).toMatchObject({ scope: 'application', subjectId: 'crm', applicationName: 'Customer CRM' })
   })
 
   it('lets the same element answer twice when both its name and its page match', () => {
-    const hits = searchAll({ model, groupDecisions, query: 'customer' })
+    const hits = searchAll({ model, ancestorDecisions, query: 'customer' })
     expect(hits.map((h) => h.kind)).toEqual(['element', 'documentation'])
   })
 
   it('folds accents, so a Dutch board is searchable from an English keyboard', () => {
     const accented = { ...model, elements: [element('x', 'Réservation')] }
-    expect(searchAll({ model: accented, groupDecisions: [], query: 'reserv' })).toHaveLength(1)
+    expect(searchAll({ model: accented, ancestorDecisions: [], query: 'reserv' })).toHaveLength(1)
   })
 
   it('caps each kind separately', () => {
     const many = { ...model, elements: Array.from({ length: 30 }, (_, i) => element(`e${i}`, `Node ${i}`)) }
-    const hits = searchAll({ model: many, groupDecisions: [], query: 'node', limitPerKind: 5 })
+    const hits = searchAll({ model: many, ancestorDecisions: [], query: 'node', limitPerKind: 5 })
     expect(hits).toHaveLength(5)
   })
 })

@@ -38,7 +38,7 @@ describe('a new record', () => {
     expect(fresh.status).toBe('proposed')
     expect(fresh.title).toBe('Use PostgreSQL')
     expect(fresh.signers).toEqual([])
-    expect(fresh.applicationId).toBeUndefined()
+    expect(fresh.subjectId).toBeUndefined()
     expect(fresh.body).toContain('## Context and Problem Statement')
     expect(fresh.body).toContain('## Decision Outcome')
     expect(fresh.body).toContain('## Pros and Cons of the Options')
@@ -47,7 +47,7 @@ describe('a new record', () => {
   })
 
   it('files itself under an application when told to', () => {
-    expect(newAdr({ id: 'x', number: 1, title: 'T', date: 'd', t: en, applicationId: 'crm' }).applicationId).toBe('crm')
+    expect(newAdr({ id: 'x', number: 1, title: 'T', date: 'd', t: en, subjectId: 'crm' }).subjectId).toBe('crm')
   })
 
   it('template: every heading level is well formed and the file ends in one newline', () => {
@@ -143,7 +143,7 @@ describe('the list', () => {
   })
 
   it('splits the landscape level from each application', () => {
-    const mixed = [adr(), adr({ id: 'c', number: 2, applicationId: 'crm' }), adr({ id: 'd', number: 3, applicationId: 'erp' })]
+    const mixed = [adr(), adr({ id: 'c', number: 2, subjectId: 'crm' }), adr({ id: 'd', number: 3, subjectId: 'erp' })]
     expect(adrsFor(mixed, undefined).map((a) => a.id)).toEqual(['adr-a'])
     expect(adrsFor(mixed, 'crm').map((a) => a.id)).toEqual(['c'])
   })

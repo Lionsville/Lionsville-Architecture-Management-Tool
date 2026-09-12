@@ -12,7 +12,7 @@
  * diagrams/<id>.json                what a view is, and what is on it
  * diagrams/<id>.geometry.json       where its elements ended up
  * docs/<elementId>.md               an element's description, as prose
- * decisions/[<applicationId>/]NNNN-<slug>.md
+ * decisions/[<subjectId>/]NNNN-<slug>.md
  * transitions/NNNN-<slug>.md        a plan, its window and what it touches
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * logos/<key>.svg | .png            uploaded marks, as images
@@ -663,7 +663,7 @@ export function readDecisions(files: readonly FolderFile[]): Adr[] {
     if (adr && ADR_STATUSES.includes(adr.status)) found.push(adr)
   }
   return found.sort((a, b) =>
-    (a.applicationId ?? '').localeCompare(b.applicationId ?? '') || a.number - b.number)
+    (a.subjectId ?? '').localeCompare(b.subjectId ?? '') || a.number - b.number)
 }
 
 /**

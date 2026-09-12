@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../model/placement';
-import { bestMatches, groupDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
+import { bestMatches, ancestorDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
 import { searchAll } from './search'
 import { searchElements, SEARCH_RESULT_LIMIT } from './elementSearch'
 import { fold, matchesQuery, queryTokens } from '../model/textSearch'
@@ -77,8 +77,8 @@ describe('the index', () => {
       id: 'g1', number: 1, title: 'Use one identity provider', status: 'accepted',
       date: '2026-01-01', body: 'Context.', signers: [],
     }]
-    const indexed = groupDecisionIndex(records)
-    expect(indexed).toBe(groupDecisionIndex(records))
+    const indexed = ancestorDecisionIndex(records)
+    expect(indexed).toBe(ancestorDecisionIndex(records))
     expect(indexed[0].scope).toBe('group')
   })
 })
@@ -156,7 +156,7 @@ const QUERIES = ['bill', 'billing gateway', 'kestrel', 'go', 'z', 'order to cash
 
 describe('the same answers as the filter and sort it replaced', () => {
   it.each(QUERIES)('finds the same elements for %j', (query) => {
-    const found = searchAll({ model, groupDecisions: [], query })
+    const found = searchAll({ model, ancestorDecisions: [], query })
       .filter((hit) => hit.kind === 'element')
       .map((hit) => hit.elementId)
     expect(found).toEqual(naiveElements(query, 8))
@@ -168,7 +168,7 @@ describe('the same answers as the filter and sort it replaced', () => {
   })
 
   it.each(QUERIES)('finds the same documentation for %j', (query) => {
-    const found = searchAll({ model, groupDecisions: [], query })
+    const found = searchAll({ model, ancestorDecisions: [], query })
       .filter((hit) => hit.kind === 'documentation')
       .map((hit) => hit.elementId)
     const expected = model.elements
@@ -180,7 +180,7 @@ describe('the same answers as the filter and sort it replaced', () => {
   })
 
   it.each(QUERIES)('finds the same decisions for %j', (query) => {
-    const found = searchAll({ model, groupDecisions: [], query })
+    const found = searchAll({ model, ancestorDecisions: [], query })
       .filter((hit) => hit.kind === 'adr')
       .map((hit) => hit.adrId)
     const expected = (model.decisions ?? [])

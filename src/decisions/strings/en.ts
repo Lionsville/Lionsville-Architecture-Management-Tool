@@ -16,6 +16,11 @@ export const EN = {
   'adr.scopeRemoved': 'Removed applications',
   'adr.scopeGroupNote': 'Decisions that hold for every project in this group',
   'adr.scopeLandscapeNote': 'Decisions about the landscape as a whole',
+  /** A section per scope above this one (ADR-0012 §7), read-only here. */
+  'adr.scopeFrom': 'From {scope}',
+  'adr.scopeFromNote': 'Read here, edited where it lives',
+  'adr.openScope': 'Open {scope}',
+  'adr.fromAncestor': 'This record belongs to {scope}. Open that scope to change it.',
   'adr.new': 'New decision',
   'adr.newTitleField': 'Title',
   'adr.newTitleHelp': 'State the decision as a short sentence: \u201cUse PostgreSQL for the order store\u201d.',

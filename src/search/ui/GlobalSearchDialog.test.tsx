@@ -26,13 +26,13 @@ const model: HostModel = {
   relations: [], diagrams: [],
   decisions: [{ id: 'adr-1', number: 1, title: 'Use Kafka for events', status: 'accepted', date: '2026-09-01', body: '', signers: [] }],
 }
-const groupDecisions: Adr[] = [
+const ancestorDecisions: Adr[] = [
   { id: 'adr-g', number: 1, title: 'One message broker for the group', status: 'proposed', date: '2026-09-01', body: 'Kafka, not RabbitMQ.', signers: [] },
 ]
 
 describe('GlobalSearchDialog', () => {
   it('groups hits by kind and says where a decision lives', () => {
-    renderShell(<GlobalSearchDialog open model={model} groupDecisions={groupDecisions} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    renderShell(<GlobalSearchDialog open model={model} ancestorDecisions={ancestorDecisions} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'kafka' } })
     const options = screen.getAllByRole('option')
     expect(options).toHaveLength(4)
@@ -46,7 +46,7 @@ describe('GlobalSearchDialog', () => {
   it('Enter takes the highlighted hit and closes; the arrows move the highlight', () => {
     const onChoose = vi.fn()
     const onClose = vi.fn()
-    renderShell(<GlobalSearchDialog open model={model} groupDecisions={groupDecisions} onClose={onClose} onChoose={onChoose} s={translator('en')} />)
+    renderShell(<GlobalSearchDialog open model={model} ancestorDecisions={ancestorDecisions} onClose={onClose} onChoose={onChoose} s={translator('en')} />)
     const field = screen.getByRole('combobox')
     fireEvent.change(field, { target: { value: 'kafka' } })
     fireEvent.keyDown(field, { key: 'ArrowDown' })
@@ -56,7 +56,7 @@ describe('GlobalSearchDialog', () => {
   })
 
   it('says so when nothing matches', () => {
-    renderShell(<GlobalSearchDialog open model={model} groupDecisions={[]} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    renderShell(<GlobalSearchDialog open model={model} ancestorDecisions={[]} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzz' } })
     expect(screen.getByText('Nothing matches “zzz”.')).toBeTruthy()
   })

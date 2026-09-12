@@ -20,7 +20,7 @@ import { fold, queryTokens } from '../model'
 import type { ElementKind } from '../model'
 import type { Adr, AdrStatus } from '../decisions/adr'
 import type { HostModel } from '../model/fromInterchange'
-import { bestMatches, groupDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
+import { bestMatches, ancestorDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
 import type { AdrEntry, AdrScope } from './searchIndex'
 
 export type { AdrScope }
@@ -46,7 +46,7 @@ export type SearchHit =
     adrId: string
     scope: AdrScope
     /** Which application's record, when the scope is one. */
-    applicationId?: string
+    subjectId?: string
     applicationName?: string
     number: number
     title: string
@@ -59,12 +59,12 @@ export const SEARCH_LIMIT_PER_KIND = 8
 
 export type SearchInput = {
   model: HostModel
-  groupDecisions: readonly Adr[]
+  ancestorDecisions: readonly Adr[]
   query: string
   limitPerKind?: number
 }
 
-export function searchAll({ model, groupDecisions, query, limitPerKind = SEARCH_LIMIT_PER_KIND }: SearchInput): SearchHit[] {
+export function searchAll({ model, ancestorDecisions, query, limitPerKind = SEARCH_LIMIT_PER_KIND }: SearchInput): SearchHit[] {
   const tokens = queryTokens(query)
   if (tokens.length === 0) return []
   const index = searchIndex(model)
@@ -100,15 +100,15 @@ export function searchAll({ model, groupDecisions, query, limitPerKind = SEARCH_
     kind: 'adr',
     adrId: entry.adr.id,
     scope: entry.scope,
-    applicationId: entry.adr.applicationId,
-    applicationName: entry.adr.applicationId ? index.names.get(entry.adr.applicationId) : undefined,
+    subjectId: entry.adr.subjectId,
+    applicationName: entry.adr.subjectId ? index.names.get(entry.adr.subjectId) : undefined,
     number: entry.adr.number,
     title: entry.adr.title,
     status: entry.adr.status,
     snippet: matchesTokens(tokens, entry.title) ? '' : snippet(entry.adr.body, query),
   })
   const decisions: SearchHit[] = []
-  for (const list of [groupDecisionIndex(groupDecisions), index.decisions]) {
+  for (const list of [ancestorDecisionIndex(ancestorDecisions), index.decisions]) {
     for (const entry of list) {
       if (decisions.length >= limitPerKind) break
       if (matchesTokens(tokens, entry.fields)) decisions.push(hit(entry))

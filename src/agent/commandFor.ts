@@ -619,7 +619,7 @@ function planDecisions(args: Args, view: ReadView): string[] | AgentAnswer | und
   if (ids === undefined || ids === null) return undefined
   const own = decisionsOf(view.model)
   for (const id of ids) {
-    if (!own[id] && !view.groupDecisions.some((adr) => adr.id === id)) return refused('agent.unknownId', `decision ${id}`)
+    if (!own[id] && !view.ancestorDecisions.some((adr) => adr.id === id)) return refused('agent.unknownId', `decision ${id}`)
   }
   return [...new Set(ids)]
 }
@@ -989,14 +989,17 @@ function proposeDecision(args: Args, view: WriteView): Prepared | AgentAnswer {
   const { model } = view
   const title = (args.title as string).trim()
   if (!title) return refused('agent.badArguments', '"title" must not be blank')
-  const applicationId = args.applicationId as string | undefined
-  if (applicationId !== undefined && !model.elements[applicationId]) return refused('agent.unknownId', `element ${applicationId}`)
-  // Numbers are per list: the landscape's own, and each application's.
+  // `applicationId` is accepted as an alias for one beta (ADR-0012 §7): every
+  // agent that learnt the old word keeps working, and `tools.ts` says which is
+  // the name.
+  const subjectId = (args.subjectId ?? args.applicationId) as string | undefined
+  if (subjectId !== undefined && !model.elements[subjectId]) return refused('agent.unknownId', `element ${subjectId}`)
+  // Numbers are per list: the scope's own, and each subject's.
   const list = model.order.decisions
     .map((id) => model.decisions![id])
-    .filter((adr) => (adr.applicationId ?? undefined) === applicationId)
+    .filter((adr) => (adr.subjectId ?? undefined) === subjectId)
   const decision: Adr = newAdr({
-    id: view.makeId('adr'), number: nextAdrNumber(list), title, date: view.today(), t: view.translate, applicationId,
+    id: view.makeId('adr'), number: nextAdrNumber(list), title, date: view.today(), t: view.translate, subjectId,
   })
   if (typeof args.body === 'string' && args.body.trim()) decision.body = args.body
   const signers = signersOf(args)
@@ -1016,7 +1019,7 @@ function proposeDecision(args: Args, view: WriteView): Prepared | AgentAnswer {
   return {
     command: transaction([{ type: 'decision.add', decision }, ...linked], { origin: 'agent' }),
     answer: json({
-      id: decision.id, number: decision.number, label: formatAdrNumber(decision.number), title, status: decision.status, applicationId,
+      id: decision.id, number: decision.number, label: formatAdrNumber(decision.number), title, status: decision.status, subjectId,
       ...(linked.length ? { plans: linked.map((c) => (c.type === 'transition.update' ? c.id : '')) } : {}),
     }),
   }
@@ -1026,7 +1029,7 @@ function proposeDecision(args: Args, view: WriteView): Prepared | AgentAnswer {
 function ownDecision(id: string, view: ReadView): Adr | AgentAnswer {
   const held = decisionsOf(view.model)[id]
   if (held) return held
-  return view.groupDecisions.some((adr) => adr.id === id)
+  return view.ancestorDecisions.some((adr) => adr.id === id)
     ? refused('agent.readOnly', 'a group\'s records are changed on the decisions page')
     : refused('agent.unknownId', `decision ${id}`)
 }

@@ -27,12 +27,12 @@ describe('adrPath', () => {
 
   it('gives an application its own folder, because numbers are per list', () => {
     // The landscape's ADR-0007 and an application's ADR-0007 are two records.
-    expect(adrPath(record({ applicationId: 'crews' })))
+    expect(adrPath(record({ subjectId: 'crews' })))
       .toBe('decisions/crews/0007-keep-the-working-file-in-a-folder.md')
   })
 
   it('keeps an id that is not a slug out of the path', () => {
-    expect(adrPath(record({ applicationId: '../escape' }))).toBe('decisions/0007-keep-the-working-file-in-a-folder.md')
+    expect(adrPath(record({ subjectId: '../escape' }))).toBe('decisions/0007-keep-the-working-file-in-a-folder.md')
   })
 
   it('still names a file for a record with no title yet', () => {
@@ -70,7 +70,7 @@ describe('adrFileText', () => {
 
 describe('adrFromFile', () => {
   it('reads back everything it wrote', () => {
-    const adr = record({ applicationId: 'crews', supersededBy: 'adr-9', status: 'superseded' })
+    const adr = record({ subjectId: 'crews', supersededBy: 'adr-9', status: 'superseded' })
     expect(adrFromFile(adrFileText(adr), adrPath(adr))).toEqual(adr)
   })
 
@@ -91,7 +91,7 @@ describe('adrFromFile', () => {
 
   it('takes the application from the folder when the field is missing', () => {
     const held = adrFromFile('# ADR-0003 — Dropped in\n', 'decisions/crews/0003-dropped-in.md')
-    expect(held?.applicationId).toBe('crews')
+    expect(held?.subjectId).toBe('crews')
   })
 
   it('refuses a file that carries no number anywhere', () => {
@@ -108,5 +108,31 @@ describe('adrFromFile', () => {
   it('drops a signer with no name rather than inventing one', () => {
     const text = '---\nnumber: 1\nsigners:\n  - role: Architect\n  - name: W\n---\n\n# ADR-0001 — X\n'
     expect(adrFromFile(text, 'decisions/0001-x.md')?.signers).toEqual([{ name: 'W' }])
+  })
+})
+
+/**
+ * The field was renamed when the three decision lists became one
+ * (ADR-0012 §7). Nothing about the file changed but the name of one field, so
+ * it is a read-time alias inside the same format rather than a migration —
+ * and format 6 drops it.
+ */
+describe('subjectId, and the old spelling', () => {
+  it('reads applicationId as subjectId, and writes only the new word', () => {
+    const text = [
+      '---', 'id: adr-1', 'number: 7', 'status: accepted', 'date: 2026-01-01',
+      'applicationId: crews', '---', '', '# ADR-0007 — Keep the crews app', '', 'Because.', '',
+    ].join('\n')
+    const held = adrFromFile(text, 'decisions/0007-keep.md')
+    expect(held?.subjectId).toBe('crews')
+    const written = adrFileText(held!)
+    expect(written).toContain('subjectId: crews')
+    expect(written).not.toContain('applicationId')
+  })
+
+  /** The front matter wins over the folder, as it always has. */
+  it('still takes the subject from the folder when the file says nothing', () => {
+    const text = ['---', 'number: 3', '---', '', '# ADR-0003 — Something', ''].join('\n')
+    expect(adrFromFile(text, 'decisions/wms/0003-something.md')?.subjectId).toBe('wms')
   })
 })

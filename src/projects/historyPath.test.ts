@@ -37,7 +37,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
       laidOut({ id: 'Billing View', kind: 'container', name: 'Billing', placements: [], applicationElementId: 'billing' }),
       laidOut({ id: 'billing-view', kind: 'container', name: 'Billing again', placements: [], applicationElementId: 'billing' }),
     ],
-    decisions: [decision(), decision({ id: 'adr-app', number: 1, title: 'Inside billing', applicationId: 'billing' })],
+    decisions: [decision(), decision({ id: 'adr-app', number: 1, title: 'Inside billing', subjectId: 'billing' })],
     ...over,
   }
 }

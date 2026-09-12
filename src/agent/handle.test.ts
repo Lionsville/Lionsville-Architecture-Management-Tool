@@ -69,7 +69,7 @@ function session(over: Partial<SessionView> = {}): SessionView & { model: () => 
     current: () => toArrays(model),
     activeDiagramId: () => 'l7',
     scopePath: () => 'acme/landscape',
-    groupDecisions: () => [],
+    ancestorDecisions: () => [],
     blocked: () => undefined,
     dispatch: (command) => {
       const result = apply(model, command)
@@ -387,7 +387,7 @@ describe('the four things only the renderer can do', () => {
 
 describe('resources', () => {
   it('lists the descriptions and the decisions, and reads them back as markdown', async () => {
-    const held = session({ groupDecisions: () => [{ id: 'g-1', number: 1, title: 'One identity', status: 'accepted', date: '2026-01-01', body: 'Yes.', signers: [] }] })
+    const held = session({ ancestorDecisions: () => [{ id: 'g-1', number: 1, title: 'One identity', status: 'accepted', date: '2026-01-01', body: 'Yes.', signers: [] }] })
     const listed = parsed(await handle({ id: '1', tool: RESOURCE_LIST, args: {} }, held)) as { resources: { uri: string }[] }
     expect(listed.resources.map((r) => r.uri)).toEqual([
       'lvarch://element/billing/description', 'lvarch://decision/g-1', 'lvarch://decision/adr-1',
