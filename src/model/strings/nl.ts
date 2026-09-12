@@ -23,8 +23,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'relation.serves': 'Bedient',
   'relation.realises': 'Realiseert',
   'relation.assigned': 'Toegewezen aan',
-  'relation.notInThisFormat': 'Een relatie van het type {type} kan nog niet in dit bestandsformaat worden opgeslagen. Alleen koppelingen wel.',
-  'element.notInThisFormat': 'Een {kind} kan nog niet in dit bestandsformaat worden opgeslagen. Het houdt applicaties, componenten en actoren.',
 
   'zone.actors': 'ACTOREN',
   'zone.inputChannels': 'INVOERKANALEN',

@@ -206,7 +206,7 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     // The exchange format files a place under its group's NAME, because that is
     // what another tool can read. A group's id is this model's (ADR-0012 §6),
     // so it is minted here, per diagram, in the order the places name them —
-    // the same rule `folderFormat` follows for a format-3 folder.
+    // the same rule `migrate3to4` follows for a folder written before ids.
     const taken = new Set<string>()
     const idOf = new Map<string, string>()
     const groups: DiagramGroup[] = []

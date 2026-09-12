@@ -23,8 +23,6 @@ export const FY: Record<keyof typeof EN, string> = {
   'relation.serves': 'Betsjinnet',
   'relation.realises': 'Realisearret',
   'relation.assigned': 'Tawiisd oan',
-  'relation.notInThisFormat': 'In relaasje fan it type {type} kin noch net yn dit bestânsformaat bewarre wurde. Allinne keppelingen wol.',
-  'element.notInThisFormat': 'In {kind} kin noch net yn dit bestânsformaat bewarre wurde. It hâldt applikaasjes, komponinten en akteurs.',
 
   'zone.actors': 'AKTEUREN',
   'zone.inputChannels': 'YNFIERKANALEN',

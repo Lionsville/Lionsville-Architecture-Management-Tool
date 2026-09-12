@@ -26,10 +26,8 @@ export function defaultGroupName(translate: Translate = DEFAULT_TRANSLATE): stri
  *
  * The name stopped being the group's key when a group got an id (ADR-0012 §6),
  * so a duplicate no longer hijacks somebody else's box — but two groups called
- * the same thing are still a board nobody can read, and format 3 has only the
- * name to write them under until the format turns, so a duplicate would fold
- * two groups into one on save. Both reasons say the same thing: keep them
- * distinct. Someone typing "Commerce" when a "Commerce" already exists gets
+ * the same thing are still a board nobody can read, which is reason enough on
+ * its own. Someone typing "Commerce" when a "Commerce" already exists gets
  * "Commerce 2".
  */
 export function uniqueGroupName(

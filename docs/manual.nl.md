@@ -61,9 +61,9 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
     group.json                        naam, klant, omschrijving en koppelingen
     warehouse-landscape/              het project
       project.json                    hoe het heet, en wat erin zit
-      model.json                      de applicaties en de lijnen ertussen
+      model.json                      de elementen en de lijnen ertussen
       diagrams/landscape.json         wat een aanzicht is
-      diagrams/landscape.placements.json   waar de elementen staan
+      diagrams/landscape.geometry.json     waar de elementen staan
       docs/warehouse.md               de omschrijving van een element, als tekst
       decisions/0007-one-writer.md    een besluit
       logos/own.svg                   een logo dat je hebt geüpload

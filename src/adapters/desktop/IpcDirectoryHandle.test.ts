@@ -72,7 +72,7 @@ describe('IpcDirectoryHandle', () => {
 
     const { readFileSync } = await import('node:fs')
     const header = readFileSync(join(folder, 'acme-logistics/landscape/project.json'), 'utf8')
-    expect(JSON.parse(header)).toMatchObject({ name: 'Application landscape', formatVersion: 3 })
+    expect(JSON.parse(header)).toMatchObject({ name: 'Application landscape', formatVersion: 4 })
   })
 
   it('reads back a project another program wrote into the folder', async () => {

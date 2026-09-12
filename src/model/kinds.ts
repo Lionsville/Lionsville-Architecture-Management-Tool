@@ -85,16 +85,15 @@ export function nodeFigure(
 /**
  * What a figure's name MEANS, read back.
  *
- * The six names above are also the vocabulary two file formats hold: format 3's
- * `model.json` and the interchange document, both written when a figure and a
- * kind were the same word. So the one table serves both shims — a name read out
- * of a file becomes the kind it always was plus the fact that carried it, and
+ * The six names above are also the vocabulary the interchange document holds,
+ * written when a figure and a kind were the same word: a name read out of one
+ * becomes the kind it always was plus the fact that carried it, and
  * {@link nodeFigure} writes it back.
  *
- * The two lifetimes differ and the comment has to say so: the format-3 fold
- * (`projects/folderFormat.ts`) is deleted at format 4, and the interchange one
- * is permanent, because the interchange is a contract with other tools and does
- * not change (ADR-0012 §11).
+ * Permanent, unlike the working format's own use of it — that one went at
+ * format 4, and `projects/migrate3to4.ts` is the last reader of it — because
+ * the interchange is a contract with other tools and does not change
+ * (ADR-0012 §11).
  */
 export const FIGURE_MEANS: Record<NodeFigure, { kind: ElementKind; outside?: true }> = {
   application: { kind: 'application' },
@@ -112,12 +111,12 @@ export function isNodeFigure(held: unknown): held is NodeFigure {
 /**
  * The band each element sits in, from the first view that puts it in one.
  *
- * What both shims need and neither should work out for itself: a card's band is
- * half of what it is drawn as, and an element is written to a file once however
- * many boards it is on. Diagram order, so the answer is the model's own and not
- * a set's iteration order; only a band counts, because an element in the open
- * landscape has said nothing about what it is, which is the whole point of
- * retiring the two kinds.
+ * What the interchange export needs and should not work out for itself: a
+ * card's band is half of what it is drawn as, and an element is written to the
+ * document once however many boards it is on. Diagram order, so the answer is
+ * the model's own and not a set's iteration order; only a band counts, because
+ * an element in the open landscape has said nothing about what it is, which is
+ * the whole point of retiring the two kinds.
  */
 export function bandsOf(diagrams: readonly DesignDiagram[]): Map<ElementId, Layer7Zone> {
   const bands = new Map<ElementId, Layer7Zone>()

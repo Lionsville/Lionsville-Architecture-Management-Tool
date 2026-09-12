@@ -1213,8 +1213,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const trimmed = name.trim();
         const held = (diagram?.groups ?? []).find((g) => g.id === groupId);
         if (!diagram || !held || !trimmed || trimmed === held.name) return;
-        // Two groups with one name is a board nobody can read, and format 3
-        // writes a group under its name until the format turns — see
+        // Two groups with one name is a board nobody can read — see
         // `uniqueGroupName`.
         if (diagram.groups?.some((g) => g.id !== groupId && g.name === trimmed)) return;
         dispatch({

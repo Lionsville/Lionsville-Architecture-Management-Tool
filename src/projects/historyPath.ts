@@ -20,7 +20,9 @@
  */
 import type { HostModel } from '../model/fromInterchange'
 import { adrPathPattern } from './adrFile'
-import { descriptionPath, diagramStems, DIAGRAMS_FOLDER, MODEL_FILE } from './folderFormat'
+import {
+  descriptionPath, diagramStems, DIAGRAMS_FOLDER, GEOMETRY_SUFFIX, MODEL_FILE,
+} from './folderFormat'
 
 /** One thing a person can ask the history of. */
 export type HistorySubject =
@@ -43,7 +45,7 @@ export function historyPaths(subject: HistorySubject, model: HostModel): string[
       const stems = diagramStems(known ? model.diagrams : [{ id: subject.id }])
       const stem = stems.get(subject.id)
       if (!stem) return undefined
-      return [`${DIAGRAMS_FOLDER}/${stem}.json`, `${DIAGRAMS_FOLDER}/${stem}.placements.json`]
+      return [`${DIAGRAMS_FOLDER}/${stem}.json`, `${DIAGRAMS_FOLDER}/${stem}${GEOMETRY_SUFFIX}`]
     }
     case 'description':
       // An element whose id cannot be a file name keeps its description in

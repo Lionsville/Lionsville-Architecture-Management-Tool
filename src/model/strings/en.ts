@@ -21,13 +21,6 @@ export const EN = {
   'relation.serves': 'Serves',
   'relation.realises': 'Realises',
   'relation.assigned': 'Assigned to',
-  /**
-   * The model can say more than format 3 can hold. Said as a refusal rather
-   * than a silent drop, because the alternative is a file an older build reads
-   * as a line it cannot understand.
-   */
-  'relation.notInThisFormat': 'A {type} relation cannot be saved in this file format yet. Only flows can.',
-  'element.notInThisFormat': 'A {kind} cannot be saved in this file format yet. It holds applications, components and actors.',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',

@@ -56,7 +56,7 @@ const written = (held: HostModel): string[] => projectFiles(project(held)).map((
 describe('what a subject is filed as', () => {
   it('names both of a diagram\'s files, as the writer names them', () => {
     const paths = historyPaths({ what: 'diagram', id: 'landscape' }, model())
-    expect(paths).toEqual(['diagrams/landscape.json', 'diagrams/landscape.placements.json'])
+    expect(paths).toEqual(['diagrams/landscape.json', 'diagrams/landscape.geometry.json'])
     for (const path of paths!) expect(written(model())).toContain(path)
   })
 
@@ -77,7 +77,7 @@ describe('what a subject is filed as', () => {
 
   it('still names a diagram that has been deleted since', () => {
     const paths = historyPaths({ what: 'diagram', id: 'gone' }, model())
-    expect(paths).toEqual(['diagrams/gone.json', 'diagrams/gone.placements.json'])
+    expect(paths).toEqual(['diagrams/gone.json', 'diagrams/gone.geometry.json'])
   })
 
   it('names the description\'s own page', () => {

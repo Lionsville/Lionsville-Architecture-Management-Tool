@@ -288,7 +288,7 @@ describe('the history of one thing (ADR-0008)', () => {
     },
     {
       id: 'c1', subject: 'Moved everything', at, author: 'W.',
-      touched: ['acme/landscape/diagrams/d1.placements.json', 'acme/landscape/diagrams/d1.json'],
+      touched: ['acme/landscape/diagrams/d1.geometry.json', 'acme/landscape/diagrams/d1.json'],
       projects: [{ ...withDescribed(), model: { ...described(), diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] })] } }],
     },
   ])

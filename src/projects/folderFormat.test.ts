@@ -4,10 +4,8 @@
  * change to one thing changes one file.
  */
 import { describe, expect, it } from 'vitest'
-import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../decisions/adr'
-import { ShellError } from '../platform/errors'
 import type { DesignElement } from '../model'
 import type { Transition } from '../model/transition'
 import type { HostModel } from '../model/fromInterchange'
@@ -102,10 +100,10 @@ describe('projectFiles', () => {
   it('writes one document per thing that changes independently', () => {
     expect(paths(projectFiles(project()))).toEqual([
       'decisions/0001-one-writer.md',
+      'diagrams/containers.geometry.json',
       'diagrams/containers.json',
-      'diagrams/containers.placements.json',
+      'diagrams/l7.geometry.json',
       'diagrams/l7.json',
-      'diagrams/l7.placements.json',
       'docs/crews.md',
       'images/cutover.png',
       'logos/own.svg',
@@ -119,10 +117,15 @@ describe('projectFiles', () => {
     expect(projectFiles(project())).toEqual(projectFiles(project()))
   })
 
-  it('keeps coordinates out of the definition and everything else out of the placements', () => {
+  it('keeps coordinates out of the definition and everything but numbers out of the geometry', () => {
     const files = projectFiles(project())
     expect(textOf(files, 'diagrams/l7.json')).not.toContain('"x"')
-    expect(textOf(files, 'diagrams/l7.placements.json')).not.toContain('Landschap')
+    const geometry = textOf(files, 'diagrams/l7.geometry.json')
+    expect(geometry).not.toContain('Landschap')
+    // A group's name and a member's band are the view's business, not the
+    // geometry's — which is the whole of ADR-0012 §6.
+    expect(geometry).not.toContain('Kern')
+    expect(geometry).not.toContain('"zone"')
   })
 
   it('files a description as prose, not as an escaped string in JSON', () => {
@@ -187,46 +190,104 @@ describe('projectFiles', () => {
     expect(textOf(files, MODEL_FILE)).toContain('Nowhere to file this.')
   })
 
-  it('writes an empty placement file rather than none, so a missing one means something', () => {
-    expect(textOf(projectFiles(project()), 'diagrams/containers.placements.json'))
-      .toBe('{\n  "placements": []\n}\n')
+  it('writes an empty geometry file rather than none, so a missing one means something', () => {
+    expect(textOf(projectFiles(project()), 'diagrams/containers.geometry.json'))
+      .toBe('{\n  "nodes": []\n}\n')
   })
 })
 
 /**
- * The model gained four relation types before the file gained a place for them
- * (ADR-0012 §5). A save that quietly wrote one into a list called `connections`
- * would hand every 1.x build a line it reads as an interface between two
- * applications, so the writer says no instead.
+ * What the model says, the file says (ADR-0012 §5 and §4).
+ *
+ * Both of these were refusals until format 4: the model could say more than the
+ * file could hold, and a save that wrote a `supports` row into a list called
+ * `connections` — or a capability as the `application` its figure fell back
+ * to — would have handed an older build a row that was a lie. The list is
+ * called `relations` now and carries the type on every row, so there is nothing
+ * left to refuse.
  */
-describe('a relation format 3 has no place for', () => {
-  it('refuses the save, with a key rather than a sentence', () => {
+describe('the model\'s own vocabulary, written', () => {
+  const wider = (): ProjectSnapshot => {
     const held = project()
     const model: HostModel = {
       ...held.model,
-      relations: [...held.model.relations, { id: 'r-1', type: 'supports', sourceId: 'crews', targetId: 'reisinfo' }],
+      // In id order, because that is the order the file writes them back in
+      // and this fixture is compared against a round trip of itself.
+      elements: [
+        element('carrier', 'Carrier', { outside: true, partyId: 'partner' }),
+        ...held.model.elements.filter((held) => held.id === 'crews'),
+        element('fulfilment', 'Fulfilment', { kind: 'function', order: 2 }),
+        element('partner', 'Marketplace partner', { kind: 'actor', outside: true }),
+        ...held.model.elements.filter((held) => held.id === 'reisinfo'),
+        element('ship', 'Ship a consignment', { kind: 'step', parentId: 'fulfilment', lane: 'partner' }),
+      ],
+      relations: [
+        ...held.model.relations,
+        { id: 'r-1', type: 'supports', sourceId: 'crews', targetId: 'fulfilment', validFrom: '2027-03-01' },
+      ],
     }
-    expect(() => projectFiles({ ...held, model })).toThrow(ShellError)
-    try {
-      projectFiles({ ...held, model })
-    } catch (error) {
-      expect((error as ShellError).key).toBe('relation.notInThisFormat')
-    }
+    return { ...held, model }
+  }
+
+  it('writes every relation with the type it has, under the name the model uses', () => {
+    expect(JSON.parse(textOf(projectFiles(wider()), MODEL_FILE)).relations).toEqual([
+      { id: 'c-1', type: 'flow', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false },
+      { id: 'r-1', type: 'supports', sourceId: 'crews', targetId: 'fulfilment', validFrom: '2027-03-01' },
+    ])
   })
 
-  it('writes the flows it does have a place for exactly as it always did', () => {
-    expect(JSON.parse(textOf(projectFiles(project()), MODEL_FILE)).connections)
-      .toEqual([{ id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }])
+  it('writes a business kind as the kind it is, with its own fields', () => {
+    const rows: Record<string, Record<string, unknown>> = Object.fromEntries(
+      JSON.parse(textOf(projectFiles(wider()), MODEL_FILE)).elements
+        .map((row: { id: string }) => [row.id, row]),
+    )
+    expect(rows.fulfilment).toMatchObject({ kind: 'function', order: 2 })
+    expect(rows.ship).toMatchObject({ kind: 'step', parentId: 'fulfilment', lane: 'partner' })
+    expect(rows.partner).toMatchObject({ kind: 'actor', outside: true })
+    // Three facts that used to be one word: an application nobody here owns,
+    // and whose it is (ADR-0012 §4).
+    expect(rows.carrier).toMatchObject({ kind: 'application', outside: true, partyId: 'partner' })
+  })
+
+  it('gives the whole of it back, field for field', () => {
+    expect(stableJson(projectFromFolder(projectFiles(wider()), REF))).toBe(stableJson(wider()))
+  })
+
+  it('carries a kind of view this build has not heard of', () => {
+    // The format holds what the model's type allows and switches on no list of
+    // its own: a view kind added tomorrow is written and read today.
+    const held = project()
+    held.model.diagrams = [
+      { ...held.model.diagrams[0], kind: 'sheet' as never },
+      held.model.diagrams[1],
+    ]
+    expect(projectFromFolder(projectFiles(held), REF)?.model.diagrams[0].kind).toBe('sheet')
   })
 })
 
 describe('what one change touches', () => {
   const before = projectFiles(project())
 
-  it('moving a node: the placement file, and nothing else', () => {
+  it('moving a node: the geometry file, and nothing else', () => {
     const moved = project()
-    placedNodes(moved.model.diagrams[0])[0] = { id: 'crews', x: 44, y: 20 }
-    expect(changed(before, projectFiles(moved))).toEqual(['diagrams/l7.placements.json'])
+    const diagram = moved.model.diagrams[0]
+    moved.model.diagrams[0] = {
+      ...diagram,
+      geometry: {
+        ...diagram.geometry,
+        nodes: diagram.geometry.nodes.map((node) => (node.id === 'crews' ? { ...node, x: 44 } : node)),
+      },
+    }
+    expect(changed(before, projectFiles(moved))).toEqual(['diagrams/l7.geometry.json'])
+  })
+
+  it('renaming a dashed group: the definition, and not one coordinate', () => {
+    // What format 3 could not do: the name was the key there, so a rename
+    // rewrote every row that mentioned it. A member points at the id now.
+    const renamed = project()
+    const diagram = renamed.model.diagrams[0]
+    renamed.model.diagrams[0] = { ...diagram, groups: [{ id: 'kern', name: 'Core' }] }
+    expect(changed(before, projectFiles(renamed))).toEqual(['diagrams/l7.json'])
   })
 
   it('editing a description: one markdown file', () => {
@@ -279,11 +340,15 @@ describe('projectFromFolder', () => {
     expect(projectFromFolder(projectFiles(project()), elsewhere)?.ref).toEqual(elsewhere)
   })
 
-  it('treats a deleted placement file as "lay it out again"', () => {
+  it('treats a deleted geometry file as "lay it out again", with the view intact', () => {
+    // The flip format 4 makes: membership is the definition's, so a view whose
+    // coordinates are gone is laid out again from a list that is still whole
+    // (ADR-0012 §6). At format 3 the same deletion emptied the board.
     const files = projectFiles(project())
-      .filter((file) => file.path !== 'diagrams/l7.placements.json')
+      .filter((file) => file.path !== 'diagrams/l7.geometry.json')
     const back = projectFromFolder(files, REF)
-    expect(back?.model.diagrams[0]).toMatchObject({ members: [], geometry: { nodes: [], needsLayout: true } })
+    expect(back?.model.diagrams[0].geometry).toEqual({ nodes: [], needsLayout: true })
+    expect(back?.model.diagrams[0].members.map((member) => member.id)).toEqual(['crews', 'reisinfo'])
     expect(back?.model.diagrams[0].name).toBe('Landschap')
   })
 
@@ -358,7 +423,7 @@ describe('projectFromFolder', () => {
   it('refuses a folder written by a newer version of this tool', () => {
     // Half-reading it would drop whatever the new version added, on the next save.
     const files = projectFiles(project()).map((file) => file.path === PROJECT_FILE
-      ? { path: PROJECT_FILE, text: stableJson({ type: 'lionsville-architecture', formatVersion: 4, diagrams: ['l7'] }) }
+      ? { path: PROJECT_FILE, text: stableJson({ type: 'lionsville-architecture', formatVersion: PROJECT_FORMAT_VERSION + 1, diagrams: ['l7'] }) }
       : file)
     expect(projectFromFolder(files, REF)).toBeUndefined()
   })
@@ -398,169 +463,6 @@ describe('projectSummaryFrom', () => {
   })
 })
 
-/**
- * The shim that carries a dashed group's id across format 3 (ADR-0012 §6).
- *
- * The file has no field for an id: it files a group under its NAME, on the
- * rectangle and on every placement. So the ids are minted on read and folded
- * back on write, and the property that has to hold is that a folder which goes
- * through this build unchanged comes out as the bytes that went in — a 1.x
- * build still reads it, and a save is not a diff.
- *
- * All of this goes at format 4, where a group is written with its id.
- */
-describe('dashed groups, across format 3', () => {
-  const v3 = (): FolderFile[] => [
-    {
-      path: 'project.json',
-      text: stableJson({
-        type: 'lionsville-architecture', formatVersion: 3, name: 'L', groupName: 'G',
-        activeDiagramId: 'l7', diagrams: ['l7'],
-      }),
-    },
-    { path: 'model.json', text: stableJson({ connections: [], elements: [element('a', 'A'), element('b', 'B'), element('c', 'C')] }) },
-    {
-      path: 'diagrams/l7.json',
-      text: stableJson({
-        id: 'l7',
-        kind: 'layer7',
-        name: 'Landscape',
-        layoutConfig: {
-          canvas: { width: 1680, height: 1040 },
-          domainGroups: [
-            { name: 'Core systems', x: 10, y: 20, width: 300, height: 200, color: '#2f6fdb' },
-            { name: 'Core Systems', x: 400, y: 20, width: 300, height: 200 },
-          ],
-        },
-      }),
-    },
-    {
-      path: 'diagrams/l7.placements.json',
-      text: stableJson({
-        placements: [
-          { elementId: 'a', domainGroup: 'Core systems', x: 30, y: 40 },
-          { elementId: 'b', domainGroup: 'Core Systems', x: 420, y: 40 },
-          // A name no rectangle claims — format 3 allows it, and so does this.
-          { elementId: 'c', domainGroup: 'Nobody drew a box', x: 800, y: 40 },
-        ],
-      }),
-    },
-  ]
-
-  const diagramOf = (files: readonly FolderFile[]) =>
-    projectFromFolder(files, REF)!.model.diagrams[0]
-
-  it('mints an id per name, in the order the file has them, and files the members under it', () => {
-    const diagram = diagramOf(v3())
-    // Two names that slug alike are told apart by which came first, the way
-    // `diagramStems` tells two diagram ids apart.
-    expect(diagram.groups).toEqual([
-      { id: 'core-systems', name: 'Core systems', color: '#2f6fdb' },
-      { id: 'core-systems-2', name: 'Core Systems' },
-      { id: 'nobody-drew-a-box', name: 'Nobody drew a box' },
-    ])
-    expect(diagram.geometry?.groups).toEqual([
-      { id: 'core-systems', x: 10, y: 20, width: 300, height: 200 },
-      { id: 'core-systems-2', x: 400, y: 20, width: 300, height: 200 },
-    ])
-    expect(placedNodes(diagram).map((p) => p.group))
-      .toEqual(['core-systems', 'core-systems-2', 'nobody-drew-a-box'])
-  })
-
-  it('files what is on the view apart from where it ended up', () => {
-    // ADR-0012 §6, at format 3: the placement file still holds both halves in
-    // one row, and the model does not — so this pins which half comes from
-    // where, and it is the same check that survives the format turning.
-    const diagram = diagramOf(v3())
-    expect(diagram.members).toEqual([
-      { id: 'a', group: 'core-systems' },
-      { id: 'b', group: 'core-systems-2' },
-      { id: 'c', group: 'nobody-drew-a-box' },
-    ])
-    expect(diagram.geometry.nodes).toEqual([
-      { id: 'a', x: 30, y: 40 },
-      { id: 'b', x: 420, y: 40 },
-      { id: 'c', x: 800, y: 40 },
-    ])
-    expect(diagram.geometry.canvas).toEqual({ width: 1680, height: 1040 })
-  })
-
-  it('moves a card in the geometry and says nothing about the definition', () => {
-    const project = projectFromFolder(v3(), REF)!
-    const before = projectFiles(project)
-    const diagram = project.model.diagrams[0]
-    project.model.diagrams[0] = {
-      ...diagram,
-      geometry: {
-        ...diagram.geometry,
-        nodes: diagram.geometry.nodes.map((node) =>
-          (node.id === 'a' ? { ...node, x: 999 } : node)),
-      },
-    }
-    expect(project.model.diagrams[0].members).toBe(diagram.members)
-    expect(changed(before, projectFiles(project))).toEqual(['diagrams/l7.placements.json'])
-  })
-
-  it('reads, then writes, the bytes it started with', () => {
-    const files = v3()
-    const written = projectFiles(projectFromFolder(files, REF)!)
-    for (const file of files) {
-      expect(textOf(written, file.path)).toBe(textOf(files, file.path))
-    }
-  })
-
-  it('writes no id and no groups list into a format-3 file', () => {
-    const written = projectFiles(projectFromFolder(v3(), REF)!)
-    expect(textOf(written, 'diagrams/l7.json')).not.toContain('"groups"')
-    expect(textOf(written, 'diagrams/l7.placements.json')).not.toContain('"group"')
-  })
-
-  /**
-   * The one thing the fold cannot carry, said out loud.
-   *
-   * Format 3 keeps a group's colour ON its rectangle, so a group that has a
-   * colour and no box has nowhere to put it. Nothing in the app makes one —
-   * the colour is picked from the box's own menu — and it goes at format 4,
-   * where the group's record holds both.
-   */
-  it('cannot carry the colour of a group that has no box', () => {
-    const project = projectFromFolder(v3(), REF)!
-    const diagram = project.model.diagrams[0]
-    project.model.diagrams[0] = {
-      ...diagram,
-      groups: diagram.groups!.map((g) =>
-        (g.id === 'nobody-drew-a-box' ? { ...g, color: '#aa0000' } : g)),
-    }
-    const back = projectFromFolder(projectFiles(project), REF)!
-    expect(back.model.diagrams[0].groups).toEqual(diagram.groups)
-  })
-
-  /**
-   * A rename is one line in the MODEL, and format 3 is what still spreads it.
-   *
-   * The members point at the id, so nothing but the group's own row changes in
-   * the document — which is the whole point of ADR-0012 §6. On disk, format 3
-   * has only the name to file a member under, so the placements file follows;
-   * the coordinates in it are untouched. That second line goes at format 4,
-   * and this pins that it is the format's doing and not the model's.
-   */
-  it('renames a group in one row of the model, and only the name moves on disk', () => {
-    const project = projectFromFolder(v3(), REF)!
-    const before = projectFiles(project)
-    const diagram = project.model.diagrams[0]
-    project.model.diagrams[0] = {
-      ...diagram,
-      groups: diagram.groups!.map((g) => (g.id === 'core-systems' ? { ...g, name: 'Kern' } : g)),
-    }
-    expect(project.model.diagrams[0].members).toBe(diagram.members)
-    const after = projectFiles(project)
-    expect(changed(before, after)).toEqual(['diagrams/l7.json', 'diagrams/l7.placements.json'])
-    // And what moved in the placements file is the name, nothing else.
-    expect(textOf(after, 'diagrams/l7.placements.json'))
-      .toBe(textOf(before, 'diagrams/l7.placements.json').replaceAll('Core systems"', 'Kern"'))
-  })
-})
-
 describe('a group', () => {
   const profile = {
     group: 'acme-logistics',
@@ -593,122 +495,6 @@ describe('a group', () => {
   it('drops a link that is not one rather than handing it to a renderer', () => {
     const files = [{ path: 'group.json', text: stableJson({ name: 'A', links: ['https://x.test', { url: 'y' }] }) }]
     expect(groupFromFolder(files, 'a')?.links).toEqual([])
-  })
-})
-
-/**
- * The three kinds that retired, across format 3 (ADR-0012 §4).
- *
- * `externalSystem`, `inputChannel` and `managementTool` are not kinds any
- * more: an external system is an `application` nobody here owns, and a channel
- * and a management tool are an `application` in a band of a board. A v3 file
- * still spells all three, a 1.x build still reads them, and the property is
- * the same one the dashed groups have — a folder that goes through this build
- * unchanged comes out as the bytes that went in.
- *
- * The fold goes at format 4, where the file says what the model says.
- */
-describe('the retired kinds, across format 3', () => {
-  const v3 = (): FolderFile[] => [
-    {
-      path: 'project.json',
-      text: stableJson({
-        type: 'lionsville-architecture', formatVersion: 3, name: 'L', groupName: 'G',
-        activeDiagramId: 'l7', diagrams: ['l7'],
-      }),
-    },
-    {
-      path: 'model.json',
-      text: stableJson({
-        connections: [],
-        elements: [
-          { ...element('carrier', 'Carrier'), kind: 'externalSystem', isManaged: false },
-          { ...element('monitoring', 'Monitoring'), kind: 'managementTool' },
-          { ...element('portal', 'Portal'), kind: 'inputChannel' },
-          element('wms', 'WMS'),
-        ],
-      }),
-    },
-    {
-      path: 'diagrams/l7.json',
-      text: stableJson({ id: 'l7', kind: 'layer7', name: 'Landscape' }),
-    },
-    {
-      path: 'diagrams/l7.placements.json',
-      text: stableJson({
-        placements: [
-          { elementId: 'carrier', zone: 'externalSystems', x: 1500, y: 40 },
-          { elementId: 'monitoring', zone: 'management', x: 100, y: 900 },
-          { elementId: 'portal', zone: 'inputChannels', x: 60, y: 300 },
-          { elementId: 'wms', zone: 'landscape', x: 400, y: 300 },
-        ],
-      }),
-    },
-  ]
-
-  const elementsOf = (files: readonly FolderFile[]) => {
-    const model = projectFromFolder(files, REF)!.model
-    return Object.fromEntries(model.elements.map((e) => [e.id, e]))
-  }
-
-  it('reads all three as the application each always was', () => {
-    const read = elementsOf(v3())
-    expect(read.carrier).toMatchObject({ kind: 'application', outside: true })
-    // A band says where a card is drawn, not who owns it: nothing in the file
-    // ever said that a channel or a management tool was somebody else's.
-    expect(read.portal).toMatchObject({ kind: 'application' })
-    expect(read.monitoring).toMatchObject({ kind: 'application' })
-    expect('outside' in read.portal).toBe(false)
-    expect('outside' in read.monitoring).toBe(false)
-  })
-
-  it('reads, then writes, the bytes it started with', () => {
-    const files = v3()
-    const written = projectFiles(projectFromFolder(files, REF)!)
-    for (const file of files) {
-      expect(textOf(written, file.path), file.path).toBe(textOf(files, file.path))
-    }
-  })
-
-  it('writes `outside` nowhere: format 3 says it with a kind', () => {
-    const written = projectFiles(projectFromFolder(v3(), REF)!)
-    expect(textOf(written, 'model.json')).not.toContain('"outside"')
-  })
-
-  /**
-   * The one thing this fold cannot carry, said out loud.
-   *
-   * Format 3's kind said *channel* where the model now says *in the channel
-   * band*, so a channel dragged out into the open landscape comes back as the
-   * application it is. That is where the migration was always going to land it
-   * (ADR-0012 §11) — but it is a byte a save will change, and it should be
-   * discovered here rather than in somebody's diff.
-   */
-  it('cannot carry a channel that was dragged out of its band', () => {
-    const project = projectFromFolder(v3(), REF)!
-    const diagram = project.model.diagrams[0]
-    project.model.diagrams[0] = {
-      ...diagram,
-      members: diagram.members.map((member) =>
-        (member.id === 'portal' ? { id: member.id, zone: 'landscape' as const } : member)),
-    }
-    expect(textOf(projectFiles(project), 'model.json')).not.toContain('inputChannel')
-  })
-
-  /**
-   * And what it will not carry at all.
-   *
-   * The business layer arrived with ADR-0012 §4 and the file has nowhere to
-   * put one, so writing a `function` is refused rather than flattened into the
-   * `application` its figure would fall back to — the same answer, and for the
-   * same reason, as a `supports` row (`model/relations.ts`).
-   */
-  it('refuses a business kind rather than writing an application that is a lie', () => {
-    const project = projectFromFolder(v3(), REF)!
-    project.model.elements = [...project.model.elements, element('fulfilment', 'Fulfilment', { kind: 'function' })]
-    expect(() => projectFiles(project)).toThrow(
-      expect.objectContaining({ key: 'element.notInThisFormat' }),
-    )
   })
 })
 

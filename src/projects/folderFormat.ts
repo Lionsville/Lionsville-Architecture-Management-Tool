@@ -8,9 +8,9 @@
  *
  * ```
  * project.json                      what it is called and what it holds
- * model.json                        elements and connections (the model's flows)
+ * model.json                        elements and relations
  * diagrams/<id>.json                what a view is, and what is on it
- * diagrams/<id>.placements.json     where its elements ended up
+ * diagrams/<id>.geometry.json       where its elements ended up
  * docs/<elementId>.md               an element's description, as prose
  * decisions/[<applicationId>/]NNNN-<slug>.md
  * transitions/NNNN-<slug>.md        a plan, its window and what it touches
@@ -18,25 +18,23 @@
  * logos/<key>.svg | .png            uploaded marks, as images
  * ```
  *
+ * **The file says what the model says.** That is what format 4 is: the three
+ * folds this file used to carry — connections against typed relations,
+ * placements against members plus geometry, the retired kinds against an
+ * application and a band — are gone, and with them every refusal that existed
+ * because the model could say more than the file could hold. What is left is a
+ * writer and a reader that name the same fields the model does, so a person
+ * reading `model.json` is reading the model. `projects/migrate3to4.ts` is the
+ * last reader of format 3 and the only place that still knows those spellings.
+ *
  * **Layout is separate from the model** and that is the split the format is
- * for. A drag rewrites one `.placements.json`; a rename rewrites one definition
- * and no coordinates; a deleted placement file means "not laid out yet" rather
- * than a broken project.
+ * for (ADR-0012 §6). A drag rewrites one `.geometry.json`; a rename rewrites
+ * one definition and no coordinates; a deleted geometry file means "not laid
+ * out yet" — and, since format 4, the view is laid out again from a membership
+ * list that is still complete, because what is ON a view is the definition's.
  *
- * ADR-0012 §6 took that split into the model as well — a view says what is on
- * it (`members`, `groups`, `lines`) and its geometry says where it ended up —
- * and format 3's two files do not line up with it: a placement row is a member
- * AND a node, a group's box carries its name and colour, and a route row
- * carries both its constraints and its waypoints. So the two shapes meet here,
- * in {@link diagramFiles} and {@link readDiagram}, and the whole of that
- * translation goes at format 4, where the files say what the model says.
- *
- * ADR-0012 §3 and §4 land on the element rows in the same way — one parent
- * field for every kind, and three kinds that turned out to be a band and a
- * fact — and {@link asStoredElement} is that pair.
- *
- * **What the format normalises, deliberately.** Elements, connections,
- * placements and routes are written in id order, because two people adding an
+ * **What the format normalises, deliberately.** Elements, relations, members
+ * and routes are written in id order, because two people adding an
  * element to the same landscape should not both append to the same line. Order
  * is kept only where it is a decision somebody made: the diagram list, which is
  * the order of the tabs, and it is written out in `project.json`. Decisions are
@@ -46,24 +44,17 @@
  * there is nowhere to write the difference. Everything else round-trips
  * exactly, including the absent-versus-empty distinction on a diagram's routes.
  */
-import { ShellError } from '../platform/errors'
 import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
-  AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramGroup, DiagramMember,
-  DocumentImage, DomainGroupRect, EdgeRoute, ElementKind, Geometry, Layer7Zone,
-  NodeGeometry, Relation, UploadedLogo,
+  AspectConfigEntry, DesignDiagram, DesignElement, DiagramGroup, DiagramLine, DiagramMember,
+  DocumentImage, DomainGroupRect, Geometry, NodeGeometry, Relation, RouteGeometry, UploadedLogo,
 } from '../model'
-import { bandsOf, FIGURE_MEANS, isNodeFigure, nodeFigure } from '../model/kinds'
-import { edgeRoutesOf, splitRoutes } from '../model/routes'
-import { placedNodes } from '../model/placement'
-import type { PlacedNode } from '../model'
-import { asConnections, asRelations } from '../model/relations'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
-import { claimKey, slug } from '../model/keys'
+import { slug } from '../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
   TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
@@ -93,11 +84,26 @@ export const GROUP_FILE = 'group.json'
 export { DECISIONS_FOLDER, TRANSITIONS_FOLDER }
 
 /**
- * 3, and the same 3 as the working file's version — the single `.lvarch` is
+ * 4, and the same 4 as the working file's version — the single `.lvarch` is
  * this folder in a zip, so there is one number for one shape rather than two
  * that have to be kept in step.
+ *
+ * It turned from 3 the moment the model stopped fitting in it (ADR-0012 §11,
+ * and the rule on formats at the top of `docs/plan-2.0.0.md`): 2.x breaks the
+ * format as often as the model needs it to, as long as every older version
+ * opens and migrates. An older build meeting one of these sees no project,
+ * which is the same honest answer `isWorkingFile` gives a file it does not know.
  */
-export const PROJECT_FORMAT_VERSION = 3
+export const PROJECT_FORMAT_VERSION = 4
+
+/**
+ * The second half of a view's pair of files: where it ended up.
+ *
+ * Named rather than spelled twice, because two readers have to agree about it —
+ * this file's, and the one that lists a folder's diagrams and has to tell a
+ * definition from its geometry.
+ */
+export const GEOMETRY_SUFFIX = '.geometry.json'
 
 /** What may stand as a file name without escaping, quoting or surprising an OS. */
 const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
@@ -143,6 +149,11 @@ function byId<T extends { id: string }>(list: readonly T[]): T[] {
   return [...list].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
+/** The same rule for the two lists keyed by a relation rather than by an id. */
+function byRelation<T extends { relationId: string }>(list: readonly T[]): T[] {
+  return [...list].sort((a, b) => (a.relationId < b.relationId ? -1 : a.relationId > b.relationId ? 1 : 0))
+}
+
 const LOGO_EXTENSIONS: Record<string, string> = { 'image/svg+xml': 'svg', 'image/png': 'png' }
 const LOGO_MEDIA_TYPES: Record<string, string> = { svg: 'image/svg+xml', png: 'image/png' }
 
@@ -178,202 +189,33 @@ type ProjectHeader = {
  */
 export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderFile[] {
   const { members, groups, lines, geometry, ...definition } = diagram
-  const nameOf = new Map((groups ?? []).map((group) => [group.id, group]))
-  const layoutConfig = {
-    ...(geometry?.zones !== undefined ? { zones: geometry.zones } : {}),
-    ...(geometry?.groups !== undefined
-      ? { domainGroups: geometry.groups.map((rect) => asStoredGroup(rect, nameOf)) }
-      : {}),
-    ...(geometry?.canvas !== undefined ? { canvas: geometry.canvas } : {}),
-  }
-  const hasRoutes = lines !== undefined || geometry?.routes !== undefined
   return [
     {
       path: `${DIAGRAMS_FOLDER}/${name}.json`,
-      text: stableJson(
-        Object.keys(layoutConfig).length ? { ...definition, layoutConfig } : definition,
-      ),
-    },
-    // Always written, even empty: a diagram that has no placement file is one
-    // whose file was deleted, and that has to mean "lay it out again" rather
-    // than "it has no placements", which is a thing a diagram can genuinely be.
-    {
-      path: `${DIAGRAMS_FOLDER}/${name}.placements.json`,
       text: stableJson({
-        ...(geometry?.needsLayout ? { needsLayout: geometry.needsLayout } : {}),
-        placements: placedNodes(diagram)
-          .slice()
-          .sort((a, b) => (a.id < b.id ? -1 : 1))
-          .map((placement) => asStoredPlacement(placement, nameOf)),
-        ...(hasRoutes
-          ? {
-            routes: edgeRoutesOf(diagram)
-              .slice()
-              .sort((a, b) => (a.relationId < b.relationId ? -1 : 1))
-              .map(asStoredRoute),
-          }
-          : {}),
+        ...definition,
+        members: byId(members),
+        ...(groups !== undefined ? { groups: byId(groups) } : {}),
+        ...(lines !== undefined ? { lines: byRelation(lines) } : {}),
+      }),
+    },
+    // Always written, even empty: a diagram that has no geometry file is one
+    // whose file was deleted, and that has to mean "lay it out again" rather
+    // than "nothing has coordinates", which is a thing a diagram can genuinely
+    // be. What is ON the view survives that deletion either way — it is in the
+    // definition, which is the point of the split.
+    {
+      path: `${DIAGRAMS_FOLDER}/${name}${GEOMETRY_SUFFIX}`,
+      text: stableJson({
+        ...(geometry.needsLayout ? { needsLayout: geometry.needsLayout } : {}),
+        ...(geometry.canvas !== undefined ? { canvas: geometry.canvas } : {}),
+        ...(geometry.zones !== undefined ? { zones: geometry.zones } : {}),
+        nodes: byId(geometry.nodes),
+        ...(geometry.groups !== undefined ? { groups: byId(geometry.groups) } : {}),
+        ...(geometry.routes !== undefined ? { routes: byRelation(geometry.routes) } : {}),
       }),
     },
   ]
-}
-
-/**
- * A dashed group's two identities, and where they meet.
- *
- * ADR-0012 §6 gives a group an id of its own, so that renaming one is a line in
- * the definition rather than a rewrite of every row that named it. Format 3 has
- * no such field: the NAME is the key there, on the rectangle and on every
- * placement filed under it. So the ids are **minted on read and folded back on
- * write**, and a file that goes through this build unchanged comes out byte for
- * byte the file that went in.
- *
- * Minted with {@link claimKey}, over the names in the order the file has them —
- * rectangles first, then any name a placement uses that has no rectangle, which
- * format 3 allows and this build still does. The same name therefore always
- * yields the same id, and two names that slug alike are told apart by which
- * came first, exactly as {@link diagramStems} tells two diagram ids apart.
- *
- * **This pair is deleted at format 4**, where a group is written with its id
- * and neither half has anything to do.
- */
-function readGroups(
-  rects: readonly Record<string, unknown>[], placements: readonly Record<string, unknown>[],
-): { groups: DiagramGroup[]; idOf: Map<string, string> } {
-  const taken = new Set<string>()
-  const idOf = new Map<string, string>()
-  const groups: DiagramGroup[] = []
-  const claim = (groupName: string, color?: unknown) => {
-    if (idOf.has(groupName)) return
-    const id = claimKey(groupName, taken)
-    idOf.set(groupName, id)
-    groups.push({
-      id, name: groupName, ...(typeof color === 'string' ? { color } : {}),
-    })
-  }
-  for (const rect of rects) {
-    if (typeof rect.name === 'string') claim(rect.name, rect.color)
-  }
-  for (const placement of placements) {
-    if (typeof placement.domainGroup === 'string') claim(placement.domainGroup)
-  }
-  return { groups, idOf }
-}
-
-/**
- * One node, as format 3 files it: a placement row, which is its membership and
- * its coordinates in one object (ADR-0012 §6 is what separates them).
- *
- * The keys are written in the order format 3 had them, so a file that goes
- * through this build unchanged is the bytes that went in — `stableJson` sorts
- * them anyway, and this keeps the two readable side by side.
- */
-function asStoredPlacement(
-  placement: PlacedNode, nameOf: Map<string, DiagramGroup>,
-): Record<string, unknown> {
-  const { id, zone, group, ...rest } = placement
-  return {
-    elementId: id,
-    ...(zone !== undefined ? { zone } : {}),
-    ...(group !== undefined ? { domainGroup: nameOf.get(group)?.name ?? group } : {}),
-    ...rest,
-  }
-}
-
-function asStoredGroup(
-  rect: DomainGroupRect, nameOf: Map<string, DiagramGroup>,
-): Record<string, unknown> {
-  const { id, ...box } = rect
-  const held = nameOf.get(id)
-  return {
-    name: held?.name ?? id, ...box, ...(held?.color !== undefined ? { color: held.color } : {}),
-  }
-}
-
-/**
- * A route row's two names for the same thing.
- *
- * The model calls a line's row `relationId`, because that is the list it points
- * into (ADR-0012 §5) and what §6's geometry file will call it. Format 3 called
- * it `connectionId` and a 1.x build still reads it that way, so the name is
- * translated here — the same seam `asConnections` occupies for the model's own
- * list, one file down. Both halves go at format 4.
- */
-function asStoredRoute(route: EdgeRoute): Record<string, unknown> {
-  const { relationId, ...rest } = route
-  return { connectionId: relationId, ...rest }
-}
-
-function asEdgeRoute(row: Record<string, unknown>): EdgeRoute {
-  const { connectionId, ...rest } = row
-  return { relationId: connectionId as string, ...rest } as unknown as EdgeRoute
-}
-
-/**
- * An element's two spellings, across format 3.
- *
- * Two of ADR-0012's changes land on the same row of `model.json`, so they are
- * folded and unfolded together, the same seam the dashed groups and the route
- * rows occupy — one function each way, and a folder that goes through this
- * build unchanged comes out byte for byte the folder that went in.
- *
- * **Containment (§3).** One field says what a thing sits inside, whatever kind
- * it is; format 3 knows only `parentApplicationId`, from when a component
- * inside an application was the only containment there was.
- *
- * **The three retired kinds (§4).** `externalSystem`, `inputChannel` and
- * `managementTool` are not kinds any more: an external system is an
- * `application` nobody here owns, and a channel and a management tool are an
- * `application` in a band of a board. So a v3 file's kind is read as the
- * application it always was plus the fact that carried it, and written back as
- * whatever that application is now DRAWN as ({@link nodeFigure}) — which is the
- * band it sits in on the first view that holds it, or `outside` where no band
- * says otherwise.
- *
- * **One thing the fold cannot carry**, and it is worth naming: format 3's kind
- * said *channel* where the model now says *in the channel band*, so a channel
- * somebody had dragged out into the open landscape comes back as the
- * application it is. That is not a loss of meaning — it is where the migration
- * was always going to land it (§11) — but it is a byte a save will change, and
- * `folderFormat.test.ts` pins it rather than letting it be discovered.
- *
- * **What format 3 has no word for at all is refused**, not flattened. The
- * business layer's kinds arrived with §4 and the file has nowhere to put one, so
- * writing a `function` as the `application` {@link nodeFigure} would fall back
- * to would hand a 1.x build a row that is a lie. It is a {@link ShellError} for
- * the same reason `asConnections` is one for a `supports` row: this build can
- * say more than its file can hold, and a save that quietly drops half a sheet is
- * the worse of the two answers. Both refusals go at format 4.
- *
- * **Every half is deleted at format 4**, where the file says what the model
- * says.
- */
-const NOT_IN_FORMAT_3: readonly ElementKind[] = ['step', 'function', 'process']
-
-function asStoredElement(
-  element: DesignElement, row: Record<string, unknown>, band: Layer7Zone | undefined,
-): Record<string, unknown> {
-  if (NOT_IN_FORMAT_3.includes(element.kind)) {
-    throw new ShellError('element.notInThisFormat', { kind: element.kind })
-  }
-  const { parentId, outside: _fact, ...rest } = row
-  return {
-    ...rest,
-    // A figure's name IS what format 3 called the kind — the two were one word
-    // when the file was designed, which is why one table reads it back.
-    kind: nodeFigure(element, band),
-    ...(parentId !== undefined ? { parentApplicationId: parentId } : {}),
-  }
-}
-
-function readStoredElement(row: Record<string, unknown>): Record<string, unknown> {
-  const { parentApplicationId, ...rest } = row
-  const meant = isNodeFigure(row.kind) ? FIGURE_MEANS[row.kind] : undefined
-  return {
-    ...rest,
-    ...(meant ?? {}),
-    ...(parentApplicationId !== undefined ? { parentId: parentApplicationId } : {}),
-  }
 }
 
 /**
@@ -385,7 +227,6 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
   const files: FolderFile[] = []
 
   const filed = new Set<string>()
-  const bands = bandsOf(model.diagrams)
   const elements = byId(model.elements).map((element) => {
     const explicit = model.explicitFields?.[element.id]
     const description = element.description
@@ -395,19 +236,15 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
       files.push({ path: page, text: markdownFile(description) })
     }
     const { description: _filed, ...rest } = element
-    return asStoredElement(element, {
+    return {
       ...(filed.has(element.id) ? rest : element),
       ...(explicit ? { explicit } : {}),
-    }, bands.get(element.id))
+    }
   })
 
   files.push({
     path: MODEL_FILE,
-    // `connections`, not `relations`: format 3 has one kind of line and this is
-    // the one place the two names meet (ADR-0012 §11). A relation of any other
-    // type is refused here rather than written into a list a 1.x build reads as
-    // connections — see `model/relations.ts`.
-    text: stableJson({ connections: byId(asConnections(model.relations)), elements }),
+    text: stableJson({ elements, relations: byId(model.relations) }),
   })
 
   const stems = diagramStems(model.diagrams)
@@ -539,6 +376,12 @@ function header(project: ProjectSnapshot, files: FolderFile[]): ProjectHeader {
  *
  * The decision files carry their number in the name for this reason as much as
  * for ordering: `decisions/README.md` does not match, and survives.
+ *
+ * It is a **grammar and not a list**, which is what lets a superseded file
+ * leave a folder: a name this format has stopped writing but that still matches
+ * the shape is no longer among the files a save hands over, so the same rule
+ * that removes a deleted diagram removes it. The format-4 migration relies on
+ * exactly that, and says so (`migrate3to4.ts`).
  */
 export function isFormatPath(path: string): boolean {
   if (path === PROJECT_FILE || path === MODEL_FILE || path === GROUP_FILE) return true
@@ -577,20 +420,46 @@ function jsonAt(folder: Folder, path: string): Record<string, unknown> | undefin
     : undefined
 }
 
-/**
- * Is this a header this build may read?
- *
- * A version it does not know is refused rather than half-read, for the reason
- * `isWorkingFile` gives: a newer format may carry meaning this build would
- * silently drop on its next save. A folder with no version at all is somebody's
- * hand-made project and is read as best we can.
- */
-function readableHeader(held: Record<string, unknown> | undefined): ProjectHeader | undefined {
+function headerOf(held: Record<string, unknown> | undefined): ProjectHeader | undefined {
   if (!held) return undefined
   if (held.type !== undefined && held.type !== WORKING_FILE_TYPE) return undefined
-  const version = held.formatVersion
-  if (version !== undefined && version !== PROJECT_FORMAT_VERSION) return undefined
   return held as ProjectHeader
+}
+
+/**
+ * Which version a folder is written in, or `undefined` when it is not one this
+ * build can get a project out of at all.
+ *
+ * Two different refusals, and they are not symmetrical. A version this build is
+ * **older** than is refused rather than half-read, for the reason
+ * `isWorkingFile` gives: it may carry meaning this build would silently drop on
+ * its next save. A version this build is **newer** than is not a refusal at
+ * all — it is a folder to migrate, which is what `migrate3to4.ts` is for. A
+ * folder with no version is somebody's hand-made project and is read as best we
+ * can, so it answers with the version this build writes.
+ */
+export function folderFormatVersion(text: string): number | undefined {
+  const parsed = parseJson(text)
+  const held = headerOf(
+    parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown> : undefined,
+  )
+  if (!held) return undefined
+  const version = held.formatVersion
+  if (version === undefined) return PROJECT_FORMAT_VERSION
+  return typeof version === 'number' && version <= PROJECT_FORMAT_VERSION ? version : undefined
+}
+
+/**
+ * Is this a header this build reads *as it stands*, rather than one it would
+ * have to migrate first? {@link folderFormatVersion} is the wider question.
+ */
+function readableHeader(held: Record<string, unknown> | undefined): ProjectHeader | undefined {
+  const header = headerOf(held)
+  if (!header) return undefined
+  const version = header.formatVersion
+  if (version !== undefined && version !== PROJECT_FORMAT_VERSION) return undefined
+  return header
 }
 
 function listOf(held: unknown): Record<string, unknown>[] {
@@ -606,12 +475,16 @@ function listOf(held: unknown): Record<string, unknown>[] {
  * document per project rather than a whole landscape. A project with no
  * diagrams is not listed, for the same reason it does not load — there is
  * nothing to show.
+ *
+ * The picker lists a folder this build would have to migrate, because the name
+ * and the group are in the same three fields in every version of the header,
+ * and a project you cannot see is a project you cannot ask to be migrated.
  */
 export function projectSummaryFrom(
   text: string, ref: ProjectRef, updatedAt?: string,
 ): ProjectSummary | undefined {
   const parsed = parseJson(text)
-  const held = readableHeader(
+  const held = folderFormatVersion(text) === undefined ? undefined : headerOf(
     parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : undefined,
   )
   if (!held || !Array.isArray(held.diagrams) || held.diagrams.length === 0) return undefined
@@ -628,52 +501,38 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
   if (!definition || typeof definition.id !== 'string' || typeof definition.name !== 'string') {
     return undefined
   }
-  const laid = jsonAt(folder, `${DIAGRAMS_FOLDER}/${name}.placements.json`)
-  const rows = listOf(laid?.placements).filter((row) => typeof row.elementId === 'string')
-  const { layoutConfig, ...rest } = definition
-  const held = layoutConfig as Record<string, unknown> | undefined
-  const rects = listOf(held?.domainGroups)
-  const { groups, idOf } = readGroups(rects, rows)
+  const laid = jsonAt(folder, `${DIAGRAMS_FOLDER}/${name}${GEOMETRY_SUFFIX}`)
+  const { members, groups, lines, ...rest } = definition
 
-  // A placement row is a member AND a node, and format 3 keeps them in one
-  // object; ADR-0012 §6 is what takes them apart.
-  const members: DiagramMember[] = rows.map((row) => ({
-    id: row.elementId as string,
-    ...(typeof row.zone === 'string' ? { zone: row.zone as DiagramMember['zone'] } : {}),
-    ...(typeof row.domainGroup === 'string' ? { group: idOf.get(row.domainGroup) } : {}),
-  }))
-  const nodes: NodeGeometry[] = rows.map((row) => ({
-    id: row.elementId as string,
-    x: typeof row.x === 'number' ? row.x : 0,
-    y: typeof row.y === 'number' ? row.y : 0,
-    ...(typeof row.width === 'number' ? { width: row.width } : {}),
-    ...(typeof row.height === 'number' ? { height: row.height } : {}),
-  }))
-  const stored = laid && 'routes' in laid
-    ? listOf(laid.routes).filter((row) => typeof row.connectionId === 'string').map(asEdgeRoute)
-    : undefined
-  const { lines, routes } = stored ? splitRoutes(stored) : { lines: undefined, routes: undefined }
-
-  const geometry: Geometry = { nodes }
-  // No placement file at all: somebody deleted it, or a hand-made folder never
-  // had one. Either way the geometry is not a decision anybody made yet.
-  if (laid?.needsLayout === true || !laid) geometry.needsLayout = true
-  if (held?.canvas !== undefined) geometry.canvas = held.canvas as Geometry['canvas']
-  if (held?.zones !== undefined) geometry.zones = held.zones as Geometry['zones']
-  if (rects.length) {
-    geometry.groups = rects.map(({ name: groupName, color: _color, ...box }) => ({
-      id: idOf.get(groupName as string)!, ...box,
-    })) as unknown as DomainGroupRect[]
+  const geometry: Geometry = {
+    nodes: listOf(laid?.nodes).filter((row) => typeof row.id === 'string') as unknown as NodeGeometry[],
   }
-  // Present-versus-absent survives: an empty `routes` key in the file is a
-  // diagram somebody emptied, and comes back as one.
-  if (stored) geometry.routes = routes ?? []
+  // No geometry file at all: somebody deleted it, or a hand-made folder never
+  // had one. Either way the geometry is not a decision anybody made yet — and
+  // the view is still a complete list of what is on it.
+  if (laid?.needsLayout === true || !laid) geometry.needsLayout = true
+  if (laid?.canvas !== undefined) geometry.canvas = laid.canvas as Geometry['canvas']
+  if (laid?.zones !== undefined) geometry.zones = laid.zones as Geometry['zones']
+  // Present-versus-absent survives on both lists: an empty `routes` key in the
+  // file is a diagram somebody emptied, and comes back as one.
+  if (laid && 'groups' in laid) {
+    geometry.groups = listOf(laid.groups)
+      .filter((row) => typeof row.id === 'string') as unknown as DomainGroupRect[]
+  }
+  if (laid && 'routes' in laid) {
+    geometry.routes = listOf(laid.routes)
+      .filter((row) => typeof row.relationId === 'string') as unknown as RouteGeometry[]
+  }
 
   return {
-    ...(rest as unknown as Omit<DesignDiagram, 'members' | 'geometry'>),
-    ...(groups.length ? { groups } : {}),
-    ...(lines ? { lines } : {}),
-    members,
+    ...(rest as unknown as Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geometry'>),
+    ...('groups' in definition
+      ? { groups: listOf(groups).filter((row) => typeof row.id === 'string') as unknown as DiagramGroup[] }
+      : {}),
+    ...('lines' in definition
+      ? { lines: listOf(lines).filter((row) => typeof row.relationId === 'string') as unknown as DiagramLine[] }
+      : {}),
+    members: listOf(members).filter((row) => typeof row.id === 'string') as unknown as DiagramMember[],
     geometry,
   }
 }
@@ -692,7 +551,7 @@ function readElements(folder: Folder): {
     }
     const prose = textAt(folder, `${DOCS_FOLDER}/${row.id}.md`)
     return [{
-      ...(readStoredElement(rest) as unknown as DesignElement),
+      ...(rest as unknown as DesignElement),
       ...(prose !== undefined ? { description: markdownBody(prose) } : {}),
     }]
   })
@@ -702,10 +561,10 @@ function readElements(folder: Folder): {
   }
 }
 
-/** Every line the file holds, as what format 3 says it is: a flow. */
+/** Every row that joins two elements, of whatever type it says it is. */
 function readRelations(folder: Folder): Relation[] {
-  return asRelations(listOf(jsonAt(folder, MODEL_FILE)?.connections)
-    .filter((row) => typeof row.id === 'string') as unknown as DesignConnection[])
+  return listOf(jsonAt(folder, MODEL_FILE)?.relations)
+    .filter((row) => typeof row.id === 'string') as unknown as Relation[]
 }
 
 /**
@@ -801,7 +660,7 @@ export function projectFromFolder(
 
   const names = [...folder.keys()]
     .filter((path) => path.startsWith(`${DIAGRAMS_FOLDER}/`) && path.endsWith('.json')
-      && !path.endsWith('.placements.json'))
+      && !path.endsWith(GEOMETRY_SUFFIX))
     .map((path) => path.slice(DIAGRAMS_FOLDER.length + 1, -'.json'.length))
     .sort()
 

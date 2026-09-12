@@ -14,7 +14,8 @@
  * with other tools rather than branding. They do not get renamed — with the
  * one exception ADR-0012 §5 makes: `connections` became `relations`, because
  * the list stopped being only connections. The interchange document keeps the
- * old name (`fromInterchange.ts` owns its own shapes), and so does format 3.
+ * old name — `fromInterchange.ts` owns its own shapes — and the working format
+ * followed the model at version 4.
  */
 
 /** The Lionsville aspect superset; element aspect keys may also be custom slugs. */
@@ -224,11 +225,11 @@ export type RelationType = 'flow' | 'supports' | 'serves' | 'realises' | 'assign
 /**
  * A line's own fields, with nothing said about what it means.
  *
- * The shape format 3 writes under `connections` and the interchange format
- * calls a connection, and — because only a `flow` is ever drawn on a canvas —
- * the shape `layout/` routes. A {@link Relation} is one of these with its type
- * said out loud; the two are one row in the file until format 4 renames the
- * key (ADR-0012 §11).
+ * The shape the interchange format calls a connection, and — because only a
+ * `flow` is ever drawn on a canvas — the shape `layout/` routes. A
+ * {@link Relation} is one of these with its type said out loud; the working
+ * format writes the type, and the interchange, which is a contract with other
+ * tools, exports the flows alone (ADR-0012 §11).
  */
 export interface DesignConnection {
   id: string;

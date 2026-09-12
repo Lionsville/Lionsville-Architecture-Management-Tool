@@ -49,7 +49,7 @@ describe('workingFileBytes', () => {
     const entries = unzipSync(workingFileBytes(project()))
     expect(Object.keys(entries).sort()).toEqual(projectFiles(project()).map((f) => f.path))
     expect(JSON.parse(textFromBytes(entries['project.json'])))
-      .toMatchObject({ type: WORKING_FILE_TYPE, formatVersion: 3 })
+      .toMatchObject({ type: WORKING_FILE_TYPE, formatVersion: 4 })
     expect(textFromBytes(entries['docs/crews.md'])).toBe('Roster.\n')
   })
 

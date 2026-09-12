@@ -23,8 +23,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'relation.serves': 'Bedient',
   'relation.realises': 'Realisiert',
   'relation.assigned': 'Zugewiesen an',
-  'relation.notInThisFormat': 'Eine Relation vom Typ {type} kann in diesem Dateiformat noch nicht gespeichert werden. Nur Verbindungen.',
-  'element.notInThisFormat': 'Ein {kind} kann in diesem Dateiformat noch nicht gespeichert werden. Es hält Anwendungen, Komponenten und Akteure.',
 
   'zone.actors': 'AKTEURE',
   'zone.inputChannels': 'EINGABEKANÄLE',

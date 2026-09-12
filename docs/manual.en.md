@@ -59,9 +59,9 @@ everything you make lives there as files you can read:
     group.json                        its name, client, description and links
     warehouse-landscape/              the project
       project.json                    what it is called, and what it holds
-      model.json                      the applications and the lines between them
+      model.json                      the elements and the lines between them
       diagrams/landscape.json         what a diagram is
-      diagrams/landscape.placements.json   where its elements sit
+      diagrams/landscape.geometry.json     where its elements sit
       docs/warehouse.md               an element's description, as prose
       decisions/0007-one-writer.md    a decision record
       logos/own.svg                   a logo you uploaded

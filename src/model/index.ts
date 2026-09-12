@@ -29,9 +29,9 @@ export {
   elementList, relationList, diagramList, decisionList, transitionList, memberList, routeList,
 } from './normalised'
 
-/** What a relation is, and the one type format 3 has a place for (ADR-0012 §5). */
+/** What a relation is, and the one type a canvas draws (ADR-0012 §5). */
 export {
-  RELATION_LABEL, RELATION_TYPES, asConnections, asRelations, flowsOf, isFlow, isRelationType,
+  RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
 /** Where a thing is on a given day (ADR-0009). */

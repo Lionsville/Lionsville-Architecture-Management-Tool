@@ -30,10 +30,10 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     await store.save(projectAt({ group: 'acme/rail', project: 'rolling-stock' }))
 
     expect(root.paths()).toEqual([
+      'acme/rail/rolling-stock/diagrams/cd.geometry.json',
       'acme/rail/rolling-stock/diagrams/cd.json',
-      'acme/rail/rolling-stock/diagrams/cd.placements.json',
+      'acme/rail/rolling-stock/diagrams/l7.geometry.json',
       'acme/rail/rolling-stock/diagrams/l7.json',
-      'acme/rail/rolling-stock/diagrams/l7.placements.json',
       'acme/rail/rolling-stock/logos/own.svg',
       'acme/rail/rolling-stock/model.json',
       'acme/rail/rolling-stock/project.json',
@@ -135,7 +135,7 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     await store.save(moved)
 
     expect(await touched(before, await stamps(root)))
-      .toEqual(['acme-logistics/landscape/diagrams/l7.placements.json'])
+      .toEqual(['acme-logistics/landscape/diagrams/l7.geometry.json'])
   })
 
   it('clears up after a deleted diagram, and leaves what is not ours where it is', async () => {
@@ -151,7 +151,7 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
 
     const paths = root.paths().map((path) => path.replace('acme-logistics/landscape/', ''))
     expect(paths).not.toContain('diagrams/cd.json')
-    expect(paths).not.toContain('diagrams/cd.placements.json')
+    expect(paths).not.toContain('diagrams/cd.geometry.json')
     expect(paths).toContain('README.md')
   })
 

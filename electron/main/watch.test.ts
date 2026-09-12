@@ -87,9 +87,9 @@ describe('watchFolder', () => {
     const { mkdir } = await import('node:fs/promises')
     await mkdir(join(root, 'acme/landscape/diagrams'), { recursive: true })
     const watcher = collecting()
-    await writeFile(join(root, 'acme/landscape/diagrams/l7.placements.json'), '{}')
+    await writeFile(join(root, 'acme/landscape/diagrams/l7.geometry.json'), '{}')
 
-    await expect(watcher.sees('acme/landscape/diagrams/l7.placements.json')).resolves.toBeTruthy()
+    await expect(watcher.sees('acme/landscape/diagrams/l7.geometry.json')).resolves.toBeTruthy()
   })
 
   it('reports a deleted file with no fingerprint at all', async () => {

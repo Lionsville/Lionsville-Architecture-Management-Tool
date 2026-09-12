@@ -63,11 +63,15 @@ describe('a restore, at the folder', () => {
     if (!applied.ok) throw new Error(applied.reason)
     const after = files(toArrays(applied.model))
     const only = (list: string[], prefix: string) => list.filter((entry) => entry.startsWith(prefix))
-    // The diagram's own two files are the snapshot's, less the placement of
-    // an element today does not have.
-    expect(only(after, 'diagrams/d1.json')).toEqual(only(files(then), 'diagrams/d1.json'))
-    expect(only(after, 'diagrams/d1.placements')[0]).toContain('"billing"')
-    expect(only(after, 'diagrams/d1.placements')[0]).not.toContain('"crm"')
+    // The diagram's own two files are the snapshot's, less the element today
+    // does not have — and at format 4 that shows in BOTH of them, because what
+    // is ON a view is the definition's and no longer the geometry's alone
+    // (ADR-0012 §6).
+    expect(only(after, 'diagrams/d1.json')[0]).toContain('"Warehouse"')
+    expect(only(after, 'diagrams/d1.json')[0]).toContain('"billing"')
+    expect(only(after, 'diagrams/d1.json')[0]).not.toContain('"crm"')
+    expect(only(after, 'diagrams/d1.geometry')[0]).toContain('"billing"')
+    expect(only(after, 'diagrams/d1.geometry')[0]).not.toContain('"crm"')
     expect(result.dropped).toBe(1)
     // Everything else is today's.
     expect(only(after, 'docs/')).toEqual(only(files(now), 'docs/'))

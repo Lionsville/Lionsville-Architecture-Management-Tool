@@ -67,8 +67,8 @@ export function model(overrides: Partial<DesignModel> = {}): DesignModel {
 }
 
 /**
- * A diagram written the way format 3 wrote one — placements, routes and a
- * layout config — as the two halves ADR-0012 §6 keeps apart.
+ * A diagram said the way the model said one before ADR-0012 §6 — placements,
+ * routes and a layout config in one object — as the two halves it keeps apart.
  *
  * For a test whose subject is not the split: a fixture should be one object
  * that says "here is a board", and writing every id twice to say one thing
