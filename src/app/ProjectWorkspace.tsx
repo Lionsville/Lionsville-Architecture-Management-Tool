@@ -18,6 +18,7 @@ import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
 import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { ScopeIndex } from '../projects/scopeIndex'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
@@ -69,6 +70,15 @@ import type { Notify } from './useToasts'
 export type ProjectWorkspaceProps = {
   project: ScopeSnapshot
   projects: ProjectSaver
+  /**
+   * The organisation's index, read-only (ADR-0012 §2, §10).
+   *
+   * Held above this workspace because it outlives a scope switch and because
+   * the first screen reads it too. Everything below takes what it needs from
+   * it: the id policy the ids spoken for, `mayEdit` who answers for one, and a
+   * sheet at the root the `supports` rows a landscape wrote.
+   */
+  index: ScopeIndex
   /**
    * Somebody else changed this project's files. Bound to this project's ref by
    * the caller, and absent in a browser tab, where nothing can watch.
@@ -186,7 +196,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
+  project, projects, index, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, scopes, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   groupName, groupClient,
@@ -194,7 +204,18 @@ export function ProjectWorkspace({
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
-  const session = useModelSession({ initialProject: project, notify, s })
+  // The index by reference, for the callbacks that must not be rebuilt when it
+  // is: the id policy is minted once for the life of the session.
+  const indexRef = useRef(index)
+  indexRef.current = index
+  const session = useModelSession({
+    initialProject: project,
+    notify,
+    s,
+    // Read per ask, not captured: the index is rebuilt under a live session
+    // whenever the folder changes (ADR-0012 §2).
+    takenInTree: useCallback(() => indexRef.current.takenIds(), []),
+  })
   const diagrams = useDiagramActions({ session, notify, s, makeId })
   // A request INTO the editor carries a nonce: "show this one" asked twice is
   // two requests. Declared here because the agent's renderer view, below,

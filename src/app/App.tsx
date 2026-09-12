@@ -24,7 +24,9 @@ import { reasonOf } from '../platform/errors'
 import {
   flattenScopes, isProjectOrder, moveScope, namesUnder, renameScope, setScopeDefaults,
 } from '../projects/scope'
-import type { ProjectOrder, ScopeKind, ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type {
+  ProjectOrder, ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary,
+} from '../projects/scope'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
 import {
@@ -65,6 +67,7 @@ import { useAgentGateway } from './useAgentGateway'
 import { useGlobalErrors } from './useGlobalErrors'
 import { useHostCommands } from './useHostCommands'
 import type { CommandStream } from './useHostCommands'
+import { useIndex } from './useIndex'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter } from './useShellPreferences'
 import { useStorageNotice } from './useStorageNotice'
@@ -110,6 +113,12 @@ export type ScopeLibrary = {
   load(path: ScopePath): Promise<ScopeSnapshot | undefined>
   save(scope: ScopeSnapshot): Promise<void>
   remove(path: ScopePath): Promise<void>
+  /**
+   * Every scope's records and rows, for the index (ADR-0012 §2). Optional on
+   * the seam and optional here; `indexOf` loads each scope where a store
+   * cannot answer it.
+   */
+  models?(): Promise<ScopeModel[]>
 }
 
 /** What the settings dialogs may change about a scope, whatever level it is. */
@@ -337,6 +346,25 @@ export function App({
     history, folderSettings, initial: initialSync, onTheirs: reloadOpenProject,
     notify: toasts.notify, s, diagnostics,
   })
+
+  /**
+   * The organisation's index (ADR-0012 §2), held here rather than in the
+   * workspace because both screens read it: the id policy and `mayEdit` below
+   * a canvas, and the finding line on every row of the tree above one. It
+   * outlives a scope switch, which is right — it is about the folder and not
+   * about what is open in it.
+   *
+   * Watched over the WHOLE tree (`ROOT_SCOPE`), not the open scope: a sibling
+   * domain renaming its ERP is exactly the change the drift check exists to
+   * notice, and a watcher bound to the open scope would never hear of it.
+   * Watching the root is one subscription on the same watcher the workspace
+   * uses — main watches a root once, whoever asks.
+   */
+  const watchTree = useMemo(() => {
+    if (!watchProject) return undefined
+    return (onChanged: () => void) => watchProject(ROOT_SCOPE, onChanged)
+  }, [watchProject])
+  const tree = useIndex({ scopes: projects, watch: watchTree, onFailure: failed })
 
   /**
    * An address this app has just moved a project away from.
@@ -732,6 +760,7 @@ export function App({
             key={`${project.path}#${reloadKey}`}
             project={project}
             projects={workspaceStore}
+            index={tree.index}
             watch={watchOpenProject}
             source={source}
             commands={bus.on}
