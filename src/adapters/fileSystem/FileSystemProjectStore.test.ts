@@ -40,6 +40,47 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     ])
   })
 
+  /**
+   * A folder from before format 4, opened and then saved.
+   *
+   * The read side is `migrate3to4`'s and is tested there; what only this store
+   * can show is the other half — that the project the migration produced is
+   * written back as format 4, and that the file the format has stopped writing
+   * leaves the folder under the store's own removal rule.
+   */
+  it('opens a folder written before format 4, and writes format 4 back', async () => {
+    const { root, store } = setup()
+    const ref = { group: 'acme-logistics', project: 'landscape' }
+    const folder = await (await root.getDirectoryHandle('acme-logistics', { create: true }))
+      .getDirectoryHandle('landscape', { create: true }) as FakeDirectory
+    folder.writeRaw('project.json', JSON.stringify({
+      type: 'lionsville-architecture', formatVersion: 3, name: 'Landscape', groupName: 'Acme',
+      activeDiagramId: 'l7', diagrams: ['l7'],
+    }))
+    folder.writeRaw('model.json', JSON.stringify({
+      connections: [], elements: [{ id: 'portal', kind: 'inputChannel', name: 'Portal' }],
+    }))
+    const diagrams = await folder.getDirectoryHandle('diagrams', { create: true }) as FakeDirectory
+    diagrams.writeRaw('l7.json', JSON.stringify({ id: 'l7', kind: 'layer7', name: 'Landscape' }))
+    diagrams.writeRaw('l7.placements.json', JSON.stringify({
+      placements: [{ elementId: 'portal', zone: 'inputChannels', x: 10, y: 20 }],
+    }))
+
+    const opened = await store.load(ref)
+    expect(opened?.model.elements[0]).toMatchObject({ kind: 'application' })
+    expect(opened?.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
+
+    await store.save(opened!)
+    expect(root.paths()).toEqual([
+      'acme-logistics/landscape/diagrams/l7.geometry.json',
+      'acme-logistics/landscape/diagrams/l7.json',
+      'acme-logistics/landscape/model.json',
+      'acme-logistics/landscape/project.json',
+    ])
+    const header = await (await folder.getFileHandle('project.json')).getFile()
+    expect(JSON.parse(await header.text())).toMatchObject({ formatVersion: 4 })
+  })
+
   it('ignores files and folders that are not projects', async () => {
     const { root, store } = setup()
     await store.save(sampleProject())

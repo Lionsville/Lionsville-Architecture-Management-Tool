@@ -18,6 +18,7 @@
  * and somebody needs to know.
  */
 import { ShellError } from '../../platform/errors'
+import { migrateModel } from '../../projects/migrate3to4'
 import { isUsableProject, sortProjects, summarise } from '../../projects/project'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
 import { isProjectRef, refPath } from '../../projects/projectRef'
@@ -126,7 +127,10 @@ export class WebStorageProjectStore implements ProjectStore {
     if (!isProjectRef(held.ref)) return undefined
     return {
       ref: held.ref,
-      model: held.model,
+      // There is no version on a record kept here — it is a whole snapshot
+      // under one key — so the fold is run over every read and is written to
+      // be safe on a model that is already this shape (`migrate3to4.ts`).
+      model: migrateModel(held.model),
       activeDiagramId: held.activeDiagramId ?? held.model.diagrams[0].id,
       // Additive field: a record written before the mark library lacks it and
       // yields an empty library, not a broken project.

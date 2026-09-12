@@ -8,7 +8,7 @@
  * This binds the folder, turns a ref into the path the project sits at, and
  * turns the files at a commit back into a project.
  */
-import { projectFromFolder } from '../../projects/folderFormat'
+import { openProjectFolder } from '../../projects/migrate3to4'
 import type { ProjectSnapshot } from '../../projects/project'
 import { refPath } from '../../projects/projectRef'
 import type { ProjectRef } from '../../projects/projectRef'
@@ -72,6 +72,6 @@ export class DesktopProjectHistory implements ProjectHistory {
     // The marks are not read back (a bitmap is not text and a diff of the
     // architecture does not want one), so the project that comes out has the
     // folder's shape and no logo library. Comparing models is what it is for.
-    return projectFromFolder(files, ref)
+    return openProjectFolder(files, ref)
   }
 }

@@ -29,8 +29,9 @@
  * tested without a filesystem at all.
  */
 import {
-  isFormatPath, PROJECT_FILE, projectFiles, projectFromFolder, projectSummaryFrom,
+  isFormatPath, PROJECT_FILE, projectFiles, projectSummaryFrom,
 } from '../../projects/folderFormat'
+import { openProjectFolder } from '../../projects/migrate3to4'
 import type { FolderFile } from '../../projects/folderFormat'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
 import { groupSegments, isProjectRef } from '../../projects/projectRef'
@@ -210,7 +211,10 @@ export class FileSystemProjectStore implements ProjectStore {
       const entries = await this.entries(folder)
       const files = (await Promise.all(entries.map((entry) => this.read(entry))))
         .filter((file): file is FolderFile => !!file)
-      const project = projectFromFolder(files, ref)
+      // Whichever version wrote the folder: a project written before format 4
+      // is read through the migration and is format 4 the next time it is
+      // saved, which is what takes its superseded files off disk.
+      const project = openProjectFolder(files, ref)
       if (!project) return undefined
       const latest = Math.max(0, ...await Promise.all(entries.map(async (entry) =>
         (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)))

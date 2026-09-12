@@ -122,6 +122,64 @@ describe('openDocumentBytes', () => {
     expect(held.ok && held.project.model.name).toBe('Application landscape')
   })
 
+  /**
+   * The versions that are the point of a version number.
+   *
+   * A v1 or v2 document was written when the model had one list of connections
+   * and kept a view's membership in the same row as its coordinates, and a v3
+   * zip is that folder one format ago. All three open, and all three land on
+   * format 4 through the one fold (`migrate3to4.ts`).
+   */
+  it('opens a version-1 document written before ADR-0012, in the shape it was written', () => {
+    const v1 = stableJson({
+      type: WORKING_FILE_TYPE,
+      version: 1,
+      model: {
+        name: 'Landscape',
+        customerName: 'Acme',
+        connections: [{ id: 'c-1', sourceId: 'portal', targetId: 'wms', isBidirectional: false }],
+        elements: [
+          { id: 'portal', kind: 'inputChannel', name: 'Portal' },
+          { id: 'wms', kind: 'application', name: 'WMS' },
+        ],
+        diagrams: [{
+          id: 'l7',
+          kind: 'layer7',
+          name: 'Landschap',
+          placements: [{ elementId: 'portal', zone: 'inputChannels', x: 4, y: 8 }],
+        }],
+      },
+    })
+    const held = openDocumentBytes(bytesFromText(v1), into)
+    expect(held.ok && held.kind).toBe('workingFile')
+    if (!held.ok) return
+    expect(held.project.model.relations[0]).toMatchObject({ type: 'flow', id: 'c-1' })
+    expect(held.project.model.elements[0]).toMatchObject({ kind: 'application' })
+    expect(held.project.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
+    expect(held.project.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 4, y: 8 }])
+  })
+
+  it('opens a version-3 zip, and what comes out is format 4\'s shape', () => {
+    const entries: Record<string, Uint8Array> = {
+      'project.json': bytesFromText(stableJson({
+        type: WORKING_FILE_TYPE, formatVersion: 3, name: 'Landscape', groupName: 'Acme',
+        activeDiagramId: 'l7', diagrams: ['l7'],
+      })),
+      'model.json': bytesFromText(stableJson({
+        connections: [], elements: [{ id: 'carrier', kind: 'externalSystem', name: 'Carrier' }],
+      })),
+      'diagrams/l7.json': bytesFromText(stableJson({ id: 'l7', kind: 'layer7', name: 'Landschap' })),
+      'diagrams/l7.placements.json': bytesFromText(stableJson({
+        placements: [{ elementId: 'carrier', zone: 'externalSystems', x: 1, y: 2 }],
+      })),
+    }
+    const held = openDocumentBytes(zipSync(entries), into)
+    expect(held.ok && held.kind).toBe('workingFile')
+    if (!held.ok) return
+    expect(held.project.model.elements[0]).toMatchObject({ kind: 'application', outside: true })
+    expect(held.project.model.diagrams[0].members).toEqual([{ id: 'carrier', zone: 'externalSystems' }])
+  })
+
   it('still imports an interchange document, and lays it out again', () => {
     const doc = stableJson({
       formatVersion: 'solution-design/v1',

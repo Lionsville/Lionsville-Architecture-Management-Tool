@@ -335,6 +335,26 @@ describe('projectFromFolder', () => {
     expect(stableJson(projectFromFolder(projectFiles(plain), REF))).toBe(stableJson(plain))
   })
 
+  /**
+   * The one thing format 3 could not carry, now carried.
+   *
+   * A group's colour lived on its rectangle there, so a group with no box had
+   * nowhere to put one and the fold said so out loud rather than dropping it
+   * quietly. The colour is on the group's own row now, and the box is numbers.
+   */
+  it('keeps the colour of a group that has no box of its own', () => {
+    const held = project()
+    const diagram = held.model.diagrams[0]
+    held.model.diagrams[0] = {
+      ...diagram,
+      groups: [{ id: 'kern', name: 'Kern', color: '#2f6fdb' }, { id: 'rand', name: 'Rand', color: '#aa0000' }],
+    }
+    expect(projectFromFolder(projectFiles(held), REF)?.model.diagrams[0].groups).toEqual([
+      { id: 'kern', name: 'Kern', color: '#2f6fdb' },
+      { id: 'rand', name: 'Rand', color: '#aa0000' },
+    ])
+  })
+
   it('takes the ref from where the folder is, not from anything inside it', () => {
     const elsewhere = { group: 'globex', project: 'moved' }
     expect(projectFromFolder(projectFiles(project()), elsewhere)?.ref).toEqual(elsewhere)

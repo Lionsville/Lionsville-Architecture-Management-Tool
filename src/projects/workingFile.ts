@@ -1,11 +1,12 @@
 /**
- * A project as one file: version 3, and everything before it.
+ * A project as one file: version 4, and everything before it.
  *
  * The folder is the working copy; this is the **container** — what you hand to
  * somebody, mail, attach to a ticket, or open on a machine that has never seen
  * your working directory. ADR-0003 kept it for exactly that, and the header
  * comment in `model/hostModel.ts` reserved the shape when it refused to promise
- * JSON in the `.lvarch` extension: version 3 is the project folder, zipped.
+ * JSON in the `.lvarch` extension: version 4 is the project folder, zipped, and
+ * version 3 was the same folder one format earlier.
  *
  * It is the folder and not a new format on purpose. There is one writer, one
  * reader, one set of rules about what a file is called and what goes in it, and
@@ -13,15 +14,17 @@
  * export is even reproducible — the entries carry a fixed timestamp — so two
  * exports of the same project are the same file and can be compared as one.
  *
- * Versions 1 and 2 keep opening: they are a single JSON document, and
- * `openProjectDocument` has read them since there was one. So does an
- * interchange document, which is a different thing again — someone else's
- * format, which we import rather than open.
+ * Every older version keeps opening, and lands on format 4 through the one
+ * fold (`migrate3to4.ts`): a version-3 zip is a folder the migration reads, and
+ * versions 1 and 2 are a single JSON document `openProjectDocument` has read
+ * since there was one. So is an interchange document, which is a different
+ * thing again — someone else's format, which we import rather than open.
  */
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
 import { bytesFromText, parseJson, textFromBytes } from './fileText'
-import { projectFiles, projectFromFolder } from './folderFormat'
+import { projectFiles } from './folderFormat'
+import { migrateSnapshot, openProjectFolder } from './migrate3to4'
 import type { FolderFile } from './folderFormat'
 import { openProjectDocument } from './project'
 import type { OpenResult, ProjectSnapshot } from './project'
@@ -64,7 +67,7 @@ function fileFrom(path: string, bytes: Uint8Array): FolderFile {
 }
 
 /**
- * The folder inside a version-3 file.
+ * The folder inside a zipped file.
  *
  * A zip made by a person rather than by this tool usually has one folder at the
  * top — that is what "zip this folder" does in every file manager — so a single
@@ -88,8 +91,8 @@ function folderIn(bytes: Uint8Array): FolderFile[] | undefined {
 /**
  * A file the user chose, landed into the project they had open.
  *
- * One door for all of it: a version-3 zip, a version-1 or -2 JSON document, and
- * an interchange document from another tool. Which one it is, is a question
+ * One door for all of it: a zip of whatever version, a version-1 or -2 JSON
+ * document, and an interchange document from another tool. Which one it is, is a question
  * about the bytes and not about the extension — a file that was renamed is
  * still what it is.
  *
@@ -99,10 +102,17 @@ function folderIn(bytes: Uint8Array): FolderFile[] | undefined {
 export function openDocumentBytes(bytes: Uint8Array, into: ProjectSnapshot): OpenResult {
   if (isZip(bytes)) {
     const files = folderIn(bytes)
-    const project = files && projectFromFolder(files, into.ref)
+    const project = files && openProjectFolder(files, into.ref)
     if (!project) return { ok: false, messageKey: 'shell.unknownFile' }
     if (!project.model.diagrams.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
     return { ok: true, kind: 'workingFile', relayout: false, project }
   }
-  return openProjectDocument(parseJson(textFromBytes(bytes)), into)
+  const opened = openProjectDocument(parseJson(textFromBytes(bytes)), into)
+  // A version-1 or -2 document holds the model as it was said before ADR-0012:
+  // one list of connections, and a view's membership in the same row as its
+  // coordinates. It opens, through the same fold a format-3 folder goes
+  // through, and is format 4 the moment it is saved.
+  return opened.ok && opened.kind === 'workingFile'
+    ? { ...opened, project: migrateSnapshot(opened.project) }
+    : opened
 }
