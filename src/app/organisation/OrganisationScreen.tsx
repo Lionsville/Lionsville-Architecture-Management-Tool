@@ -246,7 +246,12 @@ export function OrganisationScreen({
                           {example.description}
                         </Typography>
                       </Box>
-                      <Button size="small" onClick={() => organisation.copyExample(example)} sx={quiet}>
+                      <Button
+                        size="small"
+                        data-testid="copy-example"
+                        onClick={() => organisation.copyExample(example)}
+                        sx={quiet}
+                      >
                         {s('org.copyHere')}
                       </Button>
                     </Stack>

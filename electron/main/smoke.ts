@@ -181,7 +181,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     if (!folder) throw new Error('no folder could be granted')
     sendCommand({ type: 'openFolder', root: folder.root })
     const seen = await window.webContents.executeJavaScript(waitFor(
-      "[...document.querySelectorAll('button')].some((b) => /Copy to a project|Open|Kopieer|Openen/.test(b.textContent || '')) && 'the picker is up'",
+      "document.querySelector('[data-testid=\"organisation-cards\"]') && 'the organisation screen is up'",
       'the app to open the folder',
     ), true) as string
     return `${folder.root} — ${seen}`
@@ -189,10 +189,12 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   results.push(await check(window, 'an example project opens', `
     (async () => {
-      ${'' /* The picker's own affordance: the button on an example card. */}
-      const button = [...document.querySelectorAll('button')]
-        .find((b) => /Copy to a project|Open|Kopieer|Openen/.test(b.textContent || ''))
-      if (!button) throw new Error('no example button; picker text was: ' + document.body.innerText.slice(0, 200))
+      ${'' /* By its testid rather than by its words: the organisation screen's
+              cards say "Open" too, and matching on text picked whichever came
+              first in the DOM. A testid is also the only form of this that does
+              not have to be rewritten in four languages. */}
+      const button = document.querySelector('[data-testid="copy-example"]')
+      if (!button) throw new Error('no example button; screen text was: ' + document.body.innerText.slice(0, 200))
       button.click()
       return await ${waitFor("document.querySelector('.react-flow') && 'canvas mounted'", 'the canvas to mount')}
     })()`))
