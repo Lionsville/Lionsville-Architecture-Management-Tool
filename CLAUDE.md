@@ -182,6 +182,10 @@ src/business/     The business layer, and the arithmetic over its four trees
                     coverage          per function: supported, manual, uncovered
                     lanes             a journey's phases, and per lane the fork,
                                       the join and the phases it passes through
+                    sheet · sheetDiagram   the laid-out page — rail, journey,
+                                      areas, unmapped — and what a new one
+                                      starts out showing
+                    ui/               SheetPage, FunctionInspector, captureSheet
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first

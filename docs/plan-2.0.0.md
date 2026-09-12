@@ -103,6 +103,24 @@ example's journey and areas. Four things the next stretch has to know:
   agent may not reach `business` and so cannot re-parent at all, which is why
   `element.update` does not offer `parentId`.
 
+**The sheet half landed 12 September 2026 (51a631d…52f4d82).** `DesignDiagram`
+gained the `sheet` kind with `journeyId`, `lanes`, `areas` and `showActors` and
+no geometry at all; `business/sheet.ts` lays the page out in rows and depths the
+way the roadmap works in days; `ui/SheetPage.tsx` draws it and
+`ui/FunctionInspector.tsx` edits one thing on it, re-parenting included, with a
+loop offered and refused rather than hidden; `app/useSheet.ts` is the wiring —
+its tab sits in the editor's own strip and *Business architecture* is under the
+`+`, while the active diagram stays a board, so the canvas is never unmounted
+for it. For an agent, `diagram.inspect` answers a sheet's rows instead of its
+geometry, `diagram.render` a PNG of the whole page, and tidy and route are
+refused as questions about the model. Two notes for whoever picks this up: the
+matrix gained `agent` → `business`, and the page needs nothing from the editor's
+theme, because its whole design is MUI palette tokens.
+
+**What is left of step 3 is the example's journey and areas**, which waits for
+the format-4 example form in step 4 — an interchange-shaped example cannot carry
+a business layer.
+
 Kinds `actor` (a tree, `outside`), `step`, `function`, `process`;
 `parentId` replaces `parentApplicationId`; `order` where order is a
 decision. `externalSystem`, `inputChannel`, `managementTool` are read from a
