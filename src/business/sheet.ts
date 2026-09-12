@@ -40,7 +40,7 @@
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../model'
 import { coverageOf, type FunctionCoverage } from './coverage'
 import { journeyOf } from './lanes'
-import { rootsOfKind } from './sheetDiagram'
+import { rootsOfKind, unmappedFunctions } from './sheetDiagram'
 import { childrenOf, flatten } from './tree'
 
 /** A row of the stakeholder rail. */
@@ -166,8 +166,10 @@ export function sheetPage(
     actors: sheet.showActors === false ? [] : railOf(elements),
     journey: journeyFor(model, sheet, byId),
     areas,
-    unmapped: rootsOfKind(elements, 'function')
-      .filter((element) => !(element.scopes?.length) && !drawn.includes(element.id)),
+    // The rule itself is `unmappedFunctions`; what this band adds is "and this
+    // sheet is not already drawing it", which is about the page and not about
+    // the model.
+    unmapped: unmappedFunctions(elements).filter((element) => !drawn.includes(element.id)),
   }
 }
 

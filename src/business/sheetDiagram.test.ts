@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rootsOfKind, seedSheet } from './sheetDiagram'
+import { rootsOfKind, seedSheet, unmappedFunctions } from './sheetDiagram'
 import { actor, area, capability, grouping, journey, phase } from './testFixtures'
 
 const scope = () => [
@@ -52,5 +52,35 @@ describe('seedSheet', () => {
     expect(sheet).toMatchObject({ kind: 'sheet', members: [] })
     expect(sheet.journeyId).toBeUndefined()
     expect(sheet.areas).toBeUndefined()
+  })
+})
+
+describe('unmappedFunctions', () => {
+  const roots = (over: { id: string; scopes?: string[] }[]) => over.map((one) => ({
+    id: one.id, kind: 'function' as const, name: one.id, lifecycle: 'live' as const,
+    isManaged: true, aspects: {}, ...(one.scopes ? { scopes: one.scopes } : {}),
+  }))
+
+  it('answers the function roots no domain has been given', () => {
+    const elements = roots([{ id: 'billing' }, { id: 'warehousing', scopes: ['retail'] }])
+    expect(unmappedFunctions(elements).map((e) => e.id)).toEqual(['billing'])
+  })
+
+  /** A capability inherits where its area was assigned; counting it too counts twice. */
+  it('looks at roots only', () => {
+    const elements = [
+      ...roots([{ id: 'warehousing', scopes: ['retail'] }]),
+      { id: 'picking', kind: 'function' as const, parentId: 'warehousing', name: 'Picking',
+        lifecycle: 'live' as const, isManaged: true, aspects: {} },
+    ]
+    expect(unmappedFunctions(elements)).toEqual([])
+  })
+
+  it('ignores every other kind', () => {
+    const elements = [
+      { id: 'quote', kind: 'step' as const, name: 'Quote', lifecycle: 'live' as const, isManaged: true, aspects: {} },
+      { id: 'wms', kind: 'application' as const, name: 'WMS', lifecycle: 'live' as const, isManaged: true, aspects: {} },
+    ]
+    expect(unmappedFunctions(elements)).toEqual([])
   })
 })

@@ -30,6 +30,27 @@ export function rootsOfKind(
 }
 
 /**
+ * The function roots nobody has said a domain for (ADR-0012 §9).
+ *
+ * The *top-down* half of who owns a capability, and the only half there is
+ * until a stand-in below can be derived from the tree: a function root with an
+ * empty `scopes` is one the organisation has named and not yet handed to
+ * anybody. That is a finding rather than a fault — it is the normal state of
+ * every capability on the day it is written down.
+ *
+ * Here rather than inline in the sheet's own pass because two screens ask it
+ * now: the sheet draws them in its *not yet mapped* band, and the
+ * organisation's business-architecture card counts them. Two spellings of one
+ * rule is how the band and the number come to disagree by one.
+ *
+ * Roots only. A capability under an area inherits where the area was assigned,
+ * and counting it separately would count the same gap twice.
+ */
+export function unmappedFunctions(elements: readonly DesignElement[]): DesignElement[] {
+  return rootsOfKind(elements, 'function').filter((element) => !element.scopes?.length)
+}
+
+/**
  * A fresh sheet over what the scope already holds.
  *
  * The journey is taken only when there is exactly one: with two, picking the

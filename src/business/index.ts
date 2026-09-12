@@ -21,7 +21,7 @@ export { coverageFor, coverageOf } from './coverage'
 export type { Coverage, FunctionCoverage } from './coverage'
 export { journeyOf } from './lanes'
 export type { Journey, Lane, LaneCell } from './lanes'
-export { rootsOfKind, seedSheet } from './sheetDiagram'
+export { rootsOfKind, seedSheet, unmappedFunctions } from './sheetDiagram'
 export { sheetPage } from './sheet'
 export type {
   SheetActor, SheetArea, SheetCapability, SheetCell, SheetGrouping, SheetJourney, SheetLane,
