@@ -20,6 +20,7 @@ import { toInterchange } from '../model/toInterchange'
 import { refPath } from '../projects/projectRef'
 import { openDocumentBytes, workingFileBytes, WORKING_FILE_MEDIA_TYPE } from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
+import { interchangeSaved } from './interchangeNotice'
 import { messageFor } from './messageFor'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -91,9 +92,9 @@ export function useProjectFiles(deps: {
    * cancelled picker) then showed "saved" and the user had every reason to
    * believe it. The promise decides now, and both branches say so.
    */
-  const handOver = useCallback((doc: SavedDocument, success: 'shell.savedWorkingFile' | 'shell.savedInterchange') => {
+  const handOver = useCallback((doc: SavedDocument, success: string) => {
     documents.save(doc).then(
-      () => notify(s(success), 'success'),
+      () => notify(success, 'success'),
       (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
     )
   }, [documents, notify, s])
@@ -112,17 +113,26 @@ export function useProjectFiles(deps: {
       name: fileNameFor(project.ref, WORKING_FILE_EXTENSION),
       bytes: workingFileBytes(project),
       mediaType: WORKING_FILE_MEDIA_TYPE,
-    }, 'shell.savedWorkingFile')
+    }, s('shell.savedWorkingFile'))
   }, [session, handOver])
 
+  /**
+   * The exchange document — and, since ADR-0012, what it could not carry.
+   *
+   * The format holds applications and the flows between them, and a project may
+   * now hold a business layer besides. A person handed a smaller document than
+   * their project has to be told so at the moment they ask for it, which is why
+   * the toast is built from the export rather than fixed.
+   */
   const saveInterchange = useCallback(() => {
     const project = session.snapshot()
+    const { doc, omitted } = toInterchange(project.model)
     handOver({
       name: fileNameFor(project.ref, '.json'),
-      text: JSON.stringify(toInterchange(project.model), null, 2) + '\n',
+      text: JSON.stringify(doc, null, 2) + '\n',
       mediaType: 'application/json',
-    }, 'shell.savedInterchange')
-  }, [session, handOver])
+    }, interchangeSaved(omitted, s))
+  }, [session, handOver, s])
 
   /**
    * Open a chosen file into the project you are in.

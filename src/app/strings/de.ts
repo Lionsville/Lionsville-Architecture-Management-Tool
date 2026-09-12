@@ -50,6 +50,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.deleted': '„{name}“ gelöscht.',
   'shell.savedInterchange':
     'Interchange-Dokument gespeichert — Topologie und Semantik; Geometrie und Gestaltung reisen in der Arbeitsdatei mit.',
+  'shell.savedInterchangeLeftOut':
+    'Austauschdokument gespeichert — es trägt Anwendungen und die Flüsse dazwischen, deshalb blieb dies zurück: {left}.',
+  'shell.leftOutPart': '{count} × {label}',
   'shell.savedWorkingFile':
     'Arbeitsdatei gespeichert — alles, einschließlich Geometrie, Gestaltung und eigener Logos.',
   'shell.workingFileLoaded': 'Arbeitsdatei „{name}“ geladen.',

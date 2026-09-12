@@ -50,6 +50,9 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.deleted': '“{name}” fuortsmiten.',
   'shell.savedInterchange':
     'Interchange-dokumint bewarre — topology en semantyk; geometry en opmak reizgje mei yn it wurkbestân.',
+  'shell.savedInterchangeLeftOut':
+    'Útwikselingsdokumint bewarre — it draacht applikaasjes en de keppelingen dertusken, dus dit bleau efter: {left}.',
+  'shell.leftOutPart': '{count} × {label}',
   'shell.savedWorkingFile':
     'Wurkbestân bewarre — alles, ynklusyf geometry, opmak en eigen logo’s.',
   'shell.workingFileLoaded': 'Wurkbestân “{name}” laden.',

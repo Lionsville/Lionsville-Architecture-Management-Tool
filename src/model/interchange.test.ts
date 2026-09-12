@@ -15,7 +15,8 @@ import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../model/placement';
 import doc from '../app/examples/acme-logistics.json'
 import { fromInterchange } from './fromInterchange'
-import type { InterchangeDoc } from './fromInterchange'
+import type { HostModel, InterchangeDoc } from './fromInterchange'
+import type { DesignElement, ElementKind } from './types'
 import { toInterchange } from './toInterchange'
 
 const GROUP_NAME = 'Acme Logistics'
@@ -40,6 +41,10 @@ const diagramByKey = (out: InterchangeDoc, key: string) => {
 
 const source = doc as unknown as InterchangeDoc
 
+/** An element the model holds, for the cases the document has no word for. */
+const el = (id: string, kind: ElementKind, over: Partial<DesignElement> = {}): DesignElement =>
+  ({ id, kind, name: id, lifecycle: 'live', isManaged: false, aspects: {}, ...over })
+
 /** Deep copy with each object's keys sorted alphabetically. */
 function sortKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortKeys)
@@ -52,7 +57,7 @@ function sortKeys(value: unknown): unknown {
   return value
 }
 
-const roundTrip = (input: InterchangeDoc) => toInterchange(fromInterchange(input, GROUP_NAME))
+const roundTrip = (input: InterchangeDoc) => toInterchange(fromInterchange(input, GROUP_NAME)).doc
 
 describe('fromInterchange → toInterchange on the shipped example', () => {
   it('comes back deep-equal (compared on sorted keys)', () => {
@@ -192,7 +197,7 @@ describe('fromInterchange → toInterchange on a synthetic document', () => {
     model.elements = model.elements.map((e) =>
       e.id === 'stil' ? { ...e, lifecycle: 'retiring' as const, isManaged: false } : e)
 
-    const out = toInterchange(model)
+    const out = toInterchange(model).doc
 
     expect(out.elements.find((e) => e.key === 'stil')).toMatchObject({
       lifecycle: 'retiring', isManaged: false,
@@ -281,7 +286,7 @@ describe('iconType', () => {
     model.elements = model.elements.map((e) =>
       e.id === 'kaal' ? { ...e, iconKey: 'database' } : e)
 
-    const out = toInterchange(model)
+    const out = toInterchange(model).doc
 
     expect(out.elements.find((e) => e.key === 'kaal')).toMatchObject({ iconType: 'database' })
   })
@@ -293,7 +298,7 @@ describe('iconType', () => {
     model.elements = model.elements.map((e) =>
       e.id === 'kern' ? { ...e, iconKey: 'lib:eigen-merk' } : e)
 
-    const out = toInterchange(model)
+    const out = toInterchange(model).doc
 
     expect('iconType' in elementByKey(out, 'kern')).toBe(false)
   })
@@ -306,7 +311,7 @@ describe('iconType', () => {
     model.elements = model.elements.map((e) =>
       e.id === 'kaal' ? { ...e, iconKey: 'verzonnen' } : e)
 
-    const out = toInterchange(model)
+    const out = toInterchange(model).doc
 
     expect('iconType' in elementByKey(out, 'kaal')).toBe(false)
   })
@@ -442,15 +447,73 @@ describe('project-wide defaults', () => {
     const model = fromInterchange(doc, GROUP_NAME)
     expect(model.defaultAuthor).toBe('W. Simons')
     expect(model.defaultAspectConfig).toEqual([{ key: 'dr', label: 'Continuity', code: 'CONT' }])
-    expect(toInterchange(model).design).toMatchObject({
+    expect(toInterchange(model).doc.design).toMatchObject({
       author: 'W. Simons',
       aspectConfig: [{ key: 'dr', label: 'Continuity', code: 'CONT' }],
     })
   })
 
   it('says nothing about them when the source said nothing', () => {
-    const out = toInterchange(fromInterchange({ ...doc, design: { name: 'Klein' } }, GROUP_NAME))
+    const out = toInterchange(fromInterchange({ ...doc, design: { name: 'Klein' } }, GROUP_NAME)).doc
     expect('author' in out.design).toBe(false)
     expect('aspectConfig' in out.design).toBe(false)
+  })
+})
+
+/**
+ * The export is a smaller document than the project, for the first time.
+ *
+ * A scope can hold a business layer (ADR-0012 §4) and relations of four types
+ * the interchange has no line for (§5), and the interchange is a contract with
+ * other tools and does not change (§11). So an export leaves things behind —
+ * which is fine, and is not allowed to be quiet.
+ */
+describe('what an export leaves behind (ADR-0012 §4, §5)', () => {
+  const withBusiness = (): HostModel => {
+    const model = fromInterchange({
+      formatVersion: '1',
+      design: { name: 'Acme Logistics' },
+      elements: [
+        { key: 'wms', kind: 'application', name: 'WMS' },
+        { key: 'portal', kind: 'inputChannel', name: 'Portal' },
+      ],
+      connections: [{ key: 'f1', sourceKey: 'portal', targetKey: 'wms' }],
+      diagrams: [{
+        key: 'l7', kind: 'layer7', name: 'Landschap',
+        places: [{ elementKey: 'wms' }, { elementKey: 'portal', zone: 'inputChannels' }],
+      }],
+    }, GROUP_NAME)
+    // A journey and the capabilities under it, and the rows that cover them.
+    model.elements = [
+      ...model.elements,
+      el('fulfilment', 'function'),
+      el('picking', 'function', { parentId: 'fulfilment' }),
+      el('ship', 'step'),
+      el('clerk', 'actor'),
+    ]
+    model.relations = [
+      ...model.relations,
+      { id: 's1', type: 'supports', sourceId: 'wms', targetId: 'fulfilment' },
+      { id: 's2', type: 'supports', sourceId: 'wms', targetId: 'picking' },
+      { id: 'a1', type: 'assigned', sourceId: 'clerk', targetId: 'ship' },
+    ]
+    return model
+  }
+
+  it('carries the applications, the actors and the flows, and nothing else', () => {
+    const { doc } = toInterchange(withBusiness())
+    expect(doc.elements.map((e) => e.key).sort()).toEqual(['clerk', 'portal', 'wms'])
+    expect(doc.connections?.map((c) => c.key)).toEqual(['f1'])
+  })
+
+  it('says what it left behind, counted by type and by kind', () => {
+    const { omitted } = toInterchange(withBusiness())
+    expect(omitted.relations).toEqual([{ type: 'supports', count: 2 }, { type: 'assigned', count: 1 }])
+    expect(omitted.elements).toEqual([{ kind: 'function', count: 2 }, { kind: 'step', count: 1 }])
+  })
+
+  it('says nothing at all about a landscape that has no business layer on it', () => {
+    const { omitted } = toInterchange(fromInterchange(source, GROUP_NAME))
+    expect(omitted).toEqual({ relations: [], elements: [] })
   })
 })

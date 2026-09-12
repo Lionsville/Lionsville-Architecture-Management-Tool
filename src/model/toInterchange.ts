@@ -18,7 +18,7 @@ import type { HostModel, InterchangeDoc } from './fromInterchange'
 import { bandsOf, nodeFigure } from './kinds'
 import { KEY_RE, claimKey } from './keys'
 import { flowsOf } from './relations'
-import type { ElementKind } from './types'
+import type { ElementKind, RelationType } from './types'
 import { UPLOADED_KEY_PREFIX } from './logo'
 
 /**
@@ -67,6 +67,36 @@ function prune<T extends object>(obj: T): T {
 }
 
 /**
+ * What an export could not carry, so the person asking for it is told.
+ *
+ * The interchange format is a contract with other tools and does not change
+ * (ADR-0012 §11): it holds boxes that are drawn on a board and lines between
+ * two applications. From ADR-0012 §4 and §5 a scope can hold more than that —
+ * a journey, the capabilities under an area, the rows that say what supports
+ * what — and an export of one is therefore a smaller document than the
+ * project, for the first time in this tool's life.
+ *
+ * That is fine, and it is not fine to do it quietly. So it is neither a
+ * refusal (the export is still the right document to hand another tool) nor a
+ * silence: it is a value beside the document, counted by kind and by type, for
+ * whoever asked to render. Empty lists mean nothing was left behind, which is
+ * every landscape that has no business layer on it.
+ */
+export type InterchangeOmissions = {
+  relations: { type: RelationType; count: number }[]
+  elements: { kind: ElementKind; count: number }[]
+}
+
+export type InterchangeExport = { doc: InterchangeDoc; omitted: InterchangeOmissions }
+
+/** Counts by a key, in the order the keys were first met — a stable sentence. */
+function tally<T extends string>(values: readonly T[]): { key: T; count: number }[] {
+  const counts = new Map<T, number>()
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
+  return [...counts].map(([key, count]) => ({ key, count }))
+}
+
+/**
  * The kinds this format has no box for: the business layer (ADR-0012 §4).
  *
  * Written out rather than derived from what a canvas draws, because they are
@@ -76,7 +106,7 @@ function prune<T extends object>(obj: T): T {
  */
 const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process']
 
-export function toInterchange(model: HostModel): InterchangeDoc {
+export function toInterchange(model: HostModel): InterchangeExport {
   const keys = keyMap(model)
   const k = (id: string | undefined) => (id == null ? undefined : keys.get(id) ?? id)
   const explicit = model.explicitFields ?? {}
@@ -85,7 +115,7 @@ export function toInterchange(model: HostModel): InterchangeDoc {
   const bands = bandsOf(model.diagrams)
   const carried = model.elements.filter((e) => !NOT_IN_THE_FORMAT.includes(e.kind))
 
-  return prune({
+  const doc = prune({
     formatVersion: typeof model.formatVersion === 'string' ? model.formatVersion : '1',
     design: prune({
       name: model.name,
@@ -157,4 +187,14 @@ export function toInterchange(model: HostModel): InterchangeDoc {
     })),
     adrLinks: (model.adrLinks as InterchangeDoc['adrLinks'])?.length ? model.adrLinks : undefined,
   }) as InterchangeDoc
+
+  return {
+    doc,
+    omitted: {
+      relations: tally(model.relations.filter((r) => r.type !== 'flow').map((r) => r.type))
+        .map(({ key, count }) => ({ type: key, count })),
+      elements: tally(model.elements.filter((e) => NOT_IN_THE_FORMAT.includes(e.kind)).map((e) => e.kind))
+        .map(({ key, count }) => ({ kind: key, count })),
+    },
+  }
 }
