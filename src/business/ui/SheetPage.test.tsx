@@ -17,7 +17,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { SheetPage } from './SheetPage'
 import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
-import { shippingScope } from '../testFixtures'
+import { actor, shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel } from '../../model'
 
 afterEach(() => cleanup())
@@ -296,8 +296,12 @@ describe('making something', () => {
     expect(acts.addArea).toHaveBeenCalledWith('New area')
   })
 
-  it('adds a stakeholder under one, and a group at the end of the rail', () => {
-    const { actions: acts } = open()
+  it('adds a stakeholder to a group, once, after its last member', () => {
+    // The fixture's rail is all leaves; a group is a row with something under
+    // it, and only a group offers the add — after its members, not on each row.
+    const grouped = { ...model(), elements: [...model().elements, actor('floor-staff', 'Floor staff', { parentId: 'warehouse-team' })] }
+    const { actions: acts } = open({ model: grouped })
+    expect(screen.getAllByLabelText(/^Add a stakeholder under/)).toHaveLength(1)
     fireEvent.click(screen.getByLabelText('Add a stakeholder under Warehouse team'))
     expect(acts.addElement).toHaveBeenCalledWith({
       kind: 'actor', name: 'New stakeholder', parentId: 'warehouse-team',

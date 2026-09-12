@@ -25,7 +25,7 @@
  * Electron computes drag regions from geometry rather than from what is
  * painted on top.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
@@ -337,8 +337,11 @@ function Add({ label, title, onClick, sx }: {
  * A row with something under it is a heading and a row without one is an
  * entry — read off the next row's depth rather than stored, because "has
  * children" is a fact about the tree and not a second field to keep in step.
- * Every row takes a stakeholder of its own, because a row becomes a group the
- * moment something is under it; the one at the bottom makes a new group.
+ * A group takes a stakeholder once, after its last member, addressed to the
+ * group — not on every row: at the rail's width a button beside each name
+ * left the names wrapping word by word under their own chips. A top-level
+ * actor with nothing under it is an entry, and becomes a group through the
+ * inspector's parent field; the one at the bottom makes a new group.
  */
 function Rail({ actors, onSelect, author, t }: {
   actors: readonly SheetActor[]
@@ -367,19 +370,25 @@ function Rail({ actors, onSelect, author, t }: {
       )}
       {actors.map((row, index) => {
         const heading = (actors[index + 1]?.depth ?? 0) > row.depth
-        const add = author && (
-          <Add
-            label={t('sheet.addStakeholder')}
-            title={t('sheet.addStakeholderTo', { name: row.element.name })}
-            onClick={() => author.made(author.actions.addElement({
-              kind: 'actor', name: t('sheet.nameStakeholder'), parentId: row.element.id,
-            }))}
-            sx={{ px: 0.4, py: 0, fontSize: 9 }}
-          />
+        // The group this row belongs to is the nearest row at depth 0 at or
+        // above it; the add line goes after the group's last member.
+        const group = row.depth === 0 ? row : [...actors.slice(0, index)].reverse().find((r) => r.depth === 0) ?? row
+        const endsGroup = row.depth > 0 && (actors[index + 1]?.depth ?? 0) === 0
+        const add = author && endsGroup && (
+          <Box sx={{ pl: 1.25, py: 0.25 }}>
+            <Add
+              label={t('sheet.addStakeholder')}
+              title={t('sheet.addStakeholderTo', { name: group.element.name })}
+              onClick={() => author.made(author.actions.addElement({
+                kind: 'actor', name: t('sheet.nameStakeholder'), parentId: group.element.id,
+              }))}
+              sx={{ px: 0.4, py: 0, fontSize: 9 }}
+            />
+          </Box>
         )
         return (
+          <Fragment key={row.element.id}>
           <Box
-            key={row.element.id}
             sx={{
               display: 'flex', alignItems: 'center', gap: 0.5,
               pl: row.depth * 1.25,
@@ -414,8 +423,9 @@ function Rail({ actors, onSelect, author, t }: {
                 sx={{ height: 16, fontSize: 9, '& .MuiChip-label': { px: 0.5 } }}
               />
             )}
-            {add}
           </Box>
+          {add}
+          </Fragment>
         )
       })}
       {author && (
