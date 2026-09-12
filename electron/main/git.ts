@@ -320,7 +320,7 @@ export async function label(root: string, sha: string, name: string): Promise<La
  * One project folder as it was at a commit.
  *
  * Text only, and that is not a limitation here: the reader that turns these
- * back into a project needs `project.json`, `model.json`, the diagrams, the
+ * back into a scope needs `scope.json`, `model.json`, the diagrams, the
  * descriptions and the decisions, and none of those are bitmaps. A mark is
  * skipped, and a project read at a commit therefore has the marks the working
  * copy has — which is right for a diff of the architecture and wrong for

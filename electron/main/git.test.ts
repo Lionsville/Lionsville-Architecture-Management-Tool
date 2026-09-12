@@ -59,7 +59,7 @@ describe.skipIf(!available)('git in a working directory', () => {
 
   it('takes a snapshot, and says nothing changed when nothing did', async () => {
     await initRepository(root)
-    await project('project.json', '{"name":"Landscape"}')
+    await project('scope.json', '{"name":"Landscape"}')
 
     const first = await snapshot(root, 'The first one')
     expect(first).toMatch(/^[0-9a-f]{40}$/)
@@ -71,15 +71,15 @@ describe.skipIf(!available)('git in a working directory', () => {
   it('commits on a machine with no git identity configured', async () => {
     // A fresh laptop must be able to take a snapshot.
     await initRepository(root)
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     await expect(snapshot(root, 'On a fresh machine')).resolves.toBeTruthy()
   })
 
   it('reads the history newest first, with what each one said', async () => {
     await initRepository(root)
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     await snapshot(root, 'The first one')
-    await project('project.json', '{"n":2}')
+    await project('scope.json', '{"n":2}')
     await snapshot(root, 'The second one')
 
     const log = await history(root)
@@ -113,9 +113,9 @@ describe.skipIf(!available)('git in a working directory', () => {
 
   it('labels a snapshot, reads the label back beside it, and refuses the same word twice', async () => {
     await initRepository(root)
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     const first = await snapshot(root, 'One')
-    await project('project.json', '{"n":2}')
+    await project('scope.json', '{"n":2}')
     const second = await snapshot(root, 'Two')
 
     expect(await label(root, first!, 'Shown to the board')).toBe('done')
@@ -133,7 +133,7 @@ describe.skipIf(!available)('git in a working directory', () => {
 
   it('shows a tag somebody made in a terminal by its name, having no words for it', async () => {
     await initRepository(root)
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     await snapshot(root, 'One')
     await run('git', ['tag', 'v1'], { cwd: root })
     expect((await history(root))[0].labels).toEqual(['v1'])
@@ -147,28 +147,28 @@ describe.skipIf(!available)('git in a working directory', () => {
 
   it('reads one project folder back as it was at a commit', async () => {
     await initRepository(root)
-    await project('project.json', '{"name":"Before"}')
+    await project('scope.json', '{"name":"Before"}')
     await project('model.json', '{"elements":[]}')
     const sha = await snapshot(root, 'Before')
-    await project('project.json', '{"name":"After"}')
+    await project('scope.json', '{"name":"After"}')
     await snapshot(root, 'After')
 
     const files = await filesAt(root, sha!, 'acme/landscape')
-    expect(files.map((file) => file.path).sort()).toEqual(['model.json', 'project.json'])
-    expect(files.find((file) => file.path === 'project.json')?.text).toBe('{"name":"Before"}')
+    expect(files.map((file) => file.path).sort()).toEqual(['model.json', 'scope.json'])
+    expect(files.find((file) => file.path === 'scope.json')?.text).toBe('{"name":"Before"}')
   })
 
   it('leaves the marks out of what it reads back', async () => {
     // A diff of the architecture does not need the bitmaps, and reading them as
     // text would be a lie about what they are.
     await initRepository(root)
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     await mkdir(join(root, 'acme/landscape/logos'), { recursive: true })
     await writeFile(join(root, 'acme/landscape/logos/own.png'), Buffer.from([1, 2, 3]))
     const sha = await snapshot(root, 'With a mark')
 
     expect((await filesAt(root, sha!, 'acme/landscape')).map((file) => file.path))
-      .toEqual(['project.json'])
+      .toEqual(['scope.json'])
   })
 
   it('does not take somebody else’s repository for its own', async () => {
@@ -186,7 +186,7 @@ describe.skipIf(!available)('git in a working directory', () => {
     // own snapshots — which then cannot be read back once this folder has a
     // repository of its own: `ls-tree` answers `not a tree object`.
     await initRepository(root)
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     const outer = await snapshot(root, 'The enclosing project')
 
     const inside = join(root, 'nested')
@@ -197,12 +197,12 @@ describe.skipIf(!available)('git in a working directory', () => {
 
   it('starts a repository here rather than committing into the one above', async () => {
     await initRepository(root)
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     await snapshot(root, 'The enclosing project')
 
     const inside = join(root, 'nested/landscape')
     await mkdir(inside, { recursive: true })
-    await writeFile(join(inside, 'project.json'), '{}', 'utf8')
+    await writeFile(join(inside, 'scope.json'), '{}', 'utf8')
 
     expect(await snapshot(inside, 'The nested one')).toMatch(/^[0-9a-f]{40}$/)
     expect(await isRepository(inside)).toBe(true)
@@ -277,7 +277,7 @@ describe.skipIf(!available)('the remote', () => {
   it('refuses rather than hangs when the remote is not there', async () => {
     await initRepository(root)
     await sh(root, ['remote', 'add', 'origin', join(bare, 'no-such-repository')])
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     await snapshot(root, 'One')
     expect(await pull(root)).toBe('unreachable')
     expect(await push(root)).toBe('unreachable')
@@ -285,7 +285,7 @@ describe.skipIf(!available)('the remote', () => {
 
   it('pushes, sets the upstream, and then has nothing to pull', async () => {
     await withRemote()
-    await project('project.json', '{"name":"Ours"}')
+    await project('scope.json', '{"name":"Ours"}')
     await snapshot(root, 'Ours')
 
     expect(await push(root)).toBe('done')
@@ -301,14 +301,14 @@ describe.skipIf(!available)('the remote', () => {
 
   it('fast-forwards to what a colleague pushed, into a folder with no commits yet', async () => {
     await withRemote()
-    await colleagueCommits('project.json', '{"name":"Theirs"}')
+    await colleagueCommits('scope.json', '{"name":"Theirs"}')
     expect(await pull(root)).toBe('done')
-    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"name":"Theirs"}')
+    expect(await readFile(join(root, 'acme/landscape/scope.json'), 'utf8')).toBe('{"name":"Theirs"}')
   })
 
   it('pushes a label with the branch, so a colleague sees the same mark', async () => {
     await withRemote()
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     const sha = await snapshot(root, 'One')
     await label(root, sha!, 'Shown to the board')
     expect(await push(root)).toBe('done')
@@ -317,7 +317,7 @@ describe.skipIf(!available)('the remote', () => {
 
   it('fast-forwards when only they moved on', async () => {
     await withRemote()
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     await snapshot(root, 'One')
     await push(root)
     await colleagueCommits('model.json', '{"elements":[]}')
@@ -327,53 +327,53 @@ describe.skipIf(!available)('the remote', () => {
 
   it('answers diverged from one end and rejected from the other when both moved on', async () => {
     await withRemote()
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     await snapshot(root, 'One')
     await push(root)
     await colleagueCommits('model.json', '{"theirs":true}')
-    await project('project.json', '{"n":2}')
+    await project('scope.json', '{"n":2}')
     await snapshot(root, 'Two')
 
     expect(await push(root)).toBe('rejected')
     expect(await pull(root)).toBe('diverged')
     // Neither merged, rebased nor stashed: ours is exactly as it was.
-    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"n":2}')
+    expect(await readFile(join(root, 'acme/landscape/scope.json'), 'utf8')).toBe('{"n":2}')
     expect((await history(root)).map((held) => held.subject)).toEqual(['Two', 'One'])
   })
 
   it('take theirs: the remote stands, and ours is kept on a branch named for the moment', async () => {
     await withRemote()
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     await snapshot(root, 'One')
     await push(root)
     await colleagueCommits('model.json', '{"theirs":true}')
-    await project('project.json', '{"n":2}')
+    await project('scope.json', '{"n":2}')
     await snapshot(root, 'Two')
     // And something not yet recorded, which the reset must not destroy.
     await project('unrecorded.json', '{"kept":true}')
 
     expect(await resolve(root, 'theirs')).toBe('done')
-    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"n":1}')
+    expect(await readFile(join(root, 'acme/landscape/scope.json'), 'utf8')).toBe('{"n":1}')
     expect(await readFile(join(root, 'acme/landscape/model.json'), 'utf8')).toBe('{"theirs":true}')
     const branches = await sh(root, ['branch', '--list', 'before-sync/*'])
     expect(branches).toMatch(/before-sync\//)
     const kept = branches.trim().replace(/^\*?\s*/, '')
-    expect(await sh(root, ['show', `${kept}:acme/landscape/project.json`])).toBe('{"n":2}')
+    expect(await sh(root, ['show', `${kept}:acme/landscape/scope.json`])).toBe('{"n":2}')
     expect(await sh(root, ['show', `${kept}:acme/landscape/unrecorded.json`])).toBe('{"kept":true}')
     expect(await pull(root)).toBe('done')
   })
 
   it('keep ours: a merge commit whose tree is ours and whose parents are both sides', async () => {
     await withRemote()
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     await snapshot(root, 'One')
     await push(root)
     await colleagueCommits('model.json', '{"theirs":true}')
-    await project('project.json', '{"n":2}')
+    await project('scope.json', '{"n":2}')
     await snapshot(root, 'Two')
 
     expect(await resolve(root, 'ours')).toBe('done')
-    expect(await readFile(join(root, 'acme/landscape/project.json'), 'utf8')).toBe('{"n":2}')
+    expect(await readFile(join(root, 'acme/landscape/scope.json'), 'utf8')).toBe('{"n":2}')
     // Their file is not in our tree: no line of anything was combined.
     await expect(readFile(join(root, 'acme/landscape/model.json'), 'utf8')).rejects.toThrow()
     expect((await sh(root, ['log', '-1', '--format=%P'])).split(' ')).toHaveLength(2)
@@ -385,7 +385,7 @@ describe.skipIf(!available)('the remote', () => {
   it('leaves the folder as it was when resolving is refused', async () => {
     await initRepository(root)
     await sh(root, ['remote', 'add', 'origin', join(bare, 'gone')])
-    await project('project.json', '{"n":1}')
+    await project('scope.json', '{"n":1}')
     await snapshot(root, 'One')
     expect(await resolve(root, 'theirs')).toBe('unreachable')
     expect((await history(root)).map((held) => held.subject)).toEqual(['One'])
@@ -398,11 +398,11 @@ describe.skipIf(!available)('this machine\'s settings file', () => {
     await initRepository(root)
     await mkdir(join(root, '.lionsville-architecture'), { recursive: true })
     await writeFile(join(root, LOCAL_SETTINGS_PATH), '{"version":1}', 'utf8')
-    await project('project.json', '{}')
+    await project('scope.json', '{}')
     const sha = await snapshot(root, 'With the local file beside it')
     const listed = await sh(root, ['ls-tree', '-r', '--name-only', sha!])
     expect(listed).not.toContain('local.json')
-    expect(listed).toContain('acme/landscape/project.json')
+    expect(listed).toContain('acme/landscape/scope.json')
 
     await sh(root, ['add', '-A'])
     expect(await sh(root, ['diff', '--cached', '--name-only'])).toBe('')

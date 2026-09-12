@@ -39,7 +39,7 @@ const text = (held: Uint8Array | undefined) => held && new TextDecoder().decode(
 
 describe('safeRelativePath', () => {
   it('takes a path that is only ever a path inside something', () => {
-    expect(safeRelativePath('acme/landscape/project.json')).toBeTruthy()
+    expect(safeRelativePath('acme/landscape/scope.json')).toBeTruthy()
     expect(safeRelativePath('')).toBe('')
   })
 
@@ -74,9 +74,9 @@ describe('resolveInside', () => {
 
 describe('what the channel does with a folder', () => {
   it('writes, reads and lists', async () => {
-    await writeInside(root, 'acme/landscape/project.json', bytes('{}\n'))
+    await writeInside(root, 'acme/landscape/scope.json', bytes('{}\n'))
 
-    expect(text((await readInside(root, 'acme/landscape/project.json'))?.bytes)).toBe('{}\n')
+    expect(text((await readInside(root, 'acme/landscape/scope.json'))?.bytes)).toBe('{}\n')
     expect(await listDirectory(root, 'acme')).toEqual([{ name: 'landscape', kind: 'directory' }])
   })
 
@@ -99,11 +99,11 @@ describe('what the channel does with a folder', () => {
   it('leaves the previous file in place when a write is interrupted', async () => {
     // The temporary file is in the same directory and is renamed over the
     // target, so there is no moment at which the project is half-written.
-    await writeInside(root, 'project.json', bytes('the first one\n'))
-    const half = writeInside(root, 'project.json', bytes('the second one\n'))
-    expect(text((await readInside(root, 'project.json'))?.bytes)).toBe('the first one\n')
+    await writeInside(root, 'scope.json', bytes('the first one\n'))
+    const half = writeInside(root, 'scope.json', bytes('the second one\n'))
+    expect(text((await readInside(root, 'scope.json'))?.bytes)).toBe('the first one\n')
     await half
-    expect(text((await readInside(root, 'project.json'))?.bytes)).toBe('the second one\n')
+    expect(text((await readInside(root, 'scope.json'))?.bytes)).toBe('the second one\n')
   })
 
   it('leaves nothing behind when a write fails', async () => {
@@ -123,18 +123,18 @@ describe('what the channel does with a folder', () => {
   })
 
   it('removes a file, and a folder only when asked recursively', async () => {
-    await writeInside(root, 'group/landscape/project.json', bytes('{}'))
-    await removeEntry(root, 'group/landscape/project.json')
-    expect(await listDirectory(root, 'group/landscape')).toEqual([])
+    await writeInside(root, 'acme/landscape/scope.json', bytes('{}'))
+    await removeEntry(root, 'acme/landscape/scope.json')
+    expect(await listDirectory(root, 'acme/landscape')).toEqual([])
 
-    await removeEntry(root, 'group', { recursive: true })
-    expect(await listDirectory(root, 'group')).toBeUndefined()
+    await removeEntry(root, 'acme', { recursive: true })
+    expect(await listDirectory(root, 'acme')).toBeUndefined()
   })
 
   it('never removes the folder the user chose', async () => {
-    await writeInside(root, 'project.json', bytes('{}'))
+    await writeInside(root, 'scope.json', bytes('{}'))
     await removeEntry(root, '', { recursive: true })
-    expect(await listDirectory(root, '')).toEqual([{ name: 'project.json', kind: 'file' }])
+    expect(await listDirectory(root, '')).toEqual([{ name: 'scope.json', kind: 'file' }])
   })
 
   it('does not mind removing what is not there', async () => {
