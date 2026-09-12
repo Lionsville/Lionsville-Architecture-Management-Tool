@@ -6,6 +6,7 @@ import {
   memberOf,
   nodeGeometryOf,
   BAND_NODE_MIN,
+  canPlaceKind,
   cascadeSlot,
   clampPlacementIntoZone,
   defaultZonePosition,
@@ -378,5 +379,36 @@ describe('placedNodes', () => {
     const [a] = placedNodes(view);
     expect(memberOf(a)).toEqual({ id: 'a', zone: 'landscape', group: 'core' });
     expect(nodeGeometryOf(a)).toEqual({ id: 'a', x: 10, y: 20, width: 300 });
+  });
+});
+
+/**
+ * Where a kind may go (ADR-0012 §6).
+ *
+ * A `layer7` board and a `container` board are geometry: a box has a position,
+ * a size and a band. A sheet and a map are *laid out* from trees, order and
+ * depth, with no drag and no geometry file — so asking for a coordinate for a
+ * function is asking where a thing goes whose place its parent decides.
+ */
+describe('canPlaceKind', () => {
+  it('lets a canvas hold what a canvas has always held', () => {
+    for (const kind of ['application', 'component', 'actor'] as const) {
+      expect(canPlaceKind(kind, 'layer7'), kind).toEqual({ ok: true });
+      expect(canPlaceKind(kind, 'container'), kind).toEqual({ ok: true });
+    }
+  });
+
+  it('refuses a business kind on a canvas, as a value with a reason', () => {
+    for (const kind of ['step', 'function', 'process'] as const) {
+      expect(canPlaceKind(kind, 'layer7'), kind)
+        .toEqual({ ok: false, reason: 'placement.notOnACanvas' });
+      expect(canPlaceKind(kind, 'container'), kind)
+        .toEqual({ ok: false, reason: 'placement.notOnACanvas' });
+    }
+  });
+
+  it('excepts the actor, which has stood in the top band of every board', () => {
+    // A business kind by ADR-0012 §4, and the one that was always drawn.
+    expect(canPlaceKind('actor', 'layer7')).toEqual({ ok: true });
   });
 });

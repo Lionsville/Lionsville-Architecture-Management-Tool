@@ -13,6 +13,7 @@ import type { IdPolicy } from '../model/keys';
 import { transaction } from '../model/commands';
 import type { Command } from '../model/commands';
 import { placedNodes,
+  canPlaceKind,
   clampPlacementIntoZone,
   defaultContainerPosition,
   defaultZonePosition,
@@ -576,6 +577,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       addElement(seed) {
         const diagram = currentDiagram();
         if (!diagram) return;
+        // A record and a drawing are two acts (ADR-0012 §10), and this one is
+        // the drawing: a business kind has no place on a canvas, because a
+        // sheet is laid out from the tree rather than dragged. The palette
+        // never offers one, so this is the rule behind the rows rather than a
+        // second copy of it — and it is a refusal the caller can read, never a
+        // throw.
+        if (!canPlaceKind(seed.kind, diagram.kind).ok) return;
         // The name first, because the id is derived from it: an element gets the
         // key the file would have given it, at the moment it is drawn.
         const name =

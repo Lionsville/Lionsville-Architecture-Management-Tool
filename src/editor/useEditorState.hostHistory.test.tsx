@@ -65,6 +65,23 @@ describe('useEditorState — the host owns the stack', () => {
       .toEqual(['element.create', 'transaction']);
   });
 
+  it('draws nothing for a kind a canvas does not hold', () => {
+    // A record and a drawing are two acts (ADR-0012 §10), and a sheet is laid
+    // out from the tree rather than dragged (§6) — so a function has no place
+    // on a board, and asking for one is refused rather than half-done. The
+    // palette never offers one; this is the rule behind the rows.
+    const { result, host } = renderEditorState(model());
+
+    act(() => result.current.actions.addElement({ kind: 'function' }));
+    act(() => result.current.actions.addElement({ kind: 'step' }));
+    act(() => result.current.actions.addElement({ kind: 'process' }));
+
+    expect(host.current.commands).toEqual([]);
+    // And the one business kind that has always been drawn still is.
+    act(() => result.current.actions.addElement({ kind: 'actor' }));
+    expect(host.current.commands).toHaveLength(1);
+  });
+
   it('sends nothing at all under readOnly', () => {
     const { result, host } = renderEditorState(model(), { readOnly: true });
 
