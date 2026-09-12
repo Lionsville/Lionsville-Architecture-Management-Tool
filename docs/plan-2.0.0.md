@@ -179,6 +179,35 @@ until format 4 (the same shim rule as step 2).
   `supports` window; an export of the example says it left out its
   `supports` rows.
 
+**3c — a person can author the sheet — landed 12 September 2026.** Beta 1 drew
+the business architecture and offered nothing to make it with: the only authors
+were the example's JSON and an agent, and the first person to test the beta hit
+that in the first minute. Every band now has its own *+* — a journey with its
+first phase, a phase, a step on any row, a lane (its actor made on the spot if
+need be, with the step that makes its row appear), an area, a grouping, a
+capability, a stakeholder — each one `Command`, undoable, with an Activity line,
+and each one selecting what it made with the cursor in its name so the gesture
+is click, type, Enter. *Supported by…* and *Done by…* on a capability write the
+`supports` and `assigned` rows a person could previously only get from an agent,
+which is the half of step 12 that could not wait. *Delete* is refused as a value
+while something is inside it — nothing cascades. *What this sheet draws* is the
+four fields a sheet is made of, including which journey a scope with two of them
+draws. Three things worth knowing:
+
+- **A leaf is a leaf at any depth** (`business/sheet.ts`). A function straight
+  under an area used to draw as a grouping box with nothing in it, which is what
+  *+ capability* on an area would have made; a grouping is now a child of an
+  area that holds something, and an emptied one reads as a card again. The
+  agent's sheet report carries an area's own leaves for the same reason.
+- **A lane is still derived.** `addLane` writes an actor and a step, and nothing
+  else: `lanes` on the diagram is the *order* of the rows, and a row exists
+  because a step names the actor. A lane whose last step goes stops being drawn,
+  with nothing to tidy up.
+- **A coverage link lands where the element is drawn.** `model/drawnOn.ts`
+  answers which boards hold it *and* draw it on their own day, so the two
+  landscapes in the example stop sending a person to a board that does not have
+  it; when none does, the element's own page opens instead.
+
 ### 4. Format 4 — the model's own shape, written — landed 12 September 2026 (6691380…ccf5de7)
 
 The file says what the model says. The three folds in

@@ -475,23 +475,68 @@ Every capability says who covers it:
   for the thing you do by hand.
 - **nothing yet** — neither, which *is* the gap, and the reason to draw the page.
 
-Those are read from the model rather than typed on the page: a capability is
-covered because something in the landscape supports it, and support can carry a
-window like anything else with a date on it, so a capability covered from March
-is covered from March.
+Those are read from the model rather than kept on the card: a capability is
+covered because something in the landscape supports it. **Supported by…** in the
+inspector is how that row gets written, and support can carry a window like
+anything else with a date on it, so a capability covered from March is covered
+from March.
 
 At the end is a band for what is **not yet mapped to a domain** — the areas
 nobody has been given. It is a finding, not an error: a list of what the
 organisation has said it does and has not yet said who does it.
 
+### Making one
+
+A sheet on a project with nothing above its applications is empty, and the empty
+page offers the two places to start: **New journey** and **New area**.
+Everything else is a **+** where the thing would go, and they all work the same
+way — what you made appears, it is selected, and the cursor is in its name, so
+you type over what it was called and press Enter.
+
+- **New journey** makes the journey and its first phase, *Start*, and points
+  this sheet at it, because a band that is a header with nothing under it is not
+  what you asked for.
+- **+ phase**, at the end of the phase row, puts a column at the end.
+- **+ step**, in any cell, adds a step to that phase on that row's path.
+- **+ lane…**, under the last row, asks whose path it is — one of your
+  stakeholders, or a name you type, marked as outside the organisation if they
+  are — and which phase it forks at, since a lane is drawn where its steps are
+  and one with no steps is not drawn at all.
+- **+ area**, after the last area, adds one and draws it on this sheet from the
+  moment it exists.
+- **+ grouping** and **+ capability** inside an area, and **+ capability**
+  inside a grouping. A capability made straight in an area is a card in the
+  column, and becomes a grouping the moment something is put inside it.
+- **+ stakeholder**, beside a rail entry, adds one under it; **+ group**, at the
+  foot of the rail, starts a branch of its own.
+
+**Supported by…** and **Done by…** in the inspector are how a capability gets
+covered: tick an application and it supports this capability, tick a team and it
+is theirs. Each tick is a step of its own, and the line under the capability's
+name changes as you go.
+
+**Delete**, at the foot of the inspector, removes what is selected and every row
+that ended on it. It is refused while anything is inside it, and says how much:
+nothing cascades, so an area you delete is an area you emptied first.
+
+**What this sheet draws**, the sliders in the top bar, is about the sheet rather
+than the model — which journey runs across the top (a project with two journeys
+starts with neither), which areas are drawn and in which order, the order of the
+lanes, and whether the rail is there at all.
+
 ### Editing one
 
 Pick anything on the page and it opens on the right: its name, its description,
-what it sits under, where it is among its neighbours, whose path a step is, and
-the lifecycle a capability is in — a capability being built is in the same phase
-as an application being built. Moving one thing under another is refused if it
-would put a thing inside itself; the refusal is offered in the list, not hidden
-from it. The eye in the top bar hides the stakeholder rail.
+what it sits under, where it is among its neighbours, whose path a step is,
+whether a stakeholder is from outside the organisation, and the lifecycle a
+capability is in — a capability being built is in the same phase as an
+application being built. Moving one thing under another is refused if it would
+put a thing inside itself; the refusal is offered in the list, not hidden from
+it. The eye in the top bar hides the stakeholder rail.
+
+Opening an application from a capability's coverage takes you to a board that
+actually draws it, switching boards if the one you are on does not — and to the
+application's own page when no board draws it at all.
 
 ## Search
 

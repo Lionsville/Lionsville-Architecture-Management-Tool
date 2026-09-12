@@ -493,25 +493,72 @@ Elke capability zegt wie hem invult:
   voor wat u met de hand doet.
 - **nog niets** — geen van beide, en dát is het gat waarvoor je de pagina tekent.
 
-Die staan in het model en worden niet op de pagina getypt: een capability is
-ingevuld omdat iets in het landschap hem ondersteunt, en zo'n ondersteuning kan
-een venster dragen zoals alles met een datum, dus een capability die vanaf maart
-is ingevuld is vanaf maart ingevuld.
+Die staan in het model en niet op het kaartje: een capability is ingevuld omdat
+iets in het landschap hem ondersteunt. **Ondersteund door…** in het paneel is
+hoe die regel geschreven wordt, en zo'n ondersteuning kan een venster dragen
+zoals alles met een datum, dus een capability die vanaf maart is ingevuld is
+vanaf maart ingevuld.
 
 Onderaan staat een band voor wat **nog niet aan een domein is toegewezen** — de
 gebieden die nog aan niemand zijn gegeven. Dat is een bevinding, geen fout: een
 lijst van wat de organisatie gezegd heeft te doen en nog niet gezegd heeft wie
 het doet.
 
+### Er een maken
+
+Een blad op een project met niets boven de applicaties is leeg, en die lege
+pagina biedt de twee plekken om te beginnen: **Nieuwe klantreis** en **Nieuw
+gebied**. De rest is telkens een **+** op de plek waar het ding komt, en ze
+werken allemaal hetzelfde — wat u maakt verschijnt, is gekozen, en de cursor
+staat in de naam, dus u typt over wat het heette en drukt op Enter.
+
+- **Nieuwe klantreis** maakt de klantreis én de eerste fase, *Begin*, en laat
+  dit blad hem tekenen; een band die een kop is met niets eronder is niet wat u
+  vroeg.
+- **+ fase**, aan het eind van de faserij, zet er een kolom achteraan.
+- **+ stap**, in elke cel, zet een stap in die fase op het pad van die rij.
+- **+ baan…**, onder de laatste rij, vraagt wiens pad het is — een
+  belanghebbende die u al hebt, of een naam die u typt, met de aantekening
+  buiten de organisatie als dat zo is — en bij welke fase hij splitst, want een
+  baan wordt getekend waar zijn stappen staan en een baan zonder stappen wordt
+  niet getekend.
+- **+ gebied**, na het laatste gebied, maakt er een en tekent hem vanaf dat
+  moment op dit blad.
+- **+ groep** en **+ capability** binnen een gebied, en **+ capability** binnen
+  een groep. Een capability die rechtstreeks in een gebied gemaakt wordt is een
+  kaartje in de kolom, en wordt een groep zodra er iets in gezet wordt.
+- **+ belanghebbende**, naast een regel op de rail, zet er een onder; **+
+  groep**, onderaan de rail, begint een eigen tak.
+
+**Ondersteund door…** en **Gedaan door…** in het paneel zijn hoe een capability
+ingevuld raakt: vink een applicatie aan en die ondersteunt hem, vink een team
+aan en het is van hen. Elk vinkje is een eigen stap, en de regel onder de naam
+van de capability verandert mee.
+
+**Verwijderen**, onderaan het paneel, haalt weg wat gekozen is en elke regel die
+erop uitkwam. Het wordt geweigerd zolang er iets in zit, met hoeveel erbij: er
+cascadeert niets, dus een gebied dat u verwijdert is een gebied dat u eerst
+leeggemaakt hebt.
+
+**Wat dit blad tekent**, de schuifjes in de bovenbalk, gaat over het blad en
+niet over het model — welke klantreis bovenaan loopt (een project met twee
+klantreizen begint met geen van beide), welke gebieden getekend worden en in
+welke volgorde, de volgorde van de banen, en of de rail er staat.
+
 ### Er een bewerken
 
 Kies iets op de pagina en het opent rechts: de naam, de beschrijving, waar het
-onder valt, waar het tussen zijn buren staat, wiens pad een stap is, en de
-levenscyclus van een capability — een capability die gebouwd wordt is in dezelfde
-fase als een applicatie die gebouwd wordt. Iets onder iets anders hangen wordt
-geweigerd als het daarmee in zichzelf zou komen te zitten; die weigering staat in
-de lijst en wordt er niet uit weggelaten. Het oog in de bovenbalk verbergt de
+onder valt, waar het tussen zijn buren staat, wiens pad een stap is, of een
+belanghebbende van buiten de organisatie is, en de levenscyclus van een
+capability — een capability die gebouwd wordt is in dezelfde fase als een
+applicatie die gebouwd wordt. Iets onder iets anders hangen wordt geweigerd als
+het daarmee in zichzelf zou komen te zitten; die weigering staat in de lijst en
+wordt er niet uit weggelaten. Het oog in de bovenbalk verbergt de
 belanghebbenden.
+
+Een applicatie openen vanuit de invulling van een capability brengt u naar een
+bord dat hem ook echt tekent — desnoods een ander dan waar u stond — en naar de
+eigen pagina van de applicatie als geen enkel bord hem tekent.
 
 ## Zoeken
 
