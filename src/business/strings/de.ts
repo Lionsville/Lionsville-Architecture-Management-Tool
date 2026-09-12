@@ -4,7 +4,6 @@ import type { EN } from './en'
 export const DE: Record<keyof typeof EN, string> = {
   'sheet.page': 'Geschäftsarchitektur',
   'sheet.close': 'Geschäftsarchitektur schließen',
-  'sheet.new': 'Geschäftsarchitektur',
 
   'sheet.stakeholders': 'Beteiligte',
   'sheet.outside': 'Extern',

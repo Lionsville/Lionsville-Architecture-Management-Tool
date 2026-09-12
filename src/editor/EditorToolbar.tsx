@@ -48,6 +48,15 @@ export interface EditorToolbarProps {
   busy?: LayoutAction;
   onActiveDiagramChange(diagramId: string): void;
   onCreateLayer7Diagram(): void;
+  /**
+   * Open a laid-out view the canvas cannot draw (ADR-0012 §6). Its tab sits in
+   * the same strip — a view is a view — but choosing it is a request to the
+   * host rather than a change of the active diagram, because the canvas has
+   * nothing to draw for one.
+   */
+  onOpenSheet?(diagramId: string): void;
+  /** Offer a business architecture beside a landscape under the `+`. */
+  onCreateSheet?(): void;
   onTidy(): void;
   /**
    * Stop the tidy that is running. Absent when the layout has no thread of its
@@ -159,6 +168,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const theme = useTheme();
   const { t, language } = useStrings();
   const layer7Diagrams = props.model.diagrams.filter((d) => d.kind === 'layer7');
+  // The laid-out views, listed only where the host can draw one.
+  const sheets = props.onOpenSheet ? props.model.diagrams.filter((d) => d.kind === 'sheet') : [];
+  const tabs = [...layer7Diagrams, ...sheets];
   const isContainer = props.activeDiagram.kind === 'container';
   // Legend opens on hover of the toggle (which itself toggles on click), so the
   // one control doubles as its own key (plan D4).
@@ -167,6 +179,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
   // builder as the canvas menus and drawn by the same component.
   const [tabMenu, setTabMenu] = useState<{ diagramId: string; screen: Point } | null>(null);
   const [duplicateAsOf, setDuplicateAsOf] = useState<{ diagramId: string; day: string } | null>(null);
+  const [newMenu, setNewMenu] = useState<HTMLElement | null>(null);
   const platform = useMemo(() => detectPlatform(), []);
   const tabMenuItems = useMemo(
     () =>
@@ -200,7 +213,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
   };
   const handleTabMenuSelect = (item: MenuItemModel) => {
     if (!tabMenu) return;
-    const diagram = layer7Diagrams.find((d) => d.id === tabMenu.diagramId);
+    const diagram = tabs.find((d) => d.id === tabMenu.diagramId);
     if (!diagram) return;
     switch (item.action) {
       case 'rename-diagram':
@@ -248,11 +261,16 @@ export function EditorToolbar(props: EditorToolbarProps) {
         <>
           <Tabs
             value={props.activeDiagram.id}
-            onChange={(_e, value: string) => props.onActiveDiagramChange(value)}
+            onChange={(_e, value: string) => {
+              // A sheet is opened, never made active: the canvas would have
+              // nothing to draw, and the host owns the page that draws it.
+              if (sheets.some((d) => d.id === value)) props.onOpenSheet?.(value);
+              else props.onActiveDiagramChange(value);
+            }}
             variant="scrollable"
             sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0.5 } }}
           >
-            {layer7Diagrams.map((diagram) => (
+            {tabs.map((diagram) => (
               <Tab
                 key={diagram.id}
                 value={diagram.id}
@@ -307,13 +325,34 @@ export function EditorToolbar(props: EditorToolbarProps) {
               </Button>
             </DialogActions>
           </Dialog>
-          {!props.readOnly && (
+          {!props.readOnly && (props.onCreateSheet ? (
+            <>
+              <Tooltip title={t('toolbar.newDiagram')}>
+                <IconButton
+                  size="small"
+                  aria-label={t('toolbar.newDiagram')}
+                  aria-haspopup="menu"
+                  onClick={(event) => setNewMenu(event.currentTarget)}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+              <Menu anchorEl={newMenu} open={Boolean(newMenu)} onClose={() => setNewMenu(null)}>
+                <MenuItem onClick={() => { setNewMenu(null); props.onCreateLayer7Diagram(); }}>
+                  {t('toolbar.newLandscape')}
+                </MenuItem>
+                <MenuItem onClick={() => { setNewMenu(null); props.onCreateSheet?.(); }}>
+                  {t('toolbar.newSheet')}
+                </MenuItem>
+              </Menu>
+            </>
+          ) : (
             <Tooltip title={t('toolbar.newDiagram')}>
               <IconButton size="small" aria-label={t('toolbar.newDiagram')} onClick={props.onCreateLayer7Diagram}>
                 <AddIcon />
               </IconButton>
             </Tooltip>
-          )}
+          ))}
         </>
       )}
 

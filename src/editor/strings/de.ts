@@ -149,6 +149,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'paletteDescription.domainGroup': 'Ein beschrifteter Bereich, der die Landschaft gruppiert',
 
   'toolbar.newDiagram': 'Neues Layer-7-Diagramm',
+  'toolbar.newLandscape': 'Landschaft',
+  'toolbar.newSheet': 'Geschäftsarchitektur',
   'toolbar.readOnly': 'Schreibgeschützt',
   'toolbar.undo': 'Rückgängig',
   'toolbar.undoTip': 'Rückgängig (⌘Z)',

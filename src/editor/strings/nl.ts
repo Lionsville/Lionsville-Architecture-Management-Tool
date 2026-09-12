@@ -149,6 +149,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'paletteDescription.domainGroup': 'Een benoemd vlak dat het landschap groepeert',
 
   'toolbar.newDiagram': 'Nieuw Layer 7-aanzicht',
+  'toolbar.newLandscape': 'Landschap',
+  'toolbar.newSheet': 'Bedrijfsarchitectuur',
   'toolbar.readOnly': 'Alleen-lezen',
   'toolbar.undo': 'Ongedaan maken',
   'toolbar.undoTip': 'Ongedaan maken (⌘Z)',

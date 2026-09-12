@@ -11,7 +11,6 @@
 export const EN = {
   'sheet.page': 'Business architecture',
   'sheet.close': 'Close the business architecture',
-  'sheet.new': 'Business architecture',
 
   // --- the stakeholder rail ------------------------------------------------
   'sheet.stakeholders': 'Stakeholders',

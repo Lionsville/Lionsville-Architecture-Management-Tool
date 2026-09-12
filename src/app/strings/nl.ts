@@ -63,6 +63,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.moveLeftCopy': 'Verplaatst — maar de kopie in de oude groep kon niet worden verwijderd: {message}',
   'shell.groupRenameIncomplete': 'De groep is hernoemd, maar deze projecten dragen nog de oude naam: {names}.',
   'shell.newDiagram': 'Nieuw landschap',
+  'shell.newSheet': 'Bedrijfsarchitectuur',
   'shell.add': 'Toevoegen',
   'shell.imagesMissing': 'PNG geëxporteerd, maar deze logo’s ontbreken: {labels}.',
   'shell.logoAdded': 'Logo “{name}” toegevoegd aan de eigen bibliotheek.',

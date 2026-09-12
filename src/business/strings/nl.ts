@@ -4,7 +4,6 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
   'sheet.page': 'Bedrijfsarchitectuur',
   'sheet.close': 'Bedrijfsarchitectuur sluiten',
-  'sheet.new': 'Bedrijfsarchitectuur',
 
   'sheet.stakeholders': 'Belanghebbenden',
   'sheet.outside': 'Extern',

@@ -45,6 +45,7 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
+import { SheetPage } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
@@ -57,6 +58,7 @@ import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
 import { useModelSession } from './useModelSession'
 import { usePlans } from './usePlans'
+import { useSheet } from './useSheet'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
 import { useNearlyFullNotice } from './useStorageNotice'
@@ -431,14 +433,23 @@ export function ProjectWorkspace({
     session, makeId, s,
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
+  const sheets = useSheet({ session, makeId, s, toElement: focusElement })
+  // The toolbar's pages are one at a time, and the sheet is one of them.
   const openDecisions = useCallback((adrId?: string) => {
     plans.closeAll()
+    sheets.close()
     showDecision(adrId)
-  }, [plans.closeAll, showDecision])
+  }, [plans.closeAll, sheets.close, showDecision])
   const openRoadmap = useCallback(() => {
     setAdrPage({ open: false })
+    sheets.close()
     plans.openRoadmap()
-  }, [plans.openRoadmap])
+  }, [plans.openRoadmap, sheets.close])
+  const openSheet = useCallback((id: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.open(id)
+  }, [plans.closeAll, sheets.open])
 
   const chooseHit = useCallback((hit: SearchHit) => {
     switch (hit.kind) {
@@ -571,6 +582,8 @@ export function ProjectWorkspace({
             onDuplicate: diagrams.onDuplicateDiagram,
             onDelete: diagrams.requestDeleteDiagram,
             onSettingsChange: diagrams.onDiagramSettingsChange,
+            onOpenSheet: openSheet,
+            onCreateSheet: sheets.create,
           }}
           history={historyRequests}
           requests={{ focus: focusRequest, documentation: docRequest }}
@@ -690,6 +703,15 @@ export function ProjectWorkspace({
         onAddImage={files.addImage}
         images={{ library: session.imageLibrary, usedBy: imageUsedBy, onRemove: files.removeImage }}
         onClose={plans.closePlan}
+        windowChrome={pageChrome}
+      />
+      <SheetPage
+        open={sheets.sheetId !== undefined}
+        model={session.model}
+        sheet={sheets.sheet}
+        readOnly={false}
+        actions={sheets.actions}
+        onClose={sheets.close}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog

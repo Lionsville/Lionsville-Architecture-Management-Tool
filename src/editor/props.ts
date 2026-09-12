@@ -64,6 +64,22 @@ export interface EditorDiagramActions {
      * project's default columns a diagram may override.
      */
     onSettingsChange?(diagramId: string, settings: DiagramSettings): void;
+    /**
+     * Open a view this canvas cannot draw: a `sheet` is laid out from the
+     * model's own trees and has no geometry (ADR-0012 §6), so the editor lists
+     * it among the tabs — a view is a view, and the tab strip is where you
+     * reach one — and hands it straight back to the host, which draws it.
+     *
+     * Absent = those tabs are not offered at all, which is the right answer
+     * for a host that has nowhere to put one. The active diagram never becomes
+     * a sheet: this is a request, not a selection.
+     */
+    onOpenSheet?(diagramId: string): void;
+    /**
+     * Make a business architecture sheet. Absent = the `+` makes a landscape
+     * without asking which kind, which is what it always did.
+     */
+    onCreateSheet?(): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */

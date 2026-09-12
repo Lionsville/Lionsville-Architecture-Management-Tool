@@ -63,6 +63,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.moveLeftCopy': 'Ferpleatst — mar de kopy yn de âlde groep koe net fuortsmiten wurde: {message}',
   'shell.groupRenameIncomplete': 'De groep is omneamd, mar dizze projekten drage noch de âlde namme: {names}.',
   'shell.newDiagram': 'Nij lânskip',
+  'shell.newSheet': 'Bedriuwsarsjitektuer',
   'shell.add': 'Tafoegje',
   'shell.imagesMissing': 'PNG eksportearre, mar dizze logo’s ûntbrekke: {labels}.',
   'shell.logoAdded': 'Logo “{name}” tafoege oan de eigen bibleteek.',

@@ -149,6 +149,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'paletteDescription.domainGroup': 'In beneamd flak dat it lânskip groepearret',
 
   'toolbar.newDiagram': 'Nij Layer 7-diagram',
+  'toolbar.newLandscape': 'Lânskip',
+  'toolbar.newSheet': 'Bedriuwsarsjitektuer',
   'toolbar.readOnly': 'Allinnich-lêze',
   'toolbar.undo': 'Ûngedien meitsje',
   'toolbar.undoTip': 'Ûngedien meitsje (⌘Z)',

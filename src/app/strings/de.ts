@@ -63,6 +63,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.moveLeftCopy': 'Verschoben — aber die Kopie in der alten Gruppe konnte nicht entfernt werden: {message}',
   'shell.groupRenameIncomplete': 'Die Gruppe wurde umbenannt, aber diese Projekte tragen noch den alten Namen: {names}.',
   'shell.newDiagram': 'Neue Landschaft',
+  'shell.newSheet': 'Geschäftsarchitektur',
   'shell.add': 'Hinzufügen',
   'shell.imagesMissing': 'PNG exportiert, aber diese Logos fehlen: {labels}.',
   'shell.logoAdded': 'Logo „{name}“ zur eigenen Bibliothek hinzugefügt.',

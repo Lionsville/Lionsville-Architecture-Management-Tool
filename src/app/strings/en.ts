@@ -107,6 +107,7 @@ export const EN = {
    */
   'shell.groupRenameIncomplete': 'The group was renamed, but these projects still carry the old name: {names}.',
   'shell.newDiagram': 'New landscape',
+  'shell.newSheet': 'Business architecture',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',
   'shell.logoAdded': 'Logo “{name}” added to your own library.',
