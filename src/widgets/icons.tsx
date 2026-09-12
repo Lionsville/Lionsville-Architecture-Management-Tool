@@ -443,3 +443,46 @@ export function AgentIcon({ size = 18, filled = false }: IconProps & { filled?: 
     </svg>
   );
 }
+
+/**
+ * The organisation screen's four cards. Each says what its page is made of
+ * rather than being a generic document: a journey band over columns, a record
+ * with a verdict on it, spans on an axis, and rows in a list.
+ */
+export function SheetIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M3 9h18" stroke="currentColor" strokeWidth="2" />
+      <path d="M9 9v11M15 9v11" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+export function DecisionIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 3h8l4 4v14H6z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M9 13.5l2 2 4-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function TimelineIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 5h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect x="4" y="9" width="10" height="4" rx="1.5" stroke="currentColor" strokeWidth="2" />
+      <rect x="10" y="16" width="10" height="4" rx="1.5" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+export function RegisterIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M7 9h10M7 12.5h10M7 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}

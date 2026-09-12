@@ -1,0 +1,208 @@
+// @vitest-environment jsdom
+/**
+ * The organisation's home: what it says about itself, and what its own pages
+ * have in them.
+ *
+ * This is the screen that replaced the picker, and the difference it is here to
+ * pin is not a layout: the picker showed what is filed UNDER the root and
+ * nothing about the root, and this shows the root — its name, its client, its
+ * links, and the four pages it holds — with the tree beneath it.
+ *
+ * Rendered through the whole shell rather than as a component with props, so
+ * the loads the cards depend on are real ones through a real store. There is
+ * exactly one thing on this screen a listing can answer; everything else comes
+ * from one read of the root.
+ */
+import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { laidOut } from '../../model/testFixtures'
+import type { ScopeSnapshot } from '../../projects/scope'
+import { renderApp } from '../testing/renderShell'
+
+afterEach(() => cleanup())
+
+const TODAY = () => '2026-09-12'
+
+const board = () => laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [] })
+
+function scope(path: string, name: string, over: Partial<ScopeSnapshot> = {}): ScopeSnapshot {
+  return {
+    path,
+    model: { name, elements: [], relations: [], diagrams: [board()] },
+    activeDiagramId: 'l7',
+    logoLibrary: [],
+    ...over,
+  }
+}
+
+/** A root with a business layer, a record and a plan on it — an organisation. */
+function organisation(): ScopeSnapshot {
+  return {
+    path: '',
+    model: {
+      name: 'Acme Logistics',
+      description: 'A parcel and pallet operator.',
+      elements: [
+        { id: 'ship', kind: 'step', name: 'Ship a consignment', lifecycle: 'live', isManaged: true, aspects: {} },
+        { id: 'warehousing', kind: 'function', name: 'Warehousing', scopes: ['retail'], lifecycle: 'live', isManaged: true, aspects: {} },
+        { id: 'billing', kind: 'function', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} },
+        { id: 'planner', kind: 'actor', name: 'Planner', lifecycle: 'live', isManaged: true, aspects: {} },
+      ],
+      relations: [],
+      diagrams: [],
+      decisions: [
+        { id: 'a1', number: 1, title: 'One identity', status: 'accepted', date: '2026-09-01', body: '', signers: [] },
+        { id: 'a2', number: 2, title: 'Federate the model', status: 'proposed', date: '2026-09-05', body: '', signers: [] },
+      ],
+      transitions: [
+        { id: 't1', number: 1, title: 'Retire the rater', status: 'running', to: '2026-08-01', elements: [], decisions: [], milestones: [], body: '' },
+      ],
+    },
+    activeDiagramId: '',
+    logoLibrary: [],
+    client: 'Acme Logistics BV',
+    links: [{ label: 'Wiki', url: 'https://example.test/wiki' }],
+  }
+}
+
+describe('the organisation screen — identity', () => {
+  it('shows the root scope as the screen, name and description and links', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
+    expect(screen.getByText('A parcel and pallet operator.')).toBeDefined()
+    const link = screen.getByRole('link', { name: 'Wiki' })
+    expect(link.getAttribute('href')).toBe('https://example.test/wiki')
+    // The address came from a file somebody else may have written.
+    expect(link.getAttribute('rel')).toContain('noopener')
+  })
+
+  it('counts a domain by what is under it and a landscape by what it draws', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([
+        organisation(),
+        { ...scope('retail', 'Retail'), model: { name: 'Retail', elements: [], relations: [], diagrams: [] } },
+        scope('retail/warehouse', 'Warehouse'),
+        scope('finance', 'Finance'),
+      ]),
+      today: TODAY,
+    })
+    const meta = await screen.findByTestId('organisation-meta')
+    await waitFor(() => expect(meta.textContent).toContain('1 domain'))
+    expect(meta.textContent).toContain('2 landscapes')
+  })
+
+  /** "For Acme Logistics" under the heading "Acme Logistics" says it twice. */
+  it('names the client only when it differs from the name', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    expect((await screen.findByTestId('organisation-meta')).textContent)
+      .toContain('For Acme Logistics BV')
+
+    cleanup()
+    const same = organisation()
+    same.client = 'Acme Logistics'
+    renderApp({ scopes: new InMemoryScopeStore([same]), today: TODAY })
+    expect((await screen.findByTestId('organisation-meta')).textContent).not.toContain('For ')
+  })
+})
+
+describe('the organisation screen — its own pages', () => {
+  it('counts the root’s own business layer, and says what is not yet mapped', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('1 journey'))
+    expect(cards.textContent).toContain('2 functions')
+    expect(cards.textContent).toContain('1 stakeholder')
+    // `billing` has no `scopes`; `warehousing` has one.
+    expect(cards.textContent).toContain('1 function not yet mapped to a domain')
+  })
+
+  it('counts the root’s records by status and names the newest', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('2 records'))
+    expect(cards.textContent).toContain('1 proposed')
+    expect(cards.textContent).toContain('1 accepted')
+    expect(cards.textContent).toContain('ADR-0002 Federate the model')
+  })
+
+  it('shows the first thing the roadmap’s dates disagree about', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('1 plan'))
+    expect(cards.textContent).toContain('was due to finish on 2026-08-01')
+  })
+
+  /** Beta 3's. A number here would be the one untrue thing on the screen. */
+  it('draws the register as a placeholder with no count and no way in', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    expect(cards.textContent).toContain('Arrives with the register')
+    // Three ways in, not four.
+    expect(within(cards).getAllByRole('button')).toHaveLength(3)
+  })
+
+  it('opens the root on the page the card was pressed for', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    fireEvent.click(await screen.findByTestId('open-decisions'))
+    // The root draws nothing at all; the decisions page is what it was opened
+    // for, and is what appears.
+    expect(await screen.findByText('Architecture decisions')).toBeDefined()
+  })
+
+  it('offers to make a sheet where the scope has none, and to open the one it has', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    expect((await screen.findByTestId('open-business')).textContent).toBe('Make a sheet…')
+
+    cleanup()
+    const withSheet = organisation()
+    withSheet.model.diagrams = [{
+      id: 'sh', kind: 'sheet', name: 'Business architecture', members: [], geometry: { nodes: [] },
+    }]
+    renderApp({ scopes: new InMemoryScopeStore([withSheet]), today: TODAY })
+    await waitFor(() => expect(screen.getByTestId('open-business').textContent).toBe('Open'))
+  })
+
+  /** A fresh folder. Four zeroes read as a fault; a sentence reads as a start. */
+  it('says nothing is here yet rather than showing zeroes', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('Nothing at this level yet.'))
+    expect(cards.textContent).not.toContain('0 journeys')
+  })
+})
+
+describe('the organisation screen — a fresh folder', () => {
+  it('asks for a name where the heading would be, and takes it', async () => {
+    const scopes = new InMemoryScopeStore([])
+    renderApp({ scopes, today: TODAY })
+
+    expect(screen.queryByTestId('organisation-name')).toBeNull()
+    const field = await screen.findByTestId('organisation-name-field')
+    fireEvent.change(field, { target: { value: 'Globex' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(async () => expect((await scopes.load(''))?.model.name).toBe('Globex'))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Globex')
+  })
+
+  it('shows no tree, and the examples underneath', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([]),
+      today: TODAY,
+      examples: [{
+        key: 'acme', path: 'acme-logistics', label: 'Acme Logistics', description: 'an example',
+        folder: {
+          'scope.json': {
+            type: 'lionsville-architecture', version: 5, name: 'Acme Logistics',
+            kind: 'organisation', activeDiagramId: '', diagrams: [],
+          },
+          'model.json': { elements: [], relations: [] },
+        },
+      }],
+    })
+    expect(await screen.findByText('Examples')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
+    expect(screen.queryByText('Domains and landscapes')).toBeNull()
+  })
+})

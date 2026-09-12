@@ -76,7 +76,7 @@ describe('once there is a folder', () => {
     })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
-    expect(screen.getByTestId('working-directory').textContent).toContain('Architecture')
+    expect(screen.getByTestId('working-source').textContent).toContain('Architecture')
   })
 })
 
@@ -85,7 +85,8 @@ describe('a browser tab', () => {
     renderApp({ scopes: new InMemoryScopeStore([project()]) })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
-    expect(screen.getByText('Projects')).toBeDefined()
+    // The organisation's home, which is what a tab opens on.
+    expect(screen.getByTestId('organisation-cards')).toBeDefined()
   })
 
   it('is offered a folder where the browser has one, and never made to choose', () => {
@@ -94,6 +95,7 @@ describe('a browser tab', () => {
     renderApp({ scopes: new InMemoryScopeStore([project()]), onChooseWorkingDirectory: () => {} })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
-    expect(screen.getByTestId('working-directory').textContent).toContain('inside the app')
+    expect(screen.getByTestId('working-source').textContent).toContain('In this browser')
+    expect(screen.getByRole('button', { name: 'Choose folder…' })).toBeDefined()
   })
 })

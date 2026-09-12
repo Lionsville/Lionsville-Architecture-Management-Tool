@@ -42,6 +42,7 @@ import type { CrashControls, CrashTrail } from './ErrorBoundary'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
+import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { SheetPage } from '../business'
@@ -160,6 +161,20 @@ export type ProjectWorkspaceProps = {
   hostControls: CrashControls
   /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
   today?: () => string
+  /**
+   * Which page to show the moment this appears, when it was opened for one.
+   *
+   * The organisation screen's cards open the ROOT scope, which usually draws
+   * nothing at all: its decisions, its plans and its business architecture are
+   * what it holds, and a canvas is not. Without this a person pressing *Open*
+   * on a card would land on an empty board and have to find the page again on
+   * the bar. Absent is the ordinary case — a landscape opened on its canvas.
+   *
+   * `sheet` with no id means "the one this scope is about to be given": the
+   * seeding is a `Command` through the session like any other, so it is one
+   * undo step and one Activity line rather than a write from the screen.
+   */
+  initialPage?: InitialPage
   /** Passed straight to the toolbar, which is the bar the window borrows. */
   windowChrome?: WindowChrome
 }
@@ -175,7 +190,7 @@ export function ProjectWorkspace({
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onLeave, scopes, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
   groupName, groupClient,
-  diagnostics, hostControls, today = localToday, windowChrome,
+  diagnostics, hostControls, today = localToday, initialPage, windowChrome,
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
@@ -484,6 +499,37 @@ export function ProjectWorkspace({
     sheets.open(id)
   }, [plans.closeAll, sheets.open])
 
+  /**
+   * The page this was opened for, shown once.
+   *
+   * An effect and not a seeded `useState`, because two of the three are owned
+   * by hooks of their own and one of them has to make a diagram first. Keyed on
+   * nothing: the workspace remounts on a project switch, so "once" is once per
+   * project, which is what was asked for.
+   */
+  const openedFor = useRef(false)
+  useEffect(() => {
+    if (!initialPage || openedFor.current) return
+    openedFor.current = true
+    if (initialPage.page === 'decisions') openDecisions()
+    if (initialPage.page === 'roadmap') openRoadmap()
+    if (initialPage.page === 'sheet') {
+      if (initialPage.id) openSheet(initialPage.id)
+      else sheets.create()
+    }
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create])
+
+  /**
+   * A scope that draws nothing has nowhere to go when the page closes.
+   *
+   * The canvas would show "diagram not found", which is true and useless: this
+   * scope was opened FOR its decisions or its roadmap, and closing them means
+   * going back to where they were opened from. A scope with a board closes its
+   * pages onto that board, as it always has.
+   */
+  const drawsNothing = session.model.diagrams.length === 0
+  const leaveIfNothingToDraw = useCallback(() => { if (drawsNothing) onLeave() }, [drawsNothing, onLeave])
+
   const chooseHit = useCallback((hit: SearchHit) => {
     switch (hit.kind) {
       case 'element':
@@ -689,7 +735,7 @@ export function ProjectWorkspace({
       />
       <AdrPage
         open={adrPage.open}
-        onClose={() => setAdrPage({ open: false })}
+        onClose={() => { setAdrPage({ open: false }); leaveIfNothingToDraw() }}
         model={session.model}
         groupName={groupName}
         groupDecisions={groupDecisions}
@@ -715,7 +761,7 @@ export function ProjectWorkspace({
         asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
         readOnly={false}
         actions={plans.roadmapActions}
-        onClose={plans.closeRoadmap}
+        onClose={() => { plans.closeRoadmap(); leaveIfNothingToDraw() }}
         windowChrome={pageChrome}
       />
       <ReplaceDialog
@@ -744,7 +790,7 @@ export function ProjectWorkspace({
         sheet={sheets.sheet}
         readOnly={false}
         actions={sheets.actions}
-        onClose={sheets.close}
+        onClose={() => { sheets.close(); leaveIfNothingToDraw() }}
         onHandle={onSheetHandle}
         windowChrome={pageChrome}
       />

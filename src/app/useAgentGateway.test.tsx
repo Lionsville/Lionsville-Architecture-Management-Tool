@@ -10,7 +10,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -149,9 +149,10 @@ describe('the agent seam, bound to the shell', () => {
   it('moves the binding from the shell to the workspace when a project opens', async () => {
     const { gateway, ask } = fakeGateway()
     renderApp({ initialProject: undefined, agent: gateway, scopes: new InMemoryScopeStore([project]) })
-    await waitFor(() => expect(screen.getByText('Warehouse landscape')).toBeDefined())
-    // The card itself is the affordance: its name is what a person clicks.
-    fireEvent.click(screen.getByText('Warehouse landscape'))
+    await waitFor(() => expect(screen.getByTestId('scope-acme/landscape')).toBeDefined())
+    // The row's own Open: the cards above it open the ROOT scope's pages, and
+    // this is the scope the agent is about to be asked about.
+    fireEvent.click(within(screen.getByTestId('scope-acme/landscape')).getByRole('button', { name: 'Open' }))
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
     expect(parsed(await ask('project.current'))).toMatchObject({ name: 'Warehouse landscape' })
   })

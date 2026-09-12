@@ -485,3 +485,25 @@ export function newestChange(root: ScopeSummary): string | undefined {
     .sort()
     .pop()
 }
+
+/**
+ * Every scope in a subtree, re-addressed under a new parent.
+ *
+ * A move is save-then-remove, and `ScopeStore.remove` takes a scope *and
+ * everything filed under it* — so moving a domain means writing its landscapes
+ * at their new addresses too, before the old folder goes. Saving the parent and
+ * removing it would take the children with it.
+ *
+ * Parents first, in the order {@link flattenScopes} gives, so a move that is
+ * interrupted leaves a tree that is whole as far as it got — the same rule
+ * creating a scope follows for the ancestors it has to make.
+ */
+export function movedPaths(
+  subtree: ScopeSummary, to: ScopePath,
+): { from: ScopePath; to: ScopePath }[] {
+  return flattenScopes(subtree).map((scope) => {
+    if (scope.path === subtree.path) return { from: scope.path, to }
+    const below = scope.path.slice(subtree.path.length + 1)
+    return { from: scope.path, to: to === ROOT_SCOPE ? below : `${to}/${below}` }
+  })
+}

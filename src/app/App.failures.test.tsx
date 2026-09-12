@@ -4,8 +4,8 @@
  *
  * Every one of these was a `void store.x().then(...)` with a success handler
  * and nothing else. A store that started refusing mid-session left the screen
- * looking exactly as it does when everything is fine: an empty picker that
- * reads as "you have no projects", a group half renamed, a project quietly
+ * looking exactly as it does when everything is fine: an empty organisation
+ * that reads as "you have nothing here", a scope half renamed, a scope quietly
  * filed at two addresses.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -32,7 +32,7 @@ const project = (key: string, name: string) => ({
   logoLibrary: [],
 })
 
-/** The whole app on the picker, with one seam replaced by a refusing one. */
+/** The whole app on the organisation screen, one seam replaced by a refusing one. */
 function show(projects: Partial<ScopeLibrary>) {
   return renderApp({
     scopes: {
@@ -60,7 +60,7 @@ function show(projects: Partial<ScopeLibrary>) {
   })
 }
 
-describe('the picker, when the store refuses', () => {
+describe('the organisation screen, when the store refuses', () => {
   it('says the list could not be read instead of showing an empty one', async () => {
     show({ list: refused })
     await waitFor(() => expect(screen.getByRole('alert').textContent)
@@ -77,8 +77,8 @@ describe('the picker, when the store refuses', () => {
 describe('copying an example, when the store refuses', () => {
   it('does not sit there looking as though nothing was pressed', async () => {
     const { diagnostics } = show({ load: refused })
-    fireEvent.click(await screen.findByText(/Copy to a project|Open/))
-    await waitFor(() => expect(diagnostics.recent().some((e) => e.where === 'copyExample')).toBe(true))
+    fireEvent.click(await screen.findByText('Copy into this folder…'))
+    await waitFor(() => expect(diagnostics.recent().some((e) => e.where === 'organisation.copyExample')).toBe(true))
     // A load that will not read is a store refusing, so the standing storage
     // message is the honest one — and it is latched, so it arrives once.
     await waitFor(() => expect(screen.getByRole('alert').textContent)
@@ -92,7 +92,7 @@ describe('copying an example, when the store refuses', () => {
  * name is its own `scope.json` and nothing else holds a copy (ADR-0012 §1) — so
  * the failure it guarded against cannot happen and the message it showed is
  * gone with it. A save that refuses is one write refusing, which
- * `applyScopeSettings` reports as `group.saveFailed`.
+ * `useOrganisation`'s `applySettings` reports as `group.saveFailed`.
  */
 describe('a scope whose record will not save', () => {
   it('says so rather than leaving the dialog looking as though it landed', async () => {
@@ -102,7 +102,7 @@ describe('a scope whose record will not save', () => {
     const { diagnostics } = renderApp({ scopes: projects })
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings for Warehouse' }))
-    fireEvent.change(await screen.findByLabelText('Group name'), {
+    fireEvent.change(await screen.findByLabelText('Name'), {
       target: { value: 'Warehouse renamed' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))

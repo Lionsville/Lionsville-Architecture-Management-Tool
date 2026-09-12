@@ -339,13 +339,13 @@ export const EN = {
   'sync.pushRefused': 'The snapshot was not pushed: {reason}',
   'sync.resolveRefused': 'Nothing was changed: {reason}',
 
-  'group.title': 'Group settings',
+  'group.title': 'Scope settings',
   'group.open': 'Settings…',
   'group.openFor': 'Settings for {name}',
-  'group.name': 'Group name',
-  'group.nameHelp': 'Renaming relabels every project filed here. The address ({path}) does not change.',
+  'group.name': 'Name',
+  'group.nameHelp': 'Renaming relabels it. The address ({path}) does not change — “Filed under” is what moves it.',
   'group.client': 'Client',
-  'group.clientHelp': 'Named on every exported diagram. Empty means the group name.',
+  'group.clientHelp': 'Named on every exported diagram. Empty means the nearest name above.',
   'group.description': 'Description',
   'group.descriptionPlaceholder': 'Who they are, what this landscape covers, who to ask.',
   'group.links': 'LINKS',
@@ -356,8 +356,8 @@ export const EN = {
   'group.removeLink': 'Remove {name}',
   'group.badUrl': 'Needs to start with http:// or https://',
   'group.saved': 'Saved {name}.',
-  'group.renamed': 'Group renamed to “{name}”.',
-  'group.saveFailed': 'Could not save this group.',
+  'group.renamed': 'Renamed to “{name}”.',
+  'group.saveFailed': 'Could not save this scope.',
   // --- an agent as a peer of the menu (ADR-0007) ------------------------------
   'agent.title': 'Connect an agent',
   /** The glyph's three states, as its tooltip names them. */
@@ -437,4 +437,63 @@ export const EN = {
   'shell.activityAgent': 'AGENT',
   'shell.search': 'Search',
   'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
+
+  // The organisation screen: the root scope's home, which replaced the picker.
+  // What a scope IS, as a word this screen shows and nothing branches on.
+  'org.kind': 'What this is',
+  'org.kindHelp': 'A word for the screen to show. Nothing behaves differently.',
+  'org.kindNone': 'Not said',
+  'org.kindOrganisation': 'Organisation',
+  'org.kindDomain': 'Domain',
+  'org.kindProgramme': 'Programme',
+  'org.kindLandscape': 'Landscape',
+  'org.filedUnder': 'Filed under',
+  'org.filedUnderHelp': 'Moving changes the address of this scope and of everything under it. The content is untouched.',
+
+  // The identity block at the top.
+  'org.nameThis': 'Name this organisation',
+  'org.forClient': 'For {name}',
+  'org.lastChanged': 'Last changed {when}',
+  'org.domainsOne': '{count} domain',
+  'org.domainsOther': '{count} domains',
+  'org.landscapesOne': '{count} landscape',
+  'org.landscapesOther': '{count} landscapes',
+  'org.diagramsOne': '{count} diagram',
+  'org.diagramsOther': '{count} diagrams',
+
+  // The organisation's own pages, as cards.
+  'org.business': 'Business architecture',
+  'org.businessMake': 'Make a sheet\u2026',
+  'org.journeysOne': '{count} journey',
+  'org.journeysOther': '{count} journeys',
+  'org.areasOne': '{count} area',
+  'org.areasOther': '{count} areas',
+  'org.functionsOne': '{count} function',
+  'org.functionsOther': '{count} functions',
+  'org.stakeholdersOne': '{count} stakeholder',
+  'org.stakeholdersOther': '{count} stakeholders',
+  'org.unmappedOne': '{count} function not yet mapped to a domain',
+  'org.unmappedOther': '{count} functions not yet mapped to a domain',
+  'org.allMapped': 'Every function is mapped to a domain.',
+  'org.recordsOne': '{count} record',
+  'org.recordsOther': '{count} records',
+  'org.latest': 'Latest: {name}',
+  'org.plansOne': '{count} plan',
+  'org.plansOther': '{count} plans',
+  'org.noFindings': 'Nothing the dates disagree about.',
+  /** One entry of a status tally: "3 accepted", "1 running". */
+  'org.statusCount': '{count} {status}',
+  'org.register': 'Register',
+  /** Beta 3's, and said so rather than shown as a number that is not derived. */
+  'org.registerSoon': 'Every application across the organisation, derived from the tree. Arrives with the register.',
+  'org.nothingHere': 'Nothing at this level yet.',
+
+  // The tree of scopes beneath.
+  'org.tree': 'Domains and landscapes',
+  'org.treeEmpty': 'Nothing filed under this organisation yet. Create a scope, or copy an example.',
+  'org.expand': 'Show what is under {name}',
+  'org.collapse': 'Hide what is under {name}',
+
+  // Examples, last and small.
+  'org.copyHere': 'Copy into this folder\u2026',
 } as const

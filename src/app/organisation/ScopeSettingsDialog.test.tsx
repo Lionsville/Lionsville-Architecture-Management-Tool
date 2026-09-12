@@ -62,7 +62,7 @@ describe('ScopeSettingsDialog', () => {
   it('hands back a patch at the path it was opened on, and takes a client apart from the name', () => {
     const { onSave } = open({ kind: 'domain' })
     fireEvent.change(screen.getByLabelText('Client'), { target: { value: ' Acme Logistics BV ' } })
-    fireEvent.change(screen.getByLabelText('Group name'), { target: { value: '  Acme Rail  ' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '  Acme Rail  ' } })
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Rolling stock.' } })
     save()
     expect(onSave).toHaveBeenCalledWith('acme', {
@@ -103,7 +103,82 @@ describe('ScopeSettingsDialog', () => {
 
   it('refuses a nameless scope', () => {
     open()
-    fireEvent.change(screen.getByLabelText('Group name'), { target: { value: '  ' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '  ' } })
     expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+/**
+ * A move, which is the one thing this dialog asks that is not a field edit.
+ *
+ * The dialog says *where*; the caller performs it, because changing an address
+ * is a store operation — save there, remove here — and this component has no
+ * store. What is pinned here is that it asks only when it can, and answers only
+ * when the answer changed.
+ */
+describe('ScopeSettingsDialog — filed under', () => {
+  const tree: ScopeSummary = {
+    path: '', name: 'Acme Logistics', diagrams: 0, children: [
+      { path: 'acme', name: 'Acme', diagrams: 0, children: [
+        { path: 'acme/rail', name: 'Rail', diagrams: 1, children: [] },
+      ] },
+      { path: 'globex', name: 'Globex', diagrams: 0, children: [] },
+    ],
+  }
+
+  function openWithTree(target: Partial<ScopeSummary> = {}) {
+    const onSave = vi.fn<(path: string, patch: ScopeSettingsPatch) => void>()
+    renderShell(
+      <ScopeSettingsDialog
+        target={{ path: 'acme', name: 'Acme', diagrams: 0, children: [], ...target }}
+        tree={tree}
+        onSave={onSave}
+        onCancel={() => {}}
+        s={s}
+      />,
+    )
+    return { onSave }
+  }
+
+  it('does not ask where the root goes, because there is nowhere above it', () => {
+    openWithTree({ path: '', name: 'Acme Logistics' })
+    expect(screen.queryByLabelText('Filed under')).toBeNull()
+  })
+
+  it('does not ask at all when it was given no tree to offer', () => {
+    open()
+    expect(screen.queryByLabelText('Filed under')).toBeNull()
+  })
+
+  it('says nothing about the parent when the parent did not change', () => {
+    const { onSave } = openWithTree()
+    save()
+    expect(onSave.mock.calls[0][1].parent).toBeUndefined()
+  })
+
+  it('hands back the new parent when it did', () => {
+    const { onSave } = openWithTree()
+    fireEvent.mouseDown(screen.getByLabelText('Filed under'))
+    fireEvent.click(screen.getByRole('option', { name: 'Globex' }))
+    save()
+    expect(onSave).toHaveBeenCalledWith('acme', expect.objectContaining({ parent: 'globex' }))
+  })
+
+  /** A scope filed under itself, or under its own child, has no address at all. */
+  it('offers neither the scope itself nor anything inside it', () => {
+    openWithTree()
+    fireEvent.mouseDown(screen.getByLabelText('Filed under'))
+    const options = screen.getAllByRole('option').map((one) => one.textContent?.trim())
+    expect(options).toContain('Globex')
+    expect(options).not.toContain('Acme')
+    expect(options).not.toContain('Rail')
+  })
+
+  it('offers the kind as a word, and hands it back', () => {
+    const { onSave } = openWithTree({ kind: 'domain' })
+    fireEvent.mouseDown(screen.getByLabelText('What this is'))
+    fireEvent.click(screen.getByRole('option', { name: 'Programme' }))
+    save()
+    expect(onSave).toHaveBeenCalledWith('acme', expect.objectContaining({ kind: 'programme' }))
   })
 })

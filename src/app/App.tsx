@@ -22,12 +22,10 @@ import type { Adr } from '../decisions/adr'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
 import {
-  bareScope, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, moveScope, namesUnder,
-  renameScope, scopeTree, setScopeDefaults,
+  flattenScopes, isProjectOrder, moveScope, namesUnder, renameScope, setScopeDefaults,
 } from '../projects/scope'
 import type { ProjectOrder, ScopeKind, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
-import { normaliseLinks } from '../projects/links'
 import type { RecordLink } from '../projects/links'
 import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
@@ -52,12 +50,12 @@ import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
-import { exampleScopes } from './examples'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
 import { ChooseFolder } from './organisation/ChooseFolder'
-import { ProjectPicker } from './picker/ProjectPicker'
+import { OrganisationScreen } from './organisation/OrganisationScreen'
+import { useOrganisation } from './organisation/useOrganisation'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
@@ -88,6 +86,25 @@ export type ShellDiagnostics = {
   recent(): DiagnosticEntry[]
 }
 
+/**
+ * Which page the workspace should be showing the moment it appears.
+ *
+ * The organisation's own pages are reached from the cards on its screen, and
+ * the root scope that holds them usually draws nothing at all — its decisions,
+ * its plans and its business architecture are what it has, and a canvas is not.
+ * Without this, pressing *Open* on a card would land a person on an empty board
+ * with the page they asked for still shut.
+ *
+ * Shell vocabulary rather than either screen's: one screen says it and the
+ * other obeys it, and a type that lived in either would make them import each
+ * other.
+ */
+export type InitialPage =
+  | { page: 'decisions' }
+  | { page: 'roadmap' }
+  /** A sheet by id, or — with none — the one the scope is about to be given. */
+  | { page: 'sheet'; id?: string }
+
 export type ScopeLibrary = {
   list(): Promise<ScopeSummary>
   load(path: ScopePath): Promise<ScopeSnapshot | undefined>
@@ -102,6 +119,15 @@ export type ScopeSettingsPatch = {
   description?: string
   links?: RecordLink[]
   kind?: ScopeKind
+  /**
+   * Where it is filed, when that is what changed.
+   *
+   * Absent means "leave the address alone", which is what a rename does and
+   * what every field above does. Present and different is a move: save the
+   * subtree at its new addresses, then remove the old folder — never the other
+   * way round.
+   */
+  parent?: ScopePath
 }
 
 export type AppProps = {
@@ -181,6 +207,9 @@ export type AppProps = {
    */
   initialSync?: PullOutcome
 
+  /** Today as `yyyy-mm-dd`. Injected so a card's finding is not at the clock's mercy. */
+  today?: () => string
+
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ScopeSnapshot | undefined
   initialPreferences: unknown
@@ -203,14 +232,24 @@ export type AppProps = {
   onTitle?: (organisation: string, scope?: string) => void
 }
 
+function localToday(): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
-  history, folderSettings, updateSettings, agent, initialSync, initialProject, initialPreferences,
+  history, folderSettings, updateSettings, agent, initialSync, today = localToday,
+  initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME, onTitle,
 }: AppProps) {
   const toasts = useToasts()
+  // Read once per render rather than per card: a finding re-derived because a
+  // millisecond passed is a model walked again for nothing.
+  const todayDay = useMemo(() => today(), [today])
 
   /**
    * Preferences and the storage notice need each other: writing a preference can
@@ -255,6 +294,11 @@ export function App({
   const failedRef = useRef(failed)
   failedRef.current = failed
 
+  // Likewise a ref, and for a plainer reason: the callbacks that re-read the
+  // tree are declared above the hook that owns it, and a hook cannot move
+  // above the `enter` it is given.
+  const refreshTree = useRef<() => void>(() => {})
+
   const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
@@ -270,9 +314,6 @@ export function App({
     return (onChanged: () => void) => watchProject(openPath, onChanged)
   }, [watchProject, openPath])
 
-  /** Bumped whenever the set of projects changed, so the picker re-reads it. */
-  const [revision, setRevision] = useState(0)
-
   /**
    * Bumped when the open project has to be read again from disk with nothing
    * carried over — after *take theirs* on the whole folder. Part of the
@@ -284,7 +325,7 @@ export function App({
     if (!project) return
     void projects.load(project.path).then(
       (found) => {
-        if (!found) { setProject(undefined); setRevision((r) => r + 1); return }
+        if (!found) { setProject(undefined); refreshTree.current(); return }
         setProject(found)
         setReloadKey((k) => k + 1)
       },
@@ -440,95 +481,49 @@ export function App({
     prefs.writePreference({ projectOrder: next })
   }, [prefs])
 
-  /** Opening is what makes a project "last opened", so both happen here. */
-  const enter = useCallback((next: ScopeSnapshot) => {
+  /**
+   * Opening is what makes a scope "last opened", so both happen here — and, when
+   * it was opened for one of the organisation's own pages, which page that was.
+   *
+   * Held beside the project rather than inside the workspace so that switching
+   * scopes clears it: a page asked for on the root is not a page asked for on
+   * the landscape opened next.
+   */
+  const [initialPage, setInitialPage] = useState<InitialPage | undefined>(undefined)
+  const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
     setProject(next)
+    setInitialPage(page)
     prefs.writePreference({ lastScope: next.path })
   }, [prefs])
 
-  const openProject = useCallback((path: ScopePath) => {
-    void projects.load(path).then(
-      (found) => {
-        // A scope with no views is a domain (ADR-0012 §1): it reads, and there
-        // is nothing for the canvas to show. Step 7's screen opens one; until
-        // then this says so rather than mounting an editor with no board.
-        if (!isOpenableScope(found)) {
-          toasts.notify(s('picker.loadFailed'), 'error')
-          setRevision((r) => r + 1)
-          return
-        }
-        enter(found)
-      },
-      (cause: unknown) => failed('openProject', cause, 'picker.loadFailed'),
-    )
-  }, [projects, enter, toasts, failed, s])
+  /**
+   * The organisation screen's wiring (`useOrganisation`).
+   *
+   * Called whatever is on screen, because the tree it holds is what the open
+   * workspace's settings dialog offers as a parent to file under — and because
+   * a hook cannot be called conditionally. It reads the root's own document
+   * only while its screen is up, which is the one read on this path that costs
+   * anything.
+   */
+  const organisation = useOrganisation({
+    scopes: projects,
+    active: project === undefined,
+    onEnter: enter,
+    notify: toasts.notify,
+    onFailure: failed,
+    onStorageResult: reportStorage,
+    s,
+  })
+  refreshTree.current = organisation.refresh
 
   const leaveProject = useCallback(() => {
     setProject(undefined)
-    // Deliberately keeps `lastProject`: closing a project is not the same as
-    // saying you never want to see it again, and a refresh should still land
-    // you back in your work.
-    setRevision((r) => r + 1)
-  }, [])
-
-  /** A new project exists as soon as it is saved; otherwise a refresh loses it. */
-  const createAndEnter = useCallback((fresh: ScopeSnapshot, message: string) => {
-    void projects.save(fresh).then(
-      () => {
-        enter(fresh)
-        setRevision((r) => r + 1)
-        toasts.notify(message, 'success')
-      },
-      (cause: unknown) => { failed('createAndEnter', cause); reportStorage(false) },
-    )
-  }, [projects, enter, toasts, failed, reportStorage])
-
-  /**
-   * Create a scope under another one.
-   *
-   * **The ancestors are created too**, when they are not there. A folder with
-   * no `scope.json` is not a scope (ADR-0012 §1), so a child filed under one
-   * would be filed under nothing and nothing would list it. They are written
-   * from the top down and before the new scope itself, so an interrupted run
-   * leaves a tree that is whole as far as it got.
-   */
-  const createScope = useCallback((wanted: { parent: ScopePath; name: string }) => {
-    void projects.list().then(async (tree) => {
-      const held = flattenScopes(tree)
-      const parent = held.find((scope) => scope.path === wanted.parent)
-      const path = scopePathFor(wanted.parent, wanted.name, namesUnder(parent))
-      try {
-        for (const missing of ancestorScopes(path).reverse()) {
-          if (missing === ROOT_SCOPE || held.some((scope) => scope.path === missing)) continue
-          await projects.save(bareScope(missing, scopePathLabel(missing), 'domain'))
-        }
-      } catch (cause) {
-        failed('createScope.ancestors', cause)
-        reportStorage(false)
-        return
-      }
-      createAndEnter(
-        emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape'),
-        s('shell.scopeCreated', { name: wanted.name }),
-      )
-    }, (cause: unknown) => {
-      // A list that will not read is a store that is refusing, so the standing
-      // storage notice is the honest message — and it is latched, so a burst of
-      // these says it once.
-      failed('createScope', cause)
-      reportStorage(false)
-    })
-  }, [projects, createAndEnter, failed, reportStorage, s])
-
-  /** The tree as it stands, for the dialogs that offer a parent to file under. */
-  const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
-  const refreshTree = useCallback(() => {
-    void projects.list().then(setTree, (cause: unknown) => {
-      setTree(scopeTree([]))
-      failed('refreshTree', cause)
-      reportStorage(false)
-    })
-  }, [projects, failed, reportStorage])
+    setInitialPage(undefined)
+    // Deliberately keeps `lastScope`: closing a scope is not the same as saying
+    // you never want to see it again, and a refresh should still land you back
+    // in your work.
+    organisation.refresh()
+  }, [organisation])
 
   /**
    * Change a scope's name, where it is filed, or both.
@@ -596,7 +591,6 @@ export function App({
       }
       enter(next)
       movedAway.current = undefined
-      setRevision((r) => r + 1)
       toasts.notify(
         moving
           ? s('settings.moved', { name: settings.name })
@@ -610,70 +604,6 @@ export function App({
       return undefined
     })
   }, [projects, enter, toasts, failed, reportStorage, s])
-
-  /**
-   * Apply a scope's edited record: what it is called, who its drawings are made
-   * out to, what it is, where the rest of its material lives.
-   *
-   * One write, where the group's was a write and then a sweep. A group's name
-   * rode on every project in it (`model.customerName`), so renaming one meant
-   * rewriting them all and saying which it could not reach; a scope's name is
-   * its own `scope.json` and nothing else holds a copy (ADR-0012 §1).
-   *
-   * No address changes. A path is an address; renaming relabels.
-   */
-  const applyScopeSettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch) => {
-    void (async () => {
-      let held: ScopeSnapshot | undefined
-      try {
-        held = await projects.load(path)
-      } catch (cause) {
-        failed('applyScopeSettings.load', cause, 'group.saveFailed')
-        return
-      }
-      const links = normaliseLinks(patch.links)
-      const next: ScopeSnapshot = {
-        ...(held ?? bareScope(path, patch.name)),
-        model: {
-          ...(held?.model ?? bareScope(path, patch.name).model),
-          name: patch.name.trim() || scopePathLabel(path),
-          ...(patch.description?.trim()
-            ? { description: patch.description.trim() }
-            : { description: undefined }),
-        },
-        ...(patch.client?.trim() ? { client: patch.client.trim() } : { client: undefined }),
-        ...(links.length ? { links } : { links: undefined }),
-        ...(patch.kind ? { kind: patch.kind } : {}),
-      }
-      // Absent rather than set to `undefined`, so the file has the shape a
-      // hand-written one would.
-      if (next.model.description === undefined) delete next.model.description
-      if (next.client === undefined) delete next.client
-      if (next.links === undefined) delete next.links
-
-      try {
-        await projects.save(next)
-      } catch (cause) {
-        failed('applyScopeSettings.save', cause, 'group.saveFailed')
-        return
-      }
-      // The open scope's ancestors are read into state, so a rename of one has
-      // to be told rather than left to notice.
-      refreshAncestors()
-      setRevision((r) => r + 1)
-      toasts.notify(
-        held && held.model.name !== next.model.name
-          ? s('group.renamed', { name: next.model.name })
-          : s('group.saved', { name: next.model.name }),
-        'success',
-      )
-    })().catch((cause: unknown) => {
-      // A backstop, not a handler: everything above is caught where it can be
-      // answered. A throw that reaches here happened in the synchronous tail,
-      // which no boundary can see from inside an async function.
-      failed('applyScopeSettings', cause, 'group.saveFailed')
-    })
-  }, [projects, toasts, failed, s])
 
   /**
    * The scopes above the open one, for the decisions and the client they carry.
@@ -711,12 +641,6 @@ export function App({
     )
     return () => { live = false }
   }, [openPathForAncestors, readAncestors])
-  const refreshAncestors = useCallback(() => {
-    if (openPathForAncestors === undefined) return
-    void readAncestors(openPathForAncestors).then(setAncestors, (cause: unknown) => {
-      failedRef.current('ancestors', cause)
-    })
-  }, [openPathForAncestors, readAncestors])
 
   /** The nearest scope above this one, which is where a group's records went. */
   const parent = ancestors[0]
@@ -752,8 +676,8 @@ export function App({
    * it is would name a window after nothing.
    */
   useEffect(() => {
-    onTitle?.(project ? groupName : tree.name, project?.model.name)
-  }, [onTitle, project, groupName, tree.name])
+    onTitle?.(project ? groupName : organisation.tree.name, project?.model.name)
+  }, [onTitle, project, groupName, organisation.tree.name])
 
   /**
    * The ancestor's decisions, written back to the scope they belong to.
@@ -776,33 +700,6 @@ export function App({
       },
     )
   }, [parent, projects, failed])
-
-  /**
-   * An example is a starting point, not a document you keep opening. Copying it
-   * into a project of your own is what makes it editable and savable; opening it
-   * again later opens *your* copy, which is why an existing one wins here.
-   */
-  const copyExample = useCallback((example: ExampleProject) => {
-    void (async () => {
-      const existing = await projects.load(example.path)
-      if (existing) { enter(existing); return }
-      // A tree since format 5: the organisation and the landscape under it are
-      // two scopes, written parents first so an interrupted copy leaves a tree
-      // that is whole as far as it got.
-      const copy = exampleScopes(example)
-      // A shipped example this build cannot read is a bug the example tests
-      // exist to prevent, so it reaches here as nothing rather than as a crash.
-      if (copy.length === 0) {
-        failed('copyExample', new Error('the example did not read'))
-        return
-      }
-      for (const scope of copy.slice(0, -1)) await projects.save(scope)
-      createAndEnter(copy[copy.length - 1], s('shell.exampleCopied', { name: example.label }))
-    })().catch((cause: unknown) => {
-      failed('copyExample', cause)
-      reportStorage(false)
-    })
-  }, [projects, enter, createAndEnter, failed, reportStorage, s])
 
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
@@ -856,8 +753,8 @@ export function App({
             editorPreferences={prefs.preferences}
             onEditorPreferencesChange={prefs.savePreferences}
             onLeave={leaveProject}
-            scopes={tree}
-            onOpenSettings={refreshTree}
+            scopes={organisation.tree}
+            onOpenSettings={organisation.refresh}
             onApplySettings={applyProjectSettings}
             makeId={makeId}
             groupDecisions={groupDecisions}
@@ -866,22 +763,29 @@ export function App({
             groupClient={groupClient}
             diagnostics={diagnostics}
             hostControls={hostControls}
+            initialPage={initialPage}
             windowChrome={windowChrome}
           />
         ) : (
-          <ProjectPicker
-            scopes={projects}
-            onApplyScopeSettings={applyScopeSettings}
+          <OrganisationScreen
+            organisation={organisation}
             examples={examples}
             order={order}
             onOrderChange={chooseOrder}
-            onOpen={openProject}
-            onCreate={createScope}
-            onCopyExample={copyExample}
-            onFailure={failed}
-            revision={revision}
-            workingDirectory={source.kind === 'folder' ? source : undefined}
+            source={source}
             onChooseWorkingDirectory={onChooseWorkingDirectory}
+            // The same two the workspace's bar carries: the menu on a host
+            // that has none of its own, and the agent glyph, which has to be
+            // reachable with nothing open (ADR-0007).
+            overflow={hostMenu ? undefined : {
+              themeMode: prefs.themeMode,
+              // No history: snapshots and the history page are about the scope
+              // that is open, and none is.
+              can: { folders: Boolean(onChooseWorkingDirectory), history: false },
+              onCommand: bus.send,
+            }}
+            agent={agentBar}
+            today={todayDay}
             language={prefs.language}
             s={s}
             windowChrome={windowChrome}

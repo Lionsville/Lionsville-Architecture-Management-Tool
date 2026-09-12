@@ -7,10 +7,16 @@
  * its drawings are made out to, what it is, and where the rest of its material
  * lives.
  *
- * **The address never changes.** `acme/rail` is how everything under it is
- * filed and how the last-opened preference points at one; renaming relabels, it
- * does not re-file. That is the same rule as renaming anything else here, and
- * it is stated on screen rather than left to be discovered.
+ * **Renaming is not moving.** `acme/rail` is how everything under it is filed
+ * and how the last-opened preference points at one; renaming relabels and
+ * leaves the address alone. Moving is the separate question *filed under*,
+ * which changes the address of this scope and of everything beneath it — save
+ * there, remove here, which is the caller's to perform for the same reason a
+ * save is.
+ *
+ * A scope may not be filed under itself or under one of its own descendants,
+ * so the field excludes its own subtree; the root has no field at all, because
+ * the root is where the tree is and there is nowhere above it.
  *
  * The dialog says what it wants; the caller performs it, because a save is a
  * store operation and not a field edit.
@@ -23,20 +29,40 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import type { Translate } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
 import { isSafeLinkUrl } from '../../projects/links'
 import type { RecordLink } from '../../projects/links'
-import type { ScopeSummary } from '../../projects/scope'
+import { SCOPE_KINDS } from '../../projects/scope'
+import type { ScopeKind, ScopeSummary } from '../../projects/scope'
+import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeSettingsPatch } from '../App'
+import { ScopeField } from './ScopeField'
+
+/**
+ * What each kind is called. A word for this dialog to offer and never a branch
+ * ({@link ScopeKind}) — the screen reads it, nothing switches on it.
+ */
+export const SCOPE_KIND_LABEL = {
+  organisation: 'org.kindOrganisation',
+  domain: 'org.kindDomain',
+  programme: 'org.kindProgramme',
+  landscape: 'org.kindLandscape',
+} as const satisfies Record<ScopeKind, StringKey>
 
 export type ScopeSettingsDialogProps = {
   /** The scope being edited; the dialog is closed while undefined. */
   target?: ScopeSummary
+  /**
+   * The tree, for the *filed under* field. Absent means the question is not
+   * asked — a caller with no listing to hand cannot offer a move.
+   */
+  tree?: ScopeSummary
   onSave: (path: ScopePath, patch: ScopeSettingsPatch) => void
   onCancel: () => void
   s: Translate
@@ -44,11 +70,15 @@ export type ScopeSettingsDialogProps = {
 
 type LinkDraft = RecordLink
 
-export function ScopeSettingsDialog({ target, onSave, onCancel, s }: ScopeSettingsDialogProps) {
+export function ScopeSettingsDialog({
+  target, tree, onSave, onCancel, s,
+}: ScopeSettingsDialogProps) {
   const [name, setName] = useState('')
   const [client, setClient] = useState('')
   const [description, setDescription] = useState('')
   const [links, setLinks] = useState<LinkDraft[]>([])
+  const [kind, setKind] = useState<ScopeKind | ''>('')
+  const [parent, setParent] = useState<ScopePath>(ROOT_SCOPE)
 
   // Reopening on a different scope must not show the previous one's values.
   useEffect(() => {
@@ -57,7 +87,12 @@ export function ScopeSettingsDialog({ target, onSave, onCancel, s }: ScopeSettin
     setClient(target.client ?? '')
     setDescription(target.description ?? '')
     setLinks((target.links ?? []).map((link) => ({ ...link })))
+    setKind(target.kind ?? '')
+    setParent(parentScope(target.path) ?? ROOT_SCOPE)
   }, [target])
+
+  // The root has nowhere to go, and a listing is what the field is made of.
+  const canMove = tree !== undefined && target !== undefined && target.path !== ROOT_SCOPE
 
   const editLink = (index: number, patch: Partial<LinkDraft>) =>
     setLinks(links.map((link, i) => (i === index ? { ...link, ...patch } : link)))
@@ -97,6 +132,31 @@ export function ScopeSettingsDialog({ target, onSave, onCancel, s }: ScopeSettin
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label={s('org.kind')}
+            helperText={s('org.kindHelp')}
+            value={kind}
+            onChange={(e) => setKind(e.target.value as ScopeKind | '')}
+          >
+            <MenuItem value="">{s('org.kindNone')}</MenuItem>
+            {SCOPE_KINDS.map((one) => (
+              <MenuItem key={one} value={one}>{s(SCOPE_KIND_LABEL[one])}</MenuItem>
+            ))}
+          </TextField>
+          {canMove && (
+            <ScopeField
+              tree={tree}
+              value={parent}
+              onChange={setParent}
+              label={s('org.filedUnder')}
+              helperText={s('org.filedUnderHelp')}
+              excluding={target.path}
+              s={s}
+            />
+          )}
 
           <Box>
             <Typography sx={{
@@ -167,7 +227,14 @@ export function ScopeSettingsDialog({ target, onSave, onCancel, s }: ScopeSettin
             // and plans this dialog does not show, and the caller reads the
             // scope and writes these fields onto it rather than over it.
             onSave(target.path, {
-              name, client, description, links, ...(target.kind ? { kind: target.kind } : {}),
+              name,
+              client,
+              description,
+              links,
+              ...(kind ? { kind } : {}),
+              ...(canMove && parent !== (parentScope(target.path) ?? ROOT_SCOPE)
+                ? { parent }
+                : {}),
             })
           }}
         >

@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import type { InterchangeDoc } from '../model/fromInterchange'
 import {
   bareScope, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
-  moveScope, namesUnder, newestChange,
+  moveScope, movedPaths, namesUnder, newestChange,
   openScopeDocument, renameScope, resolveActive, scopeFromDocument, scopeTree, setScopeDefaults,
   sortScopes, subtreeTotals, summarise, toWorkingFile,
 } from './scope'
@@ -470,5 +470,28 @@ describe('what a tree of scopes adds up to', () => {
 
   it('answers nothing where no scope has been written yet', () => {
     expect(newestChange(scopeTree([at(''), at('retail')]))).toBeUndefined()
+  })
+})
+
+describe('movedPaths', () => {
+  const tree = scopeTree([
+    { path: 'retail', name: 'Retail', diagrams: 0, children: [] },
+    { path: 'retail/warehouse', name: 'Warehouse', diagrams: 1, children: [] },
+    { path: 'retail/warehouse/wms', name: 'WMS', diagrams: 1, children: [] },
+  ])
+  const retail = tree.children[0]
+
+  /** `remove` takes the children with it, so they have to be written first. */
+  it('re-addresses the whole subtree, parents first', () => {
+    expect(movedPaths(retail, 'ops/retail')).toEqual([
+      { from: 'retail', to: 'ops/retail' },
+      { from: 'retail/warehouse', to: 'ops/retail/warehouse' },
+      { from: 'retail/warehouse/wms', to: 'ops/retail/warehouse/wms' },
+    ])
+  })
+
+  it('answers one pair for a leaf', () => {
+    const leaf = scopeTree([{ path: 'finance', name: 'Finance', diagrams: 1, children: [] }]).children[0]
+    expect(movedPaths(leaf, 'ops/finance')).toEqual([{ from: 'finance', to: 'ops/finance' }])
   })
 })
