@@ -132,10 +132,29 @@ export function useModelSession(deps: {
   initialProject: ScopeSnapshot
   notify: Notify
   s: Translate
+  /**
+   * Every id spoken for ANYWHERE in the organisation (ADR-0012 §2).
+   *
+   * An id names one thing across the whole tree, so a new element drawn here
+   * must not take a name a sibling domain has already used: two scopes that
+   * each define `erp` are a conflict finding, and one this app caused itself
+   * would be a poor advertisement for the finding. The union with this
+   * document's own ids is made below — this answers for the tree as the index
+   * last read it, and the session answers for what has been typed since.
+   *
+   * A function, and optional. A function because the index is rebuilt while
+   * the session lives (the watcher), and a set captured once would go stale;
+   * optional because a scope opened with no index behind it — every component
+   * test, and the first render before a listing has been read — is a document
+   * whose own ids are the whole answer, which is what this did before the tree
+   * had one.
+   */
+  takenInTree?: () => Iterable<string>
 }): ModelSession {
-  const { initialProject, notify, s } = deps
+  const { initialProject, notify, s, takenInTree } = deps
 
-  const [model, setModel] = useState<Model>(() => fromArrays(initialProject.model))
+  const [model, setModel]
+ = useState<Model>(() => fromArrays(initialProject.model))
   const [activeId, setActiveId] = useState(initialProject.activeDiagramId)
   // The mark library is shell state, not model state: it belongs to this browser
   // and to the working file, not to the interchange document.
@@ -164,12 +183,20 @@ export function useModelSession(deps: {
   }, [])
   const arrays = asArrays(model)
 
+  // Read through a ref for the same reason the model is: the policy is minted
+  // once for the life of the session, and it has to see the index as it stands
+  // when an id is asked for rather than as it stood when the hook first ran.
+  const treeIds = useRef(takenInTree)
+  treeIds.current = takenInTree
+
   const ids = useRef<IdPolicy | null>(null)
   ids.current ??= idPolicy(() => [
+    ...(treeIds.current?.() ?? []),
     ...modelRef.current.order.elements,
     ...modelRef.current.order.relations,
     ...modelRef.current.order.diagrams,
   ])
+
 
   // The stacks are refs, because a caller has to be able to read and move them
   // inside an event handler. Nothing renders from them directly, so a counter

@@ -51,16 +51,19 @@ const project = (over: Partial<ScopeSnapshot> = {}): ScopeSnapshot => ({
   ...over,
 })
 
-function mount(initial = project()) {
+function mount(initial = project(), takenInTree?: () => Iterable<string>) {
   const notify = vi.fn()
   let session!: ModelSession
   function Host() {
-    session = useModelSession({ initialProject: initial, notify, s: translator('en') })
+    session = useModelSession({
+      initialProject: initial, notify, s: translator('en'), takenInTree,
+    })
     return null
   }
   render(<Host />)
   return { notify, session: () => session }
 }
+
 
 /** Renaming the one element — enough to watch a change land. */
 const rename = (name: string) =>
@@ -198,6 +201,27 @@ describe('useModelSession — where an id comes from', () => {
     const { session } = mount()
     expect(session().ids.element('d1')).not.toBe('d1')
   })
+
+  /**
+   * ADR-0012 §2: an id names one thing across the whole organisation, not
+   * across one document. The landscape below has never heard of `warehouse`
+   * and must still not mint it, because a sibling domain defines it — and two
+   * definitions of one id are a conflict finding, which this app should not be
+   * in the business of creating by itself.
+   */
+  it('does not hand out a key another scope in the tree already has', () => {
+    const { session } = mount(project(), () => ['warehouse', 'erp'])
+    expect(session().ids.element('Warehouse')).toBe('warehouse-2')
+  })
+
+  it('reads the tree again for every ask, because the index is rebuilt under it', () => {
+    let held: string[] = []
+    const { session } = mount(project(), () => held)
+    expect(session().ids.element('Warehouse')).toBe('warehouse')
+    held = ['depot']
+    expect(session().ids.element('Depot')).toBe('depot-2')
+  })
+
 
   it('lands what the editor drew under the id the editor already gave it', () => {
     const { session } = mount()
