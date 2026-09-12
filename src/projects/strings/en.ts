@@ -61,6 +61,24 @@ export const EN = {
   'check.short.uncovered.one': '{count} uncovered',
   'check.short.uncovered.other': '{count} uncovered',
 
+  /**
+   * Why a gesture that crosses scopes was declined (ADR-0012 §10).
+   *
+   * Keyed by the refusal's own key, the way the findings above are: `gestures.ts`
+   * answers `gesture.wouldConflict` and this is the sentence for it, so nothing
+   * has to keep a second table mapping one to the other. `{scope}` is the other
+   * scope, where the refusal names one.
+   */
+  'gesture.unknownId': 'This scope no longer holds that record.',
+  'gesture.notADefinition': 'This record already stands in for one somewhere else.',
+  'gesture.notAMaster': '{scope} answers for this. Move it from there.',
+  'gesture.noMaster': 'Nothing else in the organisation defines this.',
+  'gesture.notAnAncestor': 'A record can only be promoted to a scope this one is filed under.',
+  'gesture.notADescendant': 'A record can only be demoted to a scope filed under this one.',
+  'gesture.noSuchScope': 'There is no such scope to move it to.',
+  'gesture.wouldConflict': '{scope} already answers for this.',
+  'gesture.hasChildren': 'What is filed under this record would be left without it. Move those first.',
+
   'standIn.definedIn': 'Defined in {scope} — its detail is answered for there.',
   'standIn.open': 'Open {scope}',
   /** Under a stand-in's name on a card, small: where the thing really lives. */

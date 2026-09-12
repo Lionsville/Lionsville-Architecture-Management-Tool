@@ -45,6 +45,16 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.uncovered.one': '{count} niet gedekt',
   'check.short.uncovered.other': '{count} niet gedekt',
 
+  'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
+  'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',
+  'gesture.notAMaster': '{scope} beheert dit. Verplaats het daarvandaan.',
+  'gesture.noMaster': 'Niets anders in de organisatie definieert dit.',
+  'gesture.notAnAncestor': 'Een record kan alleen omhoog naar een niveau waar dit onder valt.',
+  'gesture.notADescendant': 'Een record kan alleen omlaag naar een niveau dat hieronder valt.',
+  'gesture.noSuchScope': 'Dat niveau bestaat niet.',
+  'gesture.wouldConflict': '{scope} beheert dit al.',
+  'gesture.hasChildren': 'Wat onder dit record valt blijft dan zonder. Verplaats dat eerst.',
+
   'standIn.definedIn': 'Gedefinieerd in {scope} — de details worden daar beheerd.',
   'standIn.open': '{scope} openen',
   'standIn.from': 'uit {scope}',

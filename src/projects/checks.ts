@@ -151,6 +151,19 @@ export { OWNER_DETAIL } from '../model'
 export type { OwnerDetailField } from '../model'
 
 /**
+ * Which of the owner's detail this record actually says something with.
+ *
+ * Published because two callers ask it: this module reports the fields when
+ * they appear on a stand-in, and `gestures.ts` asks whether the scope a
+ * definition is about to move into already holds a record of its own — a thin
+ * declaration yields, which is what a declaration is for, and a record with
+ * the owner's detail on it is somebody's work and is refused.
+ */
+export function ownerDetailOn(element: DesignElement): OwnerDetailField[] {
+  return OWNER_DETAIL.filter((field) => detailSaidOn(element, field))
+}
+
+/**
  * Is this field one the owning scope answers for?
  *
  * `lifecycle`, `isManaged` and `aspects` are required on the type and present
@@ -267,7 +280,7 @@ export function documentFindings(deps: {
       // Ignored on a stand-in, and reported if present (§3). Reported rather
       // than stripped on save: somebody wrote it, and a file quietly losing
       // fields is worse than a line saying which scope answers for them.
-      const fields = OWNER_DETAIL.filter((field) => detailSaidOn(element, field))
+      const fields = ownerDetailOn(element)
       if (fields.length > 0) {
         const owner = index.lookup(element.id)?.master
         found.push({

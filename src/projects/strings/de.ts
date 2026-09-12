@@ -45,6 +45,16 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.uncovered.one': '{count} nicht abgedeckt',
   'check.short.uncovered.other': '{count} nicht abgedeckt',
 
+  'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
+  'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',
+  'gesture.notAMaster': '{scope} verantwortet dies. Verschieben Sie es von dort.',
+  'gesture.noMaster': 'Nichts sonst in der Organisation definiert dies.',
+  'gesture.notAnAncestor': 'Ein Datensatz kann nur in einen Bereich hochgezogen werden, unter dem dieser liegt.',
+  'gesture.notADescendant': 'Ein Datensatz kann nur in einen Bereich abgegeben werden, der hierunter liegt.',
+  'gesture.noSuchScope': 'Diesen Bereich gibt es nicht.',
+  'gesture.wouldConflict': '{scope} verantwortet dies bereits.',
+  'gesture.hasChildren': 'Was unter diesem Datensatz liegt, bliebe ohne ihn. Verschieben Sie das zuerst.',
+
   'standIn.definedIn': 'Definiert in {scope} — die Details werden dort verantwortet.',
   'standIn.open': '{scope} öffnen',
   'standIn.from': 'aus {scope}',

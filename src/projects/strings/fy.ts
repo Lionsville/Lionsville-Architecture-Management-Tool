@@ -45,6 +45,16 @@ export const FY: Record<keyof typeof EN, string> = {
   'check.short.uncovered.one': '{count} net dekt',
   'check.short.uncovered.other': '{count} net dekt',
 
+  'gesture.unknownId': 'Dit nivo hat dat record net mear.',
+  'gesture.notADefinition': 'Dit record ferwiist al nei in definysje earne oars.',
+  'gesture.notAMaster': '{scope} behearret dit. Ferpleats it dêrwei.',
+  'gesture.noMaster': 'Neat oars yn de organisaasje definiearret dit.',
+  'gesture.notAnAncestor': 'In record kin allinnich omheech nei in nivo dêr\'t dit ûnder falt.',
+  'gesture.notADescendant': 'In record kin allinnich omleech nei in nivo dat hjirûnder falt.',
+  'gesture.noSuchScope': 'Dat nivo bestiet net.',
+  'gesture.wouldConflict': '{scope} behearret dit al.',
+  'gesture.hasChildren': 'Wat ûnder dit record falt bliuwt dan sûnder. Ferpleats dat earst.',
+
   'standIn.definedIn': 'Definiearre yn {scope} — de details wurde dêr behearre.',
   'standIn.open': '{scope} iepenje',
   'standIn.from': 'út {scope}',
