@@ -50,12 +50,35 @@ export interface AspectConfigEntry {
    */
   code?: string;
 }
+/**
+ * What a thing IS (ADR-0012 §4) — which stopped being the same question as how
+ * it is drawn.
+ *
+ * Six words, four of them the business layer's. Three kinds left: an
+ * `externalSystem` was an `application` somebody else owns (`outside`), and an
+ * `inputChannel` and a `managementTool` were an `application` in a band of the
+ * board (`DiagramMember.zone`). Each was a drawing decision or a category
+ * wearing a kind's clothes, and each had a second meaning it could not carry —
+ * the same portal is a channel on one board and a system on another, and
+ * "external" meant both *outside this organisation* and *not the subject of
+ * this board*. What they drew as is {@link ./kinds.NodeFigure}, derived.
+ *
+ * `actor`, `step`, `function` and `process` are trees: `parentId` and `order`
+ * make the depth, and depth is what the sheet draws from — an area, a
+ * grouping, a capability; a journey, a phase, a step. The model does not know
+ * those words.
+ */
 export type ElementKind =
+  /** A party, stakeholder, role, team, or a group of them. */
   | 'actor'
+  /** A journey, its phases and its steps. Ordered: a journey reads left to right. */
+  | 'step'
+  /** A responsibility area, a grouping, a capability. */
+  | 'function'
+  /** A business process; its page holds the ```bpmn fence. */
+  | 'process'
   | 'application'
-  | 'externalSystem'
-  | 'inputChannel'
-  | 'managementTool'
+  /** A container inside an application (C4). */
   | 'component';
 export type Layer7Zone =
   | 'actors'
@@ -105,11 +128,46 @@ export interface DesignElement {
    * (`projects/folderFormat.ts`), and stops at format 4.
    */
   parentId?: ElementId;
+  /**
+   * Where this sits among its siblings, low first (ADR-0012 §3).
+   *
+   * Only where order is a DECISION — a journey reads left to right, and the
+   * phases of one are not alphabetical. Absent everywhere else, because a list
+   * that carries an order nobody chose is a list two people renumber for
+   * nothing. Ties fall back to the order the list already has.
+   */
+  order?: number;
+  /**
+   * A `step` only: the actor whose own path this step is (ADR-0012 §4).
+   *
+   * One journey is rarely one path — a key account runs differently from a
+   * customer who orders directly — so the sheet draws a row per lane under the
+   * same phases. Absent means the common row, which is the one every lane
+   * shares. Everything else about a lane is derived from where it has steps;
+   * see `business/lanes.ts`.
+   */
+  lane?: ElementId;
   name: string;
   category?: string;
   vendor?: string;
   technology?: string;
   description?: string;
+  /**
+   * Nobody in this organisation owns it (ADR-0012 §3).
+   *
+   * A fact about the world, and one of the three separate things "external"
+   * used to mean at once. `true` or absent — never `false`, so nothing has to
+   * write down that a thing is ours.
+   */
+  outside?: true;
+  /** Which {@link ElementKind} `actor` it belongs to, when that has been said. */
+  partyId?: ElementId;
+  /**
+   * Which phase it is in, and — with {@link DesignElement.lifecycleDates} — when
+   * (ADR-0009). Meaningful on a function and an actor as well as an application
+   * since ADR-0012 §8: a capability can be being built, and a partner can be
+   * being onboarded.
+   */
   lifecycle: Lifecycle;
   /**
    * When each phase begins, `yyyy-mm-dd` (ADR-0009). Absent throughout — which

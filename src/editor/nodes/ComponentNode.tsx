@@ -68,7 +68,7 @@ export const ComponentNode = memo(function ComponentNode({
       <Typography sx={{ fontSize: 9.5, fontStyle: 'italic', color: tokens.card.subtitle }}>
         [{element.technology?.trim() || 'Container'}]
       </Typography>
-      <NodeDescription kind="component" text={element.description} height={height} />
+      <NodeDescription figure="component" text={element.description} height={height} />
     </NodeShell>
   );
 });

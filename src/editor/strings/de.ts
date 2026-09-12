@@ -12,11 +12,11 @@ export const DE: Record<keyof typeof EN, string> = {
   'kind.domainGroup': 'Domänengruppe',
 
   'newName.actor': 'Neuer Akteur',
+  'newName.step': 'Neuer Schritt',
+  'newName.function': 'Neue Funktion',
+  'newName.process': 'Neuer Prozess',
   'newName.application': 'Neue Anwendung',
   'newName.component': 'Neue Komponente',
-  'newName.externalSystem': 'Neues externes System',
-  'newName.inputChannel': 'Neuer Eingabekanal',
-  'newName.managementTool': 'Neues Verwaltungswerkzeug',
   'newName.domainGroup': 'Neue Gruppe',
 
   'lifecycle.planned': 'Geplant',
@@ -142,13 +142,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'palette.searchPlaceholder': 'Suchen…',
   'palette.noMatches': 'Nichts passt zu „{query}“',
   'palette.section.systems': 'Anwendungen & Komponenten',
-  'palette.section.integration': 'Integration',
   'palette.section.people': 'Personen & Kontext',
   'paletteDescription.application': 'Ein System, das der Kunde betreibt oder bezieht',
   'paletteDescription.component': 'Ein Teil innerhalb einer Anwendung',
-  'paletteDescription.inputChannel': 'Wie Arbeit und Daten in die Landschaft gelangen',
-  'paletteDescription.externalSystem': 'Ein System außerhalb der Kontrolle des Kunden',
-  'paletteDescription.managementTool': 'Werkzeuge, die die Landschaft betreiben und überwachen',
   'paletteDescription.actor': 'Eine Person oder Rolle, die die Landschaft nutzt',
   'paletteDescription.domainGroup': 'Ein beschrifteter Bereich, der die Landschaft gruppiert',
 

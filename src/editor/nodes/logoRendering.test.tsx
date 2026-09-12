@@ -13,7 +13,9 @@ import { InputChannelNode } from './InputChannelNode';
 import { ManagementToolNode } from './ManagementToolNode';
 import { LogoLibraryProvider } from './logoRegistry';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
-import type { DesignElement, ElementKind } from '../../model/types';
+import type { DesignElement } from '../../model/types';
+import { FIGURE_MEANS } from '../../model/kinds';
+import type { NodeFigure } from '../../model/kinds';
 import type { ElementNodeProps } from './nodeData';
 import { testResizeLimits } from './nodeTestData';
 
@@ -49,10 +51,15 @@ function withProviders(node: React.ReactNode) {
   );
 }
 
-function props(kind: ElementKind, over: Partial<DesignElement> = {}): ElementNodeProps {
+/**
+ * The props React Flow hands a node of this figure. The element under it is
+ * what the figure means (`FIGURE_MEANS`) — an external system is an application
+ * nobody here owns — so the node is rendered over the model it would really have.
+ */
+function props(figure: NodeFigure, over: Partial<DesignElement> = {}): ElementNodeProps {
   return {
     id: 'e1',
-    type: kind,
+    type: figure,
     selected: false,
     dragging: false,
     zIndex: 0,
@@ -64,7 +71,7 @@ function props(kind: ElementKind, over: Partial<DesignElement> = {}): ElementNod
     data: {
       element: {
         id: 'e1',
-        kind,
+        ...FIGURE_MEANS[figure],
         name: 'Example',
         lifecycle: 'live',
         isManaged: false,
@@ -72,7 +79,7 @@ function props(kind: ElementKind, over: Partial<DesignElement> = {}): ElementNod
         ...over,
       },
       placement: { id: 'e1', zone: 'landscape', x: 0, y: 0 },
-      resizeLimits: testResizeLimits(kind),
+      resizeLimits: testResizeLimits(figure),
       readOnly: false,
       aspectConfig: [],
       showLifecycle: false,
@@ -80,38 +87,44 @@ function props(kind: ElementKind, over: Partial<DesignElement> = {}): ElementNod
   } as unknown as ElementNodeProps;
 }
 
-/** Every node component that carries an icon slot — which is now all of them. */
-const KINDS: { name: string; kind: ElementKind; Node: ComponentType<ElementNodeProps> }[] = [
-  { name: 'ApplicationCardNode', kind: 'application', Node: ApplicationCardNode },
-  { name: 'ApplicationBoundaryNode', kind: 'application', Node: ApplicationBoundaryNode },
-  { name: 'ComponentNode', kind: 'component', Node: ComponentNode },
-  { name: 'ExternalSystemNode', kind: 'externalSystem', Node: ExternalSystemNode },
-  { name: 'ManagementToolNode', kind: 'managementTool', Node: ManagementToolNode },
-  { name: 'InputChannelNode', kind: 'inputChannel', Node: InputChannelNode },
-  { name: 'ActorNode', kind: 'actor', Node: ActorNode },
+/**
+ * Every node component that carries an icon slot — which is now all of them.
+ *
+ * Keyed by the FIGURE each component draws (ADR-0012 §4), which is what a node
+ * type has been since the three kinds retired: three of these rows are the same
+ * `application` in three different bands.
+ */
+const FIGURES: { name: string; figure: NodeFigure; Node: ComponentType<ElementNodeProps> }[] = [
+  { name: 'ApplicationCardNode', figure: 'application', Node: ApplicationCardNode },
+  { name: 'ApplicationBoundaryNode', figure: 'application', Node: ApplicationBoundaryNode },
+  { name: 'ComponentNode', figure: 'component', Node: ComponentNode },
+  { name: 'ExternalSystemNode', figure: 'externalSystem', Node: ExternalSystemNode },
+  { name: 'ManagementToolNode', figure: 'managementTool', Node: ManagementToolNode },
+  { name: 'InputChannelNode', figure: 'inputChannel', Node: InputChannelNode },
+  { name: 'ActorNode', figure: 'actor', Node: ActorNode },
 ];
 
-describe.each(KINDS)('$name logo slot', ({ kind, Node }) => {
+describe.each(FIGURES)('$name logo slot', ({ figure, Node }) => {
   it('renders the resolved mark when the iconKey resolves', () => {
-    const { getByLabelText } = withProviders(<Node {...props(kind, { iconKey: 'database' })} />);
+    const { getByLabelText } = withProviders(<Node {...props(figure, { iconKey: 'database' })} />);
     expect(getByLabelText('Database')).toBeDefined();
   });
 
   it('falls back (no mark) when the iconKey is unknown', () => {
     const { queryByLabelText } = withProviders(
-      <Node {...props(kind, { iconKey: 'not-a-real-key' })} />,
+      <Node {...props(figure, { iconKey: 'not-a-real-key' })} />,
     );
     expect(queryByLabelText('Database')).toBeNull();
   });
 
   it('renders no mark when the iconKey is absent', () => {
-    const { queryByRole } = withProviders(<Node {...props(kind)} />);
+    const { queryByRole } = withProviders(<Node {...props(figure)} />);
     expect(queryByRole('img')).toBeNull();
   });
 
   it('draws the large body mark at 28px when iconSize is "large"', () => {
     const { getByLabelText } = withProviders(
-      <Node {...props(kind, { iconKey: 'database', iconSize: 'large' })} />,
+      <Node {...props(figure, { iconKey: 'database', iconSize: 'large' })} />,
     );
     const mark = getByLabelText('Database');
     expect(mark.getAttribute('width')).toBe('28');
@@ -186,7 +199,7 @@ describe('the actor stickman keeps its figure', () => {
  * is a security rule rather than a preference: an uploaded SVG may carry a
  * script, so it must reach the page as an `img` and never as inline markup.
  */
-describe.each(KINDS)('$name uploaded logo slot', ({ kind, Node }) => {
+describe.each(FIGURES)('$name uploaded logo slot', ({ figure, Node }) => {
   const library = [
     { key: 'lib:salesforce', label: 'Salesforce', url: 'https://hal.test/logos/salesforce/content' },
   ];
@@ -204,7 +217,7 @@ describe.each(KINDS)('$name uploaded logo slot', ({ kind, Node }) => {
   }
 
   it('renders an uploaded mark as a full-colour image', () => {
-    const { getByAltText } = withLibrary(<Node {...props(kind, { iconKey: 'lib:salesforce' })} />);
+    const { getByAltText } = withLibrary(<Node {...props(figure, { iconKey: 'lib:salesforce' })} />);
     const image = getByAltText('Salesforce');
     expect(image.tagName).toBe('IMG');
     expect(image.getAttribute('src')).toBe(library[0].url);
@@ -215,7 +228,7 @@ describe.each(KINDS)('$name uploaded logo slot', ({ kind, Node }) => {
     // means a built-in can never shadow one.
     const shadowing = [{ key: 'lib:database', label: 'Eigen database', url: 'https://hal.test/x' }];
     const { getByAltText, queryByLabelText } = withLibrary(
-      <Node {...props(kind, { iconKey: 'lib:database' })} />,
+      <Node {...props(figure, { iconKey: 'lib:database' })} />,
       shadowing,
     );
     expect(getByAltText('Eigen database')).toBeDefined();
@@ -225,7 +238,7 @@ describe.each(KINDS)('$name uploaded logo slot', ({ kind, Node }) => {
   it('prefers a built-in mark over an un-namespaced uploaded entry', () => {
     const shadowing = [{ key: 'database', label: 'Not the built-in', url: 'https://hal.test/x' }];
     const { getByLabelText, queryByAltText } = withLibrary(
-      <Node {...props(kind, { iconKey: 'database' })} />,
+      <Node {...props(figure, { iconKey: 'database' })} />,
       shadowing,
     );
     expect(getByLabelText('Database')).toBeDefined();
@@ -234,7 +247,7 @@ describe.each(KINDS)('$name uploaded logo slot', ({ kind, Node }) => {
 
   it('degrades to the kind glyph when a purged key no longer resolves', () => {
     const { queryByRole, queryByAltText } = withLibrary(
-      <Node {...props(kind, { iconKey: 'lib:was-purged' })} />,
+      <Node {...props(figure, { iconKey: 'lib:was-purged' })} />,
     );
     expect(queryByAltText('Salesforce')).toBeNull();
     expect(queryByRole('img')).toBeNull();

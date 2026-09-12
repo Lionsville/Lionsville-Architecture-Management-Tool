@@ -11,11 +11,12 @@ import type { EN } from './en'
 export const FY: Record<keyof typeof EN, string> = {
 
   'kind.actor': 'Akteur',
+  'kind.step': 'Stap',
+  'kind.function': 'Funksje',
+  'kind.process': 'Proses',
   'kind.application': 'Applikaasje',
   'kind.component': 'Komponint',
-  'kind.externalSystem': 'Ekstern systeem',
-  'kind.inputChannel': 'Ynfierkanaal',
-  'kind.managementTool': 'Behearark',
+  'placement.notOnACanvas': 'In {kind} wurdt net op dit soarte werjefte tekene.',
 
   'relation.flow': 'Keppeling',
   'relation.supports': 'Stipet',
@@ -23,6 +24,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'relation.realises': 'Realisearret',
   'relation.assigned': 'Tawiisd oan',
   'relation.notInThisFormat': 'In relaasje fan it type {type} kin noch net yn dit bestânsformaat bewarre wurde. Allinne keppelingen wol.',
+  'element.notInThisFormat': 'In {kind} kin noch net yn dit bestânsformaat bewarre wurde. It hâldt applikaasjes, komponinten en akteurs.',
 
   'zone.actors': 'AKTEUREN',
   'zone.inputChannels': 'YNFIERKANALEN',

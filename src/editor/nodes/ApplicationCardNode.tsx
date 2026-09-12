@@ -131,8 +131,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         }}
       >
         {bodyIcon && <NodeIcon element={element} size={28} color={tokens.card.subtitle} />}
-        <NodeDescription
-          kind="application"
+        <NodeDescription figure="application"
           text={shortDescription(element.description)}
           height={height}
           sx={{ flex: 1 }}

@@ -12,11 +12,11 @@ export const FY: Record<keyof typeof EN, string> = {
   'kind.domainGroup': 'Domeingroep',
 
   'newName.actor': 'Nije akteur',
+  'newName.step': 'Nije stap',
+  'newName.function': 'Nije funksje',
+  'newName.process': 'Nij proses',
   'newName.application': 'Nije applikaasje',
   'newName.component': 'Nij komponint',
-  'newName.externalSystem': 'Nij ekstern systeem',
-  'newName.inputChannel': 'Nij ynfierkanaal',
-  'newName.managementTool': 'Nij behearark',
   'newName.domainGroup': 'Nije groep',
 
   'lifecycle.planned': 'Pland',
@@ -142,13 +142,9 @@ export const FY: Record<keyof typeof EN, string> = {
   'palette.searchPlaceholder': 'Sykje…',
   'palette.noMatches': 'Neat komt oerien mei “{query}”',
   'palette.section.systems': 'Applikaasjes & komponinten',
-  'palette.section.integration': 'Yntegraasje',
   'palette.section.people': 'Minsken & kontekst',
   'paletteDescription.application': 'In systeem dat de klant draait of ôfnimt',
   'paletteDescription.component': 'In ûnderdiel binnen ien applikaasje',
-  'paletteDescription.inputChannel': 'Hoe’t wurk en gegevens it lânskip ynkomme',
-  'paletteDescription.externalSystem': 'In systeem bûten de ynfloed fan de klant',
-  'paletteDescription.managementTool': 'Ark dat it lânskip draait en bewekket',
   'paletteDescription.actor': 'In persoan of rol dy’t it lânskip brûkt',
   'paletteDescription.domainGroup': 'In beneamd flak dat it lânskip groepearret',
 

@@ -21,10 +21,11 @@ import type { IdPolicy, MakeId } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
 import { toDiagram, toArrays } from '../model/normalised'
 import {
-  clampPlacementIntoZone, defaultContainerPosition, defaultZonePosition, freeSlotIn, freeZonePosition, groupRectAround,
-  memberOf, placementRect, rectCenter, rectsIntersect, unionRects,
+  canPlaceKind, clampPlacementIntoZone, defaultContainerPosition, defaultZonePosition, freeSlotIn,
+  freeZonePosition, groupRectAround, memberOf, placementRect, rectCenter, rectsIntersect, unionRects,
 } from '../model/placement'
 import { HOME_ZONE, zoneForPoint } from '../model/zones'
+import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
@@ -254,8 +255,8 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       if (!held) return refused('agent.notDrawn', elementId)
       const gap = (args.gap as number | undefined) ?? 40
       const side = (args.side as 'right' | 'left' | 'above' | 'below' | undefined) ?? 'right'
-      const a = placementRect(anchor.kind, anchorPlacement)
-      const mine = placementRect(element.kind, held)
+      const a = placementRect(nodeFigure(anchor, anchorPlacement.zone), anchorPlacement)
+      const mine = placementRect(nodeFigure(element, held.zone), held)
       const spot = side === 'right' ? { x: a.x + a.width + gap, y: a.y }
         : side === 'left' ? { x: a.x - gap - mine.width, y: a.y }
         : side === 'above' ? { x: a.x, y: a.y - gap - mine.height }
@@ -268,10 +269,10 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       if ((beside.zone ?? 'landscape') !== 'landscape') delete beside.group
       // Beside its anchor in the anchor's band means inside that band: right of
       // the last card in a side band is outside it, and the report would say so.
-      const placement = diagram.kind === 'layer7' ? keptInBand(model, diagram, element.kind, beside) : beside
+      const placement = diagram.kind === 'layer7' ? keptInBand(model, diagram, element, beside) : beside
       const commands: Command[] = [placeOn(diagram.id, [placement])]
       const layout = diagram.kind === 'layer7' && placement.group !== undefined
-        ? growGroup(diagram, placement.group, placementRect(element.kind, placement)) : undefined
+        ? growGroup(diagram, placement.group, placementRect(nodeFigure(element, placement.zone), placement)) : undefined
       if (layout) commands.push(layout)
       const clamped = placement.x !== spot.x || placement.y !== spot.y
       return {
@@ -303,7 +304,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const placed = onDiagram(args, view)
       if ('ok' in placed) return placed
       const { diagram, placements } = placed
-      const bounds: NodeBounds[] = placements.map((p) => ({ id: p.id, ...placementRect(model.elements[p.id].kind, p) }))
+      const bounds: NodeBounds[] = placements.map((p) => ({ id: p.id, ...placementRect(nodeFigure(model.elements[p.id], p.zone), p) }))
       const updates = tool === 'align'
         ? alignNodes(bounds, args.axis as AlignAxis)
         : distributeNodes(bounds, args.axis as DistributeAxis)
@@ -326,6 +327,9 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const name = (args.name as string).trim()
   if (!name) return refused('agent.badArguments', '"name" must not be blank')
   const kind = (args.kind as ElementKind | undefined) ?? 'application'
+  // Read before the row is built: it decides what the box is drawn as, and
+  // therefore where it lands and how big it is (ADR-0012 §4).
+  const outside = args.outside === true
   const diagram = diagramOf(args, view)
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
   const parentId = args.parentId as string | undefined
@@ -337,9 +341,12 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const bare: DesignElement = {
     id,
     kind,
+    ...(outside ? { outside: true as const } : {}),
     name,
     lifecycle: 'live',
-    isManaged: kind !== 'externalSystem' && kind !== 'actor',
+    // Managed unless nobody here runs it: a person or a team, a
+    // responsibility, a journey, or a system somebody else owns.
+    isManaged: (kind === 'application' || kind === 'component') && !outside,
     aspects: {},
     ...(parentId !== undefined
       ? { parentId }
@@ -353,7 +360,17 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const element: DesignElement = { ...bare, ...patch }
   for (const key of Object.keys(patch) as (keyof DesignElement)[]) if (element[key] === undefined) delete element[key]
 
-  const seeded = seedPlacement(model, diagram, id, kind, args)
+  // A record and a drawing are two acts (ADR-0012 §10). A business kind has no
+  // place on a canvas — a sheet is laid out from the tree, not dragged — so the
+  // record is made and nothing is drawn, and the answer says which happened
+  // rather than refusing a thing that is perfectly real.
+  if (!canPlaceKind(kind, diagram.kind).ok) {
+    return {
+      command: transaction([{ type: 'element.create', element }], { origin: 'agent' }),
+      answer: json({ id, name, kind, drawn: false, reason: `a ${kind} is not drawn on a ${diagram.kind} view` }),
+    }
+  }
+  const seeded = seedPlacement(model, diagram, id, element, args)
   if ('ok' in seeded) return seeded
   const { placement, layout } = seeded
   return {
@@ -717,16 +734,25 @@ type Seeded = { placement: PlacedNode; layout?: Command }
  * card filed under a group and drawn outside its box is a card the next drag
  * re-files. A group that has no box yet gets one around the card.
  */
-function seedPlacement(model: Model, diagram: Diagram, elementId: ElementId, kind: ElementKind, args: Args): Seeded | AgentAnswer {
+function seedPlacement(
+  model: Model, diagram: Diagram, elementId: ElementId,
+  element: Pick<DesignElement, 'kind' | 'outside'>, args: Args,
+): Seeded | AgentAnswer {
   const asked = typeof args.x === 'number' && typeof args.y === 'number'
     ? { x: args.x, y: args.y } : undefined
   if (diagram.kind !== 'layer7') {
     if (args.zone !== undefined || typeof args.domainGroup === 'string') {
       return refused('agent.badArguments', 'bands and domain groups are a landscape\'s')
     }
-    return { placement: { id: elementId, ...(asked ?? defaultContainerPosition(kind, diagram.order.members.length)) } }
+    return {
+      placement: {
+        id: elementId,
+        ...(asked ?? defaultContainerPosition(nodeFigure(element), diagram.order.members.length)),
+      },
+    }
   }
-  const zone = (args.zone as Layer7Zone | undefined) ?? HOME_ZONE[kind]
+  const zone = (args.zone as Layer7Zone | undefined) ?? HOME_ZONE[nodeFigure(element)]
+  const figure = nodeFigure(element, zone)
   const name = typeof args.domainGroup === 'string' && args.domainGroup.trim() ? args.domainGroup.trim() : undefined
   if (name !== undefined && zone !== 'landscape') return refused('agent.badArguments', `${name} is a domain group; only landscape cards are grouped`)
   // A name nobody has used yet makes the group, which is what a card filed
@@ -738,11 +764,11 @@ function seedPlacement(model: Model, diagram: Diagram, elementId: ElementId, kin
     : [{ type: 'group.set', diagramId: diagram.id, groups: [{ id: groupId!, name }] }]
   const box = groupId === undefined ? undefined : groupBox(diagram, groupId)
   const position = asked
-    ?? (box ? freeSlotIn(box, kind, membersOf(model, diagram, groupId!).map(([, rect]) => rect))
-      : defaultZonePosition(zone, kind, diagram.order.members.filter((id) => (placedOn(diagram, id)!.zone ?? 'landscape') === zone).length, diagram))
+    ?? (box ? freeSlotIn(box, figure, membersOf(model, diagram, groupId!).map(([, rect]) => rect))
+      : defaultZonePosition(zone, figure, diagram.order.members.filter((id) => (placedOn(diagram, id)!.zone ?? 'landscape') === zone).length, diagram))
   const placement: PlacedNode = { id: elementId, zone, ...position, ...(groupId !== undefined ? { group: groupId } : {}) }
-  const kept = zone === 'landscape' ? placement : clampPlacementIntoZone(placement, kind, diagram) ?? placement
-  const grown = groupId === undefined ? undefined : growGroup(diagram, groupId, placementRect(kind, kept))
+  const kept = zone === 'landscape' ? placement : clampPlacementIntoZone(placement, figure, diagram) ?? placement
+  const grown = groupId === undefined ? undefined : growGroup(diagram, groupId, placementRect(figure, kept))
   return { placement: kept, layout: transaction([...made, ...(grown ? [grown] : [])]) }
 }
 
@@ -758,16 +784,20 @@ function groupNameOn(diagram: Diagram, groupId: string | undefined): string | un
  * anchor, usually — so a clamped card that would land on another one takes a
  * free slot in the band instead. A landscape card is not touched.
  */
-function keptInBand(model: Model, diagram: Diagram, kind: ElementKind, placement: PlacedNode): PlacedNode {
+function keptInBand(
+  model: Model, diagram: Diagram,
+  element: Pick<DesignElement, 'kind' | 'outside'>, placement: PlacedNode,
+): PlacedNode {
   if ((placement.zone ?? 'landscape') === 'landscape') return placement
-  const clamped = clampPlacementIntoZone(placement, kind, diagram)
+  const figure = nodeFigure(element, placement.zone)
+  const clamped = clampPlacementIntoZone(placement, figure, diagram)
   if (!clamped) return placement
   const others = diagram.order.members
     .filter((id) => id !== placement.id && model.elements[id] && (placedOn(diagram, id)!.zone ?? 'landscape') === placement.zone)
-    .map((id) => placementRect(model.elements[id].kind, placedOn(diagram, id)!))
-  const mine = placementRect(kind, clamped)
+    .map((id) => placementRect(nodeFigure(model.elements[id], placedOn(diagram, id)!.zone), placedOn(diagram, id)!))
+  const mine = placementRect(figure, clamped)
   if (!others.some((rect) => rectsIntersect(mine, rect))) return clamped
-  return { ...clamped, ...freeZonePosition(placement.zone!, kind, others, diagram) }
+  return { ...clamped, ...freeZonePosition(placement.zone!, figure, others, diagram) }
 }
 
 function groupBox(diagram: Diagram, groupId: string): DomainGroupRect | undefined {
@@ -789,7 +819,7 @@ function groupNamed(diagram: Diagram, name: string): DiagramGroup | undefined {
 function membersOf(model: Model, diagram: Diagram, groupId: string): [ElementId, Rect][] {
   return diagram.order.members
     .filter((id) => placedOn(diagram, id)!.group === groupId && model.elements[id])
-    .map((id) => [id, placementRect(model.elements[id].kind, placedOn(diagram, id)!)])
+    .map((id) => [id, placementRect(nodeFigure(model.elements[id], placedOn(diagram, id)!.zone), placedOn(diagram, id)!)])
 }
 
 /**
@@ -838,7 +868,7 @@ function placeElement(args: Args, view: WriteView): Prepared | AgentAnswer {
       // A spot in another band than the card is filed in is a contradiction
       // the report would flag straight away; the band has to be said.
       const filed = held.zone ?? 'landscape'
-      const actually = zoneForPoint(rectCenter(placementRect(element.kind, next)), diagram)
+      const actually = zoneForPoint(rectCenter(placementRect(nodeFigure(element, next.zone), next)), diagram)
       if (actually !== filed) return refused('agent.badArguments', `(${asked.x}, ${asked.y}) is in the ${actually} band; say zone: ${actually} to move it there`)
     }
     if (group === null) delete next.group
@@ -850,15 +880,15 @@ function placeElement(args: Args, view: WriteView): Prepared | AgentAnswer {
       if (!held || !box) return refused('agent.unknownId', `domain group ${name}; make one with group`)
       if (!asked) {
         const others = membersOf(model, diagram, held.id).filter(([member]) => member !== id).map(([, rect]) => rect)
-        next = { ...next, ...freeSlotIn(box, element.kind, others) }
+        next = { ...next, ...freeSlotIn(box, nodeFigure(element, next.zone), others) }
       }
       next.group = held.id
     }
-    next = keptInBand(model, diagram, element.kind, next)
+    next = keptInBand(model, diagram, element, next)
   }
 
   const commands: Command[] = [placeOn(diagram.id, [next])]
-  const layout = next.group === undefined ? undefined : growGroup(diagram, next.group, placementRect(element.kind, next))
+  const layout = next.group === undefined ? undefined : growGroup(diagram, next.group, placementRect(nodeFigure(element, next.zone), next))
   if (layout) commands.push(layout)
   const clamped = asked !== undefined && (next.x !== asked.x || next.y !== asked.y)
   return {
@@ -879,7 +909,10 @@ function drawElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const element = model.elements[id]
   if (!element) return refused('agent.unknownId', `element ${id}`)
   if (placedOn(diagram, id)) return refused('agent.badArguments', `${id} is drawn on ${diagram.id} already; element.place moves it`)
-  const seeded = seedPlacement(model, diagram, id, element.kind, args)
+  if (!canPlaceKind(element.kind, diagram.kind).ok) {
+    return refused('agent.badArguments', `a ${element.kind} is not drawn on a ${diagram.kind} view`)
+  }
+  const seeded = seedPlacement(model, diagram, id, element, args)
   if ('ok' in seeded) return seeded
   const { placement, layout } = seeded
   return {
@@ -1118,7 +1151,7 @@ function groupElements(args: Args, view: WriteView): Prepared | AgentAnswer {
   const existing = boxesOf(diagram)[groupId]
   if (!known && placements.length === 0) return refused('agent.badArguments', 'a new group needs at least one element')
 
-  const around = groupRectAround(placements.map((p) => placementRect(model.elements[p.id].kind, p)))
+  const around = groupRectAround(placements.map((p) => placementRect(nodeFigure(model.elements[p.id], p.zone), p)))
   const box = unionRects([...(existing ? [existing] : []), ...(around ? [around] : [])])!
   const rect: DomainGroupRect = { id: groupId, x: box.x, y: box.y, width: box.width, height: box.height }
 

@@ -34,7 +34,7 @@ const host: HostModel = {
   elements: [
     element('billing', 'Billing', { category: 'Finance', vendor: 'Kestrel', description: 'Sends the **invoices**.' }),
     element('crm', 'CRM', { technology: 'Java' }),
-    element('wh', 'Warehouse', { kind: 'externalSystem' }),
+    element('wh', 'Warehouse', { kind: 'application', outside: true }),
     element('who', 'Clerk', { kind: 'actor' }),
     element('billing-api', 'Billing API', { kind: 'component', parentId: 'billing' }),
   ],

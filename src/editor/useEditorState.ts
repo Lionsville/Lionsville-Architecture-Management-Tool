@@ -33,6 +33,7 @@ import { edgeRoutesOf,
 } from '../model/routes';
 import { clampCanvasSize, clampZoneSize, HOME_ZONE, RESIZABLE_ZONES } from '../model/zones';
 import { canChangeKind, placementForKind } from '../model/kindChange';
+import { nodeFigure } from '../model/kinds';
 
 /**
  * A set of selected canvas items. Elements, connections and domain groups live
@@ -141,6 +142,12 @@ export function mirrorGraphSelection(
 
 export interface ElementSeed {
   kind: ElementKind;
+  /**
+   * Nobody in this organisation owns it (ADR-0012 §3). What used to be the
+   * `externalSystem` kind, as the fact it always was — and the only way to say
+   * it on a container view, which has no bands to say it with.
+   */
+  outside?: true;
   position?: { x: number; y: number };
   zone?: Layer7Zone;
   /** The dashed group's id (ADR-0012 §6). */
@@ -403,10 +410,10 @@ export interface EditorState {
  */
 export const DEFAULT_NAME_KEYS: Record<ElementKind, StringKey> = {
   actor: 'newName.actor',
+  step: 'newName.step',
+  function: 'newName.function',
+  process: 'newName.process',
   application: 'newName.application',
-  externalSystem: 'newName.externalSystem',
-  inputChannel: 'newName.inputChannel',
-  managementTool: 'newName.managementTool',
   component: 'newName.component',
 };
 
@@ -423,26 +430,27 @@ export function defaultElementNames(
 ): Record<ElementKind, string> {
   return {
     actor: defaultElementName('actor', translate),
+    step: defaultElementName('step', translate),
+    function: defaultElementName('function', translate),
+    process: defaultElementName('process', translate),
     application: defaultElementName('application', translate),
-    externalSystem: defaultElementName('externalSystem', translate),
-    inputChannel: defaultElementName('inputChannel', translate),
-    managementTool: defaultElementName('managementTool', translate),
     component: defaultElementName('component', translate),
   };
 }
 
 /**
- * UX defaults only (the DB default is `true` across the board): elements we
- * operate default to managed; actors, external systems and input channels are
- * outside Lionsville's operational scope by definition, so they start
- * unmanaged and never produce false "unlinked" coverage warnings.
+ * UX defaults only (the stored default is `true` across the board): things we
+ * operate default to managed, and the ones nobody here operates start unmanaged
+ * so they never produce a false "unlinked" coverage warning. An actor is a
+ * person or a team; the business kinds are responsibilities and journeys, which
+ * nobody runs a backup of.
  */
 const DEFAULT_MANAGED: Record<ElementKind, boolean> = {
   actor: false,
+  step: false,
+  function: false,
+  process: false,
   application: true,
-  externalSystem: false,
-  inputChannel: false,
-  managementTool: true,
   component: true,
 };
 
@@ -577,6 +585,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const element: DesignElement = {
           id,
           kind: seed.kind,
+          ...(seed.outside ? { outside: seed.outside } : {}),
           name,
           lifecycle: 'live',
           isManaged: DEFAULT_MANAGED[seed.kind],
@@ -623,7 +632,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const element = model.elements.find((e) => e.id === id);
         const placement = placedNodes(diagram).find((p) => p.id === id);
         if (!element || !placement) return;
-        const next = placementForKind(placement, kind, diagram);
+        const next = placementForKind(placement, { kind, outside: element.outside }, diagram);
         dispatch(transaction([
           { type: 'element.update', id, patch: { kind } },
           placeOn(diagram.id, [next]),
@@ -645,8 +654,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           const element = elementsById.get(move.id);
           if (element) {
             rects.set(move.id, {
-              before: placementRect(element.kind, placement),
-              after: placementRect(element.kind, { ...placement, x: move.x, y: move.y }),
+              before: placementRect(nodeFigure(element, placement.zone), placement),
+              after: placementRect(
+                nodeFigure(element, move.zone ?? placement.zone),
+                { ...placement, x: move.x, y: move.y },
+              ),
             });
           }
           placements.push({
@@ -1108,7 +1120,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         for (const placement of placedNodes(diagram)) {
           const element = elementsById.get(placement.id);
           if (!element || !placement.zone || placement.zone === 'landscape') continue;
-          const moved = clampPlacementIntoZone(placement, element.kind, next);
+          const moved = clampPlacementIntoZone(placement, nodeFigure(element, placement.zone), next);
           if (moved) placements.push(moved);
         }
         dispatch(transaction([
@@ -1283,19 +1295,23 @@ function seedPlacement(
   elementId: ElementId,
 ): PlacedNode {
   if (diagram.kind === 'layer7') {
-    const zone = seed.zone ?? HOME_ZONE[seed.kind];
+    // A seed that names no band goes to the home of what it would be drawn as
+    // where nothing has been said — which for an application is the landscape,
+    // and for one nobody here owns is the external band.
+    const zone = seed.zone ?? HOME_ZONE[nodeFigure(seed)];
+    const figure = nodeFigure(seed, zone);
     const position =
       seed.position ??
       defaultZonePosition(
         zone,
-        seed.kind,
+        figure,
         placedNodes(diagram).filter((p) => (p.zone ?? 'landscape') === zone).length,
         diagram.geometry,
       );
     return { id: elementId, zone, group: seed.group, ...position };
   }
   const position =
-    seed.position ?? defaultContainerPosition(seed.kind, diagram.members.length);
+    seed.position ?? defaultContainerPosition(nodeFigure(seed), diagram.members.length);
   return { id: elementId, ...position };
 }
 

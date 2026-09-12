@@ -65,7 +65,7 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
       >
         {element.name}
       </Typography>
-      <NodeDescription kind="externalSystem" text={element.description} height={height} />
+      <NodeDescription figure="externalSystem" text={element.description} height={height} />
     </NodeShell>
   );
 });

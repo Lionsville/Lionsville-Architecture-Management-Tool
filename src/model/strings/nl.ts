@@ -11,11 +11,12 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
 
   'kind.actor': 'Actor',
+  'kind.step': 'Stap',
+  'kind.function': 'Functie',
+  'kind.process': 'Proces',
   'kind.application': 'Applicatie',
   'kind.component': 'Component',
-  'kind.externalSystem': 'Extern systeem',
-  'kind.inputChannel': 'Invoerkanaal',
-  'kind.managementTool': 'Beheertool',
+  'placement.notOnACanvas': 'Een {kind} wordt niet op dit soort weergave getekend.',
 
   'relation.flow': 'Koppeling',
   'relation.supports': 'Ondersteunt',
@@ -23,6 +24,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'relation.realises': 'Realiseert',
   'relation.assigned': 'Toegewezen aan',
   'relation.notInThisFormat': 'Een relatie van het type {type} kan nog niet in dit bestandsformaat worden opgeslagen. Alleen koppelingen wel.',
+  'element.notInThisFormat': 'Een {kind} kan nog niet in dit bestandsformaat worden opgeslagen. Het houdt applicaties, componenten en actoren.',
 
   'zone.actors': 'ACTOREN',
   'zone.inputChannels': 'INVOERKANALEN',

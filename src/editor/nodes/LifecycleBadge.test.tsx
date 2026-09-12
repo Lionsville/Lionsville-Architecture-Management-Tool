@@ -13,7 +13,9 @@ import { InputChannelNode } from './InputChannelNode';
 import { LifecycleBadge } from './LifecycleBadge';
 import { ManagementToolNode } from './ManagementToolNode';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
-import type { ElementKind, Lifecycle } from '../../model/types';
+import type { Lifecycle } from '../../model/types';
+import { FIGURE_MEANS } from '../../model/kinds';
+import type { NodeFigure } from '../../model/kinds';
 import type { ElementNodeProps } from './nodeData';
 import { testResizeLimits } from './nodeTestData';
 import { t } from '../../i18n/strings';
@@ -65,16 +67,19 @@ describe('LifecycleBadge', () => {
   );
 });
 
-// --- Badge across every node kind + the boundary variant --------------------
+// --- Badge across every node figure + the boundary variant ------------------
 
 function props(
-  kind: ElementNodeProps['type'],
+  type: ElementNodeProps['type'],
   lifecycle: Lifecycle,
   showLifecycle: boolean,
 ): ElementNodeProps {
+  // The boundary is the one node type that is not a figure; every other one is,
+  // and the element beneath it is what that figure means (ADR-0012 §4).
+  const figure: NodeFigure = type === 'applicationBoundary' ? 'application' : (type as NodeFigure);
   return {
     id: 'e1',
-    type: kind,
+    type,
     selected: false,
     dragging: false,
     zIndex: 0,
@@ -86,16 +91,14 @@ function props(
     data: {
       element: {
         id: 'e1',
-        kind: kind === 'applicationBoundary' ? 'application' : kind,
+        ...FIGURE_MEANS[figure],
         name: 'Example',
         lifecycle,
         isManaged: false,
         aspects: {},
       },
       placement: { id: 'e1', zone: 'landscape', x: 0, y: 0 },
-      resizeLimits: testResizeLimits(
-        (kind === 'applicationBoundary' ? 'application' : kind) as ElementKind,
-      ),
+      resizeLimits: testResizeLimits(figure),
       readOnly: false,
       aspectConfig: [],
       showLifecycle,

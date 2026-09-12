@@ -7,12 +7,13 @@ import type {
   DesignDiagram,
   DesignElement,
   DesignModel,
-  ElementKind,
   Point,
   Rect,
   ResizableZone,
 } from '../model/types';
 import { placedNodes, placementSize } from '../model/placement';
+import { nodeFigure } from '../model/kinds';
+import type { NodeFigure } from '../model/kinds';
 import { CANVAS_SIZE_LIMITS, LAYER7_CANVAS, zoneRect, zoneSizeLimits, zoneSizes } from '../model/zones';
 import {
   bandTargets,
@@ -95,10 +96,19 @@ function segmentCrossings(a: Point[], b: Point[]): number {
  * rewrite.
  */
 
-function elt(id: string, kind: ElementKind, extra: Partial<DesignElement> = {}): DesignElement {
+/**
+ * A landscape box, named by what the board DRAWS it as.
+ *
+ * Three of those names stopped being kinds at ADR-0012 §4 — a channel and a
+ * management tool are an application in a band, and a system from outside is
+ * one nobody here owns — and the layout is about the box, so the fixture keeps
+ * saying the box's word and translates it here.
+ */
+function elt(id: string, figure: NodeFigure, extra: Partial<DesignElement> = {}): DesignElement {
   return {
     id,
-    kind,
+    kind: figure === 'actor' || figure === 'component' ? figure : 'application',
+    ...(figure === 'externalSystem' ? { outside: true as const } : {}),
     name: id,
     lifecycle: 'live',
     isManaged: true,
@@ -152,14 +162,14 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
 
     // Every member sits inside its group's rect (ELK padding keeps them clear
     // of the border; the rect and members share the same centring offset).
-    const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
+    const figureOf = new Map(model.elements.map((e) => [e.id, e]));
     const rectByGroup = new Map(result.domainGroups!.map((g) => [g.id, g]));
     for (const placement of result.placements) {
       const groupName = placedNodes(diagram).find((p) => p.id === placement.id)
         ?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
-      const size = placementSize(kindById.get(placement.id)!, placement);
+      const size = placementSize(nodeFigure(figureOf.get(placement.id)!, placement.zone), placement);
       expect(placement.x).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
@@ -214,13 +224,13 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     expect(rectByGroup.has('Beta')).toBe(true);
 
     // Each member sits inside its group's rect (member-derived + padded bounds).
-    const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
+    const figureOf = new Map(model.elements.map((e) => [e.id, e]));
     for (const placement of result.placements) {
       const groupName = placedNodes(diagram).find((p) => p.id === placement.id)
         ?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
-      const size = placementSize(kindById.get(placement.id)!, placement);
+      const size = placementSize(nodeFigure(figureOf.get(placement.id)!, placement.zone), placement);
       expect(placement.x).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
@@ -531,7 +541,7 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
   };
   const rectOf = (result: Awaited<ReturnType<typeof tidyLayer7>>, id: string): Rect => {
     const p = result.placements.find((pp) => pp.id === id)!;
-    const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
+    const size = placementSize(nodeFigure(model.elements.find((e) => e.id === id)!, p.zone), p);
     return { x: p.x, y: p.y, width: size.width, height: size.height };
   };
 
@@ -599,10 +609,10 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
 describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-align)', () => {
   const posOf = (result: Awaited<ReturnType<typeof tidyLayer7>>, id: string) =>
     result.placements.find((p) => p.id === id)!;
-  const centreX = (p: PlacedNode, kind: ElementKind) =>
-    p.x + placementSize(kind, p).width / 2;
-  const centreY = (p: PlacedNode, kind: ElementKind) =>
-    p.y + placementSize(kind, p).height / 2;
+  const centreX = (p: PlacedNode, figure: NodeFigure) =>
+    p.x + placementSize(figure, p).width / 2;
+  const centreY = (p: PlacedNode, figure: NodeFigure) =>
+    p.y + placementSize(figure, p).height / 2;
 
   it('positions a band node above the app it connects to (not bunched at the left inset)', async () => {
     // Landscape appL → appR (ELK direction RIGHT puts appL left, appR right).
@@ -842,19 +852,19 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
 });
 
 describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
-  const kindById = (model: DesignModel) => new Map(model.elements.map((e) => [e.id, e.kind]));
+  const elementsOf = (model: DesignModel) => new Map(model.elements.map((e) => [e.id, e]));
   // Every member of `group` sits fully inside that group's returned rect.
   const membersInside = (
     result: Awaited<ReturnType<typeof tidyLayer7>>,
     diagram: DesignDiagram,
-    kinds: Map<string, ElementKind>,
+    elements: Map<string, DesignElement>,
   ) => {
     const rectByGroup = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
     for (const placement of result.placements) {
       const groupName = placedNodes(diagram).find((p) => p.id === placement.id)?.group;
       if (!groupName) continue;
       const rect = rectByGroup.get(groupName)!;
-      const size = placementSize(kinds.get(placement.id)!, placement);
+      const size = placementSize(nodeFigure(elements.get(placement.id)!, placement.zone), placement);
       expect(placement.x).toBeGreaterThanOrEqual(rect.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(rect.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(rect.x + rect.width + 0.5);
@@ -893,7 +903,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     // it were still constraining), with the members inside it.
     expect(core.width).toBeGreaterThan(200);
     expect(core.height).toBeGreaterThan(0);
-    membersInside(result, diagram, kindById(model));
+    membersInside(result, diagram, elementsOf(model));
   });
 
   it('sizes the box to enclose its members regardless of the seed box size', async () => {
@@ -928,7 +938,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     const core = result.domainGroups!.find((g) => g.id === 'Core')!;
     expect(core.width).toBeGreaterThan(20);
     expect(core.height).toBeGreaterThan(20);
-    membersInside(result, diagram, kindById(model));
+    membersInside(result, diagram, elementsOf(model));
   });
 
   it('gives two groups distinct non-overlapping boxes, each containing its members', async () => {
@@ -979,7 +989,7 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
       alpha.y + alpha.height > beta.y;
     expect(overlaps).toBe(false);
 
-    membersInside(result, diagram, kindById(model));
+    membersInside(result, diagram, elementsOf(model));
   });
 
   it('still auto-arranges loose (ungrouped) elements as before — no pinned boxes', async () => {
@@ -1091,7 +1101,7 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
   const rectFor = (result: Awaited<ReturnType<typeof tidyLayer7>>, id: string) => {
     const p = result.placements.find((pp) => pp.id === id)!;
     const el = model.elements.find((e) => e.id === id)!;
-    const size = placementSize(el.kind, p);
+    const size = placementSize(nodeFigure(el, p.zone), p);
     return { x: p.x, y: p.y, width: size.width, height: size.height };
   };
   const pathFor = (result: Awaited<ReturnType<typeof tidyLayer7>>, connId: string, sourceId: string, targetId: string) => {
@@ -1334,7 +1344,7 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
 
     const rectOf = (id: string): Rect => {
       const p = result.placements.find((pp) => pp.id === id)!;
-      const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
+      const size = placementSize(nodeFigure(model.elements.find((e) => e.id === id)!, p.zone), p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
     for (const conn of model.relations) {
@@ -1445,7 +1455,7 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
     const result = await tidyLayer7(model, model.diagrams[0]);
     const rectOf = (id: string): Rect => {
       const p = result.placements.find((pp) => pp.id === id)!;
-      const size = placementSize(model.elements.find((e) => e.id === id)!.kind, p);
+      const size = placementSize(nodeFigure(model.elements.find((e) => e.id === id)!, p.zone), p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
     const pathOf = (connId: string) => {
@@ -1565,9 +1575,9 @@ describe('tidyGroup — one group in place', () => {
     expect(box.y).toBe(200);
 
     // Members no longer overlap and every one sits inside the resized box.
-    const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
+    const figureOf = new Map(model.elements.map((e) => [e.id, e]));
     const rects = result.placements.map((p) => {
-      const size = placementSize(kindById.get(p.id)!, p);
+      const size = placementSize(nodeFigure(figureOf.get(p.id)!, p.zone), p);
       return rect(p.x, p.y, size.width, size.height);
     });
     expect(rectIntersectsRect(rects[0], rects[1], 0)).toBe(false);
@@ -1827,14 +1837,14 @@ describe('tidyLayer7 — pinGroups', () => {
     const result = await tidyLayer7(model, model.diagrams[0], options);
 
     const byName = new Map((result.domainGroups ?? []).map((g) => [g.id, g]));
-    const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
+    const figureOf = new Map(model.elements.map((e) => [e.id, e]));
     for (const placement of result.placements) {
       const groupName = placedNodes(model.diagrams[0]).find(
         (p) => p.id === placement.id,
       )?.group;
       if (!groupName) continue;
       const box = byName.get(groupName)!;
-      const size = placementSize(kindById.get(placement.id)!, placement);
+      const size = placementSize(nodeFigure(figureOf.get(placement.id)!, placement.zone), placement);
       expect(placement.x).toBeGreaterThanOrEqual(box.x - 0.5);
       expect(placement.y).toBeGreaterThanOrEqual(box.y - 0.5);
       expect(placement.x + size.width).toBeLessThanOrEqual(box.x + box.width + 0.5);
@@ -1846,10 +1856,10 @@ describe('tidyLayer7 — pinGroups', () => {
     const model = pinned();
     const result = await tidyLayer7(model, model.diagrams[0], options);
 
-    const kindById = new Map(model.elements.map((e) => [e.id, e.kind]));
+    const figureOf = new Map(model.elements.map((e) => [e.id, e]));
     const rects = ['a1', 'a2'].map((id) => {
       const p = result.placements.find((pl) => pl.id === id)!;
-      const size = placementSize(kindById.get(id)!, p);
+      const size = placementSize(nodeFigure(figureOf.get(id)!, p.zone), p);
       return rect(p.x, p.y, size.width, size.height);
     });
     expect(rectIntersectsRect(rects[0], rects[1], 0)).toBe(false);

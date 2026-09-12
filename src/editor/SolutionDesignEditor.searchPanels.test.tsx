@@ -246,14 +246,14 @@ describe('ElementPalette — search', () => {
   it('matches the Dutch label too, whatever the UI language is', () => {
     // An English UI used by a Dutch-speaking architect is the normal case here.
     renderEditor();
-    fireEvent.change(filter(), { target: { value: 'invoerkanaal' } });
-    expect(screen.getByText('Input channel')).toBeDefined();
+    fireEvent.change(filter(), { target: { value: 'applicatie' } });
+    expect(screen.getByText('Application')).toBeDefined();
   });
 
   it('matches the description, not only the name', () => {
     renderEditor();
-    fireEvent.change(filter(), { target: { value: 'outside' } });
-    expect(screen.getByText('External system')).toBeDefined();
+    fireEvent.change(filter(), { target: { value: 'buys' } });
+    expect(screen.getByText('Application')).toBeDefined();
     expect(screen.queryByText('Actor')).toBeNull();
   });
 

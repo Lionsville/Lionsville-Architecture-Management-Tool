@@ -20,6 +20,7 @@ import {
   placedNodes,
   placementSize,
 } from '../model/placement';
+import { nodeFigure } from '../model/kinds';
 import { canvasRect, clampCanvasSize, LAYER7_CANVAS, zoneRect, zoneSizes } from '../model/zones';
 import { layoutGraph, type ElkChild, type ElkEdgeSpec, type LayoutOptions } from './elkLayout';
 import { edgeLabelSize } from './edgeLabelSize';
@@ -331,7 +332,7 @@ export async function tidyLayer7(
   for (const p of landscape.placements) {
     const element = elementsById.get(p.id);
     if (!element) continue;
-    const size = placementSize(element.kind, p);
+    const size = placementSize(nodeFigure(element, p.zone), p);
     landscapePos.set(p.id, { x: p.x, y: p.y, width: size.width, height: size.height });
   }
   const actors = byZone.get('actors') ?? [];
@@ -477,12 +478,12 @@ function flowBand(
   const bandLength = direction === 'row' ? rect.width : rect.height;
   const fullSizeOf = (p: PlacedNode) => {
     const element = elementsById.get(p.id) as DesignElement;
-    const size = placementSize(element.kind, p);
+    const size = placementSize(nodeFigure(element, p.zone), p);
     return direction === 'row' ? size.width : size.height;
   };
   const crossAxis = (placement: PlacedNode, start: number): PlacedNode => {
     const element = elementsById.get(placement.id) as DesignElement;
-    const size = placementSize(element.kind, placement);
+    const size = placementSize(nodeFigure(element, placement.zone), placement);
     return direction === 'row'
       ? { ...placement, x: start, y: rect.y + (rect.height - size.height) / 2 }
       : { ...placement, x: rect.x + (rect.width - size.width) / 2, y: start };
@@ -609,7 +610,7 @@ async function layoutGroupInPlace(
 > {
   if (members.length === 0) return undefined;
   const sizeOf = (placement: PlacedNode) =>
-    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
+    placementSize(nodeFigure(elementsById.get(placement.id) as DesignElement, placement.zone), placement);
 
   const children: ElkChild[] = members.map((placement) => ({
     id: placement.id,
@@ -836,7 +837,7 @@ async function tidyLandscapePinned(
 }> {
   const rects = domainGroupRectMap(geometry?.groups);
   const sizeOf = (placement: PlacedNode) =>
-    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
+    placementSize(nodeFigure(elementsById.get(placement.id) as DesignElement, placement.zone), placement);
 
   const byGroup = new Map<string, PlacedNode[]>();
   const result: PlacedNode[] = [];
@@ -935,7 +936,7 @@ async function tidyLandscapeGroupsAsLeaves(
   canvas: { width: number; height: number };
 }> {
   const sizeOf = (placement: PlacedNode) =>
-    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
+    placementSize(nodeFigure(elementsById.get(placement.id) as DesignElement, placement.zone), placement);
   const rects = domainGroupRectMap(geometry?.groups);
 
   const byGroup = new Map<string, PlacedNode[]>();
@@ -1117,7 +1118,7 @@ function tidyLandscapeFullyPinned(
   }
   for (const placement of placements) {
     const size = placementSize(
-      (elementsById.get(placement.id) as DesignElement).kind,
+      nodeFigure(elementsById.get(placement.id) as DesignElement, placement.zone),
       placement,
     );
     maxX = Math.max(maxX, placement.x + size.width);
@@ -1191,7 +1192,7 @@ async function tidyLandscape(
   const loose: ElkChild[] = [];
   for (const placement of placements) {
     const element = elementsById.get(placement.id) as DesignElement;
-    const size = placementSize(element.kind, placement);
+    const size = placementSize(nodeFigure(element, placement.zone), placement);
     const child: ElkChild = { id: placement.id, ...size };
     if (placement.group) {
       const members = byGroup.get(placement.group) ?? [];
@@ -1257,7 +1258,7 @@ async function tidyLandscape(
     return b;
   };
   const sizeOf = (placement: PlacedNode) =>
-    placementSize((elementsById.get(placement.id) as DesignElement).kind, placement);
+    placementSize(nodeFigure(elementsById.get(placement.id) as DesignElement, placement.zone), placement);
 
   // Per-group member bounds in ELK's frame (pre-offset); loose nodes bound directly.
   // A group's box is member-derived (so a group still gets a box even when cross-
@@ -1393,7 +1394,7 @@ export async function tidyGroup(
   const members = placedNodes(diagram).filter((placement) => {
     const element = elementsById.get(placement.id);
     if (!element || (placement.zone ?? 'landscape') !== 'landscape') return false;
-    const size = placementSize(element.kind, placement);
+    const size = placementSize(nodeFigure(element, placement.zone), placement);
     const centre = { x: placement.x + size.width / 2, y: placement.y + size.height / 2 };
     return domainGroupForPoint(centre, groups) === groupId;
   });
@@ -1449,7 +1450,7 @@ export async function tidyContainer(
   for (const placement of placedNodes(diagram)) {
     const element = elementsById.get(placement.id);
     if (!element || element.id === appId) continue;
-    const child: ElkChild = { id: element.id, ...placementSize(element.kind, placement) };
+    const child: ElkChild = { id: element.id, ...placementSize(nodeFigure(element, placement.zone), placement) };
     if (element.kind === 'component' && element.parentId === appId) {
       components.push(child);
     } else {

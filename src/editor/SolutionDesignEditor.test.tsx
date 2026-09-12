@@ -309,7 +309,8 @@ function modelWithConnection(): DesignModel {
   const model = modelWithPlacement('d1');
   model.elements.push({
     id: 'b1',
-    kind: 'externalSystem',
+    kind: 'application',
+    outside: true,
     name: 'Carrier',
     lifecycle: 'live',
     isManaged: false,

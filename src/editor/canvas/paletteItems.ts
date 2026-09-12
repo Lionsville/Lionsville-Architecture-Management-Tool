@@ -1,5 +1,5 @@
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
-import type { ElementKind } from '../../model/types';
+import type { CanvasKind } from '../../model/placement';
 import { KIND_LABEL_KEYS } from '../../model/kinds';
 
 /**
@@ -13,8 +13,12 @@ import { KIND_LABEL_KEYS } from '../../model/kinds';
  * model imported the palette to find out.
  */
 
-/** A palette entry: every element kind, plus the layer7-only domain group. */
-export type PaletteKey = ElementKind | 'domainGroup';
+/**
+ * A palette entry: every kind a canvas can draw, plus the layer7-only domain
+ * group. Not every kind — a business kind is not placed on a board at all
+ * (`model/placement.canPlaceKind`), so there is no row for one to be offered in.
+ */
+export type PaletteKey = CanvasKind | 'domainGroup';
 
 export interface PaletteItem {
   key: PaletteKey;
@@ -39,21 +43,6 @@ export const PALETTE_ITEMS: Record<PaletteKey, PaletteItem> = {
     key: 'component',
     labelKey: KIND_LABEL_KEYS.component,
     descriptionKey: 'paletteDescription.component',
-  },
-  inputChannel: {
-    key: 'inputChannel',
-    labelKey: KIND_LABEL_KEYS.inputChannel,
-    descriptionKey: 'paletteDescription.inputChannel',
-  },
-  externalSystem: {
-    key: 'externalSystem',
-    labelKey: KIND_LABEL_KEYS.externalSystem,
-    descriptionKey: 'paletteDescription.externalSystem',
-  },
-  managementTool: {
-    key: 'managementTool',
-    labelKey: KIND_LABEL_KEYS.managementTool,
-    descriptionKey: 'paletteDescription.managementTool',
   },
   actor: {
     key: 'actor',
@@ -86,11 +75,17 @@ export interface PaletteSection {
 }
 
 /**
- * Groups in render order, rendered as quiet captions that never fold. Six rows
- * do not need collapsing; what the captions carry is which kinds the active
- * diagram type even offers, so a container diagram degrades to one row under
- * each of the three captions and still reads as deliberate rather than
- * truncated.
+ * Groups in render order, rendered as quiet captions that never fold. What the
+ * captions carry is which kinds the active diagram type even offers, so a
+ * container diagram degrades to one row under each caption and still reads as
+ * deliberate rather than truncated.
+ *
+ * The integration caption went with ADR-0012 §4. An input channel, an external
+ * system and a management tool were three rows that all added an application
+ * and differed only in which band it landed in — and the band is the board's to
+ * say, so the palette offers the thing and the board offers the place. Right-
+ * clicking inside a band and adding there is how a person still puts one
+ * straight into it.
  *
  * A group whose keys are all unavailable on the active diagram is not rendered.
  * Note `component` is not a Layer 7 kind — components require a parent
@@ -99,11 +94,6 @@ export interface PaletteSection {
  */
 export const PALETTE_SECTIONS: PaletteSection[] = [
   { id: 'systems', titleKey: 'palette.section.systems', keys: ['application', 'component'] },
-  {
-    id: 'integration',
-    titleKey: 'palette.section.integration',
-    keys: ['inputChannel', 'externalSystem', 'managementTool'],
-  },
   { id: 'people', titleKey: 'palette.section.people', keys: ['actor', 'domainGroup'] },
 ];
 

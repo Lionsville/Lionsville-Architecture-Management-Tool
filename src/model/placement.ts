@@ -9,8 +9,51 @@ import type {
   PlacedNode,
   Rect,
 } from './types';
+import type { NodeFigure } from './kinds';
 import { zoneRect, zoneSizes } from './zones';
 import type { BoardGeometry } from './zones';
+
+/**
+ * The kinds a canvas can draw — and it is the same three it always drew.
+ *
+ * A `layer7` board and a `container` board are geometry: a box has a position,
+ * a size and a band. The business kinds are not drawn that way at all
+ * (ADR-0012 §6) — a sheet is *laid out* from trees, order and depth, with no
+ * drag, no router and no geometry file — so putting one on a canvas would be
+ * asking for a coordinate for a thing whose place is decided by its parent.
+ *
+ * The actor is the exception and always was: it is a business kind by ADR-0012
+ * §4 and it has stood in the top band of every landscape this tool has drawn.
+ */
+export const CANVAS_KINDS: readonly ElementKind[] & readonly CanvasKind[] =
+  ['application', 'component', 'actor'];
+
+/** One of {@link CANVAS_KINDS} — narrower than a kind, where a canvas is meant. */
+export type CanvasKind = 'application' | 'component' | 'actor';
+
+/** Why a kind cannot go on a view. A key, as every refusal from `model/` is. */
+export type PlacementRefusal = 'placement.notOnACanvas';
+
+export type PlacementCheck = { ok: true } | { ok: false; reason: PlacementRefusal };
+
+/**
+ * May a thing of this kind be put on a view of this sort?
+ *
+ * A **value**, not a throw and not a silent drop: the palette asks it to decide
+ * what to offer, the agent asks it before minting a command, and both want a
+ * reason they can say out loud. A model that already holds a function on a
+ * landscape — a hand-edited file, a scope from a later build — is not made
+ * illegal by this; it draws as best it can and this refuses the next one.
+ */
+export function canPlaceKind(
+  kind: ElementKind,
+  on: DesignDiagram['kind'],
+): PlacementCheck {
+  if (on !== 'layer7' && on !== 'container') return { ok: true };
+  return CANVAS_KINDS.includes(kind)
+    ? { ok: true }
+    : { ok: false, reason: 'placement.notOnACanvas' };
+}
 
 /**
  * A view's members with where each ended up (ADR-0012 §6).
@@ -85,11 +128,17 @@ export function nodeGeometryOf(node: PlacedNode): NodeGeometry {
 }
 
 /**
- * Canonical node sizes per kind, in flow pixels. Cards are fixed-size by
- * design (the PVH/Akzo boards read as a grid of equal cards); placements may
- * still carry explicit width/height (e.g. container boundaries) which win.
+ * Canonical node sizes per figure, in flow pixels. Cards are fixed-size by
+ * design (the boards read as a grid of equal cards); placements may still carry
+ * explicit width/height (e.g. container boundaries) which win.
+ *
+ * Keyed by what the box IS DRAWN AS and not by what the element is (ADR-0012
+ * §4): a chip in the input-channel band is 160×56 whether or not anything has
+ * been said about who owns it, and the size follows the band the way the
+ * drawing does. {@link ../model/kinds.nodeFigure} is the one place that answers
+ * it; every caller here is handed the answer rather than re-deriving it.
  */
-export const NODE_SIZES: Record<ElementKind, { width: number; height: number }> = {
+export const NODE_SIZES: Record<NodeFigure, { width: number; height: number }> = {
   application: { width: 200, height: 130 },
   component: { width: 200, height: 120 },
   actor: { width: 150, height: 48 },
@@ -105,7 +154,7 @@ export const NODE_SIZES: Record<ElementKind, { width: number; height: number }> 
  * grow so a longer name or description fits.
  */
 export const BAND_NODE_MIN: Record<
-  Exclude<ElementKind, 'application' | 'component'>,
+  Exclude<NodeFigure, 'application' | 'component'>,
   { width: number; height: number }
 > = {
   actor: { width: 104, height: 40 },
@@ -121,8 +170,10 @@ export const BAND_NODE_MIN: Record<
 export const NODE_MAX_SIZE = { width: 480, height: 360 };
 
 /** Smallest a node may be dragged: canonical for cards, a little under for band chips. */
-export function nodeMinSize(kind: ElementKind): { width: number; height: number } {
-  return kind === 'application' || kind === 'component' ? NODE_SIZES[kind] : BAND_NODE_MIN[kind];
+export function nodeMinSize(figure: NodeFigure): { width: number; height: number } {
+  return figure === 'application' || figure === 'component'
+    ? NODE_SIZES[figure]
+    : BAND_NODE_MIN[figure];
 }
 
 /**
@@ -137,13 +188,13 @@ export function nodeMinSize(kind: ElementKind): { width: number; height: number 
  * may be narrower (120) than an external system's floor (140).
  */
 export function nodeMaxSize(
-  kind: ElementKind,
+  figure: NodeFigure,
   zone: Layer7Zone | undefined,
   geometry?: BoardGeometry,
 ): { width: number; height: number } {
   if (zone === undefined || zone === 'landscape') return NODE_MAX_SIZE;
   const band = zoneSizes(geometry)[zone];
-  const min = nodeMinSize(kind);
+  const min = nodeMinSize(figure);
   const acrossHeight = zone === 'actors' || zone === 'management';
   return {
     width: acrossHeight ? NODE_MAX_SIZE.width : Math.max(Math.min(NODE_MAX_SIZE.width, band), min.width),
@@ -154,11 +205,11 @@ export function nodeMaxSize(
 }
 
 /**
- * Description type scale per kind. The line clamp is derived from the line
+ * Description type scale per figure. The line clamp is derived from the line
  * height, so both live here: read from two places, a font-size change drifts
  * the clamp without anything failing.
  */
-export const DESCRIPTION_TYPE: Record<ElementKind, { fontSize: number; lineHeight: number }> = {
+export const DESCRIPTION_TYPE: Record<NodeFigure, { fontSize: number; lineHeight: number }> = {
   application: { fontSize: 10, lineHeight: 1.3 },
   component: { fontSize: 9.5, lineHeight: 1.3 },
   externalSystem: { fontSize: 9.5, lineHeight: 1.3 },
@@ -173,10 +224,10 @@ export const DESCRIPTION_TYPE: Record<ElementKind, { fontSize: number; lineHeigh
  * growing a box actually reveals more of a longer description instead of
  * ellipsizing at two lines forever.
  */
-export function descriptionLineClamp(kind: ElementKind, height: number | undefined): number {
-  const canonical = NODE_SIZES[kind].height;
+export function descriptionLineClamp(figure: NodeFigure, height: number | undefined): number {
+  const canonical = NODE_SIZES[figure].height;
   if (height === undefined || height <= canonical) return 2;
-  const type = DESCRIPTION_TYPE[kind];
+  const type = DESCRIPTION_TYPE[figure];
   return 2 + Math.floor((height - canonical) / (type.fontSize * type.lineHeight));
 }
 
@@ -188,15 +239,15 @@ export function descriptionLineClamp(kind: ElementKind, height: number | undefin
  */
 export function clampPlacementIntoZone(
   placement: PlacedNode,
-  kind: ElementKind,
+  figure: NodeFigure,
   geometry?: BoardGeometry,
 ): PlacedNode | undefined {
   if (placement.zone === undefined || placement.zone === 'landscape') return undefined;
   const band = zoneRect(placement.zone, geometry);
-  const max = nodeMaxSize(kind, placement.zone, geometry);
+  const max = nodeMaxSize(figure, placement.zone, geometry);
   const width = placement.width === undefined ? undefined : Math.min(placement.width, max.width);
   const height = placement.height === undefined ? undefined : Math.min(placement.height, max.height);
-  const size = placementSize(kind, { width, height });
+  const size = placementSize(figure, { width, height });
   const clamp = (value: number, min: number, span: number) =>
     Math.min(Math.max(value, min), Math.max(min, min + span));
   const x = clamp(placement.x, band.x, band.width - size.width);
@@ -210,17 +261,17 @@ export function clampPlacementIntoZone(
 }
 
 export function placementSize(
-  kind: ElementKind,
+  figure: NodeFigure,
   placement?: Pick<NodeGeometry, 'width' | 'height'>,
 ): { width: number; height: number } {
   return {
-    width: placement?.width ?? NODE_SIZES[kind].width,
-    height: placement?.height ?? NODE_SIZES[kind].height,
+    width: placement?.width ?? NODE_SIZES[figure].width,
+    height: placement?.height ?? NODE_SIZES[figure].height,
   };
 }
 
-export function placementRect(kind: ElementKind, placement: Omit<NodeGeometry, 'id'>): Rect {
-  const size = placementSize(kind, placement);
+export function placementRect(figure: NodeFigure, placement: Omit<NodeGeometry, 'id'>): Rect {
+  const size = placementSize(figure, placement);
   return { x: placement.x, y: placement.y, width: size.width, height: size.height };
 }
 
@@ -279,11 +330,11 @@ export function rectsIntersect(a: Rect, b: Rect): boolean {
  */
 export function cascadeSlot(
   area: Rect,
-  kind: ElementKind,
+  figure: NodeFigure,
   index: number,
   inset: { x: number; y: number } = { x: ZONE_INSET, y: ZONE_INSET },
 ): { x: number; y: number } {
-  const size = NODE_SIZES[kind];
+  const size = NODE_SIZES[figure];
   const usableWidth = Math.max(area.width - inset.x * 2, size.width);
   const perRow = Math.max(1, Math.floor(usableWidth / (size.width + CASCADE_GAP_X)));
   const row = Math.floor(index / perRow);
@@ -301,11 +352,11 @@ export function cascadeSlot(
  */
 export function defaultZonePosition(
   zone: Layer7Zone,
-  kind: ElementKind,
+  figure: NodeFigure,
   existingInZone: number,
   geometry?: BoardGeometry,
 ): { x: number; y: number } {
-  return cascadeSlot(zoneRect(zone, geometry), kind, existingInZone);
+  return cascadeSlot(zoneRect(zone, geometry), figure, existingInZone);
 }
 
 /**
@@ -319,27 +370,27 @@ export function defaultZonePosition(
  */
 export function freeSlotIn(
   area: Rect,
-  kind: ElementKind,
+  figure: NodeFigure,
   occupied: readonly Rect[],
   inset?: { x: number; y: number },
 ): { x: number; y: number } {
-  const size = NODE_SIZES[kind];
+  const size = NODE_SIZES[figure];
   for (let index = 0; index <= occupied.length; index += 1) {
-    const slot = cascadeSlot(area, kind, index, inset);
+    const slot = cascadeSlot(area, figure, index, inset);
     const candidate: Rect = { ...slot, width: size.width, height: size.height };
     if (!occupied.some((rect) => rectsIntersect(candidate, rect))) return slot;
   }
-  return cascadeSlot(area, kind, occupied.length, inset);
+  return cascadeSlot(area, figure, occupied.length, inset);
 }
 
 /** {@link freeSlotIn} for a Layer 7 band. */
 export function freeZonePosition(
   zone: Layer7Zone,
-  kind: ElementKind,
+  figure: NodeFigure,
   occupied: readonly Rect[],
   geometry?: BoardGeometry,
 ): { x: number; y: number } {
-  return freeSlotIn(zoneRect(zone, geometry), kind, occupied);
+  return freeSlotIn(zoneRect(zone, geometry), figure, occupied);
 }
 
 /**
@@ -348,11 +399,11 @@ export function freeZonePosition(
  * column to the left of it.
  */
 export function defaultContainerPosition(
-  kind: ElementKind,
+  figure: NodeFigure,
   existingOfKindGroup: number,
 ): { x: number; y: number } {
-  const size = NODE_SIZES[kind];
-  if (kind === 'component') {
+  const size = NODE_SIZES[figure];
+  if (figure === 'component') {
     const perRow = 3;
     const row = Math.floor(existingOfKindGroup / perRow);
     const col = existingOfKindGroup % perRow;

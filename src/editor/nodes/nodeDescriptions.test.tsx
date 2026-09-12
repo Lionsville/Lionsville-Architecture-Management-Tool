@@ -6,7 +6,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { ActorNode } from './ActorNode';
 import { InputChannelNode } from './InputChannelNode';
 import { ManagementToolNode } from './ManagementToolNode';
-import type { ElementKind } from '../../model/types';
+import type { NodeFigure } from '../../model/kinds';
+import { HOME_ZONE } from '../../model/zones';
 import type { ElementNodeProps } from './nodeData';
 import { testResizeLimits } from './nodeTestData';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
@@ -24,10 +25,15 @@ beforeAll(() => {
 });
 afterEach(() => cleanup());
 
-function props(kind: ElementKind, description?: string): ElementNodeProps {
+/**
+ * A node's props, by the FIGURE it draws — which is no longer the same thing as
+ * its kind (ADR-0012 §4): a management tool is an application in the bottom
+ * band, so the band is what these say.
+ */
+function props(figure: NodeFigure, description?: string): ElementNodeProps {
   return {
     id: 'e1',
-    type: kind,
+    type: figure,
     selected: false,
     dragging: false,
     zIndex: 0,
@@ -39,16 +45,16 @@ function props(kind: ElementKind, description?: string): ElementNodeProps {
     data: {
       element: {
         id: 'e1',
-        kind,
+        kind: figure === 'actor' ? 'actor' : 'application',
         name: 'Example',
         description,
-        vendor: kind === 'managementTool' ? 'ExampleCo' : undefined,
+        vendor: figure === 'managementTool' ? 'ExampleCo' : undefined,
         lifecycle: 'live',
         isManaged: false,
         aspects: {},
       },
-      placement: { id: 'e1', zone: 'landscape', x: 0, y: 0 },
-      resizeLimits: testResizeLimits(kind),
+      placement: { id: 'e1', zone: HOME_ZONE[figure], x: 0, y: 0 },
+      resizeLimits: testResizeLimits(figure),
       readOnly: false,
       aspectConfig: [],
     },
@@ -66,19 +72,19 @@ function renderNode(node: React.ReactNode) {
 }
 
 const CASES = [
-  { name: 'ActorNode', Node: ActorNode, kind: 'actor' as const },
-  { name: 'InputChannelNode', Node: InputChannelNode, kind: 'inputChannel' as const },
-  { name: 'ManagementToolNode', Node: ManagementToolNode, kind: 'managementTool' as const },
+  { name: 'ActorNode', Node: ActorNode, figure: 'actor' as const },
+  { name: 'InputChannelNode', Node: InputChannelNode, figure: 'inputChannel' as const },
+  { name: 'ManagementToolNode', Node: ManagementToolNode, figure: 'managementTool' as const },
 ];
 
-describe.each(CASES)('$name description rendering', ({ Node, kind }) => {
+describe.each(CASES)('$name description rendering', ({ Node, figure }) => {
   it('renders the description when the element has one', () => {
-    const { getByText } = renderNode(<Node {...props(kind, 'Handles the thing.')} />);
+    const { getByText } = renderNode(<Node {...props(figure, 'Handles the thing.')} />);
     expect(getByText('Handles the thing.')).toBeDefined();
   });
 
   it('renders name-only when there is no description', () => {
-    const { getByText, queryByText } = renderNode(<Node {...props(kind, undefined)} />);
+    const { getByText, queryByText } = renderNode(<Node {...props(figure, undefined)} />);
     expect(getByText('Example')).toBeDefined();
     expect(queryByText('Handles the thing.')).toBeNull();
   });
@@ -103,9 +109,9 @@ const PAGE = [
   '- [x] decided',
 ].join('\n');
 
-describe.each(CASES)('$name with a documented element', ({ Node, kind }) => {
+describe.each(CASES)('$name with a documented element', ({ Node, figure }) => {
   it('draws only the short description', () => {
-    const { getByText, container } = renderNode(<Node {...props(kind, PAGE)} />);
+    const { getByText, container } = renderNode(<Node {...props(figure, PAGE)} />);
     expect(getByText('Handles the thing.')).toBeDefined();
     expect(container.textContent).not.toContain('Interfaces');
     expect(container.textContent).not.toContain('|');

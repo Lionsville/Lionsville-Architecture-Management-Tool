@@ -107,8 +107,15 @@ export interface ElementInspectorProps {
   layout?: 'tabs' | 'stacked';
 }
 
+/**
+ * Who sells it — asked of an application and of nothing else.
+ *
+ * It used to be asked of three kinds, and the other two turned out to BE
+ * applications (ADR-0012 §4): a management tool has a vendor because it is a
+ * piece of software somebody bought, and so does a system from outside.
+ */
 function showVendor(kind: DesignElement['kind']): boolean {
-  return kind === 'application' || kind === 'managementTool' || kind === 'externalSystem';
+  return kind === 'application';
 }
 
 function showTechnology(kind: DesignElement['kind']): boolean {

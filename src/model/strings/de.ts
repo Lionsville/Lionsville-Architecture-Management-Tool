@@ -11,11 +11,12 @@ import type { EN } from './en'
 export const DE: Record<keyof typeof EN, string> = {
 
   'kind.actor': 'Akteur',
+  'kind.step': 'Schritt',
+  'kind.function': 'Funktion',
+  'kind.process': 'Prozess',
   'kind.application': 'Anwendung',
   'kind.component': 'Komponente',
-  'kind.externalSystem': 'Externes System',
-  'kind.inputChannel': 'Eingabekanal',
-  'kind.managementTool': 'Verwaltungswerkzeug',
+  'placement.notOnACanvas': 'Ein {kind} wird auf dieser Art von Ansicht nicht gezeichnet.',
 
   'relation.flow': 'Verbindung',
   'relation.supports': 'Unterstützt',
@@ -23,6 +24,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'relation.realises': 'Realisiert',
   'relation.assigned': 'Zugewiesen an',
   'relation.notInThisFormat': 'Eine Relation vom Typ {type} kann in diesem Dateiformat noch nicht gespeichert werden. Nur Verbindungen.',
+  'element.notInThisFormat': 'Ein {kind} kann in diesem Dateiformat noch nicht gespeichert werden. Es hält Anwendungen, Komponenten und Akteure.',
 
   'zone.actors': 'AKTEURE',
   'zone.inputChannels': 'EINGABEKANÄLE',

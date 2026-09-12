@@ -1,7 +1,7 @@
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
+import type { NodeFigure } from './kinds';
 import type {
   Geometry,
-  ElementKind,
   Layer7Zone,
   Point,
   Rect,
@@ -147,8 +147,17 @@ export function zoneMenuLabel(zone: Layer7Zone, translate: Translate = DEFAULT_T
   return translate(ZONE_MENU_LABEL_KEYS[zone]);
 }
 
-/** The default home zone the palette places each element kind into. */
-export const HOME_ZONE: Record<ElementKind, Layer7Zone> = {
+/**
+ * The band each figure belongs in.
+ *
+ * Read both ways since ADR-0012 §4. Forwards it is where the palette drops a
+ * new box and where a kind change moves one. Backwards it is the whole reason
+ * two kinds could be retired: a card's band is what makes it a channel or a
+ * management tool, so this table and {@link ../model/kinds.nodeFigure} are the
+ * two directions of one fact and have to keep agreeing — `zones.test.ts` says
+ * so out loud.
+ */
+export const HOME_ZONE: Record<NodeFigure, Layer7Zone> = {
   actor: 'actors',
   application: 'landscape',
   externalSystem: 'externalSystems',

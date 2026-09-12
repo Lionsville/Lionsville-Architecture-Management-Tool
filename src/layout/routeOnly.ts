@@ -9,6 +9,7 @@ import type {
   Rect,
 } from '../model/types';
 import { placedNodes, placementSize } from '../model/placement';
+import { nodeFigure } from '../model/kinds';
 import { edgeRoutesOf, routeSides } from '../model/routes';
 import { edgeLabelSize } from './edgeLabelSize';
 import { labelSpotFor, rectCentre, rectContainsPoint } from './routing';
@@ -115,7 +116,7 @@ export async function routeDiagramEdges(
   for (const placement of placedNodes(diagram)) {
     const element = elementsById.get(placement.id);
     if (!element) continue;
-    const size = placementSize(element.kind, placement);
+    const size = placementSize(nodeFigure(element, placement.zone), placement);
     rectById.set(placement.id, {
       x: placement.x,
       y: placement.y,

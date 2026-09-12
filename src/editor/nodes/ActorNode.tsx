@@ -126,7 +126,7 @@ export const ActorNode = memo(function ActorNode({ data, selected, height }: Ele
         </Typography>
       </Box>
       {hasDescription && (
-        <NodeDescription kind="actor" text={description} height={height} />
+        <NodeDescription figure="actor" text={description} height={height} />
       )}
     </NodeShell>
   );

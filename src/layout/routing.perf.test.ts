@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { routeWithLibavoidInProcess } from './libavoidRouter'
 import type { RouterConnection, RouterInput, RouterNode } from './libavoidRouter'
 import { placedNodes, placementSize } from '../model/placement'
+import { nodeFigure } from '../model/kinds';
 import { measureAsync } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 import type { DesignElement, DomainGroupRect } from '../model/types'
@@ -29,7 +30,7 @@ function inputFor(size: 'small' | 'large'): RouterInput {
   for (const placement of placedNodes(landscape)) {
     const element = byId.get(placement.id) as DesignElement | undefined
     if (!element) continue
-    const size = placementSize(element.kind, placement)
+    const size = placementSize(nodeFigure(element, placement.zone), placement)
     nodes.push({
       id: placement.id,
       rect: { x: placement.x, y: placement.y, width: size.width, height: size.height },

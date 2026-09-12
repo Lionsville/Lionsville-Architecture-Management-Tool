@@ -19,7 +19,7 @@ const link = (id: string, sourceId: string, targetId: string): Relation =>
 
 /**
  * Crews (with two components) talks to Reisinfo (another application, through one
- * of ITS components) and to a standalone external system.
+ * of ITS components) and to a standalone system nobody here owns.
  */
 function model(over: Partial<HostModel> = {}): HostModel {
   return {
@@ -31,7 +31,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
       el('crews-ui', 'component', { parentId: 'crews' }),
       el('reisinfo', 'application'),
       el('reisinfo-api', 'component', { parentId: 'reisinfo' }),
-      el('extern', 'externalSystem'),
+      el('extern', 'application', { outside: true }),
       el('losstaand', 'application'),
     ],
     relations: [

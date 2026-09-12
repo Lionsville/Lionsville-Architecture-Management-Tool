@@ -67,7 +67,7 @@ export const ManagementToolNode = memo(function ManagementToolNode({
           </Typography>
         )}
         {shortDescription(element.description) && (
-          <NodeDescription kind="managementTool" text={element.description} height={height} />
+          <NodeDescription figure="managementTool" text={element.description} height={height} />
         )}
       </Box>
     </NodeShell>

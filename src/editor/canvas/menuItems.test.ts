@@ -125,11 +125,11 @@ describe('menuItemsFor — node', () => {
   it('Icon is offered for every kind — the old three-kind gate is gone', () => {
     for (const kind of [
       'application',
-      'externalSystem',
-      'managementTool',
       'actor',
-      'inputChannel',
       'component',
+      'function',
+      'process',
+      'step',
     ] as const) {
       expect(ids(menuItemsFor(NODE, ctx({ element: app({ kind }) })))).toContain('icon');
     }
@@ -347,8 +347,8 @@ describe('menuItemsFor — pane', () => {
   });
 
   it('Add here lists exactly the kinds the palette offers, by their palette labels', () => {
-    const add = byId(menuItemsFor(PANE, ctx({ allowedKinds: ['component', 'actor', 'externalSystem'] })), 'add-here');
-    expect(add.children?.map((c) => c.label)).toEqual(['Component', 'Actor', 'External system']);
+    const add = byId(menuItemsFor(PANE, ctx({ allowedKinds: ['component', 'actor', 'application'] })), 'add-here');
+    expect(add.children?.map((c) => c.label)).toEqual(['Component', 'Actor', 'Application']);
     expect(add.children?.[0]).toMatchObject({ action: 'add-here', args: { kind: 'component' } });
   });
 
@@ -575,11 +575,11 @@ describe('menuItemsFor — change kind', () => {
   it('lists the kinds the caller says are reachable', () => {
     const items = menuItemsFor(
       NODE,
-      ctx({ element: { ...app(), changeableKinds: ['actor', 'externalSystem'] } }),
+      ctx({ element: { ...app(), changeableKinds: ['actor', 'application'] } }),
     );
     const entry = byId(items, 'change-kind');
     expect(entry.disabled).toBeUndefined();
-    expect(entry.children?.map((c) => c.label)).toEqual(['Actor', 'External system']);
+    expect(entry.children?.map((c) => c.label)).toEqual(['Actor', 'Application']);
     expect(entry.children?.[0].args).toEqual({ newKind: 'actor' });
   });
 

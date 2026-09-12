@@ -14,6 +14,7 @@ import { placedNodes,
   placementSize,
   unionRects,
 } from '../model/placement';
+import { nodeFigure } from '../model/kinds';
 import { edgeRoutesOf, isAutoRoute, routeSides, routeSource } from '../model/routes';
 import { relationLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
 
@@ -99,12 +100,15 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     if (args.asOfDay && isGoneOn(element, args.asOfDay)) continue;
     const isBoundary =
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
+    const figure = nodeFigure(element, placement.zone);
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
-      : placementRect(element.kind, placement);
+      : placementRect(figure, placement);
     nodes.push({
       id: element.id,
-      type: isBoundary ? 'applicationBoundary' : element.kind,
+      // What a box looks like is the figure, not the kind (ADR-0012 §4): the
+      // band a card sits in is what makes it a channel or a management tool.
+      type: isBoundary ? 'applicationBoundary' : figure,
       position: { x: rect.x, y: rect.y },
       width: rect.width,
       height: rect.height,
@@ -120,8 +124,8 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
         hasContainerDiagram:
           element.kind === 'application' && containerDiagramApps.has(element.id),
         resizeLimits: {
-          min: nodeMinSize(element.kind),
-          max: nodeMaxSize(element.kind, placement.zone, args.diagram.geometry),
+          min: nodeMinSize(figure),
+          max: nodeMaxSize(figure, placement.zone, args.diagram.geometry),
         },
         showLifecycle: args.showLifecycle ?? true,
         phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
@@ -187,7 +191,9 @@ export function buildEdges(
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
     rectById.set(
       element.id,
-      isBoundary ? boundaryRect(args.diagram, elementsById) : placementRect(element.kind, placement),
+      isBoundary
+        ? boundaryRect(args.diagram, elementsById)
+        : placementRect(nodeFigure(element, placement.zone), placement),
     );
   }
   // Resolve what each edge DRAWS first, because the slot fan below must only see
@@ -311,13 +317,13 @@ export function buildEdges(
   return keepingUnchanged(edges, previous, sameEdge);
 }
 
-/** Sizes used by ELK and the boundary: explicit placement size or kind default. */
+/** Sizes used by ELK and the boundary: explicit placement size or the figure's default. */
 export function nodeSizeOf(element: DesignElement, diagram: DesignDiagram): {
   width: number;
   height: number;
 } {
   const placement = placedNodes(diagram).find((p) => p.id === element.id);
-  return placementSize(element.kind, placement);
+  return placementSize(nodeFigure(element, placement?.zone), placement);
 }
 
 // --- keeping the objects that did not change ---------------------------------

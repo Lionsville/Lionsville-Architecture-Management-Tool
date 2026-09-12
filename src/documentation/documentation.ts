@@ -261,14 +261,21 @@ export function linkElementRefs(
 
 // --- the page's neighbours -----------------------------------------------------
 
-/** The order the page lists kinds in: what a reader most often documents first. */
+/**
+ * The order the page lists kinds in: what a reader most often documents first.
+ *
+ * Three of the seven rows were the same application in different bands until
+ * ADR-0012 §4, and the business kinds took their place — a landscape has none
+ * of those on it, and a group with nothing in it is left out, so the list is
+ * the same page it was for a landscape and grows one when a sheet has one.
+ */
 const KIND_ORDER: readonly ElementKind[] = [
   'application',
   'component',
-  'externalSystem',
-  'inputChannel',
-  'managementTool',
   'actor',
+  'function',
+  'process',
+  'step',
 ];
 
 export interface DocumentedGroup {

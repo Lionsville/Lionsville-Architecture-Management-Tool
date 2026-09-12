@@ -63,7 +63,7 @@ export const InputChannelNode = memo(function InputChannelNode({
         </Typography>
       </Box>
       {hasDescription && (
-        <NodeDescription kind="inputChannel" text={description} height={height} />
+        <NodeDescription figure="inputChannel" text={description} height={height} />
       )}
     </NodeShell>
   );

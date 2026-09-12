@@ -8,7 +8,8 @@ import { InputChannelNode } from './InputChannelNode';
 import { ManagementToolNode } from './ManagementToolNode';
 
 /**
- * React Flow node type registry. Element kinds map 1:1 to node types, plus
+ * React Flow node type registry, keyed by {@link ../../model/kinds.NodeFigure} —
+ * what a box is DRAWN as, which stopped being its kind at ADR-0012 §4 — plus
  * 'applicationBoundary' for the application-as-boundary on container diagrams.
  */
 export const nodeTypes: NodeTypes = {

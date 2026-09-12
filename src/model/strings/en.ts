@@ -8,11 +8,12 @@
 export const EN = {
 
   'kind.actor': 'Actor',
+  'kind.step': 'Step',
+  'kind.function': 'Function',
+  'kind.process': 'Process',
   'kind.application': 'Application',
   'kind.component': 'Component',
-  'kind.externalSystem': 'External system',
-  'kind.inputChannel': 'Input channel',
-  'kind.managementTool': 'Management tool',
+  'placement.notOnACanvas': 'A {kind} is not drawn on this sort of view.',
 
   // --- what a relation MEANS (ADR-0012 §5) ---------------------------------
   'relation.flow': 'Flow',
@@ -26,6 +27,7 @@ export const EN = {
    * as a line it cannot understand.
    */
   'relation.notInThisFormat': 'A {type} relation cannot be saved in this file format yet. Only flows can.',
+  'element.notInThisFormat': 'A {kind} cannot be saved in this file format yet. It holds applications, components and actors.',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',

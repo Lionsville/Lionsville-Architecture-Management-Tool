@@ -41,6 +41,7 @@ import type {
 import type { HostModel } from '../fromInterchange'
 import { slug } from '../keys'
 import { memberOf, nodeGeometryOf } from '../placement'
+import type { NodeFigure } from '../kinds'
 
 export type SyntheticSpec = {
   /** Elements of every kind together, components included. */
@@ -109,14 +110,22 @@ type Rng = () => number
 const pick = <T>(rng: Rng, from: readonly T[]): T => from[Math.floor(rng() * from.length) % from.length]
 const between = (rng: Rng, low: number, high: number) => low + Math.floor(rng() * (high - low + 1))
 
-/** The five landscape kinds, as fractions of everything that is not a component. */
+/**
+  * The five boxes of a landscape, as fractions of everything that is not a
+  * component — and, since ADR-0012 §4, three kinds fewer than boxes. A channel
+  * and a management tool are an application in a band; a system from outside is
+  * an application nobody here owns. The shares and the bands are unchanged, so
+  * the generated board is the board the budgets were written against.
+  */
 const KIND_MIX = [
-  { kind: 'actor', zone: 'actors', share: 0.08 },
-  { kind: 'inputChannel', zone: 'inputChannels', share: 0.08 },
-  { kind: 'externalSystem', zone: 'externalSystems', share: 0.16 },
-  { kind: 'managementTool', zone: 'management', share: 0.06 },
-  { kind: 'application', zone: 'landscape', share: 0.62 },
-] as const satisfies readonly { kind: DesignElement['kind']; zone: Layer7Zone; share: number }[]
+  { figure: 'actor', kind: 'actor', zone: 'actors', share: 0.08 },
+  { figure: 'inputChannel', kind: 'application', zone: 'inputChannels', share: 0.08 },
+  { figure: 'externalSystem', kind: 'application', outside: true, zone: 'externalSystems', share: 0.16 },
+  { figure: 'managementTool', kind: 'application', zone: 'management', share: 0.06 },
+  { figure: 'application', kind: 'application', zone: 'landscape', share: 0.62 },
+] as const satisfies readonly {
+  figure: NodeFigure; kind: DesignElement['kind']; outside?: true; zone: Layer7Zone; share: number;
+}[]
 
 /** Applications per domain group — a group nobody can read is not a group. */
 const PER_DOMAIN_GROUP = 24
@@ -141,17 +150,20 @@ function build(spec: SyntheticSpec): HostModel {
     const last = index === KIND_MIX.length - 1
     const count = last ? landscapeCount - made : Math.round(landscapeCount * entry.share)
     for (let n = 0; n < count; n++) {
-      const id = `${PREFIX[entry.kind]}-${String(n + 1).padStart(4, '0')}`
+      const id = `${PREFIX[entry.figure]}-${String(n + 1).padStart(4, '0')}`
       elements.push(describe(rng, spec, {
         id,
         kind: entry.kind,
-        name: nameFor(rng, entry.kind, n + 1),
+        ...('outside' in entry ? { outside: entry.outside } : {}),
+        name: nameFor(rng, entry.figure, n + 1),
         lifecycle: 'live',
         isManaged: true,
         aspects: {},
       }))
       zoneOf.set(id, entry.zone)
-      if (entry.kind === 'application') applications.push(id)
+      // The landscape band only: a container view is about a card in the middle
+      // of the board, not about a chip in a side band.
+      if (entry.figure === 'application') applications.push(id)
     }
     made += count
   }
@@ -204,7 +216,7 @@ function build(spec: SyntheticSpec): HostModel {
   }
 }
 
-const PREFIX: Record<DesignElement['kind'], string> = {
+const PREFIX: Record<NodeFigure, string> = {
   actor: 'who',
   inputChannel: 'chan',
   externalSystem: 'ext',
@@ -516,11 +528,11 @@ const TEAMS = ['Platform', 'Integration', 'Data', 'Security', 'Operations', 'Arc
 const PEOPLE = ['A. Vance', 'B. Okoro', 'C. Lindqvist', 'D. Moreau', 'E. Tanaka', 'F. Alarcon']
 const COLORS = ['#4f6d7a', '#c0d6df', '#dbe9ee', '#8d99ae', '#a3b18a']
 
-function nameFor(rng: Rng, kind: DesignElement['kind'], n: number): string {
+function nameFor(rng: Rng, figure: NodeFigure, n: number): string {
   const domain = DOMAINS[(n - 1) % DOMAINS.length]
   const part = PARTS[(n - 1) % PARTS.length]
   const capital = domain[0].toUpperCase() + domain.slice(1)
-  switch (kind) {
+  switch (figure) {
     case 'actor':
       return `${pick(rng, TEAMS)} ${n}`
     case 'inputChannel':

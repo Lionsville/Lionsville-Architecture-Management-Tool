@@ -28,7 +28,7 @@ function model(connection: Relation): DesignModel {
     ],
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
-      { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1', kind: 'application', outside: true, name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
     relations: [connection],
   };

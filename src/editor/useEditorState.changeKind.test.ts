@@ -17,7 +17,9 @@ function model(): DesignModel {
     name: 'ACME',
     customerName: 'ACME',
     elements: [
-      { id: 'e1', kind: 'externalSystem', name: 'Payments', lifecycle: 'live', isManaged: false, aspects: {} },
+      // An application nobody here owns, in the band that draws it as somebody
+      // else's (ADR-0012 §4) — what used to be the `externalSystem` kind.
+      { id: 'e1', kind: 'application', outside: true, name: 'Payments', lifecycle: 'live', isManaged: false, aspects: {} },
       { id: 'e2', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'c1', kind: 'component', name: 'Orders', parentId: 'e2', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
@@ -60,22 +62,22 @@ function render(initial: DesignModel, activeDiagramId = 'd1') {
 describe('changeElementKind', () => {
   it('changes the kind and keeps everything else about the element', () => {
     const { result, element } = render(model());
-    act(() => result.current.actions.changeElementKind('e1', 'application'));
-    expect(element('e1')?.kind).toBe('application');
+    act(() => result.current.actions.changeElementKind('e1', 'actor'));
+    expect(element('e1')?.kind).toBe('actor');
     expect(element('e1')?.name).toBe('Payments');
     expect(element('e1')?.isManaged).toBe(false);
   });
 
   it('keeps the connections — that is the whole point of not redrawing it', () => {
     const { result } = render(model());
-    act(() => result.current.actions.changeElementKind('e1', 'application'));
+    act(() => result.current.actions.changeElementKind('e1', 'actor'));
     expect(result.current.model.relations).toHaveLength(1);
   });
 
-  it('moves the placement to the new kind‘s home band', () => {
+  it('moves the placement to the home band of what it would now be drawn as', () => {
     const { result, placement } = render(model());
-    act(() => result.current.actions.changeElementKind('e1', 'application'));
-    expect(placement('e1')?.zone).toBe(HOME_ZONE.application);
+    act(() => result.current.actions.changeElementKind('e1', 'actor'));
+    expect(placement('e1')?.zone).toBe(HOME_ZONE.actor);
   });
 
   it('re-clamps a stored size the new kind cannot have, in its new band', () => {
@@ -92,7 +94,7 @@ describe('changeElementKind', () => {
 
   it('is one command — the element and its placement travel together', () => {
     const { result, sent } = render(model());
-    act(() => result.current.actions.changeElementKind('e1', 'application'));
+    act(() => result.current.actions.changeElementKind('e1', 'actor'));
     expect(sent()).toHaveLength(1);
     const command = sent()[0];
     expect(command.type).toBe('transaction');
@@ -104,15 +106,15 @@ describe('changeElementKind', () => {
 
   it('is one undo step', () => {
     const { result, element } = render(model());
-    act(() => result.current.actions.changeElementKind('e1', 'application'));
-    expect(element('e1')?.kind).toBe('application');
+    act(() => result.current.actions.changeElementKind('e1', 'actor'));
+    expect(element('e1')?.kind).toBe('actor');
     act(() => result.current.undo());
-    expect(element('e1')?.kind).toBe('externalSystem');
+    expect(element('e1')?.kind).toBe('application');
   });
 
   it('refuses — and commits nothing — for an application with a container diagram', () => {
     const { result, sent, element } = render(model());
-    act(() => result.current.actions.changeElementKind('e2', 'externalSystem'));
+    act(() => result.current.actions.changeElementKind('e2', 'actor'));
     expect(element('e2')?.kind).toBe('application');
     expect(sent()).toEqual([]);
   });
@@ -131,8 +133,10 @@ describe('changeElementKind', () => {
   });
 
   it('refuses the kind it already is', () => {
+    // And the card in the external-systems band IS an application: what the
+    // band says about it is the view's, not the element's (ADR-0012 §4).
     const { result, sent } = render(model());
-    act(() => result.current.actions.changeElementKind('e1', 'externalSystem'));
+    act(() => result.current.actions.changeElementKind('e1', 'application'));
     expect(sent()).toEqual([]);
   });
 });

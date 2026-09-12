@@ -16,6 +16,7 @@ import { placedNodes,
   placementSize,
   rectContains,
 } from '../../model/placement';
+import { nodeFigure } from '../../model/kinds';
 import {
   insertWaypointOnDrawn,
   isAutoRoute,
@@ -345,7 +346,9 @@ function rectOf(host: MenuActionHost, elementId: ElementId): Rect | undefined {
   if (measured && measured.width > 0 && measured.height > 0) return measured;
   const placement = placedNodes(host.diagram).find((p) => p.id === elementId);
   const element = host.model.elements.find((e) => e.id === elementId);
-  return placement && element ? placementRect(element.kind, placement) : undefined;
+  return placement && element
+    ? placementRect(nodeFigure(element, placement.zone), placement)
+    : undefined;
 }
 
 /** Placement rects of every OTHER element whose placement satisfies `where`. */
@@ -359,7 +362,7 @@ function occupiedRects(
     .filter((p) => p.id !== except && where(p))
     .flatMap((p) => {
       const element = elementsById.get(p.id);
-      return element ? [placementRect(element.kind, p)] : [];
+      return element ? [placementRect(nodeFigure(element, p.zone), p)] : [];
     });
 }
 
@@ -374,8 +377,10 @@ function moveToZone(host: MenuActionHost, elementId: ElementId, zone: Layer7Zone
   const element = model.elements.find((e) => e.id === elementId);
   if (!placement || !element || (placement.zone ?? 'landscape') === zone) return;
   const occupied = occupiedRects(host, elementId, (p) => (p.zone ?? 'landscape') === zone);
-  const position = freeZonePosition(zone, element.kind, occupied, diagram.geometry);
-  const size = placementSize(element.kind, placement);
+  // The band it is MOVING to is what it will be drawn as when it lands.
+  const figure = nodeFigure(element, zone);
+  const position = freeZonePosition(zone, figure, occupied, diagram.geometry);
+  const size = placementSize(figure, placement);
   const centre = { x: position.x + size.width / 2, y: position.y + size.height / 2 };
   actions.movePlacements([
     { id: elementId, ...position, ...(host.resolveDrop?.(elementId, centre) ?? { zone, group: undefined }) },
@@ -397,7 +402,8 @@ function setDomainGroup(host: MenuActionHost, elementId: ElementId, name: string
   const placement = placedNodes(diagram).find((p) => p.id === elementId);
   const element = model.elements.find((e) => e.id === elementId);
   if (!rect || !placement || !element) return;
-  const size = placementSize(element.kind, placement);
+  const figure = nodeFigure(element, placement.zone);
+  const size = placementSize(figure, placement);
   const centre = { x: placement.x + size.width / 2, y: placement.y + size.height / 2 };
   if (rectContains(rect, centre)) {
     actions.setDomainGroup(elementId, name);
@@ -405,7 +411,7 @@ function setDomainGroup(host: MenuActionHost, elementId: ElementId, name: string
   }
   const occupied = occupiedRects(host, elementId, (p) => p.group === name);
   // Insets keep a moved-in card clear of the border and of the name pill on top.
-  const position = freeSlotIn(rect, element.kind, occupied, { x: 24, y: 36 });
+  const position = freeSlotIn(rect, figure, occupied, { x: 24, y: 36 });
   actions.movePlacements([{ id: elementId, ...position, zone: 'landscape', group: name }]);
 }
 

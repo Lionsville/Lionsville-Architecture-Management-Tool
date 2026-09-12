@@ -7,7 +7,7 @@ import { ActorNode } from './ActorNode';
 import { InputChannelNode } from './InputChannelNode';
 import { ExternalSystemNode } from './ExternalSystemNode';
 import { ManagementToolNode } from './ManagementToolNode';
-import type { ElementKind } from '../../model/types';
+import type { NodeFigure } from '../../model/kinds';
 import type { ElementNodeProps } from './nodeData';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
 import { NodeResizeContext } from '../canvas/NodeResizeContext';
@@ -28,7 +28,7 @@ beforeAll(() => {
 afterEach(() => cleanup());
 
 function props(
-  kind: ElementKind,
+  figure: NodeFigure,
   options: {
     selected: boolean;
     readOnly: boolean;
@@ -36,11 +36,11 @@ function props(
     element?: Partial<DesignElement>;
   },
 ): ElementNodeProps {
-  const zone = options.zone ?? HOME_ZONE[kind];
-  const canonical = NODE_SIZES[kind];
+  const zone = options.zone ?? HOME_ZONE[figure];
+  const canonical = NODE_SIZES[figure];
   return {
     id: 'e1',
-    type: kind,
+    type: figure,
     selected: options.selected,
     dragging: false,
     zIndex: 0,
@@ -52,7 +52,8 @@ function props(
     data: {
       element: {
         id: 'e1',
-        kind,
+        // What the box IS, under what it is drawn as (ADR-0012 §4).
+        kind: figure === 'actor' || figure === 'component' ? figure : 'application',
         name: 'Example',
         lifecycle: 'live',
         isManaged: false,
@@ -63,7 +64,7 @@ function props(
       readOnly: options.readOnly,
       aspectConfig: [],
       showLifecycle: true,
-      resizeLimits: { min: nodeMinSize(kind), max: nodeMaxSize(kind, zone) },
+      resizeLimits: { min: nodeMinSize(figure), max: nodeMaxSize(figure, zone) },
     },
   } as unknown as ElementNodeProps;
 }

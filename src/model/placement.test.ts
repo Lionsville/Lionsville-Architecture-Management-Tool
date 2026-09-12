@@ -27,7 +27,8 @@ import {
 } from './placement';
 import { zoneRect } from './zones';
 import type { BoardGeometry } from './zones';
-import type { DomainGroupRect, ElementKind, Rect } from './types';
+import type { DomainGroupRect, Rect } from './types';
+import type { NodeFigure } from './kinds';
 
 describe('placementSize', () => {
   it('uses kind defaults when the placement has no explicit size', () => {
@@ -141,16 +142,16 @@ describe('nodeMaxSize', () => {
 });
 
 describe('BAND_NODE_MIN', () => {
-  it('stays below each kind\'s canonical size so shrinking is actually possible', () => {
-    for (const kind of ['actor', 'inputChannel', 'managementTool', 'externalSystem'] as const) {
-      expect(BAND_NODE_MIN[kind].width).toBeLessThan(NODE_SIZES[kind].width);
-      expect(BAND_NODE_MIN[kind].height).toBeLessThan(NODE_SIZES[kind].height);
+  it('stays below each figure\'s canonical size so shrinking is actually possible', () => {
+    for (const figure of ['actor', 'inputChannel', 'managementTool', 'externalSystem'] as const) {
+      expect(BAND_NODE_MIN[figure].width).toBeLessThan(NODE_SIZES[figure].width);
+      expect(BAND_NODE_MIN[figure].height).toBeLessThan(NODE_SIZES[figure].height);
     }
   });
 });
 
 describe('defaultZonePosition', () => {
-  const kinds: [ElementKind, Parameters<typeof zoneRect>[0]][] = [
+  const figures: [NodeFigure, Parameters<typeof zoneRect>[0]][] = [
     ['actor', 'actors'],
     ['application', 'landscape'],
     ['externalSystem', 'externalSystems'],
@@ -158,11 +159,11 @@ describe('defaultZonePosition', () => {
     ['managementTool', 'management'],
   ];
 
-  it.each(kinds)('keeps the first 6 %s placements inside their zone band', (kind, zone) => {
+  it.each(figures)('keeps the first 6 %s placements inside their zone band', (figure, zone) => {
     const rect = zoneRect(zone);
     for (let i = 0; i < 6; i += 1) {
-      const pos = defaultZonePosition(zone, kind, i);
-      const size = NODE_SIZES[kind];
+      const pos = defaultZonePosition(zone, figure, i);
+      const size = NODE_SIZES[figure];
       expect(pos.x).toBeGreaterThanOrEqual(rect.x);
       expect(pos.x + size.width).toBeLessThanOrEqual(rect.x + rect.width);
       expect(pos.y).toBeGreaterThanOrEqual(rect.y);

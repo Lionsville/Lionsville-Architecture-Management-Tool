@@ -14,6 +14,7 @@
  * refusals pass through.
  */
 import type { StepSummary } from '../model/activity'
+import { nodeFigure } from '../model/kinds'
 import type { Adr } from '../model/adr'
 import type { Command } from '../model/commands'
 import { transaction } from '../model/commands'
@@ -453,7 +454,7 @@ async function render(
   } else {
     const rects = diagram.order.members
       .filter((id) => model.elements[id])
-      .map((id) => placementRect(model.elements[id].kind, placedOn(diagram, id)!))
+      .map((id) => placementRect(nodeFigure(model.elements[id], placedOn(diagram, id)!.zone), placedOn(diagram, id)!))
     const drawn = unionRects(rects)
     bounds = diagram.kind === 'layer7'
       ? unionRects([canvasRect(diagram), ...(drawn ? [drawn] : [])])

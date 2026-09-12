@@ -17,6 +17,7 @@
  * the loop an agent runs is inspect, move, inspect again.
  */
 import { drawnPolyline } from '../model/routes'
+import { nodeFigure } from '../model/kinds'
 import type { Diagram, Model } from '../model/normalised'
 import { boxList, groupsOf, placedOn, routesOf } from '../model/normalised'
 import { domainGroupForPoint, domainGroupRectMap, placementRect, rectCenter, unionRects } from '../model/placement'
@@ -64,7 +65,7 @@ export function inspect(model: Model, diagram: Diagram, limit = INSPECT_LIMIT): 
   const rects = new Map<ElementId, Rect>()
   for (const id of diagram.order.members) {
     const element = model.elements[id]
-    if (element) rects.set(id, placementRect(element.kind, placedOn(diagram, id)!))
+    if (element) rects.set(id, placementRect(nodeFigure(element, placedOn(diagram, id)!.zone), placedOn(diagram, id)!))
   }
 
   const connections = model.order.relations
@@ -262,7 +263,7 @@ export function boundsOf(model: Model, diagram: Diagram, elementIds: readonly El
   for (const id of elementIds) {
     const placement: PlacedNode | undefined = placedOn(diagram, id)!
     const element = model.elements[id]
-    if (placement && element) rects.push(placementRect(element.kind, placement))
+    if (placement && element) rects.push(placementRect(nodeFigure(element, placement.zone), placement))
   }
   return unionRects(rects)
 }

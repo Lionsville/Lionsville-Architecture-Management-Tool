@@ -42,7 +42,7 @@ function model(): DesignModel {
     ],
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
-      { id: 'b1', kind: 'externalSystem', name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1', kind: 'application', outside: true, name: 'Carrier', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
     relations: [{ type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', isBidirectional: false }],
   };

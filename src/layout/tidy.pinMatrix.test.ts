@@ -182,7 +182,7 @@ function container(): DesignModel {
       { id: 'app', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'c1', kind: 'component', parentId: 'app', name: 'API', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'c2', kind: 'component', parentId: 'app', name: 'DB', lifecycle: 'live', isManaged: true, aspects: {} },
-      { id: 'ext', kind: 'externalSystem', name: 'PSP', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'ext', kind: 'application', outside: true, name: 'PSP', lifecycle: 'live', isManaged: false, aspects: {} },
     ],
     relations: [{ type: 'flow', id: 'c1-ext', sourceId: 'c1', targetId: 'ext', isBidirectional: false }],
     diagrams: [

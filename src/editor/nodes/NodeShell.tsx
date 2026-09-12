@@ -5,7 +5,8 @@ import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles'
 import { getNodeTokens } from '../theme/tokens';
 import { DESCRIPTION_TYPE, descriptionLineClamp } from '../../model/placement';
 import { shortDescription } from '../../documentation/documentation';
-import type { DesignElement, ElementKind, Lifecycle } from '../../model/types';
+import type { DesignElement, Lifecycle } from '../../model/types';
+import type { NodeFigure } from '../../model/kinds';
 import { ElementResizer } from './ElementResizer';
 import { LifecycleBadge } from './LifecycleBadge';
 import { LogoMark, useResolvedLogo } from './logoRegistry';
@@ -169,18 +170,19 @@ export function NodeIcon({
 
 /**
  * The line-clamped description block, once. Six nodes carried the same six CSS
- * properties with only the per-kind type scale differing; the clamp count is
+ * properties with only the per-figure type scale differing; the clamp count is
  * derived from the node's measured height (`descriptionLineClamp`), which is the
  * part worth having in one place — as is the rule that a description that has
  * grown into a page is drawn as its short description only.
  */
 export function NodeDescription({
-  kind,
+  figure,
   text,
   height,
   sx,
 }: {
-  kind: ElementKind;
+  /** Which box this is — the node component knows, because it IS one. */
+  figure: NodeFigure;
   text: string | undefined;
   /** The node's measured height; decides how many lines fit. */
   height: number | undefined;
@@ -193,11 +195,11 @@ export function NodeDescription({
   return (
     <Typography
       sx={{
-        fontSize: DESCRIPTION_TYPE[kind].fontSize,
-        lineHeight: DESCRIPTION_TYPE[kind].lineHeight,
+        fontSize: DESCRIPTION_TYPE[figure].fontSize,
+        lineHeight: DESCRIPTION_TYPE[figure].lineHeight,
         color: tokens.card.description,
         display: '-webkit-box',
-        WebkitLineClamp: descriptionLineClamp(kind, height),
+        WebkitLineClamp: descriptionLineClamp(figure, height),
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
         ...sx,

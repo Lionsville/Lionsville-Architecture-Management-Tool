@@ -31,6 +31,10 @@
  * in {@link diagramFiles} and {@link readDiagram}, and the whole of that
  * translation goes at format 4, where the files say what the model says.
  *
+ * ADR-0012 §3 and §4 land on the element rows in the same way — one parent
+ * field for every kind, and three kinds that turned out to be a band and a
+ * fact — and {@link asStoredElement} is that pair.
+ *
  * **What the format normalises, deliberately.** Elements, connections,
  * placements and routes are written in id order, because two people adding an
  * element to the same landscape should not both append to the same line. Order
@@ -42,12 +46,15 @@
  * there is nowhere to write the difference. Everything else round-trips
  * exactly, including the absent-versus-empty distinction on a diagram's routes.
  */
+import { ShellError } from '../platform/errors'
 import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
   AspectConfigEntry, DesignConnection, DesignDiagram, DesignElement, DiagramGroup, DiagramMember,
-  DocumentImage, DomainGroupRect, EdgeRoute, Geometry, NodeGeometry, Relation, UploadedLogo,
+  DocumentImage, DomainGroupRect, EdgeRoute, ElementKind, Geometry, Layer7Zone,
+  NodeGeometry, Relation, UploadedLogo,
 } from '../model'
+import { bandsOf, FIGURE_MEANS, isNodeFigure, nodeFigure } from '../model/kinds'
 import { edgeRoutesOf, splitRoutes } from '../model/routes'
 import { placedNodes } from '../model/placement'
 import type { PlacedNode } from '../model'
@@ -303,27 +310,70 @@ function asEdgeRoute(row: Record<string, unknown>): EdgeRoute {
 }
 
 /**
- * What an element is contained BY, under format 3's name for it.
+ * An element's two spellings, across format 3.
  *
- * ADR-0012 §3 gave containment one field for every kind — a component's
- * application, a function's area, a step's phase, an actor's group — so the
- * name lost the word that described only the first of them. Format 3 knows only
- * `parentApplicationId`, and a 1.x build reads nothing else, so the spelling is
- * translated here: the same seam the dashed groups and the route rows occupy,
- * one function each way, and a folder that goes through this build unchanged
- * comes out byte for byte the folder that went in.
+ * Two of ADR-0012's changes land on the same row of `model.json`, so they are
+ * folded and unfolded together, the same seam the dashed groups and the route
+ * rows occupy — one function each way, and a folder that goes through this
+ * build unchanged comes out byte for byte the folder that went in.
  *
- * **Both halves are deleted at format 4**, where the file says what the model
+ * **Containment (§3).** One field says what a thing sits inside, whatever kind
+ * it is; format 3 knows only `parentApplicationId`, from when a component
+ * inside an application was the only containment there was.
+ *
+ * **The three retired kinds (§4).** `externalSystem`, `inputChannel` and
+ * `managementTool` are not kinds any more: an external system is an
+ * `application` nobody here owns, and a channel and a management tool are an
+ * `application` in a band of a board. So a v3 file's kind is read as the
+ * application it always was plus the fact that carried it, and written back as
+ * whatever that application is now DRAWN as ({@link nodeFigure}) — which is the
+ * band it sits in on the first view that holds it, or `outside` where no band
+ * says otherwise.
+ *
+ * **One thing the fold cannot carry**, and it is worth naming: format 3's kind
+ * said *channel* where the model now says *in the channel band*, so a channel
+ * somebody had dragged out into the open landscape comes back as the
+ * application it is. That is not a loss of meaning — it is where the migration
+ * was always going to land it (§11) — but it is a byte a save will change, and
+ * `folderFormat.test.ts` pins it rather than letting it be discovered.
+ *
+ * **What format 3 has no word for at all is refused**, not flattened. The
+ * business layer's kinds arrived with §4 and the file has nowhere to put one, so
+ * writing a `function` as the `application` {@link nodeFigure} would fall back
+ * to would hand a 1.x build a row that is a lie. It is a {@link ShellError} for
+ * the same reason `asConnections` is one for a `supports` row: this build can
+ * say more than its file can hold, and a save that quietly drops half a sheet is
+ * the worse of the two answers. Both refusals go at format 4.
+ *
+ * **Every half is deleted at format 4**, where the file says what the model
  * says.
  */
-function asStoredParent(element: Record<string, unknown>): Record<string, unknown> {
-  const { parentId, ...rest } = element
-  return parentId === undefined ? rest : { ...rest, parentApplicationId: parentId }
+const NOT_IN_FORMAT_3: readonly ElementKind[] = ['step', 'function', 'process']
+
+function asStoredElement(
+  element: DesignElement, row: Record<string, unknown>, band: Layer7Zone | undefined,
+): Record<string, unknown> {
+  if (NOT_IN_FORMAT_3.includes(element.kind)) {
+    throw new ShellError('element.notInThisFormat', { kind: element.kind })
+  }
+  const { parentId, outside: _fact, ...rest } = row
+  return {
+    ...rest,
+    // A figure's name IS what format 3 called the kind — the two were one word
+    // when the file was designed, which is why one table reads it back.
+    kind: nodeFigure(element, band),
+    ...(parentId !== undefined ? { parentApplicationId: parentId } : {}),
+  }
 }
 
-function readStoredParent(row: Record<string, unknown>): Record<string, unknown> {
+function readStoredElement(row: Record<string, unknown>): Record<string, unknown> {
   const { parentApplicationId, ...rest } = row
-  return parentApplicationId === undefined ? rest : { ...rest, parentId: parentApplicationId }
+  const meant = isNodeFigure(row.kind) ? FIGURE_MEANS[row.kind] : undefined
+  return {
+    ...rest,
+    ...(meant ?? {}),
+    ...(parentApplicationId !== undefined ? { parentId: parentApplicationId } : {}),
+  }
 }
 
 /**
@@ -335,6 +385,7 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
   const files: FolderFile[] = []
 
   const filed = new Set<string>()
+  const bands = bandsOf(model.diagrams)
   const elements = byId(model.elements).map((element) => {
     const explicit = model.explicitFields?.[element.id]
     const description = element.description
@@ -344,10 +395,10 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
       files.push({ path: page, text: markdownFile(description) })
     }
     const { description: _filed, ...rest } = element
-    return asStoredParent({
+    return asStoredElement(element, {
       ...(filed.has(element.id) ? rest : element),
       ...(explicit ? { explicit } : {}),
-    })
+    }, bands.get(element.id))
   })
 
   files.push({
@@ -641,7 +692,7 @@ function readElements(folder: Folder): {
     }
     const prose = textAt(folder, `${DOCS_FOLDER}/${row.id}.md`)
     return [{
-      ...(readStoredParent(rest) as unknown as DesignElement),
+      ...(readStoredElement(rest) as unknown as DesignElement),
       ...(prose !== undefined ? { description: markdownBody(prose) } : {}),
     }]
   })

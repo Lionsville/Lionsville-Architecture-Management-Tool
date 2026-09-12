@@ -16,11 +16,11 @@ export const EN = {
    * and (unlike `kind.*`, which names a category) it reads as a name.
    */
   'newName.actor': 'New actor',
+  'newName.step': 'New step',
+  'newName.function': 'New function',
+  'newName.process': 'New process',
   'newName.application': 'New application',
   'newName.component': 'New component',
-  'newName.externalSystem': 'New external system',
-  'newName.inputChannel': 'New input channel',
-  'newName.managementTool': 'New management tool',
   'newName.domainGroup': 'New group',
 
   'lifecycle.planned': 'Planned',
@@ -150,13 +150,9 @@ export const EN = {
   'palette.searchPlaceholder': 'Search…',
   'palette.noMatches': 'Nothing matches “{query}”',
   'palette.section.systems': 'Applications & components',
-  'palette.section.integration': 'Integration',
   'palette.section.people': 'People & context',
   'paletteDescription.application': 'A system the customer runs or buys',
   'paletteDescription.component': 'A part inside one application',
-  'paletteDescription.inputChannel': 'How work and data enter the landscape',
-  'paletteDescription.externalSystem': 'A system outside the customer’s control',
-  'paletteDescription.managementTool': 'Tooling that runs and watches the landscape',
   'paletteDescription.actor': 'A person or role using the landscape',
   'paletteDescription.domainGroup': 'A labelled area grouping the landscape',
 

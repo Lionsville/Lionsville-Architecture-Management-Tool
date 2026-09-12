@@ -14,6 +14,8 @@
 import type {
   DesignDiagram, DesignElement, DesignModel, DiagramGroup, DiagramMember, Layer7Zone, Relation,
 } from '.'
+import { FIGURE_MEANS, isNodeFigure } from './kinds'
+import type { NodeFigure } from './kinds'
 import { claimKey } from './keys'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
@@ -30,7 +32,19 @@ import type { Transition } from './transition'
  */
 type InterchangeElement = {
   key: string
-  kind: DesignElement['kind']
+  /**
+   * The document's OWN vocabulary, spelled out — the one field that may not be
+   * taken from the model.
+   *
+   * It was `DesignElement['kind']` until ADR-0012 §4, on the rule above, and
+   * that rule ran out the moment the model's kinds and the document's stopped
+   * being the same six words. The document still says `externalSystem`,
+   * `inputChannel` and `managementTool`, because it is a contract with other
+   * tools and does not change (§11) — and those six words are exactly what a
+   * box is DRAWN as, which is what {@link NodeFigure} now means. So the two
+   * vocabularies are kept apart here and {@link FIGURE_MEANS} joins them.
+   */
+  kind: NodeFigure
   parentKey?: string
   name: string
   category?: string
@@ -142,7 +156,13 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     }
     return {
       id: e.key,
-      kind: e.kind,
+      // `externalSystem` is an application nobody here owns; a channel and a
+      // management tool are an application, and the band each sits in comes
+      // with the place that draws it (ADR-0012 §4).
+      // A word this format never had falls back to the card, the same way an
+      // undrawable kind does — a document from a newer tool loses the word, not
+      // the element.
+      ...(isNodeFigure(e.kind) ? FIGURE_MEANS[e.kind] : { kind: 'application' as const }),
       parentId: e.parentKey,
       name: e.name,
       category: e.category,

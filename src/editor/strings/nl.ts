@@ -12,11 +12,11 @@ export const NL: Record<keyof typeof EN, string> = {
   'kind.domainGroup': 'Domeingroep',
 
   'newName.actor': 'Nieuwe actor',
+  'newName.step': 'Nieuwe stap',
+  'newName.function': 'Nieuwe functie',
+  'newName.process': 'Nieuw proces',
   'newName.application': 'Nieuwe applicatie',
   'newName.component': 'Nieuw component',
-  'newName.externalSystem': 'Nieuw extern systeem',
-  'newName.inputChannel': 'Nieuw invoerkanaal',
-  'newName.managementTool': 'Nieuwe beheertool',
   'newName.domainGroup': 'Nieuwe groep',
 
   'lifecycle.planned': 'Gepland',
@@ -142,13 +142,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'palette.searchPlaceholder': 'Zoeken…',
   'palette.noMatches': 'Niets komt overeen met “{query}”',
   'palette.section.systems': 'Applicaties & componenten',
-  'palette.section.integration': 'Integratie',
   'palette.section.people': 'Mensen & context',
   'paletteDescription.application': 'Een systeem dat de klant draait of afneemt',
   'paletteDescription.component': 'Een onderdeel binnen één applicatie',
-  'paletteDescription.inputChannel': 'Hoe werk en gegevens het landschap binnenkomen',
-  'paletteDescription.externalSystem': 'Een systeem buiten de invloed van de klant',
-  'paletteDescription.managementTool': 'Gereedschap dat het landschap draait en bewaakt',
   'paletteDescription.actor': 'Een persoon of rol die het landschap gebruikt',
   'paletteDescription.domainGroup': 'Een benoemd vlak dat het landschap groepeert',
 

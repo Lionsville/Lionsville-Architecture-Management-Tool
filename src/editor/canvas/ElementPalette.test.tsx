@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementPalette, PALETTE_DRAG_MIME } from './ElementPalette';
-import type { ElementKind, UploadedLogo } from '../../model/types';
+import type { UploadedLogo } from '../../model/types';
+import type { CanvasKind } from '../../model/placement';
 import { RAIL_PACK } from '../../app/iconPacks/rail';
 import { registerLogoPack } from '../../model/logoRegistry';
 // The rail pack ships with this build (`app/composition.ts` registers it), so
@@ -27,7 +28,7 @@ registerLogoPack(RAIL_PACK);
 
 afterEach(() => cleanup());
 
-const KINDS: ElementKind[] = ['application', 'actor'];
+const KINDS: CanvasKind[] = ['application', 'actor'];
 
 const LIBRARY: UploadedLogo[] = [
   { key: 'salesforce', label: 'Salesforce', url: 'https://hal.test/logos/salesforce/content' },

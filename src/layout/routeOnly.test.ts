@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { memberOf, nodeGeometryOf } from '../model/placement';
+import { nodeFigure } from '../model/kinds';
+import type { NodeFigure } from '../model/kinds';
 import type { EdgeRoute } from '../model/types';
 import { laidOut } from '../model/testFixtures';
 import type {
@@ -8,7 +10,6 @@ import type {
   DesignDiagram,
   DesignElement,
   DesignModel,
-  ElementKind,
   Rect,
 } from '../model/types';
 import { placedNodes, placementSize } from '../model/placement';
@@ -27,14 +28,23 @@ import { pathClearance, routedPath } from './routeTestSupport';
  * hardcoding them would turn every router upgrade into a test rewrite.
  */
 
-function elt(id: string, kind: ElementKind): DesignElement {
-  return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {} };
+/** A landscape box, named by what the board draws it as (see tidy.test.ts). */
+function elt(id: string, figure: NodeFigure): DesignElement {
+  return {
+    id,
+    kind: figure === 'actor' || figure === 'component' ? figure : 'application',
+    ...(figure === 'externalSystem' ? { outside: true as const } : {}),
+    name: id,
+    lifecycle: 'live',
+    isManaged: true,
+    aspects: {},
+  };
 }
 
 const rectFor = (model: DesignModel, diagram: DesignDiagram, id: string): Rect => {
   const p = placedNodes(diagram).find((pp) => pp.id === id)!;
   const el = model.elements.find((e) => e.id === id)!;
-  const size = placementSize(el.kind, p);
+  const size = placementSize(nodeFigure(el, p.zone), p);
   return { x: p.x, y: p.y, width: size.width, height: size.height };
 };
 
@@ -482,7 +492,7 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
     const rect = (id: string): Rect => {
       const p = tidied.placements.find((pp) => pp.id === id)!;
       const el = model.elements.find((e) => e.id === id)!;
-      const size = placementSize(el.kind, p);
+      const size = placementSize(nodeFigure(el, p.zone), p);
       return { x: p.x, y: p.y, width: size.width, height: size.height };
     };
     const webshop = rect('webshop');

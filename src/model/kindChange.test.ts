@@ -28,8 +28,10 @@ const board = () =>
     ],
     elements: [
       element('a1', { kind: 'application' }),
-      element('a2', { kind: 'externalSystem' }),
-      element('c1', { kind: 'externalSystem' }),
+      // What used to be two external systems: an application nobody here owns,
+      // in the band that draws it as one (ADR-0012 §4).
+      element('a2', { kind: 'application', outside: true }),
+      element('c1', { kind: 'application', outside: true }),
       element('c2', { kind: 'component', parentId: 'boundary' }),
       element('boundary', { kind: 'application' }),
     ],
@@ -47,7 +49,7 @@ describe('allowedKindsOn', () => {
 
 describe('canChangeKind', () => {
   it('allows a straightforward change', () => {
-    expect(canChangeKind(board(), layer7(), 'a2', 'application')).toEqual({ ok: true });
+    expect(canChangeKind(board(), layer7(), 'a2', 'actor')).toEqual({ ok: true });
   });
 
   it('refuses the kind it already is', () => {
@@ -80,7 +82,7 @@ describe('canChangeKind', () => {
     const m = board();
     m.diagrams[0].members.push({ id: 'boundary', zone: 'landscape' });
     m.diagrams[0].geometry.nodes.push({ id: 'boundary', x: 0, y: 0 });
-    expect(canChangeKind(m, m.diagrams[0], 'boundary', 'externalSystem')).toEqual({
+    expect(canChangeKind(m, m.diagrams[0], 'boundary', 'actor')).toEqual({
       ok: false,
       reason: 'kindChange.hasContainerDiagram',
     });
@@ -91,19 +93,19 @@ describe('canChangeKind', () => {
     // its component was placed straight onto the landscape (or the view was
     // deleted and left the component behind), so the container-diagram refusal
     // does not fire and only this one stands between the model and a component
-    // parented to an external system.
+    // parented to an actor.
     const m = board();
     m.elements = m.elements.map((e) =>
       e.id === 'c1' ? { ...e, kind: 'component' as const, parentId: 'a1' } : e,
     );
-    expect(canChangeKind(m, m.diagrams[0], 'a1', 'externalSystem')).toEqual({
+    expect(canChangeKind(m, m.diagrams[0], 'a1', 'actor')).toEqual({
       ok: false,
       reason: 'kindChange.hasComponents',
     });
     // And it is the only thing stopping it: detach the component and the same
     // change goes through.
     const detached = board();
-    expect(canChangeKind(detached, detached.diagrams[0], 'a1', 'externalSystem')).toEqual({
+    expect(canChangeKind(detached, detached.diagrams[0], 'a1', 'actor')).toEqual({
       ok: true,
     });
   });
@@ -138,7 +140,6 @@ describe('changeableKinds', () => {
     expect(kinds).not.toContain('application');
     expect(kinds).not.toContain('component');
     expect(kinds).toContain('actor');
-    expect(kinds).toContain('externalSystem');
   });
 
   it('is empty for an element the rules refuse outright', () => {
@@ -148,27 +149,31 @@ describe('changeableKinds', () => {
 
 describe('placementForKind', () => {
   it('leaves a landscape placement in the landscape — it holds every kind', () => {
-    const next = placementForKind(placement('a1', { zone: 'landscape', x: 400, y: 300 }), 'actor', layer7());
+    const next = placementForKind(
+      placement('a1', { zone: 'landscape', x: 400, y: 300 }), { kind: 'actor' }, layer7(),
+    );
     expect(next.zone).toBe('landscape');
     expect(next.x).toBe(400);
   });
 
-  it('moves a band member to the new kind‘s home band', () => {
-    // An external system in the external-systems band becoming an actor belongs
-    // in the actors band; leaving it would put an actor in a band whose grammar
-    // says external systems.
+  it('moves a band member to the home of what it would now be drawn as', () => {
+    // A card in the external-systems band becoming an actor belongs in the
+    // actors band; leaving it would put an actor in a band whose grammar says
+    // somebody else's systems.
     const next = placementForKind(
       placement('a2', { zone: 'externalSystems', x: 1500, y: 400 }),
-      'actor',
+      { kind: 'actor' },
       layer7(),
     );
     expect(next.zone).toBe(HOME_ZONE.actor);
   });
 
   it('keeps a band member where it is when the band is already its home', () => {
+    // An application nobody here owns draws as an external system, and the
+    // external-systems band is that figure's home — so nothing moves.
     const next = placementForKind(
       placement('a2', { zone: 'externalSystems', x: 1500, y: 400 }),
-      'externalSystem',
+      { kind: 'application', outside: true },
       layer7(),
     );
     expect(next.zone).toBe('externalSystems');
@@ -177,18 +182,18 @@ describe('placementForKind', () => {
   it('keeps an explicit size that still fits', () => {
     const next = placementForKind(
       placement('a1', { zone: 'landscape', width: 240, height: 160 }),
-      'externalSystem',
+      { kind: 'application', outside: true },
       layer7(),
     );
     expect(next.width).toBe(240);
     expect(next.height).toBe(160);
   });
 
-  it('clamps an explicit size the new kind cannot have', () => {
+  it('clamps an explicit size the new figure cannot have', () => {
     const min = nodeMinSize('actor');
     const next = placementForKind(
       placement('a1', { zone: 'landscape', width: 10, height: 10 }),
-      'actor',
+      { kind: 'actor' },
       layer7(),
     );
     expect(next.width).toBe(min.width);
@@ -196,7 +201,7 @@ describe('placementForKind', () => {
 
     const huge = placementForKind(
       placement('a1', { zone: 'landscape', width: 9000, height: 9000 }),
-      'application',
+      { kind: 'application' },
       layer7(),
     );
     expect(huge.width).toBe(NODE_MAX_SIZE.width);
@@ -204,13 +209,13 @@ describe('placementForKind', () => {
   });
 
   it('never invents a stored size for a placement that had none', () => {
-    const next = placementForKind(placement('a1', { zone: 'landscape' }), 'actor', layer7());
+    const next = placementForKind(placement('a1', { zone: 'landscape' }), { kind: 'actor' }, layer7());
     expect(next.width).toBeUndefined();
     expect(next.height).toBeUndefined();
   });
 
   it('leaves zones alone on a container diagram — it has no bands', () => {
-    const next = placementForKind(placement('c2'), 'actor', container());
+    const next = placementForKind(placement('c2'), { kind: 'actor' }, container());
     expect(next.zone).toBeUndefined();
   });
 });

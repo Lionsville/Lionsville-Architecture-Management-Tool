@@ -15,8 +15,10 @@ import type { DesignModel } from '.'
 import { placedNodes } from './placement'
 import { isBuiltInLogoKey } from './logoRegistry'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
+import { bandsOf, nodeFigure } from './kinds'
 import { KEY_RE, claimKey } from './keys'
 import { flowsOf } from './relations'
+import type { ElementKind } from './types'
 import { UPLOADED_KEY_PREFIX } from './logo'
 
 /**
@@ -64,10 +66,24 @@ function prune<T extends object>(obj: T): T {
   ) as T
 }
 
+/**
+ * The kinds this format has no box for: the business layer (ADR-0012 §4).
+ *
+ * Written out rather than derived from what a canvas draws, because they are
+ * different questions with the same answer today — the format's vocabulary is
+ * frozen by the contract, and what a canvas may draw is this tool's own rule
+ * and may yet grow.
+ */
+const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process']
+
 export function toInterchange(model: HostModel): InterchangeDoc {
   const keys = keyMap(model)
   const k = (id: string | undefined) => (id == null ? undefined : keys.get(id) ?? id)
   const explicit = model.explicitFields ?? {}
+  // What a box is drawn as is what this format calls its kind, and the band is
+  // half of that answer (ADR-0012 §4) — so the boards are read once, here.
+  const bands = bandsOf(model.diagrams)
+  const carried = model.elements.filter((e) => !NOT_IN_THE_FORMAT.includes(e.kind))
 
   return prune({
     formatVersion: typeof model.formatVersion === 'string' ? model.formatVersion : '1',
@@ -77,11 +93,11 @@ export function toInterchange(model: HostModel): InterchangeDoc {
       author: model.defaultAuthor,
       aspectConfig: model.defaultAspectConfig,
     }),
-    elements: model.elements.map((e) => {
+    elements: carried.map((e) => {
       const ex = explicit[e.id] ?? {}
       return prune({
         key: k(e.id),
-        kind: e.kind,
+        kind: nodeFigure(e, bands.get(e.id)),
         parentKey: k(e.parentId),
         name: e.name,
         category: e.category,

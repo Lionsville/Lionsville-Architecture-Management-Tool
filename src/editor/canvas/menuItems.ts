@@ -1,6 +1,7 @@
 import type {
   AttachSide, DiagramGroup, EdgeRouting, ElementId, ElementKind, Layer7Zone, Lifecycle,
 } from '../../model/types';
+import type { CanvasKind } from '../../model/placement';
 import { formatShortcut, type Platform } from '../keymap';
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
 import { zoneMenuLabel } from '../../model/zones';
@@ -145,7 +146,7 @@ export interface ElementMenuFacts {
    * tooltip, because "why can't I?" is the question at that moment and a
    * missing entry answers it with nothing.
    */
-  changeableKinds?: ElementKind[];
+  changeableKinds?: CanvasKind[];
   /** Why the change is refused, when it is. A string-table key. */
   kindChangeRefusal?: StringKey;
 }
@@ -197,7 +198,7 @@ export interface MenuContext {
   groups?: readonly DiagramGroup[];
   clipboardHasContent?: boolean;
   /** Element kinds the palette offers on this diagram — the "Add here" list. */
-  allowedKinds?: ElementKind[];
+  allowedKinds?: CanvasKind[];
   showGrid?: boolean;
   snapToGrid?: boolean;
   /** Board-level layout actions the editor wired; absent hides the item. */
@@ -487,7 +488,7 @@ function changeKindItem(el: ElementMenuFacts, t: Translate): MenuItem {
   return {
     id: 'change-kind',
     label: t('menu.changeKind'),
-    children: kinds.map((kind: ElementKind) => ({
+    children: kinds.map((kind: CanvasKind) => ({
       id: `change-kind-${kind}`,
       label: paletteLabel(kind, t),
       action: 'change-kind' as const,

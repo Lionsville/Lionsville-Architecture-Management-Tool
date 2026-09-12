@@ -198,14 +198,16 @@ describe('ElementInspector — icon picker (now a grid, in Appearance)', () => {
     }
   });
 
-  it('keeps the Vendor text field on the three kinds that carry one', () => {
+  it('keeps the Vendor text field on the kinds that carry one', () => {
     // The gate did not disappear — it moved back to the field it was about.
-    for (const kind of ['application', 'managementTool', 'externalSystem'] as ElementKind[]) {
+    // Three of the kinds that had one were the same `application` in three
+    // bands (ADR-0012 §4), so what is left is the application itself.
+    for (const kind of ['application'] as ElementKind[]) {
       const { unmount } = renderInspector(element({ kind }));
       expect(screen.getByLabelText('Vendor')).toBeDefined();
       unmount();
     }
-    for (const kind of ['actor', 'inputChannel', 'component'] as ElementKind[]) {
+    for (const kind of ['actor', 'function', 'component'] as ElementKind[]) {
       const { unmount } = renderInspector(element({ kind }));
       expect(screen.queryByLabelText('Vendor')).toBeNull();
       unmount();

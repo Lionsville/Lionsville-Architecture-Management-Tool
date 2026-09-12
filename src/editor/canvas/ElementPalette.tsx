@@ -9,16 +9,14 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme, alpha, type Theme } from '@mui/material/styles';
 import type { ElementKind, UploadedLogo } from '../../model/types';
+import type { CanvasKind } from '../../model/placement';
 import { LogoGrid } from '../nodes/LogoGrid';
 import { LogoLibraryProvider } from '../nodes/logoRegistry';
 import {
   ApplicationGlyph,
-  ChannelGlyph,
   ComponentGlyph,
   DomainGroupGlyph,
-  GlobeGlyph,
   PersonGlyph,
-  WrenchGlyph,
 } from '../nodes/glyphs';
 import { ColorField } from '../ColorField';
 import { defaultGroupName } from './domainGroupPlacement';
@@ -96,9 +94,6 @@ const KIND_GLYPHS: Record<PaletteKey, FC<{ size?: number; strokeWidth?: number }
   actor: PersonGlyph,
   application: ApplicationGlyph,
   component: ComponentGlyph,
-  externalSystem: GlobeGlyph,
-  inputChannel: ChannelGlyph,
-  managementTool: WrenchGlyph,
   domainGroup: DomainGroupGlyph,
 };
 
@@ -136,7 +131,7 @@ function cleanGroupSeed(draft: PaletteDraft): DomainGroupSeed | undefined {
 // --- component ---------------------------------------------------------------
 
 export interface ElementPaletteProps {
-  kinds: ElementKind[];
+  kinds: CanvasKind[];
   onAdd(kind: ElementKind, seed?: PaletteSeed): void;
   /**
    * Layer 7 only: offer a "Domain group" entry (creates a layoutConfig rect).

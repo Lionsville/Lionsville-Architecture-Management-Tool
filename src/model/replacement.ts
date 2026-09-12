@@ -28,6 +28,7 @@
 import { placeOn } from './commands'
 import type { Command } from './commands'
 import { placedNode, placementRect } from './placement'
+import { nodeFigure } from './kinds'
 import { addDays } from './transition'
 import type { Transition, TransitionRole } from './transition'
 import type { DesignElement, DesignModel, ElementId, PlacedNode, Relation } from './types'
@@ -110,7 +111,7 @@ export function replacementCommands(
       for (const diagram of model.diagrams) {
         const held = placedNode(diagram, seed.id)
         if (!held) continue
-        const rect = placementRect(seed.kind, held)
+        const rect = placementRect(nodeFigure(seed, held.zone), held)
         const placement: PlacedNode = {
           id: toId,
           x: rect.x + rect.width + GAP,
