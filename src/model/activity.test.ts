@@ -127,10 +127,23 @@ describe('summarise', () => {
       { type: 'diagram.update', id: 'd1', patch: { autoRoute: true } },
       { type: 'project.settings', patch: { name: 'Other' } },
       { type: 'standin.refresh', entries: [{ id: 'crm', name: 'CRM', ref: 'acme/retail' }] },
+      { type: 'element.link', id: 'crm', name: 'Retail CRM', ref: 'acme/retail' },
     ] satisfies Command[]
     for (const command of every) {
       expect(summarise([command], before()).key, command.type).not.toBe('activity.nothing')
     }
+  })
+
+  /**
+   * A link gives the record the master's name, so the log has to read the
+   * name this scope had for it — otherwise the line is about a thing nobody
+   * here had ever called that.
+   */
+  it('names a link by what this scope called the thing before it', () => {
+    expect(summarise(
+      [{ type: 'element.link', id: 'crm', name: 'Retail CRM', ref: 'acme/retail' }],
+      before(),
+    )).toEqual({ key: 'activity.elementLinked', name: 'CRM' })
   })
 
   /**

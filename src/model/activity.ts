@@ -106,6 +106,13 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
      */
     case 'standin.refresh':
       return { key: 'activity.standInsRefreshed', count: lead.entries.length }
+    /**
+     * Named against the model as it WAS, like every other line here: a link
+     * gives the record the master's name, and a log that read the new one
+     * would say the step was about a thing this scope had never called that.
+     */
+    case 'element.link':
+      return { key: 'activity.elementLinked', name: before.elements[lead.id]?.name ?? lead.name }
 
     // The words follow the type (ADR-0012 §5). A flow keeps the word this tool
     // has always used for it — it is the line a person draws on a board, the

@@ -87,6 +87,23 @@ export type CommandBody =
    * stand-in, which is *link*, a different gesture with a confirmation.
    */
   | { type: 'standin.refresh'; entries: StandInCache[] }
+  /**
+   * A definition here becomes a stand-in of a record another scope answers
+   * for — *link*, the first of ADR-0012 §10's four gestures and the only one
+   * that writes one scope.
+   *
+   * This scope keeps what it answers for — its perspective, its presentation,
+   * where the thing sits on its own trees, and every child whose `parentId`
+   * names it — and gives up the owner's detail, because from now on somebody
+   * else says what the thing IS (`model/standIn.ts`). The `name` and `ref`
+   * come in for the same reason a refresh's do: the model has no idea what a
+   * scope is, and the index says what the tree holds.
+   *
+   * Its own command rather than an `element.update` with nine cleared fields,
+   * so the Activity list can say what the step was and so the rule about what
+   * a stand-in carries lives in one place.
+   */
+  | { type: 'element.link'; id: ElementId; name: string; ref: string }
 
   // --- relations (ADR-0012 §5) ---------------------------------------------
   | { type: 'relation.create'; relation: Relation; at?: number }

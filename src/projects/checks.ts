@@ -31,7 +31,8 @@
  * this module testable with two plain arrays.
  */
 import type { StringKey } from '../i18n'
-import type { DesignElement, ElementId } from '../model'
+import { OWNER_DETAIL } from '../model'
+import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
@@ -139,23 +140,15 @@ export type Finding = {
  * Everything on a record that belongs to whoever DEFINES the thing
  * (ADR-0012 §3).
  *
- * Written once, here, and read by two: this module reports these when they
- * appear on a stand-in, and `mayEdit.ts` refuses writes to them. A field in
- * one list and not the other would be a field the inspector greys out and the
- * agent accepts, or the reverse.
- *
- * What is deliberately NOT here: `description`, which is this scope's own
- * perspective and the one thing a stand-in may say for itself; the four
- * presentation fields, which are about this scope's drawing of it; and
- * `parentId` / `order` / `lane`, which say where it sits on THIS scope's
- * trees.
+ * Said once in `model/standIn.ts` and re-exported here, because three modules
+ * need the same answer: this one reports the fields when they appear on a
+ * stand-in, `mayEdit.ts` refuses writes to them, and the reducer's
+ * `element.link` drops them. A field in one list and not the others would be a
+ * field the inspector greys out and the agent accepts, or one a link leaves
+ * behind for these checks to complain about for ever.
  */
-export const OWNER_DETAIL = [
-  'lifecycle', 'lifecycleDates', 'successorId', 'owner', 'outside', 'partyId',
-  'category', 'vendor', 'technology', 'aspects', 'isManaged', 'scopes',
-] as const satisfies readonly (keyof DesignElement)[]
-
-export type OwnerDetailField = typeof OWNER_DETAIL[number]
+export { OWNER_DETAIL } from '../model'
+export type { OwnerDetailField } from '../model'
 
 /**
  * Is this field one the owning scope answers for?

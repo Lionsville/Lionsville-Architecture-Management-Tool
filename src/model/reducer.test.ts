@@ -186,6 +186,74 @@ describe('apply — refreshing a stand-in (ADR-0012 §9)', () => {
   })
 })
 
+/**
+ * *Link* is a definition giving up answering for itself (ADR-0012 §10): the
+ * owner's detail goes, the perspective and the presentation stay, and the
+ * children — whose `parentId` still names the id — are not touched at all.
+ */
+describe('apply — linking a definition to a master elsewhere (ADR-0012 §10)', () => {
+  function withDefinition(): Model {
+    return fromArrays({
+      name: 'Design',
+      elements: [
+        element('erp', {
+          name: 'Our ERP',
+          description: 'What the ERP means to us',
+          vendor: 'Initech',
+          owner: 'Platform team',
+          lifecycle: 'retiring',
+          isManaged: true,
+          aspects: { security: { status: 'partial' } },
+          accentColor: '#123456',
+        }),
+        element('erp-api', { name: 'ERP API', kind: 'component', parentId: 'erp' }),
+      ],
+      relations: [],
+      diagrams: [diagram('landscape', { placements: [placement('erp')] })],
+    })
+  }
+
+  it('drops the owner’s detail and keeps the perspective, reversibly', () => {
+    const m = withDefinition()
+    const next = reversible(m, { type: 'element.link', id: 'erp', name: 'ERP', ref: 'acme/retail' })
+    expect(next.elements.erp).toMatchObject({
+      name: 'ERP',
+      ref: 'acme/retail',
+      description: 'What the ERP means to us',
+      accentColor: '#123456',
+      lifecycle: 'live',
+      isManaged: false,
+      aspects: {},
+    })
+    expect(next.elements.erp.vendor).toBeUndefined()
+    expect(next.elements.erp.owner).toBeUndefined()
+  })
+
+  it('keeps the record on every view it is on, and its children under it', () => {
+    const m = withDefinition()
+    const next = ok(apply(m, { type: 'element.link', id: 'erp', name: 'ERP', ref: 'acme/retail' })).model
+    expect(next.diagrams.landscape.order.members).toEqual(['erp'])
+    expect(next.elements['erp-api'].parentId).toBe('erp')
+  })
+
+  it('is not a step when the record already is that stand-in', () => {
+    const m = fromArrays({
+      name: 'Design',
+      elements: [element('erp', { name: 'ERP', ref: 'acme/retail', isManaged: false })],
+      relations: [],
+      diagrams: [diagram('landscape', { placements: [] })],
+    })
+    const result = ok(apply(m, { type: 'element.link', id: 'erp', name: 'ERP', ref: 'acme/retail' }))
+    expect(result.model).toBe(m)
+    expect(result.inverse).toEqual(NOTHING)
+  })
+
+  it('refuses an id this scope does not hold', () => {
+    expect(apply(withDefinition(), { type: 'element.link', id: 'nope', name: 'X', ref: 'a' }))
+      .toEqual({ ok: false, reason: 'command.gone' })
+  })
+})
+
 describe('apply — relations', () => {
   it('creates, updates and deletes, each reversibly', () => {
     const m = sample()

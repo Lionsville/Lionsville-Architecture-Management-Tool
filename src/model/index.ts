@@ -34,6 +34,10 @@ export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
+/** What a stand-in may carry, and what the scope that defines it answers for (ADR-0012 §3). */
+export { OWNER_DETAIL, asStandIn } from './standIn'
+export type { OwnerDetailField } from './standIn'
+
 /** Where a thing is on a given day (ADR-0009). */
 export {
   relationLiveAt, DATED_PHASES, datesIn, datesInOrder, daysBetween, hasDates, isDay, isGoneOn,

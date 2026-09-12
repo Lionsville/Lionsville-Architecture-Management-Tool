@@ -87,6 +87,7 @@ export const EN = {
   'activity.elementChanged': 'Changed {name}',
   'activity.elementDeleted': 'Deleted {name}',
   'activity.standInsRefreshed': 'Refreshed {count} stand-ins',
+  'activity.elementLinked': 'Linked {name}',
   'activity.relationAdded': 'Drew a connection',
   'activity.relationChanged': 'Changed a connection',
   'activity.relationDeleted': 'Deleted a connection',

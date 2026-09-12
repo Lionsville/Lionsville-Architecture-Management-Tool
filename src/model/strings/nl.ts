@@ -78,6 +78,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.elementChanged': '{name} gewijzigd',
   'activity.elementDeleted': '{name} verwijderd',
   'activity.standInsRefreshed': '{count} verwijzingen bijgewerkt',
+  'activity.elementLinked': '{name} gekoppeld',
   'activity.relationAdded': 'Koppeling getekend',
   'activity.relationChanged': 'Koppeling gewijzigd',
   'activity.relationDeleted': 'Koppeling verwijderd',

@@ -78,6 +78,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.elementChanged': '{name} geändert',
   'activity.elementDeleted': '{name} gelöscht',
   'activity.standInsRefreshed': '{count} Platzhalter aktualisiert',
+  'activity.elementLinked': '{name} verknüpft',
   'activity.relationAdded': 'Verbindung gezeichnet',
   'activity.relationChanged': 'Verbindung geändert',
   'activity.relationDeleted': 'Verbindung gelöscht',

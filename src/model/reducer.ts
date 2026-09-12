@@ -31,7 +31,8 @@
  * becomes absent the first time anything touches it. Nothing reads the
  * difference; `decisionsOf` and `routesOf` answer the same either way.
  */
-import { transaction, reverse, NOTHING } from './commands'
+import { transaction, reverse, replacement, NOTHING } from './commands'
+import { asStandIn, isLinked } from './standIn'
 import type {
   BoardPatch, Command, CommandMeta, DiagramPatch, ProjectPatch, StandInCache,
 } from './commands'
@@ -245,6 +246,27 @@ export function apply(model: Model, command: Command): ApplyResult {
         rows = put(rows.by, rows.order, entry.id, { ...row, name: entry.name, ref: entry.ref })
       }
       return ok(withElements(model, rows), { type: 'standin.refresh', entries: before })
+    }
+
+    /**
+     * A definition becomes a stand-in — *link* (ADR-0012 §10).
+     *
+     * The inverse is the whole record put back, because a link drops nine
+     * fields and an undo that restored the name and the ref alone would leave
+     * the lifecycle, the vendor and the aspects gone for good. A record that
+     * is already exactly this stand-in is not a step, the way a refresh that
+     * finds nothing stale is not one.
+     */
+    case 'element.link': {
+      const held = model.elements[command.id]
+      if (!held) return gone
+      if (isLinked(held, command)) return ok(model, NOTHING)
+      const next = asStandIn(held, command)
+      const rows = put(model.elements, model.order.elements, command.id, next)
+      return ok(
+        withElements(model, rows),
+        { type: 'element.update', id: command.id, patch: replacement(next, held) },
+      )
     }
 
     // --- relations ----------------------------------------------------------

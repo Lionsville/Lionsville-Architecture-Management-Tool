@@ -78,6 +78,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'activity.elementChanged': '{name} wizige',
   'activity.elementDeleted': '{name} fuortsmiten',
   'activity.standInsRefreshed': '{count} ferwizings bywurke',
+  'activity.elementLinked': '{name} keppele',
   'activity.relationAdded': 'Ferbining tekene',
   'activity.relationChanged': 'Ferbining wizige',
   'activity.relationDeleted': 'Ferbining fuortsmiten',
