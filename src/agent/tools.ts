@@ -241,7 +241,11 @@ const SPECS = [
     tier: 'read',
     description:
       'Everything about one element: its fields, its documentation as markdown, the '
-      + 'connections that end on it, where it is drawn on each diagram, and the decisions recorded about it.',
+      + 'connections that end on it, where it is drawn on each diagram, and the decisions recorded about it. '
+      + 'A record carrying `ref` is a STAND-IN: the thing is defined in the scope that `ref` names, its `name` '
+      + 'and `ref` are caches of what is written there, and its description is this scope\'s own account of it. '
+      + 'Everything else on a stand-in — lifecycle, dates, owner, vendor, technology, aspects — belongs to the '
+      + 'owning scope and cannot be changed from here.',
     inputSchema: { type: 'object', properties: { id: ID('element') }, required: ['id'], additionalProperties: false },
   },
   {

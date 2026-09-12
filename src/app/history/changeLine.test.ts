@@ -34,6 +34,18 @@ describe('changeLine', () => {
       .toBe('Moved 40 on Roadmap')
   })
 
+  it('says what a record became, rather than listing "ref" among its fields', () => {
+    const s = translator('en')
+    const change = (refChanged: ModelChange['refChanged']): ModelChange =>
+      ({ kind: 'changed', what: 'element', id: 'erp', name: 'ERP', fields: ['ref'], refChanged })
+    expect(changeLine(change({ to: 'acme/retail' }), s))
+      .toBe('ERP is now a stand-in of acme/retail')
+    // The root's path is the empty string, so it is named by the word for it
+    // rather than by a sentence with a hole in it.
+    expect(changeLine(change({ to: '' }), s)).toBe('ERP is now a stand-in of the organisation')
+    expect(changeLine(change({}), s)).toBe('ERP is now defined here')
+  })
+
   it('calls a flow a connection, and the other four rows what they are', () => {
     // The vocabulary follows the type (ADR-0012 §5): a flow is the line a
     // person draws on a board and the one the file still calls a connection,

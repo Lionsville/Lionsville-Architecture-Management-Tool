@@ -59,6 +59,18 @@ export type ModelChange = {
   fields?: string[]
   /** How many boxes ended up somewhere else. Only on a geometry row. */
   count?: number
+  /**
+   * For an `element` whose `ref` changed: what the record now IS (ADR-0012 §3).
+   *
+   * Present only when `ref` itself differs. "Now a stand-in of retail" is a
+   * different fact from a rename, and a reader scanning a list of changed
+   * field names would never pick it out from among them.
+   *
+   * An object rather than a bare path, because the ROOT's path is the empty
+   * string: `to` absent means the record became a definition again, and `to`
+   * present — empty or not — is the scope it now stands in for.
+   */
+  refChanged?: { to?: string }
 }
 
 /** Fields that are not a change to the landscape, or are reported separately. */
@@ -245,7 +257,11 @@ function compare<T extends object>(
   if (!was || !now) return []
   const fields = changedFields(was, now)
   if (fields.length === 0) return []
-  return [{ kind: 'changed', what, id, name: nameOf(now), fields }]
+  const held = (now as { ref?: string }).ref
+  const ref = what === 'element' && fields.includes('ref')
+    ? { refChanged: held === undefined ? {} : { to: held } }
+    : {}
+  return [{ kind: 'changed', what, id, name: nameOf(now), fields, ...ref }]
 }
 
 /** Nothing happened, which is a perfectly ordinary answer. */

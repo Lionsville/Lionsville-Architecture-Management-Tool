@@ -128,6 +128,26 @@ describe('remapClipboard', () => {
     });
     expect(out.elements[0].parentId).toBeUndefined();
   });
+
+  /**
+   * A stand-in copies as a stand-in (ADR-0012 §3): what a record IS travels
+   * with it, and what it is is decided by `ref`. The copy gets a fresh id like
+   * everything else, so it is a stand-in nobody defines — which the ADR names
+   * as an ordinary state with a repair of its own (*link*, §10) rather than
+   * something a paste should quietly turn into a definition.
+   */
+  it('copies a stand-in as a stand-in', () => {
+    const out = remapClipboard({
+      elements: [element('erp', { name: 'ERP', ref: 'acme/retail' })],
+      relations: [],
+      placements: [placement('erp', { x: 0, y: 0 })],
+    }, {
+      ...minters(),
+      offset: { x: 0, y: 0 },
+      target: { kind: 'layer7' },
+    });
+    expect(out.elements[0]).toMatchObject({ id: 'tmp-e1', name: 'ERP', ref: 'acme/retail' });
+  });
 });
 
 describe('pasteOffsetFor', () => {

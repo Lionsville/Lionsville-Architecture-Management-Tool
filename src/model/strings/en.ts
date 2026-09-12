@@ -66,6 +66,7 @@ export const EN = {
   'deletion.groupOne': '{count} group',
   'deletion.groupOther': '{count} groups',
   'deletion.joined': '{head} and {last}',
+  'deletion.withStandIns': '{what} — {count} of them stand-ins, which stay where they are defined',
   /**
    * The three refusals from `logoLibrary.readLogoFile`. They travel as KEYS,
    * not sentences: the reader is a pure browser helper with no language of its
@@ -85,6 +86,7 @@ export const EN = {
   'activity.elementAdded': 'Added {name}',
   'activity.elementChanged': 'Changed {name}',
   'activity.elementDeleted': 'Deleted {name}',
+  'activity.standInsRefreshed': 'Refreshed {count} stand-ins',
   'activity.relationAdded': 'Drew a connection',
   'activity.relationChanged': 'Changed a connection',
   'activity.relationDeleted': 'Deleted a connection',

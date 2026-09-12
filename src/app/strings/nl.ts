@@ -169,6 +169,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'change.membershipRemoved': '{name} van {on} gehaald',
   'change.membershipMoved': '{name} op {on} verplaatst naar een andere band of groep',
   'change.geometry': '{count} verplaatst op {name}',
+  'change.becameStandIn': '{name} verwijst nu naar {scope}',
+  'change.becameDefinition': '{name} wordt nu hier gedefinieerd',
 
   'folder.title': 'Waar horen je projecten te staan?',
   'folder.body':

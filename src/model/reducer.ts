@@ -32,7 +32,9 @@
  * difference; `decisionsOf` and `routesOf` answer the same either way.
  */
 import { transaction, reverse, NOTHING } from './commands'
-import type { BoardPatch, Command, CommandMeta, DiagramPatch, ProjectPatch } from './commands'
+import type {
+  BoardPatch, Command, CommandMeta, DiagramPatch, ProjectPatch, StandInCache,
+} from './commands'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from './normalised'
@@ -217,6 +219,33 @@ export function apply(model: Model, command: Command): ApplyResult {
 
     case 'element.delete':
       return deleteElement(model, command.id, meta)
+
+    /**
+     * A stand-in's caches, written back to what the tree says (ADR-0012 §9).
+     *
+     * Every row that would change nothing is dropped, so a refresh over a
+     * scope that is already up to date is one command that lands nothing and
+     * therefore is not a step — which is what keeps the Activity list from
+     * filling up with "refreshed 0" every time somebody presses it. A row for
+     * an id this scope does not hold, or holds as a DEFINITION, is ignored:
+     * turning a definition into a stand-in is *link*, a gesture of its own
+     * with a confirmation, and never a side effect of refreshing.
+     */
+    case 'standin.refresh': {
+      const wanted = command.entries.filter((entry) => {
+        const row = model.elements[entry.id]
+        return row?.ref !== undefined && (row.name !== entry.name || row.ref !== entry.ref)
+      })
+      if (wanted.length === 0) return ok(model, NOTHING)
+      let rows: Rows<DesignElement> = { by: model.elements, order: model.order.elements }
+      const before: StandInCache[] = []
+      for (const entry of wanted) {
+        const row = model.elements[entry.id]
+        before.push({ id: entry.id, name: row.name, ref: row.ref! })
+        rows = put(rows.by, rows.order, entry.id, { ...row, name: entry.name, ref: entry.ref })
+      }
+      return ok(withElements(model, rows), { type: 'standin.refresh', entries: before })
+    }
 
     // --- relations ----------------------------------------------------------
     case 'relation.create': {

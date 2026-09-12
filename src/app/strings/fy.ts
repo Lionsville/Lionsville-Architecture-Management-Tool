@@ -169,6 +169,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'change.membershipRemoved': '{name} fan {on} helle',
   'change.membershipMoved': '{name} op {on} nei in oare bân of groep ferpleatst',
   'change.geometry': '{count} ferpleatst op {name}',
+  'change.becameStandIn': '{name} ferwiist no nei {scope}',
+  'change.becameDefinition': '{name} wurdt no hjir definiearre',
 
   'folder.title': 'Wêr hearre dyn projekten te stean?',
   'folder.body':

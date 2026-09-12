@@ -99,6 +99,10 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       if (!element) return refused('agent.unknownId', `element ${String(args.id)}`)
       return json({
         ...element,
+        // Said out loud beside `ref`, which is the path and not the fact
+        // (ADR-0012 §3). What it costs a reader to work out from a field that
+        // is usually absent is exactly what `element.update` refuses on.
+        standIn: element.ref !== undefined,
         // `parent`, not `parentApplication`: one field says what a thing sits
         // inside whatever kind it is (ADR-0012 §3) — a component's
         // application, a function's area, a step's phase, an actor's group.

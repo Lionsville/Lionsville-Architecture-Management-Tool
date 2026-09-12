@@ -194,6 +194,25 @@ describe('restoring the whole project', () => {
     expect(undone.ok && toArrays(undone.model)).toEqual(now())
   })
 
+  /**
+   * A snapshot from before a *link*, or from after one. Neither is a special
+   * case for a restore — a stand-in is a record like any other and `ref` is a
+   * field like any other — and the point of pinning it is that nothing in the
+   * restore path may start treating it as one.
+   */
+  it('puts a record back as the stand-in, or the definition, that it was', () => {
+    const refOf = (model: HostModel) => model.elements.find((e) => e.id === 'crm')?.ref
+    const linked = now({
+      elements: [
+        element('billing', 'Billing', { description: 'Rewritten.' }),
+        element('crm', 'CRM', { ref: 'acme/retail' }),
+        element('wms', 'Warehouse system'),
+      ],
+    })
+    expect(refOf(restored(then(), linked, undefined).after)).toBeUndefined()
+    expect(refOf(restored(linked, then(), undefined).after)).toBe('acme/retail')
+  })
+
   it('creates the diagram of a restored element before deleting today\'s, so a landscape is never the last', () => {
     // Today's only landscape is not the snapshot's; the snapshot's is created
     // first and today's deleted after, or the reducer would refuse.

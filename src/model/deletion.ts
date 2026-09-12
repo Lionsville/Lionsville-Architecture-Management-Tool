@@ -28,6 +28,16 @@ export interface DeletionSummary {
    * part of a delete nobody sees coming, and therefore the part worth saying.
    */
   cascadingConnections: number;
+  /**
+   * How many of the selected elements are stand-ins (ADR-0012 §3).
+   *
+   * Worth saying because it is the part of a delete people ASSUME wrong in the
+   * other direction: deleting a stand-in takes this scope's record of the
+   * thing, and the thing itself stays where it is defined. Nobody has ever
+   * needed reassuring that deleting a definition deletes it, so only this
+   * number is drawn.
+   */
+  standIns: number;
 }
 
 export function deletionSummary(model: DesignModel, selection: DeletionSelection): DeletionSummary {
@@ -41,6 +51,7 @@ export function deletionSummary(model: DesignModel, selection: DeletionSelection
     connections: explicit.size,
     domainGroups: new Set(selection.domainGroups).size,
     cascadingConnections: cascading.length,
+    standIns: model.elements.filter((e) => elementIds.has(e.id) && e.ref !== undefined).length,
   };
 }
 
@@ -89,9 +100,18 @@ export function describeDeletion(
       : '',
   ].filter(Boolean);
   if (parts.length === 0) return translate('deletion.nothing');
-  if (parts.length === 1) return parts[0];
-  return translate('deletion.joined', {
-    head: parts.slice(0, -1).join(', '),
-    last: parts[parts.length - 1],
-  });
+  const listed = parts.length === 1
+    ? parts[0]
+    : translate('deletion.joined', {
+      head: parts.slice(0, -1).join(', '),
+      last: parts[parts.length - 1],
+    });
+  // Appended rather than woven in: it is a clause about what the delete does
+  // NOT take, and a list of counts is the wrong shape for that (ADR-0012 §3).
+  return summary.standIns > 0
+    ? translate('deletion.withStandIns', {
+      what: listed,
+      count: summary.standIns,
+    })
+    : listed;
 }

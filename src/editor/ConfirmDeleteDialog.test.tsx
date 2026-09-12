@@ -11,6 +11,7 @@ const summary = (over: Partial<DeletionSummary> = {}): DeletionSummary => ({
   connections: 0,
   domainGroups: 0,
   cascadingConnections: 0,
+  standIns: 0,
   ...over,
 });
 

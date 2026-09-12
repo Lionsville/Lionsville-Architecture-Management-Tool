@@ -240,6 +240,10 @@ export const EN = {
   'change.membershipRemoved': 'Took {name} off {on}',
   'change.membershipMoved': 'Refiled {name} on {on}',
   'change.geometry': 'Moved {count} on {name}',
+  // What a record IS changed (ADR-0012 §3), which is not the same news as a
+  // field on it changing and does not read as one.
+  'change.becameStandIn': '{name} is now a stand-in of {scope}',
+  'change.becameDefinition': '{name} is now defined here',
 
   'folder.title': 'Where should your projects live?',
   'folder.body':

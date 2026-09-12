@@ -98,6 +98,14 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
         name: before.elements[lead.id]?.name,
         count: many('element.delete'),
       }
+    /**
+     * Named by the count and not by the first row: a refresh is one gesture
+     * over however many stand-ins had gone stale, and "refreshed Billing" for
+     * a step that rewrote nine of them would be the log describing a ninth of
+     * what happened.
+     */
+    case 'standin.refresh':
+      return { key: 'activity.standInsRefreshed', count: lead.entries.length }
 
     // The words follow the type (ADR-0012 §5). A flow keeps the word this tool
     // has always used for it — it is the line a person draws on a board, the

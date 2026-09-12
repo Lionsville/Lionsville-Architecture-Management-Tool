@@ -129,6 +129,63 @@ describe('apply — elements', () => {
   })
 })
 
+/**
+ * A stand-in's `name` and `ref` are caches of the master's (ADR-0012 §3), and
+ * a refresh is the one thing that writes them: a person does not type either.
+ * The fresh values come in with the command, because the model has no idea
+ * what a scope is — the index says what the tree holds and this carries the
+ * answer.
+ */
+describe('apply — refreshing a stand-in (ADR-0012 §9)', () => {
+  function withStandIn(): Model {
+    return fromArrays({
+      name: 'Design',
+      elements: [
+        element('a', { name: 'Ours' }),
+        element('erp', { name: 'ERP', ref: 'acme/retail' }),
+      ],
+      relations: [],
+      diagrams: [diagram('landscape', { placements: [placement('a')] })],
+    })
+  }
+
+  it('writes the caches, reversibly', () => {
+    const m = withStandIn()
+    const next = reversible(m, {
+      type: 'standin.refresh',
+      entries: [{ id: 'erp', name: 'Retail ERP', ref: 'acme/retail/warehouse' }],
+    })
+    expect(next.elements.erp).toMatchObject({ name: 'Retail ERP', ref: 'acme/retail/warehouse' })
+  })
+
+  /**
+   * Turning a definition into a stand-in is *link* — a gesture of its own,
+   * with a confirmation — and must never be a side effect of a refresh, which
+   * is something a page may do without asking.
+   */
+  it('leaves a definition alone, and an id this scope does not hold', () => {
+    const m = withStandIn()
+    const result = ok(apply(m, {
+      type: 'standin.refresh',
+      entries: [
+        { id: 'a', name: 'Somebody else\'s', ref: 'acme/retail' },
+        { id: 'gone', name: 'Never here', ref: 'acme/retail' },
+      ],
+    }))
+    expect(result.model).toBe(m)
+  })
+
+  it('is not a step when every cache already says what the tree says', () => {
+    const m = withStandIn()
+    const result = ok(apply(m, {
+      type: 'standin.refresh',
+      entries: [{ id: 'erp', name: 'ERP', ref: 'acme/retail' }],
+    }))
+    expect(result.model).toBe(m)
+    expect(result.inverse).toEqual(NOTHING)
+  })
+})
+
 describe('apply — relations', () => {
   it('creates, updates and deletes, each reversibly', () => {
     const m = sample()

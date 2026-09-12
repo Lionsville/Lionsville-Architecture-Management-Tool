@@ -126,9 +126,25 @@ describe('summarise', () => {
       { type: 'diagram.settings', id: 'd1', settings: { name: 'L7' } },
       { type: 'diagram.update', id: 'd1', patch: { autoRoute: true } },
       { type: 'project.settings', patch: { name: 'Other' } },
+      { type: 'standin.refresh', entries: [{ id: 'crm', name: 'CRM', ref: 'acme/retail' }] },
     ] satisfies Command[]
     for (const command of every) {
       expect(summarise([command], before()).key, command.type).not.toBe('activity.nothing')
     }
+  })
+
+  /**
+   * By the count, not by the first row: a refresh is one gesture over however
+   * many stand-ins had gone stale, and "refreshed CRM" for a step that
+   * rewrote nine of them would describe a ninth of what happened.
+   */
+  it('names a refresh by how many stand-ins it wrote', () => {
+    expect(summarise([{
+      type: 'standin.refresh',
+      entries: [
+        { id: 'crm', name: 'CRM', ref: 'acme/retail' },
+        { id: 'billing', name: 'Billing', ref: 'acme/finance' },
+      ],
+    }], before())).toEqual({ key: 'activity.standInsRefreshed', count: 2 })
   })
 })

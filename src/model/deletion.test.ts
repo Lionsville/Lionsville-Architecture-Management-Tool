@@ -17,6 +17,7 @@ const summary = (overrides: Partial<DeletionSummary> = {}): DeletionSummary => (
   connections: 0,
   domainGroups: 0,
   cascadingConnections: 0,
+  standIns: 0,
   ...overrides,
 });
 
@@ -102,5 +103,30 @@ describe('describeDeletion', () => {
 
   it('says "nothing" for an empty summary', () => {
     expect(describeDeletion(summary())).toBe('nothing');
+  });
+
+  /**
+   * The part of a delete people assume wrong in the other direction
+   * (ADR-0012 §3): deleting a stand-in takes this scope's record of the thing,
+   * and the thing stays where it is defined. Nobody ever needed reassuring
+   * that deleting a definition deletes it, so only this number is drawn.
+   */
+  it('says how many of them are stand-ins, and what that means', () => {
+    expect(describeDeletion(summary({ elements: 3, standIns: 2 }))).toBe(
+      '3 elements — 2 of them stand-ins, which stay where they are defined',
+    );
+    expect(describeDeletion(summary({ elements: 3 }))).toBe('3 elements');
+  });
+});
+
+describe('deletionSummary — stand-ins', () => {
+  it('counts the selected records that only draw what somebody else defines', () => {
+    const tree = model({
+      elements: [element('e1'), element('erp', { ref: 'acme/retail' })],
+      relations: [],
+    });
+    expect(
+      deletionSummary(tree, { elementIds: ['e1', 'erp'], connectionIds: [], domainGroups: [] }),
+    ).toMatchObject({ elements: 2, standIns: 1 });
   });
 });

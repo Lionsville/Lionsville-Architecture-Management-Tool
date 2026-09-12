@@ -54,6 +54,33 @@ describe('diffModels', () => {
     })
   })
 
+  /**
+   * What a record IS is not a field on it (ADR-0012 §3). Left among the
+   * changed fields, "ref" would be one word in a list nobody reads closely —
+   * and it is the news that a scope stopped answering for something.
+   */
+  it('says when an element became a stand-in, and of where', () => {
+    const after = model({
+      elements: [element('crews', 'Crews', { ref: 'acme/retail' }), element('reisinfo', 'Reisinformatie')],
+    })
+    expect(diffModels(model(), after)[0]).toMatchObject({
+      kind: 'changed', what: 'element', id: 'crews', refChanged: { to: 'acme/retail' },
+    })
+  })
+
+  /**
+   * The root's path is the empty string, so "it became a stand-in of the
+   * organisation" and "it stopped being one" are told apart by the key being
+   * there at all, never by the value being empty.
+   */
+  it('tells a stand-in of the root from a record that stopped being one', () => {
+    const drawn = model({
+      elements: [element('crews', 'Crews', { ref: '' }), element('reisinfo', 'Reisinformatie')],
+    })
+    expect(diffModels(model(), drawn)[0]).toMatchObject({ refChanged: { to: '' } })
+    expect(diffModels(drawn, model())[0]).toMatchObject({ refChanged: {} })
+  })
+
   it('names a connection by its ends when it has no label', () => {
     const after = model({ relations: [] })
     expect(diffModels(model(), after)).toEqual([

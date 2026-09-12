@@ -72,6 +72,21 @@ export type CommandBody =
   | { type: 'element.update'; id: ElementId; patch: Partial<DesignElement> }
   /** Takes its relations, its placements and any container view about it. */
   | { type: 'element.delete'; id: ElementId }
+  /**
+   * Write a stand-in's caches back to what the tree says (ADR-0012 §9).
+   *
+   * A stand-in's `name` and `ref` are caches of the master's, and they go
+   * stale when the owning scope renames the thing or the definition moves. A
+   * person does not type either of them — a *refresh* rewrites them, several
+   * at a time, as one undo step and one Activity line that says what it was.
+   *
+   * The fresh values come IN, because the model has no idea what a scope is:
+   * the index says what the tree holds (`projects/scopeIndex.ts`) and this
+   * carries the answer. A row for an id this scope does not hold, or holds as
+   * a definition, is ignored — a refresh must never turn a definition into a
+   * stand-in, which is *link*, a different gesture with a confirmation.
+   */
+  | { type: 'standin.refresh'; entries: StandInCache[] }
 
   // --- relations (ADR-0012 §5) ---------------------------------------------
   | { type: 'relation.create'; relation: Relation; at?: number }
@@ -134,6 +149,15 @@ export type CommandBody =
    * Warehouse" but "restored Warehouse as of the 3rd". `restore.ts` builds it.
    */
   | { type: 'restore'; restored: Restored; commands: Command[] }
+
+/** One stand-in's caches, as the tree currently has them (ADR-0012 §3). */
+export type StandInCache = {
+  id: ElementId
+  /** The master's name. */
+  name: string
+  /** Where the master is — the path, as `DesignElement.ref` spells it. */
+  ref: string
+}
 
 /** What a restore put back, for the line that names the step. */
 export type Restored = {

@@ -59,6 +59,17 @@ export function changeLine(change: ModelChange, s: Translate): string {
   if (change.what === 'geometry') {
     return s('change.geometry', { count: change.count ?? 0, name: change.name })
   }
+  // What a record IS changed, which is a different fact from a field on it
+  // (ADR-0012 §3) and would otherwise read as "changed Billing: ref".
+  if (change.refChanged) {
+    const { to } = change.refChanged
+    return to === undefined
+      ? s('change.becameDefinition', { name: change.name })
+      // The root's path is the empty string, and a sentence saying "a stand-in
+      // of " would be a sentence with a hole in it: the organisation is named
+      // by the word for it, and every other scope by its path.
+      : s('change.becameStandIn', { name: change.name, scope: to || s('common.organisation') })
+  }
   const asRow = change.relationType !== undefined && change.relationType !== 'flow'
   const key = asRow ? ROW_KEYS[change.kind] : KEYS[`${change.what}:${change.kind}`]
   return s(key, {

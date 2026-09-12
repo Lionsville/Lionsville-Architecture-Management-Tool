@@ -23,4 +23,5 @@ export const FY: Record<keyof typeof EN, string> = {
   'common.languageEn': 'English',
   'common.empty': 'Noch neat skreaun.',
   'common.history': 'Skiednis…',
+  'common.organisation': 'de organisaasje',
 }
