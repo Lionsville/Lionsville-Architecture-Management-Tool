@@ -56,8 +56,10 @@ organisation on that page; closing the page brings you back here.
 **The tree**, beneath: one row per scope, the children indented, with a chevron
 to fold a domain shut. A row says how much is inside it — landscapes and
 diagrams over the whole subtree for a domain, diagrams for a landscape — and
-when it last changed. **Order** lists by name or by what you changed most
-recently.
+when it last changed. Under that, where there is anything to say, it carries
+its **findings**: how many names two scopes both claim, how many copies have
+gone stale, and the rest of *One name across the organisation* below.
+**Order** lists by name or by what you changed most recently.
 
 - **Open** enters a scope that draws something. A scope that draws nothing is a
   domain: everything filed under it is listed, and there is no canvas to show.
@@ -83,6 +85,65 @@ reopens the scope you had open.
 
 Six names are refused, because a scope's own folders use them already:
 `diagrams`, `docs`, `decisions`, `transitions`, `images` and `logos`.
+
+## One name across the organisation
+
+A name means the same thing everywhere in your folder. The warehouse system is
+one system whichever domain draws it, and a capability the organisation names
+is that capability wherever a landscape refines it — so each thing is written
+down **once**, in one scope, and every other scope that uses it points at the
+same one.
+
+**The scope that writes it down answers for it.** That record carries the
+detail: what phase it is in and on which dates, who owns it, which vendor sells
+it, what it is built on, its maturity. Change any of it there and everywhere
+that draws it says the new thing.
+
+**Everywhere else holds a stand-in** — a card that draws the thing without
+answering for it. A stand-in shows its name with a small **from …** line
+underneath saying where it is really defined, and its inspector says the same
+with a button to go there. Its name and that line are copies, so they are shown
+read-only, and so is everything in the owner's detail; what a stand-in *can*
+carry is **its own description** — what the ERP means to the warehouse is a
+different page from what the ERP is, and both are worth writing. So are the
+colour, the shape and the icon you give it, and where you put it on your own
+boards.
+
+Which scope answers for a thing is decided by **depth**: the deepest scope that
+writes it down. That one rule works in both directions, which is the point.
+Capabilities are written at the organisation and refined downwards, so the
+organisation keeps them. Applications are written in the landscape that runs
+them, so a domain keeps its own — and an organisation that lists an application
+by name before anybody has detailed it is naming a placeholder that steps aside
+the moment somebody deeper writes the real record.
+
+### What a finding means
+
+The app never refuses a save over any of this. It reads the whole folder when
+it opens — and again whenever the folder changes under it — and reports what it
+finds. Each row of the tree on the organisation screen carries its own line.
+
+- **Conflict** — two scopes at the same level both write down the same name.
+  Somebody is mid-migration, or two teams named the same thing on the same
+  afternoon. Both rows say so, because neither of them is the wrong one. Turn
+  one into a stand-in of the other.
+- **Drifting** — a stand-in's copy of the name is not what the owning scope
+  calls it any more, or the scope it points at has moved. **Refresh** writes the
+  copies back in one step, which you can undo like anything else.
+- **Undefined** — a stand-in of something nothing in the folder writes down. The
+  card is drawn and the line is kept; what it needs is a record somewhere to
+  point at.
+- **A loose row** — a line that ends on something nothing in the folder holds.
+  Kept and drawn as a stub, never dropped by a save.
+- **A proposal** — a capability a domain named that no scope above it has. Not a
+  fault: it is a conversation with the level above.
+- **Without an owner** — a system marked as somebody else's that nobody has said
+  whose it is.
+
+One thing on the list is **information rather than a fault**: a record no board
+in its own scope draws. A thing can be real, owned and documented without being
+on anybody's picture yet, so it is counted apart and never coloured like a
+finding.
 
 ## Your working folder (desktop)
 

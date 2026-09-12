@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3648 tests** and one of every config. The
+One codebase, in modules, with **3758 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3648 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3758 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -202,6 +202,14 @@ src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.t
 src/projects/     A scope: open, save, order, summarise, address, remember.
                     scope             the document every level is (ADR-0012 §1),
                                       and the arithmetic over a tree of them
+                    scopeIndex        who owns an id and who else draws it, over
+                                      the whole tree (ADR-0012 §2). `index.ts` is
+                                      the barrel, so the index is named for what
+                                      it is
+                    checks            what the tree contradicts about itself, as
+                                      values with keys — never a refusal (§9)
+                    mayEdit           what one scope may change about one record;
+                                      the owner's detail refused as a value (§10)
                     scopePath · scopeLabel   the address, and what to call the
                                       organisation a scope sits in
                     links             the one rule about what may become an anchor
@@ -231,7 +239,10 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     agentServer       the server's three states, and mcp.json's shape
 src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
-                    ScopeStore · PreferencesStore · DocumentGateway
+                    ScopeStore        …and `models?()`, the tree's `model.json`
+                                      files and nothing else — what the index is
+                                      built from, one file per scope
+                    PreferencesStore · DocumentGateway
                     ProjectHistory · Diagnostics · HostControls
                     FolderSettings · UpdateSettings   the two other scopes
                     AgentGateway      where an agent's calls arrive, and the switch
@@ -515,6 +526,9 @@ identifiers is still a list of a customer's identifiers.
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |
 | Agent resources | `lvarch://element/<id>/description`, `lvarch://decision/<id>` |
 | Vendor / copyright | Lionsville Group BV |
+| A record that draws what another scope defines (ADR-0012 §3) | a **stand-in**: `ref` present, its `name` and `ref` caches, its `description` this scope's own |
+| The scope that answers for an id | the **master**: the deepest definition; one above it is a **declaration** and yields |
+| What the tree contradicts about itself (§9) | a **finding**: a value with a `check.` key, never a refusal and never a reason a save fails |
 | Shipped example | a fictional organisation, never a real customer's landscape |
 
 One thing deliberately does **not** change:
@@ -829,3 +843,38 @@ that were not records: a group nobody wrote a `group.json` for, and the root,
 whose name was the `organisation` key in `folder.json` and is taken out of it
 once the root exists. A browser tab moves its keys from `lvarch.project.` to
 `lvarch.scope.` through the same pass.
+
+Then an id came to mean one thing across the whole organisation
+(`docs/plan-2.0.0.md`, steps 8 and 9). Ids were unique per document, so the
+same application drawn on two domains' boards was two unrelated elements and an
+interface arriving from another domain was a box with a name and no link.
+**`projects/scopeIndex.ts` is the price of federation**: every scope's
+`model.json`, read at open and again when the watcher fires, indexed by id —
+definitions by depth, from which the master, the declarations and a conflict
+fall out, and stand-ins by path. `ScopeStore.models?()` is what reads it, one
+file per scope and never a description, a view, a decision or a geometry; a
+store without it is loaded scope by scope instead, which is slower and not
+wrong. The register of §2 is that index filtered to applications — derived,
+never committed. ADR-0004's table gained a line for it: twenty scopes of the
+large fixture, 7.6 ms against 500.
+
+`Element.ref` is the whole of what a stand-in is, and most of the model needed
+nothing for it — the format writes it because the writer spreads the record, a
+stand-in's `docs/<id>.md` is its perspective page because that is where a
+description is already filed, and `restore` tolerates it because `differing` is
+generic over keys. `projects/checks.ts` turns the index's truths into findings
+with keys, and `projects/mayEdit.ts` is the one function that says what a scope
+may write; the inspectors and the agent's `element.update` both read it, so a
+field greyed out on a panel cannot be written from a tool call. Neither
+`editor` nor `business` may know a scope tree exists, so each is handed the
+fields and the words as props.
+
+The shipped example is two documents now rather than one: the business layer —
+the journey, the rail, the areas, the capabilities, the sheet — is the
+organisation's, and the applications are the landscape's, which holds a
+stand-in of every capability its applications support and of the four people it
+draws. **The organisation owns every actor** (§4: "a landscape's actor is a
+stand-in of one of them"), because the rail is one tree on the organisation's
+own page. Counting what covers a capability therefore crosses scopes:
+`coverageOf` and `sheetPage` take a second list of rows, handed in from the
+index because `business` sits below `projects` and may not reach for it.

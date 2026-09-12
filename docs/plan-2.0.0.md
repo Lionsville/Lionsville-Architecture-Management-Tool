@@ -413,21 +413,69 @@ that work.
 
 ## Beta 3 — one identity
 
-### 8. Organisation-wide ids and the index
+### 8. Organisation-wide ids and the index — landed 12 September 2026 (9be31de…7d2e76b)
 
-`idPolicy` takes the tree's taken set. `projects/index.ts`: the index built
-from every scope's `model.json` — definitions (id → name, kind, master path,
-declaring paths), stand-ins (id → drawing paths) — with a budget line in
-`model/testing/` for twenty scopes of a few thousand elements. The watcher
-invalidates it. A session holds it read-only.
+`idPolicy` takes the tree's taken set. The index built from every scope's
+`model.json` — definitions (id → name, kind, master path, declaring paths),
+stand-ins (id → drawing paths) — with a budget line in `model/testing/` for
+twenty scopes of a few thousand elements. The watcher invalidates it. A session
+holds it read-only.
 
-### 9. `ref`, the checks, and `mayEdit`
+**Landed**, and five things the next stretch should know:
 
-`Element.ref`; the checks of ADR-0012 §9 as one `checks.ts` in `business/`
-or `projects/` — conflict, drift, dangling, unmapped, proposal, uncovered,
-unattributed, master drawn nowhere — each a value with a key and a place it
-is drawn. `mayEdit(id, scope)` refuses as a value; the inspector shows the
-owning scope and offers to open it.
+- **It is `projects/scopeIndex.ts`, not `projects/index.ts`.** That name is the
+  module barrel and says what the module is for; a second meaning for it would
+  cost a reader the one file they can rely on.
+- **`ScopeStore.models?()` is the clause it reads**, optional the way
+  `outdated?()` is: one `model.json` per scope, never a description, a view, a
+  decision or a geometry. A store without it is loaded scope by scope instead
+  (`indexOf`), which is slower and not wrong — so a backend written without the
+  clause still federates.
+- **Drift lives in the index, not in the checks.** Which caches disagree with
+  the master is a fact about the tree and the index is the one pass that has
+  both halves; `checks.ts` turns the truth into a finding.
+- **The whole tree is watched, not the open scope.** A sibling domain renaming
+  its ERP is exactly the change the drift check exists to notice, so `useIndex`
+  binds the watcher at the root. There is no debounce: the desktop watcher
+  already settles a burst into one report, and what the hook adds is the guard
+  it cannot give — a rebuild in flight is queued once rather than started again.
+- **A failed read keeps the index it had.** An empty one says every stand-in is
+  dangling and every application unowned, which is a screen full of findings
+  about a read that did not happen.
+
+### 9. `ref`, the checks, and `mayEdit` — landed 12 September 2026 (cf175bc…a6f9f82)
+
+`Element.ref`; the checks of ADR-0012 §9 as one `projects/checks.ts` — conflict,
+drift, dangling, unmapped, proposal, uncovered, unattributed, master drawn
+nowhere — each a value with a key and a place it is drawn. `mayEdit` refuses as
+a value; the inspector shows the owning scope and offers to open it.
+
+**Landed**, and six things the next stretch should know:
+
+- **`business/`'s two arrive as an argument.** `projects` sits below `business`
+  in the import matrix, so `unmappedFunctions` and `coverageOf` are handed in as
+  two lists of ids rather than called — the same rule the brief applies in the
+  other direction, and it keeps `checks.ts` testable with two plain arrays.
+- **A stand-in's `name` and `ref` are refused with the owner's detail**, for the
+  other half of §10's sentence rather than the same one: they are caches, and a
+  refresh rewrites them where a person does not. `FIXED_ON_A_STANDIN` is the
+  joined list, and it is what the inspectors are HANDED — neither `editor` nor
+  `business` may know a scope tree exists.
+- **`check.notDrawn` is about this scope's own masters.** The ADR derives it
+  from views, and views are the one thing `models()` deliberately does not read,
+  so it is answered from the open scope's document rather than from the index.
+- **The proposal rule reads the index's own scopes.** "The organisation" is a
+  master with no ancestor IN THE INDEX, not one whose path happens to be empty —
+  which is also what makes an index over a subtree (a `.lvarch` of one domain)
+  behave.
+- **A `ref` is an address, and a move has to carry it.** `copyExampleInto`
+  re-addresses refs along with paths; **`ScopeStore` moves and the four gestures
+  do not yet**, and a domain moved with stand-ins pointing into it will drift.
+  That is step 10's, and it is the first thing step 10 should write.
+- **The example is the reference tree**, and `examples.test.ts` pins that no
+  finding fires on it. Writing the split is what found three faults in the
+  checks; a shipped example that contradicts itself is the tool teaching the
+  wrong thing on the first screen.
 
 ### 10. The register page and the four gestures
 

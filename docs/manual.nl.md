@@ -58,8 +58,11 @@ weer hier.
 **De boom**, eronder: één regel per onderdeel, de kinderen ingesprongen, met een
 pijltje om een domein dicht te klappen. Een regel zegt hoeveel erin zit —
 landschappen en diagrammen over de hele tak voor een domein, diagrammen voor een
-landschap — en wanneer het laatst iets veranderde. **Volgorde** sorteert op naam
-of op wat je het laatst hebt gewijzigd.
+landschap — en wanneer het laatst iets veranderde. Daaronder draagt de regel,
+waar er iets te melden is, zijn **bevindingen**: hoeveel namen twee onderdelen
+allebei claimen, hoeveel kopieën verouderd zijn, en de rest van *Eén naam in de
+hele organisatie* hieronder. **Volgorde** sorteert op naam of op wat je het
+laatst hebt gewijzigd.
 
 - **Openen** gaat een onderdeel in dat iets tekent. Een onderdeel dat niets
   tekent is een domein: alles wat eronder valt staat eronder, en er is geen bord
@@ -87,6 +90,65 @@ het onderdeel dat je open had.
 
 Zes namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
 `diagrams`, `docs`, `decisions`, `transitions`, `images` en `logos`.
+
+## Eén naam in de hele organisatie
+
+Een naam betekent overal in je map hetzelfde. Het magazijnsysteem is één
+systeem, welk domein het ook tekent, en een capability die de organisatie
+benoemt is diezelfde capability waar een landschap hem verfijnt — dus elk ding
+wordt **één keer** vastgelegd, in één onderdeel, en elk ander onderdeel dat het
+gebruikt wijst naar datzelfde ding.
+
+**Het onderdeel dat het vastlegt, beheert het.** Daar zitten de details: in
+welke fase het is en op welke data, wie het beheert, welke leverancier, waarop
+het draait, hoe volwassen het is. Verander daar iets en overal waar het
+getekend wordt staat het nieuwe.
+
+**Overal elders staat een verwijzing** — een kaart die het ding tekent zonder
+het te beheren. Zo'n kaart toont de naam met een klein **uit …** eronder dat
+zegt waar het echt is vastgelegd, en het detailpaneel zegt hetzelfde met een
+knop om daarheen te gaan. De naam en die regel zijn kopieën en staan dus
+alleen-lezen, net als alles wat de beheerder beantwoordt. Wat een verwijzing
+wél mag dragen is **haar eigen beschrijving** — wat het ERP voor het magazijn
+betekent is een andere pagina dan wat het ERP ís, en allebei zijn ze het
+opschrijven waard. Net zo de kleur, de vorm en het icoon die je hem geeft, en
+waar je hem op je eigen borden zet.
+
+Welk onderdeel een ding beheert, wordt bepaald door **diepte**: het diepste
+onderdeel dat het vastlegt. Die ene regel werkt beide kanten op, en dat is het
+punt. Capabilities worden bij de organisatie vastgelegd en naar beneden
+verfijnd, dus de organisatie houdt ze. Applicaties worden vastgelegd in het
+landschap dat ze draait, dus een domein houdt de zijne — en een organisatie die
+een applicatie alvast bij naam noemt, noemt een plaatshouder die opzij gaat
+zodra iemand dieper het echte record schrijft.
+
+### Wat een bevinding betekent
+
+De app weigert hierover nooit een save. Hij leest de hele map bij het openen —
+en opnieuw zodra de map onder je verandert — en meldt wat hij vindt. Elke regel
+van de boom op het organisatiescherm draagt zijn eigen zin.
+
+- **Conflict** — twee onderdelen op hetzelfde niveau leggen dezelfde naam vast.
+  Iemand is halverwege een migratie, of twee teams noemden hetzelfde ding op
+  dezelfde middag. Beide regels zeggen het, want geen van beide is de foute.
+  Maak er één een verwijzing naar de ander van.
+- **Verouderd** — de kopie van de naam klopt niet meer met hoe het beherende
+  onderdeel het noemt, of dat onderdeel is verplaatst. **Bijwerken** schrijft de
+  kopieën in één stap terug, en dat kun je ongedaan maken als al het andere.
+- **Ongedefinieerd** — een verwijzing naar iets dat niets in de map vastlegt. De
+  kaart wordt getekend en de regel blijft staan; wat ontbreekt is ergens een
+  record om naar te wijzen.
+- **Een losse regel** — een lijn die eindigt op iets dat niets in de map heeft.
+  Blijft staan en wordt als stomp getekend, en verdwijnt nooit bij een save.
+- **Een voorstel** — een capability die een domein benoemde en geen onderdeel
+  erboven. Geen fout: het is een gesprek met het niveau erboven.
+- **Zonder eigenaar** — een systeem dat als andermans is gemarkeerd zonder dat
+  iemand heeft gezegd van wie.
+
+Eén ding op die lijst is **informatie en geen fout**: een record dat geen enkel
+bord in zijn eigen onderdeel tekent. Iets kan echt, beheerd en beschreven zijn
+zonder al op iemands plaat te staan, dus het wordt apart geteld en nooit als
+bevinding gekleurd.
 
 ## Je werkmap (desktop)
 
