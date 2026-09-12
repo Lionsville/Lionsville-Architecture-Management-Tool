@@ -41,6 +41,9 @@ export {
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'
 
+/** Which boards draw a thing, on their own day (ADR-0009, ADR-0010). */
+export { boardsDrawing } from './drawnOn'
+
 /** What the dates in a landscape contradict (ADR-0009). */
 export { findings } from './checks'
 export type { CheckContext, Finding, FindingKind, FindingSubject } from './checks'
