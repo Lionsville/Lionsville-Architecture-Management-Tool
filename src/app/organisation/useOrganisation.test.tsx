@@ -57,13 +57,17 @@ function mount(
   active = true,
 ): Harness {
   const store = new InMemoryScopeStore(initial)
-  const scopes: ScopeLibrary = {
+  return mountWith({
     list: () => store.list(),
     load: (path) => store.load(path),
     save: (scope) => store.save(scope),
     remove: (path) => store.remove(path),
     ...over,
-  }
+  }, store, active)
+}
+
+/** The same harness over a library somebody else built — one that counts its calls. */
+function mountWith(scopes: ScopeLibrary, store: InMemoryScopeStore, active = true): Harness {
   const entered = vi.fn<(scope: ScopeSnapshot, page?: InitialPage) => void>()
   const failures: string[] = []
   let current: Organisation | undefined
@@ -193,6 +197,71 @@ describe('useOrganisation', () => {
     expect(failures).toContain('organisation.root')
     expect(held().ready).toBe(true)
     expect(held().root).toBeUndefined()
+  })
+
+  /**
+   * A ref is an address (ADR-0012 §3), and until this the move carried the
+   * folders and left every stand-in elsewhere pointing at where they used to
+   * be — a drift finding in scopes nobody had touched.
+   */
+  describe('moving a scope', () => {
+    const element = (id: string, ref?: string) => ({
+      id, kind: 'application' as const, name: id, lifecycle: 'live' as const,
+      isManaged: false, aspects: {}, ...(ref !== undefined ? { ref } : {}),
+    })
+    const scope = (path: string, elements: ReturnType<typeof element>[]): ScopeSnapshot => ({
+      path,
+      model: { name: path || 'Acme', elements, relations: [], diagrams: [] },
+      activeDiagramId: '',
+      logoLibrary: [],
+    })
+    const tree = () => [
+      scope('', []),
+      scope('freight', []),
+      scope('rail', [element('erp')]),
+      scope('rail/rolling-stock', [element('wms')]),
+      scope('road', [element('erp', 'rail'), element('wms', 'rail/rolling-stock')]),
+    ]
+
+    it('carries every ref that points into the subtree', async () => {
+      const { held, store } = mount(tree())
+      await settle()
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+
+      const road = await store.load('road')
+      expect(road?.model.elements.map((e) => e.ref))
+        .toEqual(['freight/rail', 'freight/rail/rolling-stock'])
+      expect((await store.load('freight/rail/rolling-stock'))?.model.elements[0].id).toBe('wms')
+      expect(await store.load('rail')).toBeUndefined()
+    })
+
+    /**
+     * The order is the point: a pass that wrote the subtree first and then
+     * failed would have removed the old folder before the rest of the tree
+     * had heard where it went.
+     */
+    it('writes the scopes outside it first, then the subtree, then removes the old folder', async () => {
+      const writes: string[] = []
+      const store = new InMemoryScopeStore(tree())
+      const { held } = mountWith({
+        models: () => store.models(),
+        list: () => store.list(),
+        load: (path) => store.load(path),
+        save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
+        remove: (path) => { writes.push(`remove ${path}`); return store.remove(path) },
+      }, store)
+      await settle()
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+
+      expect(writes).toEqual([
+        'save road',
+        'save freight/rail',
+        'save freight/rail/rolling-stock',
+        'remove rail',
+      ])
+    })
   })
 
   it('folds a scope shut and open again', async () => {

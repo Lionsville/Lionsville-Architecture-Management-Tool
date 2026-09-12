@@ -287,12 +287,24 @@ export type IndexSource = {
  * defines nothing", and a read that failed is not evidence for it.
  */
 export async function indexOf(source: IndexSource): Promise<ScopeIndex> {
-  if (source.models) return indexScopes(await source.models())
+  return indexScopes(await treeModels(source))
+}
+
+/**
+ * Every scope's records and rows, however the store can answer for them.
+ *
+ * Said out loud rather than kept inside {@link indexOf}, because the index is
+ * not the only pass over the whole tree: re-addressing the refs that point
+ * into a moved subtree (`readdress.ts`) asks the same question and must not
+ * grow a second way of asking it.
+ */
+export async function treeModels(source: IndexSource): Promise<ScopeModel[]> {
+  if (source.models) return source.models()
   const paths = flattenScopes(await source.list()).map((scope) => scope.path)
   const loaded = await Promise.all(paths.map((path) => source.load(path)))
-  return indexScopes(loaded
+  return loaded
     .filter((scope): scope is ScopeSnapshot => scope !== undefined)
-    .map((scope) => ({ path: scope.path, model: scope.model })))
+    .map((scope) => ({ path: scope.path, model: scope.model }))
 }
 
 /**

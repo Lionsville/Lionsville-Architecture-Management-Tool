@@ -28,6 +28,7 @@ import type {
   ProjectOrder, ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary,
 } from '../projects/scope'
 import { findingsByScope, identityFindings } from '../projects/checks'
+import { applyRefPatch } from '../projects/readdress'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
 import {
@@ -56,6 +57,7 @@ import type { WorkingSource } from '../platform/workingSource'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
+import { carryRefs } from './carryRefs'
 import { ChooseFolder } from './organisation/ChooseFolder'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { useOrganisation } from './organisation/useOrganisation'
@@ -627,6 +629,21 @@ export function App({
           : scopePathFor(targetGroup, scopePathLabel(current.path)))
       }
 
+      const moved = moving && current.path !== next.path
+      // A ref is an address, and a move carries the ones pointing into this
+      // scope (ADR-0012 §3) — the same pass the organisation screen's move
+      // makes, because it is the same act from a different dialog.
+      if (moved) {
+        try {
+          const carried = await carryRefs({ scopes: projects, from: current.path, to: next.path })
+          next = applyRefPatch(next, carried.get(current.path))
+        } catch (cause) {
+          failed('applyProjectSettings.readdress', cause)
+          reportStorage(false)
+          return undefined
+        }
+      }
+
       // Before the save, so nothing can write to the old address from the
       // moment this app stops considering it ours.
       if (moving) movedAway.current = current.path
@@ -638,7 +655,6 @@ export function App({
         movedAway.current = undefined
         return undefined
       }
-      const moved = moving && current.path !== next.path
       if (moved) {
         // Inside the guard, not after it. The save has landed, so the project
         // exists at both addresses; a remove that throws here used to do so

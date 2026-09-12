@@ -30,11 +30,14 @@ import {
 } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { normaliseLinks } from '../../projects/links'
+import { applyRefPatch } from '../../projects/readdress'
+import type { RefPatch } from '../../projects/readdress'
 import { reasonOf } from '../../platform/errors'
 import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
+import { carryRefs } from '../carryRefs'
 import { copyExampleInto } from '../examples'
 import type { ExampleProject } from '../examples'
 import type { InitialPage, ScopeLibrary, ScopeSettingsPatch } from '../App'
@@ -278,14 +281,31 @@ export function useOrganisation({
       if (next.client === undefined) delete next.client
       if (next.links === undefined) delete next.links
 
+      /**
+       * A ref is an address, so a move carries the ones pointing into it
+       * (ADR-0012 §3). The scopes OUTSIDE the subtree are written by this call;
+       * what comes back is what the subtree's own scopes should say, applied
+       * below as each is written at its new address. A failure here is a move
+       * that has not started, which is why it has a guard of its own.
+       */
+      let carried = new Map<ScopePath, RefPatch>()
+      if (moving) {
+        try {
+          carried = await carryRefs({ scopes, from: path, to })
+        } catch (cause) {
+          onFailure('organisation.settings.readdress', cause, 'group.saveFailed')
+          return
+        }
+      }
+
       try {
-        await scopes.save(next)
+        await scopes.save(applyRefPatch(next, carried.get(path)))
         if (moving && subtree) {
           // The scope itself is already written; what is left is everything
           // filed under it, parents first.
           for (const pair of movedPaths(subtree, to).slice(1)) {
             const child = await scopes.load(pair.from)
-            if (child) await scopes.save({ ...child, path: pair.to })
+            if (child) await scopes.save(applyRefPatch({ ...child, path: pair.to }, carried.get(pair.from)))
           }
         }
       } catch (cause) {
