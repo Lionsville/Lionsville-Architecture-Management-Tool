@@ -442,6 +442,77 @@ einddatum heen is.
 Het toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap
 verouderd is — dat kan niets — en de pagina zegt dat onder de lijst.
 
+## De bedrijfsarchitectuur
+
+**+** bij de diagramtabs, dan **Bedrijfsarchitectuur**, maakt een **blad**: de
+laag boven de applicaties, op één pagina. Een landschap zegt wat er draait en wat
+met wat praat. Een blad zegt wat de organisatie doet, voor wie ze het doet, en
+hoeveel ervan door software wordt ingevuld.
+
+Een blad wordt *gelegd*, niet getekend. Er valt niets te slepen en er is geen
+router: wat het toont zijn vier bomen — een klantreis, de gebieden eronder, de
+capabilities daarbinnen, en de belanghebbenden langs de zijkant — en de pagina
+wordt berekend uit hun volgorde en hun diepte. Het krijgt een tab naast de
+borden, en het openen laat het canvas staan waar het stond, zodat de tekening
+waaraan u werkte er nog is als u terugkomt.
+
+<!-- screenshot: the sheet, beside the landscape -->
+
+### De klantreis, en de paden erdoorheen
+
+Bovenaan loopt één **klantreis**: wat de organisatie doet, van begin tot eind. De
+fasen zijn de kolommen, van links naar rechts te lezen, en onder elke fase staan
+de stappen die erin gezet worden.
+
+Eén klantreis is zelden één pad. Een stap kan een **rijstrook** noemen — de
+belanghebbende wiens eigen pad het is — en het blad tekent een rij per strook
+onder dezelfde fasen, het gemeenschappelijke pad eerst. Waar een strook aftakt en
+waar hij weer aansluit staat nergens vastgelegd: het is de eerste en de laatste
+fase waarin de strook een eigen stap heeft. Een fase binnen dat bereik waarin hij
+er geen heeft wordt getekend als *zoals de rij hierboven*; daarbuiten wordt de
+strook helemaal niet getekend. Niets kan het oneens zijn over waar een pad
+weggaat en terugkomt, omdat niets anders dan de stappen het zegt.
+
+Een stap die iemand buiten de organisatie zet — een partner die een order
+afhandelt — wordt gemarkeerd als buiten de organisatie gedaan, zodat de pagina
+kan zeggen dat een fase door niemand binnen wordt gedekt.
+
+### Gebieden, en wat ze invult
+
+Onder de klantreis staan de **gebieden**, elk met hun groeperingen en de
+capabilities daarbinnen. De diepte is wat getekend wordt, en het model kent de
+woorden niet: een item bovenaan is een gebied, een item daarin een groepering, en
+een item daarin weer een capability.
+
+Elke capability zegt wie hem invult:
+
+- **een applicatie**, of meerdere — wat hem ondersteunt. Een capability met er
+  twee waarvan er één uitfaseert is een migratie die u kunt zien.
+- **mensen** — niemands software, iemands werk. Een volledig antwoord en geen
+  gat: een pagina die dit als probleem tekende zou u aanraden software te kopen
+  voor wat u met de hand doet.
+- **nog niets** — geen van beide, en dát is het gat waarvoor je de pagina tekent.
+
+Die staan in het model en worden niet op de pagina getypt: een capability is
+ingevuld omdat iets in het landschap hem ondersteunt, en zo'n ondersteuning kan
+een venster dragen zoals alles met een datum, dus een capability die vanaf maart
+is ingevuld is vanaf maart ingevuld.
+
+Onderaan staat een band voor wat **nog niet aan een domein is toegewezen** — de
+gebieden die nog aan niemand zijn gegeven. Dat is een bevinding, geen fout: een
+lijst van wat de organisatie gezegd heeft te doen en nog niet gezegd heeft wie
+het doet.
+
+### Er een bewerken
+
+Kies iets op de pagina en het opent rechts: de naam, de beschrijving, waar het
+onder valt, waar het tussen zijn buren staat, wiens pad een stap is, en de
+levenscyclus van een capability — een capability die gebouwd wordt is in dezelfde
+fase als een applicatie die gebouwd wordt. Iets onder iets anders hangen wordt
+geweigerd als het daarmee in zichzelf zou komen te zitten; die weigering staat in
+de lijst en wordt er niet uit weggelaten. Het oog in de bovenbalk verbergt de
+belanghebbenden.
+
 ## Zoeken
 
 **Zoeken** in de bovenbalk, of ⌘K, doorzoekt het hele project in één keer:

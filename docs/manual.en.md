@@ -425,6 +425,74 @@ after one of its ends has retired, and a plan past the day it was due to finish.
 It says where the dates contradict each other. It cannot tell you that a landscape
 is out of date — nothing can — and the page says so under the list.
 
+## The business architecture
+
+**+** in the diagram tabs, then **Business architecture**, makes a **sheet**: the
+layer above the applications, on one page. A landscape says what runs and what
+talks to what. A sheet says what the organisation does, who it does it for, and
+how much of it any software covers at all.
+
+A sheet is *laid out*, not drawn. There is nothing to drag and no router: what it
+shows is four trees — a journey, the areas of responsibility under it, the
+capabilities inside those, and the stakeholders down the side — and the page is
+computed from their order and their depth. It gets a tab beside the boards, and
+opening it leaves the canvas where it was, so the picture you were working on is
+still there when you come back.
+
+<!-- screenshot: the sheet, beside the landscape -->
+
+### The journey, and the paths through it
+
+Across the top runs one **journey**: the thing the organisation does, end to end.
+Its phases are the columns, read left to right, and under each phase are the
+steps taken in it.
+
+One journey is rarely one path. A step can name a **lane** — the stakeholder
+whose own path it is — and the sheet draws a row per lane under the same phases,
+the common path first. Where a lane forks and where it rejoins is not written
+down anywhere: it is the first and last phase the lane has a step of its own in.
+A phase inside that span where it has none is drawn as *as the row above*;
+outside the span the lane is not drawn at all. Nothing can disagree with where a
+path leaves and returns, because nothing but its steps says so.
+
+A step somebody outside the organisation takes — a partner fulfilling an order —
+is marked as done outside, so the page can say a phase is covered by nobody
+inside.
+
+### Areas, and what covers them
+
+Under the journey are the **areas** of responsibility, each with its groupings
+and the capabilities inside those. Depth is what is drawn, and the model does not
+know the words: a top-level entry is an area, one inside it is a grouping, one
+inside that is a capability.
+
+Every capability says who covers it:
+
+- **an app**, or several — the applications that support it. A capability with
+  two of them and one of those retiring is a migration you can see.
+- **people** — nobody's software, somebody's job. A complete answer and not a
+  gap: a page that drew this as a problem would be telling you to buy software
+  for the thing you do by hand.
+- **nothing yet** — neither, which *is* the gap, and the reason to draw the page.
+
+Those are read from the model rather than typed on the page: a capability is
+covered because something in the landscape supports it, and support can carry a
+window like anything else with a date on it, so a capability covered from March
+is covered from March.
+
+At the end is a band for what is **not yet mapped to a domain** — the areas
+nobody has been given. It is a finding, not an error: a list of what the
+organisation has said it does and has not yet said who does it.
+
+### Editing one
+
+Pick anything on the page and it opens on the right: its name, its description,
+what it sits under, where it is among its neighbours, whose path a step is, and
+the lifecycle a capability is in — a capability being built is in the same phase
+as an application being built. Moving one thing under another is refused if it
+would put a thing inside itself; the refusal is offered in the list, not hidden
+from it. The eye in the top bar hides the stakeholder rail.
+
 ## Search
 
 **Search** in the top bar, or ⌘K, searches the whole project at once: elements
