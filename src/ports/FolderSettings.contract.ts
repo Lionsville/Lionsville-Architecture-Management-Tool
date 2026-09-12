@@ -9,7 +9,9 @@
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LOCAL_SETTINGS, LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
+import {
+  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH, WITHOUT_ORGANISATION,
+} from '../projects/folderSettings'
 import type { FolderSettingsStore } from './FolderSettings'
 
 export type SeededStore = {
@@ -58,10 +60,29 @@ export function describeFolderSettings(
       expect(await store.readLocal()).toEqual(DEFAULT_LOCAL_SETTINGS)
     })
 
-    it('never writes the shared file, which has nothing to say yet', async () => {
+    it('never writes the shared file for a machine setting', async () => {
       const { store, textAt } = make()
       await store.writeLocal({ git: { pullOnOpen: true } })
       expect(await textAt('.lionsville-architecture/folder.json')).toBeUndefined()
+    })
+
+    /**
+     * The shared file's one and only write: the 4 → 5 pass taking away the key
+     * that held an organisation's name before the root scope existed to hold
+     * it (ADR-0012 §1). A colleague's newer keys have to survive it.
+     */
+    it('takes away the key the pass names, and carries every other through', async () => {
+      const { store, textAt } = make({
+        [FOLDER_SETTINGS_PATH]: '{"version":1,"organisation":{"name":"Acme Logistics"},"somethingLater":true}\n',
+      })
+      expect((await store.readFolder()).legacyOrganisationName).toBe('Acme Logistics')
+
+      await store.writeFolder(WITHOUT_ORGANISATION)
+
+      const held = JSON.parse((await textAt(FOLDER_SETTINGS_PATH))!)
+      expect('organisation' in held).toBe(false)
+      expect(held.somethingLater).toBe(true)
+      expect(await store.readFolder()).toEqual({})
     })
   })
 }

@@ -41,6 +41,17 @@ import type { KeyValueStorage } from './KeyValueStorage'
 export const SCOPE_PREFIX = 'lvarch.scope.'
 
 /**
+ * The prefix a build before scopes used, and the whole of the 4 → 5 move here.
+ *
+ * A key is not a folder: there is no header to fold, only a name to change. So
+ * this store reads both prefixes, calls a record under the old one outdated,
+ * and writes the new key and removes the old one on the save the pass makes —
+ * which is the same `outdated` / `load` / `save` the folder goes through, and
+ * therefore the same one pass.
+ */
+export const LEGACY_PROJECT_PREFIX = 'lvarch.project.'
+
+/**
  * What this store will hold, near enough.
  *
  * The origin quota for browser storage is customarily five megabytes, counted
@@ -101,7 +112,24 @@ export class WebStorageScopeStore implements ScopeStore {
   }
 
   private ourKeys(): string[] {
-    return this.storage.keys().filter((key) => key.startsWith(this.prefix))
+    return this.storage.keys()
+      .filter((key) => key.startsWith(this.prefix) || key.startsWith(LEGACY_PROJECT_PREFIX))
+  }
+
+  /** The path a key of either vintage addresses. */
+  private pathOf(key: string): ScopePath {
+    return key.startsWith(this.prefix)
+      ? key.slice(this.prefix.length)
+      : key.slice(LEGACY_PROJECT_PREFIX.length)
+  }
+
+  private legacyKeyFor(path: ScopePath): string {
+    return `${LEGACY_PROJECT_PREFIX}${path}`
+  }
+
+  private forget(key: string): void {
+    this.storage.removeItem(key)
+    this.sizes().delete(key)
   }
 
   /** See {@link ScopeStore.pressure}. */
@@ -151,6 +179,14 @@ export class WebStorageScopeStore implements ScopeStore {
   outdated(): Promise<ScopePath[]> {
     const found: ScopePath[] = []
     for (const key of this.ourKeys()) {
+      if (key.startsWith(LEGACY_PROJECT_PREFIX)) {
+        // A record only an older build could address. Reading it is enough to
+        // know it is there; whether its model is old as well is answered by
+        // the same save.
+        const held = this.pathOf(key)
+        if (isSafeScopePath(held) && this.read(key)) found.push(held)
+        continue
+      }
       let parsed: unknown
       try {
         const raw = this.storage.getItem(key)
@@ -169,12 +205,11 @@ export class WebStorageScopeStore implements ScopeStore {
   list(): Promise<ScopeSummary> {
     let keys: string[]
     try {
-      keys = this.storage.keys()
+      keys = this.ourKeys()
     } catch {
       return Promise.resolve(scopeTree([]))
     }
     const found = keys
-      .filter((key) => key.startsWith(this.prefix))
       .map((key) => this.read(key))
       .filter((scope): scope is ScopeSnapshot => scope !== undefined)
       .map(summarise)
@@ -188,7 +223,9 @@ export class WebStorageScopeStore implements ScopeStore {
 
   load(path: ScopePath): Promise<ScopeSnapshot | undefined> {
     if (!isSafeScopePath(path)) return Promise.resolve(undefined)
-    return Promise.resolve(this.read(this.keyFor(path)))
+    // The old key second, so a record the pass has already moved wins over the
+    // one it has not yet taken away.
+    return Promise.resolve(this.read(this.keyFor(path)) ?? this.read(this.legacyKeyFor(path)))
   }
 
   save(scope: ScopeSnapshot): Promise<void> {
@@ -201,6 +238,9 @@ export class WebStorageScopeStore implements ScopeStore {
       const text = JSON.stringify(stamped)
       this.storage.setItem(key, text)
       this.sizes().set(key, text.length)
+      // Written before the old one is taken away: an interrupted move then
+      // leaves two copies of a scope, which opens, rather than none.
+      this.forget(this.legacyKeyFor(scope.path))
       return Promise.resolve()
     } catch (err) {
       return Promise.reject(err instanceof Error ? err : new Error(String(err)))
@@ -214,9 +254,7 @@ export class WebStorageScopeStore implements ScopeStore {
       // behind is addressed by nothing.
       if (isSafeScopePath(path) && path !== ROOT_SCOPE) {
         for (const key of this.ourKeys()) {
-          if (!isWithinScope(key.slice(this.prefix.length), path)) continue
-          this.storage.removeItem(key)
-          this.sizes().delete(key)
+          if (isWithinScope(this.pathOf(key), path)) this.forget(key)
         }
       }
     } catch {

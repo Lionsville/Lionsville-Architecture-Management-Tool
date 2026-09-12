@@ -52,7 +52,17 @@ export const FOLDER_SETTINGS_VERSION = 1
  * reads it keeps its shape, and so the next shared setting is one field rather
  * than a new file.
  */
-export type FolderSettings = Readonly<Record<string, never>>
+export type FolderSettings = {
+  /**
+   * What an older build called this organisation, where the file still says so.
+   *
+   * Not a setting, and not read by anything that draws: the root scope's
+   * `scope.json` is where a name belongs (ADR-0012 §1). The 4 → 5 pass is this
+   * field's only reader — it takes the name for the root it is about to write,
+   * and then names the key in a patch that drops it.
+   */
+  readonly legacyOrganisationName?: string
+}
 
 /**
  * What a writer may change in the shared file.
@@ -66,6 +76,12 @@ export type FolderSettings = Readonly<Record<string, never>>
 export type FolderSettingsPatch = {
   readonly without?: readonly string[]
 }
+
+/** The key an older build wrote the organisation's name under. */
+const LEGACY_ORGANISATION = 'organisation'
+
+/** The patch that pass applies, once, after the root scope has its name. */
+export const WITHOUT_ORGANISATION: FolderSettingsPatch = { without: [LEGACY_ORGANISATION] }
 
 /** What this machine does about the folder's git remote. */
 export type LocalGitSettings = {
@@ -105,13 +121,17 @@ function flag(value: unknown, fallback: boolean): boolean {
 /**
  * The shared settings out of `folder.json`, or what an absent one means.
  *
- * Nothing either way, at this version, and forgiving about everything: a file
- * that will not parse, a file from a newer build, no file at all. What a key
- * this build does not know means is that build's business, and the writer
- * carries it through.
+ * Nothing this build governs, at this version, and forgiving about everything:
+ * a file that will not parse, a file from a newer build, no file at all. What a
+ * key this build does not know means is that build's business, and the writer
+ * carries it through. The one key it does read is the one it is about to take
+ * away — see {@link FolderSettings.legacyOrganisationName}.
  */
-export function readFolderSettings(_text: string | undefined): FolderSettings {
-  return {}
+export function readFolderSettings(text: string | undefined): FolderSettings {
+  const held = text === undefined ? undefined : record(parseJson(text))
+  const organisation = record(held?.[LEGACY_ORGANISATION])
+  const name = typeof organisation?.['name'] === 'string' ? organisation['name'].trim() : ''
+  return name ? { legacyOrganisationName: name } : {}
 }
 
 /**

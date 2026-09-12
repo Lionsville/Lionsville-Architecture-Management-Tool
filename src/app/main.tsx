@@ -55,6 +55,7 @@ import {
   withoutLastScope, withWorkingDirectory,
 } from '../projects/preferences'
 import { migrated, migrateInto, upgradeProjects } from '../projects/migration'
+import { WITHOUT_ORGANISATION } from '../projects/folderSettings'
 import type { PullOutcome } from '../platform/sync'
 import { isOpenableScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -322,13 +323,22 @@ async function moveInto(folder: Shell, root: string): Promise<boolean> {
  * work for want of a commit would be the worse answer.
  */
 async function upgradeFormat(): Promise<void> {
-  const { history, diagnostics } = shell
+  const { history, diagnostics, folderSettings } = shell
   const s = translator(readLanguage(stored)
     ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
-  const tally = await upgradeProjects(shell.scopes, history && (async () => {
-    if (!await history.available() || !await history.keeping()) return false
-    return history.snapshot(s('history.beforeUpgrade'))
-  })).catch((cause: unknown) => {
+  // The organisation's name, where a build before scopes put it: `folder.json`
+  // (ADR-0012 §1). Read before the pass because the root it is about to write
+  // is what the name is for, and taken out of the file after — a name in two
+  // places is a name that can disagree with itself.
+  const settings = await folderSettings?.readFolder().catch(() => undefined)
+  const tally = await upgradeProjects(shell.scopes, {
+    rootName: settings?.legacyOrganisationName
+      ?? (shell.source.kind === 'folder' ? shell.source.name : undefined),
+    record: history && (async () => {
+      if (!await history.available() || !await history.keeping()) return false
+      return history.snapshot(s('history.beforeUpgrade'))
+    }),
+  }).catch((cause: unknown) => {
     diagnostics.report({
       level: 'error', where: 'formatUpgrade', message: 'upgrading the file format failed', cause,
     })
@@ -336,11 +346,21 @@ async function upgradeFormat(): Promise<void> {
   })
   // Counts, never names: this line goes to a log file the user is invited to
   // hand over. Silent when there was nothing to do, which is almost always.
-  if (!tally || (tally.upgraded === 0 && tally.failed === 0)) return
+  if (!tally || (tally.upgraded === 0 && tally.created === 0 && tally.failed === 0)) return
+  if (settings?.legacyOrganisationName) {
+    // Best effort, and after the root is written: a key left behind is stale
+    // data in a file every build forgives, where a name taken away before the
+    // scope that replaces it exists would be a name lost.
+    await folderSettings?.writeFolder(WITHOUT_ORGANISATION).catch((cause: unknown) => {
+      diagnostics.report({
+        level: 'warn', where: 'formatUpgrade', message: 'the old organisation key was left in place', cause,
+      })
+    })
+  }
   diagnostics.report({
     level: tally.failed ? 'warn' : 'info',
     where: 'formatUpgrade',
-    message: `upgraded ${tally.upgraded} scopes, failed ${tally.failed}, snapshot ${tally.recorded}`,
+    message: `upgraded ${tally.upgraded} scopes, created ${tally.created}, failed ${tally.failed}, snapshot ${tally.recorded}`,
   })
 }
 

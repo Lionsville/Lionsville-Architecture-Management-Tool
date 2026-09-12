@@ -40,6 +40,7 @@ describeFolderSettings('in-memory directory', (files = {}) => {
       readFolder: async () => { await planted; return store.readFolder() },
       readLocal: async () => { await planted; return store.readLocal() },
       writeLocal: async (patch) => { await planted; return store.writeLocal(patch) },
+      writeFolder: async (patch) => { await planted; return store.writeFolder(patch) },
     },
     textAt: (path) => textAt(root, path),
   }

@@ -4,7 +4,7 @@
  *
  * The one implementation, over `DirectoryHandleLike`: the desktop's IPC handle
  * and the browser's directory handle both satisfy it, which is how
- * `FileSystemGroupStore` avoids two as well. Everything about what the files
+ * `FileSystemScopeStore` avoids two as well. Everything about what the files
  * mean is in `projects/folderSettings.ts`; this only finds them and puts the
  * text back.
  *
@@ -15,10 +15,12 @@
  * change notice: folder settings are read on open, not live.
  */
 import {
-  FOLDER_SETTINGS_FILE, LOCAL_SETTINGS_FILE, SETTINGS_FOLDER, localSettingsText, readFolderSettings,
-  readLocalSettings,
+  FOLDER_SETTINGS_FILE, folderSettingsText, LOCAL_SETTINGS_FILE, SETTINGS_FOLDER, localSettingsText,
+  readFolderSettings, readLocalSettings,
 } from '../../projects/folderSettings'
-import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
+import type {
+  FolderSettings, FolderSettingsPatch, LocalSettings, LocalSettingsPatch,
+} from '../../projects/folderSettings'
 import type { FolderSettingsStore } from '../../ports/FolderSettings'
 import type { DirectoryHandleLike } from './FileSystemScopeStore'
 
@@ -49,12 +51,19 @@ export class FileSystemFolderSettings implements FolderSettingsStore {
   }
 
   async writeLocal(patch: LocalSettingsPatch): Promise<void> {
-    const next = localSettingsText(await this.text(LOCAL_SETTINGS_FILE), patch)
+    await this.write(LOCAL_SETTINGS_FILE, localSettingsText(await this.text(LOCAL_SETTINGS_FILE), patch))
+  }
+
+  async writeFolder(patch: FolderSettingsPatch): Promise<void> {
+    await this.write(FOLDER_SETTINGS_FILE, folderSettingsText(await this.text(FOLDER_SETTINGS_FILE), patch))
+  }
+
+  private async write(name: string, text: string): Promise<void> {
     const folder = await this.root.getDirectoryHandle(SETTINGS_FOLDER, { create: true })
-    const handle = await folder.getFileHandle(LOCAL_SETTINGS_FILE, { create: true })
+    const handle = await folder.getFileHandle(name, { create: true })
     const writable = await handle.createWritable()
     try {
-      await writable.write(next)
+      await writable.write(text)
     } finally {
       await writable.close()
     }

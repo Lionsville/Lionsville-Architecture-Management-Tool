@@ -5,7 +5,7 @@ import {
 import { flattenScopes } from '../../projects/scope'
 import type { KeyValueStorage } from './KeyValueStorage'
 import {
-  SCOPE_PREFIX, STORAGE_BUDGET_CHARS, WebStorageScopeStore,
+  LEGACY_PROJECT_PREFIX, SCOPE_PREFIX, STORAGE_BUDGET_CHARS, WebStorageScopeStore,
 } from './WebStorageScopeStore'
 
 /**
@@ -240,5 +240,47 @@ describe('WebStorageScopeStore — how full it is', () => {
       used: 0,
       budget: STORAGE_BUDGET_CHARS,
     })
+  })
+})
+
+/**
+ * A tab that has records from before scopes.
+ *
+ * There is no header in a key, only a name: the move is the prefix, and it
+ * happens on the same `outdated` / `load` / `save` the folder goes through.
+ */
+describe('WebStorageScopeStore — keys from before scopes', () => {
+  const legacyKey = `${LEGACY_PROJECT_PREFIX}acme/landscape`
+  const stored = () => JSON.stringify({ ...sampleScope(), path: 'acme/landscape' })
+
+  it('names an old key as one to move, and stops once it has been written back', async () => {
+    const storage = fakeStorage({ [legacyKey]: stored() })
+    const store = new WebStorageScopeStore(storage)
+
+    expect(await store.outdated()).toEqual(['acme/landscape'])
+    await store.save((await store.load('acme/landscape'))!)
+    expect(await store.outdated()).toEqual([])
+  })
+
+  it('reads it before the move, and files it under the new prefix after', async () => {
+    const storage = fakeStorage({ [legacyKey]: stored() })
+    const store = new WebStorageScopeStore(storage)
+
+    expect((await store.load('acme/landscape'))?.model.name).toBe('Application landscape')
+    await store.save((await store.load('acme/landscape'))!)
+
+    expect(storage.keys()).toEqual([`${SCOPE_PREFIX}acme/landscape`])
+    expect((await store.load('acme/landscape'))?.model.name).toBe('Application landscape')
+  })
+
+  it('lists it, so a tab that has not been through the pass still shows the work', async () => {
+    const store = new WebStorageScopeStore(fakeStorage({ [legacyKey]: stored() }))
+    expect(await listed(store)).toEqual(['acme/landscape'])
+  })
+
+  it('takes the old key away when the scope is removed', async () => {
+    const storage = fakeStorage({ [legacyKey]: stored() })
+    await new WebStorageScopeStore(storage).remove('acme/landscape')
+    expect(storage.keys()).toEqual([])
   })
 })

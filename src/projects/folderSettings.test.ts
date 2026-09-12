@@ -108,11 +108,20 @@ describe('readFolderSettings', () => {
   /**
    * The shared file is keyless again (ADR-0012 §1): its one key was the
    * organisation's name, and the root scope's `scope.json` is where a name
-   * belongs. A key an older build wrote is somebody else's business, not an
-   * error, and the writer carries it through.
+   * belongs. The one thing still read out of it is that name, for the 4 → 5
+   * pass to give the root it is about to write — and the pass takes the key
+   * away afterwards.
    */
-  it('reads nothing, including out of a file an older build wrote a section into', () => {
-    expect(readFolderSettings('{"version":1,"organisation":{"name":"Acme"}}')).toEqual({})
+  it('reads the name an older build wrote, for the pass that is about to drop it', () => {
+    expect(readFolderSettings('{"version":1,"organisation":{"name":"  Acme  "}}'))
+      .toEqual({ legacyOrganisationName: 'Acme' })
+  })
+
+  it('reads nothing out of a section with no usable name in it', () => {
+    for (const held of ['{"organisation":"Acme"}', '{"organisation":{"name":7}}',
+      '{"organisation":{"name":"   "}}', '{"organisation":{}}']) {
+      expect(readFolderSettings(held), held).toEqual({})
+    }
   })
 })
 

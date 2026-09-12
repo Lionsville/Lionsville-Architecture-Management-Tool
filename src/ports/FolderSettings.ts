@@ -13,14 +13,26 @@
  * default (`projects/folderSettings.ts` decides what that is). Writing patches
  * what is there and may reject, the way every other write may.
  */
-import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
+import type {
+  FolderSettings, FolderSettingsPatch, LocalSettings, LocalSettingsPatch,
+} from '../projects/folderSettings'
 
 export interface FolderSettingsStore {
   /** Where this one keeps things, in plain words. For messages and the trail. */
   readonly id: string
 
-  /** What everyone who opens this folder agrees on. Nothing yet. */
+  /** What everyone who opens this folder agrees on. Nothing this build governs. */
   readFolder(): Promise<FolderSettings>
+
+  /**
+   * Change the shared file.
+   *
+   * Only one caller, and only once: the 4 → 5 pass, taking away the key that
+   * held an organisation's name before the root scope existed to hold it
+   * (ADR-0012 §1). Everything the patch does not name is carried through, so an
+   * older build writing here cannot prune a newer one's settings.
+   */
+  writeFolder(patch: FolderSettingsPatch): Promise<void>
 
   /** What this machine does about the folder. Defaults when there is no file. */
   readLocal(): Promise<LocalSettings>

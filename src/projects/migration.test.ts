@@ -18,6 +18,12 @@ import type { ScopePath } from './scopePath'
 const named = (group: string, project: string, name: string): ScopeSnapshot =>
   scopeAt(`${group}/${project}`, name)
 
+/** A store that says which of its scopes an older build wrote. */
+const outdated = (store: InMemoryScopeStore, refs: ScopePath[]): UpgradeTarget =>
+  Object.assign(Object.create(store) as InMemoryScopeStore, {
+    outdated: () => Promise.resolve(refs),
+  })
+
 describe('copyScopesInto', () => {
   it('copies everything the folder does not have', async () => {
     const from = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
@@ -102,11 +108,6 @@ describe('migrateInto', () => {
  * because the store is the one that knows which of its projects are old.
  */
 describe('upgradeProjects', () => {
-  const outdated = (store: InMemoryScopeStore, refs: ScopePath[]): UpgradeTarget =>
-    Object.assign(Object.create(store) as InMemoryScopeStore, {
-      outdated: () => Promise.resolve(refs),
-    })
-
   it('reads each old project and writes it back', async () => {
     const store = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
     const written: string[] = []
@@ -115,14 +116,15 @@ describe('upgradeProjects', () => {
 
     expect(await upgradeProjects(target)).toMatchObject({ upgraded: 1, failed: 0 })
     // The one that was already current is not touched, which is what keeps a
-    // migration out of everybody's `git status` and off every timestamp.
-    expect(written).toEqual(['acme/one'])
+    // migration out of everybody's `git status` and off every timestamp. The
+    // two after it are the folders format 4 never made records of.
+    expect(written).toEqual(['acme/one', '', 'acme'])
   })
 
   it('does nothing at all for a store with nothing old in it', async () => {
     const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
     expect(await upgradeProjects(outdated(store, []))).toEqual({
-      upgraded: 0, failed: 0, recorded: 'nothing to record',
+      upgraded: 0, created: 0, failed: 0, recorded: 'nothing to record',
     })
   })
 
@@ -139,12 +141,11 @@ describe('upgradeProjects', () => {
     const target = outdated(store, ['acme/one'])
     target.save = async (project) => { order.push('save'); await store.save(project) }
 
-    const tally = await upgradeProjects(target, () => {
-      order.push('record')
-      return Promise.resolve(true)
+    const tally = await upgradeProjects(target, {
+      record: () => { order.push('record'); return Promise.resolve(true) },
     })
     expect(tally.recorded).toBe('taken')
-    expect(order).toEqual(['record', 'save'])
+    expect(order.slice(0, 2)).toEqual(['record', 'save'])
   })
 
   it('migrates anyway when there is nothing to record it with', async () => {
@@ -153,14 +154,59 @@ describe('upgradeProjects', () => {
     const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
     const target = outdated(store, ['acme/one'])
 
-    expect(await upgradeProjects(target, () => Promise.reject(new Error('no git'))))
-      .toEqual({ upgraded: 1, failed: 0, recorded: 'unavailable' })
+    expect(await upgradeProjects(target, { record: () => Promise.reject(new Error('no git')) }))
+      .toMatchObject({ upgraded: 1, failed: 0, recorded: 'unavailable' })
   })
 
   it('counts the one that will not read and upgrades the rest', async () => {
     const store = new InMemoryScopeStore([named('acme', 'two', 'Two')])
     const target = outdated(store, ['acme/gone', 'acme/two'])
 
-    expect(await upgradeProjects(target)).toEqual({ upgraded: 1, failed: 1, recorded: 'unavailable' })
+    expect(await upgradeProjects(target)).toMatchObject({ upgraded: 1, failed: 1 })
+  })
+})
+
+/**
+ * The folders format 4 had that were not records.
+ *
+ * A group with projects under it and no `group.json` was still a group,
+ * because a group was derived from what was filed under it; a scope is derived
+ * from nothing (ADR-0012 §1), so that folder has to say its own name or what
+ * is inside it is filed under nothing at all.
+ */
+describe('upgradeProjects — the folders that were never records', () => {
+  it('gives the root a scope, named from what the caller found', async () => {
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
+    const tally = await upgradeProjects(outdated(store, ['acme/one']), { rootName: 'Acme Logistics' })
+
+    expect(tally.created).toBe(2)
+    expect((await store.load(''))?.model.name).toBe('Acme Logistics')
+    expect((await store.load(''))?.kind).toBe('organisation')
+  })
+
+  it('names a parent from its own folder, and only the ones that are missing', async () => {
+    const store = new InMemoryScopeStore([
+      named('acme', 'one', 'One'), bareScope('', 'Acme Logistics', 'organisation'),
+    ])
+    const tally = await upgradeProjects(outdated(store, ['acme/one']))
+
+    expect(tally.created).toBe(1)
+    expect((await store.load('acme'))?.model.name).toBe('acme')
+    expect((await store.load('acme'))?.kind).toBe('domain')
+    expect((await store.load(''))?.model.name).toBe('Acme Logistics')
+  })
+
+  it('names every level a nested tree was missing', async () => {
+    const store = new InMemoryScopeStore([scopeAt('acme/rail/rolling-stock', 'Rolling stock')])
+    await upgradeProjects(outdated(store, ['acme/rail/rolling-stock']), { rootName: 'Acme' })
+
+    expect(flattenScopes(await store.list()).map((scope) => scope.path))
+      .toEqual(['', 'acme', 'acme/rail', 'acme/rail/rolling-stock'])
+  })
+
+  it('invents nothing when there was nothing old to begin with', async () => {
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
+    expect(await upgradeProjects(outdated(store, []))).toMatchObject({ created: 0 })
+    expect(await store.load('')).toBeUndefined()
   })
 })

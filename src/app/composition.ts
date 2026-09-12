@@ -284,6 +284,7 @@ export function inWorkingDirectory(
     folderSettings: settings && {
       id: settings.id,
       readFolder: () => settings.readFolder(),
+      writeFolder: (patch) => settings.writeFolder(patch),
       readLocal: () => settings.readLocal(),
       writeLocal: async (patch) => {
         await settings.writeLocal(patch)

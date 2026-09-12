@@ -188,26 +188,36 @@ export class FileSystemScopeStore implements ScopeStore {
   }
 
   /**
-   * Every folder holding a `scope.json`, and where it is.
+   * Every folder holding a header, and where it is.
    *
-   * A dot-folder is never one: `.git` is the history and
-   * `.lionsville-architecture` is the settings (ADR-0005), and neither is a
-   * scope however it is spelled.
+   * A header is a `scope.json` or — until the tree has been through the 4 → 5
+   * pass — one of the two files it replaced. A folder that still holds one of
+   * those is walked and listed, because a scope you cannot see is a scope you
+   * cannot ask to be migrated.
+   *
+   * A dot-folder is never a scope: `.git` is the history and
+   * `.lionsville-architecture` is the settings (ADR-0005), and neither is one
+   * however it is spelled.
    */
   private async walk(
     folder: DirectoryHandleLike,
     segments: string[],
-    visit: (folder: DirectoryHandleLike, path: ScopePath, header: FileHandleLike) => Promise<void>,
+    visit: (held: { folder: DirectoryHandleLike; path: ScopePath; header: FileHandleLike; current: boolean }) => Promise<void>,
   ): Promise<void> {
     const children: DirectoryHandleLike[] = []
     let header: FileHandleLike | undefined
+    let older: FileHandleLike | undefined
     for await (const entry of folder.values()) {
       if (entry.kind === 'directory') {
         if (!entry.name.startsWith('.') && !SCOPE_FOLDERS.includes(entry.name)) children.push(entry)
       } else if (entry.name === SCOPE_FILE) header = entry
+      else if (isSupersededPath(entry.name)) older = entry
     }
 
-    if (header) await visit(folder, segments.join('/'), header)
+    const held = header ?? older
+    if (held) {
+      await visit({ folder, path: segments.join('/'), header: held, current: header !== undefined })
+    }
     for (const child of children) await this.walk(child, [...segments, child.name], visit)
   }
 
@@ -215,7 +225,8 @@ export class FileSystemScopeStore implements ScopeStore {
   async outdated(): Promise<ScopePath[]> {
     const found: ScopePath[] = []
     try {
-      await this.walk(this.root, [], async (_folder, path, header) => {
+      await this.walk(this.root, [], async ({ path, header, current }) => {
+        if (!current) { found.push(path); return }
         const text = await (await header.getFile().catch(() => undefined))?.text().catch(() => undefined)
         const version = text === undefined ? undefined : folderFormatVersion(text)
         if (version !== undefined && version < SCOPE_FORMAT_VERSION) found.push(path)
@@ -231,7 +242,7 @@ export class FileSystemScopeStore implements ScopeStore {
   async list(): Promise<ScopeSummary> {
     const found: ScopeSummary[] = []
     try {
-      await this.walk(this.root, [], async (folder, path, header) => {
+      await this.walk(this.root, [], async ({ folder, path, header }) => {
         // The date comes off the files and never out of a field: a screen
         // orders by it, and a stored timestamp goes stale the moment anything
         // but this tool touches the folder — which, in a working directory, it

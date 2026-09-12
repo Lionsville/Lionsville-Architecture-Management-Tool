@@ -56,6 +56,7 @@ function fakeFolderSettings(initial: LocalSettings = DEFAULT_LOCAL_SETTINGS) {
   const store: FolderSettingsStore = {
     id: 'fake',
     readFolder: () => Promise.resolve({}),
+    writeFolder: () => Promise.resolve(),
     readLocal: () => Promise.resolve(held),
     writeLocal: (patch) => {
       writes.push(patch)

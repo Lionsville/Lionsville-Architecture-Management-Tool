@@ -14,8 +14,9 @@
  * structural seams rather than a `ProjectStore`, a tally of counts and never
  * names, and a failure that is one project rather than the run.
  */
-import { flattenScopes } from './scope'
-import type { ScopeSnapshot, ScopeSummary } from './scope'
+import { bareScope, flattenScopes } from './scope'
+import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
+import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from './scopePath'
 import type { ScopePath } from './scopePath'
 
 /** Where the scopes are coming from: enough to see them and read them. */
@@ -123,13 +124,32 @@ export type RecordBefore = () => Promise<boolean>
 export type UpgradeTally = {
   /** Scopes read in an older format and written back in this one. */
   upgraded: number
+  /**
+   * Scopes the pass had to invent, because format 4 had folders that were not
+   * records: the group folder somebody never gave a `group.json`, and the root.
+   */
+  created: number
   failed: number
   /** Whether what the folder looked like first was kept. */
   recorded: 'taken' | 'unavailable' | 'nothing to record'
 }
 
 export const NOTHING_UPGRADED: UpgradeTally = {
-  upgraded: 0, failed: 0, recorded: 'nothing to record',
+  upgraded: 0, created: 0, failed: 0, recorded: 'nothing to record',
+}
+
+/** What the pass needs beyond the store. */
+export type UpgradeOptions = {
+  /** Keep what the folder looked like first (ADR-0008), where there is a git. */
+  record?: RecordBefore
+  /**
+   * What to call the root when the tree has never had one.
+   *
+   * The organisation's name, which at format 4 lived in `folder.json` and
+   * otherwise nowhere (ADR-0012 §1) — so the caller reads it from there, and
+   * falls back to the folder's own name, which is what a person called it.
+   */
+  rootName?: string
 }
 
 /**
@@ -147,7 +167,7 @@ export const NOTHING_UPGRADED: UpgradeTally = {
  * next month, without anybody having to remember it.
  */
 export async function upgradeProjects(
-  store: UpgradeTarget, record?: RecordBefore,
+  store: UpgradeTarget, options: UpgradeOptions = {},
 ): Promise<UpgradeTally> {
   const tally: UpgradeTally = { ...NOTHING_UPGRADED }
   let outdated: readonly ScopePath[]
@@ -155,21 +175,70 @@ export async function upgradeProjects(
     outdated = await store.outdated?.() ?? []
   } catch {
     // A store that cannot be asked is a store nothing can be done about here;
-    // opening a project will fail loudly enough on its own.
+    // opening a scope will fail loudly enough on its own.
     return tally
   }
   if (outdated.length === 0) return tally
 
+  const { record, rootName } = options
   tally.recorded = record && await record().catch(() => false) ? 'taken' : 'unavailable'
   for (const path of outdated) {
     try {
-      const project = await store.load(path)
-      if (!project) { tally.failed += 1; continue }
-      await store.save(project)
+      const scope = await store.load(path)
+      if (!scope) { tally.failed += 1; continue }
+      await store.save(scope)
       tally.upgraded += 1
     } catch {
       tally.failed += 1
     }
   }
+  await nameTheFolders(store, tally, rootName)
   return tally
+}
+
+/**
+ * The folders format 4 had that were not records, given one.
+ *
+ * Two of them. A group with projects under it and no `group.json` was still a
+ * group, because a group was derived from what was filed under it; a scope is
+ * not derived from anything, so that folder has to say its own name or the
+ * scopes inside it are filed under nothing. And the root was never a record at
+ * all — its name was a key in `folder.json`, which is where `rootName` comes
+ * from.
+ *
+ * Named from the folder, which is what a person called it. A slug is a poor
+ * name and a better one than none; it is one rename away, and the alternative
+ * is a tree with holes in it.
+ */
+async function nameTheFolders(
+  store: UpgradeTarget, tally: UpgradeTally, rootName?: string,
+): Promise<void> {
+  const make = async (path: ScopePath, name: string, kind: ScopeKind) => {
+    try {
+      await store.save(bareScope(path, name, kind))
+      tally.created += 1
+    } catch {
+      tally.failed += 1
+    }
+  }
+
+  try {
+    if (!await store.load(ROOT_SCOPE)) {
+      const tree = await store.list()
+      await make(ROOT_SCOPE, rootName?.trim() || tree.name, 'organisation')
+    }
+    // Read after the root, so a scope the pass has just written is in it.
+    const held = flattenScopes(await store.list())
+    const known = new Set(held.map((scope) => scope.path))
+    const missing = new Set(held
+      .flatMap((scope) => ancestorScopes(scope.path))
+      .filter((path) => !known.has(path)))
+    // Shallowest first: a parent has to exist before its own parent is asked
+    // for, or the second write lands under a folder that is not a scope yet.
+    for (const path of [...missing].sort()) await make(path, scopePathLabel(path), 'domain')
+  } catch {
+    // A store that will not list is a store the rest of the app will complain
+    // about loudly enough; the scopes that were rewritten are still rewritten.
+    tally.failed += 1
+  }
 }
