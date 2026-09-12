@@ -17,7 +17,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.scopeLandscape': 'Landschappen',
   'adr.scopeApplications': 'Applicaties',
   'adr.scopeRemoved': 'Verwijderde applicaties',
-  'adr.scopeGroupNote': 'Besluiten die voor elk project in deze groep gelden',
   'adr.scopeLandscapeNote': 'Besluiten over het landschap als geheel',
   'adr.scopeFrom': 'Van {scope}',
   'adr.scopeFromNote': 'Hier te lezen, te wijzigen waar het thuishoort',

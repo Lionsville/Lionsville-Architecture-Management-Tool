@@ -17,7 +17,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.scopeLandscape': 'Landschaften',
   'adr.scopeApplications': 'Anwendungen',
   'adr.scopeRemoved': 'Entfernte Anwendungen',
-  'adr.scopeGroupNote': 'Entscheidungen, die für jedes Projekt in dieser Gruppe gelten',
   'adr.scopeLandscapeNote': 'Entscheidungen über die Landschaft als Ganzes',
   'adr.scopeFrom': 'Von {scope}',
   'adr.scopeFromNote': 'Hier zu lesen, dort zu ändern, wo es liegt',

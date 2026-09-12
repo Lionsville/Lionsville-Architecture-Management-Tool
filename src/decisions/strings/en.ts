@@ -15,7 +15,6 @@ export const EN = {
   'adr.scopeLandscape': 'Landscapes',
   'adr.scopeApplications': 'Applications',
   'adr.scopeRemoved': 'Removed applications',
-  'adr.scopeGroupNote': 'Decisions that hold for every project in this group',
   'adr.scopeLandscapeNote': 'Decisions about the landscape as a whole',
   /** A section per scope above this one (ADR-0012 §7), read-only here. */
   'adr.scopeFrom': 'From {scope}',

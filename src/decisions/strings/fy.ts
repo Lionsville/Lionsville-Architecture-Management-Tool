@@ -17,7 +17,6 @@ export const FY: Record<keyof typeof EN, string> = {
   'adr.scopeLandscape': 'Lânskippen',
   'adr.scopeApplications': 'Applikaasjes',
   'adr.scopeRemoved': 'Fuortsmiten applikaasjes',
-  'adr.scopeGroupNote': 'Besluten dy\u2019t foar elk projekt yn dizze groep jilde',
   'adr.scopeLandscapeNote': 'Besluten oer it lânskip as gehiel',
   'adr.scopeFrom': 'Fan {scope}',
   'adr.scopeFromNote': 'Hjir te lêzen, te wizigjen dêr’t it heart',
