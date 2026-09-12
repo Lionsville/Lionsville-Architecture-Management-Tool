@@ -48,7 +48,7 @@ import tseslint from 'typescript-eslint'
  */
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions',
-  'roadmap', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
+  'roadmap', 'business', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
 ]
 
 const MAY_IMPORT = {
@@ -60,6 +60,7 @@ const MAY_IMPORT = {
   documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
+  business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'roadmap'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'ports'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
@@ -78,6 +79,7 @@ const WHY = {
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
   roadmap: 'A roadmap is the model on a time axis, and the plans over it. It does not know how a landscape is drawn or where it is saved.',
+  business: 'A sheet is laid out from the model\'s own trees, not dragged. It does not know what a canvas is, nor a project.',
   search: 'search reads what it searches — the model, documentation, decisions, plans — and nothing that draws them.',
   projects: 'A project is what is saved and reopened: the model, its decisions, and the ports it is saved through.',
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',

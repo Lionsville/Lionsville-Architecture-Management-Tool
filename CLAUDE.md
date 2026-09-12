@@ -175,6 +175,13 @@ src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009)
                     ui/PlanPage       one plan: its facts, its interfaces, its
                                       document (ADR-0010)
                     ui/ReplaceDialog  the three inputs a replacement needs
+src/business/     The business layer, and the arithmetic over its four trees
+                  (ADR-0012 §4). Laid out, never dragged — so it is pure.
+                    tree              children, depth, siblings in order, and the
+                                      parent that would make a loop, refused
+                    coverage          per function: supported, manual, uncovered
+                    lanes             a journey's phases, and per lane the fork,
+                                      the join and the phases it passes through
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
