@@ -13,6 +13,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'adr.title': 'Arsjitektuerbesluten',
   'adr.close': 'Besluten slute',
   'adr.scopeGroup': 'Groep',
+  'adr.scopeAbove': 'Fan in nivo derboppe',
   'adr.scopeLandscape': 'Lânskippen',
   'adr.scopeApplications': 'Applikaasjes',
   'adr.scopeRemoved': 'Fuortsmiten applikaasjes',

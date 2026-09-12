@@ -62,7 +62,7 @@ export function projectScopeOf(adr: Pick<Adr, 'subjectId'>): ScopeKey {
  * too and must not name this module's string keys to label them.
  */
 export const SCOPE_LABEL = {
-  group: 'adr.scopeGroup',
+  above: 'adr.scopeAbove',
   landscape: 'adr.scopeLandscape',
   application: 'adr.scopeApplications',
 } as const satisfies Record<string, StringKey>

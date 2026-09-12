@@ -54,12 +54,12 @@ describe('searchAll', () => {
     expect((docs[0] as { snippet: string }).snippet).not.toContain('**')
   })
 
-  it('finds decisions at all three levels and labels the scope', () => {
+  it('finds decisions in this scope and above, and labels where each is', () => {
     const hits = searchAll({ model, ancestorDecisions, query: 'kafka' }).filter((h) => h.kind === 'adr')
-    expect(hits.map((h) => (h as { scope: string }).scope)).toEqual(['group', 'landscape'])
-    expect(hits[0]).toMatchObject({ adrId: 'adr-g', scope: 'group' })
+    expect(hits.map((h) => (h as { scope: string }).scope)).toEqual(['above', 'landscape'])
+    expect(hits[0]).toMatchObject({ adrId: 'adr-g', scope: 'above' })
     const app = searchAll({ model, ancestorDecisions, query: 'system of record' }).filter((h) => h.kind === 'adr')
-    expect(app[0]).toMatchObject({ scope: 'application', subjectId: 'crm', applicationName: 'Customer CRM' })
+    expect(app[0]).toMatchObject({ scope: 'application', subjectId: 'crm', subjectName: 'Customer CRM' })
   })
 
   it('lets the same element answer twice when both its name and its page match', () => {

@@ -39,7 +39,7 @@ describe('GlobalSearchDialog', () => {
     expect(screen.getByText('Elements')).toBeTruthy()
     expect(screen.getByText('Documentation')).toBeTruthy()
     expect(screen.getByText('Decisions')).toBeTruthy()
-    expect(screen.getByText(/Group · Kafka, not RabbitMQ/)).toBeTruthy()
+    expect(screen.getByText(/From a scope above · Kafka, not RabbitMQ/)).toBeTruthy()
     expect(screen.getByText('Landscapes')).toBeTruthy()
   })
 

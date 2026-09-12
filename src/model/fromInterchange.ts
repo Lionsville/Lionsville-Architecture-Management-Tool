@@ -127,7 +127,7 @@ export interface HostExtras {
   adrLinks?: unknown[]
   /**
    * The project's decision records — the landscape level's and every
-   * application's, told apart by `applicationId`. They travel in the working
+   * subject's, told apart by `subjectId`. They travel in the working
    * file and nowhere else: the interchange format is a contract with other
    * tools, and its `adrLinks` are references to records kept elsewhere, which
    * is a different thing from the records themselves.

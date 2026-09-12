@@ -238,7 +238,12 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         }))
       return json({
         hits: [
-          ...searchAll({ model: view.current(), ancestorDecisions: view.ancestorDecisions, query, limitPerKind: limit }),
+          // `above` is what the app calls a record from a scope above this one
+          // since the three decision lists became one (ADR-0012 §7); the
+          // protocol still says `group`, which `decisions.list`'s own `scope`
+          // enum says too. Both change together, in the agent's own stretch.
+          ...searchAll({ model: view.current(), ancestorDecisions: view.ancestorDecisions, query, limitPerKind: limit })
+            .map((hit) => (hit.kind === 'adr' && hit.scope === 'above' ? { ...hit, scope: 'group' } : hit)),
           ...plans,
         ],
       })

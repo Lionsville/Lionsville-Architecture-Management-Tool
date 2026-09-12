@@ -72,14 +72,14 @@ describe('the index', () => {
     expect(places.first.get(model.elements[0].id)?.id).toBe('landscape')
   })
 
-  it('indexes a group\'s records apart from the project\'s', () => {
+  it('indexes an ancestor\'s records apart from this scope\'s', () => {
     const records: Adr[] = [{
       id: 'g1', number: 1, title: 'Use one identity provider', status: 'accepted',
       date: '2026-01-01', body: 'Context.', signers: [],
     }]
     const indexed = ancestorDecisionIndex(records)
     expect(indexed).toBe(ancestorDecisionIndex(records))
-    expect(indexed[0].scope).toBe('group')
+    expect(indexed[0].scope).toBe('above')
   })
 })
 

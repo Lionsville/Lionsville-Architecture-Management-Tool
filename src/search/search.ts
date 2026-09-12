@@ -45,9 +45,9 @@ export type SearchHit =
     kind: 'adr'
     adrId: string
     scope: AdrScope
-    /** Which application's record, when the scope is one. */
+    /** What the record is about, when it is about one thing (ADR-0012 §7). */
     subjectId?: string
-    applicationName?: string
+    subjectName?: string
     number: number
     title: string
     status: AdrStatus
@@ -92,16 +92,16 @@ export function searchAll({ model, ancestorDecisions, query, limitPerKind = SEAR
     snippet: snippet(element.description ?? '', query),
   }))
 
-  // The group's records first, then the project's, and the limit applies to the
-  // two together: a group with nine matching decisions must not push the
-  // landscape's own out of the list, and it does not, because eight is all
-  // anybody reads before narrowing the query.
+  // The scopes above first, then this one's, and the limit applies to the two
+  // together: a domain with nine matching decisions must not push this scope's
+  // own out of the list, and it does not, because eight is all anybody reads
+  // before narrowing the query.
   const hit = (entry: AdrEntry): SearchHit => ({
     kind: 'adr',
     adrId: entry.adr.id,
     scope: entry.scope,
     subjectId: entry.adr.subjectId,
-    applicationName: entry.adr.subjectId ? index.names.get(entry.adr.subjectId) : undefined,
+    subjectName: entry.adr.subjectId ? index.names.get(entry.adr.subjectId) : undefined,
     number: entry.adr.number,
     title: entry.adr.title,
     status: entry.adr.status,

@@ -278,8 +278,9 @@ const SPECS = [
     tier: 'read',
     description:
       'The architecture decision records: id, number, label, title, status and date. Three scopes: '
-      + 'the group the project is filed under, the landscape, and each application — and numbers are '
-      + 'per scope, so name a record in text by its label and scope (ADR-0001 of the landscape), never by the number alone.',
+      + 'a scope above this one ("group"), this scope itself ("landscape"), and each subject a record '
+      + 'is about ("application") — and numbers are per scope, so name a record in text by its label '
+      + 'and scope (ADR-0001 of the landscape), never by the number alone.',
     inputSchema: {
       type: 'object',
       properties: {

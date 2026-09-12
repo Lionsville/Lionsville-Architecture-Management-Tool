@@ -37,7 +37,12 @@ import { placedNodes } from '../model/placement';
 import type { DesignDiagram, DesignElement, ElementId } from '../model/types'
 import { fold } from '../model'
 
-export type AdrScope = 'group' | 'landscape' | 'application'
+/**
+ * Where a record was found: a scope above this one, this scope itself, or one
+ * subject in it (ADR-0012 §7). `above` was `group` while there was one list
+ * over the open scope and it was the group's.
+ */
+export type AdrScope = 'above' | 'landscape' | 'application'
 
 /** One element, with its haystacks already folded. */
 export type ElementEntry = {
@@ -140,7 +145,7 @@ export function searchIndex(model: IndexableModel): SearchIndex {
 export function ancestorDecisionIndex(decisions: readonly Adr[]): readonly AdrEntry[] {
   const held = groupIndexes.get(decisions)
   if (held) return held
-  const built = decisions.map((adr) => adrEntry(adr, 'group'))
+  const built = decisions.map((adr) => adrEntry(adr, 'above'))
   groupIndexes.set(decisions, built)
   return built
 }

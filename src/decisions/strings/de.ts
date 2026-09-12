@@ -13,6 +13,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.title': 'Architekturentscheidungen',
   'adr.close': 'Entscheidungen schließen',
   'adr.scopeGroup': 'Gruppe',
+  'adr.scopeAbove': 'Aus einem Bereich darüber',
   'adr.scopeLandscape': 'Landschaften',
   'adr.scopeApplications': 'Anwendungen',
   'adr.scopeRemoved': 'Entfernte Anwendungen',

@@ -13,6 +13,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.title': 'Architectuurbesluiten',
   'adr.close': 'Besluiten sluiten',
   'adr.scopeGroup': 'Groep',
+  'adr.scopeAbove': 'Van een onderdeel erboven',
   'adr.scopeLandscape': 'Landschappen',
   'adr.scopeApplications': 'Applicaties',
   'adr.scopeRemoved': 'Verwijderde applicaties',

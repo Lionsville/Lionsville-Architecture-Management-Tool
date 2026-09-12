@@ -200,7 +200,7 @@ function HitRow({ hit, s }: { hit: SearchHit; s: Translate }) {
           </Box>
           <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>
             {[
-              hit.scope === 'application' ? (hit.applicationName ?? s(SCOPE_LABEL.application)) : s(SCOPE_LABEL[hit.scope]),
+              hit.scope === 'application' ? (hit.subjectName ?? s(SCOPE_LABEL.application)) : s(SCOPE_LABEL[hit.scope]),
               hit.snippet || undefined,
             ].filter(Boolean).join(' · ')}
           </Typography>

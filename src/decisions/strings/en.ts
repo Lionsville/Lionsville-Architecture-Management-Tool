@@ -11,6 +11,7 @@ export const EN = {
   'adr.title': 'Architecture decisions',
   'adr.close': 'Close decisions',
   'adr.scopeGroup': 'Group',
+  'adr.scopeAbove': 'From a scope above',
   'adr.scopeLandscape': 'Landscapes',
   'adr.scopeApplications': 'Applications',
   'adr.scopeRemoved': 'Removed applications',

@@ -3,7 +3,7 @@
  * it, and the page that reads them.
  *
  * Three lists, one shape. A group's records live on its profile; a landscape's
- * and every application's live on the model, told apart by `applicationId`.
+ * and every subject's live on the model, told apart by `subjectId`.
  * The status is a state machine and its three end states lock the record —
  * `updateAdr` and `removeAdr` refuse them.
  */
