@@ -34,8 +34,8 @@ import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { ExampleProject } from '../examples'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { NewScopeDialog } from './NewScopeDialog'
-import { ScopeSettingsDialog } from './ScopeSettingsDialog'
+import { NewScopeDialog } from '../organisation/NewScopeDialog'
+import { ScopeSettingsDialog } from '../organisation/ScopeSettingsDialog'
 import type { ScopeSettingsPatch } from '../App'
 
 /**

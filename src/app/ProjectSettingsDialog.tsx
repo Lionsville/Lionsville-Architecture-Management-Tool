@@ -35,7 +35,7 @@ import type { AspectConfigEntry } from '../model'
 import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { parentScope, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import { ScopeField } from './picker/ScopeField'
+import { ScopeField } from './organisation/ScopeField'
 
 export type ProjectSettings = {
   name: string
