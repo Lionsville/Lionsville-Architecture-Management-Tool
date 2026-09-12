@@ -67,11 +67,11 @@ export const WORKING_FILE_EXTENSION = '.lvarch'
  *     reader would keep the file's other content and silently drop those on
  *     its next save, which is exactly the loss the version exists to refuse.
  *
- * There are versions 3 and 4, and they are deliberately not in this union: they
- * are the project folder in a zip (ADR-0003), so there is no JSON document to
- * carry a version field at all. The number lives inside, on the folder's
- * `project.json` — one number for one shape. `projects/workingFile.ts` reads
- * it, and reaches the two below by asking whether the bytes are a zip.
+ * There are versions 3, 4 and 5, and they are deliberately not in this union:
+ * they are a scope's folder in a zip (ADR-0003), so there is no JSON document
+ * to carry a version field at all. The number lives inside, on the folder's
+ * `scope.json` — one number for one shape. `projects/workingFile.ts` reads it,
+ * and reaches the two below by asking whether the bytes are a zip.
  */
 export type WorkingFileVersion = 1 | 2
 

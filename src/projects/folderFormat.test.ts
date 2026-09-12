@@ -142,7 +142,7 @@ describe('projectFiles', () => {
     const image = files.find((file) => file.path === 'images/cutover.png')
     // Bytes, not base64 in a JSON string: the folder holds a real PNG.
     expect(image && 'bytes' in image && [...image.bytes]).toEqual([1, 2])
-    // The file name IS the reference, so `project.json` has no list to drift.
+    // The file name IS the reference, so `scope.json` has no list to drift.
     expect(textOf(files, SCOPE_FILE)).not.toContain('cutover')
   })
 

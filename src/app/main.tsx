@@ -419,6 +419,7 @@ function renderApp(
         makeId={makeId}
         browserLanguages={navigator.languages ?? navigator.language}
         windowChrome={shell.windowChrome}
+        onTitle={shell.showTitle}
       />
     </StrictMode>,
   )

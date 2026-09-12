@@ -23,6 +23,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
 import type { DesktopChange, DesktopDirectory } from '../../src/adapters/desktop/channel'
+import { SCOPE_FILE, scopeNameIn } from '../../src/platform/scopeHeader'
 import {
   excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, label, pull, push, remote,
   resolve, snapshot,
@@ -64,6 +65,22 @@ export function recentDirectories(): readonly DesktopDirectory[] {
   return recents
 }
 
+/**
+ * What to call a working directory: the organisation it holds, or the folder.
+ *
+ * A working directory IS the root scope (ADR-0012 §1), so the honest label for
+ * one is the name in its `scope.json`. A folder that has none — never opened,
+ * or not a working directory at all — is called what the person called it in
+ * their file manager, which is what this always said.
+ *
+ * One small read per folder, on the few occasions the list changes. The window
+ * title and the Recent menu are the two things that show it.
+ */
+async function nameOf(root: string): Promise<string> {
+  const text = await readFile(join(root, SCOPE_FILE), 'utf8').catch(() => undefined)
+  return scopeNameIn(text) ?? basename(root)
+}
+
 /** The folders being watched, and how to stop watching each. */
 const watching = new Map<string, () => void>()
 
@@ -83,7 +100,7 @@ async function loadRecents(): Promise<void> {
       const real = await realpath(root).catch(() => undefined)
       if (!real) continue
       granted.add(real)
-      recents.push({ root: real, name: basename(real) })
+      recents.push({ root: real, name: await nameOf(real) })
     }
   } catch {
     // No file yet, or one somebody edited into nonsense. An empty list is the
@@ -118,7 +135,7 @@ export async function grantDirectory(
   const real = await realpath(path).catch(() => undefined)
   if (!real) return undefined
   granted.add(real)
-  const directory = { root: real, name: basename(real) }
+  const directory = { root: real, name: await nameOf(real) }
   // The smoke run's folder is a temporary directory that will not exist an hour
   // from now, and the Recent menu is for folders a person chose.
   if (options.remember !== false) await rememberRecent(directory)

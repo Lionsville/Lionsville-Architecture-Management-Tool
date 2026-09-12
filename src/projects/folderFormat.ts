@@ -44,7 +44,7 @@
  * and routes are written in id order, because two people adding an
  * element to the same landscape should not both append to the same line. Order
  * is kept only where it is a decision somebody made: the diagram list, which is
- * the order of the tabs, and it is written out in `project.json`. Decisions are
+ * the order of the tabs, and it is written out in `scope.json`. Decisions are
  * read back in number order within each list, which is the order the page shows
  * them in. And a model carrying an empty `decisions` array comes back without
  * the key, because "no decisions" is a folder with no decision files in it and
@@ -61,6 +61,7 @@ import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
+import { SCOPE_FILE } from '../platform/scopeHeader'
 import { slug } from '../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
@@ -83,7 +84,7 @@ import type { ScopePath } from './scopePath'
  */
 export type FolderFile = { path: string; text: string } | { path: string; bytes: Uint8Array }
 
-export const SCOPE_FILE = 'scope.json'
+export { SCOPE_FILE }
 export const MODEL_FILE = 'model.json'
 export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
@@ -306,7 +307,7 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
 /**
  * The pictures, as files.
  *
- * Unlike the marks, nothing in `project.json` names these: the file name IS the
+ * Unlike the marks, nothing in `scope.json` names these: the file name IS the
  * reference, because that is what the markdown holds (ADR-0009). So there is no
  * list to keep in step with the folder, and a picture somebody drops into
  * `images/` by hand is a picture their documents can use immediately.

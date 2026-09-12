@@ -6,7 +6,7 @@
  * model stores, and the tool decides where it appears. An image here is
  * addressed by a **file name written into somebody's markdown**, which makes
  * the file name the identity and the folder the whole of the index. There is no
- * key, no label and no entry in `project.json`: `images/cutover.png` exists, a
+ * key, no label and no entry in `scope.json`: `images/cutover.png` exists, a
  * document says `![](../images/cutover.png)`, and that is the entire mechanism.
  *
  * That is what makes the reference portable, which is the point. The same

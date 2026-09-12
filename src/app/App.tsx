@@ -196,6 +196,11 @@ export type AppProps = {
    * be the thing you drag the window by. A browser tab needs neither.
    */
   windowChrome?: WindowChrome
+  /**
+   * Say what this window is about. Absent in a test, which has no window to
+   * name and would otherwise rename the runner's.
+   */
+  onTitle?: (organisation: string, scope?: string) => void
 }
 
 export function App({
@@ -203,7 +208,7 @@ export function App({
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, initialProject, initialPreferences,
-  examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME,
+  examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME, onTitle,
 }: AppProps) {
   const toasts = useToasts()
 
@@ -738,6 +743,17 @@ export function App({
   }, [project, ancestors])
   const groupName = project ? organisationLabel(project.path, chain) : ''
   const groupClient = project ? scopeClient(project.path, chain) : undefined
+
+  /**
+   * What the window is called, which is the two names the bar already shows.
+   *
+   * With nothing open it is the organisation on its own — or the product on its
+   * own, before there is one — because the picker is not a scope and pretending
+   * it is would name a window after nothing.
+   */
+  useEffect(() => {
+    onTitle?.(project ? groupName : tree.name, project?.model.name)
+  }, [onTitle, project, groupName, tree.name])
 
   /**
    * The ancestor's decisions, written back to the scope they belong to.

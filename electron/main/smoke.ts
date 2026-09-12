@@ -323,30 +323,48 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   // renderer asks over IPC, main resolves the path inside the folder it was
   // granted, and the bytes land on somebody's disk. None of that is observable
   // from the unit tests, which know the main-process half but not the wire.
-  results.push(await checkHere('a project written through the file channel lands as files', async () => {
+  results.push(await checkHere('a tree of scopes written through the file channel lands as folders', async () => {
     const directory = folder
     if (!directory) throw new Error('the folder could not be granted')
 
+    // Three scopes, nested, each the same document (ADR-0012 §1): the
+    // organisation at the root of the folder, a domain under it, a landscape
+    // under that. What only this can show is that the nesting survives the
+    // wire — a path with two segments in it resolved inside the granted folder
+    // and came back as folders a file manager would show.
     const answer = await window.webContents.executeJavaScript(`
       (async () => {
         const root = ${JSON.stringify(directory.root)}
         const files = window.desktop.files
-        await files.write(root, 'smoke/one/project.json', new TextEncoder().encode('{"name":"Smoke"}'))
-        const back = await files.read(root, 'smoke/one/project.json')
-        const listing = await files.list(root, 'smoke/one')
+        const header = (name, kind) => new TextEncoder().encode(
+          JSON.stringify({ type: 'lionsville-architecture', version: 5, name, kind, diagrams: [] }))
+        await files.write(root, 'scope.json', header('Smoke Logistics', 'organisation'))
+        await files.write(root, 'smoke/scope.json', header('Smoke', 'domain'))
+        await files.write(root, 'smoke/one/scope.json', header('Smoke landscape', 'landscape'))
+        const back = await files.read(root, 'smoke/one/scope.json')
+        const listing = await files.list(root, 'smoke')
         const escaped = await files.read(root, '../escape.json')
         return JSON.stringify({
           text: new TextDecoder().decode(back.bytes),
-          listing: listing.map((entry) => entry.name),
+          listing: listing.map((entry) => entry.name + ':' + entry.kind),
           escaped: escaped === undefined,
         })
       })()`, true) as string
 
     const held = JSON.parse(answer) as { text: string; listing: string[]; escaped: boolean }
-    if (held.text !== '{"name":"Smoke"}') throw new Error(`read back ${held.text}`)
+    if (!held.text.includes('"Smoke landscape"')) throw new Error(`read back ${held.text}`)
     if (!held.escaped) throw new Error('a path outside the folder was answered')
-    const onDisk = await readFile(join(directory.root, 'smoke/one/project.json'), 'utf8')
-    if (onDisk !== held.text) throw new Error('the file on disk is not what the channel returned')
+    if (!held.listing.includes('one:directory')) {
+      throw new Error(`the domain does not hold the landscape: ${held.listing.join(', ')}`)
+    }
+    for (const [path, name] of [
+      ['scope.json', 'Smoke Logistics'],
+      ['smoke/scope.json', 'Smoke'],
+      ['smoke/one/scope.json', 'Smoke landscape'],
+    ]) {
+      const onDisk = await readFile(join(directory.root, path), 'utf8')
+      if (!onDisk.includes(`"${name}"`)) throw new Error(`${path} on disk says ${onDisk}`)
+    }
     const left = await readdir(join(directory.root, 'smoke/one'))
     if (left.some((name) => name.endsWith('.tmp'))) throw new Error(`temporary files left: ${left}`)
     return `${directory.root}, ${held.listing.join(', ')}`

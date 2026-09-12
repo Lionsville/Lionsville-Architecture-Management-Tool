@@ -47,7 +47,7 @@ import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
-import { hostWindowChrome } from '../adapters/browser/hostWindow'
+import { hostWindowChrome, showWindowTitle } from '../adapters/browser/hostWindow'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { browserStorage } from '../adapters/webStorage/available'
@@ -134,6 +134,12 @@ export type Shell = {
    * own top bar.
    */
   windowChrome: WindowChrome
+  /**
+   * Say what this window is about: the scope that is open, and the
+   * organisation it sits in. A browser tab shows it in the tab strip and the
+   * desktop reads it off the page, so one call serves both.
+   */
+  showTitle: (organisation: string, scope?: string) => void
 }
 
 /**
@@ -159,6 +165,7 @@ export function composeShell(): Shell {
     updateSettings: desktopSettings() && new DesktopUpdateSettings(desktopSettings()!),
     agent: desktopAgent() && new DesktopAgentGateway(desktopAgent()!),
     windowChrome: hostWindowChrome(),
+    showTitle: showWindowTitle,
   }
 }
 
