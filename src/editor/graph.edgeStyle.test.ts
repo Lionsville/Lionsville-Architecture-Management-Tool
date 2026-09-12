@@ -14,7 +14,6 @@ import type { DesignDiagram, DesignModel, Relation } from '../model/types';
 function model(connection: Relation): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     diagrams: [
       laidOut({
         id: 'd1',

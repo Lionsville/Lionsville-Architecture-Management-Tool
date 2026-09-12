@@ -34,7 +34,7 @@ function diagram(id: string, placed: string[]): DesignDiagram {
 }
 
 const MODEL: DesignModel = {
-  name: 'Acme', customerName: 'Acme',
+  name: 'Acme', 
   elements: [element('wms'), element('billing'), element('erp')],
   relations: [line('a', 'wms', 'billing', { protocol: 'REST' }), line('b', 'erp', 'wms')],
   diagrams: [diagram('landscape', ['wms', 'billing']), diagram('other', ['billing'])],

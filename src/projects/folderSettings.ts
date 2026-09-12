@@ -13,11 +13,13 @@
  * its extension: `.lvarch/` beside `something.lvarch` would be one token
  * meaning two things in the same directory listing.
  *
- * The shared file's first key is the **organisation** (ADR-0012): the working
- * directory is one organisation, and this is where it says its own name. That
- * is what the scope was held open for — its location, its rules and a reader
- * that tolerated its absence were built before there was anything to put in it,
- * so that the first key would land on a file every build already forgives.
+ * **The shared file is keyless again**, and that is the point rather than an
+ * oversight. Its first key was the organisation's name (ADR-0012), put there
+ * before there was anywhere better; the root scope's `scope.json` is that
+ * place, and a name in two files is a name that can disagree with itself. The
+ * 4 → 5 pass reads the old key once and drops it (`migrate4to5.ts`), and this
+ * file's location, its rules and a reader that tolerates its absence stay ready
+ * for whatever the next shared setting turns out to be.
  *
  * Readers tolerate anything — absent, malformed, a `version` newer than this
  * build — and fail towards the safe default, which for the machine file is
@@ -30,8 +32,6 @@
  * that does.
  */
 import { parseJson, stableJson } from './fileText'
-import { isOrganisation, normaliseOrganisation } from './organisation'
-import type { Organisation } from './organisation'
 
 export const SETTINGS_FOLDER = '.lionsville-architecture'
 export const FOLDER_SETTINGS_FILE = 'folder.json'
@@ -48,18 +48,23 @@ export const FOLDER_SETTINGS_VERSION = 1
 /**
  * What everyone who opens this folder agrees on.
  *
- * The organisation is absent until someone names it. A folder that has only
- * ever been opened is a folder, not an unnamed organisation, and the difference
- * matters: absent falls back to the folder's own name, whereas a record with a
- * blank name is a person who cleared the field.
+ * Nothing, at this version — see the header. The type stays so the seam that
+ * reads it keeps its shape, and so the next shared setting is one field rather
+ * than a new file.
  */
-export type FolderSettings = {
-  readonly organisation?: Organisation
-}
+export type FolderSettings = Readonly<Record<string, never>>
 
-/** What a writer may change in the shared file: any subset of it. */
+/**
+ * What a writer may change in the shared file.
+ *
+ * `without` is how a key LEAVES. Everything a writer does not name is carried
+ * through unchanged — that is the rule this file is built on, because the newer
+ * build whose keys must survive an older one writing is routinely a colleague's
+ * — so a key that has been superseded has to be named to go, and the only
+ * caller that names one is the 4 → 5 pass.
+ */
 export type FolderSettingsPatch = {
-  readonly organisation?: Organisation
+  readonly without?: readonly string[]
 }
 
 /** What this machine does about the folder's git remote. */
@@ -100,15 +105,13 @@ function flag(value: unknown, fallback: boolean): boolean {
 /**
  * The shared settings out of `folder.json`, or what an absent one means.
  *
- * Key by key, and forgiving, for the same reason as `local.json`: a file
- * carrying one good section and one written by a build that disagrees keeps the
- * good one. A section this build cannot read is absent rather than an error —
- * an organisation nobody can name still opens.
+ * Nothing either way, at this version, and forgiving about everything: a file
+ * that will not parse, a file from a newer build, no file at all. What a key
+ * this build does not know means is that build's business, and the writer
+ * carries it through.
  */
-export function readFolderSettings(text: string | undefined): FolderSettings {
-  const held = text === undefined ? undefined : record(parseJson(text))
-  const organisation = held?.['organisation']
-  return isOrganisation(organisation) ? { organisation } : {}
+export function readFolderSettings(_text: string | undefined): FolderSettings {
+  return {}
 }
 
 /**
@@ -117,24 +120,18 @@ export function readFolderSettings(text: string | undefined): FolderSettings {
  * Unknown keys are kept and the version is never lowered — the same two rules
  * as `local.json`, and here they are load-bearing rather than careful: this
  * file is committed, so the newer build whose keys must survive an older one
- * writing is routinely a colleague's.
- *
- * A section in the patch **replaces** rather than merges, unlike `local.json`'s
- * flags. An organisation is edited as a form and saved whole, so merging would
- * make a cleared field indistinguishable from an untouched one.
+ * writing is routinely a colleague's. `patch.without` is the one exception, and
+ * the only thing that can take a key out.
  */
 export function folderSettingsText(
-  existing: string | undefined, patch: FolderSettingsPatch,
+  existing: string | undefined, patch: FolderSettingsPatch = {},
 ): string {
-  const held = (existing === undefined ? undefined : record(parseJson(existing))) ?? {}
+  const held = { ...((existing === undefined ? undefined : record(parseJson(existing))) ?? {}) }
+  for (const key of patch.without ?? []) delete held[key]
   const version = typeof held['version'] === 'number' && held['version'] > FOLDER_SETTINGS_VERSION
     ? held['version']
     : FOLDER_SETTINGS_VERSION
-  return stableJson({
-    ...held,
-    version,
-    ...(patch.organisation ? { organisation: normaliseOrganisation(patch.organisation) } : {}),
-  })
+  return stableJson({ ...held, version })
 }
 
 /**

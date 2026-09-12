@@ -12,7 +12,7 @@ import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { HostCommand } from '../platform/hostCommands'
 import type { AgentServerPatch, AgentServerStatus } from '../platform/agentServer'
 import type { AgentGateway } from '../ports/AgentGateway'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {
@@ -22,10 +22,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => cleanup())
 
-const project: ProjectSnapshot = {
+const project: ScopeSnapshot = {
   path: 'acme/landscape',
   model: {
-    name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
+    name: 'Landscape', elements: [], relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',

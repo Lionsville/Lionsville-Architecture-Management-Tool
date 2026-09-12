@@ -10,6 +10,5 @@ import type { EN } from './en'
 
 export const FY: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dat ûnderdiel hat gjin brûkber adres ({path}) en kin dus net bewarre wurde.',
-  'shell.badGroupPath': 'Dy groep hat gjin brûkber adres ({path}) en kin dus net bewarre wurde.',
   'shell.folderUnavailable': 'Dy map is net beskikber. Kies him opnij, of keppel de skiif wer oan dêr\'t er op stiet.',
 }

@@ -18,7 +18,7 @@ function adr(id: string, title: string, over: Partial<Adr> = {}): Adr {
 }
 
 const model: HostModel = {
-  name: 'Landscape', customerName: 'Acme',
+  name: 'Landscape', 
   elements: [
     element('crm', 'Customer CRM', { vendor: 'Salesforce', description: 'Holds every **customer** record and the sales pipeline.' }),
     element('billing', 'Billing', { technology: 'Kafka' }),

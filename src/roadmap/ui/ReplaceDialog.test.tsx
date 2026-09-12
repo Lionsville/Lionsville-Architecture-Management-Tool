@@ -17,7 +17,7 @@ function element(id: string, name: string, over: Partial<DesignElement> = {}): D
 }
 
 const MODEL = {
-  name: 'Acme', customerName: 'Acme', diagrams: [], connections: [],
+  name: 'Acme', diagrams: [], connections: [],
   elements: [element('wms', 'Warehouse Management'), element('erp', 'ERP'), element('scanner', 'Scanner', { kind: 'component' })],
 } as unknown as DesignModel
 

@@ -11,8 +11,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import type { ProjectLibrary } from './App'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import type { ScopeLibrary } from './App'
+import { scopeTree } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -23,7 +24,6 @@ const project = (key: string, name: string) => ({
   path: `acme/${key}`,
   model: {
     name,
-    customerName: 'Acme',
     elements: [],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
@@ -33,10 +33,10 @@ const project = (key: string, name: string) => ({
 })
 
 /** The whole app on the picker, with one seam replaced by a refusing one. */
-function show(projects: Partial<ProjectLibrary>) {
+function show(projects: Partial<ScopeLibrary>) {
   return renderApp({
-    projects: {
-      list: () => Promise.resolve([]),
+    scopes: {
+      list: () => Promise.resolve(scopeTree([])),
       load: () => Promise.resolve(undefined),
       save: () => Promise.resolve(),
       remove: () => Promise.resolve(),
@@ -48,9 +48,9 @@ function show(projects: Partial<ProjectLibrary>) {
       label: 'Acme Logistics',
       description: 'an example',
       folder: {
-        'project.json': {
-          type: 'lionsville-architecture', formatVersion: 4, name: 'Warehouse landscape',
-          groupName: 'Acme', activeDiagramId: 'l7', diagrams: ['l7'],
+        'scope.json': {
+          type: 'lionsville-architecture', version: 5, name: 'Warehouse landscape',
+          activeDiagramId: 'l7', diagrams: ['l7'],
         },
         'model.json': { elements: [], relations: [] },
         'diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
@@ -86,29 +86,27 @@ describe('copying an example, when the store refuses', () => {
   })
 })
 
-describe('renaming a group when the sweep cannot finish', () => {
-  it('names the projects it did not reach instead of stopping in silence', async () => {
-    const projects = new InMemoryProjectStore([
-      project('warehouse', 'Warehouse'),
-      project('rolling-stock', 'Rolling stock'),
-    ])
-    // One of the two refuses. The old sweep returned at the first failure, so
-    // the second project kept the old label and nobody was told which.
-    vi.spyOn(projects, 'save').mockImplementation((held) =>
-      held.path === 'acme/rolling-stock'
-        ? Promise.reject(new Error('quota'))
-        : Promise.resolve())
+/**
+ * What used to be here: a group's rename sweeping every project filed under it,
+ * naming the ones it could not reach. There is no sweep any more — a scope's
+ * name is its own `scope.json` and nothing else holds a copy (ADR-0012 §1) — so
+ * the failure it guarded against cannot happen and the message it showed is
+ * gone with it. A save that refuses is one write refusing, which
+ * `applyScopeSettings` reports as `group.saveFailed`.
+ */
+describe('a scope whose record will not save', () => {
+  it('says so rather than leaving the dialog looking as though it landed', async () => {
+    const projects = new InMemoryScopeStore([project('warehouse', 'Warehouse')])
+    vi.spyOn(projects, 'save').mockRejectedValue(new Error('quota'))
 
-    const { diagnostics } = renderApp({ projects })
+    const { diagnostics } = renderApp({ scopes: projects })
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Acme' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Warehouse' }))
     fireEvent.change(await screen.findByLabelText('Group name'), {
-      target: { value: 'Acme Logistics' },
+      target: { value: 'Warehouse renamed' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(screen.getByRole('alert').textContent)
-      .toContain('these projects still carry the old name: Rolling stock'))
-    expect(diagnostics.recent().some((e) => e.where === 'applyGroupSettings.relabel')).toBe(true)
+    await waitFor(() => expect(diagnostics.messages()).toContain('group.saveFailed'))
   })
 })

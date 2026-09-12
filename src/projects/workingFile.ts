@@ -1,12 +1,12 @@
 /**
- * A project as one file: version 4, and everything before it.
+ * A scope as one file: version 5, and everything before it.
  *
  * The folder is the working copy; this is the **container** — what you hand to
  * somebody, mail, attach to a ticket, or open on a machine that has never seen
  * your working directory. ADR-0003 kept it for exactly that, and the header
  * comment in `model/hostModel.ts` reserved the shape when it refused to promise
- * JSON in the `.lvarch` extension: version 4 is the project folder, zipped, and
- * version 3 was the same folder one format earlier.
+ * JSON in the `.lvarch` extension: version 5 is a scope's folder, zipped, and
+ * every version before it was the same folder one format earlier.
  *
  * It is the folder and not a new format on purpose. There is one writer, one
  * reader, one set of rules about what a file is called and what goes in it, and
@@ -14,8 +14,8 @@
  * export is even reproducible — the entries carry a fixed timestamp — so two
  * exports of the same project are the same file and can be compared as one.
  *
- * Every older version keeps opening, and lands on format 4 through the one
- * fold (`migrate3to4.ts`): a version-3 zip is a folder the migration reads, and
+ * Every older version keeps opening, and lands on format 5 through the folds
+ * (`migrate3to4.ts`, `migrate4to5.ts`): a version-3 zip is a folder the migration reads, and
  * versions 1 and 2 are a single JSON document `openProjectDocument` has read
  * since there was one. So is an interchange document, which is a different
  * thing again — someone else's format, which we import rather than open.
@@ -23,11 +23,12 @@
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
 import { bytesFromText, parseJson, textFromBytes } from './fileText'
-import { projectFiles } from './folderFormat'
-import { migrateSnapshot, openProjectFolder } from './migrate3to4'
+import { scopeFiles } from './folderFormat'
+import { migrateSnapshot } from './migrate3to4'
+import { openScopeFolder } from './migrate4to5'
 import type { FolderFile } from './folderFormat'
-import { openProjectDocument } from './project'
-import type { OpenResult, ProjectSnapshot } from './project'
+import { openScopeDocument } from './scope'
+import type { OpenResult, ScopeSnapshot } from './scope'
 
 export { WORKING_FILE_EXTENSION }
 
@@ -49,10 +50,10 @@ export function isZip(bytes: Uint8Array): boolean {
     && bytes[2] === 0x03 && bytes[3] === 0x04
 }
 
-/** The project as one file: the folder, zipped, entries in path order. */
-export function workingFileBytes(project: ProjectSnapshot): Uint8Array {
+/** The scope as one file: the folder, zipped, entries in path order. */
+export function workingFileBytes(scope: ScopeSnapshot): Uint8Array {
   const entries: Record<string, [Uint8Array, { mtime: Date }]> = {}
-  for (const file of projectFiles(project)) {
+  for (const file of scopeFiles(scope)) {
     entries[file.path] = [
       'text' in file ? bytesFromText(file.text) : file.bytes,
       { mtime: FIXED_MTIME },
@@ -96,23 +97,23 @@ function folderIn(bytes: Uint8Array): FolderFile[] | undefined {
  * about the bytes and not about the extension — a file that was renamed is
  * still what it is.
  *
- * `into` is the project being replaced: the file supplies the content, the open
- * project supplies where it is filed.
+ * `into` is the scope being replaced: the file supplies the content, the open
+ * scope supplies where it is filed.
  */
-export function openDocumentBytes(bytes: Uint8Array, into: ProjectSnapshot): OpenResult {
+export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenResult {
   if (isZip(bytes)) {
     const files = folderIn(bytes)
-    const project = files && openProjectFolder(files, into.path)
-    if (!project) return { ok: false, messageKey: 'shell.unknownFile' }
-    if (!project.model.diagrams.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
-    return { ok: true, kind: 'workingFile', relayout: false, project }
+    const scope = files && openScopeFolder(files, into.path)
+    if (!scope) return { ok: false, messageKey: 'shell.unknownFile' }
+    if (!scope.model.diagrams.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
+    return { ok: true, kind: 'workingFile', relayout: false, scope }
   }
-  const opened = openProjectDocument(parseJson(textFromBytes(bytes)), into)
+  const opened = openScopeDocument(parseJson(textFromBytes(bytes)), into)
   // A version-1 or -2 document holds the model as it was said before ADR-0012:
   // one list of connections, and a view's membership in the same row as its
   // coordinates. It opens, through the same fold a format-3 folder goes
-  // through, and is format 4 the moment it is saved.
+  // through, and is format 5 the moment it is saved.
   return opened.ok && opened.kind === 'workingFile'
-    ? { ...opened, project: migrateSnapshot(opened.project) }
+    ? { ...opened, scope: migrateSnapshot(opened.scope) }
     : opened
 }

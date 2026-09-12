@@ -287,7 +287,7 @@ function differing<T extends object>(from: T, to: T): Partial<T> {
   return patch
 }
 
-const PROJECT_FIELDS = ['name', 'customerName', 'description', 'defaultAuthor', 'defaultAspectConfig'] as const
+const PROJECT_FIELDS = ['name', 'description', 'defaultAuthor', 'defaultAspectConfig'] as const
 
 function projectSettings(model: Model): ProjectPatch {
   return pick(model, PROJECT_FIELDS) as ProjectPatch

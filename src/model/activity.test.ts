@@ -20,7 +20,6 @@ const element = (id: string, name: string) => ({
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [element('billing', 'Billing'), element('crm', 'CRM')],
   relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
   diagrams: [laidOut({

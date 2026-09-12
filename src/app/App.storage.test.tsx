@@ -42,7 +42,7 @@ describe('what the top bar says you are working from', () => {
   const project = {
     path: 'acme/landscape',
     model: {
-      name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
+      name: 'Landscape', elements: [], relations: [],
       diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
     },
     activeDiagramId: 'd1',

@@ -18,7 +18,7 @@ function adr(id: string, number: number, overrides: Partial<Adr> = {}): Adr {
 
 function host(overrides: Partial<HostModel> = {}): HostModel {
   return {
-    name: 'Design', customerName: 'ACME', elements: [], relations: [], diagrams: [],
+    name: 'Design', elements: [], relations: [], diagrams: [],
     ...overrides,
   }
 }

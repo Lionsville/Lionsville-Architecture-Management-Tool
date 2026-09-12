@@ -23,7 +23,6 @@ function fixture(routes: EdgeRoute[] = [], extraConnection?: DesignModel['relati
   });
   const model: DesignModel = {
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['a', 'b'].map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })),
     relations: [{ type: 'flow', id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false }, ...(extraConnection ? [extraConnection] : [])],
     diagrams: [diagram],

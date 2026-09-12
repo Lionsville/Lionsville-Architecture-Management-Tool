@@ -29,7 +29,7 @@ function connection(id: string, sourceId: string, targetId: string, over: Partia
 /** The hybrid run: the old system retires as the new one arrives, with a sync between. */
 function model(): DesignModel {
   return {
-    name: 'Acme', customerName: 'Acme',
+    name: 'Acme', 
     elements: [
       element('wms-old', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),
       element('wms-new', { lifecycle: 'planned', lifecycleDates: { live: '2027-04-01' } }),

@@ -18,7 +18,7 @@ const element = (id: string, name: string, over: Record<string, unknown> = {}) =
 }) as HostModel['elements'][number]
 
 const model: HostModel = {
-  name: 'Landscape', customerName: 'Acme',
+  name: 'Landscape', 
   elements: [
     element('billing', 'Billing', { technology: 'Kafka' }),
     element('crm', 'CRM', { description: 'Publishes customer events on Kafka.' }),

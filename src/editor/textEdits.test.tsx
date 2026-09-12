@@ -23,7 +23,6 @@ afterEach(() => cleanup());
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'a1', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'application', name: 'Orders', lifecycle: 'live', isManaged: true, aspects: {} },

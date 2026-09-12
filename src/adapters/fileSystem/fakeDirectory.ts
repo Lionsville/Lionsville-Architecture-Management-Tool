@@ -19,7 +19,7 @@
  */
 import type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
-} from './FileSystemProjectStore'
+} from './FileSystemScopeStore'
 
 type StoredFile = { contents: string | Uint8Array; lastModified: number }
 

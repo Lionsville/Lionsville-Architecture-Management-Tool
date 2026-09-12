@@ -24,7 +24,7 @@ import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
 import type { Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
-import type { ProjectSnapshot } from '../../projects/project'
+import type { ScopeSnapshot } from '../../projects/scope'
 import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
 import type { Notify } from '../useToasts'
 
@@ -70,7 +70,7 @@ export type ProjectHistoryState = {
 export function useProjectHistory(deps: {
   history?: ProjectHistory
   /** What is on screen, and how it got there. */
-  project: () => ProjectSnapshot
+  project: () => ScopeSnapshot
   steps: () => readonly { summary: StepSummary }[]
   /** Write the project out and answer when it has landed. */
   save: () => Promise<void>

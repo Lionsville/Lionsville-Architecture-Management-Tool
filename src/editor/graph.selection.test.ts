@@ -12,7 +12,6 @@ import type { DesignDiagram, DesignModel } from '../model/types';
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     diagrams: [
       laidOut({
         id: 'd1',

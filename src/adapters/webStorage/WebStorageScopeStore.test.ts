@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  SAMPLE_PATH, describeProjectStore, projectAt, sampleProject,
-} from '../../ports/ProjectStore.contract'
+  SAMPLE_PATH, describeScopeStore, scopeAt, sampleScope,
+} from '../../ports/ScopeStore.contract'
+import { flattenScopes } from '../../projects/scope'
 import type { KeyValueStorage } from './KeyValueStorage'
 import {
-  PROJECT_PREFIX, STORAGE_BUDGET_CHARS, WebStorageProjectStore,
-} from './WebStorageProjectStore'
+  SCOPE_PREFIX, STORAGE_BUDGET_CHARS, WebStorageScopeStore,
+} from './WebStorageScopeStore'
 
 /**
  * Fake storage in a `Map`. No jsdom needed: the adapter asks for four lines and
@@ -31,85 +32,106 @@ function refusingStorage(): KeyValueStorage {
   }
 }
 
-const keyFor = (group: string, project: string) => `${PROJECT_PREFIX}${group}/${project}`
+const keyFor = (group: string, project: string) => `${SCOPE_PREFIX}${group}/${project}`
 
-describeProjectStore('browser storage', () => new WebStorageProjectStore(fakeStorage()))
+/** Every path in the listing but the root, so a tree reads as a flat set. */
+const listed = async (store: WebStorageScopeStore) =>
+  flattenScopes(await store.list()).filter((s) => s.path !== '').map((s) => s.path)
 
-describe('WebStorageProjectStore', () => {
-  it('files a project under its ref as a path', async () => {
+describeScopeStore('browser storage', () => new WebStorageScopeStore(fakeStorage()))
+
+describe('WebStorageScopeStore', () => {
+  it('files a scope under its path', async () => {
     const storage = fakeStorage()
-    await new WebStorageProjectStore(storage).save(sampleProject())
+    await new WebStorageScopeStore(storage).save(sampleScope())
     expect(storage.keys()).toEqual([keyFor('acme-logistics', 'landscape')])
   })
 
-  it('uses the group path as written, so a nested group nests the key', async () => {
+  it('uses the path as written, so a nested scope nests the key', async () => {
     const storage = fakeStorage()
-    const store = new WebStorageProjectStore(storage)
-    await store.save(projectAt('acme/rail/landscape'))
+    const store = new WebStorageScopeStore(storage)
+    await store.save(scopeAt('acme/rail/landscape'))
     expect(storage.keys()).toEqual([keyFor('acme/rail', 'landscape')])
+  })
+
+  /** The root is the tab's whole working tree, so its key is the bare prefix. */
+  it('files the root under the prefix alone', async () => {
+    const storage = fakeStorage()
+    await new WebStorageScopeStore(storage).save({ ...sampleScope(), path: '' })
+    expect(storage.keys()).toEqual([SCOPE_PREFIX])
   })
 
   it('skips half-written JSON instead of failing the whole listing', async () => {
     // One damaged record must not hide every other project the user has.
     const storage = fakeStorage({ [keyFor('acme', 'broken')]: '{"model":' })
-    const store = new WebStorageProjectStore(storage)
-    await store.save(sampleProject())
-    expect(await store.list()).toHaveLength(1)
+    const store = new WebStorageScopeStore(storage)
+    await store.save(sampleScope())
+    expect(await listed(store)).toEqual([SAMPLE_PATH])
     await expect(store.load('acme/broken')).resolves.toBeUndefined()
   })
 
-  it('skips a record that is not a project', async () => {
-    const store = new WebStorageProjectStore(fakeStorage({ [keyFor('a', 'b')]: '"some text"' }))
-    await expect(store.list()).resolves.toEqual([])
+  it('skips a record that is not a scope', async () => {
+    const store = new WebStorageScopeStore(fakeStorage({ [keyFor('a', 'b')]: '"some text"' }))
+    expect(await listed(store)).toEqual([])
   })
 
   it('skips a record whose path cannot be addressed again', async () => {
-    const orphan = JSON.stringify({ ...sampleProject(), path: '../escape' })
-    const store = new WebStorageProjectStore(fakeStorage({ [keyFor('a', 'b')]: orphan }))
-    await expect(store.list()).resolves.toEqual([])
+    const orphan = JSON.stringify({ ...sampleScope(), path: '../escape' })
+    const store = new WebStorageScopeStore(fakeStorage({ [keyFor('a', 'b')]: orphan }))
+    expect(await listed(store)).toEqual([])
   })
 
   it('ignores keys that are not its own', async () => {
     const storage = fakeStorage({ 'lvarch.preferences': '{"language":"nl"}' })
-    const store = new WebStorageProjectStore(storage)
-    await store.save(sampleProject())
-    expect(await store.list()).toHaveLength(1)
+    const store = new WebStorageScopeStore(storage)
+    await store.save(sampleScope())
+    expect(await listed(store)).toEqual([SAMPLE_PATH])
   })
 
   it('yields an empty library for a record written before marks existed', async () => {
-    const old = sampleProject()
+    const old = sampleScope()
     const without = { path: SAMPLE_PATH, model: old.model, activeDiagramId: 'l7' }
-    const store = new WebStorageProjectStore(fakeStorage({
+    const store = new WebStorageScopeStore(fakeStorage({
       [keyFor('acme-logistics', 'landscape')]: JSON.stringify(without),
     }))
     expect((await store.load(SAMPLE_PATH))?.logoLibrary).toEqual([])
   })
 
   it('lists alphabetically, not in the order the keys happen to enumerate', async () => {
-    const store = new WebStorageProjectStore(fakeStorage())
-    await store.save(projectAt('acme/zebra', 'Zebra'))
-    await store.save(projectAt('acme/aardvark', 'Aardvark'))
-    expect((await store.list()).map((s) => s.name)).toEqual(['Aardvark', 'Zebra'])
+    const store = new WebStorageScopeStore(fakeStorage())
+    await store.save(scopeAt('acme/zebra', 'Zebra'))
+    await store.save(scopeAt('acme/aardvark', 'Aardvark'))
+    expect(flattenScopes(await store.list()).map((s) => s.name))
+      .toEqual(['', 'Aardvark', 'Zebra'])
   })
 
   it('refuses visibly when storage will not write', async () => {
     // This is why save() returns a promise that can reject: the shell has to be
     // able to say, once, "everything works until you close this tab".
-    const store = new WebStorageProjectStore(refusingStorage())
-    await expect(store.save(sampleProject())).rejects.toBeInstanceOf(Error)
+    const store = new WebStorageScopeStore(refusingStorage())
+    await expect(store.save(sampleScope())).rejects.toBeInstanceOf(Error)
   })
 
   it('lists nothing rather than throwing when storage will not enumerate', async () => {
-    await expect(new WebStorageProjectStore(refusingStorage()).list()).resolves.toEqual([])
+    expect(await listed(new WebStorageScopeStore(refusingStorage()))).toEqual([])
   })
 
   it('does not turn a failed remove() into a fault', async () => {
-    await expect(new WebStorageProjectStore(refusingStorage()).remove(SAMPLE_PATH))
+    await expect(new WebStorageScopeStore(refusingStorage()).remove(SAMPLE_PATH))
       .resolves.toBeUndefined()
   })
 
   it('does not share its prefix with the preferences key', () => {
-    expect('lvarch.preferences'.startsWith(PROJECT_PREFIX)).toBe(false)
+    expect('lvarch.preferences'.startsWith(SCOPE_PREFIX)).toBe(false)
+  })
+
+  /** A child left behind by a removed parent is addressed by nothing. */
+  it('removes what is filed under the scope it removes', async () => {
+    const store = new WebStorageScopeStore(fakeStorage())
+    await store.save(scopeAt('acme'))
+    await store.save(scopeAt('acme/rail'))
+    await store.remove('acme')
+    expect(await listed(store)).toEqual([])
   })
 })
 
@@ -127,14 +149,13 @@ describe('WebStorageProjectStore', () => {
  * There is no version on a key here, so the store answers both questions off
  * the model itself: whether it is old, and — on every read — what it says now.
  */
-describe('WebStorageProjectStore — a record from before format 4', () => {
+describe('WebStorageScopeStore — a record from before format 4', () => {
   const beforeAdr0012 = JSON.stringify({
     path: 'acme/old',
     activeDiagramId: 'l7',
     logoLibrary: [],
     model: {
       name: 'Landscape',
-      customerName: 'Acme',
       connections: [{ id: 'c-1', sourceId: 'portal', targetId: 'wms', isBidirectional: false }],
       elements: [
         { id: 'portal', kind: 'inputChannel', name: 'Portal' },
@@ -151,7 +172,7 @@ describe('WebStorageProjectStore — a record from before format 4', () => {
 
   it('names it as one to upgrade, and stops once it has been written back', async () => {
     const storage = fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 })
-    const store = new WebStorageProjectStore(storage)
+    const store = new WebStorageScopeStore(storage)
 
     expect(await store.outdated()).toEqual(['acme/old'])
     await store.save((await store.load('acme/old'))!)
@@ -159,7 +180,7 @@ describe('WebStorageProjectStore — a record from before format 4', () => {
   })
 
   it('reads it as the model says it now, whether or not it has been written back', async () => {
-    const store = new WebStorageProjectStore(fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 }))
+    const store = new WebStorageScopeStore(fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 }))
     const held = await store.load('acme/old')
 
     expect(held?.model.relations).toEqual([
@@ -171,11 +192,11 @@ describe('WebStorageProjectStore — a record from before format 4', () => {
   })
 })
 
-describe('WebStorageProjectStore — how full it is', () => {
+describe('WebStorageScopeStore — how full it is', () => {
   it('counts what it holds, and nothing else on the origin', async () => {
     const storage = fakeStorage({ 'something.else': 'x'.repeat(1_000) })
-    const store = new WebStorageProjectStore(storage)
-    await store.save(sampleProject())
+    const store = new WebStorageScopeStore(storage)
+    await store.save(sampleScope())
 
     const pressure = store.pressure()
     expect(pressure?.budget).toBe(STORAGE_BUDGET_CHARS)
@@ -185,19 +206,19 @@ describe('WebStorageProjectStore — how full it is', () => {
   })
 
   it('counts what was already there before this store was made', () => {
-    const held = JSON.stringify(sampleProject())
-    const store = new WebStorageProjectStore(
+    const held = JSON.stringify(sampleScope())
+    const store = new WebStorageScopeStore(
       fakeStorage({ [keyFor('acme-logistics', 'landscape')]: held }),
     )
     expect(store.pressure()?.used).toBe(held.length)
   })
 
-  it('follows a project that grows, and one that goes', async () => {
-    const store = new WebStorageProjectStore(fakeStorage())
-    await store.save(sampleProject())
+  it('follows a scope that grows, and one that goes', async () => {
+    const store = new WebStorageScopeStore(fakeStorage())
+    await store.save(sampleScope())
     const small = store.pressure()?.used ?? 0
 
-    const wordy = sampleProject()
+    const wordy = sampleScope()
     wordy.model.description = 'x'.repeat(5_000)
     await store.save(wordy)
     expect(store.pressure()?.used ?? 0).toBeGreaterThan(small + 4_000)
@@ -206,16 +227,16 @@ describe('WebStorageProjectStore — how full it is', () => {
     expect(store.pressure()?.used).toBe(0)
   })
 
-  it('adds two projects together', async () => {
-    const store = new WebStorageProjectStore(fakeStorage())
-    await store.save(sampleProject())
+  it('adds two scopes together', async () => {
+    const store = new WebStorageScopeStore(fakeStorage())
+    await store.save(sampleScope())
     const one = store.pressure()?.used ?? 0
-    await store.save(projectAt('acme-logistics/second'))
+    await store.save(scopeAt('acme-logistics/second'))
     expect(store.pressure()?.used ?? 0).toBeGreaterThan(one)
   })
 
   it('says nothing is known rather than throwing when storage will not enumerate', () => {
-    expect(new WebStorageProjectStore(refusingStorage()).pressure()).toEqual({
+    expect(new WebStorageScopeStore(refusingStorage()).pressure()).toEqual({
       used: 0,
       budget: STORAGE_BUDGET_CHARS,
     })

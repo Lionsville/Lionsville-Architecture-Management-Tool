@@ -121,7 +121,6 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
   it('returns a rect per laid-out group whose box contains its members', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('e1', 'application'),
         elt('e2', 'application'),
@@ -185,7 +184,6 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     // encloses them regardless of ELK's internal choice.
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('a1', 'application'),
         elt('a2', 'application'),
@@ -250,7 +248,6 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
     // libavoid then routes through. Stop passing them and this test goes red.
     const twoNodes = (connection: Relation): DesignModel => ({
       name: 'ACME',
-      customerName: 'ACME',
       elements: [elt('e1', 'application'), elt('e2', 'application')],
       relations: [connection],
       diagrams: [
@@ -299,7 +296,6 @@ describe('tidyLayer7 — domain-group rects follow the layout (QF4)', () => {
   it('returns no group rects when the landscape has no grouped members', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [elt('e1', 'application')],
       relations: [],
       diagrams: [
@@ -343,7 +339,6 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
     }
     return {
       name: 'ACME',
-      customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
       relations,
       diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements, layoutConfig })],
@@ -392,7 +387,6 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
     // floor is then the user's board, not the default.
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [elt('e1', 'application')],
       relations: [],
       diagrams: [
@@ -467,7 +461,6 @@ describe('tidyLayer7 — canvas grows/shrinks to fit the landscape (STAP-1)', ()
     const ids = ['hub', ...targets];
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
       relations: targets.map((id, i) => ({
         id: `c${i}`,
@@ -517,7 +510,6 @@ describe('tidyLayer7 — routes every landscape edge around the nodes (U-edge-2)
    */
   const model: DesignModel = {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [elt('a', 'application'), elt('b', 'application'), elt('c', 'application')],
     relations: [
       { type: 'flow', id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
@@ -620,7 +612,6 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
     // way over on the right, NOT packed at the band's left inset.
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('appL', 'application'),
         elt('appR', 'application'),
@@ -662,7 +653,6 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
     // sweep must separate them by at least a full node width, both still in-band.
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('appL', 'application'),
         elt('appR', 'application'),
@@ -708,7 +698,6 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
     // the two app centres, so M's centre must land between the two app centres.
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('appL', 'application'),
         elt('appR', 'application'),
@@ -752,7 +741,6 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
   it('keeps an unconnected band node inside its zone without breaking the pass', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('appL', 'application'),
         elt('appR', 'application'),
@@ -797,7 +785,6 @@ describe('tidyLayer7 — bands positioned above connected-landscape nodes (U-ali
     // only push the lower one down), inside the left band, x centred in the band.
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('app0', 'application'),
         elt('app1', 'application'),
@@ -875,7 +862,6 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
   it('replaces a stale seed box with a member-derived box containing its members', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [elt('e1', 'application'), elt('e2', 'application')],
       relations: [{ type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false }],
       diagrams: [
@@ -909,7 +895,6 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
   it('sizes the box to enclose its members regardless of the seed box size', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [elt('e1', 'application'), elt('e2', 'application'), elt('e3', 'application')],
       relations: [
         { type: 'flow', id: 'c1', sourceId: 'e1', targetId: 'e2', isBidirectional: false },
@@ -944,7 +929,6 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
   it('gives two groups distinct non-overlapping boxes, each containing its members', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('a1', 'application'),
         elt('a2', 'application'),
@@ -999,7 +983,6 @@ describe('tidyLayer7 — domain-group boxes hug their laid-out members', () => {
     const ids = ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6'];
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: ids.map((id) => elt(id, 'application')),
       relations: ids.slice(1).map((id, i) => ({
         id: `c${i}`,
@@ -1041,7 +1024,6 @@ describe('tidyLayer7 — real E-Commerce landscape does not stack cross-zone lin
   // pinned groups, all nine landscape/band nodes, and the eight connections.
   const model: DesignModel = {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       elt('storeMgr', 'actor'),
       elt('shopper', 'actor'),
@@ -1267,7 +1249,6 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
   it('returns placements only and sizes the application boundary to its components', async () => {
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('app', 'application'),
         elt('c1', 'component', { parentId: 'app' }),
@@ -1305,7 +1286,6 @@ describe('tidyContainer — boundary sizing (QF4 result shape)', () => {
     // itself is covered against a forced blocker in `routeOnly.test.ts`).
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('app', 'application'),
         elt('c1', 'component', { parentId: 'app' }),
@@ -1381,7 +1361,6 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
    */
   const model: DesignModel = {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       elt('akeneo', 'application'),
       elt('webshop', 'application'),
@@ -1485,7 +1464,6 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
     // detour that crosses feedFar's long run — measured, both ways.
     const leftModel: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         ...model.elements,
         elt('feedFar', 'inputChannel'),
@@ -1523,7 +1501,6 @@ describe('tidyLayer7 — side-band order when the flow-axis barycentre ties', ()
 describe('tidyGroup — one group in place', () => {
   const groupModel = (): DesignModel => ({
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       elt('a1', 'application'),
       elt('a2', 'application'),
@@ -1641,7 +1618,6 @@ describe('tidyGroup — one group in place', () => {
 describe('tidy settings (direction / density)', () => {
   const chain = (): DesignModel => ({
     name: 'ACME',
-    customerName: 'ACME',
     elements: [elt('a', 'application'), elt('b', 'application'), elt('c', 'application')],
     relations: [
       { type: 'flow', id: 'ab', sourceId: 'a', targetId: 'b', isBidirectional: false },
@@ -1726,7 +1702,6 @@ describe('tidy settings (direction / density)', () => {
 describe('density reaches inside a domain group', () => {
   const grouped = (): DesignModel => ({
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['a1', 'a2', 'a3'].map((id) => elt(id, 'application')),
     relations: [
       { type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
@@ -1790,7 +1765,6 @@ describe('density reaches inside a domain group', () => {
 describe('tidyLayer7 — pinGroups', () => {
   const pinned = (): DesignModel => ({
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['a1', 'a2', 'b1', 'b2', 'loose'].map((id) => elt(id, 'application')),
     relations: [
       { type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false },
@@ -1935,7 +1909,6 @@ describe('tidyLayer7 — pinGroups', () => {
 describe('tidy — a domain group keeps its colour, because tidy never sees it', () => {
   const coloured = (): DesignModel => ({
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['a1', 'a2'].map((id) => elt(id, 'application')),
     relations: [{ type: 'flow', id: 'a12', sourceId: 'a1', targetId: 'a2', isBidirectional: false }],
     diagrams: [

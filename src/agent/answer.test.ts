@@ -29,7 +29,6 @@ const decision = (id: string, number: number, title: string, applicationId?: str
 
 const host: HostModel = {
   name: 'Warehouse landscape',
-  customerName: 'Acme Logistics',
   description: 'Everything that moves a parcel.',
   elements: [
     element('billing', 'Billing', { category: 'Finance', vendor: 'Kestrel', description: 'Sends the **invoices**.' }),
@@ -67,7 +66,7 @@ const group: Adr[] = [decision('g-1', 1, 'One group, one identity provider')]
 
 function view(model: HostModel = host, activeDiagramId = 'l7'): ReadView {
   const indexed = fromArrays(model)
-  return { model: indexed, current: () => model, activeDiagramId, groupDecisions: group }
+  return { model: indexed, current: () => model, activeDiagramId, scopePath: 'acme/landscape', groupDecisions: group }
 }
 
 /** The JSON out of an answer, or the refusal, as a test wants to read it. */
@@ -82,7 +81,7 @@ describe('project.current', () => {
   it('says what is open, in numbers and names', () => {
     expect(read('project.current', {})).toMatchObject({
       name: 'Warehouse landscape',
-      group: 'Acme Logistics',
+      path: 'acme/landscape',
       description: 'Everything that moves a parcel.',
       elements: 5,
       connections: 3,

@@ -58,7 +58,6 @@ export function diagram(id: string, overrides: Partial<V3Diagram> = {}): DesignD
 export function model(overrides: Partial<DesignModel> = {}): DesignModel {
   return {
     name: 'Design',
-    customerName: 'ACME',
     diagrams: [],
     elements: [],
     relations: [],

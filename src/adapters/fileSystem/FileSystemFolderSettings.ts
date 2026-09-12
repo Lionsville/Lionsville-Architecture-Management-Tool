@@ -20,7 +20,7 @@ import {
 } from '../../projects/folderSettings'
 import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
 import type { FolderSettingsStore } from '../../ports/FolderSettings'
-import type { DirectoryHandleLike } from './FileSystemProjectStore'
+import type { DirectoryHandleLike } from './FileSystemScopeStore'
 
 export class FileSystemFolderSettings implements FolderSettingsStore {
   readonly id = 'folder on disk'

@@ -13,7 +13,6 @@ export const EN = {
    * shown verbatim to somebody who had chosen Dutch.
    */
   'shell.badScopePath': 'That scope has no usable address ({path}), so it cannot be saved.',
-  'shell.badGroupPath': 'That group has no usable address ({path}), so it cannot be saved.',
   /**
    * The folder itself is gone: unplugged, unmounted, renamed out from under us,
    * or a permission withdrawn. Nothing this app can fix and everything the user

@@ -10,6 +10,5 @@ import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dieser Bereich hat keine verwendbare Adresse ({path}) und kann daher nicht gespeichert werden.',
-  'shell.badGroupPath': 'Diese Gruppe hat keine verwendbare Adresse ({path}) und kann daher nicht gespeichert werden.',
   'shell.folderUnavailable': 'Dieser Ordner ist nicht verfügbar. Wählen Sie ihn erneut aus, oder verbinden Sie das Laufwerk wieder, auf dem er liegt.',
 }

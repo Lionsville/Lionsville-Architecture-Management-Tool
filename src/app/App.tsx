@@ -21,16 +21,17 @@ import type { StringKey } from '../i18n'
 import type { Adr } from '../decisions/adr'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
-import { groupProfileFor, normaliseGroupProfile } from '../projects/group'
-import type { GroupProfile } from '../projects/group'
 import {
-  emptyProject, groupNameOf, groupsOf, isProjectOrder, keysInGroup, moveToGroup,
-  relabelGroup, renameProject, setProjectDefaults,
-} from '../projects/project'
-import type {
-  ProjectGroup, ProjectOrder, ProjectSnapshot, ProjectSummary,
-} from '../projects/project'
-import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
+  bareScope, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, moveScope, namesUnder,
+  renameScope, scopeTree, setScopeDefaults,
+} from '../projects/scope'
+import type { ProjectOrder, ScopeKind, ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import { organisationLabel, scopeClient } from '../projects/scopeLabel'
+import { normaliseLinks } from '../projects/links'
+import type { RecordLink } from '../projects/links'
+import {
+  ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
+} from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
@@ -51,7 +52,7 @@ import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
-import { exampleProject } from './examples'
+import { exampleScopes } from './examples'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
@@ -79,17 +80,6 @@ import { useToasts } from './useToasts'
  * be handed a smaller slice of it and a reader can see that they were.
  */
 /**
- * What the app needs from the group store. `remove` is deliberately absent: a
- * group's record outliving its last project is harmless — re-create the group
- * and its description is waiting — and nothing here should be able to erase one
- * as a side effect of something else.
- */
-export type GroupRecords = {
-  list(): Promise<GroupProfile[]>
-  save(profile: GroupProfile): Promise<void>
-}
-
-/**
  * What the shell does to the diagnostics seam: reports, and — for the crash
  * fallback it hands the trail to — reads back.
  */
@@ -98,16 +88,24 @@ export type ShellDiagnostics = {
   recent(): DiagnosticEntry[]
 }
 
-export type ProjectLibrary = {
-  list(): Promise<ProjectSummary[]>
-  load(path: ScopePath): Promise<ProjectSnapshot | undefined>
-  save(project: ProjectSnapshot): Promise<void>
+export type ScopeLibrary = {
+  list(): Promise<ScopeSummary>
+  load(path: ScopePath): Promise<ScopeSnapshot | undefined>
+  save(scope: ScopeSnapshot): Promise<void>
   remove(path: ScopePath): Promise<void>
 }
 
+/** What the settings dialogs may change about a scope, whatever level it is. */
+export type ScopeSettingsPatch = {
+  name: string
+  client?: string
+  description?: string
+  links?: RecordLink[]
+  kind?: ScopeKind
+}
+
 export type AppProps = {
-  projects: ProjectLibrary
-  groupRecords: GroupRecords
+  scopes: ScopeLibrary
   preferences: PreferencesWriter
   documents: ProjectFileChannel
   diagnostics: ShellDiagnostics
@@ -184,7 +182,7 @@ export type AppProps = {
   initialSync?: PullOutcome
 
   /** Read by the composition root before the first render, so this can be sync. */
-  initialProject: ProjectSnapshot | undefined
+  initialProject: ScopeSnapshot | undefined
   initialPreferences: unknown
 
   examples: readonly ExampleProject[]
@@ -201,7 +199,7 @@ export type AppProps = {
 }
 
 export function App({
-  projects, groupRecords, preferences, documents, diagnostics, hostControls,
+  scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, initialProject, initialPreferences,
@@ -252,7 +250,7 @@ export function App({
   const failedRef = useRef(failed)
   failedRef.current = failed
 
-  const [project, setProject] = useState<ProjectSnapshot | undefined>(initialProject)
+  const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
    * The watcher, bound to the project that is open.
@@ -309,7 +307,7 @@ export function App({
    */
   const movedAway = useRef<ScopePath | undefined>(undefined)
   const workspaceStore = useMemo(() => ({
-    save: (held: ProjectSnapshot) => (
+    save: (held: ScopeSnapshot) => (
       movedAway.current === held.path ? Promise.resolve() : projects.save(held)
     ),
     load: (path: ScopePath) => projects.load(path),
@@ -438,7 +436,7 @@ export function App({
   }, [prefs])
 
   /** Opening is what makes a project "last opened", so both happen here. */
-  const enter = useCallback((next: ProjectSnapshot) => {
+  const enter = useCallback((next: ScopeSnapshot) => {
     setProject(next)
     prefs.writePreference({ lastScope: next.path })
   }, [prefs])
@@ -446,7 +444,14 @@ export function App({
   const openProject = useCallback((path: ScopePath) => {
     void projects.load(path).then(
       (found) => {
-        if (!found) { toasts.notify(s('picker.loadFailed'), 'error'); setRevision((r) => r + 1); return }
+        // A scope with no views is a domain (ADR-0012 §1): it reads, and there
+        // is nothing for the canvas to show. Step 7's screen opens one; until
+        // then this says so rather than mounting an editor with no board.
+        if (!isOpenableScope(found)) {
+          toasts.notify(s('picker.loadFailed'), 'error')
+          setRevision((r) => r + 1)
+          return
+        }
         enter(found)
       },
       (cause: unknown) => failed('openProject', cause, 'picker.loadFailed'),
@@ -462,7 +467,7 @@ export function App({
   }, [])
 
   /** A new project exists as soon as it is saved; otherwise a refresh loses it. */
-  const createAndEnter = useCallback((fresh: ProjectSnapshot, message: string) => {
+  const createAndEnter = useCallback((fresh: ScopeSnapshot, message: string) => {
     void projects.save(fresh).then(
       () => {
         enter(fresh)
@@ -474,84 +479,90 @@ export function App({
   }, [projects, enter, toasts, failed, reportStorage])
 
   /**
-   * Create a project, in a group that exists or in a new one.
+   * Create a scope under another one.
    *
-   * `group` arrives as a slug when the picker had one to offer, so adding to a
-   * group you already work in files it under exactly that group rather than
-   * under whatever the name happens to slug to this time.
+   * **The ancestors are created too**, when they are not there. A folder with
+   * no `scope.json` is not a scope (ADR-0012 §1), so a child filed under one
+   * would be filed under nothing and nothing would list it. They are written
+   * from the top down and before the new scope itself, so an interrupted run
+   * leaves a tree that is whole as far as it got.
    */
-  const createProject = useCallback((wanted: {
-    group?: string; groupName: string; projectName: string
-  }) => {
-    void projects.list().then((existing) => {
-      const group = wanted.group ?? scopePathFor(ROOT_SCOPE, wanted.groupName)
-      const path = scopePathFor(group, wanted.projectName, keysInGroup(existing, group))
+  const createScope = useCallback((wanted: { parent: ScopePath; name: string }) => {
+    void projects.list().then(async (tree) => {
+      const held = flattenScopes(tree)
+      const parent = held.find((scope) => scope.path === wanted.parent)
+      const path = scopePathFor(wanted.parent, wanted.name, namesUnder(parent))
+      try {
+        for (const missing of ancestorScopes(path).reverse()) {
+          if (missing === ROOT_SCOPE || held.some((scope) => scope.path === missing)) continue
+          await projects.save(bareScope(missing, scopePathLabel(missing), 'domain'))
+        }
+      } catch (cause) {
+        failed('createScope.ancestors', cause)
+        reportStorage(false)
+        return
+      }
       createAndEnter(
-        emptyProject(
-          path,
-          wanted.groupName,
-          { design: wanted.projectName, diagram: s('shell.newDiagram') },
-        ),
-        s('shell.projectCreated', { name: wanted.projectName }),
+        emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape'),
+        s('shell.scopeCreated', { name: wanted.name }),
       )
     }, (cause: unknown) => {
       // A list that will not read is a store that is refusing, so the standing
       // storage notice is the honest message — and it is latched, so a burst of
       // these says it once.
-      failed('createProject', cause)
+      failed('createScope', cause)
       reportStorage(false)
     })
   }, [projects, createAndEnter, failed, reportStorage, s])
 
-  /** The groups that exist, for the pickers in both dialogs. */
-  const [groups, setGroups] = useState<ProjectGroup[]>([])
-  const refreshGroups = useCallback(() => {
-    void projects.list().then((all) => setGroups(groupsOf(all)), (cause: unknown) => {
-      setGroups([])
-      failed('refreshGroups', cause)
+  /** The tree as it stands, for the dialogs that offer a parent to file under. */
+  const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
+  const refreshTree = useCallback(() => {
+    void projects.list().then(setTree, (cause: unknown) => {
+      setTree(scopeTree([]))
+      failed('refreshTree', cause)
       reportStorage(false)
     })
   }, [projects, failed, reportStorage])
 
   /**
-   * Change a project's name, its group, or both.
+   * Change a scope's name, where it is filed, or both.
    *
-   * A rename edits the model in place. A move changes the ref, so the store has
-   * to take the new address before it forgets the old one — that order matters:
-   * removing first and then failing to save would lose the project outright.
+   * A rename edits the model in place. A move changes the address, so the store
+   * has to take the new one before it forgets the old — that order matters:
+   * removing first and then failing to save would lose the scope outright.
    *
-   * The edit is made on `current` — the project as the open session has it, not
+   * The edit is made on `current` — the scope as the open session has it, not
    * as this component last saw it. Those two drift apart with every stroke of
    * editing, and applying settings to the stale one would write a model without
    * this afternoon's work over the model with it.
    *
-   * What comes back is the saved project when the workspace stays mounted, so
-   * the session can take it on: without that, the session keeps a model that
-   * knows nothing of the new defaults and the next autosave puts it back.
-   * Nothing comes back from a move, because a move changes the ref and the
+   * What comes back is the saved scope when the workspace stays mounted, so the
+   * session can take it on: without that, the session keeps a model that knows
+   * nothing of the new defaults and the next autosave puts it back. Nothing
+   * comes back from a move, because a move changes the address and the
    * workspace remounts on it anyway.
    */
   const applyProjectSettings = useCallback((
     settings: ProjectSettings,
-    current: ProjectSnapshot,
-  ): Promise<ProjectSnapshot | undefined> => {
-    return projects.list().then(async (existing) => {
+    current: ScopeSnapshot,
+  ): Promise<ScopeSnapshot | undefined> => {
+    return projects.list().then(async (held) => {
       const targetGroup = settings.group
       const moving = targetGroup !== (parentScope(current.path) ?? ROOT_SCOPE)
-      const named = setProjectDefaults(renameProject(current, settings.name), {
+      const named = setScopeDefaults(renameScope(current, settings.name), {
         author: settings.defaultAuthor,
         aspectConfig: settings.defaultAspectConfig,
       })
-      let next = moving
-        ? moveToGroup(named, targetGroup, settings.groupName)
-        : { ...named, model: { ...named.model, customerName: settings.groupName } }
+      let next = named
 
       if (moving) {
-        // A key free in the old group can be taken in the new one.
-        const taken = keysInGroup(existing, targetGroup)
-        if (taken.includes(scopePathLabel(next.path))) {
-          next = { ...next, path: scopePathFor(targetGroup, settings.name, taken) }
-        }
+        // A name free under the old parent can be taken under the new one.
+        const parent = flattenScopes(held).find((scope) => scope.path === targetGroup)
+        const taken = namesUnder(parent)
+        next = moveScope(named, taken.includes(scopePathLabel(current.path))
+          ? scopePathFor(targetGroup, settings.name, taken)
+          : scopePathFor(targetGroup, scopePathLabel(current.path)))
       }
 
       // Before the save, so nothing can write to the old address from the
@@ -583,7 +594,7 @@ export function App({
       setRevision((r) => r + 1)
       toasts.notify(
         moving
-          ? s('settings.moved', { name: settings.groupName })
+          ? s('settings.moved', { name: settings.name })
           : s('settings.renamed', { name: settings.name }),
         'success',
       )
@@ -596,133 +607,159 @@ export function App({
   }, [projects, enter, toasts, failed, reportStorage, s])
 
   /**
-   * Apply a group's edited record: what it is called, what it is, where the rest
-   * of its material lives.
+   * Apply a scope's edited record: what it is called, who its drawings are made
+   * out to, what it is, where the rest of its material lives.
    *
-   * The record is one write. The **name** is not, because the editor reads a
-   * group's name off each project (`model.customerName`) — so a rename has to
-   * sweep the group's projects too, and it is the sweep, not the record, that
-   * the toast is about. The record goes first: if the sweep then fails halfway,
-   * the group still knows its own name and reopening any project shows the old
-   * label rather than the group losing its identity outright.
+   * One write, where the group's was a write and then a sweep. A group's name
+   * rode on every project in it (`model.customerName`), so renaming one meant
+   * rewriting them all and saying which it could not reach; a scope's name is
+   * its own `scope.json` and nothing else holds a copy (ADR-0012 §1).
    *
-   * No ref changes. A group path is an address; renaming relabels.
+   * No address changes. A path is an address; renaming relabels.
    */
-  const applyGroupSettings = useCallback((profile: GroupProfile) => {
+  const applyScopeSettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch) => {
     void (async () => {
+      let held: ScopeSnapshot | undefined
       try {
-        await groupRecords.save(profile)
+        held = await projects.load(path)
       } catch (cause) {
-        failed('applyGroupSettings.record', cause, 'group.saveFailed')
+        failed('applyScopeSettings.load', cause, 'group.saveFailed')
         return
       }
+      const links = normaliseLinks(patch.links)
+      const next: ScopeSnapshot = {
+        ...(held ?? bareScope(path, patch.name)),
+        model: {
+          ...(held?.model ?? bareScope(path, patch.name).model),
+          name: patch.name.trim() || scopePathLabel(path),
+          ...(patch.description?.trim()
+            ? { description: patch.description.trim() }
+            : { description: undefined }),
+        },
+        ...(patch.client?.trim() ? { client: patch.client.trim() } : { client: undefined }),
+        ...(links.length ? { links } : { links: undefined }),
+        ...(patch.kind ? { kind: patch.kind } : {}),
+      }
+      // Absent rather than set to `undefined`, so the file has the shape a
+      // hand-written one would.
+      if (next.model.description === undefined) delete next.model.description
+      if (next.client === undefined) delete next.client
+      if (next.links === undefined) delete next.links
 
-      let inGroup: ProjectSummary[]
       try {
-        inGroup = (await projects.list())
-          .filter((it) => (parentScope(it.path) ?? ROOT_SCOPE) === profile.group)
+        await projects.save(next)
       } catch (cause) {
-        failed('applyGroupSettings.list', cause)
-        reportStorage(false)
+        failed('applyScopeSettings.save', cause, 'group.saveFailed')
         return
       }
-
-      const renaming = inGroup.some((it) => it.groupName !== profile.name)
-      // What the sweep could not relabel. Collected rather than thrown, because
-      // abandoning the loop at the first failure left the group half renamed
-      // AND said nothing — the projects it never reached looked identical to
-      // the ones it had deliberately skipped.
-      const missed: string[] = []
-      for (const summary of inGroup) {
-        try {
-          const held = await projects.load(summary.path)
-          if (!held) continue
-          const relabelled = relabelGroup(held, profile.name)
-          if (relabelled === held) continue
-          await projects.save(relabelled)
-        } catch (cause) {
-          failed('applyGroupSettings.relabel', cause)
-          missed.push(summary.name)
-        }
-      }
-
-      // The open project holds its own copy of the model, so it has to be told
-      // rather than left to notice.
-      if (project && (parentScope(project.path) ?? ROOT_SCOPE) === profile.group) {
-        enter(relabelGroup(project, profile.name))
-      }
+      // The open scope's ancestors are read into state, so a rename of one has
+      // to be told rather than left to notice.
+      refreshAncestors()
       setRevision((r) => r + 1)
-      if (missed.length) {
-        reportStorage(false)
-        toasts.notify(s('shell.groupRenameIncomplete', { names: missed.join(', ') }), 'warning')
-        return
-      }
       toasts.notify(
-        renaming ? s('group.renamed', { name: profile.name }) : s('group.saved', { name: profile.name }),
+        held && held.model.name !== next.model.name
+          ? s('group.renamed', { name: next.model.name })
+          : s('group.saved', { name: next.model.name }),
         'success',
       )
     })().catch((cause: unknown) => {
       // A backstop, not a handler: everything above is caught where it can be
       // answered. A throw that reaches here happened in the synchronous tail,
       // which no boundary can see from inside an async function.
-      failed('applyGroupSettings', cause, 'group.saveFailed')
+      failed('applyScopeSettings', cause, 'group.saveFailed')
     })
-  }, [groupRecords, projects, project, enter, toasts, failed, reportStorage, s])
+  }, [projects, toasts, failed, s])
 
   /**
-   * The open project's group record, for the decisions kept at group level.
+   * The scopes above the open one, for the decisions and the client they carry.
    *
-   * Read when a project is entered and after every write, not on every render:
-   * the record is small and rarely changes, and the workspace only needs the
-   * decisions off it. A group without a record has none — `groupProfileFor`
-   * supplies the plain profile, so the write path below never has to ask
-   * whether one existed.
+   * Read when a scope is entered and after every write, not on every render.
+   * ADR-0012 §7 reads a decision up the tree as well as at the scope, so the
+   * page beside the landscape still shows the domain's records — which is where
+   * a group's used to live, filed one level up and under another name.
+   *
+   * Loaded rather than listed, because a listing carries names and not
+   * decisions. There are at most a handful of ancestors, and a domain's model
+   * is small; the root's is the one that is not, and reading it once on opening
+   * a scope is the price of the records being reachable at all.
    */
-  const [groupProfiles, setGroupProfiles] = useState<GroupProfile[]>([])
-  const groupKey = project && (parentScope(project.path) ?? ROOT_SCOPE)
-  // How a failure is reported is not an input to reading the record. `failed`
-  // is read through the ref so it cannot re-trigger the read: `list()` answers
-  // with a new array every time, so a dependency that changes identity on
-  // render is not a needless read but an endless one.
+  const [ancestors, setAncestors] = useState<readonly ScopeSnapshot[]>([])
+  const openPathForAncestors = project?.path
+  // How a failure is reported is not an input to reading a scope. `failed` is
+  // read through the ref so it cannot re-trigger the read: a dependency that
+  // changes identity on render is not a needless read but an endless one.
+  const readAncestors = useCallback(async (of: ScopePath): Promise<ScopeSnapshot[]> => {
+    const held = await Promise.all(ancestorScopes(of).map((path) => projects.load(path)))
+    return held.filter((scope): scope is ScopeSnapshot => !!scope)
+  }, [projects])
   useEffect(() => {
-    if (!groupKey) return
+    if (openPathForAncestors === undefined) return
     let live = true
-    void groupRecords.list().then(
-      (all) => { if (live) setGroupProfiles(all) },
+    void readAncestors(openPathForAncestors).then(
+      (held) => { if (live) setAncestors(held) },
       (cause: unknown) => {
-        if (live) setGroupProfiles([])
-        // No message: a group's record is decoration, and its decisions page
-        // being empty is visible on its own. The trail still gets it.
-        failedRef.current('groupProfiles', cause)
+        if (live) setAncestors([])
+        // No message: what an ancestor says is decoration here, and a decisions
+        // page that is empty is visible on its own. The trail still gets it.
+        failedRef.current('ancestors', cause)
       },
     )
     return () => { live = false }
-  }, [groupKey, groupRecords])
+  }, [openPathForAncestors, readAncestors])
+  const refreshAncestors = useCallback(() => {
+    if (openPathForAncestors === undefined) return
+    void readAncestors(openPathForAncestors).then(setAncestors, (cause: unknown) => {
+      failedRef.current('ancestors', cause)
+    })
+  }, [openPathForAncestors, readAncestors])
 
+  /** The nearest scope above this one, which is where a group's records went. */
+  const parent = ancestors[0]
   const groupDecisions = useMemo<readonly Adr[]>(
-    () => (groupKey ? groupProfiles.find((p) => p.group === groupKey)?.decisions ?? [] : []),
-    [groupProfiles, groupKey],
+    () => parent?.model.decisions ?? [], [parent],
   )
-  const groupClient = groupKey
-    ? groupProfiles.find((p) => p.group === groupKey)?.client
-    : undefined
 
+  /**
+   * The name and the client, walked up the tree over what has been read.
+   *
+   * The summaries the ancestors were loaded as, plus the open scope's own — so
+   * a scope that says nothing yields to the one above it, and a title block is
+   * never blank (`projects/scopeLabel.ts`).
+   */
+  const chain = useMemo<ScopeSummary[]>(() => {
+    if (!project) return []
+    return [project, ...ancestors].map((scope) => ({
+      path: scope.path,
+      name: scope.model.name,
+      ...(scope.client !== undefined ? { client: scope.client } : {}),
+      diagrams: scope.model.diagrams.length,
+      children: [],
+    }))
+  }, [project, ancestors])
+  const groupName = project ? organisationLabel(project.path, chain) : ''
+  const groupClient = project ? scopeClient(project.path, chain) : undefined
+
+  /**
+   * The ancestor's decisions, written back to the scope they belong to.
+   *
+   * Refused rather than invented when there is no scope above this one: the
+   * root's records are the root's, and a landscape at the top of the tree has
+   * nowhere to put a record that is not its own.
+   */
   const saveGroupDecisions = useCallback((next: Adr[]) => {
-    if (!project) return
-    const held = groupProfileFor(
-      parentScope(project.path) ?? ROOT_SCOPE, groupNameOf(project.model), groupProfiles)
-    const profile = normaliseGroupProfile({ ...held, decisions: next })
+    if (!parent) return
+    const updated: ScopeSnapshot = { ...parent, model: { ...parent.model, decisions: next } }
     // Optimistic: the page shows the change at once, and a failed write puts
     // the old record back along with the message.
-    setGroupProfiles((all) => [...all.filter((p) => p.group !== profile.group), profile])
-    void groupRecords.save(profile).then(
+    setAncestors((held) => held.map((scope) => (scope.path === parent.path ? updated : scope)))
+    void projects.save(updated).then(
       undefined,
       (cause: unknown) => {
         failed('saveGroupDecisions', cause, 'group.saveFailed')
-        setGroupProfiles((all) => [...all.filter((p) => p.group !== held.group), held])
+        setAncestors((held) => held.map((scope) => (scope.path === parent.path ? parent : scope)))
       },
     )
-  }, [project, groupProfiles, groupRecords, failed])
+  }, [parent, projects, failed])
 
   /**
    * An example is a starting point, not a document you keep opening. Copying it
@@ -730,14 +767,22 @@ export function App({
    * again later opens *your* copy, which is why an existing one wins here.
    */
   const copyExample = useCallback((example: ExampleProject) => {
-    void projects.load(example.path).then((existing) => {
+    void (async () => {
+      const existing = await projects.load(example.path)
       if (existing) { enter(existing); return }
-      const copy = exampleProject(example)
+      // A tree since format 5: the organisation and the landscape under it are
+      // two scopes, written parents first so an interrupted copy leaves a tree
+      // that is whole as far as it got.
+      const copy = exampleScopes(example)
       // A shipped example this build cannot read is a bug the example tests
       // exist to prevent, so it reaches here as nothing rather than as a crash.
-      if (!copy) { failed('copyExample', new Error('the example did not read')); return }
-      createAndEnter(copy, s('shell.exampleCopied', { name: example.label }))
-    }, (cause: unknown) => {
+      if (copy.length === 0) {
+        failed('copyExample', new Error('the example did not read'))
+        return
+      }
+      for (const scope of copy.slice(0, -1)) await projects.save(scope)
+      createAndEnter(copy[copy.length - 1], s('shell.exampleCopied', { name: example.label }))
+    })().catch((cause: unknown) => {
       failed('copyExample', cause)
       reportStorage(false)
     })
@@ -795,12 +840,13 @@ export function App({
             editorPreferences={prefs.preferences}
             onEditorPreferencesChange={prefs.savePreferences}
             onLeave={leaveProject}
-            groups={groups}
-            onOpenSettings={refreshGroups}
+            scopes={tree}
+            onOpenSettings={refreshTree}
             onApplySettings={applyProjectSettings}
             makeId={makeId}
             groupDecisions={groupDecisions}
             onGroupDecisionsChange={saveGroupDecisions}
+            groupName={groupName}
             groupClient={groupClient}
             diagnostics={diagnostics}
             hostControls={hostControls}
@@ -808,14 +854,13 @@ export function App({
           />
         ) : (
           <ProjectPicker
-            projects={projects}
-            groups={groupRecords}
-            onApplyGroupSettings={applyGroupSettings}
+            scopes={projects}
+            onApplyScopeSettings={applyScopeSettings}
             examples={examples}
             order={order}
             onOrderChange={chooseOrder}
             onOpen={openProject}
-            onCreate={createProject}
+            onCreate={createScope}
             onCopyExample={copyExample}
             onFailure={failed}
             revision={revision}

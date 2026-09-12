@@ -24,7 +24,6 @@ afterEach(() => cleanup());
 function model(elementName = 'Billing'): DesignModel {
   return {
     name: 'Landscape',
-    customerName: 'ACME',
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })],
     elements: [{
       id: 'billing', kind: 'application', name: elementName,

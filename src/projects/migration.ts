@@ -2,46 +2,42 @@
  * Two migrations, and they are not the same kind of thing.
  *
  * **Out of browser storage and into the folder** (ADR-0003). It copies, and
- * deletes nothing: three rules, on {@link copyProjectsInto}.
+ * deletes nothing: three rules, on {@link copyScopesInto}.
  *
  * **Out of an older file format and into this one** (ADR-0012 §11). It rewrites
  * in place, because a folder cannot hold two versions of itself. The fold is
  * `migrate3to4.ts`; what lives here is the pass over a whole store — ask which
- * projects are old, record the folder before touching it, then read each one
- * and write it back ({@link upgradeProjects}).
+ * scopes are old, record the folder before touching it, then read each one and
+ * write it back ({@link upgradeProjects}).
  *
  * They share a file because they share the shape a caller wants: narrow
  * structural seams rather than a `ProjectStore`, a tally of counts and never
  * names, and a failure that is one project rather than the run.
  */
-import type { GroupProfile } from './group'
-import type { ProjectSnapshot, ProjectSummary } from './project'
+import { flattenScopes } from './scope'
+import type { ScopeSnapshot, ScopeSummary } from './scope'
 import type { ScopePath } from './scopePath'
 
-/** Where the projects are coming from: enough to see them and read them. */
-export type ProjectSource = {
-  list(): Promise<ProjectSummary[]>
-  load(path: ScopePath): Promise<ProjectSnapshot | undefined>
+/** Where the scopes are coming from: enough to see them and read them. */
+export type ScopeSource = {
+  list(): Promise<ScopeSummary>
+  load(path: ScopePath): Promise<ScopeSnapshot | undefined>
 }
 
 /** Where they are going: enough to see what is already there, and to write. */
-export type ProjectTarget = ProjectSource & {
-  save(project: ProjectSnapshot): Promise<void>
+export type ScopeTarget = ScopeSource & {
+  save(scope: ScopeSnapshot): Promise<void>
 }
-
-export type GroupSource = { list(): Promise<GroupProfile[]> }
-export type GroupTarget = GroupSource & { save(profile: GroupProfile): Promise<void> }
 
 /** What happened, for the trail. Counts, never names — a log is not a document. */
 export type MigrationTally = {
-  projects: number
-  groups: number
+  scopes: number
   /** Already in the folder, and therefore left exactly as they were. */
   kept: number
   failed: number
 }
 
-export const NOTHING_MIGRATED: MigrationTally = { projects: 0, groups: 0, kept: 0, failed: 0 }
+export const NOTHING_MIGRATED: MigrationTally = { scopes: 0, kept: 0, failed: 0 }
 
 /**
  * The projects in browser storage, copied into the folder.
@@ -63,13 +59,15 @@ export const NOTHING_MIGRATED: MigrationTally = { projects: 0, groups: 0, kept: 
  * **A failure is one project, not the run.** A landscape that will not read is
  * skipped and counted; the other eleven still arrive.
  */
-export async function copyProjectsInto(
-  from: ProjectSource, into: ProjectTarget,
+export async function copyScopesInto(
+  from: ScopeSource, into: ScopeTarget,
 ): Promise<MigrationTally> {
   const tally = { ...NOTHING_MIGRATED }
-  let summaries: readonly ProjectSummary[]
+  let summaries: readonly ScopeSummary[]
   try {
-    summaries = await from.list()
+    // Parents before children, which `flattenScopes` already answers in: a
+    // child saved first would sit under a folder that is not a scope yet.
+    summaries = flattenScopes(await from.list())
   } catch {
     return tally
   }
@@ -77,10 +75,13 @@ export async function copyProjectsInto(
   for (const summary of summaries) {
     try {
       if (await into.load(summary.path)) { tally.kept += 1; continue }
-      const project = await from.load(summary.path)
-      if (!project) { tally.failed += 1; continue }
-      await into.save(project)
-      tally.projects += 1
+      const scope = await from.load(summary.path)
+      // Listed but not there: the root of a store that has never had one saved
+      // is in every listing and in no store. Per the port, `undefined` is an
+      // ordinary answer and a genuine failure rejects — which is counted below.
+      if (!scope) continue
+      await into.save(scope)
+      tally.scopes += 1
     } catch {
       tally.failed += 1
     }
@@ -88,51 +89,15 @@ export async function copyProjectsInto(
   return tally
 }
 
-/**
- * The group records too — a description and a set of decisions that would
- * otherwise stay behind in a browser profile while their projects moved out.
- */
-export async function copyGroupsInto(
-  from: GroupSource, into: GroupTarget,
-): Promise<Pick<MigrationTally, 'groups' | 'kept' | 'failed'>> {
-  const tally = { groups: 0, kept: 0, failed: 0 }
-  let profiles: readonly GroupProfile[]
-  try {
-    profiles = await from.list()
-  } catch {
-    return tally
-  }
-
-  const held = new Set((await into.list().catch(() => [])).map((profile) => profile.group))
-  for (const profile of profiles) {
-    if (held.has(profile.group)) { tally.kept += 1; continue }
-    try {
-      await into.save(profile)
-      tally.groups += 1
-    } catch {
-      tally.failed += 1
-    }
-  }
-  return tally
-}
-
-/** Everything, in one call. The order matters only for the tally. */
+/** Everything, in one call. */
 export async function migrateInto(
-  projects: { from: ProjectSource; into: ProjectTarget },
-  groups: { from: GroupSource; into: GroupTarget },
+  from: ScopeSource, into: ScopeTarget,
 ): Promise<MigrationTally> {
-  const copied = await copyProjectsInto(projects.from, projects.into)
-  const withGroups = await copyGroupsInto(groups.from, groups.into)
-  return {
-    projects: copied.projects,
-    groups: withGroups.groups,
-    kept: copied.kept + withGroups.kept,
-    failed: copied.failed + withGroups.failed,
-  }
+  return copyScopesInto(from, into)
 }
 
 export function migrated(tally: MigrationTally): boolean {
-  return tally.projects > 0 || tally.groups > 0
+  return tally.scopes > 0
 }
 
 // --- out of an older format, and into this one ------------------------------
@@ -145,7 +110,7 @@ export function migrated(tally: MigrationTally): boolean {
  * which is what an in-memory store and any backend written since the format
  * turned both want.
  */
-export type UpgradeTarget = ProjectTarget & { outdated?(): Promise<ScopePath[]> }
+export type UpgradeTarget = ScopeTarget & { outdated?(): Promise<ScopePath[]> }
 
 /**
  * Recording the folder before the pass rewrites it (ADR-0008), or saying it
@@ -156,7 +121,7 @@ export type UpgradeTarget = ProjectTarget & { outdated?(): Promise<ScopePath[]> 
 export type RecordBefore = () => Promise<boolean>
 
 export type UpgradeTally = {
-  /** Projects read in an older format and written back in this one. */
+  /** Scopes read in an older format and written back in this one. */
   upgraded: number
   failed: number
   /** Whether what the folder looked like first was kept. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { diagramFiles, projectFiles } from './folderFormat'
-import type { ProjectSnapshot } from './project'
+import { diagramFiles, scopeFiles } from './folderFormat'
+import type { ScopeSnapshot } from './scope'
 import { BUDGET, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 
@@ -15,7 +15,7 @@ import { syntheticModel } from '../model/testing/synthetic'
  * whether the per-diagram saving is worth the machinery.
  */
 
-const project: ProjectSnapshot = {
+const project: ScopeSnapshot = {
   path: 'northwind/landscape',
   model: syntheticModel('large'),
   activeDiagramId: 'landscape',
@@ -33,7 +33,7 @@ describe('the cost of a save', () => {
 
   it('writes the whole project, for the record', () => {
     measure('folder: serialise the whole project', () => {
-      projectFiles(project)
+      scopeFiles(project)
     }, { runs: 3, warmup: 1 })
   })
 })

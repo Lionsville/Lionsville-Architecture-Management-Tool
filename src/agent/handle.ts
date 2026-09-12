@@ -54,7 +54,9 @@ export type SessionView = {
   /** The same model as the file has it, cached by the session. */
   current(): HostModel
   activeDiagramId(): string
-  /** The group's own records, which live beside the project rather than on it. */
+  /** Where this scope is in the tree (ADR-0012 §1); the empty string is the root. */
+  scopePath(): string
+  /** The records of the scope above this one, which are not on this model. */
   groupDecisions(): readonly Adr[]
   /**
    * Why nothing may change right now, or nothing: the person is resolving a
@@ -120,6 +122,7 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
     model: session.indexed(),
     current: session.current,
     activeDiagramId: session.activeDiagramId(),
+    scopePath: session.scopePath(),
     groupDecisions: session.groupDecisions(),
   }
   if (request.tool === RESOURCE_LIST) return listResources(view.model, view.groupDecisions)
@@ -189,6 +192,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     model: session.indexed(),
     current: session.current,
     activeDiagramId: session.activeDiagramId(),
+    scopePath: session.scopePath(),
     groupDecisions: session.groupDecisions(),
     ids: session.ids,
     makeId: session.makeId,

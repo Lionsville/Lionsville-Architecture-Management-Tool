@@ -24,7 +24,6 @@ const link = (id: string, sourceId: string, targetId: string): Relation =>
 function model(over: Partial<HostModel> = {}): HostModel {
   return {
     name: 'Acme Logistics',
-    customerName: 'Acme Logistics',
     elements: [
       el('crews', 'application'),
       el('crews-api', 'component', { parentId: 'crews' }),

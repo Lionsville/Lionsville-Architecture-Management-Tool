@@ -19,9 +19,10 @@ import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
 import { adrFileText, adrPath } from './adrFile'
 import { stableJson, textFromBytes } from './fileText'
-import { isFormatPath, projectFiles, projectFromFolder } from './folderFormat'
+import { isFormatPath, scopeFiles } from './folderFormat'
 import type { FolderFile } from './folderFormat'
-import { foldFolderToFormat4, migrateModel, openProjectFolder } from './migrate3to4'
+import { foldFolderToFormat4, migrateModel } from './migrate3to4'
+import { openScopeFolder } from './migrate4to5'
 import { transitionFileText, transitionPath } from './transitionFile'
 import type { ScopePath } from './scopePath'
 
@@ -118,7 +119,7 @@ const v3 = (): FolderFile[] => [
   { path: 'README.md', text: 'Somebody keeps notes here.\n' },
 ]
 
-const opened = () => openProjectFolder(v3(), REF)!
+const opened = () => openScopeFolder(v3(), REF)!
 
 function textOf(files: readonly FolderFile[], path: string): string {
   const file = files.find((held) => held.path === path)
@@ -211,7 +212,9 @@ describe('everything else in the folder', () => {
   it('comes through untouched — the pass only knows the three folds', () => {
     const project = opened()
     expect(project.model.name).toBe('Application landscape')
-    expect(project.model.customerName).toBe('Acme Logistics')
+    // `groupName` is the folder ABOVE this one's name and has no home in a
+    // scope's own file: the pass over the tree is what gives the parent one.
+    expect('customerName' in project.model).toBe(false)
     expect(project.model.defaultAuthor).toBe('W. Simons')
     expect(project.activeDiagramId).toBe('l7')
     expect(project.model.decisions?.map((adr) => adr.id)).toEqual(['adr-1', 'adr-2'])
@@ -226,7 +229,7 @@ describe('everything else in the folder', () => {
 })
 
 describe('what the pass writes, and what it takes away', () => {
-  it('says format 4 in the header', () => {
+  it('says format 4 in the header it hands on', () => {
     expect(JSON.parse(textOf(foldFolderToFormat4(v3())!, 'project.json')))
       .toMatchObject({ type: 'lionsville-architecture', formatVersion: 4 })
   })
@@ -248,29 +251,29 @@ describe('what the pass writes, and what it takes away', () => {
    */
   it('leaves the superseded file claimed by the grammar, so a save removes it', () => {
     expect(isFormatPath('diagrams/l7.placements.json')).toBe(true)
-    expect(projectFiles(opened()).map((file) => file.path))
+    expect(scopeFiles(opened()).map((file) => file.path))
       .not.toContain('diagrams/l7.placements.json')
   })
 
-  it('does not touch a folder that is already format 4', () => {
-    expect(foldFolderToFormat4(projectFiles(opened()))).toBeUndefined()
+  it('does not touch a folder that is not format 3', () => {
+    expect(foldFolderToFormat4(scopeFiles(opened()))).toBeUndefined()
     expect(foldFolderToFormat4([{ path: 'notes.txt', text: 'hello' }])).toBeUndefined()
   })
 })
 
-describe('the migrated project', () => {
-  it('round-trips byte for byte once it has been written as format 4', () => {
-    const written = projectFiles(opened())
-    const again = projectFiles(projectFromFolder(written, REF)!)
+describe('the migrated scope', () => {
+  it('round-trips byte for byte once it has been written as format 5', () => {
+    const written = scopeFiles(opened())
+    const again = scopeFiles(openScopeFolder(written, REF)!)
     expect(again).toEqual(written)
   })
 
   it('opens the same whether it is read once or twice', () => {
-    expect(stableJson(projectFromFolder(projectFiles(opened()), REF))).toBe(stableJson(opened()))
+    expect(stableJson(openScopeFolder(scopeFiles(opened()), REF))).toBe(stableJson(opened()))
   })
 
   it('is opened by the one door a second time without folding anything', () => {
-    expect(stableJson(openProjectFolder(projectFiles(opened()), REF))).toBe(stableJson(opened()))
+    expect(stableJson(openScopeFolder(scopeFiles(opened()), REF))).toBe(stableJson(opened()))
   })
 })
 
@@ -284,7 +287,6 @@ describe('the migrated project', () => {
 describe('a model stored as one object', () => {
   const beforeAdr0012 = {
     name: 'Landscape',
-    customerName: 'Acme',
     connections: [{ id: 'c-1', sourceId: 'portal', targetId: 'wms', isBidirectional: false }],
     elements: [
       { id: 'portal', kind: 'inputChannel', name: 'Portal' },

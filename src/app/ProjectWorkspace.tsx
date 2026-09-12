@@ -17,8 +17,7 @@ import type { EditorHandle } from '../editor'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
-import { groupNameOf } from '../projects/project'
-import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
@@ -67,7 +66,7 @@ import type { StorageNotice } from './useStorageNotice'
 import type { Notify } from './useToasts'
 
 export type ProjectWorkspaceProps = {
-  project: ProjectSnapshot
+  project: ScopeSnapshot
   projects: ProjectSaver
   /**
    * Somebody else changed this project's files. Bound to this project's ref by
@@ -119,10 +118,10 @@ export type ProjectWorkspaceProps = {
   editorPreferences: unknown
   onEditorPreferencesChange: (next: EditorPreferences) => void
 
-  /** Leave this project and go back to the picker. */
+  /** Leave this scope and go back to the picker. */
   onLeave: () => void
-  /** The groups that exist, for the settings dialog's group picker. */
-  groups: readonly ProjectGroup[]
+  /** The tree as it stands, for the settings dialog's "filed under" select. */
+  scopes: ScopeSummary
   /** Called when the dialog opens, so the caller can refresh that list. */
   onOpenSettings: () => void
   /**
@@ -132,8 +131,8 @@ export type ProjectWorkspaceProps = {
    */
   onApplySettings: (
     settings: ProjectSettings,
-    current: ProjectSnapshot,
-  ) => Promise<ProjectSnapshot | undefined>
+    current: ScopeSnapshot,
+  ) => Promise<ScopeSnapshot | undefined>
   makeId: MakeId
   /**
    * The group's own decision records, and how to write them back. They are
@@ -143,9 +142,13 @@ export type ProjectWorkspaceProps = {
   groupDecisions: readonly Adr[]
   onGroupDecisionsChange: (next: Adr[]) => void
   /**
-   * Who the group's drawings are made for, from its record. Absent = the
-   * group's name, which is what the title block said before a group could say
-   * otherwise.
+   * What the organisation this scope sits in is called, walked up the tree
+   * (`projects/scopeLabel.ts`). Shown on the bar and above a description.
+   */
+  groupName: string
+  /**
+   * Who drawings made here are addressed to. Absent = the organisation's name,
+   * which is what the title block said before a scope could say otherwise.
    */
   groupClient?: string
   /**
@@ -170,8 +173,8 @@ function localToday(): string {
 export function ProjectWorkspace({
   project, projects, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
-  onLeave, groups, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
-  groupClient,
+  onLeave, scopes, onOpenSettings, onApplySettings, makeId, groupDecisions, onGroupDecisionsChange,
+  groupName, groupClient,
   diagnostics, hostControls, today = localToday, windowChrome,
 }: ProjectWorkspaceProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -267,7 +270,7 @@ export function ProjectWorkspace({
     onUnsavedWork,
     // Their version, once it has been read: straight onto the session, without
     // a relayout — a project read back from its folder carries its geometry.
-    onAdopt: useCallback((held: ProjectSnapshot) => session.adopt(held, false), [session]),
+    onAdopt: useCallback((held: ScopeSnapshot) => session.adopt(held, false), [session]),
   })
   const forceSave = document.forceSave
 
@@ -350,6 +353,7 @@ export function ProjectWorkspace({
     indexed: session.indexed,
     current: session.current,
     activeDiagramId: session.currentActiveId,
+    scopePath: () => project.path,
     groupDecisions: () => groupDecisions,
     blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
     dispatch: session.dispatch,
@@ -365,7 +369,7 @@ export function ProjectWorkspace({
     images: session.currentImages,
     addImage: (image) => session.setImageLibrary((library) => [...library, image]),
     save: forceSave,
-  }), [session, groupDecisions, documentStatus, makeId, today, s, renderer, forceSave]))
+  }), [session, project.path, groupDecisions, documentStatus, makeId, today, s, renderer, forceSave]))
 
   const snapshots = useProjectHistory({
     history: projectHistory,
@@ -566,7 +570,7 @@ export function ProjectWorkspace({
       <ShellToolbar
         source={source}
         designName={session.model.name}
-        groupName={groupNameOf(session.model)}
+        groupName={groupName}
         savedAt={savedAt}
         status={document.state.status}
         saveFailed={saveFailed}
@@ -637,7 +641,7 @@ export function ProjectWorkspace({
           // AUTHOR: <project name>; it is now the project's default author,
           // which is absent until somebody sets one.
           exportTitleBlock={{
-            client: groupClient ?? groupNameOf(session.model),
+            client: groupClient ?? groupName,
             author: session.model.defaultAuthor,
           }}
           renderMarkdown={renderDocument}
@@ -687,7 +691,7 @@ export function ProjectWorkspace({
         open={adrPage.open}
         onClose={() => setAdrPage({ open: false })}
         model={session.model}
-        groupName={groupNameOf(session.model)}
+        groupName={groupName}
         groupDecisions={groupDecisions}
         onGroupDecisionsChange={onGroupDecisionsChange}
         onProjectDecisionsChange={onProjectDecisionsChange}
@@ -755,7 +759,7 @@ export function ProjectWorkspace({
       <ProjectSettingsDialog
         open={settingsOpen}
         project={project}
-        groups={groups}
+        scopes={scopes}
         onCancel={() => setSettingsOpen(false)}
         onSave={(settings) => { setSettingsOpen(false); applySettings(settings) }}
         s={s}

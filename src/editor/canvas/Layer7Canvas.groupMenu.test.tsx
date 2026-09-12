@@ -28,7 +28,6 @@ const NAMED = { id: 'core', name: 'Core' };
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },
     ],

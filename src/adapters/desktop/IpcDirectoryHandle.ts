@@ -1,7 +1,7 @@
 /**
  * A folder on the desktop, shaped like a folder in a browser.
  *
- * `FileSystemProjectStore` was written against `DirectoryHandleLike` — the
+ * `FileSystemScopeStore` was written against `DirectoryHandleLike` — the
  * handful of File System Access methods it actually uses — precisely so that
  * the desktop would not need a second store. This is the other implementation
  * of that shape: the same walking, reading and writing, over the IPC channel in
@@ -21,7 +21,7 @@
  */
 import type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
-} from '../fileSystem/FileSystemProjectStore'
+} from '../fileSystem/FileSystemScopeStore'
 import type { DesktopFiles } from './channel'
 
 function missing(what: string, name: string): Error {

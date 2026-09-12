@@ -37,7 +37,7 @@ const ADRS: Adr[] = [
 ]
 
 const MODEL = {
-  name: 'Acme', customerName: 'Acme', diagrams: [],
+  name: 'Acme', diagrams: [],
   relations: [
     { id: 'c-orders', type: 'flow', sourceId: 'wms-old', targetId: 'billing', isBidirectional: false, protocol: 'REST', label: 'orders' },
     { id: 'c-stock', type: 'flow', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, protocol: 'file' },

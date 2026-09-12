@@ -37,7 +37,7 @@ import { THEME_ITEMS } from '../../platform/menu'
 import type { ThemeMode } from '../../platform/theme'
 import type { UpdateChannel, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type { LocalSettingsPatch } from '../../projects/folderSettings'
-import type { ProjectOrder } from '../../projects/project'
+import type { ProjectOrder } from '../../projects/scope'
 
 export type PreferencesDialogProps = {
   open: boolean

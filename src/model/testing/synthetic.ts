@@ -207,7 +207,6 @@ function build(spec: SyntheticSpec): HostModel {
 
   return {
     name: 'Synthetic landscape',
-    customerName: 'Northwind Group',
     description: 'A generated landscape. Nobody works here.',
     elements,
     relations,

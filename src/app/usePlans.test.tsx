@@ -15,7 +15,7 @@ import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import type { DesignElement, Relation, Transition } from '../model'
 import type { HostModel } from '../model/fromInterchange'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { useModelSession } from './useModelSession'
 import type { ModelSession } from './useModelSession'
 import { usePlans } from './usePlans'
@@ -38,7 +38,6 @@ const PLAN: Transition = {
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [
     element('billing', 'Billing'),
     element('wms-old', 'Warehouse', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } }),
@@ -50,7 +49,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   ...over,
 })
 
-const project = (m: HostModel = model()): ProjectSnapshot => ({
+const project = (m: HostModel = model()): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: m,
   activeDiagramId: 'd1',

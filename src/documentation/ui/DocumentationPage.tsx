@@ -69,6 +69,12 @@ export interface DocumentationActions {
 export interface DocumentationPageProps {
   element: DesignElement;
   model: DesignModel;
+  /**
+   * The organisation this scope sits in, for the breadcrumb (ADR-0012 §1).
+   * Absent = this scope's own name, which is what a landscape with nothing
+   * above it is called.
+   */
+  scopeLabel?: string;
   diagram: DesignDiagram;
   readOnly: boolean;
   /**
@@ -119,7 +125,7 @@ export interface DocumentationPageProps {
 }
 
 export function DocumentationPage(props: DocumentationPageProps) {
-  const { element, model, diagram, readOnly, actions, onNavigate, onClose } = props;
+  const { element, model, scopeLabel, diagram, readOnly, actions, onNavigate, onClose } = props;
   const { t } = useStrings();
   const [mode, setMode] = useState<DocumentationMode>('read');
   const [draft, setDraft] = useState(element.description ?? '');
@@ -262,7 +268,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
           </IconButton>
         </Tooltip>
         <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {model.customerName} &nbsp;/&nbsp; {diagram.name} &nbsp;/&nbsp;
+          {scopeLabel ?? model.name} &nbsp;/&nbsp; {diagram.name} &nbsp;/&nbsp;
           <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{element.name}</Box>
         </Typography>
         <Box sx={{ flex: 1 }} />

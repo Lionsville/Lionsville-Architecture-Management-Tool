@@ -14,9 +14,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
-import { EXAMPLES, exampleFiles, exampleProject } from '.'
+import { EXAMPLES, exampleFiles, exampleScopes } from '.'
 import { fromArrays, toArrays } from '../../model/normalised'
-import { projectFiles, projectFromFolder } from '../../projects/folderFormat'
+import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'
 import { stableJson } from '../../projects/fileText'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { computeBusinessCase, readBusinessCase } from '../../documentation/businessCase'
@@ -26,16 +26,33 @@ import type { BuildGraphArgs } from '../../editor/graph'
 import type { DesignModel } from '../../model'
 
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
-  const project = exampleProject(example)!
+  const scopes = exampleScopes(example)
+  const project = scopes[scopes.length - 1]
   const model = project.model
   const byId = new Map(model.elements.map((e) => [e.id, e]))
 
-  it('is a project folder this build reads', () => {
+  it('is a tree of scopes this build reads', () => {
     // The one thing that would make every other check in this file vacuous,
     // and the one an example in a form the tool no longer writes would fail.
-    expect(project).toBeTruthy()
+    expect(scopes.map((scope) => scope.path))
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape'])
     expect(model.diagrams.length).toBeGreaterThan(0)
-    expect(model.customerName).toBeTruthy()
+  })
+
+  /**
+   * The organisation above the landscape: a name, what it is, and nothing else.
+   *
+   * The model is deliberately NOT split across the two. Every `supports` and
+   * `assigned` row joining a capability to an application would dangle at one
+   * end, and the stand-ins that make a cross-scope id resolve are ADR-0012 §2's.
+   */
+  it('names the organisation above the landscape, and keeps the model whole', () => {
+    const [organisation] = scopes
+    expect(organisation.model.name).toBe('Acme Logistics')
+    expect(organisation.kind).toBe('organisation')
+    expect(organisation.model.elements).toEqual([])
+    expect(organisation.model.diagrams).toEqual([])
+    expect(project.kind).toBe('landscape')
   })
 
   it('parents every component to an application that exists', () => {
@@ -77,7 +94,8 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
  * save after the reducer lands is a diff nobody asked for.
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working file', (_key, example) => {
-  const project = exampleProject(example)!
+  const scopes = exampleScopes(example)
+  const project = scopes[scopes.length - 1]
 
   it('survives the indexed model byte for byte', () => {
     const indexed = { ...project, model: toArrays(fromArrays(project.model)) }
@@ -86,10 +104,15 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working
   })
 
   it('is written back as the files it was read from', () => {
-    // The example ships as the folder the format writes, so a save of an
+    // The example ships as the folders the format writes, so a save of an
     // untouched copy has to be no diff at all — which is also what says the
     // shipped file is current rather than something a reader forgives.
-    const written = projectFiles(project)
+    const written = scopes.flatMap((scope) => {
+      const within = scope.path === example.path
+        ? ''
+        : `${scope.path.slice(example.path.length + 1)}/`
+      return scopeFiles(scope).map((file) => ({ ...file, path: `${within}${file.path}` }))
+    })
     expect(written.map((file) => file.path).sort()).toEqual(Object.keys(example.folder).sort())
     for (const file of exampleFiles(example)) {
       expect(written.find((held) => held.path === file.path), file.path).toEqual(file)
@@ -97,7 +120,9 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working
   })
 
   it('round-trips through the format unchanged', () => {
-    expect(stableJson(projectFromFolder(projectFiles(project), example.path))).toBe(stableJson(project))
+    for (const scope of scopes) {
+      expect(stableJson(scopeFromFolder(scopeFiles(scope), scope.path))).toBe(stableJson(scope))
+    }
   })
 })
 
@@ -131,7 +156,7 @@ describe('the generated landscape against the shipped one', () => {
   // is the one the router and the derive pay for — a `supports` row is neither
   // routed nor derived, and counting the business layer in would make this a
   // statement about how many capabilities somebody wrote down.
-  const shipped = degrees(exampleProject(example)!.model.relations
+  const shipped = degrees(exampleScopes(example).at(-1)!.model.relations
     .filter((c) => c.type === 'flow')
     .map((c) => ({ from: c.sourceId, to: c.targetId })))
   const generated = degrees(syntheticModel('small').relations.map((c) => ({
@@ -163,7 +188,7 @@ describe('the generated landscape against the shipped one', () => {
  * out to an answer rather than to its own source.
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by example', (_key, example) => {
-  const model = exampleProject(example)!.model
+  const model = exampleScopes(example).at(-1)!.model
   const elementIds = new Set(model.elements.map((e) => e.id))
   const decisionIds = new Set((model.decisions ?? []).map((d) => d.id))
   const plans = model.transitions ?? []
@@ -193,9 +218,9 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
     // They used to ride beside the document in TypeScript, because the
     // interchange format has nowhere to put them. The working form does.
     const paths = Object.keys(example.folder)
-    expect(paths.filter((path) => path.startsWith('decisions/')).length)
+    expect(paths.filter((path) => path.includes('/decisions/')).length)
       .toBe(model.decisions?.length ?? 0)
-    expect(paths.filter((path) => path.startsWith('transitions/')).length).toBe(plans.length)
+    expect(paths.filter((path) => path.includes('/transitions/')).length).toBe(plans.length)
   })
 })
 
@@ -213,7 +238,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
  * none (ADR-0012 §6).
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet', (_key, example) => {
-  const model = exampleProject(example)!.model
+  const model = exampleScopes(example).at(-1)!.model
   const sheets = model.diagrams.filter((diagram) => diagram.kind === 'sheet')
 
   it('ships one', () => {
@@ -321,7 +346,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet',
  * cost of being wrong is the first screen a new user opens.
  */
 describe('a stakeholder tree over a landscape that already drew its actors', () => {
-  const model = exampleProject(EXAMPLES[0])!.model
+  const model = exampleScopes(EXAMPLES[0]).at(-1)!.model
   const flat: DesignModel = {
     ...model,
     elements: model.elements.map((element) => (element.kind === 'actor'

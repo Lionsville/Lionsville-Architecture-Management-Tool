@@ -1,20 +1,31 @@
 /**
- * Projects as folders in a working directory the user chose.
+ * Scopes as folders in a working directory the user chose.
  *
- * A project is a folder of text files (ADR-0003, and `projects/folderFormat.ts`
- * is the format itself): a real thing the person owns, that can sit in
- * OneDrive, be committed, be read by a version of this tool that does not exist
- * yet. That is a different promise from browser storage, which is a per-browser
- * cache the user cannot see and a "clear site data" can wipe without warning.
+ * A scope is a folder of text files (ADR-0003 for why, and
+ * `projects/folderFormat.ts` for the format itself): a real thing the person
+ * owns, that can sit in OneDrive, be committed, be read by a version of this
+ * tool that does not exist yet. That is a different promise from browser
+ * storage, which is a per-browser cache the user cannot see and a "clear site
+ * data" can wipe without warning.
  *
- * The layout is the path, literally: a project's folder IS its address. What
- * the picker shows is what the file manager shows. That is worth more than any
- * index file — there is no second source of truth to fall out of step, and a
- * project dropped into the working directory by hand is simply there.
+ * **The layout is the address, literally**: a scope's folder IS its path, and
+ * the scopes under it are the folders inside it that hold a `scope.json` of
+ * their own (ADR-0012 §1). What a screen shows is what the file manager shows.
+ * That is worth more than any index file — there is no second source of truth
+ * to fall out of step, and a scope dropped into the working directory by hand
+ * is simply there.
+ *
+ * **Where one scope ends and the next begins.** A scope's own files are its
+ * `scope.json`, its `model.json` and the six folders the format writes into;
+ * everything else in the folder belongs to somebody — to the user, or to a
+ * scope nested inside. So the walk descends into those six and into nothing
+ * else, which is what keeps a parent's save from ever seeing a child's files.
+ * The six names are refused to a child scope for exactly this reason
+ * (`scopePath.ts`).
  *
  * **Everything is by name, nothing is cached.** A directory listing is the
- * index. Listing costs one small `project.json` per project, which is what that
- * file is for; the whole landscape is only read when a project is opened.
+ * index. Listing costs one small `scope.json` per scope, which is what that
+ * file is for; the whole landscape is only read when a scope is opened.
  *
  * **The folder belongs to the user, not to this store.** It writes and removes
  * exactly what `isFormatPath` claims and leaves everything else — a README, a
@@ -28,16 +39,19 @@
  * tested without a filesystem at all.
  */
 import {
-  folderFormatVersion, isFormatPath, PROJECT_FILE, PROJECT_FORMAT_VERSION, projectFiles,
-  projectSummaryFrom,
+  DECISIONS_FOLDER, folderFormatVersion, isFormatPath, SCOPE_FILE, SCOPE_FOLDERS,
+  SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
 } from '../../projects/folderFormat'
-import { openProjectFolder } from '../../projects/migrate3to4'
 import type { FolderFile } from '../../projects/folderFormat'
-import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
-import { isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments } from '../../projects/scopePath'
+import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
+import { scopeTree, sortScopes } from '../../projects/scope'
+import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import {
+  isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
+} from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { ShellError } from '../../platform/errors'
-import type { ProjectStore } from '../../ports/ProjectStore'
+import type { ScopeStore } from '../../ports/ScopeStore'
 
 /**
  * The slice of the File System Access API this store uses.
@@ -83,8 +97,8 @@ function isBinary(path: string): boolean {
  * `getDirectoryHandle('..')` throws in a real browser, but this store is also
  * the shape the desktop adapter takes, where the same string becomes a path on
  * someone's disk. Refusing here means the rule is stated once, in the layer
- * that knows what an address is allowed to look like, rather than relying on
- * each backend to be strict on its own.
+ * that knows what an address may look like, rather than relying on each backend
+ * to be strict on its own.
  */
 function usablePath(path: ScopePath): boolean {
   if (!isSafeScopePath(path)) return false
@@ -92,10 +106,22 @@ function usablePath(path: ScopePath): boolean {
     part.length > 0 && part !== '.' && part !== '..' && !/[/\\]/.test(part))
 }
 
-/** One file in a project folder, with enough to read it, replace it or remove it. */
+/**
+ * Is this a folder inside a scope that belongs to the scope, rather than to the
+ * user or to a scope nested in it?
+ *
+ * `decisions/` holds one more level, because an application's records are
+ * filed in a folder of their own (numbers are per list).
+ */
+function ownFolder(name: string, within: string): boolean {
+  if (within === '') return SCOPE_FOLDERS.includes(name)
+  return within === DECISIONS_FOLDER
+}
+
+/** One file in a scope's folder, with enough to read it, replace it or remove it. */
 type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
 
-export class FileSystemProjectStore implements ProjectStore {
+export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
 
   constructor(private readonly root: DirectoryHandleLike) {}
@@ -104,7 +130,7 @@ export class FileSystemProjectStore implements ProjectStore {
    * Walk down a path of folder names.
    *
    * `create: false` returns undefined rather than throwing for a folder that is
-   * not there, because "no such project" is an ordinary answer to `load` and
+   * not there, because "no such scope" is an ordinary answer to `load` and
    * `remove` — the same reasoning as the port's `load` returning `undefined`.
    */
   private async folderAt(
@@ -121,20 +147,29 @@ export class FileSystemProjectStore implements ProjectStore {
     return folder
   }
 
-  private projectFolder(path: ScopePath, create: boolean): Promise<DirectoryHandleLike | undefined> {
+  private scopeFolder(path: ScopePath, create: boolean): Promise<DirectoryHandleLike | undefined> {
     return this.folderAt(scopeSegments(path), create)
   }
 
-  /** Every file of the format under one project folder, with its path inside it. */
+  /**
+   * Every file of the format belonging to ONE scope, with its path inside it.
+   *
+   * Stops at the six folders the format writes into, which is what keeps a
+   * child scope's files out of its parent's save.
+   */
   private async entries(folder: DirectoryHandleLike, within = ''): Promise<Entry[]> {
     const found: Entry[] = []
     for await (const entry of folder.values()) {
       const path = within ? `${within}/${entry.name}` : entry.name
       if (entry.kind === 'directory') {
-        found.push(...await this.entries(entry, path))
+        if (ownFolder(entry.name, within)) found.push(...await this.entries(entry, path))
         continue
       }
-      if (isFormatPath(path)) found.push({ path, name: entry.name, parent: folder, handle: entry })
+      // A header an older format wrote is read so it can be folded, and
+      // removed on the first save because the format no longer writes it.
+      if (isFormatPath(path) || isSupersededPath(path)) {
+        found.push({ path, name: entry.name, parent: folder, handle: entry })
+      }
     }
     return found
   }
@@ -147,82 +182,44 @@ export class FileSystemProjectStore implements ProjectStore {
         : { path: entry.path, text: await file.text() }
     } catch {
       // Half a write, a file removed under us, permission withdrawn. The rest
-      // of the project is still worth reading.
+      // of the scope is still worth reading.
       return undefined
     }
   }
 
   /**
-   * A project's own folder is one that holds a `project.json`.
+   * Every folder holding a `scope.json`, and where it is.
    *
-   * Everything above it is a group, so the path down to that file IS the ref —
-   * which is why nothing has to be written inside the file to say where it is
-   * filed. Walking stops there: what is inside a project is the project's.
+   * A dot-folder is never one: `.git` is the history and
+   * `.lionsville-architecture` is the settings (ADR-0005), and neither is a
+   * scope however it is spelled.
    */
   private async walk(
-    folder: DirectoryHandleLike, segments: string[], found: ProjectSummary[],
-  ): Promise<void> {
-    const children: DirectoryHandleLike[] = []
-    let header: FileHandleLike | undefined
-    let latest = 0
-    for await (const entry of folder.values()) {
-      if (entry.kind === 'directory') children.push(entry)
-      else if (entry.name === PROJECT_FILE) header = entry
-    }
-
-    if (header) {
-      const path = segments.join('/')
-      // The date comes off the files and never out of a field: the picker orders
-      // by it, and a stored timestamp goes stale the moment anything but this
-      // tool touches the folder — which, in a working directory, it will.
-      for (const entry of await this.entries(folder)) {
-        latest = Math.max(latest, (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)
-      }
-      const summary = projectSummaryFrom(
-        await (await header.getFile()).text(),
-        path,
-        latest ? new Date(latest).toISOString() : undefined,
-      )
-      if (summary) found.push(summary)
-      return
-    }
-
-    for (const child of children) await this.walk(child, [...segments, child.name], found)
-  }
-
-  /**
-   * The same walk, asking a smaller question: which headers say a version this
-   * build is newer than.
-   *
-   * Separate from {@link walk} on purpose. That one reads every file of every
-   * project to date it, which is right for a picker and wrong for something
-   * that runs on every open and almost always answers with nothing.
-   */
-  private async walkVersions(
-    folder: DirectoryHandleLike, segments: string[], found: ScopePath[],
+    folder: DirectoryHandleLike,
+    segments: string[],
+    visit: (folder: DirectoryHandleLike, path: ScopePath, header: FileHandleLike) => Promise<void>,
   ): Promise<void> {
     const children: DirectoryHandleLike[] = []
     let header: FileHandleLike | undefined
     for await (const entry of folder.values()) {
-      if (entry.kind === 'directory') children.push(entry)
-      else if (entry.name === PROJECT_FILE) header = entry
+      if (entry.kind === 'directory') {
+        if (!entry.name.startsWith('.') && !SCOPE_FOLDERS.includes(entry.name)) children.push(entry)
+      } else if (entry.name === SCOPE_FILE) header = entry
     }
 
-    if (header) {
-      const text = await (await header.getFile().catch(() => undefined))?.text().catch(() => undefined)
-      const version = text === undefined ? undefined : folderFormatVersion(text)
-      if (version !== undefined && version < PROJECT_FORMAT_VERSION) found.push(segments.join('/'))
-      return
-    }
-
-    for (const child of children) await this.walkVersions(child, [...segments, child.name], found)
+    if (header) await visit(folder, segments.join('/'), header)
+    for (const child of children) await this.walk(child, [...segments, child.name], visit)
   }
 
-  /** See {@link ProjectStore.outdated}. */
+  /** See {@link ScopeStore.outdated}. */
   async outdated(): Promise<ScopePath[]> {
     const found: ScopePath[] = []
     try {
-      await this.walkVersions(this.root, [], found)
+      await this.walk(this.root, [], async (_folder, path, header) => {
+        const text = await (await header.getFile().catch(() => undefined))?.text().catch(() => undefined)
+        const version = text === undefined ? undefined : folderFormatVersion(text)
+        if (version !== undefined && version < SCOPE_FORMAT_VERSION) found.push(path)
+      })
     } catch {
       // Unreadable is not old: an empty answer leaves the folder alone, which
       // is the safe direction for something that rewrites files.
@@ -231,34 +228,47 @@ export class FileSystemProjectStore implements ProjectStore {
     return found
   }
 
-  async list(): Promise<ProjectSummary[]> {
-    const found: ProjectSummary[] = []
+  async list(): Promise<ScopeSummary> {
+    const found: ScopeSummary[] = []
     try {
-      await this.walk(this.root, [], found)
+      await this.walk(this.root, [], async (folder, path, header) => {
+        // The date comes off the files and never out of a field: a screen
+        // orders by it, and a stored timestamp goes stale the moment anything
+        // but this tool touches the folder — which, in a working directory, it
+        // will.
+        let latest = 0
+        for (const entry of await this.entries(folder)) {
+          latest = Math.max(latest, (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)
+        }
+        const summary = scopeSummaryFrom(
+          await (await header.getFile()).text(),
+          path,
+          latest ? new Date(latest).toISOString() : undefined,
+        )
+        if (summary) found.push(summary)
+      })
     } catch {
       // A folder that has become unreadable — permission withdrawn, drive
-      // unplugged — is an empty list rather than a broken picker.
-      return []
+      // unplugged — is an empty tree rather than a broken screen.
+      return scopeTree([], this.root.name)
     }
-    return found.sort((a, b) => a.name.localeCompare(b.name))
+    const root = scopeTree(found, this.root.name)
+    return { ...root, children: sortScopes(root.children) }
   }
 
-  async load(path: ScopePath): Promise<ProjectSnapshot | undefined> {
+  async load(path: ScopePath): Promise<ScopeSnapshot | undefined> {
     if (!usablePath(path)) return undefined
-    const folder = await this.projectFolder(path, false)
+    const folder = await this.scopeFolder(path, false)
     if (!folder) return undefined
     try {
       const entries = await this.entries(folder)
       const files = (await Promise.all(entries.map((entry) => this.read(entry))))
         .filter((file): file is FolderFile => !!file)
-      // Whichever version wrote the folder: a project written before format 4
-      // is read through the migration and is format 4 the next time it is
-      // saved, which is what takes its superseded files off disk.
-      const project = openProjectFolder(files, path)
-      if (!project) return undefined
+      const scope = openScopeFolder(files, path)
+      if (!scope) return undefined
       const latest = Math.max(0, ...await Promise.all(entries.map(async (entry) =>
         (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)))
-      return latest ? { ...project, updatedAt: new Date(latest).toISOString() } : project
+      return latest ? { ...scope, updatedAt: new Date(latest).toISOString() } : scope
     } catch {
       return undefined
     }
@@ -269,8 +279,8 @@ export class FileSystemProjectStore implements ProjectStore {
     const parent = await this.folderInside(folder, parts.slice(0, -1))
     const handle = await parent.getFileHandle(parts[parts.length - 1], { create: true })
 
-    // Written only when it would differ. An autosave of a project whose model
-    // has not changed then touches no mtime: no watcher wakes, no sync client
+    // Written only when it would differ. An autosave of a scope whose model has
+    // not changed then touches no mtime: no watcher wakes, no sync client
     // uploads, and `git status` stays empty. It costs a read, which is the
     // cheap half of the pair.
     const existing = await handle.getFile().then(
@@ -295,14 +305,14 @@ export class FileSystemProjectStore implements ProjectStore {
     return held
   }
 
-  async save(project: ProjectSnapshot): Promise<void> {
-    if (!usablePath(project.path)) {
-      throw new ShellError('shell.badScopePath', { path: String(project.path) })
+  async save(scope: ScopeSnapshot): Promise<void> {
+    if (!usablePath(scope.path)) {
+      throw new ShellError('shell.badScopePath', { path: String(scope.path) })
     }
-    const folder = await this.projectFolder(project.path, true)
+    const folder = await this.scopeFolder(scope.path, true)
     if (!folder) throw new ShellError('shell.folderUnavailable')
 
-    const files = projectFiles(project)
+    const files = scopeFiles(scope)
     // Written before anything is removed: an interrupted save then leaves a
     // folder with too much in it, which opens, rather than too little.
     for (const file of files) await this.write(folder, file)
@@ -311,25 +321,25 @@ export class FileSystemProjectStore implements ProjectStore {
     for (const entry of await this.entries(folder)) {
       if (wanted.has(entry.path)) continue
       // Only what this format writes — a deleted diagram's two files, a
-      // decision that was renamed. Everything else in the folder is somebody's.
+      // decision that was renamed. Everything else in the folder is somebody's,
+      // and a scope filed inside this one is never among these at all.
       await entry.parent.removeEntry(entry.name).catch(() => undefined)
     }
   }
 
   async remove(path: ScopePath): Promise<void> {
+    // The root is the folder the user chose. Emptying it is not this store's
+    // call, and there is no parent to remove it from.
     if (!usablePath(path) || path === ROOT_SCOPE) return
     const parent = await this.folderAt(scopeSegments(parentScope(path) ?? ROOT_SCOPE), false)
     if (!parent) return
     try {
-      // The whole folder, including anything the user filed in it: this folder
-      // IS the project, and deleting a project that leaves half of itself
-      // behind is the more surprising answer.
+      // The whole folder, including anything the user filed in it and every
+      // scope nested inside: this folder IS the scope, and a child left where
+      // its parent used to be is addressed by nothing.
       await parent.removeEntry(scopePathLabel(path), { recursive: true })
     } catch {
-      // Removing what is not there is not an error, per the port. An empty group
-      // folder is left behind on purpose: a group exists because projects are
-      // filed under it, and deleting a folder the user may have put other things
-      // in is not this store's call.
+      // Removing what is not there is not an error, per the port.
     }
   }
 }

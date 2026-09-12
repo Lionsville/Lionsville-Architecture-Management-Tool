@@ -110,7 +110,7 @@ describe('pinned label chips of nudged parallel edges do not overlap', () => {
       });
     }
     const diagram: DesignDiagram = laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements });
-    return { model: { name: 'ACME', customerName: 'ACME', elements, relations: connections, diagrams: [diagram] }, diagram };
+    return { model: { name: 'ACME', elements, relations: connections, diagrams: [diagram] }, diagram };
   }
 
   it('pins every chip clear of every other by LABEL_MARGIN', async () => {

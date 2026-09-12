@@ -26,7 +26,6 @@ import type { AgentAnswer } from './tools'
 
 const host: HostModel = {
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [{
     id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
     aspects: {}, description: 'Sends the invoices.',
@@ -69,6 +68,7 @@ function session(over: Partial<SessionView> = {}): SessionView & { model: () => 
     indexed: () => model,
     current: () => toArrays(model),
     activeDiagramId: () => 'l7',
+    scopePath: () => 'acme/landscape',
     groupDecisions: () => [],
     blocked: () => undefined,
     dispatch: (command) => {

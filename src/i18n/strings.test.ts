@@ -45,7 +45,7 @@ import { EN as commonEn } from './strings/en';
 const SLICES: Record<string, Record<string, string>> = {
   adapters: adaptersEn, app: appEn, common: commonEn, decisions: decisionsEn,
   documentation: documentationEn, editor: editorEn, model: modelEn, platform: platformEn,
-  projects: projectsEn, roadmap: roadmapEn, search: searchEn, business: businessEn,
+  scopes: projectsEn, roadmap: roadmapEn, search: searchEn, business: businessEn,
 };
 
 /** English is the schema, so its keys are THE keys. */

@@ -147,7 +147,7 @@ export interface HostExtras {
 
 export type HostModel = DesignModel & HostExtras
 
-export function fromInterchange(doc: InterchangeDoc, customerName: string): HostModel {
+export function fromInterchange(doc: InterchangeDoc): HostModel {
   const explicitFields: NonNullable<HostExtras['explicitFields']> = {}
 
   const elements: DesignElement[] = (doc.elements ?? []).map((e) => {
@@ -250,7 +250,6 @@ export function fromInterchange(doc: InterchangeDoc, customerName: string): Host
     // a worse answer than a placeholder. English, like every other literal this
     // layer produces: core has no language, and the shell's default is English.
     name: doc.design?.name ?? 'Untitled',
-    customerName,
     defaultAuthor: doc.design?.author,
     defaultAspectConfig: doc.design?.aspectConfig,
     diagrams,

@@ -3,9 +3,9 @@ import { fromArrays } from '../model'
 import { BUDGET, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 import { buildEdges, buildNodes } from '../editor/graph'
-import { projectFiles, projectFromFolder } from '../projects/folderFormat'
+import { scopeFiles, scopeFromFolder } from '../projects/folderFormat'
 import type { ScopePath } from '../projects/scopePath'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 
 /**
  * What opening a project costs, end to end, on a landscape of two thousand
@@ -21,19 +21,19 @@ import type { ProjectSnapshot } from '../projects/project'
  */
 
 const path: ScopePath = 'northwind/landscape'
-const project: ProjectSnapshot = {
+const project: ScopeSnapshot = {
   path,
   model: syntheticModel('large'),
   activeDiagramId: 'landscape',
   logoLibrary: [],
 }
 /** The text a store would hand back, produced once and outside every timer. */
-const files = projectFiles(project)
+const files = scopeFiles(project)
 
 describe('opening a project', () => {
   it('parses the folder, indexes it and derives the landscape', () => {
     const ms = measure('open: parse, index and derive the landscape', () => {
-      const opened = projectFromFolder(files, path)
+      const opened = scopeFromFolder(files, path)
       if (!opened) throw new Error('the folder did not read back as a project')
       fromArrays(opened.model)
       const diagram = opened.model.diagrams[0]

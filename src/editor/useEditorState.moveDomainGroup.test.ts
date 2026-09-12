@@ -16,7 +16,6 @@ import type { DesignModel } from '../model/types';
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'm1', kind: 'application', name: 'M1', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'm2', kind: 'application', name: 'M2', lifecycle: 'live', isManaged: true, aspects: {} },

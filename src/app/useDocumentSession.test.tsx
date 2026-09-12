@@ -16,18 +16,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { useDocumentSession } from './useDocumentSession'
 import type { DocumentSessionHook, SavableSession } from './useDocumentSession'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => { vi.useRealTimers(); cleanup() })
 
-const project = (name = 'Landscape'): ProjectSnapshot => ({
+const project = (name = 'Landscape'): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
     name,
-    customerName: 'Acme',
     elements: [],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
@@ -37,14 +36,14 @@ const project = (name = 'Landscape'): ProjectSnapshot => ({
 })
 
 function mount(
-  save: (p: ProjectSnapshot) => Promise<void> = () => Promise.resolve(),
-  onDisk?: { current: ProjectSnapshot | undefined },
+  save: (p: ScopeSnapshot) => Promise<void> = () => Promise.resolve(),
+  onDisk?: { current: ScopeSnapshot | undefined },
 ) {
   const latest = { current: project() }
   const saved = vi.fn()
   const result = vi.fn()
-  const writes: ProjectSnapshot[] = []
-  const adopted: ProjectSnapshot[] = []
+  const writes: ScopeSnapshot[] = []
+  const adopted: ScopeSnapshot[] = []
   const reported: boolean[] = []
   let hook!: DocumentSessionHook
   let announce: (() => void) | undefined

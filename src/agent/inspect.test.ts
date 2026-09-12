@@ -20,7 +20,6 @@ const app = (id: string, name = id) => ({
 // x=220 to x=1460 and y=140 to y=920.
 const host: HostModel = {
   name: 'Board',
-  customerName: 'Acme',
   elements: [
     app('a'), app('b'), app('c'), app('d'), app('e'), app('f'), app('g'),
     { ...app('who', 'Clerk'), kind: 'actor' },

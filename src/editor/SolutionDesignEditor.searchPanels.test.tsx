@@ -24,7 +24,6 @@ afterEach(() => cleanup());
 function model(): DesignModel {
   return {
     name: 'ACME Solution Design',
-    customerName: 'ACME',
     diagrams: [
       laidOut({
         id: 'd1',

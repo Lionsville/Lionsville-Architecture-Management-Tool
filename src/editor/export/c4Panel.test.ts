@@ -14,7 +14,7 @@ const wms = {
 } as unknown as DesignModel['elements'][number];
 
 const model = {
-  name: 'Application landscape', customerName: 'Acme', elements: [wms], connections: [], diagrams: [],
+  name: 'Application landscape', elements: [wms], connections: [], diagrams: [],
 } as unknown as DesignModel;
 
 const container = (over: Partial<DesignDiagram> = {}): DesignDiagram => (laidOut({

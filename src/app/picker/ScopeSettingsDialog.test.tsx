@@ -2,20 +2,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../../i18n'
-import { GroupSettingsDialog } from './GroupSettingsDialog'
-import type { GroupProfile } from '../../projects/group'
+import { ScopeSettingsDialog } from './ScopeSettingsDialog'
+import type { ScopeSummary } from '../../projects/scope'
+import type { ScopeSettingsPatch } from '../App'
 import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
 
 const s = translator('en')
 
-function open(target: Partial<GroupProfile> = {}) {
-  const onSave = vi.fn<(profile: GroupProfile) => void>()
+function open(target: Partial<ScopeSummary> = {}) {
+  const onSave = vi.fn<(path: string, patch: ScopeSettingsPatch) => void>()
   const onCancel = vi.fn()
   renderShell(
-    <GroupSettingsDialog
-      target={{ group: 'acme', name: 'Acme', ...target }}
+    <ScopeSettingsDialog
+      target={{ path: 'acme', name: 'Acme', diagrams: 0, children: [], ...target }}
       onSave={onSave}
       onCancel={onCancel}
       s={s}
@@ -26,8 +27,8 @@ function open(target: Partial<GroupProfile> = {}) {
 
 const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-describe('GroupSettingsDialog', () => {
-  it('opens on what the group already says about itself', () => {
+describe('ScopeSettingsDialog', () => {
+  it('opens on what the scope already says about itself', () => {
     open({
       name: 'Acme Logistics',
       description: 'Rail freight.',
@@ -39,73 +40,68 @@ describe('GroupSettingsDialog', () => {
   })
 
   /**
-   * The address is how every project underneath is filed. Saying so on screen
-   * is cheaper than someone discovering it by renaming and watching nothing
-   * move.
+   * The address is how everything underneath is filed. Saying so on screen is
+   * cheaper than someone discovering it by renaming and watching nothing move.
    */
   it('says out loud that the address does not change', () => {
-    open({ group: 'acme/rail' })
+    open({ path: 'acme/rail' })
     expect(screen.getByText(/The address \(acme\/rail\) does not change/)).toBeDefined()
   })
 
-  /**
-   * The dialog shows the name, the client, the description and the links. The
-   * decisions ride on the same record, unseen — and a save that rebuilt the
-   * record from the fields alone used to drop them.
-   */
-  it('keeps what it does not show, and takes a client apart from the name', () => {
-    const decisions = [{
-      id: 'g-1', number: 1, title: 'One tenant', status: 'proposed', date: '2026-09-01', body: '',
-    }] as unknown as GroupProfile['decisions']
-    const { onSave } = open({ decisions })
-    fireEvent.change(screen.getByLabelText('Client'), { target: { value: ' Acme Logistics BV ' } })
-    save()
-    expect(onSave).toHaveBeenCalledWith({
-      group: 'acme', name: 'Acme', client: 'Acme Logistics BV', decisions,
-    })
+  /** The root has no segment to show, and `/` is where it is. */
+  it('names the root by the folder it is', () => {
+    open({ path: '', name: 'Acme Logistics' })
+    expect(screen.getByText(/The address \(\/\) does not change/)).toBeDefined()
   })
 
-  it('hands back a trimmed profile under the group it was opened on', () => {
-    const { onSave } = open()
+  /**
+   * A patch and not a record: the scope also holds a model, decisions and plans
+   * this dialog does not show, and a save that handed back a whole record
+   * rebuilt from the fields would drop every one of them.
+   */
+  it('hands back a patch at the path it was opened on, and takes a client apart from the name', () => {
+    const { onSave } = open({ kind: 'domain' })
+    fireEvent.change(screen.getByLabelText('Client'), { target: { value: ' Acme Logistics BV ' } })
     fireEvent.change(screen.getByLabelText('Group name'), { target: { value: '  Acme Rail  ' } })
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Rolling stock.' } })
     save()
-    expect(onSave).toHaveBeenCalledWith({
-      group: 'acme', name: 'Acme Rail', description: 'Rolling stock.',
+    expect(onSave).toHaveBeenCalledWith('acme', {
+      name: '  Acme Rail  ',
+      client: ' Acme Logistics BV ',
+      description: 'Rolling stock.',
+      links: [],
+      kind: 'domain',
     })
   })
 
-  it('adds a link, and labels it with its own address when nobody labelled it', () => {
+  it('adds a link, and the caller labels it with its own address', () => {
     const { onSave } = open()
     fireEvent.click(screen.getByRole('button', { name: 'Add a link' }))
     fireEvent.change(screen.getByLabelText('Address'), {
       target: { value: 'https://example.test/wiki' },
     })
     save()
-    expect(onSave.mock.calls[0][0].links).toEqual([
-      { label: 'https://example.test/wiki', url: 'https://example.test/wiki' },
-    ])
+    expect(onSave.mock.calls[0][1].links)
+      .toEqual([{ label: '', url: 'https://example.test/wiki' }])
   })
 
-  it('flags an address it will not render, and drops it on save', () => {
-    const { onSave } = open()
+  it('flags an address it will not render', () => {
+    open()
     fireEvent.click(screen.getByRole('button', { name: 'Add a link' }))
     fireEvent.change(screen.getByLabelText('Address'), {
       target: { value: 'javascript:alert(1)' },
     })
     expect(screen.getByText('Needs to start with http:// or https://')).toBeDefined()
-    save()
-    expect('links' in onSave.mock.calls[0][0]).toBe(false)
   })
 
   it('removes a link', () => {
     const { onSave } = open({ links: [{ label: 'Wiki', url: 'https://example.test/wiki' }] })
     fireEvent.click(screen.getByRole('button', { name: 'Remove Wiki' }))
     save()
-    expect('links' in onSave.mock.calls[0][0]).toBe(false)
+    expect(onSave.mock.calls[0][1].links).toEqual([])
   })
 
-  it('refuses a nameless group', () => {
+  it('refuses a nameless scope', () => {
     open()
     fireEvent.change(screen.getByLabelText('Group name'), { target: { value: '  ' } })
     expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)

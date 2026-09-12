@@ -2,7 +2,7 @@
  * The desktop folder, held to the same contract as every other store.
  *
  * The whole claim of this adapter is that the desktop needs no store of its
- * own: `FileSystemProjectStore` over a different handle is the desktop store.
+ * own: `FileSystemScopeStore` over a different handle is the desktop store.
  * Running the shared suite over it is how that claim is checked rather than
  * asserted — and running it over the *real* main-process implementation, in a
  * real temporary folder, is what makes it worth running. What is left
@@ -15,8 +15,9 @@ import { basename, join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile,
 } from '../../../electron/main/fileStore'
-import { describeProjectStore, sampleProject } from '../../ports/ProjectStore.contract'
-import { FileSystemProjectStore } from '../fileSystem/FileSystemProjectStore'
+import { describeScopeStore, sampleScope } from '../../ports/ScopeStore.contract'
+import { flattenScopes } from '../../projects/scope'
+import { FileSystemScopeStore } from '../fileSystem/FileSystemScopeStore'
 import type { DesktopFiles } from './channel'
 import { IpcDirectoryHandle } from './IpcDirectoryHandle'
 
@@ -57,35 +58,36 @@ function freshFolder(): string {
   return folder
 }
 
-function storeOver(folder: string): FileSystemProjectStore {
-  return new FileSystemProjectStore(
+function storeOver(folder: string): FileSystemScopeStore {
+  return new FileSystemScopeStore(
     new IpcDirectoryHandle(channelOver(folder), folder, basename(folder)),
   )
 }
 
-describeProjectStore('desktop folder over IPC', () => storeOver(freshFolder()))
+describeScopeStore('desktop folder over IPC', () => storeOver(freshFolder()))
 
 describe('IpcDirectoryHandle', () => {
-  it('writes the project as files somebody can open in a file manager', async () => {
+  it('writes the scope as files somebody can open in a file manager', async () => {
     const folder = freshFolder()
-    await storeOver(folder).save(sampleProject())
+    await storeOver(folder).save(sampleScope())
 
     const { readFileSync } = await import('node:fs')
-    const header = readFileSync(join(folder, 'acme-logistics/landscape/project.json'), 'utf8')
-    expect(JSON.parse(header)).toMatchObject({ name: 'Application landscape', formatVersion: 4 })
+    const header = readFileSync(join(folder, 'acme-logistics/landscape/scope.json'), 'utf8')
+    expect(JSON.parse(header)).toMatchObject({ name: 'Application landscape', version: 5 })
   })
 
-  it('reads back a project another program wrote into the folder', async () => {
+  it('reads back a scope another program wrote into the folder', async () => {
     // The point of files: a colleague's copy, a sync client, a git checkout.
     const folder = freshFolder()
-    await storeOver(folder).save(sampleProject())
+    await storeOver(folder).save(sampleScope())
 
     const { cpSync } = await import('node:fs')
     cpSync(join(folder, 'acme-logistics'), join(folder, 'globex'), { recursive: true })
 
     const back = await storeOver(folder).load('globex/landscape')
     expect(back?.model.name).toBe('Application landscape')
-    expect(await storeOver(folder).list()).toHaveLength(2)
+    expect(flattenScopes(await storeOver(folder).list()).map((s) => s.path))
+      .toEqual(['', 'acme-logistics/landscape', 'globex/landscape'])
   })
 
   it('refuses a path that would leave the folder, wherever it is invented', async () => {
@@ -99,9 +101,9 @@ describe('IpcDirectoryHandle', () => {
   it('reads a folder that has gone away as empty rather than as an exception', async () => {
     const folder = freshFolder()
     const store = storeOver(folder)
-    await store.save(sampleProject())
+    await store.save(sampleScope())
     rmSync(folder, { recursive: true, force: true })
 
-    await expect(store.list()).resolves.toEqual([])
+    expect((await store.list()).children).toEqual([])
   })
 })

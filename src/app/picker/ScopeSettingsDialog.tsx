@@ -1,19 +1,19 @@
 /**
- * A group, edited from the screen it appears on.
+ * A scope, edited from the screen it appears on.
  *
- * Until now a group was a heading and nothing else: its name arrived on the
- * projects underneath it, and there was no way to fix a typo in it short of
- * moving every project to a newly-named group. This dialog fixes that, and gives
- * a group the two things people kept wanting to write down beside it — what it
- * is, and where the rest of its material lives.
+ * The same dialog at every level, because every scope is the same document
+ * (ADR-0012 §1): the organisation at the root, a domain under it, a landscape
+ * under that. What it edits is what a scope says about itself — its name, who
+ * its drawings are made out to, what it is, and where the rest of its material
+ * lives.
  *
- * **The address never changes.** `acme/rail` is how every project under it is
- * filed and how the last-opened preference points at one; renaming the group
- * relabels, it does not re-file. That is the same rule as renaming a project,
- * and it is stated on screen rather than left to be discovered.
+ * **The address never changes.** `acme/rail` is how everything under it is
+ * filed and how the last-opened preference points at one; renaming relabels, it
+ * does not re-file. That is the same rule as renaming anything else here, and
+ * it is stated on screen rather than left to be discovered.
  *
- * The dialog says what it wants; the caller performs it — a rename has to reach
- * every project in the group, which is a store operation and not a field edit.
+ * The dialog says what it wants; the caller performs it, because a save is a
+ * store operation and not a field edit.
  */
 import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -28,26 +28,29 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
-import { isSafeGroupLinkUrl, normaliseGroupProfile } from '../../projects/group'
-import type { GroupLink, GroupProfile } from '../../projects/group'
+import { isSafeLinkUrl } from '../../projects/links'
+import type { RecordLink } from '../../projects/links'
+import type { ScopeSummary } from '../../projects/scope'
+import type { ScopePath } from '../../projects/scopePath'
+import type { ScopeSettingsPatch } from '../App'
 
-export type GroupSettingsDialogProps = {
-  /** The group being edited; the dialog is closed while undefined. */
-  target?: GroupProfile
-  onSave: (profile: GroupProfile) => void
+export type ScopeSettingsDialogProps = {
+  /** The scope being edited; the dialog is closed while undefined. */
+  target?: ScopeSummary
+  onSave: (path: ScopePath, patch: ScopeSettingsPatch) => void
   onCancel: () => void
   s: Translate
 }
 
-type LinkDraft = GroupLink
+type LinkDraft = RecordLink
 
-export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettingsDialogProps) {
+export function ScopeSettingsDialog({ target, onSave, onCancel, s }: ScopeSettingsDialogProps) {
   const [name, setName] = useState('')
   const [client, setClient] = useState('')
   const [description, setDescription] = useState('')
   const [links, setLinks] = useState<LinkDraft[]>([])
 
-  // Reopening on a different group must not show the previous one's values.
+  // Reopening on a different scope must not show the previous one's values.
   useEffect(() => {
     if (!target) return
     setName(target.name)
@@ -71,7 +74,7 @@ export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettin
             fullWidth
             size="small"
             label={s('group.name')}
-            helperText={s('group.nameHelp', { path: target?.group ?? '' })}
+            helperText={s('group.nameHelp', { path: target?.path || '/' })}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -108,8 +111,8 @@ export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettin
               {links.map((link, index) => {
                 // Flagged, not refused: somebody halfway through typing an
                 // address has not made a mistake yet. What cannot be rendered is
-                // dropped on save, by `normaliseGroupProfile`.
-                const bad = link.url.trim().length > 0 && !isSafeGroupLinkUrl(link.url)
+                // dropped on save, by `normaliseLinks`.
+                const bad = link.url.trim().length > 0 && !isSafeLinkUrl(link.url)
                 return (
                   <Stack key={index} direction="row" spacing={0.5} alignItems="flex-start">
                     <TextField
@@ -160,11 +163,12 @@ export function GroupSettingsDialog({ target, onSave, onCancel, s }: GroupSettin
           disabled={!ready}
           onClick={() => {
             if (!target) return
-            // Spread first: the record also carries the group's decisions,
-            // which this dialog does not show and must not throw away.
-            onSave(normaliseGroupProfile({
-              ...target, name, client, description, links,
-            }))
+            // A patch and not a record: a scope also holds a model, decisions
+            // and plans this dialog does not show, and the caller reads the
+            // scope and writes these fields onto it rather than over it.
+            onSave(target.path, {
+              name, client, description, links, ...(target.kind ? { kind: target.kind } : {}),
+            })
           }}
         >
           {s('settings.save')}

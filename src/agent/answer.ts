@@ -45,7 +45,13 @@ export type ReadView = {
   /** The same model as the file has it. Cached by the session, so cheap to ask for. */
   readonly current: () => HostModel
   readonly activeDiagramId: string
-  /** The group's own records, which are not on the model. */
+  /**
+   * Where this scope is in the tree (ADR-0012 §1). The empty string is the
+   * organisation, which is what `project.current` says when a client asks where
+   * it is working.
+   */
+  readonly scopePath: string
+  /** The records of the scope above this one, which are not on this model. */
   readonly groupDecisions: readonly Adr[]
 }
 
@@ -61,7 +67,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
     case 'project.current':
       return json({
         name: model.name,
-        group: model.customerName,
+        path: view.scopePath,
         description: model.description,
         elements: model.order.elements.length,
         connections: model.order.relations.length,
@@ -261,7 +267,7 @@ function exportMarkdown(model: Model, view: ReadView): string {
       .map((phase) => `${phase} ${held[phase as keyof typeof held]}`).join(', ')
   }
   const name = (id: string): string => model.elements[id]?.name ?? id
-  const lines: string[] = [`# ${model.name}`, '', `Group: ${model.customerName}`, '']
+  const lines: string[] = [`# ${model.name}`, '', `Scope: ${view.scopePath || '/'}`, '']
   if (model.description) lines.push(model.description, '')
 
   // Every kind, so nothing the model can hold is left out of a document meant

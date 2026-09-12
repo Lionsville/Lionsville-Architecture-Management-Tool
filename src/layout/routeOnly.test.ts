@@ -84,7 +84,6 @@ function twoNodeModel(options: {
   });
   const model: DesignModel = {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [elt('a', 'application'), elt('b', 'application'), ...extras.map((n) => elt(n.id, 'application'))],
     relations: [
       { type: 'flow', id: 'a-b', sourceId: 'a', targetId: 'b', isBidirectional: false, ...options.connection },
@@ -334,7 +333,6 @@ describe('routeDiagramEdges — route-only pass', () => {
     });
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('app', 'application'),
         elt('svc', 'component'),
@@ -381,7 +379,6 @@ describe('routeDiagramEdges — route-only pass', () => {
     });
     const model: DesignModel = {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('app', 'application'),
         elt('c1', 'component'),
@@ -430,7 +427,6 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
   // another edge's path and re-route without moving anything.
   const model: DesignModel = {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       elt('storeMgr', 'actor'),
       elt('shopper', 'actor'),

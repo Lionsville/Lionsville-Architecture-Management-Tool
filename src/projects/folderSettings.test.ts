@@ -105,33 +105,20 @@ describe('readFolderSettings', () => {
     }
   })
 
-  it('reads the organisation, which is the first key this file has', () => {
-    const text = folderSettingsText(undefined, { organisation: { name: 'Acme Logistics' } })
-    expect(readFolderSettings(text)).toEqual({ organisation: { name: 'Acme Logistics' } })
-  })
-
   /**
-   * A section this build cannot read is absent rather than fatal: an
-   * organisation nobody can name still opens, which is the whole point of
-   * reading key by key.
+   * The shared file is keyless again (ADR-0012 §1): its one key was the
+   * organisation's name, and the root scope's `scope.json` is where a name
+   * belongs. A key an older build wrote is somebody else's business, not an
+   * error, and the writer carries it through.
    */
-  it('drops a section that is not a record this build understands', () => {
-    for (const held of ['{"organisation":"Acme"}', '{"organisation":{"name":7}}',
-      '{"organisation":{"name":"Acme","links":"lots"}}']) {
-      expect(readFolderSettings(held), held).toEqual({})
-    }
+  it('reads nothing, including out of a file an older build wrote a section into', () => {
+    expect(readFolderSettings('{"version":1,"organisation":{"name":"Acme"}}')).toEqual({})
   })
 })
 
 describe('folderSettingsText', () => {
-  it('stamps this build\'s version and writes the record normalised', () => {
-    const text = folderSettingsText(undefined, {
-      organisation: { name: '  Acme  ', description: '   ', links: [{ label: '', url: 'javascript:alert(1)' }] },
-    })
-    expect(JSON.parse(text)).toEqual({
-      version: FOLDER_SETTINGS_VERSION,
-      organisation: { name: 'Acme' },
-    })
+  it('stamps this build\'s version on a file that had none', () => {
+    expect(JSON.parse(folderSettingsText(undefined))).toEqual({ version: FOLDER_SETTINGS_VERSION })
   })
 
   /**
@@ -140,32 +127,21 @@ describe('folderSettingsText', () => {
    */
   it('keeps keys it does not know, and never lowers the version', () => {
     const existing = '{"version":9,"somethingLater":{"kept":true}}'
-    const held = JSON.parse(folderSettingsText(existing, { organisation: { name: 'Acme' } }))
+    const held = JSON.parse(folderSettingsText(existing))
     expect(held.version).toBe(9)
     expect(held.somethingLater).toEqual({ kept: true })
   })
 
-  it('leaves the organisation alone when the patch does not carry one', () => {
-    const existing = folderSettingsText(undefined, { organisation: { name: 'Acme' } })
-    expect(readFolderSettings(folderSettingsText(existing, {})).organisation?.name).toBe('Acme')
-  })
-
-  /**
-   * A section is replaced rather than merged: the form is saved whole, so a
-   * cleared field has to be distinguishable from an untouched one.
-   */
-  it('replaces the organisation rather than merging into it', () => {
-    const existing = folderSettingsText(undefined, {
-      organisation: { name: 'Acme', description: 'A haulier' },
-    })
-    const held = readFolderSettings(folderSettingsText(existing, { organisation: { name: 'Acme' } }))
-    expect(held.organisation).toEqual({ name: 'Acme' })
+  /** The only thing that can take a key out, and the 4 → 5 pass is its caller. */
+  it('drops exactly the keys the patch names', () => {
+    const existing = '{"version":1,"organisation":{"name":"Acme"},"somethingLater":true}'
+    const held = JSON.parse(folderSettingsText(existing, { without: ['organisation'] }))
+    expect('organisation' in held).toBe(false)
+    expect(held.somethingLater).toBe(true)
   })
 
   it('is stable JSON, so a settings change is one readable line in a diff', () => {
-    const once = folderSettingsText(undefined, { organisation: { name: 'Acme', client: 'Acme BV' } })
-    expect(folderSettingsText(undefined, {
-      organisation: { client: 'Acme BV', name: 'Acme' },
-    })).toBe(once)
+    const once = folderSettingsText('{"b":2,"a":1}')
+    expect(folderSettingsText('{"a":1,"b":2}')).toBe(once)
   })
 })

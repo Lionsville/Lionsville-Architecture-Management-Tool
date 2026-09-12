@@ -8,7 +8,7 @@
  */
 import { useCallback, useRef } from 'react'
 import type { Translate } from '../i18n'
-import type { StoragePressure } from '../ports/ProjectStore'
+import type { StoragePressure } from '../ports/ScopeStore'
 import type { Notify } from './useToasts'
 
 /** `report(true)` after a successful write, `report(false)` after a failed one. */

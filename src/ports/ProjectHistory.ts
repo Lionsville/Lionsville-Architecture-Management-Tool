@@ -12,7 +12,7 @@
  * them may stop a save. That is why `available()` is the first thing here and
  * why every caller is expected to ask it before offering anything.
  */
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { LabelOutcome } from '../platform/history'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide } from '../platform/sync'
@@ -69,7 +69,7 @@ export interface ProjectHistory {
    * question (`model/diff.ts`), and a seam that answered it would be deciding
    * how a landscape is compared.
    */
-  projectAt(path: ScopePath, entry: string): Promise<ProjectSnapshot | undefined>
+  projectAt(path: ScopePath, entry: string): Promise<ScopeSnapshot | undefined>
   /**
    * Call a snapshot something, afterwards (ADR-0008). A mark beside the
    * subject, never a rewrite of it, and one the history carries to whoever

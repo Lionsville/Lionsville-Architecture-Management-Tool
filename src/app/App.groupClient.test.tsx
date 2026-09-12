@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 /**
- * The client an exported diagram names comes from the group's record when the
- * group has said one, and is the group's name otherwise.
+ * The client an exported diagram names, walked up the tree (ADR-0012 §1).
  *
- * The editor is stubbed to print what it was handed: what is under test is the
- * wiring from the record to the export, not the drawing.
+ * The nearest scope that says one wins; where nobody says one it is the
+ * organisation's name, which is what the title block meant before a scope could
+ * say otherwise. The editor is stubbed to print what it was handed: what is
+ * under test is the walk, not the drawing.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, screen } from '@testing-library/react'
-import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import type { ProjectSnapshot } from '../projects/project'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {
@@ -26,11 +26,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => cleanup())
 
-const project = (): ProjectSnapshot => ({
+const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
     name: 'Landscape',
-    customerName: 'Acme',
     elements: [],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
@@ -39,18 +38,40 @@ const project = (): ProjectSnapshot => ({
   logoLibrary: [],
 })
 
+const parent = (over: Partial<ScopeSnapshot> = {}): ScopeSnapshot => ({
+  path: 'acme',
+  model: { name: 'Acme', elements: [], relations: [], diagrams: [] },
+  activeDiagramId: '',
+  logoLibrary: [],
+  ...over,
+})
+
 describe('the client on an export', () => {
-  it('is the group name when the group has not said otherwise', async () => {
-    renderApp({ projects: new InMemoryProjectStore([project()]), initialProject: project() })
+  it('is the organisation\'s name when nothing above has said otherwise', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([parent(), project()]),
+      initialProject: project(),
+    })
     expect((await screen.findByTestId('export-client')).textContent).toBe('Acme')
   })
 
-  it('is what the group record says once it says something', async () => {
+  it('is what the scope above says once it says something', async () => {
     renderApp({
-      projects: new InMemoryProjectStore([project()]),
-      groupRecords: new InMemoryGroupStore([{ group: 'acme', name: 'Acme', client: 'Acme Logistics BV' }]),
+      scopes: new InMemoryScopeStore([parent({ client: 'Acme Logistics BV' }), project()]),
       initialProject: project(),
     })
     await screen.findByText('Acme Logistics BV')
+  })
+
+  /** The closest record to the drawing is the one that knows. */
+  it('is the scope\'s own client where it has one, over its parent\'s', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([
+        parent({ client: 'Acme Logistics BV' }),
+        { ...project(), client: 'Acme Rail BV' },
+      ]),
+      initialProject: { ...project(), client: 'Acme Rail BV' },
+    })
+    await screen.findByText('Acme Rail BV')
   })
 })

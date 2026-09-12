@@ -10,18 +10,17 @@ import { laidOut } from '../model/testFixtures';
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { bytesFromText, stableJson, textFromBytes } from './fileText'
-import { projectFiles } from './folderFormat'
-import type { ProjectSnapshot } from './project'
+import { scopeFiles } from './folderFormat'
+import type { ScopeSnapshot } from './scope'
 import { isZip, openDocumentBytes, workingFileBytes } from './workingFile'
 
-function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
+function project(over: Partial<ScopeSnapshot> = {}): ScopeSnapshot {
   return {
     path: 'acme-logistics/landscape',
     activeDiagramId: 'l7',
     logoLibrary: [{ key: 'lib:own', label: 'Own', url: 'data:image/png;base64,AQID' }],
     model: {
       name: 'Application landscape',
-      customerName: 'Acme Logistics',
       elements: [{
         id: 'crews', kind: 'application', name: 'Crews', description: 'Roster.',
         lifecycle: 'live', isManaged: true, aspects: {},
@@ -47,9 +46,9 @@ describe('workingFileBytes', () => {
 
   it('carries the folder, so it can be unzipped and read without this tool', () => {
     const entries = unzipSync(workingFileBytes(project()))
-    expect(Object.keys(entries).sort()).toEqual(projectFiles(project()).map((f) => f.path))
-    expect(JSON.parse(textFromBytes(entries['project.json'])))
-      .toMatchObject({ type: WORKING_FILE_TYPE, formatVersion: 4 })
+    expect(Object.keys(entries).sort()).toEqual(scopeFiles(project()).map((f) => f.path))
+    expect(JSON.parse(textFromBytes(entries['scope.json'])))
+      .toMatchObject({ type: WORKING_FILE_TYPE, version: 5 })
     expect(textFromBytes(entries['docs/crews.md'])).toBe('Roster.\n')
   })
 
@@ -74,9 +73,9 @@ describe('workingFileBytes', () => {
     expect(entries).toContain('images/cutover.png')
     expect(entries).toContain('logos/own.png')
     const back = openDocumentBytes(workingFileBytes(full), project())
-    expect(back.ok && back.project.model.decisions?.[0]?.title).toBe('One writer')
-    expect(back.ok && back.project.model.transitions?.[0]?.title).toBe('Replace the warehouse system')
-    expect(back.ok && back.project.imageLibrary?.[0]?.file).toBe('cutover.png')
+    expect(back.ok && back.scope.model.decisions?.[0]?.title).toBe('One writer')
+    expect(back.ok && back.scope.model.transitions?.[0]?.title).toBe('Replace the warehouse system')
+    expect(back.ok && back.scope.imageLibrary?.[0]?.file).toBe('cutover.png')
   })
 })
 
@@ -87,30 +86,30 @@ describe('openDocumentBytes', () => {
     const held = openDocumentBytes(workingFileBytes(project()), into)
     expect(held.ok).toBe(true)
     expect(held.ok && held.kind).toBe('workingFile')
-    expect(held.ok && stableJson(held.project)).toBe(stableJson(project()))
+    expect(held.ok && stableJson(held.scope)).toBe(stableJson(project()))
   })
 
   it('files what it opened where the open project is filed', () => {
     const elsewhere = { ...into, path: 'globex/theirs' }
     const held = openDocumentBytes(workingFileBytes(project()), elsewhere)
-    expect(held.ok && held.project.path).toEqual('globex/theirs')
+    expect(held.ok && held.scope.path).toEqual('globex/theirs')
   })
 
   it('opens a zip somebody made themselves, folder and all', () => {
     // "Right click, compress" puts the folder itself at the top of the zip.
     const entries: Record<string, Uint8Array> = {}
-    for (const file of projectFiles(project())) {
+    for (const file of scopeFiles(project())) {
       entries[`landscape/${file.path}`] = 'text' in file ? bytesFromText(file.text) : file.bytes
     }
     const held = openDocumentBytes(zipSync(entries), into)
-    expect(held.ok && held.project.model.name).toBe('Application landscape')
+    expect(held.ok && held.scope.model.name).toBe('Application landscape')
   })
 
   it('still opens a version-1 document, from before decisions existed', () => {
     const v1 = stableJson({ type: WORKING_FILE_TYPE, version: 1, model: project().model })
     const held = openDocumentBytes(bytesFromText(v1), into)
     expect(held.ok && held.kind).toBe('workingFile')
-    expect(held.ok && held.project.model.elements).toHaveLength(1)
+    expect(held.ok && held.scope.model.elements).toHaveLength(1)
   })
 
   it('still opens a version-2 document, which is not a zip at all', () => {
@@ -119,7 +118,7 @@ describe('openDocumentBytes', () => {
     })
     const held = openDocumentBytes(bytesFromText(v2), into)
     expect(held.ok && held.kind).toBe('workingFile')
-    expect(held.ok && held.project.model.name).toBe('Application landscape')
+    expect(held.ok && held.scope.model.name).toBe('Application landscape')
   })
 
   /**
@@ -136,7 +135,6 @@ describe('openDocumentBytes', () => {
       version: 1,
       model: {
         name: 'Landscape',
-        customerName: 'Acme',
         connections: [{ id: 'c-1', sourceId: 'portal', targetId: 'wms', isBidirectional: false }],
         elements: [
           { id: 'portal', kind: 'inputChannel', name: 'Portal' },
@@ -153,10 +151,10 @@ describe('openDocumentBytes', () => {
     const held = openDocumentBytes(bytesFromText(v1), into)
     expect(held.ok && held.kind).toBe('workingFile')
     if (!held.ok) return
-    expect(held.project.model.relations[0]).toMatchObject({ type: 'flow', id: 'c-1' })
-    expect(held.project.model.elements[0]).toMatchObject({ kind: 'application' })
-    expect(held.project.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
-    expect(held.project.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 4, y: 8 }])
+    expect(held.scope.model.relations[0]).toMatchObject({ type: 'flow', id: 'c-1' })
+    expect(held.scope.model.elements[0]).toMatchObject({ kind: 'application' })
+    expect(held.scope.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
+    expect(held.scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 4, y: 8 }])
   })
 
   it('opens a version-3 zip, and what comes out is format 4\'s shape', () => {
@@ -176,8 +174,8 @@ describe('openDocumentBytes', () => {
     const held = openDocumentBytes(zipSync(entries), into)
     expect(held.ok && held.kind).toBe('workingFile')
     if (!held.ok) return
-    expect(held.project.model.elements[0]).toMatchObject({ kind: 'application', outside: true })
-    expect(held.project.model.diagrams[0].members).toEqual([{ id: 'carrier', zone: 'externalSystems' }])
+    expect(held.scope.model.elements[0]).toMatchObject({ kind: 'application', outside: true })
+    expect(held.scope.model.diagrams[0].members).toEqual([{ id: 'carrier', zone: 'externalSystems' }])
   })
 
   it('still imports an interchange document, and lays it out again', () => {

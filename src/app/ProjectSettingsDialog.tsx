@@ -32,20 +32,15 @@ import { AspectColumnsEditor, settleFreshAspectKeys } from '../editor'
 import { DEFAULT_ASPECT_CONFIG } from '../model'
 import type { Translate } from '../i18n'
 import type { AspectConfigEntry } from '../model'
-import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
-import { groupNameOf } from '../projects/project'
-import { parentScope, ROOT_SCOPE, scopePathFor } from '../projects/scopePath'
-import { GroupField, NEW_GROUP, groupChoiceName, isGroupChoiceReady } from './picker/GroupField'
-import type { GroupChoice } from './picker/GroupField'
+import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import { parentScope, ROOT_SCOPE } from '../projects/scopePath'
+import type { ScopePath } from '../projects/scopePath'
+import { ScopeField } from './picker/ScopeField'
 
 export type ProjectSettings = {
   name: string
-  /**
-   * The group's slug — resolved here, so the caller never has to know that "new
-   * group" was a sentinel in a select rather than a group.
-   */
-  group: string
-  groupName: string
+  /** The scope to file this one under. The root is the empty path. */
+  group: ScopePath
   /** Who an exported diagram names when it has no author of its own. */
   defaultAuthor?: string
   /** The maturity columns a newly created landscape starts with. */
@@ -54,19 +49,20 @@ export type ProjectSettings = {
 
 export type ProjectSettingsDialogProps = {
   open: boolean
-  project: ProjectSnapshot
-  groups: readonly ProjectGroup[]
+  project: ScopeSnapshot
+  /** The tree, so a scope can be filed under another one. */
+  scopes: ScopeSummary
   onCancel: () => void
   onSave: (settings: ProjectSettings) => void
   s: Translate
 }
 
 export function ProjectSettingsDialog({
-  open, project, groups, onCancel, onSave, s,
+  open, project, scopes, onCancel, onSave, s,
 }: ProjectSettingsDialogProps) {
   const [name, setName] = useState(project.model.name)
   const parent = parentScope(project.path) ?? ROOT_SCOPE
-  const [group, setGroup] = useState<GroupChoice>({ selected: parent, newName: '' })
+  const [group, setGroup] = useState<ScopePath>(parent)
   const [author, setAuthor] = useState(project.model.defaultAuthor ?? '')
   const [columns, setColumns] = useState<AspectConfigEntry[]>(
     [...(project.model.defaultAspectConfig ?? DEFAULT_ASPECT_CONFIG)])
@@ -77,20 +73,15 @@ export function ProjectSettingsDialog({
   useEffect(() => {
     if (!open) return
     setName(project.model.name)
-    setGroup({ selected: parent, newName: '' })
+    setGroup(parent)
     setAuthor(project.model.defaultAuthor ?? '')
     setColumns([...(project.model.defaultAspectConfig ?? DEFAULT_ASPECT_CONFIG)])
     setFreshColumns([])
   }, [open, project.model.name, parent, project.model.defaultAuthor,
     project.model.defaultAspectConfig])
 
-  const groupName = group.selected === NEW_GROUP
-    ? group.newName.trim()
-    : groupChoiceName(group, groups) || groupNameOf(project.model)
-  const ready = name.trim().length > 0 && isGroupChoiceReady(group)
-  const moving = group.selected !== NEW_GROUP
-    ? group.selected !== parent
-    : group.newName.trim().length > 0
+  const ready = name.trim().length > 0
+  const moving = group !== parent
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -105,12 +96,13 @@ export function ProjectSettingsDialog({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <GroupField
-            groups={groups}
+          <ScopeField
+            tree={scopes}
             value={group}
             onChange={setGroup}
             label={s('settings.group')}
             helperText={moving ? s('settings.groupHelp') : undefined}
+            excluding={project.path}
             s={s}
           />
           <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
@@ -152,10 +144,7 @@ export function ProjectSettingsDialog({
           disabled={!ready}
           onClick={() => onSave({
             name: name.trim(),
-            group: group.selected === NEW_GROUP
-              ? scopePathFor(ROOT_SCOPE, groupName)
-              : group.selected,
-            groupName,
+            group,
             defaultAuthor: author.trim() || undefined,
             defaultAspectConfig: settleFreshAspectKeys(columns, freshColumns)
               .filter((column) => column.label.trim().length > 0),

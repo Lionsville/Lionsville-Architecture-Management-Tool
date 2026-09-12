@@ -62,7 +62,6 @@ function board(): { model: DesignModel; layer7: DesignDiagram; container: Design
   return {
     model: {
       name: 'ACME',
-      customerName: 'ACME',
       elements: [
         elt('a', 'application'),
         elt('b', 'application'),

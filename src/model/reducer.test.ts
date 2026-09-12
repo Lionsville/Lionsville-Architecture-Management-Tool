@@ -39,7 +39,6 @@ function route(connectionId: string, overrides: Partial<EdgeRoute> = {}): EdgeRo
 function sample(overrides: Partial<HostModel> = {}): Model {
   return fromArrays({
     name: 'Design',
-    customerName: 'ACME',
     elements: [element('a'), element('b'), element('c', { kind: 'component', parentId: 'a' })],
     relations: [connection('c#1', 'a', 'b'), connection('c#2', 'b', 'a')],
     diagrams: [
@@ -597,7 +596,7 @@ describe('over a thousand elements', () => {
       placements: elements.map((e, i) => placement(e.id, { x: i * 10, y: i * 4 })),
       edgeRoutes: connections.filter((_, i) => i % 7 === 0).map((c) => route(c.id)),
     }))
-    return fromArrays({ name: 'Big', customerName: 'ACME', elements, relations: connections, diagrams })
+    return fromArrays({ name: 'Big', elements, relations: connections, diagrams })
   }
 
   const m = big(1000)

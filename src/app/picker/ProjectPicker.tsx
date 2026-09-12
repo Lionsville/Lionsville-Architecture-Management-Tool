@@ -26,20 +26,17 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
-import { groupProfileFor } from '../../projects/group'
-import type { GroupProfile } from '../../projects/group'
-import { groupsOf, sortProjects } from '../../projects/project'
-import type { ProjectOrder, ProjectSummary } from '../../projects/project'
+import { flattenScopes, scopeTree, sortScopes } from '../../projects/scope'
+import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
+import { ROOT_SCOPE, scopeSegments } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { ExampleProject } from '../examples'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { NEW_GROUP, groupChoiceName } from './GroupField'
-import type { GroupChoice } from './GroupField'
-import { GroupSettingsDialog } from './GroupSettingsDialog'
-import { NewGroupDialog } from './NewGroupDialog'
-import { NewProjectDialog } from './NewProjectDialog'
+import { NewScopeDialog } from './NewScopeDialog'
+import { ScopeSettingsDialog } from './ScopeSettingsDialog'
+import type { ScopeSettingsPatch } from '../App'
 
 /**
  * What the picker needs from a store: to see what is there, and to remove one.
@@ -49,51 +46,37 @@ import { NewProjectDialog } from './NewProjectDialog'
  * caller's decision, and a picker that could load a project itself would be
  * holding half of the navigation.
  */
-export type ProjectCatalogue = {
-  list(): Promise<ProjectSummary[]>
+export type ScopeCatalogue = {
+  list(): Promise<ScopeSummary>
   remove(path: ScopePath): Promise<void>
 }
 
-/**
- * What the picker needs from the group store: to read the records. Narrower
- * than `GroupStore` — this screen has no business forgetting one, and a
- * component that could is one a reader has to check.
- */
-export type GroupCatalogue = {
-  list(): Promise<GroupProfile[]>
-}
-
 export type ProjectPickerProps = {
-  projects: ProjectCatalogue
-  groups: GroupCatalogue
+  scopes: ScopeCatalogue
   /**
-   * Apply a group's edited record. Not done here: a rename has to relabel every
-   * project filed under the group, which is the caller's store to write to.
+   * Apply a scope's edited record. Not done here: a save is a read and a write
+   * of the whole scope, which is the caller's store to reach.
    */
-  onApplyGroupSettings: (profile: GroupProfile) => void
+  onApplyScopeSettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
   examples: readonly ExampleProject[]
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
   onOpen: (path: ScopePath) => void
-  /**
-   * Create a project. `group` is an existing group's slug when there is one, so
-   * adding to a group you already work in cannot spawn a near-duplicate of it.
-   */
-  onCreate: (project: { group?: string; groupName: string; projectName: string }) => void
+  /** Create a scope under another one. The parent always exists — the root does. */
+  onCreate: (scope: { parent: ScopePath; name: string }) => void
   onCopyExample: (example: ExampleProject) => void
   /**
    * Something on this screen failed.
    *
    * The picker knows WHICH failure it was and says so with a key; the caller
-   * owns the trail and the toast bar. Without the key nothing is shown — a
-   * group record that would not read costs a description, which is not worth
-   * interrupting a perfectly readable list of projects for.
+   * owns the trail and the toast bar. Without the key nothing is shown — not
+   * every failure is worth interrupting a perfectly readable list for.
    */
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Bumped by the caller after it creates something, to re-read the list. */
   revision?: number
   /**
-   * The folder these projects are in, and how to change it.
+   * The folder these scopes are in, and how to change it.
    *
    * Both absent in a browser tab, which cannot offer a folder at all. The
    * callback present with no folder is a desktop that has not been given one
@@ -124,36 +107,27 @@ function whenChanged(updatedAt: string | undefined, language: Language, s: Trans
 }
 
 export function ProjectPicker({
-  projects, groups: groupCatalogue, onApplyGroupSettings, examples, order, onOrderChange,
+  scopes, onApplyScopeSettings, examples, order, onOrderChange,
   onOpen, onCreate, onCopyExample, onFailure,
   revision = 0, workingDirectory, onChooseWorkingDirectory,
   language, s, windowChrome = NO_WINDOW_CHROME,
 }: ProjectPickerProps) {
-  const [summaries, setSummaries] = useState<ProjectSummary[]>([])
-  const [profiles, setProfiles] = useState<GroupProfile[]>([])
-  const [groupToEdit, setGroupToEdit] = useState<GroupProfile | undefined>(undefined)
-  const [newProjectOpen, setNewProjectOpen] = useState(false)
-  const [newGroupOpen, setNewGroupOpen] = useState(false)
-  const [group, setGroup] = useState<GroupChoice>({ selected: NEW_GROUP, newName: '' })
-  const [groupName, setGroupName] = useState('')
-  const [projectName, setProjectName] = useState('')
-  const [toDelete, setToDelete] = useState<ProjectSummary | null>(null)
+  const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
+  const [toEdit, setToEdit] = useState<ScopeSummary | undefined>(undefined)
+  const [newScopeOpen, setNewScopeOpen] = useState(false)
+  const [parent, setParent] = useState<ScopePath>(ROOT_SCOPE)
+  const [scopeName, setScopeName] = useState('')
+  const [toDelete, setToDelete] = useState<ScopeSummary | null>(null)
 
   const refresh = useCallback(() => {
-    // An empty list and a list that would not read look identical on this
-    // screen, and one of them means "you have no projects" while the other
-    // means "your projects are still there, somewhere". Say which.
-    void projects.list().then(setSummaries, (cause: unknown) => {
-      setSummaries([])
+    // An empty tree and a tree that would not read look identical on this
+    // screen, and one of them means "you have nothing here" while the other
+    // means "your work is still there, somewhere". Say which.
+    void scopes.list().then(setTree, (cause: unknown) => {
+      setTree(scopeTree([]))
       onFailure('picker.list', cause, 'picker.listFailed')
     })
-    // A group's record is decoration: failing to read it costs the description
-    // and the links, never the list of projects. Trail only.
-    void groupCatalogue.list().then(setProfiles, (cause: unknown) => {
-      setProfiles([])
-      onFailure('picker.groups', cause)
-    })
-  }, [projects, groupCatalogue, onFailure])
+  }, [scopes, onFailure])
 
   useEffect(refresh, [refresh, revision])
 
@@ -161,36 +135,28 @@ export function ProjectPicker({
    * Sorted here and not in the store: the order is what this screen shows, and
    * the toggle has to be able to change it without a round trip to storage.
    */
-  const ordered = useMemo(() => sortProjects(summaries, order), [summaries, order])
-
-  /**
-   * Still derived from the projects — a record decorates a group, it never
-   * conjures one — with whatever that group has said about itself folded in.
-   */
-  const groups = useMemo(
-    () => groupsOf(ordered).map((entry) => ({
-      ...entry,
-      profile: groupProfileFor(entry.group, entry.name, profiles),
-    })),
-    [ordered, profiles],
+  const ordered = useMemo<ScopeSummary>(
+    () => ({ ...tree, children: sortScopes(tree.children, order) }),
+    [tree, order],
   )
+  const everything = useMemo(() => flattenScopes(ordered), [ordered])
 
-  /** Open "new project" with a group already chosen — the common case. */
-  const addToGroup = useCallback((slug: string) => {
-    setGroup({ selected: slug, newName: '' })
-    setProjectName('')
-    setNewProjectOpen(true)
+  /** Open "new scope" with a parent already chosen — the common case. */
+  const addUnder = useCallback((path: ScopePath) => {
+    setParent(path)
+    setScopeName('')
+    setNewScopeOpen(true)
   }, [])
 
   const confirmDelete = useCallback(() => {
     const target = toDelete
     setToDelete(null)
     if (!target) return
-    void projects.remove(target.path).then(
+    void scopes.remove(target.path).then(
       refresh,
       (cause: unknown) => onFailure('picker.remove', cause, 'picker.deleteFailed'),
     )
-  }, [toDelete, projects, refresh, onFailure])
+  }, [toDelete, scopes, refresh, onFailure])
 
   return (
     <Box sx={{
@@ -217,20 +183,8 @@ export function ProjectPicker({
               {s('picker.subtitle')}
             </Typography>
           </Box>
-          <Button
-            onClick={() => { setGroupName(''); setProjectName(''); setNewGroupOpen(true) }}
-          >
-            {s('picker.newGroup')}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setGroup({ selected: groups[0]?.group ?? NEW_GROUP, newName: '' })
-              setProjectName('')
-              setNewProjectOpen(true)
-            }}
-          >
-            {s('picker.newProject')}
+          <Button variant="contained" onClick={() => addUnder(ROOT_SCOPE)}>
+            {s('picker.newScope')}
           </Button>
         </Stack>
 
@@ -274,51 +228,86 @@ export function ProjectPicker({
           </ToggleButtonGroup>
         </Stack>
 
-        {groups.length === 0 && (
+        {everything.length === 1 && ordered.children.length === 0 && (
           <Typography sx={{ fontSize: 13, color: 'text.secondary', py: 2 }}>
             {s('picker.empty')}
           </Typography>
         )}
 
-        {groups.map((entry) => (
-          <Box key={entry.group} sx={{ mb: 2.5 }}>
+        {everything.map((scope) => (
+          <Box
+            key={scope.path || ' root'}
+            data-testid={`scope-${scope.path || 'root'}`}
+            data-depth={scopeSegments(scope.path).length}
+            sx={{ mb: 1.5, ml: scopeSegments(scope.path).length * 2 }}
+          >
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
-              <Typography sx={{
-                fontSize: 11, fontWeight: 700, color: 'text.secondary',
-                textTransform: 'uppercase', letterSpacing: 0.6, flex: 1,
-              }}>
-                {entry.profile.name}
-              </Typography>
-              <Tooltip title={s('group.openFor', { name: entry.profile.name })}>
+              {scope.diagrams > 0 ? (
+                <Card variant="outlined" sx={{ flex: 1 }}>
+                  <CardActionArea
+                    onClick={() => onOpen(scope.path)}
+                    sx={{ px: 1.5, py: 1.25 }}
+                  >
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
+                      {scope.name || s('picker.organisation')}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                      {whenChanged(scope.updatedAt, language, s)}
+                    </Typography>
+                  </CardActionArea>
+                </Card>
+              ) : (
+                /* A scope that draws nothing is a heading: there is no canvas
+                   to open, and everything filed under it is listed below. */
+                <Typography sx={{
+                  fontSize: 11, fontWeight: 700, color: 'text.secondary',
+                  textTransform: 'uppercase', letterSpacing: 0.6, flex: 1,
+                }}>
+                  {scope.name || s('picker.organisation')}
+                </Typography>
+              )}
+              <Tooltip title={s('group.openFor', { name: scope.name })}>
                 <Button
                   size="small"
                   color="inherit"
-                  onClick={() => setGroupToEdit(entry.profile)}
+                  onClick={() => setToEdit(scope)}
                   sx={{ fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' }}
-                  aria-label={s('group.openFor', { name: entry.profile.name })}
+                  aria-label={s('group.openFor', { name: scope.name })}
                 >
                   {s('group.open')}
                 </Button>
               </Tooltip>
-              <Tooltip title={s('picker.addProject', { name: entry.profile.name })}>
+              <Tooltip title={s('picker.addUnder', { name: scope.name })}>
                 <Button
                   size="small"
-                  onClick={() => addToGroup(entry.group)}
+                  onClick={() => addUnder(scope.path)}
                   sx={{ fontSize: 11, minWidth: 0, px: 1 }}
-                  aria-label={s('picker.addProject', { name: entry.profile.name })}
+                  aria-label={s('picker.addUnder', { name: scope.name })}
                 >
-                  + {s('picker.newProject')}
+                  + {s('picker.newScope')}
                 </Button>
               </Tooltip>
+              {scope.path !== ROOT_SCOPE && (
+                <Tooltip title={s('picker.delete')}>
+                  <IconButton
+                    aria-label={`${s('picker.delete')} ${scope.name}`}
+                    onClick={() => setToDelete(scope)}
+                    sx={{ color: 'text.secondary' }}
+                    size="small"
+                  >
+                    ✕
+                  </IconButton>
+                </Tooltip>
+              )}
             </Stack>
-            {entry.profile.description && (
+            {scope.description && (
               <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>
-                {entry.profile.description}
+                {scope.description}
               </Typography>
             )}
-            {entry.profile.links && entry.profile.links.length > 0 && (
+            {scope.links && scope.links.length > 0 && (
               <Stack direction="row" spacing={0.75} sx={{ mb: 0.75, flexWrap: 'wrap' }}>
-                {entry.profile.links.map((link) => (
+                {scope.links.map((link) => (
                   <Link
                     key={link.url}
                     href={link.url}
@@ -334,33 +323,6 @@ export function ProjectPicker({
                 ))}
               </Stack>
             )}
-            <Stack spacing={0.75}>
-              {entry.projects.map((summary) => (
-                <Card key={summary.path} variant="outlined">
-                  <Stack direction="row" alignItems="stretch">
-                    <CardActionArea
-                      onClick={() => onOpen(summary.path)}
-                      sx={{ px: 1.5, py: 1.25, flex: 1 }}
-                    >
-                      <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{summary.name}</Typography>
-                      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                        {whenChanged(summary.updatedAt, language, s)}
-                      </Typography>
-                    </CardActionArea>
-                    <Tooltip title={s('picker.delete')}>
-                      <IconButton
-                        aria-label={`${s('picker.delete')} ${summary.name}`}
-                        onClick={() => setToDelete(summary)}
-                        sx={{ alignSelf: 'center', mr: 0.5, color: 'text.secondary' }}
-                        size="small"
-                      >
-                        ✕
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </Card>
-              ))}
-            </Stack>
           </Box>
         ))}
 
@@ -371,7 +333,7 @@ export function ProjectPicker({
         </Typography>
         <Stack spacing={0.75}>
           {examples.map((example) => {
-            const already = summaries.some((summary) => summary.path === example.path)
+            const already = everything.some((scope) => scope.path === example.path)
             return (
               <Card key={example.key} variant="outlined">
                 <Stack direction="row" alignItems="center" sx={{ px: 1.5, py: 1.25 }} spacing={2}>
@@ -391,45 +353,25 @@ export function ProjectPicker({
         </Stack>
       </Box>
 
-      <NewProjectDialog
-        open={newProjectOpen}
-        groups={groups}
-        group={group}
-        projectName={projectName}
-        onGroupChange={setGroup}
-        onProjectNameChange={setProjectName}
-        onCancel={() => setNewProjectOpen(false)}
+      <NewScopeDialog
+        open={newScopeOpen}
+        tree={ordered}
+        parent={parent}
+        name={scopeName}
+        onParentChange={setParent}
+        onNameChange={setScopeName}
+        onCancel={() => setNewScopeOpen(false)}
         onCreate={() => {
-          setNewProjectOpen(false)
-          onCreate({
-            group: group.selected === NEW_GROUP ? undefined : group.selected,
-            groupName: groupChoiceName(group, groups),
-            projectName: projectName.trim(),
-          })
-          setProjectName('')
+          setNewScopeOpen(false)
+          onCreate({ parent, name: scopeName.trim() })
+          setScopeName('')
         }}
         s={s}
       />
-      <GroupSettingsDialog
-        target={groupToEdit}
-        onCancel={() => setGroupToEdit(undefined)}
-        onSave={(profile) => { setGroupToEdit(undefined); onApplyGroupSettings(profile) }}
-        s={s}
-      />
-      <NewGroupDialog
-        open={newGroupOpen}
-        groups={groups}
-        groupName={groupName}
-        projectName={projectName}
-        onGroupNameChange={setGroupName}
-        onProjectNameChange={setProjectName}
-        onCancel={() => setNewGroupOpen(false)}
-        onCreate={() => {
-          setNewGroupOpen(false)
-          onCreate({ groupName: groupName.trim(), projectName: projectName.trim() })
-          setGroupName('')
-          setProjectName('')
-        }}
+      <ScopeSettingsDialog
+        target={toEdit}
+        onCancel={() => setToEdit(undefined)}
+        onSave={(path, patch) => { setToEdit(undefined); onApplyScopeSettings(path, patch) }}
         s={s}
       />
       <ConfirmDialog

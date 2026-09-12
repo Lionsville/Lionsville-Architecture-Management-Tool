@@ -161,7 +161,6 @@ describe('sides travel with the row through the model layer', () => {
   function model(routes: EdgeRoute[]): DesignModel {
     return {
       name: 'ACME',
-      customerName: 'ACME',
       elements: ['a', 'b'].map((id) => ({ id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })),
       relations: [{ type: 'flow', id: 'c1', sourceId: 'a', targetId: 'b', isBidirectional: false }],
       diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'a', x: 0, y: 0 }, { id: 'b', x: 500, y: 0 }], edgeRoutes: routes })],

@@ -7,106 +7,90 @@
  * choosing a folder, and both would be discovered days later.
  */
 import { describe, expect, it } from 'vitest'
-import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import { projectAt, sampleProject } from '../ports/ProjectStore.contract'
-import { copyGroupsInto, copyProjectsInto, migrated, migrateInto, upgradeProjects } from './migration'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { sampleScope, scopeAt } from '../ports/ScopeStore.contract'
+import { copyScopesInto, migrated, migrateInto, upgradeProjects } from './migration'
 import type { UpgradeTarget } from './migration'
-import type { ProjectSnapshot } from './project'
+import { bareScope, flattenScopes } from './scope'
+import type { ScopeSnapshot } from './scope'
 import type { ScopePath } from './scopePath'
 
-const named = (group: string, project: string, name: string): ProjectSnapshot =>
-  projectAt(`${group}/${project}`, name)
+const named = (group: string, project: string, name: string): ScopeSnapshot =>
+  scopeAt(`${group}/${project}`, name)
 
-describe('copyProjectsInto', () => {
+describe('copyScopesInto', () => {
   it('copies everything the folder does not have', async () => {
-    const from = new InMemoryProjectStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
-    const into = new InMemoryProjectStore()
+    const from = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
+    const into = new InMemoryScopeStore()
 
-    expect(await copyProjectsInto(from, into)).toMatchObject({ projects: 2, kept: 0, failed: 0 })
-    expect((await into.list()).map((held) => held.name)).toEqual(['One', 'Two'])
+    expect(await copyScopesInto(from, into)).toMatchObject({ scopes: 2, kept: 0, failed: 0 })
+    expect(flattenScopes(await into.list()).slice(1).map((held) => held.name)).toEqual(['One', 'Two'])
   })
 
   it('leaves the old copy exactly where it was', async () => {
     // One-way, and not only on the first run: a folder on a drive that turns
     // out to be unplugged must cost nothing.
-    const from = new InMemoryProjectStore([sampleProject()])
-    await copyProjectsInto(from, new InMemoryProjectStore())
+    const from = new InMemoryScopeStore([sampleScope()])
+    await copyScopesInto(from, new InMemoryScopeStore())
 
-    expect(await from.list()).toHaveLength(1)
+    expect(flattenScopes(await from.list())).toHaveLength(2)
   })
 
   it('never writes over a project the folder already holds', async () => {
     // The folder's copy is where the work has been happening. Overwriting it
     // would be silent loss, triggered by choosing a folder.
-    const from = new InMemoryProjectStore([named('acme', 'one', 'The old one')])
-    const into = new InMemoryProjectStore([named('acme', 'one', 'The one being worked on')])
+    const from = new InMemoryScopeStore([named('acme', 'one', 'The old one')])
+    const into = new InMemoryScopeStore([named('acme', 'one', 'The one being worked on')])
 
-    expect(await copyProjectsInto(from, into)).toMatchObject({ projects: 0, kept: 1 })
+    expect(await copyScopesInto(from, into)).toMatchObject({ scopes: 0, kept: 1 })
     expect((await into.load('acme/one'))?.model.name)
       .toBe('The one being worked on')
   })
 
   it('skips the one that will not read and copies the rest', async () => {
-    const from = new InMemoryProjectStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
+    const from = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
     const broken = {
       list: () => from.list(),
       load: (path: ScopePath) =>
         path === 'acme/one' ? Promise.reject(new Error('unreadable')) : from.load(path),
     }
-    const into = new InMemoryProjectStore()
+    const into = new InMemoryScopeStore()
 
-    expect(await copyProjectsInto(broken, into)).toMatchObject({ projects: 1, failed: 1 })
-    expect(await into.list()).toHaveLength(1)
+    expect(await copyScopesInto(broken, into)).toMatchObject({ scopes: 1, failed: 1 })
+    expect(flattenScopes(await into.list())).toHaveLength(2)
   })
 
   it('does nothing at all when the old storage will not even list', async () => {
-    const into = new InMemoryProjectStore()
-    const tally = await copyProjectsInto({
+    const into = new InMemoryScopeStore()
+    const tally = await copyScopesInto({
       list: () => Promise.reject(new Error('gone')),
       load: () => Promise.resolve(undefined),
     }, into)
 
     expect(migrated(tally)).toBe(false)
-    expect(await into.list()).toEqual([])
-  })
-})
-
-describe('copyGroupsInto', () => {
-  it('brings the descriptions and the decisions along', async () => {
-    const from = new InMemoryGroupStore([{ group: 'acme', name: 'Acme', description: 'Freight.' }])
-    const into = new InMemoryGroupStore()
-
-    expect(await copyGroupsInto(from, into)).toMatchObject({ groups: 1 })
-    expect((await into.list())[0].description).toBe('Freight.')
-  })
-
-  it('leaves a record the folder already has', async () => {
-    const from = new InMemoryGroupStore([{ group: 'acme', name: 'Old' }])
-    const into = new InMemoryGroupStore([{ group: 'acme', name: 'Theirs' }])
-
-    expect(await copyGroupsInto(from, into)).toMatchObject({ groups: 0, kept: 1 })
-    expect((await into.list())[0].name).toBe('Theirs')
+    expect((await into.list()).children).toEqual([])
   })
 })
 
 describe('migrateInto', () => {
-  it('counts both halves in one tally', async () => {
-    const tally = await migrateInto(
-      { from: new InMemoryProjectStore([sampleProject()]), into: new InMemoryProjectStore() },
-      { from: new InMemoryGroupStore([{ group: 'acme', name: 'Acme' }]), into: new InMemoryGroupStore() },
-    )
+  it('copies the tree, parents before children', async () => {
+    const written: string[] = []
+    const into = new InMemoryScopeStore()
+    const save = into.save.bind(into)
+    into.save = async (scope) => { written.push(scope.path); await save(scope) }
+    const from = new InMemoryScopeStore([
+      scopeAt('acme/rail', 'Rail'), bareScope('acme', 'Acme', 'domain'),
+    ])
 
-    expect(tally).toEqual({ projects: 1, groups: 1, kept: 0, failed: 0 })
+    const tally = await migrateInto(from, into)
+
+    expect(tally).toEqual({ scopes: 2, kept: 0, failed: 0 })
+    expect(written).toEqual(['acme', 'acme/rail'])
     expect(migrated(tally)).toBe(true)
   })
 
   it('says nothing happened when there was nothing to move', async () => {
-    const tally = await migrateInto(
-      { from: new InMemoryProjectStore(), into: new InMemoryProjectStore() },
-      { from: new InMemoryGroupStore(), into: new InMemoryGroupStore() },
-    )
-
+    const tally = await migrateInto(new InMemoryScopeStore(), new InMemoryScopeStore())
     expect(migrated(tally)).toBe(false)
   })
 })
@@ -118,13 +102,13 @@ describe('migrateInto', () => {
  * because the store is the one that knows which of its projects are old.
  */
 describe('upgradeProjects', () => {
-  const outdated = (store: InMemoryProjectStore, refs: ScopePath[]): UpgradeTarget =>
-    Object.assign(Object.create(store) as InMemoryProjectStore, {
+  const outdated = (store: InMemoryScopeStore, refs: ScopePath[]): UpgradeTarget =>
+    Object.assign(Object.create(store) as InMemoryScopeStore, {
       outdated: () => Promise.resolve(refs),
     })
 
   it('reads each old project and writes it back', async () => {
-    const store = new InMemoryProjectStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
     const written: string[] = []
     const target = outdated(store, ['acme/one'])
     target.save = async (project) => { written.push(project.path); await store.save(project) }
@@ -136,7 +120,7 @@ describe('upgradeProjects', () => {
   })
 
   it('does nothing at all for a store with nothing old in it', async () => {
-    const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
     expect(await upgradeProjects(outdated(store, []))).toEqual({
       upgraded: 0, failed: 0, recorded: 'nothing to record',
     })
@@ -145,12 +129,12 @@ describe('upgradeProjects', () => {
   it('does nothing for a store that has no older format to have written', async () => {
     // An in-memory store, or any backend newer than the format: absent means
     // "nothing of mine is old" rather than "ask me again".
-    expect(await upgradeProjects(new InMemoryProjectStore([sampleProject()])))
+    expect(await upgradeProjects(new InMemoryScopeStore([sampleScope()])))
       .toMatchObject({ upgraded: 0 })
   })
 
   it('records what the folder looked like before it rewrites anything', async () => {
-    const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
     const order: string[] = []
     const target = outdated(store, ['acme/one'])
     target.save = async (project) => { order.push('save'); await store.save(project) }
@@ -166,7 +150,7 @@ describe('upgradeProjects', () => {
   it('migrates anyway when there is nothing to record it with', async () => {
     // No git, no repository, or a snapshot that refused. Refusing to migrate
     // for want of one would leave a project nobody can open.
-    const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
     const target = outdated(store, ['acme/one'])
 
     expect(await upgradeProjects(target, () => Promise.reject(new Error('no git'))))
@@ -174,7 +158,7 @@ describe('upgradeProjects', () => {
   })
 
   it('counts the one that will not read and upgrades the rest', async () => {
-    const store = new InMemoryProjectStore([named('acme', 'two', 'Two')])
+    const store = new InMemoryScopeStore([named('acme', 'two', 'Two')])
     const target = outdated(store, ['acme/gone', 'acme/two'])
 
     expect(await upgradeProjects(target)).toEqual({ upgraded: 1, failed: 1, recorded: 'unavailable' })

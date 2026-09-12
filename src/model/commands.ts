@@ -41,7 +41,6 @@ import { memberOf, nodeGeometryOf } from './placement'
 /** The model's own scalars — everything a project's settings dialog edits. */
 export type ProjectPatch = Partial<{
   name: string
-  customerName: string
   description: string
   defaultAuthor: string
   defaultAspectConfig: NonNullable<Diagram['aspectConfig']>

@@ -29,7 +29,6 @@ const decision = (over: Partial<Adr> = {}): Adr => ({
 function then(over: Partial<HostModel> = {}): HostModel {
   return {
     name: 'Landscape',
-    customerName: 'Acme',
     defaultAuthor: 'W.',
     elements: [
       element('billing', 'Billing', { description: 'Sends the invoices.' }),

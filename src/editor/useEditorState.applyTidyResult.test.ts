@@ -24,7 +24,6 @@ function commandTypes(command: Command): string[] {
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
     ],
@@ -68,7 +67,6 @@ function render() {
 function modelWithRoutes(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'e2', kind: 'application', name: 'E2', lifecycle: 'live', isManaged: true, aspects: {} },
@@ -159,7 +157,6 @@ describe('applyTidyResult (U1 — edge-route reconciliation)', () => {
 function modelWithCanvas(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'e1', kind: 'application', name: 'E1', lifecycle: 'live', isManaged: true, aspects: {} },
     ],

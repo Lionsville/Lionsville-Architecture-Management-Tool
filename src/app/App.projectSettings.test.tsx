@@ -15,8 +15,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import type { ProjectSnapshot } from '../projects/project'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { bareScope } from '../projects/scope'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import { renderApp } from './testing/renderShell'
 
@@ -42,11 +43,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => cleanup())
 
-const project = (): ProjectSnapshot => ({
+const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
     name: 'Landscape',
-    customerName: 'Acme',
     elements: [],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
@@ -55,9 +55,9 @@ const project = (): ProjectSnapshot => ({
   logoLibrary: [],
 })
 
-function show(initial: ProjectSnapshot) {
-  const projects = new InMemoryProjectStore([initial])
-  renderApp({ projects, initialProject: initial })
+function show(initial: ScopeSnapshot) {
+  const projects = new InMemoryScopeStore([initial])
+  renderApp({ scopes: projects, initialProject: initial })
   return projects
 }
 
@@ -73,7 +73,7 @@ function applySettings(fields: { name?: string; author?: string }) {
   fireEvent.click(screen.getByText('Save'))
 }
 
-const saved = (store: InMemoryProjectStore) =>
+const saved = (store: InMemoryScopeStore) =>
   store.load('acme/landscape')
 
 /**
@@ -94,28 +94,26 @@ describe('project settings on an open project', () => {
     //
     // The remove is held open so the window is real rather than a matter of
     // microseconds: the stale save is fired while it is in flight.
-    const store = new InMemoryProjectStore([project()])
+    // The target scope has to exist: a move files this one under another
+    // scope, and "somewhere new" is its own gesture now (New scope…).
+    const store = new InMemoryScopeStore([project(), bareScope('globex', 'Globex', 'domain')])
     let release: (() => void) | undefined
     const written: ScopePath[] = []
     const held = {
       list: () => store.list(),
       load: (ref: ScopePath) => store.load(ref),
-      save: (project: ProjectSnapshot) => { written.push(project.path); return store.save(project) },
+      save: (project: ScopeSnapshot) => { written.push(project.path); return store.save(project) },
       remove: async (ref: ScopePath) => {
         await new Promise<void>((resolve) => { release = resolve })
         await store.remove(ref)
       },
     }
-    renderApp({ projects: held, initialProject: project() })
+    renderApp({ scopes: held, initialProject: project() })
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
 
     fireEvent.click(screen.getByText('Settings…'))
     fireEvent.mouseDown(screen.getByLabelText('Group'))
-    fireEvent.click(screen.getByText('New group…'))
-    // Two fields answer to "Group" now: the select, and the name for the new
-    // one it revealed.
-    const named = screen.getAllByLabelText('Group').find((el) => el.tagName === 'INPUT')!
-    fireEvent.change(named, { target: { value: 'Globex' } })
+    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
     fireEvent.click(screen.getByText('Save'))
 
     await waitFor(() => expect(release).toBeDefined())

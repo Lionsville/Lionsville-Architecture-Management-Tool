@@ -18,7 +18,7 @@ import { translator } from '../i18n'
 import { transaction } from '../model'
 import type { DesignElement, PlacedNode } from '../model'
 import type { HostModel } from '../model/fromInterchange'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { useModelSession } from './useModelSession'
 import type { ModelSession } from './useModelSession'
 
@@ -34,7 +34,6 @@ afterEach(() => cleanup())
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [element('billing', 'Billing')],
   relations: [],
   diagrams: [
@@ -44,7 +43,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   ...over,
 })
 
-const project = (over: Partial<ProjectSnapshot> = {}): ProjectSnapshot => ({
+const project = (over: Partial<ScopeSnapshot> = {}): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: model(),
   activeDiagramId: 'd1',

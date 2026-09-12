@@ -842,7 +842,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       client:
         activeDiagram.client
         ?? props.exportTitleBlock?.client
-        ?? state.model.customerName,
+        ?? state.model.name,
       // A board dated for a day that is not today says so on the picture. An
       // exported PNG travels without the app around it, and a future landscape
       // that does not announce itself is read as the present one (ADR-0009).
@@ -962,14 +962,14 @@ function EditorBody(props: SolutionDesignEditorProps) {
       // The editor can be gone by the time that frame arrives — a diagram
       // switched, a project closed, a window shut. Nothing to hand over.
       if (!blob) return;
-      downloadBlob(blob, pngFilename(state.model.customerName, diagram));
+      downloadBlob(blob, pngFilename(props.exportTitleBlock?.client ?? state.model.name, diagram));
       closeExport();
     })().catch((error: unknown) => {
       reportLayoutError(t('error.export'), error);
     }).finally(() => {
       setExporting(false);
     });
-  }, [exportOptions, activeDiagram, state.model.customerName, closeExport, reportLayoutError, t]);
+  }, [exportOptions, activeDiagram, state.model.name, props.exportTitleBlock, closeExport, reportLayoutError, t]);
 
   /**
    * The board as pixels for a host — an agent asking through the shell
@@ -1336,6 +1336,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           key={documentationElement.id}
           element={documentationElement}
           model={state.model}
+          scopeLabel={props.exportTitleBlock?.client}
           diagram={activeDiagram}
           readOnly={readOnly}
           actions={state.actions}
@@ -1391,7 +1392,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       {props.diagrams.onSettingsChange && (
         <DiagramSettingsDialog
           target={state.model.diagrams.find((d) => d.id === settingsDiagramId)}
-          defaultClient={props.exportTitleBlock?.client ?? state.model.customerName}
+          defaultClient={props.exportTitleBlock?.client ?? state.model.name}
           onSave={props.diagrams.onSettingsChange}
           onClose={() => setSettingsDiagramId(undefined)}
         />
@@ -1574,13 +1575,13 @@ function CanvasForDiagram({
   );
 }
 
-function pngFilename(customerName: string, diagram: DesignDiagram): string {
+function pngFilename(client: string, diagram: DesignDiagram): string {
   const slug = (value: string) =>
     value
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
-  return `${slug(customerName) || 'design'}-${slug(diagram.name) || 'diagram'}.png`;
+  return `${slug(client) || 'design'}-${slug(diagram.name) || 'diagram'}.png`;
 }
 
 function downloadBlob(blob: Blob, filename: string): void {

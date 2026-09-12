@@ -13,7 +13,6 @@ import type { DesignModel, EdgeRoute } from '../model/types';
 function model(routes: EdgeRoute[] = []): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['s', 't1', 't2'].map((id) => ({
       id,
       kind: 'application' as const,

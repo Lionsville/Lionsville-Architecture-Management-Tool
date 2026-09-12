@@ -19,7 +19,7 @@ import { translator } from '../i18n'
 import type { UploadedLogo } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import { WORKING_FILE_TYPE, WORKING_FILE_VERSION } from '../model/hostModel'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { workingFileBytes } from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { useProjectFiles } from './useProjectFiles'
@@ -30,13 +30,12 @@ afterEach(() => cleanup())
 
 const model = (): HostModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [],
   relations: [],
   diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
 })
 
-const snapshot = (): ProjectSnapshot => ({
+const snapshot = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: model(),
   activeDiagramId: 'd1',

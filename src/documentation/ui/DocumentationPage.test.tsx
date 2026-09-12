@@ -48,7 +48,6 @@ function diagram(): DesignDiagram {
 function model(main: DesignElement): DesignModel {
   return {
     name: 'Design',
-    customerName: 'Acme',
     diagrams: [diagram()],
     elements: [main, billing, planner, offDiagram],
     relations: [],

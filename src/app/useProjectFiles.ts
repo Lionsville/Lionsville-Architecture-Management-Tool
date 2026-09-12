@@ -150,7 +150,7 @@ export function useProjectFiles(deps: {
       // still what it is.
       const result = openDocumentBytes(bytes, session.snapshot())
       if (!result.ok) { notify(s(result.messageKey), 'error'); return }
-      session.adopt(result.project, result.relayout)
+      session.adopt(result.scope, result.relayout)
       notify(s(
         result.kind === 'workingFile' ? 'shell.workingFileLoaded' : 'shell.interchangeLoaded',
         { name },

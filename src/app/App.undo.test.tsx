@@ -14,11 +14,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { placeOn } from '../model/commands';
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { transaction } from '../model'
 import type { Command } from '../model'
 import type { EditorHistory } from '../editor'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {
@@ -57,11 +57,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => { vi.useRealTimers(); cleanup() })
 
-const project = (): ProjectSnapshot => ({
+const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
     name: 'Landscape',
-    customerName: 'Acme',
     elements: [],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
@@ -72,8 +71,8 @@ const project = (): ProjectSnapshot => ({
 
 function show() {
   const initial = project()
-  const projects = new InMemoryProjectStore([initial])
-  renderApp({ projects, initialProject: initial })
+  const projects = new InMemoryScopeStore([initial])
+  renderApp({ scopes: projects, initialProject: initial })
   return projects
 }
 

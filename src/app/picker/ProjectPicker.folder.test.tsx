@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../../i18n'
 import { ProjectPicker } from './ProjectPicker'
+import { scopeTree } from '../../projects/scope'
 import { renderShell } from '../testing/renderShell'
 
 afterEach(() => cleanup())
@@ -24,9 +25,8 @@ function show(over: {
 }) {
   renderShell(
     <ProjectPicker
-      projects={{ list: () => Promise.resolve([]), remove: () => Promise.resolve() }}
-      groups={{ list: () => Promise.resolve([]) }}
-      onApplyGroupSettings={() => {}}
+      scopes={{ list: () => Promise.resolve(scopeTree([])), remove: () => Promise.resolve() }}
+      onApplyScopeSettings={() => {}}
       examples={[]}
       order="name"
       onOrderChange={() => {}}

@@ -23,7 +23,7 @@ const sheet: DesignDiagram = {
 };
 const other: DesignDiagram = laidOut({ id: 'd2', kind: 'layer7', name: 'Target', placements: [] });
 const model: DesignModel = {
-  name: 'Design', customerName: 'Group', elements: [], relations: [], diagrams: [board, other, sheet],
+  name: 'Design', elements: [], relations: [], diagrams: [board, other, sheet],
 };
 
 function renderToolbar(props: {

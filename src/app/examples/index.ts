@@ -1,5 +1,5 @@
 /**
- * The example projects that ship with the app.
+ * The example organisations that ship with the app.
  *
  * **Fictional, and that is a rule rather than a preference.** A real customer's
  * landscape used to ship here — it was once "the shipped document", loaded at
@@ -7,9 +7,10 @@
  * carries one client's architecture to everybody else, and the first screen a
  * new user sees is somebody else's business. Whatever ships here is invented.
  *
- * An example is one entry in a catalogue. Opening one copies it into a real
- * project under its own group; from that moment it is theirs and nothing here is
- * involved again. Adding one is a JSON file and one entry below.
+ * An example is one entry in a catalogue. Opening one copies it into scopes of
+ * the person's own, under the path the entry names; from that moment they are
+ * theirs and nothing here is involved again. Adding one is a JSON file and one
+ * entry below.
  *
  * It has to be *good*, too. It is the first thing anyone opens, and a thin
  * example makes the tool look thin — so the shipped one is a landscape with
@@ -17,8 +18,16 @@
  * groups, aspects that are not all green, a system that is visibly on its way
  * out, and a container view under one of the applications.
  *
- * Examples are data, not configuration: the group and project keys are where a
- * copy lands by default, not a statement about who runs this app.
+ * Examples are data, not configuration: the path is where a copy lands by
+ * default, not a statement about who runs this app.
+
+ * **An example is a tree.** Since format 5 the shipped one is two scopes — the
+ * organisation, which carries its name and what it is, and the landscape under
+ * it, which carries the model. The model is NOT split between them: every
+ * `supports` and `assigned` row joining a capability to an application would
+ * then dangle at one end, and the stand-ins that make a cross-scope id resolve
+ * are ADR-0012 §2's, which is beta 3. So the split here is the one that costs
+ * nothing: a name above a document.
  *
  * **An example is a project folder, not an interchange document.** It was the
  * latter until format 4, and the interchange is a contract with other tools
@@ -35,15 +44,17 @@
  * file, no build-tool features, and the reader is the format's own.
  */
 import { stableJson } from '../../projects/fileText'
-import { projectFromFolder } from '../../projects/folderFormat'
+import { SCOPE_FILE, scopeFromFolder } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
-import type { ProjectSnapshot } from '../../projects/project'
+import type { ScopeSnapshot } from '../../projects/scope'
+import { joinScope } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import acmeLogistics from './acme-logistics.json'
 
 /**
- * A project folder, as JSON: an object for each `.json` file it holds, and the
- * lines of each `.md` file.
+ * A scope's folder, as JSON: an object for each `.json` file it holds, and the
+ * lines of each `.md` file — and, since format 5, the scopes filed under it,
+ * whose files are simply deeper paths in the same map.
  */
 export type ExampleFolder = Record<string, unknown>
 
@@ -75,19 +86,42 @@ export function exampleFiles(example: ExampleProject): FolderFile[] {
 }
 
 /**
- * The example as a project of one's own, filed where the entry says.
+ * The scopes the example holds, parents first, filed under where the entry
+ * says.
  *
- * `undefined` would mean a shipped example this build cannot read, which
+ * A tree rather than one document since format 5: an example is a folder like
+ * any other, and a folder inside it that has a `scope.json` is a scope inside
+ * it. Parents first so a copy that is interrupted leaves a tree that is whole
+ * as far as it got.
+ *
+ * An empty answer would mean a shipped example this build cannot read, which
  * `examples.test.ts` is there to make impossible.
  */
-export function exampleProject(example: ExampleProject): ProjectSnapshot | undefined {
-  return projectFromFolder(exampleFiles(example), example.path)
+export function exampleScopes(example: ExampleProject): ScopeSnapshot[] {
+  const files = exampleFiles(example)
+  const within = [...new Set(files
+    .filter((file) => file.path.endsWith(SCOPE_FILE))
+    .map((file) => file.path.slice(0, -SCOPE_FILE.length).replace(/\/$/, '')))]
+    .sort()
+  return within.flatMap((prefix) => {
+    const inside = files
+      .filter((file) => (prefix === '' ? true : file.path.startsWith(`${prefix}/`)))
+      .filter((file) => !within.some((other) =>
+        other !== prefix && other.length > prefix.length
+        && file.path.startsWith(`${other}/`)))
+      .map((file) => ({
+        ...file,
+        path: prefix === '' ? file.path : file.path.slice(prefix.length + 1),
+      }))
+    const scope = scopeFromFolder(inside, prefix === '' ? example.path : joinScope(example.path, prefix))
+    return scope ? [scope] : []
+  })
 }
 
 export const EXAMPLES: readonly ExampleProject[] = [
   {
     key: 'acme-logistics',
-    path: 'acme-logistics/application-landscape',
+    path: 'acme-logistics',
     label: 'Acme Logistics · application landscape',
     description: 'A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.',
     folder: acmeLogistics,

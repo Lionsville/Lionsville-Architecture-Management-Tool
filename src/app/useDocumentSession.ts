@@ -24,10 +24,10 @@ import {
   AUTOSAVE_IDLE_MS, documentSession, hasUnsavedWork, openSession, shouldSaveNow,
 } from '../projects/documentSession'
 import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/documentSession'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { StorageNotice } from './useStorageNotice'
-import type { StoragePressure } from '../ports/ProjectStore'
+import type { StoragePressure } from '../ports/ScopeStore'
 
 /**
  * What this hook needs from a store: writing it out. Nothing else.
@@ -37,13 +37,13 @@ import type { StoragePressure } from '../ports/ProjectStore'
  * The project carries its own ref, so there is no second argument to get wrong.
  */
 export type ProjectSaver = {
-  save(project: ProjectSnapshot): Promise<void>
+  save(project: ScopeSnapshot): Promise<void>
   /**
    * Reading is here for one reason only: taking their version. The alternative
    * is the workspace loading the project itself and telling the machine
    * afterwards, which puts a transition somewhere it cannot be tested.
    */
-  load?(path: ScopePath): Promise<ProjectSnapshot | undefined>
+  load?(path: ScopePath): Promise<ScopeSnapshot | undefined>
   /**
    * How full it is, where it can say — see `ports/ProjectStore`. Read after a
    * save rather than before one: the number that matters is what the write it
@@ -59,7 +59,7 @@ export type SavableSession = {
   activeDiagramId: string
   logoLibrary: unknown
   /** The project as it stands NOW — asked at save time, never at render time. */
-  snapshot: () => ProjectSnapshot
+  snapshot: () => ScopeSnapshot
 }
 
 export type DocumentSessionHook = {
@@ -104,7 +104,7 @@ export function useDocumentSession(deps: {
    */
   watch?: (onChanged: () => void) => () => void
   /** Their version, once it has been read. The caller puts it on screen. */
-  onAdopt?: (project: ProjectSnapshot) => void
+  onAdopt?: (project: ScopeSnapshot) => void
   /**
    * Is there work that closing the window would lose?
    *

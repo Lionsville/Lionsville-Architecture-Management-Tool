@@ -8,8 +8,8 @@
  * This binds the folder, turns a ref into the path the project sits at, and
  * turns the files at a commit back into a project.
  */
-import { openProjectFolder } from '../../projects/migrate3to4'
-import type { ProjectSnapshot } from '../../projects/project'
+import { openScopeFolder } from '../../projects/migrate4to5'
+import type { ScopeSnapshot } from '../../projects/scope'
 import { scopeFilePath } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
@@ -66,12 +66,12 @@ export class DesktopProjectHistory implements ProjectHistory {
     return this.git.label(this.root, entry, name)
   }
 
-  async projectAt(path: ScopePath, entry: string): Promise<ProjectSnapshot | undefined> {
+  async projectAt(path: ScopePath, entry: string): Promise<ScopeSnapshot | undefined> {
     const files = await this.git.filesAt(this.root, entry, path)
     if (files.length === 0) return undefined
     // The marks are not read back (a bitmap is not text and a diff of the
     // architecture does not want one), so the project that comes out has the
     // folder's shape and no logo library. Comparing models is what it is for.
-    return openProjectFolder(files, path)
+    return openScopeFolder(files, path)
   }
 }

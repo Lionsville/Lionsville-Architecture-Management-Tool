@@ -37,7 +37,7 @@ function diagram(overrides: Partial<V3Diagram> = {}): DesignDiagram {
 }
 
 function model(el: DesignElement, dia: DesignDiagram): DesignModel {
-  return { name: 'SD', customerName: 'ACME', diagrams: [dia], elements: [el], relations: [] };
+  return { name: 'SD', diagrams: [dia], elements: [el], relations: [] };
 }
 
 /**

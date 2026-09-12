@@ -14,9 +14,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryProjectHistory } from '../../adapters/memory/InMemoryProjectHistory'
-import { InMemoryProjectStore } from '../../adapters/memory/InMemoryProjectStore'
+import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import type { HostModel } from '../../model/fromInterchange'
-import type { ProjectSnapshot } from '../../projects/project'
+import type { ScopeSnapshot } from '../../projects/scope'
 import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
 import { renderApp } from '../testing/renderShell'
 
@@ -49,14 +49,13 @@ afterEach(() => cleanup())
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [],
   relations: [],
   diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   ...over,
 })
 
-const project = (): ProjectSnapshot => ({
+const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: model(),
   activeDiagramId: 'd1',
@@ -83,8 +82,8 @@ function fakeHistory(over: Omit<Partial<ProjectHistory>, 'entries'> & { entries?
 }
 
 function show(history?: ProjectHistory) {
-  const projects = new InMemoryProjectStore([project()])
-  return { ...renderApp({ projects, initialProject: project(), history }), projects }
+  const projects = new InMemoryScopeStore([project()])
+  return { ...renderApp({ scopes: projects, initialProject: project(), history }), projects }
 }
 
 /**
@@ -245,7 +244,7 @@ describe('reading one back', () => {
   it('gives the window something to be dragged by, as every full page must', async () => {
     const held = fakeHistory({ keeping: () => Promise.resolve(true) })
     renderApp({
-      projects: new InMemoryProjectStore([project()]),
+      scopes: new InMemoryScopeStore([project()]),
       initialProject: project(),
       history: held.history,
       windowChrome: { draggable: true, controlsInset: 78 },
@@ -272,7 +271,7 @@ describe('the history of one thing (ADR-0008)', () => {
       id: 'adr-1', number: 1, title: 'One writer', status: 'proposed', date: '2026-09-01', body: 'Why.', signers: [],
     }],
   })
-  const withDescribed = (): ProjectSnapshot => ({ ...project(), model: described() })
+  const withDescribed = (): ScopeSnapshot => ({ ...project(), model: described() })
 
   /** Three snapshots: one touched the diagram, one the description, one the decision. */
   const threeSnapshots = () => new InMemoryProjectHistory([
@@ -294,8 +293,8 @@ describe('the history of one thing (ADR-0008)', () => {
   ])
 
   function showDescribed(history: InMemoryProjectHistory) {
-    const projects = new InMemoryProjectStore([withDescribed()])
-    return renderApp({ projects, initialProject: withDescribed(), history })
+    const projects = new InMemoryScopeStore([withDescribed()])
+    return renderApp({ scopes: projects, initialProject: withDescribed(), history })
   }
 
   it('opens on a diagram from its tab, listing only the snapshots that touched it', async () => {
@@ -349,7 +348,7 @@ describe('going back, as going forward (ADR-0008)', () => {
   const pad = (n: number) => String(n).padStart(2, '0')
   const asOf = `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`
 
-  const before = (over: Partial<HostModel> = {}): ProjectSnapshot => ({
+  const before = (over: Partial<HostModel> = {}): ScopeSnapshot => ({
     ...project(),
     model: model({
       diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] })],
@@ -357,13 +356,13 @@ describe('going back, as going forward (ADR-0008)', () => {
       ...over,
     }),
   })
-  const oneSnapshot = (held: ProjectSnapshot = before()) => new InMemoryProjectHistory([{
+  const oneSnapshot = (held: ScopeSnapshot = before()) => new InMemoryProjectHistory([{
     id: 'c1', subject: 'Before the mess', at, author: 'W.',
     touched: ['acme/landscape/diagrams/d1.json', 'acme/landscape/decisions/0001-one-writer.md'],
     projects: [held],
   }])
 
-  const now = (over: Partial<HostModel> = {}): ProjectSnapshot => ({
+  const now = (over: Partial<HostModel> = {}): ScopeSnapshot => ({
     ...project(),
     model: model({
       decisions: [{ id: 'adr-1', number: 1, title: 'One writer', status: 'accepted', date: '2026-09-02', body: 'Final.', signers: [] }],
@@ -378,8 +377,8 @@ describe('going back, as going forward (ADR-0008)', () => {
 
   it('restores one diagram as a new step: named in the Activity list, undoable, and offered a snapshot', async () => {
     const history = oneSnapshot()
-    const projects = new InMemoryProjectStore([now()])
-    renderApp({ projects, initialProject: now(), history })
+    const projects = new InMemoryScopeStore([now()])
+    renderApp({ scopes: projects, initialProject: now(), history })
     await openHistoryOfTheDiagram()
     fireEvent.click(screen.getByRole('button', { name: 'Restore this version…' }))
     // The copy says what a restore is before the first one is taken.
@@ -409,7 +408,7 @@ describe('going back, as going forward (ADR-0008)', () => {
 
   it('refuses to restore a locked decision, and says why', async () => {
     const history = oneSnapshot()
-    renderApp({ projects: new InMemoryProjectStore([now()]), initialProject: now(), history })
+    renderApp({ scopes: new InMemoryScopeStore([now()]), initialProject: now(), history })
     fireEvent.click(screen.getByText('Decisions'))
     fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('One writer'))
     fireEvent.click(within(await screen.findByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
@@ -426,7 +425,7 @@ describe('going back, as going forward (ADR-0008)', () => {
 
   it('restores the whole project behind its own confirm', async () => {
     const history = oneSnapshot(before({ decisions: [] }))
-    renderApp({ projects: new InMemoryProjectStore([now({ decisions: [] })]), initialProject: now({ decisions: [] }), history })
+    renderApp({ scopes: new InMemoryScopeStore([now({ decisions: [] })]), initialProject: now({ decisions: [] }), history })
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))

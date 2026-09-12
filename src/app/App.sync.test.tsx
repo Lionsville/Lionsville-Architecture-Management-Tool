@@ -11,10 +11,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncSide } from '../platform/sync'
 import type { LocalSettings } from '../projects/folderSettings'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { renderApp } from './testing/renderShell'
@@ -26,10 +26,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => cleanup())
 
-const project = (name = 'Landscape'): ProjectSnapshot => ({
+const project = (name = 'Landscape'): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
-    name, customerName: 'Acme', elements: [], relations: [],
+    name, elements: [], relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
@@ -101,8 +101,8 @@ const pushing = folderSettings({ git: { pullOnOpen: false, pushAfterSnapshot: tr
 const quiet = folderSettings({ git: { pullOnOpen: false, pushAfterSnapshot: false } })
 
 function show(over: Parameters<typeof renderApp>[0] = {}) {
-  const projects = new InMemoryProjectStore([project()])
-  return { ...renderApp({ projects, initialProject: project(), ...over }), projects }
+  const projects = new InMemoryScopeStore([project()])
+  return { ...renderApp({ scopes: projects, initialProject: project(), ...over }), projects }
 }
 
 /** Everything the fakes have queued, carried out and drawn. */

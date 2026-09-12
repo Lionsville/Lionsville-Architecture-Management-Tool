@@ -13,17 +13,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
-import type { ProjectSnapshot } from '../projects/project'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
 
-const project = (): ProjectSnapshot => ({
+const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
     name: 'Landscape',
-    customerName: 'Acme',
     elements: [],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
@@ -35,7 +34,7 @@ const project = (): ProjectSnapshot => ({
 describe('a desktop with no folder yet', () => {
   it('asks for one instead of listing projects kept inside the app', () => {
     renderApp({
-      projects: new InMemoryProjectStore([project()]),
+      scopes: new InMemoryScopeStore([project()]),
       onChooseWorkingDirectory: () => {},
       needsFolder: true,
       source: { kind: 'browserStorage' },
@@ -70,7 +69,7 @@ describe('a desktop with no folder yet', () => {
 describe('once there is a folder', () => {
   it('goes back to being the app', () => {
     renderApp({
-      projects: new InMemoryProjectStore([project()]),
+      scopes: new InMemoryScopeStore([project()]),
       onChooseWorkingDirectory: () => {},
       needsFolder: true,
       source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' },
@@ -83,7 +82,7 @@ describe('once there is a folder', () => {
 
 describe('a browser tab', () => {
   it('never sees the question, because it cannot answer it', () => {
-    renderApp({ projects: new InMemoryProjectStore([project()]) })
+    renderApp({ scopes: new InMemoryScopeStore([project()]) })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     expect(screen.getByText('Projects')).toBeDefined()
@@ -92,7 +91,7 @@ describe('a browser tab', () => {
   it('is offered a folder where the browser has one, and never made to choose', () => {
     // Chromium can hand a page a real directory; a tab that can have a folder
     // is still a tab that works perfectly well without one.
-    renderApp({ projects: new InMemoryProjectStore([project()]), onChooseWorkingDirectory: () => {} })
+    renderApp({ scopes: new InMemoryScopeStore([project()]), onChooseWorkingDirectory: () => {} })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     expect(screen.getByTestId('working-directory').textContent).toContain('inside the app')

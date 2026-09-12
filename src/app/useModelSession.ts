@@ -25,7 +25,7 @@ import { idPolicy } from '../model/keys'
 import type { IdPolicy } from '../model/keys'
 import { needsRemount } from '../model/hostModel'
 import type { HostModel } from '../model/fromInterchange'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { Notify } from './useToasts'
 
 /**
@@ -123,13 +123,13 @@ export type ModelSession = {
   /** The pictures as they stand now, without waiting for a render. */
   currentImages: () => DocumentImage[]
   /** The project as it stands now, ready to be saved. */
-  snapshot: () => ProjectSnapshot
+  snapshot: () => ScopeSnapshot
   /** Take on an entirely different document: an opened file, or the shipped one. */
-  adopt: (project: ProjectSnapshot, relayout: boolean) => void
+  adopt: (project: ScopeSnapshot, relayout: boolean) => void
 }
 
 export function useModelSession(deps: {
-  initialProject: ProjectSnapshot
+  initialProject: ScopeSnapshot
   notify: Notify
   s: Translate
 }): ModelSession {
@@ -316,13 +316,13 @@ export function useModelSession(deps: {
    * project's edits onto another.
    */
   const path = initialProject.path
-  const snapshot = useCallback((): ProjectSnapshot => ({
+  const snapshot = useCallback((): ScopeSnapshot => ({
     path,
     model: toArrays(modelRef.current),
     activeDiagramId: activeRef.current,
     logoLibrary: logoRef.current,
     // Absent rather than empty, so a project with no pictures is written back
-    // as the project it was read as — see `ProjectSnapshot.imageLibrary`.
+    // as the project it was read as — see `ScopeSnapshot.imageLibrary`.
     ...(imageRef.current.length ? { imageLibrary: imageRef.current } : {}),
   }), [path])
 

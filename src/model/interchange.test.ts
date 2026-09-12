@@ -26,7 +26,6 @@ import type { HostModel, InterchangeDoc } from './fromInterchange'
 import type { DesignElement, ElementKind } from './types'
 import { toInterchange } from './toInterchange'
 
-const GROUP_NAME = 'Acme Logistics'
 
 /**
  * Find or fail. The document's types are no longer `any`, so `find` returns
@@ -64,7 +63,7 @@ function sortKeys(value: unknown): unknown {
   return value
 }
 
-const roundTrip = (input: InterchangeDoc) => toInterchange(fromInterchange(input, GROUP_NAME)).doc
+const roundTrip = (input: InterchangeDoc) => toInterchange(fromInterchange(input)).doc
 
 describe('fromInterchange → toInterchange on a whole document', () => {
   it('comes back deep-equal (compared on sorted keys)', () => {
@@ -110,9 +109,8 @@ describe('fromInterchange → toInterchange on a whole document', () => {
   })
 
   it('drops nothing from the model side either: every element is placed as before', () => {
-    const model = fromInterchange(source, GROUP_NAME)
+    const model = fromInterchange(source)
 
-    expect(model.customerName).toBe(GROUP_NAME)
     expect(model.diagrams.every((d) => d.geometry?.needsLayout)).toBe(true)
     // the document carries no geometry, so every placement starts at the origin
     expect(model.diagrams.every((d) => placedNodes(d).every((p) => p.x === 0 && p.y === 0))).toBe(true)
@@ -200,7 +198,7 @@ describe('fromInterchange → toInterchange on a synthetic document', () => {
   it('speaks up when the value drifts from the default, even unasked', () => {
     // 'stil' never mentioned its lifecycle; change it in the model and the
     // export must carry it — otherwise the edit would silently vanish
-    const model = fromInterchange(synthetic, GROUP_NAME)
+    const model = fromInterchange(synthetic)
     model.elements = model.elements.map((e) =>
       e.id === 'stil' ? { ...e, lifecycle: 'retiring' as const, isManaged: false } : e)
 
@@ -272,7 +270,7 @@ describe('iconType', () => {
   })
 
   it('reads it onto the element as iconKey', () => {
-    const model = fromInterchange(withIcons, GROUP_NAME)
+    const model = fromInterchange(withIcons)
     const byKey = (key: string) => model.elements.find((e) => e.id === key)
 
     expect(byKey('kern')?.iconKey).toBe('database')
@@ -289,7 +287,7 @@ describe('iconType', () => {
   })
 
   it('writes a built-in key the editor just set, unasked', () => {
-    const model = fromInterchange(withIcons, GROUP_NAME)
+    const model = fromInterchange(withIcons)
     model.elements = model.elements.map((e) =>
       e.id === 'kaal' ? { ...e, iconKey: 'database' } : e)
 
@@ -301,7 +299,7 @@ describe('iconType', () => {
   it('never writes an uploaded (lib:) key — that one lives in the working file', () => {
     // A data URL in someone's browser is neither topology nor semantics, and a
     // reviewer of this document could not resolve it anyway.
-    const model = fromInterchange(withIcons, GROUP_NAME)
+    const model = fromInterchange(withIcons)
     model.elements = model.elements.map((e) =>
       e.id === 'kern' ? { ...e, iconKey: 'lib:eigen-merk' } : e)
 
@@ -314,7 +312,7 @@ describe('iconType', () => {
     // Nothing in the editor can produce one, so if it appears it is corruption
     // rather than a document from another tool — and the source is the only
     // evidence that would justify writing it back.
-    const model = fromInterchange(withIcons, GROUP_NAME)
+    const model = fromInterchange(withIcons)
     model.elements = model.elements.map((e) =>
       e.id === 'kaal' ? { ...e, iconKey: 'verzonnen' } : e)
 
@@ -451,7 +449,7 @@ describe('project-wide defaults', () => {
   }
 
   it('reads them off the design block and writes them back', () => {
-    const model = fromInterchange(doc, GROUP_NAME)
+    const model = fromInterchange(doc)
     expect(model.defaultAuthor).toBe('W. Simons')
     expect(model.defaultAspectConfig).toEqual([{ key: 'dr', label: 'Continuity', code: 'CONT' }])
     expect(toInterchange(model).doc.design).toMatchObject({
@@ -461,7 +459,7 @@ describe('project-wide defaults', () => {
   })
 
   it('says nothing about them when the source said nothing', () => {
-    const out = toInterchange(fromInterchange({ ...doc, design: { name: 'Klein' } }, GROUP_NAME)).doc
+    const out = toInterchange(fromInterchange({ ...doc, design: { name: 'Klein' } })).doc
     expect('author' in out.design).toBe(false)
     expect('aspectConfig' in out.design).toBe(false)
   })
@@ -489,7 +487,7 @@ describe('what an export leaves behind (ADR-0012 §4, §5)', () => {
         key: 'l7', kind: 'layer7', name: 'Landschap',
         places: [{ elementKey: 'wms' }, { elementKey: 'portal', zone: 'inputChannels' }],
       }],
-    }, GROUP_NAME)
+    })
     // A journey and the capabilities under it, and the rows that cover them.
     model.elements = [
       ...model.elements,
@@ -520,7 +518,7 @@ describe('what an export leaves behind (ADR-0012 §4, §5)', () => {
   })
 
   it('says nothing at all about a landscape that has no business layer on it', () => {
-    const { omitted } = toInterchange(fromInterchange(source, GROUP_NAME))
+    const { omitted } = toInterchange(fromInterchange(source))
     expect(omitted).toEqual({ relations: [], elements: [] })
   })
 })

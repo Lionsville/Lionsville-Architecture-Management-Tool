@@ -35,7 +35,6 @@ const decision = (id: string, number: number, title: string, status: Adr['status
 
 const host: HostModel = {
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [
     element('billing', 'Billing'),
     element('crm', 'CRM'),
@@ -67,6 +66,7 @@ function view(model: Model, over: Partial<WriteView> = {}): WriteView {
     model,
     current: () => toArrays(model),
     activeDiagramId: 'l7',
+    scopePath: 'acme/landscape',
     groupDecisions: [decision('g-1', 1, 'One identity provider')],
     ids: idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams]),
     makeId: (prefix) => `${prefix}-new-${++counter}`,

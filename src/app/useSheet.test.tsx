@@ -16,7 +16,7 @@ import { laidOut } from '../model/testFixtures'
 import { translator } from '../i18n'
 import { shippingScope } from '../business/testFixtures'
 import type { HostModel } from '../model/fromInterchange'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { useModelSession } from './useModelSession'
 import type { ModelSession } from './useModelSession'
 import { useSheet } from './useSheet'
@@ -28,7 +28,6 @@ const model = (over: Partial<HostModel> = {}): HostModel => {
   const { elements, relations } = shippingScope()
   return {
     name: 'Landscape',
-    customerName: 'Acme',
     elements,
     relations,
     // The warehouse system is ON the board, because where a coverage link
@@ -40,7 +39,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => {
   }
 }
 
-const project = (m: HostModel = model()): ProjectSnapshot => ({
+const project = (m: HostModel = model()): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: m,
   activeDiagramId: 'd1',

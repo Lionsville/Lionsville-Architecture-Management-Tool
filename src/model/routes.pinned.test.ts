@@ -19,7 +19,6 @@ const MARKER: EdgeRoute = { relationId: 'c1', waypoints: [], labelPosition: unde
 function model(routes?: EdgeRoute[]): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['e1', 'e2'].map((id) => ({
       id,
       kind: 'application' as const,

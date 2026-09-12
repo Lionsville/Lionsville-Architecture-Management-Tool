@@ -34,7 +34,6 @@ function place(id: string, x = 0, y = 0): PlacedNode {
 function model(over: Partial<HostModel> = {}): HostModel {
   return {
     name: 'Acme Logistics',
-    customerName: 'Acme Logistics',
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
     relations: [connection('c#1', 'crews', 'reisinfo')],
     diagrams: [

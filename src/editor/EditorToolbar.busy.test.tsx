@@ -19,7 +19,6 @@ afterEach(() => cleanup());
 const diagram: DesignDiagram = laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] });
 const model: DesignModel = {
   name: 'ACME',
-  customerName: 'ACME',
   elements: [],
   relations: [],
   diagrams: [diagram],

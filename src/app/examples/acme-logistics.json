@@ -1,5 +1,5 @@
 {
-  "decisions/0001-one-place-where-a-price-is-decided.md": [
+  "application-landscape/decisions/0001-one-place-where-a-price-is-decided.md": [
     "---",
     "id: adr-one-price",
     "number: 1",
@@ -38,7 +38,7 @@
     "- Rounding follows the tariff engine from the first moved contract, and the affected customers are told.",
     ""
   ],
-  "decisions/0002-buy-a-yard-system-rather-than-extend-the-warehouse-system.md": [
+  "application-landscape/decisions/0002-buy-a-yard-system-rather-than-extend-the-warehouse-system.md": [
     "---",
     "id: adr-buy-yard",
     "number: 2",
@@ -82,10 +82,10 @@
     "- The warehouse system stops booking dock doors once the yard system does; until then both do, which is the plan's shadow run.",
     ""
   ],
-  "diagrams/business-architecture.geometry.json": {
+  "application-landscape/diagrams/business-architecture.geometry.json": {
     "nodes": []
   },
-  "diagrams/business-architecture.json": {
+  "application-landscape/diagrams/business-architecture.json": {
     "areas": [
       "commercial",
       "operations",
@@ -104,11 +104,11 @@
     "name": "Business architecture",
     "showActors": true
   },
-  "diagrams/landscape-2027.geometry.json": {
+  "application-landscape/diagrams/landscape-2027.geometry.json": {
     "needsLayout": true,
     "nodes": []
   },
-  "diagrams/landscape-2027.json": {
+  "application-landscape/diagrams/landscape-2027.json": {
     "asOf": "2027-09-01",
     "aspectConfig": [
       {
@@ -268,11 +268,11 @@
     ],
     "name": "Landscape in 2027"
   },
-  "diagrams/landscape.geometry.json": {
+  "application-landscape/diagrams/landscape.geometry.json": {
     "needsLayout": true,
     "nodes": []
   },
-  "diagrams/landscape.json": {
+  "application-landscape/diagrams/landscape.json": {
     "aspectConfig": [
       {
         "key": "monitoring",
@@ -431,11 +431,11 @@
     ],
     "name": "Application landscape"
   },
-  "diagrams/wms-containers.geometry.json": {
+  "application-landscape/diagrams/wms-containers.geometry.json": {
     "needsLayout": true,
     "nodes": []
   },
-  "diagrams/wms-containers.json": {
+  "application-landscape/diagrams/wms-containers.json": {
     "applicationElementId": "wms",
     "id": "wms-containers",
     "kind": "container",
@@ -482,171 +482,171 @@
     ],
     "name": "Warehouse Management · containers"
   },
-  "docs/assets-and-fleet.md": [
+  "application-landscape/docs/assets-and-fleet.md": [
     "The trucks, the trailers and the people licensed to drive them.",
     ""
   ],
-  "docs/billing.md": [
+  "application-landscape/docs/billing.md": [
     "Invoices what was delivered, from the order and the tariff that applied on the day.",
     ""
   ],
-  "docs/commercial.md": [
+  "application-landscape/docs/commercial.md": [
     "Winning the work and keeping it: rates, contracts, and the customers they belong to.",
     ""
   ],
-  "docs/customer-master.md": [
+  "application-landscape/docs/customer-master.md": [
     "One record per customer and site, and the addresses everything else trusts.",
     ""
   ],
-  "docs/customer-portal.md": [
+  "application-landscape/docs/customer-portal.md": [
     "Booking, documents and track & trace for contract customers.",
     ""
   ],
-  "docs/customs.md": [
+  "application-landscape/docs/customs.md": [
     "National customs filing. Rejections arrive hours later, by message.",
     ""
   ],
-  "docs/dispatch.md": [
+  "application-landscape/docs/dispatch.md": [
     "The live picture: who is driving what, and what has gone wrong since the plan was made.",
     ""
   ],
-  "docs/dispatcher.md": [
+  "application-landscape/docs/dispatcher.md": [
     "Runs the day as it actually happens — reassigns, reroutes, explains.",
     ""
   ],
-  "docs/driver-app.md": [
+  "application-landscape/docs/driver-app.md": [
     "Run sheet, proof of delivery, exceptions. Offline for hours at a time.",
     ""
   ],
-  "docs/edi-intake.md": [
+  "application-landscape/docs/edi-intake.md": [
     "Orders from customers who will never use a portal. Mostly EDIFACT.",
     ""
   ],
-  "docs/finance.md": [
+  "application-landscape/docs/finance.md": [
     "Rating what was moved, billing it, and collecting it.",
     ""
   ],
-  "docs/fleet-register.md": [
+  "application-landscape/docs/fleet-register.md": [
     "Vehicles, trailers, telematics units and who is allowed to drive what.",
     ""
   ],
-  "docs/generic-services.md": [
+  "application-landscape/docs/generic-services.md": [
     "What every area uses and none of them owns: identity, integration, workplace, data.",
     ""
   ],
-  "docs/iam.md": [
+  "application-landscape/docs/iam.md": [
     "Single sign-on and the roles behind every screen above.",
     ""
   ],
-  "docs/key-accounts.md": [
+  "application-landscape/docs/key-accounts.md": [
     "Contract customers with a named manager and a frame agreement. They scope by project and invoice by milestone.",
     ""
   ],
-  "docs/legacy-rating.md": [
+  "application-landscape/docs/legacy-rating.md": [
     "The rating rules the tariff engine has not absorbed yet. Two customers still price here.",
     ""
   ],
-  "docs/marketplace-partner.md": [
+  "application-landscape/docs/marketplace-partner.md": [
     "Sells Acme capacity through its own channel and fulfils part of it from its own DC. Outside the organisation, inside the journey.",
     ""
   ],
-  "docs/observability.md": [
+  "application-landscape/docs/observability.md": [
     "Metrics, logs and traces for everything that has been onboarded.",
     ""
   ],
-  "docs/operations.md": [
+  "application-landscape/docs/operations.md": [
     "Planning the day and moving the freight. The part of the business that runs on time or does not.",
     ""
   ],
-  "docs/order-management.md": [
+  "application-landscape/docs/order-management.md": [
     "The order of record from booking to invoice hand-off. Everything downstream reads its status.",
     ""
   ],
-  "docs/partner-carriers.md": [
+  "application-landscape/docs/partner-carriers.md": [
     "Subcontracted runs. Each one integrates slightly differently.",
     ""
   ],
-  "docs/payments.md": [
+  "application-landscape/docs/payments.md": [
     "Collects on invoices and reports back what settled.",
     ""
   ],
-  "docs/planner.md": [
+  "application-landscape/docs/planner.md": [
     "Builds the daily plan: which load goes on which run, and when.",
     ""
   ],
-  "docs/route-optimiser.md": [
+  "application-landscape/docs/route-optimiser.md": [
     "Turns tomorrow’s orders into runs. Solves overnight; a re-solve during the day is manual.",
     ""
   ],
-  "docs/scanners.md": [
+  "application-landscape/docs/scanners.md": [
     "Every scan in the warehouse and at the dock door.",
     ""
   ],
-  "docs/ship-a-consignment.md": [
+  "application-landscape/docs/ship-a-consignment.md": [
     "Everything between a rate request and a settled invoice. Most consignments take the common path; two kinds of customer do not.",
     ""
   ],
-  "docs/slotting.md": [
+  "application-landscape/docs/slotting.md": [
     "Decides where stock lives and when to move it forward. Reads WMS, writes tasks back.",
     ""
   ],
-  "docs/support-agent.md": [
+  "application-landscape/docs/support-agent.md": [
     "Answers \"where is my shipment\", and fixes what caused the question.",
     ""
   ],
-  "docs/tariff-engine.md": [
+  "application-landscape/docs/tariff-engine.md": [
     "Contract rates, surcharges and fuel indexation. Changes here move real money.",
     ""
   ],
-  "docs/track-trace.md": [
+  "application-landscape/docs/track-trace.md": [
     "Shipment status for customers and support, assembled from scans and driver events.",
     ""
   ],
-  "docs/traffic-feed.md": [
+  "application-landscape/docs/traffic-feed.md": [
     "Third-party conditions used when planning and re-planning.",
     ""
   ],
-  "docs/warehouse-lead.md": [
+  "application-landscape/docs/warehouse-lead.md": [
     "Owns the floor: labour, dock doors, and what ships tonight.",
     ""
   ],
-  "docs/wms-api.md": [
+  "application-landscape/docs/wms-api.md": [
     "Stock and task queries for everything outside the warehouse.",
     ""
   ],
-  "docs/wms-db.md": [
+  "application-landscape/docs/wms-db.md": [
     "Stock positions and the task ledger.",
     ""
   ],
-  "docs/wms-events.md": [
+  "application-landscape/docs/wms-events.md": [
     "Every stock movement, published once, read by several.",
     ""
   ],
-  "docs/wms-integration.md": [
+  "application-landscape/docs/wms-integration.md": [
     "Talks to order management, slotting and the yard.",
     ""
   ],
-  "docs/wms-scan-service.md": [
+  "application-landscape/docs/wms-scan-service.md": [
     "Absorbs the scan traffic and holds it when the network drops.",
     ""
   ],
-  "docs/wms-task-engine.md": [
+  "application-landscape/docs/wms-task-engine.md": [
     "Turns demand into pick, put-away and replenishment work.",
     ""
   ],
-  "docs/wms-workstation.md": [
+  "application-landscape/docs/wms-workstation.md": [
     "What the warehouse lead and pickers actually look at.",
     ""
   ],
-  "docs/wms.md": [
+  "application-landscape/docs/wms.md": [
     "Stock, tasks and dock doors across three sites. The floor stops when it stops.",
     ""
   ],
-  "docs/yard.md": [
+  "application-landscape/docs/yard.md": [
     "Trailers, doors and time slots on the yard. Bought in, lightly integrated.",
     ""
   ],
-  "model.json": {
+  "application-landscape/model.json": {
     "elements": [
       {
         "aspects": {},
@@ -2953,24 +2953,24 @@
       }
     ]
   },
-  "project.json": {
+  "application-landscape/scope.json": {
+    "type": "lionsville-architecture",
+    "version": 5,
+    "name": "Application landscape",
+    "kind": "landscape",
+    "description": "The applications Acme runs, the business architecture above them, and the plan that replaces the rater.",
     "activeDiagramId": "landscape",
-    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
     "diagrams": [
       "landscape",
       "business-architecture",
       "landscape-2027",
       "wms-containers"
     ],
-    "formatVersion": 4,
-    "groupName": "Acme Logistics",
     "interchange": {
       "formatVersion": "1"
-    },
-    "name": "Acme Logistics",
-    "type": "lionsville-architecture"
+    }
   },
-  "transitions/0001-retire-the-legacy-rater.md": [
+  "application-landscape/transitions/0001-retire-the-legacy-rater.md": [
     "---",
     "id: tr-rating",
     "number: 1",
@@ -3034,7 +3034,7 @@
     "change rather than a release.",
     ""
   ],
-  "transitions/0002-bring-in-yard-management.md": [
+  "application-landscape/transitions/0002-bring-in-yard-management.md": [
     "---",
     "id: tr-yard",
     "number: 2",
@@ -3112,5 +3112,18 @@
     "After the cut-over the spreadsheet is the rollback for a quarter, which is",
     "why the warehouse system keeps its screen until March.",
     ""
-  ]
+  ],
+  "model.json": {
+    "elements": [],
+    "relations": []
+  },
+  "scope.json": {
+    "type": "lionsville-architecture",
+    "version": 5,
+    "name": "Acme Logistics",
+    "kind": "organisation",
+    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
+    "activeDiagramId": "",
+    "diagrams": []
+  }
 }

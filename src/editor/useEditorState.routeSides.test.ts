@@ -15,7 +15,6 @@ import { edgeRoutesOf, manualRouteIds } from '../model/routes';
 function model(routes?: EdgeRoute[], autoRoute = false): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['e1', 'e2', 'e3'].map((id) => ({
       id,
       kind: 'application' as const,

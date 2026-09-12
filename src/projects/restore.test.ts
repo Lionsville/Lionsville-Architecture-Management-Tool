@@ -8,8 +8,8 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { apply, fromArrays, restoreCommand, toArrays } from '../model'
 import type { HostModel } from '../model/fromInterchange'
-import { projectFiles } from './folderFormat'
-import type { ProjectSnapshot } from './project'
+import { scopeFiles } from './folderFormat'
+import type { ScopeSnapshot } from './scope'
 
 const element = (id: string, name: string, description?: string) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {},
@@ -17,7 +17,7 @@ const element = (id: string, name: string, description?: string) => ({
 })
 
 const then: HostModel = {
-  name: 'Landscape', customerName: 'Acme',
+  name: 'Landscape', 
   elements: [element('billing', 'Billing', 'Invoices.'), element('crm', 'CRM')],
   relations: [{ type: 'flow', id: 'c#1', sourceId: 'billing', targetId: 'crm', isBidirectional: false }],
   diagrams: [laidOut({
@@ -29,7 +29,7 @@ const then: HostModel = {
 }
 
 const now: HostModel = {
-  name: 'Renamed', customerName: 'Acme', description: 'Added since.',
+  name: 'Renamed', description: 'Added since.',
   elements: [element('billing', 'Billing', 'Rewritten.'), element('wms', 'WMS')],
   relations: [{ type: 'flow', id: 'c#2', sourceId: 'billing', targetId: 'wms', isBidirectional: true }],
   diagrams: [
@@ -40,8 +40,8 @@ const now: HostModel = {
 }
 
 const files = (model: HostModel) => {
-  const project: ProjectSnapshot = { path: 'acme/landscape', model, activeDiagramId: 'd1', logoLibrary: [] }
-  return projectFiles(project).map((file) => ('text' in file ? `${file.path}\n${file.text}` : file.path))
+  const project: ScopeSnapshot = { path: 'acme/landscape', model, activeDiagramId: 'd1', logoLibrary: [] }
+  return scopeFiles(project).map((file) => ('text' in file ? `${file.path}\n${file.text}` : file.path))
 }
 
 describe('a restore, at the folder', () => {

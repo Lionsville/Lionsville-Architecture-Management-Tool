@@ -21,7 +21,6 @@ const MOD = { ctrlKey: true } as const;
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'a1', zone: 'landscape', x: 100, y: 200 }] })],
     elements: [
       { id: 'a1', kind: 'application', name: 'App', lifecycle: 'live', isManaged: true, aspects: {} },

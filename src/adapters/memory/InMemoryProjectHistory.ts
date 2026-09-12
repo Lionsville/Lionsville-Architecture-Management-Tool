@@ -9,7 +9,7 @@
  * test that says "this snapshot touched `docs/billing.md`" gets exactly the
  * behaviour it declared and nothing it did not.
  */
-import type { ProjectSnapshot } from '../../projects/project'
+import type { ScopeSnapshot } from '../../projects/scope'
 import { scopeFilePath } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { HistoryEntry, HistoryScope, ProjectHistory } from '../../ports/ProjectHistory'
@@ -21,7 +21,7 @@ export type MemorySnapshot = Omit<HistoryEntry, 'labels'> & {
   /** Paths, relative to the root, that this snapshot changed. */
   touched?: readonly string[]
   /** The projects as they stood, by path. Absent means not in the folder then. */
-  projects?: readonly ProjectSnapshot[]
+  projects?: readonly ScopeSnapshot[]
 }
 
 /** A pattern, as git reads one: `*` matches within a name. */
@@ -82,7 +82,7 @@ export class InMemoryProjectHistory implements ProjectHistory {
     return Promise.resolve('done')
   }
 
-  projectAt(path: ScopePath, entry: string): Promise<ProjectSnapshot | undefined> {
+  projectAt(path: ScopePath, entry: string): Promise<ScopeSnapshot | undefined> {
     const held = this.snapshots.find((snapshot) => snapshot.id === entry)
     return Promise.resolve(held?.projects?.find((project) => project.path === path))
   }

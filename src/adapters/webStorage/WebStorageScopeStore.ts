@@ -1,14 +1,15 @@
 /**
- * Projects in the browser's storage, one key each.
+ * Scopes in the browser's storage, one key each.
  *
- * One key per project rather than one blob holding all of them: the blob would
+ * One key per scope rather than one blob holding all of them: the blob would
  * have to be rewritten in full on every autosave, and a quota failure while
- * saving one project would take every other project down with it. Separate keys
- * mean a project can only ever damage itself.
+ * saving one scope would take every other scope down with it. Separate keys
+ * mean a scope can only ever damage itself.
  *
- * The key is the address itself (`lvarch.project.<path>`), so `list()` is a
- * prefix scan and a store that keeps projects in folders uses the same string
- * as its path.
+ * The key is the address itself (`lvarch.scope.<path>`), so `list()` is a
+ * prefix scan and a store that keeps scopes in folders uses the same string as
+ * its path. The root's path is empty, so the root's key is the bare prefix —
+ * which is exactly right: a tab has one working tree, and that is its root.
  *
  * **Corrupt storage is a skipped entry, not an error.** Half-written JSON, a key
  * from an older version, something a human edited by hand: there is nothing the
@@ -19,15 +20,15 @@
  */
 import { ShellError } from '../../platform/errors'
 import { isBeforeFormat4, migrateModel } from '../../projects/migrate3to4'
-import { isUsableProject, sortProjects, summarise } from '../../projects/project'
-import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
-import { isSafeScopePath } from '../../projects/scopePath'
+import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
+import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import type { ProjectStore, StoragePressure } from '../../ports/ProjectStore'
+import type { ScopeStore, StoragePressure } from '../../ports/ScopeStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 
 /**
- * The prefix every project key carries.
+ * The prefix every scope key carries.
  *
  * `lvarch`, not a customer's name. It used to carry one — invisible to
  * anyone using the tool, and therefore the last place the old assumption could
@@ -37,7 +38,7 @@ import type { KeyValueStorage } from './KeyValueStorage'
  * and a migration for a tool still in development outlives its usefulness by
  * years.
  */
-export const PROJECT_PREFIX = 'lvarch.project.'
+export const SCOPE_PREFIX = 'lvarch.scope.'
 
 /**
  * What this store will hold, near enough.
@@ -49,8 +50,8 @@ export const PROJECT_PREFIX = 'lvarch.project.'
  * little pessimistic warns slightly early, which is the right direction to be
  * wrong in.
  *
- * The quota is shared with everything else on the origin — preferences, the
- * group records, whatever a future feature keeps here — so what this counts is
+ * The quota is shared with everything else on the origin — the preferences,
+ * whatever a future feature keeps here — so what this counts is
  * a floor on the usage rather than the whole of it.
  */
 export const STORAGE_BUDGET_CHARS = 2_500_000
@@ -58,12 +59,12 @@ export const STORAGE_BUDGET_CHARS = 2_500_000
 /** Where a warning is worth giving: enough room left to finish the afternoon. */
 export const STORAGE_WARNING_FRACTION = 0.8
 
-export class WebStorageProjectStore implements ProjectStore {
+export class WebStorageScopeStore implements ScopeStore {
   readonly id = 'browser-storage'
 
   constructor(
     private readonly storage: KeyValueStorage,
-    private readonly prefix: string = PROJECT_PREFIX,
+    private readonly prefix: string = SCOPE_PREFIX,
   ) {}
 
   private keyFor(path: ScopePath): string {
@@ -74,7 +75,7 @@ export class WebStorageProjectStore implements ProjectStore {
    * What each of our keys costs, so the total is arithmetic rather than a scan.
    *
    * Filled once, on the first save, by reading what is already there; from then
-   * on a save updates one entry. The alternative — reading every project back
+   * on a save updates one entry. The alternative — reading every scope back
    * on every autosave to add up its length — is several megabytes of string
    * copying every three seconds, to answer a question whose answer barely
    * moves.
@@ -103,7 +104,7 @@ export class WebStorageProjectStore implements ProjectStore {
     return this.storage.keys().filter((key) => key.startsWith(this.prefix))
   }
 
-  /** See {@link ProjectStore.pressure}. */
+  /** See {@link ScopeStore.pressure}. */
   pressure(): StoragePressure | undefined {
     let used = 0
     for (const size of this.sizes().values()) used += size
@@ -111,7 +112,7 @@ export class WebStorageProjectStore implements ProjectStore {
   }
 
   /** One stored record, or `undefined` when it is missing or unreadable. */
-  private read(key: string): ProjectSnapshot | undefined {
+  private read(key: string): ScopeSnapshot | undefined {
     let parsed: unknown
     try {
       const raw = this.storage.getItem(key)
@@ -120,10 +121,10 @@ export class WebStorageProjectStore implements ProjectStore {
     } catch {
       return undefined
     }
-    if (!isUsableProject(parsed)) return undefined
-    const held = parsed as ProjectSnapshot
+    if (!isStoredScope(parsed)) return undefined
+    const held = parsed as ScopeSnapshot
     // A record whose path is missing or malformed cannot be addressed again, so
-    // it is not a project as far as this store is concerned.
+    // it is not a scope as far as this store is concerned.
     if (!isSafeScopePath(held.path)) return undefined
     return {
       path: held.path,
@@ -131,17 +132,21 @@ export class WebStorageProjectStore implements ProjectStore {
       // under one key — so the fold is run over every read and is written to
       // be safe on a model that is already this shape (`migrate3to4.ts`).
       model: migrateModel(held.model),
-      activeDiagramId: held.activeDiagramId ?? held.model.diagrams[0].id,
+      activeDiagramId: held.activeDiagramId ?? held.model.diagrams[0]?.id ?? '',
       // Additive field: a record written before the mark library lacks it and
-      // yields an empty library, not a broken project.
+      // yields an empty library, not a broken scope.
       logoLibrary: Array.isArray(held.logoLibrary) ? held.logoLibrary : [],
+      ...(held.kind !== undefined ? { kind: held.kind } : {}),
+      ...(held.client !== undefined ? { client: held.client } : {}),
+      ...(held.links !== undefined ? { links: held.links } : {}),
+      ...(held.imageLibrary !== undefined ? { imageLibrary: held.imageLibrary } : {}),
       updatedAt: typeof held.updatedAt === 'string' ? held.updatedAt : undefined,
     }
   }
 
   /**
-   * See {@link ProjectStore.outdated}. A record here is a whole snapshot under
-   * one key with no version on it, so the question is asked of the model.
+   * See {@link ScopeStore.outdated}. A record here is a whole snapshot under one
+   * key with no version on it, so the question is asked of the model.
    */
   outdated(): Promise<ScopePath[]> {
     const found: ScopePath[] = []
@@ -154,44 +159,45 @@ export class WebStorageProjectStore implements ProjectStore {
       } catch {
         continue
       }
-      if (!isUsableProject(parsed)) continue
-      const held = parsed as ProjectSnapshot
+      if (!isStoredScope(parsed)) continue
+      const held = parsed as ScopeSnapshot
       if (isSafeScopePath(held.path) && isBeforeFormat4(held.model)) found.push(held.path)
     }
     return Promise.resolve(found)
   }
 
-  list(): Promise<ProjectSummary[]> {
+  list(): Promise<ScopeSummary> {
     let keys: string[]
     try {
       keys = this.storage.keys()
     } catch {
-      return Promise.resolve([])
+      return Promise.resolve(scopeTree([]))
     }
     const found = keys
       .filter((key) => key.startsWith(this.prefix))
       .map((key) => this.read(key))
-      .filter((project): project is ProjectSnapshot => project !== undefined)
+      .filter((scope): scope is ScopeSnapshot => scope !== undefined)
       .map(summarise)
-    // Alphabetical, which is the default the picker shows and — more to the
-    // point — an order every store can produce without depending on how its
-    // keys happen to enumerate. A caller wanting recency re-sorts with
-    // `sortProjects`; that is a presentation choice, not a storage one.
-    return Promise.resolve(sortProjects(found))
+    // Alphabetical, which is the default a screen shows and — more to the point
+    // — an order every store can produce without depending on how its keys
+    // happen to enumerate. A caller wanting recency re-sorts with `sortScopes`;
+    // that is a presentation choice, not a storage one.
+    const root = scopeTree(found)
+    return Promise.resolve({ ...root, children: sortScopes(root.children) })
   }
 
-  load(path: ScopePath): Promise<ProjectSnapshot | undefined> {
+  load(path: ScopePath): Promise<ScopeSnapshot | undefined> {
     if (!isSafeScopePath(path)) return Promise.resolve(undefined)
     return Promise.resolve(this.read(this.keyFor(path)))
   }
 
-  save(project: ProjectSnapshot): Promise<void> {
-    if (!isSafeScopePath(project.path)) {
-      return Promise.reject(new ShellError('shell.badScopePath', { path: String(project.path) }))
+  save(scope: ScopeSnapshot): Promise<void> {
+    if (!isSafeScopePath(scope.path)) {
+      return Promise.reject(new ShellError('shell.badScopePath', { path: String(scope.path) }))
     }
     try {
-      const stamped: ProjectSnapshot = { ...project, updatedAt: new Date().toISOString() }
-      const key = this.keyFor(project.path)
+      const stamped: ScopeSnapshot = { ...scope, updatedAt: new Date().toISOString() }
+      const key = this.keyFor(scope.path)
       const text = JSON.stringify(stamped)
       this.storage.setItem(key, text)
       this.sizes().set(key, text.length)
@@ -203,10 +209,15 @@ export class WebStorageProjectStore implements ProjectStore {
 
   remove(path: ScopePath): Promise<void> {
     try {
-      if (isSafeScopePath(path)) {
-        const key = this.keyFor(path)
-        this.storage.removeItem(key)
-        this.sizes().delete(key)
+      // The root is the tab's whole working tree, not something to throw away;
+      // everything filed under a scope goes with it, because a child left
+      // behind is addressed by nothing.
+      if (isSafeScopePath(path) && path !== ROOT_SCOPE) {
+        for (const key of this.ourKeys()) {
+          if (!isWithinScope(key.slice(this.prefix.length), path)) continue
+          this.storage.removeItem(key)
+          this.sizes().delete(key)
+        }
       }
     } catch {
       // Failing to throw something away is not a fault anybody can act on.

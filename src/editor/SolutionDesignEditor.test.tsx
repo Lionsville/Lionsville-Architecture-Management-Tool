@@ -22,7 +22,6 @@ afterEach(() => cleanup());
 function baseModel(): DesignModel {
   return {
     name: 'ACME Solution Design',
-    customerName: 'ACME',
     diagrams: [
       laidOut({ id: 'd1', kind: 'layer7', name: 'Layer 7 — EU', placements: [] }),
       laidOut({ id: 'd2', kind: 'container', name: 'Webshop', applicationElementId: 'a1', placements: [] }),

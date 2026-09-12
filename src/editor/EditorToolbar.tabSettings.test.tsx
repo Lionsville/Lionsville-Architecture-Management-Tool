@@ -20,7 +20,6 @@ const diagram: DesignDiagram = laidOut({ id: 'd1', kind: 'layer7', name: 'Landsc
 const other: DesignDiagram = laidOut({ id: 'd2', kind: 'layer7', name: 'Target', placements: [] });
 const model: DesignModel = {
   name: 'Design',
-  customerName: 'Group',
   elements: [],
   relations: [],
   diagrams: [diagram, other],

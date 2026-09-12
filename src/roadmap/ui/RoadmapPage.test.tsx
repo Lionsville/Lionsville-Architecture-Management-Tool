@@ -35,7 +35,7 @@ const PLAN: Transition = {
 
 function model(over: Partial<DesignModel & { transitions: Transition[] }> = {}) {
   return {
-    name: 'Acme', customerName: 'Acme', diagrams: [], relations: [],
+    name: 'Acme', diagrams: [], relations: [],
     elements: [
       element('wms-old', 'Warehouse Management', {
         lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' }, successorId: 'wms-new',

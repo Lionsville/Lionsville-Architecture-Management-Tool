@@ -617,8 +617,15 @@ export interface DiagramSettings {
 }
 
 export interface DesignModel {
+  /**
+   * What this scope's document is called — and, since ADR-0012 §1, what the
+   * scope is called: one name per scope, written into its `scope.json`.
+   *
+   * The organisation's name used to ride here too, as `customerName`, on every
+   * project in a group; it is the root scope's `name` now, and
+   * `projects/scopeLabel.ts` is what walks up the tree for it.
+   */
   name: string;
-  customerName: string;
   diagrams: DesignDiagram[];
   elements: DesignElement[];
   /**

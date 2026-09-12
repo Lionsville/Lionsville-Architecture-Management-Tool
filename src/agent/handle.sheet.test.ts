@@ -40,7 +40,6 @@ const host = (): HostModel => {
   const { elements, relations } = shippingScope()
   return {
     name: 'Landscape',
-    customerName: 'Acme',
     elements,
     relations,
     diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] }), SHEET],
@@ -73,6 +72,7 @@ function session(over: Partial<SessionView> = {}): SessionView {
     indexed: () => model,
     current: () => toArrays(model),
     activeDiagramId: () => 'l7',
+    scopePath: () => 'acme/landscape',
     groupDecisions: () => [],
     blocked: () => undefined,
     dispatch: (command) => {

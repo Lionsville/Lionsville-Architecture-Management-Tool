@@ -51,7 +51,6 @@ function board(connectionCount: number): DesignModel {
   });
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements,
     relations: Array.from({ length: connectionCount }, (_, i) => ({
       id: `c${i}`,

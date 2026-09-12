@@ -1,5 +1,5 @@
 /**
- * A project as a folder of files, and back.
+ * A scope as a folder of files, and back.
  *
  * ADR-0003: the working copy is text a person can read and git can diff, one
  * document per thing that changes independently. This file is that format —
@@ -7,7 +7,7 @@
  * that knows the layout:
  *
  * ```
- * project.json                      what it is called and what it holds
+ * scope.json                        what it is called and what it holds
  * model.json                        elements and relations
  * diagrams/<id>.json                what a view is, and what is on it
  * diagrams/<id>.geometry.json       where its elements ended up
@@ -16,16 +16,23 @@
  * transitions/NNNN-<slug>.md        a plan, its window and what it touches
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * logos/<key>.svg | .png            uploaded marks, as images
+ * <child>/                          a scope under this one: the same files again
  * ```
  *
- * **The file says what the model says.** That is what format 4 is: the three
- * folds this file used to carry — connections against typed relations,
- * placements against members plus geometry, the retired kinds against an
- * application and a band — are gone, and with them every refusal that existed
- * because the model could say more than the file could hold. What is left is a
- * writer and a reader that name the same fields the model does, so a person
- * reading `model.json` is reading the model. `projects/migrate3to4.ts` is the
- * last reader of format 3 and the only place that still knows those spellings.
+ * **One document shape, nested.** That is what format 5 is (ADR-0012 §1): a
+ * folder holding a `scope.json` is a scope, and the folders inside it that hold
+ * one are the scopes under it. `project.json` and `group.json` are gone, and
+ * with them the difference between a thing that could hold a landscape and a
+ * thing that could only hold a name. This file knows nothing about a child: a
+ * scope's own files are the ones listed above, and whoever walks the tree
+ * decides where one scope ends and the next begins.
+ *
+ * **The file says what the model says**, which is what format 4 brought and
+ * format 5 keeps: a writer and a reader that name the same fields the model
+ * does, so a person reading `model.json` is reading the model.
+ * `projects/migrate3to4.ts` and `projects/migrate4to5.ts` are the last readers
+ * of the formats before it, and the only places that still know those
+ * spellings.
  *
  * **Layout is separate from the model** and that is the split the format is
  * for (ADR-0012 §6). A drag rewrites one `.geometry.json`; a rename rewrites
@@ -62,9 +69,10 @@ import {
 import {
   dataUrl, markdownBody, markdownFile, parseJson, readDataUrl, stableJson, textFromBytes,
 } from './fileText'
-import type { GroupLink, GroupProfile } from './group'
-import { groupNameOf, resolveActive } from './project'
-import type { ProjectSnapshot, ProjectSummary } from './project'
+import { isLinkList } from './links'
+import type { RecordLink } from './links'
+import { isScopeKind, resolveActive } from './scope'
+import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
 import { scopePathLabel } from './scopePath'
 import type { ScopePath } from './scopePath'
 
@@ -75,27 +83,39 @@ import type { ScopePath } from './scopePath'
  */
 export type FolderFile = { path: string; text: string } | { path: string; bytes: Uint8Array }
 
-export const PROJECT_FILE = 'project.json'
+export const SCOPE_FILE = 'scope.json'
 export const MODEL_FILE = 'model.json'
 export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export const GROUP_FILE = 'group.json'
 export { DECISIONS_FOLDER, TRANSITIONS_FOLDER }
 
 /**
- * 4, and the same 4 as the working file's version — the single `.lvarch` is
- * this folder in a zip, so there is one number for one shape rather than two
+ * The folders a scope's own files live in — which is also the list of names a
+ * child scope may not take (`scopePath.ts`), because a folder cannot be both.
+ *
+ * Named here because this is the file that decides what goes where, and read by
+ * whoever walks a tree: descending into one of these is reading a scope's own
+ * files, and descending into anything else is leaving the scope.
+ */
+export const SCOPE_FOLDERS: readonly string[] = [
+  DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, IMAGES_FOLDER, LOGOS_FOLDER,
+]
+
+/**
+ * 5, and the same 5 as the working file's version — the single `.lvarch` is a
+ * scope's folder in a zip, so there is one number for one shape rather than two
  * that have to be kept in step.
  *
- * It turned from 3 the moment the model stopped fitting in it (ADR-0012 §11,
- * and the rule on formats at the top of `docs/plan-2.0.0.md`): 2.x breaks the
- * format as often as the model needs it to, as long as every older version
- * opens and migrates. An older build meeting one of these sees no project,
- * which is the same honest answer `isWorkingFile` gives a file it does not know.
+ * It turned from 4 when the three records became one (ADR-0012 §1), as it
+ * turned from 3 when the model stopped fitting in it. The rule is at the top of
+ * `docs/plan-2.0.0.md`: 2.x breaks the format as often as the model needs it
+ * to, as long as every older version opens and migrates. An older build meeting
+ * one of these sees no project, which is the same honest answer `isWorkingFile`
+ * gives a file it does not know.
  */
-export const PROJECT_FORMAT_VERSION = 4
+export const SCOPE_FORMAT_VERSION = 5
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -158,13 +178,26 @@ function byRelation<T extends { relationId: string }>(list: readonly T[]): T[] {
 const LOGO_EXTENSIONS: Record<string, string> = { 'image/svg+xml': 'svg', 'image/png': 'png' }
 const LOGO_MEDIA_TYPES: Record<string, string> = { svg: 'image/svg+xml', png: 'image/png' }
 
-/** What `project.json` carries. Written by this file, read by this file. */
-type ProjectHeader = {
+/**
+ * What `scope.json` carries. Written by this file, read by this file.
+ *
+ * ADR-0012 §1 sketches this shape without `activeDiagramId`; it is kept,
+ * because which tab was open is something the folder has always remembered and
+ * dropping it would send every reopen back to the first diagram. Whether that
+ * belongs to the document or to the person is a question for the screen that
+ * replaces the picker, not for the format turn.
+ */
+type ScopeFile = {
   type: string
-  formatVersion: number
+  version: number
+  /** What this scope is called: the document's name and the scope's, one field. */
   name: string
-  groupName: string
+  /** A word for a screen to show (ADR-0012 §1). Absent is ordinary. */
+  kind?: ScopeKind
+  /** Who a drawing here is made out to. Absent = the nearest ancestor's. */
+  client?: string
   description?: string
+  links?: RecordLink[]
   activeDiagramId: string
   /** Diagram ids in tab order — the one list whose order is a decision. */
   diagrams: string[]
@@ -220,11 +253,14 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
 }
 
 /**
- * The project, as files, sorted by path so two saves of the same project are
- * the same list in the same order.
+ * The scope, as files, sorted by path so two saves of the same scope are the
+ * same list in the same order.
+ *
+ * Its own files only. A scope's children are folders beside these, written when
+ * they are saved and never as a side effect of their parent.
  */
-export function projectFiles(project: ProjectSnapshot): FolderFile[] {
-  const model = project.model
+export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
+  const model = scope.model
   const files: FolderFile[] = []
 
   const filed = new Set<string>()
@@ -261,9 +297,9 @@ export function projectFiles(project: ProjectSnapshot): FolderFile[] {
     files.push({ path: transitionPath(transition), text: transitionFileText(transition) })
   }
 
-  files.push(...imageFiles(project.imageLibrary ?? []))
+  files.push(...imageFiles(scope.imageLibrary ?? []))
 
-  files.push({ path: PROJECT_FILE, text: stableJson(header(project, files)) })
+  files.push({ path: SCOPE_FILE, text: stableJson(header(scope, files)) })
   return files.sort(byPath)
 }
 
@@ -317,10 +353,10 @@ function readImages(folder: Folder): DocumentImage[] {
  * them, because the two have to agree: a `logos` entry without its file is a
  * broken mark, and a file nothing names is an orphan.
  */
-function header(project: ProjectSnapshot, files: FolderFile[]): ProjectHeader {
-  const model = project.model
+function header(scope: ScopeSnapshot, files: FolderFile[]): ScopeFile {
+  const model = scope.model
   const names = new Set<string>()
-  const logos = project.logoLibrary.map((logo) => {
+  const logos = scope.logoLibrary.map((logo) => {
     const held = readDataUrl(logo.url)
     const extension = held && LOGO_EXTENSIONS[held.mediaType]
     if (!held || !extension) {
@@ -340,11 +376,13 @@ function header(project: ProjectSnapshot, files: FolderFile[]): ProjectHeader {
 
   return {
     type: WORKING_FILE_TYPE,
-    formatVersion: PROJECT_FORMAT_VERSION,
+    version: SCOPE_FORMAT_VERSION,
     name: model.name,
-    groupName: groupNameOf(model),
+    ...(scope.kind !== undefined ? { kind: scope.kind } : {}),
+    ...(scope.client !== undefined ? { client: scope.client } : {}),
     ...(model.description !== undefined ? { description: model.description } : {}),
-    activeDiagramId: project.activeDiagramId,
+    ...(scope.links !== undefined ? { links: scope.links } : {}),
+    activeDiagramId: scope.activeDiagramId,
     diagrams: model.diagrams.map((diagram) => diagram.id),
     ...(model.defaultAuthor !== undefined || model.defaultAspectConfig !== undefined
       ? {
@@ -383,9 +421,13 @@ function header(project: ProjectSnapshot, files: FolderFile[]): ProjectHeader {
  * the shape is no longer among the files a save hands over, so the same rule
  * that removes a deleted diagram removes it. The format-4 migration relies on
  * exactly that, and says so (`migrate3to4.ts`).
+ *
+ * It answers about ONE scope's files, relative to that scope's folder. A file
+ * belonging to a scope nested under this one is not this scope's to write or to
+ * remove, and does not match — the folder it is in is not one of the six.
  */
 export function isFormatPath(path: string): boolean {
-  if (path === PROJECT_FILE || path === MODEL_FILE || path === GROUP_FILE) return true
+  if (path === SCOPE_FILE || path === MODEL_FILE) return true
   const parts = path.split('/')
   if (parts.some((part) => !part || part === '.' || part === '..')) return false
   const [folder, ...rest] = parts
@@ -421,23 +463,23 @@ function jsonAt(folder: Folder, path: string): Record<string, unknown> | undefin
     : undefined
 }
 
-function headerOf(held: Record<string, unknown> | undefined): ProjectHeader | undefined {
+function headerOf(held: Record<string, unknown> | undefined): ScopeFile | undefined {
   if (!held) return undefined
   if (held.type !== undefined && held.type !== WORKING_FILE_TYPE) return undefined
-  return held as ProjectHeader
+  return held as ScopeFile
 }
 
 /**
- * Which version a folder is written in, or `undefined` when it is not one this
- * build can get a project out of at all.
+ * Which version a `scope.json` is written in, or `undefined` when it is not one
+ * this build can get a scope out of at all.
  *
  * Two different refusals, and they are not symmetrical. A version this build is
  * **older** than is refused rather than half-read, for the reason
  * `isWorkingFile` gives: it may carry meaning this build would silently drop on
- * its next save. A version this build is **newer** than is not a refusal at
- * all — it is a folder to migrate, which is what `migrate3to4.ts` is for. A
- * folder with no version is somebody's hand-made project and is read as best we
- * can, so it answers with the version this build writes.
+ * its next save. A version this build is **newer** than is not a refusal at all
+ * — it is a folder to migrate, which is what `migrate4to5.ts` is for. A folder
+ * with no version is somebody's hand-made scope and is read as best we can, so
+ * it answers with the version this build writes.
  */
 export function folderFormatVersion(text: string): number | undefined {
   const parsed = parseJson(text)
@@ -446,20 +488,20 @@ export function folderFormatVersion(text: string): number | undefined {
       ? parsed as Record<string, unknown> : undefined,
   )
   if (!held) return undefined
-  const version = held.formatVersion
-  if (version === undefined) return PROJECT_FORMAT_VERSION
-  return typeof version === 'number' && version <= PROJECT_FORMAT_VERSION ? version : undefined
+  const version = held.version
+  if (version === undefined) return SCOPE_FORMAT_VERSION
+  return typeof version === 'number' && version <= SCOPE_FORMAT_VERSION ? version : undefined
 }
 
 /**
  * Is this a header this build reads *as it stands*, rather than one it would
  * have to migrate first? {@link folderFormatVersion} is the wider question.
  */
-function readableHeader(held: Record<string, unknown> | undefined): ProjectHeader | undefined {
+function readableHeader(held: Record<string, unknown> | undefined): ScopeFile | undefined {
   const header = headerOf(held)
   if (!header) return undefined
-  const version = header.formatVersion
-  if (version !== undefined && version !== PROJECT_FORMAT_VERSION) return undefined
+  const version = header.version
+  if (version !== undefined && version !== SCOPE_FORMAT_VERSION) return undefined
   return header
 }
 
@@ -470,29 +512,35 @@ function listOf(held: unknown): Record<string, unknown>[] {
 }
 
 /**
- * The summary the picker needs, from `project.json` alone.
+ * The summary a screen needs, from `scope.json` alone.
  *
  * The point of a header file: listing a working directory reads one small
- * document per project rather than a whole landscape. A project with no
- * diagrams is not listed, for the same reason it does not load — there is
- * nothing to show.
+ * document per scope rather than a whole landscape. A scope with no diagrams IS
+ * listed — that is a domain, and hiding it would hide everything filed under it
+ * — which is the one thing this stopped doing at format 5.
  *
- * The picker lists a folder this build would have to migrate, because the name
- * and the group are in the same three fields in every version of the header,
- * and a project you cannot see is a project you cannot ask to be migrated.
+ * A folder this build would have to migrate is listed too: the name is in the
+ * same field in every version of the header, and a scope you cannot see is a
+ * scope you cannot ask to be migrated. `children` is empty; only whoever walks
+ * the tree knows what is under it.
  */
-export function projectSummaryFrom(
+export function scopeSummaryFrom(
   text: string, path: ScopePath, updatedAt?: string,
-): ProjectSummary | undefined {
+): ScopeSummary | undefined {
   const parsed = parseJson(text)
   const held = folderFormatVersion(text) === undefined ? undefined : headerOf(
     parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : undefined,
   )
-  if (!held || !Array.isArray(held.diagrams) || held.diagrams.length === 0) return undefined
+  if (!held) return undefined
   return {
     path,
-    name: typeof held.name === 'string' ? held.name : scopePathLabel(path),
-    groupName: typeof held.groupName === 'string' ? held.groupName : '',
+    name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
+    ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
+    ...(typeof held.client === 'string' ? { client: held.client } : {}),
+    ...(typeof held.description === 'string' ? { description: held.description } : {}),
+    ...(isLinkList(held.links) ? { links: held.links } : {}),
+    diagrams: Array.isArray(held.diagrams) ? held.diagrams.length : 0,
+    children: [],
     ...(updatedAt ? { updatedAt } : {}),
   }
 }
@@ -573,13 +621,13 @@ function readRelations(folder: Folder): Relation[] {
  * then by number. A file that is not a record is skipped rather than refused —
  * the folder belongs to the user and may have a `README.md` in it.
  */
-export function readDecisions(files: readonly FolderFile[], within = ''): Adr[] {
-  const prefix = within ? `${within}/${DECISIONS_FOLDER}/` : `${DECISIONS_FOLDER}/`
+export function readDecisions(files: readonly FolderFile[]): Adr[] {
+  const prefix = `${DECISIONS_FOLDER}/`
   const found: Adr[] = []
   for (const file of files) {
     if (!file.path.startsWith(prefix) || !file.path.endsWith('.md')) continue
     if (!('text' in file)) continue
-    const adr = adrFromFile(file.text, file.path.slice(within ? within.length + 1 : 0))
+    const adr = adrFromFile(file.text, file.path)
     if (adr && ADR_STATUSES.includes(adr.status)) found.push(adr)
   }
   return found.sort((a, b) =>
@@ -604,7 +652,7 @@ export function readTransitions(files: readonly FolderFile[]): Transition[] {
   return found.sort((a, b) => a.number - b.number)
 }
 
-function readLogos(folder: Folder, held: ProjectHeader): UploadedLogo[] {
+function readLogos(folder: Folder, held: ScopeFile): UploadedLogo[] {
   const named = new Set<string>()
   const library: UploadedLogo[] = []
   for (const entry of held.logos ?? []) {
@@ -646,17 +694,22 @@ function markFor(file: FolderFile, mediaType: string): string {
 }
 
 /**
- * The project a folder holds, or `undefined` when it does not hold one.
+ * The scope a folder holds, or `undefined` when it does not hold one.
  *
  * The path comes from where the folder IS and not from anything inside it: a
- * project moved in the file manager is the project at its new address, which is
+ * scope moved in the file manager is the scope at its new address, which is
  * what anybody moving it would expect.
+ *
+ * A folder with a `scope.json` and no views is a scope — a domain draws nothing
+ * of its own and still holds its name, its decisions and its plans. Whether a
+ * scope can be OPENED is the shell's question (`isOpenableScope`), not the
+ * format's, and that is the line that moved at format 5.
  */
-export function projectFromFolder(
+export function scopeFromFolder(
   files: readonly FolderFile[], path: ScopePath,
-): ProjectSnapshot | undefined {
+): ScopeSnapshot | undefined {
   const folder = folderOf(files)
-  const held = readableHeader(jsonAt(folder, PROJECT_FILE))
+  const held = readableHeader(jsonAt(folder, SCOPE_FILE))
   if (!held) return undefined
 
   const names = [...folder.keys()]
@@ -681,14 +734,12 @@ export function projectFromFolder(
   for (const [name, diagram] of byName) {
     if (diagram && !seen.has(name)) ordered.push(diagram)
   }
-  if (ordered.length === 0) return undefined
 
   const decisions = readDecisions(files)
   const transitions = readTransitions(files)
   const { elements, explicitFields } = readElements(folder)
   const model: HostModel = {
-    name: typeof held.name === 'string' ? held.name : scopePathLabel(path),
-    customerName: typeof held.groupName === 'string' ? held.groupName : '',
+    name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
     ...(typeof held.description === 'string' ? { description: held.description } : {}),
     ...(held.defaults?.author !== undefined ? { defaultAuthor: held.defaults.author } : {}),
     ...(held.defaults?.aspectConfig !== undefined
@@ -704,71 +755,19 @@ export function projectFromFolder(
     diagrams: ordered,
   }
 
-  // Absent rather than empty when there are none, so a project with no
-  // pictures round-trips to exactly the snapshot it came from.
+  // Absent rather than empty when there are none, so a scope with no pictures
+  // round-trips to exactly the snapshot it came from.
   const images = readImages(folder)
 
   return {
     path,
     model,
+    ...(isScopeKind(held.kind) ? { kind: held.kind } : {}),
+    ...(typeof held.client === 'string' ? { client: held.client } : {}),
+    ...(isLinkList(held.links) ? { links: held.links } : {}),
     activeDiagramId: resolveActive(model, typeof held.activeDiagramId === 'string'
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
     ...(images.length ? { imageLibrary: images } : {}),
-  }
-}
-
-/**
- * A group's own record, as files.
- *
- * `group.json` beside the project folders, and the group's decisions in a
- * `decisions/` folder of its own — the same shape as a project's, because a
- * decision record is a decision record wherever it is filed.
- *
- * The path is not written into the file: a group is where its folder is, which
- * is the same rule as the project ref and for the same reason. A group folder
- * moved or renamed is the group at its new address.
- */
-export function groupFiles(profile: GroupProfile): FolderFile[] {
-  const files: FolderFile[] = [{
-    path: GROUP_FILE,
-    text: stableJson({
-      name: profile.name,
-      ...(profile.client !== undefined ? { client: profile.client } : {}),
-      ...(profile.description !== undefined ? { description: profile.description } : {}),
-      ...(profile.links !== undefined ? { links: profile.links } : {}),
-    }),
-  }]
-  for (const adr of profile.decisions ?? []) {
-    files.push({ path: adrPath(adr), text: adrFileText(adr) })
-  }
-  return files.sort(byPath)
-}
-
-/**
- * The profile a group folder holds, or `undefined` when there is no record.
- *
- * A group with projects and no `group.json` is still a group — it is derived
- * from what is filed under it — so "no profile" is an ordinary answer and not
- * a failure.
- */
-export function groupFromFolder(
-  files: readonly FolderFile[], group: string,
-): GroupProfile | undefined {
-  const held = jsonAt(folderOf(files), GROUP_FILE)
-  const decisions = readDecisions(files)
-  if (!held && decisions.length === 0) return undefined
-  const links = Array.isArray(held?.links)
-    ? held.links.filter((link): link is GroupLink =>
-      !!link && typeof link === 'object'
-      && typeof (link as GroupLink).label === 'string' && typeof (link as GroupLink).url === 'string')
-    : undefined
-  return {
-    group,
-    name: typeof held?.name === 'string' ? held.name : '',
-    ...(typeof held?.client === 'string' ? { client: held.client } : {}),
-    ...(typeof held?.description === 'string' ? { description: held.description } : {}),
-    ...(links ? { links } : {}),
-    ...(decisions.length ? { decisions } : {}),
   }
 }

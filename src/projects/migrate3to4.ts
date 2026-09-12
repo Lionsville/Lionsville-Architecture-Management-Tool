@@ -42,15 +42,23 @@ import { FIGURE_MEANS, isNodeFigure } from '../model/kinds'
 import { claimKey } from '../model/keys'
 import { splitRoutes } from '../model/routes'
 import { parseJson, stableJson, textFromBytes } from './fileText'
-import {
-  diagramFiles, DIAGRAMS_FOLDER, MODEL_FILE, PROJECT_FILE, PROJECT_FORMAT_VERSION, projectFromFolder,
-} from './folderFormat'
+import { diagramFiles, DIAGRAMS_FOLDER, MODEL_FILE } from './folderFormat'
 import type { FolderFile } from './folderFormat'
-import type { ProjectSnapshot } from './project'
-import type { ScopePath } from './scopePath'
+import type { ScopeSnapshot } from './scope'
 
 /** The version this file reads. There is no 1 or 2: the folder began at 3. */
 const FORMAT_3 = 3
+
+/**
+ * The version it writes, and the name of the header it writes it into.
+ *
+ * Both live here rather than in the format, which has moved on twice since: a
+ * format-4 folder is something this file produces on its way to a format-5 one
+ * (`migrate4to5.ts` takes it from here), and nothing else in the tree has any
+ * business knowing what that step looked like.
+ */
+const FORMAT_4 = 4
+const PROJECT_FILE = 'project.json'
 
 /** What a view's second file was called before it held numbers only. */
 const PLACEMENTS_SUFFIX = '.placements.json'
@@ -225,7 +233,7 @@ export function foldFolderToFormat4(files: readonly FolderFile[]): FolderFile[] 
     if (file.path === PROJECT_FILE) {
       folded.push({
         path: PROJECT_FILE,
-        text: stableJson({ ...header, formatVersion: PROJECT_FORMAT_VERSION }),
+        text: stableJson({ ...header, formatVersion: FORMAT_4 }),
       })
       continue
     }
@@ -266,24 +274,6 @@ export function foldFolderToFormat4(files: readonly FolderFile[]): FolderFile[] 
   return folded
 }
 
-/**
- * The project a folder holds, whichever version wrote it.
- *
- * The dispatch lives here rather than in `folderFormat.ts` because the
- * dependency runs one way: the migration may know the format, and the format
- * may not know the migration. Every reader of a folder — the store, the
- * container, the history — goes through this one door, so there is nowhere a
- * version can be forgotten.
- */
-export function openProjectFolder(
-  files: readonly FolderFile[], path: ScopePath,
-): ProjectSnapshot | undefined {
-  const now = projectFromFolder(files, path)
-  if (now) return now
-  const folded = foldFolderToFormat4(files)
-  return folded ? projectFromFolder(folded, path) : undefined
-}
-
 // --- a record stored whole --------------------------------------------------
 
 /**
@@ -319,8 +309,8 @@ export function migrateModel(model: HostModel): HostModel {
 }
 
 /** The same, for a whole stored record. */
-export function migrateSnapshot(project: ProjectSnapshot): ProjectSnapshot {
-  return { ...project, model: migrateModel(project.model) }
+export function migrateSnapshot(scope: ScopeSnapshot): ScopeSnapshot {
+  return { ...scope, model: migrateModel(scope.model) }
 }
 
 /**

@@ -19,7 +19,6 @@ const element = (id: string, name: string, over: Partial<DesignElement> = {}): D
 function model(over: Partial<HostModel> = {}): HostModel {
   return {
     name: 'Landscape',
-    customerName: 'Acme',
     elements: [element('crews', 'Crews'), element('reisinfo', 'Reisinformatie')],
     relations: [{ type: 'flow', id: 'c-1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false }],
     diagrams: [laidOut({

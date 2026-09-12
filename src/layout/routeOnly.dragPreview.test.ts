@@ -26,7 +26,6 @@ function boardModel(): DesignModel {
   const ids = ['s1', 's2', 's3', 's4', 't1', 't2', 't3', 't4'];
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: ids.map((id) => ({
       id,
       kind: 'application' as const,

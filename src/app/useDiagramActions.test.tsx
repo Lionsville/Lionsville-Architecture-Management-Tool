@@ -14,7 +14,7 @@ import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import type { DesignElement, PlacedNode } from '../model'
 import type { HostModel } from '../model/fromInterchange'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import { useDiagramActions } from './useDiagramActions'
 import type { DiagramActions } from './useDiagramActions'
 import { useModelSession } from './useModelSession'
@@ -32,7 +32,6 @@ afterEach(() => { vi.useRealTimers(); cleanup() })
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [element('billing', 'Billing')],
   relations: [],
   diagrams: [
@@ -42,7 +41,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
   ...over,
 })
 
-const project = (m: HostModel = model()): ProjectSnapshot => ({
+const project = (m: HostModel = model()): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: m,
   activeDiagramId: 'd1',

@@ -9,9 +9,9 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../decisions/adr'
 import type { HostModel } from '../model/fromInterchange'
-import { projectFiles } from './folderFormat'
+import { scopeFiles } from './folderFormat'
 import { historyPaths } from './historyPath'
-import type { ProjectSnapshot } from './project'
+import type { ScopeSnapshot } from './scope'
 
 const decision = (over: Partial<Adr> = {}): Adr => ({
   id: 'adr-7', number: 7, title: 'One writer', status: 'proposed', date: '2026-09-06',
@@ -21,7 +21,6 @@ const decision = (over: Partial<Adr> = {}): Adr => ({
 function model(over: Partial<HostModel> = {}): HostModel {
   return {
     name: 'Landscape',
-    customerName: 'Acme',
     elements: [
       {
         id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true,
@@ -43,7 +42,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
   }
 }
 
-const project = (held: HostModel): ProjectSnapshot => ({
+const project = (held: HostModel): ScopeSnapshot => ({
   path: 'acme/landscape', model: held, activeDiagramId: 'landscape', logoLibrary: [],
 })
 
@@ -51,7 +50,7 @@ const project = (held: HostModel): ProjectSnapshot => ({
 const matches = (pattern: string, path: string): boolean =>
   new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}$`).test(path)
 
-const written = (held: HostModel): string[] => projectFiles(project(held)).map((file) => file.path)
+const written = (held: HostModel): string[] => scopeFiles(project(held)).map((file) => file.path)
 
 describe('what a subject is filed as', () => {
   it('names both of a diagram\'s files, as the writer names them', () => {

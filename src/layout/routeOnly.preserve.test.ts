@@ -34,7 +34,6 @@ function boardModel(): DesignModel {
   }));
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements,
     relations: [1, 2, 3, 4].map((n) => ({
       id: `c${n}`,

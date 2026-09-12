@@ -15,7 +15,6 @@ import { renderEditorState } from './testing/editorHost';
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       // An application nobody here owns, in the band that draws it as somebody
       // else's (ADR-0012 §4) — what used to be the `externalSystem` kind.

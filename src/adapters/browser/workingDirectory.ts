@@ -2,7 +2,7 @@
  * A folder in a browser tab, where the browser has one to give.
  *
  * Chromium's File System Access API can hand a page a real directory handle,
- * and `FileSystemProjectStore` was written against exactly the slice of it that
+ * and `FileSystemScopeStore` was written against exactly the slice of it that
  * this needs — so the same store, the same format and the same contract suite
  * run in a tab as on the desktop, with the handle coming from a picker instead
  * of from IPC.
@@ -19,7 +19,7 @@
  * be: a directory handle is structured-cloneable and not serialisable, so
  * `localStorage` cannot hold one.
  */
-import type { DirectoryHandleLike } from '../fileSystem/FileSystemProjectStore'
+import type { DirectoryHandleLike } from '../fileSystem/FileSystemScopeStore'
 
 /** The slice of the File System Access API this file uses, named rather than assumed. */
 type PermissionState = 'granted' | 'denied' | 'prompt'

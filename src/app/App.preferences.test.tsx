@@ -11,12 +11,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { HostCommand } from '../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
 import { DEFAULT_LOCAL_SETTINGS } from '../projects/folderSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
-import type { ProjectSnapshot } from '../projects/project'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
@@ -29,10 +29,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => cleanup())
 
-const project = (): ProjectSnapshot => ({
+const project = (): ScopeSnapshot => ({
   path: 'acme/landscape',
   model: {
-    name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
+    name: 'Landscape', elements: [], relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
   },
   activeDiagramId: 'd1',
@@ -79,7 +79,7 @@ const history = (available: boolean): ProjectHistory => ({
 function show(over: Parameters<typeof renderApp>[0] = {}) {
   const listeners: ((command: HostCommand) => void)[] = []
   const harness = renderApp({
-    projects: new InMemoryProjectStore([project()]),
+    scopes: new InMemoryScopeStore([project()]),
     initialProject: project(),
     commands: (listener) => { listeners.push(listener); return () => {} },
     ...over,

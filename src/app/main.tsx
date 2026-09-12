@@ -56,7 +56,8 @@ import {
 } from '../projects/preferences'
 import { migrated, migrateInto, upgradeProjects } from '../projects/migration'
 import type { PullOutcome } from '../platform/sync'
-import type { ProjectSnapshot } from '../projects/project'
+import { isOpenableScope } from '../projects/scope'
+import type { ScopeSnapshot } from '../projects/scope'
 import { EXAMPLES } from './examples'
 import { App } from './App'
 import { BootFailure } from './BootFailure'
@@ -274,7 +275,7 @@ async function pullOnOpen(): Promise<PullOutcome | undefined> {
 }
 
 /**
- * The projects that were in browser storage, copied into the folder — once.
+ * The scopes that were in browser storage, copied into the folder — once.
  *
  * Once per folder, which is what the preference records. Copying again would be
  * harmless in itself (nothing already in a folder is overwritten) but it would
@@ -286,10 +287,7 @@ async function pullOnOpen(): Promise<PullOutcome | undefined> {
  */
 async function moveInto(folder: Shell, root: string): Promise<boolean> {
   if (readMigratedFolders(stored).includes(root)) return false
-  const tally = await migrateInto(
-    { from: shell.projects, into: folder.projects },
-    { from: shell.groups, into: folder.groups },
-  ).catch((cause: unknown) => {
+  const tally = await migrateInto(shell.scopes, folder.scopes).catch((cause: unknown) => {
     shell.diagnostics.report({
       level: 'error', where: 'migration', message: 'copying into the folder failed', cause,
     })
@@ -301,7 +299,7 @@ async function moveInto(folder: Shell, root: string): Promise<boolean> {
   shell.diagnostics.report({
     level: 'info',
     where: 'migration',
-    message: `copied ${tally.projects} projects and ${tally.groups} groups, kept ${tally.kept}, failed ${tally.failed}`,
+    message: `copied ${tally.scopes} scopes, kept ${tally.kept}, failed ${tally.failed}`,
   })
   // Marked as done even when there was nothing to copy: an empty browser store
   // has been migrated, and asking again every time is how a folder acquires
@@ -327,7 +325,7 @@ async function upgradeFormat(): Promise<void> {
   const { history, diagnostics } = shell
   const s = translator(readLanguage(stored)
     ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
-  const tally = await upgradeProjects(shell.projects, history && (async () => {
+  const tally = await upgradeProjects(shell.scopes, history && (async () => {
     if (!await history.available() || !await history.keeping()) return false
     return history.snapshot(s('history.beforeUpgrade'))
   })).catch((cause: unknown) => {
@@ -342,7 +340,7 @@ async function upgradeFormat(): Promise<void> {
   diagnostics.report({
     level: tally.failed ? 'warn' : 'info',
     where: 'formatUpgrade',
-    message: `upgraded ${tally.upgraded} projects, failed ${tally.failed}, snapshot ${tally.recorded}`,
+    message: `upgraded ${tally.upgraded} scopes, failed ${tally.failed}, snapshot ${tally.recorded}`,
   })
 }
 
@@ -368,13 +366,12 @@ async function upgradeFormat(): Promise<void> {
  * an error, so nothing here reports it.
  */
 function renderApp(
-  storedPreferences: unknown, initialProject: ProjectSnapshot | undefined, initialSync?: PullOutcome,
+  storedPreferences: unknown, initialProject: ScopeSnapshot | undefined, initialSync?: PullOutcome,
 ): void {
   root.render(
     <StrictMode>
       <App
-        projects={shell.projects}
-        groupRecords={shell.groups}
+        scopes={shell.scopes}
         preferences={shell.preferences}
         documents={shell.documents}
         diagnostics={shell.diagnostics}
@@ -440,9 +437,10 @@ void shell.preferences.read()
     const lastScope = files && shell.source.kind !== 'folder'
       ? undefined
       : readLastScope(storedPreferences)
-    const initialProject = lastScope === undefined
-      ? undefined
-      : await shell.projects.load(lastScope)
+    const held = lastScope === undefined ? undefined : await shell.scopes.load(lastScope)
+    // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
+    // canvas to show, so the picker opens instead of an empty editor.
+    const initialProject = isOpenableScope(held) ? held : undefined
     renderApp(storedPreferences, initialProject, initialSync)
   })
   .catch((error: unknown) => {

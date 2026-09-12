@@ -25,7 +25,6 @@ function connection(overrides: Partial<Relation> = {}): Relation {
 function model(): DesignModel {
   return {
     name: 'SD',
-    customerName: 'ACME',
     diagrams: [],
     elements: [
       { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: false, aspects: {} },

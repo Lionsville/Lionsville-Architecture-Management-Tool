@@ -2,7 +2,7 @@
  * The composition: which outside world this shell gets.
  *
  * Deliberately the only file that knows both a seam and a filling. Everything
- * above this line talks to `ProjectStore`, `PreferencesStore` and
+ * above this line talks to `ScopeStore`, `PreferencesStore` and
  * `DocumentGateway` and does not know what sits underneath; everything below it
  * does not know who calls. The moment somewhere else also decides which store it
  * is, that property is gone — and there is a lint rule for it
@@ -11,7 +11,7 @@
  *
  * Another place to keep things (disk via the File System Access API, Electron
  * over IPC, a server) is: a class under `src/adapters/`, the contract run over
- * it (`ports/ProjectStore.contract.ts`), and one branch here. Not a single file
+ * it (`ports/ScopeStore.contract.ts`), and one branch here. Not a single file
  * above it changes.
  *
  * It also decides what this build KNOWS, not only where it keeps things. The
@@ -21,9 +21,8 @@
  */
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
-import { FileSystemGroupStore } from '../adapters/fileSystem/FileSystemGroupStore'
-import { FileSystemProjectStore } from '../adapters/fileSystem/FileSystemProjectStore'
-import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemProjectStore'
+import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
+import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemScopeStore'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../adapters/browser/workingDirectory'
@@ -49,13 +48,11 @@ import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGatew
 import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome } from '../adapters/browser/hostWindow'
-import { InMemoryGroupStore } from '../adapters/memory/InMemoryGroupStore'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { browserStorage } from '../adapters/webStorage/available'
-import { WebStorageGroupStore } from '../adapters/webStorage/WebStorageGroupStore'
 import { WebStoragePreferencesStore } from '../adapters/webStorage/WebStoragePreferencesStore'
-import { WebStorageProjectStore } from '../adapters/webStorage/WebStorageProjectStore'
+import { WebStorageScopeStore } from '../adapters/webStorage/WebStorageScopeStore'
 import type { ScopePath } from '../projects/scopePath'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
@@ -66,23 +63,20 @@ import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
-import type { GroupStore } from '../ports/GroupStore'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
-import type { ProjectStore } from '../ports/ProjectStore'
+import type { ScopeStore } from '../ports/ScopeStore'
 
 /**
- * A subscription to one project's folder. Returns the way to stop it — the
- * workspace is remounted per project, and a listener per project ever opened
- * is a leak with a slow fuse.
+ * A subscription to one scope's folder. Returns the way to stop it — the
+ * workspace is remounted per scope, and a listener per scope ever opened is a
+ * leak with a slow fuse.
  */
 export type WatchProject = (path: ScopePath, onChanged: () => void) => () => void
 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
-  projects: ProjectStore
-  /** What each group says about itself. Decoration; groups are still derived. */
-  groups: GroupStore
+  scopes: ScopeStore
   preferences: PreferencesStore
   documents: DocumentGateway
   /**
@@ -154,8 +148,7 @@ export type Shell = {
 export function composeShell(): Shell {
   const storage = browserStorage()
   return {
-    projects: storage ? new WebStorageProjectStore(storage) : new InMemoryProjectStore(),
-    groups: storage ? new WebStorageGroupStore(storage) : new InMemoryGroupStore(),
+    scopes: storage ? new WebStorageScopeStore(storage) : new InMemoryScopeStore(),
     preferences: storage ? new WebStoragePreferencesStore(storage) : new InMemoryPreferencesStore(),
     documents: new BrowserDocumentGateway(),
     diagnostics: new ConsoleDiagnostics(),
@@ -210,7 +203,7 @@ export const browserFolders = {
  * The whole of the desktop's storage, and it is two lines: the folder store
  * over an IPC handle instead of over a browser's. Nothing above this file
  * changes — not `App`, not a component, not a test — which is what the seam was
- * for and what `ProjectStore.contract.ts` checks on both.
+ * for and what `ScopeStore.contract.ts` checks on both.
  *
  * Preferences stay where they were. They describe this machine (its language,
  * its theme, which folder it uses), so putting them in the folder would carry
@@ -224,8 +217,7 @@ export const browserFolders = {
 function overFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Shell {
   return {
     ...shell,
-    projects: new FileSystemProjectStore(handle),
-    groups: new FileSystemGroupStore(handle),
+    scopes: new FileSystemScopeStore(handle),
     folderSettings: new FileSystemFolderSettings(handle),
     // A browser's handle has no path to give, so its name stands in for one.
     source: { kind: 'folder', name, root: name },
@@ -253,12 +245,14 @@ export function inWorkingDirectory(
   const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
 
   const watchProject: WatchProject = (scope, onChanged) => {
-    // Watching the whole folder rather than one project: it is one watcher for
+    // Watching the whole folder rather than one scope: it is one watcher for
     // the window, and watching the same root twice is a no-op in main. Nothing
-    // unwatches it — another project may be opened a second later, and the
+    // unwatches it — another scope may be opened a second later, and the
     // watcher costs one handle.
     void channel.files.watch(directory.root).catch(() => undefined)
-    const prefix = `${scope}/`
+    // The scope's own files and the scopes filed under it: what is on screen is
+    // this scope, so a change below it is a change to what is open.
+    const prefix = scope === '' ? '' : `${scope}/`
     return channel.files.onChanged((change) => {
       if (change.root !== directory.root || !change.path.startsWith(prefix)) return
       if (channel.ours(change)) return

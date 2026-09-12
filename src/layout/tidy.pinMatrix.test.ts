@@ -22,7 +22,6 @@ function landscape(): DesignModel {
   });
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: ['a1', 'a2', 'b1', 'b2', 'loose'].map(element),
     relations: [
       { type: 'flow', id: 'a1-b1', sourceId: 'a1', targetId: 'b1', isBidirectional: false },
@@ -177,7 +176,6 @@ describe('Tidy — box position × member layout', () => {
 function container(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'app', kind: 'application', name: 'Webshop', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'c1', kind: 'component', parentId: 'app', name: 'API', lifecycle: 'live', isManaged: true, aspects: {} },

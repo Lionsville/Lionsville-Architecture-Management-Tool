@@ -13,8 +13,8 @@ import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
-import type { ProjectSnapshot } from '../projects/project'
-import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
+import type { ScopeSnapshot } from '../projects/scope'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { renderApp } from './testing/renderShell'
 
 /** What the stubbed editor's handle was asked, for the renderer tests. */
@@ -66,11 +66,10 @@ vi.mock('../editor', async (importOriginal) => {
 
 afterEach(() => cleanup())
 
-const project: ProjectSnapshot = {
+const project: ScopeSnapshot = {
   path: 'acme/landscape',
   model: {
     name: 'Warehouse landscape',
-    customerName: 'Acme',
     elements: [{ id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} }],
     relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })],
@@ -149,7 +148,7 @@ describe('the agent seam, bound to the shell', () => {
 
   it('moves the binding from the shell to the workspace when a project opens', async () => {
     const { gateway, ask } = fakeGateway()
-    renderApp({ initialProject: undefined, agent: gateway, projects: new InMemoryProjectStore([project]) })
+    renderApp({ initialProject: undefined, agent: gateway, scopes: new InMemoryScopeStore([project]) })
     await waitFor(() => expect(screen.getByText('Warehouse landscape')).toBeDefined())
     // The card itself is the affordance: its name is what a person clicks.
     fireEvent.click(screen.getByText('Warehouse landscape'))

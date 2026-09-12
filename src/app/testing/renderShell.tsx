@@ -33,11 +33,10 @@ import type { Theme } from '@mui/material/styles'
 import { shellTheme } from '../theme'
 import { LanguageProvider, translator } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
-import { InMemoryGroupStore } from '../../adapters/memory/InMemoryGroupStore'
 import { InMemoryPreferencesStore } from '../../adapters/memory/InMemoryPreferencesStore'
-import { InMemoryProjectStore } from '../../adapters/memory/InMemoryProjectStore'
+import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
-import type { ProjectSnapshot } from '../../projects/project'
+import type { ScopeSnapshot } from '../../projects/scope'
 import type { AppProps } from '../App'
 import { App } from '../App'
 import type { SavedDocument } from '../../ports/DocumentGateway'
@@ -125,8 +124,7 @@ export function recordingDocuments() {
 }
 
 export type ShellHarness = {
-  projects: InMemoryProjectStore
-  groups: InMemoryGroupStore
+  scopes: InMemoryScopeStore
   preferences: InMemoryPreferencesStore
   documents: ReturnType<typeof recordingDocuments>
   diagnostics: RecordingDiagnostics
@@ -137,10 +135,9 @@ export type ShellHarness = {
 }
 
 /** The seams, filled with things that keep receipts. */
-export function shellHarness(projects: readonly ProjectSnapshot[] = []): ShellHarness {
+export function shellHarness(projects: readonly ScopeSnapshot[] = []): ShellHarness {
   return {
-    projects: new InMemoryProjectStore(projects),
-    groups: new InMemoryGroupStore(),
+    scopes: new InMemoryScopeStore(projects),
     preferences: new InMemoryPreferencesStore(),
     documents: recordingDocuments(),
     diagnostics: new RecordingDiagnostics(),
@@ -170,8 +167,7 @@ export function renderApp(
 ): AppRender {
   const harness = shellHarness()
   const props: AppProps = {
-    projects: harness.projects,
-    groupRecords: harness.groups,
+    scopes: harness.scopes,
     preferences: harness.preferences,
     documents: harness.documents,
     diagnostics: harness.diagnostics,

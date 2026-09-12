@@ -42,7 +42,6 @@ const BENDS: Point[] = [
 function model(): DesignModel {
   return {
     name: 'ACME',
-    customerName: 'ACME',
     elements: [
       { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: true, aspects: {} },
       { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: true, aspects: {} },
