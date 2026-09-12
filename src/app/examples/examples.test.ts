@@ -20,6 +20,10 @@ import { projectFiles, projectFromFolder } from '../../projects/folderFormat'
 import { stableJson } from '../../projects/fileText'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { computeBusinessCase, readBusinessCase } from '../../documentation/businessCase'
+import { sheetPage } from '../../business'
+import { buildEdges, buildNodes } from '../../editor/graph'
+import type { BuildGraphArgs } from '../../editor/graph'
+import type { DesignModel } from '../../model'
 
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
   const project = exampleProject(example)!
@@ -102,10 +106,10 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working
  *
  * Every perf budget in the repository is quoted against `model/testing/synthetic`,
  * so a fixture that is shaped wrong makes every one of them a statement about the
- * generator. Size it cannot be checked against — the example is thirty-three
- * elements and the point of the fixture is thousands — but the SHAPE can be, and
- * the shape is what the router's and the derive's cost depend on: a long tail of
- * two- and three-link elements with a handful of hubs.
+ * generator. Size it cannot be checked against — the example's landscape is
+ * thirty-three elements and the point of the fixture is thousands — but the
+ * SHAPE can be, and the shape is what the router's and the derive's cost depend
+ * on: a long tail of two- and three-link elements with a handful of hubs.
  *
  * This lives here, in `app/`, because it is the one module allowed to read both
  * the example and the model's own test fixtures.
@@ -123,9 +127,13 @@ describe('the generated landscape against the shipped one', () => {
   }
 
   const example = EXAMPLES[0]
-  const shipped = degrees(exampleProject(example)!.model.relations.map((c) => ({
-    from: c.sourceId, to: c.targetId,
-  })))
+  // Flows only. The generator draws a landscape, and the shape being compared
+  // is the one the router and the derive pay for — a `supports` row is neither
+  // routed nor derived, and counting the business layer in would make this a
+  // statement about how many capabilities somebody wrote down.
+  const shipped = degrees(exampleProject(example)!.model.relations
+    .filter((c) => c.type === 'flow')
+    .map((c) => ({ from: c.sourceId, to: c.targetId })))
   const generated = degrees(syntheticModel('small').relations.map((c) => ({
     from: c.sourceId, to: c.targetId,
   })))
@@ -188,5 +196,158 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
     expect(paths.filter((path) => path.startsWith('decisions/')).length)
       .toBe(model.decisions?.length ?? 0)
     expect(paths.filter((path) => path.startsWith('transitions/')).length).toBe(plans.length)
+  })
+})
+
+/**
+ * The business architecture, as the sheet lays it out.
+ *
+ * The example is what a new user opens to find out what a sheet IS, so the
+ * things the page is supposed to show have to be in the data rather than in a
+ * screenshot: a journey with a common path and two that leave it, areas with
+ * all three coverage answers under them, and a band for what nobody has been
+ * given yet.
+ *
+ * Asserted in rows rather than pixels, which is what `business/sheet.ts` hands
+ * back — the page has an opinion about how wide a chevron is and this file has
+ * none (ADR-0012 §6).
+ */
+describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet', (_key, example) => {
+  const model = exampleProject(example)!.model
+  const sheets = model.diagrams.filter((diagram) => diagram.kind === 'sheet')
+
+  it('ships one', () => {
+    expect(sheets).toHaveLength(1)
+    // A sheet is laid out, so its geometry file is the empty one a save writes
+    // rather than coordinates nobody chose.
+    expect(sheets[0].geometry.nodes).toEqual([])
+  })
+
+  const page = sheetPage(model, sheets[0])
+
+  it('draws the journey in seven phases', () => {
+    expect(page.journey?.element.name).toBe('Ship a consignment')
+    expect(page.journey?.phases.map((phase) => phase.name)).toEqual(
+      ['Quote', 'Book', 'Collect', 'Line-haul', 'Deliver', 'Invoice', 'Aftercare'],
+    )
+  })
+
+  it('draws three rows under it, the common path first', () => {
+    const lanes = page.journey!.lanes
+    expect(lanes).toHaveLength(3)
+    expect(lanes[0].actorId).toBeUndefined()
+    expect(lanes.slice(1).map((lane) => lane.actor?.name))
+      .toEqual(['Key accounts', 'Marketplace partner'])
+  })
+
+  it('forks the key accounts at Quote and passes them through the middle', () => {
+    const lane = page.journey!.lanes[1]
+    const named = (id?: string) => page.journey!.phases.find((phase) => phase.id === id)?.name
+    expect(named(lane.fork)).toBe('Quote')
+    // Where a lane rejoins is derived from where its last own step is, and the
+    // key accounts have two of them in Aftercare — a quarterly review and a
+    // frame to renew — so that, not Invoice, is where the row ends.
+    expect(named(lane.join)).toBe('Aftercare')
+    expect(
+      lane.cells.filter((cell) => cell.passThrough)
+        .map((cell) => named(cell.phaseId)),
+    ).toEqual(['Collect', 'Line-haul', 'Deliver'])
+  })
+
+  it('marks every step the marketplace partner takes as done outside', () => {
+    const lane = page.journey!.lanes[2]
+    const steps = lane.cells.flatMap((cell) => cell.steps)
+    expect(steps.map((step) => step.element.name)).toEqual([
+      'Bulk order via partner', 'Inbound to partner DC', 'Partner fulfils', 'Partner settles',
+    ])
+    expect(steps.every((step) => step.outside)).toBe(true)
+    // And it passes through the leg it does not touch, rather than showing a hole.
+    const named = (id?: string) => page.journey!.phases.find((phase) => phase.id === id)?.name
+    expect(lane.cells.filter((cell) => cell.passThrough).map((cell) => named(cell.phaseId)))
+      .toEqual(['Line-haul'])
+  })
+
+  it('draws five areas, and a band of four nobody has been given', () => {
+    expect(page.areas.map((area) => area.element.name)).toEqual(
+      ['Commercial', 'Operations', 'Finance', 'Assets and fleet', 'Generic services'],
+    )
+    expect(page.areas.every((area) => area.domain !== undefined)).toBe(true)
+    expect(page.unmapped.map((held) => held.name)).toEqual(
+      ['Sustainability reporting', 'Returns', 'Customs and compliance', 'Insurance'],
+    )
+  })
+
+  it('shows every coverage answer at least once', () => {
+    const capabilities = page.areas.flatMap((area) =>
+      area.groupings.flatMap((grouping) => grouping.capabilities))
+    expect(capabilities.length).toBeGreaterThan(20)
+    const answers = new Set(capabilities.map((held) => held.coverage.coverage))
+    expect([...answers].sort()).toEqual(['covered', 'manual', 'uncovered'])
+    // The one the record exists for: people and no system is a complete
+    // answer, and the one with neither is the gap (ADR-0012 §9).
+    const named = (name: string) =>
+      capabilities.find((held) => held.element.name === name)!.coverage.coverage
+    expect(named('Rating')).toBe('covered')
+    expect(named('Driver compliance')).toBe('manual')
+    expect(named('Dangerous goods')).toBe('uncovered')
+  })
+
+  it('puts the stakeholders on the rail, with the outside ones marked', () => {
+    const roots = page.actors.filter((row) => row.depth === 0)
+    expect(roots.map((row) => row.element.name)).toEqual(
+      ['Customers', 'Partners', 'Regulators', 'Employees', 'Owners'],
+    )
+    expect(roots.filter((row) => row.outside).map((row) => row.element.name))
+      .toEqual(['Customers', 'Partners', 'Regulators'])
+    // The four the landscape already draws sit under Employees, and are still
+    // the same records the board places.
+    const employees = page.actors.filter((row) => row.element.parentId === 'employees')
+    expect(employees.map((row) => row.element.id)).toEqual(
+      ['planner', 'support-agent', 'dispatcher', 'warehouse-lead', 'drivers', 'warehouse-staff'],
+    )
+  })
+})
+
+/**
+ * The stakeholder tree, and the board that was already there.
+ *
+ * The four actors the landscape draws gained a `parentId` when the rail did —
+ * they are the organisation's employees, and a rail with them missing would be
+ * an org chart with a hole in it. `parentId` is one field for every kind of
+ * containment since ADR-0012 §3, though, and on a `layer7` board it used to
+ * mean exactly one thing: a component inside its application. Every reader of
+ * it in `editor/` and `layout/` is guarded by `kind === 'component'`, so
+ * nothing moves — and that is worth a test rather than a reading, because the
+ * cost of being wrong is the first screen a new user opens.
+ */
+describe('a stakeholder tree over a landscape that already drew its actors', () => {
+  const model = exampleProject(EXAMPLES[0])!.model
+  const flat: DesignModel = {
+    ...model,
+    elements: model.elements.map((element) => (element.kind === 'actor'
+      ? { ...element, parentId: undefined, order: undefined }
+      : element)),
+  }
+  const diagram = model.diagrams.find((held) => held.id === 'landscape')!
+  const args = (over: DesignModel): BuildGraphArgs =>
+    ({ model: over, diagram, readOnly: false, edgeColor: '#000' })
+
+  /** Where a node ended up, and nothing about what it says. */
+  const where = (nodes: ReturnType<typeof buildNodes>) => nodes.map((node) => ({
+    id: node.id,
+    type: node.type,
+    position: node.position,
+    width: node.width,
+    height: node.height,
+    zIndex: node.zIndex,
+    placement: (node.data as { placement: unknown }).placement,
+  }))
+
+  it('lays every node out in the same place', () => {
+    expect(where(buildNodes(args(model)))).toEqual(where(buildNodes(args(flat))))
+  })
+
+  it('draws the same lines between them', () => {
+    expect(JSON.stringify(buildEdges(args(model)))).toBe(JSON.stringify(buildEdges(args(flat))))
   })
 })
