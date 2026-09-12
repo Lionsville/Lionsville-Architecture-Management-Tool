@@ -395,6 +395,16 @@ function AreaCard({ area, onSelect, t }: {
             </Box>
           </Box>
         ))}
+        {/* The area's own leaves, after the boxes: a column reads as structure
+            and then the capabilities nobody has grouped yet. */}
+        {area.capabilities.map((capability) => (
+          <CapabilityCard
+            key={capability.element.id}
+            capability={capability}
+            onSelect={onSelect}
+            t={t}
+          />
+        ))}
       </Box>
     </Box>
   )

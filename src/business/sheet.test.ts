@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sheetPage } from './sheet'
-import { actor, area, capability, shippingScope } from './testFixtures'
+import { actor, area, capability, relation, shippingScope } from './testFixtures'
 
 /**
  * The page, over the organisation `testFixtures.shippingScope` describes. The
@@ -101,6 +101,42 @@ describe('the areas', () => {
     expect(fulfilment.groupings.map((g) => g.element.id)).toEqual(['warehousing'])
     expect(fulfilment.groupings[0].capabilities.map((c) => [c.element.id, c.depth]))
       .toEqual([['picking', 1], ['packing', 1]])
+  })
+
+  it('draws a capability straight under an area as a card, not as an empty grouping', () => {
+    // A leaf is a leaf at any depth. Without this, "add a capability to this
+    // area" makes a box with nothing in it and the person cannot tell why.
+    const { elements, relations } = shippingScope()
+    const loose = sheetPage(
+      { elements: [...elements, capability('tracking', 'Track a consignment', 'fulfilment')], relations },
+      SHEET,
+    )
+    const fulfilment = loose.areas[0]
+    expect(fulfilment.groupings.map((g) => g.element.id)).toEqual(['warehousing'])
+    expect(fulfilment.capabilities.map((c) => [c.element.id, c.depth])).toEqual([['tracking', 1]])
+  })
+
+  it('says what covers a loose capability, as it does for one in a grouping', () => {
+    const { elements, relations } = shippingScope()
+    const loose = sheetPage(
+      {
+        elements: [...elements, capability('tracking', 'Track a consignment', 'fulfilment')],
+        relations: [...relations, relation('s9', 'supports', 'wms', 'tracking')],
+      },
+      SHEET,
+    )
+    expect(loose.areas[0].capabilities[0].coverage)
+      .toMatchObject({ supportedBy: ['wms'], coverage: 'covered' })
+  })
+
+  it('draws a grouping whose last capability went as a card again', () => {
+    // The same rule read backwards: a grouping is a child of an area with
+    // something under it, and an empty one has stopped being one.
+    const { elements, relations } = shippingScope()
+    const emptied = elements.filter((e) => e.id !== 'picking' && e.id !== 'packing')
+    const page2 = sheetPage({ elements: emptied, relations }, SHEET)
+    expect(page2.areas[0].groupings).toEqual([])
+    expect(page2.areas[0].capabilities.map((c) => c.element.id)).toEqual(['warehousing'])
   })
 
   it('draws a capability somebody refined one step further in, rather than dropping it', () => {

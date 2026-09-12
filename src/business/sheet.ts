@@ -25,10 +25,17 @@
  * `function` at depth 0 is an area, at depth 1 a grouping, at depth 2 a
  * capability; anything deeper is a refinement of a capability and keeps its
  * depth so the page can indent it rather than drop it. That rule is applied
- * here and nowhere else, so a hand-edited file that puts a capability
- * straight under an area draws as an empty grouping — visibly wrong in the
- * place where it *is* wrong, rather than quietly rearranged into looking
- * right.
+ * here and nowhere else.
+ *
+ * With one clause on top of it, which a person authoring a sheet needs and a
+ * hand-edited file wanted anyway: **a leaf is a leaf at any depth**. A
+ * function directly under an area with nothing inside it is a capability and
+ * draws as a card, not as a grouping box with no contents — so "add a
+ * capability to this area" is a thing somebody can do, and a grouping whose
+ * last capability was deleted goes back to reading as one card rather than as
+ * an empty frame. A grouping is therefore a child of an area *with something
+ * under it*, which is also the only state in which the two are told apart on
+ * screen.
  */
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../model'
 import { coverageOf, type FunctionCoverage } from './coverage'
@@ -105,7 +112,15 @@ export type SheetArea = {
    * has room for a chip and not for a list; the record keeps every one.
    */
   domain?: string
+  /** The children of the area that hold something: the white boxes. */
   groupings: SheetGrouping[]
+  /**
+   * The children of the area that hold nothing: capabilities sitting straight
+   * in the column, drawn after the boxes. A column reads as boxes and then
+   * loose cards rather than interleaving the two, which is the one thing this
+   * split costs — the model's order within each list is kept.
+   */
+  capabilities: SheetCapability[]
 }
 
 export type LaidOutSheet = {
@@ -229,18 +244,26 @@ function areaOf(
   functions: readonly DesignElement[],
   coverage: ReadonlyMap<ElementId, FunctionCoverage>,
 ): SheetArea {
+  const covered = (leaf: DesignElement, depth: number): SheetCapability => ({
+    element: leaf,
+    depth,
+    coverage: coverage.get(leaf.id) ?? UNCOVERED,
+  })
+  const children = childrenOf(functions, element.id)
+  const holds = (id: ElementId) => childrenOf(functions, id).length > 0
+
   return {
     element,
     ...(element.scopes?.[0] !== undefined ? { domain: element.scopes[0] } : {}),
-    groupings: childrenOf(functions, element.id).map((grouping) => ({
+    groupings: children.filter((child) => holds(child.id)).map((grouping) => ({
       element: grouping,
       // The whole tree under a grouping rather than its children alone: a
       // capability somebody refined further is drawn one step in, not dropped.
-      capabilities: flatten(functions, grouping.id).slice(1).map(({ element: leaf, depth }) => ({
-        element: leaf,
-        depth,
-        coverage: coverage.get(leaf.id) ?? UNCOVERED,
-      })),
+      capabilities: flatten(functions, grouping.id).slice(1)
+        .map(({ element: leaf, depth }) => covered(leaf, depth)),
     })),
+    // A leaf is a leaf at any depth: drawn at the depth a capability inside a
+    // grouping is drawn at, because that is what it is.
+    capabilities: children.filter((child) => !holds(child.id)).map((leaf) => covered(leaf, 1)),
   }
 }
