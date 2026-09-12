@@ -17,6 +17,7 @@ import { placedNodes } from '../../model/placement';
 import { copyExampleInto, EXAMPLES, exampleFiles, exampleScopes } from '.'
 import { fromArrays, toArrays } from '../../model/normalised'
 import { documentFindings, identityFindings } from '../../projects/checks'
+import { registerRows, registerSummary } from '../organisation/register'
 import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'
 import { indexScopes } from '../../projects/scopeIndex'
 import { stableJson } from '../../projects/fileText'
@@ -479,6 +480,24 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s contradicts 
     for (const element of scopes[0].model.elements) {
       expect(master(element.id), element.id).toBe(example.path)
     }
+  })
+
+  /**
+   * The register is the same index, filtered to applications (ADR-0012 §2).
+   * A row on it with a finding, or with nobody answering for it, is the first
+   * screen teaching the wrong thing.
+   */
+  it('lists every application in the register, each answered for and settled', () => {
+    const rows = registerRows(index, identityFindings(index))
+    const applications = scopes
+      .flatMap((scope) => scope.model.elements)
+      .filter((element) => element.kind === 'application' && element.ref === undefined)
+    expect(rows.map((row) => row.id).sort()).toEqual(applications.map((one) => one.id).sort())
+    for (const row of rows) {
+      expect(row.master, row.id).toBe(`${example.path}/application-landscape`)
+      expect(row.findings, row.id).toEqual([])
+    }
+    expect(registerSummary(rows)).toMatchObject({ definedTwice: 0, unattributed: 0, stale: 0 })
   })
 
   it('reports nothing but information about either scope\'s own records', () => {
