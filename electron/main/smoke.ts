@@ -484,7 +484,8 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     const result = await client.callTool({ name: 'project.current', arguments: {} }) as
       { isError?: boolean; content: { type: string; text?: string }[] }
     if (result.isError) throw new Error(`project.current refused: ${result.content[0]?.text}`)
-    const current = JSON.parse(result.content[0]?.text ?? '{}') as { name?: string; elements?: number }
+    const current = JSON.parse(result.content[0]?.text ?? '{}') as
+      { name?: string; elements?: number; activeDiagramId?: string }
     if (!current.name || !current.elements) throw new Error(`no project in the answer: ${JSON.stringify(current)}`)
     if (agentStatus().kind !== 'connected') throw new Error('the app does not say connected')
 
@@ -492,8 +493,12 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     // picture of the board comes back as an image block with the transform
     // beside it, and pointing at an element is answered. Tidy ran a check
     // ago from the button; through the agent it is the same handler.
-    const listed = await client.callTool({ name: 'elements.list', arguments: { limit: 1 } }) as
-      { content: { text?: string }[] }
+    // The board's own members rather than the model's: since the example grew a
+    // business layer its first element by id is a journey step, and a step is on
+    // no canvas — `diagram.render` refuses what is not drawn, which is right.
+    const listed = await client.callTool({
+      name: 'elements.list', arguments: { limit: 1, diagramId: current.activeDiagramId },
+    }) as { content: { text?: string }[] }
     const first = (JSON.parse(listed.content[0]?.text ?? '{}') as { elements?: { id: string }[] }).elements?.[0]?.id
     if (!first) throw new Error('elements.list named nothing')
     const pointed = await client.callTool({ name: 'focus', arguments: { elementId: first } }) as { isError?: boolean }

@@ -76,7 +76,7 @@ until the format that makes it unnecessary is written.
   colour on the rectangle. Nothing in the app can make one, and the fold
   says so out loud rather than dropping it quietly.
 
-### 3. The business layer
+### 3. The business layer — landed 12 September 2026 (eca944c…9b21896)
 
 **The model half landed 12 September 2026 (eca944c…581c776).** The kinds, the
 fields, the format-3 fold, `src/business/`, the export's report and the
@@ -117,9 +117,32 @@ refused as questions about the model. Two notes for whoever picks this up: the
 matrix gained `agent` → `business`, and the page needs nothing from the editor's
 theme, because its whole design is MUI palette tokens.
 
-**What is left of step 3 is the example's journey and areas**, which waits for
-the format-4 example form in step 4 — an interchange-shaped example cannot carry
-a business layer.
+**The example's half landed 12 September 2026 (9b21896), and step 3 with it.**
+Acme Logistics has the layer above its applications: *Ship a consignment* in
+seven phases, a key-account lane that forks at *Quote* and a marketplace
+partner's that runs from outside, five areas with their capabilities, the
+stakeholders as a tree with the four the landscape already drew under
+*Employees*, and `supports` / `assigned` / `serves` rows joining the two layers.
+Four roots carry no domain and land in the *not yet mapped* band. Three things
+worth knowing:
+
+- **The sheet is tested over the example now, not only over a fixture.**
+  `examples.test.ts` lays the shipped page out and asserts in rows — seven
+  phases, three lanes with the common one first, the derived forks and
+  pass-throughs, five areas, a band of four, and all three coverage answers
+  present. `business/testFixtures.shippingScope()` stays what the module's own
+  suites are written over; a fixture and an example answer different questions.
+- **Two `supports` rows carry a window**, because that is the half of ADR-0012
+  §5 a page cannot show without data: the legacy rater supports *Rating* until
+  the day it goes, and Yard Management does not support *Yard and dock* until it
+  is live.
+- **`parentId` on the landscape's four actors moves nothing.** Every reader of
+  it in `editor/` and `layout/` is guarded by `kind === 'component'`, and a test
+  in `examples.test.ts` builds the board with and without the field and compares
+  the geometry rather than leaving that to a reading.
+
+Still nothing a person can do on a page makes a `supports` row — the sheet shows
+coverage and does not edit it, which is step 12's to give it.
 
 Kinds `actor` (a tree, `outside`), `step`, `function`, `process`;
 `parentId` replaces `parentApplicationId`; `order` where order is a
@@ -208,10 +231,23 @@ band — go, and with them every "refuses to write at format 3" refusal.
   `model/testing/interchange-sample.json`, because a test that another tool's
   format survives a round trip must not be fed by our own export.
 
-### 5. Strings, manual, screenshots
+### 5. Strings, manual, screenshots — landed 12 September 2026 (cc92bd4)
 
 Every new word in four languages; `docs/manual.*.md` gets *The business
 architecture*; a screenshot of the sheet beside the landscape one.
+
+The words landed with the screens that say them, as the discipline at the top of
+this file asks. The manual's section is beside the roadmap's and at the same
+length: what a sheet is and why it is laid out, the journey and the lanes
+derived from where their steps are, the three coverage answers, the not-yet-
+mapped band, and what the inspector edits.
+
+**Two things this did not do.** `docs/manual.*.md` is `en` and `nl`: the UI has
+had four languages since 087f58f but the manual has only ever had two, and two
+whole translated manuals is its own piece of work rather than a line in this
+one. And the screenshot needs a browser, so both manuals carry a marker where it
+goes — as does the README, whose `screenshot-landscape.png` is the one it should
+sit beside.
 
 **Cut 2.0.0-beta.1.**
 
