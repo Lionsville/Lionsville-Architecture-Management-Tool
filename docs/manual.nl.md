@@ -456,7 +456,7 @@ wordt berekend uit hun volgorde en hun diepte. Het krijgt een tab naast de
 borden, en het openen laat het canvas staan waar het stond, zodat de tekening
 waaraan u werkte er nog is als u terugkomt.
 
-<!-- screenshot: the sheet, beside the landscape -->
+![Het bedrijfsarchitectuurblad: belanghebbenden in de kantlijn, de klantreis bovenaan met een rij per baan, en de gebieden met hun capabilities en hoe elk wordt ondersteund](screenshot-sheet.png)
 
 ### De klantreis, en de paden erdoorheen
 

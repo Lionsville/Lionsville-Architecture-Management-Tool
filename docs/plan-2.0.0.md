@@ -249,6 +249,12 @@ one. And the screenshot needs a browser, so both manuals carry a marker where it
 goes — as does the README, whose `screenshot-landscape.png` is the one it should
 sit beside.
 
+- The screenshot landed 12 September 2026: `docs/screenshot-sheet.png`,
+  the example's sheet in the browser build, dark theme, 2× — in the README
+  beside the landscape and in both manuals. Taking it found the capability
+  cards drawing their names in the browser's `buttontext` black on the dark
+  ground; fixed in the same stretch.
+
 **Cut 2.0.0-beta.1.**
 
 ---

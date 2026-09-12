@@ -15,6 +15,14 @@ the right-click menu of a connection open](docs/screenshot-landscape.png)
 *The shipped example, `Acme Logistics` — a fictional landscape you can open,
 copy and take apart.*
 
+![The same example's business architecture: stakeholders down the side, the
+journey a consignment takes as a band of phases over three lanes, the
+responsibility areas with their capabilities and how each is covered, and the
+band of what nobody has claimed yet](docs/screenshot-sheet.png)
+
+*Its business architecture — the journey with a key account's lane and a
+marketplace partner's beside the common path, and the areas that serve it.*
+
 ## Download
 
 <p align="center">

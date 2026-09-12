@@ -439,7 +439,7 @@ computed from their order and their depth. It gets a tab beside the boards, and
 opening it leaves the canvas where it was, so the picture you were working on is
 still there when you come back.
 
-<!-- screenshot: the sheet, beside the landscape -->
+![The business architecture sheet: stakeholders down the side, the journey across the top with one row per lane, and the areas with their capabilities and how each is covered](screenshot-sheet.png)
 
 ### The journey, and the paths through it
 
