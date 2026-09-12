@@ -18,6 +18,19 @@ the old spelling. That is the rule 2.x works under (`docs/plan-2.0.0.md`): the
 format may break as often as the model needs it to, as long as every older
 version opens and migrates.
 
+**And turned again, 12 September 2026:** the folder is version 5, and what that
+changed is the header. `project.json` and `group.json` are one `scope.json`
+(ADR-0012 §1): a folder holding one is a scope, the folders inside it that hold
+one are the scopes under it, and the root of the working directory is the
+organisation. Everything this record decided still holds, and two of its
+sentences hold harder than they did — "a thing is where its folder is" now says
+how deep as well as where, and "a store removes only what the format writes" is
+what takes the two superseded headers off disk. The one clause that moved is the
+refusal: a folder with no views used to read as nothing, and reads as a domain,
+because refusing it would hide the decisions, documents and scopes filed under
+it. `projects/migrate4to5.ts` is the last reader of version 4, and
+`projects/migration.ts` runs the pass over the whole tree.
+
 ## Context and Problem Statement
 
 A landscape is a document about an organisation that a team argues over for

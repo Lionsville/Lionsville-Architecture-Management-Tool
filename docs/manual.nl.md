@@ -25,42 +25,51 @@ bestand bewaart.
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
 en geen telemetrie.
 
-## Projecten en groepen
+## Onderdelen
 
-De app opent op de **projectlijst**. Een project is één ontwerp: een landschap,
-de containerdiagrammen eronder en alles wat erop staat. Elk project staat onder
-een **groep**: een klant, een afdeling, een programma, hoe de naamruimte bij jou
-ook heet.
+De app opent op de **lijst met onderdelen**. Een **onderdeel** is één document:
+een naam, een landschap, de containerdiagrammen eronder, de besluiten, de
+plannen en alles wat erop staat. Onderdelen **nestelen**, en ze zijn allemaal
+hetzelfde document — de map waarin je werkt is de **organisatie**, een **domein**
+staat eronder, een **landschap** daar weer onder, zo diep als je werk vraagt.
+
+Een onderdeel dat niets tekent is een kop met de onderdelen eronder; een
+onderdeel dat wel iets tekent is een regel die je kunt openen. Wat het is, is
+geen instelling: het volgt uit de vraag of er iets op een bord staat.
 
 - **Voorbeelden** komen met de app mee. Een voorbeeld openen **kopieert** het
-  naar een eigen project; niets wat je doet raakt het voorbeeld zelf.
-- **Nieuwe groep** vraagt de groep en haar eerste project in één keer. Een groep
-  bestaat alleen door de projecten eronder, dus een lege groep is er niet.
-- **Nieuw project** biedt de groepen die er zijn. Elke groepskop heeft ook een
-  eigen **Project toevoegen**, en dat is de weg die voorkomt dat `Acme` en
-  `Acme Logistics` twee groepen worden.
+  naar eigen onderdelen; niets wat je doet raakt het voorbeeld zelf.
+- **Nieuw onderdeel…** vraagt om een naam en om waaronder het valt. De
+  organisatie wordt altijd aangeboden, dus het eerste onderdeel kan ergens heen.
 - **Volgorde** sorteert op naam, of op wat je het laatst hebt gewijzigd.
-- **Verwijderen** haalt het project weg: op de desktop de map, in de browser het
-  record. Een werkbestand dat je elders hebt bewaard blijft staan.
+- **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt: op de
+  desktop de map, in de browser de records. Een werkbestand dat je elders hebt
+  bewaard blijft staan.
 
-De **instellingen** van een groep bevatten haar naam, een klant, een
+De **instellingen** van een onderdeel bevatten de naam, een klant, een
 omschrijving en koppelingen: een wiki, een ticketwachtrij, een dashboard. De
 klant is voor wie een geëxporteerd aanzicht getekend is, als dat niet gewoon de
-groepsnaam is; leeg gelaten geldt de groepsnaam. Een groep hernoemen
-hernoemt het label van elk project erin. Bij het starten opent de app het
-project dat je open had.
+naam van de organisatie is; leeg gelaten geldt het dichtstbijzijnde antwoord
+erboven. Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
+hernoemen is niet verplaatsen. Verplaatsen doe je met **Instellingen… ▸ Groep**,
+en dat zet het onder een ander onderdeel. Bij het starten opent de app het
+onderdeel dat je open had.
 
-## Je projectenmap (desktop)
+Zes namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
+`diagrams`, `docs`, `decisions`, `transitions`, `images` en `logos`.
+
+## Je werkmap (desktop)
 
 De eerste keer dat de desktop-app start vraagt hij om een **map om in te
 werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
 
 ```
 <jouw map>/
-  acme-logistics/                     de groep
-    group.json                        naam, klant, omschrijving en koppelingen
-    warehouse-landscape/              het project
-      project.json                    hoe het heet, en wat erin zit
+  scope.json                          de organisatie: naam, klant, koppelingen
+  acme-logistics/                     een onderdeel eronder
+    scope.json                        hetzelfde bestand, een niveau dieper
+    warehouse-landscape/              en nog een keer
+      scope.json                      hoe het heet, en wat erin zit
       model.json                      de elementen en de lijnen ertussen
       diagrams/landscape.json         wat een aanzicht is
       diagrams/landscape.geometry.json     waar de elementen staan
@@ -69,10 +78,21 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
       logos/own.svg                   een logo dat je hebt geüpload
 ```
 
+Een map met een `scope.json` erin is een onderdeel, en de mappen daarbinnen die
+er ook een hebben zijn de onderdelen eronder. Verplaats een map in je
+bestandsbeheer en het onderdeel staat op zijn nieuwe adres; niets erin zegt waar
+het thuishoort.
+
+**Een map van een oudere versie opent gewoon.** De eerste keer dat deze versie
+er een ziet zet hij de hele boom om — `project.json` en `group.json` worden
+`scope.json` — en waar de map een git-repository is legt hij eerst vast hoe de
+map eruitzag. Nog een keer draaien doet niets.
+
 Er zit niets verstopt in de app. Zet de map in OneDrive, in Dropbox, op een
 netwerkschijf of in een git-repository en hij gedraagt zich zoals alles daar.
-**Wijzigen…** op de projectlijst brengt je naar een andere map; de mappen die je
-eerder gebruikte staan in **File ▸ Open Recent Folder**.
+**Wijzigen…** op de lijst brengt je naar een andere map; de mappen die je eerder
+gebruikte staan in **File ▸ Open Recent Folder**, elk onder de naam die hun
+organisatie zichzelf geeft.
 
 Dat je werk bestanden zijn heeft twee gevolgen.
 
@@ -140,8 +160,8 @@ Eén open project: een balk bovenin, de editor eronder.
 
 | In de balk | Wat hij doet |
 |---|---|
-| **Projecten…** | Terug naar de projectlijst |
-| **Instellingen…** | Naam en groep van dit project, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een project naar een andere groep verplaatsen laat de inhoud met rust |
+| **Projecten…** | Terug naar de lijst met onderdelen |
+| **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
 | **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je projectmap in één bestand. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
 | **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |
 | **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
@@ -309,10 +329,10 @@ codeblok gemarkeerd als `mermaid` wordt op elke pagina als diagram getekend.
 
 **Besluiten** in de bovenbalk opent de architectuurbesluiten (ADR's): een boom
 links, de besluiten van het gekozen knooppunt in het midden, en het besluit dat
-u leest rechts. Er zijn drie niveaus. De besluiten van de **groep** gelden voor
-elk project dat eronder valt en worden bij de groep bewaard. De besluiten van
-de **landschappen** horen bij het project als geheel. Elke **applicatie** heeft
-een eigen lijst. Een applicatie die uit het model is verdwenen houdt haar
+u leest rechts. Er zijn drie niveaus. De besluiten van de **groep** zijn die van
+het onderdeel erboven — ze gelden voor alles wat eronder valt en worden daar
+bewaard. De besluiten van de **landschappen** horen bij dit onderdeel als
+geheel. Elke **applicatie** heeft een eigen lijst. Een applicatie die uit het model is verdwenen houdt haar
 besluiten onder *Verwijderde applicaties*.
 
 Een besluit volgt het MADR-formaat: context en probleemstelling,
@@ -335,7 +355,7 @@ Het zoekveld boven de lijst doorzoekt alle besluiten in de boom tegelijk —
 titel, tekst en beoordelaars. De tekst is markdown, met dezelfde
 `[[Naam]]`-verwijzingen als documentatie; **Hulp bij opmaak** naast de bron
 toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met het
-project bewaard, of met de groep voor de besluiten van de groep.
+onderdeel bewaard, of met het onderdeel erboven voor diens besluiten.
 
 ## Tijd, en de dag die een bord toont
 

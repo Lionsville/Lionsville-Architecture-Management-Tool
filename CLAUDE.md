@@ -3,11 +3,11 @@
 The **Lionsville Architecture Management Tool**: a general-purpose architecture
 modelling tool — a Layer-7 application landscape and the C4 container diagrams
 under it. **There is no customer in this codebase.** An organisation is a
-*group*, which is data a user creates. Never write a customer's name into an
+*scope*, which is data a user creates. Never write a customer's name into an
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3486 tests** and one of every config. The
+One codebase, in modules, with **3504 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3486 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3504 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -199,15 +199,17 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                                       things only the canvas can do, as a view
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
-src/projects/     A project: open, save, order, summarise, address, remember.
-                    organisation      the working directory is one organisation:
-                                      its name, its client, its links (ADR-0012)
-                    group · links     a domain's record, and the one rule about
-                                      what may become an anchor
-                    folderFormat      a project as files (ADR-0003); adrFile ·
+src/projects/     A scope: open, save, order, summarise, address, remember.
+                    scope             the document every level is (ADR-0012 §1),
+                                      and the arithmetic over a tree of them
+                    scopePath · scopeLabel   the address, and what to call the
+                                      organisation a scope sits in
+                    links             the one rule about what may become an anchor
+                    folderFormat      a scope as files (ADR-0003); adrFile ·
                                       transitionFile · fileText
-                    migrate3to4       the last reader of format 3 (ADR-0012 §11)
-                    workingFile       the .lvarch container: v4 is the folder, zipped
+                    migrate3to4 · migrate4to5   the last readers of the two
+                                      formats before this one (ADR-0012 §11)
+                    workingFile       the .lvarch container: v5 is the folder, zipped
                     historyPath       where one thing is filed, for its history
                     documentSession   dirty / saving / changed on disk / conflict
                     migration         out of browser storage into the folder, and
@@ -221,16 +223,19 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       the File and View items said once as data
                     theme · workingSource · updateSettings · sync   facts two
                                       processes share (ADR-0005)
+                    scopeHeader · windowTitle   what a scope's header file is
+                                      called and what it is called on screen —
+                                      the two things main reads about a folder
                     updates           is this newer, which file is mine — the
                                       desktop's update check, without its fetch
                     agentServer       the server's three states, and mcp.json's shape
 src/widgets/      Presentation with no opinions: icons, one confirm dialog.
 src/ports/        The seams. Interfaces only, no implementations.
-                    ProjectStore · PreferencesStore · DocumentGateway
-                    GroupStore · ProjectHistory · Diagnostics · HostControls
+                    ScopeStore · PreferencesStore · DocumentGateway
+                    ProjectHistory · Diagnostics · HostControls
                     FolderSettings · UpdateSettings   the two other scopes
                     AgentGateway      where an agent's calls arrive, and the switch
-                    ProjectStore.contract.ts — behaviour every store must show
+                    ScopeStore.contract.ts — behaviour every store must show
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
                     desktop/          the Electron file channel, as a folder handle
@@ -239,6 +244,8 @@ src/app/          The shell around the editor.
                     composition.ts    which adapter, and which icon packs
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
                     picker/ · dialogs/ · examples/ · iconPacks/ · history/
+                                      the picker lists the tree; step 7 of
+                                      `docs/plan-2.0.0.md` replaces it
                     OverflowMenu      the menu, on a host that has no menu bar
                     SyncNotice · useSync   the folder and its remote disagree
                     useAgentGateway · dialogs/ConnectAgentDialog   the seam bound
@@ -256,8 +263,8 @@ electron/         The desktop main process and preload.
 ```
 
 **Components declare the interface they need**, not the widest one available.
-`useDocumentSession` asks for `{ save(project), load?(ref) }`, not for a
-`ProjectStore`, so it cannot reach `list()` or `remove()` and a reader does not
+`useDocumentSession` asks for `{ save(scope), load?(path) }`, not for a
+`ScopeStore`, so it cannot reach `list()` or `remove()` and a reader does not
 have to check whether it did. `DocumentationPage` asks for one `updateElement`, not the editor's whole
 action set. The concrete implementations satisfy those shapes structurally, so
 narrowing costs nothing: no wrappers, just a smaller type.
@@ -296,9 +303,14 @@ If you find yourself writing `localStorage`, `fetch`, `FileReader` or
 
 ## Decisions (ADRs)
 
-Three lists, one shape (`decisions/adr.ts` for the rules, `model/adr.ts` for the record). The **group's** records live on its
-`GroupProfile.decisions`; the **landscape's** and every **application's** live
-on `model.decisions`, told apart by `applicationId`. The body is MADR markdown;
+Three lists, one shape (`decisions/adr.ts` for the rules, `model/adr.ts` for the
+record). The **group's** records are the records of the scope ABOVE this one,
+read up the tree (ADR-0012 §7) and written back to that scope; the
+**landscape's** and every **application's** live on this scope's
+`model.decisions`, told apart by `applicationId`. The three lists collapse into
+one `subjectId` in beta 3; until then `groupDecisions` keeps its name through
+the editor, the search and the agent, because renaming them without changing
+what they mean is churn. The body is MADR markdown;
 title, status, date and signers are fields. The status is a state machine —
 proposed → reviewing → accepted | rejected, accepted → superseded (with the
 successor's id) — and the three end states lock the record: `updateAdr` and
@@ -306,50 +318,64 @@ successor's id) — and the three end states lock the record: `updateAdr` and
 markdown file with front matter (`projects/adrFile.ts`), and an application's go
 in a folder of their own because numbers are per list.
 
-## Groups and projects
+## Scopes
 
-There is no customer compiled into this app, and no "shipped document". A
-project is addressed by a **`ProjectRef`** — a group path and a key inside it —
-and the store holds many. In a working directory the ref IS the path, and the
-folder holding a `project.json` is the project (ADR-0003):
-
-```
-<working directory>/acme-logistics/warehouse-landscape/project.json
-<working directory>/acme/rail/rolling-stock/project.json
-```
-
-In a browser tab, which has no folder, the same refs are keys:
+There is no customer compiled into this app, and no "shipped document". **Every
+scope is the same document, nested, and the ref is the path** (ADR-0012 §1). A
+folder holding a `scope.json` is a scope; the folders inside it that hold one
+are the scopes under it. The root is the organisation — by position, because it
+is the root, and not by anything written in it:
 
 ```
-lvarch.project.acme-logistics/warehouse-landscape
-lvarch.project.acme/rail/rolling-stock
+<working directory>/            scope.json  model.json  diagrams/  docs/  …
+  acme/                         a domain: the same files
+    rail/                       a domain under that: the same files again
+      rolling-stock/            a landscape: the same files again
+  .lionsville-architecture/     settings only (ADR-0005); never a scope
 ```
 
-A **group** is whatever the namespace is called in this environment: a customer,
-a department, a programme. `ref.group` is a **path** (`acme/rail`), so groups can
-nest later without the key format, the store interface, or any stored ref
-changing — `groupSegments()` and the picker are the only places that would grow.
-The group's display name is `model.customerName`; that field belongs to the
-package's model and this shell reads it as the group's label.
+In a browser tab, which has no folder, the same paths are keys — and the root's
+key is the bare prefix, because a tab has one working tree:
 
-A group is **derived from the projects filed under it** (`groupsOf`) — there is
-nowhere to keep an empty one. Creating a group and creating a project are
-therefore separate actions with separate dialogs: "New group" asks for the group
-and its first project, "New project" offers a select of groups that exist. Each
-group header in the picker also has its own "+ New project", which is the path
-that stops `Acme` and `Acme Logistics` becoming two namespaces.
+```
+lvarch.scope.
+lvarch.scope.acme/rail/rolling-stock
+```
 
-A project's name and its group are editable afterwards (`Settings…` in the
-toolbar). A rename edits the model and leaves the ref alone; a **move** changes
-the ref, so it is save-then-remove in that order — removing first and then
-failing to save would lose the project.
+What a scope IS — `organisation | domain | programme | landscape` — is a
+**label** in its `scope.json` for a screen to show. Nothing branches on it and
+nothing may start to: the moment code asks "is this a domain" instead of "does
+this scope hold a view", a folder that says the wrong word about itself stops
+working, and a folder saying the wrong word about itself is a person's business
+and not a fault. A scope with no views is a domain; it reads, and the shell
+declines to *enter* it because the canvas has nothing to show
+(`isOpenableScope`).
 
-On boot the app reopens the project you had open (a preference), or shows the
-picker. Examples live in `src/examples/` and are **copied** into a project of
-your own when opened — nothing runs against an example in place.
+**Reserved names.** A child scope may not be called `diagrams`, `docs`,
+`decisions`, `transitions`, `images` or `logos` — a folder cannot be both. The
+rule is in `scopePath.ts` and is refused at the dialog, not suffixed quietly.
+
+**A name has one home.** `model.name` is what the scope is called, and
+`scope.json` holds it; the organisation's name used to ride on every project in
+a group as `model.customerName`, which is why renaming a group was a sweep that
+could half-finish. `projects/scopeLabel.ts` walks up the tree for the name the
+bar shows and the client a title block prints — the nearest answer wins, and a
+scope never shows its own name as its organisation.
+
+A rename edits the model and leaves the path alone; a **move** changes the path,
+so it is save-then-remove in that order — removing first and then failing to
+save would lose the scope. **Creating a scope creates the ones above it** that
+are not there: a folder with no `scope.json` is not a scope, and a child filed
+under one would be filed under nothing.
+
+On boot the app reopens the scope you had open (a preference, `lastScope`), or
+shows the picker. Examples live in `src/app/examples/` and are **copied** into
+scopes of your own when opened — nothing runs against an example in place.
 
 The picker lists **alphabetically by default**, with recency as a toggle
-(`sortProjects`, persisted as `projectOrder`).
+(`sortScopes`, persisted as `projectOrder`). It is the smallest screen that
+keeps a tree usable; step 7 of `docs/plan-2.0.0.md` replaces it with the
+organisation screen.
 
 ## Adding a storage backend (the worked example)
 
@@ -357,23 +383,23 @@ The point of the seams. Say you want to save to disk via the File System Access
 API. You write one file, run one suite, change one line:
 
 ```ts
-// src/adapters/fileSystem/FileSystemProjectStore.ts
-export class FileSystemProjectStore implements ProjectStore { /* … */ }
+// src/adapters/fileSystem/FileSystemScopeStore.ts
+export class FileSystemScopeStore implements ScopeStore { /* … */ }
 ```
 
 ```ts
-// src/adapters/fileSystem/FileSystemProjectStore.test.ts
-describeProjectStore('schijf', () => new FileSystemProjectStore(fakeHandle()))
+// src/adapters/fileSystem/FileSystemScopeStore.test.ts
+describeScopeStore('schijf', () => new FileSystemScopeStore(fakeHandle()))
 ```
 
-`describeProjectStore` (in `src/ports/ProjectStore.contract.ts`) is the shared
-behaviour suite: returns what it stored under its own ref, keeps two groups'
-identically-named projects apart, keeps a nested group apart from its parent,
-lists alphabetically, stamps `updatedAt`, refuses a ref that could escape its own
-folder, and survives a round trip unchanged. Passing it is the whole admission
-test. Then one branch in
-`composition.ts`. **Nothing above the seam changes** — not `main.tsx`, not a
-component, not a test.
+`describeScopeStore` (in `src/ports/ScopeStore.contract.ts`) is the shared
+behaviour suite: the root exists on an empty store and can be saved, a child is
+listed under its parent, a nested scope is kept apart from it, a reserved name
+is refused, a scope with no views still loads, a save-then-remove move keeps the
+children, `updatedAt` is stamped, a path that could escape the folder is
+refused, and a scope survives a round trip unchanged. Passing it is the whole
+admission test. Then one branch in `composition.ts`. **Nothing above the seam
+changes** — not `main.tsx`, not a component, not a test.
 
 The same holds for `PreferencesStore` and `DocumentGateway`.
 
@@ -449,19 +475,22 @@ identifiers is still a list of a customer's identifiers.
 | Product name | **Lionsville Architecture Management Tool** |
 | Short name (menus, window title, tight spaces) | **Architecture Management Tool** |
 | Working-file extension | **`.lvarch`** |
-| Working-file discriminator (in `project.json`) | `lionsville-architecture` |
+| Working-file discriminator (in `scope.json`) | `lionsville-architecture` |
 | npm package name | `lionsville-architecture-management-tool` |
 | Desktop bundle id | `nl.lionsville.architecture` |
-| Working-directory layout | `<group>/<project>/project.json` |
+| Working-directory layout | `<scope>/scope.json`, nested as deep as the work needs |
 | Folder settings (ADR-0005) | `<root>/.lionsville-architecture/folder.json` (shared) and `local.json` (this machine) |
-| Browser storage prefix (the fallback) | `lvarch.project.<group>/<project>` |
-| Preferences key | `lvarch.preferences` |
+| Browser storage prefix (the fallback) | `lvarch.scope.<path>`; the root is the bare prefix |
+| Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned`; `connect` / `connection.*` are the `flow` ones |
-| Working-folder format | **4** — `PROJECT_FORMAT_VERSION`, and the `.lvarch`'s version with it |
+| Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
+| What one scope's folder holds | `scope.json` · `model.json` · the six folders below · the scopes filed under it |
+| A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
+| What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
@@ -490,16 +519,18 @@ name are **not** opened: `isWorkingFile` accepts only the
 `lionsville-architecture` tag, and `model/hostModel.test.ts` pins the refusal
 with its reasoning. The working file was redefined rather than extended, at a
 moment when nobody had one worth keeping. Every version since opens: 1 and 2 are
-a JSON document, 3 and 4 are the project folder in a zip, and 4 is what is
-written now. `docs/decisions/0001` and `0003` have the long version.
+a JSON document, 3, 4 and 5 are a scope's folder in a zip, and 5 is what is
+written now. A `.lvarch` is ONE scope: the scopes filed under it are not in it,
+and a zip handed over with them inside opens as the scope at the top.
+`docs/decisions/0001` and `0003` have the long version.
 
 **2.x may break the file format as often as the model needs**, as long as every
 older version opens and migrates (`docs/plan-2.0.0.md`). A 1.x build meeting a
 2.x file sees no project in it, which is the honest answer and the same one
 `isWorkingFile` gives a file it does not know. No shim is kept for an older
 build's sake: a shim exists only until the format that makes it unnecessary is
-written, and then the read half of it moves into `projects/migrate3to4.ts` and
-the write half goes.
+written, and then the read half of it moves into `projects/migrate3to4.ts` or
+`projects/migrate4to5.ts` and the write half goes.
 
 ## State of play
 
@@ -757,3 +788,30 @@ decision or a business layer.
 Older commit messages and code comments refer to numbered roadmap phases. That
 file is gone; the numbering shifted once along the way, so read such a reference
 as history, not as a plan.
+
+Then the three records became **one** (`docs/plan-2.0.0.md`, step 6). A project
+was a `project.json` and a model; a group was a `group.json` and whatever could
+be derived from the projects filed under it; the organisation was a key in a
+settings file. They differed in what they could hold and in nothing else worth
+keeping, and the landscapes this is used on need more levels than two. **Format
+5 is one document shape, nested**: a folder holding a `scope.json` is a scope,
+the folders inside it that hold one are the scopes under it, and the root is the
+organisation by position. `ScopeStore` replaces `ProjectStore` and `GroupStore`
+over four adapters and one contract; the ref is a path; and `model.customerName`
+— the organisation's name carried on every project in a group — is the root
+scope's own name, walked up the tree by `projects/scopeLabel.ts`.
+
+Two things moved as a result and are worth knowing. A folder with **no views
+reads**, because it is a domain and refusing it would hide its decisions, its
+documents and everything filed under it; whether the canvas can show one is the
+shell's question. And a scope's **name is one write**, where a group's rename
+was a sweep over its projects that could half-finish and had a message for when
+it did.
+
+`projects/migrate4to5.ts` is the last reader of format 4 and the one door every
+folder comes through — a 1.x folder goes 3 → 4 → 5. The pass over a whole tree
+(`upgradeProjects`) also gives a `scope.json` to the two folders format 4 had
+that were not records: a group nobody wrote a `group.json` for, and the root,
+whose name was the `organisation` key in `folder.json` and is taken out of it
+once the root exists. A browser tab moves its keys from `lvarch.project.` to
+`lvarch.scope.` through the same pass.

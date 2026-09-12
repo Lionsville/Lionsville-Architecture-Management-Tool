@@ -24,41 +24,50 @@ file.
 Nothing leaves your machine either way. There is no account, no backend and no
 telemetry.
 
-## Projects and groups
+## Scopes
 
-The app opens on the **project list**. A project is one design: a landscape,
-the container diagrams under it, and everything placed on them. Every project
-is filed under a **group**: a customer, a department, a programme, whatever the
-namespace is called where you work.
+The app opens on the **scope list**. A **scope** is one document: a name, a
+landscape, the container diagrams under it, the decisions, the plans, and
+everything placed on them. Scopes **nest**, and every one of them is the same
+document — the folder you work in is the **organisation**, a **domain** sits
+under it, a **landscape** under that, as deep as your work needs.
 
-- **Examples** ship with the app. Opening one **copies** it into a project of
-  your own; nothing you do runs against the example itself.
-- **New group** asks for the group and its first project at once. A group only
-  exists through the projects filed under it, so there is no empty group.
-- **New project** offers the groups that exist. Each group header also has its
-  own **Add a project**, which is the path that keeps `Acme` and
-  `Acme Logistics` from becoming two groups.
-- **Order** lists projects by name, or by what you changed most recently.
-- **Delete** removes the project: its folder on the desktop, its record in the
-  browser. A working file you saved elsewhere is not touched.
+A scope that draws nothing is a heading with the scopes filed under it; a scope
+that draws something is a row you can open. Which it is, is not a setting: it
+follows from whether there is anything on a board.
 
-The **settings** of a group hold its name, a client, a description and links:
-a wiki space, a ticket queue, a dashboard. The client is what an exported
-diagram is drawn for, when that is not simply the group's name; left empty,
-the group's name is used. Renaming a group relabels every project in it. On
-boot the app reopens the project you had open.
+- **Examples** ship with the app. Opening one **copies** it into scopes of your
+  own; nothing you do runs against the example itself.
+- **New scope…** asks for a name and which scope to file it under. The
+  organisation is always offered, so the first one has somewhere to go.
+- **Order** lists by name, or by what you changed most recently.
+- **Delete** removes the scope and everything filed under it: its folder on the
+  desktop, its records in the browser. A working file you saved elsewhere is
+  not touched.
 
-## Your projects folder (desktop)
+The **settings** of a scope hold its name, a client, a description and links: a
+wiki space, a ticket queue, a dashboard. The client is what an exported diagram
+is drawn for, when that is not simply the organisation's name; left empty, the
+nearest answer above it is used. Renaming a scope relabels it and nothing else —
+where it is filed is its address, and renaming is not moving. Moving one is
+**Settings… ▸ Group**, which files it under another scope. On boot the app
+reopens the scope you had open.
+
+Six names are refused, because a scope's own folders use them already:
+`diagrams`, `docs`, `decisions`, `transitions`, `images` and `logos`.
+
+## Your working folder (desktop)
 
 The first time the desktop app runs it asks for a **folder to work in**, and
 everything you make lives there as files you can read:
 
 ```
 <your folder>/
-  acme-logistics/                     the group
-    group.json                        its name, client, description and links
-    warehouse-landscape/              the project
-      project.json                    what it is called, and what it holds
+  scope.json                          the organisation: its name, client, links
+  acme-logistics/                     a scope under it
+    scope.json                        the same file again, one level down
+    warehouse-landscape/              and again
+      scope.json                      what it is called, and what it holds
       model.json                      the elements and the lines between them
       diagrams/landscape.json         what a diagram is
       diagrams/landscape.geometry.json     where its elements sit
@@ -67,10 +76,20 @@ everything you make lives there as files you can read:
       logos/own.svg                   a logo you uploaded
 ```
 
+A folder holding a `scope.json` is a scope, and the folders inside it that hold
+one are the scopes under it. Move a folder in your file manager and the scope is
+at its new address; nothing inside it says where it lives.
+
+**A folder from an older version opens.** The first time this version sees one
+it converts the whole tree — `project.json` and `group.json` become `scope.json`
+— and, where the folder is a git repository, it records what the folder looked
+like first. Running it again does nothing.
+
 Nothing is hidden inside the app. Put the folder in OneDrive, in Dropbox, on a
 network share or in a git repository and it behaves the way anything else there
-does. **Change…** on the project list moves you to a different folder; the
-folders you have used before are in **File ▸ Open Recent Folder**.
+does. **Change…** on the scope list moves you to a different folder; the folders you
+have used before are in **File ▸ Open Recent Folder**, each under the name its
+organisation gives itself.
 
 Two things follow from your work being files.
 
@@ -134,9 +153,9 @@ One open project: a bar at the top, the editor below it.
 
 | In the bar | What it does |
 |---|---|
-| **Projects…** | Back to the project list |
-| **Settings…** | This project's name and group, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a project to another group leaves its content untouched |
-| **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your project folder in one file. **Interchange document** is topology and semantics only, the form for review and version control. On the desktop the menu also offers **Snapshot…** and **History…** |
+| **Projects…** | Back to the scope list |
+| **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
+| **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your scope's folder in one file. **Interchange document** is topology and semantics only, the form for review and version control. On the desktop the menu also offers **Snapshot…** and **History…** |
 | **Open…** | Loads either, and recognises which by what is in the file rather than by its name |
 | **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken. Read-only: ⌘Z is how you go back |
 | **Theme** | Light, dark or system. System follows your computer and switches with it |
@@ -297,9 +316,9 @@ block marked `mermaid` in any page is drawn as a diagram.
 **Decisions** in the top bar opens the architecture decision records: a tree
 down the left, the records of the selected node in the middle, and the record
 you are reading on the right. There are three levels. The **group's** decisions
-hold for every project filed under it and are kept with the group. The
-**landscapes'** decisions belong to the project as a whole. Each
-**application** has a list of its own. An application that has left the model
+are the records of the scope above this one — they hold for everything filed
+under it, and are kept with it. The **landscapes'** decisions belong to this
+scope as a whole. Each **application** has a list of its own. An application that has left the model
 keeps its records under *Removed applications*.
 
 A record follows the MADR format: context and problem statement, decision
@@ -319,8 +338,8 @@ replaces it and shows the link both ways. Review can be sent back to proposed.
 The search field above the list searches every record in the tree at once —
 title, body and reviewers. Bodies are markdown, with the same `[[Name]]` links
 as documentation; **Formatting help** beside the source shows the syntax,
-mermaid diagrams included. Changes are saved with the project, or with the
-group for the group's records.
+mermaid diagrams included. Changes are saved with this scope, or with the scope
+above it for its records.
 
 ## Time, and the day a board shows
 

@@ -9,6 +9,17 @@ has the eight commits. The two *Open questions* were answered by the
 implementer with the conservative reading, and are marked there — a person
 may still decide otherwise.
 
+**One key came and went, 12 September 2026.** The shared file was deliberately
+kept keyless here, waiting for the first thing everyone who opens a folder has
+to agree on; ADR-0012's first commit put the organisation's name in it, and
+scopes took it out again — the root scope's `scope.json` is where a name
+belongs, and a name in two files is a name that can disagree with itself. So
+`folder.json` is keyless again, still tolerated everywhere, still read on open
+rather than live, and still waiting. What the turn added is the writer this
+record described and nothing had needed: `writeFolder` takes a patch, carries
+every key it does not name through, and has exactly one caller — the 4 → 5
+pass, dropping the key it has just read.
+
 ## Context and Problem Statement
 
 There is no preferences screen. What a user can configure is real but scattered,

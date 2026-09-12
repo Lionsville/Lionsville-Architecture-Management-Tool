@@ -294,7 +294,7 @@ sit beside.
 §11 numbers this turn 4; the model's own shape took 4 first (step 4 above),
 and the ADR's *Built* note at 2.0.0 will say so.*
 
-### 6. One document shape
+### 6. One document shape — landed 12 September 2026 (513a925…164b137)
 
 `scope.json` replaces `project.json` and `group.json`; `ScopeStore`
 replaces `ProjectStore` + `GroupStore` (`ports/ScopeStore.ts`, its contract
@@ -318,6 +318,42 @@ with the two new clauses: a scope's children, and a reserved name refused);
 - Done when: the migration test's fixture tree round-trips; `describeScopeStore`
   passes on all four adapters; a 1.x folder opens, migrates, and every
   landscape in it draws as before.
+
+**Landed**, and six things the next stretch should know:
+
+- **A scope with no views reads.** That is the one clause of ADR-0003 that
+  moved: a folder with no diagrams used to answer `undefined`, and a domain is
+  exactly such a folder — refusing it would hide its decisions, its documents
+  and everything filed under it. Whether the canvas can show one is the shell's
+  question (`isOpenableScope`), and the picker declines to enter one.
+- **`list()` answers a tree**, root included, always — a store with nothing in
+  it answers with a root that has no children, which is what makes "there is
+  nothing here yet" a screen rather than a failure. `ScopeSummary` carries the
+  path, the name, the `kind` label, the `client`, the description, the links,
+  a count of views and the children. **That count is the only one**: it comes
+  off `scope.json`, which a listing already reads, and anything else would cost
+  a second file per scope on every open. The organisation screen's finding
+  lines will need more than a summary can answer cheaply — either a load per
+  card, or a widening of this with its own budget line.
+- **The group's decisions are the parent scope's**, read up the tree (§7) and
+  written back to it. `groupDecisions` keeps its name through the editor, the
+  search and the agent: collapsing the three ADR lists into `subjectId` is beta
+  3's, and renaming them without changing what they mean is churn.
+- **Creating a scope creates the ones above it.** A folder with no `scope.json`
+  is not a scope, so a child filed under one would be filed under nothing. The
+  4 → 5 pass does the same for a group format 4 never made a record of, and for
+  the root, whose name was `folder.json`'s `organisation` key — read once and
+  then taken away.
+- **The example is two scopes and one model.** An organisation above a
+  landscape; the model is NOT split, because every `supports` row joining a
+  capability to an application would dangle at one end and the stand-ins that
+  resolve a cross-scope id are §2's. The split that costs nothing is a name
+  above a document.
+- **What kept its name, deliberately.** The module `projects/`; `ProjectOrder`
+  and the `projectOrder` preference, which is a person's setting and would
+  silently reset if renamed; `ProjectHistory`, which is ADR-0008's vocabulary;
+  and `ProjectWorkspace`, `ProjectPicker` and `ProjectSettingsDialog`, which
+  step 7 is about to replace.
 
 ### 7. The organisation screen
 
