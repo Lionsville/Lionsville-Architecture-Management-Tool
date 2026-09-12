@@ -23,9 +23,15 @@ times.
 
 ## Beta 1 — the model underneath
 
-*Format 3 still. Nothing a user opens changes shape on disk; what changes is
-what the model can say. Ships the business sheet, on one scope, so the thing
-this was all for is on screen first.*
+*Ships the business sheet, on one scope, so the thing this was all for is on
+screen first. Steps 1–3 were built behind format 3 through shims; step 4 turns
+the format and deletes them.*
+
+**The rule on formats, decided 12 September 2026:** 2.x may break the file
+format as often as the model needs, as long as every older format opens and
+migrates. A 1.x build meeting a 2.x file fails to open it, which is the honest
+answer. No shim is kept for the sake of an older build; a shim exists only
+until the format that makes it unnecessary is written.
 
 ### 1. Relations with a type — landed 10 September 2026 (4f4615f…5d2a3d6)
 
@@ -65,7 +71,7 @@ this was all for is on screen first.*
   split the format was always meant to give history.
 - Done when: a rename of a dashed group is one line in the definition; a
   drag is one line in geometry; `describeProjectStore` passes unchanged.
-- Left standing for step 5: a group's colour is the one thing format 3
+- Left standing for step 4: a group's colour is the one thing format 3
   cannot carry for a group that has no box, because the format keeps the
   colour on the rectangle. Nothing in the app can make one, and the fold
   says so out loud rather than dropping it quietly.
@@ -82,15 +88,9 @@ example's journey and areas. Four things the next stretch has to know:
 - **Format 3 cannot hold the business layer, and says so rather than
   flattening it.** `asStoredElement` throws `element.notInThisFormat` for a
   `step`, a `function` or a `process`, the way `asConnections` already throws
-  for a `supports` row — the file has nowhere to put one, and writing a
-  `function` as the `application` its figure falls back to would hand a 1.x
-  build a row that is a lie. So **the example cannot be saved as a project
-  until this is answered**, and the answer is a decision rather than a fix:
-  either a `business` key in `model.json` that a 1.x build ignores (the file's
-  own lists stay exactly what they were, and the key goes at format 4), or
-  beta 1 ships the sheet over a model that is only ever in memory, or step 5
-  is brought forward. The interchange is not the same question — it is a
-  contract with other tools and correctly leaves the business layer out.
+  for a `supports` row. **Answered 12 September: step 4 turns the format.**
+  Until it lands, the sheet is tested over a hand-built model and the
+  example's business content waits for the format-4 example form.
 - **A sheet is a fourth diagram kind and nothing knows it yet.** `canPlaceKind`
   answers `ok` for any kind on a view that is not `layer7` or `container`,
   which is the right default for a laid-out view and is not a rule about
@@ -138,7 +138,37 @@ until format 4 (the same shim rule as step 2).
   `supports` window; an export of the example says it left out its
   `supports` rows.
 
-### 4. Strings, manual, screenshots
+### 4. Format 4 — the model's own shape, written
+
+The file says what the model says. The three folds in
+`projects/folderFormat.ts` and `model/relations.ts` — connections ↔ typed
+relations, placements ↔ members + geometry, the retired kinds ↔ application +
+band — go, and with them every "refuses to write at format 3" refusal.
+
+- `model.json`: `elements` with the six kinds and their fields (`parentId`,
+  `order`, `lane`, `outside`, `partyId`), `relations` with a `type` per row.
+  `diagrams/<id>.json` with `members`, `groups`, `lines`;
+  `diagrams/<id>.geometry.json` with numbers only. `project.json` stays
+  (scopes are beta 2's turn) and says `formatVersion: 4`.
+- **Opening a format-3 folder migrates it**: an explicit pass in
+  `projects/migration.ts` — snapshot first where the folder has git, every
+  project rewritten, `.placements.json` removed by the pass. The pass is the
+  three folds' read halves, run once, and then deleted from the format. Pinned
+  by a test over a v3 fixture tree that holds all three retired kinds, a
+  dashed group, a manual route, and a connection with a window. Browser
+  storage gets the same pass over its keys.
+- `workingFile.ts`: `.lvarch` v4 is a format-4 project zipped; v1–v3 open and
+  migrate. `isWorkingFile` and `hostModel.test.ts` pin what is refused.
+- The shipped example moves from the interchange form to the working form,
+  because the interchange cannot carry a business layer and the example is
+  about to have one (step 3's second half fills it).
+- The interchange export is untouched — it is a contract — and keeps saying
+  what it left out.
+- Done when: a v3 fixture opens, migrates, and writes format 4; a format-4
+  folder round-trips byte-for-byte; the `.lvarch` v1–v4 fixtures all open;
+  `describeProjectStore` passes; no fold remains in `folderFormat.ts`.
+
+### 5. Strings, manual, screenshots
 
 Every new word in four languages; `docs/manual.*.md` gets *The business
 architecture*; a screenshot of the sheet beside the landscape one.
@@ -149,9 +179,11 @@ architecture*; a screenshot of the sheet beside the landscape one.
 
 ## Beta 2 — scopes
 
-*Format 4. The one deliberate, whole commit with the migration in it.*
+*Format 5. The one deliberate, whole commit with the migration in it. ADR-0012
+§11 numbers this turn 4; the model's own shape took 4 first (step 4 above),
+and the ADR's *Built* note at 2.0.0 will say so.*
 
-### 5. One document shape
+### 6. One document shape
 
 `scope.json` replaces `project.json` and `group.json`; `ScopeStore`
 replaces `ProjectStore` + `GroupStore` (`ports/ScopeStore.ts`, its contract
@@ -163,20 +195,20 @@ with the two new clauses: a scope's children, and a reserved name refused);
 - Adapters: `fileSystem/`, `webStorage/`, `memory/`, `desktop/` — one
   store each over the same contract; the browser-storage tree keeps the
   same paths as keys.
-- `projects/migration.ts` grows the **format 3 → 4 pass**: snapshot first
+- `projects/migration.ts` grows the **format 4 → 5 pass**: snapshot first
   where there is git; every scope rewritten; `project.json`, `group.json`,
-  `.placements.json` removed by the pass; ids left as they are (collisions
-  are beta 3's finding, not this pass's problem). Pinned by a test over a
+  removed by the pass; ids left as they are (collisions are beta 3's
+  finding, not this pass's problem). Pinned by a test over a
   fixture tree that covers a nested group, a group with a profile, a project
   with a decision per application, and a working file inside the folder.
-- `workingFile.ts`: `.lvarch` v4 is a scope zipped; v1–v3 still open.
+- `workingFile.ts`: `.lvarch` v5 is a scope zipped; v1–v4 still open.
 - Desktop: the window title reads the root's `scope.json`; the File menu's
   *Recent* is scopes; the smoke run writes a tree and reads it back.
 - Done when: the migration test's fixture tree round-trips; `describeScopeStore`
   passes on all four adapters; a 1.x folder opens, migrates, and every
   landscape in it draws as before.
 
-### 6. The organisation screen
+### 7. The organisation screen
 
 Replaces the picker (`src/app/picker/` → `src/app/organisation/`). The
 design is on the canvas beside this plan: the root scope's home — its name,
@@ -198,7 +230,7 @@ scope…* under any node; examples last.
 
 ## Beta 3 — one identity
 
-### 7. Organisation-wide ids and the index
+### 8. Organisation-wide ids and the index
 
 `idPolicy` takes the tree's taken set. `projects/index.ts`: the index built
 from every scope's `model.json` — definitions (id → name, kind, master path,
@@ -206,7 +238,7 @@ declaring paths), stand-ins (id → drawing paths) — with a budget line in
 `model/testing/` for twenty scopes of a few thousand elements. The watcher
 invalidates it. A session holds it read-only.
 
-### 8. `ref`, the checks, and `mayEdit`
+### 9. `ref`, the checks, and `mayEdit`
 
 `Element.ref`; the checks of ADR-0012 §9 as one `checks.ts` in `business/`
 or `projects/` — conflict, drift, dangling, unmapped, proposal, uncovered,
@@ -214,13 +246,13 @@ unattributed, master drawn nowhere — each a value with a key and a place it
 is drawn. `mayEdit(id, scope)` refuses as a value; the inspector shows the
 owning scope and offers to open it.
 
-### 9. The register page and the four gestures
+### 10. The register page and the four gestures
 
 The register page at the root (derived, with the findings); *link*,
 *promote*, *demote*, *transfer* — the other scope written first, confirmed,
 and the stack refusing to undo past a two-scope step.
 
-### 10. History across scopes
+### 11. History across scopes
 
 `historyPath` for an id is the union of its files across the tree; the
 history page's subject picker offers *everywhere this is drawn*.
@@ -231,18 +263,18 @@ history page's subject picker offers *everywhere this is drawn*.
 
 ## Beta 4 — the map, and the agent
 
-### 11. The enterprise map
+### 12. The enterprise map
 
 The `map` view: functions × applications from `supports`, rolled up across
 scopes through the index; *people* as a column; *uncovered* as the gap.
 
-### 12. The agent at every scope
+### 13. The agent at every scope
 
 `scope` on every tool; `register.list`, `scopes.list`, `checks.list`; URIs
 `lvarch://<scope path>/element/<id>`; `diagram.render` for a `sheet` and a
 `map`. `docs/decisions/0011` gets a *Built* note.
 
-### 13. BPMN
+### 14. BPMN
 
 A renderer for the ```bpmn fence, registered in `documentation/`'s fence
 table. Read-only first.
