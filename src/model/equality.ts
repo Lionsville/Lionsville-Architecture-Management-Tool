@@ -1,89 +1,26 @@
-import type {
-  Relation,
-  DesignElement,
-  Geometry,
-  PlacedNode,
-  EdgeRoute,
-  ResizableZone,
-} from './types';
+import type { EdgeRoute } from './types';
 import { routeSource } from './routes';
 
 /**
- * Field-by-field equality used by reconciliation to decide whether the host's
- * refreshed model now reflects a local edit (then the local overlay entry can
- * be dropped). `undefined` and "absent" are treated as equal so DTO round-trips
- * that normalise empty strings/nulls do not keep entries alive forever.
+ * One comparison: whether a route row has changed. `useEditorState` asks it
+ * before dispatching a route gesture, so the side a line already leaves from,
+ * or the pin it already carries, costs no undo step and queues no routing pass.
  *
- * Every persisted field participates, including the U6a element style
- * (accentColor/shapeVariant/iconKey/iconSize) and U4b relation style (color/lineStyle/
- * routing/arrowheads). Leaving those out would read a pending style edit as
- * already round-tripped and drop it, reverting the colour on the next save.
+ * Everything the file stores about a route takes part — provenance, the pin,
+ * the attach sides, the waypoints and the label position — because two rows
+ * that differ in only one of those are different rows on disk, and a comparison
+ * that read them as the same would drop exactly the interesting case: identical
+ * geometry that changed hands. Coordinates are compared within an epsilon, and
+ * an absent field equals an `undefined` one, so a round trip that normalises
+ * either does not read as an edit.
+ *
+ * This is deliberately not the question `useDragRoutePreview` asks, which is
+ * whether the board would *draw* two rows the same; that one treats an absent
+ * row as a straight line, where this one treats it as nothing at all.
  */
-
-const RESIZABLE_ZONES: ResizableZone[] = [
-  'actors',
-  'inputChannels',
-  'externalSystems',
-  'management',
-];
 
 function sameOptional(a: unknown, b: unknown): boolean {
   return (a ?? undefined) === (b ?? undefined);
-}
-
-function aspectsEqual(a: DesignElement['aspects'], b: DesignElement['aspects']): boolean {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  for (const key of keys) {
-    const entryA = a[key];
-    const entryB = b[key];
-    if (!entryA || !entryB) {
-      if ((entryA ?? undefined) !== (entryB ?? undefined)) return false;
-      continue;
-    }
-    if (entryA.status !== entryB.status || !sameOptional(entryA.note, entryB.note)) return false;
-  }
-  return true;
-}
-
-export function elementsEqual(a: DesignElement, b: DesignElement): boolean {
-  if (a.id !== b.id || a.kind !== b.kind || a.name !== b.name) return false;
-  if (!sameOptional(a.parentId, b.parentId)) return false;
-  if (
-    !sameOptional(a.category, b.category) ||
-    !sameOptional(a.vendor, b.vendor) ||
-    !sameOptional(a.technology, b.technology) ||
-    !sameOptional(a.description, b.description)
-  ) {
-    return false;
-  }
-  if (a.lifecycle !== b.lifecycle || a.isManaged !== b.isManaged) return false;
-  if (!aspectsEqual(a.aspects, b.aspects)) return false;
-  if (
-    !sameOptional(a.accentColor, b.accentColor) ||
-    !sameOptional(a.shapeVariant, b.shapeVariant) ||
-    !sameOptional(a.iconKey, b.iconKey) ||
-    !sameOptional(a.iconSize, b.iconSize)
-  ) {
-    return false;
-  }
-  return true;
-}
-
-export function relationsEqual(a: Relation, b: Relation): boolean {
-  return (
-    a.id === b.id &&
-    a.type === b.type &&
-    a.sourceId === b.sourceId &&
-    a.targetId === b.targetId &&
-    sameOptional(a.label, b.label) &&
-    sameOptional(a.protocol, b.protocol) &&
-    sameOptional(a.isBidirectional, b.isBidirectional) &&
-    sameOptional(a.color, b.color) &&
-    sameOptional(a.lineStyle, b.lineStyle) &&
-    sameOptional(a.routing, b.routing) &&
-    sameOptional(a.sourceArrowhead, b.sourceArrowhead) &&
-    sameOptional(a.targetArrowhead, b.targetArrowhead)
-  );
 }
 
 const POSITION_EPSILON = 0.001;
@@ -92,31 +29,18 @@ function sameCoordinate(a: number, b: number): boolean {
   return Math.abs(a - b) < POSITION_EPSILON;
 }
 
-export function placementsEqual(a: PlacedNode, b: PlacedNode): boolean {
-  return (
-    a.id === b.id &&
-    sameOptional(a.zone, b.zone) &&
-    sameOptional(a.group, b.group) &&
-    sameCoordinate(a.x, b.x) &&
-    sameCoordinate(a.y, b.y) &&
-    sameOptional(a.width, b.width) &&
-    sameOptional(a.height, b.height)
-  );
-}
-
 export function edgeRoutesEqual(a: EdgeRoute, b: EdgeRoute): boolean {
   if (a.relationId !== b.relationId) return false;
-  // Provenance is persisted, so a route whose ONLY change is who owns it still
-  // has to reach the server. This comparison decides whether `diffToOverlay`
-  // emits an upsert at all, and leaving it out would silently drop exactly the
-  // interesting case: identical geometry that changed hands — a preserved route
-  // re-emitted as manual over a stored auto row, or an undo handing one back.
+  // Provenance is persisted, so a route whose ONLY change is who owns it is a
+  // changed row — a preserved route re-emitted as manual over a stored auto
+  // row, or an undo handing one back. Identical geometry does not make it the
+  // same record.
   if (routeSource(a) !== routeSource(b)) return false;
   // The pin is persisted too, and it is the only thing that distinguishes an
   // explicitly pinned straight line from no row at all.
   if ((a.pinned ?? false) !== (b.pinned ?? false)) return false;
-  // Attach sides are persisted constraints; a row whose only change is which side
-  // an end leaves from must reach the server like any other route edit.
+  // Attach sides are persisted constraints; a row whose only change is which
+  // side an end leaves from is a route edit like any other.
   if (!sameOptional(a.sourceSide, b.sourceSide) || !sameOptional(a.targetSide, b.targetSide)) {
     return false;
   }
@@ -133,32 +57,4 @@ export function edgeRoutesEqual(a: EdgeRoute, b: EdgeRoute): boolean {
   return a.waypoints.every(
     (p, i) => sameCoordinate(p.x, b.waypoints[i].x) && sameCoordinate(p.y, b.waypoints[i].y),
   );
-}
-
-export function layoutConfigsEqual(
-  a: Pick<Geometry, 'zones' | 'canvas' | 'groups'> | undefined,
-  b: Pick<Geometry, 'zones' | 'canvas' | 'groups'> | undefined,
-): boolean {
-  for (const zone of RESIZABLE_ZONES) {
-    if (!sameOptional(a?.zones?.[zone]?.size, b?.zones?.[zone]?.size)) return false;
-  }
-  if (
-    !sameOptional(a?.canvas?.width, b?.canvas?.width) ||
-    !sameOptional(a?.canvas?.height, b?.canvas?.height)
-  ) {
-    return false;
-  }
-  const groupsA = a?.groups ?? [];
-  const groupsB = b?.groups ?? [];
-  if (groupsA.length !== groupsB.length) return false;
-  return groupsA.every((groupA, i) => {
-    const groupB = groupsB[i];
-    return (
-      groupA.id === groupB.id &&
-      sameCoordinate(groupA.x, groupB.x) &&
-      sameCoordinate(groupA.y, groupB.y) &&
-      sameCoordinate(groupA.width, groupB.width) &&
-      sameCoordinate(groupA.height, groupB.height)
-    );
-  });
 }
