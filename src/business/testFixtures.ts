@@ -57,3 +57,62 @@ export const relation = (
   id: string, type: RelationType, sourceId: ElementId, targetId: ElementId,
   over: Partial<Relation> = {},
 ): Relation => ({ id, type, sourceId, targetId, ...over })
+
+/**
+ * One small organisation, whole: the scope every sheet test is written over.
+ *
+ * *Ship a consignment* in four phases, with two lanes beside the common row —
+ * a key account that forks at *quote*, passes through *pick* and rejoins at
+ * *deliver*, and a marketplace partner from outside that does one thing in
+ * *pick*. Two areas, a grouping each, and four capabilities between them
+ * covering all three answers `coverage.ts` can give: *picking* by two systems,
+ * *packing* by people, *invoicing* by one system, *dunning* by nobody yet.
+ *
+ * Shared rather than rebuilt per suite because the page, the inspector and the
+ * agent all have to agree about the same organisation — a fixture per test
+ * file is how three of them end up describing three different ones.
+ */
+export function shippingScope(): { elements: DesignElement[]; relations: Relation[] } {
+  return {
+    elements: [
+      journey('ship', 'Ship a consignment'),
+      phase('order', 'Order', 'ship', { order: 1 }),
+      phase('quote', 'Quote', 'ship', { order: 2 }),
+      phase('pick', 'Pick', 'ship', { order: 3 }),
+      phase('deliver', 'Deliver', 'ship', { order: 4 }),
+
+      step('take-order', 'Take the order', 'order'),
+      step('standard-rate', 'Apply the standard rate', 'quote'),
+      step('pick-goods', 'Pick the goods', 'pick'),
+      step('hand-over', 'Hand over', 'deliver'),
+      step('negotiate', 'Negotiate the rate', 'quote', { lane: 'key-account' }),
+      step('sign-off', 'Sign off the delivery', 'deliver', { lane: 'key-account' }),
+      step('partner-fulfils', 'Partner fulfils', 'pick', { lane: 'partner' }),
+
+      area('fulfilment', 'Fulfilment', { order: 1 }),
+      grouping('warehousing', 'Warehousing', 'fulfilment'),
+      capability('picking', 'Picking', 'warehousing'),
+      capability('packing', 'Packing', 'warehousing'),
+      area('billing', 'Billing', { order: 2 }),
+      grouping('invoicing', 'Invoicing', 'billing'),
+      capability('invoice', 'Raise an invoice', 'invoicing'),
+      capability('dunning', 'Chase a late payment', 'invoicing'),
+
+      actor('warehouse-team', 'Warehouse team'),
+      actor('key-account', 'Key account'),
+      actor('partner', 'Marketplace partner', { outside: true }),
+
+      application('wms', 'Warehouse system'),
+      application('scanner', 'Handheld scanners'),
+      application('erp', 'Finance system'),
+    ],
+    relations: [
+      relation('s1', 'supports', 'wms', 'picking'),
+      relation('s2', 'supports', 'scanner', 'picking'),
+      relation('s3', 'supports', 'erp', 'invoice'),
+      relation('a1', 'assigned', 'warehouse-team', 'packing'),
+      relation('a2', 'assigned', 'partner', 'partner-fulfils'),
+      relation('f1', 'flow', 'wms', 'erp'),
+    ],
+  }
+}

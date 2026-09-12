@@ -164,6 +164,17 @@ export interface DesignElement {
   /** Which {@link ElementKind} `actor` it belongs to, when that has been said. */
   partyId?: ElementId;
   /**
+   * A `function` only: which domains the organisation has assigned it to
+   * (ADR-0012 §3) — the *top-down* half of who owns a capability.
+   *
+   * A path per domain, as a plain string until scopes are a type of their own.
+   * The other half is *claimed* — a domain holding a stand-in of it — which is
+   * derived from the tree and arrives with scopes; until then this is the only
+   * half there is, and a function with none is what the sheet's *not yet
+   * mapped* band is made of (§9).
+   */
+  scopes?: string[];
+  /**
    * Which phase it is in, and — with {@link DesignElement.lifecycleDates} — when
    * (ADR-0009). Meaningful on a function and an actor as well as an application
    * since ADR-0012 §8: a capability can be being built, and a partner can be
