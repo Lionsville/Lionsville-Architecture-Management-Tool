@@ -38,13 +38,14 @@ import { EN as platformEn } from '../platform/strings/en';
 import { EN as projectsEn } from '../projects/strings/en';
 import { EN as roadmapEn } from '../roadmap/strings/en';
 import { EN as searchEn } from '../search/strings/en';
+import { EN as businessEn } from '../business/strings/en';
 import { EN as commonEn } from './strings/en';
 
 /** Every slice, by the module that owns it — the composition, spelled out once. */
 const SLICES: Record<string, Record<string, string>> = {
   adapters: adaptersEn, app: appEn, common: commonEn, decisions: decisionsEn,
   documentation: documentationEn, editor: editorEn, model: modelEn, platform: platformEn,
-  projects: projectsEn, roadmap: roadmapEn, search: searchEn,
+  projects: projectsEn, roadmap: roadmapEn, search: searchEn, business: businessEn,
 };
 
 /** English is the schema, so its keys are THE keys. */

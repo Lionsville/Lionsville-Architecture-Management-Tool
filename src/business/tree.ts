@@ -139,6 +139,42 @@ export function wouldCycle(
 }
 
 /**
+ * Moving one thing among its neighbours: which rows change, and to what.
+ *
+ * The whole sibling list is renumbered from 1, not just the pair that swap.
+ * `order` is optional because a list nobody ordered should not be renumbered
+ * to say so (see {@link inOrder}) — but the moment somebody moves one, the
+ * order of that list HAS become a decision, and half of it saying `3` while
+ * the other half says nothing is how two reads of the same file disagree.
+ * Renumbering once, at the moment the decision is made, is the cheap end of
+ * that trade.
+ *
+ * Empty when the move would go off either end, or when the scope does not
+ * hold it: nothing to write, and nothing to undo.
+ */
+export function moveAmongSiblings(
+  elements: readonly DesignElement[],
+  id: ElementId,
+  by: -1 | 1,
+): { id: ElementId; order: number }[] {
+  const element = elements.find((held) => held.id === id)
+  if (!element) return []
+  const siblings = childrenOf(
+    elements.filter((held) => held.kind === element.kind),
+    element.parentId,
+  )
+  const at = siblings.findIndex((held) => held.id === id)
+  const to = at + by
+  if (at === -1 || to < 0 || to >= siblings.length) return []
+
+  const moved = [...siblings]
+  moved.splice(to, 0, ...moved.splice(at, 1))
+  return moved
+    .map((held, index) => ({ id: held.id, order: index + 1 }))
+    .filter((row, index) => moved[index].order !== row.order)
+}
+
+/**
  * The tree under one root, flattened with each row's depth beside it.
  *
  * What a page that draws by depth actually wants, in one pass instead of a

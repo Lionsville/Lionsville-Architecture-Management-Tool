@@ -23,6 +23,7 @@ import { EN as model } from '../model/strings/en'
 import { EN as platform } from '../platform/strings/en'
 import { EN as projects } from '../projects/strings/en'
 import { EN as search } from '../search/strings/en'
+import { EN as business } from '../business/strings/en'
 
 export const EN = {
   ...adapters,
@@ -36,4 +37,5 @@ export const EN = {
   ...platform,
   ...projects,
   ...search,
+  ...business,
 } as const

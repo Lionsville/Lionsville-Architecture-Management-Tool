@@ -9,10 +9,12 @@
  *
  * Pure at the root, the way `roadmap/` is, and for the same reason: a sheet is
  * *laid out* rather than dragged (§6), so what it draws is arithmetic over the
- * model and can be tested in node without a canvas. The page that draws it
- * lives in `ui/`.
+ * model and can be tested in node without a canvas. The page that draws it —
+ * the sheet and the inspector docked to it — lives in `ui/`.
  */
-export { childrenOf, depthOf, descendantsOf, flatten, inOrder, wouldCycle } from './tree'
+export {
+  childrenOf, depthOf, descendantsOf, flatten, inOrder, moveAmongSiblings, wouldCycle,
+} from './tree'
 export { coverageFor, coverageOf } from './coverage'
 export type { Coverage, FunctionCoverage } from './coverage'
 export { journeyOf } from './lanes'
@@ -21,5 +23,9 @@ export { rootsOfKind, seedSheet } from './sheetDiagram'
 export { sheetPage } from './sheet'
 export type {
   SheetActor, SheetArea, SheetCapability, SheetCell, SheetGrouping, SheetJourney, SheetLane,
-  SheetPage, SheetStep,
+  SheetStep, LaidOutSheet,
 } from './sheet'
+export { SheetPage } from './ui/SheetPage'
+export type { SheetPageProps } from './ui/SheetPage'
+export { FunctionInspector } from './ui/FunctionInspector'
+export type { FunctionInspectorProps, SheetActions } from './ui/FunctionInspector'

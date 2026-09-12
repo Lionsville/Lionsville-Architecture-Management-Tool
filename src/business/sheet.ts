@@ -108,7 +108,7 @@ export type SheetArea = {
   groupings: SheetGrouping[]
 }
 
-export type SheetPage = {
+export type LaidOutSheet = {
   /** The rail, or empty when the sheet does not draw it. */
   actors: SheetActor[]
   /** Absent when the sheet names no journey, or names one this scope does not hold. */
@@ -135,7 +135,7 @@ const UNCOVERED: FunctionCoverage = { supportedBy: [], assignedTo: [], coverage:
 export function sheetPage(
   model: Pick<DesignModel, 'elements' | 'relations'>,
   sheet: Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors'>,
-): SheetPage {
+): LaidOutSheet {
   const { elements, relations } = model
   const byId = new Map(elements.map((element) => [element.id, element]))
   const coverage = coverageOf(relations)

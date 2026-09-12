@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { childrenOf, depthOf, descendantsOf, flatten, inOrder, wouldCycle } from './tree'
-import { area, capability, grouping } from './testFixtures'
+import { childrenOf, depthOf, descendantsOf, flatten, inOrder, moveAmongSiblings, wouldCycle } from './tree'
+import { area, capability, grouping, journey } from './testFixtures'
 
 /**
  * The tree, over a small responsibility area: *Fulfilment* with two groupings
@@ -114,6 +114,39 @@ describe('wouldCycle', () => {
   it('answers rather than hanging when the model already holds a loop', () => {
     const looped = [capability('a', 'A', 'b'), capability('b', 'B', 'a')]
     expect(wouldCycle(looped, 'c', 'a')).toBe(false)
+  })
+})
+
+describe('moveAmongSiblings', () => {
+  it('swaps a thing with the neighbour it is moving past', () => {
+    // Transport is first and Warehousing second; moving Warehousing up puts
+    // the pair back the other way round.
+    expect(moveAmongSiblings(areas(), 'warehousing', -1))
+      .toEqual([{ id: 'warehousing', order: 1 }, { id: 'transport', order: 2 }])
+  })
+
+  it('renumbers a list that never said an order, because now it has one', () => {
+    const unordered = [
+      area('a', 'A'), capability('x', 'X', 'a'), capability('y', 'Y', 'a'), capability('z', 'Z', 'a'),
+    ]
+    expect(moveAmongSiblings(unordered, 'z', -1))
+      .toEqual([{ id: 'x', order: 1 }, { id: 'z', order: 2 }, { id: 'y', order: 3 }])
+  })
+
+  it('writes nothing at either end, so there is nothing to undo', () => {
+    expect(moveAmongSiblings(areas(), 'transport', -1)).toEqual([])
+    expect(moveAmongSiblings(areas(), 'warehousing', 1)).toEqual([])
+  })
+
+  it('writes nothing for something the scope does not hold', () => {
+    expect(moveAmongSiblings(areas(), 'nobody', 1)).toEqual([])
+  })
+
+  it('counts only its own kind as neighbours', () => {
+    // A journey and an area are both roots and are not in one another's row.
+    const mixed = [area('a', 'A'), area('b', 'B'), journey('j', 'J')]
+    expect(moveAmongSiblings(mixed, 'b', -1))
+      .toEqual([{ id: 'b', order: 1 }, { id: 'a', order: 2 }])
   })
 })
 

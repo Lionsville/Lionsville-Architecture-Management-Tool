@@ -15,6 +15,7 @@ import { DE as model } from '../model/strings/de'
 import { DE as platform } from '../platform/strings/de'
 import { DE as projects } from '../projects/strings/de'
 import { DE as search } from '../search/strings/de'
+import { DE as business } from '../business/strings/de'
 
 export const DE = {
   ...adapters,
@@ -28,4 +29,5 @@ export const DE = {
   ...platform,
   ...projects,
   ...search,
+  ...business,
 } as const
