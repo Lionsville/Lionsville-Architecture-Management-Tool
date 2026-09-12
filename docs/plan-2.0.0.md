@@ -407,7 +407,7 @@ The honest signal that a store will not take a write is the standing storage
 notice along the bottom, and a second one that guessed would hide affordances
 that work.
 
-**Cut 2.0.0-beta.2.**
+**Cut 2.0.0-beta.2** — cut 12 September 2026 from `8366865`, with the sheet's authoring (3c) and three fixes found by testing beta 1 folded in.
 
 ---
 
