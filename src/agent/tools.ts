@@ -770,13 +770,15 @@ const SPECS = [
     name: 'diagram.create',
     tier: 'write',
     description:
-      'Add a diagram and switch to it: a new landscape by name, or a C4 container view of one application, '
-      + 'seeded with its components and laid out on first open. Answers with the id.',
+      'Add a diagram: a new landscape by name, a C4 container view of one application seeded with its '
+      + 'components and laid out on first open, or a business architecture sheet over the journey and the '
+      + 'areas this project already holds. The first two are switched to; a sheet is a page rather than a '
+      + 'board, so it is made and left for a person to open. Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape or a container view.', enum: ['layer7', 'container'] },
-        name: { type: 'string', description: 'For a landscape: its name.' },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, or a business architecture sheet.', enum: ['layer7', 'container', 'sheet'] },
+        name: { type: 'string', description: 'For a landscape or a sheet: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
       },
       required: ['kind'],
@@ -864,7 +866,10 @@ const SPECS = [
       + 'cards that overlap and by how much, lines that cut through a card, cards drawn in another band '
       + 'than they are filed in, group members outside their group, cards off the board, cards nothing '
       + 'connects to, and how full each band is. Lists are capped; totals are whole. Read this before '
-      + 'and after moving anything, and read the band rectangles before choosing a coordinate.',
+      + 'and after moving anything, and read the band rectangles before choosing a coordinate. '
+      + 'On a business architecture sheet, which is laid out and has no geometry, it reports the page '
+      + 'instead: the stakeholder rail, the journey with a row per lane, and every area with what '
+      + 'covers each capability.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -880,7 +885,9 @@ const SPECS = [
     description:
       'A picture of a diagram as the app draws it, as a PNG, with the transform it was drawn with so a '
       + 'pixel maps back to a flow coordinate. Crop to some elements or to a region: a whole landscape '
-      + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible.',
+      + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible. '
+      + 'A business architecture sheet is drawn whole — it has no coordinates to crop to — and the crop '
+      + 'arguments are ignored for one.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -28,6 +28,7 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
+import { seedSheet } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
 import {
@@ -1085,6 +1086,20 @@ function transitionDecision(args: Args, view: WriteView): Prepared | AgentAnswer
 
 function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   const { model } = view
+  if (args.kind === 'sheet') {
+    const name = typeof args.name === 'string' ? args.name.trim() : ''
+    if (!name) return refused('agent.badArguments', '"name" is required for a sheet')
+    const sheet = seedSheet(toArrays(model).elements, { id: view.makeId('sh'), name })
+    // No `activeDiagramId`: a sheet is laid out and the canvas cannot draw one,
+    // so making it active would leave the window on a view it has nothing for.
+    return {
+      command: { type: 'diagram.create', diagram: toDiagram(sheet), origin: 'agent' },
+      answer: json({
+        id: sheet.id, kind: 'sheet', name,
+        journeyId: sheet.journeyId, areas: sheet.areas ?? [],
+      }),
+    }
+  }
   if (args.kind === 'layer7') {
     const name = typeof args.name === 'string' ? args.name.trim() : ''
     if (!name) return refused('agent.badArguments', '"name" is required for a landscape')

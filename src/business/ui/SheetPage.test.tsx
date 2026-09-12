@@ -168,6 +168,31 @@ describe('what is not yet mapped', () => {
   })
 })
 
+describe('the handle the agent reaches the page through', () => {
+  it('is handed over while a sheet is up, naming which one', () => {
+    const onHandle = vi.fn()
+    renderShell(
+      <SheetPage
+        open model={model()} sheet={SHEET} readOnly={false} actions={actions()}
+        onClose={() => {}} onHandle={onHandle}
+      />,
+    )
+    expect(onHandle).toHaveBeenCalledWith(expect.objectContaining({ diagramId: 'sh-1' }))
+  })
+
+  it('is withdrawn when the page is not up, so nothing asks a closed page for a picture', () => {
+    const onHandle = vi.fn()
+    renderShell(
+      <SheetPage
+        open={false} model={model()} sheet={SHEET} readOnly={false} actions={actions()}
+        onClose={() => {}} onHandle={onHandle}
+      />,
+    )
+    expect(onHandle).toHaveBeenCalledWith(undefined)
+    expect(onHandle).not.toHaveBeenCalledWith(expect.objectContaining({ diagramId: 'sh-1' }))
+  })
+})
+
 describe('choosing something', () => {
   it('puts a capability in the inspector', () => {
     open()

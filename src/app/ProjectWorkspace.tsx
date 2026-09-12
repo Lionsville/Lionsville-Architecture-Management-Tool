@@ -46,6 +46,7 @@ import type { ProjectSettings } from './ProjectSettingsDialog'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { SheetPage } from '../business'
+import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
@@ -182,6 +183,12 @@ export function ProjectWorkspace({
   // points with it too.
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | undefined>(undefined)
   const files = useProjectFiles({ session, documents, notify, s })
+  // Declared here rather than beside the other pages, because the agent's
+  // renderer view below points into both: at the canvas, and at the sheet.
+  const focusElement = useCallback((id: string) => {
+    setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
+  }, [])
+  const sheets = useSheet({ session, makeId, s, toElement: focusElement })
 
   /**
    * The picture behind an image source, or nothing — which is the whole of the
@@ -264,6 +271,10 @@ export function ProjectWorkspace({
    */
   const editorHandle = useRef<EditorHandle | undefined>(undefined)
   const onEditorHandle = useCallback((handle: EditorHandle | undefined) => { editorHandle.current = handle }, [])
+  /** The same arrangement for the sheet, which is a page rather than a canvas. */
+  const sheetHandle = useRef<SheetHandle | undefined>(undefined)
+  const onSheetHandle = useCallback((handle: SheetHandle | undefined) => { sheetHandle.current = handle }, [])
+  const openSheetPage = sheets.open
   const renderer = useMemo<RendererView>(() => {
     const current = (): EditorHandle => {
       const held = editorHandle.current
@@ -300,8 +311,25 @@ export function ProjectWorkspace({
         return new Uint8Array(await blob.arrayBuffer())
       },
       focus: (elementId) => setFocusRequest((prev) => ({ id: elementId, nonce: (prev?.nonce ?? 0) + 1 })),
+      /**
+       * A sheet is a page, not the canvas: open it, wait for it to hand over
+       * its handle, and rasterise what it drew. Nothing is laid out
+       * asynchronously here, so the wait is for React rather than for a
+       * worker — but it is still a wait, and a page that never arrives is a
+       * refusal rather than a hang.
+       */
+      async sheet(diagramId, options) {
+        openSheetPage(diagramId)
+        const deadline = Date.now() + 5_000
+        while (Date.now() < deadline) {
+          const held = sheetHandle.current
+          if (held?.diagramId === diagramId) return held.capture(options)
+          await new Promise((resolve) => setTimeout(resolve, 50))
+        }
+        throw new RendererRefused('gone')
+      },
     }
-  }, [session])
+  }, [session, openSheetPage])
 
   useAgentGateway(agent, useMemo(() => ({
     indexed: session.indexed,
@@ -425,15 +453,11 @@ export function ProjectWorkspace({
 
   // The toolbar's pages are one at a time: opening one closes the others, so
   // the bar reads as tabs rather than stacking pages under each other.
-  const focusElement = useCallback((id: string) => {
-    setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
-  }, [])
   const showDecision = useCallback((adrId?: string) => setAdrPage({ open: true, adrId }), [])
   const plans = usePlans({
     session, makeId, s,
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
-  const sheets = useSheet({ session, makeId, s, toElement: focusElement })
   // The toolbar's pages are one at a time, and the sheet is one of them.
   const openDecisions = useCallback((adrId?: string) => {
     plans.closeAll()
@@ -712,6 +736,7 @@ export function ProjectWorkspace({
         readOnly={false}
         actions={sheets.actions}
         onClose={sheets.close}
+        onHandle={onSheetHandle}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog

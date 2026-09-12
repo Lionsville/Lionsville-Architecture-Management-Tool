@@ -41,6 +41,7 @@ import type { ReadTool } from './answer'
 import { commandFor } from './commandFor'
 import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
+import { inspectSheet } from './inspectSheet'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
@@ -142,7 +143,10 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   if (request.tool === 'diagram.inspect') {
     const diagram = diagramOf(view.model, args, view.activeDiagramId)
     if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
-    return json(inspect(view.model, diagram, args.limit as number | undefined))
+    // A sheet has no geometry to report on, so it reports the page instead.
+    return json(diagram.kind === 'sheet'
+      ? inspectSheet(view.model, diagram, args.limit as number | undefined)
+      : inspect(view.model, diagram, args.limit as number | undefined))
   }
 
   // Looking and pointing change nothing either.
@@ -405,6 +409,8 @@ async function seeing(
   const diagram = diagramOf(model, args, session.activeDiagramId())
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
 
+  if (diagram.kind === 'sheet') return await seeSheet(tool, diagram, args, renderer)
+
   try {
     await renderer.show(diagram.id)
     if (tool === 'diagram.tidy' || tool === 'diagram.route') {
@@ -425,6 +431,57 @@ async function seeing(
         case 'hidden': return refused('agent.windowHidden')
         case 'busy': return refused('agent.busy')
         case 'gone': return refused('agent.noAnswer', 'the board went away')
+      }
+    }
+    return refused('agent.noAnswer', error instanceof Error ? error.message : String(error))
+  }
+}
+
+/**
+ * A laid-out view, which has no geometry and so neither settles nor crops
+ * (ADR-0012 §6).
+ *
+ * Tidy and route are refused rather than quietly doing nothing: a sheet's
+ * layout is arithmetic over the trees, so "make this tidier" is a question
+ * about the model — move a capability, order the phases — and answering it
+ * with silence would leave an agent waiting for a pass that never runs.
+ */
+async function seeSheet(
+  tool: 'diagram.render' | 'diagram.tidy' | 'diagram.route' | 'focus',
+  diagram: Diagram,
+  args: Record<string, unknown>,
+  renderer: RendererView,
+): Promise<AgentAnswer> {
+  if (tool !== 'diagram.render') {
+    return refused('agent.badArguments', 'a sheet is laid out: there is nothing to tidy or route')
+  }
+  if (!renderer.sheet) return refused('agent.noAnswer', 'no page')
+  const maxPixels = (args.maxPixels as number | undefined) ?? DEFAULT_MAX_PIXELS
+  try {
+    const shot = await renderer.sheet(diagram.id, { maxPixels })
+    return {
+      ok: true,
+      content: [
+        { type: 'image', data: toBase64(shot.png), mimeType: 'image/png' },
+        {
+          type: 'text',
+          text: JSON.stringify({
+            diagramId: diagram.id,
+            kind: 'sheet',
+            width: shot.width,
+            height: shot.height,
+            pixelRatio: shot.pixelRatio,
+            note: 'A sheet is laid out from the model: ask diagram.inspect for its rows.',
+          }, undefined, 2),
+        },
+      ],
+    }
+  } catch (error) {
+    if (isRendererRefusal(error)) {
+      switch (error.reason) {
+        case 'hidden': return refused('agent.windowHidden')
+        case 'busy': return refused('agent.busy')
+        case 'gone': return refused('agent.noAnswer', 'the page went away')
       }
     }
     return refused('agent.noAnswer', error instanceof Error ? error.message : String(error))

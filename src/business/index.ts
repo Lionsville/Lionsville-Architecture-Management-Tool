@@ -26,6 +26,8 @@ export type {
   SheetStep, LaidOutSheet,
 } from './sheet'
 export { SheetPage } from './ui/SheetPage'
-export type { SheetPageProps } from './ui/SheetPage'
+export type { SheetHandle, SheetPageProps } from './ui/SheetPage'
+export { captureSheet, sheetPixelRatio } from './ui/captureSheet'
+export type { SheetShot } from './ui/captureSheet'
 export { FunctionInspector } from './ui/FunctionInspector'
 export type { FunctionInspectorProps, SheetActions } from './ui/FunctionInspector'

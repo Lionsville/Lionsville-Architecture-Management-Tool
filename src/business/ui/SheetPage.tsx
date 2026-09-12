@@ -17,13 +17,13 @@
  * Electron computes drag regions from geometry rather than from what is
  * painted on top.
  */
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { alpha } from '@mui/material/styles'
+import { alpha, useTheme } from '@mui/material/styles'
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model'
 import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
@@ -34,6 +34,8 @@ import { BackIcon, EyeIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { sheetPage } from '../sheet'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
+import type { SheetShot } from './captureSheet'
+import { captureSheet } from './captureSheet'
 import { FunctionInspector } from './FunctionInspector'
 import type { SheetActions } from './FunctionInspector'
 
@@ -46,6 +48,19 @@ export type SheetPageProps = {
   actions: SheetActions
   onClose(): void
   windowChrome?: WindowChrome
+  /**
+   * The page, as the agent's renderer reaches it (ADR-0007): handed over while
+   * one is on screen and withdrawn when it goes, the way the editor hands the
+   * workspace its own handle. Absent = nothing can ask for a picture.
+   */
+  onHandle?(handle: SheetHandle | undefined): void
+}
+
+/** What only the drawn page can do: hand over what it looks like. */
+export type SheetHandle = {
+  /** Which sheet is on screen, so a caller can tell it is the one it asked for. */
+  readonly diagramId: string
+  capture(options: { maxPixels: number }): Promise<SheetShot>
 }
 
 /** The rail, the lane labels and the notch: the design's own numbers, in one place. */
@@ -60,8 +75,29 @@ export function SheetPage(props: SheetPageProps) {
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
   const [selectedId, setSelectedId] = useState<ElementId | undefined>(undefined)
+  const theme = useTheme()
+  const page = useRef<HTMLDivElement | null>(null)
 
-  const page = useMemo(
+  /**
+   * The handle, while a sheet is up. Withdrawn on the way out so a request
+   * that arrives after the page has closed is refused rather than answered
+   * with a picture of nothing.
+   */
+  const onHandle = props.onHandle
+  const sheetId = sheet?.id
+  const capture = useCallback(async (options: { maxPixels: number }) => {
+    const node = page.current
+    if (!node) throw new Error('SheetPage: the page is not on screen')
+    return captureSheet(node, { ...options, background: theme.palette.background.default })
+  }, [theme])
+  useEffect(() => {
+    if (!onHandle) return undefined
+    if (!props.open || sheetId === undefined) { onHandle(undefined); return undefined }
+    onHandle({ diagramId: sheetId, capture })
+    return () => onHandle(undefined)
+  }, [onHandle, props.open, sheetId, capture])
+
+  const laidOut = useMemo(
     () => (sheet ? sheetPage(model, sheet) : undefined),
     [model, sheet],
   )
@@ -106,15 +142,15 @@ export function SheetPage(props: SheetPageProps) {
         )}
       </Box>
 
-      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-        {page && page.actors.length > 0 && <Rail actors={page.actors} t={t} />}
+      <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
+        {laidOut && laidOut.actors.length > 0 && <Rail actors={laidOut.actors} t={t} />}
 
         <Box data-testid="sheet-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}>
-          {page?.journey
-            ? <JourneyBand journey={page.journey} onSelect={setSelectedId} t={t} />
+          {laidOut?.journey
+            ? <JourneyBand journey={laidOut.journey} onSelect={setSelectedId} t={t} />
             : <Empty text={t('sheet.noJourney')} />}
 
-          {page && page.areas.length > 0 ? (
+          {laidOut && laidOut.areas.length > 0 ? (
             <Box
               data-testid="sheet-areas"
               sx={{
@@ -122,14 +158,14 @@ export function SheetPage(props: SheetPageProps) {
                 gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
               }}
             >
-              {page.areas.map((area) => (
+              {laidOut.areas.map((area) => (
                 <AreaCard key={area.element.id} area={area} onSelect={setSelectedId} t={t} />
               ))}
             </Box>
           ) : <Empty text={t('sheet.noAreas')} hint={t('sheet.emptyHint')} />}
 
-          {page && page.unmapped.length > 0 && (
-            <UnmappedBand elements={page.unmapped} onSelect={setSelectedId} t={t} />
+          {laidOut && laidOut.unmapped.length > 0 && (
+            <UnmappedBand elements={laidOut.unmapped} onSelect={setSelectedId} t={t} />
           )}
         </Box>
 

@@ -51,6 +51,28 @@ export type RendererView = {
   capture(options: CaptureOptions): Promise<Uint8Array>
   /** Select an element and bring it into view, so the person sees which one is meant. */
   focus(elementId: string): void
+  /**
+   * A laid-out view as a PNG (ADR-0012 §6): open the page and hand over what
+   * it draws.
+   *
+   * Its own call rather than `show` then `capture`, because the two questions
+   * the canvas's pair answers do not arise here. There is no region to crop to
+   * — a sheet has no coordinate system — and there is nothing to settle,
+   * because nothing was laid out asynchronously. What comes back says how
+   * large the picture is, which is the whole of what a caller can act on.
+   *
+   * Optional: a host with no page for one refuses the tool rather than
+   * pretending. `maxPixels` is the budget, and the ratio it chose comes back.
+   */
+  sheet?(diagramId: string, options: { maxPixels: number }): Promise<SheetShot>
+}
+
+export type SheetShot = {
+  png: Uint8Array
+  /** The bitmap's own size, after the ratio was applied. */
+  width: number
+  height: number
+  pixelRatio: number
 }
 
 // --- bytes as text, for an image block ------------------------------------------
