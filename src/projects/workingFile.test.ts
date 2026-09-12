@@ -157,7 +157,7 @@ describe('openDocumentBytes', () => {
     expect(held.scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 4, y: 8 }])
   })
 
-  it('opens a version-3 zip, and what comes out is format 4\'s shape', () => {
+  it('opens a version-3 zip, and what comes out is the model\'s own shape', () => {
     const entries: Record<string, Uint8Array> = {
       'project.json': bytesFromText(stableJson({
         type: WORKING_FILE_TYPE, formatVersion: 3, name: 'Landscape', groupName: 'Acme',
@@ -176,6 +176,31 @@ describe('openDocumentBytes', () => {
     if (!held.ok) return
     expect(held.scope.model.elements[0]).toMatchObject({ kind: 'application', outside: true })
     expect(held.scope.model.diagrams[0].members).toEqual([{ id: 'carrier', zone: 'externalSystems' }])
+  })
+
+  it('opens a version-4 zip, whose header is the one scopes replaced', () => {
+    const entries: Record<string, Uint8Array> = {
+      'project.json': bytesFromText(stableJson({
+        type: WORKING_FILE_TYPE, formatVersion: 4, name: 'Landscape', groupName: 'Acme',
+        activeDiagramId: 'l7', diagrams: ['l7'],
+      })),
+      'model.json': bytesFromText(stableJson({
+        relations: [],
+        elements: [{ id: 'wms', kind: 'application', name: 'WMS', lifecycle: 'live', isManaged: true, aspects: {} }],
+      })),
+      'diagrams/l7.json': bytesFromText(stableJson({
+        id: 'l7', kind: 'layer7', name: 'Landschap', members: [{ id: 'wms' }],
+      })),
+      'diagrams/l7.geometry.json': bytesFromText(stableJson({ nodes: [{ id: 'wms', x: 3, y: 4 }] })),
+    }
+    const held = openDocumentBytes(zipSync(entries), into)
+    expect(held.ok && held.kind).toBe('workingFile')
+    if (!held.ok) return
+    expect(held.scope.model.name).toBe('Landscape')
+    expect(held.scope.kind).toBe('landscape')
+    expect(held.scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'wms', x: 3, y: 4 }])
+    // The name of the folder above it, which this file has no folder above.
+    expect('customerName' in held.scope.model).toBe(false)
   })
 
   it('still imports an interchange document, and lays it out again', () => {

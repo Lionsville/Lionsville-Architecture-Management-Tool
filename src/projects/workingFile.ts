@@ -15,10 +15,18 @@
  * exports of the same project are the same file and can be compared as one.
  *
  * Every older version keeps opening, and lands on format 5 through the folds
- * (`migrate3to4.ts`, `migrate4to5.ts`): a version-3 zip is a folder the migration reads, and
- * versions 1 and 2 are a single JSON document `openProjectDocument` has read
- * since there was one. So is an interchange document, which is a different
- * thing again — someone else's format, which we import rather than open.
+ * (`migrate3to4.ts`, `migrate4to5.ts`): a version-3 or -4 zip is a folder the
+ * migration reads, and versions 1 and 2 are a single JSON document
+ * `openScopeDocument` has read since there was one. So is an interchange
+ * document, which is a different thing again — someone else's format, which we
+ * import rather than open.
+ *
+ * **One scope, not a subtree.** A `.lvarch` is the scope's own folder: the
+ * scopes filed under it are not in it, and a zip somebody hands over with them
+ * inside opens as the scope at the top. Exporting a subtree is a gesture of its
+ * own — ADR-0012 leaves it open, because a domain exported alone carries
+ * stand-ins whose definitions are not in the zip, and what to do about those is
+ * the question rather than the zipping.
  */
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
