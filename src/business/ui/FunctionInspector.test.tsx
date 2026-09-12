@@ -24,7 +24,7 @@ function model(): DesignModel {
 
 const held = (id: string): DesignElement => model().elements.find((e) => e.id === id)!
 
-function open(id: string, readOnly = false) {
+function open(id: string, readOnly = false, onRemoved = vi.fn()) {
   const actions: SheetActions = {
     updateElement: vi.fn(),
     moveElement: vi.fn(),
@@ -38,9 +38,12 @@ function open(id: string, readOnly = false) {
     setCoverage: vi.fn(),
   }
   const result = renderShell(
-    <FunctionInspector element={held(id)} model={model()} readOnly={readOnly} actions={actions} />,
+    <FunctionInspector
+      element={held(id)} model={model()} readOnly={readOnly} actions={actions}
+      onRemoved={onRemoved}
+    />,
   )
-  return { ...result, actions }
+  return { ...result, actions, onRemoved }
 }
 
 describe('the fields', () => {
@@ -165,5 +168,89 @@ describe('readOnly', () => {
     expect(screen.getByLabelText('Name').getAttribute('disabled')).not.toBeNull()
     expect(screen.queryByRole('button', { name: 'Move up' })).toBeNull()
     expect(screen.getByRole('combobox', { name: /Sits under/ }).getAttribute('aria-disabled')).toBe('true')
+  })
+})
+
+describe('what covers a capability, as something to tick', () => {
+  it('ticks an application into a supports row', () => {
+    const { actions } = open('dunning')
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Finance system' }))
+    expect(actions.setCoverage).toHaveBeenCalledWith({
+      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
+    })
+  })
+
+  it('unticks one that is there', () => {
+    const { actions } = open('picking')
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse system' }))
+    expect(actions.setCoverage).toHaveBeenCalledWith({
+      type: 'supports', sourceId: 'wms', functionId: 'picking', on: false,
+    })
+  })
+
+  it('ticks an actor into an assigned row — people, which is an answer', () => {
+    const { actions } = open('dunning')
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Done by/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse team' }))
+    expect(actions.setCoverage).toHaveBeenCalledWith({
+      type: 'assigned', sourceId: 'warehouse-team', functionId: 'dunning', on: true,
+    })
+  })
+
+  it('shows what is already ticked', () => {
+    open('picking')
+    expect(screen.getByRole('combobox', { name: /Supported by/ }).textContent)
+      .toBe('Handheld scanners, Warehouse system')
+  })
+
+  it('offers nothing to tick on a step — a journey is walked, not covered', () => {
+    open('negotiate')
+    expect(screen.queryByRole('combobox', { name: /Supported by/ })).toBeNull()
+  })
+})
+
+describe('a stakeholder', () => {
+  it('says whether it is part of this organisation', () => {
+    const { actions } = open('warehouse-team')
+    fireEvent.click(screen.getByLabelText('Outside the organisation'))
+    expect(actions.updateElement).toHaveBeenCalledWith('warehouse-team', { outside: true })
+  })
+
+  it('takes the mark off again, rather than storing a false', () => {
+    const { actions } = open('partner')
+    fireEvent.click(screen.getByLabelText('Outside the organisation'))
+    expect(actions.updateElement).toHaveBeenCalledWith('partner', { outside: undefined })
+  })
+
+  it('is the only kind asked, because only a party can be outside', () => {
+    open('picking')
+    expect(screen.queryByLabelText('Outside the organisation')).toBeNull()
+  })
+})
+
+describe('deleting', () => {
+  it('takes a leaf, and leaves nothing chosen behind it', () => {
+    const { actions, onRemoved } = open('packing')
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Packing' }))
+    expect(actions.removeElement).toHaveBeenCalledWith('packing')
+    expect(onRemoved).toHaveBeenCalled()
+  })
+
+  it('refuses while something is inside it, and says how much', () => {
+    // Refused in place rather than hidden: the answer to "why can I not
+    // delete this" belongs next to the thing that will not delete.
+    const { actions } = open('warehousing')
+    const button = screen.getByRole('button', { name: 'Delete Warehousing' })
+    expect(button.getAttribute('disabled')).not.toBeNull()
+    expect(screen.getByText('2 things are inside it')).toBeTruthy()
+    fireEvent.click(button)
+    expect(actions.removeElement).not.toHaveBeenCalled()
+  })
+
+  it('is not offered under readOnly', () => {
+    open('packing', true)
+    expect(screen.queryByRole('button', { name: 'Delete Packing' })).toBeNull()
   })
 })

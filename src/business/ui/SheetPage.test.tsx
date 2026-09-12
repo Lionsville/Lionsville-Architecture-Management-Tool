@@ -7,6 +7,10 @@
  * passes through rather than stopping, a step somebody outside does, what a
  * capability's footer says, and that nothing on it can be changed under
  * `readOnly`.
+ *
+ * And, since step 3c, that every band can be authored: each *+* dispatches the
+ * action it should, what it made is selected with the cursor in its name, and
+ * under `readOnly` there is not one of them on the page.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
@@ -217,5 +221,147 @@ describe('choosing something', () => {
   it('says what the inspector is for until something is chosen', () => {
     open()
     expect(screen.getByText('Choose something on the sheet to see it here.')).toBeTruthy()
+  })
+})
+
+/** A sheet of nothing: what a person sees on a project that has just begun. */
+const BARE: DesignDiagram = { ...SHEET, journeyId: undefined, lanes: [], areas: [] }
+
+const empty = (): DesignModel => ({
+  name: 'Acme Logistics', customerName: 'Acme', diagrams: [BARE], elements: [], relations: [],
+})
+
+describe('making something', () => {
+  it('offers a journey and an area on an empty sheet, and nothing else to read', () => {
+    const { actions: acts } = open({ sheet: BARE, model: empty() })
+    fireEvent.click(screen.getByLabelText('New journey'))
+    expect(acts.addJourney).toHaveBeenCalledWith({ journey: 'New journey', phase: 'Start' })
+    fireEvent.click(screen.getByLabelText('New area'))
+    expect(acts.addArea).toHaveBeenCalledWith('New area')
+  })
+
+  it('says what the two buttons do where the hint used to stop', () => {
+    open({ sheet: BARE, model: empty() })
+    expect(screen.getByText('Start with a journey across the top, or an area to keep capabilities in.'))
+      .toBeTruthy()
+  })
+
+  it('adds a phase at the end of the journey', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('Add a phase to Ship a consignment'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'step', name: 'New phase', parentId: 'ship',
+    })
+  })
+
+  it('adds a step to the path everybody takes', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('Add a step in Order, All customers'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'step', name: 'New step', parentId: 'order',
+    })
+  })
+
+  it('adds a step to a lane, on that lane', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('Add a step in Quote, Key account'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'step', name: 'New step', parentId: 'quote', lane: 'key-account',
+    })
+  })
+
+  it('adds a grouping and a capability to an area', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('Add a grouping to Fulfilment'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'function', name: 'New grouping', parentId: 'fulfilment',
+    })
+    fireEvent.click(screen.getByLabelText('Add a capability to Fulfilment'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'function', name: 'New capability', parentId: 'fulfilment',
+    })
+  })
+
+  it('adds a capability inside a grouping', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('Add a capability to Warehousing'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'function', name: 'New capability', parentId: 'warehousing',
+    })
+  })
+
+  it('adds an area after the last one', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('New area'))
+    expect(acts.addArea).toHaveBeenCalledWith('New area')
+  })
+
+  it('adds a stakeholder under one, and a group at the end of the rail', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('Add a stakeholder under Warehouse team'))
+    expect(acts.addElement).toHaveBeenCalledWith({
+      kind: 'actor', name: 'New stakeholder', parentId: 'warehouse-team',
+    })
+    fireEvent.click(screen.getByLabelText('Add a stakeholder group'))
+    expect(acts.addElement).toHaveBeenCalledWith({ kind: 'actor', name: 'New group' })
+  })
+
+  it('draws the rail on an empty scope, so the first stakeholder can be made', () => {
+    open({ sheet: BARE, model: empty() })
+    expect(within(screen.getByTestId('sheet-rail')).getByText('No stakeholders yet.')).toBeTruthy()
+    expect(screen.getByLabelText('Add a stakeholder group')).toBeTruthy()
+  })
+
+  it('selects what it just made and puts the cursor in its name', () => {
+    // The action answers with an id the model holds, which is what it does in
+    // the app: the command has landed by the time the page reads it back.
+    const acts = actions()
+    acts.addElement = vi.fn(() => 'dunning')
+    renderShell(
+      <SheetPage
+        open model={model()} sheet={SHEET} readOnly={false} actions={acts} onClose={() => {}}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText('Add a capability to Warehousing'))
+    const name = within(screen.getByTestId('sheet-inspector')).getByLabelText('Name')
+    expect((name as HTMLInputElement).value).toBe('Chase a late payment')
+    expect(document.activeElement).toBe(name)
+  })
+
+  it('offers not one of them under readOnly', () => {
+    open({ readOnly: true })
+    for (const label of [
+      'Add a phase to Ship a consignment',
+      'Add a step in Order, All customers',
+      'Add a grouping to Fulfilment',
+      'Add a capability to Warehousing',
+      'New area',
+      'Add a stakeholder under Warehouse team',
+      'Add a stakeholder group',
+      '+ lane…',
+      'What this sheet draws',
+    ]) {
+      expect(screen.queryByLabelText(label), label).toBeNull()
+    }
+  })
+})
+
+describe('the dialogs the page opens', () => {
+  it('asks for a lane, and makes one out of the answer', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('+ lane…'))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Whose path it is/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Marketplace partner' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add the lane' }))
+    expect(acts.addLane).toHaveBeenCalledWith({
+      actorId: 'partner', phaseId: 'order', stepName: 'New step',
+    })
+  })
+
+  it('opens what the sheet draws, and changes one thing at a time', () => {
+    const { actions: acts } = open()
+    fireEvent.click(screen.getByLabelText('What this sheet draws'))
+    fireEvent.click(screen.getByLabelText('Draw Billing'))
+    expect(acts.updateSheet).toHaveBeenCalledWith({ areas: ['fulfilment'] })
   })
 })
