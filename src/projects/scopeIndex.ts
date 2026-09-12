@@ -84,6 +84,19 @@ export type IndexEntry = {
   /** Every scope holding a stand-in of it, in path order: who else draws it. */
   drawnIn: ScopePath[]
   /**
+   * Scopes whose cached `name` or `ref` disagrees with the master — the drift
+   * of §2's table, said here because it is a fact about the tree rather than
+   * an opinion about it.
+   *
+   * Stand-ins AND declarations: a declaration is the thin first layer that
+   * yielded when somebody deeper took the id, and from that moment its name is
+   * a cache like any other. A refresh rewrites them; a person does not.
+   *
+   * Empty is the ordinary case, and it is empty rather than absent because
+   * every reader folds over it.
+   */
+  stale: ScopePath[]
+  /**
    * Two or more definitions at the master's own depth, in path order.
    *
    * Absent is ordinary and present is a finding on every scope named. The
@@ -165,7 +178,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   type Held = {
     id: ElementId
     definitions: { path: ScopePath; depth: number; kind: ElementKind; name: string }[]
-    standIns: { path: ScopePath; kind: ElementKind; name: string }[]
+    standIns: { path: ScopePath; kind: ElementKind; name: string; ref: string }[]
   }
 
   const held = new Map<ElementId, Held>()
@@ -188,7 +201,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       if (element.ref === undefined) {
         row.definitions.push({ path, depth, kind: element.kind, name: element.name })
       } else {
-        row.standIns.push({ path, kind: element.kind, name: element.name })
+        row.standIns.push({ path, kind: element.kind, name: element.name, ref: element.ref })
       }
     }
     for (const relation of model.relations) {
@@ -210,6 +223,15 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     // A name nobody defines is the cache somebody wrote down, which is better
     // than the id and is the only name a dangling record has.
     const named = master ?? row.standIns[0]
+    // A cache is only stale against a master; with no definition anywhere
+    // there is nothing for one to disagree with, and the finding is that
+    // nobody defines it at all (dangling) rather than that the copy is old.
+    const stale = master === undefined ? [] : [
+      ...row.standIns.filter((one) => one.name !== master.name || one.ref !== master.path),
+      // A declaration carries a name and no `ref` — there is nothing for it to
+      // point at, so only the name can have gone stale.
+      ...definitions.slice(tied.length).filter((one) => one.name !== master.name),
+    ].map((one) => one.path).sort()
     entries.set(row.id, {
       id: row.id,
       kind: named?.kind ?? 'application',
@@ -217,6 +239,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       ...(master ? { master: master.path } : {}),
       declarations: definitions.slice(tied.length).map((one) => one.path),
       drawnIn: row.standIns.map((one) => one.path),
+      stale,
       ...(tied.length > 1 ? { conflict: tied.map((one) => one.path).sort() } : {}),
     })
   }

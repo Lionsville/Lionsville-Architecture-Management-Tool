@@ -38,7 +38,7 @@ describe('the index — who answers for an id', () => {
     const index = indexScopes([scope('retail', [element('erp', { name: 'ERP' })])])
     expect(index.lookup('erp')).toEqual({
       id: 'erp', kind: 'application', name: 'ERP',
-      master: 'retail', declarations: [], drawnIn: [],
+      master: 'retail', declarations: [], drawnIn: [], stale: [],
     })
   })
 
@@ -99,6 +99,28 @@ describe('the index — who answers for an id', () => {
    * the cached name, because that is the only name there is and the id is not
    * one anybody chose to read.
    */
+  /**
+   * A cache goes stale when the owning scope renames the thing, or when the
+   * definition moves and the path a stand-in points at is no longer where it
+   * is. A declaration can go stale too — it is the thin layer that yielded,
+   * and from that moment its name is a cache like any other.
+   */
+  it('names the scopes whose cached name or ref disagrees with the master', () => {
+    const index = indexScopes([
+      scope('', [element('erp', { name: 'Old name' })]),
+      scope('acme/retail', [element('erp', { name: 'Retail ERP' })]),
+      scope('acme/finance', [standIn('erp', 'acme/retail', { name: 'Retail ERP' })]),
+      scope('acme/legal', [standIn('erp', 'acme/retail', { name: 'Old name' })]),
+      scope('acme/hr', [standIn('erp', '', { name: 'Retail ERP' })]),
+    ])
+    expect(index.lookup('erp')?.stale).toEqual(['', 'acme/hr', 'acme/legal'])
+  })
+
+  it('calls nothing stale where there is no master to disagree with', () => {
+    const index = indexScopes([scope('retail', [standIn('erp', 'finance', { name: 'ERP' })])])
+    expect(index.lookup('erp')?.stale).toEqual([])
+  })
+
   it('answers with no master, and the cached name, for an id nobody defines', () => {
     const index = indexScopes([scope('retail', [standIn('erp', 'finance', { name: 'ERP' })])])
     expect(index.lookup('erp')?.master).toBeUndefined()
