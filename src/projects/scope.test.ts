@@ -8,10 +8,10 @@
 import { describe, expect, it } from 'vitest'
 import type { InterchangeDoc } from '../model/fromInterchange'
 import {
-  bareScope, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope, moveScope,
-  namesUnder,
+  bareScope, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
+  moveScope, namesUnder, newestChange,
   openScopeDocument, renameScope, resolveActive, scopeFromDocument, scopeTree, setScopeDefaults,
-  sortScopes, summarise, toWorkingFile,
+  sortScopes, subtreeTotals, summarise, toWorkingFile,
 } from './scope'
 import type { ScopeSummary } from './scope'
 import { sampleScope } from '../ports/ScopeStore.contract'
@@ -422,5 +422,53 @@ describe('moveScope', () => {
     const scope = sampleScope()
     moveScope(scope, 'globex/landscape')
     expect(scope.path).toBe('acme-logistics/landscape')
+  })
+})
+
+describe('what a tree of scopes adds up to', () => {
+  const at = (path: string, over: Partial<ScopeSummary> = {}): ScopeSummary => ({
+    path, name: path || 'Acme', diagrams: 0, children: [], ...over,
+  })
+
+  /** A scope with children; a scope with views. Neither is the `kind` label. */
+  const tree = scopeTree([
+    at('', { name: 'Acme Logistics', updatedAt: '2026-09-01T09:00:00.000Z' }),
+    at('retail', { updatedAt: '2026-09-04T09:00:00.000Z' }),
+    at('retail/warehouse', { diagrams: 3, updatedAt: '2026-09-09T09:00:00.000Z' }),
+    at('retail/returns', { diagrams: 1, updatedAt: '2026-09-02T09:00:00.000Z' }),
+    at('finance', { diagrams: 2, updatedAt: '2026-09-03T09:00:00.000Z' }),
+  ])
+
+  it('counts a domain by what is filed under it and a landscape by what it draws', () => {
+    expect(countScopes(tree)).toEqual({ domains: 1, landscapes: 3 })
+  })
+
+  /** A scope can honestly be both, and is counted in each rather than sorted. */
+  it('counts a scope that has children AND draws as both', () => {
+    const both = scopeTree([at('retail', { diagrams: 1 }), at('retail/warehouse', { diagrams: 1 })])
+    expect(countScopes(both)).toEqual({ domains: 1, landscapes: 2 })
+  })
+
+  /** The root is the organisation, not a row in its own list. */
+  it('leaves the root out', () => {
+    expect(countScopes(scopeTree([at('', { diagrams: 4 })]))).toEqual({ domains: 0, landscapes: 0 })
+  })
+
+  it('sums a subtree including the scope you are looking at', () => {
+    const retail = tree.children.find((scope) => scope.path === 'retail')!
+    expect(subtreeTotals(retail)).toEqual({ landscapes: 2, diagrams: 4 })
+  })
+
+  it('sums a leaf as itself', () => {
+    const finance = tree.children.find((scope) => scope.path === 'finance')!
+    expect(subtreeTotals(finance)).toEqual({ landscapes: 1, diagrams: 2 })
+  })
+
+  it('answers the newest change anywhere in the tree', () => {
+    expect(newestChange(tree)).toBe('2026-09-09T09:00:00.000Z')
+  })
+
+  it('answers nothing where no scope has been written yet', () => {
+    expect(newestChange(scopeTree([at(''), at('retail')]))).toBeUndefined()
   })
 })

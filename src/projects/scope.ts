@@ -429,3 +429,59 @@ export function setScopeDefaults(
 export function moveScope(scope: ScopeSnapshot, path: ScopePath): ScopeSnapshot {
   return { ...scope, path }
 }
+
+/**
+ * What a tree of scopes adds up to, for the line under an organisation's name.
+ *
+ * **A domain is a scope with scopes filed under it; a landscape is a scope that
+ * holds a view.** Two readings and not one classification, because a scope can
+ * honestly be both — a domain that also draws a board of its own is counted in
+ * each, which is what it is — and because a scope that is neither yet is an
+ * ordinary thing somebody made a minute ago.
+ *
+ * The `kind` label is deliberately not consulted. It is a word for a screen to
+ * show and never a branch ({@link ScopeKind}), so counting by it would make a
+ * folder that says the wrong word about itself count wrong.
+ *
+ * The root is left out: it is the organisation, and the screen this line
+ * belongs to is its home rather than a row in its own list.
+ */
+export function countScopes(root: ScopeSummary): { domains: number; landscapes: number } {
+  const under = flattenScopes(root).slice(1)
+  return {
+    domains: under.filter((scope) => scope.children.length > 0).length,
+    landscapes: under.filter((scope) => scope.diagrams > 0).length,
+  }
+}
+
+/**
+ * One scope and everything filed under it, as the two numbers a row says.
+ *
+ * The scope itself is included: a domain that draws two boards of its own and
+ * holds three landscapes has five landscapes' worth of drawing in its folder,
+ * and a total that left out the one you are looking at would be a total of
+ * something nobody asked about.
+ */
+export function subtreeTotals(scope: ScopeSummary): { landscapes: number; diagrams: number } {
+  const all = flattenScopes(scope)
+  return {
+    landscapes: all.filter((held) => held.diagrams > 0).length,
+    diagrams: all.reduce((total, held) => total + held.diagrams, 0),
+  }
+}
+
+/**
+ * The newest `updatedAt` anywhere in the tree — when the organisation last
+ * changed, whichever scope it happened in.
+ *
+ * ISO timestamps, so the newest is the largest string. Absent where no scope
+ * has been written yet, which a store answers for a folder nobody has saved
+ * into; the caller says "not yet" rather than inventing a day.
+ */
+export function newestChange(root: ScopeSummary): string | undefined {
+  return flattenScopes(root)
+    .map((scope) => scope.updatedAt)
+    .filter((at): at is string => at !== undefined)
+    .sort()
+    .pop()
+}
