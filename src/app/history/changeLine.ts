@@ -8,6 +8,7 @@
  */
 import type { ChangeKind, ChangeSubject, ModelChange } from '../../model/diff'
 import type { StringKey, Translate } from '../../i18n'
+import { RELATION_LABEL } from '../../model/relations'
 
 /**
  * Every subject the diff can name, times every kind — as a type, so that a
@@ -22,9 +23,11 @@ const KEYS: Record<LineKey, StringKey> = {
   'element:added': 'change.elementAdded',
   'element:removed': 'change.elementRemoved',
   'element:changed': 'change.elementChanged',
-  'connection:added': 'change.connectionAdded',
-  'connection:removed': 'change.connectionRemoved',
-  'connection:changed': 'change.connectionChanged',
+  // A flow keeps the word this tool has always used for it: it is the line a
+  // person draws on a board, and the one the file still calls a connection.
+  'relation:added': 'change.connectionAdded',
+  'relation:removed': 'change.connectionRemoved',
+  'relation:changed': 'change.connectionChanged',
   'diagram:added': 'change.diagramAdded',
   'diagram:removed': 'change.diagramRemoved',
   'diagram:changed': 'change.diagramChanged',
@@ -41,14 +44,27 @@ const KEYS: Record<LineKey, StringKey> = {
   'membership:changed': 'change.membershipMoved',
 }
 
+/**
+ * The four rows the business layer brought (ADR-0012 §5), which say which they
+ * are rather than all calling themselves connections — a row between a
+ * capability and a journey step was never a line on a board.
+ */
+const ROW_KEYS: Record<ChangeKind, StringKey> = {
+  added: 'change.rowAdded',
+  removed: 'change.rowRemoved',
+  changed: 'change.rowChanged',
+}
+
 export function changeLine(change: ModelChange, s: Translate): string {
   if (change.what === 'geometry') {
     return s('change.geometry', { count: change.count ?? 0, name: change.name })
   }
-  const key = KEYS[`${change.what}:${change.kind}`]
+  const asRow = change.relationType !== undefined && change.relationType !== 'flow'
+  const key = asRow ? ROW_KEYS[change.kind] : KEYS[`${change.what}:${change.kind}`]
   return s(key, {
     name: change.name,
     on: change.on ?? '',
+    type: change.relationType ? s(RELATION_LABEL[change.relationType]) : '',
     // Field names are the model's own words and are not translated: they are
     // what somebody reading the file would see, which is the point of naming
     // them at all.

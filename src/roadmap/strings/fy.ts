@@ -113,7 +113,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'check.retiresWithDependants': '{name} wurdt ôfboud op {detail} wylst der noch {count} keppelingen live binne.',
   'check.successorTooLate': 'De opfolger fan {name} giet pas live neidat it fuort is: {detail}.',
   'check.successorMissing': '{name} wurdt ôfboud op {detail} en der is gjin opfolger neamd.',
-  'check.lineOutlivesEnd': '“{name}” is noch jildich neidat {detail} ôfboud is.',
+  'check.lineOutlivesEnd': 'De rige “{name}” ({type}) is noch jildich neidat {detail} ôfboud is.',
   'check.planOverdue': '{name} soe op {detail} klear wêze en rint noch.',
   'check.staleness': 'Dit toant wêr\'t de datums inoar tsjinsprekke. It kin net sjen oft in lânskip ferâldere is.',
 }

@@ -26,7 +26,7 @@
 import { relationLiveAt, isDay, phaseAt } from './lifecycle'
 import { isTransitionFinished } from './transition'
 import type { Transition } from './transition'
-import type { DesignElement, DesignModel, ElementId, Relation } from './types'
+import type { DesignElement, DesignModel, ElementId, Relation, RelationType } from './types'
 
 export type FindingKind =
   /** Something retires while things are still connected to it. */
@@ -40,7 +40,12 @@ export type FindingKind =
   /** A plan is still running after the day it was due to end. */
   | 'planOverdue'
 
-export type FindingSubject = 'element' | 'connection' | 'transition'
+/**
+ * What a finding is about. `relation` since ADR-0012 §5 — a row between two
+ * things is not always a connection, and a page that clicks through to one
+ * needs to know which list to look in, not what to call it.
+ */
+export type FindingSubject = 'element' | 'relation' | 'transition'
 
 export type Finding = {
   kind: FindingKind
@@ -53,6 +58,12 @@ export type Finding = {
   detail?: string
   /** How many, where the finding is about several. */
   count?: number
+  /**
+   * For a `relation` subject: which kind of row it was (ADR-0012 §5), so the
+   * sentence can say *supports* where it means supports. The key its label is
+   * under lives in `model/relations.RELATION_LABEL`; this is the fact.
+   */
+  relationType?: RelationType
 }
 
 export type CheckContext = {
@@ -155,7 +166,8 @@ export function findings({ model, today }: CheckContext): Finding[] {
     if (dead) {
       found.push({
         kind: 'lineOutlivesEnd',
-        subject: 'connection',
+        subject: 'relation',
+        relationType: relation.type,
         id: relation.id,
         name: relation.label || `${source.name} → ${target.name}`,
         detail: dead.name,

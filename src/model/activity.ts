@@ -22,6 +22,8 @@ import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import { decisionsOf, transitionsOf } from './normalised'
 import type { Model } from './normalised'
+import { RELATION_LABEL } from './relations'
+import type { RelationType } from './types'
 
 export type StepSummary = {
   /** What it says. */
@@ -32,6 +34,29 @@ export type StepSummary = {
   count?: number
   /** The day a restored version was taken, `yyyy-mm-dd` (ADR-0008). */
   asOf?: string
+  /**
+   * For a relation, what kind of row it was (ADR-0012 §5), as the key its
+   * label is under rather than the label — a step is named at the moment it is
+   * made, and read in whatever language is on screen much later.
+   */
+  typeKey?: StringKey
+}
+
+/**
+ * A flow says "connection"; anything else says which row it was.
+ *
+ * A row whose type the model no longer holds — an update to something deleted
+ * in the same breath — falls back to the flow's words, because that is what it
+ * almost certainly was and a log line is not the place to say "unknown".
+ */
+function rowStep(
+  type: RelationType | undefined,
+  asFlow: StringKey,
+  asRow: StringKey,
+): StepSummary {
+  return type === undefined || type === 'flow'
+    ? { key: asFlow }
+    : { key: asRow, typeKey: RELATION_LABEL[type] }
 }
 
 /** A step nobody can name — the empty transaction, and nothing else. */
@@ -74,15 +99,18 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
         count: many('element.delete'),
       }
 
-    // The words still say "connection", because every relation a person can
-    // draw in this build is one. They follow the type when the business layer
-    // can make the other four (ADR-0012 §4).
+    // The words follow the type (ADR-0012 §5). A flow keeps the word this tool
+    // has always used for it — it is the line a person draws on a board, the
+    // one the file still calls a connection, and it is almost every row — and
+    // the four the business layer brought say which they are, because "drew a
+    // connection" for a row between a capability and a journey step would be
+    // the log describing something that did not happen.
     case 'relation.create':
-      return { key: 'activity.relationAdded' }
+      return rowStep(lead.relation.type, 'activity.relationAdded', 'activity.rowAdded')
     case 'relation.update':
-      return { key: 'activity.relationChanged' }
+      return rowStep(before.relations[lead.id]?.type, 'activity.relationChanged', 'activity.rowChanged')
     case 'relation.delete':
-      return { key: 'activity.relationDeleted' }
+      return rowStep(before.relations[lead.id]?.type, 'activity.relationDeleted', 'activity.rowDeleted')
 
     // A card put on a view and a card dragged are one step to a reader, and
     // two commands since ADR-0012 §6 — so both lead-ins count the same rows.

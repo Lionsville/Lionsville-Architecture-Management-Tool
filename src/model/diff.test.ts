@@ -58,7 +58,7 @@ describe('diffModels', () => {
   it('names a connection by its ends when it has no label', () => {
     const after = model({ relations: [] })
     expect(diffModels(model(), after)).toEqual([
-      { kind: 'removed', what: 'connection', id: 'c-1', name: 'Crews → Reisinformatie' },
+      { kind: 'removed', what: 'relation', id: 'c-1', name: 'Crews → Reisinformatie', relationType: 'flow' },
     ])
   })
 
@@ -202,7 +202,7 @@ describe('diffModels', () => {
       diagrams: [{ ...model().diagrams[0], name: 'Board' }],
     })
     expect(diffModels(model(), after).map((change) => change.what))
-      .toEqual(['element', 'element', 'connection', 'diagram'])
+      .toEqual(['element', 'element', 'relation', 'diagram'])
   })
 })
 

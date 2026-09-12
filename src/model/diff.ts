@@ -27,13 +27,13 @@
 import type { HostModel } from './fromInterchange'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { DesignDiagram, DesignElement, Relation } from './types'
+import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
-  | 'element' | 'connection' | 'diagram' | 'decision' | 'transition'
+  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition'
   | 'membership' | 'geometry'
 
 export type ModelChange = {
@@ -48,6 +48,11 @@ export type ModelChange = {
   name: string
   /** Which view a membership change is on, by name. Only on a membership row. */
   on?: string
+  /**
+   * For a `relation` subject: which kind of row it was (ADR-0012 §5). The fact,
+   * not the word — this file says what happened and refuses to say it in words.
+   */
+  relationType?: RelationType
   /** That view's id, which is what files the row under it. Membership only. */
   onId?: string
   /** Which fields differ. Only on a `changed` row, and never for geometry. */
@@ -182,8 +187,9 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   for (const id of ids(wasRelations, nowRelations)) {
     const was = wasRelations.get(id)
     const now = nowRelations.get(id)
-    changes.push(...compare<Relation>('connection', id, was, now,
-      (held) => relationName(held, now ? after : before)))
+    changes.push(...compare<Relation>('relation', id, was, now,
+      (held) => relationName(held, now ? after : before))
+      .map((change) => ({ ...change, relationType: (now ?? was)!.type })))
   }
 
   // An element is named from whichever version still has it: one that was
@@ -222,7 +228,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   }
 
   const order: ChangeSubject[] = [
-    'element', 'connection', 'diagram', 'decision', 'transition', 'membership', 'geometry',
+    'element', 'relation', 'diagram', 'decision', 'transition', 'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }

@@ -370,6 +370,11 @@ export function RoadmapPage(props: RoadmapPageProps) {
                           name: problem.name,
                           detail: problem.detail ?? '',
                           count: String(problem.count ?? 0),
+                          // Which kind of row it was (ADR-0012 §5), in words:
+                          // *supports* where the finding means supports.
+                          type: problem.relationType
+                            ? t(RELATION_LABEL[problem.relationType])
+                            : '',
                         })}
                       </Box>
                     ))}

@@ -61,6 +61,9 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
                   name: entry.summary.name ?? '—',
                   count: entry.summary.count ?? 1,
                   asOf: entry.summary.asOf ?? '',
+                  // What kind of row it was, in today's language rather than
+                  // the one it was drawn in (ADR-0012 §5).
+                  type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
                 })}
               </Typography>
               {entry.origin === 'agent' && (

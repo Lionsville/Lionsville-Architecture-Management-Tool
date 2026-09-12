@@ -130,7 +130,9 @@ describe('a line that outlives one of its ends', () => {
       [connection('c1', 'wms', 'x', { label: 'sync', validUntil: '2028-06-01' })],
     )
     expect(list.find((one) => one.kind === 'lineOutlivesEnd'))
-      .toMatchObject({ subject: 'connection', id: 'c1', name: 'sync', detail: 'wms' })
+      // `relation`, and which kind of row it was, since ADR-0012 §5 — a row
+      // between two things is not always a connection.
+      .toMatchObject({ subject: 'relation', relationType: 'flow', id: 'c1', name: 'sync', detail: 'wms' })
   })
 
   it('is not reported for a line with no window of its own', () => {

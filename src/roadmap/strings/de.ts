@@ -113,7 +113,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.retiresWithDependants': '{name} wird am {detail} abgeschaltet, während noch {count} Verbindungen live sind.',
   'check.successorTooLate': 'Der Nachfolger von {name} geht erst live, nachdem es weg ist: {detail}.',
   'check.successorMissing': '{name} wird am {detail} abgeschaltet, und kein Nachfolger ist benannt.',
-  'check.lineOutlivesEnd': '„{name}“ ist noch gültig, nachdem {detail} abgeschaltet wurde.',
+  'check.lineOutlivesEnd': 'Die Zeile „{name}“ ({type}) ist noch gültig, nachdem {detail} abgeschaltet wurde.',
   'check.planOverdue': '{name} sollte am {detail} fertig sein und läuft noch.',
   'check.staleness': 'Dies zeigt, wo die Daten einander widersprechen. Ob eine Landschaft veraltet ist, kann es nicht sagen.',
 }

@@ -113,7 +113,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.retiresWithDependants': '{name} wordt uitgefaseerd op {detail} terwijl er nog {count} koppelingen live zijn.',
   'check.successorTooLate': 'De opvolger van {name} gaat pas live nadat het weg is: {detail}.',
   'check.successorMissing': '{name} wordt uitgefaseerd op {detail} en er is geen opvolger benoemd.',
-  'check.lineOutlivesEnd': '“{name}” is nog geldig nadat {detail} is uitgefaseerd.',
+  'check.lineOutlivesEnd': 'De rij “{name}” ({type}) is nog geldig nadat {detail} is uitgefaseerd.',
   'check.planOverdue': '{name} zou op {detail} klaar zijn en loopt nog.',
   'check.staleness': 'Dit toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap verouderd is.',
 }

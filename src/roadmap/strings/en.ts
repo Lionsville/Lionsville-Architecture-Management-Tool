@@ -127,7 +127,7 @@ export const EN = {
   'check.retiresWithDependants': '{name} retires on {detail} with {count} connections still live.',
   'check.successorTooLate': 'What replaces {name} does not go live until after it is gone: {detail}.',
   'check.successorMissing': '{name} retires on {detail} and nothing is named to replace it.',
-  'check.lineOutlivesEnd': '“{name}” is still valid after {detail} has been retired.',
+  'check.lineOutlivesEnd': 'The row “{name}” ({type}) is still valid after {detail} has been retired.',
   'check.planOverdue': '{name} was due to finish on {detail} and is still running.',
   'check.staleness': 'These say where the dates contradict each other. They cannot tell you a landscape is out of date.',
 } as const

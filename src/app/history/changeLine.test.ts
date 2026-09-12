@@ -9,7 +9,7 @@ import { changeLine } from './changeLine'
 import { translator } from '../../i18n'
 import type { ChangeKind, ChangeSubject, ModelChange } from '../../model/diff'
 
-const SUBJECTS: ChangeSubject[] = ['element', 'connection', 'diagram', 'decision', 'transition', 'membership', 'geometry']
+const SUBJECTS: ChangeSubject[] = ['element', 'relation', 'diagram', 'decision', 'transition', 'membership', 'geometry']
 const KINDS: ChangeKind[] = ['added', 'removed', 'changed']
 
 describe('changeLine', () => {
@@ -32,6 +32,18 @@ describe('changeLine', () => {
     )).toBe('Put Warehouse on Roadmap')
     expect(changeLine({ kind: 'changed', what: 'geometry', id: 'd1', name: 'Roadmap', count: 40 }, s))
       .toBe('Moved 40 on Roadmap')
+  })
+
+  it('calls a flow a connection, and the other four rows what they are', () => {
+    // The vocabulary follows the type (ADR-0012 §5): a flow is the line a
+    // person draws on a board and the one the file still calls a connection,
+    // and a row between a capability and a journey step never was one.
+    const s = translator('en')
+    const row = (relationType: ModelChange['relationType']): ModelChange =>
+      ({ kind: 'added', what: 'relation', id: 'r1', name: 'WMS → Fulfilment', relationType })
+    expect(changeLine(row('flow'), s)).toBe('Drew WMS → Fulfilment')
+    expect(changeLine(row('supports'), s)).toBe('Drew a row (Supports): WMS → Fulfilment')
+    expect(changeLine(row('assigned'), s)).toBe('Drew a row (Assigned to): WMS → Fulfilment')
   })
 
   it('names a plan as a plan', () => {

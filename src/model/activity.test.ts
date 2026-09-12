@@ -82,6 +82,30 @@ describe('summarise', () => {
       .toMatchObject({ key: 'activity.diagramDeleted', name: 'L7' })
   })
 
+  it('calls a flow a connection, and says which the other four rows were', () => {
+    // The vocabulary follows the type (ADR-0012 §5). A flow keeps the word this
+    // tool has always used for it — it is what a person draws on a board, and
+    // it is almost every row — and "drew a connection" for a row between a
+    // capability and a journey step would be the log describing something that
+    // did not happen.
+    expect(summarise([{
+      type: 'relation.create',
+      relation: { id: 'r1', type: 'flow', sourceId: 'billing', targetId: 'crm', isBidirectional: false },
+    }], before())).toEqual({ key: 'activity.relationAdded' })
+
+    expect(summarise([{
+      type: 'relation.create',
+      relation: { id: 'r2', type: 'supports', sourceId: 'billing', targetId: 'fulfilment' },
+    }], before())).toEqual({ key: 'activity.rowAdded', typeKey: 'relation.supports' })
+  })
+
+  it('names a row it no longer holds as the flow it almost certainly was', () => {
+    // An update to something deleted in the same breath: a log line is not the
+    // place to say "unknown".
+    expect(summarise([{ type: 'relation.update', id: 'gone', patch: { label: 'x' } }], before()))
+      .toEqual({ key: 'activity.relationChanged' })
+  })
+
   it('has a name for every command in the vocabulary', () => {
     // A step with no words is a step the list would show as blank, and the one
     // way that happens is a command nobody thought about here.
