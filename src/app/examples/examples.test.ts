@@ -14,16 +14,25 @@
  */
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
-import { EXAMPLES } from '.'
-import { fromInterchange } from '../../model/fromInterchange'
+import { EXAMPLES, exampleFiles, exampleProject } from '.'
 import { fromArrays, toArrays } from '../../model/normalised'
-import { projectFromDocument, toWorkingFile } from '../../projects/project'
+import { projectFiles, projectFromFolder } from '../../projects/folderFormat'
+import { stableJson } from '../../projects/fileText'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { computeBusinessCase, readBusinessCase } from '../../documentation/businessCase'
 
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
-  const model = fromInterchange(example.document, example.groupName)
+  const project = exampleProject(example)!
+  const model = project.model
   const byId = new Map(model.elements.map((e) => [e.id, e]))
+
+  it('is a project folder this build reads', () => {
+    // The one thing that would make every other check in this file vacuous,
+    // and the one an example in a form the tool no longer writes would fail.
+    expect(project).toBeTruthy()
+    expect(model.diagrams.length).toBeGreaterThan(0)
+    expect(model.customerName).toBeTruthy()
+  })
 
   it('parents every component to an application that exists', () => {
     const components = model.elements.filter((e) => e.kind === 'component')
@@ -64,11 +73,27 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
  * save after the reducer lands is a diff nobody asked for.
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working file', (_key, example) => {
+  const project = exampleProject(example)!
+
   it('survives the indexed model byte for byte', () => {
-    const project = projectFromDocument(example.document, example.ref, example.groupName)
     const indexed = { ...project, model: toArrays(fromArrays(project.model)) }
 
-    expect(JSON.stringify(toWorkingFile(indexed))).toBe(JSON.stringify(toWorkingFile(project)))
+    expect(stableJson(indexed)).toBe(stableJson(project))
+  })
+
+  it('is written back as the files it was read from', () => {
+    // The example ships as the folder the format writes, so a save of an
+    // untouched copy has to be no diff at all — which is also what says the
+    // shipped file is current rather than something a reader forgives.
+    const written = projectFiles(project)
+    expect(written.map((file) => file.path).sort()).toEqual(Object.keys(example.folder).sort())
+    for (const file of exampleFiles(example)) {
+      expect(written.find((held) => held.path === file.path), file.path).toEqual(file)
+    }
+  })
+
+  it('round-trips through the format unchanged', () => {
+    expect(stableJson(projectFromFolder(projectFiles(project), example.ref))).toBe(stableJson(project))
   })
 })
 
@@ -98,8 +123,8 @@ describe('the generated landscape against the shipped one', () => {
   }
 
   const example = EXAMPLES[0]
-  const shipped = degrees((example.document.connections ?? []).map((c) => ({
-    from: String(c.sourceKey), to: String(c.targetKey),
+  const shipped = degrees(exampleProject(example)!.model.relations.map((c) => ({
+    from: c.sourceId, to: c.targetId,
   })))
   const generated = degrees(syntheticModel('small').relations.map((c) => ({
     from: c.sourceId, to: c.targetId,
@@ -130,22 +155,23 @@ describe('the generated landscape against the shipped one', () => {
  * out to an answer rather than to its own source.
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by example', (_key, example) => {
-  const model = fromInterchange(example.document, example.groupName)
+  const model = exampleProject(example)!.model
   const elementIds = new Set(model.elements.map((e) => e.id))
-  const decisionIds = new Set((example.decisions ?? []).map((d) => d.id))
+  const decisionIds = new Set((model.decisions ?? []).map((d) => d.id))
+  const plans = model.transitions ?? []
 
   it('ships at least one plan, one decision and one dated board', () => {
-    expect(example.transitions?.length ?? 0).toBeGreaterThan(0)
-    expect(example.decisions?.length ?? 0).toBeGreaterThan(0)
+    expect(plans.length).toBeGreaterThan(0)
+    expect(model.decisions?.length ?? 0).toBeGreaterThan(0)
     expect(model.diagrams.some((d) => d.asOf)).toBe(true)
   })
 
-  it.each((example.transitions ?? []).map((plan) => [plan.title, plan] as const))('plan %s names only what exists', (_title, plan) => {
+  it.each(plans.map((plan) => [plan.title, plan] as const))('plan %s names only what exists', (_title, plan) => {
     for (const { elementId } of plan.elements) expect(elementIds.has(elementId), elementId).toBe(true)
     for (const id of plan.decisions) expect(decisionIds.has(id), id).toBe(true)
   })
 
-  it.each((example.transitions ?? []).map((plan) => [plan.title, plan] as const))('plan %s carries a business case that computes', (_title, plan) => {
+  it.each(plans.map((plan) => [plan.title, plan] as const))('plan %s carries a business case that computes', (_title, plan) => {
     const fence = /```business-case\n([\s\S]*?)```/.exec(plan.body)
     expect(fence, 'no business-case fence').toBeTruthy()
     const held = readBusinessCase(fence![1])
@@ -155,9 +181,12 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
     expect(result.score?.total).toBeGreaterThan(0)
   })
 
-  it('opens with its decisions and plans on the model', () => {
-    const snapshot = projectFromDocument(example.document, example.ref, example.groupName, example.transitions, example.decisions)
-    expect(snapshot.model.transitions?.map((t) => t.id)).toEqual(example.transitions?.map((t) => t.id))
-    expect(snapshot.model.decisions?.map((d) => d.id)).toEqual(example.decisions?.map((d) => d.id))
+  it('files its decisions and plans as the folder does, one markdown file each', () => {
+    // They used to ride beside the document in TypeScript, because the
+    // interchange format has nowhere to put them. The working form does.
+    const paths = Object.keys(example.folder)
+    expect(paths.filter((path) => path.startsWith('decisions/')).length)
+      .toBe(model.decisions?.length ?? 0)
+    expect(paths.filter((path) => path.startsWith('transitions/')).length).toBe(plans.length)
   })
 })

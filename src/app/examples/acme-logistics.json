@@ -1,1057 +1,1817 @@
 {
-  "formatVersion": "1",
-  "design": {
-    "name": "Acme Logistics",
-    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills."
+  "decisions/0001-one-place-where-a-price-is-decided.md": [
+    "---",
+    "id: adr-one-price",
+    "number: 1",
+    "status: accepted",
+    "date: 2026-01-20",
+    "signers:",
+    "  - name: M. Okafor",
+    "    role: Head of revenue systems",
+    "    verdict: approved",
+    "    signedAt: 2026-01-20",
+    "  - name: J. Lindqvist",
+    "    role: Enterprise architect",
+    "    verdict: approved",
+    "    signedAt: 2026-01-22",
+    "---",
+    "",
+    "# ADR-0001 — One place where a price is decided",
+    "",
+    "## Context",
+    "",
+    "Two contracts are still priced by [[Rating (legacy)]] while everything else",
+    "goes through the [[Tariff Engine]]. Every tariff change is made twice, and",
+    "the two disagree about rounding often enough that finance reconciles them",
+    "by hand each month.",
+    "",
+    "## Decision",
+    "",
+    "The tariff engine becomes the only place a price is decided. The two",
+    "remaining contracts are moved one at a time, and the legacy rater is",
+    "switched off when the last one has moved — not before, and not later.",
+    "",
+    "## Consequences",
+    "",
+    "- The tariff engine falls back to the legacy rater for whatever it cannot yet price; that line is dated and disappears at the switch-off.",
+    "- The legacy licence is not renewed. The saving is in the plan that carries this decision out.",
+    "- Rounding follows the tariff engine from the first moved contract, and the affected customers are told.",
+    ""
+  ],
+  "decisions/0002-buy-a-yard-system-rather-than-extend-the-warehouse-system.md": [
+    "---",
+    "id: adr-buy-yard",
+    "number: 2",
+    "status: accepted",
+    "date: 2026-02-10",
+    "signers:",
+    "  - name: R. Baptiste",
+    "    role: Warehouse operations",
+    "    verdict: approved",
+    "    signedAt: 2026-02-10",
+    "  - name: J. Lindqvist",
+    "    role: Enterprise architect",
+    "    verdict: approved",
+    "    signedAt: 2026-02-11",
+    "---",
+    "",
+    "# ADR-0002 — Buy a yard system rather than extend the warehouse system",
+    "",
+    "## Context",
+    "",
+    "Dock doors are booked in a spreadsheet and announced by phone. Trucks wait,",
+    "detention fees follow, and [[Warehouse Management]] knows nothing about a",
+    "trailer until it is at the door.",
+    "",
+    "## Options considered",
+    "",
+    "| Option | Time to live | Cost over five years | Fit |",
+    "| ------ | ------------ | -------------------- | --- |",
+    "| Extend the warehouse system with a dock module | 14 months | 410 000 | Poor: the WMS vendor has no yard roadmap |",
+    "| Buy a yard management system | 6 months | 480 000 | Good: gate, yard and dock in one product |",
+    "| Keep the spreadsheet, add a booking page | 2 months | 60 000 | None: the yard itself stays invisible |",
+    "",
+    "## Decision",
+    "",
+    "Buy. A yard system is introduced beside the warehouse system, takes dock",
+    "booking off it, and [[Dispatch]] announces arrivals to it rather than by phone.",
+    "",
+    "## Consequences",
+    "",
+    "- One more application to run, and one more vendor.",
+    "- The warehouse system stops booking dock doors once the yard system does; until then both do, which is the plan's shadow run.",
+    ""
+  ],
+  "diagrams/landscape-2027.geometry.json": {
+    "needsLayout": true,
+    "nodes": []
   },
-  "elements": [
-    {
-      "key": "order-management",
-      "kind": "application",
-      "name": "Order Management",
-      "category": "Order to delivery",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "The order of record from booking to invoice hand-off. Everything downstream reads its status.",
-      "iconType": "erp",
-      "aspects": {
-        "monitoring": {
-          "status": "managed"
-        },
-        "security": {
-          "status": "managed"
-        },
-        "self-healing": {
-          "status": "partial"
-        },
-        "dr": {
-          "status": "managed"
-        }
-      }
-    },
-    {
-      "key": "route-optimiser",
-      "kind": "application",
-      "name": "Route Optimiser",
-      "category": "Order to delivery",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Turns tomorrow’s orders into runs. Solves overnight; a re-solve during the day is manual.",
-      "iconType": "planning",
-      "aspects": {
-        "monitoring": {
-          "status": "partial"
-        },
-        "self-healing": {
-          "status": "none",
-          "note": "A failed overnight solve is noticed by the planner, not by a monitor."
-        },
-        "security": {
-          "status": "managed"
-        },
-        "dr": {
-          "status": "partial"
-        }
-      }
-    },
-    {
-      "key": "dispatch",
-      "kind": "application",
-      "name": "Dispatch",
-      "category": "Order to delivery",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "The live picture: who is driving what, and what has gone wrong since the plan was made.",
-      "iconType": "dashboard",
-      "aspects": {
-        "monitoring": {
-          "status": "managed"
-        },
-        "self-healing": {
-          "status": "partial"
-        },
-        "security": {
-          "status": "managed"
-        },
-        "dr": {
-          "status": "partial"
-        }
-      }
-    },
-    {
-      "key": "track-trace",
-      "kind": "application",
-      "name": "Track & Trace",
-      "category": "Order to delivery",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Shipment status for customers and support, assembled from scans and driver events.",
-      "iconType": "map",
-      "aspects": {
-        "monitoring": {
-          "status": "managed"
-        },
-        "security": {
-          "status": "partial"
-        },
-        "self-healing": {
-          "status": "managed"
-        },
-        "dr": {
-          "status": "managed"
-        }
-      }
-    },
-    {
-      "key": "planner",
-      "kind": "actor",
-      "name": "Transport planner",
-      "description": "Builds the daily plan: which load goes on which run, and when."
-    },
-    {
-      "key": "dispatcher",
-      "kind": "actor",
-      "name": "Dispatcher",
-      "description": "Runs the day as it actually happens — reassigns, reroutes, explains."
-    },
-    {
-      "key": "warehouse-lead",
-      "kind": "actor",
-      "name": "Warehouse lead",
-      "description": "Owns the floor: labour, dock doors, and what ships tonight."
-    },
-    {
-      "key": "support-agent",
-      "kind": "actor",
-      "name": "Support agent",
-      "description": "Answers \"where is my shipment\", and fixes what caused the question."
-    },
-    {
-      "key": "driver-app",
-      "kind": "inputChannel",
-      "name": "Driver app",
-      "description": "Run sheet, proof of delivery, exceptions. Offline for hours at a time.",
-      "iconType": "mobile-app"
-    },
-    {
-      "key": "customer-portal",
-      "kind": "inputChannel",
-      "name": "Customer portal",
-      "description": "Booking, documents and track & trace for contract customers.",
-      "iconType": "portal"
-    },
-    {
-      "key": "edi-intake",
-      "kind": "inputChannel",
-      "name": "EDI intake",
-      "description": "Orders from customers who will never use a portal. Mostly EDIFACT.",
-      "iconType": "connector"
-    },
-    {
-      "key": "scanners",
-      "kind": "inputChannel",
-      "name": "Handheld scanners",
-      "description": "Every scan in the warehouse and at the dock door.",
-      "iconType": "iot-sensor"
-    },
-    {
-      "key": "wms",
-      "kind": "application",
-      "name": "Warehouse Management",
-      "category": "Warehouse",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Stock, tasks and dock doors across three sites. The floor stops when it stops.",
-      "iconType": "storage",
-      "aspects": {
-        "monitoring": {
-          "status": "managed"
-        },
-        "security": {
-          "status": "managed"
-        },
-        "self-healing": {
-          "status": "partial"
-        },
-        "dr": {
-          "status": "atRisk",
-          "note": "Failover has never been rehearsed against a full shift."
-        }
-      }
-    },
-    {
-      "key": "slotting",
-      "kind": "application",
-      "name": "Slotting & Replenishment",
-      "category": "Warehouse",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Decides where stock lives and when to move it forward. Reads WMS, writes tasks back.",
-      "iconType": "batch-job",
-      "aspects": {
-        "monitoring": {
-          "status": "partial"
-        },
-        "security": {
-          "status": "managed"
-        }
-      }
-    },
-    {
-      "key": "yard",
-      "kind": "application",
-      "name": "Yard Management",
-      "category": "Warehouse",
-      "lifecycle": "planned",
-      "isManaged": true,
-      "description": "Trailers, doors and time slots on the yard. Bought in, lightly integrated.",
-      "iconType": "scheduler",
-      "aspects": {
-        "monitoring": {
-          "status": "none"
-        },
-        "security": {
-          "status": "partial"
-        }
+  "diagrams/landscape-2027.json": {
+    "asOf": "2027-09-01",
+    "aspectConfig": [
+      {
+        "key": "monitoring",
+        "label": "Monitoring"
       },
-      "lifecycleDates": {
-        "live": "2026-11-02"
+      {
+        "key": "self-healing",
+        "label": "Self-healing"
       },
-      "owner": "Warehouse operations"
-    },
-    {
-      "key": "billing",
-      "kind": "application",
-      "name": "Billing",
-      "category": "Billing",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Invoices what was delivered, from the order and the tariff that applied on the day.",
-      "iconType": "finance",
-      "aspects": {
-        "monitoring": {
-          "status": "managed"
-        },
-        "security": {
-          "status": "managed"
-        },
-        "dr": {
-          "status": "managed"
-        },
-        "self-healing": {
-          "status": "partial"
-        }
+      {
+        "key": "security",
+        "label": "Security"
+      },
+      {
+        "key": "dr",
+        "label": "Disaster recovery"
       }
-    },
-    {
-      "key": "tariff-engine",
-      "kind": "application",
-      "name": "Tariff Engine",
-      "category": "Billing",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Contract rates, surcharges and fuel indexation. Changes here move real money.",
-      "iconType": "workflow",
-      "aspects": {
-        "monitoring": {
-          "status": "partial"
-        },
-        "security": {
-          "status": "managed"
-        },
-        "dr": {
-          "status": "partial"
-        }
+    ],
+    "groups": [
+      {
+        "id": "billing",
+        "name": "Billing"
       },
-      "owner": "Revenue systems"
-    },
-    {
-      "key": "legacy-rating",
-      "kind": "application",
-      "name": "Rating (legacy)",
-      "category": "Billing",
-      "lifecycle": "retiring",
-      "isManaged": false,
-      "description": "The rating rules the tariff engine has not absorbed yet. Two customers still price here.",
-      "iconType": "mainframe",
-      "aspects": {
-        "monitoring": {
-          "status": "none"
-        },
-        "security": {
-          "status": "atRisk",
-          "note": "Runs on an OS release that stopped receiving patches."
-        },
-        "dr": {
-          "status": "none"
-        }
+      {
+        "id": "master-data",
+        "name": "Master data"
       },
-      "lifecycleDates": {
-        "retiring": "2026-04-01",
-        "retired": "2027-06-30"
+      {
+        "id": "order-to-delivery",
+        "name": "Order to delivery"
       },
-      "successorKey": "tariff-engine",
-      "owner": "Revenue systems"
-    },
-    {
-      "key": "customer-master",
-      "kind": "application",
-      "name": "Customer Master",
-      "category": "Master data",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "One record per customer and site, and the addresses everything else trusts.",
-      "iconType": "crm",
-      "aspects": {
-        "monitoring": {
-          "status": "managed"
-        },
-        "security": {
-          "status": "managed"
-        },
-        "dr": {
-          "status": "managed"
-        }
+      {
+        "id": "warehouse",
+        "name": "Warehouse"
       }
-    },
-    {
-      "key": "fleet-register",
-      "kind": "application",
-      "name": "Fleet Register",
-      "category": "Master data",
-      "lifecycle": "live",
-      "isManaged": true,
-      "description": "Vehicles, trailers, telematics units and who is allowed to drive what.",
-      "iconType": "database",
-      "aspects": {
-        "monitoring": {
-          "status": "partial"
-        },
-        "security": {
-          "status": "managed"
-        }
+    ],
+    "id": "landscape-2027",
+    "kind": "layer7",
+    "members": [
+      {
+        "group": "billing",
+        "id": "billing",
+        "zone": "landscape"
+      },
+      {
+        "group": "master-data",
+        "id": "customer-master",
+        "zone": "landscape"
+      },
+      {
+        "id": "customer-portal",
+        "zone": "inputChannels"
+      },
+      {
+        "id": "customs",
+        "zone": "externalSystems"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "dispatch",
+        "zone": "landscape"
+      },
+      {
+        "id": "dispatcher",
+        "zone": "actors"
+      },
+      {
+        "id": "driver-app",
+        "zone": "inputChannels"
+      },
+      {
+        "id": "edi-intake",
+        "zone": "inputChannels"
+      },
+      {
+        "group": "master-data",
+        "id": "fleet-register",
+        "zone": "landscape"
+      },
+      {
+        "id": "iam",
+        "zone": "management"
+      },
+      {
+        "group": "billing",
+        "id": "legacy-rating",
+        "zone": "landscape"
+      },
+      {
+        "id": "observability",
+        "zone": "management"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "order-management",
+        "zone": "landscape"
+      },
+      {
+        "id": "partner-carriers",
+        "zone": "externalSystems"
+      },
+      {
+        "id": "payments",
+        "zone": "externalSystems"
+      },
+      {
+        "id": "planner",
+        "zone": "actors"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "route-optimiser",
+        "zone": "landscape"
+      },
+      {
+        "id": "scanners",
+        "zone": "inputChannels"
+      },
+      {
+        "group": "warehouse",
+        "id": "slotting",
+        "zone": "landscape"
+      },
+      {
+        "id": "support-agent",
+        "zone": "actors"
+      },
+      {
+        "group": "billing",
+        "id": "tariff-engine",
+        "zone": "landscape"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "track-trace",
+        "zone": "landscape"
+      },
+      {
+        "id": "traffic-feed",
+        "zone": "externalSystems"
+      },
+      {
+        "id": "warehouse-lead",
+        "zone": "actors"
+      },
+      {
+        "group": "warehouse",
+        "id": "wms",
+        "zone": "landscape"
+      },
+      {
+        "group": "warehouse",
+        "id": "yard",
+        "zone": "landscape"
       }
-    },
-    {
-      "key": "customs",
-      "kind": "externalSystem",
-      "name": "Customs declarations",
-      "description": "National customs filing. Rejections arrive hours later, by message.",
-      "iconType": "document-management"
-    },
-    {
-      "key": "partner-carriers",
-      "kind": "externalSystem",
-      "name": "Partner carriers",
-      "description": "Subcontracted runs. Each one integrates slightly differently.",
-      "iconType": "saas"
-    },
-    {
-      "key": "payments",
-      "kind": "externalSystem",
-      "name": "Payment provider",
-      "description": "Collects on invoices and reports back what settled.",
-      "iconType": "api"
-    },
-    {
-      "key": "traffic-feed",
-      "kind": "externalSystem",
-      "name": "Traffic & weather feed",
-      "description": "Third-party conditions used when planning and re-planning.",
-      "iconType": "cloud"
-    },
-    {
-      "key": "observability",
-      "kind": "managementTool",
-      "name": "Observability",
-      "description": "Metrics, logs and traces for everything that has been onboarded.",
-      "iconType": "monitoring"
-    },
-    {
-      "key": "iam",
-      "kind": "managementTool",
-      "name": "Identity & access",
-      "description": "Single sign-on and the roles behind every screen above.",
-      "iconType": "auth"
-    },
-    {
-      "key": "wms-workstation",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Floor workstation",
-      "description": "What the warehouse lead and pickers actually look at.",
-      "iconType": "desktop-app"
-    },
-    {
-      "key": "wms-api",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Inventory API",
-      "description": "Stock and task queries for everything outside the warehouse.",
-      "iconType": "api"
-    },
-    {
-      "key": "wms-task-engine",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Task engine",
-      "description": "Turns demand into pick, put-away and replenishment work.",
-      "iconType": "workflow"
-    },
-    {
-      "key": "wms-scan-service",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Scan service",
-      "description": "Absorbs the scan traffic and holds it when the network drops.",
-      "iconType": "connector"
-    },
-    {
-      "key": "wms-integration",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Integration service",
-      "description": "Talks to order management, slotting and the yard.",
-      "iconType": "integration-platform"
-    },
-    {
-      "key": "wms-db",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Inventory database",
-      "description": "Stock positions and the task ledger.",
-      "iconType": "database"
-    },
-    {
-      "key": "wms-events",
-      "kind": "component",
-      "parentKey": "wms",
-      "name": "Event stream",
-      "description": "Every stock movement, published once, read by several.",
-      "iconType": "event-stream"
-    }
+    ],
+    "name": "Landscape in 2027"
+  },
+  "diagrams/landscape.geometry.json": {
+    "needsLayout": true,
+    "nodes": []
+  },
+  "diagrams/landscape.json": {
+    "aspectConfig": [
+      {
+        "key": "monitoring",
+        "label": "Monitoring"
+      },
+      {
+        "key": "self-healing",
+        "label": "Self-healing"
+      },
+      {
+        "key": "security",
+        "label": "Security"
+      },
+      {
+        "key": "dr",
+        "label": "Disaster recovery"
+      }
+    ],
+    "groups": [
+      {
+        "id": "billing",
+        "name": "Billing"
+      },
+      {
+        "id": "master-data",
+        "name": "Master data"
+      },
+      {
+        "id": "order-to-delivery",
+        "name": "Order to delivery"
+      },
+      {
+        "id": "warehouse",
+        "name": "Warehouse"
+      }
+    ],
+    "id": "landscape",
+    "kind": "layer7",
+    "members": [
+      {
+        "group": "billing",
+        "id": "billing",
+        "zone": "landscape"
+      },
+      {
+        "group": "master-data",
+        "id": "customer-master",
+        "zone": "landscape"
+      },
+      {
+        "id": "customer-portal",
+        "zone": "inputChannels"
+      },
+      {
+        "id": "customs",
+        "zone": "externalSystems"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "dispatch",
+        "zone": "landscape"
+      },
+      {
+        "id": "dispatcher",
+        "zone": "actors"
+      },
+      {
+        "id": "driver-app",
+        "zone": "inputChannels"
+      },
+      {
+        "id": "edi-intake",
+        "zone": "inputChannels"
+      },
+      {
+        "group": "master-data",
+        "id": "fleet-register",
+        "zone": "landscape"
+      },
+      {
+        "id": "iam",
+        "zone": "management"
+      },
+      {
+        "group": "billing",
+        "id": "legacy-rating",
+        "zone": "landscape"
+      },
+      {
+        "id": "observability",
+        "zone": "management"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "order-management",
+        "zone": "landscape"
+      },
+      {
+        "id": "partner-carriers",
+        "zone": "externalSystems"
+      },
+      {
+        "id": "payments",
+        "zone": "externalSystems"
+      },
+      {
+        "id": "planner",
+        "zone": "actors"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "route-optimiser",
+        "zone": "landscape"
+      },
+      {
+        "id": "scanners",
+        "zone": "inputChannels"
+      },
+      {
+        "group": "warehouse",
+        "id": "slotting",
+        "zone": "landscape"
+      },
+      {
+        "id": "support-agent",
+        "zone": "actors"
+      },
+      {
+        "group": "billing",
+        "id": "tariff-engine",
+        "zone": "landscape"
+      },
+      {
+        "group": "order-to-delivery",
+        "id": "track-trace",
+        "zone": "landscape"
+      },
+      {
+        "id": "traffic-feed",
+        "zone": "externalSystems"
+      },
+      {
+        "id": "warehouse-lead",
+        "zone": "actors"
+      },
+      {
+        "group": "warehouse",
+        "id": "wms",
+        "zone": "landscape"
+      },
+      {
+        "group": "warehouse",
+        "id": "yard",
+        "zone": "landscape"
+      }
+    ],
+    "name": "Application landscape"
+  },
+  "diagrams/wms-containers.geometry.json": {
+    "needsLayout": true,
+    "nodes": []
+  },
+  "diagrams/wms-containers.json": {
+    "applicationElementId": "wms",
+    "id": "wms-containers",
+    "kind": "container",
+    "members": [
+      {
+        "id": "order-management"
+      },
+      {
+        "id": "scanners"
+      },
+      {
+        "id": "slotting"
+      },
+      {
+        "id": "warehouse-lead"
+      },
+      {
+        "id": "wms"
+      },
+      {
+        "id": "wms-api"
+      },
+      {
+        "id": "wms-db"
+      },
+      {
+        "id": "wms-events"
+      },
+      {
+        "id": "wms-integration"
+      },
+      {
+        "id": "wms-scan-service"
+      },
+      {
+        "id": "wms-task-engine"
+      },
+      {
+        "id": "wms-workstation"
+      },
+      {
+        "id": "yard"
+      }
+    ],
+    "name": "Warehouse Management · containers"
+  },
+  "docs/billing.md": [
+    "Invoices what was delivered, from the order and the tariff that applied on the day.",
+    ""
   ],
-  "connections": [
-    {
-      "sourceKey": "planner",
-      "targetKey": "route-optimiser",
-      "label": "plans the day",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "planner",
-      "targetKey": "order-management",
-      "label": "checks and amends orders",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "dispatcher",
-      "targetKey": "dispatch",
-      "label": "runs the day",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "warehouse-lead",
-      "targetKey": "wms",
-      "label": "assigns work on the floor",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "support-agent",
-      "targetKey": "track-trace",
-      "label": "answers where a shipment is",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "support-agent",
-      "targetKey": "order-management",
-      "label": "corrects an order",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "customer-portal",
-      "targetKey": "order-management",
-      "label": "books shipments",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "edi-intake",
-      "targetKey": "order-management",
-      "label": "delivers EDIFACT orders",
-      "protocol": "AS2"
-    },
-    {
-      "sourceKey": "driver-app",
-      "targetKey": "dispatch",
-      "label": "reports position and exceptions",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "driver-app",
-      "targetKey": "track-trace",
-      "label": "sends proof of delivery",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "scanners",
-      "targetKey": "wms",
-      "label": "every scan on the floor",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "customer-portal",
-      "targetKey": "track-trace",
-      "label": "shows shipment status",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "order-management",
-      "targetKey": "route-optimiser",
-      "label": "hands over tomorrow’s orders",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "route-optimiser",
-      "targetKey": "dispatch",
-      "label": "publishes the plan",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "dispatch",
-      "targetKey": "track-trace",
-      "label": "streams run events",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "order-management",
-      "targetKey": "wms",
-      "label": "requests picking and shipping",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "wms",
-      "targetKey": "track-trace",
-      "label": "publishes stock movements",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "order-management",
-      "targetKey": "billing",
-      "label": "hands over what was delivered",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "billing",
-      "targetKey": "tariff-engine",
-      "label": "asks what it costs",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "billing",
-      "targetKey": "legacy-rating",
-      "label": "rates two remaining contracts",
-      "protocol": "SOAP"
-    },
-    {
-      "sourceKey": "slotting",
-      "targetKey": "wms",
-      "label": "writes replenishment tasks",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "wms",
-      "targetKey": "yard",
-      "label": "books a dock door",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "dispatch",
-      "targetKey": "yard",
-      "label": "announces arrivals",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "order-management",
-      "targetKey": "customer-master",
-      "label": "resolves customer and site",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "billing",
-      "targetKey": "customer-master",
-      "label": "invoices the right legal entity",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "dispatch",
-      "targetKey": "fleet-register",
-      "label": "checks vehicle and licence",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "route-optimiser",
-      "targetKey": "fleet-register",
-      "label": "plans against real capacity",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "order-management",
-      "targetKey": "customs",
-      "label": "files declarations",
-      "protocol": "AS4"
-    },
-    {
-      "sourceKey": "dispatch",
-      "targetKey": "partner-carriers",
-      "label": "subcontracts runs",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "partner-carriers",
-      "targetKey": "track-trace",
-      "label": "returns status events",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "billing",
-      "targetKey": "payments",
-      "label": "collects on invoices",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "route-optimiser",
-      "targetKey": "traffic-feed",
-      "label": "reads conditions",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "observability",
-      "targetKey": "order-management",
-      "label": "monitors",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "observability",
-      "targetKey": "wms",
-      "label": "monitors",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "observability",
-      "targetKey": "dispatch",
-      "label": "monitors",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "iam",
-      "targetKey": "customer-portal",
-      "label": "authenticates",
-      "protocol": "OIDC"
-    },
-    {
-      "sourceKey": "iam",
-      "targetKey": "order-management",
-      "label": "authorises",
-      "protocol": "OIDC"
-    },
-    {
-      "sourceKey": "iam",
-      "targetKey": "wms",
-      "label": "authorises",
-      "protocol": "OIDC"
-    },
-    {
-      "sourceKey": "wms-workstation",
-      "targetKey": "wms-api",
-      "label": "reads stock and tasks",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "scanners",
-      "targetKey": "wms-scan-service",
-      "label": "scans",
-      "protocol": "HTTPS"
-    },
-    {
-      "sourceKey": "wms-scan-service",
-      "targetKey": "wms-events",
-      "label": "publishes movements",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "wms-api",
-      "targetKey": "wms-db",
-      "label": "reads and writes",
-      "protocol": "SQL"
-    },
-    {
-      "sourceKey": "wms-task-engine",
-      "targetKey": "wms-db",
-      "label": "writes the task ledger",
-      "protocol": "SQL"
-    },
-    {
-      "sourceKey": "wms-events",
-      "targetKey": "wms-task-engine",
-      "label": "triggers replenishment",
-      "protocol": "AMQP"
-    },
-    {
-      "sourceKey": "wms-integration",
-      "targetKey": "wms-api",
-      "label": "serves the outside world",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "order-management",
-      "targetKey": "wms-integration",
-      "label": "requests picking and shipping",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "slotting",
-      "targetKey": "wms-integration",
-      "label": "writes replenishment tasks",
-      "protocol": "REST"
-    },
-    {
-      "sourceKey": "tariff-engine",
-      "targetKey": "legacy-rating",
-      "label": "falls back for two contracts",
-      "protocol": "REST",
-      "validUntil": "2027-06-30"
-    }
+  "docs/customer-master.md": [
+    "One record per customer and site, and the addresses everything else trusts.",
+    ""
   ],
-  "diagrams": [
-    {
-      "key": "landscape",
-      "kind": "layer7",
-      "name": "Application landscape",
-      "aspectConfig": [
-        {
-          "key": "monitoring",
-          "label": "Monitoring"
+  "docs/customer-portal.md": [
+    "Booking, documents and track & trace for contract customers.",
+    ""
+  ],
+  "docs/customs.md": [
+    "National customs filing. Rejections arrive hours later, by message.",
+    ""
+  ],
+  "docs/dispatch.md": [
+    "The live picture: who is driving what, and what has gone wrong since the plan was made.",
+    ""
+  ],
+  "docs/dispatcher.md": [
+    "Runs the day as it actually happens — reassigns, reroutes, explains.",
+    ""
+  ],
+  "docs/driver-app.md": [
+    "Run sheet, proof of delivery, exceptions. Offline for hours at a time.",
+    ""
+  ],
+  "docs/edi-intake.md": [
+    "Orders from customers who will never use a portal. Mostly EDIFACT.",
+    ""
+  ],
+  "docs/fleet-register.md": [
+    "Vehicles, trailers, telematics units and who is allowed to drive what.",
+    ""
+  ],
+  "docs/iam.md": [
+    "Single sign-on and the roles behind every screen above.",
+    ""
+  ],
+  "docs/legacy-rating.md": [
+    "The rating rules the tariff engine has not absorbed yet. Two customers still price here.",
+    ""
+  ],
+  "docs/observability.md": [
+    "Metrics, logs and traces for everything that has been onboarded.",
+    ""
+  ],
+  "docs/order-management.md": [
+    "The order of record from booking to invoice hand-off. Everything downstream reads its status.",
+    ""
+  ],
+  "docs/partner-carriers.md": [
+    "Subcontracted runs. Each one integrates slightly differently.",
+    ""
+  ],
+  "docs/payments.md": [
+    "Collects on invoices and reports back what settled.",
+    ""
+  ],
+  "docs/planner.md": [
+    "Builds the daily plan: which load goes on which run, and when.",
+    ""
+  ],
+  "docs/route-optimiser.md": [
+    "Turns tomorrow’s orders into runs. Solves overnight; a re-solve during the day is manual.",
+    ""
+  ],
+  "docs/scanners.md": [
+    "Every scan in the warehouse and at the dock door.",
+    ""
+  ],
+  "docs/slotting.md": [
+    "Decides where stock lives and when to move it forward. Reads WMS, writes tasks back.",
+    ""
+  ],
+  "docs/support-agent.md": [
+    "Answers \"where is my shipment\", and fixes what caused the question.",
+    ""
+  ],
+  "docs/tariff-engine.md": [
+    "Contract rates, surcharges and fuel indexation. Changes here move real money.",
+    ""
+  ],
+  "docs/track-trace.md": [
+    "Shipment status for customers and support, assembled from scans and driver events.",
+    ""
+  ],
+  "docs/traffic-feed.md": [
+    "Third-party conditions used when planning and re-planning.",
+    ""
+  ],
+  "docs/warehouse-lead.md": [
+    "Owns the floor: labour, dock doors, and what ships tonight.",
+    ""
+  ],
+  "docs/wms-api.md": [
+    "Stock and task queries for everything outside the warehouse.",
+    ""
+  ],
+  "docs/wms-db.md": [
+    "Stock positions and the task ledger.",
+    ""
+  ],
+  "docs/wms-events.md": [
+    "Every stock movement, published once, read by several.",
+    ""
+  ],
+  "docs/wms-integration.md": [
+    "Talks to order management, slotting and the yard.",
+    ""
+  ],
+  "docs/wms-scan-service.md": [
+    "Absorbs the scan traffic and holds it when the network drops.",
+    ""
+  ],
+  "docs/wms-task-engine.md": [
+    "Turns demand into pick, put-away and replenishment work.",
+    ""
+  ],
+  "docs/wms-workstation.md": [
+    "What the warehouse lead and pickers actually look at.",
+    ""
+  ],
+  "docs/wms.md": [
+    "Stock, tasks and dock doors across three sites. The floor stops when it stops.",
+    ""
+  ],
+  "docs/yard.md": [
+    "Trailers, doors and time slots on the yard. Bought in, lightly integrated.",
+    ""
+  ],
+  "model.json": {
+    "elements": [
+      {
+        "aspects": {
+          "dr": {
+            "status": "managed"
+          },
+          "monitoring": {
+            "status": "managed"
+          },
+          "security": {
+            "status": "managed"
+          },
+          "self-healing": {
+            "status": "partial"
+          }
         },
-        {
-          "key": "self-healing",
-          "label": "Self-healing"
+        "category": "Billing",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "key": "security",
-          "label": "Security"
+        "iconKey": "finance",
+        "id": "billing",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Billing"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "managed"
+          },
+          "monitoring": {
+            "status": "managed"
+          },
+          "security": {
+            "status": "managed"
+          }
         },
-        {
-          "key": "dr",
-          "label": "Disaster recovery"
-        }
-      ],
-      "places": [
-        {
-          "elementKey": "order-management",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
+        "category": "Master data",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "route-optimiser",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
+        "iconKey": "crm",
+        "id": "customer-master",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Customer Master"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "dispatch",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
+        "iconKey": "portal",
+        "id": "customer-portal",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Customer portal"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "track-trace",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
+        "iconKey": "document-management",
+        "id": "customs",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Customs declarations",
+        "outside": true
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "partial"
+          },
+          "monitoring": {
+            "status": "managed"
+          },
+          "security": {
+            "status": "managed"
+          },
+          "self-healing": {
+            "status": "partial"
+          }
         },
-        {
-          "elementKey": "planner",
-          "zone": "actors"
+        "category": "Order to delivery",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "dispatcher",
-          "zone": "actors"
+        "iconKey": "dashboard",
+        "id": "dispatch",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Dispatch"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "warehouse-lead",
-          "zone": "actors"
+        "id": "dispatcher",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Dispatcher"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "support-agent",
-          "zone": "actors"
+        "iconKey": "mobile-app",
+        "id": "driver-app",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Driver app"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "driver-app",
-          "zone": "inputChannels"
+        "iconKey": "connector",
+        "id": "edi-intake",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "EDI intake"
+      },
+      {
+        "aspects": {
+          "monitoring": {
+            "status": "partial"
+          },
+          "security": {
+            "status": "managed"
+          }
         },
-        {
-          "elementKey": "customer-portal",
-          "zone": "inputChannels"
+        "category": "Master data",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "edi-intake",
-          "zone": "inputChannels"
+        "iconKey": "database",
+        "id": "fleet-register",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Fleet Register"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "scanners",
-          "zone": "inputChannels"
+        "iconKey": "auth",
+        "id": "iam",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Identity & access"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "none"
+          },
+          "monitoring": {
+            "status": "none"
+          },
+          "security": {
+            "note": "Runs on an OS release that stopped receiving patches.",
+            "status": "atRisk"
+          }
         },
-        {
-          "elementKey": "wms",
-          "zone": "landscape",
-          "domainGroup": "Warehouse"
+        "category": "Billing",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "slotting",
-          "zone": "landscape",
-          "domainGroup": "Warehouse"
+        "iconKey": "mainframe",
+        "id": "legacy-rating",
+        "isManaged": false,
+        "kind": "application",
+        "lifecycle": "retiring",
+        "lifecycleDates": {
+          "retired": "2027-06-30",
+          "retiring": "2026-04-01"
         },
-        {
-          "elementKey": "yard",
-          "zone": "landscape",
-          "domainGroup": "Warehouse"
+        "name": "Rating (legacy)",
+        "owner": "Revenue systems",
+        "successorId": "tariff-engine"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "billing",
-          "zone": "landscape",
-          "domainGroup": "Billing"
+        "iconKey": "monitoring",
+        "id": "observability",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Observability"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "managed"
+          },
+          "monitoring": {
+            "status": "managed"
+          },
+          "security": {
+            "status": "managed"
+          },
+          "self-healing": {
+            "status": "partial"
+          }
         },
-        {
-          "elementKey": "tariff-engine",
-          "zone": "landscape",
-          "domainGroup": "Billing"
+        "category": "Order to delivery",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "legacy-rating",
-          "zone": "landscape",
-          "domainGroup": "Billing"
+        "iconKey": "erp",
+        "id": "order-management",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Order Management"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "customer-master",
-          "zone": "landscape",
-          "domainGroup": "Master data"
+        "iconKey": "saas",
+        "id": "partner-carriers",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Partner carriers",
+        "outside": true
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "fleet-register",
-          "zone": "landscape",
-          "domainGroup": "Master data"
+        "iconKey": "api",
+        "id": "payments",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Payment provider",
+        "outside": true
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "customs",
-          "zone": "externalSystems"
+        "id": "planner",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Transport planner"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "partial"
+          },
+          "monitoring": {
+            "status": "partial"
+          },
+          "security": {
+            "status": "managed"
+          },
+          "self-healing": {
+            "note": "A failed overnight solve is noticed by the planner, not by a monitor.",
+            "status": "none"
+          }
         },
-        {
-          "elementKey": "partner-carriers",
-          "zone": "externalSystems"
+        "category": "Order to delivery",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "payments",
-          "zone": "externalSystems"
+        "iconKey": "planning",
+        "id": "route-optimiser",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Route Optimiser"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
         },
-        {
-          "elementKey": "traffic-feed",
-          "zone": "externalSystems"
+        "iconKey": "iot-sensor",
+        "id": "scanners",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Handheld scanners"
+      },
+      {
+        "aspects": {
+          "monitoring": {
+            "status": "partial"
+          },
+          "security": {
+            "status": "managed"
+          }
         },
-        {
-          "elementKey": "observability",
-          "zone": "management"
+        "category": "Warehouse",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
         },
-        {
-          "elementKey": "iam",
-          "zone": "management"
-        }
-      ]
+        "iconKey": "batch-job",
+        "id": "slotting",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Slotting & Replenishment"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "id": "support-agent",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Support agent"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "partial"
+          },
+          "monitoring": {
+            "status": "partial"
+          },
+          "security": {
+            "status": "managed"
+          }
+        },
+        "category": "Billing",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
+        },
+        "iconKey": "workflow",
+        "id": "tariff-engine",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Tariff Engine",
+        "owner": "Revenue systems"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "status": "managed"
+          },
+          "monitoring": {
+            "status": "managed"
+          },
+          "security": {
+            "status": "partial"
+          },
+          "self-healing": {
+            "status": "managed"
+          }
+        },
+        "category": "Order to delivery",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
+        },
+        "iconKey": "map",
+        "id": "track-trace",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Track & Trace"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "cloud",
+        "id": "traffic-feed",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Traffic & weather feed",
+        "outside": true
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "id": "warehouse-lead",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Warehouse lead"
+      },
+      {
+        "aspects": {
+          "dr": {
+            "note": "Failover has never been rehearsed against a full shift.",
+            "status": "atRisk"
+          },
+          "monitoring": {
+            "status": "managed"
+          },
+          "security": {
+            "status": "managed"
+          },
+          "self-healing": {
+            "status": "partial"
+          }
+        },
+        "category": "Warehouse",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
+        },
+        "iconKey": "storage",
+        "id": "wms",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "live",
+        "name": "Warehouse Management"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "api",
+        "id": "wms-api",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Inventory API",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "database",
+        "id": "wms-db",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Inventory database",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "event-stream",
+        "id": "wms-events",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Event stream",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "integration-platform",
+        "id": "wms-integration",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Integration service",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "connector",
+        "id": "wms-scan-service",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Scan service",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "workflow",
+        "id": "wms-task-engine",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Task engine",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": true,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "iconKey": "desktop-app",
+        "id": "wms-workstation",
+        "isManaged": true,
+        "kind": "component",
+        "lifecycle": "live",
+        "name": "Floor workstation",
+        "parentId": "wms"
+      },
+      {
+        "aspects": {
+          "monitoring": {
+            "status": "none"
+          },
+          "security": {
+            "status": "partial"
+          }
+        },
+        "category": "Warehouse",
+        "explicit": {
+          "iconType": true,
+          "isManaged": true,
+          "lifecycle": true
+        },
+        "iconKey": "scheduler",
+        "id": "yard",
+        "isManaged": true,
+        "kind": "application",
+        "lifecycle": "planned",
+        "lifecycleDates": {
+          "live": "2026-11-02"
+        },
+        "name": "Yard Management",
+        "owner": "Warehouse operations"
+      }
+    ],
+    "relations": [
+      {
+        "id": "c#1",
+        "isBidirectional": false,
+        "label": "plans the day",
+        "protocol": "HTTPS",
+        "sourceId": "planner",
+        "targetId": "route-optimiser",
+        "type": "flow"
+      },
+      {
+        "id": "c#10",
+        "isBidirectional": false,
+        "label": "sends proof of delivery",
+        "protocol": "HTTPS",
+        "sourceId": "driver-app",
+        "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#11",
+        "isBidirectional": false,
+        "label": "every scan on the floor",
+        "protocol": "HTTPS",
+        "sourceId": "scanners",
+        "targetId": "wms",
+        "type": "flow"
+      },
+      {
+        "id": "c#12",
+        "isBidirectional": false,
+        "label": "shows shipment status",
+        "protocol": "HTTPS",
+        "sourceId": "customer-portal",
+        "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#13",
+        "isBidirectional": false,
+        "label": "hands over tomorrow’s orders",
+        "protocol": "AMQP",
+        "sourceId": "order-management",
+        "targetId": "route-optimiser",
+        "type": "flow"
+      },
+      {
+        "id": "c#14",
+        "isBidirectional": false,
+        "label": "publishes the plan",
+        "protocol": "AMQP",
+        "sourceId": "route-optimiser",
+        "targetId": "dispatch",
+        "type": "flow"
+      },
+      {
+        "id": "c#15",
+        "isBidirectional": false,
+        "label": "streams run events",
+        "protocol": "AMQP",
+        "sourceId": "dispatch",
+        "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#16",
+        "isBidirectional": false,
+        "label": "requests picking and shipping",
+        "protocol": "REST",
+        "sourceId": "order-management",
+        "targetId": "wms",
+        "type": "flow"
+      },
+      {
+        "id": "c#17",
+        "isBidirectional": false,
+        "label": "publishes stock movements",
+        "protocol": "AMQP",
+        "sourceId": "wms",
+        "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#18",
+        "isBidirectional": false,
+        "label": "hands over what was delivered",
+        "protocol": "AMQP",
+        "sourceId": "order-management",
+        "targetId": "billing",
+        "type": "flow"
+      },
+      {
+        "id": "c#19",
+        "isBidirectional": false,
+        "label": "asks what it costs",
+        "protocol": "REST",
+        "sourceId": "billing",
+        "targetId": "tariff-engine",
+        "type": "flow"
+      },
+      {
+        "id": "c#2",
+        "isBidirectional": false,
+        "label": "checks and amends orders",
+        "protocol": "HTTPS",
+        "sourceId": "planner",
+        "targetId": "order-management",
+        "type": "flow"
+      },
+      {
+        "id": "c#20",
+        "isBidirectional": false,
+        "label": "rates two remaining contracts",
+        "protocol": "SOAP",
+        "sourceId": "billing",
+        "targetId": "legacy-rating",
+        "type": "flow"
+      },
+      {
+        "id": "c#21",
+        "isBidirectional": false,
+        "label": "writes replenishment tasks",
+        "protocol": "REST",
+        "sourceId": "slotting",
+        "targetId": "wms",
+        "type": "flow"
+      },
+      {
+        "id": "c#22",
+        "isBidirectional": false,
+        "label": "books a dock door",
+        "protocol": "REST",
+        "sourceId": "wms",
+        "targetId": "yard",
+        "type": "flow"
+      },
+      {
+        "id": "c#23",
+        "isBidirectional": false,
+        "label": "announces arrivals",
+        "protocol": "REST",
+        "sourceId": "dispatch",
+        "targetId": "yard",
+        "type": "flow"
+      },
+      {
+        "id": "c#24",
+        "isBidirectional": false,
+        "label": "resolves customer and site",
+        "protocol": "REST",
+        "sourceId": "order-management",
+        "targetId": "customer-master",
+        "type": "flow"
+      },
+      {
+        "id": "c#25",
+        "isBidirectional": false,
+        "label": "invoices the right legal entity",
+        "protocol": "REST",
+        "sourceId": "billing",
+        "targetId": "customer-master",
+        "type": "flow"
+      },
+      {
+        "id": "c#26",
+        "isBidirectional": false,
+        "label": "checks vehicle and licence",
+        "protocol": "REST",
+        "sourceId": "dispatch",
+        "targetId": "fleet-register",
+        "type": "flow"
+      },
+      {
+        "id": "c#27",
+        "isBidirectional": false,
+        "label": "plans against real capacity",
+        "protocol": "REST",
+        "sourceId": "route-optimiser",
+        "targetId": "fleet-register",
+        "type": "flow"
+      },
+      {
+        "id": "c#28",
+        "isBidirectional": false,
+        "label": "files declarations",
+        "protocol": "AS4",
+        "sourceId": "order-management",
+        "targetId": "customs",
+        "type": "flow"
+      },
+      {
+        "id": "c#29",
+        "isBidirectional": false,
+        "label": "subcontracts runs",
+        "protocol": "REST",
+        "sourceId": "dispatch",
+        "targetId": "partner-carriers",
+        "type": "flow"
+      },
+      {
+        "id": "c#3",
+        "isBidirectional": false,
+        "label": "runs the day",
+        "protocol": "HTTPS",
+        "sourceId": "dispatcher",
+        "targetId": "dispatch",
+        "type": "flow"
+      },
+      {
+        "id": "c#30",
+        "isBidirectional": false,
+        "label": "returns status events",
+        "protocol": "REST",
+        "sourceId": "partner-carriers",
+        "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#31",
+        "isBidirectional": false,
+        "label": "collects on invoices",
+        "protocol": "HTTPS",
+        "sourceId": "billing",
+        "targetId": "payments",
+        "type": "flow"
+      },
+      {
+        "id": "c#32",
+        "isBidirectional": false,
+        "label": "reads conditions",
+        "protocol": "HTTPS",
+        "sourceId": "route-optimiser",
+        "targetId": "traffic-feed",
+        "type": "flow"
+      },
+      {
+        "id": "c#33",
+        "isBidirectional": false,
+        "label": "monitors",
+        "protocol": "HTTPS",
+        "sourceId": "observability",
+        "targetId": "order-management",
+        "type": "flow"
+      },
+      {
+        "id": "c#34",
+        "isBidirectional": false,
+        "label": "monitors",
+        "protocol": "HTTPS",
+        "sourceId": "observability",
+        "targetId": "wms",
+        "type": "flow"
+      },
+      {
+        "id": "c#35",
+        "isBidirectional": false,
+        "label": "monitors",
+        "protocol": "HTTPS",
+        "sourceId": "observability",
+        "targetId": "dispatch",
+        "type": "flow"
+      },
+      {
+        "id": "c#36",
+        "isBidirectional": false,
+        "label": "authenticates",
+        "protocol": "OIDC",
+        "sourceId": "iam",
+        "targetId": "customer-portal",
+        "type": "flow"
+      },
+      {
+        "id": "c#37",
+        "isBidirectional": false,
+        "label": "authorises",
+        "protocol": "OIDC",
+        "sourceId": "iam",
+        "targetId": "order-management",
+        "type": "flow"
+      },
+      {
+        "id": "c#38",
+        "isBidirectional": false,
+        "label": "authorises",
+        "protocol": "OIDC",
+        "sourceId": "iam",
+        "targetId": "wms",
+        "type": "flow"
+      },
+      {
+        "id": "c#39",
+        "isBidirectional": false,
+        "label": "reads stock and tasks",
+        "protocol": "REST",
+        "sourceId": "wms-workstation",
+        "targetId": "wms-api",
+        "type": "flow"
+      },
+      {
+        "id": "c#4",
+        "isBidirectional": false,
+        "label": "assigns work on the floor",
+        "protocol": "HTTPS",
+        "sourceId": "warehouse-lead",
+        "targetId": "wms",
+        "type": "flow"
+      },
+      {
+        "id": "c#40",
+        "isBidirectional": false,
+        "label": "scans",
+        "protocol": "HTTPS",
+        "sourceId": "scanners",
+        "targetId": "wms-scan-service",
+        "type": "flow"
+      },
+      {
+        "id": "c#41",
+        "isBidirectional": false,
+        "label": "publishes movements",
+        "protocol": "AMQP",
+        "sourceId": "wms-scan-service",
+        "targetId": "wms-events",
+        "type": "flow"
+      },
+      {
+        "id": "c#42",
+        "isBidirectional": false,
+        "label": "reads and writes",
+        "protocol": "SQL",
+        "sourceId": "wms-api",
+        "targetId": "wms-db",
+        "type": "flow"
+      },
+      {
+        "id": "c#43",
+        "isBidirectional": false,
+        "label": "writes the task ledger",
+        "protocol": "SQL",
+        "sourceId": "wms-task-engine",
+        "targetId": "wms-db",
+        "type": "flow"
+      },
+      {
+        "id": "c#44",
+        "isBidirectional": false,
+        "label": "triggers replenishment",
+        "protocol": "AMQP",
+        "sourceId": "wms-events",
+        "targetId": "wms-task-engine",
+        "type": "flow"
+      },
+      {
+        "id": "c#45",
+        "isBidirectional": false,
+        "label": "serves the outside world",
+        "protocol": "REST",
+        "sourceId": "wms-integration",
+        "targetId": "wms-api",
+        "type": "flow"
+      },
+      {
+        "id": "c#46",
+        "isBidirectional": false,
+        "label": "requests picking and shipping",
+        "protocol": "REST",
+        "sourceId": "order-management",
+        "targetId": "wms-integration",
+        "type": "flow"
+      },
+      {
+        "id": "c#47",
+        "isBidirectional": false,
+        "label": "writes replenishment tasks",
+        "protocol": "REST",
+        "sourceId": "slotting",
+        "targetId": "wms-integration",
+        "type": "flow"
+      },
+      {
+        "id": "c#48",
+        "isBidirectional": false,
+        "label": "falls back for two contracts",
+        "protocol": "REST",
+        "sourceId": "tariff-engine",
+        "targetId": "legacy-rating",
+        "type": "flow",
+        "validUntil": "2027-06-30"
+      },
+      {
+        "id": "c#5",
+        "isBidirectional": false,
+        "label": "answers where a shipment is",
+        "protocol": "HTTPS",
+        "sourceId": "support-agent",
+        "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#6",
+        "isBidirectional": false,
+        "label": "corrects an order",
+        "protocol": "HTTPS",
+        "sourceId": "support-agent",
+        "targetId": "order-management",
+        "type": "flow"
+      },
+      {
+        "id": "c#7",
+        "isBidirectional": false,
+        "label": "books shipments",
+        "protocol": "HTTPS",
+        "sourceId": "customer-portal",
+        "targetId": "order-management",
+        "type": "flow"
+      },
+      {
+        "id": "c#8",
+        "isBidirectional": false,
+        "label": "delivers EDIFACT orders",
+        "protocol": "AS2",
+        "sourceId": "edi-intake",
+        "targetId": "order-management",
+        "type": "flow"
+      },
+      {
+        "id": "c#9",
+        "isBidirectional": false,
+        "label": "reports position and exceptions",
+        "protocol": "HTTPS",
+        "sourceId": "driver-app",
+        "targetId": "dispatch",
+        "type": "flow"
+      }
+    ]
+  },
+  "project.json": {
+    "activeDiagramId": "landscape",
+    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
+    "diagrams": [
+      "landscape",
+      "landscape-2027",
+      "wms-containers"
+    ],
+    "formatVersion": 4,
+    "groupName": "Acme Logistics",
+    "interchange": {
+      "formatVersion": "1"
     },
-    {
-      "key": "landscape-2027",
-      "kind": "layer7",
-      "name": "Landscape in 2027",
-      "asOf": "2027-09-01",
-      "aspectConfig": [
-        {
-          "key": "monitoring",
-          "label": "Monitoring"
-        },
-        {
-          "key": "self-healing",
-          "label": "Self-healing"
-        },
-        {
-          "key": "security",
-          "label": "Security"
-        },
-        {
-          "key": "dr",
-          "label": "Disaster recovery"
-        }
-      ],
-      "places": [
-        {
-          "elementKey": "order-management",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
-        },
-        {
-          "elementKey": "route-optimiser",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
-        },
-        {
-          "elementKey": "dispatch",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
-        },
-        {
-          "elementKey": "track-trace",
-          "zone": "landscape",
-          "domainGroup": "Order to delivery"
-        },
-        {
-          "elementKey": "planner",
-          "zone": "actors"
-        },
-        {
-          "elementKey": "dispatcher",
-          "zone": "actors"
-        },
-        {
-          "elementKey": "warehouse-lead",
-          "zone": "actors"
-        },
-        {
-          "elementKey": "support-agent",
-          "zone": "actors"
-        },
-        {
-          "elementKey": "driver-app",
-          "zone": "inputChannels"
-        },
-        {
-          "elementKey": "customer-portal",
-          "zone": "inputChannels"
-        },
-        {
-          "elementKey": "edi-intake",
-          "zone": "inputChannels"
-        },
-        {
-          "elementKey": "scanners",
-          "zone": "inputChannels"
-        },
-        {
-          "elementKey": "wms",
-          "zone": "landscape",
-          "domainGroup": "Warehouse"
-        },
-        {
-          "elementKey": "slotting",
-          "zone": "landscape",
-          "domainGroup": "Warehouse"
-        },
-        {
-          "elementKey": "yard",
-          "zone": "landscape",
-          "domainGroup": "Warehouse"
-        },
-        {
-          "elementKey": "billing",
-          "zone": "landscape",
-          "domainGroup": "Billing"
-        },
-        {
-          "elementKey": "tariff-engine",
-          "zone": "landscape",
-          "domainGroup": "Billing"
-        },
-        {
-          "elementKey": "legacy-rating",
-          "zone": "landscape",
-          "domainGroup": "Billing"
-        },
-        {
-          "elementKey": "customer-master",
-          "zone": "landscape",
-          "domainGroup": "Master data"
-        },
-        {
-          "elementKey": "fleet-register",
-          "zone": "landscape",
-          "domainGroup": "Master data"
-        },
-        {
-          "elementKey": "customs",
-          "zone": "externalSystems"
-        },
-        {
-          "elementKey": "partner-carriers",
-          "zone": "externalSystems"
-        },
-        {
-          "elementKey": "payments",
-          "zone": "externalSystems"
-        },
-        {
-          "elementKey": "traffic-feed",
-          "zone": "externalSystems"
-        },
-        {
-          "elementKey": "observability",
-          "zone": "management"
-        },
-        {
-          "elementKey": "iam",
-          "zone": "management"
-        }
-      ]
-    },
-    {
-      "key": "wms-containers",
-      "kind": "container",
-      "name": "Warehouse Management · containers",
-      "applicationKey": "wms",
-      "places": [
-        {
-          "elementKey": "wms"
-        },
-        {
-          "elementKey": "wms-workstation"
-        },
-        {
-          "elementKey": "wms-api"
-        },
-        {
-          "elementKey": "wms-task-engine"
-        },
-        {
-          "elementKey": "wms-scan-service"
-        },
-        {
-          "elementKey": "wms-integration"
-        },
-        {
-          "elementKey": "wms-db"
-        },
-        {
-          "elementKey": "wms-events"
-        },
-        {
-          "elementKey": "warehouse-lead"
-        },
-        {
-          "elementKey": "scanners"
-        },
-        {
-          "elementKey": "order-management"
-        },
-        {
-          "elementKey": "slotting"
-        },
-        {
-          "elementKey": "yard"
-        }
-      ]
-    }
+    "name": "Acme Logistics",
+    "type": "lionsville-architecture"
+  },
+  "transitions/0001-retire-the-legacy-rater.md": [
+    "---",
+    "id: tr-rating",
+    "number: 1",
+    "status: running",
+    "from: 2026-04-01",
+    "to: 2027-06-30",
+    "owner: Revenue systems",
+    "decisions:",
+    "  - id: adr-one-price",
+    "elements:",
+    "  - elementId: legacy-rating",
+    "    role: retires",
+    "  - elementId: tariff-engine",
+    "    role: changes",
+    "  - elementId: billing",
+    "    role: changes",
+    "milestones:",
+    "  - date: 2026-04-01",
+    "    name: Tariff engine takes the first contract",
+    "  - date: 2026-10-01",
+    "    name: All but two contracts moved",
+    "  - date: 2027-06-30",
+    "    name: Legacy rater switched off",
+    "---",
+    "",
+    "# TR-0001 — Retire the legacy rater",
+    "",
+    "## Goal",
+    "",
+    "One place where a price is decided. Two contracts still price in the legacy",
+    "rater, and every change to them is made twice.",
+    "",
+    "## Approach",
+    "",
+    "Move contracts a few at a time. While both run, the tariff engine falls back",
+    "to the legacy rater for whatever it cannot yet price — the line between them",
+    "is dated and disappears when the last contract moves.",
+    "",
+    "## Business case",
+    "",
+    "```business-case",
+    "currency: EUR",
+    "discount rate: 10%",
+    "",
+    "| Line                  | Year 0  | Year 1 | Year 2 | Year 3 |",
+    "| --------------------- | ------- | ------ | ------ | ------ |",
+    "| Migration effort      | -95 000 | -40 000 |       |        |",
+    "| Legacy licence saved  |         | 38 000 | 76 000 | 76 000 |",
+    "| Pricing errors avoided |        | 15 000 | 30 000 | 30 000 |",
+    "",
+    "| Criterion               | Weight | Score |",
+    "| ----------------------- | ------ | ----- |",
+    "| Alignment with strategy | 3      | 4     |",
+    "| Risk reduction          | 2      | 4     |",
+    "```",
+    "",
+    "## Risks and rollback",
+    "",
+    "The two remaining contracts are the hardest and are deliberately last. Until",
+    "the legacy rater is switched off, rolling a contract back is a configuration",
+    "change rather than a release.",
+    ""
+  ],
+  "transitions/0002-bring-in-yard-management.md": [
+    "---",
+    "id: tr-yard",
+    "number: 2",
+    "status: agreed",
+    "from: 2026-06-01",
+    "to: 2027-03-31",
+    "owner: Warehouse operations",
+    "decisions:",
+    "  - id: adr-buy-yard",
+    "elements:",
+    "  - elementId: yard",
+    "    role: introduces",
+    "  - elementId: wms",
+    "    role: changes",
+    "  - elementId: dispatch",
+    "    role: changes",
+    "milestones:",
+    "  - date: 2026-06-01",
+    "    name: Vendor contract signed",
+    "  - date: 2026-09-01",
+    "    name: Pilot on two dock doors",
+    "  - date: 2026-11-02",
+    "    name: Yard Management live for every dock",
+    "  - date: 2027-03-31",
+    "    name: Dock booking removed from the warehouse system",
+    "---",
+    "",
+    "# TR-0002 — Bring in yard management",
+    "",
+    "## Goal",
+    "",
+    "A truck that arrives is expected. [[Yard Management]] takes the gate, the",
+    "yard and the dock doors, [[Dispatch]] announces arrivals to it, and",
+    "[[Warehouse Management]] books a door through it instead of in a spreadsheet.",
+    "",
+    "## Approach",
+    "",
+    "Two dock doors first, for one carrier that arrives on a schedule. When the",
+    "pilot holds for a month, every door follows on one day — a dock either is",
+    "booked in the yard system or it is not. The warehouse system keeps its own",
+    "booking screen for one more quarter as the fallback, then loses it.",
+    "",
+    "| Site      | Dock doors | Trucks per day | Detention fees, 2025 |",
+    "| --------- | ---------- | -------------- | -------------------- |",
+    "| Rotterdam | 24         | 310            | 168 000              |",
+    "| Venlo     | 12         | 140            | 61 000               |",
+    "| Antwerp   | 8          | 90             | 44 000               |",
+    "",
+    "## Business case",
+    "",
+    "Against the do-nothing reference: the spreadsheet, the phone and the fees.",
+    "",
+    "```business-case",
+    "currency: EUR",
+    "discount rate: 8%",
+    "",
+    "| Line                          | 2026     | 2027    | 2028    | 2029    | 2030    | 2031    |",
+    "| ----------------------------- | -------- | ------- | ------- | ------- | ------- | ------- |",
+    "| Licence and implementation    | -180 000 | -60 000 | -60 000 | -60 000 | -60 000 | -60 000 |",
+    "| Integration with WMS and Dispatch | -70 000 | -15 000 |        |         |         |         |",
+    "| Detention fees avoided        |          | 90 000  | 120 000 | 120 000 | 120 000 | 120 000 |",
+    "| Extra loads per door per day  |          | 45 000  | 70 000  | 70 000  | 70 000  | 70 000  |",
+    "| Yard staff overtime saved     |          | 20 000  | 25 000  | 25 000  | 25 000  | 25 000  |",
+    "",
+    "| Criterion               | Weight | Score |",
+    "| ----------------------- | ------ | ----- |",
+    "| Alignment with strategy | 3      | 3     |",
+    "| Risk reduction          | 2      | 4     |",
+    "| Customer impact         | 2      | 5     |",
+    "```",
+    "",
+    "## Risks and rollback",
+    "",
+    "The pilot is the rollback: two doors go back to the spreadsheet in an hour.",
+    "After the cut-over the spreadsheet is the rollback for a quarter, which is",
+    "why the warehouse system keeps its screen until March.",
+    ""
   ]
 }

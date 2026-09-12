@@ -45,13 +45,16 @@ function show(projects: Partial<ProjectLibrary>) {
     examples: [{
       key: 'acme',
       ref: { group: 'acme', project: 'landscape' },
-      groupName: 'Acme',
       label: 'Acme Logistics',
       description: 'an example',
-      document: {
-        formatVersion: '1',
-        design: { name: 'Warehouse landscape' },
-        elements: [], connections: [], diagrams: [],
+      folder: {
+        'project.json': {
+          type: 'lionsville-architecture', formatVersion: 4, name: 'Warehouse landscape',
+          groupName: 'Acme', activeDiagramId: 'l7', diagrams: ['l7'],
+        },
+        'model.json': { elements: [], relations: [] },
+        'diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
+        'diagrams/l7.geometry.json': { nodes: [] },
       },
     }],
   })

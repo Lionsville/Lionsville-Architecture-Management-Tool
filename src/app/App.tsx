@@ -24,7 +24,7 @@ import { reasonOf } from '../platform/errors'
 import { groupProfileFor, normaliseGroupProfile } from '../projects/group'
 import type { GroupProfile } from '../projects/group'
 import {
-  emptyProject, groupNameOf, groupsOf, isProjectOrder, keysInGroup, moveToGroup, projectFromDocument,
+  emptyProject, groupNameOf, groupsOf, isProjectOrder, keysInGroup, moveToGroup,
   relabelGroup, renameProject, setProjectDefaults,
 } from '../projects/project'
 import type {
@@ -51,6 +51,7 @@ import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
+import { exampleProject } from './examples'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
@@ -734,10 +735,11 @@ export function App({
   const copyExample = useCallback((example: ExampleProject) => {
     void projects.load(example.ref).then((existing) => {
       if (existing) { enter(existing); return }
-      createAndEnter(
-        projectFromDocument(example.document, example.ref, example.groupName, example.transitions, example.decisions),
-        s('shell.exampleCopied', { name: example.label }),
-      )
+      const copy = exampleProject(example)
+      // A shipped example this build cannot read is a bug the example tests
+      // exist to prevent, so it reaches here as nothing rather than as a crash.
+      if (!copy) { failed('copyExample', new Error('the example did not read')); return }
+      createAndEnter(copy, s('shell.exampleCopied', { name: example.label }))
     }, (cause: unknown) => {
       failed('copyExample', cause)
       reportStorage(false)

@@ -6,7 +6,6 @@
  * `FileReader`, toasts and React state — and therefore only checkable by hand.
  */
 import { describe, expect, it } from 'vitest'
-import acmeLogistics from '../app/examples/acme-logistics.json'
 import type { InterchangeDoc } from '../model/fromInterchange'
 import {
   emptyProject, groupNameOf, groupsOf, isProjectOrder, isUsableProject, keysInGroup,
@@ -16,7 +15,31 @@ import {
 import type { ProjectSummary } from './project'
 import { sampleProject } from '../ports/ProjectStore.contract'
 
-const doc = acmeLogistics as InterchangeDoc
+/**
+ * Somebody else's format, written out here rather than taken from the shipped
+ * example — the example is a project folder now (ADR-0012 §11), and an
+ * interchange document is precisely the thing it is no longer.
+ */
+const doc: InterchangeDoc = {
+  formatVersion: 'solution-design/v1',
+  design: { name: 'Warehouse landscape', description: 'What another tool exported.' },
+  elements: [
+    { key: 'order-management', kind: 'application', name: 'Order Management' },
+    { key: 'wms', kind: 'application', name: 'Warehouse Management' },
+    { key: 'portal', kind: 'inputChannel', name: 'Customer Portal' },
+  ],
+  connections: [{ key: 'c-1', sourceKey: 'order-management', targetKey: 'wms' }],
+  diagrams: [{
+    key: 'landscape',
+    kind: 'layer7',
+    name: 'Landscape',
+    places: [
+      { elementKey: 'portal', zone: 'inputChannels' },
+      { elementKey: 'order-management', zone: 'landscape', domainGroup: 'Order to delivery' },
+      { elementKey: 'wms', zone: 'landscape', domainGroup: 'Order to delivery' },
+    ],
+  }],
+}
 const GROUP = 'Acme Logistics'
 const REF = { group: 'acme-logistics', project: 'landscape' }
 

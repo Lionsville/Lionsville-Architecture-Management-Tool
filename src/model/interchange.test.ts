@@ -7,13 +7,20 @@
  * normalise field order within an element once."
  *
  * That field order is therefore precisely the one permitted difference, and it
- * is pinned here rather than papered over: the comparison of the shipped
+ * is pinned here rather than papered over: the comparison of the sample
  * document runs on sorted keys, and a separate test shows the difference is
  * order alone and that a second round shifts nothing further.
+ *
+ * `testing/interchange-sample.json` is a whole fictional landscape in somebody
+ * else's format, which is what this file needs and what a hand-written fixture
+ * of six elements would not be: it carries icons, aspects, lifecycles, bands,
+ * dashed groups and a container view. It shipped as the example until the
+ * example became a project folder (ADR-0012 §11), and it stayed behind here,
+ * because a document another tool wrote is exactly what an example is not.
  */
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../model/placement';
-import doc from '../app/examples/acme-logistics.json'
+import doc from './testing/interchange-sample.json'
 import { fromInterchange } from './fromInterchange'
 import type { HostModel, InterchangeDoc } from './fromInterchange'
 import type { DesignElement, ElementKind } from './types'
@@ -59,7 +66,7 @@ function sortKeys(value: unknown): unknown {
 
 const roundTrip = (input: InterchangeDoc) => toInterchange(fromInterchange(input, GROUP_NAME)).doc
 
-describe('fromInterchange → toInterchange on the shipped example', () => {
+describe('fromInterchange → toInterchange on a whole document', () => {
   it('comes back deep-equal (compared on sorted keys)', () => {
     expect(sortKeys(roundTrip(source))).toEqual(sortKeys(source))
   })
@@ -316,7 +323,7 @@ describe('iconType', () => {
     expect('iconType' in elementByKey(out, 'kaal')).toBe(false)
   })
 
-  it('returns the shipped example\'s icons unchanged', () => {
+  it('returns the sample document\'s icons unchanged', () => {
     // The example uses built-in marks throughout, which makes it the round-trip
     // case worth having: every `iconType` it carries is in the closed
     // vocabulary, so all of them must come back, on the same elements, spelled
