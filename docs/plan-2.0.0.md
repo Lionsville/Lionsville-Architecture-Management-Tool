@@ -255,7 +255,7 @@ sit beside.
   cards drawing their names in the browser's `buttontext` black on the dark
   ground; fixed in the same stretch.
 
-**Cut 2.0.0-beta.1.**
+**Cut 2.0.0-beta.1** — cut 12 September 2026 from `3af5dad`.
 
 ---
 
