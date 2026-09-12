@@ -228,7 +228,7 @@ describe('choosing something', () => {
 const BARE: DesignDiagram = { ...SHEET, journeyId: undefined, lanes: [], areas: [] }
 
 const empty = (): DesignModel => ({
-  name: 'Acme Logistics', customerName: 'Acme', diagrams: [BARE], elements: [], relations: [],
+  name: 'Acme Logistics', diagrams: [BARE], elements: [], relations: [],
 })
 
 describe('making something', () => {

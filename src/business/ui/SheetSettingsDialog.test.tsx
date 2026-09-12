@@ -31,7 +31,7 @@ const SHEET: DesignDiagram = {
 function model(over: Partial<DesignModel> = {}): DesignModel {
   const { elements, relations } = shippingScope()
   return {
-    name: 'Acme Logistics', customerName: 'Acme', diagrams: [SHEET], elements, relations, ...over,
+    name: 'Acme Logistics', diagrams: [SHEET], elements, relations, ...over,
   }
 }
 

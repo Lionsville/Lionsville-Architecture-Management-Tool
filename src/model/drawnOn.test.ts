@@ -22,7 +22,6 @@ const board = (id: string, members: string[], over: Partial<DesignDiagram> = {})
 
 const model = (over: Partial<DesignModel> = {}): DesignModel => ({
   name: 'Landscape',
-  customerName: 'Acme',
   elements: [
     element('wms'),
     element('rater', { lifecycleDates: { retired: '2027-01-01' } }),

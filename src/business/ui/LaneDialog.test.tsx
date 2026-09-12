@@ -17,7 +17,7 @@ afterEach(() => cleanup())
 
 function model(): DesignModel {
   const { elements, relations } = shippingScope()
-  return { name: 'Acme Logistics', customerName: 'Acme', diagrams: [], elements, relations }
+  return { name: 'Acme Logistics', diagrams: [], elements, relations }
 }
 
 function open() {
