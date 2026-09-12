@@ -26,6 +26,7 @@
  * the stack. What a step is CALLED is not here — `activity.ts` works that out
  * from the commands, so there is no second thing to keep true.
  */
+import type { StringKey } from '../i18n/strings'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type {
@@ -211,6 +212,21 @@ export type CommandMeta = {
    * agent's step.
    */
   origin?: 'agent'
+  /**
+   * The stack may not undo this step, and this key says why (ADR-0012 §10).
+   *
+   * What a gesture that wrote TWO scopes leaves behind. Only one of the two
+   * writes is on this session's stack — the other scope was written through
+   * the store, by a session that does not exist — so an undo would put this
+   * scope's definition back beside the one now standing in the other scope,
+   * which is a conflict the person did not ask for. Confirm-and-forbid is
+   * ADR-0012's own first answer to two-scope undo, and a stack that spans
+   * scopes is an open question there rather than a thing to build in passing.
+   *
+   * The reducer neither reads nor carries it: applying a command is the same
+   * act either way, and it is the stack above that refuses.
+   */
+  barrier?: StringKey
 }
 
 export type Command = CommandBody & CommandMeta

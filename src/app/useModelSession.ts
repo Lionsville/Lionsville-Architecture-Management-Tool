@@ -18,7 +18,7 @@
  * and who writes that away is not this hook's business.
  */
 import { useCallback, useRef, useState } from 'react'
-import type { Translate } from '../i18n'
+import type { StringKey, Translate } from '../i18n'
 import type { Command, CommandMeta, DocumentImage, Model, StepSummary, UploadedLogo } from '../model'
 import { apply, fromArrays, summarise, toArrays, transaction } from '../model'
 import { idPolicy } from '../model/keys'
@@ -57,6 +57,15 @@ export type HistoryStep = {
   at: number
   /** Who made it, when it was not the person (ADR-0007). */
   origin?: 'agent'
+  /**
+   * ⌘Z stops here, and this key says why (ADR-0012 §10).
+   *
+   * A gesture that wrote two scopes leaves one of its two writes on this
+   * stack and the other in a scope nothing here can speak for, so undoing it
+   * would leave the tree saying two different things. Steps taken AFTER it
+   * undo perfectly well; the run stops when it reaches this one.
+   */
+  barrier?: StringKey
 }
 
 export type DispatchOptions = {
@@ -241,6 +250,7 @@ export function useModelSession(deps: {
         commands, inverses, at: Date.now(), summary: summarise(commands, before),
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
         ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
+        ...(meta.barrier !== undefined ? { barrier: meta.barrier } : {}),
       })
       if (past.current.length > HISTORY_CAP) past.current.shift()
     }
@@ -278,6 +288,7 @@ export function useModelSession(deps: {
     if (command.coalesce !== undefined) meta.coalesce = command.coalesce
     if (command.undoable !== undefined) meta.undoable = command.undoable
     if (command.origin !== undefined) meta.origin = command.origin
+    if (command.barrier !== undefined) meta.barrier = command.barrier
     record(before, result.model, [command], [result.inverse], meta)
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)
@@ -286,6 +297,17 @@ export function useModelSession(deps: {
   const step = useCallback((from: 'past' | 'future') => {
     const stack = from === 'past' ? past.current : future.current
     const other = from === 'past' ? future.current : past.current
+    /**
+     * A two-scope gesture is where a run of undos stops (ADR-0012 §10). The
+     * step stays on the stack, because it happened and the Activity list says
+     * so; what is refused is taking it back, and the reason is the key the
+     * gesture put there rather than a sentence invented here.
+     */
+    const barrier = stack[stack.length - 1]?.barrier
+    if (from === 'past' && barrier !== undefined) {
+      notify(s(barrier), 'warning')
+      return
+    }
     const entry = stack.pop()
     if (!entry) return
     const result = apply(

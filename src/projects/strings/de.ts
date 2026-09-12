@@ -54,6 +54,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.noSuchScope': 'Diesen Bereich gibt es nicht.',
   'gesture.wouldConflict': '{scope} verantwortet dies bereits.',
   'gesture.hasChildren': 'Was unter diesem Datensatz liegt, bliebe ohne ihn. Verschieben Sie das zuerst.',
+  'gesture.barrier': 'Dieser Schritt hat zwei Bereiche geschrieben und kann hier nicht rückgängig gemacht werden. Verschieben Sie den Datensatz mit einer eigenen Geste zurück.',
 
   'standIn.definedIn': 'Definiert in {scope} — die Details werden dort verantwortet.',
   'standIn.open': '{scope} öffnen',

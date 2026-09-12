@@ -13,6 +13,7 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
+import type { StringKey } from '../i18n'
 import type { StepSummary } from '../model/activity'
 import { nodeFigure } from '../model/kinds'
 import type { Adr } from '../model/adr'
@@ -108,6 +109,12 @@ export type HistoryEntry = {
   readonly origin?: 'agent'
   readonly summary: StepSummary
   readonly commands: readonly Command[]
+  /**
+   * ⌘Z stops here, and this key says why (ADR-0012 §10) — a step that wrote
+   * two scopes, of which only one write is on this stack. The agent gets the
+   * same answer the person does, for the same reason.
+   */
+  readonly barrier?: StringKey
 }
 
 const RESOURCE_SCHEME = 'lvarch://'
@@ -262,7 +269,7 @@ function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAn
   for (let n = 0; n < wanted; n += 1) {
     const history = session.history()
     const top = history[history.length - 1]
-    if (!top || top.origin !== 'agent') break
+    if (!top || top.origin !== 'agent' || top.barrier !== undefined) break
     const what = session.translate(top.summary.key, {
       name: top.summary.name ?? '', count: top.summary.count ?? 0, asOf: top.summary.asOf ?? '',
     })
@@ -271,6 +278,8 @@ function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAn
   }
   if (undone.length === 0) {
     const history = session.history()
+    const held = history[history.length - 1]
+    if (held?.barrier !== undefined) return refused('gesture.barrier', session.translate(held.barrier))
     return history.length === 0 ? refused('agent.badArguments', 'nothing to undo') : refused('agent.notYours')
   }
   const history = session.history()
@@ -278,7 +287,15 @@ function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAn
   return json({
     undone,
     revision: session.revision(),
-    ...(undone.length < wanted ? { stopped: top ? 'the next step is a person\'s' : 'nothing left to undo' } : {}),
+    ...(undone.length < wanted
+      ? {
+        stopped: top
+          ? top.barrier !== undefined
+            ? 'the next step crossed two scopes'
+            : 'the next step is a person\'s'
+          : 'nothing left to undo',
+      }
+      : {}),
   })
 }
 

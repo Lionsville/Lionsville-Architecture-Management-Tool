@@ -312,6 +312,42 @@ describe('useModelSession — undo and redo', () => {
     expect(session().canUndo).toBe(false)
   })
 
+  /**
+   * A gesture that wrote two scopes (ADR-0012 §10) has only half of itself on
+   * this stack, so ⌘Z stops at it — with the reason, because a key that did
+   * nothing and said nothing would read as a broken shortcut.
+   */
+  describe('a step that crossed two scopes', () => {
+    const promote = () => {
+      const held = mount()
+      act(() => { held.session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Before' }) })
+      act(() => {
+        held.session().dispatch({
+          type: 'element.link', id: 'billing', name: 'Billing', ref: 'acme',
+          barrier: 'gesture.barrier',
+        })
+      })
+      return held
+    }
+
+    it('undoes the steps after it, and then stops', () => {
+      const { session } = promote()
+      act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'After' }) })
+      act(() => session().undo())
+      expect(session().current().diagrams[0].name).toBe('Before')
+      act(() => session().undo())
+      expect(session().current().elements[0].ref).toBe('acme')
+    })
+
+    it('says why, and leaves the step on the stack', () => {
+      const { session, notify } = promote()
+      act(() => session().undo())
+      expect(notify).toHaveBeenCalledWith(expect.stringContaining('two scopes'), 'warning')
+      expect(session().history()).toHaveLength(2)
+      expect(session().canRedo).toBe(false)
+    })
+  })
+
   it('says why a command was refused, and changes nothing', () => {
     const { session, notify } = mount(project({
       model: model({ diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })] }),

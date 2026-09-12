@@ -74,7 +74,7 @@ function session(over: Partial<SessionView> = {}): SessionView & { model: () => 
     dispatch: (command) => {
       const result = apply(model, command)
       if (!result.ok) return undefined
-      past.push({ at: 1_700_000_000_000 + past.length, summary: summarise([command], model), commands: [command], inverse: result.inverse, ...(command.origin ? { origin: command.origin } : {}) })
+      past.push({ at: 1_700_000_000_000 + past.length, summary: summarise([command], model), commands: [command], inverse: result.inverse, ...(command.origin ? { origin: command.origin } : {}), ...(command.barrier ? { barrier: command.barrier } : {}) })
       model = result.model
       revision += 1
       return toArrays(model)
@@ -219,6 +219,24 @@ describe('the session’s own: revision, the log, undo, save', () => {
     expect(held.model().elements.billing.vendor).toBe('Kestrel')
     expect(await handle({ id: '4', tool: 'undo', args: {} }, held)).toMatchObject({ refusal: 'agent.notYours' })
     expect(await handle({ id: '5', tool: 'undo', args: {} }, session())).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  /**
+   * A step that wrote two scopes has only half of itself on this stack
+   * (ADR-0012 §10), so the agent gets the answer the person gets at ⌘Z.
+   */
+  it('stops at a step that crossed two scopes, and says so', async () => {
+    const held = session()
+    held.dispatch({
+      type: 'element.link', id: 'billing', name: 'Billing', ref: 'acme',
+      origin: 'agent', barrier: 'gesture.barrier',
+    })
+    await handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held)
+    const out = parsed(await handle({ id: '2', tool: 'undo', args: { steps: 3 } }, held))
+    expect(out).toMatchObject({ undone: ['Added CRM'], stopped: 'the next step crossed two scopes' })
+    expect(await handle({ id: '3', tool: 'undo', args: {} }, held))
+      .toMatchObject({ refusal: 'gesture.barrier' })
+    expect(held.model().elements.billing.ref).toBe('acme')
   })
 
   it('saves through the session, and turns a refusal into a key', async () => {

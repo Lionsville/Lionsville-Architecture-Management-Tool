@@ -1196,6 +1196,13 @@ export type AgentRefusal =
    * one word, wherever a write arrives from.
    */
   | 'check.ownedElsewhere'
+  /**
+   * A step that wrote two scopes cannot be taken back from here (ADR-0012
+   * §10). A `gesture.` key for the same reason the one above is a `check.`
+   * one: it is the refusal the person meets at ⌘Z, said in one word wherever
+   * the undo arrives from.
+   */
+  | 'gesture.barrier'
   | CommandRefusal
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
@@ -1218,6 +1225,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'check.ownedElsewhere': 'This record is a stand-in: the scope named in the detail defines the thing and answers for its lifecycle, dates, owner, vendor, technology, aspects and category. Its description here is this scope\'s own and can be changed.',
+  'gesture.barrier': 'That step wrote two scopes — a record moved between them — so it cannot be undone from here. Move the record back with a gesture of its own.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',

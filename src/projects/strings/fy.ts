@@ -54,6 +54,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'gesture.noSuchScope': 'Dat nivo bestiet net.',
   'gesture.wouldConflict': '{scope} behearret dit al.',
   'gesture.hasChildren': 'Wat ûnder dit record falt bliuwt dan sûnder. Ferpleats dat earst.',
+  'gesture.barrier': 'Dy stap hat twa nivo\'s skreaun en kin hjir net ûngedien makke wurde. Ferpleats it record werom mei in eigen hanneling.',
 
   'standIn.definedIn': 'Definiearre yn {scope} — de details wurde dêr behearre.',
   'standIn.open': '{scope} iepenje',

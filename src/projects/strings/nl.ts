@@ -54,6 +54,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.noSuchScope': 'Dat niveau bestaat niet.',
   'gesture.wouldConflict': '{scope} beheert dit al.',
   'gesture.hasChildren': 'Wat onder dit record valt blijft dan zonder. Verplaats dat eerst.',
+  'gesture.barrier': 'Die stap heeft twee niveaus geschreven en kan hier niet ongedaan worden gemaakt. Verplaats het record terug met een eigen handeling.',
 
   'standIn.definedIn': 'Gedefinieerd in {scope} — de details worden daar beheerd.',
   'standIn.open': '{scope} openen',

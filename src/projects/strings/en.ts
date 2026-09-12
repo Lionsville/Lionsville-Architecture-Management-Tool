@@ -78,6 +78,7 @@ export const EN = {
   'gesture.noSuchScope': 'There is no such scope to move it to.',
   'gesture.wouldConflict': '{scope} already answers for this.',
   'gesture.hasChildren': 'What is filed under this record would be left without it. Move those first.',
+  'gesture.barrier': 'That step wrote two scopes, so it cannot be taken back here. Move the record back with a gesture of its own.',
 
   'standIn.definedIn': 'Defined in {scope} — its detail is answered for there.',
   'standIn.open': 'Open {scope}',
