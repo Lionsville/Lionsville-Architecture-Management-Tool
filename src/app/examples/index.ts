@@ -46,8 +46,9 @@
 import { stableJson } from '../../projects/fileText'
 import { SCOPE_FILE, scopeFromFolder } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
-import type { ScopeSnapshot } from '../../projects/scope'
-import { joinScope } from '../../projects/scopePath'
+import { namesUnder } from '../../projects/scope'
+import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import { joinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import acmeLogistics from './acme-logistics.json'
 
@@ -115,6 +116,43 @@ export function exampleScopes(example: ExampleProject): ScopeSnapshot[] {
       }))
     const scope = scopeFromFolder(inside, prefix === '' ? example.path : joinScope(example.path, prefix))
     return scope ? [scope] : []
+  })
+}
+
+/**
+ * Where a copy lands, which depends on what the root already is.
+ *
+ * **A root nobody has named, with nothing in it, BECOMES the example.** That is
+ * the common case by a long way: somebody has just pointed the app at an empty
+ * folder and wants to see what this thing does. Filing the example one level
+ * down would leave them with an unnamed organisation sitting above a named one
+ * for ever, and a home screen whose heading is blank — so the example's own
+ * organisation takes the root, name and record and all, and the scopes under it
+ * become the root's children.
+ *
+ * **A root that is already something takes it as a child.** A name, a scope
+ * filed under it, or a board of its own: each is work somebody did, and writing
+ * the example's organisation record over it would be losing it. The tree is
+ * re-addressed under one new scope named after the example, with the ordinary
+ * collision rule, so copying twice gives two rather than one overwritten one.
+ *
+ * A board of its own is not in the sentence the design asked for — it says "a
+ * name or children" — and is here anyway: an unnamed root with a landscape
+ * drawn in it is rare, and overwriting it would be the one mistake on this
+ * screen nothing can undo.
+ */
+export function copyExampleInto(
+  example: ExampleProject,
+  root: ScopeSummary,
+): ScopeSnapshot[] {
+  const fresh = root.name.trim() === '' && root.children.length === 0 && root.diagrams === 0
+  const base = fresh
+    ? ROOT_SCOPE
+    : scopePathFor(ROOT_SCOPE, scopePathLabel(example.path), namesUnder(root))
+  return exampleScopes(example).map((scope) => {
+    if (scope.path === example.path) return { ...scope, path: base }
+    const below = scope.path.slice(example.path.length + 1)
+    return { ...scope, path: base === ROOT_SCOPE ? below : `${base}/${below}` }
   })
 }
 

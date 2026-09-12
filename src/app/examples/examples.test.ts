@@ -14,7 +14,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
-import { EXAMPLES, exampleFiles, exampleScopes } from '.'
+import { copyExampleInto, EXAMPLES, exampleFiles, exampleScopes } from '.'
 import { fromArrays, toArrays } from '../../model/normalised'
 import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'
 import { stableJson } from '../../projects/fileText'
@@ -24,6 +24,7 @@ import { sheetPage } from '../../business'
 import { buildEdges, buildNodes } from '../../editor/graph'
 import type { BuildGraphArgs } from '../../editor/graph'
 import type { DesignModel } from '../../model'
+import type { ScopeSummary } from '../../projects/scope'
 
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
   const scopes = exampleScopes(example)
@@ -374,5 +375,52 @@ describe('a stakeholder tree over a landscape that already drew its actors', () 
 
   it('draws the same lines between them', () => {
     expect(JSON.stringify(buildEdges(args(model)))).toBe(JSON.stringify(buildEdges(args(flat))))
+  })
+})
+
+describe('where a copy lands', () => {
+  const example = EXAMPLES[0]
+  const root = (over: Partial<ScopeSummary> = {}): ScopeSummary => ({
+    path: '', name: '', diagrams: 0, children: [], ...over,
+  })
+
+  /** The common case: an empty folder, and somebody who wants to see the tool. */
+  it('makes the example the organisation when the root is unnamed and empty', () => {
+    const copied = copyExampleInto(example, root())
+    expect(copied.map((scope) => scope.path)).toEqual(['', 'application-landscape'])
+    expect(copied[0].model.name).toBe('Acme Logistics')
+    expect(copied[0].kind).toBe('organisation')
+  })
+
+  it('files it under a child of a root that already has a name', () => {
+    const copied = copyExampleInto(example, root({ name: 'Globex' }))
+    expect(copied.map((scope) => scope.path))
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape'])
+  })
+
+  it('files it under a child of a root that already has scopes in it', () => {
+    const copied = copyExampleInto(example, root({ children: [
+      { path: 'retail', name: 'Retail', diagrams: 0, children: [] },
+    ] }))
+    expect(copied[0].path).toBe('acme-logistics')
+  })
+
+  /** Not in the design's sentence; overwriting a board is the unrecoverable one. */
+  it('files it under a child of an unnamed root that already draws something', () => {
+    expect(copyExampleInto(example, root({ diagrams: 1 }))[0].path).toBe('acme-logistics')
+  })
+
+  it('gives a second copy its own address rather than writing over the first', () => {
+    const copied = copyExampleInto(example, root({ name: 'Globex', children: [
+      { path: 'acme-logistics', name: 'Acme Logistics', diagrams: 0, children: [] },
+    ] }))
+    expect(copied.map((scope) => scope.path))
+      .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape'])
+  })
+
+  it('carries the content over unchanged, wherever it lands', () => {
+    const asRoot = copyExampleInto(example, root())
+    const asChild = copyExampleInto(example, root({ name: 'Globex' }))
+    expect(asChild[1].model).toEqual(asRoot[1].model)
   })
 })
