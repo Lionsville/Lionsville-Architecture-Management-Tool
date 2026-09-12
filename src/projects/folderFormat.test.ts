@@ -596,6 +596,122 @@ describe('a group', () => {
   })
 })
 
+/**
+ * The three kinds that retired, across format 3 (ADR-0012 §4).
+ *
+ * `externalSystem`, `inputChannel` and `managementTool` are not kinds any
+ * more: an external system is an `application` nobody here owns, and a channel
+ * and a management tool are an `application` in a band of a board. A v3 file
+ * still spells all three, a 1.x build still reads them, and the property is
+ * the same one the dashed groups have — a folder that goes through this build
+ * unchanged comes out as the bytes that went in.
+ *
+ * The fold goes at format 4, where the file says what the model says.
+ */
+describe('the retired kinds, across format 3', () => {
+  const v3 = (): FolderFile[] => [
+    {
+      path: 'project.json',
+      text: stableJson({
+        type: 'lionsville-architecture', formatVersion: 3, name: 'L', groupName: 'G',
+        activeDiagramId: 'l7', diagrams: ['l7'],
+      }),
+    },
+    {
+      path: 'model.json',
+      text: stableJson({
+        connections: [],
+        elements: [
+          { ...element('carrier', 'Carrier'), kind: 'externalSystem', isManaged: false },
+          { ...element('monitoring', 'Monitoring'), kind: 'managementTool' },
+          { ...element('portal', 'Portal'), kind: 'inputChannel' },
+          element('wms', 'WMS'),
+        ],
+      }),
+    },
+    {
+      path: 'diagrams/l7.json',
+      text: stableJson({ id: 'l7', kind: 'layer7', name: 'Landscape' }),
+    },
+    {
+      path: 'diagrams/l7.placements.json',
+      text: stableJson({
+        placements: [
+          { elementId: 'carrier', zone: 'externalSystems', x: 1500, y: 40 },
+          { elementId: 'monitoring', zone: 'management', x: 100, y: 900 },
+          { elementId: 'portal', zone: 'inputChannels', x: 60, y: 300 },
+          { elementId: 'wms', zone: 'landscape', x: 400, y: 300 },
+        ],
+      }),
+    },
+  ]
+
+  const elementsOf = (files: readonly FolderFile[]) => {
+    const model = projectFromFolder(files, REF)!.model
+    return Object.fromEntries(model.elements.map((e) => [e.id, e]))
+  }
+
+  it('reads all three as the application each always was', () => {
+    const read = elementsOf(v3())
+    expect(read.carrier).toMatchObject({ kind: 'application', outside: true })
+    // A band says where a card is drawn, not who owns it: nothing in the file
+    // ever said that a channel or a management tool was somebody else's.
+    expect(read.portal).toMatchObject({ kind: 'application' })
+    expect(read.monitoring).toMatchObject({ kind: 'application' })
+    expect('outside' in read.portal).toBe(false)
+    expect('outside' in read.monitoring).toBe(false)
+  })
+
+  it('reads, then writes, the bytes it started with', () => {
+    const files = v3()
+    const written = projectFiles(projectFromFolder(files, REF)!)
+    for (const file of files) {
+      expect(textOf(written, file.path), file.path).toBe(textOf(files, file.path))
+    }
+  })
+
+  it('writes `outside` nowhere: format 3 says it with a kind', () => {
+    const written = projectFiles(projectFromFolder(v3(), REF)!)
+    expect(textOf(written, 'model.json')).not.toContain('"outside"')
+  })
+
+  /**
+   * The one thing this fold cannot carry, said out loud.
+   *
+   * Format 3's kind said *channel* where the model now says *in the channel
+   * band*, so a channel dragged out into the open landscape comes back as the
+   * application it is. That is where the migration was always going to land it
+   * (ADR-0012 §11) — but it is a byte a save will change, and it should be
+   * discovered here rather than in somebody's diff.
+   */
+  it('cannot carry a channel that was dragged out of its band', () => {
+    const project = projectFromFolder(v3(), REF)!
+    const diagram = project.model.diagrams[0]
+    project.model.diagrams[0] = {
+      ...diagram,
+      members: diagram.members.map((member) =>
+        (member.id === 'portal' ? { id: member.id, zone: 'landscape' as const } : member)),
+    }
+    expect(textOf(projectFiles(project), 'model.json')).not.toContain('inputChannel')
+  })
+
+  /**
+   * And what it will not carry at all.
+   *
+   * The business layer arrived with ADR-0012 §4 and the file has nowhere to
+   * put one, so writing a `function` is refused rather than flattened into the
+   * `application` its figure would fall back to — the same answer, and for the
+   * same reason, as a `supports` row (`model/relations.ts`).
+   */
+  it('refuses a business kind rather than writing an application that is a lie', () => {
+    const project = projectFromFolder(v3(), REF)!
+    project.model.elements = [...project.model.elements, element('fulfilment', 'Fulfilment', { kind: 'function' })]
+    expect(() => projectFiles(project)).toThrow(
+      expect.objectContaining({ key: 'element.notInThisFormat' }),
+    )
+  })
+})
+
 describe('isFormatPath', () => {
   it('claims every file the format writes', () => {
     for (const file of projectFiles(project())) {
