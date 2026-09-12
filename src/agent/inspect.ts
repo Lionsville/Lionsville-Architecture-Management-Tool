@@ -21,7 +21,7 @@ import { nodeFigure } from '../model/kinds'
 import type { Diagram, Model } from '../model/normalised'
 import { boxList, groupsOf, placedOn, routesOf } from '../model/normalised'
 import { domainGroupForPoint, domainGroupRectMap, placementRect, rectCenter, unionRects } from '../model/placement'
-import type { PlacedNode, ElementId, Layer7Zone, Point, Rect } from '../model/types'
+import type { DesignDiagram, PlacedNode, ElementId, Layer7Zone, Point, Rect } from '../model/types'
 import { canvasRect, zoneForPoint, zoneRect } from '../model/zones'
 import { segmentIntersectsRect } from '../layout/geometry'
 
@@ -33,7 +33,7 @@ const ZONES: readonly Layer7Zone[] = ['actors', 'inputChannels', 'externalSystem
 export type InspectReport = {
   diagramId: string
   name: string
-  kind: 'layer7' | 'container'
+  kind: DesignDiagram['kind']
   /** The box around every drawn element, in flow coordinates. */
   bounds?: Rect
   /** A landscape's board, which the bands divide. */

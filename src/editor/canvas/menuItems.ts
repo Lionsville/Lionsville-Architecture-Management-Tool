@@ -1,5 +1,5 @@
 import type {
-  AttachSide, DiagramGroup, EdgeRouting, ElementId, ElementKind, Layer7Zone, Lifecycle,
+  AttachSide, DesignDiagram, DiagramGroup, EdgeRouting, ElementId, ElementKind, Layer7Zone, Lifecycle,
 } from '../../model/types';
 import type { CanvasKind } from '../../model/placement';
 import { formatShortcut, type Platform } from '../keymap';
@@ -193,7 +193,13 @@ export interface MenuContext {
    * whole builder become bilingual without touching a single one of its tests.
    */
   t?: Translate;
-  diagramKind: 'layer7' | 'container';
+  /**
+   * Which view the menu is being opened on. A canvas only ever draws a
+   * `layer7` or a `container`; the wider type is the diagram's own, so that
+   * adding a laid-out kind (ADR-0012 §6) does not need a cast at the one call
+   * site that reads a diagram's kind off the model.
+   */
+  diagramKind: DesignDiagram['kind'];
   /** The dashed groups on the active diagram (layer7) — ids to act on, names to read. */
   groups?: readonly DiagramGroup[];
   clipboardHasContent?: boolean;

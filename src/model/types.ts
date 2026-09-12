@@ -486,7 +486,16 @@ export interface Geometry {
 
 export interface DesignDiagram {
   id: string;
-  kind: 'layer7' | 'container';
+  /**
+   * What kind of view this is (ADR-0012 §6).
+   *
+   * `layer7` and `container` are drawn on a canvas and have geometry. A
+   * `sheet` is **laid out**: the business architecture on one page, computed
+   * from the trees and their order, so it has no coordinates at all and
+   * {@link DesignDiagram.geometry} stays empty on one. Nothing drags, nothing
+   * routes, and a deleted geometry file would change nothing about it.
+   */
+  kind: 'layer7' | 'container' | 'sheet';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —
@@ -518,6 +527,27 @@ export interface DesignDiagram {
   /** Whether the exported PNG carries a title block at all. Absent = it does. */
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;
+  /**
+   * A sheet: the journey drawn across the top — the `step` at the root of the
+   * tree whose phases become the header row (ADR-0012 §6). Absent draws no
+   * journey band at all, which is what a sheet about areas alone is.
+   */
+  journeyId?: ElementId;
+  /**
+   * A sheet: which actors get a lane of their own under the phases, and in
+   * which order (ADR-0012 §4). The common path is always the first row and is
+   * never named here; a lane a step names and this list does not still gets a
+   * row, after the named ones, because a step that names a lane is a fact.
+   */
+  lanes?: ElementId[];
+  /**
+   * A sheet: which function roots are drawn as areas, and in which order.
+   * Absent draws every root the scope holds, in the model's own order — a
+   * sheet nobody has curated shows everything rather than nothing.
+   */
+  areas?: ElementId[];
+  /** A sheet: whether the stakeholder rail is drawn. Absent = it is. */
+  showActors?: boolean;
   /**
    * What is ON this view (ADR-0012 §6), and what that means from here: which
    * band an element sits in, and which dashed group it belongs to.
