@@ -35,6 +35,8 @@ plannen, de bedrijfsarchitectuur en alles wat erop staat. Onderdelen
 een **domein** eronder, een **landschap** daar weer onder, zo diep als je werk
 vraagt.
 
+![Het organisatiescherm: de naam en koppelingen bovenaan, de eigen pagina's van de organisatie als kaarten, de boom van domeinen en landschappen, en de voorbeelden onderaan](screenshot-organisation.png)
+
 Het scherm is het thuis van de organisatie en geen lijst met documenten, en het
 bestaat uit vier delen.
 

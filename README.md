@@ -152,16 +152,20 @@ the same table that dispatches the keys, so it cannot drift.
 There is a **read-only** mode that hides every mutating control rather than
 disabling it.
 
-### Projects, and the groups they sit in
+### The organisation, and the scopes in it
 
-Projects are listed in a picker: yours, and the examples that ship with the app.
-A project is filed under a **group** — a customer, a department, a programme,
-whatever the namespace is called where you work — and both the project's name
-and its group can be changed afterwards. The list sorts alphabetically, or by
-what you changed most recently.
+The app opens on the **organisation** — the working folder itself. Everything
+in it is a **scope**: one document with a name, its boards, decisions, plans and
+business architecture — and scopes nest, the organisation at the top, a
+**domain** under it, a **landscape** under that, as deep as the work needs. The
+first screen is the organisation's home: its name and links, its own pages, the
+tree of domains and landscapes beneath, sorted by name or by what changed most
+recently, and the examples last. A scope's name, its kind and where it is filed
+can all be changed afterwards.
 
-Examples are **copied** into a project of your own when you open one; nothing
-you do runs against an example in place.
+Examples are **copied** in when you open one — into an empty organisation as
+the organisation itself, otherwise under a scope of their own. Nothing you do
+runs against an example in place.
 
 ### Saving, exporting, sharing
 
@@ -239,7 +243,8 @@ The status bar says so once.
 The working file (`.lvarch`) is the same folder in one file — a zip — for
 handing to somebody else. Files written by older builds keep opening.
 
-On boot the app reopens the project you had open, or shows the picker.
+On boot the app reopens the scope you had open, or shows the organisation
+screen.
 
 ## Running from source
 
@@ -313,7 +318,7 @@ src/widgets/        icons and one dialog — presentation with no opinions
 src/ports/          the seams: ProjectStore · PreferencesStore · DocumentGateway
                     GroupStore · ProjectHistory · Diagnostics · HostControls
 src/adapters/       the outside world, one folder per flavour
-src/app/            the shell: picker, workspace, toolbar, dialogs, composition
+src/app/            the shell: the organisation screen, workspace, toolbar, dialogs
 electron/           the desktop main process and preload
 ```
 

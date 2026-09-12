@@ -37,6 +37,8 @@ work needs.
 The screen is the organisation's home rather than a list of documents, and it
 has four parts.
 
+![The organisation screen: the name and links at the top, the organisation's own pages as cards, the tree of domains and landscapes, and the examples last](screenshot-organisation.png)
+
 **Its identity**, at the top: the name, the client if the drawings are made out
 to somebody else, how many domains and landscapes are filed under it, when
 anything in it last changed, the description, and its links. A folder nobody has
