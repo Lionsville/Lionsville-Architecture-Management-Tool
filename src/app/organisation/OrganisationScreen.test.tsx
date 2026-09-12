@@ -231,9 +231,12 @@ describe('the organisation screen — the shipped example', () => {
     expect(screen.getByTestId('scope-application-landscape')).toBeDefined()
     await waitFor(() => expect(screen.getByTestId('organisation-meta').textContent)
       .toContain('1 landscape'))
-    // The example's organisation holds nothing itself: the sheet moves up to it
-    // in beta 3, when a cross-scope id can resolve.
-    expect(screen.getByTestId('organisation-cards').textContent)
-      .toContain('Nothing at this level yet.')
+    // The sheet is the ORGANISATION's now that a cross-scope id resolves
+    // (ADR-0012 §1): the journey, the rail and the areas are what this level
+    // holds, and the applications are the row beneath it.
+    const cards = screen.getByTestId('organisation-cards').textContent ?? ''
+    expect(cards).toContain('Business architecture')
+    expect(cards).toContain('1 journey')
+    expect(cards).not.toContain('Nothing at this level yet.')
   })
 })

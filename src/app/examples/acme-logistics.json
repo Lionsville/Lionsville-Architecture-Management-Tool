@@ -82,28 +82,6 @@
     "- The warehouse system stops booking dock doors once the yard system does; until then both do, which is the plan's shadow run.",
     ""
   ],
-  "application-landscape/diagrams/business-architecture.geometry.json": {
-    "nodes": []
-  },
-  "application-landscape/diagrams/business-architecture.json": {
-    "areas": [
-      "commercial",
-      "operations",
-      "finance",
-      "assets-and-fleet",
-      "generic-services"
-    ],
-    "id": "business-architecture",
-    "journeyId": "ship-a-consignment",
-    "kind": "sheet",
-    "lanes": [
-      "key-accounts",
-      "marketplace-partner"
-    ],
-    "members": [],
-    "name": "Business architecture",
-    "showActors": true
-  },
   "application-landscape/diagrams/landscape-2027.geometry.json": {
     "needsLayout": true,
     "nodes": []
@@ -482,16 +460,8 @@
     ],
     "name": "Warehouse Management · containers"
   },
-  "application-landscape/docs/assets-and-fleet.md": [
-    "The trucks, the trailers and the people licensed to drive them.",
-    ""
-  ],
   "application-landscape/docs/billing.md": [
     "Invoices what was delivered, from the order and the tariff that applied on the day.",
-    ""
-  ],
-  "application-landscape/docs/commercial.md": [
-    "Winning the work and keeping it: rates, contracts, and the customers they belong to.",
     ""
   ],
   "application-landscape/docs/customer-master.md": [
@@ -510,10 +480,6 @@
     "The live picture: who is driving what, and what has gone wrong since the plan was made.",
     ""
   ],
-  "application-landscape/docs/dispatcher.md": [
-    "Runs the day as it actually happens — reassigns, reroutes, explains.",
-    ""
-  ],
   "application-landscape/docs/driver-app.md": [
     "Run sheet, proof of delivery, exceptions. Offline for hours at a time.",
     ""
@@ -522,40 +488,20 @@
     "Orders from customers who will never use a portal. Mostly EDIFACT.",
     ""
   ],
-  "application-landscape/docs/finance.md": [
-    "Rating what was moved, billing it, and collecting it.",
-    ""
-  ],
   "application-landscape/docs/fleet-register.md": [
     "Vehicles, trailers, telematics units and who is allowed to drive what.",
-    ""
-  ],
-  "application-landscape/docs/generic-services.md": [
-    "What every area uses and none of them owns: identity, integration, workplace, data.",
     ""
   ],
   "application-landscape/docs/iam.md": [
     "Single sign-on and the roles behind every screen above.",
     ""
   ],
-  "application-landscape/docs/key-accounts.md": [
-    "Contract customers with a named manager and a frame agreement. They scope by project and invoice by milestone.",
-    ""
-  ],
   "application-landscape/docs/legacy-rating.md": [
     "The rating rules the tariff engine has not absorbed yet. Two customers still price here.",
     ""
   ],
-  "application-landscape/docs/marketplace-partner.md": [
-    "Sells Acme capacity through its own channel and fulfils part of it from its own DC. Outside the organisation, inside the journey.",
-    ""
-  ],
   "application-landscape/docs/observability.md": [
     "Metrics, logs and traces for everything that has been onboarded.",
-    ""
-  ],
-  "application-landscape/docs/operations.md": [
-    "Planning the day and moving the freight. The part of the business that runs on time or does not.",
     ""
   ],
   "application-landscape/docs/order-management.md": [
@@ -570,10 +516,6 @@
     "Collects on invoices and reports back what settled.",
     ""
   ],
-  "application-landscape/docs/planner.md": [
-    "Builds the daily plan: which load goes on which run, and when.",
-    ""
-  ],
   "application-landscape/docs/route-optimiser.md": [
     "Turns tomorrow’s orders into runs. Solves overnight; a re-solve during the day is manual.",
     ""
@@ -582,16 +524,8 @@
     "Every scan in the warehouse and at the dock door.",
     ""
   ],
-  "application-landscape/docs/ship-a-consignment.md": [
-    "Everything between a rate request and a settled invoice. Most consignments take the common path; two kinds of customer do not.",
-    ""
-  ],
   "application-landscape/docs/slotting.md": [
     "Decides where stock lives and when to move it forward. Reads WMS, writes tasks back.",
-    ""
-  ],
-  "application-landscape/docs/support-agent.md": [
-    "Answers \"where is my shipment\", and fixes what caused the question.",
     ""
   ],
   "application-landscape/docs/tariff-engine.md": [
@@ -604,10 +538,6 @@
   ],
   "application-landscape/docs/traffic-feed.md": [
     "Third-party conditions used when planning and re-planning.",
-    ""
-  ],
-  "application-landscape/docs/warehouse-lead.md": [
-    "Owns the floor: labour, dock doors, and what ships tonight.",
     ""
   ],
   "application-landscape/docs/wms-api.md": [
@@ -649,78 +579,6 @@
   "application-landscape/model.json": {
     "elements": [
       {
-        "aspects": {},
-        "id": "accept-the-quote",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Accept the quote",
-        "order": 2,
-        "parentId": "quote"
-      },
-      {
-        "aspects": {},
-        "id": "account",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Account",
-        "order": 2,
-        "parentId": "finance"
-      },
-      {
-        "aspects": {},
-        "id": "aftercare",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Aftercare",
-        "order": 7,
-        "parentId": "ship-a-consignment"
-      },
-      {
-        "aspects": {},
-        "id": "architecture",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Architecture",
-        "order": 2,
-        "parentId": "govern"
-      },
-      {
-        "aspects": {},
-        "id": "ask-for-a-rate",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Ask for a rate",
-        "order": 1,
-        "parentId": "quote"
-      },
-      {
-        "aspects": {},
-        "id": "assets-and-fleet",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Assets and fleet",
-        "order": 4,
-        "scopes": [
-          "logistics"
-        ]
-      },
-      {
-        "aspects": {},
-        "id": "bill",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Bill",
-        "order": 1,
-        "parentId": "finance"
-      },
-      {
         "aspects": {
           "dr": {
             "status": "managed"
@@ -750,117 +608,12 @@
       },
       {
         "aspects": {},
-        "id": "book",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Book",
-        "order": 2,
-        "parentId": "ship-a-consignment"
-      },
-      {
-        "aspects": {},
-        "id": "book-the-shipment",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Book the shipment",
-        "order": 1,
-        "parentId": "book"
-      },
-      {
-        "aspects": {},
-        "id": "bulk-order-via-partner",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "marketplace-partner",
-        "lifecycle": "live",
-        "name": "Bulk order via partner",
-        "order": 4,
-        "parentId": "book"
-      },
-      {
-        "aspects": {},
-        "id": "claims",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Claims",
-        "order": 1,
-        "parentId": "aftercare"
-      },
-      {
-        "aspects": {},
-        "id": "claims-settlement",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Claims settlement",
-        "order": 4,
-        "parentId": "bill"
-      },
-      {
-        "aspects": {},
-        "id": "collect",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Collect",
-        "order": 3,
-        "parentId": "ship-a-consignment"
-      },
-      {
-        "aspects": {},
-        "id": "collect-and-scan",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Collect and scan",
-        "order": 2,
-        "parentId": "collect"
-      },
-      {
-        "aspects": {},
         "id": "collections",
         "isManaged": false,
         "kind": "function",
         "lifecycle": "live",
         "name": "Collections",
-        "order": 3,
-        "parentId": "bill"
-      },
-      {
-        "aspects": {},
-        "id": "commercial",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Commercial",
-        "order": 1,
-        "scopes": [
-          "retail"
-        ]
-      },
-      {
-        "aspects": {},
-        "id": "confirm-a-slot",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Confirm a slot",
-        "order": 2,
-        "parentId": "book"
-      },
-      {
-        "aspects": {},
-        "id": "consignees",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Consignees",
-        "order": 2,
-        "outside": true,
-        "parentId": "customers"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -869,28 +622,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Contract management",
-        "order": 3,
-        "parentId": "sell"
-      },
-      {
-        "aspects": {},
-        "id": "cost-allocation",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Cost allocation",
-        "order": 2,
-        "parentId": "account"
-      },
-      {
-        "aspects": {},
-        "id": "cross-dock",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Cross-dock",
-        "order": 1,
-        "parentId": "line-haul"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -899,8 +631,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Customer management",
-        "order": 2,
-        "parentId": "sell"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -943,16 +674,6 @@
       },
       {
         "aspects": {},
-        "id": "customers",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Customers",
-        "order": 1,
-        "outside": true
-      },
-      {
-        "aspects": {},
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -964,58 +685,8 @@
         "kind": "application",
         "lifecycle": "live",
         "name": "Customs declarations",
-        "outside": true
-      },
-      {
-        "aspects": {},
-        "id": "customs-and-compliance",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Customs and compliance",
-        "order": 8
-      },
-      {
-        "aspects": {},
-        "id": "customs-authority",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Customs authority",
-        "order": 1,
         "outside": true,
-        "parentId": "regulators"
-      },
-      {
-        "aspects": {},
-        "id": "customs-brokers",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Customs brokers",
-        "order": 2,
-        "outside": true,
-        "parentId": "partners"
-      },
-      {
-        "aspects": {},
-        "id": "customs-papers",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Customs papers",
-        "order": 3,
-        "parentId": "collect"
-      },
-      {
-        "aspects": {},
-        "id": "dangerous-goods",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Dangerous goods",
-        "order": 4,
-        "parentId": "move"
+        "partyId": "customs-authority"
       },
       {
         "aspects": {},
@@ -1024,18 +695,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Data platform",
-        "order": 4,
-        "parentId": "run"
-      },
-      {
-        "aspects": {},
-        "id": "deliver",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Deliver",
-        "order": 5,
-        "parentId": "ship-a-consignment"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -1072,33 +732,16 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Dispatch and driving",
-        "order": 3,
-        "parentId": "move"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
-        "explicit": {
-          "iconType": false,
-          "isManaged": false,
-          "lifecycle": false
-        },
         "id": "dispatcher",
-        "isManaged": true,
+        "isManaged": false,
         "kind": "actor",
         "lifecycle": "live",
         "name": "Dispatcher",
-        "order": 3,
-        "parentId": "employees"
-      },
-      {
-        "aspects": {},
-        "id": "drive-the-leg",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Drive the leg",
-        "order": 2,
-        "parentId": "line-haul"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -1116,26 +759,6 @@
       },
       {
         "aspects": {},
-        "id": "driver-compliance",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Driver compliance",
-        "order": 4,
-        "parentId": "keep"
-      },
-      {
-        "aspects": {},
-        "id": "drivers",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Drivers",
-        "order": 5,
-        "parentId": "employees"
-      },
-      {
-        "aspects": {},
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1150,44 +773,12 @@
       },
       {
         "aspects": {},
-        "id": "employees",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Employees",
-        "order": 4
-      },
-      {
-        "aspects": {},
-        "id": "exceptions",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Exceptions",
-        "order": 3,
-        "parentId": "deliver"
-      },
-      {
-        "aspects": {},
-        "id": "finance",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Finance",
-        "order": 3,
-        "scopes": [
-          "finance"
-        ]
-      },
-      {
-        "aspects": {},
         "id": "fleet-management",
         "isManaged": false,
         "kind": "function",
         "lifecycle": "live",
         "name": "Fleet management",
-        "order": 1,
-        "parentId": "keep"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -1213,49 +804,6 @@
       },
       {
         "aspects": {},
-        "id": "frame-agreement",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "key-accounts",
-        "lifecycle": "live",
-        "name": "Frame agreement",
-        "order": 3,
-        "parentId": "book"
-      },
-      {
-        "aspects": {},
-        "id": "general-ledger",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "General ledger",
-        "order": 1,
-        "parentId": "account"
-      },
-      {
-        "aspects": {},
-        "id": "generic-services",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Generic services",
-        "order": 5,
-        "scopes": [
-          "corporate-it"
-        ]
-      },
-      {
-        "aspects": {},
-        "id": "govern",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Govern",
-        "order": 2,
-        "parentId": "generic-services"
-      },
-      {
-        "aspects": {},
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1275,28 +823,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Identity and access",
-        "order": 1,
-        "parentId": "run"
-      },
-      {
-        "aspects": {},
-        "id": "inbound-to-partner-dc",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "marketplace-partner",
-        "lifecycle": "live",
-        "name": "Inbound to partner DC",
-        "order": 4,
-        "parentId": "collect"
-      },
-      {
-        "aspects": {},
-        "id": "insurance",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Insurance",
-        "order": 9
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -1305,28 +832,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Integration",
-        "order": 2,
-        "parentId": "run"
-      },
-      {
-        "aspects": {},
-        "id": "invoice",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Invoice",
-        "order": 6,
-        "parentId": "ship-a-consignment"
-      },
-      {
-        "aspects": {},
-        "id": "invoice-and-collect",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Invoice and collect",
-        "order": 2,
-        "parentId": "invoice"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -1335,49 +841,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Invoicing",
-        "order": 2,
-        "parentId": "bill"
-      },
-      {
-        "aspects": {},
-        "id": "keep",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Keep",
-        "order": 1,
-        "parentId": "assets-and-fleet"
-      },
-      {
-        "aspects": {},
-        "id": "key-account-development",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Key account development",
-        "order": 4,
-        "parentId": "sell"
-      },
-      {
-        "aspects": {},
-        "id": "key-accounts",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Key accounts",
-        "order": 3,
-        "outside": true,
-        "parentId": "customers"
-      },
-      {
-        "aspects": {},
-        "id": "last-mile",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Last mile",
-        "order": 1,
-        "parentId": "deliver"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -1413,58 +877,6 @@
       },
       {
         "aspects": {},
-        "id": "line-haul",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Line-haul",
-        "order": 4,
-        "parentId": "ship-a-consignment"
-      },
-      {
-        "aspects": {},
-        "id": "maintenance",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Maintenance",
-        "order": 2,
-        "parentId": "keep"
-      },
-      {
-        "aspects": {},
-        "id": "marketplace-partner",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Marketplace partner",
-        "order": 4,
-        "outside": true,
-        "parentId": "partners"
-      },
-      {
-        "aspects": {},
-        "id": "milestone-invoicing",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "key-accounts",
-        "lifecycle": "live",
-        "name": "Milestone invoicing",
-        "order": 3,
-        "parentId": "invoice"
-      },
-      {
-        "aspects": {},
-        "id": "move",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Move",
-        "order": 2,
-        "parentId": "operations"
-      },
-      {
-        "aspects": {},
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1479,25 +891,12 @@
       },
       {
         "aspects": {},
-        "id": "operations",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Operations",
-        "order": 2,
-        "scopes": [
-          "logistics"
-        ]
-      },
-      {
-        "aspects": {},
         "id": "order-intake",
         "isManaged": false,
         "kind": "function",
         "lifecycle": "live",
         "name": "Order intake",
-        "order": 1,
-        "parentId": "serve"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -1529,15 +928,6 @@
       },
       {
         "aspects": {},
-        "id": "owners",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Owners",
-        "order": 5
-      },
-      {
-        "aspects": {},
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1549,39 +939,8 @@
         "kind": "application",
         "lifecycle": "live",
         "name": "Partner carriers",
-        "outside": true
-      },
-      {
-        "aspects": {},
-        "id": "partner-fulfils",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "marketplace-partner",
-        "lifecycle": "live",
-        "name": "Partner fulfils",
-        "order": 4,
-        "parentId": "deliver"
-      },
-      {
-        "aspects": {},
-        "id": "partner-settles",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "marketplace-partner",
-        "lifecycle": "live",
-        "name": "Partner settles",
-        "order": 4,
-        "parentId": "invoice"
-      },
-      {
-        "aspects": {},
-        "id": "partners",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Partners",
-        "order": 2,
-        "outside": true
+        "outside": true,
+        "partyId": "subcontracted-carriers"
       },
       {
         "aspects": {},
@@ -1596,84 +955,17 @@
         "kind": "application",
         "lifecycle": "live",
         "name": "Payment provider",
-        "outside": true
+        "outside": true,
+        "partyId": "partners"
       },
       {
         "aspects": {},
-        "id": "plan",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Plan",
-        "order": 1,
-        "parentId": "operations"
-      },
-      {
-        "aspects": {},
-        "id": "plan-the-pick-up",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Plan the pick-up",
-        "order": 1,
-        "parentId": "collect"
-      },
-      {
-        "aspects": {},
-        "explicit": {
-          "iconType": false,
-          "isManaged": false,
-          "lifecycle": false
-        },
         "id": "planner",
-        "isManaged": true,
+        "isManaged": false,
         "kind": "actor",
         "lifecycle": "live",
         "name": "Transport planner",
-        "order": 1,
-        "parentId": "employees"
-      },
-      {
-        "aspects": {},
-        "id": "port-and-rail-operators",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Port and rail operators",
-        "order": 3,
-        "outside": true,
-        "parentId": "partners"
-      },
-      {
-        "aspects": {},
-        "id": "proof-of-delivery",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Proof of delivery",
-        "order": 2,
-        "parentId": "deliver"
-      },
-      {
-        "aspects": {},
-        "id": "quarterly-review",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "key-accounts",
-        "lifecycle": "live",
-        "name": "Quarterly review",
-        "order": 3,
-        "parentId": "aftercare"
-      },
-      {
-        "aspects": {},
-        "id": "quote",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Quote",
-        "order": 1,
-        "parentId": "ship-a-consignment"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -1682,18 +974,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Quoting and tariffs",
-        "order": 1,
-        "parentId": "sell"
-      },
-      {
-        "aspects": {},
-        "id": "rate-the-job",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Rate the job",
-        "order": 1,
-        "parentId": "invoice"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -1702,59 +983,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Rating",
-        "order": 1,
-        "parentId": "bill"
-      },
-      {
-        "aspects": {},
-        "id": "regulators",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Regulators",
-        "order": 3,
-        "outside": true
-      },
-      {
-        "aspects": {},
-        "id": "renew-the-frame",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "key-accounts",
-        "lifecycle": "live",
-        "name": "Renew the frame",
-        "order": 4,
-        "parentId": "aftercare"
-      },
-      {
-        "aspects": {},
-        "id": "returns",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Returns",
-        "order": 7
-      },
-      {
-        "aspects": {},
-        "id": "review-the-account",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Review the account",
-        "order": 2,
-        "parentId": "aftercare"
-      },
-      {
-        "aspects": {},
-        "id": "road-transport-inspectorate",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Road transport inspectorate",
-        "order": 2,
-        "outside": true,
-        "parentId": "regulators"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -1787,16 +1016,6 @@
       },
       {
         "aspects": {},
-        "id": "run",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Run",
-        "order": 1,
-        "parentId": "generic-services"
-      },
-      {
-        "aspects": {},
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1808,76 +1027,6 @@
         "kind": "application",
         "lifecycle": "live",
         "name": "Handheld scanners"
-      },
-      {
-        "aspects": {},
-        "id": "scope-the-project",
-        "isManaged": false,
-        "kind": "step",
-        "lane": "key-accounts",
-        "lifecycle": "live",
-        "name": "Scope the project",
-        "order": 3,
-        "parentId": "quote"
-      },
-      {
-        "aspects": {},
-        "id": "security",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Security",
-        "order": 1,
-        "parentId": "govern"
-      },
-      {
-        "aspects": {},
-        "id": "sell",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Sell",
-        "order": 1,
-        "parentId": "commercial"
-      },
-      {
-        "aspects": {},
-        "id": "serve",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Serve",
-        "order": 2,
-        "parentId": "commercial"
-      },
-      {
-        "aspects": {},
-        "id": "shareholders",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Shareholders",
-        "order": 1,
-        "parentId": "owners"
-      },
-      {
-        "aspects": {},
-        "id": "ship-a-consignment",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Ship a consignment"
-      },
-      {
-        "aspects": {},
-        "id": "shippers",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Shippers",
-        "order": 1,
-        "outside": true,
-        "parentId": "customers"
       },
       {
         "aspects": {
@@ -1908,43 +1057,16 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Slotting and replenishment",
-        "order": 2,
-        "parentId": "plan"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
-        "id": "subcontracted-carriers",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Subcontracted carriers",
-        "order": 1,
-        "outside": true,
-        "parentId": "partners"
-      },
-      {
-        "aspects": {},
-        "explicit": {
-          "iconType": false,
-          "isManaged": false,
-          "lifecycle": false
-        },
         "id": "support-agent",
-        "isManaged": true,
+        "isManaged": false,
         "kind": "actor",
         "lifecycle": "live",
         "name": "Support agent",
-        "order": 2,
-        "parentId": "employees"
-      },
-      {
-        "aspects": {},
-        "id": "sustainability-reporting",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Sustainability reporting",
-        "order": 6
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -1979,18 +1101,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Telematics",
-        "order": 3,
-        "parentId": "keep"
-      },
-      {
-        "aspects": {},
-        "id": "track-and-trace",
-        "isManaged": false,
-        "kind": "step",
-        "lifecycle": "live",
-        "name": "Track and trace",
-        "order": 3,
-        "parentId": "line-haul"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -1999,8 +1110,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Track and trace",
-        "order": 2,
-        "parentId": "serve"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -2043,7 +1153,8 @@
         "kind": "application",
         "lifecycle": "live",
         "name": "Traffic & weather feed",
-        "outside": true
+        "outside": true,
+        "partyId": "partners"
       },
       {
         "aspects": {},
@@ -2052,23 +1163,16 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Transport planning",
-        "order": 1,
-        "parentId": "plan"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
-        "explicit": {
-          "iconType": false,
-          "isManaged": false,
-          "lifecycle": false
-        },
         "id": "warehouse-lead",
-        "isManaged": true,
+        "isManaged": false,
         "kind": "actor",
         "lifecycle": "live",
         "name": "Warehouse lead",
-        "order": 4,
-        "parentId": "employees"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {},
@@ -2077,18 +1181,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Warehouse operations",
-        "order": 1,
-        "parentId": "move"
-      },
-      {
-        "aspects": {},
-        "id": "warehouse-staff",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Warehouse staff",
-        "order": 6,
-        "parentId": "employees"
+        "ref": "acme-logistics"
       },
       {
         "aspects": {
@@ -2225,26 +1318,6 @@
         "parentId": "wms"
       },
       {
-        "aspects": {},
-        "id": "workplace",
-        "isManaged": false,
-        "kind": "function",
-        "lifecycle": "live",
-        "name": "Workplace",
-        "order": 3,
-        "parentId": "run"
-      },
-      {
-        "aspects": {},
-        "id": "works-council",
-        "isManaged": false,
-        "kind": "actor",
-        "lifecycle": "live",
-        "name": "Works council",
-        "order": 2,
-        "parentId": "owners"
-      },
-      {
         "aspects": {
           "monitoring": {
             "status": "none"
@@ -2277,8 +1350,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Yard and dock",
-        "order": 2,
-        "parentId": "move"
+        "ref": "acme-logistics"
       }
     ],
     "relations": [
@@ -2832,88 +1904,10 @@
         "type": "supports"
       },
       {
-        "id": "r#27",
-        "sourceId": "planner",
-        "targetId": "transport-planning",
-        "type": "assigned"
-      },
-      {
-        "id": "r#28",
-        "sourceId": "dispatcher",
-        "targetId": "dispatch-and-driving",
-        "type": "assigned"
-      },
-      {
-        "id": "r#29",
-        "sourceId": "drivers",
-        "targetId": "dispatch-and-driving",
-        "type": "assigned"
-      },
-      {
         "id": "r#3",
         "sourceId": "order-management",
         "targetId": "contract-management",
         "type": "supports"
-      },
-      {
-        "id": "r#30",
-        "sourceId": "dispatcher",
-        "targetId": "driver-compliance",
-        "type": "assigned"
-      },
-      {
-        "id": "r#31",
-        "sourceId": "warehouse-lead",
-        "targetId": "warehouse-operations",
-        "type": "assigned"
-      },
-      {
-        "id": "r#32",
-        "sourceId": "warehouse-lead",
-        "targetId": "yard-and-dock",
-        "type": "assigned"
-      },
-      {
-        "id": "r#33",
-        "sourceId": "warehouse-staff",
-        "targetId": "slotting-and-replenishment",
-        "type": "assigned"
-      },
-      {
-        "id": "r#34",
-        "sourceId": "support-agent",
-        "targetId": "order-intake",
-        "type": "assigned"
-      },
-      {
-        "id": "r#35",
-        "sourceId": "support-agent",
-        "targetId": "claims-settlement",
-        "type": "assigned"
-      },
-      {
-        "id": "r#36",
-        "sourceId": "quoting-and-tariffs",
-        "targetId": "ask-for-a-rate",
-        "type": "serves"
-      },
-      {
-        "id": "r#37",
-        "sourceId": "order-intake",
-        "targetId": "book-the-shipment",
-        "type": "serves"
-      },
-      {
-        "id": "r#38",
-        "sourceId": "track-and-trace-2",
-        "targetId": "track-and-trace",
-        "type": "serves"
-      },
-      {
-        "id": "r#39",
-        "sourceId": "invoicing",
-        "targetId": "invoice-and-collect",
-        "type": "serves"
       },
       {
         "id": "r#4",
@@ -2962,7 +1956,6 @@
     "activeDiagramId": "landscape",
     "diagrams": [
       "landscape",
-      "business-architecture",
       "landscape-2027",
       "wms-containers"
     ],
@@ -3113,9 +2106,1219 @@
     "why the warehouse system keeps its screen until March.",
     ""
   ],
+  "diagrams/business-architecture.geometry.json": {
+    "nodes": []
+  },
+  "diagrams/business-architecture.json": {
+    "areas": [
+      "commercial",
+      "operations",
+      "finance",
+      "assets-and-fleet",
+      "generic-services"
+    ],
+    "id": "business-architecture",
+    "journeyId": "ship-a-consignment",
+    "kind": "sheet",
+    "lanes": [
+      "key-accounts",
+      "marketplace-partner"
+    ],
+    "members": [],
+    "name": "Business architecture",
+    "showActors": true
+  },
+  "docs/assets-and-fleet.md": [
+    "The trucks, the trailers and the people licensed to drive them.",
+    ""
+  ],
+  "docs/commercial.md": [
+    "Winning the work and keeping it: rates, contracts, and the customers they belong to.",
+    ""
+  ],
+  "docs/dispatcher.md": [
+    "Runs the day as it actually happens — reassigns, reroutes, explains.",
+    ""
+  ],
+  "docs/finance.md": [
+    "Rating what was moved, billing it, and collecting it.",
+    ""
+  ],
+  "docs/generic-services.md": [
+    "What every area uses and none of them owns: identity, integration, workplace, data.",
+    ""
+  ],
+  "docs/key-accounts.md": [
+    "Contract customers with a named manager and a frame agreement. They scope by project and invoice by milestone.",
+    ""
+  ],
+  "docs/marketplace-partner.md": [
+    "Sells Acme capacity through its own channel and fulfils part of it from its own DC. Outside the organisation, inside the journey.",
+    ""
+  ],
+  "docs/operations.md": [
+    "Planning the day and moving the freight. The part of the business that runs on time or does not.",
+    ""
+  ],
+  "docs/planner.md": [
+    "Builds the daily plan: which load goes on which run, and when.",
+    ""
+  ],
+  "docs/ship-a-consignment.md": [
+    "Everything between a rate request and a settled invoice. Most consignments take the common path; two kinds of customer do not.",
+    ""
+  ],
+  "docs/support-agent.md": [
+    "Answers \"where is my shipment\", and fixes what caused the question.",
+    ""
+  ],
+  "docs/warehouse-lead.md": [
+    "Owns the floor: labour, dock doors, and what ships tonight.",
+    ""
+  ],
   "model.json": {
-    "elements": [],
-    "relations": []
+    "elements": [
+      {
+        "aspects": {},
+        "id": "accept-the-quote",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Accept the quote",
+        "order": 2,
+        "parentId": "quote"
+      },
+      {
+        "aspects": {},
+        "id": "account",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Account",
+        "order": 2,
+        "parentId": "finance"
+      },
+      {
+        "aspects": {},
+        "id": "aftercare",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Aftercare",
+        "order": 7,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "architecture",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Architecture",
+        "order": 2,
+        "parentId": "govern"
+      },
+      {
+        "aspects": {},
+        "id": "ask-for-a-rate",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Ask for a rate",
+        "order": 1,
+        "parentId": "quote"
+      },
+      {
+        "aspects": {},
+        "id": "assets-and-fleet",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Assets and fleet",
+        "order": 4,
+        "scopes": [
+          "logistics"
+        ]
+      },
+      {
+        "aspects": {},
+        "id": "bill",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Bill",
+        "order": 1,
+        "parentId": "finance"
+      },
+      {
+        "aspects": {},
+        "id": "book",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Book",
+        "order": 2,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "book-the-shipment",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Book the shipment",
+        "order": 1,
+        "parentId": "book"
+      },
+      {
+        "aspects": {},
+        "id": "bulk-order-via-partner",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "marketplace-partner",
+        "lifecycle": "live",
+        "name": "Bulk order via partner",
+        "order": 4,
+        "parentId": "book"
+      },
+      {
+        "aspects": {},
+        "id": "claims",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Claims",
+        "order": 1,
+        "parentId": "aftercare"
+      },
+      {
+        "aspects": {},
+        "id": "claims-settlement",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Claims settlement",
+        "order": 4,
+        "parentId": "bill"
+      },
+      {
+        "aspects": {},
+        "id": "collect",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Collect",
+        "order": 3,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "collect-and-scan",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Collect and scan",
+        "order": 2,
+        "parentId": "collect"
+      },
+      {
+        "aspects": {},
+        "id": "collections",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Collections",
+        "order": 3,
+        "parentId": "bill"
+      },
+      {
+        "aspects": {},
+        "id": "commercial",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Commercial",
+        "order": 1,
+        "scopes": [
+          "retail"
+        ]
+      },
+      {
+        "aspects": {},
+        "id": "confirm-a-slot",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Confirm a slot",
+        "order": 2,
+        "parentId": "book"
+      },
+      {
+        "aspects": {},
+        "id": "consignees",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Consignees",
+        "order": 2,
+        "outside": true,
+        "parentId": "customers"
+      },
+      {
+        "aspects": {},
+        "id": "contract-management",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Contract management",
+        "order": 3,
+        "parentId": "sell"
+      },
+      {
+        "aspects": {},
+        "id": "cost-allocation",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Cost allocation",
+        "order": 2,
+        "parentId": "account"
+      },
+      {
+        "aspects": {},
+        "id": "cross-dock",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Cross-dock",
+        "order": 1,
+        "parentId": "line-haul"
+      },
+      {
+        "aspects": {},
+        "id": "customer-management",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Customer management",
+        "order": 2,
+        "parentId": "sell"
+      },
+      {
+        "aspects": {},
+        "id": "customers",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Customers",
+        "order": 1,
+        "outside": true
+      },
+      {
+        "aspects": {},
+        "id": "customs-and-compliance",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Customs and compliance",
+        "order": 8
+      },
+      {
+        "aspects": {},
+        "id": "customs-authority",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Customs authority",
+        "order": 1,
+        "outside": true,
+        "parentId": "regulators"
+      },
+      {
+        "aspects": {},
+        "id": "customs-brokers",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Customs brokers",
+        "order": 2,
+        "outside": true,
+        "parentId": "partners"
+      },
+      {
+        "aspects": {},
+        "id": "customs-papers",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Customs papers",
+        "order": 3,
+        "parentId": "collect"
+      },
+      {
+        "aspects": {},
+        "id": "dangerous-goods",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Dangerous goods",
+        "order": 4,
+        "parentId": "move"
+      },
+      {
+        "aspects": {},
+        "id": "data-platform",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Data platform",
+        "order": 4,
+        "parentId": "run"
+      },
+      {
+        "aspects": {},
+        "id": "deliver",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Deliver",
+        "order": 5,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "dispatch-and-driving",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Dispatch and driving",
+        "order": 3,
+        "parentId": "move"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "id": "dispatcher",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Dispatcher",
+        "order": 3,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
+        "id": "drive-the-leg",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Drive the leg",
+        "order": 2,
+        "parentId": "line-haul"
+      },
+      {
+        "aspects": {},
+        "id": "driver-compliance",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Driver compliance",
+        "order": 4,
+        "parentId": "keep"
+      },
+      {
+        "aspects": {},
+        "id": "drivers",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Drivers",
+        "order": 5,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
+        "id": "employees",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Employees",
+        "order": 4
+      },
+      {
+        "aspects": {},
+        "id": "exceptions",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Exceptions",
+        "order": 3,
+        "parentId": "deliver"
+      },
+      {
+        "aspects": {},
+        "id": "finance",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Finance",
+        "order": 3,
+        "scopes": [
+          "finance"
+        ]
+      },
+      {
+        "aspects": {},
+        "id": "fleet-management",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Fleet management",
+        "order": 1,
+        "parentId": "keep"
+      },
+      {
+        "aspects": {},
+        "id": "frame-agreement",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "key-accounts",
+        "lifecycle": "live",
+        "name": "Frame agreement",
+        "order": 3,
+        "parentId": "book"
+      },
+      {
+        "aspects": {},
+        "id": "general-ledger",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "General ledger",
+        "order": 1,
+        "parentId": "account"
+      },
+      {
+        "aspects": {},
+        "id": "generic-services",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Generic services",
+        "order": 5,
+        "scopes": [
+          "corporate-it"
+        ]
+      },
+      {
+        "aspects": {},
+        "id": "govern",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Govern",
+        "order": 2,
+        "parentId": "generic-services"
+      },
+      {
+        "aspects": {},
+        "id": "identity-and-access",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Identity and access",
+        "order": 1,
+        "parentId": "run"
+      },
+      {
+        "aspects": {},
+        "id": "inbound-to-partner-dc",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "marketplace-partner",
+        "lifecycle": "live",
+        "name": "Inbound to partner DC",
+        "order": 4,
+        "parentId": "collect"
+      },
+      {
+        "aspects": {},
+        "id": "insurance",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Insurance",
+        "order": 9
+      },
+      {
+        "aspects": {},
+        "id": "integration",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Integration",
+        "order": 2,
+        "parentId": "run"
+      },
+      {
+        "aspects": {},
+        "id": "invoice",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Invoice",
+        "order": 6,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "invoice-and-collect",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Invoice and collect",
+        "order": 2,
+        "parentId": "invoice"
+      },
+      {
+        "aspects": {},
+        "id": "invoicing",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Invoicing",
+        "order": 2,
+        "parentId": "bill"
+      },
+      {
+        "aspects": {},
+        "id": "keep",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Keep",
+        "order": 1,
+        "parentId": "assets-and-fleet"
+      },
+      {
+        "aspects": {},
+        "id": "key-account-development",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Key account development",
+        "order": 4,
+        "parentId": "sell"
+      },
+      {
+        "aspects": {},
+        "id": "key-accounts",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Key accounts",
+        "order": 3,
+        "outside": true,
+        "parentId": "customers"
+      },
+      {
+        "aspects": {},
+        "id": "last-mile",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Last mile",
+        "order": 1,
+        "parentId": "deliver"
+      },
+      {
+        "aspects": {},
+        "id": "line-haul",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Line-haul",
+        "order": 4,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "maintenance",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Maintenance",
+        "order": 2,
+        "parentId": "keep"
+      },
+      {
+        "aspects": {},
+        "id": "marketplace-partner",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Marketplace partner",
+        "order": 4,
+        "outside": true,
+        "parentId": "partners"
+      },
+      {
+        "aspects": {},
+        "id": "milestone-invoicing",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "key-accounts",
+        "lifecycle": "live",
+        "name": "Milestone invoicing",
+        "order": 3,
+        "parentId": "invoice"
+      },
+      {
+        "aspects": {},
+        "id": "move",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Move",
+        "order": 2,
+        "parentId": "operations"
+      },
+      {
+        "aspects": {},
+        "id": "operations",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Operations",
+        "order": 2,
+        "scopes": [
+          "logistics"
+        ]
+      },
+      {
+        "aspects": {},
+        "id": "order-intake",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Order intake",
+        "order": 1,
+        "parentId": "serve"
+      },
+      {
+        "aspects": {},
+        "id": "owners",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Owners",
+        "order": 5
+      },
+      {
+        "aspects": {},
+        "id": "partner-fulfils",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "marketplace-partner",
+        "lifecycle": "live",
+        "name": "Partner fulfils",
+        "order": 4,
+        "parentId": "deliver"
+      },
+      {
+        "aspects": {},
+        "id": "partner-settles",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "marketplace-partner",
+        "lifecycle": "live",
+        "name": "Partner settles",
+        "order": 4,
+        "parentId": "invoice"
+      },
+      {
+        "aspects": {},
+        "id": "partners",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Partners",
+        "order": 2,
+        "outside": true
+      },
+      {
+        "aspects": {},
+        "id": "plan",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Plan",
+        "order": 1,
+        "parentId": "operations"
+      },
+      {
+        "aspects": {},
+        "id": "plan-the-pick-up",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Plan the pick-up",
+        "order": 1,
+        "parentId": "collect"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "id": "planner",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Transport planner",
+        "order": 1,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
+        "id": "port-and-rail-operators",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Port and rail operators",
+        "order": 3,
+        "outside": true,
+        "parentId": "partners"
+      },
+      {
+        "aspects": {},
+        "id": "proof-of-delivery",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Proof of delivery",
+        "order": 2,
+        "parentId": "deliver"
+      },
+      {
+        "aspects": {},
+        "id": "quarterly-review",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "key-accounts",
+        "lifecycle": "live",
+        "name": "Quarterly review",
+        "order": 3,
+        "parentId": "aftercare"
+      },
+      {
+        "aspects": {},
+        "id": "quote",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Quote",
+        "order": 1,
+        "parentId": "ship-a-consignment"
+      },
+      {
+        "aspects": {},
+        "id": "quoting-and-tariffs",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Quoting and tariffs",
+        "order": 1,
+        "parentId": "sell"
+      },
+      {
+        "aspects": {},
+        "id": "rate-the-job",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Rate the job",
+        "order": 1,
+        "parentId": "invoice"
+      },
+      {
+        "aspects": {},
+        "id": "rating",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Rating",
+        "order": 1,
+        "parentId": "bill"
+      },
+      {
+        "aspects": {},
+        "id": "regulators",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Regulators",
+        "order": 3,
+        "outside": true
+      },
+      {
+        "aspects": {},
+        "id": "renew-the-frame",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "key-accounts",
+        "lifecycle": "live",
+        "name": "Renew the frame",
+        "order": 4,
+        "parentId": "aftercare"
+      },
+      {
+        "aspects": {},
+        "id": "returns",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Returns",
+        "order": 7
+      },
+      {
+        "aspects": {},
+        "id": "review-the-account",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Review the account",
+        "order": 2,
+        "parentId": "aftercare"
+      },
+      {
+        "aspects": {},
+        "id": "road-transport-inspectorate",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Road transport inspectorate",
+        "order": 2,
+        "outside": true,
+        "parentId": "regulators"
+      },
+      {
+        "aspects": {},
+        "id": "run",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Run",
+        "order": 1,
+        "parentId": "generic-services"
+      },
+      {
+        "aspects": {},
+        "id": "scope-the-project",
+        "isManaged": false,
+        "kind": "step",
+        "lane": "key-accounts",
+        "lifecycle": "live",
+        "name": "Scope the project",
+        "order": 3,
+        "parentId": "quote"
+      },
+      {
+        "aspects": {},
+        "id": "security",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Security",
+        "order": 1,
+        "parentId": "govern"
+      },
+      {
+        "aspects": {},
+        "id": "sell",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Sell",
+        "order": 1,
+        "parentId": "commercial"
+      },
+      {
+        "aspects": {},
+        "id": "serve",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Serve",
+        "order": 2,
+        "parentId": "commercial"
+      },
+      {
+        "aspects": {},
+        "id": "shareholders",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Shareholders",
+        "order": 1,
+        "parentId": "owners"
+      },
+      {
+        "aspects": {},
+        "id": "ship-a-consignment",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Ship a consignment"
+      },
+      {
+        "aspects": {},
+        "id": "shippers",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Shippers",
+        "order": 1,
+        "outside": true,
+        "parentId": "customers"
+      },
+      {
+        "aspects": {},
+        "id": "slotting-and-replenishment",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Slotting and replenishment",
+        "order": 2,
+        "parentId": "plan"
+      },
+      {
+        "aspects": {},
+        "id": "subcontracted-carriers",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Subcontracted carriers",
+        "order": 1,
+        "outside": true,
+        "parentId": "partners"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "id": "support-agent",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Support agent",
+        "order": 2,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
+        "id": "sustainability-reporting",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Sustainability reporting",
+        "order": 6
+      },
+      {
+        "aspects": {},
+        "id": "telematics",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Telematics",
+        "order": 3,
+        "parentId": "keep"
+      },
+      {
+        "aspects": {},
+        "id": "track-and-trace",
+        "isManaged": false,
+        "kind": "step",
+        "lifecycle": "live",
+        "name": "Track and trace",
+        "order": 3,
+        "parentId": "line-haul"
+      },
+      {
+        "aspects": {},
+        "id": "track-and-trace-2",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Track and trace",
+        "order": 2,
+        "parentId": "serve"
+      },
+      {
+        "aspects": {},
+        "id": "transport-planning",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Transport planning",
+        "order": 1,
+        "parentId": "plan"
+      },
+      {
+        "aspects": {},
+        "explicit": {
+          "iconType": false,
+          "isManaged": false,
+          "lifecycle": false
+        },
+        "id": "warehouse-lead",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Warehouse lead",
+        "order": 4,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
+        "id": "warehouse-operations",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Warehouse operations",
+        "order": 1,
+        "parentId": "move"
+      },
+      {
+        "aspects": {},
+        "id": "warehouse-staff",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Warehouse staff",
+        "order": 6,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
+        "id": "workplace",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Workplace",
+        "order": 3,
+        "parentId": "run"
+      },
+      {
+        "aspects": {},
+        "id": "works-council",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Works council",
+        "order": 2,
+        "parentId": "owners"
+      },
+      {
+        "aspects": {},
+        "id": "yard-and-dock",
+        "isManaged": false,
+        "kind": "function",
+        "lifecycle": "live",
+        "name": "Yard and dock",
+        "order": 2,
+        "parentId": "move"
+      }
+    ],
+    "relations": [
+      {
+        "id": "r#27",
+        "sourceId": "planner",
+        "targetId": "transport-planning",
+        "type": "assigned"
+      },
+      {
+        "id": "r#28",
+        "sourceId": "dispatcher",
+        "targetId": "dispatch-and-driving",
+        "type": "assigned"
+      },
+      {
+        "id": "r#29",
+        "sourceId": "drivers",
+        "targetId": "dispatch-and-driving",
+        "type": "assigned"
+      },
+      {
+        "id": "r#30",
+        "sourceId": "dispatcher",
+        "targetId": "driver-compliance",
+        "type": "assigned"
+      },
+      {
+        "id": "r#31",
+        "sourceId": "warehouse-lead",
+        "targetId": "warehouse-operations",
+        "type": "assigned"
+      },
+      {
+        "id": "r#32",
+        "sourceId": "warehouse-lead",
+        "targetId": "yard-and-dock",
+        "type": "assigned"
+      },
+      {
+        "id": "r#33",
+        "sourceId": "warehouse-staff",
+        "targetId": "slotting-and-replenishment",
+        "type": "assigned"
+      },
+      {
+        "id": "r#34",
+        "sourceId": "support-agent",
+        "targetId": "order-intake",
+        "type": "assigned"
+      },
+      {
+        "id": "r#35",
+        "sourceId": "support-agent",
+        "targetId": "claims-settlement",
+        "type": "assigned"
+      },
+      {
+        "id": "r#36",
+        "sourceId": "quoting-and-tariffs",
+        "targetId": "ask-for-a-rate",
+        "type": "serves"
+      },
+      {
+        "id": "r#37",
+        "sourceId": "order-intake",
+        "targetId": "book-the-shipment",
+        "type": "serves"
+      },
+      {
+        "id": "r#38",
+        "sourceId": "track-and-trace-2",
+        "targetId": "track-and-trace",
+        "type": "serves"
+      },
+      {
+        "id": "r#39",
+        "sourceId": "invoicing",
+        "targetId": "invoice-and-collect",
+        "type": "serves"
+      }
+    ]
   },
   "scope.json": {
     "type": "lionsville-architecture",
@@ -3123,7 +3326,9 @@
     "name": "Acme Logistics",
     "kind": "organisation",
     "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
-    "activeDiagramId": "",
-    "diagrams": []
+    "activeDiagramId": "business-architecture",
+    "diagrams": [
+      "business-architecture"
+    ]
   }
 }

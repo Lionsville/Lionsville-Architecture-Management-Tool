@@ -150,10 +150,23 @@ const UNCOVERED: FunctionCoverage = { supportedBy: [], assignedTo: [], coverage:
 export function sheetPage(
   model: Pick<DesignModel, 'elements' | 'relations'>,
   sheet: Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors'>,
+  /**
+   * Rows written in another scope of the same organisation (ADR-0012 §2).
+   *
+   * A sheet at the root draws capabilities the root defines, and the
+   * applications that support them are in a landscape's model — so without
+   * this every capability on the organisation's own page would read as
+   * uncovered. Handed in rather than looked up: `business` may not import
+   * `projects`, and the index is what knows where a row is.
+   *
+   * Absent is one scope on its own, which is what every sheet was before the
+   * tree had an index.
+   */
+  elsewhere: readonly Relation[] = [],
 ): LaidOutSheet {
   const { elements, relations } = model
   const byId = new Map(elements.map((element) => [element.id, element]))
-  const coverage = coverageOf(relations)
+  const coverage = coverageOf(relations, elsewhere)
 
   const functions = elements.filter((element) => element.kind === 'function')
   const drawn = sheet.areas ?? rootsOfKind(elements, 'function').map((element) => element.id)

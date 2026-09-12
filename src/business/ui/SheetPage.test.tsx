@@ -18,7 +18,7 @@ import { SheetPage } from './SheetPage'
 import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { actor, shippingScope } from '../testFixtures'
-import type { DesignDiagram, DesignModel } from '../../model'
+import type { DesignDiagram, DesignModel, Relation } from '../../model'
 
 afterEach(() => cleanup())
 
@@ -56,7 +56,12 @@ function actions(): SheetActions {
   }
 }
 
-function open(over: { sheet?: DesignDiagram; readOnly?: boolean; model?: DesignModel } = {}) {
+function open(over: {
+  sheet?: DesignDiagram
+  readOnly?: boolean
+  model?: DesignModel
+  elsewhere?: readonly Relation[]
+} = {}) {
   const acts = actions()
   const result = renderShell(
     <SheetPage
@@ -65,6 +70,7 @@ function open(over: { sheet?: DesignDiagram; readOnly?: boolean; model?: DesignM
       sheet={over.sheet ?? SHEET}
       readOnly={over.readOnly ?? false}
       actions={acts}
+      elsewhere={over.elsewhere}
       onClose={() => {}}
     />,
   )
@@ -150,6 +156,31 @@ describe('the areas', () => {
     expect(screen.getByTestId('sheet-coverage-invoice').textContent).toBe('1 app')
     expect(screen.getByTestId('sheet-coverage-packing').textContent).toBe('people')
     expect(screen.getByTestId('sheet-coverage-dunning').textContent).toBe('nothing yet')
+  })
+
+  /**
+   * The organisation's own sheet, after ADR-0012 §2: the capabilities are
+   * this scope's and the applications supporting them are a landscape's, so
+   * the rows behind "2 apps" are not in the model this page was handed.
+   */
+  it('counts the rows another scope wrote about a capability this one defines', () => {
+    const { elements, relations } = shippingScope()
+    const ours = relations.filter((row) => row.type !== 'supports')
+    // Without them, every capability on the organisation's page is people or
+    // nothing; with them, the numbers are the ones the whole tree says.
+    open({ model: model({ elements, relations: ours }) })
+    expect(screen.getByTestId('sheet-coverage-picking').textContent).toBe('nothing yet')
+    cleanup()
+
+    const elsewhere = relations.filter((row) => row.type === 'supports')
+    open({ model: model({ elements, relations: ours }), elsewhere })
+    expect(screen.getByTestId('sheet-coverage-picking').textContent).toBe('2 apps')
+  })
+
+  it('counts a row it also holds itself once, not twice', () => {
+    const { relations } = shippingScope()
+    open({ elsewhere: relations })
+    expect(screen.getByTestId('sheet-coverage-picking').textContent).toBe('2 apps')
   })
 
   it('carries the domain an area is assigned to', () => {

@@ -164,6 +164,24 @@ describe('what is NOT a finding', () => {
   })
 
   /**
+   * `partyId` says which ACTOR a thing belongs to, so an outside actor is the
+   * party rather than a thing missing one. Customers and Regulators on a
+   * stakeholder rail are outside by definition, and a finding on each of them
+   * would be the whole rail underlined in orange on the day it was drawn.
+   */
+  it('does not ask an outside actor which actor it belongs to', () => {
+    const index = indexScopes([scope('retail', [])])
+    const model = document({
+      elements: [
+        element('customers', { kind: 'actor', outside: true }),
+        element('post', { outside: true }),
+      ],
+    })
+    expect(documentFindings({ scope: 'retail', model, index })
+      .filter((f) => f.key === 'check.unattributed').map((f) => f.id)).toEqual(['post'])
+  })
+
+  /**
    * A row reaching into another domain is what organisation-wide ids are FOR
    * (§5). Only an end nobody in the tree holds is a dangling one.
    */

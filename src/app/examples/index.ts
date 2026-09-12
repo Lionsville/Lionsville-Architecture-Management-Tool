@@ -149,11 +149,28 @@ export function copyExampleInto(
   const base = fresh
     ? ROOT_SCOPE
     : scopePathFor(ROOT_SCOPE, scopePathLabel(example.path), namesUnder(root))
-  return exampleScopes(example).map((scope) => {
-    if (scope.path === example.path) return { ...scope, path: base }
-    const below = scope.path.slice(example.path.length + 1)
-    return { ...scope, path: base === ROOT_SCOPE ? below : `${base}/${below}` }
-  })
+  const readdress = (path: ScopePath): ScopePath => {
+    if (path === example.path) return base
+    const below = path.slice(example.path.length + 1)
+    return base === ROOT_SCOPE ? below : `${base}/${below}`
+  }
+  return exampleScopes(example).map((scope) => ({
+    ...scope,
+    path: readdress(scope.path),
+    // A stand-in's `ref` is an address too (ADR-0012 §3), and an address that
+    // was not carried over is a drifting stand-in of a folder that is not
+    // there. The example ships at its own paths and lands wherever the root
+    // sends it, so the two have to move together — which the drift check found
+    // the moment it existed.
+    model: { ...scope.model, elements: scope.model.elements.map(withRef(readdress)) },
+  }))
+}
+
+/** One element's `ref`, re-addressed. Untouched where there is none. */
+function withRef(readdress: (path: ScopePath) => ScopePath) {
+  return (element: ScopeSnapshot['model']['elements'][number]) => (
+    element.ref === undefined ? element : { ...element, ref: readdress(element.ref) }
+  )
 }
 
 export const EXAMPLES: readonly ExampleProject[] = [

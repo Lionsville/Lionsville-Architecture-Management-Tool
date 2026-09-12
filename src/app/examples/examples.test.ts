@@ -16,7 +16,9 @@ import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
 import { copyExampleInto, EXAMPLES, exampleFiles, exampleScopes } from '.'
 import { fromArrays, toArrays } from '../../model/normalised'
+import { documentFindings, identityFindings } from '../../projects/checks'
 import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'
+import { indexScopes } from '../../projects/scopeIndex'
 import { stableJson } from '../../projects/fileText'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { computeBusinessCase, readBusinessCase } from '../../documentation/businessCase'
@@ -41,19 +43,70 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
   })
 
   /**
-   * The organisation above the landscape: a name, what it is, and nothing else.
+   * The split ADR-0012 §1 puts the sheet on the other side of.
    *
-   * The model is deliberately NOT split across the two. Every `supports` and
-   * `assigned` row joining a capability to an application would dangle at one
-   * end, and the stand-ins that make a cross-scope id resolve are ADR-0012 §2's.
+   * The business layer is the ORGANISATION's: the journey, the stakeholder
+   * rail, the areas and the capabilities under them, and the sheet that draws
+   * them. The applications are the landscape's. Neither could say the other's
+   * half until ids crossed scopes — which is why the model was one document
+   * through beta 2 and is two now.
    */
-  it('names the organisation above the landscape, and keeps the model whole', () => {
+  it('puts the business layer at the organisation and the applications under it', () => {
     const [organisation] = scopes
     expect(organisation.model.name).toBe('Acme Logistics')
     expect(organisation.kind).toBe('organisation')
-    expect(organisation.model.elements).toEqual([])
-    expect(organisation.model.diagrams).toEqual([])
     expect(project.kind).toBe('landscape')
+
+    const kinds = (held: DesignModel) =>
+      [...new Set(held.elements.filter((e) => e.ref === undefined).map((e) => e.kind))].sort()
+    expect(kinds(organisation.model)).toEqual(['actor', 'function', 'step'])
+    expect(kinds(model)).toEqual(['application', 'component'])
+    expect(organisation.model.diagrams.map((d) => d.kind)).toEqual(['sheet'])
+    expect(model.diagrams.every((d) => d.kind !== 'sheet')).toBe(true)
+  })
+
+  /**
+   * A domain's refinement (ADR-0012 §3): the landscape draws capabilities and
+   * people the organisation defines, and holds a stand-in of each so its own
+   * rows resolve inside its own document.
+   *
+   * **The organisation owns every actor**, and the landscape holds stand-ins of
+   * the four it draws — not the other way round. §4 settles it in a sentence:
+   * "a landscape's actor is a stand-in of one of them". The rail is the
+   * organisation's page, its tree is one tree, and four leaves defined in a
+   * landscape would leave *Employees* with no children in the scope that draws
+   * it — and a second landscape drawing the same dispatcher would define a
+   * second one, which is a conflict finding about two records of one person.
+   */
+  it('holds a stand-in of every capability and person it draws', () => {
+    const standIns = model.elements.filter((e) => e.ref !== undefined)
+    const owned = new Set(scopes[0].model.elements.map((e) => e.id))
+    expect(standIns.length).toBeGreaterThan(0)
+    expect(standIns.every((e) => owned.has(e.id))).toBe(true)
+    // Every `supports` row the landscape wrote lands on a record it holds.
+    const held = new Set(model.elements.map((e) => e.id))
+    expect(model.relations.filter((r) => r.type === 'supports')
+      .every((r) => held.has(r.sourceId) && held.has(r.targetId))).toBe(true)
+    expect(standIns.filter((e) => e.kind === 'actor').map((e) => e.id))
+      .toEqual(['dispatcher', 'planner', 'support-agent', 'warehouse-lead'])
+  })
+
+  /**
+   * A stand-in's `name` and `ref` are caches and everything else on it belongs
+   * to the scope that defines it (§3). A shipped example carrying a lifecycle
+   * on one would be the reference tree demonstrating a finding.
+   */
+  it('carries nothing on a stand-in that the organisation answers for', () => {
+    for (const standIn of model.elements.filter((e) => e.ref !== undefined)) {
+      // The three fields every record carries are on it and at their
+      // defaults — a stand-in is a `DesignElement` like any other, and what
+      // makes it one is saying nothing rather than leaving fields out.
+      expect(Object.keys(standIn).sort(), standIn.id)
+        .toEqual(['aspects', 'id', 'isManaged', 'kind', 'lifecycle', 'name', 'ref'])
+      expect(standIn.lifecycle, standIn.id).toBe('live')
+      expect(standIn.isManaged, standIn.id).toBe(false)
+      expect(standIn.aspects, standIn.id).toEqual({})
+    }
   })
 
   it('parents every component to an application that exists', () => {
@@ -239,17 +292,38 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
  * none (ADR-0012 §6).
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet', (_key, example) => {
-  const model = exampleScopes(example).at(-1)!.model
+  const tree = exampleScopes(example)
+  const model = tree[0].model
   const sheets = model.diagrams.filter((diagram) => diagram.kind === 'sheet')
 
-  it('ships one', () => {
+  it('ships one, at the organisation', () => {
     expect(sheets).toHaveLength(1)
     // A sheet is laid out, so its geometry file is the empty one a save writes
     // rather than coordinates nobody chose.
     expect(sheets[0].geometry.nodes).toEqual([])
   })
 
-  const page = sheetPage(model, sheets[0])
+  /**
+   * The rows behind "2 apps" under a capability are a LANDSCAPE's — the
+   * applications are down there and so are the rows to them (ADR-0012 §2).
+   * Handed in the way the workspace hands them in, from the index.
+   */
+  const elsewhere = tree.slice(1).flatMap((scope) => scope.model.relations)
+  const page = sheetPage(model, sheets[0], elsewhere)
+
+  /**
+   * The guard against the coverage assertions below being vacuous: without the
+   * landscape's rows the organisation's own page would say nothing is covered,
+   * which is the state the split would leave it in if nobody carried the rows
+   * across (ADR-0012 §2).
+   */
+  it('has nothing covered without the rows the landscape wrote', () => {
+    const alone = sheetPage(model, sheets[0])
+    const capabilities = alone.areas.flatMap((area) =>
+      area.groupings.flatMap((grouping) => grouping.capabilities))
+    expect(capabilities.some((held) => held.coverage.coverage === 'covered')).toBe(false)
+    expect(capabilities.some((held) => held.coverage.coverage === 'manual')).toBe(true)
+  })
 
   it('draws the journey in seven phases', () => {
     expect(page.journey?.element.name).toBe('Ship a consignment')
@@ -337,21 +411,22 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet',
 /**
  * The stakeholder tree, and the board that was already there.
  *
- * The four actors the landscape draws gained a `parentId` when the rail did —
- * they are the organisation's employees, and a rail with them missing would be
- * an org chart with a hole in it. `parentId` is one field for every kind of
- * containment since ADR-0012 §3, though, and on a `layer7` board it used to
- * mean exactly one thing: a component inside its application. Every reader of
- * it in `editor/` and `layout/` is guarded by `kind === 'component'`, so
- * nothing moves — and that is worth a test rather than a reading, because the
- * cost of being wrong is the first screen a new user opens.
+ * The four actors the landscape draws are stand-ins now, and a stand-in sits
+ * on no tree of this scope's — so the example's own board carries no
+ * `parentId` on an actor at all. The guard is still worth keeping and is
+ * stated the other way round: `parentId` is one field for every kind of
+ * containment since ADR-0012 §3, and on a `layer7` board it used to mean
+ * exactly one thing — a component inside its application. Every reader of it
+ * in `editor/` and `layout/` is guarded by `kind === 'component'`, so giving
+ * an actor one must move nothing. The cost of being wrong is the first screen
+ * a new user opens.
  */
 describe('a stakeholder tree over a landscape that already drew its actors', () => {
   const model = exampleScopes(EXAMPLES[0]).at(-1)!.model
   const flat: DesignModel = {
     ...model,
     elements: model.elements.map((element) => (element.kind === 'actor'
-      ? { ...element, parentId: undefined, order: undefined }
+      ? { ...element, parentId: 'employees', order: 3 }
       : element)),
   }
   const diagram = model.diagrams.find((held) => held.id === 'landscape')!
@@ -375,6 +450,43 @@ describe('a stakeholder tree over a landscape that already drew its actors', () 
 
   it('draws the same lines between them', () => {
     expect(JSON.stringify(buildEdges(args(model)))).toBe(JSON.stringify(buildEdges(args(flat))))
+  })
+})
+
+/**
+ * The example is the reference tree, so a finding on it is a bug.
+ *
+ * Not a style preference: it is the first thing anybody opens, and an example
+ * that ships a conflict or a drifting stand-in is the tool teaching the wrong
+ * thing on the first screen. Information is not a fault and is allowed — a
+ * capability nobody has drawn on a board is an ordinary state and the whole
+ * point of `check.notDrawn` being information (ADR-0012 §9).
+ */
+describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s contradicts nothing', (_key, example) => {
+  const scopes = exampleScopes(example)
+  const index = indexScopes(scopes.map((scope) => ({ path: scope.path, model: scope.model })))
+
+  it('has one master per id, every stand-in resolving, and no cache stale', () => {
+    expect(identityFindings(index)).toEqual([])
+  })
+
+  it('says the landscape owns every application and the organisation every function', () => {
+    const master = (id: string) => index.lookup(id)?.master
+    for (const element of scopes.at(-1)!.model.elements) {
+      if (element.ref !== undefined) continue
+      expect(master(element.id), element.id).toBe(`${example.path}/application-landscape`)
+    }
+    for (const element of scopes[0].model.elements) {
+      expect(master(element.id), element.id).toBe(example.path)
+    }
+  })
+
+  it('reports nothing but information about either scope\'s own records', () => {
+    for (const scope of scopes) {
+      const found = documentFindings({ scope: scope.path, model: scope.model, index })
+        .filter((finding) => !finding.information)
+      expect(found, scope.path).toEqual([])
+    }
   })
 })
 
@@ -418,9 +530,24 @@ describe('where a copy lands', () => {
       .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape'])
   })
 
-  it('carries the content over unchanged, wherever it lands', () => {
+  /**
+   * The content travels; the ADDRESSES in it travel with it (ADR-0012 §3). A
+   * stand-in's `ref` is a path, and a copy that carried the old one would land
+   * a tree whose every stand-in points at a folder that is not there — which
+   * the drift check found the afternoon it existed.
+   */
+  it('carries the content over unchanged, and re-addresses what is an address', () => {
     const asRoot = copyExampleInto(example, root())
     const asChild = copyExampleInto(example, root({ name: 'Globex' }))
-    expect(asChild[1].model).toEqual(asRoot[1].model)
+    const withoutRefs = (scope: typeof asRoot[number]) => ({
+      ...scope.model,
+      elements: scope.model.elements.map(({ ref: _held, ...rest }) => rest),
+    })
+    expect(withoutRefs(asChild[1])).toEqual(withoutRefs(asRoot[1]))
+
+    const refs = (scope: typeof asRoot[number]) =>
+      [...new Set(scope.model.elements.map((e) => e.ref).filter((ref) => ref !== undefined))]
+    expect(refs(asRoot[1])).toEqual([''])
+    expect(refs(asChild[1])).toEqual(['acme-logistics'])
   })
 })

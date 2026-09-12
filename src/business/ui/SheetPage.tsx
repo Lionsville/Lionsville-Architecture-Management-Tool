@@ -43,6 +43,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { sheetPage } from '../sheet'
+import type { Relation } from '../../model'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
 import type { SheetShot } from './captureSheet'
 import { captureSheet } from './captureSheet'
@@ -72,6 +73,15 @@ export type SheetPageProps = {
    * for why `business` is handed the answer rather than working it out.
    */
   ownerOf?: FunctionInspectorProps['ownerOf']
+  /**
+   * Rows written in another scope of the same organisation (ADR-0012 §2) —
+   * see `sheetPage`. The `supports` rows behind "2 apps" under a capability
+   * this scope defines are usually a landscape's, not this page's.
+   *
+   * It has to be a STABLE array: it is a dependency of the page's one memo,
+   * and a fresh one per render would lay the whole sheet out per render.
+   */
+  elsewhere?: readonly Relation[]
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
@@ -126,8 +136,8 @@ export function SheetPage(props: SheetPageProps) {
   }, [onHandle, props.open, sheetId, capture])
 
   const laidOut = useMemo(
-    () => (sheet ? sheetPage(model, sheet) : undefined),
-    [model, sheet],
+    () => (sheet ? sheetPage(model, sheet, props.elsewhere) : undefined),
+    [model, sheet, props.elsewhere],
   )
   const selected = selectedId === undefined
     ? undefined

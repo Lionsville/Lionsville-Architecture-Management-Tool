@@ -51,6 +51,23 @@ describe('coverageOf', () => {
     const found = coverageOf(rows())
     expect([...found.keys()]).toEqual(['picking', 'claims'])
   })
+
+  /**
+   * A sheet at the organisation draws capabilities the organisation defines,
+   * and the applications supporting them are in a landscape's model
+   * (ADR-0012 §2). Without the second list every capability on the
+   * organisation's own page would read as uncovered.
+   */
+  it('counts rows another scope wrote, and counts a row it holds itself once', () => {
+    const ours = rows().filter((row) => row.type !== 'supports')
+    const theirs = rows().filter((row) => row.type === 'supports')
+
+    expect(coverageOf(ours).get('picking')?.coverage).not.toBe('covered')
+    expect(coverageOf(ours, theirs).get('picking'))
+      .toMatchObject({ coverage: 'covered', supportedBy: ['wms', 'scanner'] })
+    // The whole tree includes this scope, so the same row arrives twice.
+    expect(coverageOf(rows(), rows()).get('picking')?.supportedBy).toEqual(['wms', 'scanner'])
+  })
 })
 
 describe('coverageFor', () => {

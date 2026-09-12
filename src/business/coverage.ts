@@ -15,6 +15,13 @@
  * Time is left where ADR-0009 put it. A `supports` row may carry a window, and
  * a caller that cares which day it is asks for the rows that are live then
  * (`model/lifecycle`) and hands those in; this counts what it is given.
+ *
+ * **Rows written in another scope arrive as a second list** (ADR-0012 §2). The
+ * applications that support a capability the ORGANISATION defines live in a
+ * landscape's model, so a sheet drawn at the root has to count rows it does
+ * not hold; the index is what knows where they are, and `business` may not
+ * import `projects`, so they are handed in. Deduplicated by row id, because
+ * the whole tree includes the caller's own scope.
  */
 import type { ElementId, Relation } from '../model'
 
@@ -40,14 +47,21 @@ const NOTHING: FunctionCoverage = { supportedBy: [], assignedTo: [], coverage: '
  * end this scope does not have is ordinary (§5), and dropping it here would
  * make a domain's own sheet say its capabilities are uncovered.
  */
-export function coverageOf(relations: readonly Relation[]): Map<ElementId, FunctionCoverage> {
+export function coverageOf(
+  relations: readonly Relation[],
+  elsewhere: readonly Relation[] = [],
+): Map<ElementId, FunctionCoverage> {
   const found = new Map<ElementId, { supportedBy: ElementId[]; assignedTo: ElementId[] }>()
+  const held = new Set(relations.map((relation) => relation.id))
   const at = (id: ElementId) => {
     const held = found.get(id) ?? { supportedBy: [], assignedTo: [] }
     found.set(id, held)
     return held
   }
-  for (const relation of relations) {
+  for (const relation of [...relations, ...elsewhere]) {
+    // A row this scope also holds is one row, not two: `elsewhere` is a whole
+    // tree's worth and the open scope's own rows are in it.
+    if (elsewhere.includes(relation) && held.has(relation.id)) continue
     if (relation.type === 'supports') at(relation.targetId).supportedBy.push(relation.sourceId)
     if (relation.type === 'assigned') at(relation.targetId).assignedTo.push(relation.sourceId)
   }

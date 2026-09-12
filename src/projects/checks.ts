@@ -168,8 +168,10 @@ export type OwnerDetailField = typeof OWNER_DETAIL[number]
  */
 function detailSaidOn(element: DesignElement, field: OwnerDetailField): boolean {
   switch (field) {
-    // The three every record carries. See the note above.
-    case 'lifecycle': return element.lifecycle !== 'live'
+    // The three every record carries. See the note above. An ABSENT lifecycle
+    // is a hand-written file leaving out what it had nothing to say about, and
+    // reporting it would be reporting the absence of a field.
+    case 'lifecycle': return element.lifecycle !== undefined && element.lifecycle !== 'live'
     case 'isManaged': return element.isManaged === true
     case 'aspects': return Object.keys(element.aspects ?? {}).length > 0
     default: return element[field] !== undefined
@@ -222,14 +224,19 @@ export function identityFindings(index: ScopeIndex): Finding[] {
  * Does no scope above this one define the id?
  *
  * The master is the deepest definition, so "above it" is exactly the
- * declarations — which the index has already worked out. The root proposing
- * something is not a proposal: there is nobody for it to be proposing to.
+ * declarations — which the index has already worked out.
+ *
+ * A master with no ancestor IN THE INDEX is not a proposal: there is nobody
+ * for it to be proposing to. Usually that is the organisation itself; it is
+ * also an index built over a subtree, which a `.lvarch` of one domain and
+ * every test that names its own paths is.
  */
 function proposedAt(master: ScopePath, index: ScopeIndex, id: ElementId): boolean {
-  if (master === '') return false
+  const known = new Set(index.scopes())
+  const above = ancestorScopes(master).filter((path) => known.has(path))
+  if (above.length === 0) return false
   const entry = index.lookup(id)
-  const above = new Set(ancestorScopes(master))
-  return !(entry?.declarations ?? []).some((path) => above.has(path))
+  return !(entry?.declarations ?? []).some((path) => above.includes(path))
 }
 
 /**
@@ -280,7 +287,13 @@ export function documentFindings(deps: {
     }
     // Outside the organisation, and nobody has said whose it is (§4). A gap
     // the tool shows rather than a state it stores.
-    if (element.outside && element.partyId === undefined) {
+    //
+    // Applications only. `partyId` says which ACTOR a thing belongs to, so an
+    // outside actor is the party rather than a thing missing one — Customers
+    // and Regulators on a stakeholder rail are outside by definition, and a
+    // finding on every one of them would be the whole rail underlined in
+    // orange on the day it was drawn.
+    if (element.kind === 'application' && element.outside && element.partyId === undefined) {
       found.push({ key: 'check.unattributed', scope, id: element.id, name: element.name })
     }
     // A master no view in its own scope draws. Information: a record and a

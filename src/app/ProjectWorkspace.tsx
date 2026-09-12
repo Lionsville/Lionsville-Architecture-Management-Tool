@@ -23,7 +23,7 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
 import { CHECK_LABEL, identityFindings } from '../projects/checks'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
-import type { DesignElement } from '../model'
+import type { DesignElement, Relation } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
@@ -475,6 +475,26 @@ export function ProjectWorkspace({
     return found
   }, [index, project.path, s])
 
+  /**
+   * The `supports` and `assigned` rows the rest of the organisation wrote
+   * about the functions this scope defines (ADR-0012 §2).
+   *
+   * What makes "2 apps" under a capability on the ORGANISATION's own sheet
+   * true: the applications are in a landscape's model and the rows with them.
+   * Per function this scope holds rather than the whole tree's rows, so a page
+   * pays for what it draws; memoised on the index and the elements, because
+   * the sheet lays itself out from it and a fresh array per render would lay
+   * the page out per render.
+   */
+  const rowsElsewhere = useMemo(() => {
+    const found: Relation[] = []
+    for (const element of session.model.elements) {
+      if (element.kind !== 'function') continue
+      for (const row of index.rowsTo(element.id, ['supports', 'assigned'])) found.push(row.relation)
+    }
+    return found
+  }, [index, session.model.elements])
+
   const ownership = useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => {
       const held = session.indexed().elements[elementId]
@@ -906,6 +926,7 @@ export function ProjectWorkspace({
         onClose={() => { sheets.close(); leaveIfNothingToDraw() }}
         onHandle={onSheetHandle}
         ownerOf={ownership.ownerOf}
+        elsewhere={rowsElsewhere}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog
