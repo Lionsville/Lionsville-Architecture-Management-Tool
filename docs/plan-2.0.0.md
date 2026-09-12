@@ -72,6 +72,37 @@ this was all for is on screen first.*
 
 ### 3. The business layer
 
+**The model half landed 12 September 2026 (eca944c…581c776).** The kinds, the
+fields, the format-3 fold, `src/business/`, the export's report and the
+agent's vocabulary. What is left of this step is the half that draws: the
+`sheet` view, `ui/SheetPage.tsx`, `ui/FunctionInspector.tsx`,
+`business/sheet.ts` (the laid-out page), `diagram.render` for a sheet, and the
+example's journey and areas. Four things the next stretch has to know:
+
+- **Format 3 cannot hold the business layer, and says so rather than
+  flattening it.** `asStoredElement` throws `element.notInThisFormat` for a
+  `step`, a `function` or a `process`, the way `asConnections` already throws
+  for a `supports` row — the file has nowhere to put one, and writing a
+  `function` as the `application` its figure falls back to would hand a 1.x
+  build a row that is a lie. So **the example cannot be saved as a project
+  until this is answered**, and the answer is a decision rather than a fix:
+  either a `business` key in `model.json` that a 1.x build ignores (the file's
+  own lists stay exactly what they were, and the key goes at format 4), or
+  beta 1 ships the sheet over a model that is only ever in memory, or step 5
+  is brought forward. The interchange is not the same question — it is a
+  contract with other tools and correctly leaves the business layer out.
+- **A sheet is a fourth diagram kind and nothing knows it yet.** `canPlaceKind`
+  answers `ok` for any kind on a view that is not `layer7` or `container`,
+  which is the right default for a laid-out view and is not a rule about
+  sheets; `toInterchange` writes a diagram's kind through unchanged.
+- **`business/` has no `strings/` slice**, because nothing in the model half
+  says a word to anybody. The page brings the first one, and with it a line in
+  `i18n/strings.en.ts` and its three siblings.
+- **A `parentId` that would make a loop is refused by `business/tree.wouldCycle`
+  and nothing calls it yet.** The gesture that re-parents is the sheet's; the
+  agent may not reach `business` and so cannot re-parent at all, which is why
+  `element.update` does not offer `parentId`.
+
 Kinds `actor` (a tree, `outside`), `step`, `function`, `process`;
 `parentId` replaces `parentApplicationId`; `order` where order is a
 decision. `externalSystem`, `inputChannel`, `managementTool` are read from a
