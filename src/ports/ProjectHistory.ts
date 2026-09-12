@@ -13,7 +13,17 @@
  * why every caller is expected to ask it before offering anything.
  */
 import type { ScopeSnapshot } from '../projects/scope'
+import type { HistoryPlace } from '../projects/historyPath'
 import type { ScopePath } from '../projects/scopePath'
+
+/**
+ * One place a subject is filed: a scope, and paths inside its folder.
+ *
+ * The same type `projects/historyPath.ts` answers with, rather than a second
+ * one beside it — a seam that redeclared it would be a shape two files have to
+ * be kept agreeing about.
+ */
+export type { HistoryPlace }
 import type { LabelOutcome } from '../platform/history'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide } from '../platform/sync'
 
@@ -30,12 +40,22 @@ export type HistoryEntry = {
   labels: readonly string[]
 }
 
-/** One thing's worth of a project's history: the project, and its paths. */
-export type HistoryScope = {
-  path: ScopePath
-  /** Relative to the scope's folder; a `*` matches within a name. */
-  paths: readonly string[]
-}
+/**
+ * Everywhere one subject is filed — a LIST of places (ADR-0012 §7).
+ *
+ * One place for most things: a diagram and a decision are one scope's files.
+ * An element's page is not, because an id is organisation-wide: the scope that
+ * answers for it holds the owner's account, and every scope that draws it
+ * holds a perspective of its own. "The history of `erp`" is the union of
+ * those files across the tree, which is what this shape exists to say.
+ *
+ * A list rather than a scope and a flat list of prefixed paths, because it is
+ * the smaller change at both ends: `projects/historyPath.ts` already answers
+ * per scope, and an adapter that binds a scope to a folder already knows how
+ * to prefix one — so it flattens the list and runs the one `git log` it ran
+ * before.
+ */
+export type HistoryScope = readonly HistoryPlace[]
 
 export interface ProjectHistory {
   /** Can this machine keep a history at all? */
@@ -55,11 +75,13 @@ export interface ProjectHistory {
   /**
    * The snapshots, newest first.
    *
-   * With `of`, only the ones that touched one thing (ADR-0008): a project, and
-   * paths inside it as `projects/historyPath.ts` names them. The question is
-   * the adapter's to answer because only it knows how cheaply — a history that
-   * is git answers it in one command, and a history that is not may answer it
-   * by reading every entry, which is its business.
+   * With `of`, only the ones that touched one thing (ADR-0008): the places it
+   * is filed at, as `projects/historyPath.ts` names them — one scope for a
+   * diagram or a decision, and every scope that holds the id for an element's
+   * page (ADR-0012 §7). The question is the adapter's to answer because only
+   * it knows how cheaply — a history that is git answers it in one command,
+   * and a history that is not may answer it by reading every entry, which is
+   * its business.
    */
   entries(limit?: number, of?: HistoryScope): Promise<HistoryEntry[]>
   /**

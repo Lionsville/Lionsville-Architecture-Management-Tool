@@ -50,9 +50,10 @@ export class DesktopProjectHistory implements ProjectHistory {
   }
 
   entries(limit?: number, of?: HistoryScope): Promise<HistoryEntry[]> {
-    // The scope's paths are relative to the project; git wants them relative
-    // to the root, which is the one thing this adapter knows and the seam does not.
-    const paths = of ? of.paths.map((path) => scopeFilePath(of.path, path)) : undefined
+    // Each place's paths are relative to its own scope; git wants them relative
+    // to the root, which is the one thing this adapter knows and the seam does
+    // not. Several places flatten into one list, so it stays one `git log`.
+    const paths = of?.flatMap((place) => place.paths.map((path) => scopeFilePath(place.path, path)))
     return this.git.history(this.root, limit, paths).then((commits) => commits.map((held) => ({
       id: held.sha,
       subject: held.subject,

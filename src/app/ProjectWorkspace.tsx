@@ -592,6 +592,7 @@ export function ProjectWorkspace({
 
   const snapshots = useProjectHistory({
     history: projectHistory,
+    index,
     project: session.snapshot,
     steps: session.history,
     save: forceSave,
@@ -929,6 +930,7 @@ export function ProjectWorkspace({
         current={session.model}
         subject={snapshots.subject}
         onSubjectChange={snapshots.setSubject}
+        scopes={snapshots.places.map((place) => scopeLabel(place.path))}
         onRestore={snapshots.restore}
         onLabel={snapshots.label}
         language={language}

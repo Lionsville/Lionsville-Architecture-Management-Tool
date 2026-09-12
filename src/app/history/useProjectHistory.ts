@@ -14,8 +14,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { draftCommitMessage } from '../../projects/commitMessage'
-import { historyPaths } from '../../projects/historyPath'
-import type { HistorySubject } from '../../projects/historyPath'
+import { historyPlaces } from '../../projects/historyPath'
+import type { HistoryPlace, HistorySubject } from '../../projects/historyPath'
+import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/fromInterchange'
 import { fromArrays } from '../../model/normalised'
@@ -48,6 +49,13 @@ export type ProjectHistoryState = {
   chosen?: { id: string; model?: HostModel }
   /** Whose history the page is showing; absent is the whole project's (ADR-0008). */
   subject?: HistorySubject
+  /**
+   * Every scope the open subject is filed in, this one first (ADR-0012 §7).
+   *
+   * What the page says under the picker — *everywhere this is drawn* — and
+   * empty for the whole scope's history, which is one folder by definition.
+   */
+  places: readonly HistoryPlace[]
   openDialog: () => void
   closeDialog: () => void
   take: (message: string) => void
@@ -69,6 +77,13 @@ export type ProjectHistoryState = {
 
 export function useProjectHistory(deps: {
   history?: ProjectHistory
+  /**
+   * The organisation's index (ADR-0012 §2), for the scopes an element's page
+   * is filed in besides this one. Absent where there is no tree to read, and
+   * the history is then this scope's — which is what it was before the tree
+   * had an index.
+   */
+  index?: ScopeIndex
   /** What is on screen, and how it got there. */
   project: () => ScopeSnapshot
   steps: () => readonly { summary: StepSummary }[]
@@ -82,7 +97,7 @@ export function useProjectHistory(deps: {
   /** A snapshot succeeded. What follows — a push, perhaps — is the caller's. */
   onTaken?: () => void
 }): ProjectHistoryState {
-  const { history, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
+  const { history, index, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
 
   const [available, setAvailable] = useState(false)
   const [keeping, setKeeping] = useState(false)
@@ -92,6 +107,7 @@ export function useProjectHistory(deps: {
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([])
   const [chosen, setChosen] = useState<{ id: string; model?: HostModel } | undefined>(undefined)
   const [subject, setSubjectState] = useState<HistorySubject | undefined>(undefined)
+  const [places, setPlaces] = useState<readonly HistoryPlace[]>([])
 
   /** How much of this session's log the last snapshot already covers. */
   const recorded = useRef(0)
@@ -156,13 +172,18 @@ export function useProjectHistory(deps: {
   const list = useCallback((of: HistorySubject | undefined) => {
     if (!history) return
     const held = project()
-    const paths = of ? historyPaths(of, held.model) : undefined
-    const read = of && !paths ? Promise.resolve([]) : history.entries(undefined, paths && { path: held.path, paths })
+    // Everywhere it is filed, which for an element's page is every scope that
+    // holds the id (ADR-0012 §7) and for everything else is this scope alone.
+    const places = of
+      ? historyPlaces(of, { scope: held.path, model: held.model, ...(index ? { index } : {}) })
+      : undefined
+    setPlaces(places ?? [])
+    const read = of && !places ? Promise.resolve([]) : history.entries(undefined, places)
     void read.then(setEntries, (cause: unknown) => {
       setEntries([])
       notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, project, notify, s])
+  }, [history, project, index, notify, s])
 
   const openPage = useCallback((of?: HistorySubject) => {
     if (!history) return
@@ -224,6 +245,7 @@ export function useProjectHistory(deps: {
     entries,
     chosen,
     subject,
+    places,
     openDialog,
     closeDialog: useCallback(() => setDialogOpen(false), []),
     take,

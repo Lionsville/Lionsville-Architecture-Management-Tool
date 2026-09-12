@@ -118,6 +118,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.by': '{author}',
   'history.subject': 'Verlauf anzeigen von',
   'history.everything': 'Das ganze Projekt',
+  'history.everywhere': 'Überall, wo dies gezeichnet ist: {scopes}',
+  'history.restorePerScope': 'Wiederherstellen setzt zurück, was dieser Bereich hält. Die Seiten der anderen Bereiche gehören jenen Bereichen.',
   'history.diagrams': 'Diagramme',
   'history.descriptions': 'Beschreibungen',
   'history.decisions': 'Entscheidungen',

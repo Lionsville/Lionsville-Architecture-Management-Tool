@@ -62,7 +62,7 @@ export class InMemoryProjectHistory implements ProjectHistory {
   }
 
   entries(limit = 50, of?: HistoryScope): Promise<HistoryEntry[]> {
-    const wanted = of ? of.paths.map((path) => scopeFilePath(of.path, path)) : undefined
+    const wanted = of?.flatMap((place) => place.paths.map((path) => scopeFilePath(place.path, path)))
     const listed = this.snapshots
       .filter((held) => !wanted || (held.touched ?? []).some((path) => wanted.some((pattern) => matches(pattern, path))))
       .slice(0, limit)

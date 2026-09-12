@@ -14,15 +14,25 @@
  * does not. A diagram and a description are keyed by id and do not move, so
  * theirs are plain paths that happen to contain no `*`.
  *
- * Relative to the project folder. Whoever binds this to a working directory
- * (the adapter) prepends the project's own path; this module does not know
- * where the project is, only what is in it.
+ * Relative to a scope's folder. Whoever binds this to a working directory (the
+ * adapter) prepends the scope's own path; this module does not know where a
+ * scope is, only what is in it.
+ *
+ * Since ADR-0012 §7 there is a second answer beside the first:
+ * {@link historyPaths} says where a subject is filed in ONE scope, and
+ * {@link historyPlaces} says everywhere it is filed in the tree — which is a
+ * different question only for an element's page, because an id is
+ * organisation-wide and the scopes that draw it each keep a perspective of
+ * their own.
  */
+import type { ElementId } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import { adrPathPattern } from './adrFile'
 import {
   descriptionPath, diagramStems, DIAGRAMS_FOLDER, GEOMETRY_SUFFIX, MODEL_FILE,
 } from './folderFormat'
+import type { ScopeIndex } from './scopeIndex'
+import type { ScopePath } from './scopePath'
 
 /** One thing a person can ask the history of. */
 export type HistorySubject =
@@ -56,4 +66,63 @@ export function historyPaths(subject: HistorySubject, model: HostModel): string[
       return adr ? [adrPathPattern(adr)] : undefined
     }
   }
+}
+
+/** One scope, and the paths this subject is filed at inside it. */
+export type HistoryPlace = { path: ScopePath; paths: string[] }
+
+/**
+ * Everywhere a subject is filed, across the tree (ADR-0012 §7).
+ *
+ * A diagram and a decision are one scope's files and answer with one place.
+ * An element's page is not: an id is organisation-wide, the scope that answers
+ * for it holds the owner's account, and every scope that draws it holds a
+ * perspective of its own — so "the history of `erp`" is the union of those
+ * files, which ids being global is precisely what makes possible.
+ *
+ * **The owning scope's `model.json` is deliberately not in it.** Every element
+ * in a scope shares that file, so a history of one id that listed every commit
+ * touching any record there would be the scope's history wearing the element's
+ * name. It appears only where the id cannot be a file name, which is the same
+ * coarse-and-honest answer {@link historyPaths} already gives.
+ *
+ * Without an index this is the open scope's own answer, which is what it was
+ * before the tree had one.
+ */
+export function historyPlaces(
+  subject: HistorySubject,
+  deps: { scope: ScopePath; model: HostModel; index?: ScopeIndex },
+): HistoryPlace[] | undefined {
+  const own = historyPaths(subject, deps.model)
+  if (!own) return undefined
+  const here: HistoryPlace = { path: deps.scope, paths: own }
+  if (subject.what !== 'description') return [here]
+  return [here, ...elsewhere(subject.id, deps.scope, deps.index)]
+}
+
+/** Every OTHER scope that holds this id, and its page for it. */
+function elsewhere(
+  id: ElementId, scope: ScopePath, index?: ScopeIndex,
+): HistoryPlace[] {
+  const entry = index?.lookup(id)
+  if (!entry) return []
+  const paths = [
+    ...(entry.master !== undefined ? [entry.master] : []),
+    ...entry.declarations,
+    ...entry.drawnIn,
+  ]
+  return [...new Set(paths)]
+    .filter((path) => path !== scope)
+    .sort()
+    .map((path) => ({ path, paths: [descriptionPath(id) ?? MODEL_FILE] }))
+}
+
+/**
+ * Every scope this subject is filed in, for a page to say where it is looking.
+ *
+ * The places' paths in their own order, which is this scope first and the rest
+ * of the tree after it.
+ */
+export function historyScopes(places: readonly HistoryPlace[]): ScopePath[] {
+  return places.map((place) => place.path)
 }

@@ -118,6 +118,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.by': '{author}',
   'history.subject': 'Toon de geschiedenis van',
   'history.everything': 'Het hele project',
+  'history.everywhere': 'Overal waar dit getekend is: {scopes}',
+  'history.restorePerScope': 'Terugzetten herstelt wat dit niveau heeft. De pagina’s van de andere niveaus horen bij die niveaus.',
   'history.diagrams': 'Aanzichten',
   'history.descriptions': 'Beschrijvingen',
   'history.decisions': 'Besluiten',

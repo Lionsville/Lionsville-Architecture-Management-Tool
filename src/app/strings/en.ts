@@ -186,6 +186,13 @@ export const EN = {
   'history.by': '{author}',
   'history.subject': 'Show the history of',
   'history.everything': 'The whole project',
+  /**
+   * Where a subject's history is coming from, when it is more than one scope
+   * (ADR-0012 §7): an element's page is filed in every scope that holds the
+   * id, and the list is the union of those files' commits.
+   */
+  'history.everywhere': 'Everywhere this is drawn: {scopes}',
+  'history.restorePerScope': 'A restore puts back what this scope holds. The other scopes’ pages are theirs to restore.',
   'history.diagrams': 'Diagrams',
   'history.descriptions': 'Descriptions',
   'history.decisions': 'Decisions',

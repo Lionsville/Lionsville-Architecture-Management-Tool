@@ -333,6 +333,54 @@ describe('the history of one thing (ADR-0008)', () => {
     expect(within(screen.getByTestId('history-list')).getByText('Wrote about billing')).toBeDefined()
   })
 
+  /**
+   * An id is organisation-wide (ADR-0012 §7): the scope that answers for an
+   * element holds the owner's account, and every scope that draws it holds a
+   * perspective of its own. The history of the id is the union of those pages.
+   */
+  it('lists a stand-in’s perspective beside the master’s own page', async () => {
+    const master = (): ScopeSnapshot => ({
+      ...withDescribed(),
+      path: 'acme',
+      model: { ...described(), name: 'Acme' },
+    })
+    // The landscape only DRAWS it: its page for the element is its own account
+    // of what the thing means here, and the owner's is in the scope above.
+    const drawing = (): ScopeSnapshot => ({
+      ...withDescribed(),
+      model: {
+        ...described(),
+        elements: [{ ...described().elements[0], ref: 'acme', description: 'What it means to us.' }],
+      },
+    })
+    const projects = new InMemoryScopeStore([master(), drawing()])
+    renderApp({
+      scopes: projects,
+      initialProject: drawing(),
+      history: new InMemoryProjectHistory([
+        {
+          id: 'c2', subject: 'What billing means to us', at: at + 1000, author: 'W.',
+          touched: ['acme/landscape/docs/billing.md'],
+          projects: [drawing()],
+        },
+        {
+          id: 'c1', subject: 'What billing is', at, author: 'W.',
+          touched: ['acme/docs/billing.md'],
+          projects: [drawing()],
+        },
+      ]),
+    })
+    fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
+    fireEvent.change(await screen.findByLabelText('Show the history of'), { target: { value: 'description:billing' } })
+    const list = await screen.findByTestId('history-list')
+    await waitFor(() => expect(within(list).getByText('What billing means to us')).toBeDefined())
+    expect(within(list).getByText('What billing is')).toBeDefined()
+    // And the page says where it is looking, and that a restore is per scope.
+    const where = await screen.findByTestId('history-everywhere')
+    expect(where.textContent).toContain('acme')
+    expect(where.textContent).toContain('what this scope holds')
+  })
+
   it('says so when no snapshot touched the thing', async () => {
     showDescribed(new InMemoryProjectHistory([
       { id: 'c1', subject: 'Something else', at, author: 'W.', touched: ['acme/landscape/model.json'] },

@@ -118,6 +118,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'history.by': '{author}',
   'history.subject': 'Lit de skiednis sjen fan',
   'history.everything': 'It hiele projekt',
+  'history.everywhere': 'Oeral dêr’t dit tekene is: {scopes}',
+  'history.restorePerScope': 'Weromsette herstelt wat dit nivo hat. De side’s fan de oare nivo’s hearre by dy nivo’s.',
   'history.diagrams': 'Oansichten',
   'history.descriptions': 'Beskriuwings',
   'history.decisions': 'Besluten',

@@ -56,6 +56,15 @@ export type HistoryPageProps = {
   /** Whose history this is; absent is the whole project's. */
   subject?: HistorySubject
   onSubjectChange: (subject: HistorySubject | undefined) => void
+  /**
+   * Every scope the subject is filed in, this one first (ADR-0012 §7).
+   *
+   * An element's page is filed in the scope that answers for it and in every
+   * scope that draws it, so the list below is the union of those files'
+   * commits — and a person looking at it should be able to see that. One entry
+   * or none is the ordinary case and says nothing.
+   */
+  scopes?: readonly string[]
   /** Make the subject, or the whole project, what the chosen snapshot held (ADR-0008). */
   onRestore: () => void
   /** Call the chosen snapshot something (ADR-0008). */
@@ -83,7 +92,8 @@ function when(at: number, language: Language): string {
 
 export function HistoryPage(props: HistoryPageProps) {
   const {
-    open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange, onRestore, onLabel, language, s,
+    open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange,
+    scopes = [], onRestore, onLabel, language, s,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
@@ -193,6 +203,24 @@ export function HistoryPage(props: HistoryPageProps) {
           )}
         </NativeSelect>
       </Box>
+
+      {/* Where the list is coming from, when it is coming from more than one
+          scope (ADR-0012 §7) — and the half of that a person has to know: a
+          restore is one command on one session, so it puts back what THIS
+          scope holds. */}
+      {subject && scopes.length > 1 && (
+        <Box
+          data-testid="history-everywhere"
+          sx={{ px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'action.hover' }}
+        >
+          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+            {s('history.everywhere', { scopes: scopes.join(' · ') })}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+            {s('history.restorePerScope')}
+          </Typography>
+        </Box>
+      )}
 
       <Box sx={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         <Box sx={{ borderRight: 1, borderColor: 'divider', overflowY: 'auto' }}>

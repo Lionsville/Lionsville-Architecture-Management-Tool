@@ -10,7 +10,8 @@ import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../decisions/adr'
 import type { HostModel } from '../model/fromInterchange'
 import { scopeFiles } from './folderFormat'
-import { historyPaths } from './historyPath'
+import { historyPaths, historyPlaces, historyScopes } from './historyPath'
+import { indexScopes } from './scopeIndex'
 import type { ScopeSnapshot } from './scope'
 
 const decision = (over: Partial<Adr> = {}): Adr => ({
@@ -112,5 +113,47 @@ describe('what a subject is filed as', () => {
 
   it('has no answer for a decision the model does not hold', () => {
     expect(historyPaths({ what: 'decision', id: 'nobody' }, model())).toBeUndefined()
+  })
+})
+
+/**
+ * An id is organisation-wide, so an element's page is filed in every scope
+ * that holds it (ADR-0012 §7): the owner's account where it is defined, and a
+ * perspective wherever it is drawn.
+ */
+describe('everywhere a subject is filed', () => {
+  const tree = indexScopes([
+    { path: 'acme', model: { elements: [{ id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} }], relations: [] } },
+    { path: 'acme/landscape', model: { elements: [{ id: 'billing', kind: 'application', name: 'Billing', ref: 'acme', lifecycle: 'live', isManaged: true, aspects: {} }], relations: [] } },
+    { path: 'acme/retail', model: { elements: [{ id: 'billing', kind: 'application', name: 'Billing', ref: 'acme', lifecycle: 'live', isManaged: true, aspects: {} }], relations: [] } },
+  ])
+
+  it('takes an element’s page from every scope that holds the id, this one first', () => {
+    const places = historyPlaces(
+      { what: 'description', id: 'billing' },
+      { scope: 'acme/landscape', model: model(), index: tree },
+    )
+    expect(places).toEqual([
+      { path: 'acme/landscape', paths: ['docs/billing.md'] },
+      { path: 'acme', paths: ['docs/billing.md'] },
+      { path: 'acme/retail', paths: ['docs/billing.md'] },
+    ])
+    expect(historyScopes(places!)).toEqual(['acme/landscape', 'acme', 'acme/retail'])
+  })
+
+  /** A diagram and a decision are one scope's files, whatever the tree says. */
+  it('leaves a diagram and a decision where they are', () => {
+    const deps = { scope: 'acme/landscape', model: model(), index: tree }
+    expect(historyPlaces({ what: 'diagram', id: 'landscape' }, deps)).toHaveLength(1)
+    expect(historyPlaces({ what: 'decision', id: 'adr-7' }, deps)).toHaveLength(1)
+  })
+
+  it('is this scope’s own answer with no tree to read', () => {
+    expect(historyPlaces({ what: 'description', id: 'billing' }, { scope: 'acme/landscape', model: model() }))
+      .toEqual([{ path: 'acme/landscape', paths: ['docs/billing.md'] }])
+  })
+
+  it('has nothing to ask by for a subject the model no longer holds', () => {
+    expect(historyPlaces({ what: 'decision', id: 'gone' }, { scope: '', model: model() })).toBeUndefined()
   })
 })
