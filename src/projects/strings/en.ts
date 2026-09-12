@@ -40,6 +40,27 @@ export const EN = {
    * The words live here because `projects/` is where a stand-in is defined —
    * every other module is handed the sentence rather than the key.
    */
+  'check.short.conflict.one': '{count} conflict',
+  'check.short.conflict.other': '{count} conflicts',
+  'check.short.drift.one': '{count} drifting',
+  'check.short.drift.other': '{count} drifting',
+  'check.short.dangling.one': '{count} undefined',
+  'check.short.dangling.other': '{count} undefined',
+  'check.short.danglingEnd.one': '{count} loose row',
+  'check.short.danglingEnd.other': '{count} loose rows',
+  'check.short.proposal.one': '{count} proposal',
+  'check.short.proposal.other': '{count} proposals',
+  'check.short.ownedElsewhere.one': '{count} owned elsewhere',
+  'check.short.ownedElsewhere.other': '{count} owned elsewhere',
+  'check.short.unattributed.one': '{count} unattributed',
+  'check.short.unattributed.other': '{count} unattributed',
+  'check.short.notDrawn.one': '{count} on no board',
+  'check.short.notDrawn.other': '{count} on no board',
+  'check.short.unmapped.one': '{count} unmapped',
+  'check.short.unmapped.other': '{count} unmapped',
+  'check.short.uncovered.one': '{count} uncovered',
+  'check.short.uncovered.other': '{count} uncovered',
+
   'standIn.definedIn': 'Defined in {scope} — its detail is answered for there.',
   'standIn.open': 'Open {scope}',
   /** Under a stand-in's name on a card, small: where the thing really lives. */

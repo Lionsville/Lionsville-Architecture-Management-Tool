@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import { EditorRefused, SolutionDesignEditor } from '../editor'
-import type { EditorHandle, EditorOwnership } from '../editor'
+import type { EditorHandle, EditorOwnership, StandInNote } from '../editor'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
@@ -21,6 +21,7 @@ import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
+import { CHECK_LABEL, identityFindings } from '../projects/checks'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
 import type { DesignElement } from '../model'
 import { transitionLabel } from '../model/transition'
@@ -437,25 +438,65 @@ export function ProjectWorkspace({
    * list of fields and the words come from `projects/` and the way out comes
    * from `App` — which is the one thing that knows how to open a scope.
    */
+  /**
+   * What every card on this board says about a record another scope defines
+   * (ADR-0012 §3, §9) — one entry per stand-in, and one fold over the tree.
+   *
+   * Keyed on the INDEX and not on the model, which is what makes it affordable:
+   * the index is rebuilt twice a session, so a card's note is the same object
+   * from one keystroke to the next and `React.memo` below the canvas holds.
+   * Computing a note per element per derive is precisely what ADR-0004
+   * measured and took out of this path.
+   *
+   * The consequence is that a record linked a second ago draws as a definition
+   * until the tree is read again. The inspector beside it says otherwise at
+   * once, because it asks the live record; that difference is the right way
+   * round — the panel is where a person is looking.
+   */
+  const notes = useMemo(() => {
+    const bySubject = new Map<string, string>()
+    for (const finding of identityFindings(index)) {
+      if (finding.scope !== project.path || bySubject.has(finding.id)) continue
+      bySubject.set(finding.id, s(CHECK_LABEL[finding.key], {
+        name: finding.name,
+        scope: finding.scopes?.[0] || s('common.organisation'),
+      }))
+    }
+    const found = new Map<string, StandInNote>()
+    for (const entry of index.entries()) {
+      if (!entry.drawnIn.includes(project.path)) continue
+      const owner = entry.master ?? ''
+      const warning = bySubject.get(entry.id)
+      found.set(entry.id, {
+        from: s('standIn.from', { scope: owner || s('common.organisation') }),
+        ...(warning !== undefined ? { warning } : {}),
+      })
+    }
+    return found
+  }, [index, project.path, s])
+
   const ownership = useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => {
       const held = session.indexed().elements[elementId]
       const rights = mayEdit(elementId, project.path, index, held)
       if (rights.all) return undefined
-      const label = rights.owner === undefined
-        ? s('common.organisation')
-        : rights.owner || s('common.organisation')
+      // The scope this record SAYS defines it, where the tree cannot say —
+      // a dangling stand-in still points somewhere, and the cached path is
+      // the only address anybody wrote down.
+      const owner = rights.owner ?? held?.ref
       return {
-        label,
+        label: owner === undefined ? s('common.organisation') : owner || s('common.organisation'),
         fields: FIXED_ON_A_STANDIN,
-        // A dangling stand-in has nowhere to go, and offering to open the
-        // organisation instead would be offering the wrong scope.
+        // A stand-in nobody defines has nowhere to go, and offering to open
+        // the scope its cache names would be offering a folder that is not
+        // there. *Link* is the repair, and it is step 10's.
         ...(rights.owner !== undefined && onOpenScope
           ? { onOpen: () => onOpenScope(rights.owner!) }
           : {}),
       }
     },
-  }), [session, project.path, index, onOpenScope, s])
+    noteFor: (elementId) => notes.get(elementId),
+  }), [session, project.path, index, notes, onOpenScope, s])
 
   const snapshots = useProjectHistory({
     history: projectHistory,

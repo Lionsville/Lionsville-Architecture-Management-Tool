@@ -162,3 +162,61 @@ describe('the tree', () => {
     ])
   })
 })
+
+/**
+ * The finding line the tree waited a whole beta for (ADR-0012 §9).
+ *
+ * What matters here beyond the words: the whole organisation is folded ONCE
+ * and every row reads a map, and a conflict is a finding on both scopes,
+ * because neither of them is the one that is wrong.
+ */
+describe('what a row says the tree contradicts', () => {
+  function element(id: string, name: string, ref?: string) {
+    return {
+      id, kind: 'application' as const, name, lifecycle: 'live' as const,
+      isManaged: false, aspects: {}, ...(ref !== undefined ? { ref } : {}),
+    }
+  }
+
+  /**
+   * `retail` and `finance` are both one level down, so each defining `erp` is
+   * a tie and therefore a conflict — two definitions at DIFFERENT depths are
+   * a master and a declaration, and no finding at all. Finance also holds a
+   * stand-in of something nobody defines.
+   */
+  const withFindings = () => {
+    const held = TREE()
+    const at = (path: string) => held.find((scope) => scope.path === path)!
+    at('retail').model.elements = [element('erp', 'ERP')]
+    at('finance').model.elements = [
+      element('erp', 'Finance ERP'),
+      element('crm', 'CRM', 'sales'),
+    ]
+    return held
+  }
+
+  it('counts the findings on the scope each is about', async () => {
+    show(withFindings())
+    const finance = await screen.findByTestId('findings-finance')
+    expect(finance.textContent).toContain('1 conflict')
+    expect(finance.textContent).toContain('1 undefined')
+  })
+
+  it('puts a conflict on both scopes, since neither is the wrong one', async () => {
+    show(withFindings())
+    await screen.findByTestId('findings-finance')
+    expect(screen.getByTestId('findings-retail').textContent).toContain('1 conflict')
+  })
+
+  it('says nothing at all about a scope with nothing wrong', async () => {
+    show(withFindings())
+    await screen.findByTestId('findings-finance')
+    expect(screen.queryByTestId('findings-retail/warehouse')).toBeNull()
+  })
+
+  it('says nothing on a tree nobody has found anything in', async () => {
+    show()
+    await screen.findByTestId('scope-finance')
+    expect(screen.queryByTestId('findings-finance')).toBeNull()
+  })
+})

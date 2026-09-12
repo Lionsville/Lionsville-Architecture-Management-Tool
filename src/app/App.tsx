@@ -27,6 +27,7 @@ import {
 import type {
   ProjectOrder, ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary,
 } from '../projects/scope'
+import { findingsByScope, identityFindings } from '../projects/checks'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
 import {
@@ -565,6 +566,18 @@ export function App({
     )
   }, [projects, enter])
 
+  /**
+   * What the organisation contradicts about itself, by scope (ADR-0012 §9).
+   *
+   * One fold over the index for the whole tree, memoised on it — a row that
+   * asked for its own would be a fold per row, and there is one row per scope.
+   * Only the findings the index alone can answer are in here; the ones that
+   * need a scope's own records belong to the scope that is open.
+   */
+  const treeFindings = useMemo(
+    () => findingsByScope(identityFindings(tree.index)), [tree.index],
+  )
+
   const leaveProject = useCallback(() => {
     setProject(undefined)
     setInitialPage(undefined)
@@ -836,6 +849,7 @@ export function App({
               onCommand: bus.send,
             }}
             agent={agentBar}
+            findings={treeFindings}
             today={todayDay}
             language={prefs.language}
             s={s}

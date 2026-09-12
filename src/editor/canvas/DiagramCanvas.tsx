@@ -36,7 +36,7 @@ import { nodeTypes } from '../nodes/nodeTypes';
 import { LogoMark, useResolvedLogo } from '../nodes/logoRegistry';
 import { LogoPickerPopover } from './LogoPickerPopover';
 import { FloatingEdge } from '../edges/FloatingEdge';
-import type { ElementNode } from '../nodes/nodeData';
+import type { ElementNode, StandInNote } from '../nodes/nodeData';
 import type { DesignDiagram, DesignModel, ElementId, ElementKind, Point, Rect } from '../../model/types';
 import {
   EMPTY_SELECTION,
@@ -258,6 +258,14 @@ export interface DiagramCanvasProps {
   /** Lifecycle-badge toggle (U5, editor-level): shows badges + the retired dim. */
   showLifecycle: boolean;
   /**
+   * What a card says about a record another scope defines (ADR-0012 §3).
+   *
+   * Passed straight to `buildNodes`; see {@link ../graph.BuildGraphArgs.noteFor}
+   * for the identity rule it has to keep. Absent on a canvas with no scope tree
+   * behind it, which is every canvas test.
+   */
+  noteFor?(elementId: ElementId): StandInNote | undefined;
+  /**
    * Live auto-routing is on for this diagram. The canvas uses it for ONE thing:
    * while it is on, an edge incident to a dragging node renders waypoint-free so
    * it follows the cursor. With it off the user's routes must not visibly
@@ -463,11 +471,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         edgeColor: tokens.edge.stroke,
         showLifecycle: props.showLifecycle,
         asOfDay,
+        noteFor: props.noteFor,
       }, lastNodes.current);
       lastNodes.current = next;
       return next;
     },
-    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay],
+    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor],
   );
   const derivedEdges = useMemo(
     () => {

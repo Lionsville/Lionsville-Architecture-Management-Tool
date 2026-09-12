@@ -32,7 +32,9 @@ import { plural } from '../../i18n/strings'
 import type { Language, Translate } from '../../i18n'
 import { countScopes, newestChange, sortScopes } from '../../projects/scope'
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
+import type { Finding } from '../../projects/checks'
 import { ROOT_SCOPE } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
@@ -68,6 +70,15 @@ export type OrganisationScreenProps = {
   /** The menu, for a host that has no menu bar — where theme and language are. */
   overflow?: ToolbarOverflow
   agent?: ToolbarAgent
+  /**
+   * What the tree contradicts about itself, by scope (ADR-0012 §9).
+   *
+   * Handed in already worked out, because the index behind it belongs to the
+   * shell and outlives this screen — and because one fold over the
+   * organisation serves every row. Absent means nothing has been read yet, and
+   * a row then says nothing about findings rather than saying there are none.
+   */
+  findings?: ReadonlyMap<ScopePath, readonly Finding[]>
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
@@ -77,7 +88,7 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
-  overflow, agent, today, language, s, windowChrome = NO_WINDOW_CHROME,
+  overflow, agent, findings, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, root, ready, dialog } = organisation
 
@@ -219,6 +230,7 @@ export function OrganisationScreen({
                 onAddUnder={organisation.addUnder}
                 onSettings={organisation.editScope}
                 onDelete={organisation.askDelete}
+                findings={findings}
                 language={language}
                 s={s}
               />

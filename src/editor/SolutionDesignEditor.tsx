@@ -13,6 +13,7 @@ import type { StringKey, Translate } from '../i18n';
 import type { ExportLegend } from './props';
 import { EditorRefused } from './props';
 import type { EditorHandle, EditorRequests, SolutionDesignEditorProps } from './props';
+import type { StandInNote } from './nodes/nodeData';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
@@ -1198,6 +1199,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           showGrid={showGrid}
           onToggleShowGrid={() => setShowGrid((on) => !on)}
           showLifecycle={showLifecycle}
+          noteFor={props.ownership?.noteFor}
           showMinimap={showMinimap}
           showEdgeLabels={exportOptions ? exportOptions.showLabels : showEdgeLabels}
           mountEveryElement={capturing || exportOptions !== undefined}
@@ -1476,6 +1478,7 @@ function CanvasForDiagram({
   showGrid,
   onToggleShowGrid,
   showLifecycle,
+  noteFor,
   showMinimap,
   showEdgeLabels,
   mountEveryElement,
@@ -1508,6 +1511,8 @@ function CanvasForDiagram({
   showGrid: boolean;
   onToggleShowGrid(): void;
   showLifecycle: boolean;
+  /** See `EditorOwnership.noteFor` (ADR-0012 §3). Absent = no scope tree. */
+  noteFor?(elementId: ElementId): StandInNote | undefined;
   showMinimap: boolean;
   showEdgeLabels: boolean;
   /** See `DiagramCanvasProps.mountEveryElement`: true while a PNG is captured. */
@@ -1546,6 +1551,7 @@ function CanvasForDiagram({
     showGrid,
     onToggleShowGrid,
     showLifecycle,
+    noteFor,
     showMinimap,
     showEdgeLabels,
     mountEveryElement,

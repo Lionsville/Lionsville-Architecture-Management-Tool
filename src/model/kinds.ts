@@ -72,14 +72,19 @@ export const NODE_FIGURES: readonly NodeFigure[] = [
  * thing with a name and a description has always had.
  */
 export function nodeFigure(
-  element: Pick<DesignElement, 'kind' | 'outside'>,
+  element: Pick<DesignElement, 'kind' | 'outside' | 'ref'>,
   zone?: Layer7Zone,
 ): NodeFigure {
   if (element.kind === 'actor' || element.kind === 'component') return element.kind
   if (zone === 'inputChannels') return 'inputChannel'
   if (zone === 'management') return 'managementTool'
   if (zone === 'externalSystems') return 'externalSystem'
-  return element.outside ? 'externalSystem' : 'application'
+  // "A stand-in from another domain" is the second half of what the
+  // `externalSystem` figure is for (ADR-0012 §4): not the subject of this
+  // board. It is a different fact from `outside` — somebody in this
+  // organisation does own it, just not this scope — and they draw the same,
+  // because what the look says is "somebody else's", which is true of both.
+  return element.outside || element.ref !== undefined ? 'externalSystem' : 'application'
 }
 
 /**

@@ -5,7 +5,7 @@ import { useTheme } from '@mui/material/styles';
 import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
 import { useStrings } from '../../i18n/LanguageContext';
-import { GlobeGlyph } from './glyphs';
+import { GlobeGlyph, WarningGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
 
@@ -17,7 +17,7 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
 }: ElementNodeProps) {
   const { t } = useStrings();
   const tokens = getNodeTokens(useTheme());
-  const { element } = data;
+  const { element, note } = data;
   return (
     <NodeShell
       element={element}
@@ -45,8 +45,24 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
           size={iconSlotSize(element, 13)}
           fallback={<GlobeGlyph />}
         />
-        <Typography sx={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8 }}>{t('node.external')}</Typography>
+        <Typography sx={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8 }}>
+          {note ? note.from : t('node.external')}
+        </Typography>
         <Box sx={{ flex: 1 }} />
+        {/* Drift, or a stand-in nobody defines (ADR-0012 §9). A glyph and the
+            finding's own sentence as its title: it is worth noticing on a
+            board of two hundred cards and is never a reason to stop. */}
+        {note?.warning && (
+          <Box
+            component="span"
+            data-testid="stand-in-warning"
+            title={note.warning}
+            aria-label={note.warning}
+            sx={{ display: 'inline-flex', color: 'warning.main' }}
+          >
+            <WarningGlyph size={11} />
+          </Box>
+        )}
         {element.vendor && (
           <Typography sx={{ fontSize: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 70 }}>
             {element.vendor}

@@ -14,6 +14,7 @@ import type { IdPolicy } from '../model/keys';
 import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
+import type { StandInNote } from './nodes/nodeData';
 import type {
   DesignModel, DiagramSettings, DocumentImage, ElementId,
   Rect, UploadedLogo,
@@ -343,6 +344,18 @@ export interface EditorOwnership {
     /** Open that scope. Absent where the host cannot — a test, a read-only shell. */
     onOpen?(): void;
   } | undefined;
+  /**
+   * What a CARD says about the same record: where it is from, and any finding
+   * about it as a sentence.
+   *
+   * A second question rather than a field on the first, because the two are
+   * asked on different clocks. The inspector asks about one record per render
+   * and wants the live answer; the canvas asks about every record on the board
+   * and compares what it is given BY IDENTITY, so this one has to hand back
+   * the same object until the tree changes — see
+   * {@link ../editor/nodes/nodeData.StandInNote}.
+   */
+  noteFor(elementId: ElementId): StandInNote | undefined;
 }
 
 export interface SolutionDesignEditorProps {

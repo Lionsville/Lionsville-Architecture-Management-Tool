@@ -93,6 +93,26 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
 }
 
 /**
+ * The same findings counted rather than said — "2 conflicts · 1 drifting".
+ *
+ * A second table because a line that counts wants a noun and a line that
+ * explains wants a sentence, and one string cannot be both. One pair per
+ * finding, because every language this ships in tells one from many.
+ */
+export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }> = {
+  'check.conflict': { one: 'check.short.conflict.one', other: 'check.short.conflict.other' },
+  'check.drift': { one: 'check.short.drift.one', other: 'check.short.drift.other' },
+  'check.dangling': { one: 'check.short.dangling.one', other: 'check.short.dangling.other' },
+  'check.danglingEnd': { one: 'check.short.danglingEnd.one', other: 'check.short.danglingEnd.other' },
+  'check.proposal': { one: 'check.short.proposal.one', other: 'check.short.proposal.other' },
+  'check.ownedElsewhere': { one: 'check.short.ownedElsewhere.one', other: 'check.short.ownedElsewhere.other' },
+  'check.unattributed': { one: 'check.short.unattributed.one', other: 'check.short.unattributed.other' },
+  'check.notDrawn': { one: 'check.short.notDrawn.one', other: 'check.short.notDrawn.other' },
+  'check.unmapped': { one: 'check.short.unmapped.one', other: 'check.short.unmapped.other' },
+  'check.uncovered': { one: 'check.short.uncovered.one', other: 'check.short.uncovered.other' },
+}
+
+/**
  * One finding: what it is, where, and about what.
  *
  * `scope` is the scope the finding is ABOUT — the one holding the record that

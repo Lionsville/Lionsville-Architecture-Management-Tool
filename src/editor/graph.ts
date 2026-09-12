@@ -1,6 +1,6 @@
 import { MarkerType, type Edge } from '@xyflow/react';
 import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, Rect } from '../model/types';
-import type { ElementNode, ElementNodeData } from './nodes/nodeData';
+import type { ElementNode, ElementNodeData, StandInNote } from './nodes/nodeData';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
 import type { EdgeAnchors } from '../model/floatingEdgeMath';
 import { aspectConfigFor } from '../model/aspects';
@@ -77,6 +77,18 @@ export interface BuildGraphArgs {
    * two functions without naming a day.
    */
   asOfDay?: string;
+  /**
+   * What a card says about a record another scope defines (ADR-0012 §3).
+   *
+   * A function rather than a map, so the caller decides what it is keyed on —
+   * and it MUST hand back the same object until something about it changes,
+   * because that identity is what keeps every card on the board out of a
+   * re-render (see {@link ../nodes/nodeData.StandInNote}).
+   *
+   * Absent means no scope tree, which is a landscape opened on its own and
+   * every canvas test.
+   */
+  noteFor?(elementId: ElementId): StandInNote | undefined;
 }
 
 const BOUNDARY_PADDING = 56;
@@ -101,6 +113,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     const isBoundary =
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
     const figure = nodeFigure(element, placement.zone);
+    const note = args.noteFor?.(element.id);
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
       : placementRect(figure, placement);
@@ -129,6 +142,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
         },
         showLifecycle: args.showLifecycle ?? true,
         phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
+        ...(note !== undefined ? { note } : {}),
       },
     });
   }
@@ -385,6 +399,10 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
     held.hasContainerDiagram === next.hasContainerDiagram &&
     held.showLifecycle === next.showLifecycle &&
     held.phase === next.phase &&
+    // By identity: see `StandInNote`. The supplier holds one object per record
+    // and replaces it only when the tree changes, so this costs one comparison
+    // rather than two string compares per card per derive.
+    held.note === next.note &&
     held.resizeLimits.min.width === next.resizeLimits.min.width &&
     held.resizeLimits.min.height === next.resizeLimits.min.height &&
     held.resizeLimits.max.width === next.resizeLimits.max.width &&

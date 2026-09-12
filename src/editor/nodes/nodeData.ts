@@ -1,6 +1,22 @@
 import type { Node, NodeProps } from '@xyflow/react';
 import type { AspectConfigEntry, DesignElement, PlacedNode, Lifecycle } from '../../model/types';
 
+/**
+ * What a card says about a record another scope defines (ADR-0012 §3).
+ *
+ * Two sentences, already in the reader's language: the editor may not know a
+ * scope tree exists, so it is handed the words rather than the paths. The
+ * OBJECT is what `sameNodeData` compares, so whoever supplies it must hand
+ * back the same one until something about it changes — a fresh object per
+ * derive is what ADR-0004 measured and removed from every card on the board.
+ */
+export interface StandInNote {
+  /** "from acme/retail" — where the thing is really defined. */
+  from: string;
+  /** A finding about this record, as its sentence: drift, or dangling. */
+  warning?: string;
+}
+
 /** Shared payload for every element node on the canvas. */
 export interface ElementNodeData extends Record<string, unknown> {
   element: DesignElement;
@@ -27,6 +43,8 @@ export interface ElementNodeData extends Record<string, unknown> {
    * costs one comparison.
    */
   phase: Lifecycle;
+  /** See {@link StandInNote}. Absent on a record this scope defines. */
+  note?: StandInNote;
 }
 
 export type ElementNode = Node<ElementNodeData>;

@@ -44,6 +44,8 @@ export type {
   EditorRequests,
   EditorHandle, EditorRefusal, ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
 } from './props'
+/** What a card says about a record another scope defines (ADR-0012 §3). */
+export type { StandInNote } from './nodes/nodeData'
 /**
  * The maturity-column list, on its own. The shell keeps its own defaults —
  * "what a new landscape starts with" — and edits them with the same component
