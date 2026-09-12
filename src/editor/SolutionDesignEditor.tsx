@@ -1251,6 +1251,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               onOpenDocumentation={openDocumentation}
               onReplace={readOnly ? undefined : props.plans?.onReplace}
               owned={props.ownership?.ownerOf(state.selectedElement.id)}
+              move={moveFor(props.ownership, state.selectedElement.id)}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector
@@ -1361,6 +1362,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
               onReplace={readOnly ? undefined : props.plans?.onReplace}
               owned={props.ownership?.ownerOf(element.id)}
+              move={moveFor(props.ownership, element.id)}
               layout="stacked"
               hideDescription
             />
@@ -1420,6 +1422,27 @@ function EditorBody(props: SolutionDesignEditorProps) {
  * and what the badge colours mean on a landscape, the lifecycle colours on
  * any board that draws them. A board with nothing to explain gets no key.
  */
+/**
+ * The *Move…* button for one record, or nothing (ADR-0012 §10).
+ *
+ * Asked per element rather than handed down as a prop, because whether there
+ * is anywhere to move a record to is a question about the tree and the tree
+ * changes under a live session. The words are the host's; the editor only
+ * decides where the button goes.
+ */
+function moveFor(
+  ownership: SolutionDesignEditorProps['ownership'],
+  elementId: ElementId,
+): { label: string; tip: string; onMove(): void } | undefined {
+  const gestures = ownership?.gestures
+  if (!gestures?.offered(elementId)) return undefined
+  return {
+    label: gestures.label,
+    tip: gestures.tip,
+    onMove: () => gestures.onMove(elementId),
+  }
+}
+
 function exportLegendFor(
   diagram: DesignDiagram,
   theme: Theme,

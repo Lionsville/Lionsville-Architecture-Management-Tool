@@ -67,6 +67,24 @@ function organisation(): ScopeSnapshot {
   }
 }
 
+/** The same organisation, with two applications under it in a domain. */
+function withApplications(): ScopeSnapshot[] {
+  const app = (id: string, name: string, over = {}) =>
+    ({ id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: false, aspects: {}, ...over })
+  return [
+    organisation(),
+    {
+      ...scope('retail', 'Retail'),
+      model: {
+        name: 'Retail',
+        elements: [app('wms', 'Warehouse system'), app('post', 'Post office', { outside: true })],
+        relations: [],
+        diagrams: [board()],
+      },
+    },
+  ]
+}
+
 describe('the organisation screen — identity', () => {
   it('shows the root scope as the screen, name and description and links', async () => {
     renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
@@ -134,13 +152,23 @@ describe('the organisation screen — its own pages', () => {
     expect(cards.textContent).toContain('was due to finish on 2026-08-01')
   })
 
-  /** Beta 3's. A number here would be the one untrue thing on the screen. */
-  it('draws the register as a placeholder with no count and no way in', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+  /**
+   * The one card about the WHOLE tree (ADR-0012 §2). Its numbers come from the
+   * index the shell already holds, not from a load of its own — which is why
+   * it can count applications the root's own document has none of.
+   */
+  it('counts the register over every scope, and opens it', async () => {
+    renderApp({ scopes: new InMemoryScopeStore(withApplications()), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
-    expect(cards.textContent).toContain('Arrives with the register')
-    // Three ways in, not four.
-    expect(within(cards).getAllByRole('button')).toHaveLength(3)
+    await waitFor(() => expect(cards.textContent).toContain('2 applications'))
+    expect(cards.textContent).toContain('2 owned by a domain')
+    expect(cards.textContent).toContain('1 outside')
+    expect(cards.textContent).toContain('1 outside and unattributed')
+
+    fireEvent.click(within(cards).getByTestId('open-register'))
+    const table = await screen.findByTestId('register-table')
+    expect(within(table).getByTestId('register-master-wms').textContent).toBe('retail')
+    expect(table.textContent).toContain('Post office')
   })
 
   it('opens the root on the page the card was pressed for', async () => {

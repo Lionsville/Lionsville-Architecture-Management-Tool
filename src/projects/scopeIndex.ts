@@ -105,6 +105,17 @@ export type IndexEntry = {
    * a stand-in.
    */
   conflict?: ScopePath[]
+  /**
+   * Nobody in this organisation owns it, as the master's record says (§4).
+   *
+   * Here rather than looked up per row, because the register draws it for
+   * every application in the tree and the index has already read every record
+   * to build this. The same reasoning as `name`: what is cheap in the one pass
+   * is expensive as a load per card.
+   */
+  outside?: true
+  /** Which actor an outside application belongs to, where that has been said. */
+  partyId?: ElementId
 }
 
 /** One row, and the scope whose `model.json` holds it. */
@@ -177,8 +188,13 @@ export const EMPTY_INDEX: ScopeIndex = indexScopes([])
 export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   type Held = {
     id: ElementId
-    definitions: { path: ScopePath; depth: number; kind: ElementKind; name: string }[]
+    definitions: Definition[]
     standIns: { path: ScopePath; kind: ElementKind; name: string; ref: string }[]
+  }
+
+  type Definition = {
+    path: ScopePath; depth: number; kind: ElementKind; name: string
+    outside?: true; partyId?: ElementId
   }
 
   const held = new Map<ElementId, Held>()
@@ -199,7 +215,11 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       taken.add(element.id)
       const row = at(element.id)
       if (element.ref === undefined) {
-        row.definitions.push({ path, depth, kind: element.kind, name: element.name })
+        row.definitions.push({
+          path, depth, kind: element.kind, name: element.name,
+          ...(element.outside ? { outside: element.outside } : {}),
+          ...(element.partyId !== undefined ? { partyId: element.partyId } : {}),
+        })
       } else {
         row.standIns.push({ path, kind: element.kind, name: element.name, ref: element.ref })
       }
@@ -238,6 +258,10 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       name: named?.name ?? row.id,
       ...(master ? { master: master.path } : {}),
       declarations: definitions.slice(tied.length).map((one) => one.path),
+      // The master's, not the tree's: a declaration above it is a cache, and
+      // a stand-in may not carry either of these at all (§3).
+      ...(master?.outside ? { outside: master.outside } : {}),
+      ...(master?.partyId !== undefined ? { partyId: master.partyId } : {}),
       drawnIn: row.standIns.map((one) => one.path),
       stale,
       ...(tied.length > 1 ? { conflict: tied.map((one) => one.path).sort() } : {}),

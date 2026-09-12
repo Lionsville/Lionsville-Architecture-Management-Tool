@@ -1,14 +1,14 @@
 /**
  * The organisation's own pages, as a row of cards.
  *
- * Four of them, and only three are real. The register is derived over the whole
- * tree from an index that arrives in beta 3 (ADR-0012 §9), so its card says so
- * in one line and offers nothing — an honest placeholder is better than a
- * number that was not derived from anything, and a card that quietly showed
- * `0` would be the only untrue thing on this screen.
+ * Four of them, and one of the four is not like the others. Business,
+ * decisions and the roadmap are about the ROOT's own document and come from
+ * {@link organisationPages}, which is one read of it; the register is about
+ * the whole tree and comes from the index the shell already holds
+ * (ADR-0012 §2). Neither is a load of its own, which is the point: a load per
+ * card is the shape ADR-0004 keeps catching.
  *
- * Every count comes from {@link organisationPages}, which is one read of the
- * root's own document. Nothing here loads, and nothing here counts.
+ * Nothing here loads, and nothing here counts.
  */
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -23,14 +23,25 @@ import { CHECK_SENTENCE, PLAN_STATUS_LABEL } from '../../roadmap'
 import { RELATION_LABEL } from '../../model'
 import { DecisionIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
+import type { RegisterSummary } from './register'
 
 export type OrganisationCardsProps = {
   pages: OrganisationPages
   /** The root has been read at least once. Before that the cards say nothing. */
   ready: boolean
+  /**
+   * The register's own numbers (ADR-0012 §2).
+   *
+   * From the index rather than from a load, which is why this card can say
+   * something about the WHOLE tree while the other three speak for the root's
+   * own document: the index is one pass over every `model.json`, held by the
+   * shell and already read.
+   */
+  register: RegisterSummary
   onOpenBusiness: () => void
   onOpenDecisions: () => void
   onOpenRoadmap: () => void
+  onOpenRegister: () => void
   s: Translate
 }
 
@@ -68,7 +79,7 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, onOpenBusiness, onOpenDecisions, onOpenRoadmap, s,
+  pages, ready, register, onOpenBusiness, onOpenDecisions, onOpenRoadmap, onOpenRegister, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -154,12 +165,31 @@ export function OrganisationCards({
         )}
       />
 
-      {/* Beta 3's, and drawn rather than left out: a person who can see where
-          the register will be is not wondering whether it exists. */}
+      {/* The one card that is about the whole tree rather than about the
+          root's own document — the register is derived over every scope
+          (ADR-0012 §2), so its numbers come from the index and not from a
+          load of its own. */}
       <OnePage
         icon={<RegisterIcon />}
         title={s('org.register')}
-        finding={s('org.registerSoon')}
+        count={[
+          plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, register.applications),
+          plural(s, { one: 'register.ownedOne', other: 'register.ownedOther' }, register.ownedByADomain),
+          plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, register.outside),
+        ].join(' · ')}
+        finding={[
+          register.definedTwice > 0
+            ? plural(s, { one: 'register.definedTwiceOne', other: 'register.definedTwiceOther' }, register.definedTwice)
+            : '',
+          register.unattributed > 0
+            ? plural(s, { one: 'register.unattributedOne', other: 'register.unattributedOther' }, register.unattributed)
+            : '',
+        ].filter(Boolean).join(' · ') || s('register.settled')}
+        action={(
+          <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register">
+            {s('picker.open')}
+          </Button>
+        )}
       />
     </Stack>
   )

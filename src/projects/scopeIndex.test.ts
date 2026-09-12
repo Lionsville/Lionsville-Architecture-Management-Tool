@@ -148,6 +148,24 @@ describe('the index — what it is read for', () => {
     expect(index.register().map((entry) => entry.id)).toEqual(['erp', 'wms'])
   })
 
+  /**
+   * Two facts about a definition that the register draws for every row, and
+   * that a second read per row would make a load per card of (ADR-0004).
+   * The MASTER's, because a declaration above it is a cache and a stand-in may
+   * not carry either of them at all (§3).
+   */
+  it('carries whether the master is outside, and whose it is', () => {
+    const index = indexScopes([
+      scope('', [element('post', { name: 'Post office', outside: true })]),
+      scope('retail', [
+        element('post', { name: 'Post office', outside: true, partyId: 'carrier' }),
+        element('wms', { name: 'Warehouse' }),
+      ]),
+    ])
+    expect(index.lookup('post')).toMatchObject({ master: 'retail', outside: true, partyId: 'carrier' })
+    expect(index.lookup('wms')?.outside).toBeUndefined()
+  })
+
   it('says every id the tree has spoken for, rows included', () => {
     const index = indexScopes([
       scope('retail', [element('erp')], [row('c#1', 'flow', 'erp', 'erp')]),

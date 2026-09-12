@@ -488,8 +488,6 @@ export const EN = {
   /** One entry of a status tally: "3 accepted", "1 running". */
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
-  /** Beta 3's, and said so rather than shown as a number that is not derived. */
-  'org.registerSoon': 'Every application across the organisation, derived from the tree. Arrives with the register.',
   'org.nothingHere': 'Nothing at this level yet.',
 
   // The tree of scopes beneath.
@@ -500,4 +498,71 @@ export const EN = {
 
   // Examples, last and small.
   'org.copyHere': 'Copy into this folder\u2026',
+
+  // --- the register, derived over the whole tree (ADR-0012 §2, §9) ----------
+  /**
+   * The register is every application definition in the tree, keyed by id, and
+   * nothing commits it. These words are the page's and the card's alike, so
+   * the two cannot come to say different things about the same number.
+   */
+  'register.title': 'Register',
+  'register.what': 'Every application across the organisation, derived from the tree.',
+  'register.applicationsOne': '{count} application',
+  'register.applicationsOther': '{count} applications',
+  'register.ownedOne': '{count} owned by a domain',
+  'register.ownedOther': '{count} owned by a domain',
+  'register.outsideOne': '{count} outside',
+  'register.outsideOther': '{count} outside',
+  'register.definedTwiceOne': '{count} defined twice',
+  'register.definedTwiceOther': '{count} defined twice',
+  'register.unattributedOne': '{count} outside and unattributed',
+  'register.unattributedOther': '{count} outside and unattributed',
+  'register.staleOne': '{count} with a stale stand-in',
+  'register.staleOther': '{count} with stale stand-ins',
+  'register.settled': 'Nothing the register disagrees about.',
+  'register.empty': 'No application is defined anywhere in this organisation yet.',
+  'register.noMatch': 'No application matches \u201c{query}\u201d.',
+  'register.filter': 'Filter',
+  'register.order': 'Order',
+  'register.byName': 'By name',
+  'register.byScope': 'By scope',
+  'register.colName': 'Application',
+  'register.colMaster': 'Answered for by',
+  'register.colDrawn': 'Drawn in',
+  'register.colFindings': 'Findings',
+  /** No scope in the tree defines it: every record of it is a stand-in. */
+  'register.nobody': 'Nobody',
+  'register.outsideParty': 'Outside \u00b7 {name}',
+  'register.outsideUnattributed': 'Outside \u00b7 nobody said whose',
+  'register.drawnNowhere': 'No board',
+  'register.drawnOne': '{count} scope',
+  'register.drawnOther': '{count} scopes',
+  'register.openRow': 'Open {name} where it is answered for',
+  'register.linkRow': 'Link\u2026',
+  'register.linkRowTip': 'Open {scope} and make its record stand in for the other one',
+
+  // --- the four gestures that cross scopes (ADR-0012 \u00a710) --------------------
+  'gesture.move': 'Move\u2026',
+  'gesture.moveTip': 'Move this record to another scope, or stand in for one that is already defined elsewhere',
+  'gesture.title': 'Move {name}',
+  'gesture.what': 'What to do',
+  'gesture.link': 'Link',
+  'gesture.linkWhat': 'Give up this definition and stand in for the one another scope already holds. This scope keeps its own description of it.',
+  'gesture.promote': 'Promote',
+  'gesture.promoteWhat': 'Move the definition up to a scope this one is filed under, and stand in for it here.',
+  'gesture.demote': 'Demote',
+  'gesture.demoteWhat': 'Move the definition down to a scope filed under this one, and stand in for it here.',
+  'gesture.transfer': 'Transfer',
+  'gesture.transferWhat': 'Move the definition to another scope.',
+  'gesture.to': 'To',
+  'gesture.keepStandIn': 'Keep a stand-in here',
+  'gesture.keepStandInHelp': 'Without one this scope stops drawing it altogether.',
+  'gesture.go': 'Move',
+  'gesture.confirmTitle': 'Let {scope} answer for {name}?',
+  'gesture.confirmBody': 'This writes two scopes: {scope} first, then this one. Undo stops there \u2014 move the record again to put it back.',
+  'gesture.moved': '{scope} answers for {name} now',
+  'gesture.linked': '{name} stands in for the record in {scope} now',
+  'gesture.writeFailed': 'That scope could not be written: {message}',
+  'gesture.leftCopy': '{scope} has it now, but this scope could not be written: {message}. The record is in both places.',
+
 } as const

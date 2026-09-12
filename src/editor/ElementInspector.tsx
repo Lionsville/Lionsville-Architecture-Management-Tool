@@ -2,6 +2,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -123,6 +124,18 @@ export interface ElementInspectorProps {
     fields: readonly string[];
     /** Open it. Absent where the host cannot — a test, or a page with nowhere to go. */
     onOpen?(): void;
+  };
+  /**
+   * Ask to move this record to another scope (ADR-0012 §10).
+   *
+   * A button and a word for it, and nothing else: which gestures are on offer
+   * and what each would write are the host's, because a panel that knew would
+   * know what a scope tree is. Absent where there is nothing to offer.
+   */
+  move?: {
+    label: string;
+    tip: string;
+    onMove(): void;
   };
 }
 
@@ -297,6 +310,26 @@ export function ElementInspector(props: ElementInspectorProps) {
               {t('standIn.open', { scope: props.owned.label })}
             </Button>
           )}
+        </Box>
+      )}
+
+      {/* Where this record is answered for, when it is answered for here and
+          could be somewhere else (ADR-0012 §10). Beside the stand-in strip
+          rather than inside it: the strip is about a record this scope does
+          not own, and this is about one it does. */}
+      {!readOnly && props.move && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Tooltip title={props.move.tip}>
+            <Button
+              size="small"
+              color="inherit"
+              data-testid="move-record"
+              sx={{ fontSize: 11, minWidth: 0, px: 1 }}
+              onClick={props.move.onMove}
+            >
+              {props.move.label}
+            </Button>
+          </Tooltip>
         </Box>
       )}
 

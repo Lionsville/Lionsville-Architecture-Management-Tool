@@ -32,7 +32,7 @@
 import type { StringKey } from '../i18n'
 import type { Command, DesignElement, ElementId } from '../model'
 import { ownerDetailOn } from './checks'
-import type { ScopeModel } from './scope'
+import type { ScopeModel, ScopeSnapshot } from './scope'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes, isWithinScope } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -137,6 +137,31 @@ export type GesturePlan = {
   name: string
   /** Which scope answers for it once this has run — where *Open …* goes. */
   owner: ScopePath
+}
+
+/**
+ * Why the stack refuses to undo a step that crossed two scopes.
+ *
+ * Published rather than named at the call site, so the session, the agent and
+ * the hook that dispatches the command all say the same why.
+ */
+export const GESTURE_BARRIER: StringKey = 'gesture.barrier'
+
+/**
+ * One scope's document, given a definition: upserted by id, appended where the
+ * scope had no record of it.
+ *
+ * The load-patch-save half of a gesture, said here because it is arithmetic
+ * over a document and the hook that calls it should hold nothing but the
+ * order of the writes.
+ */
+export function withDefinition(scope: ScopeSnapshot, element: DesignElement): ScopeSnapshot {
+  const held = scope.model.elements
+  const at = held.findIndex((one) => one.id === element.id)
+  const elements = at === -1
+    ? [...held, element]
+    : held.map((one, n) => (n === at ? element : one))
+  return { ...scope, model: { ...scope.model, elements } }
 }
 
 export function isGestureRefusal(

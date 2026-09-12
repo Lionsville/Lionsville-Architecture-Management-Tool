@@ -32,6 +32,7 @@ import { plural } from '../../i18n/strings'
 import type { Language, Translate } from '../../i18n'
 import { countScopes, newestChange, sortScopes } from '../../projects/scope'
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
+import type { ElementId } from '../../model'
 import type { Finding } from '../../projects/checks'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
@@ -49,6 +50,9 @@ import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
 import { agentTip, sourceLabel } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
+import { registerSummary } from './register'
+import type { RegisterRow } from './register'
+import { RegisterPage } from './RegisterPage'
 import { OrganisationCards } from './OrganisationCards'
 import { organisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
@@ -79,6 +83,20 @@ export type OrganisationScreenProps = {
    * a row then says nothing about findings rather than saying there are none.
    */
   findings?: ReadonlyMap<ScopePath, readonly Finding[]>
+  /**
+   * The register, derived over the whole tree (ADR-0012 §2).
+   *
+   * Handed in for the same reason the findings are: the index behind it
+   * belongs to the shell and outlives this screen, and one pass over it serves
+   * the card and the page alike. Empty means nothing has been read yet, which
+   * on this screen is the same as an organisation with no applications in it —
+   * and the page says so in a sentence either way.
+   */
+  register?: readonly RegisterRow[]
+  /** Open a row where it is answered for, with the element selected. */
+  onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
+  /** Resolve a conflict: open the scope that should yield, with *link* pending. */
+  onLinkFromRegister?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
@@ -88,9 +106,16 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
-  overflow, agent, findings, today, language, s, windowChrome = NO_WINDOW_CHROME,
+  overflow, agent, findings, register = [], onOpenRegisterRow, onLinkFromRegister,
+  today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, root, ready, dialog } = organisation
+  /**
+   * The register is a page of its own, opened from its card — state here and
+   * not in the hook, because it is the one page on this screen that neither
+   * writes nor asks a store anything.
+   */
+  const [registerOpen, setRegisterOpen] = useState(false)
 
   /**
    * Ordered here and not in the store: the order is what this screen shows, and
@@ -101,6 +126,7 @@ export function OrganisationScreen({
     [tree, order],
   )
   const pages = useMemo(() => organisationPages(root, today), [root, today])
+  const registerCounts = useMemo(() => registerSummary(register), [register])
   const counts = useMemo(() => countScopes(tree), [tree])
   const changed = useMemo(() => newestChange(tree), [tree])
 
@@ -191,6 +217,8 @@ export function OrganisationScreen({
               )}
               onOpenDecisions={() => organisation.open(ROOT_SCOPE, { page: 'decisions' })}
               onOpenRoadmap={() => organisation.open(ROOT_SCOPE, { page: 'roadmap' })}
+              register={registerCounts}
+              onOpenRegister={() => setRegisterOpen(true)}
               s={s}
             />
           </Box>
@@ -275,6 +303,16 @@ export function OrganisationScreen({
         </Box>
       </Box>
 
+      <RegisterPage
+        open={registerOpen}
+        onClose={() => setRegisterOpen(false)}
+        rows={register}
+        organisation={tree.name.trim() || s('picker.organisation')}
+        onOpen={onOpenRegisterRow}
+        onLink={onLinkFromRegister}
+        s={s}
+        windowChrome={windowChrome}
+      />
       <NewScopeDialog
         open={dialog.kind === 'newScope'}
         tree={ordered}

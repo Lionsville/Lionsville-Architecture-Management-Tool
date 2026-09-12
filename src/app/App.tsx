@@ -19,6 +19,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '../i18n'
 import type { StringKey } from '../i18n'
 import type { Adr } from '../decisions/adr'
+import type { ElementId } from '../model'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
 import {
@@ -29,6 +30,7 @@ import type {
 } from '../projects/scope'
 import { findingsByScope, identityFindings } from '../projects/checks'
 import { applyRefPatch } from '../projects/readdress'
+import { treeModels } from '../projects/scopeIndex'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
 import {
@@ -60,6 +62,7 @@ import type { CrashControls } from './ErrorBoundary'
 import { carryRefs } from './carryRefs'
 import { ChooseFolder } from './organisation/ChooseFolder'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
+import { registerRows } from './organisation/register'
 import { useOrganisation } from './organisation/useOrganisation'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -110,6 +113,21 @@ export type InitialPage =
   | { page: 'roadmap' }
   /** A sheet by id, or — with none — the one the scope is about to be given. */
   | { page: 'sheet'; id?: string }
+  /**
+   * A record, selected on the board that draws it — a row of the register,
+   * opened where it is answered for.
+   */
+  | { page: 'element'; id: ElementId }
+  /**
+   * Not a page, and here anyway: *link* (ADR-0012 §10), asked the moment the
+   * scope opens.
+   *
+   * A gesture is applied by the session that holds the scope — one `Command`,
+   * one undo step, one Activity line — so the register's *Link…* cannot do it
+   * where it stands. What it can do is open the scope that should yield and
+   * ask there, which is this.
+   */
+  | { page: 'link'; id: ElementId; to: ScopePath }
 
 export type ScopeLibrary = {
   list(): Promise<ScopeSummary>
@@ -558,10 +576,10 @@ export function App({
    * pressed, and there is nothing useful to say about that beyond showing what
    * is there now.
    */
-  const openScopeAt = useCallback((path: ScopePath) => {
+  const openScopeAt = useCallback((path: ScopePath, page?: InitialPage) => {
     void projects.load(path).then(
       (found) => {
-        if (found) enter(found)
+        if (found) enter(found, page)
         else refreshTree.current()
       },
       (cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'),
@@ -576,9 +594,26 @@ export function App({
    * Only the findings the index alone can answer are in here; the ones that
    * need a scope's own records belong to the scope that is open.
    */
-  const treeFindings = useMemo(
-    () => findingsByScope(identityFindings(tree.index)), [tree.index],
-  )
+  const identity = useMemo(() => identityFindings(tree.index), [tree.index])
+  const treeFindings = useMemo(() => findingsByScope(identity), [identity])
+
+  /**
+   * The register, derived over the same index and in the same one pass
+   * (ADR-0012 §2). The card on the organisation screen and the page behind it
+   * read this; nothing commits it, and nothing loads for it.
+   */
+  const register = useMemo(() => registerRows(tree.index, identity), [tree.index, identity])
+
+  /**
+   * The tree's records, read when a gesture asks (ADR-0012 §10), and the two
+   * things to do again once one has landed: the listing this screen shows, and
+   * the index everything below it decides ownership by.
+   */
+  const readTreeModels = useCallback(() => treeModels(projects), [projects])
+  const treeChanged = useCallback(() => {
+    refreshTree.current()
+    tree.refresh()
+  }, [tree])
 
   const leaveProject = useCallback(() => {
     setProject(undefined)
@@ -834,7 +869,9 @@ export function App({
             onLeave={leaveProject}
             onOpenScope={openScopeAt}
             scopes={organisation.tree}
+            models={readTreeModels}
             onOpenSettings={organisation.refresh}
+            onTreeChanged={treeChanged}
             onApplySettings={applyProjectSettings}
             makeId={makeId}
             groupDecisions={groupDecisions}
@@ -866,6 +903,9 @@ export function App({
             }}
             agent={agentBar}
             findings={treeFindings}
+            register={register}
+            onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
+            onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
             today={todayDay}
             language={prefs.language}
             s={s}

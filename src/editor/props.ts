@@ -356,6 +356,27 @@ export interface EditorOwnership {
    * {@link ../editor/nodes/nodeData.StandInNote}.
    */
   noteFor(elementId: ElementId): StandInNote | undefined;
+  /**
+   * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
+   * them: is there one to offer on this record, and one way to ask for it.
+   *
+   * Deliberately not four questions and four verbs. Which gestures are on
+   * offer, where each could send the record and what happens then are the
+   * host's — a canvas that knew what *promote* meant would know what a scope
+   * tree is — so this is a button and a word for it, and everything behind it
+   * is a dialog of the host's own.
+   *
+   * Absent in a read-only shell and in a test with no tree, and the panel then
+   * offers nothing rather than offering something that leads nowhere.
+   */
+  gestures?: {
+    /** Is there anything to offer for this record? */
+    offered(elementId: ElementId): boolean;
+    /** What the button says, and what it says on hover. The host has the words. */
+    label: string;
+    tip: string;
+    onMove(elementId: ElementId): void;
+  };
 }
 
 export interface SolutionDesignEditorProps {

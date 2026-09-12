@@ -17,7 +17,7 @@ import type { EditorHandle, EditorOwnership, StandInNote } from '../editor'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
-import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
@@ -35,11 +35,13 @@ import type { HostCommand } from '../platform/hostCommands'
 import type { WorkingSource } from '../platform/workingSource'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ProjectHistory } from '../ports/ProjectHistory'
+import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { DiskChangeNotice } from './DiskChangeNotice'
 import { HistoryPage } from './history/HistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { useProjectHistory } from './history/useProjectHistory'
+import { MoveRecordDialog } from './dialogs/MoveRecordDialog'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ErrorBoundary } from './ErrorBoundary'
 import { messageFor } from './messageFor'
@@ -62,6 +64,7 @@ import { useAgentGateway } from './useAgentGateway'
 import { useDiagramActions } from './useDiagramActions'
 import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
+import { useGestures } from './useGestures'
 import { useModelSession } from './useModelSession'
 import { usePlans } from './usePlans'
 import { useSheet } from './useSheet'
@@ -147,8 +150,23 @@ export type ProjectWorkspaceProps = {
   onOpenScope?: (path: ScopePath) => void
   /** The tree as it stands, for the settings dialog's "filed under" select. */
   scopes: ScopeSummary
+  /**
+   * Every scope's records, read when a gesture is asked for (ADR-0012 §10).
+   *
+   * Not the index, which keeps a summary: deciding whether the scope a
+   * definition would move into already answers for the id needs the record.
+   * Read on the gesture rather than held, because a gesture is a decision and
+   * not a keystroke. Absent in a test, and nothing is then offered.
+   */
+  models?: () => Promise<ScopeModel[]>
   /** Called when the dialog opens, so the caller can refresh that list. */
   onOpenSettings: () => void
+  /**
+   * A gesture changed the tree: read the listing and the index again
+   * (ADR-0012 §10). The shell owns both, and a gesture is the one thing this
+   * workspace does that changes a scope other than the one it has open.
+   */
+  onTreeChanged?: () => void
   /**
    * Apply the settings to the project as it stands, and hand back what was
    * saved so the session can take it on. Nothing comes back from a move: that
@@ -212,7 +230,8 @@ function localToday(): string {
 export function ProjectWorkspace({
   project, projects, index, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
-  onLeave, onOpenScope, scopes, onOpenSettings, onApplySettings, makeId, groupDecisions,
+  onLeave, onOpenScope, scopes, models, onOpenSettings, onTreeChanged = () => {},
+  onApplySettings, makeId, groupDecisions,
   onGroupDecisionsChange,
   groupName, groupClient,
   diagnostics, hostControls, today = localToday, initialPage, windowChrome,
@@ -495,6 +514,39 @@ export function ProjectWorkspace({
     return found
   }, [index, session.model.elements])
 
+  /**
+   * The four gestures that cross scopes (ADR-0012 §10).
+   *
+   * Here rather than in `App` because a gesture ends in a `Command` at THIS
+   * session: the other scope is written through the store, and then this
+   * scope's record becomes a stand-in as one undo step with a barrier on it.
+   */
+  /** What to call a scope on screen: its path, or the organisation's own name. */
+  const scopeLabel = useCallback(
+    (path: ScopePath) => path || groupName || s('common.organisation'),
+    [groupName, s],
+  )
+  const gestures = useGestures({
+    scope: project.path,
+    scopes: projects,
+    ...(models ? { models } : {}),
+    index,
+    session,
+    onTreeChanged,
+    ...(onOpenScope ? { onOpenScope } : {}),
+    scopeLabel,
+    notify,
+    onFailure: useCallback((where: string, cause: unknown) => {
+      diagnostics.report({ level: 'error', where, message: 'rejected', cause })
+    }, [diagnostics]),
+    s,
+  })
+
+  // Read off the hook so the editor's ownership seam is not rebuilt every
+  // time a dialog opens: both are `useCallback`s over the tree and the
+  // session, and neither moves when the choice does.
+  const { offers: gestureOffers, choose: gestureChoose } = gestures
+
   const ownership = useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => {
       const held = session.indexed().elements[elementId]
@@ -516,7 +568,13 @@ export function ProjectWorkspace({
       }
     },
     noteFor: (elementId) => notes.get(elementId),
-  }), [session, project.path, index, notes, onOpenScope, s])
+    gestures: {
+      offered: (elementId) => gestureOffers(elementId).length > 0,
+      label: s('gesture.move'),
+      tip: s('gesture.moveTip'),
+      onMove: (elementId) => gestureChoose(elementId),
+    },
+  }), [session, project.path, index, notes, onOpenScope, s, gestureOffers, gestureChoose])
 
   const snapshots = useProjectHistory({
     history: projectHistory,
@@ -649,7 +707,14 @@ export function ProjectWorkspace({
       if (initialPage.id) openSheet(initialPage.id)
       else sheets.create()
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create])
+    // A row of the register, opened where it is answered for.
+    if (initialPage.page === 'element') focusElement(initialPage.id)
+    // Not a page: the register's *Link…*, which can only be done by the
+    // session that holds this scope (ADR-0012 §10).
+    if (initialPage.page === 'link') {
+      gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
+    }
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, focusElement, gestures])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -936,6 +1001,35 @@ export function ProjectWorkspace({
         onClose={() => setSearchOpen(false)}
         onChoose={chooseHit}
         s={s}
+      />
+      {/* The four gestures (ADR-0012 §10): the chooser, and the confirmation
+          that three of them write two scopes and cannot be undone here. */}
+      <MoveRecordDialog
+        target={gestures.choice?.kind === 'choosing'
+          ? { id: gestures.choice.id, name: gestures.choice.name }
+          : undefined}
+        offers={gestures.choice?.kind === 'choosing' ? gestures.offers(gestures.choice.id) : []}
+        targets={gestures.targets}
+        scopeLabel={scopeLabel}
+        onCancel={gestures.close}
+        onMove={gestures.ask}
+        busy={gestures.busy}
+        s={s}
+      />
+      <ConfirmDialog
+        open={gestures.choice?.kind === 'confirming'}
+        title={gestures.choice?.kind === 'confirming'
+          ? s('gesture.confirmTitle', {
+            scope: scopeLabel(gestures.choice.plan.owner), name: gestures.choice.plan.name,
+          })
+          : ''}
+        body={gestures.choice?.kind === 'confirming'
+          ? s('gesture.confirmBody', { scope: scopeLabel(gestures.choice.plan.owner) })
+          : ''}
+        confirmLabel={s('gesture.go')}
+        cancelLabel={s('common.cancel')}
+        onCancel={gestures.close}
+        onConfirm={gestures.confirm}
       />
       <ProjectSettingsDialog
         open={settingsOpen}
