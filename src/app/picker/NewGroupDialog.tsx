@@ -15,7 +15,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
-import { refFor } from '../../projects/projectRef'
+import { ROOT_SCOPE, scopePathFor } from '../../projects/scopePath'
 import type { ProjectGroup } from '../../projects/project'
 
 export type NewGroupDialogProps = {
@@ -38,7 +38,7 @@ export function NewGroupDialog({
   // Slugged, because that is what decides whether it is the same group - "Acme"
   // and "acme" are one namespace, and saying so beats creating a second.
   const collides = ready
-    && groups.some((group) => group.group === refFor(groupName, projectName).group)
+    && groups.some((group) => group.group === scopePathFor(ROOT_SCOPE, groupName))
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>

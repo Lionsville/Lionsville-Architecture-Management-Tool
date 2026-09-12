@@ -37,7 +37,7 @@ const model = (): HostModel => ({
 })
 
 const snapshot = (): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: model(),
   activeDiagramId: 'd1',
   logoLibrary: [],

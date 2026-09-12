@@ -18,7 +18,7 @@ const print = (over: Partial<SaveFingerprint> = {}): SaveFingerprint => ({
 
 /** Run a session forward through events, from a fresh one. */
 function play(...events: DocumentEvent[]): DocumentSession {
-  return events.reduce(documentSession, emptySession({ group: 'acme', project: 'landscape' }))
+  return events.reduce(documentSession, emptySession('acme/landscape'))
 }
 
 const attached = { type: 'attached', fingerprint: print() } as const
@@ -49,7 +49,7 @@ describe('attaching and detaching', () => {
 
   it('keeps the ref across a detach — the project outlives the file', () => {
     const state = play(attached, { type: 'detached' })
-    expect(state.ref).toEqual({ group: 'acme', project: 'landscape' })
+    expect(state.path).toEqual('acme/landscape')
   })
 })
 

@@ -14,7 +14,7 @@
 import { ShellError } from '../../platform/errors'
 import { isGroupProfile } from '../../projects/group'
 import type { GroupProfile } from '../../projects/group'
-import { isGroupPath } from '../../projects/projectRef'
+import { isGroupPath } from '../../projects/group'
 import type { GroupStore } from '../../ports/GroupStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 

@@ -21,6 +21,7 @@ import { isAdrList } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import { isLinkList, isSafeLinkUrl, normaliseLinks } from './links'
 import type { RecordLink } from './links'
+import { isSafeScopePath, ROOT_SCOPE } from './scopePath'
 
 /**
  * One link on a group. The shared shape under its old name: callers and saved
@@ -56,6 +57,18 @@ export type GroupProfile = {
    * project to ride on, which is the reason this record exists at all.
    */
   decisions?: Adr[]
+}
+
+/**
+ * Is this a group path a store may be asked for?
+ *
+ * A scope path, and never the root: a group has always been a namespace with
+ * something filed under it, and the root is the folder itself. Same rule and
+ * same reason as every other address — a segment that is not a slug could
+ * escape its own folder in a store that keeps things on disk.
+ */
+export function isGroupPath(value: unknown): value is string {
+  return isSafeScopePath(value) && value !== ROOT_SCOPE
 }
 
 /**

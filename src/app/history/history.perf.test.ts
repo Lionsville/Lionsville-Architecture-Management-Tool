@@ -6,7 +6,7 @@ import type { HostModel } from '../../model/fromInterchange'
 import { BUDGET, measure } from '../../model/testing/measure'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { projectFiles, projectFromFolder } from '../../projects/folderFormat'
-import type { ProjectRef } from '../../projects/projectRef'
+import type { ScopePath } from '../../projects/scopePath'
 import type { ProjectSnapshot } from '../../projects/project'
 import { changesFor } from './changesFor'
 
@@ -24,7 +24,7 @@ import { changesFor } from './changesFor'
  * A restore is that comparison again, as commands, through the reducer.
  */
 
-const ref: ProjectRef = { group: 'northwind', project: 'landscape' }
+const path: ScopePath = 'northwind/landscape'
 const then: HostModel = syntheticModel('large')
 
 /** Where the project has got to since: names, geometry, a page and a record. */
@@ -39,14 +39,14 @@ const now: HostModel = {
   decisions: (then.decisions ?? []).map((adr, i) => (i === 0 ? { ...adr, title: `${adr.title}, retitled` } : adr)),
 }
 
-const files = projectFiles({ ref, model: then, activeDiagramId: then.diagrams[0].id, logoLibrary: [] } as ProjectSnapshot)
+const files = projectFiles({ path, model: then, activeDiagramId: then.diagrams[0].id, logoLibrary: [] } as ProjectSnapshot)
 const nowIndexed = fromArrays(now)
 const landscape = then.diagrams[0].id
 
 describe('the history page, per snapshot looked at', () => {
   it('reads the snapshot back, compares it with now, and keeps the rows about one diagram', () => {
     const ms = measure('history: look at one snapshot, for one diagram', () => {
-      const opened = projectFromFolder(files, ref)
+      const opened = projectFromFolder(files, path)
       if (!opened) throw new Error('the folder did not read back as a project')
       const rows = changesFor(diffModels(opened.model, now), { what: 'diagram', id: landscape })
       if (rows.length === 0) throw new Error('the comparison saw nothing')

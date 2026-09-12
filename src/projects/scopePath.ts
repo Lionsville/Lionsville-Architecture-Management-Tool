@@ -89,6 +89,18 @@ export function joinScope(parent: ScopePath, name: string): ScopePath {
   return [...segments, name].join('/')
 }
 
+/**
+ * A file inside a scope, addressed from the root of the tree.
+ *
+ * The root's own files have no prefix at all, which is why this is a function
+ * rather than a template string: `` `${scope}/${file}` `` on the root gives a
+ * leading slash, and a leading slash is an absolute path in every place one of
+ * these is used.
+ */
+export function scopeFilePath(scope: ScopePath, relative: string): string {
+  return scope === ROOT_SCOPE ? relative : `${scope}/${relative}`
+}
+
 /** Is `path` this scope, or one filed anywhere beneath it? */
 export function isWithinScope(path: ScopePath, within: ScopePath): boolean {
   if (within === ROOT_SCOPE) return true

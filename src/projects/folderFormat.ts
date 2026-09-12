@@ -65,7 +65,8 @@ import {
 import type { GroupLink, GroupProfile } from './group'
 import { groupNameOf, resolveActive } from './project'
 import type { ProjectSnapshot, ProjectSummary } from './project'
-import type { ProjectRef } from './projectRef'
+import { scopePathLabel } from './scopePath'
+import type { ScopePath } from './scopePath'
 
 /**
  * One file in the folder. Text unless it is a bitmap — a PNG has no honest
@@ -481,7 +482,7 @@ function listOf(held: unknown): Record<string, unknown>[] {
  * and a project you cannot see is a project you cannot ask to be migrated.
  */
 export function projectSummaryFrom(
-  text: string, ref: ProjectRef, updatedAt?: string,
+  text: string, path: ScopePath, updatedAt?: string,
 ): ProjectSummary | undefined {
   const parsed = parseJson(text)
   const held = folderFormatVersion(text) === undefined ? undefined : headerOf(
@@ -489,8 +490,8 @@ export function projectSummaryFrom(
   )
   if (!held || !Array.isArray(held.diagrams) || held.diagrams.length === 0) return undefined
   return {
-    ref,
-    name: typeof held.name === 'string' ? held.name : ref.project,
+    path,
+    name: typeof held.name === 'string' ? held.name : scopePathLabel(path),
     groupName: typeof held.groupName === 'string' ? held.groupName : '',
     ...(updatedAt ? { updatedAt } : {}),
   }
@@ -647,12 +648,12 @@ function markFor(file: FolderFile, mediaType: string): string {
 /**
  * The project a folder holds, or `undefined` when it does not hold one.
  *
- * `ref` comes from where the folder IS and not from anything inside it: a
+ * The path comes from where the folder IS and not from anything inside it: a
  * project moved in the file manager is the project at its new address, which is
  * what anybody moving it would expect.
  */
 export function projectFromFolder(
-  files: readonly FolderFile[], ref: ProjectRef,
+  files: readonly FolderFile[], path: ScopePath,
 ): ProjectSnapshot | undefined {
   const folder = folderOf(files)
   const held = readableHeader(jsonAt(folder, PROJECT_FILE))
@@ -686,7 +687,7 @@ export function projectFromFolder(
   const transitions = readTransitions(files)
   const { elements, explicitFields } = readElements(folder)
   const model: HostModel = {
-    name: typeof held.name === 'string' ? held.name : ref.project,
+    name: typeof held.name === 'string' ? held.name : scopePathLabel(path),
     customerName: typeof held.groupName === 'string' ? held.groupName : '',
     ...(typeof held.description === 'string' ? { description: held.description } : {}),
     ...(held.defaults?.author !== undefined ? { defaultAuthor: held.defaults.author } : {}),
@@ -708,7 +709,7 @@ export function projectFromFolder(
   const images = readImages(folder)
 
   return {
-    ref,
+    path,
     model,
     activeDiagramId: resolveActive(model, typeof held.activeDiagramId === 'string'
       ? held.activeDiagramId : undefined),

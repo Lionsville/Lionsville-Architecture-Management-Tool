@@ -7,11 +7,10 @@
  * yet. That is a different promise from browser storage, which is a per-browser
  * cache the user cannot see and a "clear site data" can wipe without warning.
  *
- * The layout is the ref, literally: `<group path>/<project>/`. A group is a
- * path, so a nested group is nested folders, and what the picker shows is what
- * the file manager shows. That is worth more than any index file — there is no
- * second source of truth to fall out of step, and a project dropped into the
- * working directory by hand is simply there.
+ * The layout is the path, literally: a project's folder IS its address. What
+ * the picker shows is what the file manager shows. That is worth more than any
+ * index file — there is no second source of truth to fall out of step, and a
+ * project dropped into the working directory by hand is simply there.
  *
  * **Everything is by name, nothing is cached.** A directory listing is the
  * index. Listing costs one small `project.json` per project, which is what that
@@ -35,8 +34,8 @@ import {
 import { openProjectFolder } from '../../projects/migrate3to4'
 import type { FolderFile } from '../../projects/folderFormat'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
-import { groupSegments, isProjectRef } from '../../projects/projectRef'
-import type { ProjectRef } from '../../projects/projectRef'
+import { isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import { ShellError } from '../../platform/errors'
 import type { ProjectStore } from '../../ports/ProjectStore'
 
@@ -79,18 +78,17 @@ function isBinary(path: string): boolean {
 }
 
 /**
- * Reject a ref before it becomes a path.
+ * Reject a path before it becomes a folder.
  *
  * `getDirectoryHandle('..')` throws in a real browser, but this store is also
  * the shape the desktop adapter takes, where the same string becomes a path on
  * someone's disk. Refusing here means the rule is stated once, in the layer
- * that knows what a ref is allowed to look like, rather than relying on each
- * backend to be strict on its own.
+ * that knows what an address is allowed to look like, rather than relying on
+ * each backend to be strict on its own.
  */
-function usableRef(ref: ProjectRef): boolean {
-  if (!isProjectRef(ref)) return false
-  const parts = [...groupSegments(ref.group), ref.project]
-  return parts.every((part) =>
+function usablePath(path: ScopePath): boolean {
+  if (!isSafeScopePath(path)) return false
+  return scopeSegments(path).every((part) =>
     part.length > 0 && part !== '.' && part !== '..' && !/[/\\]/.test(part))
 }
 
@@ -123,8 +121,8 @@ export class FileSystemProjectStore implements ProjectStore {
     return folder
   }
 
-  private projectFolder(ref: ProjectRef, create: boolean): Promise<DirectoryHandleLike | undefined> {
-    return this.folderAt([...groupSegments(ref.group), ref.project], create)
+  private projectFolder(path: ScopePath, create: boolean): Promise<DirectoryHandleLike | undefined> {
+    return this.folderAt(scopeSegments(path), create)
   }
 
   /** Every file of the format under one project folder, with its path inside it. */
@@ -172,8 +170,8 @@ export class FileSystemProjectStore implements ProjectStore {
       else if (entry.name === PROJECT_FILE) header = entry
     }
 
-    if (header && segments.length >= 2) {
-      const ref = { group: segments.slice(0, -1).join('/'), project: segments[segments.length - 1] }
+    if (header) {
+      const path = segments.join('/')
       // The date comes off the files and never out of a field: the picker orders
       // by it, and a stored timestamp goes stale the moment anything but this
       // tool touches the folder — which, in a working directory, it will.
@@ -182,7 +180,7 @@ export class FileSystemProjectStore implements ProjectStore {
       }
       const summary = projectSummaryFrom(
         await (await header.getFile()).text(),
-        ref,
+        path,
         latest ? new Date(latest).toISOString() : undefined,
       )
       if (summary) found.push(summary)
@@ -201,7 +199,7 @@ export class FileSystemProjectStore implements ProjectStore {
    * that runs on every open and almost always answers with nothing.
    */
   private async walkVersions(
-    folder: DirectoryHandleLike, segments: string[], found: ProjectRef[],
+    folder: DirectoryHandleLike, segments: string[], found: ScopePath[],
   ): Promise<void> {
     const children: DirectoryHandleLike[] = []
     let header: FileHandleLike | undefined
@@ -210,14 +208,10 @@ export class FileSystemProjectStore implements ProjectStore {
       else if (entry.name === PROJECT_FILE) header = entry
     }
 
-    if (header && segments.length >= 2) {
+    if (header) {
       const text = await (await header.getFile().catch(() => undefined))?.text().catch(() => undefined)
       const version = text === undefined ? undefined : folderFormatVersion(text)
-      if (version !== undefined && version < PROJECT_FORMAT_VERSION) {
-        found.push({
-          group: segments.slice(0, -1).join('/'), project: segments[segments.length - 1],
-        })
-      }
+      if (version !== undefined && version < PROJECT_FORMAT_VERSION) found.push(segments.join('/'))
       return
     }
 
@@ -225,8 +219,8 @@ export class FileSystemProjectStore implements ProjectStore {
   }
 
   /** See {@link ProjectStore.outdated}. */
-  async outdated(): Promise<ProjectRef[]> {
-    const found: ProjectRef[] = []
+  async outdated(): Promise<ScopePath[]> {
+    const found: ScopePath[] = []
     try {
       await this.walkVersions(this.root, [], found)
     } catch {
@@ -249,9 +243,9 @@ export class FileSystemProjectStore implements ProjectStore {
     return found.sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  async load(ref: ProjectRef): Promise<ProjectSnapshot | undefined> {
-    if (!usableRef(ref)) return undefined
-    const folder = await this.projectFolder(ref, false)
+  async load(path: ScopePath): Promise<ProjectSnapshot | undefined> {
+    if (!usablePath(path)) return undefined
+    const folder = await this.projectFolder(path, false)
     if (!folder) return undefined
     try {
       const entries = await this.entries(folder)
@@ -260,7 +254,7 @@ export class FileSystemProjectStore implements ProjectStore {
       // Whichever version wrote the folder: a project written before format 4
       // is read through the migration and is format 4 the next time it is
       // saved, which is what takes its superseded files off disk.
-      const project = openProjectFolder(files, ref)
+      const project = openProjectFolder(files, path)
       if (!project) return undefined
       const latest = Math.max(0, ...await Promise.all(entries.map(async (entry) =>
         (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)))
@@ -302,10 +296,10 @@ export class FileSystemProjectStore implements ProjectStore {
   }
 
   async save(project: ProjectSnapshot): Promise<void> {
-    if (!usableRef(project.ref)) {
-      throw new ShellError('shell.badProjectRef', { path: `${project.ref.group}/${project.ref.project}` })
+    if (!usablePath(project.path)) {
+      throw new ShellError('shell.badScopePath', { path: String(project.path) })
     }
-    const folder = await this.projectFolder(project.ref, true)
+    const folder = await this.projectFolder(project.path, true)
     if (!folder) throw new ShellError('shell.folderUnavailable')
 
     const files = projectFiles(project)
@@ -322,15 +316,15 @@ export class FileSystemProjectStore implements ProjectStore {
     }
   }
 
-  async remove(ref: ProjectRef): Promise<void> {
-    if (!usableRef(ref)) return
-    const parent = await this.folderAt(groupSegments(ref.group), false)
+  async remove(path: ScopePath): Promise<void> {
+    if (!usablePath(path) || path === ROOT_SCOPE) return
+    const parent = await this.folderAt(scopeSegments(parentScope(path) ?? ROOT_SCOPE), false)
     if (!parent) return
     try {
       // The whole folder, including anything the user filed in it: this folder
       // IS the project, and deleting a project that leaves half of itself
       // behind is the more surprising answer.
-      await parent.removeEntry(ref.project, { recursive: true })
+      await parent.removeEntry(scopePathLabel(path), { recursive: true })
     } catch {
       // Removing what is not there is not an error, per the port. An empty group
       // folder is left behind on purpose: a group exists because projects are

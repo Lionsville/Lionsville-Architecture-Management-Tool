@@ -47,7 +47,7 @@ import {
 } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import type { ProjectSnapshot } from './project'
-import type { ProjectRef } from './projectRef'
+import type { ScopePath } from './scopePath'
 
 /** The version this file reads. There is no 1 or 2: the folder began at 3. */
 const FORMAT_3 = 3
@@ -276,12 +276,12 @@ export function foldFolderToFormat4(files: readonly FolderFile[]): FolderFile[] 
  * version can be forgotten.
  */
 export function openProjectFolder(
-  files: readonly FolderFile[], ref: ProjectRef,
+  files: readonly FolderFile[], path: ScopePath,
 ): ProjectSnapshot | undefined {
-  const now = projectFromFolder(files, ref)
+  const now = projectFromFolder(files, path)
   if (now) return now
   const folded = foldFolderToFormat4(files)
-  return folded ? projectFromFolder(folded, ref) : undefined
+  return folded ? projectFromFolder(folded, path) : undefined
 }
 
 // --- a record stored whole --------------------------------------------------

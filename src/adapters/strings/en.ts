@@ -12,7 +12,7 @@ export const EN = {
    * store has no language of its own, and these used to be English sentences
    * shown verbatim to somebody who had chosen Dutch.
    */
-  'shell.badProjectRef': 'That project has no usable address ({path}), so it cannot be saved.',
+  'shell.badScopePath': 'That scope has no usable address ({path}), so it cannot be saved.',
   'shell.badGroupPath': 'That group has no usable address ({path}), so it cannot be saved.',
   /**
    * The folder itself is gone: unplugged, unmounted, renamed out from under us,

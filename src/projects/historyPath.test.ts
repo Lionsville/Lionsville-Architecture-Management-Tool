@@ -44,7 +44,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
 }
 
 const project = (held: HostModel): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' }, model: held, activeDiagramId: 'landscape', logoLibrary: [],
+  path: 'acme/landscape', model: held, activeDiagramId: 'landscape', logoLibrary: [],
 })
 
 /** A pattern, as git reads one: `*` matches within a name. */

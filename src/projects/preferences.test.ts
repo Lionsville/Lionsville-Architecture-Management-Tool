@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  readLanguage, readThemeMode, withoutLastProject,
+  readLanguage, readLastScope, readThemeMode, withoutLastScope,
 } from './preferences'
 
 describe('readLanguage', () => {
@@ -38,18 +38,42 @@ describe('readThemeMode', () => {
   })
 })
 
-describe('withoutLastProject', () => {
-  it('drops the ref and keeps everything else', () => {
-    expect(withoutLastProject({ language: 'nl', themeMode: 'dark', lastProject: { group: 'a', project: 'b' } }))
+describe('withoutLastScope', () => {
+  it('drops the path and keeps everything else', () => {
+    expect(withoutLastScope({ language: 'nl', themeMode: 'dark', lastScope: 'a/b' }))
       .toEqual({ language: 'nl', themeMode: 'dark' })
   })
 
+  /** Or the boot would hand the same broken address back on the next run. */
+  it('drops the key an older build wrote too', () => {
+    expect(withoutLastScope({ language: 'nl', lastProject: { group: 'a', project: 'b' } }))
+      .toEqual({ language: 'nl' })
+  })
+
   it('leaves a blob that never had one alone', () => {
-    expect(withoutLastProject({ language: 'en' })).toEqual({ language: 'en' })
+    expect(withoutLastScope({ language: 'en' })).toEqual({ language: 'en' })
   })
 
   it('turns nothing into an empty blob rather than throwing', () => {
-    expect(withoutLastProject(undefined)).toEqual({})
-    expect(withoutLastProject('not a blob')).toEqual({})
+    expect(withoutLastScope(undefined)).toEqual({})
+    expect(withoutLastScope('not a blob')).toEqual({})
+  })
+})
+
+describe('readLastScope', () => {
+  it('reads a path back', () => {
+    expect(readLastScope({ lastScope: 'acme/rail' })).toBe('acme/rail')
+  })
+
+  /** The two spell the same address, so a blob from before scopes still lands you in your work. */
+  it('reads the group and key an older build wrote as the path they always were', () => {
+    expect(readLastScope({ lastProject: { group: 'acme', project: 'rail' } })).toBe('acme/rail')
+  })
+
+  it('refuses a path that could walk out of the folder, and an absent one', () => {
+    expect(readLastScope({ lastScope: '../elsewhere' })).toBeUndefined()
+    expect(readLastScope({ lastScope: '' })).toBeUndefined()
+    expect(readLastScope({})).toBeUndefined()
+    expect(readLastScope(undefined)).toBeUndefined()
   })
 })

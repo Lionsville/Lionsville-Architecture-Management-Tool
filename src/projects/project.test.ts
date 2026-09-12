@@ -41,7 +41,7 @@ const doc: InterchangeDoc = {
   }],
 }
 const GROUP = 'Acme Logistics'
-const REF = { group: 'acme-logistics', project: 'landscape' }
+const REF = 'acme-logistics/landscape'
 
 describe('projectFromDocument', () => {
   it('turns an interchange document into a usable project', () => {
@@ -52,7 +52,7 @@ describe('projectFromDocument', () => {
   })
 
   it('files it under the ref it was given', () => {
-    expect(projectFromDocument(doc, REF, GROUP).ref).toEqual(REF)
+    expect(projectFromDocument(doc, REF, GROUP).path).toEqual(REF)
   })
 
   it('takes the group name from the caller, not from the document', () => {
@@ -90,7 +90,7 @@ describe('groupNameOf and summarise', () => {
   it('summarises without carrying the model along', () => {
     const summary = summarise({ ...sampleProject(), updatedAt: '2026-09-05T10:00:00.000Z' })
     expect(summary).toEqual({
-      ref: { group: 'acme-logistics', project: 'landscape' },
+      path: 'acme-logistics/landscape',
       name: 'Application landscape',
       groupName: 'Acme Logistics',
       updatedAt: '2026-09-05T10:00:00.000Z',
@@ -100,7 +100,7 @@ describe('groupNameOf and summarise', () => {
 
 describe('sortProjects', () => {
   const summary = (groupName: string, name: string, updatedAt?: string): ProjectSummary => ({
-    ref: { group: groupName.toLowerCase(), project: name.toLowerCase() },
+    path: `${groupName.toLowerCase()}/${name.toLowerCase()}`,
     name, groupName, updatedAt,
   })
   const list = [
@@ -207,9 +207,9 @@ describe('openProjectDocument — working file', () => {
   it('lands in the project it was opened from, not a new one', () => {
     // A file says what the design is; it does not get to say where you filed it.
     const parsed = JSON.parse(JSON.stringify(toWorkingFile(sampleProject())))
-    const elsewhere = { ...into, ref: { group: 'acme', project: 'landscape' } }
+    const elsewhere = { ...into, path: 'acme/landscape' }
     const result = openProjectDocument(parsed, elsewhere)
-    expect(result.ok && result.project.ref).toEqual({ group: 'acme', project: 'landscape' })
+    expect(result.ok && result.project.path).toEqual('acme/landscape')
   })
 
   it('does not lay out again — a working file carries its own geometry', () => {
@@ -306,7 +306,7 @@ describe('isUsableProject', () => {
 
 describe('groupsOf', () => {
   const summary = (group: string, groupName: string, name: string): ProjectSummary => ({
-    ref: { group, project: name.toLowerCase() }, name, groupName,
+    path: `${group}/${name.toLowerCase()}`, name, groupName,
   })
 
   it('collects the projects of a group under one entry', () => {
@@ -339,7 +339,7 @@ describe('groupsOf', () => {
 
 describe('keysInGroup', () => {
   const summary = (group: string, project: string): ProjectSummary => ({
-    ref: { group, project }, name: project, groupName: group,
+    path: `${group}/${project}`, name: project, groupName: group,
   })
 
   it('returns only the keys used inside that group', () => {
@@ -359,7 +359,7 @@ describe('relabelGroup', () => {
 
   it('leaves the ref alone — a group rename relabels, it does not re-file', () => {
     const out = relabelGroup(sampleProject(), 'Acme Rail')
-    expect(out.ref).toEqual(sampleProject().ref)
+    expect(out.path).toEqual(sampleProject().path)
   })
 
   it('hands back the same project when the name has not moved', () => {
@@ -400,7 +400,7 @@ describe('renameProject', () => {
     // The picker and the lastProject preference both hold the ref. Re-filing on
     // every rename would break both, and for nothing: a ref is an address.
     const renamed = renameProject(sampleProject(), 'Another name')
-    expect(renamed.ref).toEqual(sampleProject().ref)
+    expect(renamed.path).toEqual(sampleProject().path)
   })
 
   it('does not touch the original', () => {
@@ -414,7 +414,7 @@ describe('moveToGroup', () => {
   const moved = moveToGroup(sampleProject(), 'globex', 'Globex')
 
   it('changes the half of the address that is the group', () => {
-    expect(moved.ref).toEqual({ group: 'globex', project: 'landscape' })
+    expect(moved.path).toEqual('globex/landscape')
   })
 
   it('changes the label with it, so the two cannot disagree', () => {
@@ -429,6 +429,6 @@ describe('moveToGroup', () => {
   it('does not touch the original', () => {
     const project = sampleProject()
     moveToGroup(project, 'globex', 'Globex')
-    expect(project.ref.group).toBe('acme-logistics')
+    expect(project.path).toBe('acme-logistics/landscape')
   })
 })

@@ -57,7 +57,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
 })
 
 const project = (): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: model(),
   activeDiagramId: 'd1',
   logoLibrary: [],
@@ -162,7 +162,7 @@ describe('taking a snapshot', () => {
     fireEvent.click(screen.getByText('Take snapshot'))
 
     await waitFor(async () => {
-      const stored = await view.projects.load({ group: 'acme', project: 'landscape' })
+      const stored = await view.projects.load('acme/landscape')
       expect(stored?.model.diagrams[0].name).toBe('Edited')
     })
     expect(held.calls.snapshots).toHaveLength(1)
@@ -403,7 +403,7 @@ describe('going back, as going forward (ADR-0008)', () => {
     fireEvent.click(screen.getByText('Take snapshot'))
     await waitFor(() => expect(history.calls.snapshots).toHaveLength(1))
     // And the folder now holds the old diagram, through the store that always writes it.
-    const stored = await projects.load({ group: 'acme', project: 'landscape' })
+    const stored = await projects.load('acme/landscape')
     expect(stored?.model.diagrams[0].name).toBe('Old name')
   })
 

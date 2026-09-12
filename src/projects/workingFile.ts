@@ -102,7 +102,7 @@ function folderIn(bytes: Uint8Array): FolderFile[] | undefined {
 export function openDocumentBytes(bytes: Uint8Array, into: ProjectSnapshot): OpenResult {
   if (isZip(bytes)) {
     const files = folderIn(bytes)
-    const project = files && openProjectFolder(files, into.ref)
+    const project = files && openProjectFolder(files, into.path)
     if (!project) return { ok: false, messageKey: 'shell.unknownFile' }
     if (!project.model.diagrams.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
     return { ok: true, kind: 'workingFile', relayout: false, project }

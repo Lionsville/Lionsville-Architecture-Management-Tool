@@ -11,8 +11,8 @@
 import { ShellError } from '../../platform/errors'
 import { isUsableProject, sortProjects, summarise } from '../../projects/project'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
-import { isProjectRef, refPath } from '../../projects/projectRef'
-import type { ProjectRef } from '../../projects/projectRef'
+import { isSafeScopePath } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import type { ProjectStore } from '../../ports/ProjectStore'
 
 export class InMemoryProjectStore implements ProjectStore {
@@ -20,7 +20,7 @@ export class InMemoryProjectStore implements ProjectStore {
   private held = new Map<string, ProjectSnapshot>()
 
   constructor(initial: readonly ProjectSnapshot[] = []) {
-    for (const project of initial) this.held.set(refPath(project.ref), structuredClone(project))
+    for (const project of initial) this.held.set(project.path, structuredClone(project))
   }
 
   list(): Promise<ProjectSummary[]> {
@@ -29,26 +29,26 @@ export class InMemoryProjectStore implements ProjectStore {
     return Promise.resolve(sortProjects(found))
   }
 
-  load(ref: ProjectRef): Promise<ProjectSnapshot | undefined> {
-    if (!isProjectRef(ref)) return Promise.resolve(undefined)
-    const project = this.held.get(refPath(ref))
+  load(path: ScopePath): Promise<ProjectSnapshot | undefined> {
+    if (!isSafeScopePath(path)) return Promise.resolve(undefined)
+    const project = this.held.get(path)
     if (!isUsableProject(project)) return Promise.resolve(undefined)
     return Promise.resolve(structuredClone(project))
   }
 
   save(project: ProjectSnapshot): Promise<void> {
-    if (!isProjectRef(project.ref)) {
-      return Promise.reject(new ShellError('shell.badProjectRef', { path: JSON.stringify(project.ref) }))
+    if (!isSafeScopePath(project.path)) {
+      return Promise.reject(new ShellError('shell.badScopePath', { path: String(project.path) }))
     }
-    this.held.set(refPath(project.ref), {
+    this.held.set(project.path, {
       ...structuredClone(project),
       updatedAt: new Date().toISOString(),
     })
     return Promise.resolve()
   }
 
-  remove(ref: ProjectRef): Promise<void> {
-    if (isProjectRef(ref)) this.held.delete(refPath(ref))
+  remove(path: ScopePath): Promise<void> {
+    if (isSafeScopePath(path)) this.held.delete(path)
     return Promise.resolve()
   }
 }

@@ -30,8 +30,8 @@ import {
 import type {
   ProjectGroup, ProjectOrder, ProjectSnapshot, ProjectSummary,
 } from '../projects/project'
-import { refFor, sameRef } from '../projects/projectRef'
-import type { ProjectRef } from '../projects/projectRef'
+import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
+import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
@@ -100,9 +100,9 @@ export type ShellDiagnostics = {
 
 export type ProjectLibrary = {
   list(): Promise<ProjectSummary[]>
-  load(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
+  load(path: ScopePath): Promise<ProjectSnapshot | undefined>
   save(project: ProjectSnapshot): Promise<void>
-  remove(ref: ProjectRef): Promise<void>
+  remove(path: ScopePath): Promise<void>
 }
 
 export type AppProps = {
@@ -140,7 +140,7 @@ export type AppProps = {
    * Tell me when a project's folder changed under us. Absent where nothing can
    * watch, and the workspace then never leaves the states it can reach alone.
    */
-  watchProject?: (ref: ProjectRef, onChanged: () => void) => () => void
+  watchProject?: (path: ScopePath, onChanged: () => void) => () => void
   /**
    * Menu items and files the OS opened us with. Subscribed to here for the
    * commands about folders, and handed to the workspace for the ones about the
@@ -261,12 +261,11 @@ export function App({
    * the ref because the workspace subscribes to whatever it is handed: a fresh
    * function every render would be a fresh subscription every render.
    */
-  const group = project?.ref.group
-  const key = project?.ref.project
+  const openPath = project?.path
   const watchOpenProject = useMemo(() => {
-    if (!watchProject || !group || !key) return undefined
-    return (onChanged: () => void) => watchProject({ group, project: key }, onChanged)
-  }, [watchProject, group, key])
+    if (!watchProject || openPath === undefined) return undefined
+    return (onChanged: () => void) => watchProject(openPath, onChanged)
+  }, [watchProject, openPath])
 
   /** Bumped whenever the set of projects changed, so the picker re-reads it. */
   const [revision, setRevision] = useState(0)
@@ -280,7 +279,7 @@ export function App({
   const [reloadKey, setReloadKey] = useState(0)
   const reloadOpenProject = useCallback(() => {
     if (!project) return
-    void projects.load(project.ref).then(
+    void projects.load(project.path).then(
       (found) => {
         if (!found) { setProject(undefined); setRevision((r) => r + 1); return }
         setProject(found)
@@ -308,14 +307,12 @@ export function App({
    * not after React has rendered. Cleared once the workspace has been given the
    * new address, which remounts it.
    */
-  const movedAway = useRef<ProjectRef | undefined>(undefined)
+  const movedAway = useRef<ScopePath | undefined>(undefined)
   const workspaceStore = useMemo(() => ({
     save: (held: ProjectSnapshot) => (
-      movedAway.current && sameRef(movedAway.current, held.ref)
-        ? Promise.resolve()
-        : projects.save(held)
+      movedAway.current === held.path ? Promise.resolve() : projects.save(held)
     ),
-    load: (ref: ProjectRef) => projects.load(ref),
+    load: (path: ScopePath) => projects.load(path),
   }), [projects])
 
   /**
@@ -443,11 +440,11 @@ export function App({
   /** Opening is what makes a project "last opened", so both happen here. */
   const enter = useCallback((next: ProjectSnapshot) => {
     setProject(next)
-    prefs.writePreference({ lastProject: next.ref })
+    prefs.writePreference({ lastScope: next.path })
   }, [prefs])
 
-  const openProject = useCallback((ref: ProjectRef) => {
-    void projects.load(ref).then(
+  const openProject = useCallback((path: ScopePath) => {
+    void projects.load(path).then(
       (found) => {
         if (!found) { toasts.notify(s('picker.loadFailed'), 'error'); setRevision((r) => r + 1); return }
         enter(found)
@@ -487,12 +484,11 @@ export function App({
     group?: string; groupName: string; projectName: string
   }) => {
     void projects.list().then((existing) => {
-      const group = wanted.group ?? refFor(wanted.groupName, wanted.projectName).group
-      const ref = refFor(
-        wanted.groupName, wanted.projectName, keysInGroup(existing, group))
+      const group = wanted.group ?? scopePathFor(ROOT_SCOPE, wanted.groupName)
+      const path = scopePathFor(group, wanted.projectName, keysInGroup(existing, group))
       createAndEnter(
         emptyProject(
-          { group, project: ref.project },
+          path,
           wanted.groupName,
           { design: wanted.projectName, diagram: s('shell.newDiagram') },
         ),
@@ -541,7 +537,7 @@ export function App({
   ): Promise<ProjectSnapshot | undefined> => {
     return projects.list().then(async (existing) => {
       const targetGroup = settings.group
-      const moving = targetGroup !== current.ref.group
+      const moving = targetGroup !== (parentScope(current.path) ?? ROOT_SCOPE)
       const named = setProjectDefaults(renameProject(current, settings.name), {
         author: settings.defaultAuthor,
         aspectConfig: settings.defaultAspectConfig,
@@ -553,15 +549,14 @@ export function App({
       if (moving) {
         // A key free in the old group can be taken in the new one.
         const taken = keysInGroup(existing, targetGroup)
-        if (taken.includes(next.ref.project)) {
-          next = { ...next, ref: refFor(settings.groupName, settings.name, taken) }
-          next = { ...next, ref: { group: targetGroup, project: next.ref.project } }
+        if (taken.includes(scopePathLabel(next.path))) {
+          next = { ...next, path: scopePathFor(targetGroup, settings.name, taken) }
         }
       }
 
       // Before the save, so nothing can write to the old address from the
       // moment this app stops considering it ours.
-      if (moving) movedAway.current = current.ref
+      if (moving) movedAway.current = current.path
       try {
         await projects.save(next)
       } catch (cause) {
@@ -570,14 +565,14 @@ export function App({
         movedAway.current = undefined
         return undefined
       }
-      const moved = moving && !sameRef(current.ref, next.ref)
+      const moved = moving && current.path !== next.path
       if (moved) {
         // Inside the guard, not after it. The save has landed, so the project
         // exists at both addresses; a remove that throws here used to do so
         // silently and leave a duplicate for the user to find in the picker
         // weeks later. The move itself still counts as done.
         try {
-          await projects.remove(current.ref)
+          await projects.remove(current.path)
         } catch (cause) {
           failed('applyProjectSettings.remove', cause)
           toasts.notify(s('shell.moveLeftCopy', { message: reasonOf(cause) }), 'warning')
@@ -624,7 +619,8 @@ export function App({
 
       let inGroup: ProjectSummary[]
       try {
-        inGroup = (await projects.list()).filter((it) => it.ref.group === profile.group)
+        inGroup = (await projects.list())
+          .filter((it) => (parentScope(it.path) ?? ROOT_SCOPE) === profile.group)
       } catch (cause) {
         failed('applyGroupSettings.list', cause)
         reportStorage(false)
@@ -639,7 +635,7 @@ export function App({
       const missed: string[] = []
       for (const summary of inGroup) {
         try {
-          const held = await projects.load(summary.ref)
+          const held = await projects.load(summary.path)
           if (!held) continue
           const relabelled = relabelGroup(held, profile.name)
           if (relabelled === held) continue
@@ -652,7 +648,7 @@ export function App({
 
       // The open project holds its own copy of the model, so it has to be told
       // rather than left to notice.
-      if (project && project.ref.group === profile.group) {
+      if (project && (parentScope(project.path) ?? ROOT_SCOPE) === profile.group) {
         enter(relabelGroup(project, profile.name))
       }
       setRevision((r) => r + 1)
@@ -683,7 +679,7 @@ export function App({
    * whether one existed.
    */
   const [groupProfiles, setGroupProfiles] = useState<GroupProfile[]>([])
-  const groupKey = project?.ref.group
+  const groupKey = project && (parentScope(project.path) ?? ROOT_SCOPE)
   // How a failure is reported is not an input to reading the record. `failed`
   // is read through the ref so it cannot re-trigger the read: `list()` answers
   // with a new array every time, so a dependency that changes identity on
@@ -713,7 +709,8 @@ export function App({
 
   const saveGroupDecisions = useCallback((next: Adr[]) => {
     if (!project) return
-    const held = groupProfileFor(project.ref.group, groupNameOf(project.model), groupProfiles)
+    const held = groupProfileFor(
+      parentScope(project.path) ?? ROOT_SCOPE, groupNameOf(project.model), groupProfiles)
     const profile = normaliseGroupProfile({ ...held, decisions: next })
     // Optimistic: the page shows the change at once, and a failed write puts
     // the old record back along with the message.
@@ -733,7 +730,7 @@ export function App({
    * again later opens *your* copy, which is why an existing one wins here.
    */
   const copyExample = useCallback((example: ExampleProject) => {
-    void projects.load(example.ref).then((existing) => {
+    void projects.load(example.path).then((existing) => {
       if (existing) { enter(existing); return }
       const copy = exampleProject(example)
       // A shipped example this build cannot read is a bug the example tests
@@ -774,7 +771,7 @@ export function App({
             // Remounting on a project switch is the mechanism, not an accident:
             // the session's undo stack, aliases and pending batches belong to
             // one project and must not survive into another.
-            key={`${project.ref.group}/${project.ref.project}#${reloadKey}`}
+            key={`${project.path}#${reloadKey}`}
             project={project}
             projects={workspaceStore}
             watch={watchOpenProject}

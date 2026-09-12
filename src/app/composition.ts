@@ -56,8 +56,7 @@ import { browserStorage } from '../adapters/webStorage/available'
 import { WebStorageGroupStore } from '../adapters/webStorage/WebStorageGroupStore'
 import { WebStoragePreferencesStore } from '../adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageProjectStore } from '../adapters/webStorage/WebStorageProjectStore'
-import { refPath } from '../projects/projectRef'
-import type { ProjectRef } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
@@ -77,7 +76,7 @@ import type { ProjectStore } from '../ports/ProjectStore'
  * workspace is remounted per project, and a listener per project ever opened
  * is a leak with a slow fuse.
  */
-export type WatchProject = (ref: ProjectRef, onChanged: () => void) => () => void
+export type WatchProject = (path: ScopePath, onChanged: () => void) => () => void
 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
@@ -253,13 +252,13 @@ export function inWorkingDirectory(
   const channel = rememberingWrites(files)
   const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
 
-  const watchProject: WatchProject = (ref, onChanged) => {
+  const watchProject: WatchProject = (scope, onChanged) => {
     // Watching the whole folder rather than one project: it is one watcher for
     // the window, and watching the same root twice is a no-op in main. Nothing
     // unwatches it — another project may be opened a second later, and the
     // watcher costs one handle.
     void channel.files.watch(directory.root).catch(() => undefined)
-    const prefix = `${refPath(ref)}/`
+    const prefix = `${scope}/`
     return channel.files.onChanged((change) => {
       if (change.root !== directory.root || !change.path.startsWith(prefix)) return
       if (channel.ours(change)) return

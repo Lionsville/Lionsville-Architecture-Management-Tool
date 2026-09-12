@@ -10,8 +10,8 @@
  * behaviour it declared and nothing it did not.
  */
 import type { ProjectSnapshot } from '../../projects/project'
-import { refPath } from '../../projects/projectRef'
-import type { ProjectRef } from '../../projects/projectRef'
+import { scopeFilePath } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import type { HistoryEntry, HistoryScope, ProjectHistory } from '../../ports/ProjectHistory'
 import { labelSlug } from '../../platform/history'
 import type { LabelOutcome } from '../../platform/history'
@@ -20,7 +20,7 @@ export type MemorySnapshot = Omit<HistoryEntry, 'labels'> & {
   labels?: string[]
   /** Paths, relative to the root, that this snapshot changed. */
   touched?: readonly string[]
-  /** The projects as they stood, by ref path. Absent means not in the folder then. */
+  /** The projects as they stood, by path. Absent means not in the folder then. */
   projects?: readonly ProjectSnapshot[]
 }
 
@@ -62,7 +62,7 @@ export class InMemoryProjectHistory implements ProjectHistory {
   }
 
   entries(limit = 50, of?: HistoryScope): Promise<HistoryEntry[]> {
-    const wanted = of ? of.paths.map((path) => `${refPath(of.ref)}/${path}`) : undefined
+    const wanted = of ? of.paths.map((path) => scopeFilePath(of.path, path)) : undefined
     const listed = this.snapshots
       .filter((held) => !wanted || (held.touched ?? []).some((path) => wanted.some((pattern) => matches(pattern, path))))
       .slice(0, limit)
@@ -82,8 +82,8 @@ export class InMemoryProjectHistory implements ProjectHistory {
     return Promise.resolve('done')
   }
 
-  projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined> {
+  projectAt(path: ScopePath, entry: string): Promise<ProjectSnapshot | undefined> {
     const held = this.snapshots.find((snapshot) => snapshot.id === entry)
-    return Promise.resolve(held?.projects?.find((project) => refPath(project.ref) === refPath(ref)))
+    return Promise.resolve(held?.projects?.find((project) => project.path === path))
   }
 }

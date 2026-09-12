@@ -16,7 +16,7 @@ import { isZip, openDocumentBytes, workingFileBytes } from './workingFile'
 
 function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
   return {
-    ref: { group: 'acme-logistics', project: 'landscape' },
+    path: 'acme-logistics/landscape',
     activeDiagramId: 'l7',
     logoLibrary: [{ key: 'lib:own', label: 'Own', url: 'data:image/png;base64,AQID' }],
     model: {
@@ -91,9 +91,9 @@ describe('openDocumentBytes', () => {
   })
 
   it('files what it opened where the open project is filed', () => {
-    const elsewhere = { ...into, ref: { group: 'globex', project: 'theirs' } }
+    const elsewhere = { ...into, path: 'globex/theirs' }
     const held = openDocumentBytes(workingFileBytes(project()), elsewhere)
-    expect(held.ok && held.project.ref).toEqual({ group: 'globex', project: 'theirs' })
+    expect(held.ok && held.project.path).toEqual('globex/theirs')
   })
 
   it('opens a zip somebody made themselves, folder and all', () => {

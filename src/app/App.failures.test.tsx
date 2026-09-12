@@ -20,7 +20,7 @@ afterEach(() => cleanup())
 const refused = () => Promise.reject(new Error('storage refused'))
 
 const project = (key: string, name: string) => ({
-  ref: { group: 'acme', project: key },
+  path: `acme/${key}`,
   model: {
     name,
     customerName: 'Acme',
@@ -44,7 +44,7 @@ function show(projects: Partial<ProjectLibrary>) {
     },
     examples: [{
       key: 'acme',
-      ref: { group: 'acme', project: 'landscape' },
+      path: 'acme/landscape',
       label: 'Acme Logistics',
       description: 'an example',
       folder: {
@@ -95,7 +95,7 @@ describe('renaming a group when the sweep cannot finish', () => {
     // One of the two refuses. The old sweep returned at the first failure, so
     // the second project kept the old label and nobody was told which.
     vi.spyOn(projects, 'save').mockImplementation((held) =>
-      held.ref.project === 'rolling-stock'
+      held.path === 'acme/rolling-stock'
         ? Promise.reject(new Error('quota'))
         : Promise.resolve())
 

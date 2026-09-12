@@ -23,9 +23,9 @@ import { isFormatPath, projectFiles, projectFromFolder } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import { foldFolderToFormat4, migrateModel, openProjectFolder } from './migrate3to4'
 import { transitionFileText, transitionPath } from './transitionFile'
-import type { ProjectRef } from './projectRef'
+import type { ScopePath } from './scopePath'
 
-const REF: ProjectRef = { group: 'acme-logistics', project: 'landscape' }
+const REF: ScopePath = 'acme-logistics/landscape'
 
 const DECISION: Adr = {
   id: 'adr-1', number: 1, title: 'One writer', status: 'accepted', date: '2026-09-06',

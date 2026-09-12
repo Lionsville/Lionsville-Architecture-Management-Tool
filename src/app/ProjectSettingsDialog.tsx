@@ -34,7 +34,7 @@ import type { Translate } from '../i18n'
 import type { AspectConfigEntry } from '../model'
 import type { ProjectGroup, ProjectSnapshot } from '../projects/project'
 import { groupNameOf } from '../projects/project'
-import { refFor, refPath } from '../projects/projectRef'
+import { parentScope, ROOT_SCOPE, scopePathFor } from '../projects/scopePath'
 import { GroupField, NEW_GROUP, groupChoiceName, isGroupChoiceReady } from './picker/GroupField'
 import type { GroupChoice } from './picker/GroupField'
 
@@ -65,8 +65,8 @@ export function ProjectSettingsDialog({
   open, project, groups, onCancel, onSave, s,
 }: ProjectSettingsDialogProps) {
   const [name, setName] = useState(project.model.name)
-  const [group, setGroup] = useState<GroupChoice>(
-    { selected: project.ref.group, newName: '' })
+  const parent = parentScope(project.path) ?? ROOT_SCOPE
+  const [group, setGroup] = useState<GroupChoice>({ selected: parent, newName: '' })
   const [author, setAuthor] = useState(project.model.defaultAuthor ?? '')
   const [columns, setColumns] = useState<AspectConfigEntry[]>(
     [...(project.model.defaultAspectConfig ?? DEFAULT_ASPECT_CONFIG)])
@@ -77,11 +77,11 @@ export function ProjectSettingsDialog({
   useEffect(() => {
     if (!open) return
     setName(project.model.name)
-    setGroup({ selected: project.ref.group, newName: '' })
+    setGroup({ selected: parent, newName: '' })
     setAuthor(project.model.defaultAuthor ?? '')
     setColumns([...(project.model.defaultAspectConfig ?? DEFAULT_ASPECT_CONFIG)])
     setFreshColumns([])
-  }, [open, project.model.name, project.ref.group, project.model.defaultAuthor,
+  }, [open, project.model.name, parent, project.model.defaultAuthor,
     project.model.defaultAspectConfig])
 
   const groupName = group.selected === NEW_GROUP
@@ -89,7 +89,7 @@ export function ProjectSettingsDialog({
     : groupChoiceName(group, groups) || groupNameOf(project.model)
   const ready = name.trim().length > 0 && isGroupChoiceReady(group)
   const moving = group.selected !== NEW_GROUP
-    ? group.selected !== project.ref.group
+    ? group.selected !== parent
     : group.newName.trim().length > 0
 
   return (
@@ -114,7 +114,7 @@ export function ProjectSettingsDialog({
             s={s}
           />
           <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-            {refPath(project.ref)}
+            {project.path}
           </Typography>
 
           <Divider sx={{ mt: 1.5 }} />
@@ -153,7 +153,7 @@ export function ProjectSettingsDialog({
           onClick={() => onSave({
             name: name.trim(),
             group: group.selected === NEW_GROUP
-              ? refFor(groupName, name.trim()).group
+              ? scopePathFor(ROOT_SCOPE, groupName)
               : group.selected,
             groupName,
             defaultAuthor: author.trim() || undefined,

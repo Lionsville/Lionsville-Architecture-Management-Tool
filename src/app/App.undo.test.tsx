@@ -58,7 +58,7 @@ vi.mock('../editor', async (importOriginal) => {
 afterEach(() => { vi.useRealTimers(); cleanup() })
 
 const project = (): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name: 'Landscape',
     customerName: 'Acme',

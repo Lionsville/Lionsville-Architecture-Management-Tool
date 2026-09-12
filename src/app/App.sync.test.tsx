@@ -27,7 +27,7 @@ vi.mock('../editor', async (importOriginal) => {
 afterEach(() => cleanup())
 
 const project = (name = 'Landscape'): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name, customerName: 'Acme', elements: [], relations: [],
     diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],

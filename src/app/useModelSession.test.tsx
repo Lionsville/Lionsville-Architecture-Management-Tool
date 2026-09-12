@@ -45,7 +45,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
 })
 
 const project = (over: Partial<ProjectSnapshot> = {}): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: model(),
   activeDiagramId: 'd1',
   logoLibrary: [],
@@ -152,12 +152,12 @@ describe('useModelSession — the snapshot', () => {
   it('keeps the ref it was mounted with, whatever else changes', () => {
     const { session } = mount()
     act(() => session().adopt(project({
-      ref: { group: 'somebody', project: 'else' }, model: model({ name: 'Opened file' }),
+      path: 'somebody/else', model: model({ name: 'Opened file' }),
     }), false))
     // The address belongs to the workspace, which is remounted on a project
     // switch. A session that could change its own would autosave one project's
     // edits onto another.
-    expect(session().snapshot().ref).toEqual({ group: 'acme', project: 'landscape' })
+    expect(session().snapshot().path).toEqual('acme/landscape')
     expect(session().snapshot().model.name).toBe('Opened file')
   })
 

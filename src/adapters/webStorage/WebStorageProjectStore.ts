@@ -6,9 +6,9 @@
  * saving one project would take every other project down with it. Separate keys
  * mean a project can only ever damage itself.
  *
- * The key is the ref as a path (`lvarch.project.<group>/<project>`), so
- * `list()` is a prefix scan and a store that later keeps projects in folders
- * uses the same string as its path.
+ * The key is the address itself (`lvarch.project.<path>`), so `list()` is a
+ * prefix scan and a store that keeps projects in folders uses the same string
+ * as its path.
  *
  * **Corrupt storage is a skipped entry, not an error.** Half-written JSON, a key
  * from an older version, something a human edited by hand: there is nothing the
@@ -21,8 +21,8 @@ import { ShellError } from '../../platform/errors'
 import { isBeforeFormat4, migrateModel } from '../../projects/migrate3to4'
 import { isUsableProject, sortProjects, summarise } from '../../projects/project'
 import type { ProjectSnapshot, ProjectSummary } from '../../projects/project'
-import { isProjectRef, refPath } from '../../projects/projectRef'
-import type { ProjectRef } from '../../projects/projectRef'
+import { isSafeScopePath } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import type { ProjectStore, StoragePressure } from '../../ports/ProjectStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 
@@ -66,8 +66,8 @@ export class WebStorageProjectStore implements ProjectStore {
     private readonly prefix: string = PROJECT_PREFIX,
   ) {}
 
-  private keyFor(ref: ProjectRef): string {
-    return `${this.prefix}${refPath(ref)}`
+  private keyFor(path: ScopePath): string {
+    return `${this.prefix}${path}`
   }
 
   /**
@@ -122,11 +122,11 @@ export class WebStorageProjectStore implements ProjectStore {
     }
     if (!isUsableProject(parsed)) return undefined
     const held = parsed as ProjectSnapshot
-    // A record whose ref is missing or malformed cannot be addressed again, so
+    // A record whose path is missing or malformed cannot be addressed again, so
     // it is not a project as far as this store is concerned.
-    if (!isProjectRef(held.ref)) return undefined
+    if (!isSafeScopePath(held.path)) return undefined
     return {
-      ref: held.ref,
+      path: held.path,
       // There is no version on a record kept here — it is a whole snapshot
       // under one key — so the fold is run over every read and is written to
       // be safe on a model that is already this shape (`migrate3to4.ts`).
@@ -143,8 +143,8 @@ export class WebStorageProjectStore implements ProjectStore {
    * See {@link ProjectStore.outdated}. A record here is a whole snapshot under
    * one key with no version on it, so the question is asked of the model.
    */
-  outdated(): Promise<ProjectRef[]> {
-    const found: ProjectRef[] = []
+  outdated(): Promise<ScopePath[]> {
+    const found: ScopePath[] = []
     for (const key of this.ourKeys()) {
       let parsed: unknown
       try {
@@ -156,7 +156,7 @@ export class WebStorageProjectStore implements ProjectStore {
       }
       if (!isUsableProject(parsed)) continue
       const held = parsed as ProjectSnapshot
-      if (isProjectRef(held.ref) && isBeforeFormat4(held.model)) found.push(held.ref)
+      if (isSafeScopePath(held.path) && isBeforeFormat4(held.model)) found.push(held.path)
     }
     return Promise.resolve(found)
   }
@@ -180,18 +180,18 @@ export class WebStorageProjectStore implements ProjectStore {
     return Promise.resolve(sortProjects(found))
   }
 
-  load(ref: ProjectRef): Promise<ProjectSnapshot | undefined> {
-    if (!isProjectRef(ref)) return Promise.resolve(undefined)
-    return Promise.resolve(this.read(this.keyFor(ref)))
+  load(path: ScopePath): Promise<ProjectSnapshot | undefined> {
+    if (!isSafeScopePath(path)) return Promise.resolve(undefined)
+    return Promise.resolve(this.read(this.keyFor(path)))
   }
 
   save(project: ProjectSnapshot): Promise<void> {
-    if (!isProjectRef(project.ref)) {
-      return Promise.reject(new ShellError('shell.badProjectRef', { path: JSON.stringify(project.ref) }))
+    if (!isSafeScopePath(project.path)) {
+      return Promise.reject(new ShellError('shell.badScopePath', { path: String(project.path) }))
     }
     try {
       const stamped: ProjectSnapshot = { ...project, updatedAt: new Date().toISOString() }
-      const key = this.keyFor(project.ref)
+      const key = this.keyFor(project.path)
       const text = JSON.stringify(stamped)
       this.storage.setItem(key, text)
       this.sizes().set(key, text.length)
@@ -201,10 +201,10 @@ export class WebStorageProjectStore implements ProjectStore {
     }
   }
 
-  remove(ref: ProjectRef): Promise<void> {
+  remove(path: ScopePath): Promise<void> {
     try {
-      if (isProjectRef(ref)) {
-        const key = this.keyFor(ref)
+      if (isSafeScopePath(path)) {
+        const key = this.keyFor(path)
         this.storage.removeItem(key)
         this.sizes().delete(key)
       }

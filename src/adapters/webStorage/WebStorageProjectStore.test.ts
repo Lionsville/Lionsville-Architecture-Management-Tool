@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  SAMPLE_REF, describeProjectStore, projectAt, sampleProject,
+  SAMPLE_PATH, describeProjectStore, projectAt, sampleProject,
 } from '../../ports/ProjectStore.contract'
 import type { KeyValueStorage } from './KeyValueStorage'
 import {
@@ -45,7 +45,7 @@ describe('WebStorageProjectStore', () => {
   it('uses the group path as written, so a nested group nests the key', async () => {
     const storage = fakeStorage()
     const store = new WebStorageProjectStore(storage)
-    await store.save(projectAt({ group: 'acme/rail', project: 'landscape' }))
+    await store.save(projectAt('acme/rail/landscape'))
     expect(storage.keys()).toEqual([keyFor('acme/rail', 'landscape')])
   })
 
@@ -55,7 +55,7 @@ describe('WebStorageProjectStore', () => {
     const store = new WebStorageProjectStore(storage)
     await store.save(sampleProject())
     expect(await store.list()).toHaveLength(1)
-    await expect(store.load({ group: 'acme', project: 'broken' })).resolves.toBeUndefined()
+    await expect(store.load('acme/broken')).resolves.toBeUndefined()
   })
 
   it('skips a record that is not a project', async () => {
@@ -63,8 +63,8 @@ describe('WebStorageProjectStore', () => {
     await expect(store.list()).resolves.toEqual([])
   })
 
-  it('skips a record whose ref cannot be addressed again', async () => {
-    const orphan = JSON.stringify({ ...sampleProject(), ref: { group: '', project: '' } })
+  it('skips a record whose path cannot be addressed again', async () => {
+    const orphan = JSON.stringify({ ...sampleProject(), path: '../escape' })
     const store = new WebStorageProjectStore(fakeStorage({ [keyFor('a', 'b')]: orphan }))
     await expect(store.list()).resolves.toEqual([])
   })
@@ -78,17 +78,17 @@ describe('WebStorageProjectStore', () => {
 
   it('yields an empty library for a record written before marks existed', async () => {
     const old = sampleProject()
-    const without = { ref: SAMPLE_REF, model: old.model, activeDiagramId: 'l7' }
+    const without = { path: SAMPLE_PATH, model: old.model, activeDiagramId: 'l7' }
     const store = new WebStorageProjectStore(fakeStorage({
       [keyFor('acme-logistics', 'landscape')]: JSON.stringify(without),
     }))
-    expect((await store.load(SAMPLE_REF))?.logoLibrary).toEqual([])
+    expect((await store.load(SAMPLE_PATH))?.logoLibrary).toEqual([])
   })
 
   it('lists alphabetically, not in the order the keys happen to enumerate', async () => {
     const store = new WebStorageProjectStore(fakeStorage())
-    await store.save(projectAt({ group: 'acme', project: 'zebra' }, 'Zebra'))
-    await store.save(projectAt({ group: 'acme', project: 'aardvark' }, 'Aardvark'))
+    await store.save(projectAt('acme/zebra', 'Zebra'))
+    await store.save(projectAt('acme/aardvark', 'Aardvark'))
     expect((await store.list()).map((s) => s.name)).toEqual(['Aardvark', 'Zebra'])
   })
 
@@ -104,7 +104,7 @@ describe('WebStorageProjectStore', () => {
   })
 
   it('does not turn a failed remove() into a fault', async () => {
-    await expect(new WebStorageProjectStore(refusingStorage()).remove(SAMPLE_REF))
+    await expect(new WebStorageProjectStore(refusingStorage()).remove(SAMPLE_PATH))
       .resolves.toBeUndefined()
   })
 
@@ -129,7 +129,7 @@ describe('WebStorageProjectStore', () => {
  */
 describe('WebStorageProjectStore — a record from before format 4', () => {
   const beforeAdr0012 = JSON.stringify({
-    ref: { group: 'acme', project: 'old' },
+    path: 'acme/old',
     activeDiagramId: 'l7',
     logoLibrary: [],
     model: {
@@ -153,14 +153,14 @@ describe('WebStorageProjectStore — a record from before format 4', () => {
     const storage = fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 })
     const store = new WebStorageProjectStore(storage)
 
-    expect(await store.outdated()).toEqual([{ group: 'acme', project: 'old' }])
-    await store.save((await store.load({ group: 'acme', project: 'old' }))!)
+    expect(await store.outdated()).toEqual(['acme/old'])
+    await store.save((await store.load('acme/old'))!)
     expect(await store.outdated()).toEqual([])
   })
 
   it('reads it as the model says it now, whether or not it has been written back', async () => {
     const store = new WebStorageProjectStore(fakeStorage({ [keyFor('acme', 'old')]: beforeAdr0012 }))
-    const held = await store.load({ group: 'acme', project: 'old' })
+    const held = await store.load('acme/old')
 
     expect(held?.model.relations).toEqual([
       { id: 'c-1', type: 'flow', sourceId: 'portal', targetId: 'wms', isBidirectional: false },
@@ -202,7 +202,7 @@ describe('WebStorageProjectStore — how full it is', () => {
     await store.save(wordy)
     expect(store.pressure()?.used ?? 0).toBeGreaterThan(small + 4_000)
 
-    await store.remove(SAMPLE_REF)
+    await store.remove(SAMPLE_PATH)
     expect(store.pressure()?.used).toBe(0)
   })
 
@@ -210,7 +210,7 @@ describe('WebStorageProjectStore — how full it is', () => {
     const store = new WebStorageProjectStore(fakeStorage())
     await store.save(sampleProject())
     const one = store.pressure()?.used ?? 0
-    await store.save(projectAt({ group: 'acme-logistics', project: 'second' }))
+    await store.save(projectAt('acme-logistics/second'))
     expect(store.pressure()?.used ?? 0).toBeGreaterThan(one)
   })
 

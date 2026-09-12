@@ -16,12 +16,12 @@
  */
 import type { GroupProfile } from './group'
 import type { ProjectSnapshot, ProjectSummary } from './project'
-import type { ProjectRef } from './projectRef'
+import type { ScopePath } from './scopePath'
 
 /** Where the projects are coming from: enough to see them and read them. */
 export type ProjectSource = {
   list(): Promise<ProjectSummary[]>
-  load(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
+  load(path: ScopePath): Promise<ProjectSnapshot | undefined>
 }
 
 /** Where they are going: enough to see what is already there, and to write. */
@@ -76,8 +76,8 @@ export async function copyProjectsInto(
 
   for (const summary of summaries) {
     try {
-      if (await into.load(summary.ref)) { tally.kept += 1; continue }
-      const project = await from.load(summary.ref)
+      if (await into.load(summary.path)) { tally.kept += 1; continue }
+      const project = await from.load(summary.path)
       if (!project) { tally.failed += 1; continue }
       await into.save(project)
       tally.projects += 1
@@ -145,7 +145,7 @@ export function migrated(tally: MigrationTally): boolean {
  * which is what an in-memory store and any backend written since the format
  * turned both want.
  */
-export type UpgradeTarget = ProjectTarget & { outdated?(): Promise<ProjectRef[]> }
+export type UpgradeTarget = ProjectTarget & { outdated?(): Promise<ScopePath[]> }
 
 /**
  * Recording the folder before the pass rewrites it (ADR-0008), or saying it
@@ -185,7 +185,7 @@ export async function upgradeProjects(
   store: UpgradeTarget, record?: RecordBefore,
 ): Promise<UpgradeTally> {
   const tally: UpgradeTally = { ...NOTHING_UPGRADED }
-  let outdated: readonly ProjectRef[]
+  let outdated: readonly ScopePath[]
   try {
     outdated = await store.outdated?.() ?? []
   } catch {
@@ -196,9 +196,9 @@ export async function upgradeProjects(
   if (outdated.length === 0) return tally
 
   tally.recorded = record && await record().catch(() => false) ? 'taken' : 'unavailable'
-  for (const ref of outdated) {
+  for (const path of outdated) {
     try {
-      const project = await store.load(ref)
+      const project = await store.load(path)
       if (!project) { tally.failed += 1; continue }
       await store.save(project)
       tally.upgraded += 1

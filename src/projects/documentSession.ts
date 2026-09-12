@@ -28,7 +28,7 @@
  * - `conflict`   — both sides changed. This is the only state that requires a
  *                  human, and it is deliberately the only one.
  */
-import type { ProjectRef } from './projectRef'
+import type { ScopePath } from './scopePath'
 
 export type DocumentStatus =
   | 'no-file'
@@ -103,13 +103,13 @@ export type DocumentSession = {
    */
   editedWhileSaving: boolean
   /** Which project this session is for, when one is attached. */
-  ref?: ProjectRef
+  path?: ScopePath
   /** Why the last save failed, for the message. Cleared by the next attempt. */
   lastError?: string
 }
 
-export function emptySession(ref?: ProjectRef): DocumentSession {
-  return { status: 'no-file', editedWhileSaving: false, ref }
+export function emptySession(path?: ScopePath): DocumentSession {
+  return { status: 'no-file', editedWhileSaving: false, path }
 }
 
 /**
@@ -120,8 +120,8 @@ export function emptySession(ref?: ProjectRef): DocumentSession {
  * document from the first frame and `no-file` would be a state nobody is ever
  * in. Clean, because what is on screen is what was just read.
  */
-export function openSession(ref: ProjectRef, fingerprint?: SaveFingerprint): DocumentSession {
-  return { status: 'clean', editedWhileSaving: false, ref, fingerprint }
+export function openSession(path: ScopePath, fingerprint?: SaveFingerprint): DocumentSession {
+  return { status: 'clean', editedWhileSaving: false, path, fingerprint }
 }
 
 /** Two fingerprints describing the same bytes in the same place. */
@@ -144,7 +144,7 @@ export function documentSession(state: DocumentSession, event: DocumentEvent): D
       return { ...state, status: 'clean', fingerprint: event.fingerprint, editedWhileSaving: false }
 
     case 'detached':
-      return { ...emptySession(state.ref), status: 'no-file' }
+      return { ...emptySession(state.path), status: 'no-file' }
 
     case 'edited':
       switch (state.status) {

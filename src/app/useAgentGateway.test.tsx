@@ -67,7 +67,7 @@ vi.mock('../editor', async (importOriginal) => {
 afterEach(() => cleanup())
 
 const project: ProjectSnapshot = {
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name: 'Warehouse landscape',
     customerName: 'Acme',

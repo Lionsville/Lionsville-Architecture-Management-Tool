@@ -16,9 +16,9 @@ import {
 } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import type { ProjectSnapshot } from './project'
-import type { ProjectRef } from './projectRef'
+import type { ScopePath } from './scopePath'
 
-const REF: ProjectRef = { group: 'acme-logistics', project: 'landscape' }
+const REF: ScopePath = 'acme-logistics/landscape'
 
 function element(id: string, name: string, over: Partial<DesignElement> = {}): DesignElement {
   return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {}, ...over }
@@ -67,7 +67,7 @@ function project(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
     ...(over.model ?? {}),
   }
   return {
-    ref: REF,
+    path: REF,
     activeDiagramId: 'l7',
     logoLibrary: [{ key: 'lib:own', label: 'Own', url: 'data:image/svg+xml;base64,PHN2Zy8+' }],
     imageLibrary: [{ file: 'cutover.png', url: 'data:image/png;base64,AQI=' }],
@@ -324,7 +324,7 @@ describe('projectFromFolder', () => {
 
   it('reads a project with nothing optional in it', () => {
     const plain: ProjectSnapshot = {
-      ref: REF,
+      path: REF,
       activeDiagramId: 'l7',
       logoLibrary: [],
       model: {
@@ -356,8 +356,8 @@ describe('projectFromFolder', () => {
   })
 
   it('takes the ref from where the folder is, not from anything inside it', () => {
-    const elsewhere = { group: 'globex', project: 'moved' }
-    expect(projectFromFolder(projectFiles(project()), elsewhere)?.ref).toEqual(elsewhere)
+    const elsewhere = 'globex/moved'
+    expect(projectFromFolder(projectFiles(project()), elsewhere)?.path).toEqual(elsewhere)
   })
 
   it('treats a deleted geometry file as "lay it out again", with the view intact', () => {
@@ -469,7 +469,7 @@ describe('projectSummaryFrom', () => {
   it('answers the picker from the header alone', () => {
     const header = textOf(projectFiles(project()), PROJECT_FILE)
     expect(projectSummaryFrom(header, REF, '2026-09-06T10:00:00.000Z')).toEqual({
-      ref: REF, name: 'Application landscape', groupName: 'Acme Logistics',
+      path: REF, name: 'Application landscape', groupName: 'Acme Logistics',
       updatedAt: '2026-09-06T10:00:00.000Z',
     })
   })

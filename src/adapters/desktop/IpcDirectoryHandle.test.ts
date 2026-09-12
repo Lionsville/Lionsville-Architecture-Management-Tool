@@ -83,7 +83,7 @@ describe('IpcDirectoryHandle', () => {
     const { cpSync } = await import('node:fs')
     cpSync(join(folder, 'acme-logistics'), join(folder, 'globex'), { recursive: true })
 
-    const back = await storeOver(folder).load({ group: 'globex', project: 'landscape' })
+    const back = await storeOver(folder).load('globex/landscape')
     expect(back?.model.name).toBe('Application landscape')
     expect(await storeOver(folder).list()).toHaveLength(2)
   })

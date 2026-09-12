@@ -51,7 +51,7 @@ const model = (over: Partial<HostModel> = {}): HostModel => ({
 })
 
 const project = (m: HostModel = model()): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: m,
   activeDiagramId: 'd1',
   logoLibrary: [],

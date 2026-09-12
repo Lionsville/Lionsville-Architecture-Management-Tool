@@ -40,7 +40,7 @@ const now: HostModel = {
 }
 
 const files = (model: HostModel) => {
-  const project: ProjectSnapshot = { ref: { group: 'acme', project: 'landscape' }, model, activeDiagramId: 'd1', logoLibrary: [] }
+  const project: ProjectSnapshot = { path: 'acme/landscape', model, activeDiagramId: 'd1', logoLibrary: [] }
   return projectFiles(project).map((file) => ('text' in file ? `${file.path}\n${file.text}` : file.path))
 }
 

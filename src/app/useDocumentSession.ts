@@ -25,7 +25,7 @@ import {
 } from '../projects/documentSession'
 import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/documentSession'
 import type { ProjectSnapshot } from '../projects/project'
-import type { ProjectRef } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 import type { StorageNotice } from './useStorageNotice'
 import type { StoragePressure } from '../ports/ProjectStore'
 
@@ -43,7 +43,7 @@ export type ProjectSaver = {
    * is the workspace loading the project itself and telling the machine
    * afterwards, which puts a transition somewhere it cannot be tested.
    */
-  load?(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
+  load?(path: ScopePath): Promise<ProjectSnapshot | undefined>
   /**
    * How full it is, where it can say — see `ports/ProjectStore`. Read after a
    * save rather than before one: the number that matters is what the write it
@@ -119,7 +119,7 @@ export function useDocumentSession(deps: {
   } = deps
   const { model, activeDiagramId, logoLibrary, snapshot } = session
 
-  const [state, dispatch] = useReducer(documentSession, snapshot().ref, openSession)
+  const [state, dispatch] = useReducer(documentSession, snapshot().path, openSession)
 
   /**
    * The same machine, kept in step by hand.
@@ -185,7 +185,7 @@ export function useDocumentSession(deps: {
     const timer = window.setTimeout(() => saving.current('idle'), AUTOSAVE_IDLE_MS)
     return () => window.clearTimeout(timer)
     // These three and nothing else. Everything the body reaches for besides
-    // them is a ref or is stable for the life of the hook; a dependency that
+    // them is a path or is stable for the life of the hook; a dependency that
     // changed identity per render would read as an edit per render.
   }, [model, activeDiagramId, logoLibrary])
 
@@ -257,8 +257,8 @@ export function useDocumentSession(deps: {
   }, [watch, apply])
 
   const takeTheirs = useCallback(() => {
-    const ref = snapshot().ref
-    void projects.load?.(ref)?.then((project) => {
+    const path = snapshot().path
+    void projects.load?.(path)?.then((project) => {
       // Gone from disk entirely: somebody deleted the project while it was
       // open. Nothing to take, and the copy on screen is now the only one —
       // which the unsaved-work prompt will insist on when the window closes.

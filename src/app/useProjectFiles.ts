@@ -17,7 +17,7 @@ import { readLogoFile, takenLogoKeys } from '../model/logo'
 import { readImageFile, takenImageFiles } from '../model/documentImage'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
 import { toInterchange } from '../model/toInterchange'
-import { refPath } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 import { openDocumentBytes, workingFileBytes, WORKING_FILE_MEDIA_TYPE } from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { interchangeSaved } from './interchangeNotice'
@@ -72,8 +72,8 @@ export type ProjectFiles = {
  * several, two exports in a row would overwrite each other in the download
  * folder and nobody could tell which landscape they were looking at.
  */
-function fileNameFor(ref: { group: string; project: string }, suffix: string): string {
-  return `${refPath(ref).replace(/\//g, '-')}${suffix}`
+function fileNameFor(path: ScopePath, suffix: string): string {
+  return `${path.replace(/\//g, '-')}${suffix}`
 }
 
 export function useProjectFiles(deps: {
@@ -110,7 +110,7 @@ export function useProjectFiles(deps: {
   const saveWorkingFile = useCallback(() => {
     const project = session.snapshot()
     handOver({
-      name: fileNameFor(project.ref, WORKING_FILE_EXTENSION),
+      name: fileNameFor(project.path, WORKING_FILE_EXTENSION),
       bytes: workingFileBytes(project),
       mediaType: WORKING_FILE_MEDIA_TYPE,
     }, s('shell.savedWorkingFile'))
@@ -128,7 +128,7 @@ export function useProjectFiles(deps: {
     const project = session.snapshot()
     const { doc, omitted } = toInterchange(project.model)
     handOver({
-      name: fileNameFor(project.ref, '.json'),
+      name: fileNameFor(project.path, '.json'),
       text: JSON.stringify(doc, null, 2) + '\n',
       mediaType: 'application/json',
     }, interchangeSaved(omitted, s))

@@ -51,8 +51,8 @@ import {
 } from './composition'
 import type { DesktopDirectory, Shell } from './composition'
 import {
-  readLanguage, readLastProject, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
-  withoutLastProject, withWorkingDirectory,
+  readLanguage, readLastScope, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
+  withoutLastScope, withWorkingDirectory,
 } from '../projects/preferences'
 import { migrated, migrateInto, upgradeProjects } from '../projects/migration'
 import type { PullOutcome } from '../platform/sync'
@@ -437,10 +437,12 @@ void shell.preferences.read()
     // Not on a desktop with no folder yet: there is nothing to reopen, because
     // the only place a project could be is the app's own storage, which is
     // exactly what ADR-0003 retired. The first-run screen asks instead.
-    const lastProject = files && shell.source.kind !== 'folder'
+    const lastScope = files && shell.source.kind !== 'folder'
       ? undefined
-      : readLastProject(storedPreferences)
-    const initialProject = lastProject ? await shell.projects.load(lastProject) : undefined
+      : readLastScope(storedPreferences)
+    const initialProject = lastScope === undefined
+      ? undefined
+      : await shell.projects.load(lastScope)
     renderApp(storedPreferences, initialProject, initialSync)
   })
   .catch((error: unknown) => {
@@ -454,7 +456,7 @@ void shell.preferences.read()
         error={error}
         onReload={shell.hostControls.reload}
         onStartFresh={() => {
-          const kept = withoutLastProject(stored)
+          const kept = withoutLastScope(stored)
           // Best effort: the store may be the very thing that refused. Writing
           // it back is what stops the next boot repeating this one — the render
           // below happens either way.

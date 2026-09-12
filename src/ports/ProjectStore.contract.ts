@@ -24,14 +24,15 @@ import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import type { ProjectSnapshot } from '../projects/project'
-import type { ProjectRef } from '../projects/projectRef'
+import { parentScope, ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
+import type { ScopePath } from '../projects/scopePath'
 import type { ProjectStore } from './ProjectStore'
 
 function element(id: string, name: string): DesignElement {
   return { id, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {} }
 }
 
-export const SAMPLE_REF: ProjectRef = { group: 'acme-logistics', project: 'landscape' }
+export const SAMPLE_PATH: ScopePath = 'acme-logistics/landscape'
 
 /** Small but real: two diagrams, a connection, and an uploaded mark. */
 export function sampleProject(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
@@ -50,7 +51,7 @@ export function sampleProject(over: Partial<ProjectSnapshot> = {}): ProjectSnaps
     ...(over.model ?? {}),
   }
   return {
-    ref: SAMPLE_REF,
+    path: SAMPLE_PATH,
     activeDiagramId: 'l7',
     logoLibrary: [{ key: 'lib:own', label: 'Own', url: 'data:image/svg+xml;base64,PHN2Zy8+' }],
     ...over,
@@ -61,13 +62,14 @@ export function sampleProject(over: Partial<ProjectSnapshot> = {}): ProjectSnaps
 /**
  * The same project filed somewhere else, for the addressing checks.
  *
- * The group's name follows the ref rather than staying the sample's own, so an
+ * The group's name follows the path rather than staying the sample's own, so an
  * ordering test actually exercises grouping instead of comparing one string
  * with itself.
  */
-export function projectAt(ref: ProjectRef, name = ref.project): ProjectSnapshot {
+export function projectAt(path: ScopePath, name = scopePathLabel(path)): ProjectSnapshot {
   const base = sampleProject()
-  return { ...base, ref, model: { ...base.model, name, customerName: ref.group } }
+  const group = parentScope(path) ?? ROOT_SCOPE
+  return { ...base, path, model: { ...base.model, name, customerName: group } }
 }
 
 /**
@@ -91,16 +93,16 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
     it('starts empty', async () => {
       const store = create()
       await expect(store.list()).resolves.toEqual([])
-      await expect(store.load(SAMPLE_REF)).resolves.toBeUndefined()
+      await expect(store.load(SAMPLE_PATH)).resolves.toBeUndefined()
     })
 
-    it('gives back what was saved, under its own ref', async () => {
+    it('gives back what was saved, under its own path', async () => {
       const store = create()
       const project = sampleProject()
       await store.save(project)
-      const back = await store.load(SAMPLE_REF)
+      const back = await store.load(SAMPLE_PATH)
       expect(back).toMatchObject({
-        ref: SAMPLE_REF,
+        path: SAMPLE_PATH,
         activeDiagramId: 'l7',
         logoLibrary: project.logoLibrary,
       })
@@ -120,20 +122,20 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       await expect(store.outdated?.() ?? Promise.resolve([])).resolves.toEqual([])
     })
 
-    it('does not answer for a ref that was never saved', async () => {
+    it('does not answer for a path that was never saved', async () => {
       const store = create()
       await store.save(sampleProject())
-      await expect(store.load({ group: 'other', project: 'landscape' })).resolves.toBeUndefined()
-      await expect(store.load({ group: 'acme-logistics', project: 'other' }))
+      await expect(store.load('other/landscape')).resolves.toBeUndefined()
+      await expect(store.load('acme-logistics/other'))
         .resolves.toBeUndefined()
     })
 
     it('keeps two projects in the same group apart', async () => {
       const store = create()
-      await store.save(projectAt({ group: 'acme', project: 'one' }, 'One'))
-      await store.save(projectAt({ group: 'acme', project: 'two' }, 'Two'))
-      expect((await store.load({ group: 'acme', project: 'one' }))?.model.name).toBe('One')
-      expect((await store.load({ group: 'acme', project: 'two' }))?.model.name).toBe('Two')
+      await store.save(projectAt('acme/one', 'One'))
+      await store.save(projectAt('acme/two', 'Two'))
+      expect((await store.load('acme/one'))?.model.name).toBe('One')
+      expect((await store.load('acme/two'))?.model.name).toBe('Two')
       expect(await store.list()).toHaveLength(2)
     })
 
@@ -142,19 +144,19 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       // people whose landscape it describes, and everybody calls their first
       // project the same thing.
       const store = create()
-      await store.save(projectAt({ group: 'acme', project: 'landscape' }, 'Acme'))
-      await store.save(projectAt({ group: 'globex', project: 'landscape' }, 'Globex'))
-      expect((await store.load({ group: 'acme', project: 'landscape' }))?.model.name).toBe('Acme')
-      expect((await store.load({ group: 'globex', project: 'landscape' }))?.model.name).toBe('Globex')
+      await store.save(projectAt('acme/landscape', 'Acme'))
+      await store.save(projectAt('globex/landscape', 'Globex'))
+      expect((await store.load('acme/landscape'))?.model.name).toBe('Acme')
+      expect((await store.load('globex/landscape'))?.model.name).toBe('Globex')
     })
 
     it('keeps a nested group apart from its parent', async () => {
       // Groups do not nest in the UI yet; the store must not be what stops them.
       const store = create()
-      await store.save(projectAt({ group: 'acme', project: 'landscape' }, 'Parent'))
-      await store.save(projectAt({ group: 'acme/rail', project: 'landscape' }, 'Nested'))
-      expect((await store.load({ group: 'acme', project: 'landscape' }))?.model.name).toBe('Parent')
-      expect((await store.load({ group: 'acme/rail', project: 'landscape' }))?.model.name).toBe('Nested')
+      await store.save(projectAt('acme/landscape', 'Parent'))
+      await store.save(projectAt('acme/rail/landscape', 'Nested'))
+      expect((await store.load('acme/landscape'))?.model.name).toBe('Parent')
+      expect((await store.load('acme/rail/landscape'))?.model.name).toBe('Nested')
     })
 
     it('overwrites in place rather than accumulating', async () => {
@@ -162,16 +164,16 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       await store.save(sampleProject())
       await store.save(sampleProject({ activeDiagramId: 'cd' }))
       expect(await store.list()).toHaveLength(1)
-      expect((await store.load(SAMPLE_REF))?.activeDiagramId).toBe('cd')
+      expect((await store.load(SAMPLE_PATH))?.activeDiagramId).toBe('cd')
     })
 
     it('lists in a stable alphabetical order', async () => {
       // Deterministic, and the same from every store: the picker offers recency
       // as an option and re-sorts for it, but a store must not decide that.
       const store = create()
-      await store.save(projectAt({ group: 'zeta', project: 'one' }, 'Zeta one'))
-      await store.save(projectAt({ group: 'alpha', project: 'two' }, 'Alpha two'))
-      await store.save(projectAt({ group: 'alpha', project: 'one' }, 'Alpha one'))
+      await store.save(projectAt('zeta/one', 'Zeta one'))
+      await store.save(projectAt('alpha/two', 'Alpha two'))
+      await store.save(projectAt('alpha/one', 'Alpha one'))
       expect((await store.list()).map((s) => `${s.groupName}/${s.name}`))
         .toEqual(['alpha/Alpha one', 'alpha/Alpha two', 'zeta/Zeta one'])
     })
@@ -181,7 +183,7 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       await store.save(sampleProject())
       const [summary] = await store.list()
       expect(summary).toMatchObject({
-        ref: SAMPLE_REF,
+        path: SAMPLE_PATH,
         name: 'Application landscape',
         groupName: 'Acme Logistics',
       })
@@ -198,28 +200,28 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
     it('forgets a project after remove()', async () => {
       const store = create()
       await store.save(sampleProject())
-      await store.remove(SAMPLE_REF)
-      await expect(store.load(SAMPLE_REF)).resolves.toBeUndefined()
+      await store.remove(SAMPLE_PATH)
+      await expect(store.load(SAMPLE_PATH)).resolves.toBeUndefined()
       await expect(store.list()).resolves.toEqual([])
     })
 
     it('removes only what it was asked to', async () => {
       const store = create()
-      await store.save(projectAt({ group: 'acme', project: 'one' }))
-      await store.save(projectAt({ group: 'acme', project: 'two' }))
-      await store.remove({ group: 'acme', project: 'one' })
+      await store.save(projectAt('acme/one'))
+      await store.save(projectAt('acme/two'))
+      await store.remove('acme/one')
       expect(await store.list()).toHaveLength(1)
     })
 
     it('does not mind remove() for something that is not there', async () => {
-      await expect(create().remove(SAMPLE_REF)).resolves.toBeUndefined()
+      await expect(create().remove(SAMPLE_PATH)).resolves.toBeUndefined()
     })
 
-    it('refuses to file a project under an unusable ref', async () => {
+    it('refuses to file a project under an unusable path', async () => {
       // A key that is not a slug could walk out of its own folder once a store
       // keeps projects on disk. Refusing here means no adapter has to sanitise.
       const store = create()
-      const bad = { ...sampleProject(), ref: { group: '', project: '../escape' } }
+      const bad = { ...sampleProject(), path: '../escape' }
       await expect(store.save(bad)).rejects.toBeInstanceOf(Error)
     })
 
@@ -231,7 +233,7 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       const store = create()
       const project = sampleProject()
       await store.save(project)
-      const back = await store.load(SAMPLE_REF)
+      const back = await store.load(SAMPLE_PATH)
       expect(stableJson({ ...back, updatedAt: undefined }))
         .toBe(stableJson({ ...project, updatedAt: undefined }))
     })
@@ -243,7 +245,7 @@ export function describeProjectStore(name: string, create: () => ProjectStore): 
       const empty = sampleProject()
       empty.model = { ...empty.model, diagrams: [] }
       await store.save(empty)
-      await expect(store.load(SAMPLE_REF)).resolves.toBeUndefined()
+      await expect(store.load(SAMPLE_PATH)).resolves.toBeUndefined()
       await expect(store.list()).resolves.toEqual([])
     })
 

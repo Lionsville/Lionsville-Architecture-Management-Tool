@@ -10,7 +10,7 @@ describe('ShellError', () => {
   })
 
   it('uses the key as its message, so an unread one still says which refusal', () => {
-    expect(new ShellError('shell.badProjectRef').message).toBe('shell.badProjectRef')
+    expect(new ShellError('shell.badScopePath').message).toBe('shell.badScopePath')
   })
 
   it('is an Error, so nothing that catches broadly has to learn about it', () => {

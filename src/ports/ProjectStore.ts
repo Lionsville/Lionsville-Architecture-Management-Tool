@@ -8,12 +8,11 @@
  * one line in the composition — not an `if` in fifteen places.
  *
  * **Projects are addressed, not implied.** A store holds many, keyed by
- * {@link ProjectRef} — a group path and a key inside it. A store that keeps
- * projects in folders can use `refPath()` as the path directly; one that keeps
- * them in a table can use it as a primary key. The group level exists so this
- * tool can be handed to the people whose landscape it describes without their
- * projects and ours sharing a namespace, and so groups can nest later without
- * the key format changing.
+ * {@link ScopePath} — a path of slug segments (ADR-0012 §1). A store that keeps
+ * projects in folders uses it as the path directly; one that keeps them in a
+ * table uses it as a primary key. The levels above a project exist so this tool
+ * can be handed to the people whose landscape it describes without their
+ * projects and ours sharing a namespace.
  *
  * **Why everything returns a promise, even though `localStorage` is synchronous.**
  * Every backend that comes after this one — the File System Access API, Electron
@@ -28,7 +27,7 @@
  * expensive shape.
  */
 import type { ProjectSnapshot, ProjectSummary } from '../projects/project'
-import type { ProjectRef } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 
 export interface ProjectStore {
   /**
@@ -45,24 +44,24 @@ export interface ProjectStore {
   /**
    * One project, or `undefined` when it is not there.
    *
-   * Deliberately `undefined` and not an error: a ref remembered from last time
-   * can point at a project since deleted, and the caller does the same thing
+   * Deliberately `undefined` and not an error: a path remembered from last time
+   * can name a project since deleted, and the caller does the same thing
    * with that as with a first visit. A genuine failure — the disk is gone,
    * permission is missing — may reject.
    */
-  load(ref: ProjectRef): Promise<ProjectSnapshot | undefined>
+  load(path: ScopePath): Promise<ProjectSnapshot | undefined>
 
   /**
    * Write a project out, under its own ref.
    *
-   * The ref comes from the project rather than a separate argument so the two
+   * The path comes from the project rather than a separate argument so the two
    * can never disagree — saving a project under somebody else's key is not a
    * thing a caller should be able to express by accident.
    */
   save(project: ProjectSnapshot): Promise<void>
 
   /** Remove one project. Removing what is not there is not an error. */
-  remove(ref: ProjectRef): Promise<void>
+  remove(path: ScopePath): Promise<void>
 
   /**
    * How close this store is to being full, when it can say.
@@ -91,7 +90,7 @@ export interface ProjectStore {
    * and a backend written after the format turned has none either; absent means
    * "nothing of mine is old", which is the honest answer in both cases.
    */
-  outdated?(): Promise<ProjectRef[]>
+  outdated?(): Promise<ScopePath[]>
 }
 
 /** How much of what a store will hold is already held. Characters, not bytes. */

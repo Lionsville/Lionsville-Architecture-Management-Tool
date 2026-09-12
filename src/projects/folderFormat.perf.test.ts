@@ -16,7 +16,7 @@ import { syntheticModel } from '../model/testing/synthetic'
  */
 
 const project: ProjectSnapshot = {
-  ref: { group: 'northwind', project: 'landscape' },
+  path: 'northwind/landscape',
   model: syntheticModel('large'),
   activeDiagramId: 'landscape',
   logoLibrary: [],

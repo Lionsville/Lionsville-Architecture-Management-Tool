@@ -40,7 +40,7 @@ describe('what the top bar says you are working from', () => {
   // one where saying so matters most: the strip at the foot says it, and so
   // does the bar.
   const project = {
-    ref: { group: 'acme', project: 'landscape' },
+    path: 'acme/landscape',
     model: {
       name: 'Landscape', customerName: 'Acme', elements: [], relations: [],
       diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],

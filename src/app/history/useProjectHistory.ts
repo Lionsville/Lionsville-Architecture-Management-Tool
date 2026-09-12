@@ -139,7 +139,7 @@ export function useProjectHistory(deps: {
   const choose = useCallback((id: string) => {
     if (!history) return
     setChosen({ id })
-    void history.projectAt(project().ref, id).then(
+    void history.projectAt(project().path, id).then(
       (held) => setChosen({ id, model: held?.model }),
       (cause: unknown) => {
         setChosen({ id })
@@ -157,7 +157,7 @@ export function useProjectHistory(deps: {
     if (!history) return
     const held = project()
     const paths = of ? historyPaths(of, held.model) : undefined
-    const read = of && !paths ? Promise.resolve([]) : history.entries(undefined, paths && { ref: held.ref, paths })
+    const read = of && !paths ? Promise.resolve([]) : history.entries(undefined, paths && { path: held.path, paths })
     void read.then(setEntries, (cause: unknown) => {
       setEntries([])
       notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')

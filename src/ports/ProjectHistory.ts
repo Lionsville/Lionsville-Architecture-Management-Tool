@@ -13,7 +13,7 @@
  * why every caller is expected to ask it before offering anything.
  */
 import type { ProjectSnapshot } from '../projects/project'
-import type { ProjectRef } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 import type { LabelOutcome } from '../platform/history'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide } from '../platform/sync'
 
@@ -32,8 +32,8 @@ export type HistoryEntry = {
 
 /** One thing's worth of a project's history: the project, and its paths. */
 export type HistoryScope = {
-  ref: ProjectRef
-  /** Relative to the project folder; a `*` matches within a name. */
+  path: ScopePath
+  /** Relative to the scope's folder; a `*` matches within a name. */
   paths: readonly string[]
 }
 
@@ -69,7 +69,7 @@ export interface ProjectHistory {
    * question (`model/diff.ts`), and a seam that answered it would be deciding
    * how a landscape is compared.
    */
-  projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined>
+  projectAt(path: ScopePath, entry: string): Promise<ProjectSnapshot | undefined>
   /**
    * Call a snapshot something, afterwards (ADR-0008). A mark beside the
    * subject, never a rewrite of it, and one the history carries to whoever

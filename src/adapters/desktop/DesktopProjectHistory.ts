@@ -10,8 +10,8 @@
  */
 import { openProjectFolder } from '../../projects/migrate3to4'
 import type { ProjectSnapshot } from '../../projects/project'
-import { refPath } from '../../projects/projectRef'
-import type { ProjectRef } from '../../projects/projectRef'
+import { scopeFilePath } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
 import type { LabelOutcome } from '../../platform/history'
 import type { SyncSide } from '../../platform/sync'
@@ -52,7 +52,7 @@ export class DesktopProjectHistory implements ProjectHistory {
   entries(limit?: number, of?: HistoryScope): Promise<HistoryEntry[]> {
     // The scope's paths are relative to the project; git wants them relative
     // to the root, which is the one thing this adapter knows and the seam does not.
-    const paths = of ? of.paths.map((path) => `${refPath(of.ref)}/${path}`) : undefined
+    const paths = of ? of.paths.map((path) => scopeFilePath(of.path, path)) : undefined
     return this.git.history(this.root, limit, paths).then((commits) => commits.map((held) => ({
       id: held.sha,
       subject: held.subject,
@@ -66,12 +66,12 @@ export class DesktopProjectHistory implements ProjectHistory {
     return this.git.label(this.root, entry, name)
   }
 
-  async projectAt(ref: ProjectRef, entry: string): Promise<ProjectSnapshot | undefined> {
-    const files = await this.git.filesAt(this.root, entry, refPath(ref))
+  async projectAt(path: ScopePath, entry: string): Promise<ProjectSnapshot | undefined> {
+    const files = await this.git.filesAt(this.root, entry, path)
     if (files.length === 0) return undefined
     // The marks are not read back (a bitmap is not text and a diff of the
     // architecture does not want one), so the project that comes out has the
     // folder's shape and no logo library. Comparing models is what it is for.
-    return openProjectFolder(files, ref)
+    return openProjectFolder(files, path)
   }
 }

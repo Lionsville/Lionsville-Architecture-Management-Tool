@@ -24,7 +24,7 @@ beforeEach(() => vi.useFakeTimers())
 afterEach(() => { vi.useRealTimers(); cleanup() })
 
 const project = (name = 'Landscape'): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name,
     customerName: 'Acme',

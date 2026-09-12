@@ -30,8 +30,7 @@ import { groupProfileFor } from '../../projects/group'
 import type { GroupProfile } from '../../projects/group'
 import { groupsOf, sortProjects } from '../../projects/project'
 import type { ProjectOrder, ProjectSummary } from '../../projects/project'
-import { refPath, sameRef } from '../../projects/projectRef'
-import type { ProjectRef } from '../../projects/projectRef'
+import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { ExampleProject } from '../examples'
@@ -52,7 +51,7 @@ import { NewProjectDialog } from './NewProjectDialog'
  */
 export type ProjectCatalogue = {
   list(): Promise<ProjectSummary[]>
-  remove(ref: ProjectRef): Promise<void>
+  remove(path: ScopePath): Promise<void>
 }
 
 /**
@@ -75,7 +74,7 @@ export type ProjectPickerProps = {
   examples: readonly ExampleProject[]
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
-  onOpen: (ref: ProjectRef) => void
+  onOpen: (path: ScopePath) => void
   /**
    * Create a project. `group` is an existing group's slug when there is one, so
    * adding to a group you already work in cannot spawn a near-duplicate of it.
@@ -187,7 +186,7 @@ export function ProjectPicker({
     const target = toDelete
     setToDelete(null)
     if (!target) return
-    void projects.remove(target.ref).then(
+    void projects.remove(target.path).then(
       refresh,
       (cause: unknown) => onFailure('picker.remove', cause, 'picker.deleteFailed'),
     )
@@ -337,10 +336,10 @@ export function ProjectPicker({
             )}
             <Stack spacing={0.75}>
               {entry.projects.map((summary) => (
-                <Card key={refPath(summary.ref)} variant="outlined">
+                <Card key={summary.path} variant="outlined">
                   <Stack direction="row" alignItems="stretch">
                     <CardActionArea
-                      onClick={() => onOpen(summary.ref)}
+                      onClick={() => onOpen(summary.path)}
                       sx={{ px: 1.5, py: 1.25, flex: 1 }}
                     >
                       <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{summary.name}</Typography>
@@ -372,7 +371,7 @@ export function ProjectPicker({
         </Typography>
         <Stack spacing={0.75}>
           {examples.map((example) => {
-            const already = summaries.some((summary) => sameRef(summary.ref, example.ref))
+            const already = summaries.some((summary) => summary.path === example.path)
             return (
               <Card key={example.key} variant="outlined">
                 <Stack direction="row" alignItems="center" sx={{ px: 1.5, py: 1.25 }} spacing={2}>

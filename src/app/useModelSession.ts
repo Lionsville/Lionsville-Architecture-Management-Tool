@@ -315,16 +315,16 @@ export function useModelSession(deps: {
    * that could change its own address mid-flight would be able to autosave one
    * project's edits onto another.
    */
-  const ref = initialProject.ref
+  const path = initialProject.path
   const snapshot = useCallback((): ProjectSnapshot => ({
-    ref,
+    path,
     model: toArrays(modelRef.current),
     activeDiagramId: activeRef.current,
     logoLibrary: logoRef.current,
     // Absent rather than empty, so a project with no pictures is written back
     // as the project it was read as — see `ProjectSnapshot.imageLibrary`.
     ...(imageRef.current.length ? { imageLibrary: imageRef.current } : {}),
-  }), [ref])
+  }), [path])
 
   return {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId,

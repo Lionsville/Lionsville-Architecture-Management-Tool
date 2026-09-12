@@ -97,7 +97,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working
   })
 
   it('round-trips through the format unchanged', () => {
-    expect(stableJson(projectFromFolder(projectFiles(project), example.ref))).toBe(stableJson(project))
+    expect(stableJson(projectFromFolder(projectFiles(project), example.path))).toBe(stableJson(project))
   })
 })
 

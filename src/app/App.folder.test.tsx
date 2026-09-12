@@ -20,7 +20,7 @@ import { renderApp } from './testing/renderShell'
 afterEach(() => cleanup())
 
 const project = (): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name: 'Landscape',
     customerName: 'Acme',

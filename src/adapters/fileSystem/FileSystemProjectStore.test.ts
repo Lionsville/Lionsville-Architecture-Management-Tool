@@ -27,7 +27,7 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
 
   it('files a project where its ref says, so the file manager agrees with the picker', async () => {
     const { root, store } = setup()
-    await store.save(projectAt({ group: 'acme/rail', project: 'rolling-stock' }))
+    await store.save(projectAt('acme/rail/rolling-stock'))
 
     expect(root.paths()).toEqual([
       'acme/rail/rolling-stock/diagrams/cd.geometry.json',
@@ -50,7 +50,7 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
    */
   it('opens a folder written before format 4, and writes format 4 back', async () => {
     const { root, store } = setup()
-    const ref = { group: 'acme-logistics', project: 'landscape' }
+    const ref = 'acme-logistics/landscape'
     const folder = await (await root.getDirectoryHandle('acme-logistics', { create: true }))
       .getDirectoryHandle('landscape', { create: true }) as FakeDirectory
     folder.writeRaw('project.json', JSON.stringify({
@@ -104,22 +104,22 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     broken.writeRaw('project.json', '{ "name": ')
 
     expect(await store.list()).toHaveLength(1)
-    expect(await store.load({ group: 'acme-logistics', project: 'broken' })).toBeUndefined()
+    expect(await store.load('acme-logistics/broken')).toBeUndefined()
   })
 
   it('reads a project back from where it now lives, not from what it says inside', async () => {
     // Someone moved the folder in Finder. The project is then at its new address
     // — any other answer means the picker disagrees with the folder.
     const { root, store } = setup()
-    await store.save(projectAt({ group: 'acme', project: 'landscape' }, 'Landscape'))
+    await store.save(projectAt('acme/landscape', 'Landscape'))
 
     const from = await (await root.getDirectoryHandle('acme')).getDirectoryHandle('landscape')
     const to = await (await root.getDirectoryHandle('elsewhere', { create: true }))
       .getDirectoryHandle('renamed', { create: true })
     await copy(from, to)
 
-    const back = await store.load({ group: 'elsewhere', project: 'renamed' })
-    expect(back?.ref).toEqual({ group: 'elsewhere', project: 'renamed' })
+    const back = await store.load('elsewhere/renamed')
+    expect(back?.path).toEqual('elsewhere/renamed')
     expect(back?.model.name).toBe('Landscape')
   })
 
@@ -136,8 +136,8 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     // The user may keep other things in there. Deleting a folder this store did
     // not create is not its call.
     const { root, store } = setup()
-    await store.save(projectAt({ group: 'acme', project: 'only' }))
-    await store.remove({ group: 'acme', project: 'only' })
+    await store.save(projectAt('acme/only'))
+    await store.remove('acme/only')
 
     await expect(root.getDirectoryHandle('acme')).resolves.toBeDefined()
     expect(await store.list()).toEqual([])
@@ -212,14 +212,14 @@ describe('FileSystemProjectStore — the folder is somebody else’s too', () =>
     const store = new FileSystemProjectStore(gone)
 
     await expect(store.list()).resolves.toEqual([])
-    await expect(store.load({ group: 'a', project: 'b' })).resolves.toBeUndefined()
+    await expect(store.load('a/b')).resolves.toBeUndefined()
   })
 
   it('refuses to walk out of the folder it was given', async () => {
     const { store } = setup()
-    const escape = { group: '..', project: 'escape' }
+    const escape = '../escape'
 
-    await expect(store.save({ ...sampleProject(), ref: escape })).rejects.toThrow()
+    await expect(store.save({ ...sampleProject(), path: escape })).rejects.toThrow()
     await expect(store.load(escape)).resolves.toBeUndefined()
     await expect(store.remove(escape)).resolves.toBeUndefined()
   })

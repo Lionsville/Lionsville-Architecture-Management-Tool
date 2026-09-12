@@ -13,10 +13,10 @@ import { projectAt, sampleProject } from '../ports/ProjectStore.contract'
 import { copyGroupsInto, copyProjectsInto, migrated, migrateInto, upgradeProjects } from './migration'
 import type { UpgradeTarget } from './migration'
 import type { ProjectSnapshot } from './project'
-import type { ProjectRef } from './projectRef'
+import type { ScopePath } from './scopePath'
 
 const named = (group: string, project: string, name: string): ProjectSnapshot =>
-  projectAt({ group, project }, name)
+  projectAt(`${group}/${project}`, name)
 
 describe('copyProjectsInto', () => {
   it('copies everything the folder does not have', async () => {
@@ -43,7 +43,7 @@ describe('copyProjectsInto', () => {
     const into = new InMemoryProjectStore([named('acme', 'one', 'The one being worked on')])
 
     expect(await copyProjectsInto(from, into)).toMatchObject({ projects: 0, kept: 1 })
-    expect((await into.load({ group: 'acme', project: 'one' }))?.model.name)
+    expect((await into.load('acme/one'))?.model.name)
       .toBe('The one being worked on')
   })
 
@@ -51,8 +51,8 @@ describe('copyProjectsInto', () => {
     const from = new InMemoryProjectStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
     const broken = {
       list: () => from.list(),
-      load: (ref: { group: string; project: string }) =>
-        ref.project === 'one' ? Promise.reject(new Error('unreadable')) : from.load(ref),
+      load: (path: ScopePath) =>
+        path === 'acme/one' ? Promise.reject(new Error('unreadable')) : from.load(path),
     }
     const into = new InMemoryProjectStore()
 
@@ -118,7 +118,7 @@ describe('migrateInto', () => {
  * because the store is the one that knows which of its projects are old.
  */
 describe('upgradeProjects', () => {
-  const outdated = (store: InMemoryProjectStore, refs: ProjectRef[]): UpgradeTarget =>
+  const outdated = (store: InMemoryProjectStore, refs: ScopePath[]): UpgradeTarget =>
     Object.assign(Object.create(store) as InMemoryProjectStore, {
       outdated: () => Promise.resolve(refs),
     })
@@ -126,13 +126,13 @@ describe('upgradeProjects', () => {
   it('reads each old project and writes it back', async () => {
     const store = new InMemoryProjectStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
     const written: string[] = []
-    const target = outdated(store, [{ group: 'acme', project: 'one' }])
-    target.save = async (project) => { written.push(project.ref.project); await store.save(project) }
+    const target = outdated(store, ['acme/one'])
+    target.save = async (project) => { written.push(project.path); await store.save(project) }
 
     expect(await upgradeProjects(target)).toMatchObject({ upgraded: 1, failed: 0 })
     // The one that was already current is not touched, which is what keeps a
     // migration out of everybody's `git status` and off every timestamp.
-    expect(written).toEqual(['one'])
+    expect(written).toEqual(['acme/one'])
   })
 
   it('does nothing at all for a store with nothing old in it', async () => {
@@ -152,7 +152,7 @@ describe('upgradeProjects', () => {
   it('records what the folder looked like before it rewrites anything', async () => {
     const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
     const order: string[] = []
-    const target = outdated(store, [{ group: 'acme', project: 'one' }])
+    const target = outdated(store, ['acme/one'])
     target.save = async (project) => { order.push('save'); await store.save(project) }
 
     const tally = await upgradeProjects(target, () => {
@@ -167,7 +167,7 @@ describe('upgradeProjects', () => {
     // No git, no repository, or a snapshot that refused. Refusing to migrate
     // for want of one would leave a project nobody can open.
     const store = new InMemoryProjectStore([named('acme', 'one', 'One')])
-    const target = outdated(store, [{ group: 'acme', project: 'one' }])
+    const target = outdated(store, ['acme/one'])
 
     expect(await upgradeProjects(target, () => Promise.reject(new Error('no git'))))
       .toEqual({ upgraded: 1, failed: 0, recorded: 'unavailable' })
@@ -175,7 +175,7 @@ describe('upgradeProjects', () => {
 
   it('counts the one that will not read and upgrades the rest', async () => {
     const store = new InMemoryProjectStore([named('acme', 'two', 'Two')])
-    const target = outdated(store, [{ group: 'acme', project: 'gone' }, { group: 'acme', project: 'two' }])
+    const target = outdated(store, ['acme/gone', 'acme/two'])
 
     expect(await upgradeProjects(target)).toEqual({ upgraded: 1, failed: 1, recorded: 'unavailable' })
   })

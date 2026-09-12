@@ -17,7 +17,7 @@ import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryProjectStore } from '../adapters/memory/InMemoryProjectStore'
 import type { ProjectSnapshot } from '../projects/project'
-import type { ProjectRef } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 import { renderApp } from './testing/renderShell'
 
 /** The one thing the stub does: land a change on the model, as editing would. */
@@ -43,7 +43,7 @@ vi.mock('../editor', async (importOriginal) => {
 afterEach(() => cleanup())
 
 const project = (): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name: 'Landscape',
     customerName: 'Acme',
@@ -74,7 +74,7 @@ function applySettings(fields: { name?: string; author?: string }) {
 }
 
 const saved = (store: InMemoryProjectStore) =>
-  store.load({ group: 'acme', project: 'landscape' })
+  store.load('acme/landscape')
 
 /**
  * The autosave waits three seconds now (ADR-0003), which is longer than a test
@@ -96,12 +96,12 @@ describe('project settings on an open project', () => {
     // microseconds: the stale save is fired while it is in flight.
     const store = new InMemoryProjectStore([project()])
     let release: (() => void) | undefined
-    const written: ProjectRef[] = []
+    const written: ScopePath[] = []
     const held = {
       list: () => store.list(),
-      load: (ref: ProjectRef) => store.load(ref),
-      save: (project: ProjectSnapshot) => { written.push(project.ref); return store.save(project) },
-      remove: async (ref: ProjectRef) => {
+      load: (ref: ScopePath) => store.load(ref),
+      save: (project: ProjectSnapshot) => { written.push(project.path); return store.save(project) },
+      remove: async (ref: ScopePath) => {
         await new Promise<void>((resolve) => { release = resolve })
         await store.remove(ref)
       },
@@ -124,13 +124,13 @@ describe('project settings on an open project', () => {
     release!()
 
     await waitFor(async () => {
-      expect(await store.load({ group: 'globex', project: 'landscape' })).toBeTruthy()
+      expect(await store.load('globex/landscape')).toBeTruthy()
     })
     // Nothing was written to the address the project left, at any point after
     // the move began. Whether the remove happened to run first is a matter of
     // microseconds and not something to depend on.
-    expect(written.filter((ref) => ref.group === 'acme')).toEqual([])
-    expect(await store.load({ group: 'acme', project: 'landscape' })).toBeUndefined()
+    expect(written.filter((path) => path.startsWith('acme/'))).toEqual([])
+    expect(await store.load('acme/landscape')).toBeUndefined()
   })
 
   it('keeps the editing the session has done', async () => {

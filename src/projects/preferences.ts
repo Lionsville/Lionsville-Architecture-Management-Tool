@@ -18,8 +18,8 @@ import { isLanguage } from '../i18n'
 import { isThemeMode } from '../platform/theme'
 import type { ThemeMode } from '../platform/theme'
 import type { Language } from '../i18n'
-import { isProjectRef } from './projectRef'
-import type { ProjectRef } from './projectRef'
+import { isSafeScopePath } from './scopePath'
+import type { ScopePath } from './scopePath'
 
 export type { ThemeMode } from '../platform/theme'
 
@@ -45,21 +45,34 @@ export function readThemeMode(stored: unknown): ThemeMode | undefined {
 }
 
 /**
- * The project this browser had open last, or `undefined` for a first visit.
+ * The scope this browser had open last, or `undefined` for a first visit.
  *
- * A preference and not project data: which project you were in belongs to this
- * screen, the way a window position does. It is also why the app can open
- * straight into your work instead of asking every time — and why, when the ref
- * points at a project that has since been deleted, the honest answer is the
- * picker rather than an error.
+ * A preference and not content: which scope you were in belongs to this screen,
+ * the way a window position does. It is also why the app can open straight into
+ * your work instead of asking every time — and why, when the path names a scope
+ * that has since been deleted, the honest answer is the picker rather than an
+ * error.
  *
  * Validated rather than trusted: this value is the one piece of addressing that
  * survives a reload, so it is the one an old or hand-edited store can poison.
+ *
+ * A blob written before scopes says `lastProject`, as a group and a key. The
+ * two spell the same address — the path was always `<group>/<project>` — so it
+ * is read rather than thrown away, and the next write says `lastScope`.
  */
-export function readLastProject(stored: unknown): ProjectRef | undefined {
+export function readLastScope(stored: unknown): ScopePath | undefined {
   if (!stored || typeof stored !== 'object') return undefined
-  const raw = (stored as Record<string, unknown>).lastProject
-  return isProjectRef(raw) ? raw : undefined
+  const held = stored as Record<string, unknown>
+  const raw = held.lastScope ?? pathOfOldRef(held.lastProject)
+  return isSafeScopePath(raw) && raw !== '' ? raw : undefined
+}
+
+function pathOfOldRef(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const held = value as { group?: unknown; project?: unknown }
+  return typeof held.group === 'string' && typeof held.project === 'string'
+    ? `${held.group}/${held.project}`
+    : undefined
 }
 
 /**
@@ -83,9 +96,10 @@ export function readWorkingDirectory(stored: unknown): string | undefined {
 export function withWorkingDirectory(stored: unknown, root: string): Record<string, unknown> {
   const kept = stored && typeof stored === 'object' ? { ...stored as Record<string, unknown> } : {}
   kept.workingDirectory = root
-  // The project you had open was one in the OLD folder; carrying the ref across
-  // would open the picker on a project that is not there, or — worse, if the
-  // slugs happen to match — a different project with the same address.
+  // The scope you had open was one in the OLD folder; carrying the path across
+  // would open the picker on a scope that is not there, or — worse, if the
+  // slugs happen to match — a different scope at the same address.
+  delete kept.lastScope
   delete kept.lastProject
   return kept
 }
@@ -114,17 +128,19 @@ export function withMigratedFolder(stored: unknown, root: string): Record<string
 }
 
 /**
- * The same blob with the last project taken out.
+ * The same blob with the last scope taken out.
  *
- * What "Start without the last project" writes back. A ref that points at a
- * project this build cannot open — half-written, from a newer version, or
- * simply enormous — would otherwise be reopened on every boot, and every boot
- * would fail the same way. Everything else in the blob is kept: the language
- * and the theme are not what went wrong.
+ * What "Start without the last project" writes back. A path that names a scope
+ * this build cannot open — half-written, from a newer version, or simply
+ * enormous — would otherwise be reopened on every boot, and every boot would
+ * fail the same way. Everything else in the blob is kept: the language and the
+ * theme are not what went wrong. The older key goes with it, or the fallback
+ * above would hand the same broken address back on the next boot.
  */
-export function withoutLastProject(stored: unknown): Record<string, unknown> {
+export function withoutLastScope(stored: unknown): Record<string, unknown> {
   if (!stored || typeof stored !== 'object') return {}
   const next = { ...(stored as Record<string, unknown>) }
+  delete next.lastScope
   delete next.lastProject
   return next
 }

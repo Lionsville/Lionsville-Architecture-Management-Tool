@@ -21,7 +21,8 @@ import {
   WORKING_FILE_TYPE, WORKING_FILE_VERSION, isInterchange, isWorkingFile, workingFileLogoLibrary,
 } from '../model/hostModel'
 import type { WorkingFile } from '../model/hostModel'
-import type { ProjectRef } from './projectRef'
+import { ROOT_SCOPE, parentScope, scopePathLabel, scopeSegments } from './scopePath'
+import type { ScopePath } from './scopePath'
 
 /**
  * One project, complete.
@@ -31,7 +32,7 @@ import type { ProjectRef } from './projectRef'
  * machine. Preferences deliberately do not.
  */
 export type ProjectSnapshot = {
-  ref: ProjectRef
+  path: ScopePath
   model: HostModel
   activeDiagramId: string
   logoLibrary: UploadedLogo[]
@@ -49,7 +50,7 @@ export type ProjectSnapshot = {
 
 /** What the picker shows without loading a whole model. */
 export type ProjectSummary = {
-  ref: ProjectRef
+  path: ScopePath
   /** The design's name. */
   name: string
   /** The group's name — see the note at the top of this file. */
@@ -64,7 +65,7 @@ export function groupNameOf(model: HostModel): string {
 
 export function summarise(project: ProjectSnapshot): ProjectSummary {
   return {
-    ref: project.ref,
+    path: project.path,
     name: project.model.name,
     groupName: groupNameOf(project.model),
     updatedAt: project.updatedAt,
@@ -93,7 +94,7 @@ export function resolveActive(model: HostModel, preferred?: string): string {
  */
 export function projectFromDocument(
   doc: InterchangeDoc,
-  ref: ProjectRef,
+  path: ScopePath,
   groupName: string,
   /** Plans to open with, which the interchange format does not carry (ADR-0009). */
   transitions?: readonly Transition[],
@@ -103,12 +104,12 @@ export function projectFromDocument(
   const model = fromInterchange(doc, groupName)
   if (transitions?.length) model.transitions = [...transitions]
   if (decisions?.length) model.decisions = [...decisions]
-  return { ref, model, activeDiagramId: resolveActive(model), logoLibrary: [] }
+  return { path, model, activeDiagramId: resolveActive(model), logoLibrary: [] }
 }
 
 /** An empty project with one landscape, for "new project". */
 export function emptyProject(
-  ref: ProjectRef,
+  path: ScopePath,
   groupName: string,
   names: { design: string; diagram: string },
 ): ProjectSnapshot {
@@ -121,7 +122,7 @@ export function emptyProject(
       id: 'landscape', kind: 'layer7', name: names.diagram, members: [], geometry: { nodes: [] },
     }],
   }
-  return { ref, model, activeDiagramId: 'landscape', logoLibrary: [] }
+  return { path, model, activeDiagramId: 'landscape', logoLibrary: [] }
 }
 
 /**
@@ -131,7 +132,7 @@ export function emptyProject(
  * textually identical to a v1 file apart from the version number, which saves
  * noise in a diff or a version control system.
  *
- * The ref does not go in. A working file is something you hand to somebody else,
+ * The path does not go in. A working file is something you hand to somebody else,
  * and where it was filed in your store is none of their business — they open it
  * into a project of their own.
  */
@@ -178,7 +179,7 @@ export function openProjectDocument(
       kind: 'workingFile',
       relayout: false,
       project: {
-        ref: into.ref,
+        path: into.path,
         model: parsed.model,
         activeDiagramId: resolveActive(parsed.model, parsed.activeDiagramId),
         logoLibrary: workingFileLogoLibrary(parsed),
@@ -193,7 +194,7 @@ export function openProjectDocument(
       kind: 'interchange',
       relayout: true,
       project: {
-        ref: into.ref,
+        path: into.path,
         model,
         activeDiagramId: resolveActive(model),
         logoLibrary: [...into.logoLibrary],
@@ -249,7 +250,7 @@ export function sortProjects(
   const byName = (a: ProjectSummary, b: ProjectSummary) =>
     a.groupName.localeCompare(b.groupName)
     || a.name.localeCompare(b.name)
-    || a.ref.project.localeCompare(b.ref.project)
+    || a.path.localeCompare(b.path)
   if (order === 'name') return [...projects].sort(byName)
   return [...projects].sort((a, b) =>
     (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '') || byName(a, b))
@@ -277,30 +278,27 @@ export type ProjectGroup = {
 export function groupsOf(projects: readonly ProjectSummary[]): ProjectGroup[] {
   const groups = new Map<string, ProjectGroup>()
   for (const summary of projects) {
-    const held = groups.get(summary.ref.group)
+    const group = parentScope(summary.path) ?? ROOT_SCOPE
+    const held = groups.get(group)
     if (held) held.projects.push(summary)
-    else {
-      groups.set(summary.ref.group, {
-        group: summary.ref.group,
-        name: summary.groupName || summary.ref.group,
-        projects: [summary],
-      })
-    }
+    else groups.set(group, { group, name: summary.groupName || group, projects: [summary] })
   }
   return [...groups.values()]
 }
 
-/** The project keys already used inside one group — what `refFor` needs. */
+/** The project keys already used inside one group — what `scopePathFor` needs. */
 export function keysInGroup(projects: readonly ProjectSummary[], group: string): string[] {
-  return projects.filter((p) => p.ref.group === group).map((p) => p.ref.project)
+  return projects
+    .filter((p) => (parentScope(p.path) ?? ROOT_SCOPE) === group)
+    .map((p) => scopePathLabel(p.path))
 }
 
 /**
  * The project's own name, changed.
  *
- * The name lives on the model and not on the ref: renaming should not re-file
+ * The name lives on the model and not on the path: renaming should not re-file
  * the project, or every rename would break the link the picker and the
- * `lastProject` preference hold. A ref is an address, a name is a label, and
+ * `lastScope` preference hold. A path is an address, a name is a label, and
  * they are allowed to drift.
  */
 export function renameProject(project: ProjectSnapshot, name: string): ProjectSnapshot {
@@ -343,7 +341,8 @@ export function setProjectDefaults(
 /**
  * The project, filed under a different group.
  *
- * This DOES change the ref, because the group is half the address — which is
+ * This DOES change the path, because the group is all but the last segment of
+ * the address — which is
  * exactly why moving is a store operation (remove there, save here) and not a
  * field edit. Both halves change together so a project cannot end up addressed
  * by one group while labelled with another.
@@ -355,7 +354,7 @@ export function moveToGroup(
 ): ProjectSnapshot {
   return {
     ...project,
-    ref: { ...project.ref, group },
+    path: [...scopeSegments(group), scopePathLabel(project.path)].join('/'),
     model: { ...project.model, customerName: groupName },
   }
 }

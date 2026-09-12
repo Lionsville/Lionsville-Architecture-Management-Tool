@@ -14,7 +14,7 @@
 import { groupFiles, groupFromFolder, GROUP_FILE, PROJECT_FILE } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import type { GroupProfile } from '../../projects/group'
-import { isGroupPath } from '../../projects/projectRef'
+import { isGroupPath } from '../../projects/group'
 import { ShellError } from '../../platform/errors'
 import type { GroupStore } from '../../ports/GroupStore'
 import type { DirectoryHandleLike, FileHandleLike } from './FileSystemProjectStore'

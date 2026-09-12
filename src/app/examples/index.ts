@@ -38,7 +38,7 @@ import { stableJson } from '../../projects/fileText'
 import { projectFromFolder } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import type { ProjectSnapshot } from '../../projects/project'
-import type { ProjectRef } from '../../projects/projectRef'
+import type { ScopePath } from '../../projects/scopePath'
 import acmeLogistics from './acme-logistics.json'
 
 /**
@@ -50,8 +50,8 @@ export type ExampleFolder = Record<string, unknown>
 export type ExampleProject = {
   /** Stable key, for the picker and for tests. */
   key: string
-  /** Where a copy lands. The user may be offered a different group later. */
-  ref: ProjectRef
+  /** Where a copy lands. The user may be offered a different parent later. */
+  path: ScopePath
   /** What the picker calls it. */
   label: string
   /** One line on what it shows. */
@@ -81,13 +81,13 @@ export function exampleFiles(example: ExampleProject): FolderFile[] {
  * `examples.test.ts` is there to make impossible.
  */
 export function exampleProject(example: ExampleProject): ProjectSnapshot | undefined {
-  return projectFromFolder(exampleFiles(example), example.ref)
+  return projectFromFolder(exampleFiles(example), example.path)
 }
 
 export const EXAMPLES: readonly ExampleProject[] = [
   {
     key: 'acme-logistics',
-    ref: { group: 'acme-logistics', project: 'application-landscape' },
+    path: 'acme-logistics/application-landscape',
     label: 'Acme Logistics · application landscape',
     description: 'A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.',
     folder: acmeLogistics,

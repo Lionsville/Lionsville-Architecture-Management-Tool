@@ -4,7 +4,7 @@ import { BUDGET, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 import { buildEdges, buildNodes } from '../editor/graph'
 import { projectFiles, projectFromFolder } from '../projects/folderFormat'
-import type { ProjectRef } from '../projects/projectRef'
+import type { ScopePath } from '../projects/scopePath'
 import type { ProjectSnapshot } from '../projects/project'
 
 /**
@@ -20,9 +20,9 @@ import type { ProjectSnapshot } from '../projects/project'
  * cold cache rather than on a regression.
  */
 
-const ref: ProjectRef = { group: 'northwind', project: 'landscape' }
+const path: ScopePath = 'northwind/landscape'
 const project: ProjectSnapshot = {
-  ref,
+  path,
   model: syntheticModel('large'),
   activeDiagramId: 'landscape',
   logoLibrary: [],
@@ -33,7 +33,7 @@ const files = projectFiles(project)
 describe('opening a project', () => {
   it('parses the folder, indexes it and derives the landscape', () => {
     const ms = measure('open: parse, index and derive the landscape', () => {
-      const opened = projectFromFolder(files, ref)
+      const opened = projectFromFolder(files, path)
       if (!opened) throw new Error('the folder did not read back as a project')
       fromArrays(opened.model)
       const diagram = opened.model.diagrams[0]

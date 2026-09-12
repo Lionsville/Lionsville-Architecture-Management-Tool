@@ -43,7 +43,7 @@ vi.mock('../editor', async (importOriginal) => {
 afterEach(() => cleanup())
 
 const project = (name = 'Landscape'): ProjectSnapshot => ({
-  ref: { group: 'acme', project: 'landscape' },
+  path: 'acme/landscape',
   model: {
     name,
     customerName: 'Acme',
@@ -123,7 +123,7 @@ describe('commands from the host', () => {
     view.send({ type: 'save' })
 
     await waitFor(async () => {
-      const held = await view.projects.load({ group: 'acme', project: 'landscape' })
+      const held = await view.projects.load('acme/landscape')
       expect(held?.model.diagrams[0].name).toBe('Edited')
     })
   })

@@ -20,7 +20,7 @@ afterEach(() => cleanup())
 const s = translator('en')
 
 const summary = (group: string, groupName: string, name: string): ProjectSummary => ({
-  ref: { group, project: name.toLowerCase().replace(/\W+/g, '-') },
+  path: `${group}/${name.toLowerCase().replace(/\W+/g, '-')}`,
   name,
   groupName,
   updatedAt: '2026-09-05T10:00:00.000Z',
