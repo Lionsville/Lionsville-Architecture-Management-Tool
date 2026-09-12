@@ -15,6 +15,8 @@
 export {
   childrenOf, depthOf, descendantsOf, flatten, inOrder, moveAmongSiblings, wouldCycle,
 } from './tree'
+export { mayRemove, nextOrder } from './authoring'
+export type { Removal, RemovalRefusal } from './authoring'
 export { coverageFor, coverageOf } from './coverage'
 export type { Coverage, FunctionCoverage } from './coverage'
 export { journeyOf } from './lanes'
@@ -30,4 +32,6 @@ export type { SheetHandle, SheetPageProps } from './ui/SheetPage'
 export { captureSheet, sheetPixelRatio } from './ui/captureSheet'
 export type { SheetShot } from './ui/captureSheet'
 export { FunctionInspector } from './ui/FunctionInspector'
-export type { FunctionInspectorProps, SheetActions } from './ui/FunctionInspector'
+export type {
+  CoverageChange, FunctionInspectorProps, NewElement, NewLane, SheetActions,
+} from './ui/FunctionInspector'

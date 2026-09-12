@@ -30,6 +30,12 @@ function open(id: string, readOnly = false) {
     moveElement: vi.fn(),
     updateSheet: vi.fn(),
     onOpenElement: vi.fn(),
+    addElement: vi.fn(() => 'made'),
+    addJourney: vi.fn(() => 'made'),
+    addArea: vi.fn(() => 'made'),
+    addLane: vi.fn(() => 'made'),
+    removeElement: vi.fn(),
+    setCoverage: vi.fn(),
   }
   const result = renderShell(
     <FunctionInspector element={held(id)} model={model()} readOnly={readOnly} actions={actions} />,

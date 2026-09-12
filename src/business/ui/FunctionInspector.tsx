@@ -19,8 +19,12 @@
  * (`business/tree.wouldCycle`), because a cycle is not a state a person can
  * see and mend on a page that is drawn from the tree the cycle broke.
  */
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
@@ -32,12 +36,65 @@ import type { DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle } 
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { useStrings } from '../../i18n'
-import type { StringKey } from '../../i18n'
+import { plural } from '../../i18n/strings'
+import type { StringKey, Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
+import { mayRemove } from '../authoring'
 import { coverageFor } from '../coverage'
 import { childrenOf, wouldCycle } from '../tree'
 
-/** What the sheet and its inspector may ask the session to do. */
+/**
+ * A new thing in one of the sheet's trees.
+ *
+ * No id: it is minted from the name where the command is built, the way every
+ * other new element in this app gets the key the file would have given it
+ * (ADR-0002). What a depth MEANS — a phase, a step, a grouping, a capability
+ * — is the parent it is given and nothing else, which is why one shape serves
+ * every *+* on the page.
+ */
+export type NewElement = {
+  kind: 'step' | 'function' | 'actor'
+  name: string
+  /** Nothing makes it a root: a journey, an area, a stakeholder group. */
+  parentId?: ElementId
+  /** A step only: whose path it is on. */
+  lane?: ElementId
+  /** An actor only: not part of this organisation. */
+  outside?: true
+}
+
+/** A lane, which is an actor and the first step that puts it on the page. */
+export type NewLane = {
+  /** A stakeholder the organisation already holds… */
+  actorId?: ElementId
+  /** …or one made in the same step, when the person typed a name instead. */
+  name?: string
+  outside?: true
+  /** Where its first step goes, so the row has somewhere to be. */
+  phaseId: ElementId
+  stepName: string
+}
+
+/** One tick in the coverage of a capability (ADR-0012 §5, §9). */
+export type CoverageChange = {
+  /** An application supports it, or an actor is assigned to it. */
+  type: 'supports' | 'assigned'
+  /** The application or the actor. */
+  sourceId: ElementId
+  functionId: ElementId
+  /** Ticked adds the row; unticked takes every row that says the same thing. */
+  on: boolean
+}
+
+/**
+ * What the sheet and its inspector may ask the session to do.
+ *
+ * Every one of these is a `Command` through the same dispatch a keystroke on
+ * the canvas takes, so anything made here is one undo step and one Activity
+ * line. The four that make something answer with the id it was given, because
+ * the page selects what it just made and puts the cursor in its name — the
+ * whole gesture is click, type, Enter.
+ */
 export type SheetActions = {
   /**
    * A field on an element. `coalesce` makes a run of keystrokes one step —
@@ -48,8 +105,26 @@ export type SheetActions = {
   moveElement(id: ElementId, by: -1 | 1): void
   /** The sheet's own fields: the rail, the journey, which areas and in which order. */
   updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors'>>): void
-  /** Show an application on the canvas — where the coverage links go. */
+  /** Show an application where it is drawn — where the coverage links go. */
   onOpenElement(id: ElementId): void
+
+  // --- making things (the gestures on the page) ------------------------------
+  /** A phase, a step, a grouping, a capability, a stakeholder. */
+  addElement(seed: NewElement): ElementId | undefined
+  /** A journey and the first thing it does, and this sheet drawing it. One step. */
+  addJourney(names: { journey: string; phase: string }): ElementId | undefined
+  /** An area, on this sheet from the moment it exists. One step. */
+  addArea(name: string): ElementId | undefined
+  /** A lane: its actor, and the first step that makes the row appear. One step. */
+  addLane(lane: NewLane): ElementId | undefined
+  /**
+   * Take it out of the model, with its relations and whatever the sheet said
+   * about it. Refused while something is inside it — ask `mayRemove` first,
+   * which is what the page says out loud rather than finding out here.
+   */
+  removeElement(id: ElementId): void
+  /** Tick or untick what covers a capability. One transaction per tick. */
+  setCoverage(change: CoverageChange): void
 }
 
 export type FunctionInspectorProps = {
@@ -58,6 +133,15 @@ export type FunctionInspectorProps = {
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
+  /**
+   * A nonce: put the cursor in the name field. The page bumps it when
+   * something has just been made, which is what turns *+ capability* into
+   * click, type, Enter — a flag would only work once, and the inspector is
+   * not remounted between two things made one after the other.
+   */
+  nameFocus?: number
+  /** Something was deleted from here, so nothing is chosen any more. */
+  onRemoved?(): void
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
 }
 
@@ -66,6 +150,15 @@ const WIDTH = 300
 export function FunctionInspector(props: FunctionInspectorProps) {
   const { element, model, readOnly, actions } = props
   const { t } = useStrings()
+  const name = useRef<HTMLInputElement | null>(null)
+  const nameFocus = props.nameFocus
+  useEffect(() => {
+    if (!nameFocus) return
+    // Selected, not just focused: what is in the box is a placeholder, and the
+    // next keystroke should replace it rather than run on after it.
+    name.current?.focus()
+    name.current?.select()
+  }, [nameFocus])
 
   return (
     <Box
@@ -93,6 +186,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
             label={t('common.name')}
             value={element.name}
             disabled={readOnly}
+            inputRef={name}
             onChange={(e) => actions.updateElement(
               element.id, { name: e.target.value }, `sheet.name:${element.id}`,
             )}
@@ -102,6 +196,26 @@ export function FunctionInspector(props: FunctionInspectorProps) {
 
           {element.kind === 'step' && (
             <LaneField element={element} model={model} readOnly={readOnly} actions={actions} />
+          )}
+
+          {element.kind === 'actor' && (
+            <FormControlLabel
+              sx={{ mt: -1 }}
+              control={(
+                <Checkbox
+                  size="small"
+                  checked={element.outside === true}
+                  disabled={readOnly}
+                  inputProps={{ 'aria-label': t('sheet.outsideOrganisation') }}
+                  onChange={(e) => actions.updateElement(
+                    element.id, { outside: e.target.checked ? true : undefined },
+                  )}
+                />
+              )}
+              label={(
+                <Typography sx={{ fontSize: 11.5 }}>{t('sheet.outsideOrganisation')}</Typography>
+              )}
+            />
           )}
 
           <TextField
@@ -142,7 +256,9 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           </Box>
 
           {element.kind === 'function' && (
-            <Coverage element={element} model={model} onOpen={actions.onOpenElement} />
+            <Coverage
+              element={element} model={model} readOnly={readOnly} actions={actions}
+            />
           )}
 
           <MarkdownField
@@ -153,7 +269,52 @@ export function FunctionInspector(props: FunctionInspectorProps) {
             )}
             renderMarkdown={props.renderMarkdown}
           />
+
+          {!readOnly && (
+            <Remove element={element} model={model} actions={actions} onRemoved={props.onRemoved} />
+          )}
         </Box>
+      )}
+    </Box>
+  )
+}
+
+/**
+ * Taking one thing away.
+ *
+ * Refused while something is inside it, and refused *visibly*: the button
+ * stays where it is, disabled, with the count beside it, because the answer
+ * to "why can I not delete this" belongs next to the thing that will not
+ * delete. Nothing cascades — an area is not a request to delete the twenty
+ * capabilities in it (`business/authoring.mayRemove`).
+ */
+function Remove({ element, model, actions, onRemoved }: {
+  element: DesignElement
+  model: DesignModel
+  actions: SheetActions
+  onRemoved?(): void
+}) {
+  const { t } = useStrings()
+  const removal = mayRemove(model.elements, element.id)
+
+  return (
+    <Box>
+      <Tooltip title={removal.ok ? '' : t(removal.reason)}>
+        <span>
+          <Button
+            size="small" color="error" variant="outlined" fullWidth
+            disabled={!removal.ok}
+            aria-label={t('sheet.deleteThis', { name: element.name })}
+            onClick={() => { actions.removeElement(element.id); onRemoved?.() }}
+          >
+            {t('common.delete')}
+          </Button>
+        </span>
+      </Tooltip>
+      {!removal.ok && (
+        <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>
+          {plural(t, { one: 'sheet.insideOne', other: 'sheet.insideOther' }, removal.count)}
+        </Typography>
       )}
     </Box>
   )
@@ -275,10 +436,11 @@ function LaneField({ element, model, readOnly, actions }: {
  * is that one, then". People with no system beside them is a complete answer
  * and is not drawn as a gap (ADR-0012 §9).
  */
-function Coverage({ element, model, onOpen }: {
+function Coverage({ element, model, readOnly, actions }: {
   element: DesignElement
   model: DesignModel
-  onOpen(id: ElementId): void
+  readOnly: boolean
+  actions: SheetActions
 }) {
   const { t } = useStrings()
   const coverage = coverageFor(model.relations, element.id)
@@ -303,7 +465,7 @@ function Coverage({ element, model, onOpen }: {
             underline="hover"
             sx={{ fontSize: 11.5 }}
             aria-label={t('sheet.open', { name: named(id) })}
-            onClick={() => onOpen(id)}
+            onClick={() => actions.onOpenElement(id)}
           >
             {named(id)}
           </Link>
@@ -315,6 +477,82 @@ function Coverage({ element, model, onOpen }: {
           {coverage.coverage === 'manual' && ` — ${t('sheet.coveragePeople')}`}
         </Typography>
       )}
+
+      {!readOnly && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
+          <Ticks
+            label={t('sheet.supportedBy')}
+            options={model.elements.filter((held) => held.kind === 'application')}
+            picked={coverage.supportedBy}
+            onPick={(sourceId, on) =>
+              actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on })}
+            t={t}
+          />
+          <Ticks
+            label={t('sheet.doneBy')}
+            options={model.elements.filter((held) => held.kind === 'actor')}
+            picked={coverage.assignedTo}
+            onPick={(sourceId, on) =>
+              actions.setCoverage({ type: 'assigned', sourceId, functionId: element.id, on })}
+            t={t}
+          />
+        </Box>
+      )}
     </Box>
+  )
+}
+
+/**
+ * What covers this, as something a person ticks.
+ *
+ * Coverage is derived from rows (`business/coverage.ts`) and this is the one
+ * place a row is written by hand: a tick is one `supports` or `assigned`
+ * relation, an untick takes it away, and the line above redraws from the model
+ * rather than from anything held here. One tick per change, because a
+ * multi-select hands back a whole list and only ever one of them moved — which
+ * keeps each tick its own undo step and its own Activity line.
+ *
+ * Ids the scope names in a row and does not hold are ordinary (ADR-0012 §5),
+ * so the value is narrowed to what is actually on offer; the row itself stays
+ * where it is and the line above still names it.
+ */
+function Ticks({ label, options, picked, onPick, t }: {
+  label: string
+  options: readonly DesignElement[]
+  picked: readonly ElementId[]
+  onPick(id: ElementId, on: boolean): void
+  t: Translate
+}) {
+  const offered = [...options].sort((a, b) => a.name.localeCompare(b.name))
+  const held = offered.map((option) => option.id).filter((id) => picked.includes(id))
+  const named = (id: ElementId) => offered.find((option) => option.id === id)?.name ?? id
+
+  return (
+    <TextField
+      select size="small" fullWidth
+      label={label}
+      value={held}
+      slotProps={{
+        select: {
+          multiple: true,
+          renderValue: (value) => (value as ElementId[]).map(named).join(', '),
+          displayEmpty: true,
+        },
+      }}
+      onChange={(e) => {
+        const next = e.target.value as unknown as ElementId[]
+        const added = next.find((id) => !held.includes(id))
+        if (added !== undefined) { onPick(added, true); return }
+        const removed = held.find((id) => !next.includes(id))
+        if (removed !== undefined) onPick(removed, false)
+      }}
+    >
+      {offered.length === 0 && (
+        <MenuItem value="" disabled>{t('sheet.coverageNobody')}</MenuItem>
+      )}
+      {offered.map((option) => (
+        <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
+      ))}
+    </TextField>
   )
 }

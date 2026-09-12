@@ -254,6 +254,23 @@ export function GridIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** Three tracks with a handle on each: what a page is made to show. */
+export function SlidersIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      {[[9, 7], [15, 12], [7, 17]].map(([cx, cy]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.2" fill="currentColor" />
+      ))}
+    </svg>
+  );
+}
+
 export function SnapGridIcon({ size = 18 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>

@@ -31,7 +31,69 @@ export const EN = {
   'sheet.people': 'people',
   'sheet.nothingYet': 'nothing yet',
   'sheet.noAreas': 'No areas on this sheet yet.',
-  'sheet.emptyHint': 'Add a journey, an area or a capability, and it is drawn here.',
+  'sheet.emptyHint': 'Start with a journey across the top, or an area to keep capabilities in.',
+
+  // --- making something ----------------------------------------------------
+  'sheet.newJourney': 'New journey',
+  'sheet.newArea': 'New area',
+  'sheet.addPhase': '+ phase',
+  'sheet.addPhaseTo': 'Add a phase to {name}',
+  'sheet.addStep': '+ step',
+  'sheet.addStepTo': 'Add a step in {phase}, {lane}',
+  'sheet.addLane': '+ lane…',
+  'sheet.addArea': '+ area',
+  'sheet.addGrouping': '+ grouping',
+  'sheet.addGroupingTo': 'Add a grouping to {name}',
+  'sheet.addCapability': '+ capability',
+  'sheet.addCapabilityTo': 'Add a capability to {name}',
+  'sheet.addStakeholder': '+ stakeholder',
+  'sheet.addStakeholderTo': 'Add a stakeholder under {name}',
+  'sheet.addGroup': '+ group',
+  'sheet.addGroupHint': 'Add a stakeholder group',
+
+  // What a new thing is called until the person types over it. These are
+  // written into the file, so they are words rather than placeholders.
+  'sheet.nameJourney': 'New journey',
+  'sheet.nameFirstPhase': 'Start',
+  'sheet.namePhase': 'New phase',
+  'sheet.nameStep': 'New step',
+  'sheet.nameArea': 'New area',
+  'sheet.nameGrouping': 'New grouping',
+  'sheet.nameCapability': 'New capability',
+  'sheet.nameStakeholder': 'New stakeholder',
+  'sheet.nameGroup': 'New group',
+  'sheet.untitled': 'Untitled',
+
+  // --- a path of its own ---------------------------------------------------
+  'sheet.laneTitle': 'A path of its own',
+  'sheet.laneWho': 'Whose path it is',
+  'sheet.laneSomebodyNew': 'Somebody not on the rail yet',
+  'sheet.laneName': 'Their name',
+  'sheet.laneWhere': 'Forks at',
+  'sheet.laneAdd': 'Add the lane',
+  'sheet.outsideOrganisation': 'Outside the organisation',
+
+  // --- what this sheet is of -----------------------------------------------
+  'sheet.settings': 'What this sheet draws',
+  'sheet.settingsJourney': 'The journey across the top',
+  'sheet.settingsAreas': 'The areas, in order',
+  'sheet.settingsLanes': 'The lanes, in order',
+  'sheet.settingsNoLanes': 'No row of its own yet — a lane appears when a step is on it.',
+  'sheet.settingsRail': 'Draw the stakeholder rail',
+  'sheet.settingsDraw': 'Draw {name}',
+
+  // --- taking something away -----------------------------------------------
+  'sheet.deleteThis': 'Delete {name}',
+  'sheet.deleteChildrenFirst': 'Delete what is inside it first',
+  'sheet.insideOne': '1 thing is inside it',
+  'sheet.insideOther': '{count} things are inside it',
+
+  // --- coverage, as something a person ticks -------------------------------
+  'sheet.supportedBy': 'Supported by…',
+  'sheet.doneBy': 'Done by…',
+
+  // --- where an element is actually drawn ----------------------------------
+  'sheet.switchedBoard': 'Showing {name}, which draws it',
 
   // --- the band at the end (ADR-0012 §9) -----------------------------------
   'sheet.unmapped': 'Not yet mapped to a domain',

@@ -36,12 +36,19 @@ function model(over: Partial<DesignModel> = {}): DesignModel {
   }
 }
 
+/** Every gesture, recorded; the four that make something answer with an id. */
 function actions(): SheetActions {
   return {
     updateElement: vi.fn(),
     moveElement: vi.fn(),
     updateSheet: vi.fn(),
     onOpenElement: vi.fn(),
+    addElement: vi.fn(() => 'made'),
+    addJourney: vi.fn(() => 'made'),
+    addArea: vi.fn(() => 'made'),
+    addLane: vi.fn(() => 'made'),
+    removeElement: vi.fn(),
+    setCoverage: vi.fn(),
   }
 }
 

@@ -29,7 +29,11 @@ const model = (over: Partial<HostModel> = {}): HostModel => {
     customerName: 'Acme',
     elements,
     relations,
-    diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
+    // The warehouse system is ON the board, because where a coverage link
+    // lands is a question about what a board draws.
+    diagrams: [laidOut({
+      id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'wms', x: 0, y: 0 }],
+    })],
     ...over,
   }
 }
@@ -44,22 +48,35 @@ const project = (m: HostModel = model()): ProjectSnapshot => ({
 /** The real session underneath, so what is pinned is the stack and the model. */
 function mount(initial = project()) {
   const toElement = vi.fn()
+  const toDocumentation = vi.fn()
+  const notify = vi.fn()
   let sheets!: Sheets
   let session!: ModelSession
   let counter = 0
   function Host() {
     session = useModelSession({ initialProject: initial, notify: vi.fn(), s: translator('en') })
-    sheets = useSheet({ session, makeId: (p) => `${p}-${++counter}`, s: translator('en'), toElement })
+    sheets = useSheet({
+      session,
+      makeId: (p) => `${p}-${++counter}`,
+      s: translator('en'),
+      notify,
+      toElement,
+      toDocumentation,
+    })
     return null
   }
   render(<Host />)
   return {
     toElement,
+    toDocumentation,
+    notify,
     sheets: () => sheets,
     model: () => session.current(),
     activeId: () => session.currentActiveId(),
     steps: () => session.history().length,
     undo: () => act(() => session.undo()),
+    element: (id: string) => session.current().elements.find((e) => e.id === id),
+    sheetOf: (id: string) => session.current().diagrams.find((d) => d.id === id),
   }
 }
 
@@ -143,6 +160,80 @@ describe('what the page may do', () => {
   })
 })
 
+/**
+ * Where a coverage link lands (the first beta tester's second finding).
+ *
+ * A project with two landscapes over one model on two days is the shipped
+ * example's own shape, and the board somebody last had open is not
+ * necessarily one that draws the thing they clicked.
+ */
+describe('opening an element from the sheet', () => {
+  const twoBoards = () => project(model({
+    elements: [
+      ...shippingScope().elements.map((element) => (element.id === 'scanner'
+        ? { ...element, lifecycleDates: { retired: '2027-01-01' } }
+        : element)),
+    ],
+    diagrams: [
+      laidOut({
+        id: 'd1',
+        kind: 'layer7',
+        name: 'Landscape',
+        placements: [{ id: 'wms', x: 0, y: 0 }, { id: 'scanner', x: 10, y: 0 }],
+      }),
+      laidOut({
+        id: 'd2',
+        kind: 'layer7',
+        name: 'Landscape in 2027',
+        asOf: '2027-06-01',
+        placements: [{ id: 'erp', x: 0, y: 0 }, { id: 'scanner', x: 10, y: 0 }],
+      }),
+    ],
+  }))
+  const opened = () => {
+    const host = mount(twoBoards())
+    act(() => host.sheets().create())
+    return host
+  }
+
+  it('stays on the board a person is on when that board draws it', () => {
+    const host = opened()
+    act(() => host.sheets().actions.onOpenElement('wms'))
+    expect(host.activeId()).toBe('d1')
+    expect(host.notify).not.toHaveBeenCalled()
+    expect(host.toElement).toHaveBeenCalledWith('wms')
+  })
+
+  it('switches to the first board that draws it, and says which', () => {
+    const host = opened()
+    act(() => host.sheets().actions.onOpenElement('erp'))
+    expect(host.activeId()).toBe('d2')
+    expect(host.notify).toHaveBeenCalledWith('Showing Landscape in 2027, which draws it', 'info')
+    expect(host.toElement).toHaveBeenCalledWith('erp')
+  })
+
+  it('opens the element’s own page when no board draws it', () => {
+    // `scanner` is on both boards and retires before the second one's day, so
+    // the only board that draws it is the one it is already on… until that is
+    // not the active one either. Here the model holds an application nothing
+    // has been placed on at all.
+    const host = opened()
+    act(() => host.sheets().actions.onOpenElement('picking'))
+    expect(host.toDocumentation).toHaveBeenCalledWith('picking')
+    expect(host.toElement).not.toHaveBeenCalled()
+    expect(host.activeId()).toBe('d1')
+  })
+
+  it('does not send a person to a board whose day has retired it', () => {
+    const host = opened()
+    act(() => host.sheets().actions.onOpenElement('scanner'))
+    // d1 draws it and d2 does not, so the active board is right and nothing
+    // is said about a switch that did not happen.
+    expect(host.activeId()).toBe('d1')
+    expect(host.notify).not.toHaveBeenCalled()
+  })
+})
+
 describe('opening and closing', () => {
   it('opens one by id and hands the page the diagram', () => {
     const host = mount()
@@ -159,5 +250,211 @@ describe('opening and closing', () => {
     act(() => host.sheets().open('never-made'))
     expect(host.sheets().sheetId).toBe('never-made')
     expect(host.sheets().sheet).toBeUndefined()
+  })
+})
+
+/**
+ * The gestures that make something (step 3c).
+ *
+ * What is pinned here is the command each one lands, that it is one step, and
+ * that the sheet's own fields move with it — the page's side is pinned in
+ * `SheetPage.test.tsx`, over the same vocabulary.
+ */
+describe('making something', () => {
+  const opened = () => {
+    const host = mount()
+    act(() => host.sheets().create())
+    return host
+  }
+
+  it('adds a phase at the end of the row, with the id its name would have', () => {
+    const host = opened()
+    let id: string | undefined
+    act(() => { id = host.sheets().actions.addElement({ kind: 'step', name: 'Aftercare', parentId: 'ship' }) })
+    expect(id).toBe('aftercare')
+    expect(host.element('aftercare')).toMatchObject({ kind: 'step', parentId: 'ship', order: 5 })
+  })
+
+  it('adds a capability with no order, because its row has none', () => {
+    const host = opened()
+    act(() => host.sheets().actions.addElement({
+      kind: 'function', name: 'Bulk picking', parentId: 'warehousing',
+    }))
+    expect(host.element('bulk-picking')).toMatchObject({ parentId: 'warehousing' })
+    expect(host.element('bulk-picking')?.order).toBeUndefined()
+  })
+
+  it('gives a step the lane of the row it was made in', () => {
+    const host = opened()
+    act(() => host.sheets().actions.addElement({
+      kind: 'step', name: 'Chase the quote', parentId: 'quote', lane: 'key-account',
+    }))
+    expect(host.element('chase-the-quote')?.lane).toBe('key-account')
+  })
+
+  it('starts a stakeholder outside the organisation when it is one', () => {
+    const host = opened()
+    act(() => host.sheets().actions.addElement({ kind: 'actor', name: 'Auditor', outside: true }))
+    expect(host.element('auditor')).toMatchObject({ kind: 'actor', outside: true })
+  })
+
+  it('makes a journey with its first phase, and points an empty sheet at it', () => {
+    // A model with two journeys seeds none (`seedSheet`), which is the sheet
+    // this gesture has to fill.
+    const host = mount(project(model({ elements: [] })))
+    act(() => host.sheets().create())
+    act(() => host.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }))
+
+    expect(host.element('onboard-a-client')).toMatchObject({ kind: 'step' })
+    expect(host.element('start')).toMatchObject({ kind: 'step', parentId: 'onboard-a-client' })
+    expect(host.sheetOf('sh-1')?.journeyId).toBe('onboard-a-client')
+    // One step: the journey, its phase and the sheet's own field.
+    expect(host.steps()).toBe(2)
+    host.undo()
+    expect(host.element('onboard-a-client')).toBeUndefined()
+    expect(host.sheetOf('sh-1')?.journeyId).toBeUndefined()
+  })
+
+  it('leaves a sheet that already draws one pointing where it pointed', () => {
+    const host = opened()
+    act(() => host.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }))
+    expect(host.sheetOf('sh-1')?.journeyId).toBe('ship')
+  })
+
+  it('adds an area and draws it on this sheet in the same step', () => {
+    const host = opened()
+    act(() => host.sheets().actions.addArea('Compliance'))
+    expect(host.element('compliance')).toMatchObject({ kind: 'function' })
+    expect(host.sheetOf('sh-1')?.areas).toEqual(['fulfilment', 'billing', 'compliance'])
+    host.undo()
+    expect(host.element('compliance')).toBeUndefined()
+    expect(host.sheetOf('sh-1')?.areas).toEqual(['fulfilment', 'billing'])
+  })
+
+  it('makes a lane out of a stakeholder the scope already holds', () => {
+    const host = opened()
+    let id: string | undefined
+    act(() => {
+      id = host.sheets().actions.addLane({
+        actorId: 'partner', phaseId: 'order', stepName: 'Take the bulk order',
+      })
+    })
+    expect(id).toBe('take-the-bulk-order')
+    expect(host.element('take-the-bulk-order')).toMatchObject({ parentId: 'order', lane: 'partner' })
+    // `lanes` is the ORDER of the rows and nothing else: the row exists
+    // because a step names the actor.
+    expect(host.sheetOf('sh-1')?.lanes).toBeUndefined()
+  })
+
+  it('makes the stakeholder too when the person typed a name', () => {
+    const host = opened()
+    act(() => host.sheets().actions.addLane({
+      name: 'Auditor', outside: true, phaseId: 'order', stepName: 'Ask for the file',
+    }))
+    expect(host.element('auditor')).toMatchObject({ kind: 'actor', outside: true })
+    expect(host.element('ask-for-the-file')?.lane).toBe('auditor')
+    // The actor and its first step are one thing that happened.
+    expect(host.steps()).toBe(2)
+  })
+})
+
+describe('taking something away', () => {
+  const opened = () => {
+    const host = mount()
+    act(() => host.sheets().create())
+    return host
+  }
+
+  it('refuses while something is inside it', () => {
+    const host = opened()
+    act(() => host.sheets().actions.removeElement('warehousing'))
+    expect(host.element('warehousing')).toBeDefined()
+    expect(host.steps()).toBe(1)
+  })
+
+  it('takes a leaf and the rows that ended on it', () => {
+    const host = opened()
+    act(() => host.sheets().actions.removeElement('picking'))
+    expect(host.element('picking')).toBeUndefined()
+    expect(host.model().relations.some((r) => r.targetId === 'picking')).toBe(false)
+    host.undo()
+    expect(host.element('picking')).toBeDefined()
+    expect(host.model().relations.filter((r) => r.targetId === 'picking')).toHaveLength(2)
+  })
+
+  it('clears the sheet’s journey in the same step as the journey', () => {
+    const host = opened()
+    // Emptied first, because nothing cascades.
+    for (const id of ['take-order', 'standard-rate', 'negotiate', 'pick-goods', 'partner-fulfils',
+      'hand-over', 'sign-off', 'order', 'quote', 'pick', 'deliver']) {
+      act(() => host.sheets().actions.removeElement(id))
+    }
+    act(() => host.sheets().actions.removeElement('ship'))
+    expect(host.element('ship')).toBeUndefined()
+    expect(host.sheetOf('sh-1')?.journeyId).toBeUndefined()
+    host.undo()
+    expect(host.sheetOf('sh-1')?.journeyId).toBe('ship')
+  })
+
+  it('takes an area off the sheet in the same step', () => {
+    const host = opened()
+    act(() => host.sheets().actions.removeElement('invoice'))
+    act(() => host.sheets().actions.removeElement('dunning'))
+    act(() => host.sheets().actions.removeElement('invoicing'))
+    act(() => host.sheets().actions.removeElement('billing'))
+    expect(host.sheetOf('sh-1')?.areas).toEqual(['fulfilment'])
+  })
+})
+
+describe('coverage, ticked', () => {
+  const opened = () => {
+    const host = mount()
+    act(() => host.sheets().create())
+    return host
+  }
+  const rows = (host: ReturnType<typeof mount>, target: string, type: string) =>
+    host.model().relations.filter((r) => r.type === type && r.targetId === target)
+
+  it('writes a supports row from an application', () => {
+    const host = opened()
+    act(() => host.sheets().actions.setCoverage({
+      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
+    }))
+    expect(rows(host, 'dunning', 'supports').map((r) => r.sourceId)).toEqual(['erp'])
+    host.undo()
+    expect(rows(host, 'dunning', 'supports')).toEqual([])
+  })
+
+  it('writes an assigned row from an actor', () => {
+    const host = opened()
+    act(() => host.sheets().actions.setCoverage({
+      type: 'assigned', sourceId: 'warehouse-team', functionId: 'dunning', on: true,
+    }))
+    expect(rows(host, 'dunning', 'assigned').map((r) => r.sourceId)).toEqual(['warehouse-team'])
+  })
+
+  it('takes a row away again', () => {
+    const host = opened()
+    act(() => host.sheets().actions.setCoverage({
+      type: 'supports', sourceId: 'wms', functionId: 'picking', on: false,
+    }))
+    expect(rows(host, 'picking', 'supports').map((r) => r.sourceId)).toEqual(['scanner'])
+  })
+
+  it('takes every row that says the same thing, as one step', () => {
+    const host = opened()
+    act(() => host.sheets().actions.setCoverage({
+      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
+    }))
+    act(() => host.sheets().actions.setCoverage({
+      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
+    }))
+    expect(rows(host, 'dunning', 'supports')).toHaveLength(2)
+    act(() => host.sheets().actions.setCoverage({
+      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: false,
+    }))
+    expect(rows(host, 'dunning', 'supports')).toEqual([])
+    host.undo()
+    expect(rows(host, 'dunning', 'supports')).toHaveLength(2)
   })
 })

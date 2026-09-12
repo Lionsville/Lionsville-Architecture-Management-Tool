@@ -188,7 +188,22 @@ export function ProjectWorkspace({
   const focusElement = useCallback((id: string) => {
     setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [])
-  const sheets = useSheet({ session, makeId, s, toElement: focusElement })
+  /**
+   * Requests INTO the editor carry a nonce, because "open the documentation"
+   * asked twice is two requests and a prop that did not change is none.
+   *
+   * Up here with the focus request for the same reason, one page further on:
+   * the sheet is wired next, and a coverage link on it lands on the element's
+   * own page when no board draws the element at all.
+   */
+  const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
+  const openDocumentation = useCallback((elementId?: string) => {
+    if (session.current().elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
+    setDocRequest((prev) => ({ elementId, nonce: (prev?.nonce ?? 0) + 1 }))
+  }, [session, notify, s])
+  const sheets = useSheet({
+    session, makeId, s, notify, toElement: focusElement, toDocumentation: openDocumentation,
+  })
 
   /**
    * The picture behind an image source, or nothing — which is the whole of the
@@ -416,11 +431,6 @@ export function ProjectWorkspace({
 
   // --- the three pages beside the canvas ---------------------------------------
 
-  /**
-   * Requests INTO the editor carry a nonce, because "open the documentation"
-   * asked twice is two requests and a prop that did not change is none.
-   */
-  const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
   /**
    * How tall the shell toolbar is, measured: every page opens below it, so
@@ -445,11 +455,6 @@ export function ProjectWorkspace({
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
   const [searchOpen, setSearchOpen] = useState(false)
-
-  const openDocumentation = useCallback((elementId?: string) => {
-    if (session.current().elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
-    setDocRequest((prev) => ({ elementId, nonce: (prev?.nonce ?? 0) + 1 }))
-  }, [session, notify, s])
 
   // The toolbar's pages are one at a time: opening one closes the others, so
   // the bar reads as tabs rather than stacking pages under each other.

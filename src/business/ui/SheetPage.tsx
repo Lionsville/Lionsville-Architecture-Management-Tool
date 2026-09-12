@@ -12,32 +12,44 @@
  * side, the journey across the top with a row per lane, the responsibility
  * areas as columns, and what nobody has mapped to a domain yet.
  *
+ * **Every band can be written as well as read.** Beta 1 drew all of this and
+ * offered nothing to make it with, so the only authors were a file and an
+ * agent; the first person to try the beta hit that in the first minute. Each
+ * *+* here is one `Command` through the session — undoable, with an Activity
+ * line — and each one selects what it just made and puts the cursor in its
+ * name, so the whole gesture is click, type, Enter. Under `readOnly` not one
+ * of them is rendered.
+ *
  * A fullscreen dialog, and it takes `windowChrome` for the reason the other
  * pages do: the shell toolbar's drag strip stays live underneath it, and
  * Electron computes drag regions from geometry rather than from what is
  * painted on top.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme } from '@mui/material/styles'
+import type { SxProps, Theme } from '@mui/material/styles'
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model'
 import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { BackIcon, EyeIcon } from '../../widgets/icons'
+import { BackIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { sheetPage } from '../sheet'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
 import type { SheetShot } from './captureSheet'
 import { captureSheet } from './captureSheet'
 import { FunctionInspector } from './FunctionInspector'
-import type { SheetActions } from './FunctionInspector'
+import type { NewLane, SheetActions } from './FunctionInspector'
+import { LaneDialog } from './LaneDialog'
+import { SheetSettingsDialog } from './SheetSettingsDialog'
 
 export type SheetPageProps = {
   open: boolean
@@ -67,6 +79,8 @@ export type SheetHandle = {
 const RAIL_WIDTH = 178
 const LANE_LABEL_WIDTH = 136
 const NOTCH = 9
+/** The column the *+ phase* sits in, kept off the phases so the row lines up. */
+const ADD_COLUMN = 72
 const CHEVRON = `polygon(0 0, calc(100% - ${NOTCH}px) 0, 100% 50%, calc(100% - ${NOTCH}px) 100%, 0 100%)`
 
 export function SheetPage(props: SheetPageProps) {
@@ -75,6 +89,14 @@ export function SheetPage(props: SheetPageProps) {
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
   const [selectedId, setSelectedId] = useState<ElementId | undefined>(undefined)
+  /**
+   * A nonce rather than a flag: "put the cursor in the name" asked twice is
+   * two requests, and the inspector is not remounted between two things made
+   * one after the other.
+   */
+  const [nameFocus, setNameFocus] = useState(0)
+  const [laneOpen, setLaneOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const theme = useTheme()
   const page = useRef<HTMLDivElement | null>(null)
 
@@ -105,6 +127,15 @@ export function SheetPage(props: SheetPageProps) {
     ? undefined
     : model.elements.find((element) => element.id === selectedId)
 
+  /** What every gesture that makes something ends with. */
+  const made = useCallback((id: ElementId | undefined) => {
+    if (id === undefined) return
+    setSelectedId(id)
+    setNameFocus((nonce) => nonce + 1)
+  }, [])
+
+  const author = readOnly ? undefined : { t, made, actions }
+
   return (
     <PageDialog
       open={props.open}
@@ -130,25 +161,55 @@ export function SheetPage(props: SheetPageProps) {
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{sheet?.name ?? t('sheet.page')}</Typography>
         <Box sx={{ flex: 1 }} />
         {!readOnly && sheet && (
-          <Tooltip title={sheet.showActors === false ? t('sheet.showRail') : t('sheet.hideRail')}>
-            <IconButton
-              size="small"
-              aria-label={sheet.showActors === false ? t('sheet.showRail') : t('sheet.hideRail')}
-              onClick={() => actions.updateSheet({ showActors: sheet.showActors === false })}
-            >
-              <EyeIcon />
-            </IconButton>
-          </Tooltip>
+          <>
+            <Tooltip title={sheet.showActors === false ? t('sheet.showRail') : t('sheet.hideRail')}>
+              <IconButton
+                size="small"
+                aria-label={sheet.showActors === false ? t('sheet.showRail') : t('sheet.hideRail')}
+                onClick={() => actions.updateSheet({ showActors: sheet.showActors === false })}
+              >
+                <EyeIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('sheet.settings')}>
+              <IconButton
+                size="small" aria-label={t('sheet.settings')} onClick={() => setSettingsOpen(true)}
+              >
+                <SlidersIcon />
+              </IconButton>
+            </Tooltip>
+          </>
         )}
       </Box>
 
       <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-        {laidOut && laidOut.actors.length > 0 && <Rail actors={laidOut.actors} t={t} />}
+        {laidOut && sheet?.showActors !== false && (
+          <Rail actors={laidOut.actors} onSelect={setSelectedId} author={author} t={t} />
+        )}
 
         <Box data-testid="sheet-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}>
-          {laidOut?.journey
-            ? <JourneyBand journey={laidOut.journey} onSelect={setSelectedId} t={t} />
-            : <Empty text={t('sheet.noJourney')} />}
+          {laidOut?.journey ? (
+            <JourneyBand
+              journey={laidOut.journey}
+              onSelect={setSelectedId}
+              onNewLane={() => setLaneOpen(true)}
+              author={author}
+              t={t}
+            />
+          ) : (
+            <Empty
+              text={t('sheet.noJourney')}
+              action={author && (
+                <Add
+                  label={t('sheet.newJourney')}
+                  title={t('sheet.newJourney')}
+                  onClick={() => author.made(author.actions.addJourney({
+                    journey: t('sheet.nameJourney'), phase: t('sheet.nameFirstPhase'),
+                  }))}
+                />
+              )}
+            />
+          )}
 
           {laidOut && laidOut.areas.length > 0 ? (
             <Box
@@ -159,10 +220,34 @@ export function SheetPage(props: SheetPageProps) {
               }}
             >
               {laidOut.areas.map((area) => (
-                <AreaCard key={area.element.id} area={area} onSelect={setSelectedId} t={t} />
+                <AreaCard
+                  key={area.element.id} area={area} onSelect={setSelectedId} author={author} t={t}
+                />
               ))}
+              {author && (
+                <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <Add
+                    label={t('sheet.addArea')}
+                    title={t('sheet.newArea')}
+                    onClick={() => author.made(author.actions.addArea(t('sheet.nameArea')))}
+                    sx={{ py: 0.75, px: 1.5 }}
+                  />
+                </Box>
+              )}
             </Box>
-          ) : <Empty text={t('sheet.noAreas')} hint={t('sheet.emptyHint')} />}
+          ) : (
+            <Empty
+              text={t('sheet.noAreas')}
+              hint={t('sheet.emptyHint')}
+              action={author && (
+                <Add
+                  label={t('sheet.newArea')}
+                  title={t('sheet.newArea')}
+                  onClick={() => author.made(author.actions.addArea(t('sheet.nameArea')))}
+                />
+              )}
+            />
+          )}
 
           {laidOut && laidOut.unmapped.length > 0 && (
             <UnmappedBand elements={laidOut.unmapped} onSelect={setSelectedId} t={t} />
@@ -174,9 +259,70 @@ export function SheetPage(props: SheetPageProps) {
           model={model}
           readOnly={readOnly}
           actions={actions}
+          nameFocus={nameFocus}
+          onRemoved={() => setSelectedId(undefined)}
         />
       </Box>
+
+      {laneOpen && laidOut?.journey && (
+        <LaneDialog
+          model={model}
+          phases={laidOut.journey.phases}
+          onCancel={() => setLaneOpen(false)}
+          onConfirm={(lane: NewLane) => {
+            setLaneOpen(false)
+            made(actions.addLane(lane))
+          }}
+        />
+      )}
+      {settingsOpen && sheet && (
+        <SheetSettingsDialog
+          model={model}
+          sheet={sheet}
+          actions={actions}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </PageDialog>
+  )
+}
+
+/**
+ * What a gesture needs to make something, or nothing at all under `readOnly`.
+ *
+ * One object rather than a `readOnly` prop threaded through every band: a
+ * band that cannot reach the actions cannot offer a *+*, which is a stronger
+ * guarantee than remembering to write the flag into each one.
+ */
+type Author = { t: Translate; made(id: ElementId | undefined): void; actions: SheetActions }
+
+/** The one shape every *+* on this page has. */
+function Add({ label, title, onClick, sx }: {
+  label: string
+  /** What it says out loud — which of the many *+*s this is, and on what. */
+  title: string
+  onClick(): void
+  sx?: SxProps<Theme>
+}) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      aria-label={title}
+      title={title}
+      onClick={onClick}
+      sx={{
+        // The same `buttontext` trap the cards fell into: `font: inherit` does
+        // not bring the colour with it.
+        appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
+        bgcolor: 'transparent', border: '1px dashed', borderColor: 'divider', borderRadius: 0.75,
+        px: 0.75, py: 0.25, fontSize: 10, whiteSpace: 'nowrap', opacity: 0.55,
+        '&:hover': { opacity: 1, borderStyle: 'solid' },
+        ...sx,
+      }}
+    >
+      {label}
+    </Box>
   )
 }
 
@@ -188,8 +334,15 @@ export function SheetPage(props: SheetPageProps) {
  * A row with something under it is a heading and a row without one is an
  * entry — read off the next row's depth rather than stored, because "has
  * children" is a fact about the tree and not a second field to keep in step.
+ * Every row takes a stakeholder of its own, because a row becomes a group the
+ * moment something is under it; the one at the bottom makes a new group.
  */
-function Rail({ actors, t }: { actors: readonly SheetActor[]; t: Translate }) {
+function Rail({ actors, onSelect, author, t }: {
+  actors: readonly SheetActor[]
+  onSelect(id: ElementId): void
+  author: Author | undefined
+  t: Translate
+}) {
   return (
     <Box
       data-testid="sheet-rail"
@@ -204,24 +357,52 @@ function Rail({ actors, t }: { actors: readonly SheetActor[]; t: Translate }) {
       }}>
         {t('sheet.stakeholders')}
       </Typography>
+      {actors.length === 0 && (
+        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
+          {t('sheet.noStakeholders')}
+        </Typography>
+      )}
       {actors.map((row, index) => {
         const heading = (actors[index + 1]?.depth ?? 0) > row.depth
-        return heading ? (
-          <Typography
-            key={row.element.id}
-            sx={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: 'text.secondary', mt: 1.5, mb: 0.5, pl: row.depth * 1.25,
-            }}
-          >
-            {row.element.name}
-          </Typography>
-        ) : (
+        const add = author && (
+          <Add
+            label={t('sheet.addStakeholder')}
+            title={t('sheet.addStakeholderTo', { name: row.element.name })}
+            onClick={() => author.made(author.actions.addElement({
+              kind: 'actor', name: t('sheet.nameStakeholder'), parentId: row.element.id,
+            }))}
+            sx={{ px: 0.4, py: 0, fontSize: 9 }}
+          />
+        )
+        return (
           <Box
             key={row.element.id}
-            sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25, pl: row.depth * 1.25 }}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: 0.5,
+              pl: row.depth * 1.25,
+              ...(heading ? { mt: 1.5, mb: 0.5 } : { py: 0.25 }),
+            }}
           >
-            <Typography sx={{ fontSize: 11.5, minWidth: 0 }}>{row.element.name}</Typography>
+            <Box
+              component="button"
+              type="button"
+              data-testid={`sheet-actor-${row.element.id}`}
+              onClick={() => onSelect(row.element.id)}
+              sx={{
+                appearance: 'none', cursor: 'pointer', font: 'inherit',
+                background: 'none', border: 0, p: 0, textAlign: 'left', minWidth: 0, flex: 1,
+                // A button's text is the browser's `buttontext` unless it is
+                // told otherwise: inherit, or a heading loses its own colour.
+                ...(heading
+                  ? {
+                    fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                    textTransform: 'uppercase', color: 'text.secondary',
+                  }
+                  : { fontSize: 11.5, color: 'inherit' }),
+              }}
+            >
+              {row.element.name}
+            </Box>
             {row.outside && (
               <Chip
                 size="small"
@@ -230,18 +411,32 @@ function Rail({ actors, t }: { actors: readonly SheetActor[]; t: Translate }) {
                 sx={{ height: 16, fontSize: 9, '& .MuiChip-label': { px: 0.5 } }}
               />
             )}
+            {add}
           </Box>
         )
       })}
+      {author && (
+        <Box sx={{ mt: 1.5 }}>
+          <Add
+            label={t('sheet.addGroup')}
+            title={t('sheet.addGroupHint')}
+            onClick={() => author.made(author.actions.addElement({
+              kind: 'actor', name: t('sheet.nameGroup'),
+            }))}
+          />
+        </Box>
+      )}
     </Box>
   )
 }
 
 // --- the journey ------------------------------------------------------------
 
-function JourneyBand({ journey, onSelect, t }: {
+function JourneyBand({ journey, onSelect, onNewLane, author, t }: {
   journey: SheetJourney
   onSelect(id: ElementId): void
+  onNewLane(): void
+  author: Author | undefined
   t: Translate
 }) {
   return (
@@ -252,8 +447,12 @@ function JourneyBand({ journey, onSelect, t }: {
           <Box
             key={phase.id}
             data-testid={`sheet-phase-${phase.id}`}
+            component="button"
+            type="button"
+            onClick={() => onSelect(phase.id)}
             sx={{
-              flex: 1, minWidth: 0, textAlign: 'center', px: 1, py: 0.5,
+              appearance: 'none', cursor: 'pointer', font: 'inherit',
+              flex: 1, minWidth: 0, textAlign: 'center', px: 1, py: 0.5, border: 0,
               bgcolor: 'primary.main', color: 'primary.contrastText',
               borderRadius: '3px 3px 0 0',
               fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -262,20 +461,49 @@ function JourneyBand({ journey, onSelect, t }: {
             {phase.name}
           </Box>
         ))}
+        {author && (
+          <Box sx={{ flex: `0 0 ${ADD_COLUMN}px`, display: 'flex', alignItems: 'center' }}>
+            <Add
+              label={t('sheet.addPhase')}
+              title={t('sheet.addPhaseTo', { name: journey.element.name })}
+              onClick={() => author.made(author.actions.addElement({
+                kind: 'step', name: t('sheet.namePhase'), parentId: journey.element.id,
+              }))}
+            />
+          </Box>
+        )}
       </Box>
       {journey.lanes.map((lane, index) => (
-        <LaneRow key={lane.actorId ?? 'common'} lane={lane} first={index === 0} onSelect={onSelect} t={t} />
+        <LaneRow
+          key={lane.actorId ?? 'common'}
+          lane={lane}
+          phases={journey.phases}
+          first={index === 0}
+          onSelect={onSelect}
+          author={author}
+          t={t}
+        />
       ))}
+      {author && (
+        <Box sx={{ display: 'flex', borderTop: 1, borderColor: 'divider', pt: 1 }}>
+          <Box sx={{ flex: `0 0 ${LANE_LABEL_WIDTH}px`, pr: 1 }}>
+            <Add label={t('sheet.addLane')} title={t('sheet.addLane')} onClick={onNewLane} />
+          </Box>
+        </Box>
+      )}
     </Box>
   )
 }
 
-function LaneRow({ lane, first, onSelect, t }: {
+function LaneRow({ lane, phases, first, onSelect, author, t }: {
   lane: SheetLane
+  phases: readonly DesignElement[]
   first: boolean
   onSelect(id: ElementId): void
+  author: Author | undefined
   t: Translate
 }) {
+  const laneName = lane.actor?.name ?? (first ? t('sheet.commonLane') : lane.actorId ?? '')
   return (
     <Box
       data-testid={`sheet-lane-${lane.actorId ?? 'common'}`}
@@ -284,11 +512,9 @@ function LaneRow({ lane, first, onSelect, t }: {
       <Box sx={{
         flex: `0 0 ${LANE_LABEL_WIDTH}px`, display: 'flex', alignItems: 'center', pr: 1, py: 1,
       }}>
-        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-          {lane.actor?.name ?? (first ? t('sheet.commonLane') : lane.actorId)}
-        </Typography>
+        <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{laneName}</Typography>
       </Box>
-      {lane.cells.map((cell) => (
+      {lane.cells.map((cell, index) => (
         <Box
           key={cell.phaseId}
           data-testid={`sheet-cell-${lane.actorId ?? 'common'}-${cell.phaseId}`}
@@ -307,8 +533,25 @@ function LaneRow({ lane, first, onSelect, t }: {
               sx={{ borderTop: '1px dashed', borderColor: 'divider', mx: 1 }}
             />
           )}
+          {author && (
+            <Add
+              label={t('sheet.addStep')}
+              title={t('sheet.addStepTo', {
+                phase: phases[index]?.name ?? cell.phaseId, lane: laneName,
+              })}
+              onClick={() => author.made(author.actions.addElement({
+                kind: 'step',
+                name: t('sheet.nameStep'),
+                parentId: cell.phaseId,
+                ...(lane.actorId !== undefined ? { lane: lane.actorId } : {}),
+              }))}
+              sx={{ alignSelf: 'flex-start' }}
+            />
+          )}
         </Box>
       ))}
+      {/* The column the *+ phase* stands in, so every row lines up under it. */}
+      {author && <Box sx={{ flex: `0 0 ${ADD_COLUMN}px` }} />}
     </Box>
   )
 }
@@ -343,9 +586,10 @@ function Chevron({ step, onSelect, t }: {
 
 // --- the areas --------------------------------------------------------------
 
-function AreaCard({ area, onSelect, t }: {
+function AreaCard({ area, onSelect, author, t }: {
   area: SheetArea
   onSelect(id: ElementId): void
+  author: Author | undefined
   t: Translate
 }) {
   return (
@@ -377,12 +621,19 @@ function AreaCard({ area, onSelect, t }: {
             data-testid={`sheet-grouping-${group.element.id}`}
             sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}
           >
-            <Typography sx={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: 'text.secondary', mb: 0.75,
-            }}>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => onSelect(group.element.id)}
+              sx={{
+                appearance: 'none', cursor: 'pointer', font: 'inherit', background: 'none',
+                border: 0, p: 0, mb: 0.75, textAlign: 'left', width: '100%',
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'text.secondary',
+              }}
+            >
               {group.element.name}
-            </Typography>
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
               {group.capabilities.map((capability) => (
                 <CapabilityCard
@@ -392,6 +643,18 @@ function AreaCard({ area, onSelect, t }: {
                   t={t}
                 />
               ))}
+              {author && (
+                <Add
+                  label={t('sheet.addCapability')}
+                  title={t('sheet.addCapabilityTo', { name: group.element.name })}
+                  onClick={() => author.made(author.actions.addElement({
+                    kind: 'function',
+                    name: t('sheet.nameCapability'),
+                    parentId: group.element.id,
+                  }))}
+                  sx={{ alignSelf: 'flex-start' }}
+                />
+              )}
             </Box>
           </Box>
         ))}
@@ -405,6 +668,24 @@ function AreaCard({ area, onSelect, t }: {
             t={t}
           />
         ))}
+        {author && (
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Add
+              label={t('sheet.addGrouping')}
+              title={t('sheet.addGroupingTo', { name: area.element.name })}
+              onClick={() => author.made(author.actions.addElement({
+                kind: 'function', name: t('sheet.nameGrouping'), parentId: area.element.id,
+              }))}
+            />
+            <Add
+              label={t('sheet.addCapability')}
+              title={t('sheet.addCapabilityTo', { name: area.element.name })}
+              onClick={() => author.made(author.actions.addElement({
+                kind: 'function', name: t('sheet.nameCapability'), parentId: area.element.id,
+              }))}
+            />
+          </Box>
+        )}
       </Box>
     </Box>
   )
@@ -496,11 +777,12 @@ function UnmappedBand({ elements, onSelect, t }: {
   )
 }
 
-function Empty({ text, hint }: { text: string; hint?: string }) {
+function Empty({ text, hint, action }: { text: string; hint?: string; action?: ReactNode }) {
   return (
     <Box sx={{ py: 3 }}>
       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{text}</Typography>
       {hint && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{hint}</Typography>}
+      {action && <Box sx={{ mt: 1 }}>{action}</Box>}
     </Box>
   )
 }
