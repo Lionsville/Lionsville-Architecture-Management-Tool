@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3592 tests** and one of every config. The
+One codebase, in modules, with **3648 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3592 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3648 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -243,9 +243,11 @@ src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     composition.ts    which adapter, and which icon packs
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
-                    picker/ · dialogs/ · examples/ · iconPacks/ · history/
-                                      the picker lists the tree; step 7 of
-                                      `docs/plan-2.0.0.md` replaces it
+                    organisation/     the first screen: the root scope's home.
+                                      OrganisationScreen · OrganisationCards ·
+                                      ScopeTree · useOrganisation · the four
+                                      dialogs every screen asks a scope about
+                    dialogs/ · examples/ · iconPacks/ · history/
                     OverflowMenu      the menu, on a host that has no menu bar
                     SyncNotice · useSync   the folder and its remote disagree
                     useAgentGateway · dialogs/ConnectAgentDialog   the seam bound
@@ -369,13 +371,25 @@ are not there: a folder with no `scope.json` is not a scope, and a child filed
 under one would be filed under nothing.
 
 On boot the app reopens the scope you had open (a preference, `lastScope`), or
-shows the picker. Examples live in `src/app/examples/` and are **copied** into
-scopes of your own when opened — nothing runs against an example in place.
+shows the **organisation screen** (`src/app/organisation/`) — the root scope's
+home, not a list of documents: its name, client, links and description; its own
+four pages as cards with a count and a finding line each; the tree beneath it;
+the examples last. The root is never a row in its own tree, because it is the
+screen. Counts on the cards come from **one** `load(root)` — a listing carries a
+view count and nothing else (`ScopeSummary`), and a load per card is the shape
+ADR-0004 keeps catching.
 
-The picker lists **alphabetically by default**, with recency as a toggle
-(`sortScopes`, persisted as `projectOrder`). It is the smallest screen that
-keeps a tree usable; step 7 of `docs/plan-2.0.0.md` replaces it with the
-organisation screen.
+A card opens the root **on a page** (`InitialPage`), because the root usually
+draws nothing at all; closing that page comes back here rather than landing on
+an empty canvas. The register card is drawn and deliberately empty: it is
+derived over the whole tree and arrives in beta 3.
+
+The tree lists **alphabetically by default**, with recency as a toggle
+(`sortScopes`, persisted as `projectOrder`); a scope with children folds shut,
+per session rather than as a preference. Examples live in `src/app/examples/`
+and are **copied** into scopes of your own — into an unnamed, empty root the
+example *becomes* the organisation; into a root that is already something it is
+filed under a child of its own (`copyExampleInto`).
 
 ## Adding a storage backend (the worked example)
 

@@ -24,33 +24,59 @@ file.
 Nothing leaves your machine either way. There is no account, no backend and no
 telemetry.
 
-## Scopes
+## The organisation screen
 
-The app opens on the **scope list**. A **scope** is one document: a name, a
-landscape, the container diagrams under it, the decisions, the plans, and
-everything placed on them. Scopes **nest**, and every one of them is the same
-document — the folder you work in is the **organisation**, a **domain** sits
-under it, a **landscape** under that, as deep as your work needs.
+The app opens on the **organisation** — the working folder itself, which is a
+scope like any other and the one everything else is filed under. A **scope** is
+one document: a name, a landscape, the container diagrams under it, the
+decisions, the plans, the business architecture, and everything placed on them.
+Scopes **nest**, and every one of them is the same document — the organisation
+at the top, a **domain** under it, a **landscape** under that, as deep as your
+work needs.
 
-A scope that draws nothing is a heading with the scopes filed under it; a scope
-that draws something is a row you can open. Which it is, is not a setting: it
-follows from whether there is anything on a board.
+The screen is the organisation's home rather than a list of documents, and it
+has four parts.
 
-- **Examples** ship with the app. Opening one **copies** it into scopes of your
-  own; nothing you do runs against the example itself.
-- **New scope…** asks for a name and which scope to file it under. The
-  organisation is always offered, so the first one has somewhere to go.
-- **Order** lists by name, or by what you changed most recently.
+**Its identity**, at the top: the name, the client if the drawings are made out
+to somebody else, how many domains and landscapes are filed under it, when
+anything in it last changed, the description, and its links. A folder nobody has
+named yet asks for a name here instead of showing a heading.
+
+**Its own pages**, as four cards. **Business architecture** counts the journeys,
+areas, functions and stakeholders the organisation itself holds and says how
+many functions nobody has handed to a domain yet; **Decisions** counts its
+records by status and names the newest; **Roadmap** counts its plans and shows
+the first thing their dates disagree about. **Register** — every application
+across the whole organisation — is not built yet, and its card says so rather
+than showing a number nothing derived. Each of the first three opens the
+organisation on that page; closing the page brings you back here.
+
+**The tree**, beneath: one row per scope, the children indented, with a chevron
+to fold a domain shut. A row says how much is inside it — landscapes and
+diagrams over the whole subtree for a domain, diagrams for a landscape — and
+when it last changed. **Order** lists by name or by what you changed most
+recently.
+
+- **Open** enters a scope that draws something. A scope that draws nothing is a
+  domain: everything filed under it is listed, and there is no canvas to show.
+- **New scope…** asks for a name and which scope to file it under. Every row has
+  one of its own, which is the quick way to add under that scope.
+- **Settings…** on any row holds its name, what it is (organisation, domain,
+  programme, landscape — a word for the screen, nothing behaves differently),
+  a client, a description, links, and **Filed under**, which moves it.
 - **Delete** removes the scope and everything filed under it: its folder on the
-  desktop, its records in the browser. A working file you saved elsewhere is
-  not touched.
+  desktop, its records in the browser. A working file you saved elsewhere is not
+  touched. The organisation itself cannot be deleted — it is the folder you
+  opened.
 
-The **settings** of a scope hold its name, a client, a description and links: a
-wiki space, a ticket queue, a dashboard. The client is what an exported diagram
-is drawn for, when that is not simply the organisation's name; left empty, the
-nearest answer above it is used. Renaming a scope relabels it and nothing else —
-where it is filed is its address, and renaming is not moving. Moving one is
-**Settings… ▸ Group**, which files it under another scope. On boot the app
+**Examples**, last. Copying one into an empty, unnamed folder makes the example
+*the* organisation; copying it into a folder that is already something files it
+under a new scope of its own. Either way it is yours from that moment, and
+nothing you do runs against the example itself.
+
+Renaming a scope relabels it and nothing else — where it is filed is its
+address, and renaming is not moving. Moving one changes the address of the scope
+and of everything under it, and leaves the content untouched. On boot the app
 reopens the scope you had open.
 
 Six names are refused, because a scope's own folders use them already:
@@ -87,7 +113,7 @@ like first. Running it again does nothing.
 
 Nothing is hidden inside the app. Put the folder in OneDrive, in Dropbox, on a
 network share or in a git repository and it behaves the way anything else there
-does. **Change…** on the scope list moves you to a different folder; the folders you
+does. **Change…** on the organisation screen moves you to a different folder; the folders you
 have used before are in **File ▸ Open Recent Folder**, each under the name its
 organisation gives itself.
 
@@ -153,7 +179,7 @@ One open project: a bar at the top, the editor below it.
 
 | In the bar | What it does |
 |---|---|
-| **Projects…** | Back to the scope list |
+| **Projects…** | Back to the organisation screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
 | **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your scope's folder in one file. **Interchange document** is topology and semantics only, the form for review and version control. On the desktop the menu also offers **Snapshot…** and **History…** |
 | **Open…** | Loads either, and recognises which by what is in the file rather than by its name |

@@ -355,7 +355,7 @@ with the two new clauses: a scope's children, and a reserved name refused);
   and `ProjectWorkspace`, `ProjectPicker` and `ProjectSettingsDialog`, which
   step 7 is about to replace.
 
-### 7. The organisation screen
+### 7. The organisation screen — landed 12 September 2026 (d512688…9d35ef3)
 
 Replaces the picker (`src/app/picker/` → `src/app/organisation/`). The
 design is on the canvas beside this plan: the root scope's home — its name,
@@ -370,6 +370,42 @@ scope…* under any node; examples last.
   label, client, description, links).
 - Done when: the screen's tests cover open, create-under, rename, remove
   (save-then-remove order kept), and a fresh folder with nothing in it.
+
+**Landed**, and five things the next stretch should know:
+
+- **`InitialPage` is new shell vocabulary**, and it is what made the cards
+  possible at all. The root usually draws nothing, so *Open* on a card enters
+  the root and tells the workspace which page to show the moment it appears;
+  closing that page on a scope with no views leaves, rather than landing a
+  person on "diagram not found". `App` owns the type, because one screen says
+  it and the other obeys it. A `sheet` with no id is seeded through the
+  session (`sheets.create`), so making one is one undo step and one Activity
+  line rather than a write from the screen.
+- **The card counts are one `load(root)`, and the ADR-0012 §6 note about
+  widening `ScopeSummary` did not need answering.** Every number on the three
+  real cards is about the root's own document, so the screen loads the one
+  scope it is about — `organisationPages`, pure and node-tested — and the
+  listing stays exactly as cheap as it was. The hook reads the root only while
+  its screen is up (`active`), so nothing loads a whole model behind a canvas.
+- **The register card is drawn and empty on purpose.** Title, one sentence, no
+  count, no *Open*. When §8's index lands it is the only card that has to
+  change.
+- **A move is reachable from the first screen now**, which the settings dialog
+  grew a *Filed under* field and a kind picker for. `ScopeStore.remove` takes
+  the subtree with it, so every scope under the one being moved is saved at its
+  new address before the old folder is removed; `projects/scope.movedPaths`
+  says which addresses, and the order is pinned by a test rather than left to a
+  reading.
+- **`unmappedFunctions` and the roadmap's two label tables are published now.**
+  The *not yet mapped* rule was inline in `sheetPage` and the plan statuses and
+  finding sentences were private to their pages; a second screen saying the
+  same words is what the "publish a table, not a key" rule is for
+  (`business/sheetDiagram.ts`, `roadmap/labels.ts`).
+
+One thing deliberately left: `readOnly` is still not a state this screen has.
+The honest signal that a store will not take a write is the standing storage
+notice along the bottom, and a second one that guessed would hide affordances
+that work.
 
 **Cut 2.0.0-beta.2.**
 

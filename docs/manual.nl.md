@@ -25,35 +25,63 @@ bestand bewaart.
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
 en geen telemetrie.
 
-## Onderdelen
+## Het organisatiescherm
 
-De app opent op de **lijst met onderdelen**. Een **onderdeel** is één document:
+De app opent op de **organisatie** — de werkmap zelf, die een onderdeel is als
+elk ander en waaronder al het andere valt. Een **onderdeel** is één document:
 een naam, een landschap, de containerdiagrammen eronder, de besluiten, de
-plannen en alles wat erop staat. Onderdelen **nestelen**, en ze zijn allemaal
-hetzelfde document — de map waarin je werkt is de **organisatie**, een **domein**
-staat eronder, een **landschap** daar weer onder, zo diep als je werk vraagt.
+plannen, de bedrijfsarchitectuur en alles wat erop staat. Onderdelen
+**nestelen**, en ze zijn allemaal hetzelfde document — de organisatie bovenaan,
+een **domein** eronder, een **landschap** daar weer onder, zo diep als je werk
+vraagt.
 
-Een onderdeel dat niets tekent is een kop met de onderdelen eronder; een
-onderdeel dat wel iets tekent is een regel die je kunt openen. Wat het is, is
-geen instelling: het volgt uit de vraag of er iets op een bord staat.
+Het scherm is het thuis van de organisatie en geen lijst met documenten, en het
+bestaat uit vier delen.
 
-- **Voorbeelden** komen met de app mee. Een voorbeeld openen **kopieert** het
-  naar eigen onderdelen; niets wat je doet raakt het voorbeeld zelf.
-- **Nieuw onderdeel…** vraagt om een naam en om waaronder het valt. De
-  organisatie wordt altijd aangeboden, dus het eerste onderdeel kan ergens heen.
-- **Volgorde** sorteert op naam, of op wat je het laatst hebt gewijzigd.
+**Wie het is**, bovenaan: de naam, de klant als de tekeningen voor iemand anders
+gemaakt zijn, hoeveel domeinen en landschappen eronder vallen, wanneer er voor
+het laatst iets veranderde, de omschrijving en de koppelingen. Een map die nog
+geen naam heeft vraagt er hier om in plaats van een lege kop te tonen.
+
+**De eigen pagina's**, als vier kaarten. **Bedrijfsarchitectuur** telt de
+klantreizen, gebieden, functies en belanghebbenden die de organisatie zelf
+heeft, en zegt hoeveel functies nog aan geen enkel domein zijn toegewezen;
+**Besluiten** telt de vastleggingen per status en noemt de nieuwste; **Roadmap**
+telt de plannen en toont het eerste waarover hun datums het oneens zijn.
+**Register** — elke applicatie in de hele organisatie — is nog niet gebouwd, en
+die kaart zegt dat, in plaats van een getal te tonen dat nergens uit is afgeleid.
+De eerste drie openen de organisatie op die pagina; als je de pagina sluit ben je
+weer hier.
+
+**De boom**, eronder: één regel per onderdeel, de kinderen ingesprongen, met een
+pijltje om een domein dicht te klappen. Een regel zegt hoeveel erin zit —
+landschappen en diagrammen over de hele tak voor een domein, diagrammen voor een
+landschap — en wanneer het laatst iets veranderde. **Volgorde** sorteert op naam
+of op wat je het laatst hebt gewijzigd.
+
+- **Openen** gaat een onderdeel in dat iets tekent. Een onderdeel dat niets
+  tekent is een domein: alles wat eronder valt staat eronder, en er is geen bord
+  om te tonen.
+- **Nieuw onderdeel…** vraagt om een naam en om waaronder het valt. Elke regel
+  heeft er zelf een, en dat is de snelle manier om er iets onder te hangen.
+- **Instellingen…** op elke regel bevat de naam, wat het is (organisatie,
+  domein, programma, landschap — een woord voor het scherm, er gedraagt zich
+  niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
+  bij**, waarmee je het verplaatst.
 - **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt: op de
   desktop de map, in de browser de records. Een werkbestand dat je elders hebt
-  bewaard blijft staan.
+  bewaard blijft staan. De organisatie zelf kun je niet verwijderen — dat is de
+  map die je hebt geopend.
 
-De **instellingen** van een onderdeel bevatten de naam, een klant, een
-omschrijving en koppelingen: een wiki, een ticketwachtrij, een dashboard. De
-klant is voor wie een geëxporteerd aanzicht getekend is, als dat niet gewoon de
-naam van de organisatie is; leeg gelaten geldt het dichtstbijzijnde antwoord
-erboven. Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
-hernoemen is niet verplaatsen. Verplaatsen doe je met **Instellingen… ▸ Groep**,
-en dat zet het onder een ander onderdeel. Bij het starten opent de app het
-onderdeel dat je open had.
+**Voorbeelden**, als laatste. Een voorbeeld in een lege map zonder naam
+kopiëren maakt het voorbeeld *de* organisatie; kopiëren in een map die al iets
+is zet het onder een eigen nieuw onderdeel. Hoe dan ook is het vanaf dat moment
+van jou, en niets wat je doet raakt het voorbeeld zelf.
+
+Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
+hernoemen is niet verplaatsen. Verplaatsen verandert het adres van het onderdeel
+en van alles eronder, en laat de inhoud ongemoeid. Bij het starten opent de app
+het onderdeel dat je open had.
 
 Zes namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
 `diagrams`, `docs`, `decisions`, `transitions`, `images` en `logos`.
@@ -90,7 +118,7 @@ map eruitzag. Nog een keer draaien doet niets.
 
 Er zit niets verstopt in de app. Zet de map in OneDrive, in Dropbox, op een
 netwerkschijf of in een git-repository en hij gedraagt zich zoals alles daar.
-**Wijzigen…** op de lijst brengt je naar een andere map; de mappen die je eerder
+**Wijzigen…** op het organisatiescherm brengt je naar een andere map; de mappen die je eerder
 gebruikte staan in **File ▸ Open Recent Folder**, elk onder de naam die hun
 organisatie zichzelf geeft.
 
@@ -160,7 +188,7 @@ Eén open project: een balk bovenin, de editor eronder.
 
 | In de balk | Wat hij doet |
 |---|---|
-| **Projecten…** | Terug naar de lijst met onderdelen |
+| **Projecten…** | Terug naar het organisatiescherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
 | **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je projectmap in één bestand. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
 | **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |

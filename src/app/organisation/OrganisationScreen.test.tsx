@@ -18,6 +18,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
+import { EXAMPLES } from '../examples'
 import { renderApp } from '../testing/renderShell'
 
 afterEach(() => cleanup())
@@ -204,5 +205,35 @@ describe('the organisation screen — a fresh folder', () => {
     expect(await screen.findByText('Examples')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
     expect(screen.queryByText('Domains and landscapes')).toBeNull()
+  })
+})
+
+/**
+ * The shipped example, copied the way a person copies it.
+ *
+ * Over the real catalogue entry rather than a fixture: this is the first screen
+ * anybody sees, and what it says about the example is the app's first
+ * impression of itself.
+ */
+describe('the organisation screen — the shipped example', () => {
+  it('becomes the organisation, with its landscape as a row beneath', async () => {
+    const scopes = new InMemoryScopeStore([])
+    renderApp({ scopes, today: TODAY, examples: EXAMPLES })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
+    // Copying lands the person in the scope that has the work in it.
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    // By its text: MUI's tooltip lends the button its own title as the
+    // accessible name.
+    fireEvent.click(screen.getByText('Projects…'))
+
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
+    expect(screen.getByTestId('scope-application-landscape')).toBeDefined()
+    await waitFor(() => expect(screen.getByTestId('organisation-meta').textContent)
+      .toContain('1 landscape'))
+    // The example's organisation holds nothing itself: the sheet moves up to it
+    // in beta 3, when a cross-scope id can resolve.
+    expect(screen.getByTestId('organisation-cards').textContent)
+      .toContain('Nothing at this level yet.')
   })
 })
