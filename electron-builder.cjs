@@ -74,7 +74,12 @@ module.exports = {
   // asar was 61 MB, of which 55 MB was never opened — paid for on every
   // download, and again in notarization, which charges by the byte hashed.
   // Adding a runtime dependency is therefore a decision, not a convenience.
-  files: ['out/**', 'package.json'],
+  //
+  // THIRD-PARTY-NOTICES.md rides along for the opposite reason: almost every
+  // licence in that bundle asks for its notice to travel with the binary, and
+  // with nothing but bundled output in the asar there was nowhere for a reader
+  // to find one. It sits at the package root, beside package.json.
+  files: ['out/**', 'package.json', 'THIRD-PARTY-NOTICES.md'],
 
   // The product name has spaces in it, which is right for the Dock and wrong
   // for a download link. Name the artifacts after the package instead.
