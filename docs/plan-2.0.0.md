@@ -571,6 +571,14 @@ scopes through the index; *people* as a column; *uncovered* as the gap.
 - **`areas` is shared.** A map names its sections the way a sheet names its
   areas, in the same field; `seedMap` leaves it absent, so an area made later
   is drawn without asking.
+- **Seen while testing, and older than the map:** a scope below the root that
+  holds only laid-out views — a domain with a sheet and a map and no board —
+  opens on the decisions page, and closing that leaves the scope. The root's
+  pages are reached from its cards; a domain's sheet and map have no door of
+  their own but the tab strip, which a scope with no board does not draw. A
+  card row per scope in the tree, or opening such a scope on its first
+  laid-out view, is a small change and belongs with step 13's pass over what
+  every scope offers.
 
 ### 13. The agent at every scope
 

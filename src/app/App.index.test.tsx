@@ -9,7 +9,7 @@
  * call exercises the whole path — store, index, session, `idPolicy`.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
@@ -159,5 +159,39 @@ describe('the shell hands the tree the id policy reads', () => {
   it('leaves a name nobody in the tree has used exactly as it was', async () => {
     const { wire } = await twoScopes()
     expect(said(await wire.call('element.add', { name: 'Depot' })).id).toBe('depot')
+  })
+})
+
+/**
+ * The map at the organisation reads the tree (ADR-0012 §9): the capabilities
+ * are the root's, the systems supporting them and the rows saying so are a
+ * landscape's, and the page names those systems under the landscape. Nothing
+ * in the root's own document knows the warehouse system exists.
+ */
+describe('the enterprise map, across scopes', () => {
+  it('names a landscape\u2019s systems under the landscape, from the index', async () => {
+    const root: ScopeSnapshot = {
+      path: '',
+      model: {
+        name: 'Acme Logistics',
+        elements: [{
+          id: 'fulfilment', kind: 'function', name: 'Fulfilment', lifecycle: 'live', isManaged: false, aspects: {},
+        }],
+        relations: [],
+        diagrams: [{ id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] } }],
+      },
+      activeDiagramId: 'mp',
+      logoLibrary: [],
+    }
+    const retail = scope('acme/retail', [element('wms', 'Warehouse system')])
+    retail.model.relations = [{ id: 's1', type: 'supports', sourceId: 'wms', targetId: 'fulfilment' }]
+    renderApp({ scopes: new InMemoryScopeStore([root, retail]) })
+
+    fireEvent.click(await screen.findByTestId('open-map'))
+    const grid = await screen.findByTestId('map-grid')
+    await waitFor(() => expect(within(grid).getByTestId('map-column-wms').textContent).toBe('Warehouse system'))
+    expect(within(grid).getByTestId('map-owner-0').textContent).toBe('acme/retail')
+    expect(within(grid).getByTestId('map-cell-fulfilment-wms').dataset.mark).toBe('supports')
+    expect(within(grid).getByTestId('map-coverage-fulfilment').textContent).toBe('')
   })
 })
