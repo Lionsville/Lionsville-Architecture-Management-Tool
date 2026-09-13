@@ -18,6 +18,7 @@ import { groupRectAround, placementRect, unionRects } from '../model/placement'
 import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { syntheticModel } from '../model/testing/synthetic'
+import { shippingScope } from '../business/testFixtures'
 import { commandFor } from './commandFor'
 import { inspect } from './inspect'
 import type { Prepared, WriteView } from './commandFor'
@@ -235,6 +236,99 @@ describe('an element’s dates, successor, owner and look (ADR-0009)', () => {
     const out = commandFor('element.add', { name: 'Ledger', liveOn: '2027-01-01', lifecycle: 'planned', owner: 'Finance', aspects: { dr: 'managed' } }, view(model))
     const after = roundTrip(model, out)
     expect(after.elements.ledger).toMatchObject({ lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' }, owner: 'Finance', aspects: { dr: { status: 'managed' } } })
+  })
+})
+
+describe('the trees a sheet is laid out from (ADR-0012 §4, §6)', () => {
+  const sheet = {
+    id: 'sh-1', kind: 'sheet' as const, name: 'Business architecture',
+    journeyId: 'ship', lanes: ['key-account'], areas: ['fulfilment', 'billing'],
+    members: [], geometry: { nodes: [] },
+  }
+  const { elements, relations } = shippingScope()
+  const model = fromArrays({
+    name: 'Org', elements, relations,
+    diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] }), sheet],
+  })
+
+  it('element.update writes outside, partyId, order and lane, and null clears them', () => {
+    const on = roundTrip(model, commandFor('element.update',
+      { id: 'key-account', outside: true, partyId: 'partner', order: 3 }, view(model)))
+    expect(on.elements['key-account']).toMatchObject({ outside: true, partyId: 'partner', order: 3 })
+    const laned = roundTrip(on, commandFor('element.update', { id: 'take-order', lane: 'key-account' }, view(on)))
+    expect(laned.elements['take-order'].lane).toBe('key-account')
+    const off = roundTrip(laned, commandFor('element.update',
+      { id: 'key-account', outside: false, partyId: null, order: null }, view(laned)))
+    expect(off.elements['key-account']).not.toHaveProperty('outside')
+    expect(off.elements['key-account']).not.toHaveProperty('order')
+    expect(answerOf(commandFor('element.update', { id: 'key-account', outside: true }, view(model))).changed).toEqual(['outside'])
+  })
+
+  it('element.add carries the same fields onto the new row', () => {
+    const after = roundTrip(model, commandFor('element.add',
+      { name: 'Customs', kind: 'actor', outside: true, order: 9 }, view(model)))
+    expect(after.elements['customs']).toMatchObject({ kind: 'actor', outside: true, order: 9 })
+    const step = answerOf(commandFor('element.add', { name: 'Return a parcel', kind: 'step' }, view(model)))
+    expect(step.drawn).toBe(false)
+    expect(String(step.hint)).toContain('diagram.update')
+  })
+
+  it('element.update re-parents, makes a root with null, and refuses a loop', () => {
+    const moved = roundTrip(model, commandFor('element.update', { id: 'picking', parentId: 'invoicing' }, view(model)))
+    expect(moved.elements['picking'].parentId).toBe('invoicing')
+    const rooted = roundTrip(model, commandFor('element.update', { id: 'warehousing', parentId: null }, view(model)))
+    expect(rooted.elements['warehousing']).not.toHaveProperty('parentId')
+    expect(commandFor('element.update', { id: 'fulfilment', parentId: 'picking' }, view(model)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.update', { id: 'fulfilment', parentId: 'fulfilment' }, view(model)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.update', { id: 'fulfilment', parentId: 'ghost' }, view(model)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
+  it('refuses a lane on anything but a step, and a party or a lane that is not an actor', () => {
+    expect(commandFor('element.update', { id: 'picking', lane: 'key-account' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.update', { id: 'take-order', lane: 'wms' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.update', { id: 'wms', partyId: 'erp' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('diagram.update names a sheet’s journey, lanes, areas and rail, and undoes', () => {
+    const cleared = roundTrip(model, commandFor('diagram.update',
+      { id: 'sh-1', journeyId: null, lanes: [], areas: null, showActors: false }, view(model)))
+    const held = cleared.diagrams['sh-1']
+    expect(held).not.toHaveProperty('journeyId')
+    expect(held).not.toHaveProperty('lanes')
+    expect(held).not.toHaveProperty('areas')
+    expect(held.showActors).toBe(false)
+    const named = roundTrip(cleared, commandFor('diagram.update',
+      { id: 'sh-1', journeyId: 'ship', lanes: ['partner', 'key-account'], areas: ['billing'], showActors: true }, view(cleared)))
+    expect(named.diagrams['sh-1']).toMatchObject({ journeyId: 'ship', lanes: ['partner', 'key-account'], areas: ['billing'] })
+    expect(named.diagrams['sh-1']).not.toHaveProperty('showActors')
+    expect(answerOf(commandFor('diagram.update', { id: 'sh-1', journeyId: 'ship' }, view(model))))
+      .toEqual({ id: 'sh-1', kind: 'sheet', changed: ['journeyId'] })
+  })
+
+  it('diagram.update refuses a journey that is not a root step, a lane that is not an actor, an area that is not a root', () => {
+    expect(commandFor('diagram.update', { id: 'sh-1', journeyId: 'order' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'sh-1', journeyId: 'picking' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'sh-1', lanes: ['wms'] }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'sh-1', areas: ['picking'] }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'sh-1', areas: ['ghost'] }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('diagram.update', { id: 'nope', areas: [] }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
+  it('diagram.update keeps a board’s day for a board and a sheet’s fields for a sheet', () => {
+    const dated = roundTrip(model, commandFor('diagram.update', { id: 'l7', asOf: '2027-01-01' }, view(model)))
+    expect(dated.diagrams['l7'].asOf).toBe('2027-01-01')
+    expect(commandFor('diagram.update', { id: 'l7', asOf: 'soon' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'l7', journeyId: 'ship' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'sh-1', asOf: '2027-01-01' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('element.add on a sheet makes the record and draws nothing, even for an application', () => {
+    const out = answerOf(commandFor('element.add', { name: 'Portal', diagramId: 'sh-1' }, view(model)))
+    expect(out.drawn).toBe(false)
+    expect(commandFor('element.draw', { id: 'wms', diagramId: 'sh-1' }, view(model))).toMatchObject({ ok: false })
   })
 })
 

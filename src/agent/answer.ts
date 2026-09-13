@@ -439,6 +439,12 @@ function elementLine(element: DesignElement) {
     lifecycleDates: element.lifecycleDates,
     successorId: element.successorId,
     parentId: element.parentId,
+    // The tree fields and the ownership fact, because a sheet is laid out from
+    // them and a list is how an agent checks what it just set.
+    order: element.order,
+    lane: element.lane,
+    outside: element.outside,
+    partyId: element.partyId,
     hasDescription: Boolean(element.description?.trim()),
   }
 }

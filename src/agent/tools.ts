@@ -270,15 +270,16 @@ const SPECS = [
     tier: 'read',
     description:
       'The elements of the landscape, one line each: id, name, kind, lifecycle, and the '
-      + 'category, vendor, technology, owner, lifecycle dates and successor where set. Filter by kind, '
+      + 'category, vendor, technology, owner, lifecycle dates, successor, parent, order, lane and '
+      + 'outside flag where set. Filter by kind, '
       + 'by the diagram they are drawn on, or by a free-text query over name, category, vendor and technology.',
     inputSchema: {
       type: 'object',
       properties: {
         kind: {
           type: 'string',
-          description: 'Only elements of this kind.',
-          enum: ['actor', 'application', 'externalSystem', 'inputChannel', 'managementTool', 'component'],
+          description: 'Only elements of this kind. A step is a journey, a phase or a step; a function an area, a grouping or a capability.',
+          enum: KINDS,
         },
         diagramId: { type: 'string', description: 'Only elements drawn on this diagram.' },
         query: { type: 'string', description: 'Only elements whose name, category, vendor or technology contains every word.' },
@@ -472,10 +473,15 @@ const SPECS = [
     description:
       'Change an element\'s fields. Only the fields given change; the rest stay as they are, and null '
       + 'clears an optional one. The dates go live → retiring → retired and are refused out of order; '
-      + 'where a card sits on a diagram is element.place, not this.',
+      + 'a parentId that would make a loop is refused; where a card sits on a diagram is element.place, '
+      + 'not this. Order among siblings is `order`, low first — a sheet lays its trees out by it.',
     inputSchema: {
       type: 'object',
-      properties: { id: ID('element'), ...ELEMENT_FIELDS },
+      properties: {
+        id: ID('element'),
+        ...ELEMENT_FIELDS,
+        parentId: { type: 'string', description: 'What contains it now: a component\'s application, a function\'s area or grouping, a step\'s phase, an actor\'s group. Null makes it a root.' },
+      },
       required: ['id'],
       additionalProperties: false,
     },
@@ -845,6 +851,30 @@ const SPECS = [
     },
   },
 
+  {
+    name: 'diagram.update',
+    tier: 'write',
+    description:
+      'Change what a laid-out view is OF (ADR-0012 §6). A sheet draws the journey `journeyId` names — a '
+      + 'root step, whose children are the phases and their children the steps — with a row per actor in '
+      + '`lanes`, and the function roots in `areas` in that order; `showActors` false hides the stakeholder '
+      + 'rail. A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
+      + 'journey band, every root. Each list given replaces that list whole; null clears a field. A board '
+      + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('diagram'),
+        journeyId: { type: 'string', description: 'A sheet: the root step of the journey drawn across the top. Null takes the band off.' },
+        lanes: { type: 'array', description: 'A sheet: the actors that get a row of their own under the phases, in order.', items: { type: 'string' } },
+        areas: { type: 'array', description: 'A sheet or a map: the function roots drawn, in order. Null draws every root.', items: { type: 'string' } },
+        showActors: { type: 'boolean', description: 'A sheet: whether the stakeholder rail is drawn.' },
+        asOf: { type: 'string', description: 'A board: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
   {
     name: 'image.upload',
     tier: 'write',

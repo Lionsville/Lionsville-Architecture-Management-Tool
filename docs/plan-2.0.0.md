@@ -101,7 +101,11 @@ example's journey and areas. Four things the next stretch has to know:
 - **A `parentId` that would make a loop is refused by `business/tree.wouldCycle`
   and nothing calls it yet.** The gesture that re-parents is the sheet's; the
   agent may not reach `business` and so cannot re-parent at all, which is why
-  `element.update` does not offer `parentId`.
+  `element.update` does not offer `parentId`. *Overtaken 13 September: the
+  matrix gained `agent` → `business`, `element.update` takes `parentId` and
+  refuses a loop through the same function, and `diagram.update` names a
+  sheet's journey, lanes and areas — the first agent to build a business
+  architecture found every one of those missing.*
 
 **The sheet half landed 12 September 2026 (51a631d…52f4d82).** `DesignDiagram`
 gained the `sheet` kind with `journeyId`, `lanes`, `areas` and `showActors` and

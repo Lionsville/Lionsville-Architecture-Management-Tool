@@ -28,7 +28,7 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { seedMap, seedSheet } from '../business'
+import { rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
 import {
@@ -232,6 +232,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       }
     }
     case 'diagram.create': return createDiagram(args, view)
+    case 'diagram.update': return updateDiagram(args, view)
     case 'plan.replace': return replace(args, view)
     case 'plan.port': return port(args, view)
     case 'plan.unport': return unport(args, view)
@@ -387,9 +388,16 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   // record is made and nothing is drawn, and the answer says which happened
   // rather than refusing a thing that is perfectly real.
   if (!canPlaceKind(kind, diagram.kind).ok) {
+    // A root step is a journey, and a sheet draws one only when told which:
+    // say so here, because the sheet that says "no journey yet" cannot.
+    const journey = kind === 'step' && element.parentId === undefined
     return {
       command: transaction([{ type: 'element.create', element }], { origin: 'agent' }),
-      answer: json({ id, name, kind, drawn: false, reason: `a ${kind} is not drawn on a ${diagram.kind} view` }),
+      answer: json({
+        id, name, kind, drawn: false,
+        reason: `a ${kind} is not drawn on a ${diagram.kind} view`,
+        ...(journey ? { hint: `a root step is a journey; name it as a sheet's journeyId with diagram.update, and add its phases as steps under it` } : {}),
+      }),
     }
   }
   const seeded = seedPlacement(model, diagram, id, element, args)
@@ -577,6 +585,38 @@ function elementPatch(args: Args, held: DesignElement, view: ReadView): Partial<
   }
   if (args.iconKey !== undefined) {
     patch.iconKey = args.iconKey === null || args.iconKey === '' ? undefined : args.iconKey
+  }
+
+  // The tree, and the fact of ownership (ADR-0012 §3, §4). These were in the
+  // schema before they were read here, which is how an agent came to set
+  // `outside` thirty times and be answered `changed: []` each time.
+  if (args.outside !== undefined) patch.outside = args.outside === true ? true : undefined
+  if (args.partyId === null || args.partyId === '') patch.partyId = undefined
+  else if (typeof args.partyId === 'string') {
+    const party = view.model.elements[args.partyId]
+    if (!party) return refused('agent.unknownId', `element ${args.partyId}`)
+    if (party.kind !== 'actor') return refused('agent.badArguments', '"partyId" must name an actor')
+    patch.partyId = args.partyId
+  }
+  if (args.order === null) patch.order = undefined
+  else if (typeof args.order === 'number') patch.order = args.order
+  if (args.lane === null || args.lane === '') patch.lane = undefined
+  else if (typeof args.lane === 'string') {
+    if (held.kind !== 'step') return refused('agent.badArguments', 'only a step has a lane')
+    const actor = view.model.elements[args.lane]
+    if (!actor) return refused('agent.unknownId', `element ${args.lane}`)
+    if (actor.kind !== 'actor') return refused('agent.badArguments', '"lane" must name an actor')
+    patch.lane = args.lane
+  }
+  if (args.parentId === null || args.parentId === '') patch.parentId = undefined
+  else if (typeof args.parentId === 'string') {
+    if (!view.model.elements[args.parentId]) return refused('agent.unknownId', `element ${args.parentId}`)
+    // A loop is offered and refused rather than hidden, as the sheet's own
+    // inspector does — a tree with a cycle in it is a page that never ends.
+    if (wouldCycle(toArrays(view.model).elements, held.id, args.parentId)) {
+      return refused('agent.badArguments', `"parentId" ${args.parentId} would make a loop`)
+    }
+    patch.parentId = args.parentId
   }
   return patch as Partial<DesignElement>
 }
@@ -1107,6 +1147,69 @@ function transitionDecision(args: Args, view: WriteView): Prepared | AgentAnswer
   return {
     command: { type: 'decision.update', id, patch, origin: 'agent' },
     answer: json({ id, number: held.number, status: next.status, date: next.date, supersededBy: next.supersededBy }),
+  }
+}
+
+/**
+ * What a laid-out view is OF (ADR-0012 §6), and a board's day. Each id is
+ * checked for being the sort of thing the field means — a journey is a root
+ * step, a lane an actor, an area a function root — because a sheet given a
+ * capability as its journey draws an empty band and says nothing.
+ */
+function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const { model } = view
+  const id = args.id as string
+  const diagram = model.diagrams[id]
+  if (!diagram) return refused('agent.unknownId', `diagram ${id}`)
+  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map'
+  const patch: Record<string, unknown> = {}
+
+  const only = (field: string, allowed: boolean, what: string): AgentAnswer | undefined =>
+    (args[field] !== undefined && !allowed ? refused('agent.badArguments', `"${field}" is for ${what}`) : undefined)
+  const wrong = only('journeyId', diagram.kind === 'sheet', 'a sheet')
+    ?? only('lanes', diagram.kind === 'sheet', 'a sheet')
+    ?? only('showActors', diagram.kind === 'sheet', 'a sheet')
+    ?? only('areas', laidOut, 'a sheet or a map')
+    ?? only('asOf', !laidOut, 'a board')
+  if (wrong) return wrong
+
+  if (args.journeyId === null || args.journeyId === '') patch.journeyId = undefined
+  else if (typeof args.journeyId === 'string') {
+    const root = model.elements[args.journeyId]
+    if (!root) return refused('agent.unknownId', `element ${args.journeyId}`)
+    if (root.kind !== 'step' || root.parentId !== undefined) {
+      return refused('agent.badArguments', '"journeyId" must name a root step: the journey, whose children are its phases')
+    }
+    patch.journeyId = args.journeyId
+  }
+  if (args.lanes === null) patch.lanes = undefined
+  else if (Array.isArray(args.lanes)) {
+    for (const laneId of args.lanes as string[]) {
+      const actor = model.elements[laneId]
+      if (!actor) return refused('agent.unknownId', `element ${laneId}`)
+      if (actor.kind !== 'actor') return refused('agent.badArguments', `"lanes" must name actors; ${laneId} is a ${actor.kind}`)
+    }
+    patch.lanes = args.lanes.length ? [...(args.lanes as string[])] : undefined
+  }
+  if (args.areas === null) patch.areas = undefined
+  else if (Array.isArray(args.areas)) {
+    const roots = new Set(rootsOfKind(toArrays(model).elements, 'function').map((root) => root.id))
+    for (const areaId of args.areas as string[]) {
+      if (!model.elements[areaId]) return refused('agent.unknownId', `element ${areaId}`)
+      if (!roots.has(areaId)) return refused('agent.badArguments', `"areas" must name function roots; ${areaId} is not one`)
+    }
+    patch.areas = args.areas.length ? [...(args.areas as string[])] : undefined
+  }
+  if (args.showActors !== undefined) patch.showActors = args.showActors === false ? false : undefined
+  if (args.asOf === null || args.asOf === '') patch.asOf = undefined
+  else if (typeof args.asOf === 'string') {
+    if (!isDay(args.asOf)) return refused('agent.badArguments', 'asOf must be yyyy-mm-dd')
+    patch.asOf = args.asOf
+  }
+
+  return {
+    command: { type: 'diagram.update', id, patch, origin: 'agent' },
+    answer: json({ id, kind: diagram.kind, changed: Object.keys(patch) }),
   }
 }
 
