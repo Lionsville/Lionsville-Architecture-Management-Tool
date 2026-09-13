@@ -9,7 +9,7 @@
  * people turn off.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { watchFolder } from './watch'
@@ -98,6 +98,19 @@ describe('watchFolder', () => {
     await rm(join(root, 'gone.json'))
 
     expect((await watcher.sees('gone.json', (change) => !change.stamp)).stamp).toBeUndefined()
+  })
+
+  it('says nothing about a folder appearing, and reports the file inside it', async () => {
+    // A save makes a scope's folders as it goes; a folder has no content to
+    // fingerprint, and reported it would read as somebody else's write.
+    const seen = collecting()
+    await mkdir(join(root, 'acme/docs'), { recursive: true })
+    await writeFile(join(root, 'acme/docs/erp.md'), '# ERP')
+    await seen.sees('acme/docs/erp.md')
+    const paths = (await seen.quiet()).map((change) => change.path)
+    expect(paths).toContain('acme/docs/erp.md')
+    expect(paths).not.toContain('acme')
+    expect(paths).not.toContain('acme/docs')
   })
 
   it('says nothing about an editor’s scratch files', async () => {

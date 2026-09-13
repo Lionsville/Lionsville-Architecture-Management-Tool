@@ -54,20 +54,34 @@ function isNoise(path: string): boolean {
     || /^\d+\.tmp$/i.test(name)
 }
 
-async function stampOf(root: string, path: string): Promise<DesktopStamp | undefined> {
+/**
+ * What to report about one path, or nothing for a directory.
+ *
+ * A folder appearing or changing is never itself a change to a document —
+ * what is in it arrives as events of its own — and it has no content to
+ * fingerprint, so reported it would always read as somebody else's write.
+ * The app's own saves create a scope's `docs/` and `diagrams/` folders, and
+ * that is exactly how a save came back as "changed on disk" over its own
+ * unsaved work.
+ */
+async function describe(root: string, path: string): Promise<FolderChange | undefined> {
   try {
     const full = join(root, path)
     const held = await stat(full)
-    if (!held.isFile()) return undefined
+    if (held.isDirectory()) return undefined
+    if (!held.isFile()) return { path }
     return {
-      mtimeMs: held.mtimeMs,
-      size: held.size,
-      sha256: createHash('sha256').update(await readFile(full)).digest('hex'),
+      path,
+      stamp: {
+        mtimeMs: held.mtimeMs,
+        size: held.size,
+        sha256: createHash('sha256').update(await readFile(full)).digest('hex'),
+      },
     }
   } catch {
     // Gone, or being replaced at this instant. Either way there is nothing to
     // fingerprint, and "no stamp" is how a removal is reported.
-    return undefined
+    return { path }
   }
 }
 
@@ -94,8 +108,9 @@ export function watchFolder(
     const paths = [...pending].sort()
     pending.clear()
     if (paths.length === 0) return
-    void Promise.all(paths.map(async (path) => ({ path, stamp: await stampOf(root, path) })))
-      .then((changes) => { if (!stopped) onChanged(changes) })
+    void Promise.all(paths.map((path) => describe(root, path)))
+      .then((changes) => changes.filter((change): change is FolderChange => change !== undefined))
+      .then((changes) => { if (!stopped && changes.length > 0) onChanged(changes) })
   }
 
   // macOS reports one event for the watched directory itself, named after it,
