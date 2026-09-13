@@ -613,10 +613,31 @@ scopes through the index; *people* as a column; *uncovered* as the gap.
   still the open scope's only, because descriptions are files the index does
   not read.
 
-### 14. BPMN
+### 14. BPMN — landed 13 September 2026
 
 A renderer for the ```bpmn fence, registered in `documentation/`'s fence
 table. Read-only first.
+
+**Landed**, and three things the next stretch should know:
+
+- **No library.** `documentation/bpmn.ts` reads BPMN 2.0 XML into a drawing
+  — shapes with the coordinates the file's own diagram interchange gives
+  them, edges with their waypoints — and `BpmnBlock` turns it into SVG. The
+  core of the notation is a dozen shapes with well-known geometry; a viewer
+  that shipped a modeller's runtime to draw them would be the wrong trade,
+  and the mermaid block stays the one heavy dependency. The reader carries a
+  small XML reader of its own, so it is pure and tested in node: the
+  browser's parser lives on `window`, and what a BPMN file needs is
+  elements, attributes and nesting.
+- **Nothing is laid out.** A file without a `BPMNDiagram` section has no
+  positions, and the block shows its source under a line saying so rather
+  than guessing a layout. A shape the reader does not know is still drawn, as
+  a dashed box with its name — the same degradation `blocks.tsx` gives a
+  fence it cannot draw.
+- **The example has a process now**, *Handle an order*, realising *Order
+  intake*, with its BPMN on its page. It is the one process in the tree and
+  is reached from the documentation page, where processes list after
+  functions.
 
 **Cut 2.0.0-beta.4.**
 

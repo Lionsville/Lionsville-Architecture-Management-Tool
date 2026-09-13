@@ -13,3 +13,5 @@ export {
   readAmount, readBusinessCase, SCORE_SCALE,
 } from './businessCase'
 export type { BusinessCase, BusinessCaseResult, CashLine, Criterion } from './businessCase'
+export { BPMN_FENCE, readBpmn, readXml, wrapLabel } from './bpmn'
+export type { BpmnDrawing, BpmnReading, BpmnRefusal, Edge as BpmnEdge, Shape as BpmnShape } from './bpmn'

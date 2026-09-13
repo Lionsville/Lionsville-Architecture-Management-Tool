@@ -458,7 +458,13 @@ text becomes a link to that element. Ordinary links open outside the app.
 
 **Documentation** in the top bar opens the page for the selected element, or
 for the first element on the diagram when nothing is selected. A fenced code
-block marked `mermaid` in any page is drawn as a diagram.
+block marked `mermaid` in any page is drawn as a diagram. A block marked
+`bpmn` is drawn as a process: BPMN 2.0 XML as the common modellers save it,
+with its own diagram section saying where everything goes — pools and lanes,
+tasks, events, gateways, flows and messages, read-only. A process element's
+page is where one belongs (its `realises` line says which capability it is how
+of), and a file without a diagram section is shown as text under a line saying
+why.
 
 ## Decisions
 

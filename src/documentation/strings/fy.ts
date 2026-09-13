@@ -73,6 +73,10 @@ export const FY: Record<keyof typeof EN, string> = {
   'doc.showPreview': 'Foarbyld toane',
   'doc.hidePreview': 'Foarbyld ferbergje',
   'adr.mermaidFailed': 'Dit diagram koe net tekene wurde.',
+  'doc.bpmnFailed': 'Dit proses koe net tekene wurde.',
+  'doc.bpmnMalformed': 'De tekst is gjin goed foarme XML.',
+  'doc.bpmnNotBpmn': 'Dit is gjin BPMN-dokumint: der stiet gjin definitions-elemint oan de woartel.',
+  'doc.bpmnNoDiagram': 'Dizze BPMN hat gjin diagramseksje, dus neat seit wêr\'t wat stiet.',
 
   'doc.businessCaseLine': 'Rigel',
   'doc.businessCaseNet': 'Netto',

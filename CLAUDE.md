@@ -167,6 +167,8 @@ src/documentation/  Descriptions as documents.
                     remember          caches with a bound and an eviction rule
                     images · businessCase   pictures a document holds, and the
                                       block that computes (ADR-0009)
+                    bpmn              a process's notation, read into a drawing
+                                      from its own coordinates; never laid out
                     ui/               DocumentationPage, MarkdownField, blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).

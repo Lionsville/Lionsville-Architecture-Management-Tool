@@ -73,6 +73,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.showPreview': 'Vorschau anzeigen',
   'doc.hidePreview': 'Vorschau ausblenden',
   'adr.mermaidFailed': 'Dieses Diagramm konnte nicht gezeichnet werden.',
+  'doc.bpmnFailed': 'Dieser Prozess konnte nicht gezeichnet werden.',
+  'doc.bpmnMalformed': 'Der Text ist kein wohlgeformtes XML.',
+  'doc.bpmnNotBpmn': 'Dies ist kein BPMN-Dokument: an der Wurzel steht kein definitions-Element.',
+  'doc.bpmnNoDiagram': 'Dieses BPMN hat keinen Diagrammabschnitt, also sagt nichts, wo etwas steht.',
 
   'doc.businessCaseLine': 'Zeile',
   'doc.businessCaseNet': 'Netto',

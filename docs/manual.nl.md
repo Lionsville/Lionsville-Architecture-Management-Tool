@@ -481,7 +481,14 @@ openen buiten de app.
 
 **Documentatie** in de bovenbalk opent de pagina van het geselecteerde element,
 of van het eerste element op het diagram als niets geselecteerd is. Een
-codeblok gemarkeerd als `mermaid` wordt op elke pagina als diagram getekend.
+codeblok gemarkeerd als `mermaid` wordt op elke pagina als diagram getekend. Een blok
+gemarkeerd als `bpmn` wordt als proces getekend: BPMN 2.0-XML zoals de gangbare
+modelleerprogramma's het bewaren, met een eigen diagramsectie die zegt waar
+alles staat — pools en banen, taken, gebeurtenissen, gateways, stromen en
+berichten, alleen-lezen. De pagina van een proces-element is waar zo'n blok
+hoort (zijn `realises`-lijn zegt van welke capability het de uitvoering is), en
+een bestand zonder diagramsectie wordt als tekst getoond onder een regel die
+zegt waarom.
 
 ## Besluiten
 

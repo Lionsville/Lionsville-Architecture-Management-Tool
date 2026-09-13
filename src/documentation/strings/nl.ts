@@ -73,6 +73,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.showPreview': 'Voorbeeld tonen',
   'doc.hidePreview': 'Voorbeeld verbergen',
   'adr.mermaidFailed': 'Dit diagram kon niet worden getekend.',
+  'doc.bpmnFailed': 'Dit proces kon niet getekend worden.',
+  'doc.bpmnMalformed': 'De tekst is geen welgevormde XML.',
+  'doc.bpmnNotBpmn': 'Dit is geen BPMN-document: er staat geen definitions-element aan de wortel.',
+  'doc.bpmnNoDiagram': 'Deze BPMN heeft geen diagramsectie, dus niets zegt waar iets staat.',
 
   'doc.businessCaseLine': 'Regel',
   'doc.businessCaseNet': 'Netto',

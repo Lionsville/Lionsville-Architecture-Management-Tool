@@ -49,6 +49,10 @@ export const EN = {
   'doc.showPreview': 'Show preview',
   'doc.hidePreview': 'Hide preview',
   'adr.mermaidFailed': 'This diagram could not be drawn.',
+  'doc.bpmnFailed': 'This process could not be drawn.',
+  'doc.bpmnMalformed': 'The text is not well-formed XML.',
+  'doc.bpmnNotBpmn': 'This is not a BPMN document: there is no definitions element at the root.',
+  'doc.bpmnNoDiagram': 'This BPMN has no diagram section, so nothing says where anything goes.',
 
   // The pictures a project holds, listed beside the source so one can be put
   // in again or taken out (ADR-0009). Deleting is not undoable, so it asks.

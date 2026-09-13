@@ -25,6 +25,7 @@
  * one of these on screen.
  */
 import type { ComponentType } from 'react'
+import { BpmnBlock } from './BpmnBlock'
 import { BusinessCaseBlock } from './BusinessCaseBlock'
 import { MermaidBlock } from './MermaidBlock'
 import type { MermaidRenderer } from './MermaidBlock'
@@ -65,6 +66,7 @@ export type BlockRenderer = ComponentType<BlockProps>
 export const BLOCKS: ReadonlyMap<string, BlockRenderer> = new Map<string, BlockRenderer>([
   ['mermaid', ({ code, context }) => <MermaidBlock code={code} render={context.renderMermaid} />],
   ['business-case', ({ code }) => <BusinessCaseBlock code={code} />],
+  ['bpmn', ({ code }) => <BpmnBlock code={code} />],
 ])
 
 /** The fence name in a `language-…` class, or nothing for inline code. */

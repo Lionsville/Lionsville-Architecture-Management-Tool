@@ -60,7 +60,8 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
 
     const kinds = (held: DesignModel) =>
       [...new Set(held.elements.filter((e) => e.ref === undefined).map((e) => e.kind))].sort()
-    expect(kinds(organisation.model)).toEqual(['actor', 'function', 'step'])
+    // A process beside the capabilities: its page holds the BPMN (ADR-0012 §7).
+    expect(kinds(organisation.model)).toEqual(['actor', 'function', 'process', 'step'])
     expect(kinds(model)).toEqual(['application', 'component'])
     // The map beside the sheet: the organisation's capabilities against the
     // landscape's systems is the view ADR-0012 §6 was written for.

@@ -48,7 +48,7 @@ import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
 import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused, toolSpec } from './tools'
-import { identityOf, listChecks, listRegister, listScopes, notOpen, scopeAsked, withoutScope } from './tree'
+import { listChecks, listRegister, listScopes, notOpen, scopeAsked, withoutScope } from './tree'
 import type { TreeView } from './tree'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
