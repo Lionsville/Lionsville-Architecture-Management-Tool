@@ -193,7 +193,13 @@ function chooseWorkingDirectory(): void {
 
 async function openBrowserFolder(): Promise<void> {
   const handle = await browserFolders.choose()
-  if (!handle) return
+  if (!handle) {
+    shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'no folder was chosen' })
+    return
+  }
+  // The trail says where a pick got to, because "nothing happened" has been
+  // reported and a folder's name is not the folder's content.
+  shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'a folder was chosen' })
   const inFolder = inBrowserFolder(shell, handle, handle.name)
   // The same migration as the desktop's, and the same rule: copied once,
   // nothing deleted. Keyed on the folder's name, which is all a tab knows
@@ -204,6 +210,7 @@ async function openBrowserFolder(): Promise<void> {
   await shell.preferences.write(kept).catch(() => undefined)
   shell = inFolder
   await upgradeFormat()
+  shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'the folder is open' })
   renderApp(kept, undefined)
 }
 
