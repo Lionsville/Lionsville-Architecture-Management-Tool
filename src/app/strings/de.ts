@@ -429,6 +429,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'register.drawnOne': '{count} Bereich',
   'register.drawnOther': '{count} Bereiche',
   'register.openRow': '{name} dort \u00f6ffnen, wo es verantwortet wird',
+  'register.pageRow': 'Die Seite von {name} \u00f6ffnen',
   'register.linkRow': 'Verkn\u00fcpfen\u2026',
   'register.linkRowTip': '{scope} \u00f6ffnen und dessen Datensatz auf den anderen verweisen lassen',
 

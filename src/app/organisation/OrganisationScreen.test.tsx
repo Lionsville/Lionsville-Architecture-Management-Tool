@@ -184,7 +184,9 @@ describe('the organisation screen — its own pages', () => {
     const page = await screen.findByTestId('doc-content')
     expect(page.textContent).toContain('Post office')
     expect((screen.getByLabelText('Outside the organisation') as HTMLInputElement).checked).toBe(true)
-  })
+    // The whole app, a board and the page in one mount: a second alone, and
+    // several under the full run, so it gets more than the default.
+  }, 20_000)
 
   it('opens the root on the page the card was pressed for', async () => {
     renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })

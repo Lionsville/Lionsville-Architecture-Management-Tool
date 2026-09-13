@@ -429,6 +429,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'register.drawnOne': '{count} niveau',
   'register.drawnOther': '{count} niveaus',
   'register.openRow': '{name} openen waar het beheerd wordt',
+  'register.pageRow': 'De pagina van {name} openen',
   'register.linkRow': 'Koppelen\u2026',
   'register.linkRowTip': '{scope} openen en het record daar naar het andere laten verwijzen',
 

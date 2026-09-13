@@ -551,6 +551,7 @@ export const EN = {
   'register.drawnOne': '{count} scope',
   'register.drawnOther': '{count} scopes',
   'register.openRow': 'Open {name} where it is answered for',
+  'register.pageRow': 'Open the page of {name}',
   'register.linkRow': 'Link\u2026',
   'register.linkRowTip': 'Open {scope} and make its record stand in for the other one',
 

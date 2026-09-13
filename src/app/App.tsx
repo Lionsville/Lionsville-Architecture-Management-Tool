@@ -123,6 +123,11 @@ export type InitialPage =
    */
   | { page: 'element'; id: ElementId }
   /**
+   * A record's page — the document and the record's fields — opened in the
+   * scope that answers for it, which is where the fields may be written.
+   */
+  | { page: 'document'; id: ElementId }
+  /**
    * Not a page, and here anyway: *link* (ADR-0012 §10), asked the moment the
    * scope opens.
    *
@@ -920,6 +925,7 @@ export function App({
             register={register}
             initiatives={initiatives}
             onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
+            onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
             onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
             today={todayDay}
             language={prefs.language}

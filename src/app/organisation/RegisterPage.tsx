@@ -53,6 +53,12 @@ export type RegisterPageProps = {
    */
   onOpen?: (scope: ScopePath, id: ElementId) => void
   /**
+   * Open the row's page — its record and its document — in the scope that
+   * answers for it. The name is the way in, because a register is a list of
+   * things to read about; *Open* beside it lands on the board instead.
+   */
+  onOpenPage?: (scope: ScopePath, id: ElementId) => void
+  /**
    * Resolve a conflict: open the scope that should yield, with *link* pending
    * (ADR-0012 §10). A gesture is applied by the session that holds the scope,
    * so asking for one from here is asking that session to ask.
@@ -64,7 +70,7 @@ export type RegisterPageProps = {
 }
 
 export function RegisterPage(props: RegisterPageProps) {
-  const { open, onClose, rows, organisation, onOpen, onLink, readOnly = false, s } = props
+  const { open, onClose, rows, organisation, onOpen, onOpenPage, onLink, readOnly = false, s } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
   const [query, setQuery] = useState('')
@@ -171,6 +177,7 @@ export function RegisterPage(props: RegisterPageProps) {
                     label={label}
                     organisation={organisation}
                     onOpen={onOpen}
+                    onOpenPage={onOpenPage}
                     onLink={readOnly ? undefined : onLink}
                     s={s}
                   />
@@ -200,11 +207,12 @@ function findingLine(summary: ReturnType<typeof registerSummary>, s: Translate):
   return parts.length ? parts.join(' · ') : s('register.settled')
 }
 
-function Row({ row, label, organisation, onOpen, onLink, s }: {
+function Row({ row, label, organisation, onOpen, onOpenPage, onLink, s }: {
   row: RegisterRow
   label: (path: ScopePath | undefined) => string
   organisation: string
   onOpen?: (scope: ScopePath, id: ElementId) => void
+  onOpenPage?: (scope: ScopePath, id: ElementId) => void
   onLink?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
   s: Translate
 }) {
@@ -230,7 +238,25 @@ function Row({ row, label, organisation, onOpen, onLink, s }: {
       sx={{ '& td': { borderBottom: 1, borderColor: 'divider', py: 0.75, verticalAlign: 'top' } }}
     >
       <Box component="td">
-        <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{row.name}</Typography>
+        {onOpenPage && row.master !== undefined ? (
+          <Tooltip title={s('register.pageRow', { name: row.name })}>
+            <Typography
+              component="button"
+              type="button"
+              data-testid={`register-page-${row.id}`}
+              onClick={() => onOpenPage(row.master!, row.id)}
+              sx={{
+                fontSize: 13, fontWeight: 600, p: 0, border: 0, bgcolor: 'transparent',
+                color: 'text.primary', cursor: 'pointer', textAlign: 'left', font: 'inherit',
+                '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+              }}
+            >
+              {row.name}
+            </Typography>
+          </Tooltip>
+        ) : (
+          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{row.name}</Typography>
+        )}
         {row.outside && (
           <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
             {row.party !== undefined

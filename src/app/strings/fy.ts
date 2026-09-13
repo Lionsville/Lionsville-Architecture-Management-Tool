@@ -429,6 +429,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'register.drawnOne': '{count} nivo',
   'register.drawnOther': '{count} nivo\u2019s',
   'register.openRow': '{name} iepenje dêr\'t it behearre wurdt',
+  'register.pageRow': 'De side fan {name} iepenje',
   'register.linkRow': 'Keppelje\u2026',
   'register.linkRowTip': '{scope} iepenje en it record dêr nei it oare ferwize litte',
 

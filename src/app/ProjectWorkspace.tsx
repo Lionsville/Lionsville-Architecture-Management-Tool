@@ -852,12 +852,13 @@ export function ProjectWorkspace({
     }
     // A row of the register, opened where it is answered for.
     if (initialPage.page === 'element') focusElement(initialPage.id)
+    if (initialPage.page === 'document') openDocumentation(initialPage.id)
     // Not a page: the register's *Link…*, which can only be done by the
     // session that holds this scope (ADR-0012 §10).
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, plans.openPlan, focusElement, gestures])
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, plans.openPlan, focusElement, openDocumentation, gestures])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
