@@ -979,8 +979,9 @@ addressed elsewhere is refused with `agent.scopeNotOpen`; `scopes.list`,
 `agent/` as a plain object (`agent/tree.ts`). And a ```bpmn fence is **drawn**,
 from the file's own diagram interchange and with no library — `documentation/
 bpmn.ts` carries a small XML reader so it is pure and tested in node. ADR-0012
-has its *Built* preamble; what remains for 2.0.0 is the manual in Frisian and
-German and the notes over every beta.
+has its *Built* preamble, and the manual is in Frisian and German since the
+fifth beta. **2.0.0 is the stable cut of all this**, with the notes over
+every beta in its release.
 
 Then the register became a **library** (`projects/library.ts`). A landscape
 rarely invents its applications, so the palette's last row on a landscape is
