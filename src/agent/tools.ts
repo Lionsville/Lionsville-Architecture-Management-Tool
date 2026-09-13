@@ -858,7 +858,9 @@ const SPECS = [
       'Change what a laid-out view is OF (ADR-0012 §6). A sheet draws the journey `journeyId` names — a '
       + 'root step, whose children are the phases and their children the steps — with a row per actor in '
       + '`lanes`, and the function roots in `areas` in that order; `showActors` false hides the stakeholder '
-      + 'rail. A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
+      + 'rail; `columns` fixes how many columns its areas are laid out in (absent fits the window) and '
+      + '`areaSpans` maps an area id to the columns it takes, its capabilities side by side inside it. '
+      + 'A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
       + 'journey band, every root. Each list given replaces that list whole; null clears a field. A board '
       + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
     inputSchema: {
@@ -869,6 +871,8 @@ const SPECS = [
         lanes: { type: 'array', description: 'A sheet: the actors that get a row of their own under the phases, in order.', items: { type: 'string' } },
         areas: { type: 'array', description: 'A sheet or a map: the function roots drawn, in order. Null draws every root.', items: { type: 'string' } },
         showActors: { type: 'boolean', description: 'A sheet: whether the stakeholder rail is drawn.' },
+        columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the window.' },
+        areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
         asOf: { type: 'string', description: 'A board: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
       },
       required: ['id'],
@@ -977,7 +981,9 @@ const SPECS = [
       + 'pixel maps back to a flow coordinate. Crop to some elements or to a region: a whole landscape '
       + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible. '
       + 'A business architecture sheet or an enterprise map is drawn whole — neither has coordinates to '
-      + 'crop to — and the crop arguments are ignored for one.',
+      + 'crop to — and the crop arguments are ignored for one. A sheet takes `pageWidth`: the CSS width it is '
+      + 'laid out at before drawing, so its areas tile as they would on paper (A1 is 3179, A0 is 4494); '
+      + 'raise maxPixels with it, or the picture is scaled down to fit the budget.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -988,6 +994,7 @@ const SPECS = [
         width: { type: 'number', description: 'Crop to a region: its width.' },
         height: { type: 'number', description: 'Crop to a region: its height.' },
         maxPixels: { type: 'integer', description: 'The most image pixels to hand over. Default 4,000,000.', minimum: 10000, maximum: 16000000 },
+        pageWidth: { type: 'integer', description: 'A sheet: lay the page out this many CSS pixels wide before drawing it. Default: as the window shows it.', minimum: 320, maximum: 8000 },
       },
       additionalProperties: false,
     },

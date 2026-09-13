@@ -19,7 +19,7 @@
  * wherever it hangs, and a report that listed only the grouped ones would not
  * see the one a person had just made.
  */
-import { sheetPage } from '../business'
+import { MAX_SPAN, sheetPage, spanOf } from '../business'
 import type { Coverage } from '../business'
 import type { Diagram, Model } from '../model/normalised'
 import { toArrays } from '../model/normalised'
@@ -56,6 +56,11 @@ export type SheetReport = {
   }
   /** The stakeholder rail; empty when the sheet does not draw it. */
   actors: { total: number; some: { id: ElementId; name: string; depth: number; outside: boolean }[] }
+  /**
+   * How the areas tile: the columns the sheet fixes — absent fits the window
+   * — and the widest an area may be told to be. Set with diagram.update.
+   */
+  grid: { columns?: number; maxSpan: number }
   areas: {
     total: number
     some: {
@@ -63,6 +68,8 @@ export type SheetReport = {
       name: string
       /** The domain it is assigned to, when its record says one. */
       domain?: string
+      /** The columns of the grid it takes; one unless the sheet says otherwise. */
+      span: number
       groupings: {
         id: ElementId
         name: string
@@ -145,12 +152,17 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
         id: row.element.id, name: row.element.name, depth: row.depth, outside: row.outside,
       })),
     },
+    grid: {
+      ...(diagram.columns !== undefined ? { columns: diagram.columns } : {}),
+      maxSpan: MAX_SPAN,
+    },
     areas: {
       total: page.areas.length,
       some: page.areas.slice(0, limit).map((area) => ({
         id: area.element.id,
         name: area.element.name,
         ...(area.domain !== undefined ? { domain: area.domain } : {}),
+        span: spanOf(diagram, area.element.id, MAX_SPAN),
         groupings: area.groupings.map((group) => ({
           id: group.element.id,
           name: group.element.name,

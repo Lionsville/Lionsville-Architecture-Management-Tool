@@ -63,8 +63,11 @@ export type RendererView = {
    *
    * Optional: a host with no page for one refuses the tool rather than
    * pretending. `maxPixels` is the budget, and the ratio it chose comes back.
+   * `width` lays the page out at that many CSS pixels first — a sheet's grid
+   * fits more areas side by side on an A1 than on a laptop — and absent
+   * draws the page as the window shows it.
    */
-  sheet?(diagramId: string, options: { maxPixels: number }): Promise<SheetShot>
+  sheet?(diagramId: string, options: { maxPixels: number; width?: number }): Promise<SheetShot>
 }
 
 export type SheetShot = {

@@ -534,8 +534,12 @@ async function seeSheet(
   }
   if (!renderer.sheet) return refused('agent.noAnswer', 'no page')
   const maxPixels = (args.maxPixels as number | undefined) ?? DEFAULT_MAX_PIXELS
+  const width = args.pageWidth as number | undefined
+  if (width !== undefined && (!Number.isInteger(width) || width < 320 || width > 8000)) {
+    return refused('agent.badArguments', '"pageWidth" is CSS pixels, a whole number from 320 to 8000')
+  }
   try {
-    const shot = await renderer.sheet(diagram.id, { maxPixels })
+    const shot = await renderer.sheet(diagram.id, { maxPixels, ...(width !== undefined ? { width } : {}) })
     return {
       ok: true,
       content: [

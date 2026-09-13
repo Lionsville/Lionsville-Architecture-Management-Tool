@@ -1169,6 +1169,8 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   const wrong = only('journeyId', diagram.kind === 'sheet', 'a sheet')
     ?? only('lanes', diagram.kind === 'sheet', 'a sheet')
     ?? only('showActors', diagram.kind === 'sheet', 'a sheet')
+    ?? only('columns', diagram.kind === 'sheet', 'a sheet')
+    ?? only('areaSpans', diagram.kind === 'sheet', 'a sheet')
     ?? only('areas', laidOut, 'a sheet or a map')
     ?? only('asOf', !laidOut, 'a board')
   if (wrong) return wrong
@@ -1201,6 +1203,28 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     patch.areas = args.areas.length ? [...(args.areas as string[])] : undefined
   }
   if (args.showActors !== undefined) patch.showActors = args.showActors === false ? false : undefined
+  if (args.columns === null) patch.columns = undefined
+  else if (args.columns !== undefined) {
+    if (!Number.isInteger(args.columns) || (args.columns as number) < 1) {
+      return refused('agent.badArguments', '"columns" must be a whole number of at least 1')
+    }
+    patch.columns = args.columns
+  }
+  if (args.areaSpans === null) patch.areaSpans = undefined
+  else if (args.areaSpans !== undefined) {
+    if (typeof args.areaSpans !== 'object' || Array.isArray(args.areaSpans)) {
+      return refused('agent.badArguments', '"areaSpans" must map area ids to a number of columns')
+    }
+    const spans: Record<string, number> = {}
+    for (const [areaId, span] of Object.entries(args.areaSpans as Record<string, unknown>)) {
+      if (!model.elements[areaId]) return refused('agent.unknownId', `element ${areaId}`)
+      if (!Number.isInteger(span) || (span as number) < 1) {
+        return refused('agent.badArguments', `"areaSpans" for ${areaId} must be a whole number of at least 1`)
+      }
+      if ((span as number) > 1) spans[areaId] = span as number
+    }
+    patch.areaSpans = Object.keys(spans).length ? spans : undefined
+  }
   if (args.asOf === null || args.asOf === '') patch.asOf = undefined
   else if (typeof args.asOf === 'string') {
     if (!isDay(args.asOf)) return refused('agent.badArguments', 'asOf must be yyyy-mm-dd')

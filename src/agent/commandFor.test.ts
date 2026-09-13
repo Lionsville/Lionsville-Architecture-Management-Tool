@@ -308,6 +308,21 @@ describe('the trees a sheet is laid out from (ADR-0012 §4, §6)', () => {
       .toEqual({ id: 'sh-1', kind: 'sheet', changed: ['journeyId'] })
   })
 
+  it('diagram.update sets up a sheet’s grid: the columns, and the columns an area takes', () => {
+    const tiled = roundTrip(model, commandFor('diagram.update',
+      { id: 'sh-1', columns: 4, areaSpans: { billing: 2, fulfilment: 1 } }, view(model)))
+    // An area at one column is the default and is not written.
+    expect(tiled.diagrams['sh-1']).toMatchObject({ columns: 4, areaSpans: { billing: 2 } })
+    const fitted = roundTrip(tiled, commandFor('diagram.update', { id: 'sh-1', columns: null, areaSpans: null }, view(tiled)))
+    expect(fitted.diagrams['sh-1']).not.toHaveProperty('columns')
+    expect(fitted.diagrams['sh-1']).not.toHaveProperty('areaSpans')
+    expect(commandFor('diagram.update', { id: 'sh-1', columns: 0 }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id: 'sh-1', areaSpans: { ghost: 2 } }, view(model))).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('diagram.update', { id: 'sh-1', areaSpans: { billing: 'wide' } }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    // A board has no grid.
+    expect(commandFor('diagram.update', { id: 'l7', columns: 2 }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
   it('diagram.update refuses a journey that is not a root step, a lane that is not an actor, an area that is not a root', () => {
     expect(commandFor('diagram.update', { id: 'sh-1', journeyId: 'order' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
     expect(commandFor('diagram.update', { id: 'sh-1', journeyId: 'picking' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
