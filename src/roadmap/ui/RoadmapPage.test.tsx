@@ -170,6 +170,38 @@ describe('the axis', () => {
     expect(onOpenInitiative).toHaveBeenCalledWith('acme/retail', 'tr-r')
   })
 
+  it('plots the applications an initiative below changes, under a switch, and opens them where they can be shown', () => {
+    const onOpenInitiative = vi.fn()
+    const { actions } = setup({
+      fromBelow: [{
+        scope: 'acme/retail', label: 'Retail',
+        plan: { ...PLAN, id: 'tr-r', number: 2, title: 'One warehouse system', from: '2029-01-01', to: '2029-12-31', initiative: true },
+        elements: [
+          element('wms-retail', 'Retail WMS', { lifecycleDates: { retired: '2029-06-30' } }),
+          // A stand-in this scope draws as well: same id, opened here.
+          element('billing', 'Billing', { lifecycleDates: { retiring: '2029-03-01' } }),
+        ],
+      }],
+      onOpenInitiative,
+    })
+    expect(screen.getByTestId('track-wms-retail').getAttribute('data-from-scope')).toBe('acme/retail')
+    const brought = screen.getByTestId('row-wms-retail')
+    expect(within(brought).getByText('Retail')).toBeTruthy()
+    fireEvent.click(within(brought).getByText('Retail WMS'))
+    expect(onOpenInitiative).toHaveBeenCalledWith('acme/retail', 'tr-r')
+    fireEvent.click(within(screen.getByTestId('row-billing')).getByText('Billing'))
+    expect(actions.onOpenElement).toHaveBeenCalledWith('billing')
+
+    fireEvent.click(screen.getByLabelText('Show what the initiatives below change'))
+    expect(screen.queryByTestId('track-wms-retail')).toBeNull()
+    expect(screen.getByTestId('track-wms-old')).toBeTruthy()
+  })
+
+  it('offers no switch when the initiatives below name nothing', () => {
+    setup({ fromBelow: [{ scope: 'acme/retail', label: 'Retail', plan: { ...PLAN, initiative: true } }] })
+    expect(screen.queryByLabelText('Show what the initiatives below change')).toBeNull()
+  })
+
   it('is not empty when only the scopes below have dated plans', () => {
     setup({
       model: model({ elements: [], transitions: [] }),

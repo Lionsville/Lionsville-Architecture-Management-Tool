@@ -28,6 +28,23 @@ export type PhaseSpan = {
 export type ElementTrack = {
   element: DesignElement
   spans: PhaseSpan[]
+  /**
+   * Present on a row that another scope's initiative brought here (ADR-0012
+   * §7): which scope holds the element, and which of its plans named it. The
+   * element is drawn as that scope has it, and opened there.
+   */
+  below?: { scope: string; planId: string }
+}
+
+/**
+ * A plan a scope below filed and flagged, with the elements it names as that
+ * scope holds them — what the index hands a roadmap above, so the applications
+ * an initiative changes can be plotted beside this scope's own.
+ */
+export type InitiativeBelow = {
+  scope: string
+  plan: Transition
+  elements: readonly DesignElement[]
 }
 
 /**
@@ -126,34 +143,60 @@ export function monthsFrom(day: string, months: number): string {
   return new Date(Date.UTC(year, month - 1 + months, date)).toISOString().slice(0, 10)
 }
 
+/** The days an element's lifecycle names, for the axis to cover. */
+function elementDays(element: DesignElement): string[] {
+  return LIFECYCLE_ORDER
+    .map((phase) => (phase === 'planned' ? undefined : element.lifecycleDates?.[phase]))
+    .filter(isDay)
+}
+
 /**
  * The roadmap for a model: the rows that have something to say, oldest first.
  *
  * Ordered by when each one's first dated thing happens, so a reader goes down
  * the page and forwards in time.
+ *
+ * The initiatives of the scopes below are taken in as well: the axis reaches
+ * their windows, and the dated elements they name get a row each beside this
+ * scope's own, marked with where they came from. One row per id — an element
+ * this scope already tracks is this scope's row, and one named by two plans
+ * below is the first plan's — because an id means one thing across the tree
+ * (ADR-0012 §2) and two rows for it would say otherwise. The plans themselves
+ * are not in `transitions`: they are drawn under their scope's name, and
+ * edited there.
  */
 export function roadmapOf(
   model: Pick<DesignModel, 'elements' | 'relations'> & { transitions?: Transition[] },
   today: string,
+  fromBelow: readonly InitiativeBelow[] = [],
 ): Roadmap {
   const transitions = model.transitions ?? []
-  const dated = model.elements.filter((element) => (
-    LIFECYCLE_ORDER.some((phase) => phase !== 'planned' && isDay(element.lifecycleDates?.[phase]))
-  ))
+  const dated = model.elements.filter((element) => elementDays(element).length > 0)
   const windowed = model.relations.filter(hasWindow)
 
+  const tracked = new Set(dated.map((element) => element.id))
+  const brought: { element: DesignElement; below: { scope: string; planId: string } }[] = []
+  for (const { scope, plan, elements } of fromBelow) {
+    for (const element of elements) {
+      if (tracked.has(element.id) || elementDays(element).length === 0) continue
+      tracked.add(element.id)
+      brought.push({ element, below: { scope, planId: plan.id } })
+    }
+  }
+
   const days = [
-    ...dated.flatMap((element) => LIFECYCLE_ORDER
-      .map((phase) => (phase === 'planned' ? undefined : element.lifecycleDates?.[phase]))
-      .filter(isDay)),
+    ...dated.flatMap(elementDays),
+    ...brought.flatMap(({ element }) => elementDays(element)),
     ...windowed.flatMap((relation) => [relation.validFrom, relation.validUntil].filter(isDay)),
     ...transitions.flatMap(transitionDays),
+    ...fromBelow.flatMap(({ plan }) => transitionDays(plan)),
   ]
   const { from, to } = rangeOf(days, today)
 
-  const tracks = dated
-    .map((element) => ({ element, spans: spansFor(element, from) }))
-    .sort((a, b) => firstMark(a) .localeCompare(firstMark(b)) || a.element.name.localeCompare(b.element.name))
+  const tracks = [
+    ...dated.map((element) => ({ element, spans: spansFor(element, from) })),
+    ...brought.map(({ element, below }) => ({ element, spans: spansFor(element, from), below })),
+  ].sort((a, b) => firstMark(a).localeCompare(firstMark(b)) || a.element.name.localeCompare(b.element.name))
 
   const named = new Map(model.elements.map((element) => [element.id, element.name]))
   const relations = windowed
@@ -206,7 +249,7 @@ export function within(roadmap: Roadmap, from: string, to: string): Roadmap {
       const opening = phaseAt(element, from)
       return changes || (opening !== 'retired' && opening !== 'planned')
     })
-    .map(({ element }) => ({ element, spans: spansFor(element, from) }))
+    .map((track) => ({ ...track, spans: spansFor(track.element, from) }))
   // A row stays if its window overlaps the period at all. An end left open is
   // open, not absent: a line dated from March and never dated shut is there
   // for every window after March.

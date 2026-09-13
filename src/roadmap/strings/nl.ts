@@ -27,6 +27,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'roadmap.initiative': 'Initiatief',
   'roadmap.initiativeHelp': 'Ook op de roadmap van elk niveau hierboven',
   'roadmap.openInitiative': 'Openen in {scope}',
+  'roadmap.showBelowChanges': 'Toon wat de initiatieven eronder veranderen',
   'roadmap.milestones': 'Mijlpalen',
   'roadmap.touches': 'Wat het verandert',
   'roadmap.restsOn': 'Besluiten waarop het steunt',

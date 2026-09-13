@@ -269,6 +269,17 @@ describe('the index — the initiatives below a scope (ADR-0012 §7)', () => {
       .toEqual([['acme', 3], ['acme/retail', 1], ['other', 1]])
   })
 
+  it('carries the elements a plan names, as its scope holds them, and leaves out an id it has no record for', () => {
+    const named = { ...plan(1, true), elements: [
+      { elementId: 'wms', role: 'retires' as const }, { elementId: 'gone', role: 'changes' as const },
+    ] }
+    const index = indexScopes([
+      { path: '', model: { elements: [], relations: [] } },
+      { path: 'acme/retail', model: { elements: [element('wms'), element('crm')], relations: [], transitions: [named] } },
+    ])
+    expect(index.initiativesBelow('').map(({ elements }) => elements.map((one) => one.id))).toEqual([['wms']])
+  })
+
   it('leaves out a plan nobody flagged, the scope\u2019s own, and a scope with no plans read', () => {
     const below = tree().initiativesBelow('')
     expect(below.some(({ transition }) => transition.number === 2)).toBe(false)

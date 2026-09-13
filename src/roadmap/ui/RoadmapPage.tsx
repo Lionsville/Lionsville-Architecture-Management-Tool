@@ -31,8 +31,10 @@ import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
 import Chip from '@mui/material/Chip'
+import Switch from '@mui/material/Switch'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
-import type { DesignModel, ElementId, Lifecycle, Transition } from '../../model'
+import type { DesignElement, DesignModel, ElementId, Lifecycle, Transition } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon } from '../../widgets/icons'
@@ -88,6 +90,12 @@ export type Initiative = {
   /** What to call the scope on screen. */
   label: string
   plan: Transition
+  /**
+   * The elements the plan names, as its scope holds them. The dated ones are
+   * plotted among this scope's applications, under the switch; absent draws
+   * the band alone.
+   */
+  elements?: readonly DesignElement[]
 }
 
 export type RoadmapPageProps = {
@@ -118,18 +126,28 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const [window_, setWindow] = useState<{ from: string; to: string }>(() => defaultWindow(today))
 
   const below = props.fromBelow ?? []
+  // Whether the applications an initiative below changes are plotted among
+  // this scope's own. A view state, like the window: on by default because
+  // the band alone says when and not what, and off for a reader who wants
+  // this scope's own landscape only.
+  const [showBelow, setShowBelow] = useState(true)
+  const belowHasElements = below.some(({ elements }) => (elements?.length ?? 0) > 0)
   // The axis takes the initiatives in: a plan below that runs past this
   // scope's own dates would otherwise be a band cut off at the edge.
-  const whole = useMemo(() => {
-    const own = roadmapOf(model, today)
-    const days = below.flatMap(({ plan }) => [plan.from, plan.to].filter(isDay))
-    if (days.length === 0) return own
-    return {
-      ...own,
-      from: days.reduce((first, day) => (day < first ? day : first), own.from),
-      to: days.reduce((last, day) => (day > last ? day : last), own.to),
+  const whole = useMemo(() => roadmapOf(model, today, below.map(({ scope, plan, elements }) => ({
+    scope, plan, elements: showBelow ? (elements ?? []) : [],
+  }))), [model, today, below, showBelow])
+  const labelOf = (scope: string) => below.find((one) => one.scope === scope)?.label ?? scope
+  // An element brought by an initiative opens here if this scope holds it
+  // (a stand-in has the same id, §2), and otherwise on the plan that named
+  // it, in the scope that holds it — the nearest page that can show it.
+  const openBrought = (track: { element: DesignElement; below?: { scope: string; planId: string } }) => {
+    if (!track.below || model.elements.some((one) => one.id === track.element.id)) {
+      actions.onOpenElement(track.element.id)
+    } else {
+      props.onOpenInitiative?.(track.below.scope, track.below.planId)
     }
-  }, [model, today, below])
+  }
   const cut = isDay(window_.from) && isDay(window_.to) && window_.from < window_.to
   const roadmap = useMemo(
     () => (cut ? within(whole, window_.from, window_.to) : whole),
@@ -230,18 +248,48 @@ export function RoadmapPage(props: RoadmapPageProps) {
                 {t('roadmap.scrubHelp')}
               </Typography>
 
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-                {t('roadmap.applications')}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
+                  {t('roadmap.applications')}
+                </Typography>
+                {belowHasElements && (
+                  <FormControlLabel
+                    sx={{ ml: 0 }}
+                    control={(
+                      <Switch
+                        size="small"
+                        checked={showBelow}
+                        onChange={(e) => setShowBelow(e.target.checked)}
+                        slotProps={{ input: { 'aria-label': t('roadmap.showBelowChanges') } }}
+                      />
+                    )}
+                    label={<Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('roadmap.showBelowChanges')}</Typography>}
+                  />
+                )}
+              </Box>
               {roadmap.tracks.map((track) => (
-                <Box key={track.element.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography
-                    sx={{ fontSize: 12, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    onClick={() => actions.onOpenElement(track.element.id)}
+                <Box
+                  key={track.element.id}
+                  data-testid={`row-${track.element.id}`}
+                  sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
+                >
+                  <Box sx={{ minWidth: 0, cursor: 'pointer' }} onClick={() => openBrought(track)}>
+                    <Typography
+                      sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                      {track.element.name}
+                    </Typography>
+                    {track.below && (
+                      <Tooltip title={t('roadmap.openInitiative', { scope: labelOf(track.below.scope) })}>
+                        <Chip size="small" label={labelOf(track.below.scope)} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
+                      </Tooltip>
+                    )}
+                  </Box>
+                  <Box
+                    data-testid={`track-${track.element.id}`}
+                    data-from-scope={track.below?.scope}
+                    sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}
                   >
-                    {track.element.name}
-                  </Typography>
-                  <Box data-testid={`track-${track.element.id}`} sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}>
                     {track.spans.map((span_, index) => (
                       <Tooltip key={index} title={`${t(`lifecycle.${span_.phase}` as StringKey)} · ${span_.from}`}>
                         <Box

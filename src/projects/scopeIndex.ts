@@ -47,7 +47,7 @@
  *
  * Pure: `(path, model)` pairs in, answers out. No store, no React, no promise.
  */
-import type { ElementId, ElementKind, Relation, RelationType } from '../model'
+import type { DesignElement, ElementId, ElementKind, Relation, RelationType } from '../model'
 import type { Transition } from '../model/transition'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -121,8 +121,21 @@ export type IndexEntry = {
 
 /** One row, and the scope whose `model.json` holds it. */
 export type IndexedRelation = { scope: ScopePath; relation: Relation }
-/** A plan another scope filed, with where. */
-export type IndexedTransition = { scope: ScopePath; transition: Transition }
+/**
+ * A plan another scope filed, with where — and the elements it names, as
+ * that scope holds them.
+ *
+ * Carried here because a roadmap above draws the plan's band and has nothing
+ * else to draw it from: what the plan introduces and retires are that scope's
+ * elements, with that scope's dates on them, and this model does not hold
+ * them. Only the ones the plan names, in the plan's order; an id the scope
+ * has no record for is left out rather than drawn as a blank.
+ */
+export type IndexedTransition = {
+  scope: ScopePath
+  transition: Transition
+  elements: readonly DesignElement[]
+}
 
 /**
  * The answers, over a tree that has already been read.
@@ -241,8 +254,15 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       rows.push({ scope: path, relation })
       incoming.set(relation.targetId, rows)
     }
-    for (const transition of [...(model.transitions ?? [])].sort((a, b) => a.number - b.number)) {
-      if (transition.initiative) initiatives.push({ scope: path, transition })
+    const flagged = (model.transitions ?? []).filter((transition) => transition.initiative)
+    if (flagged.length > 0) {
+      const byId = new Map(model.elements.map((element) => [element.id, element]))
+      for (const transition of [...flagged].sort((a, b) => a.number - b.number)) {
+        const elements = transition.elements
+          .map((one) => byId.get(one.elementId))
+          .filter((element): element is DesignElement => element !== undefined)
+        initiatives.push({ scope: path, transition, elements })
+      }
     }
   }
 

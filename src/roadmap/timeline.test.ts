@@ -144,6 +144,63 @@ describe('roadmapOf', () => {
 })
 
 /**
+ * An initiative a scope below flagged brings the elements it names (ADR-0012
+ * §7): they are plotted beside this scope's own, marked with where they came
+ * from, and the axis reaches them.
+ */
+describe('roadmapOf — the initiatives from below', () => {
+  const plan = {
+    id: 'tr-r', number: 1, title: 'One warehouse', status: 'agreed' as const,
+    from: '2029-01-01', to: '2029-12-31',
+    elements: [{ elementId: 'wms-r', role: 'retires' as const }, { elementId: 'crm', role: 'changes' as const }],
+    decisions: [], milestones: [], body: '',
+  }
+  const retail = {
+    scope: 'acme/retail', plan,
+    elements: [
+      element('wms-r', { lifecycleDates: { retired: '2029-06-30' } }),
+      element('crm'),
+    ],
+  }
+  const own = {
+    elements: [element('wms-old', { lifecycleDates: { retiring: '2027-04-01' } })],
+    relations: [],
+  }
+
+  it('gives the dated elements a row each, saying which scope and which plan brought them', () => {
+    const { tracks } = roadmapOf(own, TODAY, [retail])
+    expect(tracks.map((t) => t.element.id)).toEqual(['wms-old', 'wms-r'])
+    expect(tracks[1].below).toEqual({ scope: 'acme/retail', planId: 'tr-r' })
+    expect(tracks[0].below).toBeUndefined()
+    expect(tracks[1].spans.map((s) => s.phase)).toEqual(['live', 'retired'])
+  })
+
+  it('reaches the plan and the elements it brings, and keeps the plan out of this scope\u2019s own', () => {
+    const roadmap = roadmapOf(own, TODAY, [retail])
+    expect(roadmap.to >= '2029-12-31').toBe(true)
+    expect(roadmap.transitions).toEqual([])
+  })
+
+  it('draws one row per id: this scope\u2019s own wins, and the first plan below wins over the second', () => {
+    const twice = { ...retail, plan: { ...plan, id: 'tr-2' }, scope: 'acme/finance' }
+    const ownToo = { ...own, elements: [...own.elements, element('wms-r', { lifecycleDates: { retired: '2030-01-01' } })] }
+    const { tracks } = roadmapOf(ownToo, TODAY, [retail, twice])
+    const brought = tracks.filter((t) => t.element.id === 'wms-r')
+    expect(brought).toHaveLength(1)
+    expect(brought[0].below).toBeUndefined()
+    const other = roadmapOf(own, TODAY, [retail, twice]).tracks.filter((t) => t.element.id === 'wms-r')
+    expect(other).toHaveLength(1)
+    expect(other[0].below?.planId).toBe('tr-r')
+  })
+
+  it('survives a window cut with its origin intact', () => {
+    const cut = within(roadmapOf(own, TODAY, [retail]), '2029-01-01', '2029-12-31')
+    expect(cut.tracks.map((t) => [t.element.id, t.below?.scope]))
+      .toEqual([['wms-old', undefined], ['wms-r', 'acme/retail']])
+  })
+})
+
+/**
  * A relation carries a window whatever it means (ADR-0012 §5), so the axis has
  * to draw "the WMS supports fulfilment from March" the same way it draws the
  * temporary sync of a hybrid run.

@@ -27,6 +27,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'roadmap.initiative': 'Inisjatyf',
   'roadmap.initiativeHelp': 'Ek op de roadmap fan elk nivo hjirboppe',
   'roadmap.openInitiative': 'Iepenje yn {scope}',
+  'roadmap.showBelowChanges': 'Sjen litte wat de inisjativen derûnder feroarje',
   'roadmap.milestones': 'Mylpealen',
   'roadmap.touches': 'Wat it feroaret',
   'roadmap.restsOn': 'Besluten dêr\'t it op stipet',

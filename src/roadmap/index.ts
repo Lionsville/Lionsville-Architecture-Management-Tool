@@ -5,7 +5,7 @@
  * and reading one always means asking what else is happening that month.
  */
 export { fractionOf, monthsFrom, rangeOf, roadmapOf, spansFor, within } from './timeline'
-export type { ElementTrack, PhaseSpan, Roadmap } from './timeline'
+export type { ElementTrack, InitiativeBelow, PhaseSpan, Roadmap } from './timeline'
 export { planBodyTemplate } from './planTemplate'
 export { CHECK_SENTENCE, PLAN_STATUS_LABEL } from './labels'
 export { RoadmapPage } from './ui/RoadmapPage'

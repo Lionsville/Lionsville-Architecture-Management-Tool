@@ -638,8 +638,8 @@ export function ProjectWorkspace({
    * the tree, and never costs a load per domain.
    */
   const initiativesBelow = useMemo(
-    () => index.initiativesBelow(project.path).map(({ scope, transition }) => ({
-      scope, label: scopeLabel(scope), plan: transition,
+    () => index.initiativesBelow(project.path).map(({ scope, transition, elements }) => ({
+      scope, label: scopeLabel(scope), plan: transition, elements,
     })),
     [index, project.path, scopeLabel],
   )

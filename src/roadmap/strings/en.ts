@@ -31,6 +31,7 @@ export const EN = {
   'roadmap.initiative': 'Initiative',
   'roadmap.initiativeHelp': 'Also shown on the roadmap of every scope above this one',
   'roadmap.openInitiative': 'Open in {scope}',
+  'roadmap.showBelowChanges': 'Show what the initiatives below change',
   'roadmap.milestones': 'Milestones',
   'roadmap.touches': 'What it changes',
   'roadmap.restsOn': 'Decisions it rests on',

@@ -27,6 +27,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'roadmap.initiative': 'Initiative',
   'roadmap.initiativeHelp': 'Auch auf dem Fahrplan jedes Bereichs darüber',
   'roadmap.openInitiative': 'In {scope} öffnen',
+  'roadmap.showBelowChanges': 'Zeigen, was die Initiativen darunter ändern',
   'roadmap.milestones': 'Meilensteine',
   'roadmap.touches': 'Was er ändert',
   'roadmap.restsOn': 'Entscheidungen, auf denen er beruht',
