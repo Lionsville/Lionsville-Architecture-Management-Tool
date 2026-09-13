@@ -16,7 +16,7 @@ import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
 import type { StandInNote } from './nodes/nodeData';
 import type {
-  DesignModel, DiagramSettings, DocumentImage, ElementId,
+  DesignModel, DiagramSettings, DocumentImage, ElementId, Layer7Zone,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
@@ -396,12 +396,22 @@ export interface EditorOwnership {
   };
   /**
    * Draw an application the organisation already has (ADR-0012 §2): the
-   * palette offers a row, and everything behind it — the register, the
-   * picker, what drawing one means for this scope's records — is the host's,
-   * for the reason `gestures` is. Absent = no row, which is a host with no
-   * register to offer.
+   * palette offers a row and the canvas's *Add here* an entry, and everything
+   * behind them — the register, the picker, what drawing one means for this
+   * scope's records — is the host's, for the reason `gestures` is. Absent =
+   * neither, which is a host with no register to offer. `at` is where the
+   * menu was opened, band and group resolved; without it the picker asks
+   * which band.
    */
-  onAddExisting?(): void;
+  onAddExisting?(at?: ExistingAt): void;
+}
+
+/** Where *Add here ▸ Existing application…* was asked for, in flow coordinates. */
+export interface ExistingAt {
+  position: { x: number; y: number };
+  zone?: Layer7Zone;
+  /** The dashed group's id, when the point is inside one. */
+  group?: string;
 }
 
 export interface SolutionDesignEditorProps {

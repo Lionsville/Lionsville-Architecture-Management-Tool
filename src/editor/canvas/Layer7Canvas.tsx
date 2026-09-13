@@ -155,6 +155,21 @@ export function Layer7Canvas(
     [actions, geometry],
   );
 
+  // An existing application asked for at a point: the point decides where it
+  // lands, the same rule as a drop, and the host's picker decides what.
+  const { onAddExistingAt: addExisting } = props;
+  const onAddExistingAt = useCallback(
+    (at: { position: Point }) => {
+      const zone = zoneForPoint(at.position, geometry);
+      addExisting?.({
+        position: at.position,
+        zone,
+        group: zone === 'landscape' ? domainGroupForPoint(at.position, domainGroupRectMap(boxes)) : undefined,
+      });
+    },
+    [addExisting, geometry, boxes],
+  );
+
   // A domain group dropped on the board: the box lands centred on the cursor,
   // clamped into the landscape. Same helper the palette's Place button uses, so
   // a dropped group and a placed group differ only in where they end up.
@@ -182,6 +197,7 @@ export function Layer7Canvas(
       resolveDrop={resolveDrop}
       onAddByDrop={onAddByDrop}
       onAddDomainGroupByDrop={props.readOnly ? undefined : onAddDomainGroupByDrop}
+      onAddExistingAt={props.readOnly || !addExisting ? undefined : onAddExistingAt}
       onPaletteDragOver={handlePaletteDragOver}
       resolvePaneMenuTarget={resolvePaneMenuTarget}
       onMenuAction={handleMenuAction}

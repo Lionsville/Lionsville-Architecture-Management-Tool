@@ -12,7 +12,7 @@ import type { Theme } from '@mui/material/styles';
 import type { StringKey, Translate } from '../i18n';
 import type { ExportLegend } from './props';
 import { EditorRefused } from './props';
-import type { EditorHandle, EditorRequests, SolutionDesignEditorProps } from './props';
+import type { EditorHandle, EditorRequests, ExistingAt, SolutionDesignEditorProps } from './props';
 import type { StandInNote } from './nodes/nodeData';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
@@ -1297,6 +1297,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onRequestDeleteConnection={requestDeleteConnection}
           onRequestDeleteSelection={requestDeleteSelection}
           menuRequest={menuRequest}
+          onAddExistingAt={readOnly ? undefined : props.ownership?.onAddExisting}
         />
         </ThemeProvider>
         {!inspectorCollapsed && (
@@ -1554,6 +1555,7 @@ function CanvasForDiagram({
   onRequestDeleteConnection,
   onRequestDeleteSelection,
   menuRequest,
+  onAddExistingAt,
 }: {
   diagram: DesignDiagram;
   state: ReturnType<typeof useEditorState>;
@@ -1591,8 +1593,11 @@ function CanvasForDiagram({
   onRequestDeleteConnection(connectionId: string): void;
   onRequestDeleteSelection(selection: Selection): void;
   menuRequest?: { kind: 'open' | 'rename'; nonce: number };
+  /** See `DiagramCanvasProps.onAddExistingAt`: the host's register, at the click. */
+  onAddExistingAt?: (at?: ExistingAt) => void;
 }) {
   const shared = {
+    onAddExistingAt,
     model: state.model,
     diagram,
     readOnly,

@@ -87,6 +87,13 @@ describe('menuItemsFor — node', () => {
     // A stand-in's inside is the owner's to show: the same entry, said honestly.
     const away = menuItemsFor(NODE, ctx({ element: app({ hasContainerDiagram: false, standIn: true }) }));
     expect(away.find((item) => item.id === 'open-container')?.label).toBe('Open where it is defined');
+    // And nothing this scope may not change about it (ADR-0012 §3): no
+    // rename, no lifecycle, no kind, no duplicate — the lines, the icon, the
+    // band and the removal stay.
+    expect(ids(away)).toEqual([
+      'open-documentation', 'open-container', 'start-connection', 'icon', 'move-to-zone',
+      'copy', 'cut', 'remove-from-diagram', 'delete-from-model',
+    ]);
     expect(byId(items, 'open-container').label).toBe('Create container diagram');
     expect(byId(items, 'open-container').action).toBe('open-container');
   });
@@ -357,6 +364,12 @@ describe('menuItemsFor — pane', () => {
 
   it('leaves out the domain-group entry on a container diagram', () => {
     expect(ids(menuItemsFor(PANE, ctx({ diagramKind: 'container' })))).not.toContain('add-domain-group-here');
+    // The register, where the host offers one, and only on a landscape.
+    const addHere = (over: Partial<MenuContext>) =>
+      menuItemsFor(PANE, ctx(over)).find((item) => item.id === 'add-here')?.children?.map((child) => child.id);
+    expect(addHere({})).toEqual(['add-application', 'add-actor']);
+    expect(addHere({ canAddExisting: true })).toEqual(['add-application', 'add-actor', 'add-existing']);
+    expect(addHere({ canAddExisting: true, diagramKind: 'container' })).not.toContain('add-existing');
   });
 
   it('hides Tidy / Route when the editor wired no handler, and disables them while a layout runs', () => {

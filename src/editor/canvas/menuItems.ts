@@ -54,6 +54,7 @@ export type MenuActionId =
   // pane
   | 'paste-here'
   | 'add-here'
+  | 'add-existing-here'
   | 'add-domain-group-here'
   | 'select-all'
   | 'tidy'
@@ -194,6 +195,12 @@ export interface MenuContext {
   readOnly: boolean;
   platform: Platform;
   /**
+   * The host offers the register (ADR-0012 §2): *Add here* then ends with an
+   * existing application, drawn at the click. Layer 7 only, like the palette
+   * row it mirrors.
+   */
+  canAddExisting?: boolean;
+  /**
    * The UI language's lookup. Optional, and English when absent: the menus are
    * a pure table with a hundred labels, and defaulting here is what let the
    * whole builder become bilingual without touching a single one of its tests.
@@ -309,23 +316,30 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
   }
   if (ctx.readOnly) return items;
 
-  items.push(
-    { id: 'rename', label: t('menu.rename'), shortcut: key('rename'), action: 'rename' },
-    { id: 'start-connection', label: t('menu.startConnection'), action: 'start-connection' },
-  );
+  // A stand-in is offered what this scope answers for and nothing else
+  // (ADR-0012 §3, `projects/mayEdit.ts`): where it sits, how it is drawn, and
+  // the lines from here. Its name is a cache, its lifecycle and kind are the
+  // owner's, and a duplicate would be a definition here of somebody else's
+  // application — none of which this menu should put a person one click from.
+  if (!el.standIn) {
+    items.push({ id: 'rename', label: t('menu.rename'), shortcut: key('rename'), action: 'rename' });
+  }
+  items.push({ id: 'start-connection', label: t('menu.startConnection'), action: 'start-connection' });
   items.push(iconItem(el.iconKey, t));
-  items.push({
-    id: 'lifecycle',
-    label: t('menu.lifecycle'),
-    children: LIFECYCLES.map((l) => ({
-      id: `lifecycle-${l.value}`,
-      label: t(l.labelKey),
-      checked: el.lifecycle === l.value,
-      action: 'set-lifecycle',
-      args: { lifecycle: l.value },
-    })),
-  });
-  items.push(changeKindItem(el, t));
+  if (!el.standIn) {
+    items.push({
+      id: 'lifecycle',
+      label: t('menu.lifecycle'),
+      children: LIFECYCLES.map((l) => ({
+        id: `lifecycle-${l.value}`,
+        label: t(l.labelKey),
+        checked: el.lifecycle === l.value,
+        action: 'set-lifecycle',
+        args: { lifecycle: l.value },
+      })),
+    });
+    items.push(changeKindItem(el, t));
+  }
   if (ctx.diagramKind === 'layer7') {
     const zone = el.zone ?? 'landscape';
     items.push({
@@ -365,7 +379,9 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
   }
   items.push(
     sep('sep-edit'),
-    { id: 'duplicate', label: t('menu.duplicate'), shortcut: key('duplicate'), action: 'duplicate' },
+    ...(el.standIn
+      ? []
+      : [{ id: 'duplicate', label: t('menu.duplicate'), shortcut: key('duplicate'), action: 'duplicate' as const }]),
     { id: 'copy', label: t('menu.copy'), shortcut: key('copy'), action: 'copy' },
     { id: 'cut', label: t('menu.cut'), shortcut: key('cut'), action: 'cut' },
     sep('sep-delete'),
@@ -567,12 +583,17 @@ function paneItems(ctx: MenuContext): MenuItem[] {
     {
       id: 'add-here',
       label: t('menu.addHere'),
-      children: (ctx.allowedKinds ?? []).map((kind) => ({
-        id: `add-${kind}`,
-        label: paletteLabel(kind, t),
-        action: 'add-here' as const,
-        args: { kind },
-      })),
+      children: [
+        ...(ctx.allowedKinds ?? []).map((kind) => ({
+          id: `add-${kind}`,
+          label: paletteLabel(kind, t),
+          action: 'add-here' as const,
+          args: { kind },
+        })),
+        ...(ctx.canAddExisting && ctx.diagramKind === 'layer7'
+          ? [{ id: 'add-existing', label: t('palette.existing'), action: 'add-existing-here' as const }]
+          : []),
+      ],
     },
   ];
   if (ctx.diagramKind === 'layer7') {

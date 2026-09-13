@@ -52,6 +52,8 @@ export interface MenuActionHost {
   /** The palette-drop seed path: kind + flow position, zone resolved by the canvas. */
   addElementAt(kind: ElementKind, position: Point): void;
   addDomainGroupAt?(position: Point): void;
+  /** *Add here ▸ Existing application…*: the host's picker, landing at the click. */
+  addExistingAt?(position: Point): void;
   /** What a drop at `center` would assign (layer7 zone + group); mirrors the drag rules. */
   resolveDrop?(elementId: ElementId, center: Point): Pick<PlacementMove, 'zone' | 'group'>;
   /** The double-click path: open or create the application's container diagram. */
@@ -267,6 +269,9 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
       return;
     case 'add-domain-group-here':
       host.addDomainGroupAt?.(flowPosition);
+      return;
+    case 'add-existing-here':
+      host.addExistingAt?.(flowPosition);
       return;
     case 'select-all':
       host.setSelection(selectAllContent(model, diagram));

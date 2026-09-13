@@ -160,6 +160,19 @@ describe('useLibrary', () => {
     expect(host.drawn('ledger')).toBe(true)
   })
 
+  it('lands at the point the canvas asked for, in that band, without asking which', () => {
+    const host = mount()
+    act(() => host.lib().open({ position: { x: 120, y: 340 }, zone: 'externalSystems' }))
+    act(() => host.lib().pick('shelf'))
+    expect(host.lib().choice).toBeUndefined()
+    expect(host.current().diagrams[0].members.find((member) => member.id === 'shelf')?.zone).toBe('externalSystems')
+    expect(host.current().diagrams[0].geometry.nodes.find((node) => node.id === 'shelf')).toMatchObject({ x: 120, y: 340 })
+    // The point is spent: the next open from the palette asks again.
+    act(() => host.lib().open())
+    act(() => host.lib().pick('crm'))
+    expect(host.lib().choice?.kind).toBe('placing')
+  })
+
   it('lets the question go unanswered', () => {
     const host = mount()
     act(() => host.lib().open())

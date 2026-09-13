@@ -13,7 +13,7 @@
  * a domain defines never takes it over; the record this scope gets is a
  * stand-in, and taking ownership is a gesture of its own (`useGestures`).
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { Command, DesignElement, ElementId } from '../model'
 import { placeOn, transaction } from '../model/commands'
@@ -21,6 +21,7 @@ import { seedPlacement } from '../model/placement'
 import { isLibraryRefusal, LIBRARY_REFUSAL, libraryRows, planFromLibrary, rowsToImport } from '../projects/library'
 import type { LibraryPlan, LibraryRow } from '../projects/library'
 import type { ScopeIndex } from '../projects/scopeIndex'
+import type { ExistingAt } from '../editor/props'
 import type { ScopePath } from '../projects/scopePath'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -38,8 +39,12 @@ export type LibraryChoice =
   | { kind: 'placing'; id: ElementId; name: string }
 
 export type Library = {
-  /** Open the picker over the active board. Nothing happens on a view that draws no cards. */
-  open(): void
+  /**
+   * Open the picker over the active board. Nothing happens on a view that
+   * draws no cards. With `at` — the canvas's *Add here* — what is picked
+   * lands there, in that band, and the band question is not asked.
+   */
+  open(at?: ExistingAt): void
   choice: LibraryChoice | undefined
   /** One row of the picker: draw it, or ask about it. */
   pick(id: ElementId): void
@@ -67,6 +72,8 @@ export function useLibrary(deps: {
   scopeLabel(path: ScopePath): string
 }): Library {
   const { session, scope, index, notify, s, focus, scopeLabel } = deps
+  // Where the picker was opened from, for as long as it is open.
+  const atRef = useRef<ExistingAt | undefined>(undefined)
   const [choice, setChoice] = useState<
     | { kind: 'picking'; rows: readonly LibraryRow[] }
     | { kind: 'asking'; plan: Extract<LibraryPlan, { kind: 'unowned' }> }
@@ -79,13 +86,14 @@ export function useLibrary(deps: {
     return model.diagrams.find((diagram) => diagram.id === session.currentActiveId())
   }, [session])
 
-  const open = useCallback(() => {
+  const open = useCallback((at?: ExistingAt) => {
     const diagram = activeBoard()
     if (!diagram) return
+    atRef.current = at
     setChoice({ kind: 'picking', rows: libraryRows(index, session.current(), diagram) })
   }, [activeBoard, index, session])
 
-  const close = useCallback(() => setChoice(undefined), [])
+  const close = useCallback(() => { atRef.current = undefined; setChoice(undefined) }, [])
 
   /**
    * Land it: the record where one is needed, and its place on the board, as
@@ -96,9 +104,13 @@ export function useLibrary(deps: {
   const land = useCallback((element: DesignElement, create: boolean, said: string, band?: LibraryBand) => {
     const diagram = activeBoard()
     if (!diagram) return
-    const seed = band === undefined
-      ? element
-      : { ...element, zone: band === 'external' ? 'externalSystems' as const : 'landscape' as const }
+    const at = atRef.current
+    atRef.current = undefined
+    const seed = at !== undefined
+      ? { ...element, position: at.position, zone: at.zone, group: at.group }
+      : band === undefined
+        ? element
+        : { ...element, zone: band === 'external' ? 'externalSystems' as const : 'landscape' as const }
     const placement = seedPlacement(seed, diagram, element.id)
     // A stand-in brings its interfaces: the flows the tree holds between it
     // and what this scope already has, so an overview joins its cards up the
@@ -134,16 +146,16 @@ export function useLibrary(deps: {
         const held = model.elements.find((element) => element.id === plan.id)
         if (!held) return
         const said = s('library.drawn', { name: plan.name })
-        if (held.ref === undefined) land(held, false, said)
+        if (held.ref === undefined || atRef.current) land(held, false, said)
         else setChoice({ kind: 'placing', element: held, create: false, said })
         return
       }
-      case 'standIn':
-        setChoice({
-          kind: 'placing', element: plan.element, create: true,
-          said: s('library.standsIn', { name: plan.element.name, scope: scopeLabel(plan.owner) }),
-        })
+      case 'standIn': {
+        const said = s('library.standsIn', { name: plan.element.name, scope: scopeLabel(plan.owner) })
+        if (atRef.current) land(plan.element, true, said)
+        else setChoice({ kind: 'placing', element: plan.element, create: true, said })
         return
+      }
       case 'unowned':
         setChoice({ kind: 'asking', plan })
     }
@@ -156,11 +168,10 @@ export function useLibrary(deps: {
 
   const drawOnly = useCallback(() => {
     if (choice?.kind !== 'asking' || !choice.plan.drawOnly) return
-    setChoice({
-      kind: 'placing', element: choice.plan.drawOnly, create: true,
-      said: s('library.drawn', { name: choice.plan.name }),
-    })
-  }, [choice, s])
+    const said = s('library.drawn', { name: choice.plan.name })
+    if (atRef.current) land(choice.plan.drawOnly, true, said)
+    else setChoice({ kind: 'placing', element: choice.plan.drawOnly, create: true, said })
+  }, [choice, s, land])
 
   const place = useCallback((band: LibraryBand) => {
     if (choice?.kind !== 'placing') return

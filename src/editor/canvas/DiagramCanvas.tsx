@@ -51,6 +51,7 @@ import {
 } from '../useEditorState';
 import { detectPlatform } from '../keymap';
 import { PALETTE_DRAG_MIME, type DomainGroupSeed } from './ElementPalette';
+import type { ExistingAt } from '../props';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './paletteItems';
 import { CanvasMenuContext, type CanvasMenuApi } from './CanvasMenuContext';
 import { ContextMenu } from './ContextMenu';
@@ -285,6 +286,13 @@ export interface DiagramCanvasProps {
    * and a group payload dropped there is ignored rather than half-created.
    */
   onAddDomainGroupByDrop?(position: Point, seed?: DomainGroupSeed): void;
+  /**
+   * *Add here ▸ Existing application…*: the host's picker over the register,
+   * landing where the menu was opened. The canvas hands the point; Layer 7
+   * adds the band and the group the point is in, the way a drop does. Absent
+   * = no entry, which is a host with no register and every container view.
+   */
+  onAddExistingAt?(at: ExistingAt): void;
   /**
    * A palette drag is hovering the board, in FLOW coordinates, or has left it
    * (`null`). Layer 7 uses it to outline the zone the drop would land in; the
@@ -777,7 +785,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     [actions],
   );
 
-  const { onAddByDrop, onAddDomainGroupByDrop, onPaletteDragOver } = props;
+  const { onAddByDrop, onAddDomainGroupByDrop, onAddExistingAt, onPaletteDragOver } = props;
   const handleDrop = useCallback(
     (event: React.DragEvent) => {
       const raw = event.dataTransfer.getData(PALETTE_DRAG_MIME);
@@ -1005,6 +1013,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         canRouteConnections: Boolean(onRouteConnections),
         canRouteConnectionsAll: Boolean(onRouteConnectionsAll),
         canTidyGroup: Boolean(canTidyGroup),
+        canAddExisting: Boolean(props.onAddExistingAt),
         layoutBusy,
       };
       if (target.kind === 'node') {
@@ -1197,6 +1206,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       pasteCountRef,
       addElementAt: (kind, position) => onAddByDrop(kind, position),
       addDomainGroupAt: onAddDomainGroupByDrop ? (position) => onAddDomainGroupByDrop(position) : undefined,
+      addExistingAt: onAddExistingAt ? (position) => onAddExistingAt({ position }) : undefined,
       resolveDrop,
       openApplication: onElementDoubleClick,
       openDocumentation: onOpenDocumentation,
@@ -1234,6 +1244,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       pasteCountRef,
       onAddByDrop,
       onAddDomainGroupByDrop,
+      onAddExistingAt,
       resolveDrop,
       onElementDoubleClick,
       onOpenDocumentation,
