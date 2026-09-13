@@ -26,6 +26,10 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
@@ -182,6 +186,18 @@ export function OrganisationScreen({
    * or nothing yet.
    */
   const level = atRoot ? 'organisation' : draws ? 'landscape' : 'domain'
+  /**
+   * Which cards, additively: a scope can honestly be a domain that also draws
+   * (`countScopes`), and taking its register away the day it gains a board
+   * would be the label deciding after all. The business layer is the root's
+   * (§4); the documentation is about the records on a scope's own boards; the
+   * register is over what is beneath, so a leaf that draws has no use for it.
+   */
+  const shows = {
+    business: atRoot,
+    documentation: draws,
+    register: atRoot || home.children.length > 0,
+  }
   const named = home.name.trim().length > 0
   const heading = home.name.trim() || (atRoot ? s('picker.organisation') : scopePathLabel(home.path))
   const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
@@ -283,7 +299,7 @@ export function OrganisationScreen({
               onOpenRoadmap={() => organisation.open(at, { page: 'roadmap' })}
               register={registerCounts}
               initiatives={initiatives}
-              level={level}
+              shows={shows}
               onOpenRegister={() => setRegisterOpen(true)}
               onOpenDocumentation={() => organisation.open(at, { page: 'documentation' })}
               s={s}
@@ -293,11 +309,15 @@ export function OrganisationScreen({
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —
               a future version of the landscape sits beside the current one
-              here rather than behind it on a tab. */}
-          {draws && (
+              here rather than behind it on a tab. On every home, empty or
+              not, because the way to a scope's FIRST board is here too: the
+              canvas's own button is behind a canvas a scope with no board is
+              never given (§1). */}
+          {root && root.path === at && (
             <BoardsTable
               boards={root.model.diagrams.filter((diagram) => isBoardKind(diagram.kind))}
               onOpen={(id) => organisation.open(at, { page: 'board', id })}
+              onAdd={() => organisation.addBoard(at)}
               language={language}
               s={s}
             />
@@ -404,10 +424,20 @@ export function OrganisationScreen({
         tree={orderedTree}
         parent={dialog.kind === 'newScope' ? dialog.parent : at}
         name={dialog.kind === 'newScope' ? dialog.name : ''}
+        withBoard={dialog.kind === 'newScope' ? dialog.withBoard : true}
         onParentChange={organisation.setNewScopeParent}
         onNameChange={organisation.setNewScopeName}
+        onWithBoardChange={organisation.setNewScopeWithBoard}
         onCancel={organisation.closeDialog}
         onCreate={organisation.create}
+        s={s}
+      />
+      <NewBoardDialog
+        open={dialog.kind === 'newBoard'}
+        name={dialog.kind === 'newBoard' ? dialog.name : ''}
+        onNameChange={organisation.setNewBoardName}
+        onCancel={organisation.closeDialog}
+        onCreate={organisation.createBoard}
         s={s}
       />
       <ScopeSettingsDialog
@@ -435,17 +465,29 @@ export function OrganisationScreen({
  * them. What a row says is what tells two boards of one landscape apart: the
  * kind, the day it shows (ADR-0009) and how much is on it.
  */
-function BoardsTable({ boards, onOpen, language, s }: {
+function BoardsTable({ boards, onOpen, onAdd, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
+  /** A board for this scope — the only way to its first one. */
+  onAdd: () => void
   language: Language
   s: Translate
 }) {
   return (
     <Box sx={{ mb: 4 }} data-testid="boards">
-      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
-        {s('org.views')}
-      </Typography>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
+          {s('org.views')}
+        </Typography>
+        <Button size="small" variant="outlined" onClick={onAdd} data-testid="new-board">
+          {s('org.newBoard')}
+        </Button>
+      </Stack>
+      {boards.length === 0 && (
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', py: 0.75 }} data-testid="boards-empty">
+          {s('org.noBoards')}
+        </Typography>
+      )}
       {boards.map((board) => (
         <Stack
           key={board.id}
@@ -479,6 +521,44 @@ function BoardsTable({ boards, onOpen, language, s }: {
         </Stack>
       ))}
     </Box>
+  )
+}
+
+/**
+ * What to call the board. One field, filled in with the usual name, so Enter
+ * on the untouched dialog is the common case and a renamed one is a tab's
+ * rename made a moment earlier.
+ */
+function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
+  open: boolean
+  name: string
+  onNameChange: (name: string) => void
+  onCancel: () => void
+  onCreate: () => void
+  s: Translate
+}) {
+  const ready = name.trim().length > 0
+  return (
+    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+      <DialogTitle>{s('org.newBoard')}</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          fullWidth
+          margin="dense"
+          label={s('org.boardName')}
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && ready) onCreate() }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button variant="contained" disabled={!ready} onClick={onCreate}>
+          {s('picker.create')}
+        </Button>
+      </DialogActions>
+    </Dialog>
   )
 }
 
@@ -519,7 +599,7 @@ function OrganisationBar({
       WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
-      <Crumbs crumbs={crumbs} current={heading} onGoHome={onGoHome} s={s} />
+      <Crumbs crumbs={crumbs} current={heading} currentPath={home.path} onGoHome={onGoHome} s={s} />
       <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
         {s(SCOPE_KIND_LABEL[home.kind ?? level])}
       </Typography>

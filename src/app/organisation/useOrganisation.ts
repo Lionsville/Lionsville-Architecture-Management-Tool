@@ -29,6 +29,8 @@ import {
   bareScope, emptyScope, flattenScopes, movedPaths, namesUnder, scopeTree,
 } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import { claimKey, idsIn } from '../../model/keys'
+import type { DesignDiagram } from '../../model'
 import { normaliseLinks } from '../../projects/links'
 import { applyRefPatch } from '../../projects/readdress'
 import type { RefPatch } from '../../projects/readdress'
@@ -45,7 +47,10 @@ import type { InitialPage, ScopeLibrary, ScopeSettingsPatch } from '../App'
 /** Which dialog is up. One at a time, because they all ask about one scope. */
 export type OrganisationDialog =
   | { kind: 'none' }
-  | { kind: 'newScope'; parent: ScopePath; name: string }
+  /** `withBoard` off makes a domain on purpose — a scope that files others and draws nothing itself. */
+  | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean }
+  /** A landscape for a scope that is already there, at any level (ADR-0012 §1). */
+  | { kind: 'newBoard'; path: ScopePath; name: string }
   | { kind: 'settings'; target: ScopeSummary }
   | { kind: 'delete'; target: ScopeSummary }
 
@@ -106,7 +111,17 @@ export type Organisation = {
   closeDialog: () => void
   setNewScopeName: (name: string) => void
   setNewScopeParent: (parent: ScopePath) => void
+  setNewScopeWithBoard: (withBoard: boolean) => void
   create: () => void
+  /**
+   * Give a scope a board of its own. The organisation's, a domain's or a
+   * team's: a landscape is a scope that draws, and nothing in the tree says
+   * which scopes may (§1) — which is why the dialog is on every home and not
+   * only on one that already draws.
+   */
+  addBoard: (path: ScopePath) => void
+  setNewBoardName: (name: string) => void
+  createBoard: () => void
   applySettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
@@ -183,7 +198,7 @@ export function useOrganisation({
   }, [])
 
   const addUnder = useCallback((parent: ScopePath) => {
-    setDialog({ kind: 'newScope', parent, name: '' })
+    setDialog({ kind: 'newScope', parent, name: '', withBoard: true })
   }, [])
   const editScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target }), [])
   const askDelete = useCallback((target: ScopeSummary) => setDialog({ kind: 'delete', target }), [])
@@ -193,6 +208,15 @@ export function useOrganisation({
   }, [])
   const setNewScopeParent = useCallback((parent: ScopePath) => {
     setDialog((held) => (held.kind === 'newScope' ? { ...held, parent } : held))
+  }, [])
+  const setNewScopeWithBoard = useCallback((withBoard: boolean) => {
+    setDialog((held) => (held.kind === 'newScope' ? { ...held, withBoard } : held))
+  }, [])
+  const addBoard = useCallback((path: ScopePath) => {
+    setDialog({ kind: 'newBoard', path, name: s('shell.newDiagram') })
+  }, [s])
+  const setNewBoardName = useCallback((name: string) => {
+    setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held))
   }, [])
 
   /** A new scope exists as soon as it is saved; otherwise a refresh loses it. */
@@ -214,7 +238,7 @@ export function useOrganisation({
    */
   const create = useCallback(() => {
     if (dialog.kind !== 'newScope') return
-    const wanted = { parent: dialog.parent, name: dialog.name.trim() }
+    const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard }
     if (!wanted.name) return
     setDialog({ kind: 'none' })
     void scopes.list().then(async (held) => {
@@ -231,8 +255,13 @@ export function useOrganisation({
         onStorageResult(false)
         return
       }
+      // A scope that draws is a landscape and one that does not is a domain
+      // (§1) — labels for a screen, said here from what the person asked for
+      // rather than read back later from the shape.
       createAndEnter(
-        emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape'),
+        wanted.withBoard
+          ? emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape')
+          : bareScope(path, wanted.name, 'domain'),
         s('shell.scopeCreated', { name: wanted.name }),
       )
     }, (cause: unknown) => {
@@ -242,6 +271,44 @@ export function useOrganisation({
       onStorageResult(false)
     })
   }, [dialog, scopes, createAndEnter, onFailure, onStorageResult, s])
+
+  /**
+   * Add a board to a scope that is already there, and land on it.
+   *
+   * Read-patch-write like the settings dialog, because the home is outside
+   * any session: there is no stack to put a `diagram.create` on until the
+   * scope is open, and it is opened on the board just made. The id is the key
+   * the file would give it, claimed against everything the document already
+   * names, so a second landscape beside the first is `landscape-2` and not a
+   * collision. A scope the store no longer has is made on the spot — its
+   * `scope.json` may have gone under us — rather than refused.
+   */
+  const createBoard = useCallback(() => {
+    if (dialog.kind !== 'newBoard') return
+    const wanted = { path: dialog.path, name: dialog.name.trim() }
+    if (!wanted.name) return
+    setDialog({ kind: 'none' })
+    void (async () => {
+      const held = await scopes.load(wanted.path) ?? bareScope(wanted.path, scopePathLabel(wanted.path))
+      const diagram: DesignDiagram = {
+        id: claimKey(s('shell.newDiagram'), new Set(idsIn(held.model))),
+        kind: 'layer7', name: wanted.name, members: [], geometry: { nodes: [] },
+        ...(held.model.defaultAspectConfig ? { aspectConfig: [...held.model.defaultAspectConfig] } : {}),
+      }
+      const next: ScopeSnapshot = {
+        ...held,
+        model: { ...held.model, diagrams: [...held.model.diagrams, diagram] },
+        activeDiagramId: diagram.id,
+      }
+      await scopes.save(next)
+      onEnter(next, { page: 'board', id: diagram.id })
+      refresh()
+      notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
+    })().catch((cause: unknown) => {
+      onFailure('organisation.board', cause)
+      onStorageResult(false)
+    })
+  }, [dialog, scopes, onEnter, refresh, notify, onFailure, onStorageResult, s])
 
   /**
    * Apply a scope's edited record: what it is called, what it is, who its
@@ -431,10 +498,12 @@ export function useOrganisation({
   return useMemo(() => ({
     tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
-    create, applySettings, confirmDelete, open, copyExample, nameOrganisation,
+    setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
+    applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
     tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
-    create, applySettings, confirmDelete, open, copyExample, nameOrganisation,
+    setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
+    applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])
 }

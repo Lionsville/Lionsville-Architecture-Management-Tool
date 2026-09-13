@@ -1,13 +1,14 @@
 /**
  * A scope's own pages, as a row of cards.
  *
- * Which cards depends on what the scope is by shape, never by its label: the
- * organisation — the root — has the business layer, because the rail is one
- * tree on its own page (ADR-0012 §4); a scope that draws has the pages of
- * the records on its boards (the boards themselves are a table beneath, one
- * row each); and every scope has its decisions and its plans. The register is over the tree beneath a scope, so it is a card
- * on the root's and a domain's and not on a landscape's, whose part of it is
- * on its own boards.
+ * Which cards depends on what the scope is by shape, never by its label, and
+ * the shapes add up rather than exclude each other: the organisation — the
+ * root — has the business layer, because the rail is one tree on its own page
+ * (ADR-0012 §4); a scope that draws has the pages of the records on its boards
+ * (the boards themselves are a table beneath, one row each); every scope has
+ * its decisions and its plans; and the register is over the tree beneath a
+ * scope, so it is a card wherever something is filed — a domain that draws a
+ * board of its own keeps it.
  *
  * Business, decisions and the roadmap are about the scope's own document and
  * come from {@link organisationPages}, which is one read of it; the register
@@ -48,12 +49,14 @@ export type OrganisationCardsProps = {
   /** Plans below this scope flagged as initiatives (ADR-0012 §7): the roadmap card's second line. */
   initiatives?: number
   /**
-   * Which cards, by the scope's shape. The business layer is the root's; the
-   * documentation is a scope's that draws, whose boards are a table under the
-   * cards rather than a card; the register is over what is beneath, so a scope
-   * that draws and holds nothing under it has no use for it.
+   * Which cards, by the scope's shape and additively — a domain that also
+   * draws keeps its register (`countScopes` counts it as both). The business
+   * layer is the root's; the documentation is a scope's that draws, whose
+   * boards are a table under the cards rather than a card; the register is
+   * over what is beneath, so a scope that draws and holds nothing under it has
+   * no use for it.
    */
-  level: 'organisation' | 'domain' | 'landscape'
+  shows: { business: boolean; documentation: boolean; register: boolean }
   onOpenBusiness: () => void
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
@@ -99,7 +102,7 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, register, initiatives = 0, level, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap,
+  pages, ready, register, initiatives = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap,
   onOpenRegister, onOpenDocumentation, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
@@ -125,7 +128,7 @@ export function OrganisationCards({
 
   return (
     <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', gap: 1.5, mb: 4 }} data-testid="organisation-cards">
-      {level === 'landscape' && (
+      {shows.documentation && (
         <OnePage
           icon={<DocumentIcon />}
           title={s('shell.documentation')}
@@ -142,7 +145,7 @@ export function OrganisationCards({
         />
       )}
 
-      {level === 'organisation' && <OnePage
+      {shows.business && <OnePage
         icon={<SheetIcon />}
         title={s('org.business')}
         count={businessCount}
@@ -222,7 +225,7 @@ export function OrganisationCards({
           root's own document — the register is derived over every scope
           (ADR-0012 §2), so its numbers come from the index and not from a
           load of its own. */}
-      {level !== 'landscape' && <OnePage
+      {shows.register && <OnePage
         icon={<RegisterIcon />}
         title={s('org.register')}
         count={[

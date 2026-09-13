@@ -10,7 +10,7 @@
  * not pin are new: **the root is not a row** (it is the screen), and a scope
  * with children folds shut.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { laidOut } from '../../model/testFixtures'
@@ -109,6 +109,23 @@ describe('the tree', () => {
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
+  })
+
+  /**
+   * A scope made by hand draws by default; unticked, it is a domain on
+   * purpose — a folder for other scopes, which until now only came about as
+   * a missing ancestor.
+   */
+  it('makes a domain on purpose when the landscape is unticked', async () => {
+    const { store } = show()
+    fireEvent.click(await screen.findByRole('button', { name: 'New scope under Retail' }))
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
+    const made = await store.load('retail/returns')
+    expect(made?.model.diagrams).toEqual([])
+    expect(made?.kind).toBe('domain')
   })
 
   /** Refused where a person can see it, rather than quietly suffixed. */
@@ -262,11 +279,19 @@ describe('a domain’s home', () => {
     expect(screen.getByTestId('scope-finance')).toBeDefined()
   })
 
-  it('offers the canvas on a scope that draws, and nothing of the kind on one that does not', async () => {
+  /**
+   * Flipped when a scope's first board became something its home offers: a
+   * domain shows the section empty, with the way to a landscape in it, rather
+   * than no section at all.
+   */
+  it('offers the canvas on a scope that draws, and an empty landscapes section on one that does not', async () => {
     show()
     fireEvent.click(await screen.findByTestId('home-retail'))
     await waitFor(() => expect(screen.getByTestId('open-decisions')).toBeDefined())
-    expect(screen.queryByTestId('boards')).toBeNull()
+    const boards = await screen.findByTestId('boards')
+    expect(within(boards).getByTestId('boards-empty')).toBeDefined()
+    expect(within(boards).queryByTestId('board-l7')).toBeNull()
+    expect(within(boards).getByTestId('new-board')).toBeDefined()
     fireEvent.click(screen.getByTestId('home-retail/warehouse'))
     expect(screen.getByTestId('organisation-name').textContent).toBe('Warehouse')
     const row = await screen.findByTestId('board-l7')
@@ -330,6 +355,20 @@ describe('the cards, per level', () => {
     expect(within(cards).getByTestId('open-register')).toBeDefined()
   })
 
+  /** A domain that draws a board of its own is both, and loses neither card. */
+  it('keep the register on a domain that draws a board of its own', async () => {
+    show([
+      scope('', 'Acme Logistics', false),
+      scope('retail', 'Retail'),
+      scope('retail/warehouse', 'Warehouse'),
+    ])
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(within(cards).getByTestId('open-documentation')).toBeDefined())
+    expect(within(cards).getByTestId('open-register')).toBeDefined()
+    expect(within(cards).queryByTestId('open-business')).toBeNull()
+  })
+
   it('give a landscape its documentation, its decisions and its plans', async () => {
     show()
     fireEvent.click(await screen.findByTestId('home-retail/warehouse'))
@@ -383,5 +422,50 @@ describe('the boards on a landscape’s home', () => {
     expect(screen.getByRole('tab', { name: /Finance 2028/ }).getAttribute('aria-selected')).toBe('true')
     // Opened on it, not switched to it: nothing to undo and nothing unsaved.
     expect(screen.getByTestId('saved-indicator').textContent).not.toContain('Unsaved')
+  })
+})
+
+/**
+ * A landscape is a scope that draws, and nothing says which scopes may (§1):
+ * the organisation, a domain and a team can each hold boards of their own.
+ * The canvas's own "new diagram" is behind a canvas a scope with no board is
+ * never given, so the way to a scope's first board is its home.
+ */
+describe('a scope’s first landscape', () => {
+  // Every one of these lands on the canvas, and jsdom has no layout for it.
+  beforeEach(() => installReactFlowMocks())
+
+  const makeOne = async (name?: string) => {
+    fireEvent.click(await screen.findByTestId('new-board'))
+    const field = await screen.findByLabelText('Name')
+    expect((field as HTMLInputElement).value).toBe('New landscape')
+    if (name) fireEvent.change(field, { target: { value: name } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+  }
+
+  it('is made from a domain’s home, and opened on it', async () => {
+    const { store } = show()
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    await makeOne('Retail today')
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    const retail = await store.load('retail')
+    expect(retail?.model.diagrams.map((d) => [d.id, d.kind, d.name])).toEqual([['new-landscape', 'layer7', 'Retail today']])
+    expect(retail?.activeDiagramId).toBe('new-landscape')
+  })
+
+  it('is made from the organisation’s own home just the same', async () => {
+    const { store } = show()
+    await screen.findByTestId('scope-retail')
+    await makeOne()
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    expect((await store.load(''))?.model.diagrams).toHaveLength(1)
+  })
+
+  it('takes a key beside the boards the scope already has', async () => {
+    const { store } = show()
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    await makeOne()
+    await waitFor(async () => expect((await store.load('finance'))?.model.diagrams).toHaveLength(2))
+    expect((await store.load('finance'))?.model.diagrams.map((d) => d.id)).toEqual(['l7', 'new-landscape'])
   })
 })

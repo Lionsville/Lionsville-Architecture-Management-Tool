@@ -146,6 +146,48 @@ describe('useOrganisation', () => {
     expect(entered.mock.calls[0][0].path).toBe('retail')
   })
 
+  /**
+   * A board for a scope that is already there: read-patch-write, since the
+   * home is outside any session, then entered on the board just made.
+   */
+  it('gives a scope with no board its first one, and enters it on that board', async () => {
+    const { held, entered, store } = mount([{
+      path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] },
+      activeDiagramId: '', logoLibrary: [],
+    }])
+    await settle()
+    act(() => held().addBoard(''))
+    expect(held().dialog).toEqual({ kind: 'newBoard', path: '', name: 'New landscape' })
+    act(() => held().setNewBoardName('Acme today'))
+    await act(async () => { held().createBoard(); await Promise.resolve() })
+    await settle()
+
+    const root = await store.load('')
+    expect(root?.model.diagrams).toEqual([
+      { id: 'new-landscape', kind: 'layer7', name: 'Acme today', members: [], geometry: { nodes: [] } },
+    ])
+    expect(entered).toHaveBeenCalledWith(
+      expect.objectContaining({ path: '', activeDiagramId: 'new-landscape' }),
+      { page: 'board', id: 'new-landscape' },
+    )
+  })
+
+  it('claims the next key when the usual one is taken', async () => {
+    const { held, store } = mount([{
+      path: 'retail',
+      model: {
+        name: 'Retail', elements: [], relations: [],
+        diagrams: [{ id: 'new-landscape', kind: 'layer7', name: 'Now', members: [], geometry: { nodes: [] } }],
+      },
+      activeDiagramId: 'new-landscape', logoLibrary: [],
+    }])
+    await settle()
+    act(() => held().addBoard('retail'))
+    await act(async () => { held().createBoard(); await Promise.resolve() })
+    await settle()
+    expect((await store.load('retail'))?.model.diagrams.map((d) => d.id)).toEqual(['new-landscape', 'new-landscape-2'])
+  })
+
   it('carries the page a scope was opened for', async () => {
     const { held, entered } = mount([{
       path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] },
