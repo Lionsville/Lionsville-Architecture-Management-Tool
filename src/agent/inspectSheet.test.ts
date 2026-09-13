@@ -22,13 +22,13 @@ function report(sheet: DesignDiagram) {
 describe('inspectSheet', () => {
   it('says the grid fits the window until the sheet fixes it, and every area is one column', () => {
     const held = report(SHEET)
-    expect(held.grid).toEqual({ maxSpan: 4 })
+    expect(held.grid).toEqual({ paper: 'A2', width: 2245, maxSpan: 4 })
     expect(held.areas.some.map((area) => [area.id, area.span])).toEqual([['fulfilment', 1], ['billing', 1]])
   })
 
   it('reports the columns and the spans the sheet was given', () => {
     const held = report({ ...SHEET, columns: 4, areaSpans: { billing: 2, fulfilment: 9 } })
-    expect(held.grid).toEqual({ columns: 4, maxSpan: 4 })
+    expect(held.grid).toEqual({ paper: 'A2', width: 2245, columns: 4, maxSpan: 4 })
     // Clamped to the widest an area may be, the way the page clamps it.
     expect(held.areas.some.map((area) => area.span)).toEqual([4, 2])
   })

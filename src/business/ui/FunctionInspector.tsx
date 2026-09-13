@@ -105,7 +105,7 @@ export type SheetActions = {
   /** Move one among its neighbours, up or down. One step, however many rows it renumbers. */
   moveElement(id: ElementId, by: -1 | 1): void
   /** The sheet's own fields: the rail, the journey, which areas, in which order and how wide. */
-  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns'>>): void
+  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper'>>): void
   /** Show an application where it is drawn — where the coverage links go. */
   onOpenElement(id: ElementId): void
 
@@ -642,6 +642,9 @@ function Picker({ label, options, picked, onPick, t }: {
   return (
     <Autocomplete
       multiple
+      // The list stays open after a pick: what supports a capability is
+      // usually several things, and closing after each was a click per row.
+      disableCloseOnSelect
       size="small"
       options={offered}
       value={held}

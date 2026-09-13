@@ -127,16 +127,25 @@ describe('the stakeholder rail', () => {
 })
 
 describe('the grid', () => {
-  it('is one column where nothing has been measured, and what the sheet fixes otherwise', () => {
+  it('is laid out on an A2 by default — wider than a window, and as many columns as fit it', () => {
     open()
+    // 2245 less the body's padding: seven columns of 300 with six gaps of 12.
+    expect(screen.getByTestId('sheet-canvas').getAttribute('data-width')).toBe('2213')
+    expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('7')
+  })
+
+  it('fits the window when the sheet says so, and takes the columns the sheet fixes', () => {
+    open({ sheet: { ...SHEET, paper: 'fit' } })
+    expect(screen.getByTestId('sheet-canvas').getAttribute('data-width')).toBe('fit')
+    // Nothing measured in a test: one column.
     expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('1')
     cleanup()
-    open({ sheet: { ...SHEET, columns: 3 } })
+    open({ sheet: { ...SHEET, paper: 'fit', columns: 3 } })
     expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('3')
   })
 
   it('gives an area the columns the sheet says, clamped to the grid', () => {
-    open({ sheet: { ...SHEET, columns: 3, areaSpans: { fulfilment: 2, billing: 9 } } })
+    open({ sheet: { ...SHEET, paper: 'fit', columns: 3, areaSpans: { fulfilment: 2, billing: 9 } } })
     expect(screen.getByTestId('sheet-area-fulfilment').getAttribute('data-span')).toBe('2')
     expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('3')
   })
@@ -151,7 +160,7 @@ describe('the grid', () => {
   })
 
   it('offers no width on a one-column grid, nor under readOnly', () => {
-    open()
+    open({ sheet: { ...SHEET, paper: 'fit' } })
     expect(screen.queryByLabelText('Make Fulfilment wider')).toBeNull()
     cleanup()
     open({ readOnly: true, sheet: { ...SHEET, columns: 3 } })

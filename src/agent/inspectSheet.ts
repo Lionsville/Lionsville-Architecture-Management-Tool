@@ -19,11 +19,11 @@
  * wherever it hangs, and a report that listed only the grouped ones would not
  * see the one a person had just made.
  */
-import { MAX_SPAN, sheetPage, spanOf } from '../business'
+import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, sheetPage, sheetPaperWidth, spanOf } from '../business'
 import type { Coverage } from '../business'
 import type { Diagram, Model } from '../model/normalised'
 import { toArrays } from '../model/normalised'
-import type { ElementId } from '../model/types'
+import type { ElementId, SheetPaper } from '../model/types'
 
 /** How many of each list the report carries. The totals beside them are whole. */
 export const SHEET_LIMIT = 40
@@ -57,10 +57,12 @@ export type SheetReport = {
   /** The stakeholder rail; empty when the sheet does not draw it. */
   actors: { total: number; some: { id: ElementId; name: string; depth: number; outside: boolean }[] }
   /**
-   * How the areas tile: the columns the sheet fixes — absent fits the window
-   * — and the widest an area may be told to be. Set with diagram.update.
+   * How the areas tile: the canvas the page is laid out on and its width in
+   * CSS pixels (none for `fit`), the columns the sheet fixes — absent fits
+   * the canvas — and the widest an area may be told to be. Set with
+   * diagram.update; a render at the canvas's width is `pageWidth`.
    */
-  grid: { columns?: number; maxSpan: number }
+  grid: { paper: SheetPaper; width?: number; columns?: number; maxSpan: number }
   areas: {
     total: number
     some: {
@@ -153,6 +155,8 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
       })),
     },
     grid: {
+      paper: isSheetPaper(diagram.paper) ? diagram.paper : DEFAULT_PAPER,
+      ...(sheetPaperWidth(diagram) !== undefined ? { width: sheetPaperWidth(diagram) } : {}),
       ...(diagram.columns !== undefined ? { columns: diagram.columns } : {}),
       maxSpan: MAX_SPAN,
     },

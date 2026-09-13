@@ -31,14 +31,16 @@ import type { PaperSize } from '../grid'
 export type ExportLayout = 'screen' | PaperSize
 
 export type SheetExportDialogProps = {
+  /** What the sheet is laid out on already, offered first. Absent = A1. */
+  initial?: ExportLayout
   /** Draw the page at the width, or as it is, and hand the picture over. Rejects when the browser declined. */
   onExport(layout: ExportLayout): Promise<void>
   onClose(): void
 }
 
-export function SheetExportDialog({ onExport, onClose }: SheetExportDialogProps) {
+export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDialogProps) {
   const { t } = useStrings()
-  const [layout, setLayout] = useState<ExportLayout>('A1')
+  const [layout, setLayout] = useState<ExportLayout>(initial ?? 'A1')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | undefined>(undefined)
 

@@ -57,7 +57,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon, ExportIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
-import { AREA_COLUMN, MAX_SPAN, packAreas, paperWidth, sheetColumns, spanOf, withSpan } from '../grid'
+import { AREA_COLUMN, MAX_SPAN, isPaperSize, packAreas, paperWidth, sheetColumns, sheetPaperWidth, spanOf, withSpan } from '../grid'
 import { sheetPage } from '../sheet'
 import type { Relation } from '../../model'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
@@ -219,11 +219,14 @@ export function SheetPage(props: SheetPageProps) {
   const author = readOnly ? undefined : { t, made, actions }
 
   /**
-   * The grid's width: what the page is being drawn for, or what the body
-   * measures — less its own padding, which the observer counts and the grid
-   * does not get.
+   * The width the page is laid out at: what a picture asked for, else the
+   * sheet's own paper, else the window. The grid gets it less the body's
+   * padding, which the observer counts and the grid does not. A canvas wider
+   * than the window scrolls sideways, which is what a wall-sized page in a
+   * laptop window is.
    */
-  const gridWidth = (exporting?.width ?? bodyWidth.width) - 32
+  const layoutWidth = exporting?.width ?? (sheet ? sheetPaperWidth(sheet) : undefined)
+  const gridWidth = (layoutWidth ?? bodyWidth.width) - 32
   const columns = sheet ? sheetColumns(sheet, gridWidth) : 1
   const packed = useMemo(() => (laidOut && sheet
     ? packAreas(laidOut.areas.map((area) => ({
@@ -232,7 +235,7 @@ export function SheetPage(props: SheetPageProps) {
       height: cards.heights[area.element.id] ?? 0,
     })), columns)
     : undefined), [laidOut, sheet, columns, cards.heights])
-  const fixedWidth = exporting?.width
+  const fixedWidth = layoutWidth
     ?? (sheet?.columns !== undefined ? columns * (AREA_COLUMN.min + AREA_COLUMN.gap) - AREA_COLUMN.gap + 32 : undefined)
   const panels = panelsShown && !exporting
 
@@ -328,7 +331,11 @@ export function SheetPage(props: SheetPageProps) {
             ? { flex: '1 1 auto', minWidth: 0, overflow: 'visible', p: 2 }
             : { flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}
         >
-        <Box sx={fixedWidth !== undefined ? { width: fixedWidth - 32, minWidth: fixedWidth - 32 } : undefined}>
+        <Box
+          data-testid="sheet-canvas"
+          data-width={fixedWidth !== undefined ? fixedWidth - 32 : 'fit'}
+          sx={fixedWidth !== undefined ? { width: fixedWidth - 32, minWidth: fixedWidth - 32 } : undefined}
+        >
           {laidOut?.journey ? (
             <JourneyBand
               journey={laidOut.journey}
@@ -460,7 +467,11 @@ export function SheetPage(props: SheetPageProps) {
         />
       )}
       {exportOpen && sheet && (
-        <SheetExportDialog onExport={exportPng} onClose={() => setExportOpen(false)} />
+        <SheetExportDialog
+          initial={isPaperSize(sheet.paper) ? sheet.paper : 'screen'}
+          onExport={exportPng}
+          onClose={() => setExportOpen(false)}
+        />
       )}
     </PageDialog>
   )

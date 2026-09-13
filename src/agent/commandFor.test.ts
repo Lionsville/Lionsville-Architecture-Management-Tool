@@ -321,6 +321,10 @@ describe('the trees a sheet is laid out from (ADR-0012 §4, §6)', () => {
     expect(commandFor('diagram.update', { id: 'sh-1', areaSpans: { billing: 'wide' } }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
     // A board has no grid.
     expect(commandFor('diagram.update', { id: 'l7', columns: 2 }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
+    // The canvas: a paper size, or the window; the default is not written.
+    expect(roundTrip(model, commandFor('diagram.update', { id: 'sh-1', paper: 'A0' }, view(model))).diagrams['sh-1'].paper).toBe('A0')
+    expect(roundTrip(model, commandFor('diagram.update', { id: 'sh-1', paper: 'A2' }, view(model))).diagrams['sh-1']).not.toHaveProperty('paper')
+    expect(commandFor('diagram.update', { id: 'sh-1', paper: 'B3' }, view(model))).toMatchObject({ refusal: 'agent.badArguments' })
   })
 
   it('diagram.update refuses a journey that is not a root step, a lane that is not an actor, an area that is not a root', () => {

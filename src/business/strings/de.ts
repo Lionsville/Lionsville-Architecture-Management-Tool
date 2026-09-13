@@ -71,6 +71,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.settingsRail': 'Beteiligte am Rand zeichnen',
   'sheet.settingsDraw': '{name} zeichnen',
 
+  'sheet.settingsPaper': 'Zeichenfläche',
+  'sheet.paperFit': 'An das Fenster anpassen',
   'sheet.settingsColumns': 'Spalten',
   'sheet.columnsFit': 'So viele wie passen',
   'sheet.wider': '{name} breiter machen',

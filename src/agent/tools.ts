@@ -858,7 +858,8 @@ const SPECS = [
       'Change what a laid-out view is OF (ADR-0012 §6). A sheet draws the journey `journeyId` names — a '
       + 'root step, whose children are the phases and their children the steps — with a row per actor in '
       + '`lanes`, and the function roots in `areas` in that order; `showActors` false hides the stakeholder '
-      + 'rail; `columns` fixes how many columns its areas are laid out in (absent fits the window) and '
+      + 'rail; `paper` is the canvas it is laid out on — A4 to A0 landscape, A2 by default, or fit for the '
+      + 'window; `columns` fixes how many columns its areas are laid out in (absent fits the canvas) and '
       + '`areaSpans` maps an area id to the columns it takes, its capabilities side by side inside it. '
       + 'A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
       + 'journey band, every root. Each list given replaces that list whole; null clears a field. A board '
@@ -871,7 +872,8 @@ const SPECS = [
         lanes: { type: 'array', description: 'A sheet: the actors that get a row of their own under the phases, in order.', items: { type: 'string' } },
         areas: { type: 'array', description: 'A sheet or a map: the function roots drawn, in order. Null draws every root.', items: { type: 'string' } },
         showActors: { type: 'boolean', description: 'A sheet: whether the stakeholder rail is drawn.' },
-        columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the window.' },
+        paper: { type: 'string', description: 'A sheet: the canvas it is laid out on. Null is the default, A2.', enum: ['A4', 'A3', 'A2', 'A1', 'A0', 'fit'] },
+        columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the canvas.' },
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
         asOf: { type: 'string', description: 'A board: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
       },

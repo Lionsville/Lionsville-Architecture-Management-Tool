@@ -11,7 +11,7 @@
  * densely in the sheet's own order, which is the priority. All of it is
  * arithmetic, so it is here rather than in the page, and tested in node.
  */
-import type { DesignDiagram, ElementId } from '../model'
+import type { DesignDiagram, ElementId, SheetPaper } from '../model'
 
 /** The narrowest an area column is drawn, and the gap between two. */
 export const AREA_COLUMN = { min: 300, gap: 12 } as const
@@ -113,4 +113,26 @@ const LONG_SIDE_MM: Record<PaperSize, number> = { A4: 297, A3: 420, A2: 594, A1:
 
 export function paperWidth(paper: PaperSize): number {
   return Math.round((LONG_SIDE_MM[paper] / 25.4) * 96)
+}
+
+/** What a sheet is laid out on when it does not say: a wall's worth, not a window's. */
+export const DEFAULT_PAPER: SheetPaper = 'A2'
+
+export function isPaperSize(value: unknown): value is PaperSize {
+  return typeof value === 'string' && (PAPER_SIZES as readonly string[]).includes(value)
+}
+
+export function isSheetPaper(value: unknown): value is SheetPaper {
+  return value === 'fit' || isPaperSize(value)
+}
+
+/**
+ * The width a sheet lays itself out at, in CSS pixels — or nothing, for a
+ * sheet that fits the window it is in. A value the sheet does not know is
+ * read as the default rather than refused: a file hand-edited to say `B3`
+ * still opens, as a page.
+ */
+export function sheetPaperWidth(sheet: Pick<DesignDiagram, 'paper'>): number | undefined {
+  const paper = isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER
+  return paper === 'fit' ? undefined : paperWidth(paper)
 }

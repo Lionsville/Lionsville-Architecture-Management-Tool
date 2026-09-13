@@ -33,7 +33,8 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
 import { journeyOf } from '../lanes'
-import { MAX_SPAN } from '../grid'
+import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperWidth } from '../grid'
+import type { SheetPaper } from '../../model'
 import { rootsOfKind } from '../sheetDiagram'
 import type { SheetActions } from './FunctionInspector'
 
@@ -152,9 +153,25 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
           label={<Typography sx={{ fontSize: 12 }}>{t('sheet.settingsRail')}</Typography>}
         />
 
-        {/* How many columns the areas tile in. Fixed, a sheet laid out for an
-            A1 is the same page on a laptop, scrolling sideways; as many as
-            fit is the window's answer, and the default. */}
+        {/* The canvas: a sheet of paper the page is laid out on, scrolling
+            sideways in a window narrower than it, or the window itself. */}
+        <TextField
+          select size="small" fullWidth
+          label={t('sheet.settingsPaper')}
+          value={isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER}
+          slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsPaper') } }}
+          onChange={(e) => actions.updateSheet({
+            paper: e.target.value === DEFAULT_PAPER ? undefined : e.target.value as SheetPaper,
+          })}
+        >
+          {PAPER_SIZES.map((paper) => (
+            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} px</MenuItem>
+          ))}
+          <MenuItem value="fit">{t('sheet.paperFit')}</MenuItem>
+        </TextField>
+
+        {/* How many columns the areas tile in: as many as the canvas has room
+            for, which is the default, or a fixed count. */}
         <TextField
           select size="small" fullWidth
           label={t('sheet.settingsColumns')}

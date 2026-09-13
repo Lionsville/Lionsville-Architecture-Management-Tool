@@ -71,6 +71,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.settingsRail': 'Belanghebbenden ernaast tekenen',
   'sheet.settingsDraw': '{name} tekenen',
 
+  'sheet.settingsPaper': 'Canvas',
+  'sheet.paperFit': 'Aan het venster aanpassen',
   'sheet.settingsColumns': 'Kolommen',
   'sheet.columnsFit': 'Zoveel als er passen',
   'sheet.wider': '{name} breder maken',

@@ -85,6 +85,8 @@ export const EN = {
   'sheet.settingsNoLanes': 'No row of its own yet — a lane appears when a step is on it.',
   'sheet.settingsRail': 'Draw the stakeholder rail',
   'sheet.settingsDraw': 'Draw {name}',
+  'sheet.settingsPaper': 'Canvas',
+  'sheet.paperFit': 'Fit the window',
   'sheet.settingsColumns': 'Columns',
   'sheet.columnsFit': 'As many as fit',
   'sheet.wider': 'Make {name} wider',

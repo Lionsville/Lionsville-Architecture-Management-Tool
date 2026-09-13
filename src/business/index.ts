@@ -26,7 +26,8 @@ export type { Journey, Lane, LaneCell } from './lanes'
 export { rootsOfKind, seedSheet, unmappedFunctions } from './sheetDiagram'
 export { sheetPage } from './sheet'
 export {
-  AREA_COLUMN, MAX_SPAN, PAPER_SIZES, columnsFor, packAreas, paperWidth, sheetColumns, spanOf, withSpan,
+  AREA_COLUMN, DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, columnsFor, isPaperSize, isSheetPaper, packAreas, paperWidth,
+  sheetColumns, sheetPaperWidth, spanOf, withSpan,
 } from './grid'
 export type { PackItem, PackedArea, PaperSize } from './grid'
 export { mapPage, seedMap } from './map'

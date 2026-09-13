@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { columnsFor, packAreas, paperWidth, sheetColumns, spanOf, withSpan } from './grid'
+import { columnsFor, packAreas, paperWidth, sheetColumns, sheetPaperWidth, spanOf, withSpan } from './grid'
 
 describe('how many columns fit', () => {
   it('is one on anything narrower than a column, and never zero', () => {
@@ -46,6 +46,13 @@ describe('paper', () => {
   it('is the long side of the ISO sheet at 96 dpi', () => {
     expect(paperWidth('A4')).toBe(1123)
     expect(paperWidth('A0')).toBe(4494)
+  })
+
+  it('is what a sheet is laid out on: A2 unless it says, and nothing at all for the window', () => {
+    expect(sheetPaperWidth({})).toBe(2245)
+    expect(sheetPaperWidth({ paper: 'A0' })).toBe(4494)
+    expect(sheetPaperWidth({ paper: 'fit' })).toBeUndefined()
+    expect(sheetPaperWidth({ paper: 'B3' as never })).toBe(2245)
   })
 })
 

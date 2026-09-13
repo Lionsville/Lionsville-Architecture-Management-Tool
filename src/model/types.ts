@@ -517,6 +517,9 @@ export interface Geometry {
   routes?: RouteGeometry[];
 }
 
+/** The widths a sheet is laid out at: ISO 216 landscape, or the window. */
+export type SheetPaper = 'fit' | 'A4' | 'A3' | 'A2' | 'A1' | 'A0';
+
 export interface DesignDiagram {
   id: string;
   /**
@@ -594,10 +597,16 @@ export interface DesignDiagram {
   areaSpans?: Record<ElementId, number>;
   /**
    * A sheet: the number of columns the grid is laid out in. Absent fits as
-   * many as the window has room for; a number fixes it, so a sheet made for
-   * an A1 print is laid out the same on a laptop, scrolling sideways.
+   * many as the canvas has room for; a number fixes it.
    */
   columns?: number;
+  /**
+   * A sheet: how wide the page is laid out — a sheet of paper, landscape,
+   * scrolling sideways in a window narrower than it, or `fit`, the window
+   * itself. Absent is A2: a business architecture is drawn for a wall, and
+   * a laptop window is a viewport onto it rather than its size.
+   */
+  paper?: SheetPaper;
   /**
    * What is ON this view (ADR-0012 §6), and what that means from here: which
    * band an element sits in, and which dashed group it belongs to.

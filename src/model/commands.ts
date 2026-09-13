@@ -58,7 +58,7 @@ export type DiagramPatch = Partial<Pick<Diagram,
   // A sheet is laid out from these four the way a landscape is laid out from
   // its coordinates (ADR-0012 §6): they say what the page is OF, so they are
   // the sheet's equivalent of a drag and belong on the same patch.
-  | 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns'>>
+  | 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper'>>
 
 /**
  * The board's own numbers: how big it is, how wide its bands are, and whether

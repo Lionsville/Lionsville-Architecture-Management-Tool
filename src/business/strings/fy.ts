@@ -71,6 +71,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'sheet.settingsRail': 'Belanghawwenden dernjonken tekenje',
   'sheet.settingsDraw': '{name} tekenje',
 
+  'sheet.settingsPaper': 'Kanvas',
+  'sheet.paperFit': 'Oan it finster oanpasse',
   'sheet.settingsColumns': 'Kolommen',
   'sheet.columnsFit': 'Safolle as der passe',
   'sheet.wider': '{name} breder meitsje',

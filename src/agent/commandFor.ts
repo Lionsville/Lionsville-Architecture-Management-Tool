@@ -28,7 +28,7 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
+import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
 import {
@@ -1171,6 +1171,7 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     ?? only('showActors', diagram.kind === 'sheet', 'a sheet')
     ?? only('columns', diagram.kind === 'sheet', 'a sheet')
     ?? only('areaSpans', diagram.kind === 'sheet', 'a sheet')
+    ?? only('paper', diagram.kind === 'sheet', 'a sheet')
     ?? only('areas', laidOut, 'a sheet or a map')
     ?? only('asOf', !laidOut, 'a board')
   if (wrong) return wrong
@@ -1209,6 +1210,11 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
       return refused('agent.badArguments', '"columns" must be a whole number of at least 1')
     }
     patch.columns = args.columns
+  }
+  if (args.paper === null) patch.paper = undefined
+  else if (args.paper !== undefined) {
+    if (!isSheetPaper(args.paper)) return refused('agent.badArguments', '"paper" is A4, A3, A2, A1, A0 or fit')
+    patch.paper = args.paper === DEFAULT_PAPER ? undefined : args.paper
   }
   if (args.areaSpans === null) patch.areaSpans = undefined
   else if (args.areaSpans !== undefined) {
