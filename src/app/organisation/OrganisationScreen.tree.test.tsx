@@ -10,7 +10,7 @@
  * not pin are new: **the root is not a row** (it is the screen), and a scope
  * with children folds shut.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { laidOut } from '../../model/testFixtures'
@@ -19,6 +19,11 @@ import { renderApp } from '../testing/renderShell'
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
 
 afterEach(() => cleanup())
+// A home's *Open* mounts the canvas, which asks jsdom for the pieces it has
+// not got. Installed once for the file: a test that mounts it before the
+// shims are there throws inside React Flow, and the error boundary's
+// recreate is a stack trace on stderr and a second mount nobody asked for.
+beforeAll(() => installReactFlowMocks())
 
 const TODAY = () => '2026-09-12'
 const board = () => laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [] })
@@ -424,8 +429,6 @@ describe('the boards on a landscape’s home', () => {
   })
 
   it('opens the row’s own board, not the one that was active', async () => {
-    // The canvas mounts for this one, and jsdom has no layout for it.
-    installReactFlowMocks()
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
     const row = await screen.findByTestId('board-next')
@@ -445,7 +448,6 @@ describe('the boards on a landscape’s home', () => {
  */
 describe('a scope’s first landscape', () => {
   // Every one of these lands on the canvas, and jsdom has no layout for it.
-  beforeEach(() => installReactFlowMocks())
 
   const makeOne = async (name?: string) => {
     fireEvent.click(await screen.findByTestId('new-board'))
