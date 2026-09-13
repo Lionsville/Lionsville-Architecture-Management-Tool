@@ -198,7 +198,7 @@ export type AppProps = {
    * Tell me when a project's folder changed under us. Absent where nothing can
    * watch, and the workspace then never leaves the states it can reach alone.
    */
-  watchProject?: (path: ScopePath, onChanged: () => void) => () => void
+  watchProject?: (path: ScopePath, onChanged: () => void, wholeTree?: boolean) => () => void
   /**
    * Menu items and files the OS opened us with. Subscribed to here for the
    * commands about folders, and handed to the workspace for the ones about the
@@ -387,7 +387,7 @@ export function App({
    */
   const watchTree = useMemo(() => {
     if (!watchProject) return undefined
-    return (onChanged: () => void) => watchProject(ROOT_SCOPE, onChanged)
+    return (onChanged: () => void) => watchProject(ROOT_SCOPE, onChanged, true)
   }, [watchProject])
   const tree = useIndex({ scopes: projects, watch: watchTree, onFailure: failed })
 

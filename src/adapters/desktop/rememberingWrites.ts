@@ -28,16 +28,30 @@ export type FolderChannel = {
 }
 
 export function rememberingWrites(files: DesktopFiles): FolderChannel {
-  /** Path to what we last left there. `undefined` means we removed it. */
-  const written = new Map<string, string | undefined>()
+  /**
+   * Path to what we last saw there — written or read. `undefined` means we
+   * removed it.
+   *
+   * Reads count as well as writes: a sync client setting an attribute, Finder
+   * tagging a file, git refreshing its stat cache all raise a change event
+   * whose bytes are exactly what this app already has on screen. A file this
+   * session has read is one it can vouch for, and a report that says the same
+   * bytes is not news.
+   */
+  const seen = new Map<string, string | undefined>()
   const keyFor = (root: string, path: string) => `${root} ${path}`
 
   return {
     files: {
       ...files,
+      async read(root, path) {
+        const held = await files.read(root, path)
+        if (held) seen.set(keyFor(root, path), held.sha256)
+        return held
+      },
       async write(root, path, bytes): Promise<DesktopStamp> {
         const stamp = await files.write(root, path, bytes)
-        written.set(keyFor(root, path), stamp.sha256)
+        seen.set(keyFor(root, path), stamp.sha256)
         return stamp
       },
       async remove(root, path, options): Promise<void> {
@@ -45,13 +59,13 @@ export function rememberingWrites(files: DesktopFiles): FolderChannel {
         // Only the path asked for. A recursive remove takes files with it whose
         // names we never had, and those come back as somebody's change — which
         // is honest, since we cannot claim what we did not name.
-        written.set(keyFor(root, path), undefined)
+        seen.set(keyFor(root, path), undefined)
       },
     },
     ours(change) {
       const key = keyFor(change.root, change.path)
-      if (!written.has(key)) return false
-      return written.get(key) === change.stamp?.sha256
+      if (!seen.has(key)) return false
+      return seen.get(key) === change.stamp?.sha256
     },
   }
 }

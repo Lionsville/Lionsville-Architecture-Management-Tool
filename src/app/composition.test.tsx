@@ -32,6 +32,50 @@ function channel(): DesktopFiles {
   }
 }
 
+describe('inWorkingDirectory — what a scope hears about', () => {
+  function listening() {
+    let listener: ((change: { root: string; path: string; stamp?: { mtimeMs: number; size: number; sha256: string } }) => void) | undefined
+    const files = { ...channel(), onChanged: (held: typeof listener) => { listener = held; return () => {} } }
+    const shell = inWorkingDirectory({} as Shell, files as never, { root: '/work', name: 'work' })
+    const heard: string[] = []
+    const report = (path: string) => listener?.({ root: '/work', path, stamp: { mtimeMs: 1, size: 1, sha256: 'x' } })
+    return { shell, heard, report }
+  }
+
+  it('tells the open scope about its own files and nothing else', () => {
+    const { shell, heard, report } = listening()
+    shell.watchProject!('acme', () => heard.push('acme'))
+    report('acme/model.json')
+    report('acme/docs/erp.md')
+    // A landscape filed under the domain, a README beside scope.json, an
+    // export saved into the folder, another domain: none of them this scope's.
+    report('acme/rail/model.json')
+    report('acme/README.md')
+    report('acme/landscape.lvarch')
+    report('finance/model.json')
+    report('scope.json')
+    expect(heard).toHaveLength(2)
+  })
+
+  it('tells the tree about everything under it', () => {
+    const { shell, heard, report } = listening()
+    shell.watchProject!('', () => heard.push('tree'), true)
+    report('acme/rail/model.json')
+    report('scope.json')
+    report('acme/README.md')
+    expect(heard).toHaveLength(3)
+  })
+
+  it('tells the organisation, opened on a page, about its own files only', () => {
+    const { shell, heard, report } = listening()
+    shell.watchProject!('', () => heard.push('root'))
+    report('acme/rail/model.json')
+    report('scope.json')
+    report('diagrams/l7.json')
+    expect(heard).toHaveLength(2)
+  })
+})
+
 describe('inWorkingDirectory', () => {
   it('keeps every method of the folder settings store, not only the one it wraps', async () => {
     const shell = inWorkingDirectory({} as Shell, channel(), { root: '/work', name: 'work' })

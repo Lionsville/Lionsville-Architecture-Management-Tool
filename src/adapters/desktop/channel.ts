@@ -110,7 +110,8 @@ export type DesktopAgent = {
   newToken(): Promise<AgentServerStatus>
 }
 
-export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: number }
+/** What a read hands back: the bytes, and the fingerprint the watcher will report them under. */
+export type DesktopFileContents = { bytes: Uint8Array; mtimeMs: number; size: number; sha256: string }
 
 /**
  * Enough to tell our own write from somebody else's — the four fields

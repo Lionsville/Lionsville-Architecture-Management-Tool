@@ -123,7 +123,12 @@ export async function readFile(root: string, path: string): Promise<DesktopFileC
   try {
     const [bytes, held] = await Promise.all([read(target), stat(target)])
     if (!held.isFile()) return undefined
-    return { bytes: new Uint8Array(bytes), mtimeMs: held.mtimeMs, size: held.size }
+    // The same fingerprint the watcher reports, so the renderer can tell a
+    // report about bytes it has already seen from one about new ones.
+    return {
+      bytes: new Uint8Array(bytes), mtimeMs: held.mtimeMs, size: held.size,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    }
   } catch {
     return undefined
   }

@@ -46,6 +46,18 @@ describe('rememberingWrites', () => {
     expect(held.ours({ root: '/work', path: 'model.json', stamp: stamp('different') })).toBe(false)
   })
 
+  it('recognises a report whose bytes are what we last read', async () => {
+    const held = rememberingWrites({
+      ...channel(),
+      read: () => Promise.resolve({ bytes: new Uint8Array([1]), mtimeMs: 1, size: 1, sha256: 'seen' }),
+    })
+    await held.files.read('/work', 'acme/landscape/model.json')
+    expect(held.ours({ root: '/work', path: 'acme/landscape/model.json', stamp: stamp('seen') })).toBe(true)
+    expect(held.ours({ root: '/work', path: 'acme/landscape/model.json', stamp: stamp('other') })).toBe(false)
+    // Gone since we read it is somebody's doing.
+    expect(held.ours({ root: '/work', path: 'acme/landscape/model.json' })).toBe(false)
+  })
+
   it('does not recognise a file we never wrote', () => {
     const held = rememberingWrites(channel())
     expect(held.ours({ root: '/work', path: 'model.json', stamp: stamp('abc') })).toBe(false)

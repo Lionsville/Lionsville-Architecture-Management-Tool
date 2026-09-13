@@ -54,6 +54,7 @@ import { browserStorage } from '../adapters/webStorage/available'
 import { WebStoragePreferencesStore } from '../adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageScopeStore } from '../adapters/webStorage/WebStorageScopeStore'
 import type { ScopePath } from '../projects/scopePath'
+import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
@@ -72,7 +73,11 @@ import type { ScopeStore } from '../ports/ScopeStore'
  * workspace is remounted per scope, and a listener per scope ever opened is a
  * leak with a slow fuse.
  */
-export type WatchProject = (path: ScopePath, onChanged: () => void) => () => void
+/**
+ * Hear about changes to one scope's own files — or, with `wholeTree`, to
+ * anything under it, which is what the index over the tree asks for.
+ */
+export type WatchProject = (path: ScopePath, onChanged: () => void, wholeTree?: boolean) => () => void
 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
@@ -251,17 +256,23 @@ export function inWorkingDirectory(
   const channel = rememberingWrites(files)
   const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
 
-  const watchProject: WatchProject = (scope, onChanged) => {
+  const watchProject: WatchProject = (scope, onChanged, wholeTree = false) => {
     // Watching the whole folder rather than one scope: it is one watcher for
     // the window, and watching the same root twice is a no-op in main. Nothing
     // unwatches it — another scope may be opened a second later, and the
     // watcher costs one handle.
     void channel.files.watch(directory.root).catch(() => undefined)
-    // The scope's own files and the scopes filed under it: what is on screen is
-    // this scope, so a change below it is a change to what is open.
+    // The scope's OWN files: what is on screen is this scope's document, and
+    // a landscape filed under a domain being edited elsewhere, a README
+    // dropped beside `scope.json`, an export saved into the folder are none of
+    // them a change to it. `isFormatPath` is the one rule for which paths a
+    // scope's folder holds, and it excludes a nested scope by construction.
+    // The index asks for the whole tree instead, because a scope three levels
+    // down renaming its ERP is exactly what it exists to notice.
     const prefix = scope === '' ? '' : `${scope}/`
     return channel.files.onChanged((change) => {
       if (change.root !== directory.root || !change.path.startsWith(prefix)) return
+      if (!wholeTree && !isFormatPath(change.path.slice(prefix.length))) return
       if (channel.ours(change)) return
       onChanged()
     })
