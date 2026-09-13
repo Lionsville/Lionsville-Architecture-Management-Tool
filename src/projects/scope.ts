@@ -39,10 +39,10 @@ import type { ScopePath } from './scopePath'
  * says the wrong word about itself stops working, and a folder saying the wrong
  * word about itself is a person's business and not a fault.
  */
-export type ScopeKind = 'organisation' | 'domain' | 'programme' | 'landscape'
+export type ScopeKind = 'organisation' | 'domain' | 'programme' | 'team' | 'landscape'
 
 export const SCOPE_KINDS: readonly ScopeKind[] = [
-  'organisation', 'domain', 'programme', 'landscape',
+  'organisation', 'domain', 'programme', 'team', 'landscape',
 ]
 
 export function isScopeKind(value: unknown): value is ScopeKind {

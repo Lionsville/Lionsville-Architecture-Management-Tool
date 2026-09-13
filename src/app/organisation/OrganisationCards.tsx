@@ -3,9 +3,9 @@
  *
  * Which cards depends on what the scope is by shape, never by its label: the
  * organisation — the root — has the business layer, because the rail is one
- * tree on its own page (ADR-0012 §4); a scope that draws has its views and
- * the pages of the records on them; and every scope has its decisions and
- * its plans. The register is over the tree beneath a scope, so it is a card
+ * tree on its own page (ADR-0012 §4); a scope that draws has the pages of
+ * the records on its boards (the boards themselves are a table beneath, one
+ * row each); and every scope has its decisions and its plans. The register is over the tree beneath a scope, so it is a card
  * on the root's and a domain's and not on a landscape's, whose part of it is
  * on its own boards.
  *
@@ -28,7 +28,7 @@ import type { Translate } from '../../i18n'
 import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisions'
 import { CHECK_SENTENCE, PLAN_STATUS_LABEL } from '../../roadmap'
 import { RELATION_LABEL } from '../../model'
-import { DecisionIcon, DocumentIcon, LandscapeIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
+import { DecisionIcon, DocumentIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
 
@@ -49,9 +49,9 @@ export type OrganisationCardsProps = {
   initiatives?: number
   /**
    * Which cards, by the scope's shape. The business layer is the root's; the
-   * views and the documentation are a scope's that draws; the register is over
-   * what is beneath, so a scope that draws and holds nothing under it has no
-   * use for it.
+   * documentation is a scope's that draws, whose boards are a table under the
+   * cards rather than a card; the register is over what is beneath, so a scope
+   * that draws and holds nothing under it has no use for it.
    */
   level: 'organisation' | 'domain' | 'landscape'
   onOpenBusiness: () => void
@@ -60,8 +60,6 @@ export type OrganisationCardsProps = {
   onOpenDecisions: () => void
   onOpenRoadmap: () => void
   onOpenRegister: () => void
-  /** Onto the canvas — the views card's door. */
-  onOpenViews?: () => void
   /** The documentation page, as the bar opens it. */
   onOpenDocumentation?: () => void
   s: Translate
@@ -102,7 +100,7 @@ function tallyLine<T extends string>(
 
 export function OrganisationCards({
   pages, ready, register, initiatives = 0, level, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap,
-  onOpenRegister, onOpenViews, onOpenDocumentation, s,
+  onOpenRegister, onOpenDocumentation, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -127,19 +125,6 @@ export function OrganisationCards({
 
   return (
     <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', gap: 1.5, mb: 4 }} data-testid="organisation-cards">
-      {level === 'landscape' && (
-        <OnePage
-          icon={<LandscapeIcon />}
-          title={s('org.views')}
-          count={ready ? plural(s, { one: 'org.diagramsOne', other: 'org.diagramsOther' }, pages.views) : undefined}
-          action={(
-            <Button size="small" onClick={onOpenViews} sx={quiet} data-testid="open-views">
-              {s('picker.open')}
-            </Button>
-          )}
-        />
-      )}
-
       {level === 'landscape' && (
         <OnePage
           icon={<DocumentIcon />}

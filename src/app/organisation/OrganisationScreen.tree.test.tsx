@@ -16,6 +16,7 @@ import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
+import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
 
 afterEach(() => cleanup())
 
@@ -265,10 +266,11 @@ describe('a domain’s home', () => {
     show()
     fireEvent.click(await screen.findByTestId('home-retail'))
     await waitFor(() => expect(screen.getByTestId('open-decisions')).toBeDefined())
-    expect(screen.queryByTestId('open-canvas')).toBeNull()
+    expect(screen.queryByTestId('boards')).toBeNull()
     fireEvent.click(screen.getByTestId('home-retail/warehouse'))
     expect(screen.getByTestId('organisation-name').textContent).toBe('Warehouse')
-    fireEvent.click(await screen.findByTestId('open-canvas'))
+    const row = await screen.findByTestId('board-l7')
+    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
   })
 })
@@ -328,17 +330,58 @@ describe('the cards, per level', () => {
     expect(within(cards).getByTestId('open-register')).toBeDefined()
   })
 
-  it('give a landscape its views, its documentation, its decisions and its plans', async () => {
+  it('give a landscape its documentation, its decisions and its plans', async () => {
     show()
     fireEvent.click(await screen.findByTestId('home-retail/warehouse'))
     const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(cards.textContent).toContain('1 diagram'))
+    await waitFor(() => expect(within(cards).getByTestId('open-documentation')).toBeDefined())
     expect(within(cards).queryByTestId('open-business')).toBeNull()
     expect(within(cards).queryByTestId('open-register')).toBeNull()
     expect(within(cards).getByTestId('open-decisions')).toBeDefined()
     expect(within(cards).getByTestId('open-roadmap')).toBeDefined()
-    expect(within(cards).getByTestId('open-documentation')).toBeDefined()
-    fireEvent.click(within(cards).getByTestId('open-views'))
+  })
+})
+
+/**
+ * A landscape's boards are a table on its home, one row each with its own
+ * way in — a future version of the landscape (a board with `asOf`, ADR-0009)
+ * is a row beside the current one rather than a tab behind it, and opening a
+ * row lands on that board.
+ */
+describe('the boards on a landscape’s home', () => {
+  const twoBoards = (): ScopeSnapshot => ({
+    path: 'finance',
+    model: {
+      name: 'Finance', elements: [], relations: [],
+      diagrams: [
+        laidOut({ id: 'now', kind: 'layer7' as const, name: 'Finance today', placements: [] }),
+        laidOut({ id: 'next', kind: 'layer7' as const, name: 'Finance 2028', asOf: '2028-01-01', placements: [] }),
+        laidOut({ id: 'sheet', kind: 'sheet' as const, name: 'Business', placements: [] }),
+      ],
+    },
+    activeDiagramId: 'now',
+    logoLibrary: [],
+  })
+
+  it('lists every board with the day it shows, and no laid-out view', async () => {
+    show([scope('', 'Acme Logistics', false), twoBoards()])
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    const boards = await screen.findByTestId('boards')
+    expect(within(boards).getByTestId('board-now').textContent).toContain('Today')
+    expect(within(boards).getByTestId('board-next').textContent).toContain('2028')
+    expect(within(boards).queryByTestId('board-sheet')).toBeNull()
+  })
+
+  it('opens the row’s own board, not the one that was active', async () => {
+    // The canvas mounts for this one, and jsdom has no layout for it.
+    installReactFlowMocks()
+    show([scope('', 'Acme Logistics', false), twoBoards()])
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    const row = await screen.findByTestId('board-next')
+    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    expect(screen.getByRole('tab', { name: /Finance 2028/ }).getAttribute('aria-selected')).toBe('true')
+    // Opened on it, not switched to it: nothing to undo and nothing unsaved.
+    expect(screen.getByTestId('saved-indicator').textContent).not.toContain('Unsaved')
   })
 })

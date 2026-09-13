@@ -283,6 +283,7 @@ export const EN = {
   'scope.kind.organisation': 'Organisation',
   'scope.kind.domain': 'Domain',
   'scope.kind.programme': 'Programme',
+  'scope.kind.team': 'Team',
   'scope.kind.landscape': 'Landscape',
   'picker.create': 'Create',
   'picker.loadFailed': 'That project could not be opened.',
@@ -463,6 +464,7 @@ export const EN = {
   'org.kindOrganisation': 'Organisation',
   'org.kindDomain': 'Domain',
   'org.kindProgramme': 'Programme',
+  'org.kindTeam': 'Team',
   'org.kindLandscape': 'Landscape',
   'org.filedUnder': 'Filed under',
   'org.filedUnderHelp': 'Moving changes the address of this scope and of everything under it. The content is untouched.',
@@ -495,7 +497,17 @@ export const EN = {
   'org.unmappedOther': '{count} functions not yet mapped to a domain',
   'org.allMapped': 'Every function is mapped to a domain.',
   /** A landscape's home: its views, and how many of its records have a page. */
+  /**
+   * The table on a landscape's home: every board, one row each, so a future
+   * version of the landscape is a row beside the current one.
+   */
   'org.views': 'Views',
+  'org.viewLayer7': 'Landscape',
+  'org.viewContainer': 'Containers',
+  'org.viewAsOf': 'As of {date}',
+  'org.viewToday': 'Today',
+  'org.onItOne': '{count} on it',
+  'org.onItOther': '{count} on it',
   'org.describedOne': '{count} of {total} described',
   'org.describedOther': '{count} of {total} described',
   'org.recordsOne': '{count} record',
@@ -510,8 +522,6 @@ export const EN = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.nothingHere': 'Nothing at this level yet.',
-  /** A scope's home, when the scope draws: the way onto its canvas. */
-  'org.openCanvas': 'Open the canvas',
 
   // The tree of scopes beneath.
   'org.tree': 'Domains and landscapes',

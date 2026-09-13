@@ -35,6 +35,9 @@ import { LOCALE } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { Language, Translate } from '../../i18n'
 import { countScopes, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
+import { isBoardKind } from '../../model/placement'
+import type { DesignDiagram } from '../../model'
+
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
 import type { Finding } from '../../projects/checks'
@@ -208,18 +211,9 @@ export function OrganisationScreen({
           {/* Identity. A folder nobody has named asks for a name where the
               heading would be, rather than showing a blank one. */}
           {named || !atRoot ? (
-            <Stack direction="row" alignItems="baseline" spacing={2}>
-              <Typography sx={{ fontSize: 28, fontWeight: 500 }} data-testid="organisation-name">
-                {heading}
-              </Typography>
-              {/* A scope that draws has a canvas; its home is a stop on the
-                  way to it, so the way on is beside the name. */}
-              {draws && !atRoot && (
-                <Button size="small" variant="contained" onClick={() => organisation.open(at)} data-testid="open-canvas">
-                  {s('org.openCanvas')}
-                </Button>
-              )}
-            </Stack>
+            <Typography sx={{ fontSize: 28, fontWeight: 500 }} data-testid="organisation-name">
+              {heading}
+            </Typography>
           ) : (
             <NameTheOrganisation onName={organisation.nameOrganisation} s={s} />
           )}
@@ -291,11 +285,23 @@ export function OrganisationScreen({
               initiatives={initiatives}
               level={level}
               onOpenRegister={() => setRegisterOpen(true)}
-              onOpenViews={() => organisation.open(at)}
               onOpenDocumentation={() => organisation.open(at, { page: 'documentation' })}
               s={s}
             />}
           </Box>
+
+          {/* The boards, one row each: a scope that draws is a stop on the way
+              to its canvas, and the way on is the row of the board you want —
+              a future version of the landscape sits beside the current one
+              here rather than behind it on a tab. */}
+          {draws && (
+            <BoardsTable
+              boards={root.model.diagrams.filter((diagram) => isBoardKind(diagram.kind))}
+              onOpen={(id) => organisation.open(at, { page: 'board', id })}
+              language={language}
+              s={s}
+            />
+          )}
 
           {/* The tree. A fresh folder has none, and says so with the examples
               underneath rather than with an empty heading. */}
@@ -420,6 +426,58 @@ export function OrganisationScreen({
         onCancel={organisation.closeDialog}
         onConfirm={organisation.confirmDelete}
       />
+    </Box>
+  )
+}
+
+/**
+ * Every board the scope draws, one row each, oldest first as the model holds
+ * them. What a row says is what tells two boards of one landscape apart: the
+ * kind, the day it shows (ADR-0009) and how much is on it.
+ */
+function BoardsTable({ boards, onOpen, language, s }: {
+  boards: readonly DesignDiagram[]
+  onOpen: (id: string) => void
+  language: Language
+  s: Translate
+}) {
+  return (
+    <Box sx={{ mb: 4 }} data-testid="boards">
+      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
+        {s('org.views')}
+      </Typography>
+      {boards.map((board) => (
+        <Stack
+          key={board.id}
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          data-testid={`board-${board.id}`}
+          sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 500 }}>{board.name}</Typography>
+            <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+              {[
+                s(board.kind === 'container' ? 'org.viewContainer' : 'org.viewLayer7'),
+                // The day the board shows. A board with no date moves with
+                // the calendar, and says so rather than printing today's.
+                board.asOf
+                  ? s('org.viewAsOf', {
+                    date: new Date(board.asOf).toLocaleDateString(LOCALE[language], {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    }),
+                  })
+                  : s('org.viewToday'),
+                plural(s, { one: 'org.onItOne', other: 'org.onItOther' }, board.members.length),
+              ].join(' · ')}
+            </Typography>
+          </Box>
+          <Button size="small" onClick={() => onOpen(board.id)} sx={{ fontSize: 11, minWidth: 0, px: 1 }}>
+            {s('picker.open')}
+          </Button>
+        </Stack>
+      ))}
     </Box>
   )
 }

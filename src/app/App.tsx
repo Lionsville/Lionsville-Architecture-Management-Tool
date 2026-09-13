@@ -130,6 +130,8 @@ export type InitialPage =
   | { page: 'document'; id: ElementId }
   /** The documentation page as the bar opens it: on the selected element, or the first. */
   | { page: 'documentation' }
+  /** One board, made the active one — a row of the views table on a landscape's home. */
+  | { page: 'board'; id: string }
   /**
    * Not a page, and here anyway: *link* (ADR-0012 §10), asked the moment the
    * scope opens.
@@ -571,7 +573,9 @@ export function App({
    */
   const [initialPage, setInitialPage] = useState<InitialPage | undefined>(undefined)
   const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
-    setProject(next)
+    // Opened for one board: the session starts on it, the way a tab click
+    // would leave it — no step on the stack, and nothing dirty for it.
+    setProject(page?.page === 'board' ? { ...next, activeDiagramId: page.id } : next)
     setInitialPage(page)
     prefs.writePreference({ lastScope: next.path })
   }, [prefs])

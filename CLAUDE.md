@@ -385,7 +385,7 @@ lvarch.scope.
 lvarch.scope.acme/rail/rolling-stock
 ```
 
-What a scope IS — `organisation | domain | programme | landscape` — is a
+What a scope IS — `organisation | domain | programme | team | landscape` — is a
 **label** in its `scope.json` for a screen to show. Nothing branches on it and
 nothing may start to: the moment code asks "is this a domain" instead of "does
 this scope hold a view", a folder that says the wrong word about itself stops
@@ -421,9 +421,11 @@ view count and nothing else (`ScopeSummary`), and a load per card is the shape
 ADR-0004 keeps catching.
 
 **Every scope has this home**, not only the root: a domain's shows its own
-cards and the tree filed under it, a landscape's shows its views, its
-documentation, its decisions and its plans, and which cards is decided by
-shape (`level` in `OrganisationScreen`) — never by the label. The bar over an
+cards and the tree filed under it, a landscape's shows its documentation, its
+decisions and its plans as cards and **its boards as a table**, one row each
+with its own *Open* (so a future version is a row beside the current one), and
+which cards is decided by shape (`level` in `OrganisationScreen`) — never by
+the label. The bar over an
 open scope is a **breadcrumb** (`crumbsFor`, `Crumbs` in `ShellToolbar`):
 every scope above, root first, each a way to that scope's home, and the open
 one in bold; the *Projects…* button and the source chip left it — the source
@@ -558,7 +560,7 @@ identifiers is still a list of a customer's identifiers.
 | Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
 | What one scope's folder holds | `scope.json` · `model.json` · the six folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
-| What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `landscape` — never a branch |
+| What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
 | The four view kinds (ADR-0012 §6) | `layer7` · `container` drawn on a canvas; `sheet` · `map` **laid out**, no geometry, `areas` shared |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |

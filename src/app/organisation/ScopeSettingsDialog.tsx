@@ -52,6 +52,7 @@ export const SCOPE_KIND_LABEL = {
   organisation: 'org.kindOrganisation',
   domain: 'org.kindDomain',
   programme: 'org.kindProgramme',
+  team: 'org.kindTeam',
   landscape: 'org.kindLandscape',
 } as const satisfies Record<ScopeKind, StringKey>
 

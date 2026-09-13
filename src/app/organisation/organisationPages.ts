@@ -67,8 +67,7 @@ export type OrganisationPages = {
     /** The first thing the dates disagree about — `findings` answers worst first. */
     finding?: Finding
   }
-  /** What a landscape's home says about its views and its pages. */
-  views: number
+  /** What a landscape's home says about its pages. */
   documentation: {
     /** Records with a description of their own. */
     described: number
@@ -122,7 +121,6 @@ export function organisationPages(
         ? { latest: [...decisions].sort((a, b) => a.number - b.number)[decisions.length - 1] }
         : {}),
     },
-    views: diagrams.length,
     documentation: {
       described: elements.filter((element) => element.description?.trim()).length,
       elements: elements.length,

@@ -45,8 +45,8 @@ describe('organisationPages', () => {
     expect(organisationPages(held, TODAY).empty).toBe(false)
   })
 
-  describe('a landscape’s two cards', () => {
-    it('counts the views, and the records that have a page of their own', () => {
+  describe('a landscape’s documentation card', () => {
+    it('counts the records that have a page of their own', () => {
       const held = scope({
         elements: [
           element({ id: 'wms', kind: 'application', description: 'The warehouse system.' }),
@@ -59,7 +59,6 @@ describe('organisationPages', () => {
         ],
       })
       const pages = organisationPages(held, TODAY)
-      expect(pages.views).toBe(2)
       expect(pages.documentation).toEqual({ described: 1, elements: 3 })
     })
   })
