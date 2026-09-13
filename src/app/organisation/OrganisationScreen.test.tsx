@@ -284,6 +284,9 @@ describe('the organisation screen — a fresh folder', () => {
     expect(screen.queryByText('Domains and landscapes')).toBeNull()
   })
 
+  // Copies the whole shipped example and mounts the app over it: a second or
+  // so here, and just over the 5 s default on the release runner, which is
+  // about three times slower than a developer's machine.
   it('offers no examples once the folder holds architecture of its own', async () => {
     const scopes = new InMemoryScopeStore([])
     renderApp({ scopes, today: TODAY, examples: EXAMPLES })
@@ -294,7 +297,7 @@ describe('the organisation screen — a fresh folder', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.queryByText('Examples')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Copy into this folder…' })).toBeNull()
-  })
+  }, 20_000)
 })
 
 /**
@@ -326,5 +329,5 @@ describe('the organisation screen — the shipped example', () => {
     expect(cards).toContain('Business architecture')
     expect(cards).toContain('1 journey')
     expect(cards).not.toContain('Nothing at this level yet.')
-  })
+  }, 20_000) // The same copy of the whole example as above; the runner needs the room.
 })
