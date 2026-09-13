@@ -436,10 +436,10 @@ describe('seedPlacement', () => {
     });
   });
 
-  it('sends a stand-in and an outside application to the external band, where nothing has been said', () => {
-    expect(seedPlacement({ kind: 'application', ref: 'acme/retail' }, landscape, 's').zone).toBe('externalSystems');
+  it('sends an outside application to the external band, and a stand-in wherever it was told', () => {
     expect(seedPlacement({ kind: 'application', outside: true }, landscape, 'o').zone).toBe('externalSystems');
-    expect(seedPlacement({ kind: 'application', ref: 'x', zone: 'landscape' }, landscape, 's').zone).toBe('landscape');
+    expect(seedPlacement({ kind: 'application', ref: 'acme/retail' }, landscape, 's').zone).toBe('landscape');
+    expect(seedPlacement({ kind: 'application', ref: 'x', zone: 'externalSystems' }, landscape, 's').zone).toBe('externalSystems');
   });
 
   it('keeps a position somebody gave it', () => {

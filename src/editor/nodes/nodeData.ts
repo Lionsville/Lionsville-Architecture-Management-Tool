@@ -15,6 +15,23 @@ export interface StandInNote {
   from: string;
   /** A finding about this record, as its sentence: drift, or dangling. */
   warning?: string;
+  /**
+   * The owner's account of the thing — the description as the scope that
+   * defines it holds it, read from there and never written here. What the
+   * card and the inspector show for a stand-in, because a description is
+   * maintained where the thing is defined and an overview only reads it.
+   */
+  description?: string;
+}
+
+/**
+ * The description a card shows: a stand-in's owner's, and a definition's own.
+ *
+ * A stand-in nobody defines, or whose owner has not been read yet, falls back
+ * to whatever text it holds itself rather than to nothing.
+ */
+export function shownDescription(data: Pick<ElementNodeData, 'element' | 'note'>): string | undefined {
+  return data.note?.description ?? data.element.description;
 }
 
 /** Shared payload for every element node on the canvas. */

@@ -66,7 +66,7 @@ function renderInspector(
     readOnly?: boolean;
     dia?: DesignDiagram;
     onReplace?: (id: string) => void;
-    owned?: { label: string; fields: readonly string[]; onOpen?: () => void };
+    owned?: { label: string; fields: readonly string[]; onOpen?: () => void; description?: string };
     /** `stacked` is the page, where the record's fields are laid out. */
     layout?: 'tabs' | 'stacked';
     onOpenDocumentation?: (id: string) => void;
@@ -437,6 +437,15 @@ describe('ElementInspector — a record another scope answers for', () => {
     renderInspector(element(), { owned });
     expect(screen.getByTestId('owned-elsewhere')).toBeDefined();
     expect(screen.queryByRole('button', { name: /^Open / })).toBeNull();
+  });
+
+  it('shows the owner\'s description in place of its own, read-only', () => {
+    renderInspector(element({ description: 'What this scope once wrote' }), {
+      owned: { ...owned, fields: [...owned.fields, 'description'], description: 'What the owner says' },
+      layout: 'stacked',
+    });
+    expect(screen.getByText('What the owner says')).toBeDefined();
+    expect(screen.queryByText('What this scope once wrote')).toBeNull();
   });
 
   it('shows the owner\'s detail read-only, and the cached name with it', () => {

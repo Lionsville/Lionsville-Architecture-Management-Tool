@@ -17,7 +17,7 @@ const rows: LibraryRow[] = [
 function mount(choice: Parameters<typeof AddFromLibraryDialog>[0]['choice'], over: Partial<Parameters<typeof AddFromLibraryDialog>[0]> = {}) {
   const props = {
     choice, scopeLabel: (path: string) => path || 'Acme',
-    onPick: vi.fn(), onOwn: vi.fn(), onDrawOnly: vi.fn(), onCancel: vi.fn(), s: translator('en'),
+    onPick: vi.fn(), onOwn: vi.fn(), onDrawOnly: vi.fn(), onPlace: vi.fn(), onCancel: vi.fn(), s: translator('en'),
     ...over,
   }
   renderShell(<AddFromLibraryDialog {...props} />)
@@ -54,6 +54,15 @@ describe('AddFromLibraryDialog', () => {
     mount({ kind: 'asking', id: 'ledger', name: 'Ledger', canDrawOnly: false })
     expect(screen.queryByText('Draw it only')).toBeNull()
     expect(screen.getByText('Answer for it here')).toBeTruthy()
+  })
+
+  it('asks which band a stand-in goes in, and answers with the one pressed', () => {
+    const props = mount({ kind: 'placing', id: 'shelf', name: 'Shelf planner' })
+    expect(screen.getByText('How should Shelf planner appear here?')).toBeTruthy()
+    fireEvent.click(screen.getByText('An application from another domain'))
+    expect(props.onPlace).toHaveBeenCalledWith('domain')
+    fireEvent.click(screen.getByText('An external reference'))
+    expect(props.onPlace).toHaveBeenCalledWith('external')
   })
 
   it('is not there without a choice', () => {

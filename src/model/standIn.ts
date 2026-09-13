@@ -24,11 +24,12 @@ import type { DesignElement } from './types'
 /**
  * Everything on a record that belongs to whoever DEFINES the thing.
  *
- * What is deliberately NOT here: `description`, which is this scope's own
- * perspective and the one thing a stand-in may say for itself; the four
- * presentation fields, which are about this scope's drawing of it; and
- * `parentId` / `order` / `lane`, which say where it sits on THIS scope's
- * trees.
+ * What is deliberately NOT here: `description`, which is not stripped on a
+ * link and not reported on a stand-in, but is not the stand-in's to show
+ * either — a card and a panel show the owner's, read from the owning scope,
+ * and `mayEdit` refuses writing it here; the four presentation fields, which
+ * are about this scope's drawing of it; and `parentId` / `order` / `lane`,
+ * which say where it sits on THIS scope's trees.
  */
 export const OWNER_DETAIL = [
   'lifecycle', 'lifecycleDates', 'successorId', 'owner', 'outside', 'partyId',
@@ -48,8 +49,9 @@ export type OwnerDetailField = typeof OWNER_DETAIL[number]
  * hand-written one and a field present and empty is not what a person would
  * have typed.
  *
- * What survives is what this scope answers for: the perspective, the
- * presentation, and where the thing sits on this scope's own trees. The
+ * What survives is what this scope answers for: the presentation, and where
+ * the thing sits on this scope's own trees — and the text it held, left in
+ * the file rather than stripped, though the owner's is what is shown. The
  * children are not touched at all — their `parentId` still names this id, and
  * a refinement is precisely a stand-in with children under it.
  */

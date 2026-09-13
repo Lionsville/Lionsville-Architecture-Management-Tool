@@ -5,6 +5,7 @@ import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shownDescription } from './nodeData';
 
 /**
  * Component: C4 container box with a technology line and description.
@@ -68,7 +69,7 @@ export const ComponentNode = memo(function ComponentNode({
       <Typography sx={{ fontSize: 9.5, fontStyle: 'italic', color: tokens.card.subtitle }}>
         [{element.technology?.trim() || 'Container'}]
       </Typography>
-      <NodeDescription figure="component" text={element.description} height={height} />
+      <NodeDescription figure="component" text={shownDescription(data)} height={height} />
     </NodeShell>
   );
 });

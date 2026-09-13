@@ -396,10 +396,22 @@ describe('the boards on a landscape’s home', () => {
         laidOut({ id: 'now', kind: 'layer7' as const, name: 'Finance today', placements: [] }),
         laidOut({ id: 'next', kind: 'layer7' as const, name: 'Finance 2028', asOf: '2028-01-01', placements: [] }),
         laidOut({ id: 'sheet', kind: 'sheet' as const, name: 'Business', placements: [] }),
+        laidOut({ id: 'cd', kind: 'container' as const, name: 'Ledger', applicationElementId: 'ledger', placements: [] }),
       ],
     },
     activeDiagramId: 'now',
     logoLibrary: [],
+  })
+
+  it('offers Delete on a container diagram only, and takes it off the scope once confirmed', async () => {
+    show([scope('', 'Acme Logistics', false), twoBoards()])
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    const boards = await screen.findByTestId('boards')
+    expect(within(within(boards).getByTestId('board-now')).queryByRole('button', { name: 'Delete' })).toBeNull()
+    fireEvent.click(within(within(boards).getByTestId('board-cd')).getByRole('button', { name: 'Delete' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(within(screen.getByTestId('boards')).queryByTestId('board-cd')).toBeNull())
+    expect(within(screen.getByTestId('boards')).getByTestId('board-now')).toBeDefined()
   })
 
   it('lists every board with the day it shows, and no laid-out view', async () => {

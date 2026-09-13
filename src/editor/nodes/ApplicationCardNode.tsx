@@ -11,6 +11,7 @@ import { DocGlyph, DrillGlyph } from './glyphs';
 import { NodeDescription, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
 import { AspectBadgeRow } from './AspectBadgeRow';
 import type { ElementNodeProps } from './nodeData';
+import { shownDescription } from './nodeData';
 import { hasDocumentation, shortDescription } from '../../documentation/documentation';
 
 /**
@@ -91,7 +92,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
             </Box>
           </Tooltip>
         )}
-        {hasDocumentation(element.description) && (
+        {hasDocumentation(shownDescription(data)) && (
           <Tooltip title={t('node.hasDocumentation')}>
             <Box sx={{ color: tokens.card.subtitle, display: 'flex' }} data-testid="doc-glyph">
               <DocGlyph />
@@ -132,7 +133,7 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
       >
         {bodyIcon && <NodeIcon element={element} size={28} color={tokens.card.subtitle} />}
         <NodeDescription figure="application"
-          text={shortDescription(element.description)}
+          text={shortDescription(shownDescription(data))}
           height={height}
           sx={{ flex: 1 }}
         />

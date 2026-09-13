@@ -8,6 +8,7 @@ import { useStrings } from '../../i18n/LanguageContext';
 import { PersonGlyph, StickmanGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shownDescription } from './nodeData';
 import { shortDescription } from '../../documentation/documentation';
 
 /**
@@ -35,7 +36,7 @@ function Stickman({ color }: { color: string }) {
 export const ActorNode = memo(function ActorNode({ data, selected, height }: ElementNodeProps) {
   const tokens = getNodeTokens(useTheme());
   const { element } = data;
-  const description = shortDescription(element.description);
+  const description = shortDescription(shownDescription(data));
   const hasDescription = Boolean(description);
 
   // D11: the stickman render bypasses the box/radius entirely (branches BEFORE

@@ -82,10 +82,14 @@ describe('useLibrary', () => {
     expect(choice.rows.find((row) => row.id === 'crm')?.held).toBe(true)
   })
 
-  it('draws what a scope beneath defines as a stand-in, in the external band, and claims nothing', () => {
+  it('draws what a scope beneath defines as a stand-in, in the band the person chose, and claims nothing', () => {
     const host = mount()
     act(() => host.lib().open())
     act(() => host.lib().pick('shelf'))
+    // Every stand-in is asked which band; nothing has landed yet.
+    expect(host.lib().choice).toEqual({ kind: 'placing', id: 'shelf', name: 'Shelf planner' })
+    expect(host.held('shelf')).toBeUndefined()
+    act(() => host.lib().place('external'))
     expect(host.held('shelf')).toMatchObject({ name: 'Shelf planner', ref: 'acme/retail/stores', isManaged: false })
     expect(host.current().diagrams[0].members.find((member) => member.id === 'shelf')?.zone).toBe('externalSystems')
     expect(host.focus).toHaveBeenCalledWith('shelf')
@@ -99,10 +103,21 @@ describe('useLibrary', () => {
     expect(host.drawn('shelf')).toBe(false)
   })
 
-  it('only places a record this scope holds already', () => {
+  it('puts an application from another domain on the landscape itself', () => {
+    const host = mount()
+    act(() => host.lib().open())
+    act(() => host.lib().pick('shelf'))
+    act(() => host.lib().place('domain'))
+    expect(host.current().diagrams[0].members.find((member) => member.id === 'shelf')?.zone).toBe('landscape')
+    expect(host.held('shelf')?.ref).toBe('acme/retail/stores')
+  })
+
+  it('only places a record this scope holds already — a stand-in asked which band, a definition not', () => {
     const host = mount()
     act(() => host.lib().open())
     act(() => host.lib().pick('crm'))
+    expect(host.lib().choice?.kind).toBe('placing')
+    act(() => host.lib().place('external'))
     expect(host.drawn('crm')).toBe(true)
     expect(host.held('crm')).toMatchObject({ name: 'CRM', ref: '' })
     expect(host.notify).toHaveBeenCalledWith('CRM is on the board', 'success')
@@ -126,6 +141,8 @@ describe('useLibrary', () => {
     act(() => host.lib().open())
     act(() => host.lib().pick('ledger'))
     act(() => host.lib().drawOnly())
+    expect(host.lib().choice?.kind).toBe('placing')
+    act(() => host.lib().place('domain'))
     expect(host.held('ledger')).toMatchObject({ name: 'Ledger', ref: 'acme/accounting' })
     expect(host.drawn('ledger')).toBe(true)
   })

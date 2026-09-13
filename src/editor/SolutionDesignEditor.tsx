@@ -16,6 +16,7 @@ import type { EditorHandle, EditorRequests, SolutionDesignEditorProps } from './
 import type { StandInNote } from './nodes/nodeData';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
+import { doubleClickTarget } from './doubleClick';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
 import { newDomainGroup } from './canvas/domainGroupPlacement';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
@@ -1031,19 +1032,14 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   const handleDoubleClick = useCallback(
     (elementId: ElementId) => {
-      const element = state.model.elements.find((e) => e.id === elementId);
-      if (!element) return;
-      // Double-click opens what is inside: an application's container diagram,
-      // and for everything else its documentation.
-      if (element.kind !== 'application') {
-        openDocumentation(elementId);
-        return;
+      const target = doubleClickTarget(state.model, elementId, props.ownership);
+      switch (target?.kind) {
+        case 'documentation': openDocumentation(elementId); return;
+        case 'owner': target.show(); return;
+        case 'container': props.document.onActiveDiagramChange(target.diagramId); return;
+        case 'newContainer': props.diagrams.onCreateContainer(elementId); return;
+        default: return;
       }
-      const existing = state.model.diagrams.find(
-        (d) => d.kind === 'container' && d.applicationElementId === elementId,
-      );
-      if (existing) props.document.onActiveDiagramChange(existing.id);
-      else props.diagrams.onCreateContainer(elementId);
     },
     [state.model, props, openDocumentation],
   );

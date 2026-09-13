@@ -65,7 +65,8 @@ export const NODE_FIGURES: readonly NodeFigure[] = [
  * band is a channel whoever owns it, and that is the reading a person drawing
  * the board is asking for. `outside` decides only where the view says nothing —
  * the open landscape, and a container diagram, which has no bands at all and is
- * where an outside system used to be a kind of its own.
+ * where an outside system used to be a kind of its own. A `ref` decides
+ * nothing here: which band a stand-in is drawn in is the board's to say.
  *
  * A business kind never reaches a canvas (`canPlaceKind`, `model/placement.ts`),
  * so the two that fall through here fall through to the card — the shape a
@@ -79,12 +80,14 @@ export function nodeFigure(
   if (zone === 'inputChannels') return 'inputChannel'
   if (zone === 'management') return 'managementTool'
   if (zone === 'externalSystems') return 'externalSystem'
-  // "A stand-in from another domain" is the second half of what the
-  // `externalSystem` figure is for (ADR-0012 §4): not the subject of this
-  // board. It is a different fact from `outside` — somebody in this
-  // organisation does own it, just not this scope — and they draw the same,
-  // because what the look says is "somebody else's", which is true of both.
-  return element.outside || element.ref !== undefined ? 'externalSystem' : 'application'
+  // A stand-in draws as whatever band it sits in, and NOT as an external
+  // system by virtue of its `ref`: the card of another domain's application
+  // on an overview is the application's card, with where it is from as a
+  // note (`StandInNote`), and a person who wants it read as outside this
+  // landscape puts it in the external band. It once drew as external
+  // wherever it sat, which made an overview of the organisation a wall of
+  // "external" boxes for its own applications.
+  return element.outside ? 'externalSystem' : 'application'
 }
 
 /**

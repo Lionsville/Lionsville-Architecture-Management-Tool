@@ -8,6 +8,7 @@ import { useStrings } from '../../i18n/LanguageContext';
 import { GlobeGlyph, WarningGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shownDescription } from './nodeData';
 
 /** External system: muted C4-style box — outside our operational scope. */
 export const ExternalSystemNode = memo(function ExternalSystemNode({
@@ -81,7 +82,7 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
       >
         {element.name}
       </Typography>
-      <NodeDescription figure="externalSystem" text={element.description} height={height} />
+      <NodeDescription figure="externalSystem" text={shownDescription(data)} height={height} />
     </NodeShell>
   );
 });

@@ -83,11 +83,11 @@ describe('mayEditField', () => {
   })
 
   /**
-   * The three things a stand-in may say for itself: its perspective, how this
-   * scope draws it, and where it sits on this scope's own trees.
+   * The two things a stand-in may say for itself: how this scope draws it,
+   * and where it sits on this scope's own trees.
    */
-  it('allows the perspective, the presentation and the placing', () => {
-    for (const field of ['description', 'accentColor', 'iconKey', 'parentId', 'order'] as const) {
+  it('allows the presentation and the placing', () => {
+    for (const field of ['accentColor', 'iconKey', 'parentId', 'order'] as const) {
       expect(mayEditField(field, 'erp', 'acme/finance', index), field).toBe(true)
     }
   })
@@ -108,6 +108,16 @@ describe('mayEditField', () => {
       .toEqual({ refused: 'check.ownedElsewhere', owner: 'acme/retail' })
     expect(mayEditField('name', 'erp', 'acme/retail', index)).toBe(true)
   })
+
+  /**
+   * A description is maintained where the thing is defined: an overview
+   * shows the owner's account and does not keep a second one.
+   */
+  it('refuses the description, which is read from the owner and changed there', () => {
+    expect(mayEditField('description', 'erp', 'acme/finance', index))
+      .toEqual({ refused: 'check.ownedElsewhere', owner: 'acme/retail' })
+    expect(mayEditField('description', 'erp', 'acme/retail', index)).toBe(true)
+  })
 })
 
 describe('mayApplyPatch', () => {
@@ -117,7 +127,7 @@ describe('mayApplyPatch', () => {
   })
 
   it('allows one that touches none of it', () => {
-    expect(mayApplyPatch({ description: 'ours' }, 'erp', 'acme/finance', index)).toBe(true)
+    expect(mayApplyPatch({ accentColor: '#123456' }, 'erp', 'acme/finance', index)).toBe(true)
   })
 
   it('allows an empty patch, which changes nothing anywhere', () => {
@@ -138,6 +148,6 @@ describe('isOwnerDetail', () => {
     expect(FIXED_ON_A_STANDIN).toContain('vendor')
     expect(FIXED_ON_A_STANDIN).toContain('name')
     expect(FIXED_ON_A_STANDIN).toContain('ref')
-    expect(FIXED_ON_A_STANDIN).not.toContain('description')
+    expect(FIXED_ON_A_STANDIN).toContain('description')
   })
 })

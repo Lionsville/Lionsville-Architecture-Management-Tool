@@ -25,10 +25,17 @@ import type { ScopePath } from '../projects/scopePath'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
-/** Which dialog is up: the picker, or the question about an unowned one. */
+/** How a stand-in is drawn here: outside this landscape, or as one of its applications. */
+export type LibraryBand = 'external' | 'domain'
+
+/**
+ * Which dialog is up: the picker, the question about an unowned one, or the
+ * question every stand-in is asked — which band.
+ */
 export type LibraryChoice =
   | { kind: 'picking'; rows: readonly LibraryRow[] }
   | { kind: 'asking'; id: ElementId; name: string; canDrawOnly: boolean }
+  | { kind: 'placing'; id: ElementId; name: string }
 
 export type Library = {
   /** Open the picker over the active board. Nothing happens on a view that draws no cards. */
@@ -40,6 +47,12 @@ export type Library = {
   own(): void
   /** The answer "no": one more stand-in, at the address the others carry. */
   drawOnly(): void
+  /**
+   * Where a stand-in goes: the external band, drawn as a system outside
+   * this landscape, or the landscape band, drawn as the application it is
+   * — with a double-click opening it where it is defined.
+   */
+  place(band: LibraryBand): void
   close(): void
 }
 
@@ -57,6 +70,7 @@ export function useLibrary(deps: {
   const [choice, setChoice] = useState<
     | { kind: 'picking'; rows: readonly LibraryRow[] }
     | { kind: 'asking'; plan: Extract<LibraryPlan, { kind: 'unowned' }> }
+    | { kind: 'placing'; element: DesignElement; create: boolean; said: string }
     | undefined
   >(undefined)
 
@@ -75,14 +89,17 @@ export function useLibrary(deps: {
 
   /**
    * Land it: the record where one is needed, and its place on the board, as
-   * one step. A stand-in seeds its own placement — `nodeFigure` draws a
-   * record another scope answers for in the external band, which is where a
-   * person would have put it.
+   * one step. A definition goes where the palette would put it; a stand-in
+   * goes in the band the person chose, because the band is what decides how
+   * it is drawn (`nodeFigure`) and that is the question `place` asks.
    */
-  const land = useCallback((element: DesignElement, create: boolean, said: string) => {
+  const land = useCallback((element: DesignElement, create: boolean, said: string, band?: LibraryBand) => {
     const diagram = activeBoard()
     if (!diagram) return
-    const placement = seedPlacement(element, diagram, element.id)
+    const seed = band === undefined
+      ? element
+      : { ...element, zone: band === 'external' ? 'externalSystems' as const : 'landscape' as const }
+    const placement = seedPlacement(seed, diagram, element.id)
     const command: Command = create
       ? transaction([{ type: 'element.create', element }, placeOn(diagram.id, [placement])])
       : placeOn(diagram.id, [placement])
@@ -102,16 +119,22 @@ export function useLibrary(deps: {
       notify(s(LIBRARY_REFUSAL[plan.refused], { name: index.lookup(id)?.name ?? id }), 'warning')
       return
     }
+    // Every stand-in is asked which band; a definition is not, because it is
+    // this scope's own application and goes where its kind goes.
     switch (plan.kind) {
       case 'draw': {
         const held = model.elements.find((element) => element.id === plan.id)
-        if (held) land(held, false, s('library.drawn', { name: plan.name }))
+        if (!held) return
+        const said = s('library.drawn', { name: plan.name })
+        if (held.ref === undefined) land(held, false, said)
+        else setChoice({ kind: 'placing', element: held, create: false, said })
         return
       }
       case 'standIn':
-        land(plan.element, true, s('library.standsIn', {
-          name: plan.element.name, scope: scopeLabel(plan.owner),
-        }))
+        setChoice({
+          kind: 'placing', element: plan.element, create: true,
+          said: s('library.standsIn', { name: plan.element.name, scope: scopeLabel(plan.owner) }),
+        })
         return
       case 'unowned':
         setChoice({ kind: 'asking', plan })
@@ -125,12 +148,21 @@ export function useLibrary(deps: {
 
   const drawOnly = useCallback(() => {
     if (choice?.kind !== 'asking' || !choice.plan.drawOnly) return
-    land(choice.plan.drawOnly, true, s('library.drawn', { name: choice.plan.name }))
-  }, [choice, land, s])
+    setChoice({
+      kind: 'placing', element: choice.plan.drawOnly, create: true,
+      said: s('library.drawn', { name: choice.plan.name }),
+    })
+  }, [choice, s])
+
+  const place = useCallback((band: LibraryBand) => {
+    if (choice?.kind !== 'placing') return
+    land(choice.element, choice.create, choice.said, band)
+  }, [choice, land])
 
   const shown = useMemo<LibraryChoice | undefined>(() => {
     if (!choice) return undefined
     if (choice.kind === 'picking') return choice
+    if (choice.kind === 'placing') return { kind: 'placing', id: choice.element.id, name: choice.element.name }
     return {
       kind: 'asking', id: choice.plan.id, name: choice.plan.name,
       canDrawOnly: choice.plan.drawOnly !== undefined,
@@ -138,7 +170,7 @@ export function useLibrary(deps: {
   }, [choice])
 
   return useMemo(
-    () => ({ open, choice: shown, pick, own, drawOnly, close }),
-    [open, shown, pick, own, drawOnly, close],
+    () => ({ open, choice: shown, pick, own, drawOnly, place, close }),
+    [open, shown, pick, own, drawOnly, place, close],
   )
 }

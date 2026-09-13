@@ -7,6 +7,7 @@ import { getNodeTokens } from '../theme/tokens';
 import { WrenchGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shownDescription } from './nodeData';
 import { shortDescription } from '../../documentation/documentation';
 
 /** Management tool: compact chip with vendor text (bottom band). */
@@ -66,8 +67,8 @@ export const ManagementToolNode = memo(function ManagementToolNode({
             {element.vendor}
           </Typography>
         )}
-        {shortDescription(element.description) && (
-          <NodeDescription figure="managementTool" text={element.description} height={height} />
+        {shortDescription(shownDescription(data)) && (
+          <NodeDescription figure="managementTool" text={shownDescription(data)} height={height} />
         )}
       </Box>
     </NodeShell>

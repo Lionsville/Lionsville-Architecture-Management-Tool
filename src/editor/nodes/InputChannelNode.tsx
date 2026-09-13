@@ -7,6 +7,7 @@ import { getNodeTokens } from '../theme/tokens';
 import { ChannelGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
+import { shownDescription } from './nodeData';
 import { shortDescription } from '../../documentation/documentation';
 
 /**
@@ -23,7 +24,7 @@ export const InputChannelNode = memo(function InputChannelNode({
 }: ElementNodeProps) {
   const tokens = getNodeTokens(useTheme());
   const { element } = data;
-  const description = shortDescription(element.description);
+  const description = shortDescription(shownDescription(data));
   const hasDescription = Boolean(description);
   return (
     <NodeShell

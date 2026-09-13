@@ -349,6 +349,15 @@ export interface EditorOwnership {
     fields: readonly string[];
     /** Open that scope. Absent where the host cannot — a test, a read-only shell. */
     onOpen?(): void;
+    /**
+     * Open that scope ON this record, selected where it is drawn — what a
+     * double-click on a stand-in does, because what is inside the thing is
+     * the owner's to show and a container diagram made here would be a
+     * second one about somebody else's application.
+     */
+    onShow?(): void;
+    /** The owner's description, for the panel to show in place of this record's own. */
+    description?: string;
   } | undefined;
   /**
    * What a CARD says about the same record: where it is from, and any finding

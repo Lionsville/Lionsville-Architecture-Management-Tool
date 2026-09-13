@@ -143,10 +143,16 @@ describe('an agent is refused the owner\'s detail, as a person is', () => {
     expect(!answer.ok && answer.detail).toBe('acme/retail')
   })
 
-  it('lets it write this scope\'s own account of the thing', async () => {
+  /**
+   * The description is the owner's too: shown here, changed there. What a
+   * stand-in may still say for itself is how this scope draws it.
+   */
+  it('refuses the description as well, and lets it write the presentation', async () => {
     const wire = await withStandIn()
-    const answer = await wire.call('element.update', { id: 'erp', description: 'What it means here.' })
-    expect(said(answer)).toMatchObject({ id: 'erp', changed: ['description'] })
+    const refused = await wire.call('element.update', { id: 'erp', description: 'What it means here.' })
+    expect(!refused.ok && refused.refusal).toBe('check.ownedElsewhere')
+    const answer = await wire.call('element.update', { id: 'erp', accentColor: '#336699' })
+    expect(said(answer)).toMatchObject({ id: 'erp', changed: ['accentColor'] })
   })
 })
 

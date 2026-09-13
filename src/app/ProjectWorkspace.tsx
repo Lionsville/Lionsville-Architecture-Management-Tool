@@ -77,6 +77,7 @@ import { useSheet } from './useSheet'
 import { useShowElement } from './useShowElement'
 import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
 import { useLibrary } from './useLibrary'
+import { useOwnerDescriptions } from './useOwnerDescriptions'
 import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
 import { useMap } from './useMap'
 import { useProjectFiles } from './useProjectFiles'
@@ -300,9 +301,18 @@ export function ProjectWorkspace({
   const [docRequest, setDocRequest] = useState<{ elementId?: string; diagramId?: string; nonce: number } | undefined>(undefined)
   /** `diagramId` is the view the reader came from — a sheet, whose neighbours the page then lists. */
   const openDocumentation = useCallback((elementId?: string, diagramId?: string) => {
-    if (session.current().elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
+    const model = session.current()
+    if (model.elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
+    // A stand-in's page is the owner's page: the description is maintained
+    // where the thing is defined (ADR-0012 §3), so the page opens there.
+    const held = elementId !== undefined ? model.elements.find((element) => element.id === elementId) : undefined
+    const master = held?.ref !== undefined ? indexRef.current.lookup(held.id)?.master : undefined
+    if (elementId !== undefined && master !== undefined && master !== project.path && onOpenScope) {
+      onOpenScope(master, { page: 'document', id: elementId })
+      return
+    }
     setDocRequest((prev) => ({ elementId, diagramId, nonce: (prev?.nonce ?? 0) + 1 }))
-  }, [session, notify, s])
+  }, [session, notify, s, project.path, onOpenScope])
   /**
    * Where a link to an element lands: a board here, a choice, its page, or
    * the scope that answers for it. The sheet, the register and a row of the
@@ -573,6 +583,14 @@ export function ProjectWorkspace({
    * once, because it asks the live record; that difference is the right way
    * round — the panel is where a person is looking.
    */
+  /**
+   * What the owners say about the stand-ins drawn here (ADR-0012 §3): read
+   * from the owning scopes, shown on the card and in the panel, never kept.
+   */
+  const ownerDescriptions = useOwnerDescriptions({
+    scope: project.path, index, ...(projects.load ? { load: projects.load } : {}),
+  })
+
   const notes = useMemo(() => {
     const bySubject = new Map<string, string>()
     for (const finding of identityFindings(index)) {
@@ -587,13 +605,15 @@ export function ProjectWorkspace({
       if (!entry.drawnIn.includes(project.path)) continue
       const owner = entry.master ?? ''
       const warning = bySubject.get(entry.id)
+      const description = ownerDescriptions.get(entry.id)
       found.set(entry.id, {
         from: s('standIn.from', { scope: owner || s('common.organisation') }),
         ...(warning !== undefined ? { warning } : {}),
+        ...(description !== undefined ? { description } : {}),
       })
     }
     return found
-  }, [index, project.path, s])
+  }, [index, project.path, s, ownerDescriptions])
 
   /**
    * The `supports` and `assigned` rows the rest of the organisation wrote
@@ -718,14 +738,19 @@ export function ProjectWorkspace({
       // a dangling stand-in still points somewhere, and the cached path is
       // the only address anybody wrote down.
       const owner = rights.owner ?? held?.ref
+      const description = ownerDescriptions.get(elementId)
       return {
         label: owner === undefined ? s('common.organisation') : owner || s('common.organisation'),
         fields: FIXED_ON_A_STANDIN,
+        ...(description !== undefined ? { description } : {}),
         // A stand-in nobody defines has nowhere to go, and offering to open
         // the scope its cache names would be offering a folder that is not
         // there. *Link* is the repair, and it is step 10's.
         ...(rights.owner !== undefined && onOpenScope
-          ? { onOpen: () => onOpenScope(rights.owner!) }
+          ? {
+            onOpen: () => onOpenScope(rights.owner!),
+            onShow: () => onOpenScope(rights.owner!, { page: 'element', id: elementId }),
+          }
           : {}),
       }
     },
@@ -737,7 +762,7 @@ export function ProjectWorkspace({
       onMove: (elementId) => gestureChoose(elementId),
     },
     onAddExisting: library.open,
-  }), [session, project.path, index, notes, onOpenScope, s, gestureOffers, gestureChoose, library.open])
+  }), [session, project.path, index, notes, onOpenScope, s, gestureOffers, gestureChoose, library.open, ownerDescriptions])
 
   const snapshots = useProjectHistory({
     history: projectHistory,
@@ -1225,6 +1250,7 @@ export function ProjectWorkspace({
         onPick={library.pick}
         onOwn={library.own}
         onDrawOnly={library.drawOnly}
+        onPlace={library.place}
         onCancel={library.close}
         s={s}
       />

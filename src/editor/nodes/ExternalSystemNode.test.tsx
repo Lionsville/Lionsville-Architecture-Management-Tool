@@ -67,8 +67,17 @@ const show = (element: Partial<DesignElement>, note?: StandInNote) => render(
 );
 
 describe('what a stand-in draws as', () => {
-  it('is the figure this look was extended for', () => {
-    expect(nodeFigure({ kind: 'application', ref: 'acme/retail' })).toBe('externalSystem');
+  /**
+   * The band, and only the band. A stand-in drew as an external system
+   * wherever it sat, which made an overview of the organisation a wall of
+   * "external" boxes for its own applications; now the external band says
+   * "outside this landscape" and the landscape band says "an application",
+   * and where the thing is defined is the card's note.
+   */
+  it('is the figure of the band it sits in, not of its ref', () => {
+    expect(nodeFigure({ kind: 'application', ref: 'acme/retail' })).toBe('application');
+    expect(nodeFigure({ kind: 'application', ref: 'acme/retail' }, 'externalSystems')).toBe('externalSystem');
+    expect(nodeFigure({ kind: 'application', outside: true })).toBe('externalSystem');
     expect(nodeFigure({ kind: 'application' })).toBe('application');
   });
 

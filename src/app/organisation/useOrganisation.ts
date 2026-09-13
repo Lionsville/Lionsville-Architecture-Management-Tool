@@ -31,6 +31,7 @@ import {
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
 import type { DesignDiagram } from '../../model'
+import { isBoardKind } from '../../model/placement'
 import { normaliseLinks } from '../../projects/links'
 import { applyRefPatch } from '../../projects/readdress'
 import type { RefPatch } from '../../projects/readdress'
@@ -53,6 +54,8 @@ export type OrganisationDialog =
   | { kind: 'newBoard'; path: ScopePath; name: string }
   | { kind: 'settings'; target: ScopeSummary }
   | { kind: 'delete'; target: ScopeSummary }
+  /** One board of a scope, from the table on its home. */
+  | { kind: 'deleteBoard'; path: ScopePath; board: { id: string; name: string } }
 
 export type UseOrganisationInput = {
   scopes: ScopeLibrary
@@ -122,6 +125,13 @@ export type Organisation = {
   addBoard: (path: ScopePath) => void
   setNewBoardName: (name: string) => void
   createBoard: () => void
+  /**
+   * Take a board off a scope, from the table on its home. The only place a
+   * container diagram can be deleted: it is not a tab, so the tab menu that
+   * deletes a landscape never reaches it.
+   */
+  askDeleteBoard: (path: ScopePath, board: { id: string; name: string }) => void
+  confirmDeleteBoard: () => void
   applySettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
@@ -309,6 +319,39 @@ export function useOrganisation({
       onStorageResult(false)
     })
   }, [dialog, scopes, onEnter, refresh, notify, onFailure, onStorageResult, s])
+
+  const askDeleteBoard = useCallback((path: ScopePath, board: { id: string; name: string }) => {
+    setDialog({ kind: 'deleteBoard', path, board })
+  }, [])
+
+  /**
+   * Read-patch-write, like making a board: the home is outside any session.
+   * The active board moves on to the first that remains, so a scope entered
+   * next does not start on a board that is not there.
+   */
+  const confirmDeleteBoard = useCallback(() => {
+    if (dialog.kind !== 'deleteBoard') return
+    const { path, board } = dialog
+    setDialog({ kind: 'none' })
+    void (async () => {
+      const held = await scopes.load(path)
+      if (!held) return
+      const diagrams = held.model.diagrams.filter((diagram) => diagram.id !== board.id)
+      const next: ScopeSnapshot = {
+        ...held,
+        model: { ...held.model, diagrams },
+        activeDiagramId: held.activeDiagramId === board.id
+          ? diagrams.find((diagram) => isBoardKind(diagram.kind))?.id ?? ''
+          : held.activeDiagramId,
+      }
+      await scopes.save(next)
+      refresh()
+      notify(s('shell.deleted', { name: board.name }), 'success')
+    })().catch((cause: unknown) => {
+      onFailure('organisation.deleteBoard', cause)
+      onStorageResult(false)
+    })
+  }, [dialog, scopes, refresh, notify, onFailure, onStorageResult, s])
 
   /**
    * Apply a scope's edited record: what it is called, what it is, who its
@@ -499,11 +542,13 @@ export function useOrganisation({
     tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
+    askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
     tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
+    askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])
 }

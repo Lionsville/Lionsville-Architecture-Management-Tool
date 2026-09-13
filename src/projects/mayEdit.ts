@@ -11,15 +11,16 @@
  *   *declaration* — a definition above the master, which yielded when somebody
  *   deeper took the id. It is this scope's record and this scope may edit it;
  *   what tells a person it is a copy is the drift check, not a locked field.
- * - A **stand-in** this scope holds: its `description`, which is this scope's
- *   own account of the thing and is allowed to differ from the owner's; its
- *   presentation; its membership on this scope's views; and the `parentId` /
- *   `order` of its children, which say where it sits on this scope's trees.
+ * - A **stand-in** this scope holds: its presentation; its membership on this
+ *   scope's views; and the `parentId` / `order` of its children, which say
+ *   where it sits on this scope's trees.
  * - Anything in the **owner's detail** — lifecycle, dates, vendor, aspects —
  *   on a stand-in: refused as a value, with the owning scope's path in the
- *   refusal so the screen can offer to open it. Its `name` and `ref` are
- *   refused with them, for the other half of the same sentence: they are
- *   caches, and a refresh rewrites them where a person does not.
+ *   refusal so the screen can offer to open it. Its `name`, `ref` and
+ *   `description` are refused with them, for the other half of the same
+ *   sentence: the first two are caches a refresh rewrites, and the
+ *   description is read from the owner and maintained there — an overview
+ *   shows the owner's account of a thing, never a second one of its own.
  *
  * **A refusal, not a strip.** Nothing here deletes a field somebody wrote: the
  * write is declined and `checks.ts` reports what is already there. A file that
@@ -126,15 +127,18 @@ export function mayApplyPatch(
 }
 
 /**
- * A stand-in's two caches (ADR-0012 §3).
+ * A stand-in's two caches (ADR-0012 §3), and its description.
  *
  * Not part of the owner's detail, because they are not the owner's detail:
- * they are this record's copy of what the tree says, and every record has a
- * name whether or not anybody wrote one. They are refused for a different
- * reason — "a refresh rewrites them; a person does not" (§10) — and they are
- * refused all the same, which is why both lists feed one predicate.
+ * the caches are this record's copy of what the tree says, and every record
+ * has a name whether or not anybody wrote one. They are refused for a
+ * different reason — "a refresh rewrites them; a person does not" (§10) —
+ * and they are refused all the same, which is why both lists feed one
+ * predicate. The description is refused because it is not this record's at
+ * all: a card and an inspector show the owner's, read from the owning scope
+ * (`app/useOwnerDescriptions.ts`), and the place to change it is there.
  */
-const CACHED_ON_STANDIN: readonly (keyof DesignElement)[] = ['name', 'ref']
+const CACHED_ON_STANDIN: readonly (keyof DesignElement)[] = ['name', 'ref', 'description']
 
 /** Is this one of the fields the owning scope answers for? See `checks.OWNER_DETAIL`. */
 export function isOwnerDetail(field: string): field is keyof DesignElement {
@@ -142,8 +146,8 @@ export function isOwnerDetail(field: string): field is keyof DesignElement {
 }
 
 /**
- * Every field a stand-in may not be written by hand: the owner's detail, and
- * the two caches.
+ * Every field a stand-in may not be written by hand: the owner's detail, the
+ * two caches, and the description.
  *
  * The list an inspector greys out and the list `mayEditField` refuses, said
  * once so they cannot drift.

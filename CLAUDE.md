@@ -579,7 +579,7 @@ identifiers is still a list of a customer's identifiers.
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |
 | Agent resources | `lvarch://<scope path>/element/<id>/description`, `lvarch://<scope path>/decision/<id>`; the organisation's path is empty, and no path on read means the open scope |
 | Vendor / copyright | Lionsville Group BV |
-| A record that draws what another scope defines (ADR-0012 §3) | a **stand-in**: `ref` present, its `name` and `ref` caches, its `description` this scope's own |
+| A record that draws what another scope defines (ADR-0012 §3) | a **stand-in**: `ref` present, its `name` and `ref` caches, its `description` the owner's, read from there |
 | The scope that answers for an id | the **master**: the deepest definition; one above it is a **declaration** and yields |
 | What the tree contradicts about itself (§9) | a **finding**: a value with a `check.` key, never a refusal and never a reason a save fails |
 | Shipped example | a fictional organisation, never a real customer's landscape |
@@ -988,8 +988,16 @@ rarely invents its applications, so the palette's last row on a landscape is
 that is not on this board. Drawing one another scope defines — beneath, beside
 or above — writes this scope a stand-in and nothing else, one command and one
 undo step, because drawing is never a claim and taking ownership stays a
-gesture with a confirmation. One nobody defines is the one question asked:
-answer for it here, which is a definition, or draw it only, which is one more
-stand-in at the address the others carry (`IndexEntry.cachedRef`).
-`seedPlacement` moved into `model/placement.ts` for it, so the shell and the
-palette agree on where a new card lands.
+gesture with a confirmation. One nobody defines is asked about first: answer
+for it here, which is a definition, or draw it only, which is one more
+stand-in at the address the others carry (`IndexEntry.cachedRef`). Every
+stand-in is then asked **which band**: an external reference, or an
+application from another domain on the landscape itself — because **the band
+decides the look** now, and a `ref` no longer does (`nodeFigure`): an overview
+of the organisation's own applications is a row of application cards with a
+*from* note each, not a wall of "external" boxes. A double-click on a stand-in
+opens it **where it is defined**, selected (`editor/doubleClick.ts`), rather
+than making a container diagram here about somebody else's application; and a
+container diagram, which has no tab, is deleted from the boards table on its
+scope's home. `seedPlacement` moved into `model/placement.ts` for all this, so
+the shell and the palette agree on where a new card lands.

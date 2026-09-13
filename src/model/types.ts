@@ -129,11 +129,11 @@ export interface DesignElement {
    * and the deepest definition in the tree is the one that answers for the
    * thing (`projects/scopeIndex.ts`).
    *
-   * What a stand-in may carry besides its two caches is its `description` —
-   * this scope's own account of the thing, which is a different page from what
-   * the thing IS and is allowed to be — and its presentation. Everything under
-   * *the owner's detail* below is ignored on a stand-in and reported if
-   * present, and `projects/mayEdit.ts` is the one function that says so.
+   * What a stand-in may carry besides its two caches is its presentation.
+   * Its `description` is shown as the owner's — read from the scope that
+   * defines the thing, maintained there — and everything under *the owner's
+   * detail* below is ignored on a stand-in and reported if present;
+   * `projects/mayEdit.ts` is the one function that says so.
    *
    * A plain string rather than a typed path, like `scopes` below and for the
    * same reason: this file imports nothing at all, and what a scope IS belongs

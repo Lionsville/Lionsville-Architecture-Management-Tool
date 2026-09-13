@@ -318,6 +318,7 @@ export function OrganisationScreen({
               boards={root.model.diagrams.filter((diagram) => isBoardKind(diagram.kind))}
               onOpen={(id) => organisation.open(at, { page: 'board', id })}
               onAdd={() => organisation.addBoard(at)}
+              onDelete={(board) => organisation.askDeleteBoard(at, board)}
               language={language}
               s={s}
             />
@@ -456,6 +457,15 @@ export function OrganisationScreen({
         onCancel={organisation.closeDialog}
         onConfirm={organisation.confirmDelete}
       />
+      <ConfirmDialog
+        open={dialog.kind === 'deleteBoard'}
+        title={s('shell.deleteDiagramTitle', { name: dialog.kind === 'deleteBoard' ? dialog.board.name : '' })}
+        body={s('shell.deleteContainerBody')}
+        confirmLabel={s('common.delete')}
+        cancelLabel={s('common.cancel')}
+        onCancel={organisation.closeDialog}
+        onConfirm={organisation.confirmDeleteBoard}
+      />
     </Box>
   )
 }
@@ -465,11 +475,16 @@ export function OrganisationScreen({
  * them. What a row says is what tells two boards of one landscape apart: the
  * kind, the day it shows (ADR-0009) and how much is on it.
  */
-function BoardsTable({ boards, onOpen, onAdd, language, s }: {
+function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
   /** A board for this scope — the only way to its first one. */
   onAdd: () => void
+  /**
+   * A container diagram only: a landscape is deleted from its tab, where the
+   * last one is refused, and a container diagram has no tab and no last one.
+   */
+  onDelete: (board: { id: string; name: string }) => void
   language: Language
   s: Translate
 }) {
@@ -518,6 +533,16 @@ function BoardsTable({ boards, onOpen, onAdd, language, s }: {
           <Button size="small" onClick={() => onOpen(board.id)} sx={{ fontSize: 11, minWidth: 0, px: 1 }}>
             {s('picker.open')}
           </Button>
+          {board.kind === 'container' && (
+            <Button
+              size="small"
+              color="error"
+              onClick={() => onDelete({ id: board.id, name: board.name })}
+              sx={{ fontSize: 11, minWidth: 0, px: 1 }}
+            >
+              {s('common.delete')}
+            </Button>
+          )}
         </Stack>
       ))}
     </Box>

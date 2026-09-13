@@ -123,6 +123,12 @@ export interface ElementInspectorProps {
     fields: readonly string[];
     /** Open it. Absent where the host cannot — a test, or a page with nowhere to go. */
     onOpen?(): void;
+    /**
+     * The owner's description, shown in place of this record's own when
+     * `fields` names `description`: maintained where the thing is defined,
+     * read here. Absent while the owner has not been read, or has none.
+     */
+    description?: string;
   };
   /**
    * Ask to move this record to another scope (ADR-0012 §10).
@@ -400,8 +406,8 @@ export function ElementInspector(props: ElementInspectorProps) {
 
           {!props.hideDescription && (
             <MarkdownField
-              value={element.description ?? ''}
-              disabled={readOnly}
+              value={(owned('description') ? props.owned?.description : element.description) ?? ''}
+              disabled={readOnly || owned('description')}
               onChange={(value) => typed('description', { description: value || undefined })}
               renderMarkdown={props.renderMarkdown}
               onOpenDocumentation={

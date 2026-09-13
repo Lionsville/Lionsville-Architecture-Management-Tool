@@ -188,6 +188,34 @@ describe('useOrganisation', () => {
     expect((await store.load('retail'))?.model.diagrams.map((d) => d.id)).toEqual(['new-landscape', 'new-landscape-2'])
   })
 
+  /**
+   * A container diagram is not a tab, so the tab menu that deletes a
+   * landscape never reaches it; its home is where it goes. The active board
+   * moves on, so the scope is not entered next on a board that is not there.
+   */
+  it('takes a board off a scope from its home, and moves the active board on', async () => {
+    const { held, store } = mount([{
+      path: 'retail',
+      model: {
+        name: 'Retail', elements: [], relations: [],
+        diagrams: [
+          { id: 'l7', kind: 'layer7', name: 'Now', members: [], geometry: { nodes: [] } },
+          { id: 'cd', kind: 'container', name: 'ERP', applicationElementId: 'erp', members: [], geometry: { nodes: [] } },
+        ],
+      },
+      activeDiagramId: 'cd', logoLibrary: [],
+    }])
+    await settle()
+    act(() => held().askDeleteBoard('retail', { id: 'cd', name: 'ERP' }))
+    expect(held().dialog).toEqual({ kind: 'deleteBoard', path: 'retail', board: { id: 'cd', name: 'ERP' } })
+    await act(async () => { held().confirmDeleteBoard(); await Promise.resolve() })
+    await settle()
+    const retail = await store.load('retail')
+    expect(retail?.model.diagrams.map((d) => d.id)).toEqual(['l7'])
+    expect(retail?.activeDiagramId).toBe('l7')
+    expect(held().dialog).toEqual({ kind: 'none' })
+  })
+
   it('carries the page a scope was opened for', async () => {
     const { held, entered } = mount([{
       path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] },
