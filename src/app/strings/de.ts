@@ -474,4 +474,21 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.writeFailed': 'Dieser Bereich konnte nicht geschrieben werden: {message}',
   'gesture.leftCopy': '{scope} hat es jetzt, aber dieser Bereich konnte nicht geschrieben werden: {message}. Der Datensatz liegt an zwei Stellen.',
 
+  'library.title': 'Vorhandene Anwendung hinzufügen',
+  'library.hint': 'Jede Anwendung der Organisation, die noch nicht auf diesem Board ist.',
+  'library.search': 'Im Register suchen',
+  'library.searchPlaceholder': 'Name oder Id…',
+  'library.none': 'Jede Anwendung der Organisation ist bereits auf diesem Board.',
+  'library.noMatches': 'Nichts passt zu „{query}“',
+  'library.heldHere': 'In diesem Bereich, nicht auf diesem Board',
+  'library.definedIn': 'Definiert in {scope}',
+  'library.nobodyDefines': 'Niemand definiert sie',
+  'library.ownTitle': 'Diesen Bereich für {name} antworten lassen?',
+  'library.ownBody': 'Kein Bereich der Organisation definiert {name}. Antworten Sie hier dafür, und dieser Bereich wird Eigentümer; zeichnen Sie sie nur, und die Frage bleibt offen.',
+  'library.own': 'Hier dafür antworten',
+  'library.drawOnly': 'Nur zeichnen',
+  'library.drawn': '{name} ist auf dem Board',
+  'library.standsIn': '{name} ist auf dem Board und verweist auf den Datensatz in {scope}',
+  'library.owned': 'Dieser Bereich antwortet jetzt für {name}',
+
 }

@@ -474,4 +474,21 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.writeFailed': 'Dat niveau kon niet worden geschreven: {message}',
   'gesture.leftCopy': '{scope} heeft het nu, maar dit niveau kon niet worden geschreven: {message}. Het record staat op twee plaatsen.',
 
+  'library.title': 'Bestaande applicatie toevoegen',
+  'library.hint': 'Elke applicatie in de organisatie die nog niet op dit bord staat.',
+  'library.search': 'Zoek in het register',
+  'library.searchPlaceholder': 'Naam of id…',
+  'library.none': 'Elke applicatie in de organisatie staat al op dit bord.',
+  'library.noMatches': 'Niets komt overeen met “{query}”',
+  'library.heldHere': 'Op dit niveau, niet op dit bord',
+  'library.definedIn': 'Gedefinieerd in {scope}',
+  'library.nobodyDefines': 'Niemand definieert deze',
+  'library.ownTitle': 'Dit niveau voor {name} laten antwoorden?',
+  'library.ownBody': 'Geen enkel niveau in de organisatie definieert {name}. Antwoord er hier voor en dit niveau wordt de eigenaar; teken het alleen en de vraag blijft open.',
+  'library.own': 'Hier voor antwoorden',
+  'library.drawOnly': 'Alleen tekenen',
+  'library.drawn': '{name} staat op het bord',
+  'library.standsIn': '{name} staat op het bord en verwijst naar het record in {scope}',
+  'library.owned': 'Dit niveau antwoordt nu voor {name}',
+
 }

@@ -383,6 +383,14 @@ export interface EditorOwnership {
     tip: string;
     onMove(elementId: ElementId): void;
   };
+  /**
+   * Draw an application the organisation already has (ADR-0012 §2): the
+   * palette offers a row, and everything behind it — the register, the
+   * picker, what drawing one means for this scope's records — is the host's,
+   * for the reason `gestures` is. Absent = no row, which is a host with no
+   * register to offer.
+   */
+  onAddExisting?(): void;
 }
 
 export interface SolutionDesignEditorProps {

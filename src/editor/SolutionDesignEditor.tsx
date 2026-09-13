@@ -1238,6 +1238,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             kinds={activeDiagram.kind === 'layer7' ? LAYER7_PALETTE : CONTAINER_PALETTE}
             onAdd={handlePaletteAdd}
             onAddDomainGroup={activeDiagram.kind === 'layer7' ? addDomainGroup : undefined}
+            onAddExisting={activeDiagram.kind === 'layer7' ? props.ownership?.onAddExisting : undefined}
             logoLibrary={props.logos?.library}
             onRequestLogoUpload={props.logos?.onRequestUpload}
             defaultNames={defaultNames}

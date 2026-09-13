@@ -80,6 +80,14 @@ export const EN = {
   'gesture.hasChildren': 'What is filed under this record would be left without it. Move those first.',
   'gesture.barrier': 'That step wrote two scopes, so it cannot be taken back here. Move the record back with a gesture of its own.',
 
+  /**
+   * Why an application could not be drawn from the register (`library.ts`).
+   * Keyed the same way, for the same reason.
+   */
+  'library.unknownId': 'The register no longer knows that application.',
+  'library.alreadyDrawn': '{name} is on this board already.',
+  'library.notABoard': 'A card is drawn on a landscape or a container view.',
+
   'standIn.definedIn': 'Defined in {scope} — its detail is answered for there.',
   'standIn.open': 'Open {scope}',
   /** Under a stand-in's name on a card, small: where the thing really lives. */

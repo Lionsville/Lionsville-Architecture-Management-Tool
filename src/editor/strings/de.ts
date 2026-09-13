@@ -147,6 +147,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'paletteDescription.component': 'Ein Teil innerhalb einer Anwendung',
   'paletteDescription.actor': 'Eine Person oder Rolle, die die Landschaft nutzt',
   'paletteDescription.domainGroup': 'Ein beschrifteter Bereich, der die Landschaft gruppiert',
+  'palette.existing': 'Vorhandene Anwendung…',
+  'paletteDescription.existing': 'Eine Anwendung, die die Organisation bereits hat, hier gezeichnet',
 
   'toolbar.newDiagram': 'Neues Layer-7-Diagramm',
   'toolbar.newLandscape': 'Landschaft',

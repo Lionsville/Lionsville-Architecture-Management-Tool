@@ -608,4 +608,26 @@ export const EN = {
   'gesture.writeFailed': 'That scope could not be written: {message}',
   'gesture.leftCopy': '{scope} has it now, but this scope could not be written: {message}. The record is in both places.',
 
+  /**
+   * Adding an application the organisation already has to a board — the
+   * register as a library (ADR-0012 §2, §3). Drawing never moves ownership;
+   * the one question asked is about an application nobody defines.
+   */
+  'library.title': 'Add an existing application',
+  'library.hint': 'Every application in the organisation that is not on this board yet.',
+  'library.search': 'Search the register',
+  'library.searchPlaceholder': 'Name or id…',
+  'library.none': 'Every application in the organisation is on this board already.',
+  'library.noMatches': 'Nothing matches “{query}”',
+  'library.heldHere': 'In this scope, not on this board',
+  'library.definedIn': 'Defined in {scope}',
+  'library.nobodyDefines': 'Nobody defines it',
+  'library.ownTitle': 'Let this scope answer for {name}?',
+  'library.ownBody': 'No scope in the organisation defines {name}. Answer for it here and this scope becomes its owner; draw it only and the question stays open.',
+  'library.own': 'Answer for it here',
+  'library.drawOnly': 'Draw it only',
+  'library.drawn': '{name} is on the board',
+  'library.standsIn': '{name} is on the board, standing in for the record in {scope}',
+  'library.owned': 'This scope answers for {name} now',
+
 } as const

@@ -56,6 +56,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.hasChildren': 'Was unter diesem Datensatz liegt, bliebe ohne ihn. Verschieben Sie das zuerst.',
   'gesture.barrier': 'Dieser Schritt hat zwei Bereiche geschrieben und kann hier nicht rückgängig gemacht werden. Verschieben Sie den Datensatz mit einer eigenen Geste zurück.',
 
+  'library.unknownId': 'Das Register kennt diese Anwendung nicht mehr.',
+  'library.alreadyDrawn': '{name} ist bereits auf diesem Board.',
+  'library.notABoard': 'Eine Karte wird auf einer Landschaft oder einer Container-Ansicht gezeichnet.',
+
   'standIn.definedIn': 'Definiert in {scope} — die Details werden dort verantwortet.',
   'standIn.open': '{scope} öffnen',
   'standIn.from': 'aus {scope}',

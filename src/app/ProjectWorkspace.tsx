@@ -76,6 +76,8 @@ import { usePlans } from './usePlans'
 import { useSheet } from './useSheet'
 import { useShowElement } from './useShowElement'
 import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
+import { useLibrary } from './useLibrary'
+import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
 import { useMap } from './useMap'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
@@ -698,6 +700,15 @@ export function ProjectWorkspace({
     [index, project.path, scopeLabel],
   )
 
+  /**
+   * The register as a library (ADR-0012 §2): an application the organisation
+   * already has, drawn on this board without a claim on it. After the label,
+   * because the toast names the scope that answers for it.
+   */
+  const library = useLibrary({
+    session, scope: project.path, index, notify, s, focus: focusElement, scopeLabel,
+  })
+
   const ownership = useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => {
       const held = session.indexed().elements[elementId]
@@ -725,7 +736,8 @@ export function ProjectWorkspace({
       tip: s('gesture.moveTip'),
       onMove: (elementId) => gestureChoose(elementId),
     },
-  }), [session, project.path, index, notes, onOpenScope, s, gestureOffers, gestureChoose])
+    onAddExisting: library.open,
+  }), [session, project.path, index, notes, onOpenScope, s, gestureOffers, gestureChoose, library.open])
 
   const snapshots = useProjectHistory({
     history: projectHistory,
@@ -1205,6 +1217,15 @@ export function ProjectWorkspace({
         choice={showElement.choice}
         onChoose={showElement.choose}
         onCancel={showElement.dismiss}
+        s={s}
+      />
+      <AddFromLibraryDialog
+        choice={library.choice}
+        scopeLabel={scopeLabel}
+        onPick={library.pick}
+        onOwn={library.own}
+        onDrawOnly={library.drawOnly}
+        onCancel={library.close}
         s={s}
       />
       <GlobalSearchDialog

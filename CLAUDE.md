@@ -222,6 +222,10 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       ordered plan and a refusal with a key (§10)
                     readdress         a ref is an address, and a move carries the
                                       ones pointing into it (§3)
+                    library           the register used as a library: drawing an
+                                      application another scope defines is a
+                                      stand-in, never a claim; one nobody defines
+                                      is a question (§2, §3)
                     scopePath · scopeLabel   the address, and what to call the
                                       organisation a scope sits in
                     links             the one rule about what may become an anchor
@@ -281,6 +285,9 @@ src/app/          The shell around the editor.
                                       confirm, and the barrier on the stack (§10)
                     carryRefs         the pass a move makes over the refs
                                       pointing into it (§3)
+                    useLibrary · dialogs/AddFromLibraryDialog   the palette's
+                                      *Existing application…*: the picker over
+                                      the register, and the one question it asks
                     dialogs/ · examples/ · iconPacks/ · history/
                     OverflowMenu      the menu, on a host that has no menu bar
                     SyncNotice · useSync   the folder and its remote disagree
@@ -974,3 +981,15 @@ from the file's own diagram interchange and with no library — `documentation/
 bpmn.ts` carries a small XML reader so it is pure and tested in node. ADR-0012
 has its *Built* preamble; what remains for 2.0.0 is the manual in Frisian and
 German and the notes over every beta.
+
+Then the register became a **library** (`projects/library.ts`). A landscape
+rarely invents its applications, so the palette's last row on a landscape is
+*Existing application…*: a picker over every application in the organisation
+that is not on this board. Drawing one another scope defines — beneath, beside
+or above — writes this scope a stand-in and nothing else, one command and one
+undo step, because drawing is never a claim and taking ownership stays a
+gesture with a confirmation. One nobody defines is the one question asked:
+answer for it here, which is a definition, or draw it only, which is one more
+stand-in at the address the others carry (`IndexEntry.cachedRef`).
+`seedPlacement` moved into `model/placement.ts` for it, so the shell and the
+palette agree on where a new card lands.

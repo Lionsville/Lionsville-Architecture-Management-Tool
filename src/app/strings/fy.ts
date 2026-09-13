@@ -474,4 +474,21 @@ export const FY: Record<keyof typeof EN, string> = {
   'gesture.writeFailed': 'Dat nivo koe net skreaun wurde: {message}',
   'gesture.leftCopy': '{scope} hat it no, mar dit nivo koe net skreaun wurde: {message}. It record stiet op twa plakken.',
 
+  'library.title': 'Besteande applikaasje taheakje',
+  'library.hint': 'Elke applikaasje yn de organisaasje dy\'t noch net op dit boerd stiet.',
+  'library.search': 'Sykje yn it register',
+  'library.searchPlaceholder': 'Namme of id…',
+  'library.none': 'Elke applikaasje yn de organisaasje stiet al op dit boerd.',
+  'library.noMatches': 'Neat komt oerien mei “{query}”',
+  'library.heldHere': 'Op dit nivo, net op dit boerd',
+  'library.definedIn': 'Definiearre yn {scope}',
+  'library.nobodyDefines': 'Nimmen definiearret dizze',
+  'library.ownTitle': 'Dit nivo foar {name} antwurdzje litte?',
+  'library.ownBody': 'Gjin inkeld nivo yn de organisaasje definiearret {name}. Antwurdzje der hjir foar en dit nivo wurdt de eigner; tekenje it allinne en de fraach bliuwt iepen.',
+  'library.own': 'Hjir foar antwurdzje',
+  'library.drawOnly': 'Allinne tekenje',
+  'library.drawn': '{name} stiet op it boerd',
+  'library.standsIn': '{name} stiet op it boerd en ferwiist nei it record yn {scope}',
+  'library.owned': 'Dit nivo antwurdet no foar {name}',
+
 }

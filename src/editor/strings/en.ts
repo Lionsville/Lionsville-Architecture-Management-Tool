@@ -155,6 +155,8 @@ export const EN = {
   'paletteDescription.component': 'A part inside one application',
   'paletteDescription.actor': 'A person or role using the landscape',
   'paletteDescription.domainGroup': 'A labelled area grouping the landscape',
+  'palette.existing': 'Existing application…',
+  'paletteDescription.existing': 'An application the organisation already has, drawn here',
 
   // --- toolbar -------------------------------------------------------------
   'toolbar.newDiagram': 'New Layer 7 diagram',

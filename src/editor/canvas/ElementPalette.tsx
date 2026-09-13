@@ -90,6 +90,21 @@ function Chevron({ direction }: { direction: 'left' | 'right' | 'down' }) {
  * The palette draws the SAME glyphs the canvas nodes draw, so what you pick
  * looks like what lands. Only the stroke is lighter here.
  */
+/**
+ * The register row's mark: an application card with a small plus — one of
+ * these, from elsewhere. Drawn here rather than in `glyphs.tsx` because no
+ * node ever wears it.
+ */
+function ExistingGlyph({ size = 14, strokeWidth = 2 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth={strokeWidth} />
+      <path d="M6 10h8M6 14h5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+      <path d="M19 3v6M16 6h6" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const KIND_GLYPHS: Record<PaletteKey, FC<{ size?: number; strokeWidth?: number }>> = {
   actor: PersonGlyph,
   application: ApplicationGlyph,
@@ -139,6 +154,13 @@ export interface ElementPaletteProps {
    * ends up without one.
    */
   onAddDomainGroup?(seed?: DomainGroupSeed): void;
+  /**
+   * Layer 7 only: a row that opens the host's picker over the register, for
+   * an application the organisation already has. Not a kind and not a tray —
+   * there is nothing to configure before choosing, and nothing to drag,
+   * because which record lands is decided in the picker. Absent = no row.
+   */
+  onAddExisting?(): void;
   /**
    * The shared logo library, injected by the host. The package never fetches:
    * `logoRegistry.tsx` promises no network and no blob, and this package is
@@ -206,6 +228,7 @@ export function ElementPalette({
   kinds,
   onAdd,
   onAddDomainGroup,
+  onAddExisting,
   logoLibrary = [],
   onRequestLogoUpload,
   defaultNames,
@@ -265,13 +288,24 @@ export function ElementPalette({
     return (key: PaletteKey) => matchesQuery(query, terms(key));
   }, [query]);
 
+  // The register row is searched the way a kind's row is, so a person typing
+  // "existing" or "bestaande" finds it — and the systems section stays up for
+  // it when every kind has been filtered away.
+  const existingMatches = useMemo(
+    () => onAddExisting !== undefined && matchesQuery(query, [
+      STRINGS.en['palette.existing'], STRINGS.nl['palette.existing'],
+      STRINGS.en['paletteDescription.existing'], STRINGS.nl['paletteDescription.existing'],
+    ]),
+    [onAddExisting, query],
+  );
+
   const sections = useMemo(
     () =>
       PALETTE_SECTIONS.map((section) => ({
         ...section,
         keys: section.keys.filter((key) => available.includes(key) && matches(key)),
-      })).filter((section) => section.keys.length > 0),
-    [available, matches],
+      })).filter((section) => section.keys.length > 0 || (section.id === 'systems' && existingMatches)),
+    [available, matches, existingMatches],
   );
 
   const closeTray = (focusRow?: PaletteKey) => {
@@ -452,6 +486,36 @@ export function ElementPalette({
             </Tooltip>
           );
         })}
+        {onAddExisting && (
+          <Tooltip
+            placement="right"
+            title={
+              <>
+                {t('palette.existing')}
+                <Box component="span" sx={{ display: 'block', opacity: 0.75 }}>
+                  {t('paletteDescription.existing')}
+                </Box>
+              </>
+            }
+          >
+            <ButtonBase
+              aria-label={t('palette.existing')}
+              onClick={onAddExisting}
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: 1.5,
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'text.primary',
+                  backgroundColor: alpha(theme.palette.text.primary, mode === 'dark' ? 0.06 : 0.04),
+                },
+              }}
+            >
+              <ExistingGlyph size={18} strokeWidth={GLYPH_STROKE} />
+            </ButtonBase>
+          </Tooltip>
+        )}
       </Box>
     );
   }
@@ -686,6 +750,20 @@ export function ElementPalette({
               {t(section.titleKey)}
             </Typography>
             {section.keys.map(renderRow)}
+            {section.id === 'systems' && onAddExisting && existingMatches && (
+              <ButtonBase
+                aria-label={t('palette.existing')}
+                onClick={onAddExisting}
+                sx={rowSx(theme, mode)}
+              >
+                <Box sx={{ display: 'flex', color: 'text.secondary' }}>
+                  <ExistingGlyph size={15} strokeWidth={GLYPH_STROKE} />
+                </Box>
+                <Typography sx={{ fontSize: 13, lineHeight: 1.4, flex: 1, textAlign: 'left' }}>
+                  {t('palette.existing')}
+                </Typography>
+              </ButtonBase>
+            )}
           </Box>
         ))}
       </Box>

@@ -147,6 +147,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'paletteDescription.component': 'Een onderdeel binnen één applicatie',
   'paletteDescription.actor': 'Een persoon of rol die het landschap gebruikt',
   'paletteDescription.domainGroup': 'Een benoemd vlak dat het landschap groepeert',
+  'palette.existing': 'Bestaande applicatie…',
+  'paletteDescription.existing': 'Een applicatie die de organisatie al heeft, hier getekend',
 
   'toolbar.newDiagram': 'Nieuw Layer 7-aanzicht',
   'toolbar.newLandscape': 'Landschap',

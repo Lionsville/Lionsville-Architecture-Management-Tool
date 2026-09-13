@@ -56,6 +56,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.hasChildren': 'Wat onder dit record valt blijft dan zonder. Verplaats dat eerst.',
   'gesture.barrier': 'Die stap heeft twee niveaus geschreven en kan hier niet ongedaan worden gemaakt. Verplaats het record terug met een eigen handeling.',
 
+  'library.unknownId': 'Het register kent die applicatie niet meer.',
+  'library.alreadyDrawn': '{name} staat al op dit bord.',
+  'library.notABoard': 'Een kaart wordt op een landschap of een containerweergave getekend.',
+
   'standIn.definedIn': 'Gedefinieerd in {scope} — de details worden daar beheerd.',
   'standIn.open': '{scope} openen',
   'standIn.from': 'uit {scope}',

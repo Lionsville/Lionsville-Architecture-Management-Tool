@@ -114,6 +114,43 @@ describe('ElementPalette — the calm panel', () => {
 });
 
 /**
+ * The register row (ADR-0012 §2): not a kind and not a tray. Pressing it hands
+ * over to the host's picker, and there is nothing to drag because which
+ * record lands is decided there.
+ */
+describe('ElementPalette — the register row', () => {
+  it('is there only when the host offers a register, and presses straight through', () => {
+    renderPalette();
+    expect(screen.queryByRole('button', { name: 'Existing application…' })).toBeNull();
+
+    cleanup();
+    const onAddExisting = vi.fn();
+    renderPalette({ onAddExisting });
+    const button = screen.getByRole('button', { name: 'Existing application…' });
+    expect(button.getAttribute('draggable')).not.toBe('true');
+    fireEvent.click(button);
+    expect(onAddExisting).toHaveBeenCalledTimes(1);
+  });
+
+  it('is found by the filter in either language, and keeps its section up when every kind is filtered out', () => {
+    renderPalette({ onAddExisting: vi.fn() });
+    fireEvent.change(screen.getByLabelText('Search the palette'), { target: { value: 'bestaande' } });
+    expect(screen.getByRole('button', { name: 'Existing application…' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Application', expanded: false })).toBeNull();
+    expect(screen.queryByText('Nothing matches “bestaande”')).toBeNull();
+  });
+
+  it('sits on the rail too, as a button that opens the picker rather than the panel', () => {
+    const onAddExisting = vi.fn();
+    const onToggleCollapsed = vi.fn();
+    renderPalette({ onAddExisting, collapsed: true, onToggleCollapsed });
+    fireEvent.click(screen.getByRole('button', { name: 'Existing application…' }));
+    expect(onAddExisting).toHaveBeenCalledTimes(1);
+    expect(onToggleCollapsed).not.toHaveBeenCalled();
+  });
+});
+
+/**
  * The domain group used to be the panel's one exception: it added on click,
  * because a layout rect was held to have nothing worth configuring. It has a
  * colour, so it opens like everything else. These tests exist to stop the

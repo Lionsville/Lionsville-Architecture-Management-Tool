@@ -56,6 +56,10 @@ export const FY: Record<keyof typeof EN, string> = {
   'gesture.hasChildren': 'Wat ûnder dit record falt bliuwt dan sûnder. Ferpleats dat earst.',
   'gesture.barrier': 'Dy stap hat twa nivo\'s skreaun en kin hjir net ûngedien makke wurde. Ferpleats it record werom mei in eigen hanneling.',
 
+  'library.unknownId': 'It register ken dy applikaasje net mear.',
+  'library.alreadyDrawn': '{name} stiet al op dit boerd.',
+  'library.notABoard': 'In kaart wurdt op in lânskip of in kontenerwerjefte tekene.',
+
   'standIn.definedIn': 'Definiearre yn {scope} — de details wurde dêr behearre.',
   'standIn.open': '{scope} iepenje',
   'standIn.from': 'út {scope}',

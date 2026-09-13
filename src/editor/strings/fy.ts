@@ -147,6 +147,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'paletteDescription.component': 'In ûnderdiel binnen ien applikaasje',
   'paletteDescription.actor': 'In persoan of rol dy’t it lânskip brûkt',
   'paletteDescription.domainGroup': 'In beneamd flak dat it lânskip groepearret',
+  'palette.existing': 'Besteande applikaasje…',
+  'paletteDescription.existing': 'In applikaasje dy\'t de organisaasje al hat, hjir tekene',
 
   'toolbar.newDiagram': 'Nij Layer 7-diagram',
   'toolbar.newLandscape': 'Lânskip',
