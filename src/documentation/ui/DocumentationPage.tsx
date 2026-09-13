@@ -38,6 +38,7 @@ import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
 import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
+import { SeamResizer } from '../../widgets/SeamResizer';
 import { DocumentSource } from './DocumentSource';
 import type { DocumentImages } from './DocumentSource';
 import { DocumentSheet } from './DocumentSheet';
@@ -56,6 +57,12 @@ import { BackIcon } from '../../widgets/icons';
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200;
+
+/**
+ * The fields column: wide enough for three dates in a row, and no wider than
+ * leaves the document readable beside it.
+ */
+export const FIELDS_COLUMN = { default: 340, min: 280, max: 720 } as const;
 
 export type DocumentationMode = 'read' | 'edit';
 
@@ -127,6 +134,14 @@ export interface DocumentationPageProps {
    * that name this element above its fields. Absent = no such section.
    */
   plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
+  /**
+   * How wide the fields column is, and where a drag on its seam goes.
+   *
+   * The host's rather than this page's, because the page is remounted per
+   * element and a width that snapped back on *next* would be a width nobody
+   * bothered to drag. Absent = the default, and no seam to drag.
+   */
+  fieldsWidth?: { value: number; onChange(next: number): void };
 }
 
 export function DocumentationPage(props: DocumentationPageProps) {
@@ -301,7 +316,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
       </Box>
 
       {/* ---- three columns ---- */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr) 340px', flex: 1, minHeight: 0 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: `220px minmax(0, 1fr) ${props.fieldsWidth ? 'auto' : ''} ${props.fieldsWidth?.value ?? FIELDS_COLUMN.default}px`, flex: 1, minHeight: 0 }}>
         {/* left: the diagram's elements */}
         <Box component="nav" data-testid="doc-nav" sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto' }}>
           <List dense disablePadding>
@@ -395,8 +410,20 @@ export function DocumentationPage(props: DocumentationPageProps) {
           )}
         </Box>
 
-        {/* right: the plans that name it, then the element's own fields */}
-        <Box sx={{ borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
+        {/* the seam, then right: the plans that name it and the element's own fields */}
+        {props.fieldsWidth && (
+          <SeamResizer
+            orientation="vertical"
+            region="after"
+            value={props.fieldsWidth.value}
+            min={FIELDS_COLUMN.min}
+            max={FIELDS_COLUMN.max}
+            defaultValue={FIELDS_COLUMN.default}
+            onChange={props.fieldsWidth.onChange}
+            label={t('doc.resizeFields')}
+          />
+        )}
+        <Box sx={{ borderLeft: props.fieldsWidth ? 0 : 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2, minWidth: 0 }}>
           {plansHere.length > 0 && (
             <Box data-testid="doc-plans" sx={{ mb: 2 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.plans')}</Typography>

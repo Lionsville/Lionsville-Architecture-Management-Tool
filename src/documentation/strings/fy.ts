@@ -35,6 +35,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'doc.read': 'Lêze',
   'doc.edit': 'Bewurkje',
   'doc.close': 'Dokumintaasje slute',
+  'doc.resizeFields': 'De kolom mei fjilden grutter of lytser meitsje',
   'doc.previous': 'Foarich elemint',
   'doc.next': 'Folgjend elemint',
   'doc.contents': 'Op dizze side',

@@ -35,6 +35,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.read': 'Lesen',
   'doc.edit': 'Bearbeiten',
   'doc.close': 'Dokumentation schließen',
+  'doc.resizeFields': 'Die Felderspalte in der Breite anpassen',
   'doc.previous': 'Vorheriges Element',
   'doc.next': 'Nächstes Element',
   'doc.contents': 'Auf dieser Seite',

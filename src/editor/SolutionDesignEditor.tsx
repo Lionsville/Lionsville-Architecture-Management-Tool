@@ -72,6 +72,7 @@ import { InspectorEmptyState, InspectorPanel } from './InspectorPanel';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { ShortcutsHelpDialog } from './ShortcutsHelpDialog';
 import { DocumentationPage } from '../documentation/ui/DocumentationPage';
+import { FIELDS_COLUMN } from '../documentation/ui/DocumentationPage';
 import {
   defaultElementNames,
   selectElement,
@@ -221,6 +222,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   /** The element whose documentation page is open; session state, never saved. */
   const [documentationId, setDocumentationId] = useState<ElementId | undefined>(undefined);
+  // The page's fields column, kept here because the page is remounted per
+  // element: a width dragged once should hold while a reader moves on.
+  const [documentationFieldsWidth, setDocumentationFieldsWidth] = useState<number>(FIELDS_COLUMN.default);
   /**
    * ONE focus request, fed by two sources: the host's `focusElement` prop and
    * the editor's own ⌘F finder.
@@ -1370,6 +1374,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             />
           )}
           plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
+          fieldsWidth={{ value: documentationFieldsWidth, onChange: setDocumentationFieldsWidth }}
           onNavigate={openDocumentation}
           onClose={() => setDocumentationId(undefined)}
           onRequestDelete={() => {

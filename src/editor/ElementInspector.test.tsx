@@ -521,6 +521,13 @@ describe('ElementInspector — the record on the page', () => {
     }
   });
 
+  it('keeps Appearance beside the canvas: the page draws no card to colour', () => {
+    renderInspector(element({ iconKey: 'database' }), { layout: 'stacked' });
+    expect(screen.queryByLabelText('Accent colour')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Icon' })).toBeNull();
+    expect(screen.getByText('OPERATIONAL ASPECTS')).toBeDefined();
+  });
+
   it('reads the party back into the panel\'s one line', () => {
     renderInspector(element({ outside: true, partyId: 'p1' }), { others: [actor('p1', 'ProRail')] });
     expect(screen.getByTestId('record-summary').textContent).toContain('Outside · ProRail');

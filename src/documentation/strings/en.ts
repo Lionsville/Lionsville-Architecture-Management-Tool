@@ -36,6 +36,7 @@ export const EN = {
   'doc.read': 'Read',
   'doc.edit': 'Edit',
   'doc.close': 'Close documentation',
+  'doc.resizeFields': 'Resize the fields column',
   'doc.previous': 'Previous element',
   'doc.next': 'Next element',
   'doc.contents': 'On this page',

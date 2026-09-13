@@ -435,8 +435,11 @@ export function ElementInspector(props: ElementInspectorProps) {
         </Box>
       )}
 
-      {sectionTitle(t('tab.appearance'))}
-      {show(1) && (
+      {/* Appearance is how this scope DRAWS the thing — a colour, a shape, a
+          mark on a card — and stays beside the canvas, where the card is. The
+          page is about what the thing is, and a colour picker on it would be
+          a control for a drawing you cannot see. */}
+      {!stacked && show(1) && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <ColorField
             label={t('field.accentColour')}

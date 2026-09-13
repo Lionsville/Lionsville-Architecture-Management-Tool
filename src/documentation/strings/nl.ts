@@ -35,6 +35,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.read': 'Lezen',
   'doc.edit': 'Bewerken',
   'doc.close': 'Documentatie sluiten',
+  'doc.resizeFields': 'De kolom met velden vergroten of verkleinen',
   'doc.previous': 'Vorig element',
   'doc.next': 'Volgend element',
   'doc.contents': 'Op deze pagina',

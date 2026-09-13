@@ -297,6 +297,19 @@ describe('DocumentationPage', () => {
     expect(name().disabled).toBe(true);
   });
 
+  it('lets the fields column be dragged wider, through the host that keeps the width', () => {
+    // The host keeps it because the page is remounted per element; without a
+    // host there is nothing to keep it and no seam either.
+    const onChange = vi.fn();
+    setup({ fieldsWidth: { value: 340, onChange } });
+    const seam = screen.getByRole('separator', { name: 'Resize the fields column' });
+    fireEvent.keyDown(seam, { key: 'ArrowLeft' });
+    expect(onChange).toHaveBeenCalledWith(348);
+    cleanup();
+    setup();
+    expect(screen.queryByRole('separator', { name: 'Resize the fields column' })).toBeNull();
+  });
+
   it('renders nothing on the right when nobody fills the slot', () => {
     setup({ renderInspector: undefined });
     expect(screen.queryByLabelText('Name')).toBeNull();
