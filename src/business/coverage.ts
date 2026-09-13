@@ -62,8 +62,10 @@ export function coverageOf(
     // A row this scope also holds is one row, not two: `elsewhere` is a whole
     // tree's worth and the open scope's own rows are in it.
     if (elsewhere.includes(relation) && held.has(relation.id)) continue
-    if (relation.type === 'supports') at(relation.targetId).supportedBy.push(relation.sourceId)
-    if (relation.type === 'assigned') at(relation.targetId).assignedTo.push(relation.sourceId)
+    // A fact said twice is one fact: two rows naming the same application
+    // — one written here, one read back from the tree — are one supporter.
+    if (relation.type === 'supports') once(at(relation.targetId).supportedBy, relation.sourceId)
+    if (relation.type === 'assigned') once(at(relation.targetId).assignedTo, relation.sourceId)
   }
   return new Map(
     [...found].map(([id, rows]) => [id, { ...rows, coverage: verdict(rows) }]),
@@ -76,6 +78,10 @@ export function coverageFor(
   id: ElementId,
 ): FunctionCoverage {
   return coverageOf(relations).get(id) ?? NOTHING
+}
+
+function once(list: ElementId[], id: ElementId): void {
+  if (!list.includes(id)) list.push(id)
 }
 
 function verdict(rows: { supportedBy: ElementId[]; assignedTo: ElementId[] }): Coverage {

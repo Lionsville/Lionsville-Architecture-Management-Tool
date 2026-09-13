@@ -41,7 +41,7 @@ import { plural } from '../../i18n/strings'
 import type { StringKey, Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
 import { mayRemove } from '../authoring'
-import { coverageFor } from '../coverage'
+import { coverageFor, coverageOf } from '../coverage'
 import { childrenOf, wouldCycle } from '../tree'
 
 /**
@@ -546,10 +546,11 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
   elsewhere: readonly Relation[] | undefined
 }) {
   const { t } = useStrings()
-  const coverage = coverageFor(
-    elsewhere?.length ? [...model.relations, ...elsewhere] : model.relations, element.id,
-  )
-  const own = elsewhere?.length ? coverageFor(model.relations, element.id) : coverage
+  // `coverageOf` rather than a concatenation: the rows elsewhere are the
+  // whole tree's, this scope's own saved rows among them, and it counts a
+  // row this scope holds once. Concatenating listed every saved app twice.
+  const own = coverageFor(model.relations, element.id)
+  const coverage = elsewhere?.length ? (coverageOf(model.relations, elsewhere).get(element.id) ?? own) : own
   const supporters: readonly Supporter[] = applications
     ?? model.elements.filter((held) => held.kind === 'application')
   const people: readonly Supporter[] = model.elements.filter((held) => held.kind === 'actor')

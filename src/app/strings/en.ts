@@ -136,6 +136,9 @@ export const EN = {
    * The bar's way back. Each scope above the open one is a crumb, and the
    * organisation is the first: pressing one lands on that scope's home.
    */
+  'shell.chooseBoard': 'Which board?',
+  'shell.chooseBoardHint': '{name} is drawn on more than one board.',
+  'shell.chooseBoardAsOf': 'As of {day}',
   'shell.crumbTip': 'Go to {name}',
   'shell.exampleCopied': 'Example \u201c{name}\u201d copied to a project of your own.',
 
@@ -280,6 +283,8 @@ export const EN = {
   'picker.addUnder': 'New scope under {name}',
   'picker.organisation': 'This organisation',
   'picker.reservedName': 'A scope cannot be called that \u2014 the folder is already used for what a scope holds.',
+  /** Off makes a domain on purpose: a scope that files others and draws nothing itself. */
+  'picker.withBoard': 'Start with a landscape',
   'scope.kind.organisation': 'Organisation',
   'scope.kind.domain': 'Domain',
   'scope.kind.programme': 'Programme',
@@ -501,7 +506,11 @@ export const EN = {
    * The table on a landscape's home: every board, one row each, so a future
    * version of the landscape is a row beside the current one.
    */
-  'org.views': 'Views',
+  'org.views': 'Landscapes',
+  /** The way to a scope's first board: the canvas's own button is behind a canvas it is never given. */
+  'org.newBoard': 'New landscape\u2026',
+  'org.noBoards': 'Nothing drawn at this level yet.',
+  'org.boardName': 'Name',
   'org.viewLayer7': 'Landscape',
   'org.viewContainer': 'Containers',
   'org.viewAsOf': 'As of {date}',

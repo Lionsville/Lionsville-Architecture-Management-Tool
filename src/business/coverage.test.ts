@@ -81,3 +81,14 @@ describe('coverageFor', () => {
     expect(coverageFor(rows(), 'picking').coverage).toBe('covered')
   })
 })
+
+describe('a fact said twice', () => {
+  it('counts one supporter for two rows naming the same application', () => {
+    const rows = [
+      relation('r1', 'supports', 'wms', 'picking'),
+      relation('r2', 'supports', 'wms', 'picking'),
+    ]
+    expect(coverageFor(rows, 'picking').supportedBy).toEqual(['wms'])
+    expect(coverageOf(rows, [relation('r3', 'supports', 'wms', 'picking')]).get('picking')?.supportedBy).toEqual(['wms'])
+  })
+})

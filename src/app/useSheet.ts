@@ -24,12 +24,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import { mayRemove, moveAmongSiblings, nextOrder, rootsOfKind, seedSheet } from '../business'
 import type { NewElement, SheetActions } from '../business'
-import { boardsDrawing, toDiagram, transaction } from '../model'
+import { toDiagram, transaction } from '../model'
 import type { Command, DesignDiagram, DesignElement, ElementId, Relation } from '../model'
 import type { IdPolicy, MakeId } from '../model/keys'
 import type { Translate } from '../i18n'
 import type { ModelSession } from './useModelSession'
-import type { Notify } from './useToasts'
 
 export type Sheets = {
   /** The sheet being read, or nothing. */
@@ -46,13 +45,15 @@ export function useSheet(deps: {
   session: ModelSession
   makeId: MakeId
   s: Translate
-  notify: Notify
-  /** Show an element on the canvas — where a coverage link goes. */
-  toElement: (id: ElementId) => void
-  /** Where a coverage link goes when no board draws it: the element's own page. */
-  toDocumentation: (id: ElementId) => void
+  /**
+   * Where a coverage link goes (`useShowElement`): a board here, a choice
+   * between boards, the element's page, or the scope that answers for it.
+   * `leave` is this page closing, called only when a board here is about to
+   * show — a page or another scope stacks over the sheet or replaces it.
+   */
+  showElement: (id: ElementId, leave: () => void) => void
 }): Sheets {
-  const { session, makeId, s, notify, toElement, toDocumentation } = deps
+  const { session, makeId, s, showElement } = deps
   const [sheetId, setSheetId] = useState<string | undefined>(undefined)
 
   const close = useCallback(() => setSheetId(undefined), [])
@@ -97,20 +98,9 @@ export function useSheet(deps: {
 
       onOpenElement(id) {
         // Leaving the page for the board, the way a plan's page leaves it —
-        // and for a board that actually draws it. The last board somebody had
-        // open may not hold it, or may be dated past the day it retires, and
-        // pointing at that one lands a person on a page with nothing selected.
-        const model = session.current()
-        const boards = boardsDrawing(model, id)
-        setSheetId(undefined)
-        if (boards.length === 0) { toDocumentation(id); return }
-        const active = session.currentActiveId()
-        const board = boards.find((held) => held.id === active) ?? boards[0]
-        if (board.id !== active) {
-          session.setActiveDiagramId(board.id)
-          notify(s('sheet.switchedBoard', { name: board.name }), 'info')
-        }
-        toElement(id)
+        // and for a board that actually draws it, which is the shell's
+        // question to answer: the sheet only says what it does on the way out.
+        showElement(id, () => setSheetId(undefined))
       },
 
       addElement(seed) {
@@ -234,7 +224,7 @@ export function useSheet(deps: {
           : transaction(rows.map((row) => ({ type: 'relation.delete' as const, id: row.id }))))
       },
     }
-  }, [session, sheetId, s, notify, toElement, toDocumentation])
+  }, [session, sheetId, s, showElement])
 
   return {
     sheetId,

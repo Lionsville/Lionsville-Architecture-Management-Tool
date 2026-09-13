@@ -118,9 +118,11 @@ export function crumbsFor(
  * bold and not a button — it is where you already are. Shared by this bar and
  * a scope's home, so the two read the same and a crumb means one thing.
  */
-export function Crumbs({ crumbs, current, onGoHome, s }: {
+export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   crumbs: readonly Crumb[]
   current: string
+  /** The open scope's path: its own crumb leads to its home too. */
+  currentPath: ScopePath
   onGoHome: (path: ScopePath) => void
   s: Translate
 }) {
@@ -145,7 +147,20 @@ export function Crumbs({ crumbs, current, onGoHome, s }: {
           <Typography aria-hidden sx={{ fontSize: 12, color: 'text.disabled' }}>›</Typography>
         </Box>
       ))}
-      <Typography sx={{ fontSize: 13, fontWeight: 700, px: 0.5 }} data-testid="crumb-current">{current}</Typography>
+      {/* The open scope is a button as well: a page that ends on a canvas with
+          nothing to draw — an organisation whose views are all laid out — has
+          no other way back to the home it came from. */}
+      <Tooltip title={s('shell.crumbTip', { name: current })}>
+        <Button
+          size="small"
+          color="inherit"
+          onClick={() => onGoHome(currentPath)}
+          data-testid="crumb-current"
+          sx={{ fontSize: 13, fontWeight: 700, minWidth: 0, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary' }}
+        >
+          {current}
+        </Button>
+      </Tooltip>
     </Box>
   )
 }
@@ -202,8 +217,10 @@ export type ShellToolbarProps = {
    */
   saveFailed?: boolean
   language: Language
-  /** Leave this scope for the home of one above it: what a crumb does. */
+  /** Leave this scope for the home of one above it, or its own: what a crumb does. */
   onGoHome: (path: ScopePath) => void
+  /** The open scope's path, for its own crumb. */
+  scopePath: ScopePath
   /** Open the project's own settings: its name and its group. */
   onOpenSettings: () => void
   /**
@@ -237,7 +254,7 @@ export type ShellToolbarProps = {
 }
 
 export function ShellToolbar({
-  designName, crumbs, savedAt, status = 'clean', saveFailed = false,
+  designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
   language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenRoadmap,
   onOpenSearch, activity,
   overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
@@ -261,7 +278,7 @@ export function ShellToolbar({
       WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
-      <Crumbs crumbs={crumbs} current={designName} onGoHome={onGoHome} s={s} />
+      <Crumbs crumbs={crumbs} current={designName} currentPath={scopePath} onGoHome={onGoHome} s={s} />
       <Tooltip title={s('settings.title')}>
         <Button size="small" color="inherit" onClick={onOpenSettings} sx={quiet}>
           {s('settings.open')}

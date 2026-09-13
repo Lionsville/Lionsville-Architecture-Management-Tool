@@ -48,8 +48,7 @@ const project = (m: HostModel = model()): ScopeSnapshot => ({
 
 /** The real session underneath, so what is pinned is the stack and the model. */
 function mount(initial = project()) {
-  const toElement = vi.fn()
-  const toDocumentation = vi.fn()
+  const showElement = vi.fn()
   const notify = vi.fn()
   let sheets!: Sheets
   let session!: ModelSession
@@ -60,16 +59,13 @@ function mount(initial = project()) {
       session,
       makeId: (p) => `${p}-${++counter}`,
       s: translator('en'),
-      notify,
-      toElement,
-      toDocumentation,
+      showElement,
     })
     return null
   }
   render(<Host />)
   return {
-    toElement,
-    toDocumentation,
+    showElement,
     notify,
     sheets: () => sheets,
     model: () => session.current(),
@@ -153,87 +149,18 @@ describe('what the page may do', () => {
     expect(host.model().diagrams.find((d) => d.id === 'sh-1')?.showActors).toBe(false)
   })
 
-  it('closes the page on its way to an element on the board', () => {
+  it('hands a coverage link to the shell, with its own closing as what to do on the way out', () => {
     const host = opened()
     act(() => host.sheets().actions.onOpenElement('wms'))
+    expect(host.showElement).toHaveBeenCalledWith('wms', expect.any(Function))
+    // Not closed yet: the shell closes it only when a board here is about
+    // to show, and leaves it up under a page or a choice.
+    expect(host.sheets().sheetId).toBe('sh-1')
+    act(() => (host.showElement.mock.calls[0][1] as () => void)())
     expect(host.sheets().sheetId).toBeUndefined()
-    expect(host.toElement).toHaveBeenCalledWith('wms')
   })
 })
 
-/**
- * Where a coverage link lands (the first beta tester's second finding).
- *
- * A project with two landscapes over one model on two days is the shipped
- * example's own shape, and the board somebody last had open is not
- * necessarily one that draws the thing they clicked.
- */
-describe('opening an element from the sheet', () => {
-  const twoBoards = () => project(model({
-    elements: [
-      ...shippingScope().elements.map((element) => (element.id === 'scanner'
-        ? { ...element, lifecycleDates: { retired: '2027-01-01' } }
-        : element)),
-    ],
-    diagrams: [
-      laidOut({
-        id: 'd1',
-        kind: 'layer7',
-        name: 'Landscape',
-        placements: [{ id: 'wms', x: 0, y: 0 }, { id: 'scanner', x: 10, y: 0 }],
-      }),
-      laidOut({
-        id: 'd2',
-        kind: 'layer7',
-        name: 'Landscape in 2027',
-        asOf: '2027-06-01',
-        placements: [{ id: 'erp', x: 0, y: 0 }, { id: 'scanner', x: 10, y: 0 }],
-      }),
-    ],
-  }))
-  const opened = () => {
-    const host = mount(twoBoards())
-    act(() => host.sheets().create())
-    return host
-  }
-
-  it('stays on the board a person is on when that board draws it', () => {
-    const host = opened()
-    act(() => host.sheets().actions.onOpenElement('wms'))
-    expect(host.activeId()).toBe('d1')
-    expect(host.notify).not.toHaveBeenCalled()
-    expect(host.toElement).toHaveBeenCalledWith('wms')
-  })
-
-  it('switches to the first board that draws it, and says which', () => {
-    const host = opened()
-    act(() => host.sheets().actions.onOpenElement('erp'))
-    expect(host.activeId()).toBe('d2')
-    expect(host.notify).toHaveBeenCalledWith('Showing Landscape in 2027, which draws it', 'info')
-    expect(host.toElement).toHaveBeenCalledWith('erp')
-  })
-
-  it('opens the element’s own page when no board draws it', () => {
-    // `scanner` is on both boards and retires before the second one's day, so
-    // the only board that draws it is the one it is already on… until that is
-    // not the active one either. Here the model holds an application nothing
-    // has been placed on at all.
-    const host = opened()
-    act(() => host.sheets().actions.onOpenElement('picking'))
-    expect(host.toDocumentation).toHaveBeenCalledWith('picking')
-    expect(host.toElement).not.toHaveBeenCalled()
-    expect(host.activeId()).toBe('d1')
-  })
-
-  it('does not send a person to a board whose day has retired it', () => {
-    const host = opened()
-    act(() => host.sheets().actions.onOpenElement('scanner'))
-    // d1 draws it and d2 does not, so the active board is right and nothing
-    // is said about a switch that did not happen.
-    expect(host.activeId()).toBe('d1')
-    expect(host.notify).not.toHaveBeenCalled()
-  })
-})
 
 describe('opening and closing', () => {
   it('opens one by id and hands the page the diagram', () => {
@@ -496,9 +423,7 @@ describe('from nothing to a covered capability', () => {
         session,
         makeId: (p) => `${p}-1`,
         s: translator('en'),
-        notify: vi.fn(),
-        toElement: vi.fn(),
-        toDocumentation: vi.fn(),
+        showElement: vi.fn(),
       })
       return sheets.sheet ? (
         <SheetPage

@@ -32,6 +32,7 @@ const props = {
   onOpenRoadmap: () => {},
   onOpenSearch: () => {},
   activity: () => [],
+  scopePath: 'retail/warehouse',
   s: translator('en'),
 }
 
@@ -131,9 +132,10 @@ describe('ShellToolbar and the window around it', () => {
     renderShell(<ShellToolbar {...props} onGoHome={(path) => went.push(path)} />)
     fireEvent.click(screen.getByTestId('crumb-retail'))
     fireEvent.click(screen.getByTestId('crumb-'))
-    expect(went).toEqual(['retail', ''])
-    // The open scope is where you already are, and is not a button.
-    expect(screen.getByTestId('crumb-current').closest('button')).toBeNull()
+    // The open scope's own crumb leads to its home as well: a canvas with
+    // nothing to draw would otherwise be a page with no way out.
+    fireEvent.click(screen.getByTestId('crumb-current'))
+    expect(went).toEqual(['retail', '', 'retail/warehouse'])
   })
 
   it('no longer says where the project is kept: that is the root’s home’s to say', () => {

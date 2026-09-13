@@ -74,6 +74,8 @@ import { useGestures } from './useGestures'
 import { useModelSession } from './useModelSession'
 import { usePlans } from './usePlans'
 import { useSheet } from './useSheet'
+import { useShowElement } from './useShowElement'
+import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
 import { useMap } from './useMap'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
@@ -299,8 +301,20 @@ export function ProjectWorkspace({
     if (session.current().elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
     setDocRequest((prev) => ({ elementId, diagramId, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [session, notify, s])
+  /**
+   * Where a link to an element lands: a board here, a choice, its page, or
+   * the scope that answers for it. The sheet, the register and a row of the
+   * organisation's own list all end here.
+   */
+  const showElement = useShowElement({
+    session, scope: project.path, notify, s,
+    focus: focusElement,
+    toDocumentation: openDocumentation,
+    masterOf: useCallback((id: string) => indexRef.current.lookup(id)?.master, []),
+    ...(onOpenScope ? { onOpenScope } : {}),
+  })
   const sheets = useSheet({
-    session, makeId, s, notify, toElement: focusElement, toDocumentation: openDocumentation,
+    session, makeId, s, showElement: showElement.show,
   })
   // The map's inspector edits a capability with the sheet's own actions: a
   // rename from either page is the same command.
@@ -871,7 +885,7 @@ export function ProjectWorkspace({
       plans.openPlan(initialPage.id)
     }
     // A row of the register, opened where it is answered for.
-    if (initialPage.page === 'element') focusElement(initialPage.id)
+    if (initialPage.page === 'element') showElement.show(initialPage.id)
     if (initialPage.page === 'document') openDocumentation(initialPage.id)
     if (initialPage.page === 'documentation') openDocumentation()
     // Not a page: the register's *Link…*, which can only be done by the
@@ -981,6 +995,7 @@ export function ProjectWorkspace({
       <ShellToolbar
         designName={session.model.name}
         crumbs={crumbs}
+        scopePath={project.path}
         savedAt={savedAt}
         status={document.state.status}
         saveFailed={saveFailed}
@@ -1185,6 +1200,12 @@ export function ProjectWorkspace({
         applications={applicationsInTree}
         onOpenDocumentation={(id) => openDocumentation(id, maps.mapId)}
         windowChrome={pageChrome}
+      />
+      <ChooseBoardDialog
+        choice={showElement.choice}
+        onChoose={showElement.choose}
+        onCancel={showElement.dismiss}
+        s={s}
       />
       <GlobalSearchDialog
         open={searchOpen}

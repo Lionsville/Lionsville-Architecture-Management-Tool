@@ -248,10 +248,15 @@ describe('what covers a capability, as something to tick', () => {
   it('counts a landscape’s rows in the line, and offers to take away only its own', () => {
     const { actions } = open('dunning', false, undefined, undefined, {
       applications: [{ id: 'crm', name: 'Customer system', where: 'acme/sales' }],
-      elsewhere: [{ id: 'r-x', type: 'supports', sourceId: 'crm', targetId: 'dunning' }],
+      elsewhere: [
+        { id: 'r-x', type: 'supports', sourceId: 'crm', targetId: 'dunning' },
+        { id: 'r-x', type: 'supports', sourceId: 'crm', targetId: 'dunning' },
+      ],
     })
     expect(screen.getByRole('button', { name: 'Open Customer system' })).toBeTruthy()
     expect(screen.queryByText('Nothing and nobody yet')).toBeNull()
+    // This scope's own saved rows are in the tree's list too: once, not twice.
+    expect(screen.getAllByRole('button', { name: /^Open / })).toHaveLength(1)
     // Not a chip: the row is the landscape's, and unpicking it here would find nothing to delete.
     const field = screen.getByRole('combobox', { name: /Supported by/ }).closest('.MuiAutocomplete-root')
     expect(field?.textContent).not.toContain('Customer system')
