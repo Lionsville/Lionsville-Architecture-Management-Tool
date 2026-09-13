@@ -282,15 +282,19 @@ describe('DocumentationPage', () => {
     expect(props.onNavigate).toHaveBeenLastCalledWith('e2');
   });
 
-  it('gives the inspector slot the element, editable only while editing', () => {
+  it('gives the inspector slot the element, editable whenever the page is', () => {
     // What the fields ARE is the editor's business — this page takes them as a
-    // slot. What it still decides is when they may be typed into: reading is
-    // read-only even when the document is not.
+    // slot. They used to be greyed out until Edit was pressed; Edit is about
+    // the prose, and the record moved to this page to be set here without
+    // opening the markdown source. Read-only is the page's own flag.
     setup();
     const name = () => screen.getByLabelText('Name') as HTMLInputElement;
-    expect(name().disabled).toBe(true);
+    expect(name().disabled).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(name().disabled).toBe(false);
+    cleanup();
+    setup({ readOnly: true });
+    expect(name().disabled).toBe(true);
   });
 
   it('renders nothing on the right when nobody fills the slot', () => {

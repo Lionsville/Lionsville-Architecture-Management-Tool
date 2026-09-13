@@ -10,12 +10,13 @@ import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../
 
 /**
  * U7a tabbed inspector: General / Appearance / Data. These tests assert (a)
- * every field that was reachable in the iteration-3 accordion is still reachable
- * under some tab (no persisted field dropped), (b) the shared ColorField accent
- * control round-trips hex/undefined, (c) the active tab resets when the selected
- * element id changes, (d) tab badges reflect set/overridden values, and (e)
- * readOnly disables controls in every tab. The `updateElement` onChange contract
- * is asserted — never MUI internals.
+ * every field an element has is reachable — under some tab beside the canvas,
+ * or in the record on the page (`layout="stacked"`), and nothing persisted is
+ * dropped, (b) the shared ColorField accent control round-trips hex/undefined,
+ * (c) the active tab resets when the selected element id changes, (d) tab
+ * badges reflect set/overridden values, and (e) readOnly disables controls in
+ * every tab. The `updateElement` onChange contract is asserted — never MUI
+ * internals.
  */
 
 afterEach(() => cleanup());
@@ -66,21 +67,28 @@ function renderInspector(
     dia?: DesignDiagram;
     onReplace?: (id: string) => void;
     owned?: { label: string; fields: readonly string[]; onOpen?: () => void };
+    /** `stacked` is the page, where the record's fields are laid out. */
+    layout?: 'tabs' | 'stacked';
+    onOpenDocumentation?: (id: string) => void;
+    others?: DesignElement[];
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
   const { actions, updateElement, setDomainGroup } = makeActions();
+  const m = model(el, dia);
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <ElementInspector
         element={el}
-        model={model(el, dia)}
+        model={{ ...m, elements: [...m.elements, ...(opts.others ?? [])] }}
         diagram={dia}
         readOnly={opts.readOnly ?? false}
         actions={actions}
         onRequestDelete={vi.fn()}
         onReplace={opts.onReplace}
         owned={opts.owned}
+        layout={opts.layout}
+        onOpenDocumentation={opts.onOpenDocumentation}
       />
     </ThemeProvider>,
   );
@@ -107,14 +115,27 @@ describe('ElementInspector — tab structure (U7a)', () => {
     expect(screen.getByRole('button', { name: /Remove \/ delete/ })).toBeDefined();
   });
 
-  it('General reaches Category, Vendor, Technology, Lifecycle, Managed, Description', () => {
-    renderInspector(element());
+  it('General reaches Category, Lifecycle, Managed, Description — and the record is one line and a way to the page', () => {
+    // Vendor, technology, owner, the dates and the successor left the panel
+    // for the page (`ElementRecord.tsx`): they are what a thing IS, not what
+    // a person sets while drawing it. What stays here is a read-out.
+    const onOpenDocumentation = vi.fn();
+    renderInspector(element({ vendor: 'SAP', owner: 'Logistics' }), { onOpenDocumentation });
     expect(screen.getByLabelText('Category')).toBeDefined();
-    expect(screen.getByLabelText('Vendor')).toBeDefined();
-    expect(screen.getByLabelText('Technology')).toBeDefined();
     expect(screen.getByLabelText('Lifecycle')).toBeDefined();
     expect(screen.getByLabelText('Managed')).toBeDefined();
     expect(screen.getByText('Description (markdown)')).toBeDefined();
+    expect(screen.queryByLabelText('Vendor')).toBeNull();
+    expect(screen.queryByLabelText('Owner')).toBeNull();
+    expect(screen.getByTestId('record-summary').textContent).toContain('Owner: Logistics · Vendor: SAP');
+    fireEvent.click(screen.getByRole('button', { name: 'Open the page' }));
+    expect(onOpenDocumentation).toHaveBeenCalledWith('e1');
+  });
+
+  it('says the record is empty rather than showing nothing, and offers no page where there is none', () => {
+    renderInspector(element());
+    expect(screen.getByTestId('record-summary').textContent).toContain('Nothing on the record yet');
+    expect(screen.queryByRole('button', { name: 'Open the page' })).toBeNull();
   });
 
   it('General reaches the layer7 Placement block (zone read-out + domain group)', () => {
@@ -209,12 +230,12 @@ describe('ElementInspector — icon picker (now a grid, in Appearance)', () => {
     // Three of the kinds that had one were the same `application` in three
     // bands (ADR-0012 §4), so what is left is the application itself.
     for (const kind of ['application'] as ElementKind[]) {
-      const { unmount } = renderInspector(element({ kind }));
+      const { unmount } = renderInspector(element({ kind }), { layout: 'stacked' });
       expect(screen.getByLabelText('Vendor')).toBeDefined();
       unmount();
     }
     for (const kind of ['actor', 'function', 'component'] as ElementKind[]) {
-      const { unmount } = renderInspector(element({ kind }));
+      const { unmount } = renderInspector(element({ kind }), { layout: 'stacked' });
       expect(screen.queryByLabelText('Vendor')).toBeNull();
       unmount();
     }
@@ -304,8 +325,13 @@ describe('ElementInspector — tab badges reflect set values', () => {
   });
 
   it('dots General when identity/status/prose is set', () => {
-    renderInspector(element({ vendor: 'SAP' }));
+    renderInspector(element({ category: 'Core' }));
     expect(within(tab('General')).queryByText('●')).not.toBeNull();
+  });
+
+  it('does not dot General for the record, which is not under the tab any more', () => {
+    renderInspector(element({ vendor: 'SAP' }));
+    expect(within(tab('General')).queryByText('●')).toBeNull();
   });
 
   it('dots Appearance when an appearance override is set', () => {
@@ -370,16 +396,16 @@ describe('ElementInspector — actor stickman shape (U7c/D11)', () => {
 describe('ElementInspector — Replace… (ADR-0010)', () => {
   it('offers the gesture beside "Replaced by" when the host can start one', () => {
     const onReplace = vi.fn();
-    renderInspector(element({ id: 'wms' }), { onReplace });
+    renderInspector(element({ id: 'wms' }), { onReplace, layout: 'stacked' });
     fireEvent.click(screen.getByRole('button', { name: 'Replace…' }));
     expect(onReplace).toHaveBeenCalledWith('wms');
   });
 
   it('offers nothing without a host to answer it, or when read-only', () => {
-    renderInspector(element());
+    renderInspector(element(), { layout: 'stacked' });
     expect(screen.queryByRole('button', { name: 'Replace…' })).toBeNull();
     cleanup();
-    renderInspector(element(), { readOnly: true, onReplace: vi.fn() });
+    renderInspector(element(), { readOnly: true, onReplace: vi.fn(), layout: 'stacked' });
     expect(screen.queryByRole('button', { name: 'Replace…' })).toBeNull();
   });
 });
@@ -414,7 +440,7 @@ describe('ElementInspector — a record another scope answers for', () => {
   });
 
   it('shows the owner\'s detail read-only, and the cached name with it', () => {
-    renderInspector(element({ vendor: 'Someone' }), { owned });
+    renderInspector(element({ vendor: 'Someone' }), { owned, layout: 'stacked' });
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByLabelText('Vendor') as HTMLInputElement).disabled).toBe(true);
     expect(selectDisabled('Lifecycle')).toBe(true);
@@ -439,5 +465,64 @@ describe('ElementInspector — a record another scope answers for', () => {
     renderInspector(element());
     expect(screen.queryByTestId('owned-elsewhere')).toBeNull();
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false);
+  });
+});
+
+/**
+ * The record, on the page (`ElementRecord.tsx`): the owner's detail laid out
+ * in full, and — for the first time on any screen — whether the thing is
+ * ours and whose it is otherwise.
+ */
+describe('ElementInspector — the record on the page', () => {
+  const actor = (id: string, name: string): DesignElement =>
+    ({ id, kind: 'actor', name, lifecycle: 'live', isManaged: false, aspects: {} });
+
+  it('lays the record out: owner, vendor, technology, the dates and the successor', () => {
+    const { updateElement } = renderInspector(element(), { layout: 'stacked' });
+    expect(screen.getByLabelText('Owner')).toBeDefined();
+    expect(screen.getByLabelText('Vendor')).toBeDefined();
+    expect(screen.getByLabelText('Technology')).toBeDefined();
+    expect(screen.getByLabelText('Live from')).toBeDefined();
+    expect(screen.getByLabelText('Replaced by')).toBeDefined();
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Logistics' } });
+    expect(updateElement).toHaveBeenCalledWith('e1', { owner: 'Logistics' }, expect.any(String));
+  });
+
+  it('writes `outside` as true or absent, never false — and drops the party with it', () => {
+    const { updateElement } = renderInspector(element(), { layout: 'stacked' });
+    fireEvent.click(screen.getByLabelText('Outside the organisation'));
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { outside: true });
+    cleanup();
+    const again = renderInspector(element({ outside: true, partyId: 'p1' }), { layout: 'stacked', others: [actor('p1', 'ProRail')] });
+    fireEvent.click(screen.getByLabelText('Outside the organisation'));
+    expect(again.updateElement).toHaveBeenLastCalledWith('e1', { outside: undefined, partyId: undefined });
+  });
+
+  it('asks whose it is only once it is outside, offering the actors of this scope', () => {
+    renderInspector(element(), { layout: 'stacked', others: [actor('p1', 'ProRail')] });
+    expect(screen.queryByLabelText('Belongs to')).toBeNull();
+    cleanup();
+    const { updateElement } = renderInspector(element({ outside: true }), { layout: 'stacked', others: [actor('p1', 'ProRail')] });
+    fireEvent.mouseDown(screen.getByLabelText('Belongs to'));
+    fireEvent.click(screen.getByRole('option', { name: 'ProRail' }));
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { partyId: 'p1' });
+  });
+
+  it('asks whether it is ours of an application and an actor, and of nothing else', () => {
+    for (const kind of ['application', 'actor'] as ElementKind[]) {
+      const { unmount } = renderInspector(element({ kind }), { layout: 'stacked' });
+      expect(screen.getByLabelText('Outside the organisation')).toBeDefined();
+      unmount();
+    }
+    for (const kind of ['function', 'component', 'step'] as ElementKind[]) {
+      const { unmount } = renderInspector(element({ kind }), { layout: 'stacked' });
+      expect(screen.queryByLabelText('Outside the organisation')).toBeNull();
+      unmount();
+    }
+  });
+
+  it('reads the party back into the panel\'s one line', () => {
+    renderInspector(element({ outside: true, partyId: 'p1' }), { others: [actor('p1', 'ProRail')] });
+    expect(screen.getByTestId('record-summary').textContent).toContain('Outside · ProRail');
   });
 });

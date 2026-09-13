@@ -284,6 +284,15 @@ export const EN = {
   'field.date.retired': 'Gone on',
   'field.successor': 'Replaced by',
   'field.owner': 'Owner',
+  'field.outside': 'Outside the organisation',
+  'field.party': 'Belongs to',
+  'field.partyNone': 'Nobody said',
+  // The record, as the panel beside the canvas shows it: one line and a way
+  // to the page where the fields are (`ElementRecord.tsx`).
+  'record.title': 'Record',
+  'record.open': 'Open the page',
+  'record.empty': 'Nothing on the record yet',
+  'record.outsideOf': 'Outside \u00b7 {name}',
   'field.replace': 'Replace…',
   'edge.replaces': 'replaces',
   'field.validFrom': 'Line valid from',

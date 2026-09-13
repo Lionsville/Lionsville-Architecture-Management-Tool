@@ -89,8 +89,13 @@ export interface DocumentationPageProps {
    *
    * A slot, like `renderMarkdown` above it, and for the same reason: the
    * inspector is the editor's, and a page that reads a description must not
-   * have to import the canvas to show the fields beside it. `readOnly` is the
-   * page's own — reading is read-only even when the document is not.
+   * have to import the canvas to show the fields beside it.
+   *
+   * `readOnly` is the page's own, and it is NOT the Read/Edit toggle: that
+   * toggle is about the prose, and a person who came to this page to set an
+   * owner should not have to open the markdown source to do it. The fields
+   * were greyed out in Read once, and the record moved here from the panel
+   * precisely so it could be edited somewhere with room.
    */
   renderInspector?(element: DesignElement, options: { readOnly: boolean }): ReactNode;
   /** Move the page to another element (the left column, an element link, prev/next). */
@@ -406,7 +411,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
               ))}
             </Box>
           )}
-          {props.renderInspector?.(element, { readOnly: readOnly || mode === 'read' })}
+          {props.renderInspector?.(element, { readOnly })}
         </Box>
       </Box>
 

@@ -97,10 +97,12 @@ describe('typing into a field', () => {
     const { host } = renderEditor();
     fireEvent.click(node('a1'));
     type(within(inspector()).getByLabelText('Name'), 'Storefront');
-    type(within(inspector()).getByLabelText('Vendor'), 'Acme BV');
+    // The description: the other field the panel still types into since the
+    // record (vendor, owner, dates) moved to the page.
+    type(within(inspector()).getByLabelText('Description'), 'Sells things.');
 
     act(() => host.current.history.undo());
-    expect(host.current.model.elements[0].vendor).toBeUndefined();
+    expect(host.current.model.elements[0].description).toBeUndefined();
     expect(host.current.model.elements[0].name).toBe('Storefront');
 
     act(() => host.current.history.undo());

@@ -13,8 +13,6 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
-import { DATED_PHASES } from '../model/lifecycle';
-import type { DatedPhase } from '../model/lifecycle';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor } from '../model/aspects';
 import { LogoGrid } from './nodes/LogoGrid';
@@ -27,6 +25,7 @@ import { AspectsEditor } from './AspectsEditor';
 import { ColorField } from './ColorField';
 import { InspectorSection } from './InspectorSection';
 import { MarkdownField } from '../documentation/ui/MarkdownField';
+import { ElementRecord, recordSummary } from './ElementRecord';
 
 const LIFECYCLES: DesignElement['lifecycle'][] = ['planned', 'live', 'retiring', 'retired'];
 
@@ -139,21 +138,6 @@ export interface ElementInspectorProps {
   };
 }
 
-/**
- * Who sells it — asked of an application and of nothing else.
- *
- * It used to be asked of three kinds, and the other two turned out to BE
- * applications (ADR-0012 §4): a management tool has a vendor because it is a
- * piece of software somebody bought, and so does a system from outside.
- */
-function showVendor(kind: DesignElement['kind']): boolean {
-  return kind === 'application';
-}
-
-function showTechnology(kind: DesignElement['kind']): boolean {
-  return kind === 'application' || kind === 'component';
-}
-
 /** Tab label with an optional "set values" dot (mirrors the InspectorSection "●" badge). */
 function TabLabel({ text, dot }: { text: string; dot: boolean }) {
   return (
@@ -171,30 +155,17 @@ function TabLabel({ text, dot }: { text: string; dot: boolean }) {
 /**
  * Element property form (U7a): a tabbed inspector — General / Appearance / Data.
  * The header (kind + Name) and the Delete action stay outside the tabs, always
- * visible. Nothing persisted was dropped from the iteration-3 accordion; the
- * concerns were regrouped: identity/status/prose + layer7 placement in General,
- * the U6 colour/shape/logo controls in Appearance, and the aspects plus
- * Tab selection is per-selection in-memory state
- * and resets to General when the selected element id changes.
- */
-/**
- * A patch for one phase's date, with the whole object rebuilt.
+ * visible. Tab selection is per-selection in-memory state and resets to General
+ * when the selected element id changes.
  *
- * Rebuilt rather than mutated because the reducer judges the dates the element
- * would END UP with, and it compares by value: clearing a field has to remove
- * the key, not leave it present and empty.
+ * **Two layouts, and the record is what differs.** Beside the canvas (`tabs`)
+ * the panel holds what a person sets while drawing — name, category, phase,
+ * the short description, the placement — and the owner's detail (vendor,
+ * owner, dates, successor, whose it is) is one line and a way to the page.
+ * On the page (`stacked`) the record is laid out in full above the rest
+ * (`ElementRecord.tsx` says why it moved). The fields are the same fields
+ * and reach the model the same way; only where they are typed differs.
  */
-function withDate(
-  held: DesignElement['lifecycleDates'],
-  phase: DatedPhase,
-  day: string | undefined,
-): DesignElement['lifecycleDates'] {
-  const next = { ...held };
-  if (day) next[phase] = day;
-  else delete next[phase];
-  return Object.keys(next).length ? next : undefined;
-}
-
 export function ElementInspector(props: ElementInspectorProps) {
   const { element, readOnly, actions } = props;
   const { t } = useStrings();
@@ -253,13 +224,9 @@ export function ElementInspector(props: ElementInspectorProps) {
   const showAspects = element.kind === 'application';
 
   const generalHasValues = Boolean(
-    element.description ||
-      element.vendor ||
-      element.technology ||
-      element.category ||
-      element.isManaged ||
-      placement?.group,
+    element.description || element.category || element.isManaged || placement?.group,
   );
+  const summary = recordSummary(element, props.model, t);
   const appearanceHasValues = Boolean(
     element.accentColor || element.shapeVariant || element.iconKey || element.iconSize,
   );
@@ -333,6 +300,44 @@ export function ElementInspector(props: ElementInspectorProps) {
         </Box>
       )}
 
+      {/* The record, as the panel beside the canvas shows it: one line and a
+          way to the page, where the fields are. Outside the tabs because it
+          is about the whole record, like the name above it. */}
+      {!stacked && (
+        <Box
+          data-testid="record-summary"
+          sx={{
+            display: 'flex', alignItems: 'center', gap: 1,
+            px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>
+            {summary.length ? summary.join(' · ') : t('record.empty')}
+          </Typography>
+          {props.onOpenDocumentation && (
+            <Button
+              size="small"
+              sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+              onClick={() => props.onOpenDocumentation?.(element.id)}
+            >
+              {t('record.open')}
+            </Button>
+          )}
+        </Box>
+      )}
+
+      {stacked && sectionTitle(t('record.title'))}
+      {stacked && (
+        <ElementRecord
+          element={element}
+          model={props.model}
+          readOnly={readOnly}
+          actions={actions}
+          owned={owned}
+          onReplace={props.onReplace}
+        />
+      )}
+
       {!stacked && <Tabs
         value={activeTab}
         onChange={(_e, value: number) => setActiveTab(value)}
@@ -355,26 +360,6 @@ export function ElementInspector(props: ElementInspectorProps) {
               disabled={readOnly || owned('category')}
               onInputChange={(_e, value) => update({ category: value || undefined })}
               renderInput={(params) => <TextField {...params} label={t('field.category')} />}
-            />
-          )}
-
-          {showVendor(element.kind) && (
-            <TextField
-              label={t('field.vendor')}
-              value={element.vendor ?? ''}
-              fullWidth
-              disabled={readOnly || owned('vendor')}
-              onChange={(e) => typed('vendor', { vendor: e.target.value || undefined })}
-            />
-          )}
-
-          {showTechnology(element.kind) && (
-            <TextField
-              label={t('field.technology')}
-              value={element.technology ?? ''}
-              fullWidth
-              disabled={readOnly || owned('technology')}
-              onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
             />
           )}
 
@@ -405,61 +390,6 @@ export function ElementInspector(props: ElementInspectorProps) {
               label={<Typography variant="caption">{t('field.managed')}</Typography>}
             />
           </Box>
-
-          {/* The dates on the lifecycle above (ADR-0009). Optional throughout:
-              an element that says nothing about time behaves exactly as it did
-              before dates existed, and these three stay empty. */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {DATED_PHASES.map((phase) => (
-              <TextField
-                key={phase}
-                type="date"
-                label={t(`field.date.${phase}` as StringKey)}
-                value={element.lifecycleDates?.[phase] ?? ''}
-                sx={{ flex: 1 }}
-                disabled={readOnly || owned('lifecycleDates')}
-                slotProps={{ inputLabel: { shrink: true } }}
-                onChange={(e) => update({
-                  lifecycleDates: withDate(element.lifecycleDates, phase, e.target.value || undefined),
-                })}
-              />
-            ))}
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <TextField
-              select
-              label={t('field.successor')}
-              value={element.successorId ?? ''}
-              disabled={readOnly || owned('successorId')}
-              sx={{ flex: 1 }}
-              onChange={(e) => update({ successorId: e.target.value || undefined })}
-            >
-              <MenuItem value="">{t('field.notSet')}</MenuItem>
-              {props.model.elements
-                // Anything but itself: a successor is another thing in this
-                // landscape, and a self-reference would be a cycle in the checks.
-                .filter((other) => other.id !== element.id && other.kind === element.kind)
-                .map((other) => (
-                  <MenuItem key={other.id} value={other.id}>{other.name}</MenuItem>
-                ))}
-            </TextField>
-            {/* The gesture that sets this field and everything around it
-                (ADR-0010). Beside the field rather than under it, so "replaced
-                by" and "replace…" read as one question. */}
-            {!readOnly && !owned('successorId') && props.onReplace && (
-              <Button size="small" variant="outlined" onClick={() => props.onReplace?.(element.id)}>
-                {t('field.replace')}
-              </Button>
-            )}
-          </Box>
-
-          <TextField
-            label={t('field.owner')}
-            value={element.owner ?? ''}
-            disabled={readOnly || owned('owner')}
-            onChange={(e) => typed('owner', { owner: e.target.value || undefined })}
-          />
 
           {!props.hideDescription && (
             <MarkdownField
