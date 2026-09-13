@@ -8,4 +8,6 @@
 export * from './icons'
 export { ConfirmDialog } from './ConfirmDialog'
 export { PageDialog } from './PageDialog'
+export { SeamResizer } from './SeamResizer'
+export type { SeamResizerProps } from './SeamResizer'
 export type { PageDialogProps } from './PageDialog'

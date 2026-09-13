@@ -18,7 +18,7 @@
  * A fullscreen dialog, and it takes `windowChrome` for the reason the others
  * do: the shell toolbar's drag strip stays live underneath it.
  */
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -51,6 +51,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { SeamResizer } from '../../widgets/SeamResizer'
 import { PLAN_STATUS_LABEL as STATUS_LABEL } from '../labels'
 
 const ROLES: readonly TransitionRole[] = ['introduces', 'retires', 'changes']
@@ -181,7 +182,15 @@ export function PlanPage(props: PlanPageProps) {
             {!fullPage && (
               <>
                 <Interfaces plan={plan} model={model} today={props.today} readOnly={readOnly} actions={actions} height={interfacesHeight} />
-                <SeamResizer height={interfacesHeight} onHeight={setInterfacesHeight} label={t('plan.resizeInterfaces')} />
+                <SeamResizer
+                  orientation="horizontal"
+                  region="before"
+                  value={interfacesHeight}
+                  min={INTERFACES_MIN_HEIGHT}
+                  defaultValue={INTERFACES_DEFAULT_HEIGHT}
+                  onChange={setInterfacesHeight}
+                  label={t('plan.resizeInterfaces')}
+                />
               </>
             )}
             <Body
@@ -495,47 +504,6 @@ function ElementDates({ element, readOnly, onChange }: {
 
 const INTERFACES_DEFAULT_HEIGHT = 320
 const INTERFACES_MIN_HEIGHT = 80
-
-/**
- * The seam between the interfaces and the document, dragged up or down.
- *
- * Its own six pixels rather than the editor's `PanelResizer`, which this
- * module may not import; the same idea — drag off the height the gesture
- * started at, arrow keys for the keyboard, double-click to put it back.
- */
-function SeamResizer({ height, onHeight, label }: { height: number; onHeight(next: number): void; label: string }) {
-  const start = useRef({ y: 0, height })
-  const clamp = (next: number) => Math.max(INTERFACES_MIN_HEIGHT, Math.min(next, Math.max(INTERFACES_MIN_HEIGHT, window.innerHeight - 200)))
-  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    start.current = { y: event.clientY, height }
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }, [height])
-  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
-    onHeight(clamp(start.current.height + (event.clientY - start.current.y)))
-  }
-  return (
-    <Box
-      role="separator"
-      aria-orientation="horizontal"
-      aria-label={label}
-      aria-valuenow={Math.round(height)}
-      aria-valuemin={INTERFACES_MIN_HEIGHT}
-      tabIndex={0}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onDoubleClick={() => onHeight(INTERFACES_DEFAULT_HEIGHT)}
-      onKeyDown={(event) => {
-        if (event.key === 'ArrowUp') { event.preventDefault(); onHeight(clamp(height - 24)) }
-        if (event.key === 'ArrowDown') { event.preventDefault(); onHeight(clamp(height + 24)) }
-      }}
-      sx={{
-        height: 6, flexShrink: 0, cursor: 'row-resize', bgcolor: 'divider',
-        '&:hover, &:focus-visible': { bgcolor: 'primary.main', outline: 'none' },
-      }}
-    />
-  )
-}
 
 /**
  * The port table: one row per line on an element the plan moves from, with

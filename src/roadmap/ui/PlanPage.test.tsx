@@ -264,8 +264,10 @@ describe('the body', () => {
     setup()
     const seam = screen.getByRole('separator', { name: 'Resize the interface list' })
     const before = Number(seam.getAttribute('aria-valuenow'))
+    // The shared seam steps 8 an arrow, 32 with Shift — the editor's pace,
+    // where this page's own seam used to step 24.
     fireEvent.keyDown(seam, { key: 'ArrowDown' })
-    expect(Number(seam.getAttribute('aria-valuenow'))).toBe(before + 24)
+    expect(Number(seam.getAttribute('aria-valuenow'))).toBe(before + 8)
     fireEvent.doubleClick(seam)
     expect(Number(seam.getAttribute('aria-valuenow'))).toBe(before)
   })
