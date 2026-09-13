@@ -251,6 +251,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     translate: session.translate,
     containerName: session.containerName,
     ...(session.ownedElsewhere ? { ownedElsewhere: session.ownedElsewhere } : {}),
+    ...(session.tree ? { known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...over,
   }
 }

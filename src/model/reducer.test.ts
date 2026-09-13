@@ -270,9 +270,13 @@ describe('apply — relations', () => {
       .toEqual(['c#1', 'c#2'])
   })
 
-  it('refuses a line to an element that is not there', () => {
-    expect(apply(sample(), { type: 'relation.create', relation: connection('c#9', 'a', 'nope') }))
+  it('refuses a line between two elements that are not there, and lands one reaching out of the scope', () => {
+    expect(apply(sample(), { type: 'relation.create', relation: connection('c#9', 'nope', 'nor') }))
       .toEqual({ ok: false, reason: 'command.gone' })
+    // An organisation's capability supported by a landscape's application
+    // (ADR-0012 §5): the id this scope does not hold is ordinary.
+    const landed = ok(apply(sample(), { type: 'relation.create', relation: connection('c#9', 'elsewhere', 'a') }))
+    expect(landed.model.relations['c#9']).toMatchObject({ sourceId: 'elsewhere', targetId: 'a' })
   })
 
   /**

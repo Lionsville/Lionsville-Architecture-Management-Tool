@@ -79,6 +79,14 @@ export type WriteView = ReadView & {
   readonly ownedElsewhere?: (
     id: ElementId, patch: Partial<DesignElement>,
   ) => { owner?: string } | undefined
+  /**
+   * Does some scope in the organisation define this id (ADR-0012 §2)? A
+   * relation may reach one end into another scope — an organisation's
+   * capability supported by a landscape's application (§5) — and this is how
+   * the end is told from a typo. Absent means only this scope's own ids are
+   * known, which is what a session with no tree honestly has.
+   */
+  readonly known?: (id: ElementId) => boolean
 }
 
 /** A command, and what to say once it has landed. */
@@ -176,7 +184,14 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const type = args.type as RelationType
       const sourceId = args.sourceId as string
       const targetId = args.targetId as string
-      for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
+      // One end may be another scope's, as long as the tree knows it; a row
+      // about nothing this scope holds is somebody else's row to write.
+      for (const id of [sourceId, targetId]) {
+        if (!model.elements[id] && !view.known?.(id)) return refused('agent.unknownId', `element ${id}`)
+      }
+      if (!model.elements[sourceId] && !model.elements[targetId]) {
+        return refused('agent.badArguments', 'a relation needs at least one end this scope holds')
+      }
       if (sourceId === targetId) return refused('agent.badArguments', 'a relation needs two different elements')
       const bare: Relation = { id: view.ids.connection(), type, sourceId, targetId }
       const patch = relationPatch(args, bare)

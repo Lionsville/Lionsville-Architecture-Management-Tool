@@ -521,6 +521,22 @@ describe('a typed relation', () => {
     expect(row).not.toHaveProperty('protocol')
   })
 
+  it('reaches one end into another scope when the tree knows the id, and never both', () => {
+    // An organisation's capability supported by a landscape's application (ADR-0012 §5).
+    const known = (id: string) => id === 'crews-lts'
+    const out = commandFor('relation.add', { type: 'supports', sourceId: 'crews-lts', targetId: 'billing' }, view(model, { known }))
+    expect(answerOf(out)).toMatchObject({ sourceId: 'crews-lts', targetId: 'billing' })
+    expect(Object.values(roundTrip(model, out).relations).some((r) => r.sourceId === 'crews-lts')).toBe(true)
+    // A typo is still a typo, and a row about nothing this scope holds is another scope's to write.
+    expect(commandFor('relation.add', { type: 'supports', sourceId: 'ghost', targetId: 'billing' }, view(model, { known })))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('relation.add', { type: 'supports', sourceId: 'crews-lts', targetId: 'crews-lts2' }, view(model, { known: () => true })))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    // Without a tree, only this scope's own ids are known.
+    expect(commandFor('relation.add', { type: 'supports', sourceId: 'crews-lts', targetId: 'billing' }, view(model)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
   it('changes what a row means, and the days it holds', () => {
     const after = roundTrip(model, commandFor('relation.update', { id: 'c1', type: 'serves', validUntil: '2028-01-31' }, view(model)))
     expect(after.relations.c1).toMatchObject({ type: 'serves', validUntil: '2028-01-31' })

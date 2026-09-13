@@ -572,8 +572,10 @@ const SPECS = [
     description:
       'Join two elements with a typed relation (ADR-0012): supports (an application covers a '
       + 'capability), serves, realises, or assigned (who is responsible). Dated when it only holds for '
-      + 'a while — the roadmap draws the window. For a flow between two applications use connect, which '
-      + 'also takes a protocol and a direction. Answers with the relation\'s id.',
+      + 'a while — the roadmap draws the window. One end may be an element another scope defines, as '
+      + 'long as register.list or scopes.list knows the id: an organisation\'s capability supported by a '
+      + 'landscape\'s application is written on the organisation. For a flow between two applications use '
+      + 'connect, which also takes a protocol and a direction. Answers with the relation\'s id.',
     inputSchema: {
       type: 'object',
       properties: {

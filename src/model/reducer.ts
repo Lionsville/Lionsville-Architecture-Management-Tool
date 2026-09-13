@@ -272,7 +272,11 @@ export function apply(model: Model, command: Command): ApplyResult {
     // --- relations ----------------------------------------------------------
     case 'relation.create': {
       const { relation, at } = command
-      if (!model.elements[relation.sourceId] || !model.elements[relation.targetId]) return gone
+      // One end is enough (ADR-0012 §5): a row is this scope's when it is
+      // about something this scope holds, and the other end may be an id the
+      // tree knows — an organisation's capability supported by a landscape's
+      // application. Neither end held is a row about nothing.
+      if (!model.elements[relation.sourceId] && !model.elements[relation.targetId]) return gone
       const rows = put(model.relations, model.order.relations, relation.id, relation, at)
       return ok(withRelations(model, rows), { type: 'relation.delete', id: relation.id })
     }
