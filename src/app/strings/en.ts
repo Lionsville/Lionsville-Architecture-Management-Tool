@@ -107,6 +107,7 @@ export const EN = {
    */
   'shell.newDiagram': 'New landscape',
   'shell.newSheet': 'Business architecture',
+  'shell.newMap': 'Enterprise map',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',
   'shell.logoAdded': 'Logo “{name}” added to your own library.',
@@ -475,6 +476,8 @@ export const EN = {
   // The organisation's own pages, as cards.
   'org.business': 'Business architecture',
   'org.businessMake': 'Make a sheet\u2026',
+  'org.map': 'Map',
+  'org.mapMake': 'Make a map\u2026',
   'org.journeysOne': '{count} journey',
   'org.journeysOther': '{count} journeys',
   'org.areasOne': '{count} area',

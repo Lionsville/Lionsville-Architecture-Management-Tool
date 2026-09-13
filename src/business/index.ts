@@ -9,8 +9,10 @@
  *
  * Pure at the root, the way `roadmap/` is, and for the same reason: a sheet is
  * *laid out* rather than dragged (§6), so what it draws is arithmetic over the
- * model and can be tested in node without a canvas. The page that draws it —
- * the sheet and the inspector docked to it — lives in `ui/`.
+ * model and can be tested in node without a canvas. The enterprise map — the
+ * functions against the applications that support them, rolled up (`map`) —
+ * is the second laid-out view and is computed the same way. The pages that
+ * draw them, and the inspector docked to both, live in `ui/`.
  */
 export {
   childrenOf, depthOf, descendantsOf, flatten, inOrder, moveAmongSiblings, wouldCycle,
@@ -23,12 +25,18 @@ export { journeyOf } from './lanes'
 export type { Journey, Lane, LaneCell } from './lanes'
 export { rootsOfKind, seedSheet, unmappedFunctions } from './sheetDiagram'
 export { sheetPage } from './sheet'
+export { mapPage, seedMap } from './map'
+export type {
+  LaidOutMap, MapColumn, MapColumnGroup, MapDescribe, MapDescription, MapOptions, MapRow,
+} from './map'
 export type {
   SheetActor, SheetArea, SheetCapability, SheetCell, SheetGrouping, SheetJourney, SheetLane,
   SheetStep, LaidOutSheet,
 } from './sheet'
 export { SheetPage } from './ui/SheetPage'
 export type { SheetHandle, SheetPageProps } from './ui/SheetPage'
+export { MapPage } from './ui/MapPage'
+export type { MapPageProps } from './ui/MapPage'
 export { captureSheet, sheetPixelRatio } from './ui/captureSheet'
 export type { SheetShot } from './ui/captureSheet'
 export { FunctionInspector } from './ui/FunctionInspector'

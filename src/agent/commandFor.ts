@@ -28,7 +28,7 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { seedSheet } from '../business'
+import { seedMap, seedSheet } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
 import {
@@ -1122,6 +1122,16 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
         id: sheet.id, kind: 'sheet', name,
         journeyId: sheet.journeyId, areas: sheet.areas ?? [],
       }),
+    }
+  }
+  if (args.kind === 'map') {
+    const name = typeof args.name === 'string' ? args.name.trim() : ''
+    if (!name) return refused('agent.badArguments', '"name" is required for a map')
+    const map = seedMap({ id: view.makeId('mp'), name })
+    // Laid out, like a sheet: made and left for a person to open.
+    return {
+      command: { type: 'diagram.create', diagram: toDiagram(map), origin: 'agent' },
+      answer: json({ id: map.id, kind: 'map', name }),
     }
   }
   if (args.kind === 'layer7') {

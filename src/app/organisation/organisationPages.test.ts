@@ -76,6 +76,14 @@ describe('organisationPages', () => {
       ] })
       expect(organisationPages(withSheet, TODAY).business.sheetId).toBe('sh')
     })
+
+    it('names the map to open, likewise', () => {
+      expect(organisationPages(held, TODAY).business.mapId).toBeUndefined()
+      const withMap = scope({ diagrams: [
+        { id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] } },
+      ] })
+      expect(organisationPages(withMap, TODAY).business.mapId).toBe('mp')
+    })
   })
 
   describe('the decisions card', () => {

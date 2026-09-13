@@ -55,6 +55,8 @@ export interface EditorToolbarProps {
    * nothing to draw for one.
    */
   onOpenSheet?(diagramId: string): void;
+  onOpenMap?(diagramId: string): void;
+  onCreateMap?(): void;
   /** Offer a business architecture beside a landscape under the `+`. */
   onCreateSheet?(): void;
   onTidy(): void;
@@ -170,7 +172,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const layer7Diagrams = props.model.diagrams.filter((d) => d.kind === 'layer7');
   // The laid-out views, listed only where the host can draw one.
   const sheets = props.onOpenSheet ? props.model.diagrams.filter((d) => d.kind === 'sheet') : [];
-  const tabs = [...layer7Diagrams, ...sheets];
+  const maps = props.onOpenMap ? props.model.diagrams.filter((d) => d.kind === 'map') : [];
+  const tabs = [...layer7Diagrams, ...sheets, ...maps];
   const isContainer = props.activeDiagram.kind === 'container';
   // Legend opens on hover of the toggle (which itself toggles on click), so the
   // one control doubles as its own key (plan D4).
@@ -265,6 +268,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
               // A sheet is opened, never made active: the canvas would have
               // nothing to draw, and the host owns the page that draws it.
               if (sheets.some((d) => d.id === value)) props.onOpenSheet?.(value);
+              else if (maps.some((d) => d.id === value)) props.onOpenMap?.(value);
               else props.onActiveDiagramChange(value);
             }}
             variant="scrollable"
@@ -344,6 +348,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 <MenuItem onClick={() => { setNewMenu(null); props.onCreateSheet?.(); }}>
                   {t('toolbar.newSheet')}
                 </MenuItem>
+                {props.onCreateMap && (
+                  <MenuItem onClick={() => { setNewMenu(null); props.onCreateMap?.(); }}>
+                    {t('toolbar.newMap')}
+                  </MenuItem>
+                )}
               </Menu>
             </>
           ) : (

@@ -523,12 +523,14 @@ export interface DesignDiagram {
    * What kind of view this is (ADR-0012 §6).
    *
    * `layer7` and `container` are drawn on a canvas and have geometry. A
-   * `sheet` is **laid out**: the business architecture on one page, computed
-   * from the trees and their order, so it has no coordinates at all and
-   * {@link DesignDiagram.geometry} stays empty on one. Nothing drags, nothing
-   * routes, and a deleted geometry file would change nothing about it.
+   * `sheet` and a `map` are **laid out**: the business architecture on one
+   * page, and functions against the applications that support them, each
+   * computed from the trees and the rows, so neither has coordinates at all
+   * and {@link DesignDiagram.geometry} stays empty on both. Nothing drags,
+   * nothing routes, and a deleted geometry file would change nothing about
+   * either.
    */
-  kind: 'layer7' | 'container' | 'sheet';
+  kind: 'layer7' | 'container' | 'sheet' | 'map';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —
@@ -574,9 +576,10 @@ export interface DesignDiagram {
    */
   lanes?: ElementId[];
   /**
-   * A sheet: which function roots are drawn as areas, and in which order.
-   * Absent draws every root the scope holds, in the model's own order — a
-   * sheet nobody has curated shows everything rather than nothing.
+   * A sheet or a map: which function roots are drawn, and in which order —
+   * as the sheet's areas, or as the map's sections. Absent draws every root
+   * the scope holds, in the model's own order — a page nobody has curated
+   * shows everything rather than nothing.
    */
   areas?: ElementId[];
   /** A sheet: whether the stakeholder rail is drawn. Absent = it is. */

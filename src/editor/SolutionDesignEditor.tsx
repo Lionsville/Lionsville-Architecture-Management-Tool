@@ -1118,6 +1118,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onCreateLayer7Diagram={props.diagrams.onCreateLayer7}
         onOpenSheet={props.diagrams.onOpenSheet}
         onCreateSheet={props.diagrams.onCreateSheet}
+        onOpenMap={props.diagrams.onOpenMap}
+        onCreateMap={props.diagrams.onCreateMap}
         // Caught, not `void`ed: `handleTidy` rethrows so the unattended caller in
         // `useAutoLayout` can tell "laid out" from "did not", and `void` discards the
         // value without attaching a rejection handler — so a failed Tidy reported its

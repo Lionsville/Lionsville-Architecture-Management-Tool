@@ -81,6 +81,9 @@ export interface EditorDiagramActions {
      * without asking which kind, which is what it always did.
      */
     onCreateSheet?(): void;
+    /** The enterprise map, the second laid-out view: open one, and make one. As the sheet's. */
+    onOpenMap?(diagramId: string): void;
+    onCreateMap?(): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */

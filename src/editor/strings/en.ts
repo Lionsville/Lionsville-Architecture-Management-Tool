@@ -160,6 +160,7 @@ export const EN = {
   'toolbar.newDiagram': 'New Layer 7 diagram',
   'toolbar.newLandscape': 'Landscape',
   'toolbar.newSheet': 'Business architecture',
+  'toolbar.newMap': 'Enterprise map',
   'toolbar.readOnly': 'Read-only',
   'toolbar.undo': 'Undo',
   'toolbar.undoTip': 'Undo (⌘Z)',

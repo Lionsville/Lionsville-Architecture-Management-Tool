@@ -778,14 +778,15 @@ const SPECS = [
     tier: 'write',
     description:
       'Add a diagram: a new landscape by name, a C4 container view of one application seeded with its '
-      + 'components and laid out on first open, or a business architecture sheet over the journey and the '
-      + 'areas this project already holds. The first two are switched to; a sheet is a page rather than a '
-      + 'board, so it is made and left for a person to open. Answers with the id.',
+      + 'components and laid out on first open, a business architecture sheet over the journey and the '
+      + 'areas this project already holds, or an enterprise map — every function against the applications '
+      + 'that support it, with the gaps. The first two are switched to; a sheet and a map are pages rather '
+      + 'than boards, so they are made and left for a person to open. Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape, a container view, or a business architecture sheet.', enum: ['layer7', 'container', 'sheet'] },
-        name: { type: 'string', description: 'For a landscape or a sheet: its name.' },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, or an enterprise map.', enum: ['layer7', 'container', 'sheet', 'map'] },
+        name: { type: 'string', description: 'For a landscape, a sheet or a map: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
       },
       required: ['kind'],
@@ -876,7 +877,8 @@ const SPECS = [
       + 'and after moving anything, and read the band rectangles before choosing a coordinate. '
       + 'On a business architecture sheet, which is laid out and has no geometry, it reports the page '
       + 'instead: the stakeholder rail, the journey with a row per lane, and every area with what '
-      + 'covers each capability.',
+      + 'covers each capability. On an enterprise map it reports the rows — every function in tree '
+      + 'order with the applications supporting it, rolled up on the sections — and the columns.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -893,8 +895,8 @@ const SPECS = [
       'A picture of a diagram as the app draws it, as a PNG, with the transform it was drawn with so a '
       + 'pixel maps back to a flow coordinate. Crop to some elements or to a region: a whole landscape '
       + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible. '
-      + 'A business architecture sheet is drawn whole — it has no coordinates to crop to — and the crop '
-      + 'arguments are ignored for one.',
+      + 'A business architecture sheet or an enterprise map is drawn whole — neither has coordinates to '
+      + 'crop to — and the crop arguments are ignored for one.',
     inputSchema: {
       type: 'object',
       properties: {

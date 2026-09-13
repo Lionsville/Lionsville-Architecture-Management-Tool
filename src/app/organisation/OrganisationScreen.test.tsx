@@ -192,6 +192,22 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(screen.getByTestId('open-business').textContent).toBe('Open'))
   })
 
+  it('offers to make a map beside the sheet, and to open the one it has', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    expect((await screen.findByTestId('open-map')).textContent).toBe('Make a map…')
+
+    cleanup()
+    const withMap = organisation()
+    withMap.model.diagrams = [{
+      id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] },
+    }]
+    renderApp({ scopes: new InMemoryScopeStore([withMap]), today: TODAY })
+    await waitFor(() => expect(screen.getByTestId('open-map').textContent).toBe('Map'))
+    fireEvent.click(screen.getByTestId('open-map'))
+    // The root draws nothing; the map is what it was opened for.
+    expect(await screen.findByTestId('map-grid', {}, { timeout: 3000 })).toBeDefined()
+  })
+
   /** A fresh folder. Four zeroes read as a fault; a sentence reads as a start. */
   it('says nothing is here yet rather than showing zeroes', async () => {
     renderApp({ scopes: new InMemoryScopeStore([]), today: TODAY })

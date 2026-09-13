@@ -215,6 +215,10 @@ export function OrganisationScreen({
                 ROOT_SCOPE,
                 { page: 'sheet', ...(pages.business.sheetId ? { id: pages.business.sheetId } : {}) },
               )}
+              onOpenMap={() => organisation.open(
+                ROOT_SCOPE,
+                { page: 'map', ...(pages.business.mapId ? { id: pages.business.mapId } : {}) },
+              )}
               onOpenDecisions={() => organisation.open(ROOT_SCOPE, { page: 'decisions' })}
               onOpenRoadmap={() => organisation.open(ROOT_SCOPE, { page: 'roadmap' })}
               register={registerCounts}

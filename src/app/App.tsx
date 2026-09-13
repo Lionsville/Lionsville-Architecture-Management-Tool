@@ -113,6 +113,8 @@ export type InitialPage =
   | { page: 'roadmap' }
   /** A sheet by id, or — with none — the one the scope is about to be given. */
   | { page: 'sheet'; id?: string }
+  /** The enterprise map, likewise. */
+  | { page: 'map'; id?: string }
   /**
    * A record, selected on the board that draws it — a row of the register,
    * opened where it is answered for.

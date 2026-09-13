@@ -39,6 +39,8 @@ export type OrganisationCardsProps = {
    */
   register: RegisterSummary
   onOpenBusiness: () => void
+  /** The enterprise map: the business card's second door (ADR-0012 §9). */
+  onOpenMap: () => void
   onOpenDecisions: () => void
   onOpenRoadmap: () => void
   onOpenRegister: () => void
@@ -79,7 +81,7 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, register, onOpenBusiness, onOpenDecisions, onOpenRoadmap, onOpenRegister, s,
+  pages, ready, register, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap, onOpenRegister, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -110,11 +112,19 @@ export function OrganisationCards({
         count={businessCount}
         finding={businessFinding}
         action={(
-          <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business">
-            {/* A scope with no sheet is not missing one; it has not been given
-                one yet, and the word says which. */}
-            {pages.business.sheetId ? s('picker.open') : s('org.businessMake')}
-          </Button>
+          <Stack direction="row" spacing={0.5}>
+            <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business">
+              {/* A scope with no sheet is not missing one; it has not been given
+                  one yet, and the word says which. */}
+              {pages.business.sheetId ? s('picker.open') : s('org.businessMake')}
+            </Button>
+            {/* The map is the same layer read the other way — what supports
+                each capability, across the tree — and lives behind the same
+                card rather than a fifth. */}
+            <Button size="small" onClick={onOpenMap} sx={quiet} data-testid="open-map">
+              {pages.business.mapId ? s('org.map') : s('org.mapMake')}
+            </Button>
+          </Stack>
         )}
       />
 

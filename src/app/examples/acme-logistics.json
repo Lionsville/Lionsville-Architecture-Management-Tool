@@ -2128,6 +2128,15 @@
     "name": "Business architecture",
     "showActors": true
   },
+  "diagrams/enterprise-map.geometry.json": {
+    "nodes": []
+  },
+  "diagrams/enterprise-map.json": {
+    "id": "enterprise-map",
+    "kind": "map",
+    "members": [],
+    "name": "Enterprise map"
+  },
   "docs/assets-and-fleet.md": [
     "The trucks, the trailers and the people licensed to drive them.",
     ""
@@ -3328,7 +3337,8 @@
     "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
     "activeDiagramId": "business-architecture",
     "diagrams": [
-      "business-architecture"
+      "business-architecture",
+      "enterprise-map"
     ]
   }
 }

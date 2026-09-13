@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3832 tests** and one of every config. The
+One codebase, in modules, with **3872 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3832 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3872 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -187,7 +187,11 @@ src/business/     The business layer, and the arithmetic over its four trees
                     sheet · sheetDiagram   the laid-out page — rail, journey,
                                       areas, unmapped — and what a new one
                                       starts out showing
-                    ui/               SheetPage, FunctionInspector, captureSheet
+                    map               the enterprise map: functions against
+                                      the applications the rows name, rolled
+                                      up on the sections, the gap on the leaves
+                    ui/               SheetPage, MapPage, FunctionInspector,
+                                      captureSheet
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -543,6 +547,7 @@ identifiers is still a list of a customer's identifiers.
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
+| The four view kinds (ADR-0012 §6) | `layer7` · `container` drawn on a canvas; `sheet` · `map` **laid out**, no geometry, `areas` shared |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |

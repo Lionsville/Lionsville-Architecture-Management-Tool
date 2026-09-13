@@ -53,7 +53,8 @@ import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
-import { SheetPage } from '../business'
+import { MapPage, SheetPage } from '../business'
+import type { MapDescribe } from '../business'
 import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
@@ -69,6 +70,7 @@ import { useGestures } from './useGestures'
 import { useModelSession } from './useModelSession'
 import { usePlans } from './usePlans'
 import { useSheet } from './useSheet'
+import { useMap } from './useMap'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
 import { useNearlyFullNotice } from './useStorageNotice'
@@ -291,6 +293,9 @@ export function ProjectWorkspace({
   const sheets = useSheet({
     session, makeId, s, notify, toElement: focusElement, toDocumentation: openDocumentation,
   })
+  // The map's inspector edits a capability with the sheet's own actions: a
+  // rename from either page is the same command.
+  const maps = useMap({ session, makeId, s })
 
   /**
    * The picture behind an image source, or nothing — which is the whole of the
@@ -373,10 +378,15 @@ export function ProjectWorkspace({
    */
   const editorHandle = useRef<EditorHandle | undefined>(undefined)
   const onEditorHandle = useCallback((handle: EditorHandle | undefined) => { editorHandle.current = handle }, [])
-  /** The same arrangement for the sheet, which is a page rather than a canvas. */
+  /**
+   * The same arrangement for the laid-out pages, which are pages rather than a
+   * canvas. One ref for both: the sheet and the map are never up together, and
+   * the agent asks for a picture by diagram id, which says which page.
+   */
   const sheetHandle = useRef<SheetHandle | undefined>(undefined)
   const onSheetHandle = useCallback((handle: SheetHandle | undefined) => { sheetHandle.current = handle }, [])
   const openSheetPage = sheets.open
+  const openMapPage = maps.open
   const renderer = useMemo<RendererView>(() => {
     const current = (): EditorHandle => {
       const held = editorHandle.current
@@ -421,7 +431,9 @@ export function ProjectWorkspace({
        * refusal rather than a hang.
        */
       async sheet(diagramId, options) {
-        openSheetPage(diagramId)
+        const asked = session.current().diagrams.find((diagram) => diagram.id === diagramId)
+        if (asked?.kind === 'map') openMapPage(diagramId)
+        else openSheetPage(diagramId)
         const deadline = Date.now() + 5_000
         while (Date.now() < deadline) {
           const held = sheetHandle.current
@@ -431,7 +443,7 @@ export function ProjectWorkspace({
         throw new RendererRefused('gone')
       },
     }
-  }, [session, openSheetPage])
+  }, [session, openSheetPage, openMapPage])
 
   useAgentGateway(agent, useMemo(() => ({
     indexed: session.indexed,
@@ -561,6 +573,26 @@ export function ProjectWorkspace({
   // session, and neither moves when the choice does.
   const { offers: gestureOffers, choose: gestureChoose } = gestures
 
+  /**
+   * What the map calls a column, and whose it is (ADR-0012 §9).
+   *
+   * The applications supporting the organisation's capabilities are a
+   * landscape's, so their names come from the index rather than from this
+   * scope's model — which holds them, if at all, as stand-ins whose cache may
+   * have drifted. `where` is the master's scope where that is not this one,
+   * said the way the bar says it.
+   */
+  const describeForMap = useCallback<MapDescribe>((id) => {
+    const entry = index.lookup(id)
+    if (!entry) return undefined
+    const { master } = entry
+    return {
+      name: entry.name,
+      kind: entry.kind,
+      ...(master !== undefined && master !== project.path ? { where: scopeLabel(master) } : {}),
+    }
+  }, [index, project.path, scopeLabel])
+
   const ownership = useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => {
       const held = session.indexed().elements[elementId]
@@ -687,22 +719,37 @@ export function ProjectWorkspace({
     session, makeId, s,
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
-  // The toolbar's pages are one at a time, and the sheet is one of them.
+  // The toolbar's pages are one at a time, and the sheet and the map are two of them.
   const openDecisions = useCallback((adrId?: string) => {
     plans.closeAll()
     sheets.close()
+    maps.close()
     showDecision(adrId)
-  }, [plans.closeAll, sheets.close, showDecision])
+  }, [plans.closeAll, sheets.close, maps.close, showDecision])
   const openRoadmap = useCallback(() => {
     setAdrPage({ open: false })
     sheets.close()
+    maps.close()
     plans.openRoadmap()
-  }, [plans.openRoadmap, sheets.close])
+  }, [plans.openRoadmap, sheets.close, maps.close])
   const openSheet = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
+    maps.close()
     sheets.open(id)
-  }, [plans.closeAll, sheets.open])
+  }, [plans.closeAll, maps.close, sheets.open])
+  const openMap = useCallback((id: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.open(id)
+  }, [plans.closeAll, sheets.close, maps.open])
+  const createMap = useCallback(() => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.create()
+  }, [plans.closeAll, sheets.close, maps.create])
 
   /**
    * The page this was opened for, shown once.
@@ -722,6 +769,10 @@ export function ProjectWorkspace({
       if (initialPage.id) openSheet(initialPage.id)
       else sheets.create()
     }
+    if (initialPage.page === 'map') {
+      if (initialPage.id) openMap(initialPage.id)
+      else createMap()
+    }
     // A row of the register, opened where it is answered for.
     if (initialPage.page === 'element') focusElement(initialPage.id)
     // Not a page: the register's *Link…*, which can only be done by the
@@ -729,7 +780,7 @@ export function ProjectWorkspace({
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, focusElement, gestures])
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, focusElement, gestures])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -875,6 +926,8 @@ export function ProjectWorkspace({
             onSettingsChange: diagrams.onDiagramSettingsChange,
             onOpenSheet: openSheet,
             onCreateSheet: sheets.create,
+            onOpenMap: openMap,
+            onCreateMap: createMap,
           }}
           history={historyRequests}
           requests={{ focus: focusRequest, documentation: docRequest }}
@@ -1008,6 +1061,20 @@ export function ProjectWorkspace({
         onHandle={onSheetHandle}
         ownerOf={ownership.ownerOf}
         elsewhere={rowsElsewhere}
+        windowChrome={pageChrome}
+      />
+      <MapPage
+        open={maps.mapId !== undefined}
+        model={session.model}
+        map={maps.map}
+        readOnly={false}
+        actions={sheets.actions}
+        onClose={() => { maps.close(); leaveIfNothingToDraw() }}
+        onHandle={onSheetHandle}
+        ownerOf={ownership.ownerOf}
+        elsewhere={rowsElsewhere}
+        describe={describeForMap}
+        today={todayDay}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog

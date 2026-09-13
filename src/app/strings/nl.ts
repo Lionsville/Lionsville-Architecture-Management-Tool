@@ -63,6 +63,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.moveLeftCopy': 'Verplaatst — maar de kopie in de oude groep kon niet worden verwijderd: {message}',
   'shell.newDiagram': 'Nieuw landschap',
   'shell.newSheet': 'Bedrijfsarchitectuur',
+  'shell.newMap': 'Bedrijfskaart',
   'shell.add': 'Toevoegen',
   'shell.imagesMissing': 'PNG geëxporteerd, maar deze logo’s ontbreken: {labels}.',
   'shell.logoAdded': 'Logo “{name}” toegevoegd aan de eigen bibliotheek.',
@@ -363,6 +364,8 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'org.business': 'Bedrijfsarchitectuur',
   'org.businessMake': 'Een plaat maken\u2026',
+  'org.map': 'Kaart',
+  'org.mapMake': 'Een kaart maken\u2026',
   'org.journeysOne': '{count} klantreis',
   'org.journeysOther': '{count} klantreizen',
   'org.areasOne': '{count} gebied',

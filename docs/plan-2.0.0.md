@@ -539,10 +539,38 @@ history page's subject picker offers *everywhere this is drawn*.
 
 ## Beta 4 — the map, and the agent
 
-### 12. The enterprise map
+### 12. The enterprise map — landed 13 September 2026
 
 The `map` view: functions × applications from `supports`, rolled up across
 scopes through the index; *people* as a column; *uncovered* as the gap.
+
+**Landed**, and five things the next stretch should know:
+
+- **It is the second laid-out view, and it borrows the sheet's everything.**
+  `business/map.ts` is the arithmetic and `MapPage` the table; the inspector,
+  the actions, the capture handle and the agent's renderer seam are the
+  sheet's, because a capability edited from the map is the same command.
+  `app/useMap.ts` holds only what is the map's alone: which one is up, and
+  making one.
+- **The columns are what the rows name**, not every application the scope
+  holds — a map of a hundred systems and forty capabilities would be mostly
+  empty. Ordered by first appearance down the rows so a tidy tree reads as a
+  diagonal, and grouped under the owning scope, which is what "across
+  domains" means on screen.
+- **The roll-up is within the drawn scope's tree.** A section's marks are the
+  union of its descendants' in THIS scope's model. The rows another scope
+  wrote do arrive — the same `elsewhere` the sheet takes — and the names come
+  from the index through `describe`; but a refinement a domain holds under a
+  stand-in (children in another scope's model) is not walked, because
+  `rowsTo` is per id and the index carries no other scope's tree. Whether the
+  organisation's map should read a domain's refinements is step 13's
+  question, which threads the index through anyway.
+- **The agent's report is over the scope's own rows** (`agent/inspectMap.ts`),
+  as the sheet's is: a map at the organisation reads through a person's
+  screen until step 13 hands the tools the index.
+- **`areas` is shared.** A map names its sections the way a sheet names its
+  areas, in the same field; `seedMap` leaves it absent, so an area made later
+  is drawn without asking.
 
 ### 13. The agent at every scope
 

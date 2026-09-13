@@ -747,6 +747,34 @@ Een applicatie openen vanuit de invulling van een capability brengt u naar een
 bord dat hem ook echt tekent — desnoods een ander dan waar u stond — en naar de
 eigen pagina van de applicatie als geen enkel bord hem tekent.
 
+### De bedrijfskaart
+
+**+** in de diagramtabs, dan **Bedrijfskaart**, maakt de tweede uitgelegde
+weergave — of **Kaart** op de kaart *Bedrijfsarchitectuur* van het
+organisatiescherm opent die van de wortel. Het is dezelfde laag, andersom
+gelezen: elke functie onder elkaar, in de volgorde waarin het blad ze tekent en
+ingesprongen naar diepte; een kolom per applicatie die de rijen noemen; een
+markering waar de een de ander ondersteunt. Op een sectie — een gebied, een
+groep — is de markering hol en betekent *iets hieronder*: het optelsel, zodat de
+kop van een gebied zegt waar het hele gebied op leunt voordat u de capabilities
+leest. Applicaties die een ander niveau bezit staan bovenaan gegroepeerd onder
+de naam van dat niveau, want de systemen die de capabilities van de organisatie
+ondersteunen zijn meestal die van een landschap, en een kolom die niet zegt van
+wie hij is heeft de helft gezegd.
+
+Twee kolommen komen laatst. **Mensen** is gemarkeerd waar iemand toegewezen is
+— één kolom en niet één per belanghebbende, want "met de hand gedaan" is één
+antwoord. **Dekking** is het gat: *ongedekt* bij een capability die niets en
+niemand dekt, *mensen* bij een die met de hand gedaan wordt zonder systeem, en
+bij een sectie hoeveel capabilities eronder ongedekt zijn. De bovenbalk telt de
+drie op. Een kaart met een *per*-dag telt de rijen die op die dag gelden, dus
+een systeem dat in maart iets gaat ondersteunen is op de kaart van februari een
+gat.
+
+Kies een rij en hij opent rechts, zoals op het blad — *Ondersteund door…*
+inbegrepen, zodat een gat gedicht kan worden vanaf de pagina die het toont.
+Kies een kolomkop om de applicatie te openen, waar dit niveau hem heeft.
+
 ## Zoeken
 
 **Zoeken** in de bovenbalk, of ⌘K, doorzoekt het hele project in één keer:

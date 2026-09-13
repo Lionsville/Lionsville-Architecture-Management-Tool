@@ -63,6 +63,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.moveLeftCopy': 'Ferpleatst — mar de kopy yn de âlde groep koe net fuortsmiten wurde: {message}',
   'shell.newDiagram': 'Nij lânskip',
   'shell.newSheet': 'Bedriuwsarsjitektuer',
+  'shell.newMap': 'Bedriuwskaart',
   'shell.add': 'Tafoegje',
   'shell.imagesMissing': 'PNG eksportearre, mar dizze logo’s ûntbrekke: {labels}.',
   'shell.logoAdded': 'Logo “{name}” tafoege oan de eigen bibleteek.',
@@ -363,6 +364,8 @@ export const FY: Record<keyof typeof EN, string> = {
 
   'org.business': 'Bedriuwsarsjitektuer',
   'org.businessMake': 'In plaat meitsje\u2026',
+  'org.map': 'Kaart',
+  'org.mapMake': 'In kaart meitsje\u2026',
   'org.journeysOne': '{count} klantreis',
   'org.journeysOther': '{count} klantreizen',
   'org.areasOne': '{count} gebiet',

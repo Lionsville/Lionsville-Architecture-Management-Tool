@@ -36,13 +36,15 @@ const SHEET = {
   geometry: { nodes: [] },
 }
 
+const MAP = { id: 'mp-1', kind: 'map' as const, name: 'Enterprise map', members: [], geometry: { nodes: [] } }
+
 const host = (): HostModel => {
   const { elements, relations } = shippingScope()
   return {
     name: 'Landscape',
     elements,
     relations,
-    diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] }), SHEET],
+    diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] }), SHEET, MAP],
   }
 }
 
@@ -102,6 +104,51 @@ const parsed = (out: AgentAnswer, at = 0): Record<string, unknown> => {
   if (!out.ok || out.content[at].type !== 'text') throw new Error(`not an answer: ${JSON.stringify(out)}`)
   return JSON.parse((out.content[at] as { text: string }).text)
 }
+
+describe('the map, which is laid out the same way', () => {
+  it('reports the rows and the columns rather than the geometry', async () => {
+    const out = await handle({ id: '1', tool: 'diagram.inspect', args: { diagramId: 'mp-1' } }, session())
+    const report = parsed(out) as never as {
+      kind: string
+      columns: { some: { id: string }[] }
+      rows: { some: { id: string; coverage: string; gaps: number }[] }
+      counts: Record<string, number>
+    }
+    expect(report.kind).toBe('map')
+    expect(report.columns.some.map((column) => column.id)).toEqual(['wms', 'scanner', 'erp'])
+    expect(report.rows.some.find((row) => row.id === 'billing')?.gaps).toBe(1)
+    expect(report.counts).toEqual({ covered: 2, manual: 1, uncovered: 1 })
+  })
+
+  it('is rendered through the page’s handle, by its own id', async () => {
+    const { renderer, asked, shown } = fakePage()
+    const out = await handle(
+      { id: '1', tool: 'diagram.render', args: { diagramId: 'mp-1' } },
+      session({ renderer }),
+    )
+    expect(out.ok).toBe(true)
+    expect(asked.map((ask) => ask.diagramId)).toEqual(['mp-1'])
+    expect(shown).toEqual([])
+    expect(parsed(out, 1)).toMatchObject({ diagramId: 'mp-1', kind: 'map' })
+  })
+
+  it('refuses to tidy one, saying what it is', async () => {
+    const out = await handle(
+      { id: '1', tool: 'diagram.tidy', args: { diagramId: 'mp-1' } },
+      session({ renderer: fakePage().renderer }),
+    )
+    expect(out.ok).toBe(false)
+    expect(JSON.stringify(out)).toContain('a map is laid out')
+  })
+
+  it('is made by diagram.create, and left for a person to open', async () => {
+    const view = session()
+    const out = await handle({ id: '1', tool: 'diagram.create', args: { kind: 'map', name: 'Coverage' } }, view)
+    expect(parsed(out)).toMatchObject({ id: 'mp-new-1', kind: 'map', name: 'Coverage' })
+    expect(view.current().diagrams.find((d) => d.id === 'mp-new-1')).toMatchObject({ kind: 'map', name: 'Coverage' })
+    expect(view.activeDiagramId()).toBe('l7')
+  })
+})
 
 describe('diagram.inspect on a sheet', () => {
   it('answers the page rather than the geometry', async () => {

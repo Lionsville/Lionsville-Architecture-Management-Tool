@@ -63,6 +63,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.moveLeftCopy': 'Verschoben — aber die Kopie in der alten Gruppe konnte nicht entfernt werden: {message}',
   'shell.newDiagram': 'Neue Landschaft',
   'shell.newSheet': 'Geschäftsarchitektur',
+  'shell.newMap': 'Unternehmenskarte',
   'shell.add': 'Hinzufügen',
   'shell.imagesMissing': 'PNG exportiert, aber diese Logos fehlen: {labels}.',
   'shell.logoAdded': 'Logo „{name}“ zur eigenen Bibliothek hinzugefügt.',
@@ -363,6 +364,8 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'org.business': 'Geschäftsarchitektur',
   'org.businessMake': 'Ein Blatt anlegen\u2026',
+  'org.map': 'Karte',
+  'org.mapMake': 'Eine Karte anlegen\u2026',
   'org.journeysOne': '{count} Kundenreise',
   'org.journeysOther': '{count} Kundenreisen',
   'org.areasOne': '{count} Bereich',

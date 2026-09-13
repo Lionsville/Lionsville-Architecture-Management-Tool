@@ -43,6 +43,7 @@ import { commandFor } from './commandFor'
 import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
 import { inspectSheet } from './inspectSheet'
+import { inspectMap } from './inspectMap'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
@@ -159,10 +160,12 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   if (request.tool === 'diagram.inspect') {
     const diagram = diagramOf(view.model, args, view.activeDiagramId)
     if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
-    // A sheet has no geometry to report on, so it reports the page instead.
-    return json(diagram.kind === 'sheet'
-      ? inspectSheet(view.model, diagram, args.limit as number | undefined)
-      : inspect(view.model, diagram, args.limit as number | undefined))
+    // A sheet or a map has no geometry to report on, so it reports the page instead.
+    if (diagram.kind === 'sheet') return json(inspectSheet(view.model, diagram, args.limit as number | undefined))
+    if (diagram.kind === 'map') {
+      return json(inspectMap(view.model, diagram, args.limit as number | undefined, session.today()))
+    }
+    return json(inspect(view.model, diagram, args.limit as number | undefined))
   }
 
   // Looking and pointing change nothing either.
@@ -437,7 +440,7 @@ async function seeing(
   const diagram = diagramOf(model, args, session.activeDiagramId())
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
 
-  if (diagram.kind === 'sheet') return await seeSheet(tool, diagram, args, renderer)
+  if (diagram.kind === 'sheet' || diagram.kind === 'map') return await seeSheet(tool, diagram, args, renderer)
 
   try {
     await renderer.show(diagram.id)
@@ -481,7 +484,7 @@ async function seeSheet(
   renderer: RendererView,
 ): Promise<AgentAnswer> {
   if (tool !== 'diagram.render') {
-    return refused('agent.badArguments', 'a sheet is laid out: there is nothing to tidy or route')
+    return refused('agent.badArguments', `a ${diagram.kind} is laid out: there is nothing to tidy or route`)
   }
   if (!renderer.sheet) return refused('agent.noAnswer', 'no page')
   const maxPixels = (args.maxPixels as number | undefined) ?? DEFAULT_MAX_PIXELS
@@ -495,11 +498,11 @@ async function seeSheet(
           type: 'text',
           text: JSON.stringify({
             diagramId: diagram.id,
-            kind: 'sheet',
+            kind: diagram.kind,
             width: shot.width,
             height: shot.height,
             pixelRatio: shot.pixelRatio,
-            note: 'A sheet is laid out from the model: ask diagram.inspect for its rows.',
+            note: `A ${diagram.kind} is laid out from the model: ask diagram.inspect for its rows.`,
           }, undefined, 2),
         },
       ],

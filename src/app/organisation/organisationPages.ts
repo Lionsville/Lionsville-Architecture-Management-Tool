@@ -48,6 +48,8 @@ export type OrganisationPages = {
     unmapped: number
     /** The sheet to open. Absent means there is one to make, not one missing. */
     sheetId?: string
+    /** The enterprise map to open, likewise (ADR-0012 §9). */
+    mapId?: string
   }
   decisions: {
     total: number
@@ -101,6 +103,9 @@ export function organisationPages(
       unmapped: unmappedFunctions(elements).length,
       ...(diagrams.find((diagram) => diagram.kind === 'sheet')
         ? { sheetId: diagrams.find((diagram) => diagram.kind === 'sheet')!.id }
+        : {}),
+      ...(diagrams.find((diagram) => diagram.kind === 'map')
+        ? { mapId: diagrams.find((diagram) => diagram.kind === 'map')!.id }
         : {}),
     },
     decisions: {

@@ -151,6 +151,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.newDiagram': 'Neues Layer-7-Diagramm',
   'toolbar.newLandscape': 'Landschaft',
   'toolbar.newSheet': 'Geschäftsarchitektur',
+  'toolbar.newMap': 'Unternehmenskarte',
   'toolbar.readOnly': 'Schreibgeschützt',
   'toolbar.undo': 'Rückgängig',
   'toolbar.undoTip': 'Rückgängig (⌘Z)',
