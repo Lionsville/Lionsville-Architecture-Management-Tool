@@ -54,6 +54,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.savedInterchangeLeftOut':
     'Austauschdokument gespeichert — es trägt Anwendungen und die Flüsse dazwischen, deshalb blieb dies zurück: {left}.',
   'shell.leftOutPart': '{count} × {label}',
+  'shell.savedPicture': 'Bild gespeichert.',
   'shell.savedWorkingFile':
     'Arbeitsdatei gespeichert — alles, einschließlich Geometrie, Gestaltung und eigener Logos.',
   'shell.workingFileLoaded': 'Arbeitsdatei „{name}“ geladen.',

@@ -61,6 +61,8 @@ function open(over: {
   readOnly?: boolean
   model?: DesignModel
   elsewhere?: readonly Relation[]
+  onOpenDocumentation?: (id: string) => void
+  onSave?: (doc: { name: string; bytes: Uint8Array }) => void
 } = {}) {
   const acts = actions()
   const result = renderShell(
@@ -71,6 +73,8 @@ function open(over: {
       readOnly={over.readOnly ?? false}
       actions={acts}
       elsewhere={over.elsewhere}
+      onOpenDocumentation={over.onOpenDocumentation}
+      onSave={over.onSave}
       onClose={() => {}}
     />,
   )
@@ -91,16 +95,86 @@ describe('the stakeholder rail', () => {
     expect(screen.queryByTestId('sheet-rail')).toBeNull()
   })
 
-  it('offers to hide the rail, as a change to the sheet', () => {
+  it('goes with the details behind one eye, as the page’s own state', () => {
+    // Was a change to the sheet, and only the rail: "give me the whole width"
+    // is one wish, and it says nothing about what the sheet is of.
     const { actions: acts } = open()
-    fireEvent.click(screen.getByLabelText('Hide the stakeholders'))
-    expect(acts.updateSheet).toHaveBeenCalledWith({ showActors: false })
+    expect(screen.getByTestId('sheet-inspector')).toBeTruthy()
+    fireEvent.click(screen.getByLabelText('Hide the stakeholders and the details'))
+    expect(screen.queryByTestId('sheet-rail')).toBeNull()
+    expect(screen.queryByTestId('sheet-inspector')).toBeNull()
+    expect(acts.updateSheet).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByLabelText('Show the stakeholders and the details'))
+    expect(screen.getByTestId('sheet-rail')).toBeTruthy()
+    expect(screen.getByTestId('sheet-inspector')).toBeTruthy()
   })
 
-  it('offers nothing to press under readOnly', () => {
+  it('still offers the eye under readOnly, because it changes nothing', () => {
     open({ readOnly: true })
-    expect(screen.queryByLabelText('Hide the stakeholders')).toBeNull()
-    expect(screen.queryByLabelText('Show the stakeholders')).toBeNull()
+    expect(screen.getByLabelText('Hide the stakeholders and the details')).toBeTruthy()
+    expect(screen.queryByLabelText('What this sheet draws')).toBeNull()
+  })
+
+  it('has a seam to drag, and so do the details', () => {
+    open()
+    const rail = screen.getByRole('separator', { name: 'Resize the stakeholder rail' })
+    fireEvent.keyDown(rail, { key: 'ArrowRight' })
+    expect(rail.getAttribute('aria-valuenow')).toBe('186')
+    const details = screen.getByRole('separator', { name: 'Resize the details' })
+    fireEvent.keyDown(details, { key: 'ArrowLeft' })
+    expect(details.getAttribute('aria-valuenow')).toBe('308')
+  })
+})
+
+describe('the grid', () => {
+  it('is one column where nothing has been measured, and what the sheet fixes otherwise', () => {
+    open()
+    expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('1')
+    cleanup()
+    open({ sheet: { ...SHEET, columns: 3 } })
+    expect(screen.getByTestId('sheet-areas').getAttribute('data-columns')).toBe('3')
+  })
+
+  it('gives an area the columns the sheet says, clamped to the grid', () => {
+    open({ sheet: { ...SHEET, columns: 3, areaSpans: { fulfilment: 2, billing: 9 } } })
+    expect(screen.getByTestId('sheet-area-fulfilment').getAttribute('data-span')).toBe('2')
+    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('3')
+  })
+
+  it('widens and narrows an area as a change to the sheet', () => {
+    const { actions: acts } = open({ sheet: { ...SHEET, columns: 3, areaSpans: { billing: 2 } } })
+    fireEvent.click(screen.getByLabelText('Make Fulfilment wider'))
+    expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: { billing: 2, fulfilment: 2 } })
+    fireEvent.click(screen.getByLabelText('Make Billing narrower'))
+    // Back to one column is nothing written about it.
+    expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: undefined })
+  })
+
+  it('offers no width on a one-column grid, nor under readOnly', () => {
+    open()
+    expect(screen.queryByLabelText('Make Fulfilment wider')).toBeNull()
+    cleanup()
+    open({ readOnly: true, sheet: { ...SHEET, columns: 3 } })
+    expect(screen.queryByLabelText('Make Fulfilment wider')).toBeNull()
+  })
+})
+
+describe('the way out', () => {
+  it('opens a capability’s own page from the details', () => {
+    const onOpenDocumentation = vi.fn()
+    open({ onOpenDocumentation })
+    fireEvent.click(screen.getByTestId('sheet-capability-picking'))
+    fireEvent.click(screen.getByRole('button', { name: /Open the page of/ }))
+    expect(onOpenDocumentation).toHaveBeenCalledWith('picking')
+  })
+
+  it('offers a picture only where the host can take one', () => {
+    open()
+    expect(screen.queryByLabelText('Save as a picture…')).toBeNull()
+    cleanup()
+    open({ onSave: vi.fn() })
+    fireEvent.click(screen.getByLabelText('Save as a picture…'))
+    expect(screen.getByRole('dialog', { name: 'Save the business architecture as a picture' })).toBeTruthy()
   })
 })
 

@@ -85,6 +85,7 @@ export const EN = {
    * publishes, and no language has to pluralise a word it is handed.
    */
   'shell.leftOutPart': '{count} × {label}',
+  'shell.savedPicture': 'Picture saved.',
   'shell.savedWorkingFile': 'Working file saved — everything, including geometry, styling and your own logos.',
   'shell.workingFileLoaded': 'Working file “{name}” loaded.',
   'shell.interchangeLoaded': 'Interchange document “{name}” loaded; the boards will be laid out again.',

@@ -17,6 +17,10 @@ export const EN = {
   'sheet.outside': 'Outside',
   'sheet.showRail': 'Show the stakeholders',
   'sheet.hideRail': 'Hide the stakeholders',
+  'sheet.hidePanels': 'Hide the stakeholders and the details',
+  'sheet.showPanels': 'Show the stakeholders and the details',
+  'sheet.resizeRail': 'Resize the stakeholder rail',
+  'sheet.resizeDetails': 'Resize the details',
   'sheet.noStakeholders': 'No stakeholders yet.',
 
   // --- the journey band ----------------------------------------------------
@@ -81,6 +85,20 @@ export const EN = {
   'sheet.settingsNoLanes': 'No row of its own yet — a lane appears when a step is on it.',
   'sheet.settingsRail': 'Draw the stakeholder rail',
   'sheet.settingsDraw': 'Draw {name}',
+  'sheet.settingsColumns': 'Columns',
+  'sheet.columnsFit': 'As many as fit',
+  'sheet.wider': 'Make {name} wider',
+  'sheet.narrower': 'Make {name} narrower',
+
+  // --- a picture of the page ----------------------------------------------
+  'sheet.export': 'Save as a picture…',
+  'sheet.exportTitle': 'Save the business architecture as a picture',
+  'sheet.exportHint': 'The whole page, laid out for the width you choose — an A1 or A0 print fits more areas side by side than the window does.',
+  'sheet.exportPaper': 'Laid out for',
+  'sheet.exportScreen': 'The window as it is',
+  'sheet.exportSave': 'Save',
+  'sheet.exportBusy': 'Drawing…',
+  'sheet.exportFailed': 'The picture could not be drawn: {message}',
 
   // --- taking something away -----------------------------------------------
   'sheet.deleteThis': 'Delete {name}',
@@ -101,6 +119,7 @@ export const EN = {
 
   // --- the inspector -------------------------------------------------------
   'sheet.details': 'Details',
+  'sheet.openPage': 'Open the page of {name}',
   'sheet.nothingSelected': 'Choose something on the sheet to see it here.',
   'sheet.parent': 'Sits under',
   'sheet.parentRoot': 'Nothing — this is a top-level entry',

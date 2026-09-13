@@ -33,6 +33,7 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
 import { journeyOf } from '../lanes'
+import { MAX_SPAN } from '../grid'
 import { rootsOfKind } from '../sheetDiagram'
 import type { SheetActions } from './FunctionInspector'
 
@@ -150,6 +151,24 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
           )}
           label={<Typography sx={{ fontSize: 12 }}>{t('sheet.settingsRail')}</Typography>}
         />
+
+        {/* How many columns the areas tile in. Fixed, a sheet laid out for an
+            A1 is the same page on a laptop, scrolling sideways; as many as
+            fit is the window's answer, and the default. */}
+        <TextField
+          select size="small" fullWidth
+          label={t('sheet.settingsColumns')}
+          value={sheet.columns ?? ''}
+          slotProps={{ htmlInput: { 'aria-label': t('sheet.settingsColumns') } }}
+          onChange={(e) => actions.updateSheet({
+            columns: e.target.value === '' ? undefined : Number(e.target.value),
+          })}
+        >
+          <MenuItem value="">{t('sheet.columnsFit')}</MenuItem>
+          {COLUMN_CHOICES.map((count) => (
+            <MenuItem key={count} value={count}>{count}</MenuItem>
+          ))}
+        </TextField>
       </DialogContent>
       <DialogActions>
         <Button size="small" onClick={onClose}>{t('common.close')}</Button>
@@ -157,6 +176,9 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
     </Dialog>
   )
 }
+
+/** One to twice the widest an area may be: an A0 holds about fourteen columns, and nobody reads that. */
+const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
 
 function Caption({ text }: { text: string }) {
   return (

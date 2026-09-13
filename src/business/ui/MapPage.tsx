@@ -39,12 +39,13 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { SeamResizer } from '../../widgets/SeamResizer'
 import { mapPage } from '../map'
 import type { LaidOutMap, MapColumn, MapDescribe, MapRow } from '../map'
 import { captureSheet } from './captureSheet'
-import { FunctionInspector } from './FunctionInspector'
-import type { FunctionInspectorProps, SheetActions } from './FunctionInspector'
-import type { SheetHandle } from './SheetPage'
+import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
+import type { FunctionInspectorProps, SheetActions, Supporter } from './FunctionInspector'
+import type { SheetCaptureOptions, SheetHandle } from './SheetPage'
 
 export type MapPageProps = {
   open: boolean
@@ -70,6 +71,10 @@ export type MapPageProps = {
   describe?: MapDescribe
   /** The day the map counts rows on, where the map itself names none. */
   today?: string
+  /** Every application in the organisation, for *Supported by…*. See the inspector. */
+  applications?: readonly Supporter[]
+  /** The way to an element's own page. Absent = no *Details ›* on the inspector. */
+  onOpenDocumentation?(id: ElementId): void
 }
 
 /** The first column's width, which is sticky and so has to be a number. */
@@ -84,12 +89,14 @@ export function MapPage(props: MapPageProps) {
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
   const [selectedId, setSelectedId] = useState<ElementId | undefined>(undefined)
+  const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
   const theme = useTheme()
   const page = useRef<HTMLDivElement | null>(null)
 
   const onHandle = props.onHandle
   const mapId = map?.id
-  const capture = useCallback(async (options: { maxPixels: number }) => {
+  // `width` is the sheet's: a map is a table, and its width is its columns'.
+  const capture = useCallback(async (options: SheetCaptureOptions) => {
     const node = page.current
     if (!node) throw new Error('MapPage: the page is not on screen')
     return captureSheet(node, { ...options, background: theme.palette.background.default })
@@ -165,11 +172,21 @@ export function MapPage(props: MapPageProps) {
           )}
         </Box>
 
+        <SeamResizer
+          orientation="vertical" region="after"
+          value={detailsWidth} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
+          defaultValue={INSPECTOR_WIDTH.default}
+          onChange={setDetailsWidth} label={t('sheet.resizeDetails')}
+        />
         <FunctionInspector
           element={selected}
           model={model}
           readOnly={readOnly}
           actions={actions}
+          width={detailsWidth}
+          applications={props.applications}
+          onOpenDocumentation={props.onOpenDocumentation}
+          elsewhere={props.elsewhere}
           onRemoved={() => setSelectedId(undefined)}
           ownerOf={props.ownerOf}
         />

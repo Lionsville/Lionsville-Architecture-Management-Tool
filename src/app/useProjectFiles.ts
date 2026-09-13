@@ -42,6 +42,8 @@ export type ProjectFileChannel = {
 export type ProjectFiles = {
   saveWorkingFile: () => void
   saveInterchange: () => void
+  /** A picture of a page — the sheet at a paper size — through the same gateway, so the desktop gets a save dialog. */
+  savePicture: (doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => void
   openFile: (file: File) => void
   /**
    * The same act, from bytes somebody else read.
@@ -202,5 +204,9 @@ export function useProjectFiles(deps: {
     session.setImageLibrary((library) => library.filter((image) => image.file !== file))
   }, [session])
 
-  return { saveWorkingFile, saveInterchange, openFile, openDocument, addLogo, addImage, removeImage }
+  const savePicture = useCallback((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => {
+    handOver(doc, s('shell.savedPicture'))
+  }, [handOver, s])
+
+  return { saveWorkingFile, saveInterchange, savePicture, openFile, openDocument, addLogo, addImage, removeImage }
 }

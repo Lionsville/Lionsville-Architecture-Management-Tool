@@ -585,6 +585,20 @@ export interface DesignDiagram {
   /** A sheet: whether the stakeholder rail is drawn. Absent = it is. */
   showActors?: boolean;
   /**
+   * A sheet: how many columns of the grid each area takes, by the area's id.
+   * Absent, or an area not named, is one column. An area wider than one column
+   * lays its capabilities side by side, which is how a large area stops being
+   * a long list and a page of three tall columns becomes a tiled one; the
+   * areas fill the grid densely in the sheet's own order (`business/grid.ts`).
+   */
+  areaSpans?: Record<ElementId, number>;
+  /**
+   * A sheet: the number of columns the grid is laid out in. Absent fits as
+   * many as the window has room for; a number fixes it, so a sheet made for
+   * an A1 print is laid out the same on a laptop, scrolling sideways.
+   */
+  columns?: number;
+  /**
    * What is ON this view (ADR-0012 §6), and what that means from here: which
    * band an element sits in, and which dashed group it belongs to.
    */

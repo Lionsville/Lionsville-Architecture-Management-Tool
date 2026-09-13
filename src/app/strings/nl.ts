@@ -54,6 +54,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.savedInterchangeLeftOut':
     'Uitwisselingsdocument opgeslagen — het draagt applicaties en de koppelingen ertussen, dus dit bleef achter: {left}.',
   'shell.leftOutPart': '{count} × {label}',
+  'shell.savedPicture': 'Afbeelding bewaard.',
   'shell.savedWorkingFile':
     'WorkingFile bewaard — alles, inclusief geometrie, opmaak en eigen logo’s.',
   'shell.workingFileLoaded': 'WorkingFile “{name}” geladen.',

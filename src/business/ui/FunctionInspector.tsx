@@ -21,6 +21,7 @@
  */
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
+import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -32,7 +33,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { DATED_PHASES, LIFECYCLE_ORDER } from '../../model'
-import type { DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle } from '../../model'
+import type { DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { useStrings } from '../../i18n'
@@ -103,8 +104,8 @@ export type SheetActions = {
   updateElement(id: ElementId, patch: Partial<DesignElement>, coalesce?: string): void
   /** Move one among its neighbours, up or down. One step, however many rows it renumbers. */
   moveElement(id: ElementId, by: -1 | 1): void
-  /** The sheet's own fields: the rail, the journey, which areas and in which order. */
-  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors'>>): void
+  /** The sheet's own fields: the rail, the journey, which areas, in which order and how wide. */
+  updateSheet(patch: Partial<Pick<DesignDiagram, 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns'>>): void
   /** Show an application where it is drawn — where the coverage links go. */
   onOpenElement(id: ElementId): void
 
@@ -127,12 +128,52 @@ export type SheetActions = {
   setCoverage(change: CoverageChange): void
 }
 
+/**
+ * Something that may support a capability: an application, wherever in the
+ * organisation it is defined (ADR-0012 §2).
+ *
+ * The organisation's capabilities are supported by a landscape's
+ * applications, and this scope's own model holds those, if at all, as
+ * stand-ins. So the list to pick from is the register — every application in
+ * the tree — handed in by the host, because `business` may not read the
+ * scope index. `where` names the scope that defines it, where that is not
+ * this one, the way the map's columns say it.
+ */
+export type Supporter = {
+  id: ElementId
+  name: string
+  where?: string
+}
+
 export type FunctionInspectorProps = {
   /** Absent when nothing on the sheet is chosen. */
   element: DesignElement | undefined
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
+  /**
+   * How wide the panel is. The page's, because the page has the seam that
+   * changes it. Absent = the default.
+   */
+  width?: number
+  /**
+   * Every application that may support a capability, from the whole tree.
+   * Absent = this scope's own applications, which on an organisation's sheet
+   * is usually none — a landscape's are what support its capabilities.
+   */
+  applications?: readonly Supporter[]
+  /**
+   * The way to the element's own page: its documentation with room, its
+   * history, the plans that name it. Absent = no link.
+   */
+  onOpenDocumentation?(id: ElementId): void
+  /**
+   * Rows written in another scope (ADR-0012 §2): the `supports` rows behind
+   * "2 apps" on an organisation's capability are a landscape's. The line
+   * says what covers it counting those; the picker writes only this scope's
+   * own rows, because those are the only ones it can take away again.
+   */
+  elsewhere?: readonly Relation[]
   /**
    * A nonce: put the cursor in the name field. The page bumps it when
    * something has just been made, which is what turns *+ capability* into
@@ -159,10 +200,12 @@ export type FunctionInspectorProps = {
   } | undefined
 }
 
-const WIDTH = 300
+/** The panel's default, and the least and most a seam may make it. */
+export const INSPECTOR_WIDTH = { default: 300, min: 240, max: 640 } as const
 
 export function FunctionInspector(props: FunctionInspectorProps) {
   const { element, model, readOnly, actions } = props
+  const width = props.width ?? INSPECTOR_WIDTH.default
   const { t } = useStrings()
   const owner = element ? props.ownerOf?.(element.id) : undefined
   /** Is this field the owning scope's? See the canvas inspector's twin of this. */
@@ -181,16 +224,35 @@ export function FunctionInspector(props: FunctionInspectorProps) {
     <Box
       data-testid="sheet-inspector"
       sx={{
-        width: WIDTH, flex: `0 0 ${WIDTH}px`, overflow: 'auto',
-        borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper', p: 2,
+        width, flex: `0 0 ${width}px`, overflow: 'auto',
+        borderLeft: props.width === undefined ? 1 : 0, borderColor: 'divider',
+        bgcolor: 'background.paper', p: 2,
       }}
     >
-      <Typography sx={{
-        fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-        color: 'text.secondary', mb: 1.5,
-      }}>
-        {t('sheet.details')}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
+        <Typography sx={{
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: 'text.secondary',
+        }}>
+          {t('sheet.details')}
+        </Typography>
+        {/* The way to the page, beside the heading rather than among the
+            fields — the same place the canvas's inspector keeps it. A
+            capability's documentation is a page like an application's, with
+            room, a history and the plans that name it; the field below is
+            for a line, not for the account of it. */}
+        {element && props.onOpenDocumentation && (
+          <Button
+            size="small"
+            data-testid="sheet-open-page"
+            aria-label={t('sheet.openPage', { name: element.name })}
+            sx={{ fontSize: 11, minWidth: 0, px: 0.5, py: 0, whiteSpace: 'nowrap', textTransform: 'none' }}
+            onClick={() => props.onOpenDocumentation?.(element.id)}
+          >
+            {t('sheet.details')} ›
+          </Button>
+        )}
+      </Box>
 
       {!element ? (
         <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
@@ -290,6 +352,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           {element.kind === 'function' && (
             <Coverage
               element={element} model={model} readOnly={readOnly} actions={actions}
+              applications={props.applications} elsewhere={props.elsewhere}
             />
           )}
 
@@ -467,16 +530,32 @@ function LaneField({ element, model, readOnly, actions }: {
  * The systems are links: a coverage question almost always ends in "and what
  * is that one, then". People with no system beside them is a complete answer
  * and is not drawn as a gap (ADR-0012 §9).
+ *
+ * The applications on offer are the whole organisation's, when the host hands
+ * them in: an organisation's sheet has no applications of its own, and the
+ * first person to try mapping a capability from it found "Supported by…"
+ * offering nothing. A row naming an id this scope does not hold is ordinary
+ * (§5), and the name beside it comes from the same list.
  */
-function Coverage({ element, model, readOnly, actions }: {
+function Coverage({ element, model, readOnly, actions, applications, elsewhere }: {
   element: DesignElement
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
+  applications: readonly Supporter[] | undefined
+  elsewhere: readonly Relation[] | undefined
 }) {
   const { t } = useStrings()
-  const coverage = coverageFor(model.relations, element.id)
-  const named = (id: ElementId) => model.elements.find((held) => held.id === id)?.name ?? id
+  const coverage = coverageFor(
+    elsewhere?.length ? [...model.relations, ...elsewhere] : model.relations, element.id,
+  )
+  const own = elsewhere?.length ? coverageFor(model.relations, element.id) : coverage
+  const supporters: readonly Supporter[] = applications
+    ?? model.elements.filter((held) => held.kind === 'application')
+  const people: readonly Supporter[] = model.elements.filter((held) => held.kind === 'actor')
+  const named = (id: ElementId) => supporters.find((held) => held.id === id)?.name
+    ?? model.elements.find((held) => held.id === id)?.name
+    ?? id
 
   return (
     <Box data-testid="sheet-inspector-coverage">
@@ -512,18 +591,18 @@ function Coverage({ element, model, readOnly, actions }: {
 
       {!readOnly && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
-          <Ticks
+          <Picker
             label={t('sheet.supportedBy')}
-            options={model.elements.filter((held) => held.kind === 'application')}
-            picked={coverage.supportedBy}
+            options={supporters}
+            picked={own.supportedBy}
             onPick={(sourceId, on) =>
               actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on })}
             t={t}
           />
-          <Ticks
+          <Picker
             label={t('sheet.doneBy')}
-            options={model.elements.filter((held) => held.kind === 'actor')}
-            picked={coverage.assignedTo}
+            options={people}
+            picked={own.assignedTo}
             onPick={(sourceId, on) =>
               actions.setCoverage({ type: 'assigned', sourceId, functionId: element.id, on })}
             t={t}
@@ -535,56 +614,60 @@ function Coverage({ element, model, readOnly, actions }: {
 }
 
 /**
- * What covers this, as something a person ticks.
+ * What covers this, as something a person picks by typing.
  *
  * Coverage is derived from rows (`business/coverage.ts`) and this is the one
- * place a row is written by hand: a tick is one `supports` or `assigned`
- * relation, an untick takes it away, and the line above redraws from the model
- * rather than from anything held here. One tick per change, because a
- * multi-select hands back a whole list and only ever one of them moved — which
- * keeps each tick its own undo step and its own Activity line.
+ * place a row is written by hand: a pick is one `supports` or `assigned`
+ * relation, an unpick takes it away, and the line above redraws from the
+ * model rather than from anything held here. One pick per change, because
+ * the field hands back a whole list and only ever one of them moved — which
+ * keeps each pick its own undo step and its own Activity line.
  *
- * Ids the scope names in a row and does not hold are ordinary (ADR-0012 §5),
- * so the value is narrowed to what is actually on offer; the row itself stays
- * where it is and the line above still names it.
+ * Typed rather than scrolled: an organisation's register runs to hundreds of
+ * applications, and a list that long is found, not browsed. Ids the scope
+ * names in a row and does not hold are ordinary (ADR-0012 §5), so the value
+ * is narrowed to what is actually on offer; the row itself stays where it is
+ * and the line above still names it.
  */
-function Ticks({ label, options, picked, onPick, t }: {
+function Picker({ label, options, picked, onPick, t }: {
   label: string
-  options: readonly DesignElement[]
+  options: readonly Supporter[]
   picked: readonly ElementId[]
   onPick(id: ElementId, on: boolean): void
   t: Translate
 }) {
   const offered = [...options].sort((a, b) => a.name.localeCompare(b.name))
-  const held = offered.map((option) => option.id).filter((id) => picked.includes(id))
-  const named = (id: ElementId) => offered.find((option) => option.id === id)?.name ?? id
+  const held = offered.filter((option) => picked.includes(option.id))
 
   return (
-    <TextField
-      select size="small" fullWidth
-      label={label}
+    <Autocomplete
+      multiple
+      size="small"
+      options={offered}
       value={held}
-      slotProps={{
-        select: {
-          multiple: true,
-          renderValue: (value) => (value as ElementId[]).map(named).join(', '),
-          displayEmpty: true,
-        },
-      }}
-      onChange={(e) => {
-        const next = e.target.value as unknown as ElementId[]
-        const added = next.find((id) => !held.includes(id))
+      getOptionLabel={(option) => option.name}
+      isOptionEqualToValue={(option, value) => option.id === value.id}
+      noOptionsText={t('sheet.coverageNobody')}
+      renderOption={(props, option) => (
+        <li {...props} key={option.id}>
+          <Typography component="span" sx={{ fontSize: 12.5 }}>{option.name}</Typography>
+          {option.where && (
+            <Typography component="span" aria-hidden sx={{ fontSize: 10.5, color: 'text.secondary', ml: 'auto', pl: 1 }}>
+              {option.where}
+            </Typography>
+          )}
+        </li>
+      )}
+      renderInput={(params) => <TextField {...params} label={label} />}
+      slotProps={{ chip: { size: 'small', sx: { height: 20, fontSize: 11 } } }}
+      onChange={(_event, next) => {
+        const ids = next.map((option) => option.id)
+        const before = held.map((option) => option.id)
+        const added = ids.find((id) => !before.includes(id))
         if (added !== undefined) { onPick(added, true); return }
-        const removed = held.find((id) => !next.includes(id))
+        const removed = before.find((id) => !ids.includes(id))
         if (removed !== undefined) onPick(removed, false)
       }}
-    >
-      {offered.length === 0 && (
-        <MenuItem value="" disabled>{t('sheet.coverageNobody')}</MenuItem>
-      )}
-      {offered.map((option) => (
-        <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
-      ))}
-    </TextField>
+    />
   )
 }

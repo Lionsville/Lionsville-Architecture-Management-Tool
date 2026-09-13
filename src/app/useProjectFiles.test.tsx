@@ -94,6 +94,15 @@ describe('saving a document out', () => {
     expect(notify).not.toHaveBeenCalledWith(expect.anything(), 'success')
   })
 
+  it('hands a picture over as the bytes it is, and says so afterwards', async () => {
+    const saved: unknown[] = []
+    const { files, notify } = mount({ save: (doc) => { saved.push(doc); return Promise.resolve() } })
+    act(() => files().savePicture({ name: 'Business architecture.png', bytes: new Uint8Array([1, 2]), mediaType: 'image/png' }))
+    expect(saved).toEqual([{ name: 'Business architecture.png', bytes: new Uint8Array([1, 2]), mediaType: 'image/png' }])
+    await settle()
+    expect(notify).toHaveBeenCalledWith('Picture saved.', 'success')
+  })
+
   it('holds the interchange document to the same standard', async () => {
     const { files, notify } = mount({ save: () => Promise.reject(new Error('cancelled')) })
     act(() => files().saveInterchange())

@@ -20,6 +20,19 @@
  * name, so the whole gesture is click, type, Enter. Under `readOnly` not one
  * of them is rendered.
  *
+ * **The areas are a grid, not three columns.** How many columns is what the
+ * width has room for, or what the sheet fixes; an area takes the columns the
+ * sheet says it does and lays its capabilities side by side inside them; and
+ * the browser packs the cards densely in the sheet's own order
+ * (`business/grid.ts`). The first sheet drawn for a real organisation had
+ * eleven areas of very different sizes in three tall columns, and that is
+ * the layout this replaces.
+ *
+ * The rail and the details are the page's own: one eye hides both, and each
+ * has a seam to drag. A picture of the page can be asked for at the width of
+ * a sheet of paper, and the page lays itself out at that width for the
+ * capture — an A1 print tiles wider than a laptop window does.
+ *
  * A fullscreen dialog, and it takes `windowChrome` for the reason the other
  * pages do: the shell toolbar's drag strip stays live underneath it, and
  * Electron computes drag regions from geometry rather than from what is
@@ -40,16 +53,20 @@ import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { BackIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
+import { BackIcon, ExportIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { SeamResizer } from '../../widgets/SeamResizer'
+import { AREA_COLUMN, MAX_SPAN, paperWidth, sheetColumns, spanOf, withSpan } from '../grid'
 import { sheetPage } from '../sheet'
 import type { Relation } from '../../model'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
 import type { SheetShot } from './captureSheet'
 import { captureSheet } from './captureSheet'
-import { FunctionInspector } from './FunctionInspector'
-import type { FunctionInspectorProps, NewLane, SheetActions } from './FunctionInspector'
+import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
+import type { FunctionInspectorProps, NewLane, SheetActions, Supporter } from './FunctionInspector'
 import { LaneDialog } from './LaneDialog'
+import { SheetExportDialog } from './SheetExportDialog'
+import type { ExportLayout } from './SheetExportDialog'
 import { SheetSettingsDialog } from './SheetSettingsDialog'
 
 export type SheetPageProps = {
@@ -82,17 +99,36 @@ export type SheetPageProps = {
    * and a fresh one per render would lay the whole sheet out per render.
    */
   elsewhere?: readonly Relation[]
+  /** Every application in the organisation, for *Supported by…*. See the inspector. */
+  applications?: readonly Supporter[]
+  /** The way to an element's own page. Absent = no *Details ›* on the inspector. */
+  onOpenDocumentation?(id: ElementId): void
+  /**
+   * Hand a picture of the page to the person (ADR-0003's gateway, behind the
+   * host). Absent = no *Save as a picture…* on the bar.
+   */
+  onSave?(doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }): void
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
 export type SheetHandle = {
   /** Which sheet is on screen, so a caller can tell it is the one it asked for. */
   readonly diagramId: string
-  capture(options: { maxPixels: number }): Promise<SheetShot>
+  capture(options: SheetCaptureOptions): Promise<SheetShot>
+}
+
+export type SheetCaptureOptions = {
+  maxPixels: number
+  /**
+   * Lay the page out at this width in CSS pixels before drawing it — the
+   * long side of an A1 is 3179 (`business/grid.paperWidth`). Absent draws
+   * the page as it stands, at the window's width.
+   */
+  width?: number
 }
 
 /** The rail, the lane labels and the notch: the design's own numbers, in one place. */
-const RAIL_WIDTH = 178
+const RAIL = { default: 178, min: 120, max: 420 } as const
 const LANE_LABEL_WIDTH = 136
 const NOTCH = 9
 /** The column the *+ phase* sits in, kept off the phases so the row lines up. */
@@ -113,8 +149,25 @@ export function SheetPage(props: SheetPageProps) {
   const [nameFocus, setNameFocus] = useState(0)
   const [laneOpen, setLaneOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+  /**
+   * The rail and the details, together: one eye for both, because "give me
+   * the whole width for the page" is one wish and was two toggles. The
+   * page's own rather than the sheet's, since it says nothing about what the
+   * sheet is of; `showActors` on the sheet still takes the rail off for good.
+   */
+  const [panelsShown, setPanelsShown] = useState(true)
+  const [railWidth, setRailWidth] = useState<number>(RAIL.default)
+  const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
+  /**
+   * While a picture is being drawn: the page laid out for it rather than for
+   * the window — no details panel, nothing scrolling, and at `width` when a
+   * paper size asked for one. Cleared the moment the capture returns.
+   */
+  const [exporting, setExporting] = useState<{ width?: number } | undefined>(undefined)
   const theme = useTheme()
   const page = useRef<HTMLDivElement | null>(null)
+  const bodyWidth = useMeasuredWidth()
 
   /**
    * The handle, while a sheet is up. Withdrawn on the way out so a request
@@ -123,10 +176,21 @@ export function SheetPage(props: SheetPageProps) {
    */
   const onHandle = props.onHandle
   const sheetId = sheet?.id
-  const capture = useCallback(async (options: { maxPixels: number }) => {
+  const capture = useCallback(async (options: SheetCaptureOptions) => {
     const node = page.current
     if (!node) throw new Error('SheetPage: the page is not on screen')
-    return captureSheet(node, { ...options, background: theme.palette.background.default })
+    // Laid out for the picture first, and given two frames to be: the grid
+    // is measured by a ResizeObserver and drawn by React, and neither has
+    // run between a state change and the next line of this function.
+    setExporting({ ...(options.width !== undefined ? { width: options.width } : {}) })
+    try {
+      await settled()
+      return await captureSheet(node, {
+        maxPixels: options.maxPixels, background: theme.palette.background.default,
+      })
+    } finally {
+      setExporting(undefined)
+    }
   }, [theme])
   useEffect(() => {
     if (!onHandle) return undefined
@@ -152,6 +216,26 @@ export function SheetPage(props: SheetPageProps) {
 
   const author = readOnly ? undefined : { t, made, actions }
 
+  /**
+   * The grid's width: what the page is being drawn for, or what the body
+   * measures — less its own padding, which the observer counts and the grid
+   * does not get.
+   */
+  const gridWidth = (exporting?.width ?? bodyWidth.width) - 32
+  const columns = sheet ? sheetColumns(sheet, gridWidth) : 1
+  const fixedWidth = exporting?.width
+    ?? (sheet?.columns !== undefined ? columns * (AREA_COLUMN.min + AREA_COLUMN.gap) - AREA_COLUMN.gap + 32 : undefined)
+  const panels = panelsShown && !exporting
+
+  const exportPng = useCallback(async (layout: ExportLayout) => {
+    if (!sheet || !props.onSave) return
+    const shot = await capture({
+      maxPixels: EXPORT_MAX_PIXELS,
+      ...(layout === 'screen' ? {} : { width: paperWidth(layout) }),
+    })
+    props.onSave({ name: `${fileSafe(sheet.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
+  }, [sheet, props.onSave, capture])
+
   return (
     <PageDialog
       open={props.open}
@@ -176,34 +260,66 @@ export function SheetPage(props: SheetPageProps) {
         </Tooltip>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{sheet?.name ?? t('sheet.page')}</Typography>
         <Box sx={{ flex: 1 }} />
+        {sheet && (
+          <Tooltip title={panelsShown ? t('sheet.hidePanels') : t('sheet.showPanels')}>
+            <IconButton
+              size="small"
+              aria-label={panelsShown ? t('sheet.hidePanels') : t('sheet.showPanels')}
+              aria-pressed={!panelsShown}
+              onClick={() => setPanelsShown((shown) => !shown)}
+            >
+              <EyeIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {sheet && props.onSave && (
+          <Tooltip title={t('sheet.export')}>
+            <IconButton size="small" aria-label={t('sheet.export')} onClick={() => setExportOpen(true)}>
+              <ExportIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         {!readOnly && sheet && (
-          <>
-            <Tooltip title={sheet.showActors === false ? t('sheet.showRail') : t('sheet.hideRail')}>
-              <IconButton
-                size="small"
-                aria-label={sheet.showActors === false ? t('sheet.showRail') : t('sheet.hideRail')}
-                onClick={() => actions.updateSheet({ showActors: sheet.showActors === false })}
-              >
-                <EyeIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={t('sheet.settings')}>
-              <IconButton
-                size="small" aria-label={t('sheet.settings')} onClick={() => setSettingsOpen(true)}
-              >
-                <SlidersIcon />
-              </IconButton>
-            </Tooltip>
-          </>
+          <Tooltip title={t('sheet.settings')}>
+            <IconButton
+              size="small" aria-label={t('sheet.settings')} onClick={() => setSettingsOpen(true)}
+            >
+              <SlidersIcon />
+            </IconButton>
+          </Tooltip>
         )}
       </Box>
 
-      <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-        {laidOut && sheet?.showActors !== false && (
-          <Rail actors={laidOut.actors} onSelect={setSelectedId} author={author} t={t} />
+      <Box
+        ref={page}
+        sx={exporting
+          // Laid out for the picture: nothing scrolls, so the node's scroll
+          // size is the page's whole size, which is what the capture reads.
+          ? { display: 'flex', alignItems: 'stretch', flex: 'none', ...(exporting.width !== undefined ? { width: exporting.width } : {}) }
+          : { flex: '1 1 auto', minHeight: 0, display: 'flex' }}
+      >
+        {laidOut && sheet?.showActors !== false && panels && (
+          <>
+            <Rail actors={laidOut.actors} width={railWidth} onSelect={setSelectedId} author={author} t={t} />
+            <SeamResizer
+              orientation="vertical" region="before"
+              value={railWidth} min={RAIL.min} max={RAIL.max} defaultValue={RAIL.default}
+              onChange={setRailWidth} label={t('sheet.resizeRail')}
+            />
+          </>
+        )}
+        {laidOut && sheet?.showActors !== false && exporting && (
+          <Rail actors={laidOut.actors} width={railWidth} onSelect={setSelectedId} author={undefined} t={t} />
         )}
 
-        <Box data-testid="sheet-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}>
+        <Box
+          ref={bodyWidth.ref}
+          data-testid="sheet-body"
+          sx={exporting
+            ? { flex: '1 1 auto', minWidth: 0, overflow: 'visible', p: 2 }
+            : { flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}
+        >
+        <Box sx={fixedWidth !== undefined ? { width: fixedWidth - 32, minWidth: fixedWidth - 32 } : undefined}>
           {laidOut?.journey ? (
             <JourneyBand
               journey={laidOut.journey}
@@ -227,17 +343,28 @@ export function SheetPage(props: SheetPageProps) {
             />
           )}
 
-          {laidOut && laidOut.areas.length > 0 ? (
+          {laidOut && sheet && laidOut.areas.length > 0 ? (
             <Box
               data-testid="sheet-areas"
+              data-columns={columns}
               sx={{
-                mt: 3, display: 'grid', gap: 1.5,
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                mt: 3, display: 'grid', gap: `${AREA_COLUMN.gap}px`,
+                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                // Dense: a one-column area after a two-column one fills the
+                // hole beside it rather than starting a new row. The order
+                // is the sheet's own, which is the priority.
+                gridAutoFlow: 'dense',
+                alignItems: 'start',
               }}
             >
               {laidOut.areas.map((area) => (
                 <AreaCard
-                  key={area.element.id} area={area} onSelect={setSelectedId} author={author} t={t}
+                  key={area.element.id} area={area}
+                  span={spanOf(sheet, area.element.id, columns)}
+                  onSpan={author && columns > 1
+                    ? (span) => actions.updateSheet({ areaSpans: withSpan(sheet.areaSpans, area.element.id, span) })
+                    : undefined}
+                  onSelect={setSelectedId} author={author} t={t}
                 />
               ))}
               {author && (
@@ -269,16 +396,31 @@ export function SheetPage(props: SheetPageProps) {
             <UnmappedBand elements={laidOut.unmapped} onSelect={setSelectedId} t={t} />
           )}
         </Box>
+        </Box>
 
-        <FunctionInspector
-          element={selected}
-          model={model}
-          readOnly={readOnly}
-          actions={actions}
-          nameFocus={nameFocus}
-          onRemoved={() => setSelectedId(undefined)}
-          ownerOf={props.ownerOf}
-        />
+        {panels && (
+          <>
+            <SeamResizer
+              orientation="vertical" region="after"
+              value={detailsWidth} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
+              defaultValue={INSPECTOR_WIDTH.default}
+              onChange={setDetailsWidth} label={t('sheet.resizeDetails')}
+            />
+            <FunctionInspector
+              element={selected}
+              model={model}
+              readOnly={readOnly}
+              actions={actions}
+              width={detailsWidth}
+              applications={props.applications}
+              onOpenDocumentation={props.onOpenDocumentation}
+              elsewhere={props.elsewhere}
+              nameFocus={nameFocus}
+              onRemoved={() => setSelectedId(undefined)}
+              ownerOf={props.ownerOf}
+            />
+          </>
+        )}
       </Box>
 
       {laneOpen && laidOut?.journey && (
@@ -300,8 +442,56 @@ export function SheetPage(props: SheetPageProps) {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+      {exportOpen && sheet && (
+        <SheetExportDialog onExport={exportPng} onClose={() => setExportOpen(false)} />
+      )}
     </PageDialog>
   )
+}
+
+/**
+ * The most pixels a picture for a person may have. An A0 at two pixels per
+ * point is about 9,000 wide, which is inside what browsers rasterise; the
+ * budget lets the ratio fall below two on a page taller than that rather
+ * than refusing it.
+ */
+const EXPORT_MAX_PIXELS = 40_000_000
+
+/** A name the file system will take, from what the sheet is called. */
+function fileSafe(name: string): string {
+  return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'sheet'
+}
+
+/** Two frames from now: React has drawn, and the observer has measured. */
+function settled(): Promise<void> {
+  const frame = typeof requestAnimationFrame === 'function'
+    ? (fn: () => void) => { requestAnimationFrame(fn) }
+    : (fn: () => void) => { setTimeout(fn, 0) }
+  return new Promise((resolve) => frame(() => frame(resolve)))
+}
+
+/**
+ * How wide an element is, kept up to date. The grid needs a number to fit
+ * its columns to, and CSS alone cannot tell a card how many columns it may
+ * span. Without a `ResizeObserver` (a test) the width stays 0, which the
+ * arithmetic reads as one column.
+ */
+function useMeasuredWidth(): { ref: (node: HTMLDivElement | null) => void; width: number } {
+  const [width, setWidth] = useState(0)
+  const observer = useRef<ResizeObserver | undefined>(undefined)
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    observer.current?.disconnect()
+    observer.current = undefined
+    if (!node || typeof ResizeObserver === 'undefined') return
+    setWidth(node.clientWidth)
+    const held = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect
+      if (box) setWidth(Math.round(box.width) + 32)
+    })
+    held.observe(node)
+    observer.current = held
+  }, [])
+  return { ref, width }
 }
 
 /**
@@ -314,11 +504,12 @@ export function SheetPage(props: SheetPageProps) {
 type Author = { t: Translate; made(id: ElementId | undefined): void; actions: SheetActions }
 
 /** The one shape every *+* on this page has. */
-function Add({ label, title, onClick, sx }: {
+function Add({ label, title, onClick, disabled, sx }: {
   label: string
   /** What it says out loud — which of the many *+*s this is, and on what. */
   title: string
   onClick(): void
+  disabled?: boolean
   sx?: SxProps<Theme>
 }) {
   return (
@@ -327,6 +518,7 @@ function Add({ label, title, onClick, sx }: {
       type="button"
       aria-label={title}
       title={title}
+      disabled={disabled}
       // A picture of the page leaves these out (`captureSheet`): an exported
       // business architecture should show the architecture, not the tool.
       data-sheet-add
@@ -338,6 +530,7 @@ function Add({ label, title, onClick, sx }: {
         bgcolor: 'transparent', border: '1px dashed', borderColor: 'divider', borderRadius: 0.75,
         px: 0.75, py: 0.25, fontSize: 10, whiteSpace: 'nowrap', opacity: 0.55,
         '&:hover': { opacity: 1, borderStyle: 'solid' },
+        '&:disabled': { opacity: 0.25, cursor: 'default', borderStyle: 'dashed' },
         ...sx,
       }}
     >
@@ -360,8 +553,9 @@ function Add({ label, title, onClick, sx }: {
  * actor with nothing under it is an entry, and becomes a group through the
  * inspector's parent field; the one at the bottom makes a new group.
  */
-function Rail({ actors, onSelect, author, t }: {
+function Rail({ actors, width, onSelect, author, t }: {
   actors: readonly SheetActor[]
+  width: number
   onSelect(id: ElementId): void
   author: Author | undefined
   t: Translate
@@ -370,8 +564,8 @@ function Rail({ actors, onSelect, author, t }: {
     <Box
       data-testid="sheet-rail"
       sx={{
-        width: RAIL_WIDTH, flex: `0 0 ${RAIL_WIDTH}px`, overflow: 'auto',
-        borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', px: 1.5, py: 2,
+        width, flex: `0 0 ${width}px`, overflow: 'auto',
+        bgcolor: 'background.paper', px: 1.5, py: 2,
       }}
     >
       <Typography sx={{
@@ -616,8 +810,17 @@ function Chevron({ step, onSelect, t }: {
 
 // --- the areas --------------------------------------------------------------
 
-function AreaCard({ area, onSelect, author, t }: {
+/** The capabilities of a grouping, or an area's loose ones, side by side where the box is wide enough. */
+const CAPABILITY_GRID = {
+  display: 'grid', gap: 0.75, gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', alignItems: 'start',
+} as const
+
+function AreaCard({ area, span, onSpan, onSelect, author, t }: {
   area: SheetArea
+  /** How many columns of the grid it takes. */
+  span: number
+  /** Make it wider or narrower — absent where the grid has one column, or under `readOnly`. */
+  onSpan?(span: number): void
   onSelect(id: ElementId): void
   author: Author | undefined
   t: Translate
@@ -625,9 +828,10 @@ function AreaCard({ area, onSelect, author, t }: {
   return (
     <Box
       data-testid={`sheet-area-${area.element.id}`}
+      data-span={span}
       sx={{
         border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden',
-        bgcolor: 'background.paper',
+        bgcolor: 'background.paper', gridColumn: `span ${span}`, minWidth: 0,
       }}
     >
       <Box
@@ -642,6 +846,22 @@ function AreaCard({ area, onSelect, author, t }: {
         </Typography>
         {area.domain !== undefined && (
           <Chip size="small" label={area.domain} sx={{ height: 18, fontSize: 9.5 }} />
+        )}
+        {onSpan && (
+          <Box
+            data-sheet-add
+            onClick={(event) => event.stopPropagation()}
+            sx={{ display: 'flex', gap: 0.25, ml: 0.5, flexShrink: 0 }}
+          >
+            <Add
+              label="−" title={t('sheet.narrower', { name: area.element.name })}
+              disabled={span <= 1} onClick={() => onSpan(span - 1)} sx={{ px: 0.6, lineHeight: 1.3 }}
+            />
+            <Add
+              label="+" title={t('sheet.wider', { name: area.element.name })}
+              disabled={span >= MAX_SPAN} onClick={() => onSpan(span + 1)} sx={{ px: 0.6, lineHeight: 1.3 }}
+            />
+          </Box>
         )}
       </Box>
       <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -664,7 +884,7 @@ function AreaCard({ area, onSelect, author, t }: {
             >
               {group.element.name}
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Box sx={CAPABILITY_GRID}>
               {group.capabilities.map((capability) => (
                 <CapabilityCard
                   key={capability.element.id}
@@ -690,14 +910,18 @@ function AreaCard({ area, onSelect, author, t }: {
         ))}
         {/* The area's own leaves, after the boxes: a column reads as structure
             and then the capabilities nobody has grouped yet. */}
-        {area.capabilities.map((capability) => (
-          <CapabilityCard
-            key={capability.element.id}
-            capability={capability}
-            onSelect={onSelect}
-            t={t}
-          />
-        ))}
+        {area.capabilities.length > 0 && (
+          <Box sx={CAPABILITY_GRID}>
+            {area.capabilities.map((capability) => (
+              <CapabilityCard
+                key={capability.element.id}
+                capability={capability}
+                onSelect={onSelect}
+                t={t}
+              />
+            ))}
+          </Box>
+        )}
         {author && (
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Add

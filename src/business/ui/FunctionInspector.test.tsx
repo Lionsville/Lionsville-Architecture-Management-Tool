@@ -10,7 +10,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { FunctionInspector } from './FunctionInspector'
-import type { SheetActions } from './FunctionInspector'
+import type { FunctionInspectorProps, SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { shippingScope } from '../testFixtures'
 import type { DesignElement, DesignModel } from '../../model'
@@ -29,6 +29,7 @@ function open(
   readOnly = false,
   onRemoved = vi.fn(),
   ownerOf?: (id: string) => { label: string; fields: readonly string[]; onOpen?: () => void } | undefined,
+  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere'> = {},
 ) {
   const actions: SheetActions = {
     updateElement: vi.fn(),
@@ -45,7 +46,7 @@ function open(
   const result = renderShell(
     <FunctionInspector
       element={held(id)} model={model()} readOnly={readOnly} actions={actions}
-      onRemoved={onRemoved} ownerOf={ownerOf}
+      onRemoved={onRemoved} ownerOf={ownerOf} {...over}
     />,
   )
   return { ...result, actions, onRemoved }
@@ -144,8 +145,8 @@ describe('what the two kinds each add', () => {
 
   it('gives a function what covers it, with a way to each system', () => {
     const { actions } = open('picking')
-    const coverage = screen.getByTestId('sheet-inspector-coverage')
-    fireEvent.click(within(coverage).getByText('Warehouse system'))
+    // The link, not the chip in the picker below it that says the same name.
+    fireEvent.click(screen.getByRole('button', { name: 'Open Warehouse system' }))
     expect(actions.onOpenElement).toHaveBeenCalledWith('wms')
   })
 
@@ -204,15 +205,83 @@ describe('what covers a capability, as something to tick', () => {
     })
   })
 
-  it('shows what is already ticked', () => {
+  it('shows what is already ticked, as chips', () => {
     open('picking')
-    expect(screen.getByRole('combobox', { name: /Supported by/ }).textContent)
-      .toBe('Handheld scanners, Warehouse system')
+    const field = screen.getByRole('combobox', { name: /Supported by/ }).closest('.MuiAutocomplete-root')
+    expect(field?.textContent).toContain('Handheld scanners')
+    expect(field?.textContent).toContain('Warehouse system')
+  })
+
+  it('offers every application in the organisation, with where it is defined', () => {
+    // An organisation's sheet holds no applications of its own: what
+    // supports its capabilities is a landscape's, handed in as the register.
+    const { actions } = open('dunning', false, undefined, undefined, {
+      applications: [
+        { id: 'erp', name: 'Finance system' },
+        { id: 'crm', name: 'Customer system', where: 'acme/sales' },
+      ],
+    })
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
+    const list = within(screen.getByRole('listbox'))
+    expect(list.getByRole('option', { name: 'Customer system' }).textContent).toContain('acme/sales')
+    fireEvent.click(list.getByRole('option', { name: 'Customer system' }))
+    expect(actions.setCoverage).toHaveBeenCalledWith({
+      type: 'supports', sourceId: 'crm', functionId: 'dunning', on: true,
+    })
+  })
+
+  it('is found by typing, because a register runs to hundreds', () => {
+    open('dunning', false, undefined, undefined, {
+      applications: [
+        { id: 'erp', name: 'Finance system' },
+        { id: 'crm', name: 'Customer system', where: 'acme/sales' },
+      ],
+    })
+    const box = screen.getByRole('combobox', { name: /Supported by/ })
+    fireEvent.focus(box)
+    fireEvent.change(box, { target: { value: 'cust' } })
+    const list = within(screen.getByRole('listbox'))
+    expect(list.getByRole('option', { name: 'Customer system' })).toBeTruthy()
+    expect(list.queryByRole('option', { name: 'Finance system' })).toBeNull()
+  })
+
+  it('counts a landscape’s rows in the line, and offers to take away only its own', () => {
+    const { actions } = open('dunning', false, undefined, undefined, {
+      applications: [{ id: 'crm', name: 'Customer system', where: 'acme/sales' }],
+      elsewhere: [{ id: 'r-x', type: 'supports', sourceId: 'crm', targetId: 'dunning' }],
+    })
+    expect(screen.getByRole('button', { name: 'Open Customer system' })).toBeTruthy()
+    expect(screen.queryByText('Nothing and nobody yet')).toBeNull()
+    // Not a chip: the row is the landscape's, and unpicking it here would find nothing to delete.
+    const field = screen.getByRole('combobox', { name: /Supported by/ }).closest('.MuiAutocomplete-root')
+    expect(field?.textContent).not.toContain('Customer system')
+    expect(actions.setCoverage).not.toHaveBeenCalled()
+  })
+
+  it('names a supporter this scope does not hold, from the same list', () => {
+    open('picking', false, undefined, undefined, {
+      applications: [{ id: 'wms', name: 'Warehouse system, as the landscape calls it', where: 'ops' }],
+    })
+    expect(screen.getByRole('button', { name: 'Open Warehouse system, as the landscape calls it' })).toBeTruthy()
   })
 
   it('offers nothing to tick on a step — a journey is walked, not covered', () => {
     open('negotiate')
     expect(screen.queryByRole('combobox', { name: /Supported by/ })).toBeNull()
+  })
+})
+
+describe('the way to the page', () => {
+  it('opens the element’s own documentation, beside the heading', () => {
+    const onOpenDocumentation = vi.fn()
+    open('dunning', false, undefined, undefined, { onOpenDocumentation })
+    fireEvent.click(screen.getByRole('button', { name: 'Open the page of Chase a late payment' }))
+    expect(onOpenDocumentation).toHaveBeenCalledWith('dunning')
+  })
+
+  it('is not offered where the host has no page to go to', () => {
+    open('dunning')
+    expect(screen.queryByTestId('sheet-open-page')).toBeNull()
   })
 })
 

@@ -139,3 +139,21 @@ describe('the rail', () => {
     expect(actions.updateSheet).toHaveBeenCalledWith({ showActors: true })
   })
 })
+
+describe('the columns', () => {
+  it('is as many as fit until a number is chosen, which is written to the sheet', () => {
+    const { actions } = open()
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Columns/ }))
+    const list = within(screen.getByRole('listbox'))
+    expect(list.getByRole('option', { name: 'As many as fit' }).getAttribute('aria-selected')).toBe('true')
+    fireEvent.click(list.getByRole('option', { name: '4' }))
+    expect(actions.updateSheet).toHaveBeenCalledWith({ columns: 4 })
+  })
+
+  it('goes back to fitting the window', () => {
+    const { actions } = open({ ...SHEET, columns: 4 })
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Columns/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'As many as fit' }))
+    expect(actions.updateSheet).toHaveBeenCalledWith({ columns: undefined })
+  })
+})

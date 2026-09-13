@@ -57,6 +57,7 @@ import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { MapPage, SheetPage } from '../business'
+import type { Supporter } from '../business'
 import type { MapDescribe } from '../business'
 import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
@@ -292,10 +293,11 @@ export function ProjectWorkspace({
    * the sheet is wired next, and a coverage link on it lands on the element's
    * own page when no board draws the element at all.
    */
-  const [docRequest, setDocRequest] = useState<{ elementId?: string; nonce: number } | undefined>(undefined)
-  const openDocumentation = useCallback((elementId?: string) => {
+  const [docRequest, setDocRequest] = useState<{ elementId?: string; diagramId?: string; nonce: number } | undefined>(undefined)
+  /** `diagramId` is the view the reader came from — a sheet, whose neighbours the page then lists. */
+  const openDocumentation = useCallback((elementId?: string, diagramId?: string) => {
     if (session.current().elements.length === 0) { notify(s('shell.noElements'), 'info'); return }
-    setDocRequest((prev) => ({ elementId, nonce: (prev?.nonce ?? 0) + 1 }))
+    setDocRequest((prev) => ({ elementId, diagramId, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [session, notify, s])
   const sheets = useSheet({
     session, makeId, s, notify, toElement: focusElement, toDocumentation: openDocumentation,
@@ -666,6 +668,21 @@ export function ProjectWorkspace({
       ...(master !== undefined && master !== project.path ? { where: scopeLabel(master) } : {}),
     }
   }, [index, project.path, scopeLabel])
+
+  /**
+   * Every application in the organisation, for the sheet's *Supported by…*
+   * (ADR-0012 §2). The register, said the way the map says a column: the
+   * name, and the scope that defines it where that is not this one. Off the
+   * index, so an application a landscape adds reaches the organisation's
+   * sheet when the watcher next reads the tree.
+   */
+  const applicationsInTree = useMemo<Supporter[]>(
+    () => index.register().map(({ id, name, master }) => ({
+      id, name,
+      ...(master !== undefined && master !== project.path ? { where: scopeLabel(master) } : {}),
+    })),
+    [index, project.path, scopeLabel],
+  )
 
   const ownership = useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => {
@@ -1148,6 +1165,9 @@ export function ProjectWorkspace({
         onHandle={onSheetHandle}
         ownerOf={ownership.ownerOf}
         elsewhere={rowsElsewhere}
+        applications={applicationsInTree}
+        onOpenDocumentation={(id) => openDocumentation(id, sheets.sheetId)}
+        onSave={files.savePicture}
         windowChrome={pageChrome}
       />
       <MapPage
@@ -1162,6 +1182,8 @@ export function ProjectWorkspace({
         elsewhere={rowsElsewhere}
         describe={describeForMap}
         today={todayDay}
+        applications={applicationsInTree}
+        onOpenDocumentation={(id) => openDocumentation(id, maps.mapId)}
         windowChrome={pageChrome}
       />
       <GlobalSearchDialog
