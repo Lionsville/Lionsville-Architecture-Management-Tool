@@ -60,6 +60,7 @@ export const EN = {
   // --- context menus -------------------------------------------------------
   'menu.openContainer': 'Open container diagram',
   'menu.createContainer': 'Create container diagram',
+  'menu.openOwner': 'Open where it is defined',
   'menu.rename': 'Rename',
   'menu.startConnection': 'Start connection to…',
   'menu.icon': 'Icon…',

@@ -1020,6 +1020,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
             hasContainerDiagram: model.diagrams.some(
               (d) => d.kind === 'container' && d.applicationElementId === element.id,
             ),
+            ...(element.ref !== undefined ? { standIn: true } : {}),
             isBoundaryApplication:
               diagram.kind === 'container' && diagram.applicationElementId === element.id,
             // "Change kind ▸": what it could become here, and — when it could

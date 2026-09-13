@@ -138,6 +138,12 @@ export interface ElementMenuFacts {
   /** Which dashed group it is filed under, by id. */
   group?: string;
   hasContainerDiagram: boolean;
+  /**
+   * Another scope defines it (ADR-0012 §3): what is inside it is shown
+   * there, so the entry that opens or makes a container diagram opens the
+   * owning scope instead, and says so.
+   */
+  standIn?: boolean;
   /** The application a container diagram is about — cannot leave its own diagram. */
   isBoundaryApplication: boolean;
   /**
@@ -293,7 +299,9 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
     action: 'open-documentation',
   });
   if (el.kind === 'application') {
-    if (el.hasContainerDiagram) {
+    if (el.standIn) {
+      items.push({ id: 'open-container', label: t('menu.openOwner'), action: 'open-container' });
+    } else if (el.hasContainerDiagram) {
       items.push({ id: 'open-container', label: t('menu.openContainer'), action: 'open-container' });
     } else if (!ctx.readOnly) {
       items.push({ id: 'open-container', label: t('menu.createContainer'), action: 'open-container' });

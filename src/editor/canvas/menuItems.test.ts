@@ -84,6 +84,9 @@ describe('menuItemsFor — node', () => {
 
   it('says "Create container diagram" when the application has none yet', () => {
     const items = menuItemsFor(NODE, ctx({ element: app({ hasContainerDiagram: false }) }));
+    // A stand-in's inside is the owner's to show: the same entry, said honestly.
+    const away = menuItemsFor(NODE, ctx({ element: app({ hasContainerDiagram: false, standIn: true }) }));
+    expect(away.find((item) => item.id === 'open-container')?.label).toBe('Open where it is defined');
     expect(byId(items, 'open-container').label).toBe('Create container diagram');
     expect(byId(items, 'open-container').action).toBe('open-container');
   });

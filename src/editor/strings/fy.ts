@@ -55,6 +55,7 @@ export const FY: Record<keyof typeof EN, string> = {
 
   'menu.openContainer': 'Containerdiagram iepenje',
   'menu.createContainer': 'Containerdiagram meitsje',
+  'menu.openOwner': 'Iepenje dêr\'t it definiearre is',
   'menu.rename': 'Omneame',
   'menu.startConnection': 'Ferbining begjinne nei…',
   'menu.icon': 'Ikoan…',

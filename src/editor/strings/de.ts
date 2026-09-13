@@ -55,6 +55,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'menu.openContainer': 'Container-Diagramm öffnen',
   'menu.createContainer': 'Container-Diagramm erstellen',
+  'menu.openOwner': 'Öffnen, wo sie definiert ist',
   'menu.rename': 'Umbenennen',
   'menu.startConnection': 'Verbindung beginnen zu…',
   'menu.icon': 'Symbol…',
