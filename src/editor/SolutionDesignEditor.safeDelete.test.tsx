@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
@@ -17,6 +17,13 @@ import type { DesignModel } from '../model/types';
  */
 
 beforeAll(() => installReactFlowMocks());
+
+/**
+ * Let React Flow measure the board: the ResizeObserver shim delivers its
+ * entries one microtask after the last `observe`, as a browser delivers a
+ * frame's, and an edge is drawn only once both its ends have a size.
+ */
+const measured = () => act(async () => {});
 afterEach(() => cleanup());
 
 function model(): DesignModel {
@@ -74,8 +81,9 @@ const dialog = () => screen.getByRole('dialog');
 const confirm = () => fireEvent.click(within(dialog()).getByRole('button', { name: 'Delete' }));
 
 describe('SolutionDesignEditor — confirming a connection delete', () => {
-  it('the line menu asks first, and Cancel keeps the line', () => {
+  it('the line menu asks first, and Cancel keeps the line', async () => {
     const { host } = renderEditor();
+    await measured();
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
@@ -88,8 +96,9 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
     expect(host.current.commands).toEqual([]);
   });
 
-  it('confirming deletes the connection', () => {
+  it('confirming deletes the connection', async () => {
     const { host } = renderEditor();
+    await measured();
 
     fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
@@ -99,8 +108,9 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('the Delete key on a selected connection asks too', () => {
+  it('the Delete key on a selected connection asks too', async () => {
     const { host } = renderEditor();
+    await measured();
 
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
     fireEvent.keyDown(screen.getByText('ACTORS'), { key: 'Delete' });
@@ -109,8 +119,9 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
     expect(host.current.commands).toEqual([]);
   });
 
-  it("the inspector's Delete connection button asks too", () => {
+  it("the inspector's Delete connection button asks too", async () => {
     renderEditor();
+    await measured();
 
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
     fireEvent.click(screen.getByRole('button', { name: 'Delete connection' }));

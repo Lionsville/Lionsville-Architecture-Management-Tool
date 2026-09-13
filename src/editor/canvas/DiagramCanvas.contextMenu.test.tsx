@@ -3,7 +3,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { diagramWithRoutes, edgeRoutesOf } from '../../model/routes';
 import { placedNodes } from '../../model/placement';
 import { laidOut } from '../../model/testFixtures';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from '../testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from '../testing/editorHost';
@@ -19,6 +19,13 @@ import type { DesignModel, EdgeRoute } from '../../model/types';
  */
 
 beforeAll(() => installReactFlowMocks());
+
+/**
+ * Let React Flow measure the board: the ResizeObserver shim delivers its
+ * entries one microtask after the last `observe`, as a browser delivers a
+ * frame's, and an edge is drawn only once both its ends have a size.
+ */
+const measured = () => act(async () => {});
 afterEach(() => cleanup());
 
 /** Two placed elements and one line between them; the application has a container diagram. */
@@ -241,9 +248,10 @@ describe('DiagramCanvas — element menu', () => {
 });
 
 describe('DiagramCanvas — connection menu', () => {
-  it('a line WITHOUT a stored route gets the menu; "Add bend point here" claims it', () => {
+  it('a line WITHOUT a stored route gets the menu; "Add bend point here" claims it', async () => {
     const { landed } = renderEditor();
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'), { clientX: 400, clientY: 300 });
+    await measured();
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'), { clientX: 400, clientY: 300 });
     const root = menu('Connection menu');
     expect(within(root).getByText('Remove all bend points').closest('[role="menuitem"]')?.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(within(root).getByText('Add bend point here'));
@@ -253,30 +261,33 @@ describe('DiagramCanvas — connection menu', () => {
     expect(route?.source).toBe('manual');
   });
 
-  it('Direction ▸ Reverse swaps the endpoints; Two-way sets isBidirectional', () => {
+  it('Direction ▸ Reverse swaps the endpoints; Two-way sets isBidirectional', async () => {
     const { landed } = renderEditor();
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    await measured();
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Direction')).getByRole('menuitemcheckbox', { name: 'Reverse' }));
     expect(landed().relations.find((c) => c.id === 'c1')).toMatchObject({ sourceId: 'b1', targetId: 'a1' });
 
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Direction')).getByRole('menuitemcheckbox', { name: 'Two-way' }));
     expect(landed().relations.find((c) => c.id === 'c1')?.isBidirectional).toBe(true);
   });
 
-  it('Line shape ▸ writes the routing token, Smooth clears it', () => {
+  it('Line shape ▸ writes the routing token, Smooth clears it', async () => {
     const { landed } = renderEditor();
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    await measured();
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Line shape')).getByRole('menuitemcheckbox', { name: 'Orthogonal' }));
     expect(landed().relations.find((c) => c.id === 'c1')?.routing).toBe('orthogonal');
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(openSubmenu(menu('Connection menu'), 'Line shape')).getByRole('menuitemcheckbox', { name: 'Smooth' }));
     expect(landed().relations.find((c) => c.id === 'c1')?.routing).toBeUndefined();
   });
 
   it('"Edit label" opens the inline editor on the chip', async () => {
     renderEditor();
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    await measured();
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Edit label'));
     const textarea = (await screen.findByPlaceholderText('Interface description…')) as HTMLTextAreaElement;
     expect(textarea.value).toBe('Sends orders');
@@ -345,7 +356,8 @@ describe('DiagramCanvas — connection menu', () => {
 
   it('"Pin route" pins a line with no stored route; the entry then reads "Unpin route" and unpins it', async () => {
     const { landed } = renderEditor();
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    await measured();
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Pin route'));
     expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')).toEqual({
       relationId: 'c1',
@@ -357,15 +369,16 @@ describe('DiagramCanvas — connection menu', () => {
     // The inspector's Route section agrees.
     expect(screen.getByTestId('route-badge').textContent).toBe('Hand-drawn');
 
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     fireEvent.click(within(menu('Connection menu')).getByText('Unpin route'));
     // A pin-only row that loses its pin has nothing left: the row is forgotten.
     expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')).toBeUndefined();
     expect(screen.getByTestId('route-badge').textContent).toBe('None');
   });
 
-  it('"Re-route everything (ignore pins)" sits after Route connections in the canvas menu', () => {
+  it('"Re-route everything (ignore pins)" sits after Route connections in the canvas menu', async () => {
     renderEditor();
+    await measured();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     const root = menu('Canvas menu');
     const labels = within(root).getAllByRole('menuitem').map((i) => i.querySelector('.MuiListItemText-primary')?.textContent);
@@ -387,8 +400,9 @@ describe('DiagramCanvas — connection menu', () => {
 });
 
 describe('DiagramCanvas — canvas menu', () => {
-  it('right-click on empty canvas opens the canvas menu; "Add here ▸ Application" creates one at the click point', () => {
+  it('right-click on empty canvas opens the canvas menu; "Add here ▸ Application" creates one at the click point', async () => {
     const { landed } = renderEditor();
+    await measured();
     // Well clear of the Core group box in flow space, on the landscape.
     const client = { x: 700, y: 500 };
     fireEvent.contextMenu(pane(), { clientX: client.x, clientY: client.y });
@@ -410,16 +424,18 @@ describe('DiagramCanvas — canvas menu', () => {
     expect(placement?.y).toBeCloseTo(expected.y, 3);
   });
 
-  it('"Add domain group here" lands a box centred on the click', () => {
+  it('"Add domain group here" lands a box centred on the click', async () => {
     const { landed } = renderEditor();
+    await measured();
     fireEvent.contextMenu(pane(), { clientX: 500, clientY: 450 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Add domain group here'));
     const groups = landed().geometry?.groups ?? [];
     expect(groups.map((g) => g.id)).toEqual(['core', 'new-group']);
   });
 
-  it('Copy on an element then "Paste here" pastes the copy with its corner at the click point', () => {
+  it('Copy on an element then "Paste here" pastes the copy with its corner at the click point', async () => {
     const { landed } = renderEditor();
+    await measured();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Copy'));
 
@@ -433,8 +449,9 @@ describe('DiagramCanvas — canvas menu', () => {
     expect(pasted?.y).toBeCloseTo(expected.y, 3);
   });
 
-  it('Show grid / Snap to grid toggle the same state as the placement toolbar', () => {
+  it('Show grid / Snap to grid toggle the same state as the placement toolbar', async () => {
     renderEditor();
+    await measured();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByRole('menuitemcheckbox', { name: 'Show grid' }));
     expect(screen.getByLabelText('Toggle grid visibility').getAttribute('aria-pressed')).toBe('false');
@@ -443,8 +460,9 @@ describe('DiagramCanvas — canvas menu', () => {
     expect(screen.getByLabelText('Toggle snap to grid').getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('Select all selects the diagram content', () => {
+  it('Select all selects the diagram content', async () => {
     renderEditor();
+    await measured();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Select all'));
     expect(screen.getByText('3 selected')).toBeDefined();
@@ -452,8 +470,9 @@ describe('DiagramCanvas — canvas menu', () => {
 });
 
 describe('DiagramCanvas — selection menu', () => {
-  it('right-click on a node inside a multi-selection opens the selection menu; Lifecycle applies to all in one batch', () => {
+  it('right-click on a node inside a multi-selection opens the selection menu; Lifecycle applies to all in one batch', async () => {
     const { landed, sent } = renderEditor();
+    await measured();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Select all'));
 
@@ -466,8 +485,9 @@ describe('DiagramCanvas — selection menu', () => {
     expect(landed().elements.map((e) => e.lifecycle)).toEqual(['planned', 'planned']);
   });
 
-  it('"Group into new domain group" boxes the landscape members and assigns them in one batch', () => {
+  it('"Group into new domain group" boxes the landscape members and assigns them in one batch', async () => {
     const { landed, sent } = renderEditor();
+    await measured();
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByText('Select all'));
     const before = sent();
@@ -520,8 +540,9 @@ describe('DiagramCanvas — keyboard', () => {
 });
 
 describe('DiagramCanvas — read-only', () => {
-  it('offers only navigation: documentation and container on an element, select all / fit view on the canvas, nothing on a line', () => {
+  it('offers only navigation: documentation and container on an element, select all / fit view on the canvas, nothing on a line', async () => {
     renderEditor({ readOnly: true });
+    await measured();
     const primary = (item: HTMLElement) => item.querySelector('.MuiListItemText-primary')?.textContent;
 
     fireEvent.contextMenu(nodeEl('a1'));
@@ -534,7 +555,7 @@ describe('DiagramCanvas — read-only', () => {
     expect(within(canvas).getAllByRole('menuitem').map(primary)).toEqual(['Select all', 'Fit view']);
     fireEvent.keyDown(canvas, { key: 'Escape' });
 
-    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
     expect(screen.queryByRole('menu', { name: 'Connection menu' })).toBeNull();
 
     // A non-application has no container to open, but reading is still allowed.

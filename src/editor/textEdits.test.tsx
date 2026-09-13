@@ -18,6 +18,13 @@ import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { DesignModel } from '../model/types';
 
 beforeAll(() => { installReactFlowMocks(); });
+
+/**
+ * Let React Flow measure the board: the ResizeObserver shim delivers its
+ * entries one microtask after the last `observe`, as a browser delivers a
+ * frame's, and an edge is drawn only once both its ends have a size.
+ */
+const measured = () => act(async () => {});
 afterEach(() => cleanup());
 
 function model(): DesignModel {
@@ -134,8 +141,9 @@ describe('typing into a field', () => {
     expect(host.current.model.elements[0].name).toBe('Store');
   });
 
-  it('does the same for a connection label', () => {
+  it('does the same for a connection label', async () => {
     const { host } = renderEditor();
+    await measured();
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
     type(within(inspector()).getByLabelText('Label'), 'Sends orders');
 
