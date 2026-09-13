@@ -1,5 +1,6 @@
 import type {
   DesignDiagram,
+  DesignElement,
   DiagramMember,
   ElementId,
   ElementKind,
@@ -9,8 +10,9 @@ import type {
   PlacedNode,
   Rect,
 } from './types';
+import { nodeFigure } from './kinds';
 import type { NodeFigure } from './kinds';
-import { zoneRect, zoneSizes } from './zones';
+import { HOME_ZONE, zoneRect, zoneSizes } from './zones';
 import type { BoardGeometry } from './zones';
 
 /**
@@ -372,6 +374,53 @@ export function defaultZonePosition(
   geometry?: BoardGeometry,
 ): { x: number; y: number } {
   return cascadeSlot(zoneRect(zone, geometry), figure, existingInZone);
+}
+
+/**
+ * What a placement is seeded from: what the thing is, and — where somebody has
+ * said — where it goes. The palette's seed, the agent's `element.draw` and a
+ * record picked from the register all reduce to this.
+ */
+export type PlacementSeed = Pick<DesignElement, 'kind' | 'outside' | 'ref'> & {
+  position?: { x: number; y: number };
+  zone?: Layer7Zone;
+  /** The dashed group's id (ADR-0012 §6). */
+  group?: string;
+};
+
+/**
+ * Where a thing lands on a view when it is ADDED there, as opposed to moved.
+ *
+ * A seed that names no band goes to the home of what it would be drawn as
+ * where nothing has been said — which for an application is the landscape,
+ * and for one nobody here owns, or one another scope answers for, the
+ * external band. No position means the next cascade slot in that band,
+ * counted the way the palette has always counted. Here rather than in the
+ * editor because the shell adds to a board too — a record picked from the
+ * register is drawn without a drag — and two answers to "where does a new
+ * card go" would drift.
+ */
+export function seedPlacement(
+  seed: PlacementSeed,
+  diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry'>,
+  elementId: ElementId,
+): PlacedNode {
+  if (diagram.kind === 'layer7') {
+    const zone = seed.zone ?? HOME_ZONE[nodeFigure(seed)];
+    const figure = nodeFigure(seed, zone);
+    const position =
+      seed.position ??
+      defaultZonePosition(
+        zone,
+        figure,
+        placedNodes(diagram).filter((p) => (p.zone ?? 'landscape') === zone).length,
+        diagram.geometry,
+      );
+    return { id: elementId, zone, group: seed.group, ...position };
+  }
+  const position =
+    seed.position ?? defaultContainerPosition(nodeFigure(seed), diagram.members.length);
+  return { id: elementId, ...position };
 }
 
 /**

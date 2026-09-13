@@ -117,6 +117,18 @@ export type IndexEntry = {
   outside?: true
   /** Which actor an outside application belongs to, where that has been said. */
   partyId?: ElementId
+  /**
+   * Where the stand-ins say the definition was last seen — kept ONLY where
+   * nobody defines it (§3).
+   *
+   * A dangling id has no master to point at, and the cached `ref` on its
+   * stand-ins is the one address anybody wrote down. A scope drawing such a
+   * thing from the register carries the same address, so that every record
+   * of it keeps saying the same thing until *link* or a definition settles it.
+   * Absent as soon as there is a master, because then the master's path is
+   * the answer and a second one would be a second answer.
+   */
+  cachedRef?: string
 }
 
 /** One row, and the scope whose `model.json` holds it. */
@@ -296,6 +308,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       // a stand-in may not carry either of these at all (§3).
       ...(master?.outside ? { outside: master.outside } : {}),
       ...(master?.partyId !== undefined ? { partyId: master.partyId } : {}),
+      ...(master === undefined && row.standIns[0] !== undefined ? { cachedRef: row.standIns[0].ref } : {}),
       drawnIn: row.standIns.map((one) => one.path),
       stale,
       ...(tied.length > 1 ? { conflict: tied.map((one) => one.path).sort() } : {}),

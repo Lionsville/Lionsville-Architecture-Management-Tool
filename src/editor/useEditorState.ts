@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardGeometry } from '../model/zones';
 import { claimKey } from '../model/keys';
 import { placeOn } from '../model/commands';
-import { memberOf, nodeGeometryOf, placedNode } from '../model/placement';
+import { memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, PlacedNode, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
@@ -15,8 +15,6 @@ import type { Command } from '../model/commands';
 import { placedNodes,
   canPlaceKind,
   clampPlacementIntoZone,
-  defaultContainerPosition,
-  defaultZonePosition,
   placementRect,
 } from '../model/placement';
 import { edgeRoutesEqual } from '../model/equality';
@@ -32,7 +30,7 @@ import { edgeRoutesOf,
   type AttachSidesPatch,
   type RouteSides,
 } from '../model/routes';
-import { clampCanvasSize, clampZoneSize, HOME_ZONE, RESIZABLE_ZONES } from '../model/zones';
+import { clampCanvasSize, clampZoneSize, RESIZABLE_ZONES } from '../model/zones';
 import { canChangeKind, placementForKind } from '../model/kindChange';
 import { nodeFigure } from '../model/kinds';
 
@@ -1294,32 +1292,6 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     canUndo: props.editing.history.canUndo,
     canRedo: props.editing.history.canRedo,
   };
-}
-
-function seedPlacement(
-  seed: ElementSeed,
-  diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry'>,
-  elementId: ElementId,
-): PlacedNode {
-  if (diagram.kind === 'layer7') {
-    // A seed that names no band goes to the home of what it would be drawn as
-    // where nothing has been said — which for an application is the landscape,
-    // and for one nobody here owns is the external band.
-    const zone = seed.zone ?? HOME_ZONE[nodeFigure(seed)];
-    const figure = nodeFigure(seed, zone);
-    const position =
-      seed.position ??
-      defaultZonePosition(
-        zone,
-        figure,
-        placedNodes(diagram).filter((p) => (p.zone ?? 'landscape') === zone).length,
-        diagram.geometry,
-      );
-    return { id: elementId, zone, group: seed.group, ...position };
-  }
-  const position =
-    seed.position ?? defaultContainerPosition(nodeFigure(seed), diagram.members.length);
-  return { id: elementId, ...position };
 }
 
 /**

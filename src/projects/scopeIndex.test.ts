@@ -55,6 +55,7 @@ describe('the index — who answers for an id', () => {
     expect(index.lookup('erp')?.master).toBe('retail')
     expect(index.lookup('erp')?.name).toBe('Retail ERP')
     expect(index.lookup('erp')?.declarations).toEqual([''])
+    expect(index.lookup('erp')?.cachedRef).toBeUndefined()
   })
 
   /**
@@ -126,6 +127,9 @@ describe('the index — who answers for an id', () => {
     expect(index.lookup('erp')?.master).toBeUndefined()
     expect(index.lookup('erp')?.name).toBe('ERP')
     expect(index.lookup('erp')?.drawnIn).toEqual(['retail'])
+    // The one address anybody wrote down, kept so a scope drawing it from
+    // the register says the same thing the others say.
+    expect(index.lookup('erp')?.cachedRef).toBe('finance')
   })
 
   it('has never heard of an id no scope holds', () => {

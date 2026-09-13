@@ -10,6 +10,7 @@ import {
   cascadeSlot,
   clampPlacementIntoZone,
   defaultZonePosition,
+  seedPlacement,
   freeSlotIn,
   freeZonePosition,
   rectsIntersect,
@@ -417,5 +418,31 @@ describe('canPlaceKind', () => {
   it('excepts the actor, which has stood in the top band of every board', () => {
     // A business kind by ADR-0012 §4, and the one that was always drawn.
     expect(canPlaceKind('actor', 'layer7')).toEqual({ ok: true });
+  });
+});
+
+describe('seedPlacement', () => {
+  const landscape = laidOut({
+    id: 'd', kind: 'layer7', name: 'L',
+    placements: [{ id: 'a', zone: 'landscape', x: 0, y: 0 }, { id: 'x', zone: 'externalSystems', x: 0, y: 0 }],
+  });
+
+  it('lands an application in the landscape band, in the next cascade slot', () => {
+    const placed = seedPlacement({ kind: 'application' }, landscape, 'new');
+    expect(placed.zone).toBe('landscape');
+    expect(placed).toEqual({
+      id: 'new', zone: 'landscape', group: undefined,
+      ...defaultZonePosition('landscape', 'application', 1, landscape.geometry),
+    });
+  });
+
+  it('sends a stand-in and an outside application to the external band, where nothing has been said', () => {
+    expect(seedPlacement({ kind: 'application', ref: 'acme/retail' }, landscape, 's').zone).toBe('externalSystems');
+    expect(seedPlacement({ kind: 'application', outside: true }, landscape, 'o').zone).toBe('externalSystems');
+    expect(seedPlacement({ kind: 'application', ref: 'x', zone: 'landscape' }, landscape, 's').zone).toBe('landscape');
+  });
+
+  it('keeps a position somebody gave it', () => {
+    expect(seedPlacement({ kind: 'actor', position: { x: 7, y: 9 } }, landscape, 'p')).toMatchObject({ x: 7, y: 9 });
   });
 });
