@@ -26,6 +26,7 @@ import {
   WORKING_FILE_TYPE, WORKING_FILE_VERSION, isInterchange, isWorkingFile, workingFileLogoLibrary,
 } from '../model/hostModel'
 import type { WorkingFile } from '../model/hostModel'
+import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -205,7 +206,7 @@ export function flattenScopes(root: ScopeSummary): ScopeSummary[] {
  * a domain's decisions, documents and plans unreachable.
  */
 export function isOpenableScope(scope: ScopeSnapshot | undefined): scope is ScopeSnapshot {
-  return !!scope && scope.model.diagrams.length > 0
+  return !!scope && scope.model.diagrams.some((diagram) => isBoardKind(diagram.kind))
 }
 
 /**
@@ -229,8 +230,12 @@ export function isStoredScope(value: unknown): value is ScopeSnapshot {
  * a better answer than a blank canvas.
  */
 export function resolveActive(model: HostModel, preferred?: string): string {
-  if (preferred && model.diagrams.some((d) => d.id === preferred)) return preferred
-  return model.diagrams[0]?.id ?? ''
+  // A board, always: a sheet or a map is a page over the canvas (ADR-0012 §6),
+  // and a scope holding only those has no active diagram — the empty answer,
+  // which is what a scope that draws nothing has always given.
+  const boards = model.diagrams.filter((d) => isBoardKind(d.kind))
+  if (preferred && boards.some((d) => d.id === preferred)) return preferred
+  return boards[0]?.id ?? ''
 }
 
 /**

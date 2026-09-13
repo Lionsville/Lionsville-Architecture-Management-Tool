@@ -31,6 +31,18 @@ export const CANVAS_KINDS: readonly ElementKind[] & readonly CanvasKind[] =
 /** One of {@link CANVAS_KINDS} — narrower than a kind, where a canvas is meant. */
 export type CanvasKind = 'application' | 'component' | 'actor';
 
+/**
+ * Is a view of this kind a board — geometry a canvas draws (ADR-0012 §6)?
+ *
+ * The other two kinds are laid out, hold no members and are never the active
+ * diagram: the shell opens them as pages over the canvas. One predicate,
+ * because "does this scope draw anything" and "may a card go here" are the
+ * same question, and a scope holding only a sheet was answering yes to both.
+ */
+export function isBoardKind(kind: DesignDiagram['kind']): boolean {
+  return kind === 'layer7' || kind === 'container';
+}
+
 /** Why a kind cannot go on a view. A key, as every refusal from `model/` is. */
 export type PlacementRefusal = 'placement.notOnACanvas';
 
@@ -49,7 +61,10 @@ export function canPlaceKind(
   kind: ElementKind,
   on: DesignDiagram['kind'],
 ): PlacementCheck {
-  if (on !== 'layer7' && on !== 'container') return { ok: true };
+  // A laid-out view has no members at all: what it draws is the trees, and a
+  // member row would be a second place to keep the same fact — one the canvas
+  // then drew as a column of cards when the scope had no board to show.
+  if (!isBoardKind(on)) return { ok: false, reason: 'placement.notOnACanvas' };
   return CANVAS_KINDS.includes(kind)
     ? { ok: true }
     : { ok: false, reason: 'placement.notOnACanvas' };

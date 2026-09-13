@@ -21,6 +21,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
 import type { Command, CommandMeta, DocumentImage, Model, StepSummary, UploadedLogo } from '../model'
 import { apply, fromArrays, summarise, toArrays, transaction } from '../model'
+import { isBoardKind } from '../model/placement'
 import { idPolicy } from '../model/keys'
 import type { IdPolicy } from '../model/keys'
 import { needsRemount } from '../model/hostModel'
@@ -267,7 +268,7 @@ export function useModelSession(deps: {
     const gone = before.order.diagrams.filter((id) => !after.diagrams[id])
     if (gone.length === 0) return
     if (gone.includes(activeRef.current)) {
-      setActiveDiagramId(after.order.diagrams[0] ?? activeRef.current)
+      setActiveDiagramId(after.order.diagrams.find((id) => isBoardKind(after.diagrams[id].kind)) ?? activeRef.current)
     }
     notify(gone.length === 1
       ? s('shell.orphanOne', { name: before.diagrams[gone[0]].name })

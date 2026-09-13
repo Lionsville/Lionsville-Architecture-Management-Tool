@@ -407,6 +407,13 @@ describe('canPlaceKind', () => {
     }
   });
 
+  it('refuses every kind on a laid-out view, which holds no members at all', () => {
+    for (const kind of ['application', 'actor', 'step', 'function'] as const) {
+      expect(canPlaceKind(kind, 'sheet'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
+      expect(canPlaceKind(kind, 'map'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
+    }
+  });
+
   it('excepts the actor, which has stood in the top band of every board', () => {
     // A business kind by ADR-0012 §4, and the one that was always drawn.
     expect(canPlaceKind('actor', 'layer7')).toEqual({ ok: true });

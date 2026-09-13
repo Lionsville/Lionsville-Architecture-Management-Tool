@@ -3418,7 +3418,7 @@
     "name": "Acme Logistics",
     "kind": "organisation",
     "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
-    "activeDiagramId": "business-architecture",
+    "activeDiagramId": "",
     "diagrams": [
       "business-architecture",
       "enterprise-map"

@@ -26,6 +26,7 @@ import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
+import { isBoardKind } from '../model/placement'
 import type { DesignElement, Relation } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
@@ -866,7 +867,7 @@ export function ProjectWorkspace({
    * going back to where they were opened from. A scope with a board closes its
    * pages onto that board, as it always has.
    */
-  const drawsNothing = session.model.diagrams.length === 0
+  const drawsNothing = !session.model.diagrams.some((diagram) => isBoardKind(diagram.kind))
   const leaveIfNothingToDraw = useCallback(() => { if (drawsNothing) onLeave() }, [drawsNothing, onLeave])
 
   const chooseHit = useCallback((hit: SearchHit) => {

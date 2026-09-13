@@ -215,6 +215,18 @@ describe('resolveActive', () => {
     expect(resolveActive(model)).toBe('l7')
   })
 
+  it('answers a board, never a laid-out view — and nothing where there is no board', () => {
+    // A sheet is a page over the canvas (ADR-0012 §6); an organisation holding
+    // only a sheet and a map would otherwise open on the sheet drawn as a
+    // column of cards.
+    const sheet = { id: 'sh', kind: 'sheet' as const, name: 'Sheet', members: [], geometry: { nodes: [] } }
+    const withSheet = { ...model, diagrams: [sheet, ...model.diagrams] }
+    expect(resolveActive(withSheet)).toBe('l7')
+    expect(resolveActive(withSheet, 'sh')).toBe('l7')
+    expect(resolveActive({ ...model, diagrams: [sheet] })).toBe('')
+    expect(isOpenableScope({ ...sampleScope(), model: { ...model, diagrams: [sheet] } })).toBe(false)
+  })
+
   it('gives an empty key for a model with no diagrams', () => {
     expect(resolveActive({ ...model, diagrams: [] })).toBe('')
   })
