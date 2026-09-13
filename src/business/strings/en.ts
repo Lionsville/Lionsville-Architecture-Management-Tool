@@ -23,6 +23,19 @@ export const EN = {
   'sheet.resizeDetails': 'Resize the details',
   'sheet.noStakeholders': 'No stakeholders yet.',
 
+  // --- finding something on the page ---------------------------------------
+  'sheet.find': 'Find on the page',
+  'sheet.findPlaceholder': 'Type a name…',
+  'sheet.findNone': 'Nothing on this page matches.',
+  'sheet.findMore': '{count} more — keep typing',
+  'sheet.bandActor': 'stakeholder',
+  'sheet.bandPhase': 'phase',
+  'sheet.bandStep': 'step',
+  'sheet.bandArea': 'area',
+  'sheet.bandGrouping': 'grouping',
+  'sheet.bandCapability': 'capability',
+  'sheet.bandUnmapped': 'not yet mapped',
+
   // --- the journey band ----------------------------------------------------
   'sheet.commonLane': 'All customers',
   'sheet.passThrough': 'As the row above',

@@ -758,7 +758,9 @@ capability yn sit — in capability dy't boud wurdt sit yn deselde faze as in
 applikaasje dy't boud wurdt. It iene ding ûnder it oare ferpleatse wurdt wegere
 as it in ding yn himsels sette soe; de wegering wurdt yn de list oanbean, net
 derút ferburgen. It each yn de balke boppe-oan ferberget de rail mei
-belanghawwenden.
+belanghawwenden, en it fergrutglês dernjonken fynt alles op de side op namme —
+kies in treffer, of druk op Enter foar de earste, en de side rôlet dernei ta,
+selektearret it en set der efkes in ring omhinne.
 
 In applikaasje iepenje fanút de ynfolling fan in capability bringt jo nei in
 boerd dat him echt tekenet, mei in wiksel fan boerd as it boerd dêr't jo op

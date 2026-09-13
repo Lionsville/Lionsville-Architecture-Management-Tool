@@ -759,7 +759,9 @@ capability — een capability die gebouwd wordt is in dezelfde fase als een
 applicatie die gebouwd wordt. Iets onder iets anders hangen wordt geweigerd als
 het daarmee in zichzelf zou komen te zitten; die weigering staat in de lijst en
 wordt er niet uit weggelaten. Het oog in de bovenbalk verbergt de
-belanghebbenden.
+belanghebbenden, en het vergrootglas ernaast vindt alles op de pagina op naam —
+kies een treffer, of druk op Enter voor de eerste, en de pagina scrolt ernaartoe,
+selecteert het en omcirkelt het even.
 
 Een applicatie openen vanuit de invulling van een capability brengt u naar een
 bord dat hem ook echt tekent — desnoods een ander dan waar u stond — en naar de

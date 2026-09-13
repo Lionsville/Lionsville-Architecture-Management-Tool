@@ -726,7 +726,7 @@ whether a stakeholder is from outside the organisation, and the lifecycle a
 capability is in — a capability being built is in the same phase as an
 application being built. Moving one thing under another is refused if it would
 put a thing inside itself; the refusal is offered in the list, not hidden from
-it. The eye in the top bar hides the stakeholder rail.
+it. The eye in the top bar hides the stakeholder rail, and the magnifying glass beside it finds anything on the page by name — pick a hit, or press Enter for the first, and the page scrolls to it, selects it and rings it for a moment.
 
 Opening an application from a capability's coverage takes you to a board that
 actually draws it, switching boards if the one you are on does not — and to the

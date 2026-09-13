@@ -15,6 +15,18 @@ export const FY: Record<keyof typeof EN, string> = {
   'sheet.resizeDetails': 'Breedte fan de details',
   'sheet.noStakeholders': 'Noch gjin belanghawwenden.',
 
+  'sheet.find': 'Sykje op de side',
+  'sheet.findPlaceholder': 'Typ in namme…',
+  'sheet.findNone': 'Neat op dizze side komt oerien.',
+  'sheet.findMore': 'noch {count} — typ fierder',
+  'sheet.bandActor': 'belanghawwende',
+  'sheet.bandPhase': 'faze',
+  'sheet.bandStep': 'stap',
+  'sheet.bandArea': 'gebiet',
+  'sheet.bandGrouping': 'groepearring',
+  'sheet.bandCapability': 'capability',
+  'sheet.bandUnmapped': 'noch net tawiisd',
+
   'sheet.commonLane': 'Alle klanten',
   'sheet.passThrough': 'Lykas de rige hjirboppe',
   'sheet.outsideStep': '{name} — bûten de organisaasje dien',

@@ -30,7 +30,10 @@
  * under its shortest card — which is why the cards are placed by hand.
  *
  * The rail and the details are the page's own: one eye hides both, and each
- * has a seam to drag. A picture of the page can be asked for at the width of
+ * has a seam to drag. The glass beside the eye finds anything the page draws
+ * by name (`business/find.ts`) and takes you to it: selected, scrolled into
+ * view, and ringed for a moment — a wall-sized sheet in a laptop window is
+ * mostly off screen, and a name is how a person knows what they are after. A picture of the page can be asked for at the width of
  * a sheet of paper, and the page lays itself out at that width for the
  * capture — an A1 print tiles wider than a laptop window does.
  *
@@ -44,6 +47,8 @@ import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
+import InputBase from '@mui/material/InputBase'
+import Popover from '@mui/material/Popover'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme } from '@mui/material/styles'
@@ -54,11 +59,13 @@ import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { BackIcon, ExportIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
+import { BackIcon, ExportIcon, EyeIcon, SearchIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { AREA_COLUMN, MAX_SPAN, isPaperSize, packAreas, paperWidth, sheetColumns, sheetPaperWidth, spanOf, withSpan } from '../grid'
 import { sheetPage } from '../sheet'
+import { findOnSheet } from '../find'
+import type { SheetBand, SheetHit } from '../find'
 import type { Relation } from '../../model'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
 import type { SheetShot } from './captureSheet'
@@ -158,6 +165,18 @@ export function SheetPage(props: SheetPageProps) {
    * sheet is of; `showActors` on the sheet still takes the rail off for good.
    */
   const [panelsShown, setPanelsShown] = useState(true)
+  /** The finder under the glass: where it is anchored while open, and what is typed in it. */
+  const [findAnchor, setFindAnchor] = useState<HTMLElement | null>(null)
+  const [query, setQuery] = useState('')
+  /**
+   * The thing the finder last took you to, ringed until the timer clears it.
+   * Drawn as one rule on the page keyed by the id rather than a prop through
+   * seven kinds of card, because it is a moment's emphasis and not state any
+   * card has a say in.
+   */
+  const [locatedId, setLocatedId] = useState<ElementId | undefined>(undefined)
+  const locatedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(locatedTimer.current), [])
   const [railWidth, setRailWidth] = useState<number>(RAIL.default)
   const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
   /**
@@ -218,6 +237,24 @@ export function SheetPage(props: SheetPageProps) {
 
   const author = readOnly ? undefined : { t, made, actions }
 
+  const hits = useMemo(
+    () => (laidOut && findAnchor ? findOnSheet(laidOut, query) : []),
+    [laidOut, findAnchor, query],
+  )
+  const closeFinder = useCallback(() => { setFindAnchor(null); setQuery('') }, [])
+  /** Select it, bring it on screen, and ring it for a moment. */
+  const locate = useCallback((id: ElementId) => {
+    closeFinder()
+    setSelectedId(id)
+    setLocatedId(id)
+    clearTimeout(locatedTimer.current)
+    locatedTimer.current = setTimeout(() => setLocatedId(undefined), LOCATED_FOR_MS)
+    // The card carries its id as data, so the page can find it without a ref
+    // per card; jsdom has no scrollIntoView, hence the optional call.
+    const node = page.current?.querySelector<HTMLElement>(`[data-element-id="${id}"]`)
+    node?.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
+  }, [closeFinder])
+
   /**
    * The width the page is laid out at: what a picture asked for, else the
    * sheet's own paper, else the window. The grid gets it less the body's
@@ -273,6 +310,18 @@ export function SheetPage(props: SheetPageProps) {
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{sheet?.name ?? t('sheet.page')}</Typography>
         <Box sx={{ flex: 1 }} />
         {sheet && (
+          <Tooltip title={t('sheet.find')}>
+            <IconButton
+              size="small"
+              aria-label={t('sheet.find')}
+              aria-expanded={Boolean(findAnchor)}
+              onClick={(event) => setFindAnchor(event.currentTarget)}
+            >
+              <SearchIcon size={16} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {sheet && (
           <Tooltip title={panelsShown ? t('sheet.hidePanels') : t('sheet.showPanels')}>
             <IconButton
               size="small"
@@ -302,13 +351,32 @@ export function SheetPage(props: SheetPageProps) {
         )}
       </Box>
 
+      <Popover
+        open={Boolean(findAnchor)}
+        anchorEl={findAnchor}
+        onClose={closeFinder}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { mt: 0.5, width: 320 } } }}
+      >
+        <Finder query={query} hits={hits} onQuery={setQuery} onPick={locate} t={t} />
+      </Popover>
+
       <Box
         ref={page}
-        sx={exporting
-          // Laid out for the picture: nothing scrolls, so the node's scroll
-          // size is the page's whole size, which is what the capture reads.
-          ? { display: 'flex', alignItems: 'stretch', flex: 'none', ...(exporting.width !== undefined ? { width: exporting.width } : {}) }
-          : { flex: '1 1 auto', minHeight: 0, display: 'flex' }}
+        sx={{
+          ...(exporting
+            // Laid out for the picture: nothing scrolls, so the node's scroll
+            // size is the page's whole size, which is what the capture reads.
+            ? { display: 'flex', alignItems: 'stretch', flex: 'none', ...(exporting.width !== undefined ? { width: exporting.width } : {}) }
+            : { flex: '1 1 auto', minHeight: 0, display: 'flex' }),
+          ...(locatedId !== undefined && !exporting ? {
+            [`& [data-element-id="${locatedId}"]`]: {
+              outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2,
+              borderRadius: 1,
+            },
+          } : {}),
+        }}
       >
         {laidOut && sheet?.showActors !== false && panels && (
           <>
@@ -611,6 +679,95 @@ function Add({ label, title, onClick, disabled, sx }: {
   )
 }
 
+// --- finding something on the page -----------------------------------------
+
+/** How long the ring stays on what the finder took you to. */
+const LOCATED_FOR_MS = 3000
+/** Rows the finder lists before it asks for another word. */
+const FINDER_ROWS = 12
+
+const BAND_LABEL: Record<SheetBand, Parameters<Translate>[0]> = {
+  actor: 'sheet.bandActor',
+  phase: 'sheet.bandPhase',
+  step: 'sheet.bandStep',
+  area: 'sheet.bandArea',
+  grouping: 'sheet.bandGrouping',
+  capability: 'sheet.bandCapability',
+  unmapped: 'sheet.bandUnmapped',
+}
+
+/**
+ * The finder: one field, and under it the hits in the page's own order, each
+ * saying which band it is in and what it sits in. Enter takes the first, so
+ * "type three letters, Enter" is the whole gesture for a name you know; the
+ * list is capped rather than scrolled, because a longer list is a request for
+ * one more word, not for a scrollbar.
+ */
+function Finder({ query, hits, onQuery, onPick, t }: {
+  query: string
+  hits: readonly SheetHit[]
+  onQuery(query: string): void
+  onPick(id: ElementId): void
+  t: Translate
+}) {
+  const shown = hits.slice(0, FINDER_ROWS)
+  return (
+    <Box data-testid="sheet-finder" sx={{ display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+        <SearchIcon size={14} />
+        <InputBase
+          autoFocus
+          fullWidth
+          value={query}
+          placeholder={t('sheet.findPlaceholder')}
+          inputProps={{ 'aria-label': t('sheet.find') }}
+          onChange={(event) => onQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && shown[0]) { event.preventDefault(); onPick(shown[0].element.id) }
+          }}
+          sx={{ fontSize: 13 }}
+        />
+      </Box>
+      <Box role="listbox" aria-label={t('sheet.find')} sx={{ py: 0.5, maxHeight: 360, overflow: 'auto' }}>
+        {shown.length === 0 && (
+          <Typography sx={{ px: 1.5, py: 1, fontSize: 12, color: 'text.secondary' }}>
+            {t('sheet.findNone')}
+          </Typography>
+        )}
+        {shown.map((hit) => (
+          <Box
+            key={hit.element.id}
+            component="button"
+            type="button"
+            role="option"
+            aria-selected={false}
+            data-testid={`sheet-find-${hit.element.id}`}
+            onClick={() => onPick(hit.element.id)}
+            sx={{
+              appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
+              display: 'flex', alignItems: 'baseline', gap: 1, width: '100%', textAlign: 'left',
+              background: 'none', border: 0, px: 1.5, py: 0.5,
+              '&:hover, &:focus-visible': { bgcolor: 'action.hover', outline: 'none' },
+            }}
+          >
+            <Typography sx={{ fontSize: 12.5, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {hit.element.name}
+            </Typography>
+            <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+              {t(BAND_LABEL[hit.band])}{hit.within !== undefined ? ` · ${hit.within}` : ''}
+            </Typography>
+          </Box>
+        ))}
+        {hits.length > shown.length && (
+          <Typography sx={{ px: 1.5, py: 0.75, fontSize: 10.5, color: 'text.secondary' }}>
+            {t('sheet.findMore', { count: hits.length - shown.length })}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  )
+}
+
 // --- the stakeholder rail ---------------------------------------------------
 
 /**
@@ -682,6 +839,7 @@ function Rail({ actors, width, onSelect, author, t }: {
               component="button"
               type="button"
               data-testid={`sheet-actor-${row.element.id}`}
+              data-element-id={row.element.id}
               onClick={() => onSelect(row.element.id)}
               sx={{
                 appearance: 'none', cursor: 'pointer', font: 'inherit',
@@ -743,6 +901,7 @@ function JourneyBand({ journey, onSelect, onNewLane, author, t }: {
           <Box
             key={phase.id}
             data-testid={`sheet-phase-${phase.id}`}
+            data-element-id={phase.id}
             component="button"
             type="button"
             onClick={() => onSelect(phase.id)}
@@ -863,6 +1022,7 @@ function Chevron({ step, onSelect, t }: {
       component="button"
       type="button"
       data-testid={`sheet-step-${step.element.id}`}
+      data-element-id={step.element.id}
       aria-label={step.outside ? t('sheet.outsideStep', { name: step.element.name }) : step.element.name}
       onClick={() => onSelect(step.element.id)}
       sx={{
@@ -909,6 +1069,7 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
     <Box
       ref={(node: HTMLDivElement | null) => measure(area.element.id, node)}
       data-testid={`sheet-area-${area.element.id}`}
+      data-element-id={area.element.id}
       data-span={span}
       data-column={place.left}
       sx={{
@@ -952,6 +1113,7 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
           <Box
             key={group.element.id}
             data-testid={`sheet-grouping-${group.element.id}`}
+            data-element-id={group.element.id}
             sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}
           >
             <Box
@@ -1046,6 +1208,7 @@ function CapabilityCard({ capability, onSelect, t }: {
       component="button"
       type="button"
       data-testid={`sheet-capability-${capability.element.id}`}
+      data-element-id={capability.element.id}
       onClick={() => onSelect(capability.element.id)}
       sx={{
         // `font: inherit` does not bring the colour with it: a button's text is
@@ -1098,6 +1261,7 @@ function UnmappedBand({ elements, onSelect, t }: {
             component="button"
             type="button"
             data-testid={`sheet-unmapped-${element.id}`}
+            data-element-id={element.id}
             onClick={() => onSelect(element.id)}
             sx={{
               // The same `buttontext` trap as the capability card: inherit the colour too.

@@ -818,7 +818,9 @@ der Lebenszyklus, in dem eine Fähigkeit ist — eine Fähigkeit im Aufbau ist i
 derselben Phase wie eine Anwendung im Aufbau. Ein Ding unter ein anderes zu
 verschieben wird abgelehnt, wenn es das Ding in sich selbst legen würde; die
 Ablehnung steht in der Liste, statt darin verborgen zu sein. Das Auge in der
-oberen Leiste blendet die Leiste der Beteiligten aus.
+oberen Leiste blendet die Leiste der Beteiligten aus, und die Lupe daneben findet
+alles auf der Seite nach Namen — einen Treffer wählen, oder Enter für den ersten,
+und die Seite rollt dorthin, wählt es aus und umrandet es für einen Moment.
 
 Eine Anwendung aus der Abdeckung einer Fähigkeit zu öffnen bringt Sie zu einem
 Board, das sie tatsächlich zeichnet, und wechselt das Board, wenn das, auf dem

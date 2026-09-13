@@ -126,6 +126,56 @@ describe('the stakeholder rail', () => {
   })
 })
 
+describe('finding something on the page', () => {
+  const glass = () => screen.getByRole('button', { name: 'Find on the page' })
+  const field = () => screen.getByLabelText('Find on the page', { selector: 'input' })
+
+  it('opens under the glass, lists what the page draws, and narrows as you type', () => {
+    open()
+    fireEvent.click(glass())
+    const finder = screen.getByTestId('sheet-finder')
+    // The page's own order: the rail before the journey before the areas.
+    const before = within(finder).getAllByRole('option').map((row) => row.getAttribute('data-testid'))
+    expect(before.indexOf('sheet-find-warehouse-team')).toBeLessThan(before.indexOf('sheet-find-order'))
+    fireEvent.change(field(), { target: { value: 'rate' } })
+    expect(within(finder).getAllByRole('option').map((row) => row.getAttribute('data-testid')))
+      .toEqual(['sheet-find-standard-rate', 'sheet-find-negotiate'])
+    expect(within(finder).getAllByText('step · Quote')).toHaveLength(2)
+    fireEvent.change(field(), { target: { value: 'nothing here' } })
+    expect(within(finder).getByText('Nothing on this page matches.')).toBeTruthy()
+  })
+
+  it('takes you to what you pick: selected, closed, and ringed', () => {
+    open()
+    fireEvent.click(glass())
+    fireEvent.change(field(), { target: { value: 'late pay' } })
+    fireEvent.click(screen.getByTestId('sheet-find-dunning'))
+    // Closed — said by the glass, because the popover's leave transition keeps
+    // the list in the tree for a moment after.
+    expect(glass().getAttribute('aria-expanded')).toBe('false')
+    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Chase a late payment')).toBeTruthy()
+    // The ring is one rule on the page keyed by the id; the card carries the
+    // id it is keyed on. jsdom does not cascade an outline, so the rule is
+    // read from the sheet Emotion wrote rather than from the card.
+    expect(screen.getByTestId('sheet-capability-dunning').getAttribute('data-element-id')).toBe('dunning')
+    const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
+    expect(rules).toContain('[data-element-id="dunning"]')
+  })
+
+  it('takes Enter as the first hit, so a name you know is three letters and a key', () => {
+    open()
+    fireEvent.click(glass())
+    fireEvent.change(field(), { target: { value: 'nego' } })
+    fireEvent.keyDown(field(), { key: 'Enter' })
+    expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Negotiate the rate')).toBeTruthy()
+  })
+
+  it('is offered under readOnly, because looking changes nothing', () => {
+    open({ readOnly: true })
+    expect(glass()).toBeTruthy()
+  })
+})
+
 describe('the grid', () => {
   it('is laid out on an A2 by default — wider than a window, and as many columns as fit it', () => {
     open()

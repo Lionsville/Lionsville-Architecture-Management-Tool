@@ -15,6 +15,18 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.resizeDetails': 'Breedte van de details',
   'sheet.noStakeholders': 'Nog geen belanghebbenden.',
 
+  'sheet.find': 'Zoeken op de pagina',
+  'sheet.findPlaceholder': 'Typ een naam…',
+  'sheet.findNone': 'Niets op deze pagina komt overeen.',
+  'sheet.findMore': 'nog {count} — typ verder',
+  'sheet.bandActor': 'belanghebbende',
+  'sheet.bandPhase': 'fase',
+  'sheet.bandStep': 'stap',
+  'sheet.bandArea': 'gebied',
+  'sheet.bandGrouping': 'groepering',
+  'sheet.bandCapability': 'capability',
+  'sheet.bandUnmapped': 'nog niet toegewezen',
+
   'sheet.commonLane': 'Alle klanten',
   'sheet.passThrough': 'Zoals de rij hierboven',
   'sheet.outsideStep': '{name} — buiten de organisatie gedaan',

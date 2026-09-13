@@ -15,6 +15,18 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.resizeDetails': 'Breite der Details',
   'sheet.noStakeholders': 'Noch keine Beteiligten.',
 
+  'sheet.find': 'Auf der Seite suchen',
+  'sheet.findPlaceholder': 'Einen Namen eingeben…',
+  'sheet.findNone': 'Nichts auf dieser Seite passt.',
+  'sheet.findMore': '{count} weitere — weiter tippen',
+  'sheet.bandActor': 'Beteiligter',
+  'sheet.bandPhase': 'Phase',
+  'sheet.bandStep': 'Schritt',
+  'sheet.bandArea': 'Bereich',
+  'sheet.bandGrouping': 'Gruppierung',
+  'sheet.bandCapability': 'Fähigkeit',
+  'sheet.bandUnmapped': 'noch nicht zugeordnet',
+
   'sheet.commonLane': 'Alle Kunden',
   'sheet.passThrough': 'Wie die Zeile darüber',
   'sheet.outsideStep': '{name} — außerhalb der Organisation erledigt',
