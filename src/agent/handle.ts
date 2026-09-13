@@ -24,7 +24,7 @@ import type { HostModel } from '../model/fromInterchange'
 import type { IdPolicy, MakeId } from '../model/keys'
 import { idPolicy } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf, toArrays, transitionList, placedOn } from '../model/normalised'
+import { decisionsOf, fromArrays, toArrays, transitionList, placedOn } from '../model/normalised'
 import { transitionLabel } from '../model/transition'
 import type { DesignElement, DocumentImage, ElementId } from '../model/types'
 import { ShellError } from '../platform/errors'
@@ -48,6 +48,8 @@ import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
 import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused, toolSpec } from './tools'
+import { identityOf, listChecks, listRegister, listScopes, notOpen, scopeAsked, withoutScope } from './tree'
+import type { TreeView } from './tree'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
 export type SessionView = {
@@ -88,6 +90,13 @@ export type SessionView = {
   ownedElsewhere?(id: ElementId, patch: Partial<DesignElement>): { owner?: string } | undefined
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
+  /**
+   * The tree (ADR-0012 §2), for the three reads that are about every scope,
+   * for `scope` on every other tool, and for who answers for an id. Absent in
+   * a test with no index; the tree-wide reads then answer over nothing and a
+   * `scope` that is not the open one is unknown.
+   */
+  tree?: TreeView
   /**
    * A counter that moves with every change to the model — a step, an undo, a
    * project adopted — so a caller can say which state it decided against.
@@ -138,12 +147,38 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
     activeDiagramId: session.activeDiagramId(),
     scopePath: session.scopePath(),
     ancestorDecisions: session.ancestorDecisions(),
+    tree: session.tree,
   }
-  if (request.tool === RESOURCE_LIST) return listResources(view.model, view.ancestorDecisions)
-  if (request.tool === RESOURCE_READ) return readResource(view.model, view.ancestorDecisions, request.args)
+  if (request.tool === RESOURCE_LIST) return listResources(view.model, view.ancestorDecisions, view.scopePath)
+  if (request.tool === RESOURCE_READ) return readResource(view, request.args, session)
 
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const spec = toolSpec(request.tool)
+
+  // Three reads about the tree rather than about a document (ADR-0012 §2,
+  // §9): answered from the index the shell holds, never from a load.
+  if (request.tool === 'scopes.list') return listScopes(session.tree, view.scopePath)
+  if (request.tool === 'register.list') return listRegister(session.tree, request.args)
+  if (request.tool === 'checks.list') return listChecks(session.tree, request.args)
+
+  // `scope` on every tool: another scope's document, read as it stands on
+  // disk — or, for anything that needs a session, a refusal with a key.
+  const asked = scopeAsked(request.args)
+  if (asked !== undefined && asked !== view.scopePath) {
+    if (spec.tier !== 'read' || SESSION_BOUND.includes(request.tool)) return notOpen(asked)
+    const wrong = checkArguments(spec.inputSchema, request.args)
+    if (wrong) return refused('agent.badArguments', wrong)
+    const held = await session.tree?.read(asked)
+    if (!held) return refused('agent.unknownScope', asked || 'the organisation')
+    return answer(request.tool as ReadTool, withoutScope(request.args), {
+      model: fromArrays(held.model),
+      current: () => held.model,
+      activeDiagramId: held.activeDiagramId,
+      scopePath: asked,
+      ancestorDecisions: held.ancestorDecisions,
+      tree: session.tree,
+    })
+  }
   // Three reads that need the session rather than the model: the log, the
   // pictures, and the revision on the orientation answer.
   if (request.tool === 'activity.list') return listActivity(request.args, session)
@@ -221,10 +256,15 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
 }
 
 /** The arguments without the guard, which the builders were not shown. */
+/** The reads that are the session's own: its log and its pictures, which no other scope has. */
+const SESSION_BOUND: readonly string[] = ['activity.list', 'images.list']
+
+/** Without the guard and the scope, both of which the handler has already acted on. */
 function withoutGuard(args: unknown): unknown {
   if (!args || typeof args !== 'object') return args
-  const { ifRevision: _guard, ...rest } = args as Record<string, unknown>
+  const { ifRevision: _guard, scope: _scope, ...rest } = args as Record<string, unknown>
   void _guard
+  void _scope
   return rest
 }
 
@@ -395,6 +435,12 @@ function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer
   let activeDiagramId: string | undefined
   for (const [index, step] of steps.entries()) {
     if (!batchable(step.tool)) return refused('agent.badArguments', `steps[${index}]: ${step.tool} cannot be part of a batch`)
+    // A step addressed to another scope is refused, not landed here: a batch
+    // is one transaction at THIS session (ADR-0012 §10).
+    const asked = scopeAsked(step.args)
+    if (asked !== undefined && asked !== session.scopePath()) {
+      return refused('agent.scopeNotOpen', `steps[${index}]: ${asked || 'the organisation'} is not the scope open in the app`)
+    }
     const prepared = commandFor(step.tool, withoutGuard(step.args), writeView(session, {
       model, current: () => toArrays(model), ids,
       ...(activeDiagramId !== undefined ? { activeDiagramId } : {}),
@@ -581,13 +627,22 @@ async function render(
 
 // --- MCP resources: descriptions and decisions, readable without a call ---------------
 
-function listResources(model: Model, ancestorDecisions: readonly Adr[]): AgentAnswer {
+/**
+ * A resource URI carries the scope's path (ADR-0012, step 13):
+ * `lvarch://acme/retail/element/erp/description`. The organisation's own path
+ * is empty, so its resources read `lvarch://element/…` — which is also the
+ * form every URI had before the tree existed, and on read a URI with no path
+ * means the scope that is open. Listed with the path, so what a client keeps
+ * is an address and not a position.
+ */
+function listResources(model: Model, ancestorDecisions: readonly Adr[], scopePath: string): AgentAnswer {
+  const prefix = scopePath ? `${RESOURCE_SCHEME}${scopePath}/` : RESOURCE_SCHEME
   const resources: { uri: string; name: string; mimeType: string; description: string }[] = []
   for (const id of model.order.elements) {
     const element = model.elements[id]
     if (!element.description?.trim()) continue
     resources.push({
-      uri: `${RESOURCE_SCHEME}element/${id}/description`,
+      uri: `${prefix}element/${id}/description`,
       name: element.name,
       mimeType: 'text/markdown',
       description: `The documentation of ${element.name} (${element.kind}).`,
@@ -600,7 +655,7 @@ function listResources(model: Model, ancestorDecisions: readonly Adr[]): AgentAn
   ]
   for (const { adr, scope } of decisions) {
     resources.push({
-      uri: `${RESOURCE_SCHEME}decision/${adr.id}`,
+      uri: `${prefix}decision/${adr.id}`,
       name: `${formatAdrNumber(adr.number)} ${adr.title}`,
       mimeType: 'text/markdown',
       description: `A ${scope} decision record, ${adr.status}.`,
@@ -609,10 +664,27 @@ function listResources(model: Model, ancestorDecisions: readonly Adr[]): AgentAn
   return json({ resources })
 }
 
-function readResource(model: Model, ancestorDecisions: readonly Adr[], args: unknown): AgentAnswer {
+async function readResource(
+  view: { model: Model; ancestorDecisions: readonly Adr[]; scopePath: string },
+  args: unknown,
+  session: SessionView,
+): Promise<AgentAnswer> {
   const uri = (args as { uri?: unknown } | undefined)?.uri
   if (typeof uri !== 'string' || !uri.startsWith(RESOURCE_SCHEME)) return refused('agent.unknownId', String(uri))
-  const path = uri.slice(RESOURCE_SCHEME.length).split('/')
+  const segments = uri.slice(RESOURCE_SCHEME.length).split('/')
+  // The path is everything before the first `element` or `decision`; none
+  // is the open scope, whichever it is.
+  const at = segments.findIndex((segment) => segment === 'element' || segment === 'decision')
+  if (at === -1) return refused('agent.unknownId', uri)
+  const scope = segments.slice(0, at).join('/')
+  const path = segments.slice(at)
+  let { model, ancestorDecisions } = view
+  if (at > 0 && scope !== view.scopePath) {
+    const held = await session.tree?.read(scope)
+    if (!held) return refused('agent.unknownScope', scope)
+    model = fromArrays(held.model)
+    ancestorDecisions = held.ancestorDecisions
+  }
   if (path[0] === 'element' && path[2] === 'description') {
     const element = model.elements[path[1]]
     if (!element) return refused('agent.unknownId', uri)

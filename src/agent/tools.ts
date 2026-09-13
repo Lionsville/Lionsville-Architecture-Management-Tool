@@ -215,6 +215,56 @@ const SPECS = [
     inputSchema: NO_ARGUMENTS,
   },
   {
+    name: 'scopes.list',
+    tier: 'read',
+    description:
+      'Every scope in the organisation (ADR-0012 §1): its path, its name, what it says it is, how many views '
+      + 'it holds, and which one is open in the app. A path is what `scope` takes on every other tool; "" is '
+      + 'the organisation itself.',
+    inputSchema: NO_ARGUMENTS,
+  },
+  {
+    name: 'register.list',
+    tier: 'read',
+    description:
+      'Every application in the organisation, derived from the whole tree (ADR-0012 §2): the scope that '
+      + 'answers for it (its master), the scopes above that declare it, the scopes that draw it as a '
+      + 'stand-in, whether it is outside the organisation and whose it is, and the keys of the findings '
+      + 'about it — defined twice, a stale cache, unattributed. Filter by a free-text query over name, id '
+      + 'and master.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Only applications whose name, id or master contains every word.' },
+        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'checks.list',
+    tier: 'read',
+    description:
+      'What the tree contradicts about itself (ADR-0012 §9), as findings with a key: check.conflict (two '
+      + 'scopes define one id), check.drift (a stand-in\'s cached name disagrees with its master), '
+      + 'check.dangling (a stand-in nobody defines), check.danglingEnd (a relation end nobody holds), '
+      + 'check.proposal (a domain names a function no ancestor has), check.ownedElsewhere (the owner\'s '
+      + 'detail written on a stand-in), check.unattributed (outside, and nobody has said whose), '
+      + 'check.unmapped and check.uncovered (the business layer\'s two), and check.notDrawn, which is '
+      + 'information rather than a fault and is listed only when asked. A finding is never a refusal and '
+      + 'never a reason a save fails.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scope: { type: 'string', description: 'Only findings about this scope, by path; "" is the organisation.' },
+        key: { type: 'string', description: 'Only findings with this key.' },
+        information: { type: 'boolean', description: 'Include check.notDrawn. Default false.' },
+        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'elements.list',
     tier: 'read',
     description:
@@ -1129,11 +1179,37 @@ const REVISION_GUARD: ArgumentSchema = {
 /** The tools that only look: no revision to guard. */
 const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render', 'focus']
 
-export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => (
-  tool.tier === 'read' || LOOKS_ONLY.includes(tool.name)
-    ? tool
-    : { ...tool, inputSchema: { ...tool.inputSchema, properties: { ...tool.inputSchema.properties, ifRevision: REVISION_GUARD } } }
-))
+/**
+ * Every tool also takes `scope` (ADR-0012, step 13): which scope of the tree
+ * to answer for, by path. A read addressed to another scope is answered over
+ * that scope's document as it stands on disk; a write, a picture, undo and the
+ * session's own lists need the scope open in the app, and are refused with
+ * `agent.scopeNotOpen` rather than landed on the wrong scope. Added here for
+ * the reason the guard is: so no tool can forget it.
+ *
+ * The three tree-wide reads are the exception — they are about every scope at
+ * once — and `checks.list` spells its own `scope` as a filter.
+ */
+const SCOPE_ARGUMENT: ArgumentSchema = {
+  type: 'string',
+  description:
+    'Which scope to answer for, as its path: "" is the organisation, "acme/retail" a landscape under a domain '
+    + '(see scopes.list). Default: the scope open in the app. A read over another scope is answered from its '
+    + 'document on disk; a change, a picture, undo and the session\'s own lists need that scope open in the '
+    + 'app, and are refused otherwise.',
+}
+
+/** About the whole tree rather than one scope: `scope` would mean nothing on them. */
+export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'checks.list']
+
+export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => {
+  const properties = {
+    ...tool.inputSchema.properties,
+    ...(TREE_WIDE.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
+    ...(tool.tier === 'read' || LOOKS_ONLY.includes(tool.name) ? {} : { ifRevision: REVISION_GUARD }),
+  }
+  return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
+})
 
 /**
  * The two pseudo-tools the protocol relays for MCP resources: not in the list
@@ -1194,6 +1270,10 @@ export type AgentRefusal =
   | 'agent.stale'
   | 'agent.notYours'
   | 'agent.saveFailed'
+  /** A change, a picture or undo addressed to a scope that is not the one open in the app (ADR-0012, step 13). */
+  | 'agent.scopeNotOpen'
+  /** `scope` names a path the tree has no scope at. */
+  | 'agent.unknownScope'
   /**
    * A field on a stand-in that the scope defining the thing answers for
    * (ADR-0012 §10). A `check.` key rather than an `agent.` one because it is
@@ -1218,6 +1298,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.unknownTool': 'No such tool.',
   'agent.badArguments': 'The arguments do not match the tool\'s schema.',
   'agent.unknownId': 'Nothing in the project has that id.',
+  'agent.scopeNotOpen': 'That scope is not the one open in the app. Reads over it are answered; a change, a picture or undo needs a person to open it.',
+  'agent.unknownScope': 'No scope in the organisation has that path. scopes.list says which there are.',
   'agent.tooLarge': 'The board is too large for this operation.',
   'agent.locked': 'The decision record is accepted, rejected or superseded, and locked; nothing about it may change.',
   'agent.notDrawn': 'That element is not drawn on that diagram.',

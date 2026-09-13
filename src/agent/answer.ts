@@ -29,6 +29,8 @@ import { formatAdrNumber } from '../decisions/adr'
 import { SEARCH_LIMIT_PER_KIND, searchAll, snippet } from '../search/search'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, text, toolSpec } from './tools'
+import { identityOf } from './tree'
+import type { TreeView } from './tree'
 
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
@@ -53,6 +55,8 @@ export type ReadView = {
   readonly scopePath: string
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
+  /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
+  readonly tree?: Pick<TreeView, 'lookup'>
 }
 
 type Args = Record<string, unknown>
@@ -103,6 +107,9 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         // (ADR-0012 §3). What it costs a reader to work out from a field that
         // is usually absent is exactly what `element.update` refuses on.
         standIn: element.ref !== undefined,
+        // Who answers for it across the organisation, and who else draws it
+        // (ADR-0012 §9) — the element's page header, said to an agent.
+        identity: identityOf(view.tree, element.id),
         // `parent`, not `parentApplication`: one field says what a thing sits
         // inside whatever kind it is (ADR-0012 §3) — a component's
         // application, a function's area, a step's phase, an actor's group.

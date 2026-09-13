@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3873 tests** and one of every config. The
+One codebase, in modules, with **3897 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3873 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3897 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -537,7 +537,8 @@ identifiers is still a list of a customer's identifiers.
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
-| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` |
+| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` — and, over the whole tree, `scopes.list` `register.list` `checks.list` |
+| Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned`; `connect` / `connection.*` are the `flow` ones |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
@@ -555,7 +556,7 @@ identifiers is still a list of a customer's identifiers.
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |
-| Agent resources | `lvarch://element/<id>/description`, `lvarch://decision/<id>` |
+| Agent resources | `lvarch://<scope path>/element/<id>/description`, `lvarch://<scope path>/decision/<id>`; the organisation's path is empty, and no path on read means the open scope |
 | Vendor / copyright | Lionsville Group BV |
 | A record that draws what another scope defines (ADR-0012 §3) | a **stand-in**: `ref` present, its `name` and `ref` caches, its `description` this scope's own |
 | The scope that answers for an id | the **master**: the deepest definition; one above it is a **declaration** and yields |

@@ -21,7 +21,10 @@ import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
-import { CHECK_LABEL, identityFindings } from '../projects/checks'
+import { CHECK_LABEL, documentFindings, identityFindings } from '../projects/checks'
+import { ancestorScopes } from '../projects/scopePath'
+import { flattenScopes } from '../projects/scope'
+import { coverageOf, unmappedFunctions } from '../business'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
 import type { DesignElement, Relation } from '../model'
 import { transitionLabel } from '../model/transition'
@@ -473,7 +476,52 @@ export function ProjectWorkspace({
     images: session.currentImages,
     addImage: (image) => session.setImageLibrary((library) => [...library, image]),
     save: forceSave,
-  }), [session, project.path, ancestorRecords, documentStatus, makeId, today, s, renderer, forceSave]))
+    /**
+     * The tree, for the agent (ADR-0012, step 13). Through the ref, as
+     * `ownedElsewhere` is, so a rebuilt index reaches a request arriving
+     * between two renders. The findings are the tree's plus the open scope's
+     * own document's, the way its page shows them; another scope's document
+     * findings would be a load per call, and the identity findings about it
+     * are in the same list already.
+     */
+    tree: {
+      scopes: () => flattenScopes(scopes).map((held) => ({
+        path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
+      })),
+      lookup: (id) => indexRef.current.lookup(id),
+      register: () => indexRef.current.register(),
+      findings: () => {
+        const model = session.current()
+        const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
+        return [
+          ...identityFindings(indexRef.current),
+          ...documentFindings({
+            scope: project.path, model, index: indexRef.current,
+            business: {
+              unmapped: unmappedFunctions(model.elements).map((held) => held.id),
+              uncovered: model.elements
+                .filter((held) => held.kind === 'function' && (coverage.get(held.id)?.coverage ?? 'uncovered') === 'uncovered')
+                .map((held) => held.id),
+            },
+          }),
+        ]
+      },
+      // A read for one call, the scope and its ancestors' records: what the
+      // open scope was handed at open, done again for the one asked about.
+      read: async (path) => {
+        const load = projects.load
+        if (!load) return undefined
+        const held = await load(path)
+        if (!held) return undefined
+        const above = await Promise.all(ancestorScopes(path).map((one) => load(one)))
+        return {
+          model: held.model,
+          activeDiagramId: held.activeDiagramId,
+          ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []),
+        }
+      },
+    },
+  }), [session, project.path, ancestorRecords, documentStatus, makeId, today, s, renderer, forceSave, scopes, projects]))
 
   /**
    * Who answers for each record on this board (ADR-0012 §10).
@@ -539,6 +587,10 @@ export function ProjectWorkspace({
     }
     return found
   }, [index, session.model.elements])
+  // By reference for the agent's findings, which are computed per call rather
+  // than per render.
+  const rowsElsewhereRef = useRef(rowsElsewhere)
+  rowsElsewhereRef.current = rowsElsewhere
 
   /**
    * The four gestures that cross scopes (ADR-0012 §10).

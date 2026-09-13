@@ -389,8 +389,9 @@ describe('resources', () => {
   it('lists the descriptions and the decisions, and reads them back as markdown', async () => {
     const held = session({ ancestorDecisions: () => [{ id: 'g-1', number: 1, title: 'One identity', status: 'accepted', date: '2026-01-01', body: 'Yes.', signers: [] }] })
     const listed = parsed(await handle({ id: '1', tool: RESOURCE_LIST, args: {} }, held)) as { resources: { uri: string }[] }
+    // Under the scope's path since step 13 of ADR-0012: an address, not a position.
     expect(listed.resources.map((r) => r.uri)).toEqual([
-      'lvarch://element/billing/description', 'lvarch://decision/g-1', 'lvarch://decision/adr-1',
+      'lvarch://acme/landscape/element/billing/description', 'lvarch://acme/landscape/decision/g-1', 'lvarch://acme/landscape/decision/adr-1',
     ])
     expect(parsed(await handle({ id: '2', tool: RESOURCE_READ, args: { uri: 'lvarch://element/billing/description' } }, held)))
       .toEqual({ contents: [{ uri: 'lvarch://element/billing/description', mimeType: 'text/markdown', text: 'Sends the invoices.' }] })

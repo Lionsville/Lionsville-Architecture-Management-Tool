@@ -580,11 +580,38 @@ scopes through the index; *people* as a column; *uncovered* as the gap.
   laid-out view, is a small change and belongs with step 13's pass over what
   every scope offers.
 
-### 13. The agent at every scope
+### 13. The agent at every scope — landed 13 September 2026
 
 `scope` on every tool; `register.list`, `scopes.list`, `checks.list`; URIs
 `lvarch://<scope path>/element/<id>`; `diagram.render` for a `sheet` and a
 `map`. `docs/decisions/0011` gets a *Built* note.
+
+**Landed**, and four things the next stretch should know:
+
+- **A read crosses scopes; a write does not.** `scope` on a read tool is
+  answered over that scope's document, loaded for the call through a seam the
+  workspace hands in (`TreeView.read`: the store's `load`, plus the ancestors
+  for their records). A write, a picture, `undo`, `activity.list` and
+  `images.list` addressed to a scope that is not open are refused with
+  `agent.scopeNotOpen` — a change is one `Command` at the session that holds
+  the scope (§10), and there is no session for a folder nobody opened. A
+  `batch` step addressed elsewhere refuses the whole batch. This is the same
+  answer the four gestures give, and the open question about a stack that
+  spans scopes stays open.
+- **The tree reaches `agent/` as a plain object** (`agent/tree.ts`), the way
+  the renderer does: `IndexEntry` and `Finding` satisfy `TreeEntry` and
+  `TreeFinding` structurally, so the module still imports nothing from
+  `projects` and is tested in node with a literal. `checks.list` is the
+  identity findings over the whole tree plus the OPEN scope's document
+  findings; another scope's document findings would be a load per call.
+- **The vocabulary grew by one argument everywhere**, added the way
+  `ifRevision` is — in the `TOOLS` map, so no schema can forget it — and by
+  three tools. `checks.list` spells its own `scope`, as a filter.
+- **A resource URI is an address now.** `lvarch://acme/retail/element/erp/description`;
+  the organisation's path is empty, so its URIs are the path-less form every
+  URI had before, and on read a path-less URI means the open scope. Listing is
+  still the open scope's only, because descriptions are files the index does
+  not read.
 
 ### 14. BPMN
 

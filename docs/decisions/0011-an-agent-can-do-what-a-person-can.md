@@ -9,6 +9,15 @@ end, from one piece of evidence: the report an agent wrote after trying to
 bring a real landscape in line with a business-case deck through the tools of
 ADR-0007, ADR-0009 and ADR-0010.
 
+**Extended, 13 September 2026**, for the federated model (ADR-0012, step 13):
+every tool takes `scope`, a path in the organisation's tree — a read over
+another scope is answered from that scope's document, and a change, a picture
+or `undo` addressed to a scope that is not open is refused with
+`agent.scopeNotOpen`, because a change is one command at the session that
+holds the scope. Three reads are about the whole tree: `scopes.list`,
+`register.list` and `checks.list`. `element.describe` says who answers for an
+id and who else draws it, and a resource URI carries the scope's path.
+
 ## Context and Problem Statement
 
 ADR-0007 made an agent a peer of the menu and gave it a vocabulary of

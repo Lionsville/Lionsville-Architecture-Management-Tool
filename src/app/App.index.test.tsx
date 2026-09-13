@@ -163,6 +163,37 @@ describe('the shell hands the tree the id policy reads', () => {
 })
 
 /**
+ * The agent at every scope (ADR-0012, step 13), as the shell wires it: the
+ * tree the workspace hands the handler is the index and the store, so
+ * `scopes.list` names every scope and a read with `scope` is answered over a
+ * document the open session never loaded.
+ */
+describe('the agent reads the tree', () => {
+  it('lists the scopes, and answers a read over another one', async () => {
+    const { wire } = await twoScopes()
+    const scopes = said(await wire.call('scopes.list', {}))
+    // In the store's listing order, which is by name.
+    expect((scopes.scopes as { path: string; open: boolean }[]).map((s) => [s.path, s.open])).toEqual([
+      ['', false], ['acme/finance', true], ['acme/retail', false],
+    ])
+    const retail = said(await wire.call('elements.list', { scope: 'acme/retail' }))
+    expect((retail.elements as { id: string }[]).map((e) => e.id)).toEqual(['warehouse'])
+    const register = said(await wire.call('register.list', {}))
+    expect((register.some as { id: string; master: string }[])).toEqual([
+      expect.objectContaining({ id: 'warehouse', master: 'acme/retail' }),
+    ])
+  })
+
+  it('refuses to write to a scope that is not open', async () => {
+    const { wire, scopes } = await twoScopes()
+    const out = await wire.call('element.add', { scope: 'acme/retail', kind: 'application', name: 'Ghost' })
+    expect(out.ok).toBe(false)
+    expect(!out.ok && out.refusal).toBe('agent.scopeNotOpen')
+    expect((await scopes.load('acme/retail'))?.model.elements.map((e) => e.id)).toEqual(['warehouse'])
+  })
+})
+
+/**
  * The map at the organisation reads the tree (ADR-0012 §9): the capabilities
  * are the root's, the systems supporting them and the rows saying so are a
  * landscape's, and the page names those systems under the landscape. Nothing
