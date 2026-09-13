@@ -111,6 +111,9 @@ describe('elements.list', () => {
     expect(ids({ diagramId: 'inside' })).toEqual(['billing', 'billing-api'])
     expect(ids({ query: 'kestrel' })).toEqual(['billing'])
     expect(ids({ query: 'billing api' })).toEqual(['billing-api'])
+    expect(ids({ parentId: 'billing' })).toEqual(['billing-api'])
+    expect(ids({ parentId: 'billing', kind: 'actor' })).toEqual([])
+    expect(read('elements.list', { parentId: 'nope' })).toEqual({ ok: false, refusal: 'agent.unknownId', detail: 'element nope' })
   })
 
   it('bounds the list and says how many there were', () => {

@@ -83,6 +83,11 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
     case 'elements.list': {
       const diagram = args.diagramId === undefined ? undefined : model.diagrams[args.diagramId as string]
       if (args.diagramId !== undefined && !diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+      // The children of one node in a tree — a function's capabilities, a
+      // phase's steps — which is how an agent walks a sheet without listing
+      // the whole business layer and filtering it by hand.
+      const parentId = args.parentId as string | undefined
+      if (parentId !== undefined && !model.elements[parentId]) return refused('agent.unknownId', `element ${parentId}`)
       const limit = (args.limit as number | undefined) ?? 200
       const rows: ReturnType<typeof elementLine>[] = []
       let total = 0
@@ -90,6 +95,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         const element = model.elements[id]
         if (!element) continue
         if (args.kind !== undefined && element.kind !== args.kind) continue
+        if (parentId !== undefined && element.parentId !== parentId) continue
         if (args.query !== undefined && !matchesQuery(args.query as string,
           [element.name, element.category, element.vendor, element.technology])) continue
         total += 1

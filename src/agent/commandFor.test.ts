@@ -273,6 +273,22 @@ describe('the trees a sheet is laid out from (ADR-0012 §4, §6)', () => {
     expect(String(step.hint)).toContain('diagram.update')
   })
 
+  it('element.add makes a record kind with no diagram on screen, and says what a canvas kind needs', () => {
+    // A scope's home is up: nothing is on screen, and nothing was named.
+    const nothingUp = view(model, { activeDiagramId: '' })
+    const added = commandFor('element.add', { name: 'Track a parcel', kind: 'function', parentId: 'warehousing' }, nothingUp)
+    expect(answerOf(added)).toMatchObject({ id: 'track-a-parcel', drawn: false })
+    expect(roundTrip(model, added).elements['track-a-parcel']).toMatchObject({ kind: 'function', parentId: 'warehousing' })
+    // A canvas kind still has to land somewhere, and the refusal says which argument.
+    expect(commandFor('element.add', { name: 'Ledger' }, nothingUp))
+      .toMatchObject({ ok: false, refusal: 'agent.badArguments', detail: expect.stringContaining('diagramId') })
+    // A diagram that was named and does not exist is a different mistake.
+    expect(commandFor('element.add', { name: 'Ledger', kind: 'function', diagramId: 'nope' }, nothingUp))
+      .toMatchObject({ ok: false, refusal: 'agent.unknownId', detail: 'diagram nope' })
+    expect(commandFor('moveBy', { elementIds: ['wms'], dx: 1, dy: 0 }, nothingUp))
+      .toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+  })
+
   it('element.update re-parents, makes a root with null, and refuses a loop', () => {
     const moved = roundTrip(model, commandFor('element.update', { id: 'picking', parentId: 'invoicing' }, view(model)))
     expect(moved.elements['picking'].parentId).toBe('invoicing')

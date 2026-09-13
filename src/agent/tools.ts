@@ -271,8 +271,9 @@ const SPECS = [
     description:
       'The elements of the landscape, one line each: id, name, kind, lifecycle, and the '
       + 'category, vendor, technology, owner, lifecycle dates, successor, parent, order, lane and '
-      + 'outside flag where set. Filter by kind, '
-      + 'by the diagram they are drawn on, or by a free-text query over name, category, vendor and technology.',
+      + 'outside flag where set. Filter by kind, by parent (the capabilities under a function, the steps '
+      + 'under a phase), by the diagram they are drawn on, or by a free-text query over name, category, '
+      + 'vendor and technology.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -281,6 +282,7 @@ const SPECS = [
           description: 'Only elements of this kind. A step is a journey, a phase or a step; a function an area, a grouping or a capability.',
           enum: KINDS,
         },
+        parentId: { type: 'string', description: 'Only the elements filed directly under this one: a function\'s capabilities, a phase\'s steps, an application\'s components, an actor group\'s actors.' },
         diagramId: { type: 'string', description: 'Only elements drawn on this diagram.' },
         query: { type: 'string', description: 'Only elements whose name, category, vendor or technology contains every word.' },
         limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
@@ -450,14 +452,15 @@ const SPECS = [
       + 'where its kind is one a board can draw. It gets the id the file would give it, derived from the '
       + 'name, and lands in its kind\'s own band unless a zone or a spot is named. A business kind — a step, '
       + 'a function, a process — is a record and is drawn nowhere: a sheet is laid out from the tree rather '
-      + 'than dragged. Answers with the id, and with whether it was drawn.',
+      + 'than dragged, so it needs no diagram and can be added while a scope\'s home is on screen. '
+      + 'Answers with the id, and with whether it was drawn.',
     inputSchema: {
       type: 'object',
       properties: {
         ...ELEMENT_FIELDS,
         kind: { type: 'string', description: 'What kind of element. Default application.', enum: KINDS },
         parentId: { type: 'string', description: 'What contains it: a component\'s application, a function\'s area, a step\'s phase, an actor\'s group.' },
-        diagramId: { type: 'string', description: 'The diagram to draw it on. Default: the one on screen.' },
+        diagramId: { type: 'string', description: 'The diagram to draw it on. Default: the one on screen. Not needed for a business kind.' },
         zone: { type: 'string', description: 'On a landscape: the band to draw it in. Default: the kind\'s own.', enum: ZONES },
         domainGroup: { type: 'string', description: 'On a landscape: the domain group to file it under.' },
         x: { type: 'number', description: 'Where to draw it, in flow coordinates. Prefer placeNextTo over guessing.' },

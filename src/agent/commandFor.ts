@@ -20,7 +20,7 @@ import { claimKey } from '../model/keys'
 import type { IdPolicy, MakeId } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
 import { toDiagram, toArrays } from '../model/normalised'
-import {
+import { CANVAS_KINDS,
   canPlaceKind, clampPlacementIntoZone, defaultContainerPosition, defaultZonePosition, freeSlotIn,
   freeZonePosition, groupRectAround, memberOf, placementRect, rectCenter, rectsIntersect, unionRects,
 } from '../model/placement'
@@ -279,8 +279,8 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       }
     }
     case 'placeNextTo': {
-      const diagram = diagramOf(args, view)
-      if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+      const diagram = diagramOrRefusal(args, view)
+      if ('ok' in diagram) return diagram
       const elementId = args.elementId as string
       const anchorId = args.anchorId as string
       const element = model.elements[elementId]
@@ -325,8 +325,8 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'element.place': return placeElement(args, view)
     case 'element.draw': return drawElement(args, view)
     case 'element.undraw': {
-      const diagram = diagramOf(args, view)
-      if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+      const diagram = diagramOrRefusal(args, view)
+      if ('ok' in diagram) return diagram
       const id = args.id as string
       if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
       if (!placedOn(diagram, id)) return refused('agent.notDrawn', id)
@@ -368,8 +368,13 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   // Read before the row is built: it decides what the box is drawn as, and
   // therefore where it lands and how big it is (ADR-0012 §4).
   const outside = args.outside === true
-  const diagram = diagramOf(args, view)
-  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  // A record kind is drawn nowhere, so it needs no diagram: an agent on a
+  // scope whose home is up — nothing on screen — can still add a function or
+  // a step. A diagram it names is still checked, because naming one that does
+  // not exist is a mistake worth hearing about.
+  const record = !CANVAS_KINDS.includes(kind)
+  const diagram = record && args.diagramId === undefined ? undefined : diagramOrRefusal(args, view)
+  if (diagram && 'ok' in diagram) return diagram
   const parentId = args.parentId as string | undefined
   if (parentId !== undefined && !model.elements[parentId]) {
     return refused('agent.unknownId', `element ${parentId}`)
@@ -388,7 +393,7 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
     aspects: {},
     ...(parentId !== undefined
       ? { parentId }
-      : kind === 'component' && diagram.kind === 'container' && diagram.applicationElementId
+      : kind === 'component' && diagram?.kind === 'container' && diagram.applicationElementId
         ? { parentId: diagram.applicationElementId }
         : {}),
   }
@@ -402,7 +407,7 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   // place on a canvas — a sheet is laid out from the tree, not dragged — so the
   // record is made and nothing is drawn, and the answer says which happened
   // rather than refusing a thing that is perfectly real.
-  if (!canPlaceKind(kind, diagram.kind).ok) {
+  if (!diagram || !canPlaceKind(kind, diagram.kind).ok) {
     // A root step is a journey, and a sheet draws one only when told which:
     // say so here, because the sheet that says "no journey yet" cannot.
     const journey = kind === 'step' && element.parentId === undefined
@@ -410,7 +415,7 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
       command: transaction([{ type: 'element.create', element }], { origin: 'agent' }),
       answer: json({
         id, name, kind, drawn: false,
-        reason: `a ${kind} is not drawn on a ${diagram.kind} view`,
+        reason: diagram ? `a ${kind} is not drawn on a ${diagram.kind} view` : `a ${kind} is a record and is drawn nowhere`,
         ...(journey ? { hint: `a root step is a journey; name it as a sheet's journeyId with diagram.update, and add its phases as steps under it` } : {}),
       }),
     }
@@ -921,8 +926,8 @@ function newGroupId(diagram: Diagram, name: string): string {
 
 function placeElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const { model } = view
-  const diagram = diagramOf(args, view)
-  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  const diagram = diagramOrRefusal(args, view)
+  if ('ok' in diagram) return diagram
   const id = args.id as string
   const element = model.elements[id]
   if (!element) return refused('agent.unknownId', `element ${id}`)
@@ -982,8 +987,8 @@ function placeElement(args: Args, view: WriteView): Prepared | AgentAnswer {
 
 function drawElement(args: Args, view: WriteView): Prepared | AgentAnswer {
   const { model } = view
-  const diagram = diagramOf(args, view)
-  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  const diagram = diagramOrRefusal(args, view)
+  if ('ok' in diagram) return diagram
   const id = args.id as string
   const element = model.elements[id]
   if (!element) return refused('agent.unknownId', `element ${id}`)
@@ -1008,8 +1013,8 @@ function drawElement(args: Args, view: WriteView): Prepared | AgentAnswer {
 
 function ungroup(args: Args, view: WriteView): Prepared | AgentAnswer {
   const { model } = view
-  const diagram = diagramOf(args, view)
-  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  const diagram = diagramOrRefusal(args, view)
+  if ('ok' in diagram) return diagram
   if (diagram.kind !== 'layer7') return refused('agent.badArguments', 'domain groups are drawn on a landscape')
   const name = (args.name as string).trim()
   const held = groupNamed(diagram, name)
@@ -1326,8 +1331,8 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
  */
 function groupElements(args: Args, view: WriteView): Prepared | AgentAnswer {
   const { model } = view
-  const diagram = diagramOf(args, view)
-  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  const diagram = diagramOrRefusal(args, view)
+  if ('ok' in diagram) return diagram
   if (diagram.kind !== 'layer7') return refused('agent.badArguments', 'domain groups are drawn on a landscape')
   const name = (args.name as string).trim()
   if (!name) return refused('agent.badArguments', '"name" must not be blank')
@@ -1380,10 +1385,26 @@ function diagramOf(args: Args, view: ReadView): Diagram | undefined {
   return view.model.diagrams[id]
 }
 
+/**
+ * The diagram a tool is about, or the refusal that says why there is none.
+ * Two different mistakes get two different answers: a diagram that was named
+ * and does not exist is an unknown id, while nothing named on a scope whose
+ * home is up — no diagram on screen — is a missing argument, and the detail
+ * says which one to pass. Eight tools used to answer `diagram undefined` to
+ * the second, which an agent read as a bug rather than as a question.
+ */
+function diagramOrRefusal(args: Args, view: ReadView): Diagram | AgentAnswer {
+  const diagram = diagramOf(args, view)
+  if (diagram) return diagram
+  return typeof args.diagramId === 'string'
+    ? refused('agent.unknownId', `diagram ${args.diagramId}`)
+    : refused('agent.badArguments', 'no diagram is on screen: pass diagramId (see diagrams.list)')
+}
+
 /** The named elements' placements on the diagram, or the first refusal. */
 function onDiagram(args: Args, view: ReadView): { diagram: Diagram; placements: PlacedNode[] } | AgentAnswer {
-  const diagram = diagramOf(args, view)
-  if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
+  const diagram = diagramOrRefusal(args, view)
+  if ('ok' in diagram) return diagram
   const placements: PlacedNode[] = []
   for (const id of args.elementIds as string[]) {
     if (!view.model.elements[id]) return refused('agent.unknownId', `element ${id}`)
