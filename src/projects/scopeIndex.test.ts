@@ -249,6 +249,34 @@ describe('the index — over whatever a store can say', () => {
   })
 })
 
+describe('the index — the initiatives below a scope (ADR-0012 §7)', () => {
+  const plan = (number: number, initiative?: true) => ({
+    id: `tr-${number}`, number, title: `Plan ${number}`, status: 'agreed' as const,
+    ...(initiative ? { initiative } : {}), elements: [], decisions: [], milestones: [], body: '',
+  })
+  const tree = () => indexScopes([
+    { path: '', model: { elements: [], relations: [], transitions: [plan(1, true)] } },
+    { path: 'acme', model: { elements: [], relations: [], transitions: [plan(3, true), plan(2)] } },
+    { path: 'acme/retail', model: { elements: [], relations: [], transitions: [plan(1, true)] } },
+    { path: 'other', model: { elements: [], relations: [], transitions: [plan(1, true)] } },
+    scope('acme/finance', []),
+  ])
+
+  it('answers the flagged plans of the scopes strictly below, by scope and number', () => {
+    expect(tree().initiativesBelow('acme').map(({ scope, transition }) => [scope, transition.number]))
+      .toEqual([['acme/retail', 1]])
+    expect(tree().initiativesBelow('').map(({ scope, transition }) => [scope, transition.number]))
+      .toEqual([['acme', 3], ['acme/retail', 1], ['other', 1]])
+  })
+
+  it('leaves out a plan nobody flagged, the scope\u2019s own, and a scope with no plans read', () => {
+    const below = tree().initiativesBelow('')
+    expect(below.some(({ transition }) => transition.number === 2)).toBe(false)
+    expect(below.some(({ scope }) => scope === '')).toBe(false)
+    expect(tree().initiativesBelow('acme/finance')).toEqual([])
+  })
+})
+
 describe('the index — the two questions an inspector asks', () => {
   const index = indexScopes([
     scope('retail', [element('erp')]),

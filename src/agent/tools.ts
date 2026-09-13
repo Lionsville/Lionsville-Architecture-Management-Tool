@@ -168,6 +168,7 @@ const PLAN_FIELDS = {
   from: { type: 'string', description: 'The day the work starts, yyyy-mm-dd.' },
   to: { type: 'string', description: 'The day it is due to end, yyyy-mm-dd.' },
   owner: { type: 'string', description: 'Who answers for it.' },
+  initiative: { type: 'boolean', description: 'An initiative the organisation follows (ADR-0012 §7): shown on the roadmap of every scope above this one, read there and edited here. False takes it off them.' },
   body: { type: 'string', description: 'The plan as markdown: goal, approach, phases, the ```business-case fence, risks, rollback.' },
 } as const satisfies Record<string, ArgumentSchema>
 

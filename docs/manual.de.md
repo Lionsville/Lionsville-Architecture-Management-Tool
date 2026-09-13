@@ -639,6 +639,16 @@ ein Ereignis.
 Jeder Plan ist eine Markdown-Datei in `transitions/` in Ihrem Projektordner,
 nummeriert ab `TR-0001` aufwärts.
 
+**Initiativen.** Ein Plan gehört zu dem Bereich, der ihn schreibt, und der
+Fahrplan einer Domäne ist der der Domäne. Ist ein Plan zugleich Sache der
+Organisation — eine Migration, der das ganze Unternehmen folgt — schalten Sie
+auf seiner Seite **Initiative** ein. Er erscheint dann auf dem Fahrplan jedes
+Bereichs darüber, unter *Initiativen aus den Bereichen darunter*, mit dem
+Bereich, zu dem er gehört, auf einem Chip; dort wird er gelesen und bearbeitet
+wird er, wo er liegt, und der Chip öffnet ihn dort. Die Fahrplankarte auf dem
+Organisationsbildschirm zählt sie mit. Auf der Organisation selbst, die keinen
+Fahrplan über sich hat, gibt es den Schalter nicht.
+
 ### Der Business Case
 
 Der Text eines Plans kann einen **Business Case** halten: einen eingezäunten

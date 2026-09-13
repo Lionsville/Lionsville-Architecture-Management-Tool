@@ -208,6 +208,22 @@ describe('the organisation screen — its own pages', () => {
     expect(await screen.findByTestId('map-grid', {}, { timeout: 3000 })).toBeDefined()
   })
 
+  it('counts the initiatives of the domains on the roadmap card, off the index', async () => {
+    const retail: ScopeSnapshot = {
+      ...organisation(), path: 'acme/retail',
+      model: {
+        ...organisation().model, name: 'Retail',
+        transitions: [
+          { id: 'tr-1', number: 1, title: 'One warehouse system', status: 'agreed', initiative: true, elements: [], decisions: [], milestones: [], body: '' },
+          { id: 'tr-2', number: 2, title: 'Not the organisation\u2019s', status: 'draft', elements: [], decisions: [], milestones: [], body: '' },
+        ],
+      },
+    }
+    renderApp({ scopes: new InMemoryScopeStore([organisation(), retail]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('1 initiative from below'))
+  })
+
   /** A fresh folder. Four zeroes read as a fault; a sentence reads as a start. */
   it('says nothing is here yet rather than showing zeroes', async () => {
     renderApp({ scopes: new InMemoryScopeStore([]), today: TODAY })

@@ -67,6 +67,13 @@ function tree(): TreeView & { read: TreeView['read'] & { asked: string[] } } {
     ],
     lookup: (id) => entries[id as keyof typeof entries],
     register: () => [entries.erp, entries.wms],
+    initiativesBelow: () => [{
+      scope: 'acme/retail',
+      transition: {
+        id: 'tr-1', number: 1, title: 'One warehouse system', status: 'agreed' as const, initiative: true as const,
+        from: '2027-01-01', elements: [], decisions: [], milestones: [], body: '',
+      },
+    }],
     findings: () => [
       { key: 'check.drift', scope: 'acme/finance', id: 'wms', name: 'Warehouse system', scopes: ['acme/retail'] },
       { key: 'check.unattributed', scope: 'acme/retail', id: 'wms', name: 'Warehouse system' },
@@ -241,6 +248,25 @@ describe('scope on anything that needs the session', () => {
     )
     expect(out.ok).toBe(true)
     expect(view.revision()).toBe(1)
+  })
+})
+
+describe('the initiatives below (ADR-0012 §7)', () => {
+  it('ride along on plans.list with where each lives', async () => {
+    const out = parsed(await handle({ id: '1', tool: 'plans.list', args: {} }, session()))
+    expect(out.plans).toEqual([])
+    expect(out.fromBelow).toEqual([{
+      scope: 'acme/retail', id: 'tr-1', label: 'TR-0001', title: 'One warehouse system', status: 'agreed', from: '2027-01-01',
+    }])
+  })
+
+  it('are flagged and unflagged through plan.create and plan.update', async () => {
+    const view = session()
+    const made = parsed(await handle({ id: '1', tool: 'plan.create', args: { title: 'Move the ledger', initiative: true } }, view))
+    expect(made.initiative).toBe(true)
+    const off = parsed(await handle({ id: '2', tool: 'plan.update', args: { id: made.id, initiative: false } }, view))
+    expect(off.initiative).toBeUndefined()
+    expect(view.current().transitions?.[0].initiative).toBeUndefined()
   })
 })
 

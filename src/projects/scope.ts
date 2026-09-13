@@ -134,6 +134,13 @@ export type ScopeModel = {
   model: {
     elements: readonly DesignElement[]
     relations: readonly Relation[]
+    /**
+     * The scope's plans, for the initiatives a roadmap above reads (ADR-0012
+     * §7). Read with the model because they are a handful of small files per
+     * scope and the roadmap of the organisation is otherwise a load per
+     * domain; absent where a store has not read them.
+     */
+    transitions?: readonly Transition[]
   }
 }
 

@@ -38,6 +38,8 @@ export type OrganisationCardsProps = {
    * shell and already read.
    */
   register: RegisterSummary
+  /** Plans below the root flagged as initiatives (ADR-0012 §7): the roadmap card's second line. */
+  initiatives?: number
   onOpenBusiness: () => void
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
@@ -81,7 +83,7 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, register, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap, onOpenRegister, s,
+  pages, ready, register, initiatives = 0, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap, onOpenRegister, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -152,12 +154,19 @@ export function OrganisationCards({
       <OnePage
         icon={<TimelineIcon />}
         title={s('shell.roadmap')}
-        count={nothing ? s('org.nothingHere') : ready
-          ? [
-            plural(s, { one: 'org.plansOne', other: 'org.plansOther' }, pages.roadmap.total),
-            tallyLine(pages.roadmap.byStatus, PLAN_STATUS_LABEL, s),
-          ].filter(Boolean).join(' · ')
-          : undefined}
+        count={[
+          nothing ? s('org.nothingHere') : ready
+            ? [
+              plural(s, { one: 'org.plansOne', other: 'org.plansOther' }, pages.roadmap.total),
+              tallyLine(pages.roadmap.byStatus, PLAN_STATUS_LABEL, s),
+            ].filter(Boolean).join(' · ')
+            : '',
+          // The domains' initiatives, which the root's roadmap draws under
+          // its own plans: counted off the index, like the register's line.
+          initiatives > 0
+            ? plural(s, { one: 'org.initiativesOne', other: 'org.initiativesOther' }, initiatives)
+            : '',
+        ].filter(Boolean).join(' · ') || undefined}
         finding={nothing || !ready
           ? undefined
           : finding

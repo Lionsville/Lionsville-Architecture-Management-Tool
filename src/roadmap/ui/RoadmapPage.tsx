@@ -30,8 +30,9 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
+import Chip from '@mui/material/Chip'
 import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
-import type { DesignModel, ElementId, Lifecycle } from '../../model'
+import type { DesignModel, ElementId, Lifecycle, Transition } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon } from '../../widgets/icons'
@@ -78,9 +79,24 @@ export type RoadmapActions = {
   onOpenElement(id: ElementId): void
 }
 
+/**
+ * A plan filed in a scope below this one and flagged as an initiative
+ * (ADR-0012 §7): drawn here under its scope's name, edited there.
+ */
+export type Initiative = {
+  scope: string
+  /** What to call the scope on screen. */
+  label: string
+  plan: Transition
+}
+
 export type RoadmapPageProps = {
   open: boolean
   model: DesignModel
+  /** The initiatives of the scopes below, read off the index; absent or empty draws no band for them. */
+  fromBelow?: readonly Initiative[]
+  /** Open a plan where it lives. Absent = the rows are drawn and go nowhere. */
+  onOpenInitiative?(scope: string, planId: string): void
   /** The day "now" is; the caller reads the clock so this stays testable. */
   today: string
   /** The day the open board is showing, so the scrubber starts where it is. */
@@ -101,7 +117,19 @@ export function RoadmapPage(props: RoadmapPageProps) {
   // is half a question, and the natural axis answers it until the other is set.
   const [window_, setWindow] = useState<{ from: string; to: string }>(() => defaultWindow(today))
 
-  const whole = useMemo(() => roadmapOf(model, today), [model, today])
+  const below = props.fromBelow ?? []
+  // The axis takes the initiatives in: a plan below that runs past this
+  // scope's own dates would otherwise be a band cut off at the edge.
+  const whole = useMemo(() => {
+    const own = roadmapOf(model, today)
+    const days = below.flatMap(({ plan }) => [plan.from, plan.to].filter(isDay))
+    if (days.length === 0) return own
+    return {
+      ...own,
+      from: days.reduce((first, day) => (day < first ? day : first), own.from),
+      to: days.reduce((last, day) => (day > last ? day : last), own.to),
+    }
+  }, [model, today, below])
   const cut = isDay(window_.from) && isDay(window_.to) && window_.from < window_.to
   const roadmap = useMemo(
     () => (cut ? within(whole, window_.from, window_.to) : whole),
@@ -118,6 +146,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false }
   const bar = barChromeFor(chrome)
   const empty = whole.tracks.length === 0 && whole.relations.length === 0 && whole.transitions.length === 0
+    && below.length === 0
 
   return (
     <PageDialog
@@ -348,6 +377,27 @@ export function RoadmapPage(props: RoadmapPageProps) {
                 )
               })}
 
+              {below.length > 0 && (
+                <>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 2, mb: 0.5 }}>
+                    {t('roadmap.fromBelow')}
+                  </Typography>
+                  {below.map((held) => (
+                    <InitiativeRow
+                      key={`${held.scope}/${held.plan.id}`}
+                      initiative={held}
+                      at={at}
+                      from={roadmap.from}
+                      to={roadmap.to}
+                      today={today}
+                      onOpen={props.onOpenInitiative}
+                      t={t}
+                      colour={theme.palette.text.primary}
+                    />
+                  ))}
+                </>
+              )}
+
               <Box sx={{ mt: 3 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
                   {t('check.title')}
@@ -422,5 +472,70 @@ function Marker({ left, colour, label }: { left: string; colour: string; label: 
     <Tooltip title={label}>
       <Box sx={{ position: 'absolute', top: -2, bottom: -2, left, width: '2px', ml: '-1px', bgcolor: colour, opacity: 0.7 }} />
     </Tooltip>
+  )
+}
+
+/**
+ * A plan from a scope below, as a band under its scope's name (ADR-0012 §7).
+ *
+ * Simpler than the rows above it on purpose: what it introduces and retires
+ * and the interfaces it ports are that scope's elements, which this model
+ * does not hold, so the band says when and the chip says where — and opening
+ * it goes there.
+ */
+function InitiativeRow({ initiative, at, from, to, today, onOpen, t, colour }: {
+  initiative: Initiative
+  at(day: string): string
+  from: string
+  to: string
+  today: string
+  onOpen?(scope: string, planId: string): void
+  t: (key: StringKey, values?: Record<string, string | number>) => string
+  colour: string
+}) {
+  const { plan, scope, label } = initiative
+  const open = onOpen ? () => onOpen(scope, plan.id) : undefined
+  return (
+    <Box
+      data-testid={`initiative-${scope}-${plan.id}`}
+      sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
+    >
+      <Box sx={{ minWidth: 0, cursor: open ? 'pointer' : 'default' }} onClick={open}>
+        <Typography sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {transitionLabel(plan)} {plan.title}
+        </Typography>
+        <Tooltip title={open ? t('roadmap.openInitiative', { scope: label }) : label}>
+          <Chip size="small" label={label} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
+        </Tooltip>
+      </Box>
+      <Box
+        onClick={open}
+        sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1, cursor: open ? 'pointer' : 'default' }}
+      >
+        {isDay(plan.from) && (
+          <Box
+            data-testid="plan-band"
+            sx={{
+              position: 'absolute', top: 3, bottom: 3,
+              left: at(plan.from),
+              right: isDay(plan.to) ? `calc(100% - ${at(plan.to)})` : 0,
+              bgcolor: 'secondary.main', opacity: 0.5, borderRadius: 1,
+            }}
+          />
+        )}
+        {plan.milestones.filter((m) => isDay(m.date) && m.date >= from && m.date <= to).map((milestone, index) => (
+          <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
+            <Box
+              data-testid="milestone"
+              sx={{
+                position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,
+                ml: '-4px', bgcolor: 'secondary.dark', transform: 'rotate(45deg)',
+              }}
+            />
+          </Tooltip>
+        ))}
+        <Marker left={at(today)} colour={colour} label={t('roadmap.today')} />
+      </Box>
+    </Box>
   )
 }

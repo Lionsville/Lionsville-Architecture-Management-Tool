@@ -640,6 +640,28 @@ table. Read-only first.
 
 **Cut 2.0.0-beta.4** — cut 13 September 2026 from `4f32519`, the map, the agent at every scope and BPMN, an hour after beta 3.
 
+### Findings from testing beta 4 on a real organisation
+
+- **The register said *No board* for every application.** The column lists
+  the scopes that hold a stand-in — who *else* draws it — and the index cannot
+  know whether the master's own boards draw it, because views are what
+  `models()` does not read. The column is *Also drawn in* now and an empty one
+  says *Nowhere else*; whether the owning scope draws it stays
+  `check.notDrawn`'s, answered from the open scope's document. 13 September.
+- **Plans did not flow up.** ADR-0012 §7 says plans are read up the tree; the
+  organisation's roadmap said nothing at this level yet while every domain had
+  plans. A plan may now be flagged an **initiative** (`Transition.initiative`,
+  `initiative: true` in its front matter): it is drawn on the roadmap of every
+  scope above it under *Initiatives from the scopes below*, with its scope on
+  a chip that opens it where it lives (`InitialPage` gained `plan`), and the
+  organisation screen's roadmap card counts them. The plans ride along with
+  the model in `ScopeStore.models()` — a handful of small files per scope,
+  so the organisation's roadmap is not a load per domain — and the index
+  answers `initiativesBelow(path)`. The agent flags one through `plan.create`
+  and `plan.update`, and `plans.list` carries `fromBelow`. The domain says
+  which of its plans are the enterprise's business; the enterprise does not
+  go and pick them. 13 September.
+
 ---
 
 ## 2.0.0

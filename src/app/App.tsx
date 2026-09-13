@@ -115,6 +115,8 @@ export type InitialPage =
   | { page: 'sheet'; id?: string }
   /** The enterprise map, likewise. */
   | { page: 'map'; id?: string }
+  /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
+  | { page: 'plan'; id: string }
   /**
    * A record, selected on the board that draws it — a row of the register,
    * opened where it is answered for.
@@ -597,6 +599,8 @@ export function App({
    * need a scope's own records belong to the scope that is open.
    */
   const identity = useMemo(() => identityFindings(tree.index), [tree.index])
+  /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
+  const initiatives = useMemo(() => tree.index.initiativesBelow('').length, [tree.index])
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])
 
   /**
@@ -895,6 +899,7 @@ export function App({
             agent={agentBar}
             findings={treeFindings}
             register={register}
+            initiatives={initiatives}
             onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
             onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
             today={todayDay}

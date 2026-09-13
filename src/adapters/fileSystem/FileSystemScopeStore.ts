@@ -40,12 +40,15 @@
  */
 import {
   DECISIONS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE,
+  TRANSITIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
 } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import type { Transition } from '../../model/transition'
+import { transitionFromFile } from '../../projects/transitionFile'
 
 import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
@@ -241,9 +244,12 @@ export class FileSystemScopeStore implements ScopeStore {
   }
 
   /**
-   * See {@link ScopeStore.models}. One `model.json` per scope, and no other
-   * file: the same walk the listing does, reading the one document the index
-   * is built from instead of a whole folder each.
+   * See {@link ScopeStore.models}. One `model.json` per scope, and the plans
+   * beside it: the same walk the listing does, reading the documents the
+   * index is built from instead of a whole folder each. The plans are a
+   * handful of small files per scope, read here so the roadmap of a scope
+   * above can show the initiatives below it without a load per domain
+   * (ADR-0012 §7).
    *
    * A scope whose model will not read is left out rather than answered with an
    * empty one. An empty model is a claim — "this scope defines nothing" — and
@@ -258,12 +264,27 @@ export class FileSystemScopeStore implements ScopeStore {
         if (!handle) return
         const text = await (await handle.getFile().catch(() => undefined))?.text().catch(() => undefined)
         if (text === undefined) return
-        found.push({ path, model: modelListsFrom(text) })
+        found.push({ path, model: { ...modelListsFrom(text), transitions: await this.transitionsIn(folder) } })
       })
     } catch {
       return []
     }
     return found
+  }
+
+  /** The plans filed in one scope's folder, by number. A file that will not read is left out. */
+  private async transitionsIn(folder: DirectoryHandleLike): Promise<Transition[]> {
+    const plans = await folder.getDirectoryHandle(TRANSITIONS_FOLDER).catch(() => undefined)
+    if (!plans) return []
+    const found: Transition[] = []
+    for await (const entry of plans.values()) {
+      if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
+      const text = await (await entry.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      if (text === undefined) continue
+      const plan = transitionFromFile(text, `${TRANSITIONS_FOLDER}/${entry.name}`)
+      if (plan) found.push(plan)
+    }
+    return found.sort((a, b) => a.number - b.number)
   }
 
   async list(): Promise<ScopeSummary> {

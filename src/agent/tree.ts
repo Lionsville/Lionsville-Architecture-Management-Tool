@@ -26,6 +26,7 @@
  */
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
+import type { Transition } from '../model/transition'
 import { matchesQuery } from '../model/textSearch'
 import type { ElementId, ElementKind } from '../model/types'
 import type { AgentAnswer } from './tools'
@@ -83,6 +84,8 @@ export type TreeView = {
   register(): readonly TreeEntry[]
   /** Every finding the tree and the open scope's document raise (§9). */
   findings(): readonly TreeFinding[]
+  /** The plans flagged as initiatives in the scopes strictly below `path` (§7). */
+  initiativesBelow(path: string): readonly { scope: string; transition: Transition }[]
   /** One scope's whole document, or nothing where there is no such scope. */
   read(path: string): Promise<ForeignScope | undefined>
 }

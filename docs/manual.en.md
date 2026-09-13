@@ -568,6 +568,15 @@ step, because a plan slipping is one thing that happened.
 Each plan is one markdown file in `transitions/` in your project folder, numbered
 `TR-0001` upwards.
 
+**Initiatives.** A plan lives in the scope that writes it, and a domain's
+roadmap is the domain's. When a plan is the organisation's business as well —
+a migration the whole company follows — switch on **Initiative** on its page.
+It then appears on the roadmap of every scope above, under *Initiatives from
+the scopes below*, with the scope it belongs to on a chip; it is read there
+and edited where it lives, and the chip opens it there. The organisation
+screen's roadmap card counts them. The switch is not offered at the
+organisation itself, which has no roadmap above it.
+
 ### The business case
 
 A plan's body can hold a **business case**: a fenced block whose input is a

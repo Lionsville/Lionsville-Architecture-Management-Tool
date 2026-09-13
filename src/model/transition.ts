@@ -74,6 +74,13 @@ export type Transition = {
   to?: string
   /** Who answers for it. */
   owner?: string
+  /**
+   * An initiative the organisation follows: shown on the roadmap of every
+   * scope above the one it is filed in (ADR-0012 §7), read there and edited
+   * here. A domain says which of its plans are the enterprise's business;
+   * the enterprise does not go and pick them.
+   */
+  initiative?: true
   /** What it does to the landscape. */
   elements: TransitionElement[]
   /** The ids of the decision records it rests on. */

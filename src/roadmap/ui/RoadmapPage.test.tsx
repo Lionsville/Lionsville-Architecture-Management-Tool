@@ -151,6 +151,34 @@ describe('the axis', () => {
     expect(screen.getByText('Supports')).toBeTruthy()
   })
 
+  it('draws the initiatives from below under their scope, and opens one where it lives', () => {
+    const onOpenInitiative = vi.fn()
+    setup({
+      fromBelow: [{
+        scope: 'acme/retail', label: 'acme/retail',
+        plan: { ...PLAN, id: 'tr-r', number: 2, title: 'One warehouse system', from: '2029-01-01', to: '2029-12-31', initiative: true },
+      }],
+      onOpenInitiative,
+    })
+    const row = screen.getByTestId('initiative-acme/retail-tr-r')
+    expect(row.textContent).toContain('One warehouse system')
+    expect(row.textContent).toContain('acme/retail')
+    // The axis took the plan in: a band well past this scope's own dates is
+    // still a band and not a sliver at the edge.
+    expect(within(row).getByTestId('plan-band')).toBeTruthy()
+    fireEvent.click(within(row).getByText('acme/retail'))
+    expect(onOpenInitiative).toHaveBeenCalledWith('acme/retail', 'tr-r')
+  })
+
+  it('is not empty when only the scopes below have dated plans', () => {
+    setup({
+      model: model({ elements: [], transitions: [] }),
+      fromBelow: [{ scope: 'acme/retail', label: 'Retail', plan: { ...PLAN, initiative: true } }],
+    })
+    expect(screen.queryByText('Nothing here has a date yet.')).toBeNull()
+    expect(screen.getByText('Initiatives from the scopes below')).toBeTruthy()
+  })
+
   it('says so plainly when nothing has a date yet', () => {
     setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
     expect(screen.getByText('Nothing here has a date yet.')).toBeTruthy()

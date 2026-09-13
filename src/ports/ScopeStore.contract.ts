@@ -352,7 +352,14 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
       const store = create()
       await store.save(bareScope(ROOT_SCOPE, 'Acme Logistics', 'organisation'))
       await store.save(bareScope('acme-logistics', 'Acme', 'domain'))
-      await store.save(sampleScope())
+      // A plan on the landscape, because the roadmap of a scope above reads
+      // the initiatives below it off this clause (ADR-0012 §7).
+      const withPlan = sampleScope()
+      withPlan.model.transitions = [{
+        id: 'tr-1', number: 1, title: 'Move the rating', status: 'agreed', initiative: true,
+        elements: [], decisions: [], milestones: [], body: '',
+      }]
+      await store.save(withPlan)
       if (!store.models) return
 
       const models = await store.models()
@@ -362,6 +369,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
         expect(stableJson(held.model.elements.map(withoutProse)))
           .toBe(stableJson((loaded?.model.elements ?? []).map(withoutProse)))
         expect(stableJson(held.model.relations)).toBe(stableJson(loaded?.model.relations ?? []))
+        expect(stableJson(held.model.transitions ?? [])).toBe(stableJson(loaded?.model.transitions ?? []))
       }
     })
 

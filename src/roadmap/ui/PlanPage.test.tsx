@@ -89,6 +89,21 @@ describe('the facts', () => {
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { owner: 'Warehouse IT' })
   })
 
+  it('flags a plan as an initiative through the one action, only where there is a scope above', () => {
+    const { actions } = setup({ initiativeToggle: true })
+    const toggle = screen.getByLabelText('Initiative') as HTMLInputElement
+    expect(toggle.checked).toBe(false)
+    fireEvent.click(toggle)
+    expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { initiative: true })
+    cleanup()
+    setup({ plan: { ...PLAN, initiative: true }, initiativeToggle: true })
+    fireEvent.click(screen.getByLabelText('Initiative'))
+    expect(actions.updateTransition).toHaveBeenCalledTimes(1)
+    cleanup()
+    setup()
+    expect(screen.queryByLabelText('Initiative')).toBeNull()
+  })
+
   it('labels the window as a window', () => {
     setup()
     expect(screen.getByLabelText('From')).toBeTruthy()

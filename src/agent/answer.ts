@@ -56,7 +56,7 @@ export type ReadView = {
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
-  readonly tree?: Pick<TreeView, 'lookup'>
+  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow'>
 }
 
 type Args = Record<string, unknown>
@@ -180,7 +180,21 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
           touching === undefined || plan.elements.some((one) => one.elementId === touching)
         ))
         .map((plan) => planEntry(plan, arrays))
-      return json({ plans: rows })
+      // The initiatives filed below this scope (ADR-0012 §7): what the
+      // roadmap draws under its own plans, said with where each lives.
+      const fromBelow = (view.tree?.initiativesBelow(view.scopePath) ?? [])
+        .filter(({ transition }) => wanted === undefined || transition.status === wanted)
+        .map(({ scope, transition }) => ({
+          scope,
+          id: transition.id,
+          label: transitionLabel(transition),
+          title: transition.title,
+          status: transition.status,
+          ...(transition.from ? { from: transition.from } : {}),
+          ...(transition.to ? { to: transition.to } : {}),
+          ...(transition.owner ? { owner: transition.owner } : {}),
+        }))
+      return json({ plans: rows, ...(fromBelow.length > 0 ? { fromBelow } : {}) })
     }
 
     case 'plan.read': {
@@ -358,6 +372,7 @@ export function planEntry(plan: Transition, arrays: HostModel) {
     ...(plan.from ? { from: plan.from } : {}),
     ...(plan.to ? { to: plan.to } : {}),
     ...(plan.owner ? { owner: plan.owner } : {}),
+    ...(plan.initiative ? { initiative: true } : {}),
     elements: plan.elements,
     decisions: plan.decisions,
     milestones: plan.milestones,

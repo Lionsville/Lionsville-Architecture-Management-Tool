@@ -656,6 +656,7 @@ function createPlan(args: Args, view: WriteView): Prepared | AgentAnswer {
     ...(days.from ? { from: days.from } : {}),
     ...(days.to ? { to: days.to } : {}),
     ...(typeof args.owner === 'string' && args.owner.trim() ? { owner: args.owner.trim() } : {}),
+    ...(args.initiative === true ? { initiative: true as const } : {}),
     elements,
     decisions: decisions ?? [],
     milestones: [],
@@ -692,6 +693,7 @@ function updatePlan(args: Args, view: WriteView): Prepared | AgentAnswer {
   if (args.owner === null) patch.owner = undefined
   else if (typeof args.owner === 'string') patch.owner = args.owner.trim() || undefined
   if (typeof args.body === 'string') patch.body = args.body
+  if (typeof args.initiative === 'boolean') patch.initiative = args.initiative ? true : undefined
   if (['introduces', 'retires', 'changes'].some((role) => Array.isArray(args[role]))) {
     const elements = planElements(args, held.elements, view)
     if ('ok' in elements) return elements

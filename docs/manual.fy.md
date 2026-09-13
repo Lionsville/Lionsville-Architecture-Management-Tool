@@ -591,6 +591,15 @@ mylpeal, en de libbenssyklusdatums fan de applikaasjes dy't it ynfiert en
 Elk plan is ien markdown-bestân yn `transitions/` yn jo projektmap, nûmere fan
 `TR-0001` ôf omheech.
 
+**Inisjativen.** In plan heart by it nivo dat it skriuwt, en de roadmap fan in
+domein is dy fan it domein. Is in plan ek in saak fan de organisaasje — in
+migraasje dy't it hiele bedriuw folget — set dan **Inisjatyf** oan op syn side.
+It ferskynt dan op de roadmap fan elk nivo derboppe, ûnder *Inisjativen út de
+nivo's derûnder*, mei it nivo dêr't it by heart op in chip; dêr wurdt it lêzen
+en it wurdt bewurke dêr't it stiet, en de chip iepenet it dêr. De roadmapkaart
+op it organisaasjeskerm telt se mei. De skeakeler is der net op de
+organisaasje sels, dy't gjin roadmap boppe har hat.
+
 ### De business case
 
 De tekst fan in plan kin in **business case** hâlde: in koadeblok waans ynfier in

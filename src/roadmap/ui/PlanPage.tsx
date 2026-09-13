@@ -21,7 +21,9 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
+import Switch from '@mui/material/Switch'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
@@ -89,6 +91,12 @@ export type PlanPageProps = {
   images?: DocumentImages
   onClose(): void
   windowChrome?: WindowChrome
+  /**
+   * Offer the initiative switch (ADR-0012 §7): this scope has scopes above
+   * it whose roadmaps could follow the plan. The organisation itself has
+   * none, and the switch would promise a roadmap that is not there.
+   */
+  initiativeToggle?: boolean
 }
 
 export function PlanPage(props: PlanPageProps) {
@@ -164,7 +172,7 @@ export function PlanPage(props: PlanPageProps) {
       {plan && (
         <Box sx={{ display: 'grid', gridTemplateColumns: fullPage ? 'minmax(0, 1fr)' : '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
           {!fullPage && (
-            <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} />
+            <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} initiativeToggle={props.initiativeToggle === true} />
           )}
           {/* The table scrolls inside a height of its own, dragged from the
               seam under it, so a plan with forty interfaces still leaves the
@@ -214,12 +222,13 @@ function Heading({ children }: { children: ReactNode }) {
   )
 }
 
-function Facts({ plan, model, decisions, readOnly, actions }: {
+function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: {
   plan: Transition
   model: DesignModel
   decisions: readonly Adr[]
   readOnly: boolean
   actions: PlanActions
+  initiativeToggle: boolean
 }) {
   const { t } = useStrings()
   const set = (patch: Partial<Transition>) => actions.updateTransition(plan.id, patch)
@@ -275,6 +284,23 @@ function Facts({ plan, model, decisions, readOnly, actions }: {
         size="small" label={t('roadmap.owner')} value={plan.owner ?? ''} disabled={readOnly}
         onChange={(e) => set({ owner: e.target.value || undefined })}
       />
+      {initiativeToggle && (
+        <Tooltip title={t('roadmap.initiativeHelp')} placement="right">
+          <FormControlLabel
+            sx={{ ml: 0 }}
+            control={(
+              <Switch
+                size="small"
+                checked={plan.initiative === true}
+                disabled={readOnly}
+                onChange={(e) => set({ initiative: e.target.checked ? true : undefined })}
+                slotProps={{ input: { 'aria-label': t('roadmap.initiative') } }}
+              />
+            )}
+            label={<Typography sx={{ fontSize: 13 }}>{t('roadmap.initiative')}</Typography>}
+          />
+        </Tooltip>
+      )}
 
       {/* ---- what it changes, with the dates on what it introduces and retires ---- */}
       <Heading>{t('roadmap.touches')}</Heading>

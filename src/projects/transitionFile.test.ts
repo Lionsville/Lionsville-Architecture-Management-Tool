@@ -41,6 +41,12 @@ describe('the round trip', () => {
     expect(roundTrip(plan())).toEqual(plan())
   })
 
+  it('keeps the initiative flag, and only when set', () => {
+    expect(roundTrip(plan({ initiative: true }))!.initiative).toBe(true)
+    expect(roundTrip(plan())).not.toHaveProperty('initiative')
+    expect(transitionFileText(plan({ initiative: true }))).toContain('initiative: true')
+  })
+
   it('reads back a plan with nothing optional on it', () => {
     const bare = plan({
       from: undefined, to: undefined, owner: undefined,

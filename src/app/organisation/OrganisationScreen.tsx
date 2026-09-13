@@ -93,6 +93,8 @@ export type OrganisationScreenProps = {
    * and the page says so in a sentence either way.
    */
   register?: readonly RegisterRow[]
+  /** How many plans below the root are initiatives (ADR-0012 §7), off the same index. */
+  initiatives?: number
   /** Open a row where it is answered for, with the element selected. */
   onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
@@ -106,7 +108,7 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
-  overflow, agent, findings, register = [], onOpenRegisterRow, onLinkFromRegister,
+  overflow, agent, findings, register = [], initiatives = 0, onOpenRegisterRow, onLinkFromRegister,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, root, ready, dialog } = organisation
@@ -222,6 +224,7 @@ export function OrganisationScreen({
               onOpenDecisions={() => organisation.open(ROOT_SCOPE, { page: 'decisions' })}
               onOpenRoadmap={() => organisation.open(ROOT_SCOPE, { page: 'roadmap' })}
               register={registerCounts}
+              initiatives={initiatives}
               onOpenRegister={() => setRegisterOpen(true)}
               s={s}
             />

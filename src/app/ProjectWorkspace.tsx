@@ -153,7 +153,7 @@ export type ProjectWorkspaceProps = {
    * lists. Absent where there is nowhere to go, and the button is then not
    * drawn rather than drawn and dead.
    */
-  onOpenScope?: (path: ScopePath) => void
+  onOpenScope?: (path: ScopePath, page?: InitialPage) => void
   /** The tree as it stands, for the settings dialog's "filed under" select. */
   scopes: ScopeSummary
   /**
@@ -355,7 +355,11 @@ export function ProjectWorkspace({
   const document = useDocumentSession({
     session,
     projects,
-    onSaved: setSavedAt,
+    // A browser tab has no watcher to say the tree changed, so a save is the
+    // one moment it can learn that this scope's records now say something
+    // else — a plan flagged an initiative reaches the organisation's roadmap
+    // through the index, and the index is read again only when asked.
+    onSaved: (at: Date) => { setSavedAt(at); if (!watch) onTreeChanged() },
     onResult: onSaveResult,
     onPressure: nearlyFull,
     watch,
@@ -490,6 +494,7 @@ export function ProjectWorkspace({
       })),
       lookup: (id) => indexRef.current.lookup(id),
       register: () => indexRef.current.register(),
+      initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
       findings: () => {
         const model = session.current()
         const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
@@ -624,6 +629,19 @@ export function ProjectWorkspace({
   // time a dialog opens: both are `useCallback`s over the tree and the
   // session, and neither moves when the choice does.
   const { offers: gestureOffers, choose: gestureChoose } = gestures
+
+  /**
+   * The initiatives of the scopes below this one (ADR-0012 §7), for the
+   * roadmap to draw under its own plans. Off the index, so a domain flagging
+   * a plan reaches the organisation's roadmap when the watcher next reads
+   * the tree, and never costs a load per domain.
+   */
+  const initiativesBelow = useMemo(
+    () => index.initiativesBelow(project.path).map(({ scope, transition }) => ({
+      scope, label: scopeLabel(scope), plan: transition,
+    })),
+    [index, project.path, scopeLabel],
+  )
 
   /**
    * What the map calls a column, and whose it is (ADR-0012 §9).
@@ -825,6 +843,12 @@ export function ProjectWorkspace({
       if (initialPage.id) openMap(initialPage.id)
       else createMap()
     }
+    // Over the roadmap, so closing the plan lands on the roadmap and closing
+    // that leaves a scope that draws nothing, rather than on an empty board.
+    if (initialPage.page === 'plan') {
+      openRoadmap()
+      plans.openPlan(initialPage.id)
+    }
     // A row of the register, opened where it is answered for.
     if (initialPage.page === 'element') focusElement(initialPage.id)
     // Not a page: the register's *Link…*, which can only be done by the
@@ -832,7 +856,7 @@ export function ProjectWorkspace({
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, focusElement, gestures])
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, plans.openPlan, focusElement, gestures])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -1076,6 +1100,8 @@ export function ProjectWorkspace({
       <RoadmapPage
         open={plans.roadmapOpen}
         model={session.model}
+        fromBelow={initiativesBelow}
+        onOpenInitiative={onOpenScope ? (scope, id) => onOpenScope(scope, { page: 'plan', id }) : undefined}
         today={todayDay}
         asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
         readOnly={false}
@@ -1102,6 +1128,7 @@ export function ProjectWorkspace({
         images={{ library: session.imageLibrary, usedBy: imageUsedBy, onRemove: files.removeImage }}
         onClose={plans.closePlan}
         windowChrome={pageChrome}
+        initiativeToggle={project.path !== ''}
       />
       <SheetPage
         open={sheets.sheetId !== undefined}

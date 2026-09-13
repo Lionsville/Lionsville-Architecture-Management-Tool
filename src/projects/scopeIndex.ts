@@ -48,6 +48,7 @@
  * Pure: `(path, model)` pairs in, answers out. No store, no React, no promise.
  */
 import type { ElementId, ElementKind, Relation, RelationType } from '../model'
+import type { Transition } from '../model/transition'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 import { scopeSegments } from './scopePath'
@@ -120,6 +121,8 @@ export type IndexEntry = {
 
 /** One row, and the scope whose `model.json` holds it. */
 export type IndexedRelation = { scope: ScopePath; relation: Relation }
+/** A plan another scope filed, with where. */
+export type IndexedTransition = { scope: ScopePath; transition: Transition }
 
 /**
  * The answers, over a tree that has already been read.
@@ -165,6 +168,13 @@ export type ScopeIndex = {
    * than as one list of every row, so a page pays for the functions it draws.
    */
   rowsTo(id: ElementId, types?: readonly RelationType[]): IndexedRelation[]
+  /**
+   * The initiatives filed in the scopes under this one (ADR-0012 §7): every
+   * plan marked `initiative` in a scope strictly below `path`, by scope and
+   * then by number. What a roadmap draws under its own plans, and what the
+   * organisation screen's card counts.
+   */
+  initiativesBelow(path: ScopePath): IndexedTransition[]
   /** The scopes this was built from, in path order. */
   scopes(): ScopePath[]
 }
@@ -201,6 +211,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const taken = new Set<string>()
   const incoming = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
+  const initiatives: IndexedTransition[] = []
 
   const at = (id: ElementId): Held => {
     const found = held.get(id) ?? { id, definitions: [], standIns: [] }
@@ -229,6 +240,9 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       const rows = incoming.get(relation.targetId) ?? []
       rows.push({ scope: path, relation })
       incoming.set(relation.targetId, rows)
+    }
+    for (const transition of [...(model.transitions ?? [])].sort((a, b) => a.number - b.number)) {
+      if (transition.initiative) initiatives.push({ scope: path, transition })
     }
   }
 
@@ -281,6 +295,9 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       const rows = incoming.get(id) ?? []
       return types ? rows.filter((row) => types.includes(row.relation.type)) : [...rows]
     },
+    initiativesBelow: (path) => initiatives.filter(({ scope }) => (
+      path === '' ? scope !== '' : scope.startsWith(`${path}/`)
+    )),
     scopes: () => [...paths],
   }
 }
