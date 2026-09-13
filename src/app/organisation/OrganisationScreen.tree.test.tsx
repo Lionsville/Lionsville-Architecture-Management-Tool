@@ -10,7 +10,7 @@
  * not pin are new: **the root is not a row** (it is the screen), and a scope
  * with children folds shut.
  */
-import { beforeAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { laidOut } from '../../model/testFixtures'
