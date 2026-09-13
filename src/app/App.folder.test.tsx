@@ -98,4 +98,18 @@ describe('a browser tab', () => {
     expect(screen.getByTestId('working-source').textContent).toContain('In this browser')
     expect(screen.getByRole('button', { name: 'Choose folder…' })).toBeDefined()
   })
+
+  it('says so when a folder was picked and did not open', async () => {
+    // The shell has no toast bar of its own. A pick that ended in a refusal —
+    // write access declined, a browser that will not hand out that folder —
+    // used to be a line in the console and a screen that did not change.
+    renderApp({
+      scopes: new InMemoryScopeStore([project()]),
+      onChooseWorkingDirectory: () => {},
+      folderFailure: Object.assign(new Error('write access was denied'), { name: 'NotAllowedError' }),
+    })
+
+    expect((await screen.findByRole('alert')).textContent).toContain('The folder could not be opened')
+    expect(screen.getByRole('alert').textContent).toContain('write access was denied')
+  })
 })

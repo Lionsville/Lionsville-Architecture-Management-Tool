@@ -170,35 +170,41 @@ let recentFolders: readonly DesktopDirectory[] = []
  * level up.
  */
 function chooseWorkingDirectory(): void {
-  if (!files) {
-    void browserFolders.choose().then(async (handle) => {
-      if (!handle) return
-      const inFolder = inBrowserFolder(shell, handle, handle.name)
-      // The same migration as the desktop's, and the same rule: copied once,
-      // nothing deleted. Keyed on the folder's name, which is all a tab knows
-      // about where it is — good enough to not copy twice into the same one.
-      let kept = withWorkingDirectory(stored, handle.name)
-      if (await moveInto(inFolder, handle.name)) kept = withMigratedFolder(kept, handle.name)
-      stored = kept
-      await shell.preferences.write(kept).catch(() => undefined)
-      shell = inFolder
-      await upgradeFormat()
-      renderApp(kept, undefined)
-    }, (cause: unknown) => {
-      shell.diagnostics.report({
-        level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
-      })
+  // One catch around the whole of it, and not only around the picker: a throw
+  // after the pick — copying in, the format pass — used to be an unhandled
+  // rejection, which is a folder chosen and a screen that does not change.
+  const failed = (cause: unknown) => {
+    shell.diagnostics.report({
+      level: 'error', where: 'workingDirectory', message: 'the folder was not opened', cause,
     })
+    // Said on screen as well as in the trail: a pick that ends in nothing looks
+    // like a button that does nothing.
+    renderApp(stored, undefined, undefined, cause)
+  }
+  if (!files) {
+    void openBrowserFolder().catch(failed)
     return
   }
   void files.chooseDirectory().then(async (chosen) => {
     if (!chosen) return
     await workIn(chosen)
-  }, (cause: unknown) => {
-    shell.diagnostics.report({
-      level: 'error', where: 'workingDirectory', message: 'the folder was not chosen', cause,
-    })
-  })
+  }).catch(failed)
+}
+
+async function openBrowserFolder(): Promise<void> {
+  const handle = await browserFolders.choose()
+  if (!handle) return
+  const inFolder = inBrowserFolder(shell, handle, handle.name)
+  // The same migration as the desktop's, and the same rule: copied once,
+  // nothing deleted. Keyed on the folder's name, which is all a tab knows
+  // about where it is — good enough to not copy twice into the same one.
+  let kept = withWorkingDirectory(stored, handle.name)
+  if (await moveInto(inFolder, handle.name)) kept = withMigratedFolder(kept, handle.name)
+  stored = kept
+  await shell.preferences.write(kept).catch(() => undefined)
+  shell = inFolder
+  await upgradeFormat()
+  renderApp(kept, undefined)
 }
 
 /**
@@ -387,6 +393,7 @@ async function upgradeFormat(): Promise<void> {
  */
 function renderApp(
   storedPreferences: unknown, initialProject: ScopeSnapshot | undefined, initialSync?: PullOutcome,
+  folderFailure?: unknown,
 ): void {
   root.render(
     <StrictMode>
@@ -413,6 +420,7 @@ function renderApp(
         updateSettings={shell.updateSettings}
         agent={shell.agent}
         initialSync={initialSync}
+        folderFailure={folderFailure}
         initialProject={initialProject}
         initialPreferences={storedPreferences}
         examples={EXAMPLES}

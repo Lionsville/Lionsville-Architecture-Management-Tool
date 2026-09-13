@@ -74,8 +74,25 @@ describe('chooseDirectory', () => {
 
   it('says nothing when the user cancelled', async () => {
     // Cancelling a picker throws, and it is not a failure.
-    browser(() => Promise.reject(new Error('AbortError')))
+    browser(() => Promise.reject(Object.assign(new Error('The user aborted a request.'), { name: 'AbortError' })))
     await expect(chooseDirectory()).resolves.toBeUndefined()
+  })
+
+  it('passes on a browser that refused the folder, so the shell can say so', async () => {
+    // Write access declined at the prompt after the pick, or a folder the
+    // browser will not hand out. Neither is a cancel, and both were quiet.
+    const refused = Object.assign(new Error('write access was denied'), { name: 'NotAllowedError' })
+    browser(() => Promise.reject(refused))
+    await expect(chooseDirectory()).rejects.toBe(refused)
+  })
+
+  it('still hands back the folder where IndexedDB refuses to open', async () => {
+    // An origin allowed no site data: `open` throws rather than failing the
+    // request. Remembering is best effort; opening is the point.
+    const host = window as unknown as Host
+    host.indexedDB = { open: () => { throw new Error('SecurityError: access to the Indexed Database API is denied') } }
+    host.showDirectoryPicker = () => Promise.resolve(handle('granted'))
+    expect((await chooseDirectory())?.name).toBe('Architecture')
   })
 
   it('says nothing in a browser that cannot offer one', async () => {

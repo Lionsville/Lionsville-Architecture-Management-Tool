@@ -240,6 +240,13 @@ export type AppProps = {
    * else's change; what is left for the shell is to say so.
    */
   initialSync?: PullOutcome
+  /**
+   * A folder that was picked and did not open, from the shell's attempt just
+   * before this render. Said once on the toast bar, because the shell has no
+   * bar of its own and a pick that ends in nothing looks like a button that
+   * does nothing.
+   */
+  folderFailure?: unknown
 
   /** Today as `yyyy-mm-dd`. Injected so a card's finding is not at the clock's mercy. */
   today?: () => string
@@ -276,7 +283,7 @@ export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
-  history, folderSettings, updateSettings, agent, initialSync, today = localToday,
+  history, folderSettings, updateSettings, agent, initialSync, folderFailure, today = localToday,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME, onTitle,
 }: AppProps) {
@@ -490,6 +497,18 @@ export function App({
     }
     return () => { live = false }
   }, [prefsOpen, updateSettings, folderSettings, history])
+
+  // Keyed on the failure alone: the toast helpers are fresh each render, and a
+  // notice that re-fires on its own consequences never stops.
+  const sayFolderFailed = useRef((cause: unknown) => {
+    toasts.notify(s('shell.folderNotOpened', { message: reasonOf(cause) }), 'error')
+  })
+  sayFolderFailed.current = (cause: unknown) => {
+    toasts.notify(s('shell.folderNotOpened', { message: reasonOf(cause) }), 'error')
+  }
+  useEffect(() => {
+    if (folderFailure !== undefined) sayFolderFailed.current(folderFailure)
+  }, [folderFailure])
 
   const settingFailed = useCallback((where: string, cause: unknown) => {
     failedRef.current(where, cause)

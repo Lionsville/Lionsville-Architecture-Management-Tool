@@ -27,6 +27,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.storageFailed':
     'Dieser Browser konnte den Entwurf nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Arbeitsdatei, sonst ist er beim Schließen des Tabs verloren.',
   'shell.storageRecovered': 'Speichern in diesem Browser funktioniert wieder.',
+  'shell.folderNotOpened': 'Der Ordner konnte nicht geöffnet werden: {message}',
   'shell.storageNearlyFull':
     'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
     + 'oder einer Datei, bevor der Platz ausgeht — ein Browser hört ohne Nachfrage auf zu speichern.',

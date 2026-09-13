@@ -49,7 +49,15 @@ function database(): Promise<IDBDatabase | undefined> {
   const factory = host().indexedDB
   if (!factory) return Promise.resolve(undefined)
   return new Promise((resolve) => {
-    const request = factory.open(DATABASE, 1)
+    let request: IDBOpenDBRequest
+    try {
+      request = factory.open(DATABASE, 1)
+    } catch {
+      // `open` itself throws where this origin may keep no site data. The
+      // folder still opens; it is only not remembered.
+      resolve(undefined)
+      return
+    }
     request.onupgradeneeded = () => request.result.createObjectStore(STORE)
     request.onsuccess = () => resolve(request.result)
     // A browser that refuses IndexedDB (a private window, a strict policy) has
@@ -75,19 +83,33 @@ function transact<T>(
   })
 }
 
-/** Ask for a folder. `undefined` when the user cancelled, or cannot be asked. */
+/** Closing the picker without choosing: the one rejection that is not a failure. */
+function isCancelled(cause: unknown): boolean {
+  return (cause as { name?: unknown } | undefined)?.name === 'AbortError'
+}
+
+/**
+ * Ask for a folder. `undefined` when the user cancelled, or cannot be asked.
+ *
+ * Rejects for everything else — the browser declining to hand out that folder,
+ * write access refused at the prompt that follows the pick — because a pick
+ * that ends in nothing looks like a button that does nothing, and the shell
+ * should say what happened. Cancelling used to be indistinguishable from those,
+ * and all of them were quiet.
+ */
 export async function chooseDirectory(): Promise<DirectoryHandleLike | undefined> {
   const picker = host().showDirectoryPicker
   if (!picker) return undefined
   let handle: DirectoryHandle
   try {
     handle = await picker.call(window, { mode: 'readwrite' })
-  } catch {
-    // Cancelling a picker throws. It is not a failure and there is nothing to
-    // say about it.
-    return undefined
+  } catch (cause) {
+    if (isCancelled(cause)) return undefined
+    throw cause
   }
-  await transact('readwrite', (store) => store.put(handle, KEY))
+  // Best effort: a folder that cannot be remembered still opens, and asks
+  // again next time.
+  await transact('readwrite', (store) => store.put(handle, KEY)).catch(() => undefined)
   return handle
 }
 

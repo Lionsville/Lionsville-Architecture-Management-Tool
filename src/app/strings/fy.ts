@@ -27,6 +27,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.storageFailed':
     'Dizze brouwer koe it ûntwerp net bewarje (opslach fol of blokkearre). Bewarje in wurkbestân, oars is it by it sluten fan it ljepblêd fuort.',
   'shell.storageRecovered': 'Bewarjen yn dizze brouwer slagget wer.',
+  'shell.folderNotOpened': 'De map koe net iepene wurde: {message}',
   'shell.storageNearlyFull':
     'Dizze brouwer sit foar sa’n {percent}% fol foar dizze app. Bewarje dyn wurk yn in map '
     + 'of in bestân foardat de romte op is — in brouwer hâldt sûnder te freegjen op mei bewarjen.',

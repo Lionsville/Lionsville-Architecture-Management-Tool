@@ -27,6 +27,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.storageFailed':
     'Deze browser kon het ontwerp niet bewaren (opslag vol of geblokkeerd). Bewaar een werkbestand, anders is het bij het sluiten van het tabblad weg.',
   'shell.storageRecovered': 'Bewaren in deze browser lukt weer.',
+  'shell.folderNotOpened': 'De map kon niet worden geopend: {message}',
   'shell.storageNearlyFull':
     'Deze browser zit voor ongeveer {percent}% vol voor deze app. Bewaar je werk in een map '
     + 'of een bestand voordat de ruimte op is — een browser stopt zonder te vragen met bewaren.',
