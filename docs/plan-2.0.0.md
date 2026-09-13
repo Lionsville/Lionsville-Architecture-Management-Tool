@@ -533,7 +533,7 @@ history page's subject picker offers *everywhere this is drawn*.
 - **A restore stays per scope**, because it is one `Command` on one session. The
   page says so under the picker, beside the list of scopes it is reading.
 
-**Cut 2.0.0-beta.3.**
+**Cut 2.0.0-beta.3** — cut 13 September 2026 from `9794308`, with the decisions collapsed into one list, the history across scopes and the third-party notices folded in.
 
 ---
 
