@@ -649,7 +649,7 @@ table. Read-only first.
 - ~~`CLAUDE.md`: the module map (`business/`, `ScopeStore`, the index), the
   names table (`scope.json`, `.geometry.json`, format 4, working file v4),
   *State of play*.~~ Kept current per step; the state of play ends at beta 4.
-- The manual, in four languages, with the organisation screen and the map.
+- ~~The manual, in four languages, with the organisation screen and the map.~~ `manual.fy.md` and `manual.de.md`, 13 September 2026; each edition links the other three.
 - Release notes covering every beta.
 
 ## What is deliberately not in this plan

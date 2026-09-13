@@ -41,8 +41,9 @@ switchable off, and **Check for Updates…** in the app menu asks on request. It
 tells you and hands you the installer; it never installs anything behind your
 back.
 
-New here? The **[user manual](docs/manual.en.md)**
-(also in [Dutch](docs/manual.nl.md)) is the place to start.
+New here? The **[user manual](docs/manual.en.md)** (also in
+[Dutch](docs/manual.nl.md), [Frisian](docs/manual.fy.md) and
+[German](docs/manual.de.md)) is the place to start.
 
 Prefer a browser, or want to change something? See
 [Running from source](#running-from-source).
@@ -362,10 +363,12 @@ is save-then-remove in that order.
 
 ## The user manual
 
-In two languages, one file each: [docs/manual.en.md](docs/manual.en.md) and
-[docs/manual.nl.md](docs/manual.nl.md). It covers projects and groups, the
-workspace, drawing, elements, connections, layout, the documentation page,
-diagram settings, saving and sharing, and the shortcuts worth knowing.
+In four languages, one file each: [docs/manual.en.md](docs/manual.en.md),
+[docs/manual.nl.md](docs/manual.nl.md), [docs/manual.fy.md](docs/manual.fy.md)
+and [docs/manual.de.md](docs/manual.de.md). It covers the organisation and its
+scopes, the workspace, drawing, elements, connections, layout, the
+documentation page, decisions, the roadmap, the business architecture and the
+map, diagram settings, saving and sharing, and the shortcuts worth knowing.
 
 ## Files worth knowing
 
@@ -381,7 +384,7 @@ diagram settings, saving and sharing, and the shortcuts worth knowing.
 | `src/ports/ProjectStore.contract.ts` | The behaviour every store must show |
 | `electron/main/index.ts` | The desktop main process; its header states what is load-bearing |
 | `build/libavoidWasm.ts` | Publishes the router's wasm; fails a build, not a shipped app |
-| `docs/manual.en.md`, `docs/manual.nl.md` | The user manual, in English and in Dutch |
+| `docs/manual.{en,nl,fy,de}.md` | The user manual, in English, Dutch, Frisian and German |
 | `LICENSE` | The licence |
 
 ## Licence
