@@ -220,3 +220,125 @@ describe('what a row says the tree contradicts', () => {
     expect(screen.queryByTestId('findings-finance')).toBeNull()
   })
 })
+
+/**
+ * A scope's home, one level down (ADR-0012 §1): every scope is the same
+ * document, so every scope has the screen the root has. A domain's shows its
+ * own name, the tree filed under it with its children as the first column,
+ * and the way back as a crumb — and not the folder, which is the root's.
+ */
+describe('a domain’s home', () => {
+  it('is reached by the row’s name, and shows what is filed under it', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-retail'))
+
+    expect(screen.getByTestId('organisation-name').textContent).toBe('Retail')
+    expect(screen.getByTestId('crumb-').textContent).toBe('Acme Logistics')
+    expect(screen.getByTestId('crumb-current').textContent).toBe('Retail')
+    // Its child is the first column now, and its neighbour is not on it.
+    expect(screen.getByTestId('scope-retail/warehouse').dataset.depth).toBe('0')
+    expect(screen.queryByTestId('scope-finance')).toBeNull()
+    expect(screen.queryByTestId('scope-retail')).toBeNull()
+    // The folder is the root's fact, not the domain's.
+    expect(screen.queryByTestId('working-source')).toBeNull()
+  })
+
+  it('files a new scope under the domain, and settings are the domain’s', async () => {
+    const { store } = show()
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    expect(screen.getByRole('button', { name: 'Settings for Retail' })).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'New scope…' }))
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
+  })
+
+  it('goes back to the organisation by its crumb', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    fireEvent.click(screen.getByTestId('crumb-'))
+    expect(screen.getByTestId('organisation-name').textContent).toBe('Acme Logistics')
+    expect(screen.getByTestId('scope-finance')).toBeDefined()
+  })
+
+  it('offers the canvas on a scope that draws, and nothing of the kind on one that does not', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    await waitFor(() => expect(screen.getByTestId('open-decisions')).toBeDefined())
+    expect(screen.queryByTestId('open-canvas')).toBeNull()
+    fireEvent.click(screen.getByTestId('home-retail/warehouse'))
+    expect(screen.getByTestId('organisation-name').textContent).toBe('Warehouse')
+    fireEvent.click(await screen.findByTestId('open-canvas'))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+  })
+})
+
+/**
+ * The bar over an open scope names every level above it, and each is a way
+ * out — to that level's home, which is where "back" should land: a person who
+ * opened a landscape from a domain's page goes back to the domain, not past
+ * it to the organisation.
+ */
+describe('the crumbs over an open scope', () => {
+  it('name the organisation, the domain and the landscape, in that order', async () => {
+    show()
+    fireEvent.click(within(await screen.findByTestId('scope-retail/warehouse')).getByRole('button', { name: 'Open' }))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    const bar = screen.getByTestId('shell-toolbar').textContent ?? ''
+    expect(bar.indexOf('Acme Logistics')).toBeLessThan(bar.indexOf('Retail'))
+    expect(bar.indexOf('Retail')).toBeLessThan(bar.indexOf('Warehouse'))
+    expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse')
+  })
+
+  it('land on the home of the crumb pressed', async () => {
+    show()
+    fireEvent.click(within(await screen.findByTestId('scope-retail/warehouse')).getByRole('button', { name: 'Open' }))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    fireEvent.click(screen.getByTestId('crumb-retail'))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Retail')
+    expect(screen.getByTestId('scope-retail/warehouse')).toBeDefined()
+  })
+})
+
+/**
+ * Which cards a home has is the scope's shape, never its label: the business
+ * layer is the root's (§4), a scope that draws has its views and its pages,
+ * and the register is over what is beneath a scope — so it is on the root's
+ * and a domain's home and not on a landscape's.
+ */
+describe('the cards, per level', () => {
+  it('give the root the business layer and the register', async () => {
+    show()
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(within(cards).getByTestId('open-decisions')).toBeDefined())
+    expect(within(cards).getByTestId('open-business')).toBeDefined()
+    expect(within(cards).getByTestId('open-register')).toBeDefined()
+    expect(within(cards).queryByTestId('open-views')).toBeNull()
+    expect(within(cards).queryByTestId('open-documentation')).toBeNull()
+  })
+
+  it('give a domain its decisions, its plans and the register beneath it, and not the business layer', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    const cards = await screen.findByTestId('organisation-cards')
+    expect(within(cards).queryByTestId('open-business')).toBeNull()
+    expect(within(cards).queryByTestId('open-views')).toBeNull()
+    expect(within(cards).getByTestId('open-decisions')).toBeDefined()
+    expect(within(cards).getByTestId('open-roadmap')).toBeDefined()
+    expect(within(cards).getByTestId('open-register')).toBeDefined()
+  })
+
+  it('give a landscape its views, its documentation, its decisions and its plans', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-retail/warehouse'))
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('1 diagram'))
+    expect(within(cards).queryByTestId('open-business')).toBeNull()
+    expect(within(cards).queryByTestId('open-register')).toBeNull()
+    expect(within(cards).getByTestId('open-decisions')).toBeDefined()
+    expect(within(cards).getByTestId('open-roadmap')).toBeDefined()
+    expect(within(cards).getByTestId('open-documentation')).toBeDefined()
+    fireEvent.click(within(cards).getByTestId('open-views'))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+  })
+})

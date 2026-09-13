@@ -13,7 +13,7 @@
  * "did Emotion emit it" is exactly the question worth asking.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../i18n'
 import { ShellToolbar } from './ShellToolbar'
 import { renderShell } from './testing/renderShell'
@@ -22,10 +22,10 @@ afterEach(() => cleanup())
 
 const props = {
   designName: 'Warehouse landscape',
-  groupName: 'Acme Logistics',
+  crumbs: [{ path: '', name: 'Acme Logistics' }, { path: 'retail', name: 'Retail' }],
   savedAt: null,
   language: 'en' as const,
-  onLeave: () => {},
+  onGoHome: () => {},
   onOpenSettings: () => {},
   onOpenDocumentation: () => {},
   onOpenDecisions: () => {},
@@ -115,20 +115,30 @@ describe('ShellToolbar and the window around it', () => {
     expect(rulesFor(bar)).not.toContain('-webkit-app-region:drag')
   })
 
-  it('says where the project is kept, first', () => {
-    // The one question the bar did not answer (ADR-0005). A folder by name,
-    // and the fallback says it is the fallback.
-    const { container } = renderShell(
-      <ShellToolbar {...props} source={{ kind: 'folder', name: 'Architecture', root: '/x' }} />)
-    expect(screen.getByTestId('working-source').textContent).toBe('Folder · Architecture')
+  it('says where you are, first: every scope above as a crumb, then the open one', () => {
+    // The organisation, the domain between, and the landscape — in that order,
+    // because the level between used to be left out and the bar read
+    // "organisation · landscape" over a folder that had three levels.
+    const { container } = renderShell(<ShellToolbar {...props} />)
     const text = barIn(container).textContent ?? ''
-    expect(text.indexOf('Folder · Architecture')).toBeLessThan(text.indexOf('Warehouse landscape'))
-    cleanup()
-    renderShell(<ShellToolbar {...props} source={{ kind: 'browserStorage' }} />)
-    expect(screen.getByTestId('working-source').textContent).toBe('In this browser')
-    cleanup()
-    renderShell(<ShellToolbar {...props} source={{ kind: 'memory' }} />)
-    expect(screen.getByTestId('working-source').textContent).toBe('Not kept anywhere')
+    expect(text.indexOf('Acme Logistics')).toBeLessThan(text.indexOf('Retail'))
+    expect(text.indexOf('Retail')).toBeLessThan(text.indexOf('Warehouse landscape'))
+    expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse landscape')
+  })
+
+  it('leaves by a crumb, to the home of the scope it names', () => {
+    const went: string[] = []
+    renderShell(<ShellToolbar {...props} onGoHome={(path) => went.push(path)} />)
+    fireEvent.click(screen.getByTestId('crumb-retail'))
+    fireEvent.click(screen.getByTestId('crumb-'))
+    expect(went).toEqual(['retail', ''])
+    // The open scope is where you already are, and is not a button.
+    expect(screen.getByTestId('crumb-current').closest('button')).toBeNull()
+  })
+
+  it('no longer says where the project is kept: that is the root’s home’s to say', () => {
+    renderShell(<ShellToolbar {...props} />)
+    expect(screen.queryByTestId('working-source')).toBeNull()
   })
 
   it('carries the menu in an overflow only where the host has no menu bar', () => {

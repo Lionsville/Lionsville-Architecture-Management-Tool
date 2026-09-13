@@ -17,7 +17,7 @@ import { matchesQuery } from '../../model'
 import type { ElementId } from '../../model'
 import type { Finding } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
-import { ROOT_SCOPE } from '../../projects/scopePath'
+import { isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 
 /** One application, as the register draws it. */
@@ -104,6 +104,22 @@ export function registerRows(
  */
 export function isUnattributed(row: RegisterRow): boolean {
   return row.outside === true && row.party === undefined
+}
+
+/**
+ * The rows a scope's home can speak for: answered for by that scope or one
+ * beneath it, or drawn there.
+ *
+ * The register is one list over the whole tree (§2); a domain's page shows
+ * the part of it that is the domain's business, and the root's page shows all
+ * of it, because everything is within the root.
+ */
+export function registerWithin(rows: readonly RegisterRow[], at: ScopePath): RegisterRow[] {
+  if (at === ROOT_SCOPE) return [...rows]
+  return rows.filter((row) => (
+    (row.master !== undefined && isWithinScope(row.master, at))
+    || row.drawnIn.some((path) => isWithinScope(path, at))
+  ))
 }
 
 export function registerSummary(rows: readonly RegisterRow[]): RegisterSummary {

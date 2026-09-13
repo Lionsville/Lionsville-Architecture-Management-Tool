@@ -131,8 +131,11 @@ export const EN = {
   'shell.sourceBrowser': 'In this browser',
   'shell.sourceMemory': 'Not kept anywhere',
   'shell.sourceTip': 'Where this project is kept',
-  'shell.projects': 'Projects\u2026',
-  'shell.projectsTip': 'Back to the project list',
+  /**
+   * The bar's way back. Each scope above the open one is a crumb, and the
+   * organisation is the first: pressing one lands on that scope's home.
+   */
+  'shell.crumbTip': 'Go to {name}',
   'shell.exampleCopied': 'Example \u201c{name}\u201d copied to a project of your own.',
 
   // --- projects and the picker ---------------------------------------------
@@ -490,6 +493,10 @@ export const EN = {
   'org.unmappedOne': '{count} function not yet mapped to a domain',
   'org.unmappedOther': '{count} functions not yet mapped to a domain',
   'org.allMapped': 'Every function is mapped to a domain.',
+  /** A landscape's home: its views, and how many of its records have a page. */
+  'org.views': 'Views',
+  'org.describedOne': '{count} of {total} described',
+  'org.describedOther': '{count} of {total} described',
   'org.recordsOne': '{count} record',
   'org.recordsOther': '{count} records',
   'org.latest': 'Latest: {name}',
@@ -502,6 +509,8 @@ export const EN = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.nothingHere': 'Nothing at this level yet.',
+  /** A scope's home, when the scope draws: the way onto its canvas. */
+  'org.openCanvas': 'Open the canvas',
 
   // The tree of scopes beneath.
   'org.tree': 'Domains and landscapes',

@@ -80,8 +80,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.sourceBrowser': 'In diesem Browser',
   'shell.sourceMemory': 'Nirgends gespeichert',
   'shell.sourceTip': 'Wo dieses Projekt aufbewahrt wird',
-  'shell.projects': 'Projekte…',
-  'shell.projectsTip': 'Zurück zur Projektliste',
+  'shell.crumbTip': 'Zu {name}',
   'shell.exampleCopied': 'Beispiel „{name}“ in ein eigenes Projekt kopiert.',
 
   // --- projects and the picker ---------------------------------------------
@@ -378,6 +377,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.unmappedOne': '{count} Funktion noch keiner Domäne zugeordnet',
   'org.unmappedOther': '{count} Funktionen noch keiner Domäne zugeordnet',
   'org.allMapped': 'Jede Funktion ist einer Domäne zugeordnet.',
+  'org.views': 'Ansichten',
+  'org.describedOne': '{count} von {total} beschrieben',
+  'org.describedOther': '{count} von {total} beschrieben',
   'org.recordsOne': '{count} Eintrag',
   'org.recordsOther': '{count} Einträge',
   'org.latest': 'Zuletzt: {name}',
@@ -389,6 +391,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.nothingHere': 'Auf dieser Ebene noch nichts.',
+  'org.openCanvas': 'Zeichenfläche öffnen',
 
   'org.tree': 'Domänen und Landschaften',
   'org.treeEmpty': 'Noch nichts unter dieser Organisation abgelegt. Lege einen Bereich an oder kopiere ein Beispiel.',

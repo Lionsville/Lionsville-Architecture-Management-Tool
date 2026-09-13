@@ -80,8 +80,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.sourceBrowser': 'In deze browser',
   'shell.sourceMemory': 'Nergens bewaard',
   'shell.sourceTip': 'Waar dit project wordt bewaard',
-  'shell.projects': 'Projecten\u2026',
-  'shell.projectsTip': 'Terug naar de projectenlijst',
+  'shell.crumbTip': 'Naar {name}',
   'shell.exampleCopied': 'Voorbeeld \u201c{name}\u201d gekopieerd naar een eigen project.',
 
   // --- projecten en de kiezer ----------------------------------------------
@@ -378,6 +377,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.unmappedOne': '{count} functie nog niet aan een domein toegewezen',
   'org.unmappedOther': '{count} functies nog niet aan een domein toegewezen',
   'org.allMapped': 'Elke functie is aan een domein toegewezen.',
+  'org.views': 'Weergaven',
+  'org.describedOne': '{count} van {total} beschreven',
+  'org.describedOther': '{count} van {total} beschreven',
   'org.recordsOne': '{count} vastlegging',
   'org.recordsOther': '{count} vastleggingen',
   'org.latest': 'Laatste: {name}',
@@ -389,6 +391,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.nothingHere': 'Op dit niveau nog niets.',
+  'org.openCanvas': 'Open het canvas',
 
   'org.tree': 'Domeinen en landschappen',
   'org.treeEmpty': 'Nog niets ondergebracht bij deze organisatie. Maak een onderdeel of kopieer een voorbeeld.',

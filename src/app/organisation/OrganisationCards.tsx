@@ -1,12 +1,19 @@
 /**
- * The organisation's own pages, as a row of cards.
+ * A scope's own pages, as a row of cards.
  *
- * Four of them, and one of the four is not like the others. Business,
- * decisions and the roadmap are about the ROOT's own document and come from
- * {@link organisationPages}, which is one read of it; the register is about
- * the whole tree and comes from the index the shell already holds
- * (ADR-0012 §2). Neither is a load of its own, which is the point: a load per
- * card is the shape ADR-0004 keeps catching.
+ * Which cards depends on what the scope is by shape, never by its label: the
+ * organisation — the root — has the business layer, because the rail is one
+ * tree on its own page (ADR-0012 §4); a scope that draws has its views and
+ * the pages of the records on them; and every scope has its decisions and
+ * its plans. The register is over the tree beneath a scope, so it is a card
+ * on the root's and a domain's and not on a landscape's, whose part of it is
+ * on its own boards.
+ *
+ * Business, decisions and the roadmap are about the scope's own document and
+ * come from {@link organisationPages}, which is one read of it; the register
+ * comes from the index the shell already holds (ADR-0012 §2). Neither is a
+ * load of its own, which is the point: a load per card is the shape ADR-0004
+ * keeps catching.
  *
  * Nothing here loads, and nothing here counts.
  */
@@ -21,7 +28,7 @@ import type { Translate } from '../../i18n'
 import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisions'
 import { CHECK_SENTENCE, PLAN_STATUS_LABEL } from '../../roadmap'
 import { RELATION_LABEL } from '../../model'
-import { DecisionIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
+import { DecisionIcon, DocumentIcon, LandscapeIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
 
@@ -38,14 +45,25 @@ export type OrganisationCardsProps = {
    * shell and already read.
    */
   register: RegisterSummary
-  /** Plans below the root flagged as initiatives (ADR-0012 §7): the roadmap card's second line. */
+  /** Plans below this scope flagged as initiatives (ADR-0012 §7): the roadmap card's second line. */
   initiatives?: number
+  /**
+   * Which cards, by the scope's shape. The business layer is the root's; the
+   * views and the documentation are a scope's that draws; the register is over
+   * what is beneath, so a scope that draws and holds nothing under it has no
+   * use for it.
+   */
+  level: 'organisation' | 'domain' | 'landscape'
   onOpenBusiness: () => void
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
   onOpenDecisions: () => void
   onOpenRoadmap: () => void
   onOpenRegister: () => void
+  /** Onto the canvas — the views card's door. */
+  onOpenViews?: () => void
+  /** The documentation page, as the bar opens it. */
+  onOpenDocumentation?: () => void
   s: Translate
 }
 
@@ -83,7 +101,8 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, register, initiatives = 0, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap, onOpenRegister, s,
+  pages, ready, register, initiatives = 0, level, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap,
+  onOpenRegister, onOpenViews, onOpenDocumentation, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -108,7 +127,37 @@ export function OrganisationCards({
 
   return (
     <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', gap: 1.5, mb: 4 }} data-testid="organisation-cards">
-      <OnePage
+      {level === 'landscape' && (
+        <OnePage
+          icon={<LandscapeIcon />}
+          title={s('org.views')}
+          count={ready ? plural(s, { one: 'org.diagramsOne', other: 'org.diagramsOther' }, pages.views) : undefined}
+          action={(
+            <Button size="small" onClick={onOpenViews} sx={quiet} data-testid="open-views">
+              {s('picker.open')}
+            </Button>
+          )}
+        />
+      )}
+
+      {level === 'landscape' && (
+        <OnePage
+          icon={<DocumentIcon />}
+          title={s('shell.documentation')}
+          count={ready
+            ? s(pages.documentation.described === 1 ? 'org.describedOne' : 'org.describedOther', {
+              count: pages.documentation.described, total: pages.documentation.elements,
+            })
+            : undefined}
+          action={(
+            <Button size="small" onClick={onOpenDocumentation} sx={quiet} data-testid="open-documentation">
+              {s('picker.open')}
+            </Button>
+          )}
+        />
+      )}
+
+      {level === 'organisation' && <OnePage
         icon={<SheetIcon />}
         title={s('org.business')}
         count={businessCount}
@@ -128,7 +177,7 @@ export function OrganisationCards({
             </Button>
           </Stack>
         )}
-      />
+      />}
 
       <OnePage
         icon={<DecisionIcon />}
@@ -188,7 +237,7 @@ export function OrganisationCards({
           root's own document — the register is derived over every scope
           (ADR-0012 §2), so its numbers come from the index and not from a
           load of its own. */}
-      <OnePage
+      {level !== 'landscape' && <OnePage
         icon={<RegisterIcon />}
         title={s('org.register')}
         count={[
@@ -209,7 +258,7 @@ export function OrganisationCards({
             {s('picker.open')}
           </Button>
         )}
-      />
+      />}
     </Stack>
   )
 }

@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { organisationPages } from './organisationPages'
+import { laidOut } from '../../model/testFixtures'
 import type { DesignElement } from '../../model'
 import type { HostModel } from '../../model/fromInterchange'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -42,6 +43,25 @@ describe('organisationPages', () => {
       { id: 'a', number: 1, title: 'Use one identity', status: 'accepted', date: '2026-09-01', body: '', signers: [] },
     ] })
     expect(organisationPages(held, TODAY).empty).toBe(false)
+  })
+
+  describe('a landscape’s two cards', () => {
+    it('counts the views, and the records that have a page of their own', () => {
+      const held = scope({
+        elements: [
+          element({ id: 'wms', kind: 'application', description: 'The warehouse system.' }),
+          element({ id: 'erp', kind: 'application', description: '   ' }),
+          element({ id: 'tms', kind: 'application' }),
+        ],
+        diagrams: [
+          laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [] }),
+          laidOut({ id: 'c', kind: 'container' as const, name: 'C', placements: [] }),
+        ],
+      })
+      const pages = organisationPages(held, TODAY)
+      expect(pages.views).toBe(2)
+      expect(pages.documentation).toEqual({ described: 1, elements: 3 })
+    })
   })
 
   describe('the business card', () => {

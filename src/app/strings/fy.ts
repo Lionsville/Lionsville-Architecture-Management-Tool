@@ -80,8 +80,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.sourceBrowser': 'Yn dizze brouwer',
   'shell.sourceMemory': 'Nearne bewarre',
   'shell.sourceTip': 'Wêr’t dit projekt bewarre wurdt',
-  'shell.projects': 'Projekten…',
-  'shell.projectsTip': 'Werom nei de projektelist',
+  'shell.crumbTip': 'Nei {name}',
   'shell.exampleCopied': 'Foarbyld “{name}” kopiearre nei in eigen projekt.',
 
   // --- projects and the picker ---------------------------------------------
@@ -378,6 +377,9 @@ export const FY: Record<keyof typeof EN, string> = {
   'org.unmappedOne': '{count} funksje noch net oan in domein tawiisd',
   'org.unmappedOther': '{count} funksjes noch net oan in domein tawiisd',
   'org.allMapped': 'Eltse funksje is oan in domein tawiisd.',
+  'org.views': 'Werjeftes',
+  'org.describedOne': '{count} fan {total} beskreaun',
+  'org.describedOther': '{count} fan {total} beskreaun',
   'org.recordsOne': '{count} fêstlizzing',
   'org.recordsOther': '{count} fêstlizzingen',
   'org.latest': 'Lêste: {name}',
@@ -389,6 +391,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'org.statusCount': '{count} {status}',
   'org.register': 'Register',
   'org.nothingHere': 'Op dit nivo noch neat.',
+  'org.openCanvas': 'It kanvas iepenje',
 
   'org.tree': 'Domeinen en lânskippen',
   'org.treeEmpty': 'Noch neat ûnderbrocht by dizze organisaasje. Meitsje in ûnderdiel of kopiearje in foarbyld.',

@@ -67,6 +67,13 @@ export type OrganisationPages = {
     /** The first thing the dates disagree about — `findings` answers worst first. */
     finding?: Finding
   }
+  /** What a landscape's home says about its views and its pages. */
+  views: number
+  documentation: {
+    /** Records with a description of their own. */
+    described: number
+    elements: number
+  }
 }
 
 function tally<T extends string>(
@@ -114,6 +121,11 @@ export function organisationPages(
       ...(decisions.length
         ? { latest: [...decisions].sort((a, b) => a.number - b.number)[decisions.length - 1] }
         : {}),
+    },
+    views: diagrams.length,
+    documentation: {
+      described: elements.filter((element) => element.description?.trim()).length,
+      elements: elements.length,
     },
     roadmap: {
       total: transitions.length,

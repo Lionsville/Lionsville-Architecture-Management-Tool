@@ -38,11 +38,20 @@ import { CaretIcon } from '../../widgets/icons'
 import { SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
 
 export type ScopeTreeProps = {
-  /** The tree, already in the order the person chose. The root is not drawn. */
+  /**
+   * The tree, already in the order the person chose. Its top is not drawn: it
+   * is the scope whose home this sits on — the root, or a domain beneath it.
+   */
   tree: ScopeSummary
   collapsed: ReadonlySet<ScopePath>
   onToggleCollapsed: (path: ScopePath) => void
+  /** Onto the scope's canvas. Offered only where there is one. */
   onOpen: (path: ScopePath) => void
+  /**
+   * To the scope's home: its own pages, and the tree under it. Every row has
+   * one, which is what its name does.
+   */
+  onHome: (path: ScopePath) => void
   onAddUnder: (path: ScopePath) => void
   onSettings: (scope: ScopeSummary) => void
   onDelete: (scope: ScopeSummary) => void
@@ -123,10 +132,12 @@ function visibleRows(tree: ScopeSummary, collapsed: ReadonlySet<ScopePath>): Sco
 }
 
 export function ScopeTree({
-  tree, collapsed, onToggleCollapsed, onOpen, onAddUnder, onSettings, onDelete, findings,
+  tree, collapsed, onToggleCollapsed, onOpen, onHome, onAddUnder, onSettings, onDelete, findings,
   language, s,
 }: ScopeTreeProps) {
   const rows = visibleRows(tree, collapsed)
+  // The top of the tree is the screen, so its children are the first column.
+  const base = scopeSegments(tree.path).length
   const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
 
   if (rows.length === 0) {
@@ -140,9 +151,7 @@ export function ScopeTree({
   return (
     <Box>
       {rows.map((scope) => {
-        // One less than the path's depth: the root is the screen, so its
-        // children are the first column rather than the second.
-        const depth = scopeSegments(scope.path).length - 1
+        const depth = scopeSegments(scope.path).length - base - 1
         const shut = collapsed.has(scope.path)
         return (
           <Stack
@@ -181,7 +190,15 @@ export function ScopeTree({
 
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Stack direction="row" alignItems="center" spacing={0.75}>
-                <Typography sx={{ fontSize: 13, fontWeight: 500 }}>{scope.name}</Typography>
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={() => onHome(scope.path)}
+                  data-testid={`home-${scope.path}`}
+                  sx={{ fontSize: 13, fontWeight: 500, minWidth: 0, px: 0.5, py: 0, textTransform: 'none' }}
+                >
+                  {scope.name}
+                </Button>
                 {scope.kind && (
                   <Chip
                     size="small"

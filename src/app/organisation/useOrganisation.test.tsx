@@ -79,6 +79,7 @@ function mountWith(scopes: ScopeLibrary, store: InMemoryScopeStore, active = tru
     current = useOrganisation({
       scopes,
       active,
+      at: '',
       onEnter: entered,
       notify: () => {},
       onFailure: (where) => { failures.push(where) },

@@ -35,10 +35,12 @@ describe('App and the storage it was given', () => {
   })
 })
 
-describe('what the top bar says you are working from', () => {
-  // The bar's first item is the source (ADR-0005), and the memory case is the
-  // one where saying so matters most: the strip at the foot says it, and so
-  // does the bar.
+describe('what the root’s home says you are working from', () => {
+  // The source is a fact about the folder, and the folder is the root: the
+  // root's home says it, and the workspace's bar — which has crumbs where
+  // the source used to be — does not. The memory case is the one where
+  // saying so matters most: the strip at the foot says it, and so does the
+  // home.
   const project = {
     path: 'acme/landscape',
     model: {
@@ -50,19 +52,22 @@ describe('what the top bar says you are working from', () => {
   }
 
   it('names the folder', () => {
-    renderApp({
-      initialProject: project,
-      source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' },
-    })
+    renderApp({ source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' } })
     expect(screen.getByTestId('working-source').textContent).toBe('Folder · Architecture')
   })
 
   it('says when it is the browser, and when it is nowhere', () => {
-    renderApp({ initialProject: project, source: { kind: 'browserStorage' } })
+    renderApp({ source: { kind: 'browserStorage' } })
     expect(screen.getByTestId('working-source').textContent).toBe('In this browser')
     cleanup()
-    renderApp({ initialProject: project, source: { kind: 'memory' } })
+    renderApp({ source: { kind: 'memory' } })
     expect(screen.getByTestId('working-source').textContent).toBe('Not kept anywhere')
+    expect(screen.getByTestId('storage-notice')).toBeDefined()
+  })
+
+  it('keeps it off the bar over an open scope, where the crumbs are', () => {
+    renderApp({ initialProject: project, source: { kind: 'memory' } })
+    expect(screen.queryByTestId('working-source')).toBeNull()
     expect(screen.getByTestId('storage-notice')).toBeDefined()
   })
 })

@@ -420,9 +420,19 @@ screen. Counts on the cards come from **one** `load(root)` — a listing carries
 view count and nothing else (`ScopeSummary`), and a load per card is the shape
 ADR-0004 keeps catching.
 
-A card opens the root **on a page** (`InitialPage`), because the root usually
-draws nothing at all; closing that page comes back here rather than landing on
-an empty canvas. The register card is drawn and deliberately empty: it is
+**Every scope has this home**, not only the root: a domain's shows its own
+cards and the tree filed under it, a landscape's shows its views, its
+documentation, its decisions and its plans, and which cards is decided by
+shape (`level` in `OrganisationScreen`) — never by the label. The bar over an
+open scope is a **breadcrumb** (`crumbsFor`, `Crumbs` in `ShellToolbar`):
+every scope above, root first, each a way to that scope's home, and the open
+one in bold; the *Projects…* button and the source chip left it — the source
+is a fact about the folder and is said on the root's home only. Which home is
+up is the shell's state (`home` in `App`), beside which scope is open.
+
+A card opens the scope **on a page** (`InitialPage`), because the root usually
+draws nothing at all; closing that page comes back to that scope's home rather
+than landing on an empty canvas. The register card is drawn and deliberately empty: it is
 derived over the whole tree and arrives in beta 3.
 
 The tree lists **alphabetically by default**, with recency as a toggle

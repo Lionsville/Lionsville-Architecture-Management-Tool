@@ -37,7 +37,6 @@ import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
-import type { WorkingSource } from '../platform/workingSource'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
@@ -63,7 +62,7 @@ import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
-import type { ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
+import type { Crumb, ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
 import type { ProjectSaver } from './useDocumentSession'
 import { useAgentGateway } from './useAgentGateway'
@@ -111,8 +110,6 @@ export type ProjectWorkspaceProps = {
    * history to offer — and passes the rest through.
    */
   overflow?: Omit<ToolbarOverflow, 'can'> & { can: Omit<ToolbarOverflow['can'], 'history'> }
-  /** Where this project is kept, for the bar to say. */
-  source?: WorkingSource
   /**
    * Tell the host whether closing the window would lose something. Absent in a
    * browser tab, where the window is ours and `beforeunload` says it.
@@ -143,8 +140,14 @@ export type ProjectWorkspaceProps = {
   editorPreferences: unknown
   onEditorPreferencesChange: (next: EditorPreferences) => void
 
-  /** Leave this scope and go back to the picker. */
-  onLeave: () => void
+  /**
+   * Leave this scope for a home: one above it from a crumb on the bar, or its
+   * own when a page closes over a canvas that draws nothing. Where a home is
+   * the shell's state, the same as which scope is open.
+   */
+  onGoHome: (path: ScopePath) => void
+  /** Every scope above this one, root first, for the bar (`crumbsFor`). */
+  crumbs: readonly Crumb[]
   /**
    * Open another scope by its path — *Open …* beside a field another scope
    * answers for (ADR-0012 §10).
@@ -237,9 +240,9 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, commands, overflow, source, onUnsavedWork, history: projectHistory,
+  project, projects, index, watch, commands, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
-  onLeave, onOpenScope, scopes, models, onOpenSettings, onTreeChanged = () => {},
+  onGoHome, crumbs, onOpenScope, scopes, models, onOpenSettings, onTreeChanged = () => {},
   onApplySettings, makeId, ancestorDecisions,
   groupName, groupClient,
   diagnostics, hostControls, today = localToday, initialPage, windowChrome,
@@ -853,6 +856,7 @@ export function ProjectWorkspace({
     // A row of the register, opened where it is answered for.
     if (initialPage.page === 'element') focusElement(initialPage.id)
     if (initialPage.page === 'document') openDocumentation(initialPage.id)
+    if (initialPage.page === 'documentation') openDocumentation()
     // Not a page: the register's *Link…*, which can only be done by the
     // session that holds this scope (ADR-0012 §10).
     if (initialPage.page === 'link') {
@@ -869,7 +873,10 @@ export function ProjectWorkspace({
    * pages onto that board, as it always has.
    */
   const drawsNothing = !session.model.diagrams.some((diagram) => isBoardKind(diagram.kind))
-  const leaveIfNothingToDraw = useCallback(() => { if (drawsNothing) onLeave() }, [drawsNothing, onLeave])
+  const leaveIfNothingToDraw = useCallback(
+    () => { if (drawsNothing) onGoHome(project.path) },
+    [drawsNothing, onGoHome, project.path],
+  )
 
   const chooseHit = useCallback((hit: SearchHit) => {
     switch (hit.kind) {
@@ -955,15 +962,14 @@ export function ProjectWorkspace({
     <>
       <Box ref={toolbarRef} sx={{ flex: '0 0 auto' }}>
       <ShellToolbar
-        source={source}
         designName={session.model.name}
-        groupName={groupName}
+        crumbs={crumbs}
         savedAt={savedAt}
         status={document.state.status}
         saveFailed={saveFailed}
         language={language}
         overflow={overflow && { ...overflow, can: { ...overflow.can, history: snapshots.available } }}
-        onLeave={onLeave}
+        onGoHome={onGoHome}
         onOpenSettings={openSettings}
         onOpenDocumentation={() => openDocumentation()}
         onOpenDecisions={() => openDecisions()}

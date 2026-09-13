@@ -289,7 +289,7 @@ describe('the organisation screen — a fresh folder', () => {
     renderApp({ scopes, today: TODAY, examples: EXAMPLES })
     fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
-    fireEvent.click(screen.getByText('Projects…'))
+    fireEvent.click(screen.getByTestId('crumb-'))
 
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.queryByText('Examples')).toBeNull()
@@ -312,9 +312,8 @@ describe('the organisation screen — the shipped example', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
     // Copying lands the person in the scope that has the work in it.
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
-    // By its text: MUI's tooltip lends the button its own title as the
-    // accessible name.
-    fireEvent.click(screen.getByText('Projects…'))
+    // The organisation's crumb is the way back to its home.
+    fireEvent.click(screen.getByTestId('crumb-'))
 
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.getByTestId('scope-application-landscape')).toBeDefined()

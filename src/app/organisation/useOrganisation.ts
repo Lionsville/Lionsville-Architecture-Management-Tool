@@ -55,11 +55,21 @@ export type UseOrganisationInput = {
    * Is this screen the one on show?
    *
    * The tree is read whatever is up, because the open workspace's settings
-   * dialog offers it as a parent to file under. The **root's own document** is
-   * read only while this screen is up: it is a whole model, and loading one
-   * behind a canvas nobody is looking at is the shape ADR-0004 keeps catching.
+   * dialog offers it as a parent to file under. The **home scope's own
+   * document** is read only while this screen is up: it is a whole model, and
+   * loading one behind a canvas nobody is looking at is the shape ADR-0004
+   * keeps catching.
    */
   active: boolean
+  /**
+   * Whose home the screen is: the root's, or a scope's beneath it.
+   *
+   * Every scope is the same document (ADR-0012 §1), so every scope has the
+   * same home — its identity, its own pages as cards, and the tree filed under
+   * it. The root's is the organisation screen; a domain's is the same screen
+   * one level down, reached from a crumb on the bar or a row in the tree.
+   */
+  at: ScopePath
   /**
    * Enter a scope, on the page it was opened for. The hook decides WHICH scope
    * and which page; what entering means — the preference, the remount — is the
@@ -76,9 +86,12 @@ export type UseOrganisationInput = {
 export type Organisation = {
   /** The whole tree, root first. Re-read after every write. */
   tree: ScopeSummary
+  /** Whose home this is. */
+  at: ScopePath
   /**
-   * The root's own document, for the cards. `undefined` until it has been read
-   * once — which `ready` is what tells a screen apart from an empty root.
+   * The home scope's own document, for the cards. `undefined` until it has
+   * been read once — which `ready` is what tells a screen apart from an empty
+   * scope.
    */
   root: ScopeSnapshot | undefined
   ready: boolean
@@ -103,7 +116,7 @@ export type Organisation = {
 }
 
 export function useOrganisation({
-  scopes, active, onEnter, notify, onFailure, onStorageResult, s,
+  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s,
 }: UseOrganisationInput): Organisation {
   const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
   const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
@@ -126,12 +139,14 @@ export function useOrganisation({
   failedRef.current = onFailure
 
   /**
-   * The listing, and the root's own document beside it.
+   * The listing, and the home scope's own document beside it.
    *
    * Two reads and not one per card. An empty tree and a tree that would not
    * read look identical on this screen, and one of them means "you have nothing
    * here" while the other means "your work is still there, somewhere" — so a
-   * refusal says which.
+   * refusal says which. A different home is a different document, so the
+   * read runs again when the crumb changes — and `ready` drops first, so the
+   * cards do not say a domain's numbers under the organisation's name.
    */
   useEffect(() => {
     let live = true
@@ -144,7 +159,8 @@ export function useOrganisation({
       },
     )
     if (!active) return () => { live = false }
-    void scopes.load(ROOT_SCOPE).then(
+    setReady(false)
+    void scopes.load(at).then(
       (held) => { if (live) { setRoot(held); setReady(true) } },
       (cause: unknown) => {
         if (!live) return
@@ -156,7 +172,7 @@ export function useOrganisation({
       },
     )
     return () => { live = false }
-  }, [scopes, active, revision])
+  }, [scopes, active, at, revision])
 
   const toggleCollapsed = useCallback((path: ScopePath) => {
     setCollapsed((held) => {
@@ -413,11 +429,11 @@ export function useOrganisation({
   }, [applySettings])
 
   return useMemo(() => ({
-    tree, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     create, applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
-    tree, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     create, applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])

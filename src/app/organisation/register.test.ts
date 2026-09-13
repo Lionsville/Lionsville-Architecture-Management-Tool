@@ -10,7 +10,7 @@ import type { DesignElement } from '../../model'
 import { identityFindings } from '../../projects/checks'
 import { indexScopes } from '../../projects/scopeIndex'
 import type { ScopeModel } from '../../projects/scope'
-import { isUnattributed, matchingRows, registerRows, registerSummary, sortRows } from './register'
+import { isUnattributed, matchingRows, registerRows, registerSummary, registerWithin, sortRows } from './register'
 
 function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   return {
@@ -108,5 +108,26 @@ describe('the filter and the order', () => {
   it('groups by scope with the ones nobody defines last', () => {
     expect(sortRows(rows(), 'scope').map((row) => row.master))
       .toEqual(['', 'rail', 'rail', 'rail', undefined])
+  })
+})
+
+describe('the part of the register a scope can speak for', () => {
+  const rows = registerRows(indexScopes(tree()), identityFindings(indexScopes(tree())))
+
+  it('is all of it at the root, because everything is within the root', () => {
+    expect(registerWithin(rows, '').map((row) => row.id)).toEqual(rows.map((row) => row.id))
+  })
+
+  it('is what a domain answers for or draws, and nothing that only its neighbour has', () => {
+    const rail = registerWithin(rows, 'rail').map((row) => row.id).sort()
+    expect(rail).toContain('wms')
+    expect(rail).toContain('post')
+    expect(rail).toContain('customs')
+    for (const id of rail) {
+      const row = rows.find((one) => one.id === id)!
+      expect(
+        (row.master ?? 'nobody').startsWith('rail') || row.drawnIn.some((path) => path.startsWith('rail')),
+      ).toBe(true)
+    }
   })
 })

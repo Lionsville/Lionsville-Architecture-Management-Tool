@@ -497,3 +497,26 @@ export function RegisterIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * A landscape's home's two cards beside those: boxes with a line between
+ * them for the views, and lines of text under a heading for the pages.
+ */
+export function LandscapeIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="4" width="7" height="6" rx="1.5" stroke="currentColor" strokeWidth="2" />
+      <rect x="14" y="14" width="7" height="6" rx="1.5" stroke="currentColor" strokeWidth="2" />
+      <path d="M10 7h4v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function DocumentIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 3h8l4 4v14H6z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M9 11h6M9 15h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}

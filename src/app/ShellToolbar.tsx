@@ -3,11 +3,15 @@
  * it stands, the three pages beside the canvas, and — on a host with no menu
  * bar — the menu.
  *
- * It reads left to right the way ADR-0005 asks: the source, then the group
- * and the project with their settings, then the status beside them. Saving,
- * opening, exporting and the history moved out of here and into the File
- * menu, where ⌘S already was; on the web the overflow at the end carries the
- * same list, and the theme went the same way.
+ * It reads left to right the way ADR-0005 asks: where you are — the
+ * organisation, each scope between, and the open one, as crumbs — with its
+ * settings, then the status beside them. Pressing a crumb goes to that
+ * scope's home, which is how you leave; the organisation's name is the first
+ * crumb and the way back to the first screen. The source left this bar for
+ * the root's home, because it is a fact about the folder and the folder is
+ * the root. Saving, opening, exporting and the history moved out of here and
+ * into the File menu, where ⌘S already was; on the web the overflow at the
+ * end carries the same list, and the theme went the same way.
  *
  * Takes no decisions and holds no state except which menu is open. Everything
  * that happens arrives from outside as a function, and there is no file field
@@ -23,6 +27,8 @@ import Typography from '@mui/material/Typography'
 import { LOCALE } from '../i18n'
 import type { Language, StringKey, Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
+import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
+import type { ScopePath } from '../projects/scopePath'
 import type { AgentServerStatus } from '../platform/agentServer'
 import { AgentIcon } from '../widgets/icons'
 import type { HostCommand } from '../platform/hostCommands'
@@ -30,7 +36,6 @@ import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
-import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import { ActivityMenu } from './ActivityMenu'
 import type { ActivityEntry } from './ActivityMenu'
@@ -80,6 +85,72 @@ export function sourceLabel(source: WorkingSource, s: Translate): string {
 }
 
 /**
+ * One scope above the one on show: its address, and what to call it.
+ *
+ * The bar's way back, and the way into any level between the organisation
+ * and the open scope — a group has a home of its own (`OrganisationScreen`),
+ * and before the crumbs the bar named the organisation and the project and
+ * left the level between them out.
+ */
+export type Crumb = { path: ScopePath; name: string }
+
+/**
+ * The crumbs above a scope, root first, named from the listing.
+ *
+ * The listing rather than the loaded ancestors: it is read at boot whatever
+ * is up, so the bar says where you are before a single document has been
+ * read for it. A scope the listing does not name — a folder somebody removed
+ * — is called by its path's last segment, and the root with no name yet by
+ * the word for one.
+ */
+export function crumbsFor(
+  of: ScopePath, scopes: readonly { path: ScopePath; name: string }[], s: Translate,
+): Crumb[] {
+  const byPath = new Map(scopes.map((scope) => [scope.path, scope.name.trim()]))
+  return ancestorScopes(of).reverse().map((path) => ({
+    path,
+    name: byPath.get(path) || (path === ROOT_SCOPE ? s('picker.organisation') : scopePathLabel(path)),
+  }))
+}
+
+/**
+ * Where you are: every scope above, as a button each, and the one on show in
+ * bold and not a button — it is where you already are. Shared by this bar and
+ * a scope's home, so the two read the same and a crumb means one thing.
+ */
+export function Crumbs({ crumbs, current, onGoHome, s }: {
+  crumbs: readonly Crumb[]
+  current: string
+  onGoHome: (path: ScopePath) => void
+  s: Translate
+}) {
+  return (
+    <Box data-testid="crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0 }}>
+      {crumbs.map((crumb) => (
+        <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+          <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
+            <Button
+              size="small"
+              color="inherit"
+              onClick={() => onGoHome(crumb.path)}
+              data-testid={`crumb-${crumb.path}`}
+              sx={{
+                fontSize: 13, fontWeight: 500, minWidth: 0, px: 0.75, py: 0,
+                textTransform: 'none', color: 'text.secondary',
+              }}
+            >
+              {crumb.name}
+            </Button>
+          </Tooltip>
+          <Typography aria-hidden sx={{ fontSize: 12, color: 'text.disabled' }}>›</Typography>
+        </Box>
+      ))}
+      <Typography sx={{ fontSize: 13, fontWeight: 700, px: 0.5 }} data-testid="crumb-current">{current}</Typography>
+    </Box>
+  )
+}
+
+/**
  * The agent glyph (ADR-0007): the one place the server's state is visible,
  * and how a person finds out the feature exists. Three states, encoded in the
  * glyph and named in its tooltip.
@@ -106,15 +177,13 @@ export type ToolbarOverflow = {
 }
 
 export type ShellToolbarProps = {
-  /** Where the project is kept. The first thing on the bar, because it was the one thing it did not say. */
-  source?: WorkingSource
   designName: string
   /**
-   * The group this project is filed under — a customer, a department, a
-   * programme. Shown beside the design's name because the same design name in
-   * two groups is not only possible, it is the normal case.
+   * Every scope above this one, root first. Shown before the design's name
+   * because the same design name in two domains is not only possible, it is
+   * the normal case — and each is the way to that scope's home.
    */
-  groupName: string
+  crumbs: readonly Crumb[]
   /** When the store last accepted this design; `null` means never. */
   savedAt: Date | null
   /**
@@ -133,8 +202,8 @@ export type ShellToolbarProps = {
    */
   saveFailed?: boolean
   language: Language
-  /** Leave this project and go back to the picker. */
-  onLeave: () => void
+  /** Leave this scope for the home of one above it: what a crumb does. */
+  onGoHome: (path: ScopePath) => void
   /** Open the project's own settings: its name and its group. */
   onOpenSettings: () => void
   /**
@@ -168,8 +237,8 @@ export type ShellToolbarProps = {
 }
 
 export function ShellToolbar({
-  source = BROWSER_STORAGE, designName, groupName, savedAt, status = 'clean', saveFailed = false,
-  language, onLeave, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenRoadmap,
+  designName, crumbs, savedAt, status = 'clean', saveFailed = false,
+  language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenRoadmap,
   onOpenSearch, activity,
   overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
@@ -192,25 +261,7 @@ export function ShellToolbar({
       WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
-      <Tooltip title={s('shell.projectsTip')}>
-        <Button size="small" color="inherit" onClick={onLeave} sx={quiet}>
-          {s('shell.projects')}
-        </Button>
-      </Tooltip>
-      <Tooltip title={s('shell.sourceTip')}>
-        <Typography
-          data-testid="working-source"
-          sx={{
-            fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1,
-            color: source.kind === 'memory' ? 'warning.main' : 'text.secondary',
-            border: 1, borderColor: source.kind === 'memory' ? 'warning.main' : 'divider',
-          }}
-        >
-          {sourceLabel(source, s)}
-        </Typography>
-      </Tooltip>
-      <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{designName}</Typography>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{groupName}</Typography>
+      <Crumbs crumbs={crumbs} current={designName} onGoHome={onGoHome} s={s} />
       <Tooltip title={s('settings.title')}>
         <Button size="small" color="inherit" onClick={onOpenSettings} sx={quiet}>
           {s('settings.open')}

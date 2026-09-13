@@ -37,6 +37,7 @@ import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
+import { crumbsFor } from './ShellToolbar'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
@@ -127,6 +128,8 @@ export type InitialPage =
    * scope that answers for it, which is where the fields may be written.
    */
   | { page: 'document'; id: ElementId }
+  /** The documentation page as the bar opens it: on the selected element, or the first. */
+  | { page: 'documentation' }
   /**
    * Not a page, and here anyway: *link* (ADR-0012 §10), asked the moment the
    * scope opens.
@@ -574,6 +577,15 @@ export function App({
   }, [prefs])
 
   /**
+   * Whose home is up while nothing is open: the root's, or a scope's beneath
+   * it (`OrganisationScreen`). A crumb on the bar and a row's name set it;
+   * closing a page over a canvas that draws nothing lands on the open scope's
+   * own. Session state and not a preference: `lastScope` says where the work
+   * was, and a home is a place you pass through on the way to it.
+   */
+  const [home, setHome] = useState<ScopePath>(ROOT_SCOPE)
+
+  /**
    * The organisation screen's wiring (`useOrganisation`).
    *
    * Called whatever is on screen, because the tree it holds is what the open
@@ -585,6 +597,7 @@ export function App({
   const organisation = useOrganisation({
     scopes: projects,
     active: project === undefined,
+    at: home,
     onEnter: enter,
     notify: toasts.notify,
     onFailure: failed,
@@ -624,7 +637,7 @@ export function App({
    */
   const identity = useMemo(() => identityFindings(tree.index), [tree.index])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
-  const initiatives = useMemo(() => tree.index.initiativesBelow('').length, [tree.index])
+  const initiatives = useMemo(() => tree.index.initiativesBelow(home).length, [tree.index, home])
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])
 
   /**
@@ -645,7 +658,8 @@ export function App({
     tree.refresh()
   }, [tree])
 
-  const leaveProject = useCallback(() => {
+  const goHome = useCallback((to: ScopePath) => {
+    setHome(to)
     setProject(undefined)
     setInitialPage(undefined)
     // Deliberately keeps `lastScope`: closing a scope is not the same as saying
@@ -653,6 +667,15 @@ export function App({
     // in your work.
     organisation.refresh()
   }, [organisation])
+
+  /**
+   * A home the listing no longer has — the scope was removed, from its own
+   * page or by somebody else's hand — falls back to the root's rather than
+   * showing a heading over nothing.
+   */
+  const homeListed = home === ROOT_SCOPE
+    || flattenScopes(organisation.tree).some((scope) => scope.path === home)
+  useEffect(() => { if (!homeListed) setHome(ROOT_SCOPE) }, [homeListed])
 
   /**
    * Change a scope's name, where it is filed, or both.
@@ -821,6 +844,11 @@ export function App({
   }, [project, ancestors])
   const groupName = project ? organisationLabel(project.path, chain) : ''
   const groupClient = project ? scopeClient(project.path, chain) : undefined
+  /** Every scope above the open one, root first, named from the listing. */
+  const crumbs = useMemo(
+    () => (project ? crumbsFor(project.path, flattenScopes(organisation.tree), s) : []),
+    [project, organisation.tree, s],
+  )
 
   /**
    * What the window is called, which is the two names the bar already shows.
@@ -829,9 +857,15 @@ export function App({
    * own, before there is one — because the picker is not a scope and pretending
    * it is would name a window after nothing.
    */
+  const homeName = useMemo(
+    () => flattenScopes(organisation.tree).find((scope) => scope.path === home)?.name,
+    [organisation.tree, home],
+  )
   useEffect(() => {
-    onTitle?.(project ? groupName : organisation.tree.name, project?.model.name)
-  }, [onTitle, project, groupName, organisation.tree.name])
+    if (project) onTitle?.(groupName, project.model.name)
+    else if (home === ROOT_SCOPE) onTitle?.(organisation.tree.name)
+    else onTitle?.(organisation.tree.name, homeName)
+  }, [onTitle, project, groupName, organisation.tree.name, home, homeName])
 
 
   return (
@@ -867,7 +901,6 @@ export function App({
             projects={workspaceStore}
             index={tree.index}
             watch={watchOpenProject}
-            source={source}
             commands={bus.on}
             overflow={hostMenu ? undefined : {
               themeMode: prefs.themeMode,
@@ -886,7 +919,8 @@ export function App({
             language={prefs.language}
             editorPreferences={prefs.preferences}
             onEditorPreferencesChange={prefs.savePreferences}
-            onLeave={leaveProject}
+            onGoHome={goHome}
+            crumbs={crumbs}
             onOpenScope={openScopeAt}
             scopes={organisation.tree}
             models={readTreeModels}
@@ -921,6 +955,7 @@ export function App({
               onCommand: bus.send,
             }}
             agent={agentBar}
+            onGoHome={goHome}
             findings={treeFindings}
             register={register}
             initiatives={initiatives}
