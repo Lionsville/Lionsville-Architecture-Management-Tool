@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { columnsFor, paperWidth, sheetColumns, spanOf, withSpan } from './grid'
+import { columnsFor, packAreas, paperWidth, sheetColumns, spanOf, withSpan } from './grid'
 
 describe('how many columns fit', () => {
   it('is one on anything narrower than a column, and never zero', () => {
@@ -46,5 +46,38 @@ describe('paper', () => {
   it('is the long side of the ISO sheet at 96 dpi', () => {
     expect(paperWidth('A4')).toBe(1123)
     expect(paperWidth('A0')).toBe(4494)
+  })
+})
+
+describe('packing the areas', () => {
+  it('stacks wide areas beside a tall narrow one, rather than leaving a row empty under them', () => {
+    const { placed, height } = packAreas([
+      { id: 'strategy', span: 1, height: 900 },
+      { id: 'commerce', span: 2, height: 300 },
+      { id: 'data', span: 2, height: 300 },
+    ], 3, 10)
+    expect(placed).toEqual([
+      { id: 'strategy', column: 0, span: 1, top: 0 },
+      { id: 'commerce', column: 1, span: 2, top: 0 },
+      { id: 'data', column: 1, span: 2, top: 310 },
+    ])
+    expect(height).toBe(900)
+  })
+
+  it('drops a small area into the lowest hole, leftmost when two are level', () => {
+    const { placed } = packAreas([
+      { id: 'a', span: 1, height: 500 },
+      { id: 'b', span: 1, height: 100 },
+      { id: 'c', span: 1, height: 100 },
+      { id: 'd', span: 1, height: 100 },
+    ], 3, 10)
+    expect(placed.map((held) => [held.id, held.column, held.top])).toEqual([
+      ['a', 0, 0], ['b', 1, 0], ['c', 2, 0], ['d', 1, 110],
+    ])
+  })
+
+  it('clamps a span to the grid, and is empty for nothing', () => {
+    expect(packAreas([{ id: 'a', span: 5, height: 10 }], 2, 10).placed[0]).toMatchObject({ column: 0, span: 2 })
+    expect(packAreas([], 3)).toEqual({ placed: [], height: 0 })
   })
 })

@@ -20,13 +20,14 @@
  * name, so the whole gesture is click, type, Enter. Under `readOnly` not one
  * of them is rendered.
  *
- * **The areas are a grid, not three columns.** How many columns is what the
+ * **The areas are packed, not three columns.** How many columns is what the
  * width has room for, or what the sheet fixes; an area takes the columns the
- * sheet says it does and lays its capabilities side by side inside them; and
- * the browser packs the cards densely in the sheet's own order
- * (`business/grid.ts`). The first sheet drawn for a real organisation had
- * eleven areas of very different sizes in three tall columns, and that is
- * the layout this replaces.
+ * sheet says it does, with one column of capabilities per column it takes;
+ * and the page measures each card and drops it at the lowest place it fits,
+ * in the sheet's own order (`business/grid.packAreas`). The first sheet
+ * drawn for a real organisation had eleven areas of very different sizes in
+ * three tall columns, and a CSS grid after it left the whole of a row empty
+ * under its shortest card — which is why the cards are placed by hand.
  *
  * The rail and the details are the page's own: one eye hides both, and each
  * has a seam to drag. A picture of the page can be asked for at the width of
@@ -56,7 +57,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon, ExportIcon, EyeIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
-import { AREA_COLUMN, MAX_SPAN, paperWidth, sheetColumns, spanOf, withSpan } from '../grid'
+import { AREA_COLUMN, MAX_SPAN, packAreas, paperWidth, sheetColumns, spanOf, withSpan } from '../grid'
 import { sheetPage } from '../sheet'
 import type { Relation } from '../../model'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
@@ -168,6 +169,7 @@ export function SheetPage(props: SheetPageProps) {
   const theme = useTheme()
   const page = useRef<HTMLDivElement | null>(null)
   const bodyWidth = useMeasuredWidth()
+  const cards = useMeasuredHeights()
 
   /**
    * The handle, while a sheet is up. Withdrawn on the way out so a request
@@ -223,6 +225,13 @@ export function SheetPage(props: SheetPageProps) {
    */
   const gridWidth = (exporting?.width ?? bodyWidth.width) - 32
   const columns = sheet ? sheetColumns(sheet, gridWidth) : 1
+  const packed = useMemo(() => (laidOut && sheet
+    ? packAreas(laidOut.areas.map((area) => ({
+      id: area.element.id,
+      span: spanOf(sheet, area.element.id, columns),
+      height: cards.heights[area.element.id] ?? 0,
+    })), columns)
+    : undefined), [laidOut, sheet, columns, cards.heights])
   const fixedWidth = exporting?.width
     ?? (sheet?.columns !== undefined ? columns * (AREA_COLUMN.min + AREA_COLUMN.gap) - AREA_COLUMN.gap + 32 : undefined)
   const panels = panelsShown && !exporting
@@ -343,32 +352,40 @@ export function SheetPage(props: SheetPageProps) {
             />
           )}
 
-          {laidOut && sheet && laidOut.areas.length > 0 ? (
-            <Box
-              data-testid="sheet-areas"
-              data-columns={columns}
-              sx={{
-                mt: 3, display: 'grid', gap: `${AREA_COLUMN.gap}px`,
-                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                // Dense: a one-column area after a two-column one fills the
-                // hole beside it rather than starting a new row. The order
-                // is the sheet's own, which is the priority.
-                gridAutoFlow: 'dense',
-                alignItems: 'start',
-              }}
-            >
-              {laidOut.areas.map((area) => (
-                <AreaCard
-                  key={area.element.id} area={area}
-                  span={spanOf(sheet, area.element.id, columns)}
-                  onSpan={author && columns > 1
-                    ? (span) => actions.updateSheet({ areaSpans: withSpan(sheet.areaSpans, area.element.id, span) })
-                    : undefined}
-                  onSelect={setSelectedId} author={author} t={t}
-                />
-              ))}
+          {laidOut && sheet && packed && laidOut.areas.length > 0 ? (
+            <>
+              <Box
+                data-testid="sheet-areas"
+                data-columns={columns}
+                sx={{ mt: 3, position: 'relative', height: packed.height }}
+              >
+                {laidOut.areas.map((area) => {
+                  const at = packed.placed.find((held) => held.id === area.element.id)
+                  if (!at) return null
+                  // The column pitch is a column and a gap; a card is its
+                  // span of pitches less the last gap. In percentages, so a
+                  // resize moves the cards before the heights are re-measured.
+                  const pitch = `(100% + ${AREA_COLUMN.gap}px) / ${columns}`
+                  return (
+                    <AreaCard
+                      key={area.element.id} area={area}
+                      span={at.span}
+                      place={{
+                        left: `calc(${pitch} * ${at.column})`,
+                        width: `calc(${pitch} * ${at.span} - ${AREA_COLUMN.gap}px)`,
+                        top: at.top,
+                      }}
+                      measure={cards.observe}
+                      onSpan={author && columns > 1
+                        ? (span) => actions.updateSheet({ areaSpans: withSpan(sheet.areaSpans, area.element.id, span) })
+                        : undefined}
+                      onSelect={setSelectedId} author={author} t={t}
+                    />
+                  )
+                })}
+              </Box>
               {author && (
-                <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                <Box sx={{ mt: 1.5, display: 'flex' }}>
                   <Add
                     label={t('sheet.addArea')}
                     title={t('sheet.newArea')}
@@ -377,7 +394,7 @@ export function SheetPage(props: SheetPageProps) {
                   />
                 </Box>
               )}
-            </Box>
+            </>
           ) : (
             <Empty
               text={t('sheet.noAreas')}
@@ -462,12 +479,56 @@ function fileSafe(name: string): string {
   return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'sheet'
 }
 
-/** Two frames from now: React has drawn, and the observer has measured. */
+/**
+ * Four frames from now: React has drawn at the new width, the observers have
+ * measured the cards at it, React has packed them from those heights, and
+ * that is on screen.
+ */
 function settled(): Promise<void> {
   const frame = typeof requestAnimationFrame === 'function'
     ? (fn: () => void) => { requestAnimationFrame(fn) }
     : (fn: () => void) => { setTimeout(fn, 0) }
-  return new Promise((resolve) => frame(() => frame(resolve)))
+  return new Promise((resolve) => frame(() => frame(() => frame(() => frame(resolve)))))
+}
+
+/**
+ * How tall each area card is, kept up to date — what the packing needs and
+ * CSS cannot say. One observer for every card; a card that leaves the page
+ * leaves the map. Without a `ResizeObserver` (a test) every height is 0 and
+ * the cards pack at the top, which the tests do not look at.
+ */
+function useMeasuredHeights(): {
+  observe: (id: ElementId, node: HTMLDivElement | null) => void
+  heights: Readonly<Record<ElementId, number>>
+} {
+  const [heights, setHeights] = useState<Readonly<Record<ElementId, number>>>({})
+  const observer = useRef<ResizeObserver | undefined>(undefined)
+  const ids = useRef(new WeakMap<Element, ElementId>())
+  const nodes = useRef(new Map<ElementId, Element>())
+  const observe = useCallback((id: ElementId, node: HTMLDivElement | null) => {
+    if (typeof ResizeObserver === 'undefined') return
+    observer.current ??= new ResizeObserver((entries) => {
+      setHeights((held) => {
+        let next: Record<ElementId, number> | undefined
+        for (const entry of entries) {
+          const at = ids.current.get(entry.target)
+          if (at === undefined) continue
+          const height = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height)
+          if (held[at] === height) continue
+          next ??= { ...held }
+          next[at] = height
+        }
+        return next ?? held
+      })
+    })
+    const before = nodes.current.get(id)
+    if (before && before !== node) { observer.current.unobserve(before); nodes.current.delete(id) }
+    if (!node) return
+    ids.current.set(node, id)
+    nodes.current.set(id, node)
+    observer.current.observe(node)
+  }, [])
+  return { observe, heights }
 }
 
 /**
@@ -810,15 +871,23 @@ function Chevron({ step, onSelect, t }: {
 
 // --- the areas --------------------------------------------------------------
 
-/** The capabilities of a grouping, or an area's loose ones, side by side where the box is wide enough. */
-const CAPABILITY_GRID = {
-  display: 'grid', gap: 0.75, gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', alignItems: 'start',
-} as const
+/**
+ * The capabilities of a grouping, or an area's loose ones: one column per
+ * column the area takes, so *wider* adds exactly one column of them. Fitting
+ * as many as the width allowed went from one column to three in a step.
+ */
+const capabilityGrid = (span: number) => ({
+  display: 'grid', gap: 0.75, gridTemplateColumns: `repeat(${span}, minmax(0, 1fr))`, alignItems: 'start',
+})
 
-function AreaCard({ area, span, onSpan, onSelect, author, t }: {
+function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
   area: SheetArea
   /** How many columns of the grid it takes. */
   span: number
+  /** Where the packing put it. */
+  place: { left: string; width: string; top: number }
+  /** Tell the page how tall it is, for the packing. */
+  measure(id: ElementId, node: HTMLDivElement | null): void
   /** Make it wider or narrower — absent where the grid has one column, or under `readOnly`. */
   onSpan?(span: number): void
   onSelect(id: ElementId): void
@@ -827,11 +896,14 @@ function AreaCard({ area, span, onSpan, onSelect, author, t }: {
 }) {
   return (
     <Box
+      ref={(node: HTMLDivElement | null) => measure(area.element.id, node)}
       data-testid={`sheet-area-${area.element.id}`}
       data-span={span}
+      data-column={place.left}
       sx={{
         border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden',
-        bgcolor: 'background.paper', gridColumn: `span ${span}`, minWidth: 0,
+        bgcolor: 'background.paper', minWidth: 0, boxSizing: 'border-box',
+        position: 'absolute', left: place.left, width: place.width, top: place.top,
       }}
     >
       <Box
@@ -884,7 +956,7 @@ function AreaCard({ area, span, onSpan, onSelect, author, t }: {
             >
               {group.element.name}
             </Box>
-            <Box sx={CAPABILITY_GRID}>
+            <Box sx={capabilityGrid(span)}>
               {group.capabilities.map((capability) => (
                 <CapabilityCard
                   key={capability.element.id}
@@ -911,7 +983,7 @@ function AreaCard({ area, span, onSpan, onSelect, author, t }: {
         {/* The area's own leaves, after the boxes: a column reads as structure
             and then the capabilities nobody has grouped yet. */}
         {area.capabilities.length > 0 && (
-          <Box sx={CAPABILITY_GRID}>
+          <Box sx={capabilityGrid(span)}>
             {area.capabilities.map((capability) => (
               <CapabilityCard
                 key={capability.element.id}

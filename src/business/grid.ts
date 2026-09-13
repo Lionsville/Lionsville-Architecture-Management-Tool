@@ -60,6 +60,46 @@ export function withSpan(
   return Object.keys(next).length ? next : undefined
 }
 
+/** One area to place: how many columns it takes, and how tall it measured. */
+export type PackItem = { id: ElementId; span: number; height: number }
+/** Where one area landed: its first column, and its top in pixels. */
+export type PackedArea = { id: ElementId; column: number; span: number; top: number }
+
+/**
+ * The areas packed under one another, not in rows.
+ *
+ * A CSS grid lays areas out in rows, and a row is as tall as its tallest
+ * card: a narrow area with twelve capabilities beside a wide one with four
+ * left the whole rest of that row empty. So the page keeps a skyline — how
+ * far down each column is filled — and drops each area, in the sheet's own
+ * order, at the lowest place its span fits, leftmost when two are level. A
+ * tall narrow area on the left and wide ones stacked beside it is exactly
+ * what falls out, and a small area lands in whatever hole is open.
+ *
+ * Heights are measured by the page and handed in; the answer is in pixels,
+ * and `height` is the whole packed page's.
+ */
+export function packAreas(
+  items: readonly PackItem[], columns: number, gap: number = AREA_COLUMN.gap,
+): { placed: PackedArea[]; height: number } {
+  const count = Math.max(1, Math.floor(columns))
+  const skyline: number[] = new Array<number>(count).fill(0)
+  const placed: PackedArea[] = []
+  for (const item of items) {
+    const span = Math.max(1, Math.min(item.span, count))
+    let column = 0
+    let top = Number.POSITIVE_INFINITY
+    for (let at = 0; at + span <= count; at += 1) {
+      const level = Math.max(...skyline.slice(at, at + span))
+      if (level < top) { top = level; column = at }
+    }
+    placed.push({ id: item.id, column, span, top })
+    const bottom = top + Math.max(0, item.height) + gap
+    for (let at = column; at < column + span; at += 1) skyline[at] = bottom
+  }
+  return { placed, height: Math.max(0, Math.max(...skyline) - gap) }
+}
+
 /**
  * ISO 216 landscape, at 96 CSS pixels to the inch — the widths a sheet is laid
  * out at for a print. The width is what the grid is fitted to; the height is
