@@ -52,6 +52,20 @@ describe('useOwnerDescriptions', () => {
     expect(host.held().has('ghost')).toBe(false)
   })
 
+  it('takes the narrow read where the store has one, and never loads then', async () => {
+    const load = vi.fn()
+    const descriptions = vi.fn(async (path: string) => {
+      const held = tree[path as keyof typeof tree]
+      return Object.fromEntries(held.model.elements.flatMap((e) => (e.description ? [[e.id, e.description]] : [])))
+    })
+    let held!: ReadonlyMap<string, string>
+    function Host() { held = useOwnerDescriptions({ scope: '', index, load, descriptions }); return null }
+    render(<Host />)
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(load).not.toHaveBeenCalled()
+    expect(held.get('erp')).toBe('Retail says: the ERP')
+  })
+
   it('reads nothing where there is nothing to read from', () => {
     let held!: ReadonlyMap<string, string>
     function Host() { held = useOwnerDescriptions({ scope: '', index }); return null }

@@ -292,10 +292,16 @@ function EditorBody(props: SolutionDesignEditorProps) {
   // the thing they were just reading about, with its inspector open.
   const openDocumentation = useCallback(
     (elementId: ElementId) => {
+      // A stand-in's page is the owner's page: the description is maintained
+      // where the thing is defined, so every way to the page — the menu, a
+      // link in a document, the inspector — goes there.
+      const held = state.model.elements.find((e) => e.id === elementId);
+      const away = held?.ref !== undefined ? props.ownership?.ownerOf(elementId)?.onDocument : undefined;
+      if (away) { away(); return; }
       setSelection(selectElement(elementId));
       setDocumentationId(elementId);
     },
-    [setSelection],
+    [setSelection, state.model.elements, props.ownership],
   );
   const requestMenu = useCallback((kind: 'open' | 'rename') => {
     menuNonce.current += 1;

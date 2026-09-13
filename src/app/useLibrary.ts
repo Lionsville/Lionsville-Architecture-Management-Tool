@@ -18,7 +18,7 @@ import type { Translate } from '../i18n'
 import type { Command, DesignElement, ElementId } from '../model'
 import { placeOn, transaction } from '../model/commands'
 import { seedPlacement } from '../model/placement'
-import { isLibraryRefusal, LIBRARY_REFUSAL, libraryRows, planFromLibrary } from '../projects/library'
+import { isLibraryRefusal, LIBRARY_REFUSAL, libraryRows, planFromLibrary, rowsToImport } from '../projects/library'
 import type { LibraryPlan, LibraryRow } from '../projects/library'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
@@ -100,14 +100,22 @@ export function useLibrary(deps: {
       ? element
       : { ...element, zone: band === 'external' ? 'externalSystems' as const : 'landscape' as const }
     const placement = seedPlacement(seed, diagram, element.id)
-    const command: Command = create
-      ? transaction([{ type: 'element.create', element }, placeOn(diagram.id, [placement])])
-      : placeOn(diagram.id, [placement])
+    // A stand-in brings its interfaces: the flows the tree holds between it
+    // and what this scope already has, so an overview joins its cards up the
+    // way the landscapes beneath it did. A definition has none to bring.
+    const rows = element.ref !== undefined
+      ? rowsToImport(index.rowsOf(element.id), element.id, session.current())
+      : []
+    const command: Command = transaction([
+      ...(create ? [{ type: 'element.create' as const, element }] : []),
+      placeOn(diagram.id, [placement]),
+      ...rows.map((relation) => ({ type: 'relation.create' as const, relation })),
+    ])
     setChoice(undefined)
     if (session.dispatch(command) === undefined) return
     focus(element.id)
     notify(said, 'success')
-  }, [activeBoard, session, focus, notify])
+  }, [activeBoard, session, index, focus, notify])
 
   const pick = useCallback((id: ElementId) => {
     const diagram = activeBoard()

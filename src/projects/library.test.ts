@@ -7,8 +7,9 @@
  * an application nobody defines is a question rather than a default.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignElement } from '../model'
-import { isLibraryRefusal, libraryRows, planFromLibrary } from './library'
+import type { DesignElement, Relation } from '../model'
+import type { IndexedRelation } from './scopeIndex'
+import { isLibraryRefusal, libraryRows, planFromLibrary, rowsToImport } from './library'
 import { indexScopes } from './scopeIndex'
 import type { ScopeModel } from './scope'
 
@@ -36,6 +37,27 @@ describe('libraryRows', () => {
     expect(rows.map((row) => row.id)).toEqual(['crm', 'ledger', 'erp', 'wms'])
     expect(rows.find((row) => row.id === 'crm')).toEqual({ id: 'crm', name: 'CRM', master: '', held: true })
     expect(rows.find((row) => row.id === 'ledger')).toEqual({ id: 'ledger', name: 'Ledger', held: false })
+  })
+})
+
+describe('rowsToImport', () => {
+  const row = (id: string, type: Relation['type'], sourceId: string, targetId: string): IndexedRelation =>
+    ({ scope: 'acme/retail', relation: { id, type, sourceId, targetId } })
+
+  it('brings the flows between the newcomer and what this scope holds, once each, and no coverage row', () => {
+    const rows = [
+      row('erp-wms', 'flow', 'erp', 'wms'),
+      row('crm-erp', 'flow', 'crm', 'erp'),
+      row('erp-ledger', 'flow', 'erp', 'ledger'),
+      row('erp-fulfil', 'supports', 'erp', 'fulfilment'),
+      { ...row('erp-wms', 'flow', 'erp', 'wms'), scope: 'acme/finance' },
+      row('erp-self', 'flow', 'erp', 'erp'),
+    ]
+    const model = {
+      elements: [element('wms'), element('crm'), element('fulfilment', { kind: 'function' })],
+      relations: [{ id: 'crm-erp', type: 'flow' as const, sourceId: 'crm', targetId: 'erp' }],
+    }
+    expect(rowsToImport(rows, 'erp', model).map((one) => one.id)).toEqual(['erp-wms'])
   })
 })
 

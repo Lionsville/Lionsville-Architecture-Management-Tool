@@ -39,11 +39,12 @@
  * tested without a filesystem at all.
  */
 import {
-  DECISIONS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE,
+  DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE,
   TRANSITIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
 } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
+import { markdownBody } from '../../projects/fileText'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
@@ -268,6 +269,36 @@ export class FileSystemScopeStore implements ScopeStore {
       })
     } catch {
       return []
+    }
+    return found
+  }
+
+  /**
+   * See {@link ScopeStore.descriptions}: the `docs/` folder and the prose an
+   * unsafe id keeps in `model.json`, and not one other file of the scope.
+   */
+  async descriptions(path: ScopePath): Promise<Record<string, string> | undefined> {
+    if (!usablePath(path)) return undefined
+    const folder = await this.scopeFolder(path, false)
+    if (!folder) return undefined
+    const found: Record<string, string> = {}
+    try {
+      const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
+      const text = await (await handle?.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      if (text === undefined) return undefined
+      for (const element of modelListsFrom(text).elements) {
+        if (element.description !== undefined) found[element.id] = element.description
+      }
+      const docs = await folder.getDirectoryHandle(DOCS_FOLDER).catch(() => undefined)
+      if (docs) {
+        for await (const entry of docs.values()) {
+          if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
+          const prose = await (await entry.getFile().catch(() => undefined))?.text().catch(() => undefined)
+          if (prose !== undefined) found[entry.name.slice(0, -'.md'.length)] = markdownBody(prose)
+        }
+      }
+    } catch {
+      return undefined
     }
     return found
   }

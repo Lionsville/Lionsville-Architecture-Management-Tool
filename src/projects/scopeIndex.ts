@@ -194,6 +194,11 @@ export type ScopeIndex = {
    */
   rowsTo(id: ElementId, types?: readonly RelationType[]): IndexedRelation[]
   /**
+   * Every row in the tree with this id at EITHER end, wherever it was written
+   * — what an overview drawing a stand-in imports the interfaces from.
+   */
+  rowsOf(id: ElementId): IndexedRelation[]
+  /**
    * The initiatives filed in the scopes under this one (ADR-0012 §7): every
    * plan marked `initiative` in a scope strictly below `path`, by scope and
    * then by number. What a roadmap draws under its own plans, and what the
@@ -235,6 +240,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const held = new Map<ElementId, Held>()
   const taken = new Set<string>()
   const incoming = new Map<ElementId, IndexedRelation[]>()
+  const touching = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
   const initiatives: IndexedTransition[] = []
 
@@ -262,9 +268,15 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     }
     for (const relation of model.relations) {
       taken.add(relation.id)
+      const row = { scope: path, relation }
       const rows = incoming.get(relation.targetId) ?? []
-      rows.push({ scope: path, relation })
+      rows.push(row)
       incoming.set(relation.targetId, rows)
+      for (const end of new Set([relation.sourceId, relation.targetId])) {
+        const held = touching.get(end) ?? []
+        held.push(row)
+        touching.set(end, held)
+      }
     }
     const flagged = (model.transitions ?? []).filter((transition) => transition.initiative)
     if (flagged.length > 0) {
@@ -328,6 +340,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       const rows = incoming.get(id) ?? []
       return types ? rows.filter((row) => types.includes(row.relation.type)) : [...rows]
     },
+    rowsOf: (id) => [...(touching.get(id) ?? [])],
     initiativesBelow: (path) => initiatives.filter(({ scope }) => (
       path === '' ? scope !== '' : scope.startsWith(`${path}/`)
     )),

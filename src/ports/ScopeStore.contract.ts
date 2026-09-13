@@ -348,6 +348,27 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * per element and the index never reads one — so the comparison is of the
      * records without their prose.
      */
+    /**
+     * The clause about {@link ScopeStore.descriptions}: the prose `load()`
+     * gives, by id, and nothing for a scope the store does not hold.
+     */
+    it('answers one scope\'s descriptions as load() gives them', async () => {
+      const store = create()
+      const scope = sampleScope()
+      scope.model.elements = scope.model.elements.map((element, n) => (
+        n === 0 ? { ...element, description: 'What it does, in prose.' } : element
+      ))
+      await store.save(scope)
+      if (!store.descriptions) return
+      const loaded = await store.load(scope.path)
+      const expected: Record<string, string> = {}
+      for (const element of loaded?.model.elements ?? []) {
+        if (element.description !== undefined) expected[element.id] = element.description
+      }
+      expect(await store.descriptions(scope.path)).toEqual(expected)
+      expect(await store.descriptions('nowhere')).toBeUndefined()
+    })
+
     it('answers for every scope it lists, with the models load() gives', async () => {
       const store = create()
       await store.save(bareScope(ROOT_SCOPE, 'Acme Logistics', 'organisation'))

@@ -28,9 +28,9 @@
  * scope holds what, which `model/` may not know.
  */
 import type { StringKey } from '../i18n'
-import type { DesignDiagram, DesignElement, ElementId } from '../model'
+import type { DesignDiagram, DesignElement, ElementId, Relation } from '../model'
 import { canPlaceKind } from '../model/placement'
-import type { IndexEntry, ScopeIndex } from './scopeIndex'
+import type { IndexedRelation, IndexEntry, ScopeIndex } from './scopeIndex'
 import type { ScopePath } from './scopePath'
 
 /** One application the register offers, as a picker lists it. */
@@ -132,6 +132,36 @@ export function planFromLibrary(deps: {
     own: definitionOf(entry),
     ...(entry.cachedRef !== undefined ? { drawOnly: standInOf(entry, entry.cachedRef) } : {}),
   }
+}
+
+/**
+ * The interfaces a stand-in brings with it: every `flow` row the tree holds
+ * between it and a record this scope already has, that this scope does not
+ * hold yet.
+ *
+ * The same row under the same id — a landscape defines the interface and an
+ * overview draws it, exactly as it draws the application — so a row is one
+ * fact across the tree and a refresh could rewrite it. Flows only: a
+ * `supports` or `serves` row is coverage, counted once over the whole tree
+ * (`rowsTo`), and a copy of one would count twice. Rows about an end this
+ * scope does not hold are left where they are; they arrive when that end
+ * does.
+ */
+export function rowsToImport(
+  rows: readonly IndexedRelation[],
+  id: ElementId,
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+): Relation[] {
+  const held = new Set(model.elements.map((element) => element.id))
+  const have = new Set(model.relations.map((relation) => relation.id))
+  const found = new Map<string, Relation>()
+  for (const { relation } of rows) {
+    if (relation.type !== 'flow' || have.has(relation.id) || found.has(relation.id)) continue
+    const other = relation.sourceId === id ? relation.targetId : relation.sourceId
+    if (other === id || !held.has(other)) continue
+    found.set(relation.id, relation)
+  }
+  return [...found.values()]
 }
 
 /**

@@ -33,6 +33,18 @@ function scope(
   return { path, model: { elements, relations } }
 }
 
+describe('the index — the rows about an id', () => {
+  it('answers with every row at either end, wherever it was written', () => {
+    const index = indexScopes([
+      scope('retail', [element('erp'), element('wms')], [row('a', 'flow', 'erp', 'wms')]),
+      scope('finance', [element('ledger')], [row('b', 'flow', 'erp', 'ledger'), row('c', 'supports', 'ledger', 'fulfilment')]),
+    ])
+    expect(index.rowsOf('erp').map((one) => `${one.scope}:${one.relation.id}`)).toEqual(['finance:b', 'retail:a'])
+    expect(index.rowsOf('ledger').map((one) => one.relation.id)).toEqual(['b', 'c'])
+    expect(index.rowsOf('nobody')).toEqual([])
+  })
+})
+
 describe('the index — who answers for an id', () => {
   it('makes the one definition in the tree the master', () => {
     const index = indexScopes([scope('retail', [element('erp', { name: 'ERP' })])])

@@ -588,7 +588,9 @@ export function ProjectWorkspace({
    * from the owning scopes, shown on the card and in the panel, never kept.
    */
   const ownerDescriptions = useOwnerDescriptions({
-    scope: project.path, index, ...(projects.load ? { load: projects.load } : {}),
+    scope: project.path, index,
+    ...(projects.load ? { load: projects.load } : {}),
+    ...(projects.descriptions ? { descriptions: projects.descriptions } : {}),
   })
 
   const notes = useMemo(() => {
@@ -750,6 +752,7 @@ export function ProjectWorkspace({
           ? {
             onOpen: () => onOpenScope(rights.owner!),
             onShow: () => onOpenScope(rights.owner!, { page: 'element', id: elementId }),
+            onDocument: () => onOpenScope(rights.owner!, { page: 'document', id: elementId }),
           }
           : {}),
       }

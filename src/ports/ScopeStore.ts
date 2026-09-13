@@ -134,6 +134,21 @@ export interface ScopeStore {
    * may not be able to do.
    */
   models?(): Promise<ScopeModel[]>
+
+  /**
+   * One scope's descriptions, by element id, and nothing else.
+   *
+   * The other half of what `models` leaves out. An overview shows a stand-in
+   * with the description its owner holds (ADR-0012 §3), which is one file per
+   * element in the owning scope — and `load()` reads that scope's pictures,
+   * marks and geometry as well, with a modification time per file, to answer
+   * a question about a few paragraphs of prose. `undefined` for a scope the
+   * store does not hold.
+   *
+   * Optional for the reason `models` is: a store that keeps whole snapshots
+   * has nothing cheaper than `load()`, and the reader falls back to it.
+   */
+  descriptions?(path: ScopePath): Promise<Record<string, string> | undefined>
 }
 
 /** How much

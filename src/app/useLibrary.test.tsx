@@ -44,7 +44,16 @@ function model(): HostModel {
 const index = indexScopes([
   { path: '', model: { elements: [element('crm', { name: 'CRM' })], relations: [] } },
   { path: 'acme/retail', model: { elements: model().elements, relations: [] } },
-  { path: 'acme/retail/stores', model: { elements: [element('shelf', { name: 'Shelf planner' })], relations: [] } },
+  {
+    path: 'acme/retail/stores',
+    model: {
+      elements: [element('shelf', { name: 'Shelf planner' }), element('pos', { ref: 'acme/retail' })],
+      relations: [
+        { id: 'shelf-pos', type: 'flow', sourceId: 'shelf', targetId: 'pos' },
+        { id: 'shelf-erp', type: 'flow', sourceId: 'shelf', targetId: 'erp' },
+      ],
+    },
+  },
   { path: 'acme/finance', model: { elements: [element('ledger', { name: 'Ledger', ref: 'acme/accounting' })], relations: [] } },
 ])
 
@@ -91,6 +100,9 @@ describe('useLibrary', () => {
     expect(host.held('shelf')).toBeUndefined()
     act(() => host.lib().place('external'))
     expect(host.held('shelf')).toMatchObject({ name: 'Shelf planner', ref: 'acme/retail/stores', isManaged: false })
+    // Its interface with what this scope holds came with it; the one to an
+    // application this scope does not hold did not.
+    expect(host.current().relations.map((row) => row.id)).toEqual(['shelf-pos'])
     expect(host.current().diagrams[0].members.find((member) => member.id === 'shelf')?.zone).toBe('externalSystems')
     expect(host.focus).toHaveBeenCalledWith('shelf')
     expect(host.notify).toHaveBeenCalledWith(
@@ -100,6 +112,7 @@ describe('useLibrary', () => {
     // One step: undo takes the record and its place back together.
     act(() => { host.session().undo() })
     expect(host.held('shelf')).toBeUndefined()
+    expect(host.current().relations).toEqual([])
     expect(host.drawn('shelf')).toBe(false)
   })
 

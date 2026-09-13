@@ -356,6 +356,8 @@ export interface EditorOwnership {
      * second one about somebody else's application.
      */
     onShow?(): void;
+    /** Open that scope on this record's page — a stand-in's page is the owner's page. */
+    onDocument?(): void;
     /** The owner's description, for the panel to show in place of this record's own. */
     description?: string;
   } | undefined;

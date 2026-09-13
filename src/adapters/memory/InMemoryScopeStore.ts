@@ -43,6 +43,18 @@ export class InMemoryScopeStore implements ScopeStore {
     return Promise.resolve(found)
   }
 
+  /** See {@link ScopeStore.descriptions}. Cheap here; present so the contract exercises the clause. */
+  descriptions(path: ScopePath): Promise<Record<string, string> | undefined> {
+    if (!isSafeScopePath(path)) return Promise.resolve(undefined)
+    const scope = this.held.get(path)
+    if (!isStoredScope(scope)) return Promise.resolve(undefined)
+    const found: Record<string, string> = {}
+    for (const element of scope.model.elements) {
+      if (element.description !== undefined) found[element.id] = element.description
+    }
+    return Promise.resolve(found)
+  }
+
   load(path: ScopePath): Promise<ScopeSnapshot | undefined> {
     if (!isSafeScopePath(path)) return Promise.resolve(undefined)
     const scope = this.held.get(path)

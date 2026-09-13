@@ -44,6 +44,8 @@ export type ProjectSaver = {
    * afterwards, which puts a transition somewhere it cannot be tested.
    */
   load?(path: ScopePath): Promise<ScopeSnapshot | undefined>
+  /** See {@link ../ports/ScopeStore.descriptions}: one scope's prose, for the stand-ins drawn here. */
+  descriptions?(path: ScopePath): Promise<Record<string, string> | undefined>
   /**
    * How full it is, where it can say — see `ports/ProjectStore`. Read after a
    * save rather than before one: the number that matters is what the write it

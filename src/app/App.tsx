@@ -154,6 +154,8 @@ export type ScopeLibrary = {
    * cannot answer it.
    */
   models?(): Promise<ScopeModel[]>
+  /** One scope's prose, for the stand-ins an overview draws (ADR-0012 §3). Optional the same way. */
+  descriptions?(path: ScopePath): Promise<Record<string, string> | undefined>
 }
 
 /** What the settings dialogs may change about a scope, whatever level it is. */
@@ -427,6 +429,7 @@ export function App({
       movedAway.current === held.path ? Promise.resolve() : projects.save(held)
     ),
     load: (path: ScopePath) => projects.load(path),
+    ...(projects.descriptions ? { descriptions: (path: ScopePath) => projects.descriptions!(path) } : {}),
   }), [projects])
 
   /**
