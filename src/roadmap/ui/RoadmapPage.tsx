@@ -37,7 +37,7 @@ import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLa
 import type { DesignElement, DesignModel, ElementId, Lifecycle, Transition } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
-import { BackIcon } from '../../widgets/icons'
+import { BackIcon, CaretIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
@@ -131,6 +131,11 @@ export function RoadmapPage(props: RoadmapPageProps) {
   // the band alone says when and not what, and off for a reader who wants
   // this scope's own landscape only.
   const [showBelow, setShowBelow] = useState(true)
+  // Whether the dated relations are listed. Shut by default: a plan that moves
+  // every interface off an application dates every one of its lines, and the
+  // page is then a wall of hatched rows under four applications. The heading
+  // still says how many there are, so a shut section is not a hidden one.
+  const [showRelations, setShowRelations] = useState(false)
   const belowHasElements = below.some(({ elements }) => (elements?.length ?? 0) > 0)
   // The axis takes the initiatives in: a plan below that runs past this
   // scope's own dates would otherwise be a band cut off at the edge.
@@ -315,10 +320,24 @@ export function RoadmapPage(props: RoadmapPageProps) {
 
               {roadmap.relations.length > 0 && (
                 <>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 2, mb: 0.5 }}>
-                    {t('roadmap.relations')}
-                  </Typography>
-                  {roadmap.relations.map(({ relation, sourceName, targetName }) => {
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-expanded={showRelations}
+                    onClick={() => setShowRelations((on) => !on)}
+                    sx={{
+                      display: 'flex', alignItems: 'center', gap: 0.5, mt: 2, mb: 0.5, p: 0,
+                      border: 0, background: 'none', cursor: 'pointer', color: 'text.secondary', font: 'inherit',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', transform: showRelations ? 'none' : 'rotate(-90deg)', transition: 'transform 120ms' }}>
+                      <CaretIcon />
+                    </Box>
+                    <Typography sx={{ fontSize: 11, fontWeight: 700 }}>
+                      {t('roadmap.relationsCount', { count: roadmap.relations.length })}
+                    </Typography>
+                  </Box>
+                  {showRelations && roadmap.relations.map(({ relation, sourceName, targetName }) => {
                     // An end left open is drawn to the edge of the axis, which is
                     // what "and onwards" looks like on a page with two edges.
                     const opens = isDay(relation.validFrom) ? relation.validFrom! : roadmap.from

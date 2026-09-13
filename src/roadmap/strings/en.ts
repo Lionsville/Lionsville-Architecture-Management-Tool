@@ -14,7 +14,7 @@ export const EN = {
   'roadmap.today': 'Today',
   'roadmap.showing': 'Showing',
   'roadmap.applications': 'Applications',
-  'roadmap.relations': 'Relations',
+  'roadmap.relationsCount': '{count} relations',
   'roadmap.plans': 'Plans',
   'roadmap.newPlan': 'New plan',
   'roadmap.newPlanTitle': 'What is the plan called?',

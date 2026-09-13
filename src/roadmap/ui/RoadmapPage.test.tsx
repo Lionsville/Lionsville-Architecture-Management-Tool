@@ -140,6 +140,12 @@ describe('the axis', () => {
         ],
       }),
     })
+    // The section starts shut, with its count on the heading: a plan that
+    // ports every interface dates every line, and the page is a wall otherwise.
+    expect(document.querySelector('[data-testid="relation-r1"]')).toBeNull()
+    const heading = screen.getByRole('button', { name: '1 relations', expanded: false })
+    fireEvent.click(heading)
+    expect(heading.getAttribute('aria-expanded')).toBe('true')
     // The undated flow says nothing about time and gets no row.
     expect(document.querySelector('[data-testid="relation-r2"]')).toBeNull()
     const row = find('[data-testid="relation-r1"]') as HTMLElement

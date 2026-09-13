@@ -564,7 +564,9 @@ wat in datum hat krijt in rige, dus in lânskip fan fjouwertûzen applikaasjes
 mei njoggen datums deryn is in roadmap fan in pear rigels — de rest stiet op it
 tekenflak, dêr't it heart. Elke rige is in rin fan kleurde stikken: pland, live,
 ôfbouwe, fuort. In line troch elke rige markearret hjoed, en in twadde de dei
-dy't it boerd efter de side toant.
+dy't it boerd efter de side toant. Relaasjes mei in eigen finster steane ûnder de applikaasjes,
+ticht fâlde mei in oantal op de kop, om't in plan dat elke ynterface
+ferpleatst elke line in datum jout.
 
 De skúf lâns de boppekant ferpleatst dat boerd. Sleep him en it tekenflak
 derefter folget, sadat de plaat en de as it net ûniens wêze kinne oer hokker

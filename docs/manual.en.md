@@ -543,7 +543,9 @@ date gets a row, so a landscape of four thousand applications with nine dates in
 it is a roadmap of a few lines — the rest is on the canvas, where it belongs.
 Each row is a run of coloured stretches: planned, live, retiring, gone. A line
 down every row marks today, and a second one marks the day the board behind the
-page is showing.
+page is showing. Relations with a window of their own are listed under the
+applications, folded shut with a count on the heading, because a plan that
+moves every interface dates every line.
 
 The slider along the top moves that board. Drag it and the canvas behind follows,
 so the picture and the axis cannot disagree about which day is under discussion.

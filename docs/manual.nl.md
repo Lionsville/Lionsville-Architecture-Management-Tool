@@ -569,7 +569,9 @@ datum heeft krijgt een regel, dus een landschap van vierduizend applicaties met
 negen datums is een roadmap van een paar regels — de rest staat op het canvas,
 waar het thuishoort. Elke regel is een reeks gekleurde stukken: gepland, live,
 uitfaserend, weg. Een streep door elke regel markeert vandaag, en een tweede de
-dag die het bord achter de pagina toont.
+dag die het bord achter de pagina toont. Relaties met een eigen venster staan onder de applicaties,
+dichtgevouwen met een aantal op de kop, omdat een plan dat elke interface
+verplaatst elke lijn een datum geeft.
 
 De schuifbalk bovenaan verplaatst dat bord. Sleep hem en het canvas erachter
 volgt, zodat de tekening en de as het niet oneens kunnen zijn over welke dag

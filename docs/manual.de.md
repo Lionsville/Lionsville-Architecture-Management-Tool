@@ -609,7 +609,9 @@ Anwendungen und neun Daten darin ein Fahrplan aus wenigen Zeilen ist — der Res
 ist auf der Zeichenfläche, wo er hingehört. Jede Zeile ist eine Folge farbiger
 Abschnitte: geplant, aktiv, auslaufend, weg. Eine Linie durch jede Zeile
 markiert heute, und eine zweite markiert den Tag, den das Board hinter der Seite
-zeigt.
+zeigt. Relationen mit einem eigenen Fenster stehen unter den Anwendungen,
+eingeklappt mit einer Zahl in der Überschrift, weil ein Plan, der jede
+Schnittstelle verlegt, jede Linie datiert.
 
 Der Schieberegler oben bewegt dieses Board. Ziehen Sie ihn, und die
 Zeichenfläche dahinter folgt, sodass das Bild und die Achse nicht uneins darüber
