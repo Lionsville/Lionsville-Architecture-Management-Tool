@@ -3,6 +3,7 @@ import {
   DESCRIPTIONS_REMEMBERED,
   SHORT_DESCRIPTION_LABELS,
   documentTemplate,
+  documentedElements,
   hasDocumentation,
   headingId,
   linkElementRefs,
@@ -116,6 +117,28 @@ describe('outline', () => {
 
   it('is empty for nothing', () => {
     expect(outline(undefined)).toEqual([]);
+  });
+});
+
+describe('documentedElements', () => {
+  const element = (id: string, kind: 'application' | 'function' | 'actor' | 'step') => ({
+    id, kind, name: id, lifecycle: 'live' as const, isManaged: false, aspects: {},
+  });
+  const model = {
+    name: 'x', relations: [], diagrams: [],
+    elements: [element('crm', 'application'), element('erp', 'application'), element('billing', 'function'), element('ops', 'actor'), element('ship', 'step')],
+  };
+
+  it('lists what a board places, and nothing else', () => {
+    const board = { id: 'b', kind: 'layer7' as const, name: 'b', members: [{ id: 'crm' }], geometry: { nodes: [] } };
+    expect(documentedElements(model, board)).toEqual([{ kind: 'application', elements: [element('crm', 'application')] }]);
+  });
+
+  it('lists the trees a sheet draws, because a sheet places nothing', () => {
+    const sheet = { id: 's', kind: 'sheet' as const, name: 's', members: [], geometry: { nodes: [] } };
+    expect(documentedElements(model, sheet).map((group) => group.kind)).toEqual(['actor', 'function', 'step']);
+    const map = { ...sheet, kind: 'map' as const };
+    expect(documentedElements(model, map).map((group) => group.kind)).toEqual(['function']);
   });
 });
 

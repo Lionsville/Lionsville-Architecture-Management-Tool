@@ -124,9 +124,12 @@ export interface EditorRequests {
      * bar, or its search. Without `elementId` the page opens on the selected
      * element, failing that the first element placed on the active diagram, and
      * failing that the first element in the model; with no elements at all it
-     * does nothing. Bump `nonce` to ask again.
+     * does nothing. Bump `nonce` to ask again. `diagramId` is the view the
+     * reader came from — a sheet, whose capabilities the page then lists down
+     * its left rather than the active board's applications; absent is the
+     * active board.
      */
-    documentation?: { elementId?: ElementId; nonce: number };
+    documentation?: { elementId?: ElementId; diagramId?: string; nonce: number };
 }
 
 /**

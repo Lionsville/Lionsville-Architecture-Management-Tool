@@ -222,6 +222,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   /** The element whose documentation page is open; session state, never saved. */
   const [documentationId, setDocumentationId] = useState<ElementId | undefined>(undefined);
+  /** The view the page lists the neighbours of, when a host named one; absent = the active board. */
+  const [documentationDiagramId, setDocumentationDiagramId] = useState<string | undefined>(undefined);
   // The page's fields column, kept here because the page is remounted per
   // element: a width dragged once should hold while a reader moves on.
   const [documentationFieldsWidth, setDocumentationFieldsWidth] = useState<number>(FIELDS_COLUMN.default);
@@ -330,7 +332,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
     if (hostDocRef.current && hostDocRef.current.nonce === hostDoc.nonce) return;
     hostDocRef.current = hostDoc;
     const id = hostDoc.elementId ?? selectedForDoc ?? firstPlaced ?? firstInModel;
-    if (id) openDocumentation(id);
+    if (!id) return;
+    setDocumentationDiagramId(hostDoc.diagramId);
+    openDocumentation(id);
   }, [hostDoc, selectedForDoc, firstPlaced, firstInModel, openDocumentation]);
 
   useFocusElement({
@@ -1085,21 +1089,84 @@ function EditorBody(props: SolutionDesignEditorProps) {
     [setShortcutContainer],
   );
 
+  // An element deleted (or undone out of existence) while its page is open
+  // simply has no page any more.
+  const documentationDiagram = (documentationDiagramId !== undefined
+    ? state.model.diagrams.find((d) => d.id === documentationDiagramId)
+    : undefined) ?? activeDiagram;
+  const documentationElement = documentationId
+    ? state.model.elements.find((e) => e.id === documentationId)
+    : undefined;
+
+  /**
+   * The page, built before the early return below: a scope with no board —
+   * an organisation, whose views are a sheet and a map — has no canvas to
+   * draw, but its capabilities and stakeholders have pages, and the sheet's
+   * *Details ›* is the way to them. The view the page lists neighbours of is
+   * the one the host named, failing that the board.
+   */
+  const documentationPage = documentationElement && documentationDiagram && (
+        <DocumentationPage
+          key={documentationElement.id}
+          element={documentationElement}
+          model={state.model}
+          scopeLabel={props.exportTitleBlock?.client}
+          diagram={documentationDiagram}
+          readOnly={readOnly}
+          actions={state.actions}
+          renderMarkdown={props.renderMarkdown}
+          onAddImage={readOnly ? undefined : props.onAddImage}
+          images={readOnly ? undefined : props.images}
+          renderInspector={(element, { readOnly: inspectorReadOnly }) => (
+            <ElementInspector
+              element={element}
+              model={state.model}
+              diagram={documentationDiagram}
+              readOnly={inspectorReadOnly}
+              actions={state.actions}
+              onRequestDelete={() => {
+                setDocumentationId(undefined);
+                setDeleteTarget(element.id);
+              }}
+              renderMarkdown={props.renderMarkdown}
+              onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
+              onReplace={readOnly ? undefined : props.plans?.onReplace}
+              owned={props.ownership?.ownerOf(element.id)}
+              move={moveFor(props.ownership, element.id)}
+              layout="stacked"
+              hideDescription
+            />
+          )}
+          plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
+          fieldsWidth={{ value: documentationFieldsWidth, onChange: setDocumentationFieldsWidth }}
+          onNavigate={openDocumentation}
+          onClose={() => { setDocumentationId(undefined); setDocumentationDiagramId(undefined); }}
+          onRequestDelete={() => {
+            setDocumentationId(undefined);
+            setDocumentationDiagramId(undefined);
+            setDeleteTarget(documentationElement.id);
+          }}
+          onRequestLogoUpload={props.logos?.onRequestUpload}
+          onOpenHistory={props.history?.onDescription
+            ? () => props.history?.onDescription?.(documentationElement.id)
+            : undefined}
+          windowChrome={props.windowChrome}
+        />
+  );
+
   if (!activeDiagram) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography color="text.secondary">{t('error.diagramNotFound')}</Typography>
-      </Box>
+      <>
+        <Box sx={{ p: 3 }}>
+          <Typography color="text.secondary">{t('error.diagramNotFound')}</Typography>
+        </Box>
+        {documentationPage}
+      </>
     );
   }
 
   const deleteElement = deleteTarget
     ? state.model.elements.find((e) => e.id === deleteTarget)
-    : undefined;
-  // An element deleted (or undone out of existence) while its page is open
-  // simply has no page any more.
-  const documentationElement = documentationId
-    ? state.model.elements.find((e) => e.id === documentationId)
     : undefined;
 
   return (
@@ -1341,53 +1408,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onClose={closeExport}
         />
       )}
-      {documentationElement && (
-        <DocumentationPage
-          key={documentationElement.id}
-          element={documentationElement}
-          model={state.model}
-          scopeLabel={props.exportTitleBlock?.client}
-          diagram={activeDiagram}
-          readOnly={readOnly}
-          actions={state.actions}
-          renderMarkdown={props.renderMarkdown}
-          onAddImage={readOnly ? undefined : props.onAddImage}
-          images={readOnly ? undefined : props.images}
-          renderInspector={(element, { readOnly: inspectorReadOnly }) => (
-            <ElementInspector
-              element={element}
-              model={state.model}
-              diagram={activeDiagram}
-              readOnly={inspectorReadOnly}
-              actions={state.actions}
-              onRequestDelete={() => {
-                setDocumentationId(undefined);
-                setDeleteTarget(element.id);
-              }}
-              renderMarkdown={props.renderMarkdown}
-              onRequestLogoUpload={readOnly ? undefined : props.logos?.onRequestUpload}
-              onReplace={readOnly ? undefined : props.plans?.onReplace}
-              owned={props.ownership?.ownerOf(element.id)}
-              move={moveFor(props.ownership, element.id)}
-              layout="stacked"
-              hideDescription
-            />
-          )}
-          plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
-          fieldsWidth={{ value: documentationFieldsWidth, onChange: setDocumentationFieldsWidth }}
-          onNavigate={openDocumentation}
-          onClose={() => setDocumentationId(undefined)}
-          onRequestDelete={() => {
-            setDocumentationId(undefined);
-            setDeleteTarget(documentationElement.id);
-          }}
-          onRequestLogoUpload={props.logos?.onRequestUpload}
-          onOpenHistory={props.history?.onDescription
-            ? () => props.history?.onDescription?.(documentationElement.id)
-            : undefined}
-          windowChrome={props.windowChrome}
-        />
-      )}
+      {documentationPage}
       <ElementSearchDialog
         open={searchOpen}
         model={state.model}

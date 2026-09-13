@@ -283,17 +283,28 @@ export interface DocumentedGroup {
   elements: DesignElement[];
 }
 
+/** What a laid-out view draws (ADR-0012 §6): the trees, not a membership list. */
+const LAID_OUT_KINDS: Partial<Record<DesignDiagram['kind'], readonly ElementKind[]>> = {
+  sheet: ['actor', 'function', 'step'],
+  map: ['function'],
+};
+
 /**
  * The elements placed on a diagram, grouped by kind and sorted by name, for the
  * page's left column and its previous/next. Placement rather than the whole
  * model, because "the other things on this drawing" is what a reader means by
  * next; a kind with nothing placed is left out rather than shown empty.
+ *
+ * A sheet or a map places nothing: it is laid out from the trees, so what is
+ * on it is every element of the kinds it draws. A capability's page reached
+ * from the sheet lists the other capabilities, not the board's applications.
  */
 export function documentedElements(model: DesignModel, diagram: DesignDiagram): DocumentedGroup[] {
-  const placed = new Set(placedNodes(diagram).map((p) => p.id));
+  const kinds = LAID_OUT_KINDS[diagram.kind];
+  const placed = kinds ? undefined : new Set(placedNodes(diagram).map((p) => p.id));
   const byKind = new Map<ElementKind, DesignElement[]>();
   for (const element of model.elements) {
-    if (!placed.has(element.id)) continue;
+    if (placed ? !placed.has(element.id) : !kinds?.includes(element.kind)) continue;
     const list = byKind.get(element.kind) ?? [];
     list.push(element);
     byKind.set(element.kind, list);
