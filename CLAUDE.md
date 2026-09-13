@@ -946,3 +946,19 @@ history followed: an element's page is filed in every scope that holds the id,
 so `historyPaths` gained `historyPlaces` beside it and `HistoryScope` became a
 list of places, which the desktop adapter flattens into the one `git log` it ran
 before.
+
+Then the fourth beta (`docs/plan-2.0.0.md`, steps 12 to 14), cut an hour after
+the third. The **enterprise map** is the second laid-out view: every function
+against the applications the rows name, grouped under the scope that owns them,
+a hollow mark on the sections for the roll-up, people as one column and the gap
+as the last — `business/map.ts` is the arithmetic, `MapPage` the table, and the
+inspector, the actions and the capture handle are the sheet's. The **agent
+reads at every scope**: `scope` on every tool answers a read over another
+scope's document, loaded for the call, while a change, a picture or `undo`
+addressed elsewhere is refused with `agent.scopeNotOpen`; `scopes.list`,
+`register.list` and `checks.list` answer from the index, and the tree reaches
+`agent/` as a plain object (`agent/tree.ts`). And a ```bpmn fence is **drawn**,
+from the file's own diagram interchange and with no library — `documentation/
+bpmn.ts` carries a small XML reader so it is pure and tested in node. ADR-0012
+has its *Built* preamble; what remains for 2.0.0 is the manual in Frisian and
+German and the notes over every beta.

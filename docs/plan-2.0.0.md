@@ -645,11 +645,11 @@ table. Read-only first.
 
 ## 2.0.0
 
-- `docs/decisions/0012` gets its *Built* preamble with the departures from
-  the text, the way 0010 has one.
-- `CLAUDE.md`: the module map (`business/`, `ScopeStore`, the index), the
+- ~~`docs/decisions/0012` gets its *Built* preamble with the departures from
+  the text, the way 0010 has one.~~ Written 13 September 2026.
+- ~~`CLAUDE.md`: the module map (`business/`, `ScopeStore`, the index), the
   names table (`scope.json`, `.geometry.json`, format 4, working file v4),
-  *State of play*.
+  *State of play*.~~ Kept current per step; the state of play ends at beta 4.
 - The manual, in four languages, with the organisation screen and the map.
 - Release notes covering every beta.
 

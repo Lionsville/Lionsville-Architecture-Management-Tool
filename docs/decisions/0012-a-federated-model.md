@@ -8,6 +8,81 @@
 order it is reached in; the last section sketches that order and is the least
 settled part of the document.*
 
+**Built, 13 September 2026**, in the fourteen steps of `docs/plan-2.0.0.md`
+over four betas cut on two consecutive days, with these departures from the
+text below:
+
+* **The format turned twice, not once.** §11 numbers the turn 4. The model's
+  own shape — typed relations, views apart from geometry, the six kinds —
+  took format 4 on its own (plan step 4), and one document shape nested took
+  5. A `.lvarch` is v5; every older version opens and migrates, and
+  `projects/migrate3to4.ts` and `migrate4to5.ts` are the last readers of the
+  two shapes before it.
+* **A scope with no views reads.** That is the one clause of ADR-0003 that
+  moved: a domain is a folder that draws nothing, and refusing it would hide
+  its decisions, documents and plans. Whether the canvas can show one is the
+  shell's question (`isOpenableScope`).
+* **The index is `projects/scopeIndex.ts`**, and `ScopeStore.models?()` is
+  the clause it reads — one `model.json` per scope, never a view, a document
+  or a geometry. A store without the clause is loaded scope by scope, which
+  is slower and not wrong. Drift is a fact the index states; `checks.ts`
+  turns it into a finding. The whole tree is watched, and a failed read keeps
+  the index it had.
+* **Two of §9's findings are answered from the open scope's document**, not
+  the index: `check.notDrawn`, because views are what the index does not
+  read, and `check.unmapped` / `check.uncovered`, which are `business/`'s
+  arithmetic and arrive in `checks.ts` as two lists, since `projects` sits
+  below `business` in the import matrix. "The organisation" for the proposal
+  rule is a master with no ancestor *in the index*, which is what makes an
+  index over a subtree behave.
+* **A stand-in's `name` and `ref` are the owner's too**, for the other half of
+  §10's sentence: they are caches a refresh rewrites, so `mayEdit` refuses
+  them with the owner's detail and `model/standIn.ts` is the one list three
+  places read.
+* **The register is a page of `app/organisation/`**, because `projects` may
+  not import React; the arithmetic is `register.ts` beside it, and
+  `outside` and `partyId` ride on the index's entry so a row needs no second
+  read. It is counted on the organisation screen's fourth card.
+* **A move re-addresses first.** A `ref` is an address, so moving a scope
+  carries every ref pointing into the subtree: the other scopes, then the
+  subtree at its new addresses, then the removal (`projects/readdress.ts`,
+  `app/carryRefs.ts`).
+* **The four gestures are one pure plan each** (`projects/gestures.ts`) — an
+  ordered list of writes and one `Command`. The barrier of §10 is the
+  session's, not the reducer's, and the agent's `undo` meets the same wall.
+  The register's *Link…* opens the scope that should yield and asks there,
+  because a gesture ends in a command at the session that holds the scope.
+  Two-scope undo's first answer — confirm and forbid — is what was built.
+* **Decisions became one list by `subjectId`**; the scopes above appear as a
+  *From …* section each, read there and edited where they live. The history
+  followed: `HistoryScope` is a list of places, and the owning scope's
+  `model.json` is deliberately not among them.
+* **The example is two scopes and the organisation owns every actor** (§4):
+  the business layer at the root, the applications in the landscape under it
+  with a stand-in of every capability they support and of the four people
+  they draw. `examples.test.ts` pins that no finding fires on it.
+* **The sheet's rules, sharpened by authoring it.** A leaf is a leaf at any
+  depth, so *+ capability* on an area makes a card and not an empty box; a
+  lane is derived from where its steps are and `lanes` is only their order.
+* **The map draws the applications the rows name**, not every one the scope
+  holds, grouped under the owning scope; its roll-up is within the drawn
+  scope's own tree, and a refinement a domain holds under a stand-in is not
+  walked, because the index carries no other scope's tree. `areas` is one
+  field for a sheet's areas and a map's sections.
+* **The agent reads across scopes and writes only where it is.** `scope` on
+  every tool answers a read over another scope's document, loaded for the
+  call; a change, a picture or `undo` addressed elsewhere is refused with
+  `agent.scopeNotOpen`. The tree reaches `agent/` as a plain object. A
+  resource URI carries the path, the organisation's is empty, and a
+  path-less URI means the open scope.
+* **BPMN is drawn with no library**, from the file's own diagram
+  interchange; a file without one shows its source under a line saying so,
+  and a shape the reader does not know is a dashed box with its name.
+
+Three of the open questions at the end stand as written — which scope a new
+master lands in, nested domains and the sheet chain, a `.lvarch` of a subtree
+— and the fourth has its first answer above.
+
 ## Context and Problem Statement
 
 This tool has two scopes above a diagram — a project, and the group it is
