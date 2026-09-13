@@ -14,31 +14,50 @@ export function installReactFlowMocks(): void {
     });
   }
 
+  /**
+   * Entries are delivered in ONE batch per observer, on the microtask after the
+   * last `observe`, the way a browser delivers them once per frame. React Flow
+   * observes every node with one observer and answers each delivery with a
+   * full measure pass (`updateNodeInternals`: a selector over the whole board,
+   * then one per node); delivered one at a time, that pass ran once per node,
+   * and jsdom's selector engine compiles afresh on every call — a thirty-node
+   * board cost a second of nothing but that. Batched, it is one pass.
+   */
   class ResizeObserverMock {
     callback: ResizeObserverCallback;
+    private pending = new Set<Element>();
+    private scheduled = false;
     constructor(callback: ResizeObserverCallback) {
       this.callback = callback;
     }
     observe(target: Element) {
-      // Newer @xyflow versions read entry.contentRect — jsdom has no layout,
-      // so synthesize one from the offset shims below.
-      const width = (target as HTMLElement).offsetWidth || 800;
-      const height = (target as HTMLElement).offsetHeight || 600;
-      const contentRect = {
-        x: 0,
-        y: 0,
-        top: 0,
-        left: 0,
-        right: width,
-        bottom: height,
-        width,
-        height,
-        toJSON: () => ({}),
-      };
-      this.callback([{ target, contentRect } as unknown as ResizeObserverEntry], this);
+      this.pending.add(target);
+      if (this.scheduled) return;
+      this.scheduled = true;
+      queueMicrotask(() => {
+        this.scheduled = false;
+        const entries = [...this.pending].map((observed) => entryFor(observed));
+        this.pending.clear();
+        if (entries.length > 0) this.callback(entries, this);
+      });
     }
-    unobserve() {}
-    disconnect() {}
+    unobserve(target: Element) {
+      this.pending.delete(target);
+    }
+    disconnect() {
+      this.pending.clear();
+    }
+  }
+
+  // Newer @xyflow versions read entry.contentRect — jsdom has no layout, so
+  // synthesize one from the offset shims below.
+  function entryFor(target: Element): ResizeObserverEntry {
+    const width = (target as HTMLElement).offsetWidth || 800;
+    const height = (target as HTMLElement).offsetHeight || 600;
+    const contentRect = {
+      x: 0, y: 0, top: 0, left: 0, right: width, bottom: height, width, height, toJSON: () => ({}),
+    };
+    return { target, contentRect } as unknown as ResizeObserverEntry;
   }
   globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
 
