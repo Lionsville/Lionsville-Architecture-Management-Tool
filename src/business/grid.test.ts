@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { columnsFor, packAreas, paperWidth, sheetColumns, sheetPaperWidth, spanOf, withSpan } from './grid'
+import {
+  MAX_SPAN, columnsFor, estimateAreaHeight, fitSpans, packAreas, paperHeight, paperOfWidth, paperWidth,
+  sheetColumns, sheetPaper, sheetPaperWidth, spanOf, withSpan,
+} from './grid'
 
 describe('how many columns fit', () => {
   it('is one on anything narrower than a column, and never zero', () => {
@@ -34,18 +37,29 @@ describe('how many an area takes', () => {
     expect(spanOf({ areaSpans: { sales: 9 } }, 'sales', 9)).toBe(4)
   })
 
-  it('writes nothing once every area is back to one column', () => {
+  it('keeps a span a person set, one column included, so the fit leaves that area alone', () => {
     const widened = withSpan(undefined, 'sales', 2)
     expect(widened).toEqual({ sales: 2 })
-    expect(withSpan(widened, 'sales', 1)).toBeUndefined()
-    expect(withSpan({ sales: 2, ops: 3 }, 'sales', 1)).toEqual({ ops: 3 })
+    expect(withSpan(widened, 'sales', 1)).toEqual({ sales: 1 })
+    expect(withSpan({ sales: 2, ops: 3 }, 'sales', 0)).toEqual({ sales: 1, ops: 3 })
+    expect(withSpan(undefined, 'sales', 9)).toEqual({ sales: MAX_SPAN })
   })
 })
 
 describe('paper', () => {
-  it('is the long side of the ISO sheet at 96 dpi', () => {
+  it('is the long side of the ISO sheet at 96 dpi, and the short side under it', () => {
     expect(paperWidth('A4')).toBe(1123)
     expect(paperWidth('A0')).toBe(4494)
+    expect(paperHeight('A4')).toBe(794)
+    expect(paperHeight('A2')).toBe(1587)
+    expect(paperOfWidth(3179)).toBe('A1')
+    expect(paperOfWidth(3000)).toBeUndefined()
+  })
+
+  it('names the paper a sheet is on, and none for the window', () => {
+    expect(sheetPaper({})).toBe('A2')
+    expect(sheetPaper({ paper: 'A0' })).toBe('A0')
+    expect(sheetPaper({ paper: 'fit' })).toBeUndefined()
   })
 
   it('is what a sheet is laid out on: A2 unless it says, and nothing at all for the window', () => {
@@ -86,5 +100,57 @@ describe('packing the areas', () => {
   it('clamps a span to the grid, and is empty for nothing', () => {
     expect(packAreas([{ id: 'a', span: 5, height: 10 }], 2, 10).placed[0]).toMatchObject({ column: 0, span: 2 })
     expect(packAreas([], 3)).toEqual({ placed: [], height: 0 })
+  })
+})
+
+describe('fitting the areas to the paper', () => {
+  // Fifteen areas of a column each on an A2: the first real sheet, which
+  // came out portrait. The fit's job is to make it landscape.
+  const AREAS = Array.from({ length: 15 }, (_, index) => ({
+    id: `area-${index}`, groupings: index % 3 === 0 ? [5, 4] : [], loose: index % 3 === 0 ? 0 : 9,
+  }))
+
+  it('estimates an area as its rows at that width, so a wider area is a shorter one', () => {
+    const tall = estimateAreaHeight({ groupings: [], loose: 9 }, 1)
+    expect(estimateAreaHeight({ groupings: [], loose: 9 }, 3)).toBeLessThan(tall)
+    expect(estimateAreaHeight({ groupings: [4], loose: 0 }, 4)).toBe(85 + 60 + 52)
+    expect(estimateAreaHeight({ groupings: [], loose: 0 }, 1)).toBe(85)
+  })
+
+  it('widens areas until the packed page is no taller than the target', () => {
+    // The areas hold what they hold: widening evens the columns out, it does
+    // not shrink the content, so the target is what seven columns can carry.
+    const spans = fitSpans(AREAS, 7, 1500)
+    const height = (candidate: Record<string, number>) => packAreas(
+      AREAS.map((area) => ({ id: area.id, span: candidate[area.id], height: estimateAreaHeight(area, candidate[area.id]) })),
+      7,
+    ).height
+    const stacked = Object.fromEntries(AREAS.map((area) => [area.id, 1]))
+    expect(height(stacked)).toBeGreaterThan(1500)
+    expect(height(spans)).toBeLessThanOrEqual(1500)
+    expect(Object.values(spans).every((span) => span >= 1 && span <= MAX_SPAN)).toBe(true)
+  })
+
+  it('stops at a page already under the target, so a small sheet keeps its columns', () => {
+    expect(fitSpans(AREAS.slice(0, 3), 7, 5000)).toEqual({ 'area-0': 1, 'area-1': 1, 'area-2': 1 })
+  })
+
+  it('goes as flat as the width allows when there is no target, and stops once nothing gets flatter', () => {
+    expect(fitSpans(AREAS.slice(0, 1), 8)).toEqual({ 'area-0': MAX_SPAN })
+    // The second area is shorter than the first at two columns already;
+    // making it wider still would not bring the page down.
+    expect(fitSpans(AREAS.slice(0, 2), 8)).toEqual({ 'area-0': MAX_SPAN, 'area-1': 2 })
+  })
+
+  it('leaves an area the sheet fixed at its span, clamped to the grid', () => {
+    const spans = fitSpans([{ ...AREAS[1], fixed: 1 }, { ...AREAS[2], fixed: 9 }, AREAS[4]], 3, 0)
+    expect(spans[AREAS[1].id]).toBe(1)
+    expect(spans[AREAS[2].id]).toBe(3)
+    expect(spans[AREAS[4].id]).toBe(3)
+  })
+
+  it('is empty for nothing, and one column each on a one-column grid', () => {
+    expect(fitSpans([], 3, 0)).toEqual({})
+    expect(fitSpans(AREAS.slice(0, 2), 1, 0)).toEqual({ 'area-0': 1, 'area-1': 1 })
   })
 })

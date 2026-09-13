@@ -19,7 +19,7 @@
  * wherever it hangs, and a report that listed only the grouped ones would not
  * see the one a person had just made.
  */
-import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, sheetPage, sheetPaperWidth, spanOf } from '../business'
+import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, paperHeight, sheetPage, sheetPaper, sheetPaperWidth, spanOf } from '../business'
 import type { Coverage } from '../business'
 import type { Diagram, Model } from '../model/normalised'
 import { toArrays } from '../model/normalised'
@@ -57,12 +57,15 @@ export type SheetReport = {
   /** The stakeholder rail; empty when the sheet does not draw it. */
   actors: { total: number; some: { id: ElementId; name: string; depth: number; outside: boolean }[] }
   /**
-   * How the areas tile: the canvas the page is laid out on and its width in
-   * CSS pixels (none for `fit`), the columns the sheet fixes — absent fits
-   * the canvas — and the widest an area may be told to be. Set with
+   * How the areas tile: the canvas the page is laid out on and its width and
+   * height in CSS pixels (none for `fit`), the columns the sheet fixes —
+   * absent fits the canvas — and the widest an area may be told to be. On
+   * paper the page is landscape: an area the sheet does not fix is widened
+   * until the page comes under the paper's height, so a drawn area may be
+   * wider than the `span` reported here, which is the sheet's own. Set with
    * diagram.update; a render at the canvas's width is `pageWidth`.
    */
-  grid: { paper: SheetPaper; width?: number; columns?: number; maxSpan: number }
+  grid: { paper: SheetPaper; width?: number; height?: number; columns?: number; maxSpan: number }
   areas: {
     total: number
     some: {
@@ -70,7 +73,7 @@ export type SheetReport = {
       name: string
       /** The domain it is assigned to, when its record says one. */
       domain?: string
-      /** The columns of the grid it takes; one unless the sheet says otherwise. */
+      /** The columns of the grid the sheet fixes for it; one unless it says, and on paper the page may widen an unfixed one. */
       span: number
       groupings: {
         id: ElementId
@@ -157,6 +160,7 @@ export function inspectSheet(model: Model, diagram: Diagram, limit = SHEET_LIMIT
     grid: {
       paper: isSheetPaper(diagram.paper) ? diagram.paper : DEFAULT_PAPER,
       ...(sheetPaperWidth(diagram) !== undefined ? { width: sheetPaperWidth(diagram) } : {}),
+      ...(sheetPaper(diagram) !== undefined ? { height: paperHeight(sheetPaper(diagram)!) } : {}),
       ...(diagram.columns !== undefined ? { columns: diagram.columns } : {}),
       maxSpan: MAX_SPAN,
     },

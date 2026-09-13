@@ -16,8 +16,8 @@ describe('SheetExportDialog', () => {
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Laid out for/ }))
     const list = within(screen.getByRole('listbox'))
     expect(list.getByRole('option', { name: 'The window as it is' })).toBeTruthy()
-    expect(list.getByRole('option', { name: 'A0 · 4494 px' })).toBeTruthy()
-    expect(list.getByRole('option', { name: 'A1 · 3179 px' }).getAttribute('aria-selected')).toBe('true')
+    expect(list.getByRole('option', { name: 'A0 · 4494 × 3179 px' })).toBeTruthy()
+    expect(list.getByRole('option', { name: 'A1 · 3179 × 2245 px' }).getAttribute('aria-selected')).toBe('true')
   })
 
   it('asks for the picture at the chosen layout, and closes once it is handed over', async () => {
@@ -26,7 +26,7 @@ describe('SheetExportDialog', () => {
     const onClose = vi.fn()
     renderShell(<SheetExportDialog onExport={onExport} onClose={onClose} />)
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Laid out for/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'A0 · 4494 px' }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'A0 · 4494 × 3179 px' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onExport).toHaveBeenCalledWith('A0')
     // Drawing: said so, and nothing else to press meanwhile.

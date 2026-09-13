@@ -865,7 +865,8 @@ const SPECS = [
       + '`lanes`, and the function roots in `areas` in that order; `showActors` false hides the stakeholder '
       + 'rail; `paper` is the canvas it is laid out on — A4 to A0 landscape, A2 by default, or fit for the '
       + 'window; `columns` fixes how many columns its areas are laid out in (absent fits the canvas) and '
-      + '`areaSpans` maps an area id to the columns it takes, its capabilities side by side inside it. '
+      + '`areaSpans` maps an area id to the columns it takes, its capabilities side by side inside it — on '
+      + 'paper an area not named there is widened until the page fits the paper\'s short side. '
       + 'A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
       + 'journey band, every root. Each list given replaces that list whole; null clears a field. A board '
       + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',

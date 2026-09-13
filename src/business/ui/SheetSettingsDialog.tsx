@@ -33,7 +33,7 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
 import { journeyOf } from '../lanes'
-import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperWidth } from '../grid'
+import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
 import type { SheetPaper } from '../../model'
 import { rootsOfKind } from '../sheetDiagram'
 import type { SheetActions } from './FunctionInspector'
@@ -165,7 +165,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
           })}
         >
           {PAPER_SIZES.map((paper) => (
-            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} px</MenuItem>
+            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} × {paperHeight(paper)} px</MenuItem>
           ))}
           <MenuItem value="fit">{t('sheet.paperFit')}</MenuItem>
         </TextField>

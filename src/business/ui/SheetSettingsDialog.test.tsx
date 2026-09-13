@@ -163,7 +163,7 @@ describe('the canvas', () => {
     const { actions } = open()
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Canvas/ }))
     const list = within(screen.getByRole('listbox'))
-    expect(list.getByRole('option', { name: 'A2 · 2245 px' }).getAttribute('aria-selected')).toBe('true')
+    expect(list.getByRole('option', { name: 'A2 · 2245 × 1587 px' }).getAttribute('aria-selected')).toBe('true')
     fireEvent.click(list.getByRole('option', { name: 'Fit the window' }))
     expect(actions.updateSheet).toHaveBeenCalledWith({ paper: 'fit' })
   })
@@ -171,7 +171,7 @@ describe('the canvas', () => {
   it('writes nothing for the default', () => {
     const { actions } = open({ ...SHEET, paper: 'A0' })
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Canvas/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'A2 · 2245 px' }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'A2 · 2245 × 1587 px' }))
     expect(actions.updateSheet).toHaveBeenCalledWith({ paper: undefined })
   })
 })

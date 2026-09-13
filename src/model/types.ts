@@ -589,10 +589,12 @@ export interface DesignDiagram {
   showActors?: boolean;
   /**
    * A sheet: how many columns of the grid each area takes, by the area's id.
-   * Absent, or an area not named, is one column. An area wider than one column
-   * lays its capabilities side by side, which is how a large area stops being
-   * a long list and a page of three tall columns becomes a tiled one; the
-   * areas fill the grid densely in the sheet's own order (`business/grid.ts`).
+   * An area wider than one column lays its capabilities side by side, which
+   * is how a large area stops being a long list and a page of three tall
+   * columns becomes a tiled one; the areas fill the grid densely in the
+   * sheet's own order (`business/grid.ts`). An area named here keeps that
+   * span, one included; one not named is one column in the window and, on
+   * paper, as many as bring the page under the paper's short side.
    */
   areaSpans?: Record<ElementId, number>;
   /**
@@ -601,10 +603,12 @@ export interface DesignDiagram {
    */
   columns?: number;
   /**
-   * A sheet: how wide the page is laid out — a sheet of paper, landscape,
+   * A sheet: what the page is laid out on — a sheet of paper, landscape,
    * scrolling sideways in a window narrower than it, or `fit`, the window
    * itself. Absent is A2: a business architecture is drawn for a wall, and
-   * a laptop window is a viewport onto it rather than its size.
+   * a laptop window is a viewport onto it rather than its size. The long
+   * side is the width; the short side is what the areas are widened to fit
+   * under, so the page comes out landscape rather than a tall column of it.
    */
   paper?: SheetPaper;
   /**

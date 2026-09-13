@@ -48,15 +48,15 @@ export function spanOf(
 }
 
 /**
- * The spans with one area's changed — and absent when every area is back to
- * one column, so a sheet nobody widened writes nothing about it.
+ * The spans with one area's changed. A span a person set is kept even at one
+ * column: on paper the fit widens what nobody has spoken for (`fitSpans`),
+ * so *narrower* down to one has to leave a mark, or the area would grow
+ * straight back. A sheet nobody touched still writes nothing.
  */
 export function withSpan(
   spans: Record<ElementId, number> | undefined, id: ElementId, span: number,
 ): Record<ElementId, number> | undefined {
-  const next = { ...spans }
-  if (span <= 1) delete next[id]
-  else next[id] = Math.min(span, MAX_SPAN)
+  const next = { ...spans, [id]: Math.max(1, Math.min(span, MAX_SPAN)) }
   return Object.keys(next).length ? next : undefined
 }
 
@@ -101,18 +101,33 @@ export function packAreas(
 }
 
 /**
- * ISO 216 landscape, at 96 CSS pixels to the inch — the widths a sheet is laid
- * out at for a print. The width is what the grid is fitted to; the height is
- * whatever the page needs, because a business architecture is cut off by
- * nothing but its own last band.
+ * ISO 216 landscape, at 96 CSS pixels to the inch — the sheets of paper a
+ * page is laid out on for a print. The long side is the width the grid is
+ * fitted to; the short side is what the areas are asked to fit under
+ * (`fitSpans`). The page still grows past it when the areas cannot be tiled
+ * any flatter, because a business architecture is cut off by nothing but its
+ * own last band — but it is the exception, not the shape of every sheet.
  */
 export const PAPER_SIZES = ['A4', 'A3', 'A2', 'A1', 'A0'] as const
 export type PaperSize = (typeof PAPER_SIZES)[number]
 
 const LONG_SIDE_MM: Record<PaperSize, number> = { A4: 297, A3: 420, A2: 594, A1: 841, A0: 1189 }
+const SHORT_SIDE_MM: Record<PaperSize, number> = { A4: 210, A3: 297, A2: 420, A1: 594, A0: 841 }
+
+const px = (mm: number) => Math.round((mm / 25.4) * 96)
 
 export function paperWidth(paper: PaperSize): number {
-  return Math.round((LONG_SIDE_MM[paper] / 25.4) * 96)
+  return px(LONG_SIDE_MM[paper])
+}
+
+/** The short side: how tall the page should be, landscape. */
+export function paperHeight(paper: PaperSize): number {
+  return px(SHORT_SIDE_MM[paper])
+}
+
+/** The paper a width is the long side of, if it is one: a picture asked for at 3179 is an A1. */
+export function paperOfWidth(width: number): PaperSize | undefined {
+  return PAPER_SIZES.find((paper) => paperWidth(paper) === width)
 }
 
 /** What a sheet is laid out on when it does not say: a wall's worth, not a window's. */
@@ -127,12 +142,116 @@ export function isSheetPaper(value: unknown): value is SheetPaper {
 }
 
 /**
- * The width a sheet lays itself out at, in CSS pixels — or nothing, for a
- * sheet that fits the window it is in. A value the sheet does not know is
- * read as the default rather than refused: a file hand-edited to say `B3`
- * still opens, as a page.
+ * The paper a sheet lays itself out on — or nothing, for a sheet that fits
+ * the window it is in. A value the sheet does not know is read as the default
+ * rather than refused: a file hand-edited to say `B3` still opens, as a page.
  */
-export function sheetPaperWidth(sheet: Pick<DesignDiagram, 'paper'>): number | undefined {
+export function sheetPaper(sheet: Pick<DesignDiagram, 'paper'>): PaperSize | undefined {
   const paper = isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER
-  return paper === 'fit' ? undefined : paperWidth(paper)
+  return paper === 'fit' ? undefined : paper
+}
+
+/** The width a sheet lays itself out at, in CSS pixels — or nothing, for the window's. */
+export function sheetPaperWidth(sheet: Pick<DesignDiagram, 'paper'>): number | undefined {
+  const paper = sheetPaper(sheet)
+  return paper === undefined ? undefined : paperWidth(paper)
+}
+
+/**
+ * The size of one area drawn, in CSS pixels — the design's own numbers, so
+ * the fit below can be worked out before anything is on screen. A capability
+ * card and the gap under it; a grouping's box around its rows; the area's
+ * header, padding and the row of buttons at the foot. Close, not exact: the
+ * page packs by what it measures, and these decide only how wide to make
+ * each area first.
+ */
+const AREA_ESTIMATE = { row: 52, grouping: 60, base: 85 } as const
+
+/** What an area holds, for the estimate: the capabilities in each of its boxes, and the loose ones. */
+export type FitItem = {
+  id: ElementId
+  groupings: readonly number[]
+  loose: number
+  /** The span the sheet fixes, when it does; absent lets the fit choose. */
+  fixed?: number
+}
+
+/** How tall an area comes out, roughly, at `span` columns: each box is its rows at that width. */
+export function estimateAreaHeight(item: Pick<FitItem, 'groupings' | 'loose'>, span: number): number {
+  const rows = (count: number) => Math.ceil(count / Math.max(1, span))
+  const boxes = item.groupings.reduce((sum, count) => sum + AREA_ESTIMATE.grouping + rows(count) * AREA_ESTIMATE.row, 0)
+  const loose = item.loose > 0 ? rows(item.loose) * AREA_ESTIMATE.row : 0
+  return AREA_ESTIMATE.base + boxes + loose
+}
+
+/**
+ * How many columns each area takes so the page comes out landscape: the
+ * areas packed no taller than `target` where the width allows, and as flat
+ * as it allows where it does not.
+ *
+ * A sheet of paper has two sides, and fixing only the width gave a real
+ * organisation's fifteen areas of one column each, stacked three deep down
+ * an A2 — a portrait page on a landscape sheet. Widening an area is the one
+ * lever the layout has: its capabilities go side by side and it gets
+ * shorter, and a tall column beside a short one becomes two of a height.
+ * So the fit starts every area at one column and, while the packed page is
+ * taller than the target, widens the one that brings the page down most,
+ * one column at a time, until nothing does. What the areas hold is what
+ * they hold, so the page can still come out taller than the paper — evenly
+ * full rather than ragged, which is the flattest the width allows. Greedy
+ * and estimated rather than measured, because the page measures what it has
+ * drawn and this decides what to draw. An area the sheet fixes keeps its
+ * span: a person's *wider* and *narrower* are the last word, and the fit
+ * works around them.
+ *
+ * With no target the fit stops only when widening stops helping — as flat
+ * as the width allows.
+ */
+export function fitSpans(
+  items: readonly FitItem[], columns: number, target = 0,
+): Record<ElementId, number> {
+  const spans: Record<ElementId, number> = {}
+  const widest = Math.max(1, Math.min(MAX_SPAN, columns))
+  for (const item of items) {
+    spans[item.id] = item.fixed !== undefined
+      ? Math.max(1, Math.min(item.fixed, widest))
+      : 1
+  }
+  // How a candidate scores: the page's height first, and then how ragged the
+  // columns are under it — a step that leaves the tallest column alone but
+  // levels the others is still a step towards a flatter page, and without
+  // it the fit stalls on a plateau two columns high.
+  const scoreOf = (candidate: Record<ElementId, number>): [number, number] => {
+    const { placed, height } = packAreas(
+      items.map((item) => ({
+        id: item.id, span: candidate[item.id] ?? 1, height: estimateAreaHeight(item, candidate[item.id] ?? 1),
+      })),
+      columns,
+    )
+    const bottoms = new Array<number>(columns).fill(0)
+    for (const at of placed) {
+      const item = items.find((held) => held.id === at.id)
+      const bottom = at.top + (item ? estimateAreaHeight(item, at.span) : 0)
+      for (let column = at.column; column < at.column + at.span; column += 1) {
+        bottoms[column] = Math.max(bottoms[column] ?? 0, bottom)
+      }
+    }
+    return [height, bottoms.reduce((sum, bottom) => sum + bottom, 0)]
+  }
+  const better = (a: [number, number], b: [number, number]) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
+
+  let score = scoreOf(spans)
+  // Every area may grow to `widest`, so this many steps at most.
+  for (let step = 0; step < items.length * widest && score[0] > target; step += 1) {
+    let best: { id: ElementId; score: [number, number] } | undefined
+    for (const item of items) {
+      if (item.fixed !== undefined || spans[item.id] >= widest) continue
+      const tried = scoreOf({ ...spans, [item.id]: spans[item.id] + 1 })
+      if (better(tried, score) && (best === undefined || better(tried, best.score))) best = { id: item.id, score: tried }
+    }
+    if (!best) break
+    spans[best.id] += 1
+    score = best.score
+  }
+  return spans
 }

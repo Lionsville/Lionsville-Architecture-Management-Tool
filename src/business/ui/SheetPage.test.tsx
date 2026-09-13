@@ -17,7 +17,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { SheetPage } from './SheetPage'
 import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
-import { actor, shippingScope } from '../testFixtures'
+import { actor, capability, shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel, Relation } from '../../model'
 
 afterEach(() => cleanup())
@@ -200,13 +200,31 @@ describe('the grid', () => {
     expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('3')
   })
 
+  it('widens an area nobody fixed until the page fits under the paper, and keeps one a person set', () => {
+    // Forty capabilities in one box: two thousand pixels down one column of
+    // an A2, whose short side is 1587. Nothing measured in a test, so the
+    // page assumes nothing above the areas.
+    const many = Array.from({ length: 40 }, (_, index) => capability(`cap-${index}`, `Capability ${index}`, 'invoicing'))
+    const held = model()
+    open({ model: { ...held, elements: [...held.elements, ...many] } })
+    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('2')
+    expect(screen.getByTestId('sheet-area-fulfilment').getAttribute('data-span')).toBe('1')
+    cleanup()
+    open({ model: { ...held, elements: [...held.elements, ...many] }, sheet: { ...SHEET, areaSpans: { billing: 1 } } })
+    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('1')
+    cleanup()
+    // The window has no short side: the sheet's own spans, and no more.
+    open({ model: { ...held, elements: [...held.elements, ...many] }, sheet: { ...SHEET, paper: 'fit', columns: 3 } })
+    expect(screen.getByTestId('sheet-area-billing').getAttribute('data-span')).toBe('1')
+  })
+
   it('widens and narrows an area as a change to the sheet', () => {
     const { actions: acts } = open({ sheet: { ...SHEET, columns: 3, areaSpans: { billing: 2 } } })
     fireEvent.click(screen.getByLabelText('Make Fulfilment wider'))
     expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: { billing: 2, fulfilment: 2 } })
     fireEvent.click(screen.getByLabelText('Make Billing narrower'))
-    // Back to one column is nothing written about it.
-    expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: undefined })
+    // Back to one column is written, so the fit on paper leaves it there.
+    expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: { billing: 1 } })
   })
 
   it('offers no width on a one-column grid, nor under readOnly', () => {

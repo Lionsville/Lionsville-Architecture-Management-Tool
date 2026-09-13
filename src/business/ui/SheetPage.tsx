@@ -29,6 +29,16 @@
  * three tall columns, and a CSS grid after it left the whole of a row empty
  * under its shortest card — which is why the cards are placed by hand.
  *
+ * **On paper, the page is landscape.** A sheet of paper has two sides, and
+ * the first real sheet — fifteen areas of a column each — came out three
+ * deep down an A2, a portrait page on a landscape canvas. So on paper an
+ * area nobody has made wider or narrower is given the columns that bring
+ * the page under the short side (`business/grid.fitSpans`), worked out from
+ * what each area holds rather than measured, because the fit decides what
+ * to draw and the measuring comes after. A span a person set is kept, one
+ * column included. The window (`fit`) has no short side, and there the
+ * spans are the sheet's own.
+ *
  * The rail and the details are the page's own: one eye hides both, and each
  * has a seam to drag. The glass beside the eye finds anything the page draws
  * by name (`business/find.ts`) and takes you to it: selected, scrolled into
@@ -62,7 +72,10 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon, ExportIcon, EyeIcon, SearchIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
-import { AREA_COLUMN, MAX_SPAN, isPaperSize, packAreas, paperWidth, sheetColumns, sheetPaperWidth, spanOf, withSpan } from '../grid'
+import {
+  AREA_COLUMN, MAX_SPAN, fitSpans, isPaperSize, packAreas, paperHeight, paperOfWidth, paperWidth, sheetColumns, sheetPaper,
+  sheetPaperWidth, spanOf, withSpan,
+} from '../grid'
 import { sheetPage } from '../sheet'
 import { findOnSheet } from '../find'
 import type { SheetBand, SheetHit } from '../find'
@@ -142,6 +155,8 @@ const NOTCH = 9
 /** The column the *+ phase* sits in, kept off the phases so the row lines up. */
 const ADD_COLUMN = 72
 const CHEVRON = `polygon(0 0, calc(100% - ${NOTCH}px) 0, 100% 50%, calc(100% - ${NOTCH}px) 100%, 0 100%)`
+/** The body's padding above and below the canvas, and the gap over the areas: what the paper's height is not for. */
+const PAGE_MARGINS = 32 + 24
 
 export function SheetPage(props: SheetPageProps) {
   const { model, sheet, readOnly, actions } = props
@@ -189,6 +204,7 @@ export function SheetPage(props: SheetPageProps) {
   const page = useRef<HTMLDivElement | null>(null)
   const bodyWidth = useMeasuredWidth()
   const cards = useMeasuredHeights()
+  const above = useMeasuredHeight()
 
   /**
    * The handle, while a sheet is up. Withdrawn on the way out so a request
@@ -265,13 +281,31 @@ export function SheetPage(props: SheetPageProps) {
   const layoutWidth = exporting?.width ?? (sheet ? sheetPaperWidth(sheet) : undefined)
   const gridWidth = (layoutWidth ?? bodyWidth.width) - 32
   const columns = sheet ? sheetColumns(sheet, gridWidth) : 1
+  /**
+   * The paper the page is on, for its short side: the one a picture asked
+   * for, else the sheet's own; a picture at a width that is no paper's is
+   * still fitted to the sheet's height. None for the window.
+   */
+  const paper = sheet
+    ? (exporting?.width !== undefined ? paperOfWidth(exporting.width) : undefined) ?? sheetPaper(sheet)
+    : undefined
+  const fitted = useMemo(() => {
+    if (!laidOut || !sheet || paper === undefined) return undefined
+    const target = paperHeight(paper) - above.height - PAGE_MARGINS
+    return fitSpans(laidOut.areas.map((area) => ({
+      id: area.element.id,
+      groupings: area.groupings.map((group) => group.capabilities.length),
+      loose: area.capabilities.length,
+      ...(sheet.areaSpans?.[area.element.id] !== undefined ? { fixed: sheet.areaSpans[area.element.id] } : {}),
+    })), columns, Math.max(0, target))
+  }, [laidOut, sheet, paper, columns, above.height])
   const packed = useMemo(() => (laidOut && sheet
     ? packAreas(laidOut.areas.map((area) => ({
       id: area.element.id,
-      span: spanOf(sheet, area.element.id, columns),
+      span: fitted?.[area.element.id] ?? spanOf(sheet, area.element.id, columns),
       height: cards.heights[area.element.id] ?? 0,
     })), columns)
-    : undefined), [laidOut, sheet, columns, cards.heights])
+    : undefined), [laidOut, sheet, fitted, columns, cards.heights])
   const fixedWidth = layoutWidth
     ?? (sheet?.columns !== undefined ? columns * (AREA_COLUMN.min + AREA_COLUMN.gap) - AREA_COLUMN.gap + 32 : undefined)
   const panels = panelsShown && !exporting
@@ -404,6 +438,8 @@ export function SheetPage(props: SheetPageProps) {
           data-width={fixedWidth !== undefined ? fixedWidth - 32 : 'fit'}
           sx={fixedWidth !== undefined ? { width: fixedWidth - 32, minWidth: fixedWidth - 32 } : undefined}
         >
+          {/* Measured, because the paper's short side is for the areas less this. */}
+          <Box ref={above.ref} data-testid="sheet-above">
           {laidOut?.journey ? (
             <JourneyBand
               journey={laidOut.journey}
@@ -426,6 +462,7 @@ export function SheetPage(props: SheetPageProps) {
               )}
             />
           )}
+          </Box>
 
           {laidOut && sheet && packed && laidOut.areas.length > 0 ? (
             <>
@@ -617,21 +654,33 @@ function useMeasuredHeights(): {
  * arithmetic reads as one column.
  */
 function useMeasuredWidth(): { ref: (node: HTMLDivElement | null) => void; width: number } {
-  const [width, setWidth] = useState(0)
+  const { ref, size } = useMeasuredSize('width')
+  return { ref, width: size }
+}
+
+/** How tall one block is, kept up to date: what sits above the areas, so the paper's height less it is theirs. */
+function useMeasuredHeight(): { ref: (node: HTMLDivElement | null) => void; height: number } {
+  const { ref, size } = useMeasuredSize('height')
+  return { ref, height: size }
+}
+
+/** One side of one box, measured the way the cards are; the width counts the body's padding back in. */
+function useMeasuredSize(side: 'width' | 'height'): { ref: (node: HTMLDivElement | null) => void; size: number } {
+  const [size, setSize] = useState(0)
   const observer = useRef<ResizeObserver | undefined>(undefined)
   const ref = useCallback((node: HTMLDivElement | null) => {
     observer.current?.disconnect()
     observer.current = undefined
     if (!node || typeof ResizeObserver === 'undefined') return
-    setWidth(node.clientWidth)
+    setSize(side === 'width' ? node.clientWidth : node.clientHeight)
     const held = new ResizeObserver((entries) => {
       const box = entries[0]?.contentRect
-      if (box) setWidth(Math.round(box.width) + 32)
+      if (box) setSize(Math.round(box[side]) + (side === 'width' ? 32 : 0))
     })
     held.observe(node)
     observer.current = held
-  }, [])
-  return { ref, width }
+  }, [side])
+  return { ref, size }
 }
 
 /**

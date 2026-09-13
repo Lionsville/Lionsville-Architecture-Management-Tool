@@ -24,7 +24,7 @@ import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
-import { PAPER_SIZES, paperWidth } from '../grid'
+import { PAPER_SIZES, paperHeight, paperWidth } from '../grid'
 import type { PaperSize } from '../grid'
 
 /** The window as it is, or a sheet of paper. */
@@ -72,7 +72,7 @@ export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDia
         >
           <MenuItem value="screen">{t('sheet.exportScreen')}</MenuItem>
           {PAPER_SIZES.map((paper) => (
-            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} px</MenuItem>
+            <MenuItem key={paper} value={paper}>{paper} · {paperWidth(paper)} × {paperHeight(paper)} px</MenuItem>
           ))}
         </TextField>
         {failure !== undefined && (
