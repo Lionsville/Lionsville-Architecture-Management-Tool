@@ -97,6 +97,8 @@ export type OrganisationScreenProps = {
   initiatives?: number
   /** Open a row where it is answered for, with the element selected. */
   onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
+  /** Open a row's page — the record and its document — where it is answered for. */
+  onOpenRegisterPage?: (scope: ScopePath, id: ElementId) => void
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
   onLinkFromRegister?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
   /** The day, injected so a card's finding is not at the mercy of the clock. */
@@ -108,7 +110,7 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
-  overflow, agent, findings, register = [], initiatives = 0, onOpenRegisterRow, onLinkFromRegister,
+  overflow, agent, findings, register = [], initiatives = 0, onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, root, ready, dialog } = organisation
@@ -277,7 +279,11 @@ export function OrganisationScreen({
             </Button>
           )}
 
-          {examples.length > 0 && (
+          {/* The examples are for a folder with nothing in it yet. Once the
+              organisation holds a view or a scope, an offer to copy one in
+              beside the real work is a way to file an example under it by
+              accident, so the section goes. */}
+          {examples.length > 0 && tree.children.length === 0 && tree.diagrams === 0 && (
             <>
               <Divider sx={{ my: 3 }} />
               <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
@@ -316,6 +322,7 @@ export function OrganisationScreen({
         rows={register}
         organisation={tree.name.trim() || s('picker.organisation')}
         onOpen={onOpenRegisterRow}
+        onOpenPage={onOpenRegisterPage}
         onLink={onLinkFromRegister}
         s={s}
         windowChrome={windowChrome}

@@ -20,6 +20,7 @@ import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { EXAMPLES } from '../examples'
 import { renderApp } from '../testing/renderShell'
+import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
 
 afterEach(() => cleanup())
 
@@ -171,6 +172,20 @@ describe('the organisation screen — its own pages', () => {
     expect(table.textContent).toContain('Post office')
   })
 
+  it('opens a register row\'s page in the scope that answers for it', async () => {
+    // The row's scope draws a board, so the canvas mounts — the one place in
+    // these tests where React Flow needs jsdom's missing pieces.
+    installReactFlowMocks()
+    renderApp({ scopes: new InMemoryScopeStore(withApplications()), today: TODAY })
+    fireEvent.click(within(await screen.findByTestId('organisation-cards')).getByTestId('open-register'))
+    fireEvent.click(await screen.findByTestId('register-page-post'))
+    // The landscape opens, and on it the page — with the record's fields
+    // there to be written, which is what the row was opened for.
+    const page = await screen.findByTestId('doc-content')
+    expect(page.textContent).toContain('Post office')
+    expect((screen.getByLabelText('Outside the organisation') as HTMLInputElement).checked).toBe(true)
+  })
+
   it('opens the root on the page the card was pressed for', async () => {
     renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
     fireEvent.click(await screen.findByTestId('open-decisions'))
@@ -265,6 +280,18 @@ describe('the organisation screen — a fresh folder', () => {
     expect(await screen.findByText('Examples')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
     expect(screen.queryByText('Domains and landscapes')).toBeNull()
+  })
+
+  it('offers no examples once the folder holds architecture of its own', async () => {
+    const scopes = new InMemoryScopeStore([])
+    renderApp({ scopes, today: TODAY, examples: EXAMPLES })
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    fireEvent.click(screen.getByText('Projects…'))
+
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
+    expect(screen.queryByText('Examples')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Copy into this folder…' })).toBeNull()
   })
 })
 
