@@ -639,7 +639,7 @@ table. Read-only first.
   is reached from the documentation page, where processes list after
   functions.
 
-**Cut 2.0.0-beta.4.**
+**Cut 2.0.0-beta.4** — cut 13 September 2026 from `4f32519`, the map, the agent at every scope and BPMN, an hour after beta 3.
 
 ---
 
