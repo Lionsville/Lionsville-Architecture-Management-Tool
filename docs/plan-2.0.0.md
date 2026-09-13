@@ -661,6 +661,14 @@ table. Read-only first.
   and `plan.update`, and `plans.list` carries `fromBelow`. The domain says
   which of its plans are the enterprise's business; the enterprise does not
   go and pick them. 13 September.
+- **"Changed on disk" over the app's own save.** The watcher reported
+  directory events, and a directory has no content to fingerprint, so the
+  folders a save makes for a new scope (`docs/`, `diagrams/`…) came back as
+  somebody else's change — the strip the smoke run had shown on every run
+  since ADR-0003 without anybody reading the screenshot. `watch.ts` drops a
+  directory from the report now; a removal still comes through with no
+  fingerprint. A wider review of the changed-on-disk path is under way.
+  13 September.
 
 ---
 
