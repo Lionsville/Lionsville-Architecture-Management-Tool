@@ -290,7 +290,7 @@ export const EN = {
   // The record, as the panel beside the canvas shows it: one line and a way
   // to the page where the fields are (`ElementRecord.tsx`).
   'record.title': 'Record',
-  'record.open': 'Open the page',
+  'record.open': 'Details',
   'record.empty': 'Nothing on the record yet',
   'record.outsideOf': 'Outside \u00b7 {name}',
   'field.replace': 'Replace…',

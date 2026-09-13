@@ -277,7 +277,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'field.party': 'Heart by',
   'field.partyNone': 'Net sein',
   'record.title': 'St\u00e2mgegevens',
-  'record.open': 'Side iepenje',
+  'record.open': 'Details',
   'record.empty': 'Noch gjin st\u00e2mgegevens',
   'record.outsideOf': 'Ekstern \u00b7 {name}',
   'field.replace': 'Ferfange…',

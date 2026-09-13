@@ -277,7 +277,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.party': 'Hoort bij',
   'field.partyNone': 'Niet gezegd',
   'record.title': 'Stamgegevens',
-  'record.open': 'Pagina openen',
+  'record.open': 'Details',
   'record.empty': 'Nog geen stamgegevens',
   'record.outsideOf': 'Extern \u00b7 {name}',
   'field.replace': 'Vervangen…',

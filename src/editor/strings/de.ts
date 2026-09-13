@@ -277,7 +277,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.party': 'Geh\u00f6rt zu',
   'field.partyNone': 'Nicht angegeben',
   'record.title': 'Stammdaten',
-  'record.open': 'Seite \u00f6ffnen',
+  'record.open': 'Details',
   'record.empty': 'Noch keine Stammdaten',
   'record.outsideOf': 'Extern \u00b7 {name}',
   'field.replace': 'Ersetzen…',

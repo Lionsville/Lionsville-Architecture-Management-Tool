@@ -244,9 +244,25 @@ export function ElementInspector(props: ElementInspectorProps) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ pb: 0.5 }}>
-        <Typography variant="overline" color="text.secondary">
-          {kindLabel(element.kind, t)}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
+          <Typography variant="overline" color="text.secondary">
+            {kindLabel(element.kind, t)}
+          </Typography>
+          {/* The way to the page, beside the kind rather than in the record
+              strip below: it is about the whole thing, and a link among the
+              facts read as one of them. Only beside the canvas — on the page
+              itself there is nowhere further to go. */}
+          {!stacked && props.onOpenDocumentation && (
+            <Button
+              size="small"
+              data-testid="open-details"
+              sx={{ fontSize: 11, minWidth: 0, px: 0.5, py: 0, whiteSpace: 'nowrap', textTransform: 'none' }}
+              onClick={() => props.onOpenDocumentation?.(element.id)}
+            >
+              {t('record.open')} ›
+            </Button>
+          )}
+        </Box>
         <TextField
           label={t('field.name')}
           value={element.name}
@@ -314,15 +330,6 @@ export function ElementInspector(props: ElementInspectorProps) {
           <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>
             {summary.length ? summary.join(' · ') : t('record.empty')}
           </Typography>
-          {props.onOpenDocumentation && (
-            <Button
-              size="small"
-              sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-              onClick={() => props.onOpenDocumentation?.(element.id)}
-            >
-              {t('record.open')}
-            </Button>
-          )}
         </Box>
       )}
 

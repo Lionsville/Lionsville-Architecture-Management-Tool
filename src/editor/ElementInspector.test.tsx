@@ -128,14 +128,14 @@ describe('ElementInspector — tab structure (U7a)', () => {
     expect(screen.queryByLabelText('Vendor')).toBeNull();
     expect(screen.queryByLabelText('Owner')).toBeNull();
     expect(screen.getByTestId('record-summary').textContent).toContain('Owner: Logistics · Vendor: SAP');
-    fireEvent.click(screen.getByRole('button', { name: 'Open the page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Details ›' }));
     expect(onOpenDocumentation).toHaveBeenCalledWith('e1');
   });
 
   it('says the record is empty rather than showing nothing, and offers no page where there is none', () => {
     renderInspector(element());
     expect(screen.getByTestId('record-summary').textContent).toContain('Nothing on the record yet');
-    expect(screen.queryByRole('button', { name: 'Open the page' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Details ›' })).toBeNull();
   });
 
   it('General reaches the layer7 Placement block (zone read-out + domain group)', () => {
