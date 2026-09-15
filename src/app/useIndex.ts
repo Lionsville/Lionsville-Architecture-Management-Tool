@@ -7,8 +7,9 @@
  * saved anywhere. It is derived, and it is derived from files this session is
  * not editing.
  *
- * **Read twice, and never per keystroke.** Once when the app starts, and again
- * when the folder changes under us. That is the whole schedule, and it is what
+ * **Read twice, and never per keystroke.** Once when the app starts — or when
+ * the store it reads from is swapped, which is how the desktop opens a folder
+ * after the boot — and again when the folder changes under us. That is the whole schedule, and it is what
  * the budget line in `model/testing/` is written against: a rebuild is a pass
  * over every scope's records, which is tens of milliseconds and must not
  * happen while somebody is typing a name. The open scope's own edits are not a
@@ -93,11 +94,16 @@ export function useIndex(deps: {
     )
   }, [])
 
+  // On `scopes` and not only on mount: the desktop opens a folder from the
+  // Recent menu by rendering the same `App` again over the folder's store
+  // (`main.tsx`, `workIn`), and an index read once over the boot's empty
+  // store would stand for the whole session — every stand-in dangling, every
+  // application unowned, and the map's columns said by their ids.
   useEffect(() => {
     live.current = true
     read()
     return () => { live.current = false }
-  }, [read])
+  }, [scopes, read])
 
   useEffect(() => {
     if (!watch) return undefined

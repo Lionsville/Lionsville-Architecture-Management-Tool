@@ -18,6 +18,7 @@ import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import { useIndex } from './useIndex'
 import type { IndexHook } from './useIndex'
+import type { IndexSource } from '../projects/scopeIndex'
 
 afterEach(() => cleanup())
 
@@ -39,20 +40,35 @@ function mount(deps: {
   onFailure?: (where: string, cause: unknown) => void
 }) {
   let hook!: IndexHook
-  function Host() {
+  // One store object for the life of the host, the way `App` holds the one it
+  // was handed: the hook reads again when that object is swapped, so a fresh
+  // literal per render would be a read per render.
+  const scopes = storeOf(deps)
+  function Host(props: { scopes: IndexSource }) {
     hook = useIndex({
-      scopes: {
-        ...(deps.models ? { models: deps.models } : {}),
-        list: deps.list ?? (() => Promise.resolve(listing([]))),
-        load: deps.load ?? (() => Promise.resolve(undefined)),
-      },
+      scopes: props.scopes,
       watch: deps.watch,
       onFailure: deps.onFailure ?? (() => {}),
     })
     return null
   }
-  render(<Host />)
-  return () => hook
+  const mounted = render(<Host scopes={scopes} />)
+  const read = () => hook
+  /** The same host, over another store — what opening a folder after the boot does. */
+  read.swap = (next: Parameters<typeof storeOf>[0]) => mounted.rerender(<Host scopes={storeOf(next)} />)
+  return read
+}
+
+function storeOf(deps: {
+  models?: () => Promise<ScopeModel[]>
+  list?: () => Promise<ScopeSummary>
+  load?: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
+}): IndexSource {
+  return {
+    ...(deps.models ? { models: deps.models } : {}),
+    list: deps.list ?? (() => Promise.resolve(listing([]))),
+    load: deps.load ?? (() => Promise.resolve(undefined)),
+  }
 }
 
 describe('useIndex', () => {
@@ -75,6 +91,28 @@ describe('useIndex', () => {
     const hook = mount({})
     expect(hook().index.lookup('erp')).toBeUndefined()
     expect(hook().index.takenIds().size).toBe(0)
+  })
+
+  /**
+   * The desktop opens a folder from the Recent menu by rendering the same
+   * `App` again over the folder's store (`main.tsx`, `workIn`). An index read
+   * once, over the store the boot had, would stand for the whole session:
+   * every stand-in dangling, every application unowned, and the map's
+   * columns said by their ids.
+   */
+  it('reads it again when the store it reads from is swapped', async () => {
+    const before = vi.fn(() => Promise.resolve<ScopeModel[]>([]))
+    const hook = mount({ models: before })
+    await waitFor(() => expect(before).toHaveBeenCalledTimes(1))
+    expect(hook().index.lookup('erp')).toBeUndefined()
+
+    hook.swap({
+      models: () => Promise.resolve([
+        { path: 'retail', model: { elements: [element('erp')], relations: [] } },
+      ]),
+    })
+    await waitFor(() => expect(hook().index.lookup('erp')?.master).toBe('retail'))
+    expect(before).toHaveBeenCalledTimes(1)
   })
 
   it('reads it again when the folder changes under us', async () => {
