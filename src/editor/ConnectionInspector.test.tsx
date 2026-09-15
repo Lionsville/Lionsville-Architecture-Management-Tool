@@ -413,3 +413,51 @@ describe('ConnectionInspector — part of which interface (ADR-0013)', () => {
     expect(selectDisabled('Part of')).toBe(true);
   });
 });
+
+
+/**
+ * What an interface with landings shows instead of a protocol (ADR-0013).
+ *
+ * The protocols are the landings\', because that is the level at which anybody
+ * knows them, so the field a person could contradict them in is not drawn at
+ * all — and the detail line is the way down to where they are.
+ */
+describe('ConnectionInspector — an interface that has landed (ADR-0013)', () => {
+  const held = (relations: Relation[]): DesignModel => ({
+    name: 'SD',
+    diagrams: [],
+    elements: [
+      { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1-api', kind: 'component', parentId: 'b1', name: 'B API', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1-events', kind: 'component', parentId: 'b1', name: 'B events', lifecycle: 'live', isManaged: false, aspects: {} },
+    ],
+    relations,
+  })
+
+  const landed = (): Relation[] => [
+    connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' }),
+    connection({ id: 'r1', sourceId: 'a1', targetId: 'b1-api', refines: 'c16', protocol: 'REST' }),
+    connection({ id: 'r2', sourceId: 'a1', targetId: 'b1-events', refines: 'c16', protocol: 'AMQP' }),
+    connection({ id: 'r3', sourceId: 'a1', targetId: 'b1-api', refines: 'c16', protocol: 'REST' }),
+  ]
+
+  it('says how many landed and which protocols they carry, deduplicated and in order', () => {
+    renderInspector(connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' }), { model: held(landed()) })
+    expect(screen.getByTestId('connection-detail').textContent)
+      .toContain('Detail: 3 interfaces on the container diagram · REST, AMQP')
+  })
+
+  it('does not draw a protocol field a person could contradict them in', () => {
+    renderInspector(connection({ id: 'c16', sourceId: 'a1', targetId: 'b1' }), { model: held(landed()) })
+    expect(screen.queryByLabelText('Protocol')).toBeNull()
+    expect(screen.queryByLabelText('Technology')).toBeNull()
+  })
+
+  it('keeps the protocol field on an interface nothing has landed on', () => {
+    const alone = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1' })
+    renderInspector(alone, { model: held([alone]) })
+    expect(screen.getByLabelText('Protocol')).toBeDefined()
+    expect(screen.queryByTestId('connection-detail')).toBeNull()
+  })
+})

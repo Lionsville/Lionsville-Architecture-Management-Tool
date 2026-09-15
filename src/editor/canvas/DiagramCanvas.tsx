@@ -301,6 +301,12 @@ export interface DiagramCanvasProps {
    */
   onPaletteDragOver?(position: Point | null): void;
   onElementDoubleClick?(elementId: ElementId): void;
+  /**
+   * A double-click on a LINE, on a landscape: the way down to where the
+   * interface lands (ADR-0013). Absent leaves the double-click adding a bend,
+   * which is what it does everywhere else.
+   */
+  onLineDoubleClick?(relationId: string): void;
   /** "Open documentation" on an element: the editor shows its page. */
   onOpenDocumentation?(elementId: ElementId): void;
   /**
@@ -852,8 +858,18 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
    * centre. Measured against the centres, the first leg ran through the middle of
    * the node and a click beside the real first leg could land on another segment.
    */
+  const { onLineDoubleClick } = props;
   const handleEdgeDoubleClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
+      // On a landscape a line is the way down to where the interface lands
+      // (ADR-0013), and reading is what a reader may do — so this one comes
+      // before the readOnly guard and before the bend.
+      if (props.diagram.kind === 'layer7') {
+        event.preventDefault();
+        event.stopPropagation();
+        onLineDoubleClick?.(edge.id);
+        return;
+      }
       if (readOnly) return;
       event.preventDefault();
       event.stopPropagation();
@@ -878,7 +894,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         insertWaypointOnDrawn(waypoints, source, target, point, routeSides(route)),
       );
     },
-    [readOnly, diagram, actions, screenToFlowPosition, getNodes],
+    [readOnly, diagram, actions, screenToFlowPosition, getNodes, onLineDoubleClick, props.diagram.kind],
   );
 
   const singleSelection = selectedElementIds.size + selectedConnectionIds.size === 1;

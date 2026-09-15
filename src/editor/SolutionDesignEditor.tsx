@@ -16,7 +16,7 @@ import type { EditorHandle, EditorRequests, ExistingAt, SolutionDesignEditorProp
 import type { StandInNote } from './nodes/nodeData';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
-import { doubleClickTarget } from './doubleClick';
+import { doubleClickTarget, lineDoubleClickTarget } from './doubleClick';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
 import { newDomainGroup } from './canvas/domainGroupPlacement';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
@@ -1059,6 +1059,29 @@ function EditorBody(props: SolutionDesignEditorProps) {
     return () => onHandle(undefined);
   }, [onHandle, activeDiagram?.id, busy, handleTidy, handleRouteEdges, captureBoard]);
 
+  /**
+   * The way down from a landscape line (ADR-0013): where this interface
+   * actually arrives, with its landings selected — the target's container
+   * diagram, the source's failing that, and an offer to make the target's
+   * where neither exists.
+   */
+  const handleLineDoubleClick = useCallback(
+    (relationId: string) => {
+      if (!activeDiagram) return;
+      const target = lineDoubleClickTarget(state.model, activeDiagram, relationId);
+      if (!target) return;
+      if (target.kind === 'newContainer') {
+        if (!readOnly) props.diagrams.onCreateContainer(target.applicationId);
+        return;
+      }
+      // Selected first, then the switch: the selection is pruned by what the
+      // model holds rather than by what the board draws, so it survives.
+      state.setSelection({ elementIds: [], connectionIds: [...target.select], domainGroups: [] });
+      props.document.onActiveDiagramChange(target.diagramId);
+    },
+    [state, activeDiagram, readOnly, props.diagrams, props.document],
+  );
+
   const handleDoubleClick = useCallback(
     (elementId: ElementId) => {
       const target = doubleClickTarget(state.model, elementId, props.ownership);
@@ -1307,6 +1330,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           showEdgeLabels={exportOptions ? exportOptions.showLabels : showEdgeLabels}
           mountEveryElement={capturing || exportOptions !== undefined}
           onElementDoubleClick={handleDoubleClick}
+          onLineDoubleClick={handleLineDoubleClick}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
           groupTidyOptions={groupTidyOptions}
@@ -1367,6 +1391,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               onResetRoute={readOnly ? undefined : (id) => void handleResetRoute(id)}
               onSetRouteSides={readOnly ? undefined : (id, sides) => void handleSetRouteSides(id, sides)}
               onRequestDelete={readOnly ? undefined : requestDeleteConnection}
+              onOpenLanding={handleLineDoubleClick}
             />
           ) : state.selectedDomainGroup ? (
             <DomainGroupInspector
@@ -1570,6 +1595,7 @@ function CanvasForDiagram({
   showEdgeLabels,
   mountEveryElement,
   onElementDoubleClick,
+  onLineDoubleClick,
   onOpenDocumentation,
   onTidyGroup,
   groupTidyOptions,
@@ -1606,6 +1632,8 @@ function CanvasForDiagram({
   /** See `DiagramCanvasProps.mountEveryElement`: true while a PNG is captured. */
   mountEveryElement: boolean;
   onElementDoubleClick(elementId: ElementId): void;
+  /** The way down from a landscape line (ADR-0013). */
+  onLineDoubleClick(relationId: string): void;
   onOpenDocumentation(elementId: ElementId): void;
   /** Layer 7 only — undefined in read-only mode. */
   onTidyGroup?(name: string): void;
@@ -1647,6 +1675,7 @@ function CanvasForDiagram({
     showEdgeLabels,
     mountEveryElement,
     onElementDoubleClick,
+    onLineDoubleClick,
     onOpenDocumentation,
     onTidy,
     onRouteConnections,

@@ -456,7 +456,14 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
   });
 
   it('claims an auto route for the user when they double-click a new bend into it', async () => {
-    const { landed } = renderEditor({ model: routedModel('auto') });
+    // On a container diagram. On a LANDSCAPE a double-click on a line is the
+    // way down to where the interface lands (ADR-0013), and the bend is on the
+    // line's own menu — which is where a bend on a landscape was always going
+    // to end up, since the landscape is the one board people read rather than
+    // draw.
+    const model = routedModel('auto');
+    model.diagrams[0] = { ...model.diagrams[0], kind: 'container', applicationElementId: 'a1' };
+    const { landed } = renderEditor({ model });
 
     fireEvent.doubleClick(await screen.findByTestId('rf__edge-c1'));
 
@@ -464,6 +471,29 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // One step: the new bend AND the claim, so a single undo puts both back.
     expect(route?.source).toBe('manual');
     expect(route?.waypoints.length).toBe(3);
+  });
+
+  it('goes down to where the interface lands when the line is on a landscape', async () => {
+    // The target (the carrier) has no container diagram; the source does, so
+    // that is where the double-click goes — and no bend is added on the way.
+    const onActiveDiagramChange = vi.fn();
+    const { landed } = renderEditor({ model: routedModel('auto'), onActiveDiagramChange });
+
+    fireEvent.doubleClick(await screen.findByTestId('rf__edge-c1'));
+
+    expect(onActiveDiagramChange).toHaveBeenCalledWith('d2');
+    expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')?.waypoints.length).toBe(2);
+  });
+
+  it('offers to make the target\'s container diagram when neither end has one', async () => {
+    const model = routedModel('auto');
+    model.diagrams = model.diagrams.filter((d) => d.kind !== 'container');
+    const onCreateContainerDiagram = vi.fn();
+    renderEditor({ model, onCreateContainerDiagram });
+
+    fireEvent.doubleClick(await screen.findByTestId('rf__edge-c1'));
+
+    expect(onCreateContainerDiagram).toHaveBeenCalledWith('b1');
   });
 });
 

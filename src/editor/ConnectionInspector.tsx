@@ -18,7 +18,7 @@ import type {
   EdgeRouting,
 } from '../model/types';
 import { routeFor, routeSource, type AttachSidesPatch } from '../model/routes';
-import { candidateInterfaces, isContainerLine } from '../model/refines';
+import { candidateInterfaces, isContainerLine, protocolsOf, refinementsOf } from '../model/refines';
 import { ColorField } from './ColorField';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
@@ -121,6 +121,7 @@ export function ConnectionInspector({
   onResetRoute,
   onSetRouteSides,
   onRequestDelete,
+  onOpenLanding,
 }: {
   connection: DesignConnection;
   model: DesignModel;
@@ -146,6 +147,12 @@ export function ConnectionInspector({
    * button.
    */
   onRequestDelete?(connectionId: string): void;
+  /**
+   * *Open* beside the detail line: go where this interface lands (ADR-0013),
+   * which is what a double-click on it does. Absent draws the line without a
+   * way there.
+   */
+  onOpenLanding?(connectionId: string): void;
 }) {
   const { t } = useStrings();
   const name = (id: string) => model.elements.find((e) => e.id === id)?.name ?? '?';
@@ -172,6 +179,11 @@ export function ConnectionInspector({
   const landedOn = connection.refines === undefined
     ? undefined
     : model.relations.find((c) => c.id === connection.refines);
+  // What landed on THIS one (ADR-0013). An interface with landings has no
+  // protocol of its own — the protocols are theirs, because that is the level
+  // at which anybody knows them — so the field is replaced by what they say.
+  const landings = refinementsOf(model.relations, connection.id);
+  const protocols = protocolsOf(model.relations, connection.id);
   const route = routeFor(diagram, connection.id);
   const routeStatus: 'none' | 'auto' | 'manual' = route ? routeSource(route) : 'none';
   const bendCount = route?.waypoints.length ?? 0;
@@ -265,22 +277,44 @@ export function ConnectionInspector({
             helperText={t('field.labelHelp')}
             onChange={(e) => typed('label', { label: e.target.value || undefined })}
           />
-          <TextField
-            label={t('field.protocol')}
-            value={connection.protocol ?? ''}
-            fullWidth
-            disabled={readOnly}
-            placeholder={t('field.protocolPlaceholder')}
-            onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
-          />
-          <TextField
-            label={t('field.technology')}
-            value={connection.technology ?? ''}
-            fullWidth
-            disabled={readOnly}
-            helperText={t('field.technologyHelp')}
-            onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
-          />
+          {landings.length > 0 ? (
+            <Box data-testid="connection-detail" sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                {t(landings.length === 1 ? 'field.detailOne' : 'field.detailOther', {
+                  count: String(landings.length),
+                  protocols: protocols.join(', '),
+                })}
+              </Typography>
+              {onOpenLanding && (
+                <Button
+                  size="small"
+                  sx={{ py: 0, minWidth: 0, fontSize: 12 }}
+                  onClick={() => onOpenLanding(connection.id)}
+                >
+                  {t('field.detailOpen')}
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <>
+              <TextField
+                label={t('field.protocol')}
+                value={connection.protocol ?? ''}
+                fullWidth
+                disabled={readOnly}
+                placeholder={t('field.protocolPlaceholder')}
+                onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
+              />
+              <TextField
+                label={t('field.technology')}
+                value={connection.technology ?? ''}
+                fullWidth
+                disabled={readOnly}
+                helperText={t('field.technologyHelp')}
+                onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
+              />
+            </>
+          )}
           {/* The days this line is there (ADR-0009). Empty on almost every
               line: one with no window follows the elements it joins, and only
               the temporary lines of a hybrid run need their own. */}
