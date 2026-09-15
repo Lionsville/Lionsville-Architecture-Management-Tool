@@ -10,8 +10,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  applicationOf, hasRefinements, isApplicationLine, isContainerLine, landingPlaces,
-  protocolsOf, refinementRefusal, refinementsOf,
+  applicationOf, hasRefinements, isApplicationLine, isContainerLine, landingGesture,
+  landingPlaces, protocolsOf, refinementRefusal, refinementsOf,
 } from './refines'
 import { element } from './testFixtures'
 import type { DesignElement, Relation } from './types'
@@ -103,5 +103,61 @@ describe('what the landings add up to', () => {
   it('lists the containers an interface could land on', () => {
     expect(landingPlaces(elements, 'wms').map((e) => e.id)).toEqual(['wms-api', 'wms-events', 'wms-db'])
     expect(landingPlaces(elements, 'billing')).toEqual([])
+  })
+})
+
+
+/**
+ * What dropping a line's end somewhere means (ADR-0013, redone).
+ *
+ * Four answers, and the fourth is the one that matters most: a landing end
+ * dropped somewhere meaningless is NOTHING, never a reconnect. Re-pointing the
+ * functional interface at another application because a drop missed by ten
+ * pixels is the worst thing this gesture could do, and it would do it in
+ * silence.
+ */
+describe('what a drop means', () => {
+  const view = { kind: 'container' as const, applicationElementId: 'wms' }
+  const interfaceLine = flow('c16', 'orders', 'wms')
+  const landed = flow('r1', 'orders', 'wms-api', { refines: 'c16' })
+
+  it('lands the boundary end on one of the application\'s own containers', () => {
+    expect(landingGesture(view, interfaceLine, { sourceId: 'orders', targetId: 'wms-api' }, held))
+      .toEqual({ kind: 'land', interfaceId: 'c16', containerId: 'wms-api' })
+  })
+
+  it('moves a landed end to another container, and takes it off at the boundary', () => {
+    expect(landingGesture(view, landed, { sourceId: 'orders', targetId: 'wms-events' }, held))
+      .toEqual({ kind: 'move', containerId: 'wms-events' })
+    expect(landingGesture(view, landed, { sourceId: 'orders', targetId: 'wms' }, held))
+      .toEqual({ kind: 'unland' })
+  })
+
+  it('does NOTHING with a boundary end dropped anywhere else — it never re-points the interface', () => {
+    // Another application, one of ITS containers, and a card that is not a
+    // container at all: three ways to miss, none of them a reconnect.
+    for (const target of ['billing', 'orders-ui', 'erp']) {
+      expect(landingGesture(view, interfaceLine, { sourceId: 'orders', targetId: target }, held), target)
+        .toEqual({ kind: 'none' })
+    }
+  })
+
+  it('does nothing with a landed end dropped anywhere else either', () => {
+    expect(landingGesture(view, landed, { sourceId: 'orders', targetId: 'billing' }, held))
+      .toEqual({ kind: 'none' })
+  })
+
+  it('leaves a line that touches neither the boundary nor a landing to an ordinary reconnect', () => {
+    const inside = flow('x1', 'wms-api', 'wms-events')
+    expect(landingGesture(view, inside, { sourceId: 'wms-api', targetId: 'wms-db' }, held))
+      .toEqual({ kind: 'reconnect' })
+  })
+
+  it('says nothing at all on a view that is not a container diagram, or about a row that is not a line', () => {
+    expect(landingGesture({ kind: 'layer7' }, interfaceLine, { sourceId: 'orders', targetId: 'wms-api' }, held))
+      .toEqual({ kind: 'reconnect' })
+    const row = { id: 'u1', type: 'uses' as const, sourceId: 'wms', targetId: 'kafka' }
+    expect(landingGesture(view, row, { sourceId: 'wms-api', targetId: 'kafka' }, held))
+      .toEqual({ kind: 'reconnect' })
   })
 })

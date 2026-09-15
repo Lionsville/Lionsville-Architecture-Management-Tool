@@ -122,6 +122,17 @@ export type LandingGesture =
   | { kind: 'move'; containerId: ElementId }
   /** A landing goes back to the boundary: the container line is removed. */
   | { kind: 'unland' }
+  /**
+   * A landing end, dropped somewhere that means no landing — on the pane, on a
+   * context box, on another application's container.
+   *
+   * NOT a reconnect. The end at the boundary and the end on a container are
+   * grabbed to land and to move; re-pointing the functional line at somebody
+   * else is never what that gesture means, and doing it silently would move an
+   * interface between two applications because a drop missed by ten pixels.
+   * Nothing happens.
+   */
+  | { kind: 'none' }
   /** Nothing to do with landing — an ordinary reconnect. */
   | { kind: 'reconnect' }
 
@@ -149,9 +160,12 @@ export function landingGesture(
 
   // The boundary end of an interface, dropped on one of the application's own
   // containers: the interface lands there. The application line itself is
-  // never re-ended — it is the functional line and stays what it is.
-  if (was === subject && isOwnContainer(now)) {
-    return { kind: 'land', interfaceId: relation.id, containerId: now }
+  // never re-ended — it is the functional line and stays what it is, which is
+  // why a drop anywhere else is nothing rather than a reconnect.
+  if (was === subject) {
+    return isOwnContainer(now)
+      ? { kind: 'land', interfaceId: relation.id, containerId: now }
+      : { kind: 'none' }
   }
   // A landed end, grabbed again: onto another container it moves, onto the
   // boundary box it goes back — and going back removes the container line,
@@ -159,6 +173,7 @@ export function landingGesture(
   if (relation.refines !== undefined && isOwnContainer(was)) {
     if (isOwnContainer(now)) return { kind: 'move', containerId: now }
     if (now === subject) return { kind: 'unland' }
+    return { kind: 'none' }
   }
   return ordinary
 }

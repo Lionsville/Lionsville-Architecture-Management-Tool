@@ -11,6 +11,7 @@ import {
   type Connection,
   type Edge,
   type EdgeChange,
+  type FinalConnectionState,
   type Node,
   type NodeChange,
   type NodePositionChange,
@@ -761,9 +762,47 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const handleConnectStart = useCallback((event: MouseEvent | TouchEvent) => {
     altConnectRef.current = 'altKey' in event && event.altKey;
   }, []);
-  const handleReconnectStart = useCallback((event: React.MouseEvent) => {
+  /**
+   * Which end of the line the drag has hold of (ADR-0013).
+   *
+   * React Flow names the end that STAYS PUT, so the one in hand is the other;
+   * and it is worth keeping, because the board's ends are not always the row's
+   * — a container of another application is drawn at that application's box,
+   * so reading the unchanged end off the edge would say both ends moved.
+   */
+  const draggedEndRef = useRef<'source' | 'target'>('target');
+  const handleReconnectStart = useCallback((event: React.MouseEvent, _edge: Edge, handleType: 'source' | 'target') => {
     altConnectRef.current = event.altKey;
+    draggedEndRef.current = handleType === 'source' ? 'target' : 'source';
   }, []);
+
+  /**
+   * What dropping a line's end on a node means, carried out — or `false` for a
+   * drop this diagram has nothing to say about, which is then an ordinary
+   * reconnect.
+   *
+   * The ends are built against the RELATION rather than the edge, for the
+   * reason above. A landing end dropped somewhere meaningless answers `none`
+   * and is swallowed here: the functional line is never re-pointed because a
+   * drop missed by ten pixels.
+   */
+  const landOrMove = useCallback((relationId: string, droppedOn: ElementId): boolean => {
+    const relation = props.model.relations.find((c) => c.id === relationId);
+    if (!relation) return false;
+    const ends = draggedEndRef.current === 'source'
+      ? { sourceId: droppedOn, targetId: relation.targetId }
+      : { sourceId: relation.sourceId, targetId: droppedOn };
+    const gesture = landingGesture(
+      props.diagram,
+      relation,
+      ends,
+      (id) => props.model.elements.find((e) => e.id === id),
+    );
+    if (gesture.kind === 'land') { actions.landInterface(gesture.interfaceId, gesture.containerId); return true; }
+    if (gesture.kind === 'move') { actions.moveLanding(relationId, gesture.containerId); return true; }
+    if (gesture.kind === 'unland') { actions.removeLanding(relationId); return true; }
+    return gesture.kind === 'none';
+  }, [actions, props.model, props.diagram]);
 
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -787,30 +826,9 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       if (newConnection.source === newConnection.target) return;
       // On a container diagram the same drag means four different things
       // (ADR-0013), and which one is a question about the model rather than
-      // about the canvas: an interface leaving the boundary to land on a
-      // container, a landing moving to another container, a landing dropped
-      // back on the boundary, or an ordinary reconnect.
-      const relation = props.model.relations.find((c) => c.id === oldEdge.id);
-      if (relation) {
-        const gesture = landingGesture(
-          props.diagram,
-          relation,
-          { sourceId: newConnection.source, targetId: newConnection.target },
-          (id) => props.model.elements.find((e) => e.id === id),
-        );
-        if (gesture.kind === 'land') {
-          actions.landInterface(gesture.interfaceId, gesture.containerId);
-          return;
-        }
-        if (gesture.kind === 'move') {
-          actions.moveLanding(oldEdge.id, gesture.containerId);
-          return;
-        }
-        if (gesture.kind === 'unland') {
-          actions.removeLanding(oldEdge.id);
-          return;
-        }
-      }
+      // about the canvas.
+      const dropped = draggedEndRef.current === 'source' ? newConnection.source : newConnection.target;
+      if (landOrMove(oldEdge.id, dropped)) return;
       const sides = altConnectRef.current ? sidesFromHandles(newConnection) : undefined;
       actions.reconnect(
         oldEdge.id,
@@ -818,7 +836,30 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         sides,
       );
     },
-    [actions, props.model, props.diagram],
+    [actions, landOrMove],
+  );
+
+  /**
+   * The drop that landed on a card rather than on one of its handles.
+   *
+   * React Flow makes a connection only within twenty pixels of a handle, which
+   * is right for drawing a line and wrong for this gesture: somebody dragging
+   * an interface onto a container aims at the CARD, and a drop in the middle
+   * of it would otherwise do nothing at all and look broken. So the end of the
+   * drag is caught here, and the node under the pointer is what it landed on.
+   *
+   * `toHandle` is how this tells the two apart without depending on the order
+   * the two callbacks fire in: a handle was hit, so `onReconnect` has the drop
+   * and this leaves it alone.
+   */
+  const handleReconnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, oldEdge: Edge, _handleType: 'source' | 'target', state: FinalConnectionState) => {
+      if (state.toHandle) return;
+      const dropped = state.toNode?.id;
+      if (dropped === undefined) return;
+      landOrMove(oldEdge.id, dropped);
+    },
+    [landOrMove],
   );
 
   const { onAddByDrop, onAddDomainGroupByDrop, onAddExistingAt, onPaletteDragOver } = props;
@@ -1541,6 +1582,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           onConnect={handleConnect}
           onReconnectStart={props.readOnly ? undefined : handleReconnectStart}
           onReconnect={props.readOnly ? undefined : handleReconnect}
+          onReconnectEnd={props.readOnly ? undefined : handleReconnectEnd}
           onNodeDoubleClick={handleNodeDoubleClick}
           onEdgeDoubleClick={handleEdgeDoubleClick}
           onNodeContextMenu={handleNodeContextMenu}

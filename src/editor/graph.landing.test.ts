@@ -129,3 +129,42 @@ describe('the day the board shows', () => {
     expect(after.map((edge) => edge.id)).toEqual(['c16']);
   });
 });
+
+
+/**
+ * Which end of a line may be grabbed (ADR-0013).
+ *
+ * The end that means something is grabbable and the other is not: an
+ * interface's boundary end lands it, a landing's own end moves it, and the far
+ * end of either belongs to the other application — dragging it would re-point
+ * the functional line, which is never what the gesture means.
+ */
+describe('the end a drag may take hold of', () => {
+  const grabbable = (relations: Relation[], id: string, diagram = containers(), readOnly = false) => {
+    const model: DesignModel = { name: 'Acme', elements: ELEMENTS, relations, diagrams: [diagram] };
+    return buildEdges({ model, diagram, readOnly, edgeColor: '#theme' })
+      .find((edge) => edge.id === id)?.reconnectable;
+  };
+
+  it('is the boundary end of an interface that has not landed', () => {
+    expect(grabbable([flow('c16', 'orders', 'wms')], 'c16')).toBe('target');
+    expect(grabbable([flow('c20', 'wms', 'orders')], 'c20')).toBe('source');
+  });
+
+  it('is a landing\'s own end, never the other application\'s', () => {
+    const landed = [flow('c16', 'orders', 'wms'), flow('r1', 'orders', 'wms-api', { refines: 'c16' })];
+    expect(grabbable(landed, 'r1')).toBe('target');
+  });
+
+  it('is either end of a line this diagram has nothing to say about', () => {
+    expect(grabbable([flow('x1', 'wms-api', 'wms-events')], 'x1')).toBe(true);
+  });
+
+  it('is neither end on a landscape, where both are ordinary', () => {
+    expect(grabbable([flow('c16', 'orders', 'wms')], 'c16', landscape())).toBe(true);
+  });
+
+  it('is neither end for a reader', () => {
+    expect(grabbable([flow('c16', 'orders', 'wms')], 'c16', containers(), true)).toBe(false);
+  });
+});
