@@ -44,6 +44,7 @@ import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
 import { inspectSheet } from './inspectSheet'
 import { inspectMap } from './inspectMap'
+import { inspectTechnology } from './inspectTechnology'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
@@ -82,6 +83,8 @@ export type SessionView = {
   translate: Translate
   /** What a container view is called, after its application. */
   containerName(applicationName: string): string
+  /** What a technology view is called, after its platform (ADR-0013). */
+  technologyName(platformName: string): string
   /**
    * See {@link WriteView.ownedElsewhere} (ADR-0012 §10): does another scope
    * answer for the fields a patch touches? Absent where there is no tree to
@@ -200,6 +203,9 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
     if (diagram.kind === 'map') {
       return json(inspectMap(view.model, diagram, args.limit as number | undefined, session.today()))
     }
+    if (diagram.kind === 'technology') {
+      return json(inspectTechnology(view.model, diagram, args.limit as number | undefined, session.today()))
+    }
     return json(inspect(view.model, diagram, args.limit as number | undefined))
   }
 
@@ -250,6 +256,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     today: session.today,
     translate: session.translate,
     containerName: session.containerName,
+    technologyName: session.technologyName,
     ...(session.ownedElsewhere ? { ownedElsewhere: session.ownedElsewhere } : {}),
     ...(session.tree ? { known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...over,
@@ -487,7 +494,9 @@ async function seeing(
   const diagram = diagramOf(model, args, session.activeDiagramId())
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
 
-  if (diagram.kind === 'sheet' || diagram.kind === 'map') return await seeSheet(tool, diagram, args, renderer)
+  if (diagram.kind === 'sheet' || diagram.kind === 'map' || diagram.kind === 'technology') {
+    return await seeSheet(tool, diagram, args, renderer)
+  }
 
   try {
     await renderer.show(diagram.id)

@@ -117,6 +117,7 @@ export const EN = {
   'shell.copyOf': '{name} (copy)',
   /** The name a newly created container view gets. */
   'shell.containerDiagram': '{name} · containers',
+  'shell.technologyView': '{name} · technology',
   'shell.deleteDiagramTitle': 'Delete view “{name}”?',
   'shell.lastLandscape': 'This is the last landscape; it cannot be deleted.',
   'shell.deleteLandscapeBody':

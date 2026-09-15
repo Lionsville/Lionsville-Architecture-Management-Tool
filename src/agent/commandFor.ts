@@ -28,6 +28,8 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
+import { seedTechnologyDiagram } from '../model/technologyDiagram'
+import { isPlatformCategory } from '../model/relations'
 import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
@@ -62,6 +64,8 @@ export type WriteView = ReadView & {
   readonly translate: Translate
   /** What a container view is called, after its application. The shell owns the words. */
   readonly containerName: (applicationName: string) => string
+  /** What a technology view is called, after its platform (ADR-0013). */
+  readonly technologyName: (platformName: string) => string
   /**
    * Does another scope answer for the fields this patch touches (ADR-0012 §10)?
    *
@@ -135,7 +139,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
       if (sourceId === targetId) return refused('agent.badArguments', 'a connection needs two different elements')
       const bare: Relation = { id: view.ids.connection(), type: 'flow', sourceId, targetId, isBidirectional: false }
-      const patch = relationPatch(args, bare)
+      const patch = relationPatch(args, bare, view)
       if ('ok' in patch) return patch
       const relation: Relation = { ...bare, ...patch }
       for (const key of Object.keys(patch) as (keyof Relation)[]) if (relation[key] === undefined) delete relation[key]
@@ -148,7 +152,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const id = args.id as string
       const held = model.relations[id]
       if (!held) return refused('agent.unknownId', `connection ${id}`)
-      const patch = relationPatch(args, held)
+      const patch = relationPatch(args, held, view)
       if ('ok' in patch) return patch
       return {
         command: { type: 'relation.update', id, patch, origin: 'agent' },
@@ -163,7 +167,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         const id = item.id as string
         const held = model.relations[id]
         if (!held) return refused('agent.unknownId', `connection ${id}`)
-        const patch = relationPatch(item, held)
+        const patch = relationPatch(item, held, view)
         if ('ok' in patch) return withDetail(patch, `items[${index}]`)
         commands.push({ type: 'relation.update', id, patch })
         changed.push({ id, changed: Object.keys(patch) })
@@ -193,8 +197,14 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         return refused('agent.badArguments', 'a relation needs at least one end this scope holds')
       }
       if (sourceId === targetId) return refused('agent.badArguments', 'a relation needs two different elements')
+      // A technology row ends on a platform (ADR-0013), where this scope can
+      // see what the end is; an id the tree knows and this scope does not is
+      // trusted, as every other row's far end is.
+      if ((type === 'uses' || type === 'hostedOn') && model.elements[targetId] && model.elements[targetId].kind !== 'platform') {
+        return refused('agent.badArguments', `${type} ends on a platform; ${targetId} is a ${model.elements[targetId].kind}`)
+      }
       const bare: Relation = { id: view.ids.connection(), type, sourceId, targetId }
-      const patch = relationPatch(args, bare)
+      const patch = relationPatch(args, bare, view)
       if ('ok' in patch) return patch
       const relation: Relation = { ...bare, ...patch }
       for (const key of Object.keys(patch) as (keyof Relation)[]) if (relation[key] === undefined) delete relation[key]
@@ -207,7 +217,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const id = args.id as string
       const held = model.relations[id]
       if (!held) return refused('agent.unknownId', `relation ${id}`)
-      const patch = relationPatch(args, held)
+      const patch = relationPatch(args, held, view)
       if ('ok' in patch) return patch
       if (typeof args.type === 'string') patch.type = args.type as RelationType
       return {
@@ -388,8 +398,8 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
     name,
     lifecycle: 'live',
     // Managed unless nobody here runs it: a person or a team, a
-    // responsibility, a journey, or a system somebody else owns.
-    isManaged: (kind === 'application' || kind === 'component') && !outside,
+    // responsibility, a journey, or a system — or a platform — somebody else owns.
+    isManaged: (kind === 'application' || kind === 'component' || kind === 'platform') && !outside,
     aspects: {},
     ...(parentId !== undefined
       ? { parentId }
@@ -568,6 +578,12 @@ function elementPatch(args: Args, held: DesignElement, view: ReadView): Partial<
   for (const key of ['description', 'category', 'vendor', 'technology', 'owner'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key]
+  }
+  if (args.platformCategory === null || args.platformCategory === '') patch.platformCategory = undefined
+  else if (typeof args.platformCategory === 'string') {
+    if (held.kind !== 'platform') return refused('agent.badArguments', 'only a platform has a platformCategory')
+    if (!isPlatformCategory(args.platformCategory)) return refused('agent.badArguments', '"platformCategory" is not one of the categories')
+    patch.platformCategory = args.platformCategory
   }
   if (typeof args.lifecycle === 'string') patch.lifecycle = args.lifecycle
   if (typeof args.isManaged === 'boolean') patch.isManaged = args.isManaged
@@ -1181,7 +1197,7 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   const id = args.id as string
   const diagram = model.diagrams[id]
   if (!diagram) return refused('agent.unknownId', `diagram ${id}`)
-  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map'
+  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map' || diagram.kind === 'technology'
   const patch: Record<string, unknown> = {}
 
   const only = (field: string, allowed: boolean, what: string): AgentAnswer | undefined =>
@@ -1192,9 +1208,19 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     ?? only('columns', diagram.kind === 'sheet', 'a sheet')
     ?? only('areaSpans', diagram.kind === 'sheet', 'a sheet')
     ?? only('paper', diagram.kind === 'sheet', 'a sheet')
-    ?? only('areas', laidOut, 'a sheet or a map')
-    ?? only('asOf', !laidOut, 'a board')
+    ?? only('areas', diagram.kind === 'sheet' || diagram.kind === 'map', 'a sheet or a map')
+    ?? only('platformId', diagram.kind === 'technology', 'a technology view')
+    ?? only('asOf', !laidOut || diagram.kind === 'technology', 'a board or a technology view')
   if (wrong) return wrong
+
+  if (typeof args.platformId === 'string') {
+    const platform = model.elements[args.platformId]
+    if (!platform) return refused('agent.unknownId', `element ${args.platformId}`)
+    if (platform.kind !== 'platform') return refused('agent.badArguments', '"platformId" must name a platform')
+    patch.platformId = args.platformId
+  } else if (args.platformId === null || args.platformId === '') {
+    return refused('agent.badArguments', 'a technology view is about a platform; name another rather than none')
+  }
 
   if (args.journeyId === null || args.journeyId === '') patch.journeyId = undefined
   else if (typeof args.journeyId === 'string') {
@@ -1287,6 +1313,25 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     return {
       command: { type: 'diagram.create', diagram: toDiagram(map), origin: 'agent' },
       answer: json({ id: map.id, kind: 'map', name }),
+    }
+  }
+  if (args.kind === 'technology') {
+    const platformId = args.platformId as string | undefined
+    if (!platformId) return refused('agent.badArguments', '"platformId" is required for a technology view')
+    const platform = model.elements[platformId]
+    if (!platform) return refused('agent.unknownId', `element ${platformId}`)
+    if (platform.kind !== 'platform') return refused('agent.badArguments', '"platformId" must name a platform')
+    const existing = model.order.diagrams.find((id) =>
+      model.diagrams[id].kind === 'technology' && model.diagrams[id].platformId === platformId)
+    if (existing) {
+      return { command: transaction([]), answer: json({ id: existing, kind: 'technology', name: model.diagrams[existing].name, existed: true }) }
+    }
+    const diagram = seedTechnologyDiagram(toArrays(model), platformId, { id: view.makeId('tv'), name: view.technologyName })
+    if (!diagram) return refused('agent.unknownId', `element ${platformId}`)
+    // Laid out, like a sheet: made and left for a person to open.
+    return {
+      command: { type: 'diagram.create', diagram: toDiagram(diagram), origin: 'agent' },
+      answer: json({ id: diagram.id, kind: 'technology', name: diagram.name, platformId }),
     }
   }
   if (args.kind === 'layer7') {
@@ -1436,13 +1481,27 @@ function hexColour(value: unknown): string | '' | false {
  * the window has to be days and run forwards, checked against what the line
  * keeps for the half that was not given.
  */
-function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAnswer {
+function relationPatch(args: Args, held: Relation, view?: WriteView): Partial<Relation> | AgentAnswer {
   const look = lineLook(args)
   if ('ok' in look) return look
   const patch: Partial<Relation> = { ...look }
   for (const key of ['label', 'protocol'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string
+  }
+  // What carries it (ADR-0013): platforms, in order, each one this scope holds
+  // or the tree knows. Empty is point-to-point and is written as absence.
+  if (args.via !== undefined) {
+    if (args.via === null || (Array.isArray(args.via) && args.via.length === 0)) patch.via = undefined
+    else if (Array.isArray(args.via) && args.via.every((id) => typeof id === 'string')) {
+      const via = [...new Set(args.via as string[])]
+      for (const id of via) {
+        const known = view?.model.elements[id]
+        if (known && known.kind !== 'platform') return refused('agent.badArguments', `via names platforms; ${id} is a ${known.kind}`)
+        if (!known && !view?.known?.(id)) return refused('agent.unknownId', `element ${id}`)
+      }
+      patch.via = via
+    } else return refused('agent.badArguments', '"via" is a list of platform ids')
   }
   if (typeof args.isBidirectional === 'boolean') patch.isBidirectional = args.isBidirectional
   for (const key of ['validFrom', 'validUntil'] as const) {

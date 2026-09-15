@@ -195,12 +195,15 @@ describe('what is NOT a finding', () => {
       relations: [
         { id: 'r1', type: 'flow', sourceId: 'wms', targetId: 'ledger' },
         { id: 'r2', type: 'flow', sourceId: 'wms', targetId: 'nobody' },
+        // What carries a flow is an end of it for this purpose (ADR-0013).
+        { id: 'r3', type: 'flow', sourceId: 'wms', targetId: 'ledger', via: ['no-bus'] },
       ],
     })
     const findings = documentFindings({ scope: 'retail', model, index })
       .filter((f) => f.key === 'check.danglingEnd')
-    expect(findings).toHaveLength(1)
+    expect(findings).toHaveLength(2)
     expect(findings[0]).toMatchObject({ id: 'r2', fields: ['nobody'] })
+    expect(findings[1]).toMatchObject({ id: 'r3', fields: ['no-bus'] })
   })
 
   it('does not call the root proposing something a proposal', () => {

@@ -497,6 +497,7 @@ export function ProjectWorkspace({
     today,
     translate: s,
     containerName: (name: string) => s('shell.containerDiagram', { name }),
+    technologyName: (name: string) => s('shell.technologyView', { name }),
     // ADR-0012 §10, as the agent's half of the one rule: what the inspector
     // greys out is what an `element.update` is refused for. Read through the
     // ref so a rebuilt index reaches a request arriving between two renders.

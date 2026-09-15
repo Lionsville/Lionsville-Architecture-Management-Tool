@@ -272,7 +272,11 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       const rows = incoming.get(relation.targetId) ?? []
       rows.push(row)
       incoming.set(relation.targetId, rows)
-      for (const end of new Set([relation.sourceId, relation.targetId])) {
+      // A flow touches what carries it as well as its two ends (ADR-0013):
+      // the bus's own page is every interface that passes through it, and
+      // those are written where the interfaces are, not where the bus is.
+      const via = relation.type === 'flow' && Array.isArray(relation.via) ? relation.via : []
+      for (const end of new Set([relation.sourceId, relation.targetId, ...via])) {
         const held = touching.get(end) ?? []
         held.push(row)
         touching.set(end, held)

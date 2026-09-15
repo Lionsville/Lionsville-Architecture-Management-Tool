@@ -71,6 +71,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.logoAdded': 'Logo “{name}” tafoege oan de eigen bibleteek.',
   'shell.copyOf': '{name} (kopy)',
   'shell.containerDiagram': '{name} · containers',
+  'shell.technologyView': '{name} · technology',
   'shell.deleteDiagramTitle': 'Oansicht “{name}” fuortsmite?',
   'shell.lastLandscape': 'Dit is it lêste lânskip; it kin net fuortsmiten wurde.',
   'shell.deleteLandscapeBody':

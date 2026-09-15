@@ -87,7 +87,8 @@ const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `Th
  * The four business kinds are records rather than boxes — a sheet is laid out
  * from the tree, not dragged — so `element.add` makes one and draws nothing.
  */
-const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component'] as const
+const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component', 'platform'] as const
+const PLATFORM_CATEGORIES = ['runtime', 'messaging', 'integration', 'network', 'data', 'identity', 'tooling', 'observability'] as const
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
@@ -97,7 +98,7 @@ const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
  * {@link checkArguments} enforces have to be the same literal, and the model's
  * list is free to grow a member this build has no tool for yet.
  */
-const RELATION_TYPES = ['flow', 'supports', 'serves', 'realises', 'assigned'] as const
+const RELATION_TYPES = ['flow', 'supports', 'serves', 'realises', 'assigned', 'uses', 'hostedOn'] as const
 
 /** How a line is drawn. Absent means the theme's own stroke and a solid line. */
 const LINE_FIELDS = {
@@ -119,6 +120,12 @@ const RELATION_FIELDS = {
 const CONNECTION_FIELDS = {
   label: { type: 'string', description: 'What flows, in a few words.' },
   protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
+  via: {
+    type: 'array',
+    description: 'What carries it (ADR-0013): the ids of the platforms the interface travels over, in order — the bus, the gateway then the broker. '
+      + 'The line stays one row from source to target; the transport pattern is read off this. Empty or null: point-to-point.',
+    items: { type: 'string' },
+  },
   isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
   validFrom: { type: 'string', description: 'The first day the line is there, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
   validUntil: { type: 'string', description: 'The last day it is there, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },
@@ -138,6 +145,7 @@ const ELEMENT_FIELDS = {
   category: { type: 'string', description: 'A business category or capability.' },
   vendor: { type: 'string', description: 'Who makes it.' },
   technology: { type: 'string', description: 'What it is built on.' },
+  platformCategory: { type: 'string', description: 'A platform only: what sort of technology it is (ADR-0013). Tooling when unsaid.', enum: PLATFORM_CATEGORIES },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
   owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the folder.' },
@@ -453,6 +461,8 @@ const SPECS = [
       + 'name, and lands in its kind\'s own band unless a zone or a spot is named. A business kind — a step, '
       + 'a function, a process — is a record and is drawn nowhere: a sheet is laid out from the tree rather '
       + 'than dragged, so it needs no diagram and can be added while a scope\'s home is on screen. '
+      + 'A platform — a cluster, a broker, a bus, the tooling (ADR-0013) — is drawn as the chip of the '
+      + 'management band and lands there; what runs on it and what passes through it are rows, not lines. '
       + 'Answers with the id, and with whether it was drawn.',
     inputSchema: {
       type: 'object',
@@ -574,7 +584,8 @@ const SPECS = [
     tier: 'write',
     description:
       'Join two elements with a typed relation (ADR-0012): supports (an application covers a '
-      + 'capability), serves, realises, or assigned (who is responsible). Dated when it only holds for '
+      + 'capability), serves, realises, assigned (who is responsible), hostedOn (an application or a '
+      + 'component runs on a platform) or uses (it consumes one: a broker, a forge, a firewall). Dated when it only holds for '
       + 'a while — the roadmap draws the window. One end may be an element another scope defines, as '
       + 'long as register.list or scopes.list knows the id: an organisation\'s capability supported by a '
       + 'landscape\'s application is written on the organisation. For a flow between two applications use '
@@ -841,15 +852,17 @@ const SPECS = [
     description:
       'Add a diagram: a new landscape by name, a C4 container view of one application seeded with its '
       + 'components and laid out on first open, a business architecture sheet over the journey and the '
-      + 'areas this project already holds, or an enterprise map — every function against the applications '
-      + 'that support it, with the gaps. The first two are switched to; a sheet and a map are pages rather '
-      + 'than boards, so they are made and left for a person to open. Answers with the id.',
+      + 'areas this project already holds, an enterprise map — every function against the applications '
+      + 'that support it, with the gaps — or a technology view of one platform: what runs on it, what uses '
+      + 'it, and every interface that passes through it (ADR-0013). The first two are switched to; the '
+      + 'other three are pages rather than boards, so they are made and left for a person to open. Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, or an enterprise map.', enum: ['layer7', 'container', 'sheet', 'map'] },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, or a technology view.', enum: ['layer7', 'container', 'sheet', 'map', 'technology'] },
         name: { type: 'string', description: 'For a landscape, a sheet or a map: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
+        platformId: { type: 'string', description: 'For a technology view: the platform it is about.' },
       },
       required: ['kind'],
       additionalProperties: false,
@@ -868,8 +881,8 @@ const SPECS = [
       + '`areaSpans` maps an area id to the columns it takes, its capabilities side by side inside it — on '
       + 'paper an area not named there is widened until the page fits the paper\'s short side. '
       + 'A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
-      + 'journey band, every root. Each list given replaces that list whole; null clears a field. A board '
-      + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
+      + 'journey band, every root. A technology view takes `platformId`, the platform it is about. Each list given replaces that list whole; null clears a field. A board '
+      + 'or a technology view takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -881,7 +894,8 @@ const SPECS = [
         paper: { type: 'string', description: 'A sheet: the canvas it is laid out on. Null is the default, A2.', enum: ['A4', 'A3', 'A2', 'A1', 'A0', 'fit'] },
         columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the canvas.' },
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
-        asOf: { type: 'string', description: 'A board: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
+        platformId: { type: 'string', description: 'A technology view: the platform it is about.' },
+        asOf: { type: 'string', description: 'A board or a technology view: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
       },
       required: ['id'],
       additionalProperties: false,

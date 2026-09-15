@@ -74,6 +74,7 @@ function view(model: Model, over: Partial<WriteView> = {}): WriteView {
     today: () => '2026-09-07',
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
+    technologyName: (name) => `${name} · technology`,
     ...over,
   }
 }
@@ -960,5 +961,79 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
     expect(commandFor('milestone.add', { planId: 'tr-1', date: '2027-05-01', name: 'Pilot' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
     expect(commandFor('milestone.update', { planId: 'tr-1', name: 'Go-live' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
     expect(commandFor('milestone.remove', { planId: 'tr-9', name: 'Pilot' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+})
+
+describe('the physical view (ADR-0013)', () => {
+  const withPlatforms = fromArrays({
+    ...host,
+    elements: [
+      ...host.elements,
+      element('esb', 'ESB', { kind: 'platform', platformCategory: 'integration' }),
+      element('cluster', 'Cluster', { kind: 'platform' }),
+    ],
+  })
+
+  it('adds a platform with its category, drawn as the management band\'s chip', () => {
+    const out = commandFor('element.add', { name: 'Kafka', kind: 'platform', platformCategory: 'messaging' }, view(withPlatforms))
+    expect(answerOf(out)).toMatchObject({ id: 'kafka', kind: 'platform', zone: 'management' })
+    const after = roundTrip(withPlatforms, out)
+    expect(after.elements.kafka).toMatchObject({ kind: 'platform', platformCategory: 'messaging', isManaged: true })
+  })
+
+  it('refuses a category on anything but a platform, and a category it does not know', () => {
+    expect(commandFor('element.update', { id: 'billing', platformCategory: 'runtime' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('element.update', { id: 'esb', platformCategory: 'cloud' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    const after = roundTrip(withPlatforms, commandFor('element.update', { id: 'cluster', platformCategory: 'runtime' }, view(withPlatforms)))
+    expect(after.elements.cluster.platformCategory).toBe('runtime')
+  })
+
+  it('joins an application to what runs it and what it uses, and refuses a row that ends on no platform', () => {
+    const hosted = roundTrip(withPlatforms, commandFor('relation.add', { type: 'hostedOn', sourceId: 'billing', targetId: 'cluster' }, view(withPlatforms)))
+    expect(Object.values(hosted.relations).find((r) => r.type === 'hostedOn')).toMatchObject({ sourceId: 'billing', targetId: 'cluster' })
+    roundTrip(withPlatforms, commandFor('relation.add', { type: 'uses', sourceId: 'api', targetId: 'esb' }, view(withPlatforms)))
+    expect(commandFor('relation.add', { type: 'hostedOn', sourceId: 'billing', targetId: 'crm' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('says what carries a flow, in order, and clears it with null or an empty list', () => {
+    const over = roundTrip(withPlatforms, commandFor('connection.update', { id: 'c1', via: ['esb', 'cluster'] }, view(withPlatforms)))
+    expect(over.relations.c1.via).toEqual(['esb', 'cluster'])
+    const cleared = roundTrip(over, commandFor('connection.update', { id: 'c1', via: [] }, view(over)))
+    expect(cleared.relations.c1.via).toBeUndefined()
+    const drawn = roundTrip(withPlatforms, commandFor('connect', { sourceId: 'billing', targetId: 'crm', via: ['esb'] }, view(withPlatforms)))
+    expect(Object.values(drawn.relations).some((r) => r.via?.[0] === 'esb')).toBe(true)
+  })
+
+  it('refuses a via that names no platform, or something nobody holds', () => {
+    expect(commandFor('connection.update', { id: 'c1', via: ['billing'] }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('connection.update', { id: 'c1', via: ['nowhere'] }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+    // An id the tree knows and this scope does not is trusted, as every far end is.
+    const known = view(withPlatforms, { known: (id) => id === 'shared-bus' })
+    expect(roundTrip(withPlatforms, commandFor('connection.update', { id: 'c1', via: ['shared-bus'] }, known)).relations.c1.via).toEqual(['shared-bus'])
+  })
+
+  it('makes a technology view about a platform, once, and refuses one about anything else', () => {
+    const first = commandFor('diagram.create', { kind: 'technology', platformId: 'esb' }, view(withPlatforms))
+    expect(answerOf(first)).toMatchObject({ kind: 'technology', name: 'ESB · technology', platformId: 'esb' })
+    const made = roundTrip(withPlatforms, first)
+    const id = made.order.diagrams.find((held) => made.diagrams[held].kind === 'technology')!
+    expect(made.diagrams[id]).toMatchObject({ kind: 'technology', platformId: 'esb' })
+    // Made and left for a person to open, so nothing is switched to.
+    expect(prepared(first).activeDiagramId).toBeUndefined()
+    expect(answerOf(commandFor('diagram.create', { kind: 'technology', platformId: 'esb' }, view(made)))).toMatchObject({ existed: true })
+    expect(commandFor('diagram.create', { kind: 'technology', platformId: 'billing' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.create', { kind: 'technology' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    // Its platform can change, its day can be set, and a sheet's fields are refused.
+    const moved = roundTrip(made, commandFor('diagram.update', { id, platformId: 'cluster', asOf: '2027-01-01' }, view(made)))
+    expect(moved.diagrams[id]).toMatchObject({ platformId: 'cluster', asOf: '2027-01-01' })
+    expect(commandFor('diagram.update', { id, journeyId: 'x' }, view(made))).toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('diagram.update', { id, platformId: null }, view(made))).toMatchObject({ refusal: 'agent.badArguments' })
   })
 })
