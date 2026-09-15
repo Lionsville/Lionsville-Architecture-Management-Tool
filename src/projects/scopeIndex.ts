@@ -47,7 +47,7 @@
  *
  * Pure: `(path, model)` pairs in, answers out. No store, no React, no promise.
  */
-import type { DesignElement, ElementId, ElementKind, Relation, RelationType } from '../model'
+import type { DesignElement, ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model'
 import type { Transition } from '../model/transition'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -126,6 +126,12 @@ export type IndexEntry = {
   outside?: true
   /** Which actor an outside application belongs to, where that has been said. */
   partyId?: ElementId
+  /**
+   * What a platform is, as its master says (ADR-0014). A stand-in carries
+   * nothing the owner answers for, so a landscape drawing the cluster reads
+   * whether it is a place from here, the way it reads what it is filed under.
+   */
+  platformArchetype?: PlatformArchetype
   /**
    * Where the stand-ins say the definition was last seen — kept ONLY where
    * nobody defines it (§3).
@@ -243,7 +249,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
 
   type Definition = {
     path: ScopePath; depth: number; kind: ElementKind; name: string; parentId?: ElementId
-    outside?: true; partyId?: ElementId
+    outside?: true; partyId?: ElementId; platformArchetype?: PlatformArchetype
   }
 
   const held = new Map<ElementId, Held>()
@@ -271,6 +277,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
           ...(element.parentId !== undefined ? { parentId: element.parentId } : {}),
           ...(element.outside ? { outside: element.outside } : {}),
           ...(element.partyId !== undefined ? { partyId: element.partyId } : {}),
+          ...(element.platformArchetype !== undefined ? { platformArchetype: element.platformArchetype } : {}),
         })
       } else {
         row.standIns.push({ path, kind: element.kind, name: element.name, ref: element.ref })
@@ -331,6 +338,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       ...(master?.parentId !== undefined ? { parentId: master.parentId } : {}),
       ...(master?.outside ? { outside: master.outside } : {}),
       ...(master?.partyId !== undefined ? { partyId: master.partyId } : {}),
+      ...(master?.platformArchetype !== undefined ? { platformArchetype: master.platformArchetype } : {}),
       ...(master === undefined && row.standIns[0] !== undefined ? { cachedRef: row.standIns[0].ref } : {}),
       drawnIn: row.standIns.map((one) => one.path),
       stale,

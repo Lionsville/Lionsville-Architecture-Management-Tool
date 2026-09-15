@@ -11,7 +11,7 @@ import type { Transition } from '../model/transition'
 import type { HostModel } from '../model/fromInterchange'
 import { stableJson, textFromBytes } from './fileText'
 import {
-  isFormatPath, MODEL_FILE, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
+  isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
   scopeSummaryFrom,
 } from './folderFormat'
 import type { FolderFile } from './folderFormat'
@@ -431,6 +431,37 @@ describe('projectFromFolder', () => {
    * hide its decisions, its documents and everything filed under it. Whether
    * the canvas can show one is the shell's question, not the format's.
    */
+  /**
+   * The last reader of ADR-0013's closed `platformCategory` (ADR-0014): a
+   * runtime was a place, a network is one, and everything else was consumed.
+   * Dropped on read, so the next save writes the archetype and not the sort.
+   */
+  it('reads the old platform category as the archetype that replaced it, and drops it', () => {
+    const held = project({
+      model: {
+        name: 'Platforms',
+        elements: [
+          { ...element('openshift', 'OpenShift', { kind: 'platform' }), platformCategory: 'runtime' },
+          { ...element('firewall', 'Firewall', { kind: 'platform' }), platformCategory: 'network' },
+          { ...element('kafka', 'Kafka', { kind: 'platform' }), platformCategory: 'messaging' },
+          { ...element('said', 'Said', { kind: 'platform', platformArchetype: 'network' }), platformCategory: 'runtime' },
+          { ...element('crews', 'Crews'), platformCategory: 'runtime' },
+        ] as unknown as DesignElement[],
+        relations: [],
+        diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'One', placements: [] })],
+      },
+    })
+    const back = scopeFromFolder(scopeFiles(held), REF)!
+    const archetypes = Object.fromEntries(back.model.elements.map((e) => [e.id, e.platformArchetype]))
+    expect(archetypes).toEqual({ openshift: 'place', firewall: 'network', kafka: 'service', said: 'network', crews: undefined })
+    expect(back.model.elements.some((e) => 'platformCategory' in e)).toBe(false)
+    // And the index's reader, which reads the model file on its own, agrees.
+    const text = scopeFiles(held).find((file) => file.path === MODEL_FILE)!
+    const listed = modelListsFrom('text' in text ? text.text : '')
+    expect(listed.elements.find((e) => e.id === 'kafka')?.platformArchetype).toBe('service')
+    expect(listed.elements.some((e) => 'platformCategory' in e)).toBe(false)
+  })
+
   it('reads a folder with no views, because that is a domain', () => {
     const empty = project()
     empty.model.diagrams = []

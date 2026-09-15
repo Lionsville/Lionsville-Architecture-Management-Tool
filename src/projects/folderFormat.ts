@@ -55,7 +55,7 @@ import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, DiagramGroup, DiagramLine, DiagramMember,
-  DocumentImage, DomainGroupRect, Geometry, NodeGeometry, Relation, RouteGeometry, UploadedLogo,
+  DocumentImage, DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
 } from '../model'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/fromInterchange'
@@ -571,10 +571,33 @@ export function modelListsFrom(
   return {
     elements: listOf(held?.elements)
       .filter((row) => typeof row.id === 'string')
-      .map(({ explicit: _held, ...rest }) => rest as unknown as DesignElement),
+      .map(({ explicit: _held, ...rest }) => elementRecord(rest)),
     relations: listOf(held?.relations)
       .filter((row) => typeof row.id === 'string') as unknown as Relation[],
   }
+}
+
+/**
+ * What the closed `platformCategory` of ADR-0013 reads as, now that a platform
+ * carries an archetype and the sort of technology it is has become the
+ * service it realises (ADR-0014).
+ *
+ * The last reader of the old field, and the only place its name survives. A
+ * runtime was a place and a network still is; everything else — a broker, a
+ * bus, a data platform, an identity provider, the tooling — was something
+ * consumed, which is what `service` means. A record that already says what it
+ * is keeps its own answer, and the old field is dropped here, so it is gone
+ * from the file on the next save.
+ */
+const ARCHETYPE_OF_CATEGORY: Record<string, PlatformArchetype> = { runtime: 'place', network: 'network' }
+
+function elementRecord(row: Record<string, unknown>): DesignElement {
+  const { platformCategory, ...rest } = row
+  const element = rest as unknown as DesignElement
+  if (typeof platformCategory !== 'string' || element.kind !== 'platform' || element.platformArchetype !== undefined) {
+    return element
+  }
+  return { ...element, platformArchetype: ARCHETYPE_OF_CATEGORY[platformCategory] ?? 'service' }
 }
 
 function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
@@ -632,7 +655,7 @@ function readElements(folder: Folder): {
     }
     const prose = textAt(folder, `${DOCS_FOLDER}/${row.id}.md`)
     return [{
-      ...(rest as unknown as DesignElement),
+      ...elementRecord(rest),
       ...(prose !== undefined ? { description: markdownBody(prose) } : {}),
     }]
   })

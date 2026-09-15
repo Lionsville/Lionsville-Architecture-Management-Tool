@@ -30,9 +30,9 @@
  */
 import type { HostModel } from './fromInterchange'
 import { isGoneOn, relationLiveAt } from './lifecycle'
-import { isTechnologyRelation, platformCategoryOf } from './relations'
+import { isTechnologyRelation, platformArchetypeOf } from './relations'
 import { isContainerLine } from './refines'
-import type { DesignElement, ElementId, PlatformCategory, Relation } from './types'
+import type { DesignElement, ElementId, PlatformArchetype, Relation } from './types'
 
 /** What the report is told about an id it may not hold: a name, and whose it is. */
 export type PlatformDescription = {
@@ -40,6 +40,13 @@ export type PlatformDescription = {
   kind?: DesignElement['kind']
   /** What to call the scope that answers for it, where that is not this one. */
   where?: string
+  /**
+   * What the platform is, as the scope that defines it says (ADR-0014). A
+   * stand-in carries nothing the owner answers for, so a report read in the
+   * landscape that stands on the cluster is told this the way it is told the
+   * name.
+   */
+  platformArchetype?: PlatformArchetype
 }
 
 export type PlatformDescribe = (id: ElementId) => PlatformDescription | undefined
@@ -80,7 +87,7 @@ export type PlatformReportOptions = {
 }
 
 export type PlatformReport = {
-  platform: PlatformEnd & { platformCategory: PlatformCategory }
+  platform: PlatformEnd & { platformArchetype: PlatformArchetype }
   /** The platforms filed under this one — a namespace under a cluster. */
   children: PlatformEnd[]
   /** What this platform itself stands on and consumes. */
@@ -187,7 +194,12 @@ export function platformReport(
       || a.relation.id.localeCompare(b.relation.id))
 
   return {
-    platform: { ...end(platformId), platformCategory: platformCategoryOf(platform) },
+    platform: {
+      ...end(platformId),
+      // The owner's answer where the tree has one: this scope's record may be
+      // a stand-in, which says nothing about what the thing is.
+      platformArchetype: describe?.(platformId)?.platformArchetype ?? platformArchetypeOf(platform),
+    },
     children: model.elements
       .filter((e) => e.kind === 'platform' && e.parentId === platformId && !gone(e.id))
       .map((e) => end(e.id))

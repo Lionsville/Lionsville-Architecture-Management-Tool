@@ -95,22 +95,22 @@ export type ElementKind =
   /** Technology: what runs the applications and carries their interfaces (ADR-0013). */
   | 'platform';
 /**
- * What sort of technology a platform is (ADR-0013).
+ * What a platform IS, as far as the model needs to know (ADR-0014).
  *
- * A closed set, because two readers branch on it and neither may guess from a
- * name: the ArchiMate mapping picks a node, a network or a technology service
- * by it, and the deployment boxes label and group by it. `tooling` is the
- * catch-all a platform lands in when nobody has said.
+ * Three values, because after the offering became a kind of its own the only
+ * distinction left for the model to make about a platform is what it is:
+ * a `place` is something a container is `hostedOn` — a cluster, a namespace,
+ * a machine, an account — and what the deployment boxes draw; a `service` is
+ * something consumed — a broker, a bus, a gateway, a vault; a `network` is a
+ * segment, a firewall, a link. What SORT of technology it is, in the sense
+ * the closed category this replaced reached for, is now the service it
+ * realises, which the enterprise authored rather than this file.
+ *
+ * `service` is what a platform with nothing said reads as: a wrong `place`
+ * puts a spurious box on a deployment diagram, a wrong `service` puts nothing
+ * anywhere.
  */
-export type PlatformCategory =
-  | 'runtime'
-  | 'messaging'
-  | 'integration'
-  | 'network'
-  | 'data'
-  | 'identity'
-  | 'tooling'
-  | 'observability';
+export type PlatformArchetype = 'place' | 'service' | 'network';
 export type Layer7Zone =
   | 'actors'
   | 'inputChannels'
@@ -205,11 +205,11 @@ export interface DesignElement {
   vendor?: string;
   technology?: string;
   /**
-   * A `platform` only: what sort of technology it is (ADR-0013). Absent reads
-   * as `tooling`, through {@link ./relations.platformCategoryOf}, so a file
-   * that says nothing still exports and still groups.
+   * A `platform` only: what it is (ADR-0014). Absent reads as `service`,
+   * through {@link ./relations.platformArchetypeOf}, so a file that says
+   * nothing draws no box it did not ask for.
    */
-  platformCategory?: PlatformCategory;
+  platformArchetype?: PlatformArchetype;
   description?: string;
   /**
    * Nobody in this organisation owns it (ADR-0012 §3).

@@ -16,7 +16,7 @@
  * other tools and does not change — takes its flows through `flowsOf`.
  */
 import type { StringKey } from '../i18n/strings'
-import type { DesignElement, PlatformCategory, Relation, RelationType } from './types'
+import type { DesignElement, PlatformArchetype, Relation, RelationType } from './types'
 
 /**
  * Every type, in the order the vocabulary was decided in: the line this tool
@@ -59,35 +59,28 @@ export function flowsOf(relations: readonly Relation[]): Relation[] {
 // --- the physical view (ADR-0013) -------------------------------------------
 
 /**
- * Every sort of platform, in the order a page groups them: what runs things
- * first, then what carries them, then what surrounds them.
+ * What a platform can be (ADR-0014), in the order a select offers them: the
+ * place something runs, the service something consumes, the network between.
  */
-export const PLATFORM_CATEGORIES: readonly PlatformCategory[] = [
-  'runtime', 'messaging', 'integration', 'network', 'data', 'identity', 'tooling', 'observability',
-]
+export const PLATFORM_ARCHETYPES: readonly PlatformArchetype[] = ['place', 'service', 'network']
 
-/** What each category is called — published, for the reason `RELATION_LABEL` is. */
-export const PLATFORM_CATEGORY_LABEL = {
-  runtime: 'platformCategory.runtime',
-  messaging: 'platformCategory.messaging',
-  integration: 'platformCategory.integration',
-  network: 'platformCategory.network',
-  data: 'platformCategory.data',
-  identity: 'platformCategory.identity',
-  tooling: 'platformCategory.tooling',
-  observability: 'platformCategory.observability',
-} as const satisfies Record<PlatformCategory, StringKey>
+/** What each archetype is called — published, for the reason `RELATION_LABEL` is. */
+export const PLATFORM_ARCHETYPE_LABEL = {
+  place: 'platformArchetype.place',
+  service: 'platformArchetype.service',
+  network: 'platformArchetype.network',
+} as const satisfies Record<PlatformArchetype, StringKey>
 
-export function isPlatformCategory(held: unknown): held is PlatformCategory {
-  return typeof held === 'string' && (PLATFORM_CATEGORIES as readonly string[]).includes(held)
+export function isPlatformArchetype(held: unknown): held is PlatformArchetype {
+  return typeof held === 'string' && (PLATFORM_ARCHETYPES as readonly string[]).includes(held)
 }
 
 /**
- * What sort of platform this is, with the answer a file that says nothing
- * gets: `tooling`, the category with the fewest consequences.
+ * What this platform is, with the answer a record that says nothing gets:
+ * `service`, the archetype that draws nothing nobody asked for.
  */
-export function platformCategoryOf(element: Pick<DesignElement, 'platformCategory'>): PlatformCategory {
-  return element.platformCategory ?? 'tooling'
+export function platformArchetypeOf(element: Pick<DesignElement, 'platformArchetype'>): PlatformArchetype {
+  return element.platformArchetype ?? 'service'
 }
 
 /**

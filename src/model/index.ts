@@ -9,7 +9,7 @@
  */
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
-  Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType, PlatformCategory,
+  Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType, PlatformArchetype,
   EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramMember, NodeGeometry, PlacedNode, DesignDiagram, SheetPaper,
   DesignModel, DiagramGroup, DiagramLine, DiagramSettings, DomainGroupRect, Geometry, RouteGeometry,
@@ -40,7 +40,7 @@ export type { ColourBy, OverlayBand } from './overlay'
 
 /** The platforms a container diagram's containers run on, drawn around them (ADR-0013). */
 export { deploymentBoxes } from './deployment'
-export type { DeploymentBox } from './deployment'
+export type { DeploymentBox, PlatformTree } from './deployment'
 
 /** Where something runs, and who may say so (ADR-0013). */
 export { containersOf, hostingOf, mayBeHosted } from './hosting'
@@ -56,10 +56,10 @@ export type { Held, LandingGesture, RefinementRefusal } from './refines'
 export { acceptImplied, impliedInterfaces } from './implied'
 export type { ImpliedInterface } from './implied'
 
-/** What a platform is, and what stands on it (ADR-0013). */
+/** What a platform is, and what stands on it (ADR-0013, ADR-0014). */
 export {
-  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, isPlatformCategory,
-  isTechnologyRelation, platformCategoryOf,
+  PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, isPlatformArchetype,
+  isTechnologyRelation, platformArchetypeOf,
 } from './relations'
 
 /** What a stand-in may carry, and what the scope that defines it answers for (ADR-0012 §3). */

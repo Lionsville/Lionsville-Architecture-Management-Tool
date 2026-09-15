@@ -19,22 +19,38 @@
  * drawing of a container nobody has said where to run. Context applications
  * are outside them too: somebody else\'s deployment is not this picture.
  *
+ * **A box is a place** (ADR-0014). A container hosted on a broker or a vault
+ * is consuming it, not sitting in it, and a rectangle around the container
+ * would say otherwise — so only a platform whose archetype is `place` gets a
+ * box, and the chain walks on through anything else to the place above it. A
+ * platform that says nothing reads as a service and draws no box it did not
+ * ask for.
+ *
  * Environments — *this container, in production, on that node* — are the open
  * question ADR-0013 keeps. The shape here takes them without changing: a
  * second grouping level is one more entry in the chain each container walks.
  */
-import { platformCategoryOf } from './relations'
-import type { DesignDiagram, DesignElement, ElementId, PlatformCategory, Relation } from './types'
+import { platformArchetypeOf } from './relations'
+import type { DesignDiagram, DesignElement, ElementId, PlatformArchetype, Relation } from './types'
 
 export type DeploymentBox = {
   /** The platform the box IS. */
   id: ElementId
   name: string
-  platformCategory: PlatformCategory
   /** How deep it sits: 0 is outermost, a namespace inside a cluster is 1. */
   depth: number
   /** Every container inside it, its nested boxes\' members included. */
   memberIds: ElementId[]
+}
+
+/**
+ * What the scope that defines a platform says about it, where this scope
+ * holds only a stand-in: what it is filed under, and what it is. Both are the
+ * owner's detail (ADR-0012 §3), so both come from the index by way of the host.
+ */
+export type PlatformTree = {
+  parentOf?(platformId: ElementId): ElementId | undefined
+  archetypeOf?(platformId: ElementId): PlatformArchetype | undefined
 }
 
 /**
@@ -49,21 +65,28 @@ export function deploymentBoxes(
   model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
   diagram: Pick<DesignDiagram, 'kind' | 'applicationElementId'>,
   placed: ReadonlySet<ElementId>,
-  parentOf?: (platformId: ElementId) => ElementId | undefined,
+  tree: PlatformTree = {},
 ): DeploymentBox[] {
   const subject = diagram.applicationElementId
   if (diagram.kind !== 'container' || subject === undefined) return []
   const byId = new Map(model.elements.map((element) => [element.id, element]))
-  const above = (platform: DesignElement) => platform.parentId ?? parentOf?.(platform.id)
+  const above = (platform: DesignElement) => platform.parentId ?? tree.parentOf?.(platform.id)
+  const isPlace = (platform: DesignElement) =>
+    (tree.archetypeOf?.(platform.id) ?? platformArchetypeOf(platform)) === 'place'
 
-  /** The platform, then what it sits in, outermost last. A loop stops itself. */
+  /**
+   * The places the platform sits in, itself first and outermost last. A
+   * service or a network on the way up is walked through and not drawn: a
+   * container on a bus that runs on a cluster is in the cluster's box. A loop
+   * stops itself.
+   */
   const chainOf = (platformId: ElementId): DesignElement[] => {
     const chain: DesignElement[] = []
     const seen = new Set<ElementId>()
     let held = byId.get(platformId)
     while (held?.kind === 'platform' && !seen.has(held.id)) {
       seen.add(held.id)
-      chain.push(held)
+      if (isPlace(held)) chain.push(held)
       const up = above(held)
       held = up === undefined ? undefined : byId.get(up)
     }
@@ -99,7 +122,6 @@ export function deploymentBoxes(
     .map(({ platform, depth, memberIds }) => ({
       id: platform.id,
       name: platform.name,
-      platformCategory: platformCategoryOf(platform),
       depth,
       memberIds,
     }))

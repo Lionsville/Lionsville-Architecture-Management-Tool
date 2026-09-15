@@ -190,6 +190,15 @@ describe('the index — what it is read for', () => {
     expect(index.lookup('wms')?.outside).toBeUndefined()
   })
 
+  it('carries what a platform is, as its master says, for the stand-ins that may not (ADR-0014)', () => {
+    const index = indexScopes([
+      scope('platforms', [element('openshift', { kind: 'platform', platformArchetype: 'place' }), element('bus', { kind: 'platform' })]),
+      scope('retail', [standIn('openshift', 'platforms', { kind: 'platform' })]),
+    ])
+    expect(index.lookup('openshift')?.platformArchetype).toBe('place')
+    expect(index.lookup('bus')?.platformArchetype).toBeUndefined()
+  })
+
   /**
    * The cross-scope half of coverage: the applications that support a
    * capability defined at the organisation are in a landscape's model, so a

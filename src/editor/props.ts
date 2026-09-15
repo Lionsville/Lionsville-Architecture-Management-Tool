@@ -20,6 +20,7 @@ import type {
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
+import type { PlatformTree } from '../model/deployment';
 import type { WindowChrome } from '../platform/windowChrome';
 
 /**
@@ -380,17 +381,18 @@ export interface EditorOwnership {
    */
   noteFor(elementId: ElementId): StandInNote | undefined;
   /**
-   * Which platform a platform is filed under, where the scope that defines it
-   * says so (ADR-0013).
+   * What the scope that defines a platform says about it: which platform it
+   * is filed under, and what it is (ADR-0013, ADR-0014).
    *
-   * The deployment boxes nest by the platform tree, and a landscape holds
-   * stand-ins of the platforms it stands on — a stand-in carries a name and a
-   * `ref` and nothing the owner answers for (§3), and the tree is the owner's.
-   * So the host reads it off the index and hands it over, the way it hands
-   * over the words on a card. Absent in a shell with no tree, and the boxes
-   * then nest by whatever this scope holds itself.
+   * The deployment boxes nest by the platform tree and draw a box only for a
+   * place, and a landscape holds stand-ins of the platforms it stands on — a
+   * stand-in carries a name and a `ref` and nothing the owner answers for
+   * (§3), and both facts are the owner's. So the host reads them off the
+   * index and hands them over, the way it hands over the words on a card.
+   * Absent in a shell with no tree, and the boxes then go by whatever this
+   * scope holds itself.
    */
-  platformParentOf?(platformId: ElementId): ElementId | undefined;
+  platformTree?: PlatformTree;
   /**
    * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
    * them: is there one to offer on this record, and one way to ask for it.

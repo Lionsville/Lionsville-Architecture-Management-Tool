@@ -62,7 +62,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     const platforms = scopes.find((scope) => scope.path === 'acme-logistics/platforms')!
     expect(platforms.kind).toBe('domain')
     expect(platforms.model.elements.every((e) => e.kind === 'platform' && e.ref === undefined)).toBe(true)
-    expect(platforms.model.elements.map((e) => e.platformCategory)).toContain('integration')
+    expect(platforms.model.elements.map((e) => e.platformArchetype)).toContain('place')
     const standIns = model.elements.filter((e) => e.kind === 'platform' && e.ref !== undefined)
     expect(standIns.length).toBeGreaterThan(0)
     expect(standIns.every((e) => e.ref === 'acme-logistics/platforms')).toBe(true)
@@ -134,8 +134,10 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     // and nothing the owner answers for (§3), so the boxes are handed what the
     // index says, exactly as the workspace hands the canvas.
     const tree = indexScopes(scopes.map((scope) => ({ path: scope.path, model: scope.model })))
-    const parentOf = (id: string) => tree.lookup(id)?.parentId
-    const boxes = deploymentBoxes(model, diagram, placed, parentOf)
+    const boxes = deploymentBoxes(model, diagram, placed, {
+      parentOf: (id) => tree.lookup(id)?.parentId,
+      archetypeOf: (id) => tree.lookup(id)?.platformArchetype,
+    })
     expect(boxes.map((box) => [box.id, box.depth])).toEqual([['openshift', 0], ['ns-logistics', 1]])
     // The database is in the cluster's box and outside the namespace's.
     expect(boxes.find((box) => box.id === 'openshift')!.memberIds).toContain('wms-db')

@@ -88,7 +88,7 @@ const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `Th
  * from the tree, not dragged — so `element.add` makes one and draws nothing.
  */
 const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component', 'platform'] as const
-const PLATFORM_CATEGORIES = ['runtime', 'messaging', 'integration', 'network', 'data', 'identity', 'tooling', 'observability'] as const
+const PLATFORM_ARCHETYPES = ['place', 'service', 'network'] as const
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
@@ -152,7 +152,7 @@ const ELEMENT_FIELDS = {
   category: { type: 'string', description: 'A business category or capability.' },
   vendor: { type: 'string', description: 'Who makes it.' },
   technology: { type: 'string', description: 'What it is built on.' },
-  platformCategory: { type: 'string', description: 'A platform only: what sort of technology it is (ADR-0013). Tooling when unsaid.', enum: PLATFORM_CATEGORIES },
+  platformArchetype: { type: 'string', description: 'A platform only: what it is (ADR-0014) — a place something is hostedOn (a cluster, a namespace, an account: the deployment boxes draw these), a service something consumes (a broker, a bus, a vault), or a network. Service when unsaid.', enum: PLATFORM_ARCHETYPES },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
   owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the folder.' },

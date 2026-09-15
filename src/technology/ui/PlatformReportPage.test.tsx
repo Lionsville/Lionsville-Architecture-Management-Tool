@@ -24,8 +24,8 @@ function model(over: Partial<DesignModel> = {}): DesignModel {
     name: 'Landscape',
     diagrams: [],
     elements: [
-      element('esb', { kind: 'platform', name: 'Enterprise bus', platformCategory: 'integration' }),
-      element('cluster', { kind: 'platform', name: 'Cluster', platformCategory: 'runtime' }),
+      element('esb', { kind: 'platform', name: 'Enterprise bus' }),
+      element('cluster', { kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
       element('orders', { name: 'Order management' }), element('billing', { name: 'Billing' }),
       element('wms', { name: 'WMS' }),
       element('orders-api', { kind: 'component', parentId: 'orders', name: 'Orders API' }),
@@ -59,10 +59,11 @@ function open(over: Partial<PlatformReportPageProps> = {}) {
 }
 
 describe('the report', () => {
-  it('names the platform and its sort, and counts what the rows say', () => {
+  it('names the platform and what it is, and counts what the rows say', () => {
     open()
     expect(screen.getByTestId('technology-platform').textContent).toContain('Enterprise bus')
-    expect(screen.getByText('Integration')).toBeTruthy()
+    // Unsaid is a service (ADR-0014).
+    expect(screen.getByText('Service')).toBeTruthy()
     expect(screen.getByTestId('technology-summary').textContent)
       .toContain('1 hosted · 1 using it · 2 interfaces across it')
   })

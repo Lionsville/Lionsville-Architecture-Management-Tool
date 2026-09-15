@@ -8,6 +8,7 @@ import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import type {
   AspectStatus, DesignDiagram, ElementId, ElementKind, Lifecycle, Rect, UploadedLogo,
 } from '../model/types';
+import type { PlatformTree } from '../model/deployment';
 import type { Theme } from '@mui/material/styles';
 import type { StringKey, Translate } from '../i18n';
 import type { ExportLegend } from './props';
@@ -1390,7 +1391,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onElementDoubleClick={handleDoubleClick}
           onLineDoubleClick={handleLineDoubleClick}
           showDeployment={showDeployment}
-          platformParentOf={props.ownership?.platformParentOf}
+          platformTree={props.ownership?.platformTree}
           overlayTints={overlayTints}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
@@ -1659,7 +1660,7 @@ function CanvasForDiagram({
   onLineDoubleClick,
   onOpenDocumentation,
   showDeployment,
-  platformParentOf,
+  platformTree,
   overlayTints,
   onTidyGroup,
   groupTidyOptions,
@@ -1701,8 +1702,8 @@ function CanvasForDiagram({
   onOpenDocumentation(elementId: ElementId): void;
   /** Whether a container diagram draws the deployment boxes (ADR-0013). */
   showDeployment: boolean;
-  /** The platform tree, where another scope answers for it (ADR-0013). */
-  platformParentOf?(platformId: ElementId): ElementId | undefined;
+  /** The platform tree, where another scope answers for it (ADR-0013, ADR-0014). */
+  platformTree?: PlatformTree;
   /** The wash each card takes under the landscape's overlay (ADR-0013). */
   overlayTints: ReadonlyMap<ElementId, string>;
   /** Layer 7 only — undefined in read-only mode. */
@@ -1770,7 +1771,7 @@ function CanvasForDiagram({
       onGroupTidyOptionsChange={onGroupTidyOptionsChange}
     />
   ) : (
-    <ContainerCanvas {...shared} showDeployment={showDeployment} platformParentOf={platformParentOf} />
+    <ContainerCanvas {...shared} showDeployment={showDeployment} platformTree={platformTree} />
   );
 }
 

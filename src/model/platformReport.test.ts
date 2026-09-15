@@ -24,9 +24,9 @@ const flow = (id: string, sourceId: string, targetId: string, over: Partial<Rela
   ({ id, type: 'flow', sourceId, targetId, ...over })
 
 const elements = [
-  platform('esb', { platformCategory: 'integration' }),
-  platform('kafka', { platformCategory: 'messaging' }),
-  platform('cluster', { platformCategory: 'runtime' }),
+  platform('esb'),
+  platform('kafka'),
+  platform('cluster', { platformArchetype: 'place' }),
   platform('ns-orders', { parentId: 'cluster' }),
   element('orders', { name: 'Order management' }), element('billing', { name: 'Billing' }),
   element('wms', { name: 'WMS' }), element('portal', { name: 'Portal' }),
@@ -46,10 +46,21 @@ describe('the report on a platform', () => {
     expect(cluster.hosted.map((e) => e.id)).toEqual(['esb', 'orders-api', 'portal'])
     expect(cluster.users.map((e) => e.id)).toEqual(['esb'])
     expect(cluster.children.map((e) => e.id)).toEqual(['ns-orders'])
-    expect(cluster.platform.platformCategory).toBe('runtime')
+    expect(cluster.platform.platformArchetype).toBe('place')
     const esb = platformReport({ elements, relations }, 'esb')!
     expect(esb.standsOn.map((e) => e.id)).toEqual(['cluster'])
     expect(esb.hosted).toEqual([])
+    // Unsaid is a service (ADR-0014).
+    expect(esb.platform.platformArchetype).toBe('service')
+  })
+
+  it('takes what the platform is from the tree, where this scope holds only a stand-in', () => {
+    // A stand-in carries nothing the owner answers for, so the record here
+    // says nothing and the index says what the master does.
+    const standIn = elements.map((e) => (e.id === 'cluster' ? { ...e, ref: 'platforms', platformArchetype: undefined } : e))
+    const describe = (id: string) => (id === 'cluster' ? { name: 'CLUSTER', kind: 'platform' as const, platformArchetype: 'place' as const } : undefined)
+    expect(platformReport({ elements: standIn, relations }, 'cluster')!.platform.platformArchetype).toBe('service')
+    expect(platformReport({ elements: standIn, relations }, 'cluster', { describe })!.platform.platformArchetype).toBe('place')
   })
 
   it('names a container beside the application it belongs to, and leaves an application bare', () => {

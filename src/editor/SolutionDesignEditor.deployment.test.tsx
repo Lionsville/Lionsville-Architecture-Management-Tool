@@ -32,8 +32,8 @@ function model(): DesignModel {
       el('wms-api', 'component', { parentId: 'wms' }),
       el('wms-db', 'component', { parentId: 'wms' }),
       el('wms-loose', 'component', { parentId: 'wms' }),
-      el('openshift', 'platform', { name: 'OpenShift', platformCategory: 'runtime' }),
-      el('ns', 'platform', { name: 'Logistics namespace', parentId: 'openshift' }),
+      el('openshift', 'platform', { name: 'OpenShift', platformArchetype: 'place' }),
+      el('ns', 'platform', { name: 'Logistics namespace', parentId: 'openshift', platformArchetype: 'place' }),
     ],
     relations: [
       { id: 'h1', type: 'hostedOn', sourceId: 'wms-api', targetId: 'ns' },
@@ -83,13 +83,12 @@ describe('the deployment boxes', () => {
     expect(boxes()).toEqual(['openshift', 'ns']);
   });
 
-  it('says the platform\'s name and its sort on the box', async () => {
+  it('says the platform\'s name on the box, and nothing else: a box is a place (ADR-0014)', async () => {
     renderEditor();
     await measured();
     const ns = screen.getAllByTestId('lv-deployment-box')
       .find((box) => box.getAttribute('data-platform') === 'ns');
-    expect(ns?.textContent).toContain('Logistics namespace');
-    expect(ns?.textContent).toContain('Tooling');
+    expect(ns?.textContent).toBe('Logistics namespace');
   });
 
   it('draws the inner box inside the outer one', async () => {

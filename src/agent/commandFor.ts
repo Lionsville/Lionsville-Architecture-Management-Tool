@@ -28,7 +28,7 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { isPlatformCategory } from '../model/relations'
+import { isPlatformArchetype } from '../model/relations'
 import { mayBeHosted } from '../model/hosting'
 import { COLOUR_BY } from '../model/overlay'
 import type { ColourBy } from '../model/overlay'
@@ -615,11 +615,11 @@ function elementPatch(args: Args, held: DesignElement, view: ReadView): Partial<
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key]
   }
-  if (args.platformCategory === null || args.platformCategory === '') patch.platformCategory = undefined
-  else if (typeof args.platformCategory === 'string') {
-    if (held.kind !== 'platform') return refused('agent.badArguments', 'only a platform has a platformCategory')
-    if (!isPlatformCategory(args.platformCategory)) return refused('agent.badArguments', '"platformCategory" is not one of the categories')
-    patch.platformCategory = args.platformCategory
+  if (args.platformArchetype === null || args.platformArchetype === '') patch.platformArchetype = undefined
+  else if (typeof args.platformArchetype === 'string') {
+    if (held.kind !== 'platform') return refused('agent.badArguments', 'only a platform has a platformArchetype')
+    if (!isPlatformArchetype(args.platformArchetype)) return refused('agent.badArguments', '"platformArchetype" is not place, service or network')
+    patch.platformArchetype = args.platformArchetype
   }
   if (typeof args.lifecycle === 'string') patch.lifecycle = args.lifecycle
   if (typeof args.isManaged === 'boolean') patch.isManaged = args.isManaged

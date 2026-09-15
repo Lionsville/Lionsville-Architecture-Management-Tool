@@ -27,7 +27,7 @@ import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
 import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
 import { isBoardKind } from '../model/placement'
-import type { DesignElement, Relation } from '../model'
+import type { DesignElement, ElementId, PlatformDescription, Relation } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
@@ -59,7 +59,6 @@ import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { MapPage, SheetPage } from '../business'
 import { PlatformReportPage } from '../technology'
 import type { Supporter } from '../business'
-import type { MapDescribe } from '../business'
 import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
@@ -714,7 +713,7 @@ export function ProjectWorkspace({
    * have drifted. `where` is the master's scope where that is not this one,
    * said the way the bar says it.
    */
-  const describeForMap = useCallback<MapDescribe>((id) => {
+  const describeForMap = useCallback((id: ElementId): PlatformDescription | undefined => {
     const entry = index.lookup(id)
     if (!entry) return undefined
     const { master } = entry
@@ -722,6 +721,9 @@ export function ProjectWorkspace({
       name: entry.name,
       kind: entry.kind,
       ...(master !== undefined && master !== project.path ? { where: scopeLabel(master) } : {}),
+      // What a platform is, as its master says (ADR-0014): a stand-in here
+      // carries nothing the owner answers for.
+      ...(entry.platformArchetype !== undefined ? { platformArchetype: entry.platformArchetype } : {}),
     }
   }, [index, project.path, scopeLabel])
 
@@ -776,10 +778,14 @@ export function ProjectWorkspace({
       }
     },
     noteFor: (elementId) => notes.get(elementId),
-    // What a platform is filed under, off the index (ADR-0013): the deployment
-    // boxes nest by the platform tree, and a landscape holds stand-ins of the
-    // platforms it stands on — the tree is the scope that defines them.
-    platformParentOf: (platformId) => index.lookup(platformId)?.parentId,
+    // What a platform is filed under and what it is, off the index (ADR-0013,
+    // ADR-0014): the deployment boxes nest by the platform tree and draw a
+    // box only for a place, and a landscape holds stand-ins of the platforms
+    // it stands on — both facts are the scope's that defines them.
+    platformTree: {
+      parentOf: (platformId) => index.lookup(platformId)?.parentId,
+      archetypeOf: (platformId) => index.lookup(platformId)?.platformArchetype,
+    },
     gestures: {
       offered: (elementId) => gestureOffers(elementId).length > 0,
       label: s('gesture.move'),

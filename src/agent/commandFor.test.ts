@@ -1039,25 +1039,26 @@ describe('the physical view (ADR-0013)', () => {
     ...host,
     elements: [
       ...host.elements,
-      element('esb', 'ESB', { kind: 'platform', platformCategory: 'integration' }),
-      element('cluster', 'Cluster', { kind: 'platform' }),
+      element('esb', 'ESB', { kind: 'platform' }),
+      element('cluster', 'Cluster', { kind: 'platform', platformArchetype: 'place' }),
     ],
   })
 
-  it('adds a platform with its category, drawn as the management band\'s chip', () => {
-    const out = commandFor('element.add', { name: 'Kafka', kind: 'platform', platformCategory: 'messaging' }, view(withPlatforms))
+  it('adds a platform saying what it is, drawn as the management band\'s chip', () => {
+    const out = commandFor('element.add', { name: 'Kafka', kind: 'platform', platformArchetype: 'service' }, view(withPlatforms))
     expect(answerOf(out)).toMatchObject({ id: 'kafka', kind: 'platform', zone: 'management' })
     const after = roundTrip(withPlatforms, out)
-    expect(after.elements.kafka).toMatchObject({ kind: 'platform', platformCategory: 'messaging', isManaged: true })
+    expect(after.elements.kafka).toMatchObject({ kind: 'platform', platformArchetype: 'service', isManaged: true })
   })
 
-  it('refuses a category on anything but a platform, and a category it does not know', () => {
-    expect(commandFor('element.update', { id: 'billing', platformCategory: 'runtime' }, view(withPlatforms)))
+  it('refuses an archetype on anything but a platform, and one it does not know', () => {
+    expect(commandFor('element.update', { id: 'billing', platformArchetype: 'place' }, view(withPlatforms)))
       .toMatchObject({ refusal: 'agent.badArguments' })
-    expect(commandFor('element.update', { id: 'esb', platformCategory: 'cloud' }, view(withPlatforms)))
+    // The schema refuses the old closed category before the builder sees it.
+    expect(commandFor('element.update', { id: 'esb', platformArchetype: 'runtime' }, view(withPlatforms)))
       .toMatchObject({ refusal: 'agent.badArguments' })
-    const after = roundTrip(withPlatforms, commandFor('element.update', { id: 'cluster', platformCategory: 'runtime' }, view(withPlatforms)))
-    expect(after.elements.cluster.platformCategory).toBe('runtime')
+    const after = roundTrip(withPlatforms, commandFor('element.update', { id: 'esb', platformArchetype: 'network' }, view(withPlatforms)))
+    expect(after.elements.esb.platformArchetype).toBe('network')
   })
 
   it('joins a container to what runs it and an application to what it uses, and refuses a row that ends on no platform', () => {

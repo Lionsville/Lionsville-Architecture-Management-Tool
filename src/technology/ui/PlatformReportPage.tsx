@@ -31,7 +31,7 @@ import { useTheme } from '@mui/material/styles'
 import type { DesignModel, ElementId, Relation } from '../../model'
 import { platformReport } from '../../model'
 import type { PlatformDescribe, PlatformEnd, PlatformLanding, PlatformReport } from '../../model'
-import { PLATFORM_CATEGORY_LABEL } from '../../model'
+import { PLATFORM_ARCHETYPE_LABEL } from '../../model'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -140,7 +140,7 @@ function Body({ report, openable, onOpen, t }: {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 1100 }}>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap' }}>
         <Typography data-testid="technology-platform" sx={{ fontSize: 18, fontWeight: 700 }}>{platform.name}</Typography>
-        <Chip size="small" label={t(PLATFORM_CATEGORY_LABEL[platform.platformCategory])} sx={{ height: 20, fontSize: 11 }} />
+        <Chip size="small" label={t(PLATFORM_ARCHETYPE_LABEL[platform.platformArchetype])} sx={{ height: 20, fontSize: 11 }} />
         {platform.where && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{platform.where}</Typography>}
       </Box>
 

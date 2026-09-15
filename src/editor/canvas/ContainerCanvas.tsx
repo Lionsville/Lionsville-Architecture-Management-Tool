@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { DesignDiagram, DesignModel, ElementKind } from '../../model/types';
+import type { PlatformTree } from '../../model/deployment';
 import { useStrings } from '../../i18n/LanguageContext';
 import { c4PanelFor } from '../export/c4Panel';
 import type { ElementSeedPatch } from '../useEditorState';
@@ -18,7 +19,7 @@ export function ContainerCanvas(
     model: DesignModel;
     diagram: DesignDiagram;
     showDeployment?: boolean;
-    platformParentOf?(platformId: string): string | undefined;
+    platformTree?: PlatformTree;
   },
 ) {
   const { actions, model, diagram } = props;
@@ -41,7 +42,7 @@ export function ContainerCanvas(
           measured off the live nodes, so it follows a card as it is dragged
           and there is no geometry to keep in step. */}
       {(props.showDeployment ?? true) && (
-        <DeploymentLayer model={model} diagram={diagram} platformParentOf={props.platformParentOf} />
+        <DeploymentLayer model={model} diagram={diagram} platformTree={props.platformTree} />
       )}
     </DiagramCanvas>
   );

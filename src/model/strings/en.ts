@@ -24,15 +24,10 @@ export const EN = {
   'relation.assigned': 'Assigned to',
   'relation.uses': 'Uses',
   'relation.hostedOn': 'Hosted on',
-  // --- what a platform is, and how an interface travels (ADR-0013) ---------
-  'platformCategory.runtime': 'Runtime',
-  'platformCategory.messaging': 'Messaging',
-  'platformCategory.integration': 'Integration',
-  'platformCategory.network': 'Network',
-  'platformCategory.data': 'Data',
-  'platformCategory.identity': 'Identity',
-  'platformCategory.tooling': 'Tooling',
-  'platformCategory.observability': 'Observability',
+  // --- what a platform is (ADR-0014) ---------------------------------------
+  'platformArchetype.place': 'Place',
+  'platformArchetype.service': 'Service',
+  'platformArchetype.network': 'Network',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',

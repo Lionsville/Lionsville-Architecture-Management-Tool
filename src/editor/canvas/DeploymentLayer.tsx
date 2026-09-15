@@ -2,10 +2,9 @@ import { useNodes, ViewportPortal } from '@xyflow/react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { deploymentBoxes } from '../../model/deployment';
-import { PLATFORM_CATEGORY_LABEL } from '../../model/relations';
+import type { PlatformTree } from '../../model/deployment';
 import { unionRects } from '../../model/placement';
 import type { DesignDiagram, DesignModel, ElementId, Rect } from '../../model/types';
-import { useStrings } from '../../i18n/LanguageContext';
 
 /**
  * The platforms a container diagram\'s containers run on, drawn around them
@@ -32,12 +31,11 @@ export interface DeploymentLayerProps {
   model: DesignModel;
   diagram: DesignDiagram;
   /** The platform tree, where another scope answers for it — see `model/deployment`. */
-  platformParentOf?(platformId: ElementId): ElementId | undefined;
+  platformTree?: PlatformTree;
 }
 
 export function DeploymentLayer(props: DeploymentLayerProps) {
   const theme = useTheme();
-  const { t } = useStrings();
   const tokens = getNodeTokens(theme);
   // The live nodes, so a box re-measures mid-drag rather than at the drop — and
   // so the day the board shows needs no second answer here: a card that is
@@ -50,7 +48,7 @@ export function DeploymentLayer(props: DeploymentLayerProps) {
     if (width === 0 || height === 0) continue;
     rects.set(node.id, { x: node.position.x, y: node.position.y, width, height });
   }
-  const boxes = deploymentBoxes(props.model, props.diagram, new Set(rects.keys()), props.platformParentOf);
+  const boxes = deploymentBoxes(props.model, props.diagram, new Set(rects.keys()), props.platformTree);
   if (boxes.length === 0) return null;
   const deepest = boxes.reduce((held, box) => Math.max(held, box.depth), 0);
 
@@ -100,9 +98,6 @@ export function DeploymentLayer(props: DeploymentLayerProps) {
               }}
             >
               {box.name}
-              <span style={{ fontWeight: 400, opacity: 0.75 }}>
-                {` · ${t(PLATFORM_CATEGORY_LABEL[box.platformCategory])}`}
-              </span>
             </span>
           </div>
         );

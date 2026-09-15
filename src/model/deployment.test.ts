@@ -23,9 +23,9 @@ const elements = [
   element('wms'), element('orders'),
   container('wms-api', 'wms'), container('wms-events', 'wms'), container('wms-db', 'wms'),
   container('wms-loose', 'wms'), container('orders-ui', 'orders'),
-  platform('account', 'Cloud account'),
-  platform('openshift', 'OpenShift', { parentId: 'account' }),
-  platform('ns', 'Logistics namespace', { parentId: 'openshift' }),
+  platform('account', 'Cloud account', { platformArchetype: 'place' }),
+  platform('openshift', 'OpenShift', { parentId: 'account', platformArchetype: 'place' }),
+  platform('ns', 'Logistics namespace', { parentId: 'openshift', platformArchetype: 'place' }),
 ]
 const relations = [
   host('h1', 'wms-api', 'ns'),
@@ -66,12 +66,35 @@ describe('the boxes a container diagram draws', () => {
     expect(boxes2.map((box) => box.id).sort()).toEqual(['account', 'ns', 'openshift'])
   })
 
-  it('says the platform\'s sort, for the box to wear', () => {
-    const typed = elements.map((e) => (e.id === 'ns' ? { ...e, platformCategory: 'runtime' as const } : e))
-    const boxes = deploymentBoxes({ elements: typed, relations }, view, placed)
-    expect(boxes.find((box) => box.id === 'ns')?.platformCategory).toBe('runtime')
-    // Unsaid reads as tooling, as everywhere.
-    expect(boxes.find((box) => box.id === 'openshift')?.platformCategory).toBe('tooling')
+  /**
+   * A box is a place (ADR-0014). A container on a broker is consuming it, not
+   * sitting in it, and a platform that says nothing is a service — so neither
+   * draws a box, and the chain walks on to the place above.
+   */
+  it('draws a box for a place only, and walks through a service to the place above it', () => {
+    const withBus = [
+      ...elements,
+      platform('bus', 'Enterprise bus', { parentId: 'openshift' }),
+      platform('unsaid', 'Unsaid', { parentId: 'openshift' }),
+    ]
+    const onBus = [...relations, host('h5', 'wms-loose', 'bus')]
+    const boxes = deploymentBoxes({ elements: withBus, relations: onBus }, view, placed)
+    expect(boxes.map((box) => box.id)).toEqual(['account', 'openshift', 'ns'])
+    expect(boxes.find((box) => box.id === 'openshift')!.memberIds).toContain('wms-loose')
+    const onUnsaid = [...relations, host('h5', 'wms-loose', 'unsaid')]
+    expect(deploymentBoxes({ elements: withBus, relations: onUnsaid }, view, placed).map((box) => box.id))
+      .toEqual(['account', 'openshift', 'ns'])
+  })
+
+  it('takes what a platform is from the tree, where this scope holds only a stand-in', () => {
+    // A stand-in carries nothing the owner answers for: the namespace here
+    // says nothing, and the index says it is a place.
+    const standIn = elements.map((e) => (e.id === 'ns' ? { ...e, ref: 'platforms', platformArchetype: undefined } : e))
+    expect(deploymentBoxes({ elements: standIn, relations }, view, placed).map((box) => box.id))
+      .toEqual(['account', 'openshift'])
+    const archetypeOf = (id: string) => (id === 'ns' ? 'place' as const : undefined)
+    expect(deploymentBoxes({ elements: standIn, relations }, view, placed, { archetypeOf }).map((box) => box.id))
+      .toEqual(['account', 'openshift', 'ns'])
   })
 
 })

@@ -851,7 +851,7 @@
         "kind": "platform",
         "lifecycle": "live",
         "name": "Identity & access",
-        "platformCategory": "identity"
+        "platformArchetype": "service"
       },
       {
         "aspects": {},
@@ -943,7 +943,7 @@
         "kind": "platform",
         "lifecycle": "live",
         "name": "Observability",
-        "platformCategory": "observability"
+        "platformArchetype": "service"
       },
       {
         "aspects": {},
@@ -3663,7 +3663,7 @@
         },
         "name": "Enterprise bus",
         "owner": "Integration team",
-        "platformCategory": "integration"
+        "platformArchetype": "service"
       },
       {
         "aspects": {},
@@ -3673,7 +3673,7 @@
         "lifecycle": "live",
         "name": "Event broker",
         "owner": "Platform team",
-        "platformCategory": "messaging",
+        "platformArchetype": "service",
         "vendor": "Confluent"
       },
       {
@@ -3685,7 +3685,7 @@
         "name": "Cloud landing zone",
         "outside": true,
         "owner": "Platform team",
-        "platformCategory": "runtime"
+        "platformArchetype": "place"
       },
       {
         "aspects": {},
@@ -3695,7 +3695,7 @@
         "lifecycle": "live",
         "name": "Logistics namespace",
         "parentId": "openshift",
-        "platformCategory": "runtime"
+        "platformArchetype": "place"
       },
       {
         "aspects": {},
@@ -3705,7 +3705,7 @@
         "lifecycle": "live",
         "name": "OpenShift",
         "owner": "Platform team",
-        "platformCategory": "runtime"
+        "platformArchetype": "place"
       }
     ],
     "relations": [

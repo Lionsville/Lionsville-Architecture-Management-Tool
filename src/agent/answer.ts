@@ -253,7 +253,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         ...(one.application !== undefined ? { application: one.application } : {}),
       })
       return json({
-        platform: { id: report.platform.id, name: report.platform.name, platformCategory: report.platform.platformCategory },
+        platform: { id: report.platform.id, name: report.platform.name, platformArchetype: report.platform.platformArchetype },
         children: report.children.map(end),
         standsOn: report.standsOn.map(end),
         hosted: report.hosted.map(end),
@@ -493,7 +493,7 @@ function elementLine(element: DesignElement) {
     category: element.category,
     vendor: element.vendor,
     technology: element.technology,
-    platformCategory: element.platformCategory,
+    platformArchetype: element.platformArchetype,
     owner: element.owner,
     lifecycleDates: element.lifecycleDates,
     successorId: element.successorId,

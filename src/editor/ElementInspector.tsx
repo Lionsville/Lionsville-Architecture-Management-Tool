@@ -16,8 +16,8 @@ import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
 import { hostingOf, mayBeHosted } from '../model/hosting';
-import { PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, platformCategoryOf } from '../model/relations';
-import type { PlatformCategory } from '../model/types';
+import { PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, platformArchetypeOf } from '../model/relations';
+import type { PlatformArchetype } from '../model/types';
 import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
@@ -238,8 +238,13 @@ export function ElementInspector(props: ElementInspectorProps) {
     : undefined;
   // Where it runs, and what it could run on (ADR-0013, redone). The platforms
   // this scope holds, definitions and stand-ins both: a shared cluster is
-  // drawn here and defined in the platform scope.
-  const platforms = props.model.elements.filter((held) => held.kind === 'platform');
+  // drawn here and defined in the platform scope. The places first (ADR-0014):
+  // a container sits in a namespace or on a machine, and a broker is offered
+  // after them rather than refused, because binding to one is legal.
+  const isPlace = (held: DesignElement) => platformArchetypeOf(held) === 'place';
+  const platforms = props.model.elements
+    .filter((held) => held.kind === 'platform')
+    .sort((a, b) => Number(isPlace(b)) - Number(isPlace(a)));
   const hosting = hostingOf(props.model, element.id);
   const nameOfPlatform = (id: ElementId) => props.model.elements.find((held) => held.id === id)?.name ?? id;
   const showAspects = element.kind === 'application';
@@ -380,19 +385,21 @@ export function ElementInspector(props: ElementInspectorProps) {
       {sectionTitle(t('tab.general'))}
       {show(0) && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {/* What sort of technology (ADR-0013): a closed set, because the
-              ArchiMate mapping and the technology view both branch on it.
-              Tooling when unsaid, which is what the select shows. */}
+          {/* What it is (ADR-0014): a place, a service or a network. A
+              service when unsaid, which is what the select shows — a wrong
+              place draws a box nobody asked for, a wrong service draws
+              nothing. */}
           {element.kind === 'platform' && (
             <TextField
               select
-              label={t('field.platformCategory')}
-              value={platformCategoryOf(element)}
-              disabled={readOnly || owned('platformCategory')}
-              onChange={(e) => update({ platformCategory: e.target.value as PlatformCategory })}
+              label={t('field.platformArchetype')}
+              value={platformArchetypeOf(element)}
+              disabled={readOnly || owned('platformArchetype')}
+              helperText={t('field.platformArchetypeHelp')}
+              onChange={(e) => update({ platformArchetype: e.target.value as PlatformArchetype })}
             >
-              {PLATFORM_CATEGORIES.map((category) => (
-                <MenuItem key={category} value={category}>{t(PLATFORM_CATEGORY_LABEL[category])}</MenuItem>
+              {PLATFORM_ARCHETYPES.map((archetype) => (
+                <MenuItem key={archetype} value={archetype}>{t(PLATFORM_ARCHETYPE_LABEL[archetype])}</MenuItem>
               ))}
             </TextField>
           )}

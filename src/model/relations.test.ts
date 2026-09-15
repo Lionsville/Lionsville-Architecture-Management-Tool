@@ -8,8 +8,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, RELATION_LABEL, RELATION_TYPES,
-  flowsOf, isFlow, isPlatformCategory, isRelationType, isTechnologyRelation, platformCategoryOf,
+  PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, RELATION_LABEL, RELATION_TYPES,
+  flowsOf, isFlow, isPlatformArchetype, isRelationType, isTechnologyRelation, platformArchetypeOf,
 } from './relations'
 import { nodeFigure } from './kinds'
 import type { Relation } from './types'
@@ -46,19 +46,22 @@ describe('the vocabulary', () => {
   })
 })
 
-describe('what a platform is (ADR-0013)', () => {
-  it('has a label for every category, and recognises its own members', () => {
-    for (const category of PLATFORM_CATEGORIES) {
-      expect(PLATFORM_CATEGORY_LABEL[category]).toBe(`platformCategory.${category}`)
-      expect(isPlatformCategory(category)).toBe(true)
+describe('what a platform is (ADR-0013, ADR-0014)', () => {
+  it('is a place, a service or a network, each with a label, and recognises its own members', () => {
+    expect(PLATFORM_ARCHETYPES).toEqual(['place', 'service', 'network'])
+    for (const archetype of PLATFORM_ARCHETYPES) {
+      expect(PLATFORM_ARCHETYPE_LABEL[archetype]).toBe(`platformArchetype.${archetype}`)
+      expect(isPlatformArchetype(archetype)).toBe(true)
     }
-    expect(isPlatformCategory('cloud')).toBe(false)
-    expect(isPlatformCategory(undefined)).toBe(false)
+    // The old closed category is not an archetype: a runtime is a place, and
+    // the folder reader says so.
+    expect(isPlatformArchetype('runtime')).toBe(false)
+    expect(isPlatformArchetype(undefined)).toBe(false)
   })
 
-  it('reads a platform that says nothing as tooling, the category with the fewest consequences', () => {
-    expect(platformCategoryOf({})).toBe('tooling')
-    expect(platformCategoryOf({ platformCategory: 'messaging' })).toBe('messaging')
+  it('reads a platform that says nothing as a service, the archetype that draws nothing nobody asked for', () => {
+    expect(platformArchetypeOf({})).toBe('service')
+    expect(platformArchetypeOf({ platformArchetype: 'place' })).toBe('place')
   })
 
   it('is drawn as the chip the management band draws, wherever it sits', () => {
