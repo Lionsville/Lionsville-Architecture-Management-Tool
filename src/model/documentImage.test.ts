@@ -33,14 +33,14 @@ describe('imageMediaType', () => {
 describe('imageFileName', () => {
   const id = 'k1'
 
-  it('slugs the name it arrived with, and stamps it with the id', () => {
+  it('slugs the name it arrived with and stamps it with the id, taking the extension from the type', () => {
     expect(imageFileName('Cutover Routing.png', 'image/png', new Set(), id)).toBe('cutover-routing-k1.png')
-  })
-
-  it('takes the extension from the type, not from the name', () => {
     // A JPEG called `.png` written as `.png` is a file nothing can read back:
     // the extension is all the folder reader has to go on.
     expect(imageFileName('diagram.png', 'image/jpeg', new Set(), id)).toBe('diagram-k1.jpg')
+    // Claimed on the stem, so `plan.png` does not let `plan.jpg` through.
+    expect(imageFileName('plan.jpg', 'image/jpeg', new Set(['plan-k1.png']), id)).not.toBe('plan-k1.jpg')
+    expect(imageFileName('.png', 'image/png', new Set(), id)).toBe('image-k1.png')
   })
 
   it('mints a different id for a different moment, so two machines do not collide', () => {
@@ -60,20 +60,11 @@ describe('imageFileName', () => {
     expect(next.endsWith('.png')).toBe(true)
   })
 
-  it('keeps two formats of one name apart', () => {
-    // Claimed on the stem, so `plan.png` does not let `plan.jpg` through.
-    expect(imageFileName('plan.jpg', 'image/jpeg', new Set(['plan-k1.png']), id)).not.toBe('plan-k1.jpg')
-  })
-
   it('cuts a slide title down to something a folder listing can show', () => {
     const long = 'Target state architecture after the warehouse consolidation programme, phase two.png'
     const file = imageFileName(long, 'image/png', new Set(), id)
     expect(file.length).toBeLessThanOrEqual(40 + 1 + id.length + 4)
     expect(file).toMatch(/^target-state-architecture-after-the-ware-k1\.png$/)
-  })
-
-  it('has something to call a file with no usable name', () => {
-    expect(imageFileName('.png', 'image/png', new Set(), id)).toBe('image-k1.png')
   })
 
   it('mints the id from the moment, in base 36', () => {

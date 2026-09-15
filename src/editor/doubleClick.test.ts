@@ -52,7 +52,6 @@ describe('doubleClickTarget', () => {
   });
 });
 
-
 /**
  * The way down from a landscape line (ADR-0013, redone).
  *
@@ -79,7 +78,7 @@ describe('a double-click on a line', () => {
     ],
   });
 
-  it('opens the target\'s container diagram, with the landings selected', () => {
+  it('opens the container diagram at the end that has one, and offers to make one where neither does', () => {
     const relations = [
       flow('c1', 'billing', 'erp'),
       flow('r1', 'billing', 'erp-api', { refines: 'c1' }),
@@ -87,22 +86,16 @@ describe('a double-click on a line', () => {
     ];
     expect(lineDoubleClickTarget(held(relations), board('layer7'), 'c1'))
       .toEqual({ kind: 'container', diagramId: 'cd-erp', select: ['r1', 'r2'] });
-  });
-
-  it('falls back to the source\'s when the target has none, with the same selection', () => {
-    const relations = [flow('c2', 'erp', 'billing'), flow('r1', 'erp-api', 'billing', { refines: 'c2' })];
-    expect(lineDoubleClickTarget(held(relations), board('layer7'), 'c2'))
+    const relations2 = [flow('c2', 'erp', 'billing'), flow('r1', 'erp-api', 'billing', { refines: 'c2' })];
+    expect(lineDoubleClickTarget(held(relations2), board('layer7'), 'c2'))
       .toEqual({ kind: 'container', diagramId: 'cd-erp', select: ['r1'] });
-  });
-
-  it('offers to make the target\'s when neither end has one', () => {
     const model = held([flow('c3', 'erp', 'billing')]);
     const bare = { ...model, diagrams: model.diagrams.filter((d) => d.kind !== 'container') };
     expect(lineDoubleClickTarget(bare, board('layer7'), 'c3'))
       .toEqual({ kind: 'newContainer', applicationId: 'billing' });
   });
 
-  it('does not offer to open up somebody else\'s application', () => {
+  it('does not offer to open somebody else’s application, and says nothing on a container diagram', () => {
     // A stand-in is answered for elsewhere (ADR-0012 §3), and a container
     // diagram made here would be a second one about their application — the
     // rule a double-click on the card already obeys.
@@ -110,9 +103,6 @@ describe('a double-click on a line', () => {
     const bare = { ...model, diagrams: model.diagrams.filter((d) => d.kind !== 'container') };
     expect(lineDoubleClickTarget(bare, board('layer7'), 'c4'))
       .toEqual({ kind: 'newContainer', applicationId: 'billing' });
-  });
-
-  it('says nothing on a container diagram, where the gesture adds a bend', () => {
     expect(lineDoubleClickTarget(held([flow('c1', 'billing', 'erp')]), board('container'), 'c1'))
       .toBeUndefined();
   });

@@ -24,8 +24,14 @@ function play(...events: DocumentEvent[]): DocumentSession {
 const attached = { type: 'attached', fingerprint: print() } as const
 
 describe('attaching and detaching', () => {
-  it('starts with no file', () => {
+  it('starts with no file, edits without one, and keeps the ref across a detach', () => {
     expect(emptySession().status).toBe('no-file')
+    // There is nowhere to write yet, so "unsaved changes" is not a useful thing
+    // to say: the shell's answer to saving from here is to ask for a file.
+    const state = play({ type: 'edited' })
+    expect(state.status).toBe('no-file')
+    const state2 = play(attached, { type: 'detached' })
+    expect(state2.path).toEqual('acme/landscape')
   })
 
   it('is clean the moment a file is bound', () => {
@@ -34,23 +40,12 @@ describe('attaching and detaching', () => {
     expect(state.fingerprint).toEqual(print())
   })
 
-  it('keeps editing possible before there is a file, without pretending to be dirty', () => {
-    // There is nowhere to write yet, so "unsaved changes" is not a useful thing
-    // to say: the shell's answer to saving from here is to ask for a file.
-    const state = play({ type: 'edited' })
-    expect(state.status).toBe('no-file')
-  })
-
   it('forgets the file it was bound to when detached', () => {
     const state = play(attached, { type: 'edited' }, { type: 'detached' })
     expect(state.status).toBe('no-file')
     expect(state.fingerprint).toBeUndefined()
   })
 
-  it('keeps the ref across a detach — the project outlives the file', () => {
-    const state = play(attached, { type: 'detached' })
-    expect(state.path).toEqual('acme/landscape')
-  })
 })
 
 describe('editing and saving', () => {
@@ -105,22 +100,20 @@ describe('an edit that arrives while the write is in flight', () => {
     expect(state.editedWhileSaving).toBe(false)
   })
 
-  it('still records what landed on disk', () => {
+  it('still records what landed on disk, and does not carry the flag into the next save', () => {
     const landed = print({ mtimeMs: 2_000, sha256: 'bbb' })
     const state = play(attached, { type: 'edited' }, { type: 'saveRequested' },
       { type: 'edited' }, { type: 'saveSucceeded', fingerprint: landed })
 
     // Or the next watcher tick reports our own write as somebody else's.
     expect(state.fingerprint).toEqual(landed)
-  })
-
-  it('does not carry the flag into the next save', () => {
-    const state = play(attached, { type: 'edited' }, { type: 'saveRequested' },
+    const state2 = play(attached, { type: 'edited' }, { type: 'saveRequested' },
       { type: 'edited' }, { type: 'saveSucceeded', fingerprint: print({ mtimeMs: 2_000 }) },
       { type: 'saveRequested' }, { type: 'saveSucceeded', fingerprint: print({ mtimeMs: 3_000 }) })
 
-    expect(state.status).toBe('clean')
+    expect(state2.status).toBe('clean')
   })
+
 })
 
 describe('a change that came from us', () => {
@@ -196,11 +189,16 @@ describe('resolving a conflict', () => {
   const theirs = { type: 'externalChangeDetected', fingerprint: print({ mtimeMs: 9_000, sha256: 'zzz' }) } as const
   const conflicted = [attached, { type: 'edited' } as const, theirs]
 
-  it('keeping mine leaves work still to be written', () => {
+  it('keeping mine leaves work to be written, and stays dirty until the copy has been', () => {
     // Not clean: ours is not on disk yet, and a session that says clean here
     // never saves, so their version quietly wins.
     const state = play(...conflicted, { type: 'conflictResolved', resolution: 'mine' })
     expect(state.status).toBe('dirty')
+    // The caller still has a file to choose; until it does, the work is unsaved.
+    const state2 = play(...conflicted, { type: 'conflictResolved', resolution: 'copy' })
+    expect(state2.status).toBe('dirty')
+    const state3 = play(attached, { type: 'conflictResolved', resolution: 'theirs' })
+    expect(state3.status).toBe('clean')
   })
 
   it('taking theirs is clean, against their file', () => {
@@ -219,16 +217,6 @@ describe('resolving a conflict', () => {
     expect(state.fingerprint).toEqual(copy)
   })
 
-  it('stays dirty when the copy has not been written yet', () => {
-    // The caller still has a file to choose; until it does, the work is unsaved.
-    const state = play(...conflicted, { type: 'conflictResolved', resolution: 'copy' })
-    expect(state.status).toBe('dirty')
-  })
-
-  it('ignores a resolution when there is no conflict to resolve', () => {
-    const state = play(attached, { type: 'conflictResolved', resolution: 'theirs' })
-    expect(state.status).toBe('clean')
-  })
 })
 
 describe('late and out-of-order events', () => {
@@ -288,17 +276,15 @@ describe('when to write', () => {
     expect(shouldSaveNow(play(), 'quit', 99_999)).toBe(false)
   })
 
-  it('never writes on top of a write in flight, whatever the trigger', () => {
+  it('never writes on top of a write in flight, whatever the trigger, nor while a conflict is open', () => {
     const saving = play(attached, { type: 'edited' }, { type: 'saveRequested' })
     for (const trigger of ['idle', 'blur', 'quit'] as const) {
       expect(shouldSaveNow(saving, trigger, 99_999)).toBe(false)
     }
-  })
-
-  it('never writes while a conflict is open', () => {
     const conflicted = play(attached, { type: 'edited' },
       { type: 'externalChangeDetected', fingerprint: print({ sha256: 'zzz' }) })
 
     expect(shouldSaveNow(conflicted, 'quit', 99_999)).toBe(false)
   })
+
 })

@@ -94,9 +94,18 @@ describe('SolutionDesignEditor — language', () => {
     expect(screen.queryByLabelText('Fit view')).toBeNull();
   });
 
-  it('translates the inspector empty state', () => {
+  it('translates the inspector and a new domain group, and does not ask for the language it is in', () => {
     renderEditor({ language: 'nl' });
     expect(screen.getByText(/Selecteer een element of koppeling/)).toBeDefined();
+    cleanup()
+    renderEditor({ language: 'nl' });
+    fireEvent.click(screen.getByRole('button', { name: 'Domeingroep', expanded: false }));
+    expect(screen.getByPlaceholderText('Nieuwe groep')).toBeDefined();
+    cleanup()
+    const { onLanguageChange } = renderEditor({ language: 'nl' });
+    fireEvent.click(screen.getByLabelText('Taal'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Nederlands' }));
+    expect(onLanguageChange).not.toHaveBeenCalled();
   });
 
   it('translates a context menu — the pure builder follows the prop', () => {
@@ -139,12 +148,6 @@ describe('SolutionDesignEditor — language', () => {
     expect((screen.getByLabelText('Naam') as HTMLInputElement).value).toBe('Nieuwe applicatie');
   });
 
-  it('names a new domain group in the UI language too', () => {
-    renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByRole('button', { name: 'Domeingroep', expanded: false }));
-    expect(screen.getByPlaceholderText('Nieuwe groep')).toBeDefined();
-  });
-
   it('asks the host for the chosen language rather than switching itself', () => {
     const { onLanguageChange } = renderEditor({ language: 'nl' });
     fireEvent.click(screen.getByLabelText('Taal'));
@@ -157,20 +160,12 @@ describe('SolutionDesignEditor — language', () => {
     expect(screen.getByLabelText('Passend maken')).toBeDefined();
   });
 
-  it('does not ask for the language it is already in', () => {
-    const { onLanguageChange } = renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByLabelText('Taal'));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Nederlands' }));
-    expect(onLanguageChange).not.toHaveBeenCalled();
-  });
-
-  it('offers no toggle when the host owns the language elsewhere', () => {
+  it('offers no toggle where the host owns the language, and keeps it in read-only mode', () => {
     renderEditor({ onLanguageChange: undefined });
     expect(screen.queryByLabelText('Language')).toBeNull();
-  });
-
-  it('keeps the toggle in read-only mode — reading is not a mutation', () => {
+    cleanup()
     renderEditor({ readOnly: true });
     expect(screen.getByLabelText('Language')).toBeDefined();
   });
+
 });

@@ -122,10 +122,19 @@ describe('what the page may do', () => {
     expect(host.steps()).toBe(2)
   })
 
-  it('re-parents through the same command a keystroke takes', () => {
+  it('re-parents through the same command a keystroke takes, and writes nothing at the row end', () => {
     const host = opened()
     act(() => host.sheets().actions.updateElement('picking', { parentId: 'invoicing' }))
     expect(held(host, 'picking').parentId).toBe('invoicing')
+    cleanup()
+    const host2 = opened()
+    const before = host2.steps()
+    act(() => host2.sheets().actions.moveElement('picking', -1))
+    expect(host2.steps()).toBe(before)
+    cleanup()
+    const host3 = opened()
+    act(() => host3.sheets().actions.updateSheet({ showActors: false }))
+    expect(host3.model().diagrams.find((d) => d.id === 'sh-1')?.showActors).toBe(false)
   })
 
   it('moves one among its neighbours as a single step, and ⌘Z puts the row back', () => {
@@ -134,19 +143,6 @@ describe('what the page may do', () => {
     expect([held(host, 'picking').order, held(host, 'packing').order]).toEqual([2, 1])
     host.undo()
     expect(held(host, 'packing').order).toBeUndefined()
-  })
-
-  it('writes nothing at the end of the row', () => {
-    const host = opened()
-    const before = host.steps()
-    act(() => host.sheets().actions.moveElement('picking', -1))
-    expect(host.steps()).toBe(before)
-  })
-
-  it('changes the sheet’s own fields, like the rail', () => {
-    const host = opened()
-    act(() => host.sheets().actions.updateSheet({ showActors: false }))
-    expect(host.model().diagrams.find((d) => d.id === 'sh-1')?.showActors).toBe(false)
   })
 
   it('hands a coverage link to the shell, with its own closing as what to do on the way out', () => {
@@ -211,18 +207,20 @@ describe('making something', () => {
     expect(host.element('bulk-picking')?.order).toBeUndefined()
   })
 
-  it('gives a step the lane of the row it was made in', () => {
+  it('gives a step the lane of the row it was made in, and a stakeholder the side it is on', () => {
     const host = opened()
     act(() => host.sheets().actions.addElement({
       kind: 'step', name: 'Chase the quote', parentId: 'quote', lane: 'key-account',
     }))
     expect(host.element('chase-the-quote')?.lane).toBe('key-account')
-  })
-
-  it('starts a stakeholder outside the organisation when it is one', () => {
-    const host = opened()
-    act(() => host.sheets().actions.addElement({ kind: 'actor', name: 'Auditor', outside: true }))
-    expect(host.element('auditor')).toMatchObject({ kind: 'actor', outside: true })
+    cleanup()
+    const host2 = opened()
+    act(() => host2.sheets().actions.addElement({ kind: 'actor', name: 'Auditor', outside: true }))
+    expect(host2.element('auditor')).toMatchObject({ kind: 'actor', outside: true })
+    cleanup()
+    const host3 = opened()
+    act(() => host3.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }))
+    expect(host3.sheetOf('sh-1')?.journeyId).toBe('ship')
   })
 
   it('makes a journey with its first phase, and points an empty sheet at it', () => {
@@ -240,12 +238,6 @@ describe('making something', () => {
     host.undo()
     expect(host.element('onboard-a-client')).toBeUndefined()
     expect(host.sheetOf('sh-1')?.journeyId).toBeUndefined()
-  })
-
-  it('leaves a sheet that already draws one pointing where it pointed', () => {
-    const host = opened()
-    act(() => host.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }))
-    expect(host.sheetOf('sh-1')?.journeyId).toBe('ship')
   })
 
   it('adds an area and draws it on this sheet in the same step', () => {

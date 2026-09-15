@@ -43,13 +43,11 @@ describe('ScopeSettingsDialog', () => {
    * The address is how everything underneath is filed. Saying so on screen is
    * cheaper than someone discovering it by renaming and watching nothing move.
    */
-  it('says out loud that the address does not change', () => {
+  it('says out loud that the address does not change, and names the root by the folder it is', () => {
     open({ path: 'acme/rail' })
     expect(screen.getByText(/The address \(acme\/rail\) does not change/)).toBeDefined()
-  })
-
-  /** The root has no segment to show, and `/` is where it is. */
-  it('names the root by the folder it is', () => {
+    cleanup()
+    // The root has no segment to show, and `/` is where it is.
     open({ path: '', name: 'Acme Logistics' })
     expect(screen.getByText(/The address \(\/\) does not change/)).toBeDefined()
   })
@@ -85,27 +83,24 @@ describe('ScopeSettingsDialog', () => {
       .toEqual([{ label: '', url: 'https://example.test/wiki' }])
   })
 
-  it('flags an address it will not render', () => {
+  it('flags an address it will not render, removes a link, and refuses a nameless scope', () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: 'Add a link' }))
     fireEvent.change(screen.getByLabelText('Address'), {
       target: { value: 'javascript:alert(1)' },
     })
     expect(screen.getByText('Needs to start with http:// or https://')).toBeDefined()
-  })
-
-  it('removes a link', () => {
+    cleanup()
     const { onSave } = open({ links: [{ label: 'Wiki', url: 'https://example.test/wiki' }] })
     fireEvent.click(screen.getByRole('button', { name: 'Remove Wiki' }))
     save()
     expect(onSave.mock.calls[0][1].links).toEqual([])
-  })
-
-  it('refuses a nameless scope', () => {
+    cleanup()
     open()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '  ' } })
     expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)
   })
+
 })
 
 /**
