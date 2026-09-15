@@ -341,6 +341,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'field.sharedHelp': 'Oanbean foar gebrûk bûten it team dat it ûnderhâldt',
   'field.sharedDerived': 'Brûkt troch {names} bûten it team dat it ûnderhâldt — oanbean, oft it dat no seit of net',
   'field.sharedWithin': 'Allinne binnen it eigen team brûkt, of noch net',
+  'field.leverages': 'Makket gebrûk fan',
   'field.direction': 'Rjochting',
   'field.directionHelp': 'Bepaalt de standertpylkpunten; per ein te oerskriuwen ûnder Werjefte',
   'field.oneWay': 'Ienrjochting →',

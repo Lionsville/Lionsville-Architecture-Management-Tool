@@ -7,6 +7,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementInspector } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
+import type { LeverageLine } from '../model/leverage';
 
 /**
  * U7a tabbed inspector: General / Appearance / Data. These tests assert (a)
@@ -77,6 +78,8 @@ function renderInspector(
     relations?: DesignModel['relations'];
     /** Who uses a service from another team, as the host works it out (ADR-0014). */
     offeredBeyond?: readonly string[];
+    /** What an application leverages, as the host works it out over the tree (ADR-0014). */
+    leverage?: LeverageLine;
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -100,6 +103,7 @@ function renderInspector(
         layout={opts.layout}
         onOpenDocumentation={opts.onOpenDocumentation}
         offeredBeyond={opts.offeredBeyond}
+        leverage={opts.leverage}
       />
     </ThemeProvider>,
   );
@@ -638,5 +642,44 @@ describe('ElementInspector — a service offered beyond its team', () => {
   it('disables the tick when read-only', () => {
     renderInspector(service(), { readOnly: true });
     expect((within(screen.getByTestId('service-shared')).getByRole('checkbox') as HTMLInputElement).disabled).toBe(true);
+  });
+});
+
+/**
+ * The *Leverages* line (ADR-0014): the services an application uses and the
+ * platforms behind them, read only and derived — off the host's answer over
+ * the whole tree where there is one, and off this scope's own rows otherwise.
+ */
+describe('ElementInspector — what an application leverages', () => {
+  const technology = () => [
+    element({ id: 'containers', kind: 'platformService', name: 'Container platform' }),
+    element({ id: 'openshift', kind: 'platform', name: 'OpenShift', platformArchetype: 'place' }),
+    element({ id: 'legacy-bus', kind: 'platform', name: 'Legacy bus' }),
+    element({ id: 'e1-api', kind: 'component', parentId: 'e1', name: 'Webshop API' }),
+  ];
+
+  it('reads the services and the platforms behind them off this scope\'s rows, itself and its containers', () => {
+    renderInspector(element(), {
+      others: technology(),
+      relations: [
+        { id: 'u1', type: 'uses', sourceId: 'e1-api', targetId: 'containers' },
+        { id: 'u2', type: 'uses', sourceId: 'e1', targetId: 'legacy-bus' },
+        { id: 'r1', type: 'realises', sourceId: 'openshift', targetId: 'containers' },
+      ],
+    });
+    expect(screen.getByTestId('element-leverages').textContent).toContain('Container platform (OpenShift) · Legacy bus');
+  });
+
+  it('takes the host\'s answer over the tree where there is one, and says nothing where there is nothing', () => {
+    renderInspector(element(), {
+      leverage: { services: [{ id: 'brokering', name: 'Message brokering', platforms: [{ id: 'kafka', name: 'Event broker' }] }], platforms: [] },
+    });
+    expect(screen.getByTestId('element-leverages').textContent).toContain('Message brokering (Event broker)');
+    cleanup();
+    renderInspector(element());
+    expect(screen.queryByTestId('element-leverages')).toBeNull();
+    cleanup();
+    renderInspector(element({ kind: 'platform' }), { others: technology() });
+    expect(screen.queryByTestId('element-leverages')).toBeNull();
   });
 });

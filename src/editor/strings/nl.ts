@@ -341,6 +341,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.sharedHelp': 'Aangeboden voor gebruik buiten het team dat het onderhoudt',
   'field.sharedDerived': 'Gebruikt door {names} buiten het team dat het onderhoudt — aangeboden, of het dat nu zegt of niet',
   'field.sharedWithin': 'Alleen binnen het eigen team gebruikt, of nog niet',
+  'field.leverages': 'Maakt gebruik van',
   'field.direction': 'Richting',
   'field.directionHelp': 'Bepaalt de standaardpijlpunten; per uiteinde te overrulen bij Weergave',
   'field.oneWay': 'Eenrichting →',

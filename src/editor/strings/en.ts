@@ -354,6 +354,7 @@ export const EN = {
   'field.sharedHelp': 'Offered for use beyond the team that maintains it',
   'field.sharedDerived': 'Used by {names} outside the team that maintains it — offered, whether or not it says so',
   'field.sharedWithin': 'Used only within its own team, or not yet',
+  'field.leverages': 'Leverages',
   'field.direction': 'Direction',
   'field.directionHelp': 'Sets the default arrowheads; override per end under Appearance',
   'field.oneWay': 'One-way →',

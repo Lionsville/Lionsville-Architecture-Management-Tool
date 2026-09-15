@@ -1222,6 +1222,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               owned={props.ownership?.ownerOf(element.id)}
               move={moveFor(props.ownership, element.id)}
               offeredBeyond={props.ownership?.offeredBeyond?.(element.id)}
+              leverage={props.ownership?.leverageOf?.(element.id)}
               layout="stacked"
               hideDescription
             />
@@ -1444,6 +1445,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               owned={props.ownership?.ownerOf(state.selectedElement.id)}
               move={moveFor(props.ownership, state.selectedElement.id)}
               offeredBeyond={props.ownership?.offeredBeyond?.(state.selectedElement.id)}
+              leverage={props.ownership?.leverageOf?.(state.selectedElement.id)}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector

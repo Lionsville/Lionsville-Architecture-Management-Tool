@@ -17,6 +17,7 @@ import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
 import { decisionsOf, groupsOf, placedList, placedOn, toArrays, transitionList } from '../model/normalised'
 import { hostingOf } from '../model/hosting'
+import { consumersOf, leverageOf, platformsBehind } from '../model/leverage'
 import { platformReport } from '../model/platformReport'
 import type { PlatformEnd } from '../model/platformReport'
 import { today } from '../model/lifecycle'
@@ -60,7 +61,7 @@ export type ReadView = {
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
-  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow'>
+  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'rowsTo'>
 }
 
 type Args = Record<string, unknown>
@@ -129,8 +130,14 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         // an application is not deployed anywhere itself; one with no
         // components answers with its own row, and a component always does.
         ...(element.kind === 'application' || element.kind === 'component'
-          ? { runsOn: runsOn(model, element.id) }
+          ? { runsOn: runsOn(model, element.id), leverages: leverages(model, element.id, view) }
           : {}),
+        // The technology layer, said from either side (ADR-0014): what a
+        // service is maintained by, realised by and consumed by; what a
+        // platform realises and sits in. Over the tree's rows where there is
+        // a tree, since the consumers are the landscapes' rows.
+        ...(element.kind === 'platformService' ? serviceSide(model, element, view) : {}),
+        ...(element.kind === 'platform' ? platformSide(model, element, view) : {}),
         connections: model.order.relations
           .map((id) => model.relations[id])
           .filter((c) => c.sourceId === element.id || c.targetId === element.id)
@@ -536,6 +543,53 @@ function runsOn(model: Model, elementId: string) {
     platforms: hosting.platformIds.map((id) => ({ id, name: nameOf(model, id) })),
     from: hosting.from,
     ...(hosting.from === 'containers' ? { containers: hosting.containers } : {}),
+  }
+}
+
+/** The rows the rest of the tree wrote about an id, where there is a tree to ask. */
+function rowsAbout(view: ReadView, ids: readonly string[]): Relation[] {
+  return ids.flatMap((id) => [...(view.tree?.rowsTo?.(id) ?? [])])
+}
+
+/**
+ * What an application leverages (ADR-0014): the services it uses, each with
+ * the platforms behind it, and any platform it binds to directly — beside
+ * `runsOn`, which is where its containers sit.
+ */
+function leverages(model: Model, applicationId: string, view: ReadView) {
+  const arrays = toArrays(model)
+  const used = leverageOf(arrays, applicationId)
+  const behind = rowsAbout(view, used.services.map((one) => one.id))
+  const leverage = leverageOf(arrays, applicationId, { elsewhere: behind })
+  const named = (id: string) => ({ id, name: nameOf(model, id) ?? view.tree?.lookup(id)?.name })
+  return {
+    services: leverage.services.map((one) => ({ ...named(one.id), platforms: one.platformIds.map(named) })),
+    platforms: leverage.platformIds.map(named),
+  }
+}
+
+function serviceSide(model: Model, service: DesignElement, view: ReadView) {
+  const arrays = toArrays(model)
+  const elsewhere = rowsAbout(view, [service.id])
+  const rows = [...arrays.relations, ...elsewhere]
+  const named = (id: string) => ({ id, name: nameOf(model, id) ?? view.tree?.lookup(id)?.name })
+  const maintainers = [...new Set(rows.filter((row) => row.type === 'assigned' && row.targetId === service.id).map((row) => row.sourceId))]
+  return {
+    maintainedBy: maintainers.map(named),
+    shared: service.shared === true,
+    realisedBy: platformsBehind(arrays, service.id, { elsewhere }).map(named),
+    consumers: consumersOf(arrays, service.id, { elsewhere }).map(named),
+  }
+}
+
+function platformSide(model: Model, platform: DesignElement, view: ReadView) {
+  const arrays = toArrays(model)
+  const named = (id: string) => ({ id, name: nameOf(model, id) ?? view.tree?.lookup(id)?.name })
+  return {
+    realises: arrays.relations
+      .filter((row) => row.type === 'realises' && row.sourceId === platform.id)
+      .map((row) => named(row.targetId)),
+    ...(platform.parentId !== undefined ? { partOf: named(platform.parentId) } : {}),
   }
 }
 

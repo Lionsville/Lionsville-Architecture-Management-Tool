@@ -16,6 +16,8 @@ import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
 import { hostingOf, mayBeHosted } from '../model/hosting';
+import { describeLeverage, leverageOf } from '../model/leverage';
+import type { LeverageLine } from '../model/leverage';
 import { PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, platformArchetypeOf } from '../model/relations';
 import type { PlatformArchetype } from '../model/types';
 import { LogoGrid } from './nodes/LogoGrid';
@@ -151,6 +153,12 @@ export interface ElementInspectorProps {
    * itself where nobody has ticked. Absent where the host has no tree to read.
    */
   offeredBeyond?: readonly string[];
+  /**
+   * For an application or a container: what it leverages, as the host works
+   * it out over the whole tree (ADR-0014). Absent = read off this scope's own
+   * rows, which is the answer a shell with no tree can give.
+   */
+  leverage?: LeverageLine;
 }
 
 /** Tab label with an optional "set values" dot (mirrors the InspectorSection "●" badge). */
@@ -253,6 +261,21 @@ export function ElementInspector(props: ElementInspectorProps) {
     .sort((a, b) => Number(isPlace(b)) - Number(isPlace(a)));
   const hosting = hostingOf(props.model, element.id);
   const nameOfPlatform = (id: ElementId) => props.model.elements.find((held) => held.id === id)?.name ?? id;
+  // What it leverages (ADR-0014): the services it uses and the platforms
+  // behind them, derived and never typed here. The host's answer where it has
+  // a tree to read, this scope's own rows otherwise.
+  const leverage = element.kind === 'application' || element.kind === 'component'
+    ? props.leverage ?? describeLeverage(
+      leverageOf(props.model, element.id),
+      (id) => props.model.elements.find((held) => held.id === id)?.name,
+    )
+    : undefined;
+  const leverageText = leverage === undefined ? '' : [
+    ...leverage.services.map((one) => (one.platforms.length
+      ? `${one.name} (${one.platforms.map((platform) => platform.name).join(', ')})`
+      : one.name)),
+    ...leverage.platforms.map((one) => one.name),
+  ].join(' · ');
   const showAspects = element.kind === 'application';
 
   const generalHasValues = Boolean(
@@ -478,6 +501,16 @@ export function ElementInspector(props: ElementInspectorProps) {
                 </Typography>
               </Box>
             )
+          )}
+
+          {/* Read only, and derived (ADR-0014): the consumer says which
+              service it uses, the platform team says what realises it, and
+              nobody types the platform on the application. */}
+          {leverage !== undefined && leverageText !== '' && (
+            <Box data-testid="element-leverages">
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.leverages')}</Typography>
+              <Typography sx={{ fontSize: 13 }}>{leverageText}</Typography>
+            </Box>
           )}
 
           {element.kind === 'application' && (

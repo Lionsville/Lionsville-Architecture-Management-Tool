@@ -341,6 +341,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.sharedHelp': 'Zur Nutzung außerhalb des Teams angeboten, das ihn pflegt',
   'field.sharedDerived': 'Von {names} außerhalb des pflegenden Teams genutzt — angeboten, ob es das sagt oder nicht',
   'field.sharedWithin': 'Nur im eigenen Team genutzt, oder noch gar nicht',
+  'field.leverages': 'Stützt sich auf',
   'field.direction': 'Richtung',
   'field.directionHelp': 'Legt die Standard-Pfeilspitzen fest; je Ende unter Darstellung übersteuerbar',
   'field.oneWay': 'Einseitig →',

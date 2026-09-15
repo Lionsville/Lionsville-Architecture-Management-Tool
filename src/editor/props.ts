@@ -21,6 +21,7 @@ import type {
 } from '../model/types';
 import type { Transition } from '../model/transition';
 import type { PlatformTree } from '../model/deployment';
+import type { LeverageLine } from '../model/leverage';
 import type { WindowChrome } from '../platform/windowChrome';
 
 /**
@@ -402,6 +403,15 @@ export interface EditorOwnership {
    * service is used only within its team, or not yet.
    */
   offeredBeyond?(serviceId: ElementId): readonly string[] | undefined;
+  /**
+   * What an application leverages, by name (ADR-0014): the services it uses
+   * and the platforms behind each, read over the whole tree — the realising
+   * rows are the platform scope's — and named off the index, since a
+   * landscape need not draw the platform behind a service it consumes. Absent
+   * in a shell with no tree, and the panel then answers from this scope's own
+   * rows.
+   */
+  leverageOf?(applicationId: ElementId): LeverageLine | undefined;
   /**
    * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
    * them: is there one to offer on this record, and one way to ask for it.

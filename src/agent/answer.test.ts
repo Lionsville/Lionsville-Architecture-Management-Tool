@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
+import type { Relation } from '../model/types'
 import { fromArrays, toArrays } from '../model/normalised'
 import { syntheticModel } from '../model/testing/synthetic'
 import { answer } from './answer'
@@ -153,6 +154,63 @@ describe('element.describe', () => {
   it('refuses an id nothing has', () => {
     expect(read('element.describe', { id: 'ghost' })).toEqual({ ok: false, refusal: 'agent.unknownId', detail: 'element ghost' })
     expect(read('element.describe', {})).toMatchObject({ refusal: 'agent.badArguments', detail: '"id" is required' })
+  })
+
+  /**
+   * The technology layer from either side (ADR-0014): an application says
+   * what it leverages beside where it runs; a service says who maintains it,
+   * what realises it and who consumes it; a platform says what it realises
+   * and what it sits in. The realising row is the platform scope's and the
+   * consumers are the landscapes', so the tree's rows are read where there is
+   * a tree.
+   */
+  it('says what an application leverages, and what a service and a platform are to each other', () => {
+    const technology: HostModel = {
+      ...host,
+      elements: [
+        ...host.elements,
+        element('containers', 'Container platform', { kind: 'platformService', shared: true }),
+        element('openshift', 'OpenShift', { kind: 'platform', platformArchetype: 'place', parentId: 'landing-zone' }),
+        element('landing-zone', 'Landing zone', { kind: 'platform', platformArchetype: 'place' }),
+        element('platform-team', 'Platform team', { kind: 'actor' }),
+      ],
+      relations: [
+        ...host.relations,
+        { id: 'u1', type: 'uses', sourceId: 'billing-api', targetId: 'containers' },
+        { id: 'a1', type: 'assigned', sourceId: 'platform-team', targetId: 'containers' },
+      ],
+    }
+    // What realises the service lives in the platform scope, and a consumer
+    // elsewhere: the tree answers rows the document does not hold.
+    const elsewhere: Relation[] = [
+      { id: 'r1', type: 'realises', sourceId: 'openshift', targetId: 'containers' },
+      { id: 'u9', type: 'uses', sourceId: 'crm', targetId: 'containers' },
+    ]
+    const withTree: ReadView = {
+      ...view(technology),
+      tree: {
+        lookup: () => undefined,
+        initiativesBelow: () => [],
+        rowsTo: (id, types) => elsewhere.filter((row) => row.targetId === id && (!types || types.includes(row.type))),
+      },
+    }
+    const parsed = (tool: 'element.describe', args: unknown, over: ReadView = withTree) =>
+      JSON.parse((answer(tool, args, over) as unknown as { content: { text: string }[] }).content[0].text)
+    expect(parsed('element.describe', { id: 'billing' })).toMatchObject({
+      leverages: { services: [{ id: 'containers', name: 'Container platform', platforms: [{ id: 'openshift', name: 'OpenShift' }] }], platforms: [] },
+    })
+    expect(parsed('element.describe', { id: 'containers' })).toMatchObject({
+      maintainedBy: [{ id: 'platform-team', name: 'Platform team' }],
+      shared: true,
+      realisedBy: [{ id: 'openshift', name: 'OpenShift' }],
+      consumers: [{ id: 'billing', name: 'Billing' }, { id: 'crm', name: 'CRM' }],
+    })
+    expect(parsed('element.describe', { id: 'openshift' })).toMatchObject({
+      realises: [], partOf: { id: 'landing-zone', name: 'Landing zone' },
+    })
+    // Without a tree, the document's own rows are the whole answer.
+    const alone = parsed('element.describe', { id: 'billing' }, view(technology)).leverages
+    expect(alone.services).toEqual([{ id: 'containers', name: 'Container platform', platforms: [] }])
   })
 })
 

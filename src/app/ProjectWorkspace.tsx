@@ -25,7 +25,7 @@ import { CHECK_LABEL, documentFindings, identityFindings, offeredBeyond } from '
 import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
-import { decisionsOf, decisionsToCommands, transaction, transitionsOf } from '../model'
+import { decisionsOf, decisionsToCommands, describeLeverage, leverageOf, transaction, transitionsOf } from '../model'
 import { isBoardKind } from '../model/placement'
 import type { DesignElement, ElementId, PlatformDescription, Relation } from '../model'
 import { transitionLabel } from '../model/transition'
@@ -530,6 +530,7 @@ export function ProjectWorkspace({
       lookup: (id) => indexRef.current.lookup(id),
       register: () => indexRef.current.register(),
       initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
+      rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
       findings: () => {
         const model = session.current()
         const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
@@ -649,7 +650,7 @@ export function ProjectWorkspace({
   const rowsThrough = useMemo(() => {
     const found: Relation[] = []
     for (const element of session.model.elements) {
-      if (element.kind !== 'platform') continue
+      if (element.kind !== 'platform' && element.kind !== 'platformService') continue
       for (const row of index.rowsOf(element.id)) found.push(row.relation)
     }
     return found
@@ -792,6 +793,13 @@ export function ProjectWorkspace({
     offeredBeyond: (serviceId) => (index.lookup(serviceId)?.kind === 'platformService'
       ? offeredBeyond(index, serviceId).outside.map((one) => one.name)
       : undefined),
+    // What an application leverages (ADR-0014), over the tree's rows — what
+    // realises a service is the platform scope's row — and named off the
+    // index, since the platform behind a service need not be drawn here.
+    leverageOf: (applicationId) => describeLeverage(
+      leverageOf(session.model, applicationId, { elsewhere: rowsThrough }),
+      (id) => index.lookup(id)?.name ?? session.model.elements.find((held) => held.id === id)?.name,
+    ),
     gestures: {
       offered: (elementId) => gestureOffers(elementId).length > 0,
       label: s('gesture.move'),
@@ -799,7 +807,7 @@ export function ProjectWorkspace({
       onMove: (elementId) => gestureChoose(elementId),
     },
     onAddExisting: library.open,
-  }), [session, project.path, index, notes, onOpenScope, s, gestureOffers, gestureChoose, library.open, ownerDescriptions])
+  }), [session, project.path, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, library.open, ownerDescriptions])
 
   const snapshots = useProjectHistory({
     history: projectHistory,

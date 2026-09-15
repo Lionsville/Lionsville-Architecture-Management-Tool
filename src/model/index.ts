@@ -46,6 +46,12 @@ export type { DeploymentBox, PlatformTree } from './deployment'
 export { containersOf, hostingOf, mayBeHosted } from './hosting'
 export type { Hosting } from './hosting'
 
+/** What an application leverages: the services it uses, and the platforms behind them (ADR-0014). */
+export {
+  consumersOf, describeLeverage, leverageOf, platformsBehind, platformsBoundTo, servicesOf,
+} from './leverage'
+export type { Leverage, LeverageLine, LeverageOptions } from './leverage'
+
 /** An interface, and where it lands a level down (ADR-0013). */
 export {
   applicationOf, candidateInterfaces, hasRefinements, isApplicationLine, isContainerLine,

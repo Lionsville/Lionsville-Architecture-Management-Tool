@@ -28,7 +28,7 @@ import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
 import { matchesQuery } from '../model/textSearch'
-import type { ElementId, ElementKind } from '../model/types'
+import type { ElementId, ElementKind, Relation, RelationType } from '../model/types'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 
@@ -86,6 +86,13 @@ export type TreeView = {
   findings(): readonly TreeFinding[]
   /** The plans flagged as initiatives in the scopes strictly below `path` (§7). */
   initiativesBelow(path: string): readonly { scope: string; transition: Transition }[]
+  /**
+   * Every row in the tree that points at this id, wherever it was written
+   * (§2): what realises a service is the platform scope's row, and what
+   * consumes it is a landscape's. Absent in a shell built before the tree
+   * answered rows, and the answer is then this scope's rows alone.
+   */
+  rowsTo?(id: ElementId, types?: readonly RelationType[]): readonly Relation[]
   /** One scope's whole document, or nothing where there is no such scope. */
   read(path: string): Promise<ForeignScope | undefined>
 }
