@@ -134,7 +134,7 @@ describe('what it changes', () => {
     expect(within(row).getByText('Retires')).toBeTruthy()
   })
 
-  it('adds an element with a role', () => {
+  it('adds an element with a role, clears the dates with the last one, and offers none on a change', () => {
     const { actions } = setup()
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Application/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Billing' }))
@@ -142,6 +142,13 @@ describe('what it changes', () => {
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', {
       elements: [...PLAN.elements, { elementId: 'billing', role: 'introduces' }],
     })
+    cleanup()
+    const { actions: actions2 } = setup()
+    fireEvent.change(screen.getByLabelText('Warehouse Management (new): Live from'), { target: { value: '' } })
+    expect(actions2.updateElementDates).toHaveBeenCalledWith('wms-new', undefined)
+    cleanup()
+    setup({ plan: { ...PLAN, elements: [{ elementId: 'billing', role: 'changes' }] } })
+    expect(screen.queryByLabelText('Billing: Live from')).toBeNull()
   })
 
   it('writes an element\'s dates to the element, never into the plan', () => {
@@ -151,16 +158,6 @@ describe('what it changes', () => {
     expect(actions.updateTransition).not.toHaveBeenCalled()
   })
 
-  it('clears the dates when the last one is emptied', () => {
-    const { actions } = setup()
-    fireEvent.change(screen.getByLabelText('Warehouse Management (new): Live from'), { target: { value: '' } })
-    expect(actions.updateElementDates).toHaveBeenCalledWith('wms-new', undefined)
-  })
-
-  it('offers no dates on an element the plan only changes', () => {
-    setup({ plan: { ...PLAN, elements: [{ elementId: 'billing', role: 'changes' }] } })
-    expect(screen.queryByLabelText('Billing: Live from')).toBeNull()
-  })
 })
 
 describe('milestones and decisions', () => {
@@ -203,10 +200,17 @@ describe('the interfaces', () => {
     expect(screen.getByTestId('port-c-stock').textContent).toContain('Moved')
   })
 
-  it('ports one line on a day, onto the only place it can go', () => {
+  it('ports one line on a day onto the only place it can go, takes it back, and says when there is none', () => {
     const { actions } = setup()
     fireEvent.change(screen.getByLabelText('Billing · orders: On'), { target: { value: '2027-03-01' } })
     expect(actions.port).toHaveBeenCalledWith('tr-1', 'c-orders', 'wms-new', '2027-03-01')
+    cleanup()
+    const { actions: actions2 } = setup()
+    fireEvent.click(within(screen.getByTestId('port-c-stock')).getByRole('button', { name: 'Take back' }))
+    expect(actions2.unport).toHaveBeenCalledWith('tr-1', 'c-stock')
+    cleanup()
+    setup({ plan: { ...PLAN, elements: [] } })
+    expect(screen.getByText(/Nothing to move yet/)).toBeTruthy()
   })
 
   it('ports everything remaining on one day as one step, defaulting to the plan\'s end', () => {
@@ -214,12 +218,6 @@ describe('the interfaces', () => {
     expect((screen.getByLabelText('Port all remaining: On') as HTMLInputElement).value).toBe('2028-01-31')
     fireEvent.click(screen.getByRole('button', { name: 'Port all remaining' }))
     expect(actions.portAll).toHaveBeenCalledWith('tr-1', 'wms-new', '2028-01-31')
-  })
-
-  it('takes a port back', () => {
-    const { actions } = setup()
-    fireEvent.click(within(screen.getByTestId('port-c-stock')).getByRole('button', { name: 'Take back' }))
-    expect(actions.unport).toHaveBeenCalledWith('tr-1', 'c-stock')
   })
 
   it('asks where each line goes when the plan introduces more than one thing', () => {
@@ -235,10 +233,6 @@ describe('the interfaces', () => {
     expect(actions.port).toHaveBeenCalledWith('tr-1', 'c-orders', 'wms-new', '2027-03-01')
   })
 
-  it('says so when there is nothing to move', () => {
-    setup({ plan: { ...PLAN, elements: [] } })
-    expect(screen.getByText(/Nothing to move yet/)).toBeTruthy()
-  })
 })
 
 describe('the body', () => {

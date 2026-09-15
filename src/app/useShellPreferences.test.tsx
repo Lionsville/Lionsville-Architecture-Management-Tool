@@ -77,22 +77,18 @@ describe('useShellPreferences — writing', () => {
     expect(written).toHaveLength(0)
   })
 
-  it('patches: what you did not mention stays, including what it does not recognise', () => {
+  it('patches rather than replaces, keeping the language, the theme and the shell’s own things', () => {
     const { prefs, written } = mount({ language: 'en', themeMode: 'dark', somethingNewer: 42 })
     act(() => prefs().chooseLanguage('nl'))
     expect(written.at(-1)).toEqual({ language: 'nl', themeMode: 'dark', somethingNewer: 42 })
-  })
-
-  it('lets the shell remember its own things beside the editor`s', () => {
-    const { prefs, written } = mount({ language: 'en' })
-    act(() => prefs().writePreference({ projectOrder: 'recent' }))
-    expect(written.at(-1)).toMatchObject({ language: 'en', projectOrder: 'recent' })
-  })
-
-  it('keeps the language and theme when the editor saves only its own settings', () => {
-    const { prefs, written } = mount({ language: 'nl', themeMode: 'dark' })
-    act(() => prefs().savePreferences({ inspectorWidth: 320 } as never))
-    expect(written.at(-1)).toMatchObject({ language: 'nl', themeMode: 'dark', inspectorWidth: 320 })
+    cleanup()
+    const { prefs: prefs2, written: written2 } = mount({ language: 'en' })
+    act(() => prefs2().writePreference({ projectOrder: 'recent' }))
+    expect(written2.at(-1)).toMatchObject({ language: 'en', projectOrder: 'recent' })
+    cleanup()
+    const { prefs: prefs3, written: written3 } = mount({ language: 'nl', themeMode: 'dark' })
+    act(() => prefs3().savePreferences({ inspectorWidth: 320 } as never))
+    expect(written3.at(-1)).toMatchObject({ language: 'nl', themeMode: 'dark', inspectorWidth: 320 })
   })
 
   it('reports a refused write, so the storage notice can say so once', async () => {

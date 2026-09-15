@@ -68,25 +68,16 @@ describe('inspect', () => {
     expect(report.groups).toEqual([{ name: 'Finance', rect: { x: 240, y: 160, width: 500, height: 300 }, members: ['a', 'b', 'f'] }])
   })
 
-  it('finds the two cards on top of each other, and says by how much', () => {
+  it('finds the overlap, the line through a card, the band and the group member outside it', () => {
     expect(report.overlaps).toEqual({
       total: 1, some: [{ a: 'a', b: 'b', width: NODE_SIZES.application.width, height: 30 }],
     })
-  })
-
-  it('finds the line that cuts through a card that is not one of its ends', () => {
     expect(report.crossings).toEqual({ total: 1, some: [{ connectionId: 'ac', elementId: 'd' }] })
-  })
-
-  it('finds the cards drawn in another band than they are filed in', () => {
     // The card off the board counts too: its centre clamps into the side band.
     expect(report.outsideZone).toEqual({ total: 2, some: [
       { elementId: 'e', zone: 'landscape', actually: 'actors' },
       { elementId: 'g', zone: 'landscape', actually: 'externalSystems' },
     ] })
-  })
-
-  it('finds the group member outside its group', () => {
     expect(report.outsideGroup).toEqual({ total: 1, some: [{ elementId: 'f', domainGroup: 'Finance', actually: undefined }] })
   })
 

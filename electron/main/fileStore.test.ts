@@ -56,20 +56,15 @@ describe('safeRelativePath', () => {
 })
 
 describe('resolveInside', () => {
-  it('resolves a path under the folder the user chose', async () => {
+  it('resolves a path under the folder the user chose, and refuses one that leads out or is not there', async () => {
     await expect(resolveInside(root, 'acme/landscape')).resolves.toBe(join(root, 'acme/landscape'))
-  })
-
-  it('refuses a symlink that leads out of it', async () => {
     // The folder belongs to the user and may contain a link to anywhere.
     // Without this, "write a file in the project" can write over anything.
     await symlink(outside, join(root, 'sideways'))
     await expect(resolveInside(root, 'sideways/secret.txt')).resolves.toBeUndefined()
-  })
-
-  it('refuses a folder that is not there at all', async () => {
     await expect(resolveInside(join(root, 'gone'), 'x')).resolves.toBeUndefined()
   })
+
 })
 
 describe('what the channel does with a folder', () => {

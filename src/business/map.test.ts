@@ -16,17 +16,14 @@ const rowOf = (page: ReturnType<typeof mapPage>, id: string) =>
   page.rows.find((row) => row.element.id === id)!
 
 describe('the rows', () => {
-  it('walks every function root in tree order, one row per function, with its depth', () => {
+  it('walks every function root in tree order, drawing only the ones the map names', () => {
     const page = mapPage(shippingScope(), {})
     expect(page.rows.map((row) => [row.element.id, row.depth])).toEqual([
       ['fulfilment', 0], ['warehousing', 1], ['picking', 2], ['packing', 2],
       ['billing', 0], ['invoicing', 1], ['invoice', 2], ['dunning', 2],
     ])
-  })
-
-  it('draws the roots the map names, in the map’s order, and only those', () => {
-    const page = mapPage(shippingScope(), { areas: ['billing'] })
-    expect(page.rows.map((row) => row.element.id)).toEqual(['billing', 'invoicing', 'invoice', 'dunning'])
+    const page2 = mapPage(shippingScope(), { areas: ['billing'] })
+    expect(page2.rows.map((row) => row.element.id)).toEqual(['billing', 'invoicing', 'invoice', 'dunning'])
   })
 
   it('gives a leaf its own coverage', () => {
@@ -49,15 +46,13 @@ describe('the rows', () => {
     expect(rowOf(page, 'billing').gaps).toBe(1)
   })
 
-  it('counts the leaves and not the sections', () => {
+  it('counts the leaves and not the sections, and an application under two capabilities once', () => {
     expect(mapPage(shippingScope(), {}).counts).toEqual({ covered: 2, manual: 1, uncovered: 1 })
-  })
-
-  it('does not count an application twice when two capabilities under one section share it', () => {
     const scope = shippingScope()
     scope.relations.push(relation('s4', 'supports', 'wms', 'packing'))
     expect(rowOf(mapPage(scope, {}), 'warehousing').supportedBy).toEqual(['wms', 'scanner'])
   })
+
 })
 
 describe('the columns', () => {
@@ -120,8 +115,9 @@ describe('the day it shows', () => {
     return scope
   }
 
-  it('counts every row when no day is given', () => {
+  it('counts every row when no day is given, and takes today where the map names none', () => {
     expect(rowOf(mapPage(dated(), {}), 'invoice').coverage).toBe('covered')
+    expect(rowOf(mapPage(dated(), {}, { today: '2027-02-01' }), 'invoice').coverage).toBe('uncovered')
   })
 
   it('counts the rows live on the map’s own day', () => {
@@ -129,9 +125,6 @@ describe('the day it shows', () => {
     expect(rowOf(mapPage(dated(), { asOf: '2027-03-01' }), 'invoice').coverage).toBe('covered')
   })
 
-  it('takes today where the map names no day', () => {
-    expect(rowOf(mapPage(dated(), {}, { today: '2027-02-01' }), 'invoice').coverage).toBe('uncovered')
-  })
 })
 
 describe('a tree that is not one', () => {

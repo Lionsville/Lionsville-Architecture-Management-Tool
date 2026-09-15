@@ -31,19 +31,26 @@ function channel(): DesktopFiles {
 }
 
 describe('rememberingWrites', () => {
-  it('recognises the change our own write causes', async () => {
+  it('recognises the change our own write or removal causes, and nobody else’s', async () => {
     const held = rememberingWrites(channel())
     await held.files.write('/work', 'acme/landscape/model.json', new Uint8Array([1]))
 
     expect(held.ours({ root: '/work', path: 'acme/landscape/model.json', stamp: stamp('abc') }))
       .toBe(true)
-  })
+    const held2 = rememberingWrites(channel())
+    await held2.files.write('/work', 'model.json', new Uint8Array([1]))
 
-  it('does not recognise somebody else changing a file we wrote', async () => {
-    const held = rememberingWrites(channel())
-    await held.files.write('/work', 'model.json', new Uint8Array([1]))
+    expect(held2.ours({ root: '/work', path: 'model.json', stamp: stamp('different') })).toBe(false)
+    const held3 = rememberingWrites(channel())
+    expect(held3.ours({ root: '/work', path: 'model.json', stamp: stamp('abc') })).toBe(false)
+    const held4 = rememberingWrites(channel())
+    await held4.files.write('/work', 'model.json', new Uint8Array([1]))
 
-    expect(held.ours({ root: '/work', path: 'model.json', stamp: stamp('different') })).toBe(false)
+    expect(held4.ours({ root: '/other', path: 'model.json', stamp: stamp('abc') })).toBe(false)
+    const held5 = rememberingWrites(channel())
+    await held5.files.remove('/work', 'diagrams/old.json')
+
+    expect(held5.ours({ root: '/work', path: 'diagrams/old.json' })).toBe(true)
   })
 
   it('recognises a report whose bytes are what we last read', async () => {
@@ -56,25 +63,6 @@ describe('rememberingWrites', () => {
     expect(held.ours({ root: '/work', path: 'acme/landscape/model.json', stamp: stamp('other') })).toBe(false)
     // Gone since we read it is somebody's doing.
     expect(held.ours({ root: '/work', path: 'acme/landscape/model.json' })).toBe(false)
-  })
-
-  it('does not recognise a file we never wrote', () => {
-    const held = rememberingWrites(channel())
-    expect(held.ours({ root: '/work', path: 'model.json', stamp: stamp('abc') })).toBe(false)
-  })
-
-  it('keeps two folders apart', async () => {
-    const held = rememberingWrites(channel())
-    await held.files.write('/work', 'model.json', new Uint8Array([1]))
-
-    expect(held.ours({ root: '/other', path: 'model.json', stamp: stamp('abc') })).toBe(false)
-  })
-
-  it('recognises a removal we asked for', async () => {
-    const held = rememberingWrites(channel())
-    await held.files.remove('/work', 'diagrams/old.json')
-
-    expect(held.ours({ root: '/work', path: 'diagrams/old.json' })).toBe(true)
   })
 
   it('still passes everything through to the channel underneath', async () => {

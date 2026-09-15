@@ -34,11 +34,8 @@ describe('organisationPages', () => {
     expect(pages.roadmap.finding).toBeUndefined()
   })
 
-  it('says a root with nothing in it is empty', () => {
+  it('says a root with nothing in it is empty, and no longer once it holds a decision', () => {
     expect(organisationPages(scope(), TODAY).empty).toBe(true)
-  })
-
-  it('is no longer empty once it holds one decision', () => {
     const held = scope({ decisions: [
       { id: 'a', number: 1, title: 'Use one identity', status: 'accepted', date: '2026-09-01', body: '', signers: [] },
     ] })
@@ -76,14 +73,11 @@ describe('organisationPages', () => {
       ],
     })
 
-    it('counts journeys and areas as roots, and functions at every depth', () => {
+    it('counts journeys and areas as roots and functions at every depth, and what no domain has', () => {
       expect(organisationPages(held, TODAY).business).toMatchObject({
         journeys: 1, areas: 2, functions: 3, stakeholders: 1,
       })
-    })
-
-    /** The rule `business/` publishes: a function root with no `scopes`. */
-    it('counts the capabilities no domain has been given', () => {
+      // The rule `business/` publishes: a function root with no `scopes`.
       expect(organisationPages(held, TODAY).business.unmapped).toBe(1)
     })
 
@@ -133,24 +127,19 @@ describe('organisationPages', () => {
       milestones: [], body: '', ...over,
     }) as NonNullable<HostModel['transitions']>[number]
 
-    it('tallies the plans by status', () => {
+    it('tallies the plans by status, and shows the first disagreement or none at all', () => {
       const held = scope({ transitions: [plan({ id: 'p1' }), plan({ id: 'p2', status: 'draft' })] })
       expect(organisationPages(held, TODAY).roadmap).toMatchObject({
         total: 2,
         byStatus: [{ status: 'draft', count: 1 }, { status: 'running', count: 1 }],
       })
-    })
-
-    it('shows the first thing the dates disagree about', () => {
-      const held = scope({ transitions: [plan({ to: '2026-08-01' })] })
-      expect(organisationPages(held, TODAY).roadmap.finding).toMatchObject({
+      const held2 = scope({ transitions: [plan({ to: '2026-08-01' })] })
+      expect(organisationPages(held2, TODAY).roadmap.finding).toMatchObject({
         kind: 'planOverdue', name: 'A plan',
       })
+      const held3 = scope({ transitions: [plan({ to: '2027-08-01' })] })
+      expect(organisationPages(held3, TODAY).roadmap.finding).toBeUndefined()
     })
 
-    it('shows none when the dates agree', () => {
-      const held = scope({ transitions: [plan({ to: '2027-08-01' })] })
-      expect(organisationPages(held, TODAY).roadmap.finding).toBeUndefined()
-    })
   })
 })
