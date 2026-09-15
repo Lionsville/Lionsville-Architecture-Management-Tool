@@ -57,6 +57,7 @@ export const EN = {
   'command.refinesEnds': 'A container interface has to sit under the interface it is part of: its two ends under that interface\'s two ends, each under its own.',
   'command.refinesLevel': 'That interface is itself part of another one. An interface lands once.',
   'command.hostedOnContainers': 'An application with containers runs where its containers run. Say where on the container instead.',
+  'command.technologyEnds': 'Hosted on runs from an application or a container to a platform. A platform inside another is filed under it, not hosted on it.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',

@@ -42,6 +42,7 @@ import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from 
 import { boxesOf, decisionsOf, groupsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
 import { mayBeHosted } from './hosting'
+import { technologyEndsRefusal } from './relations'
 import { refinementRefusal } from './refines'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect, EdgeRoute,
@@ -61,6 +62,8 @@ export type CommandRefusal =
   | 'command.refinesLevel'
   /** Where an application with containers runs is its containers' to say (ADR-0013). */
   | 'command.hostedOnContainers'
+  /** A `hostedOn` that is not application | component → platform (ADR-0014). */
+  | 'command.technologyEnds'
 
 export type ApplyResult =
   | { ok: true; model: Model; inverse: Command }
@@ -859,15 +862,20 @@ function landingRefusal(model: Model, row: Relation): { ok: false; reason: Comma
 }
 
 /**
- * Whether this row may say where something runs (ADR-0013, redone).
+ * Whether this row may say where something runs (ADR-0013, redone; ADR-0014).
  *
- * An application with containers does not run anywhere — the things it is made
- * of do — so a `hostedOn` from one is refused rather than kept as a second
- * answer beside theirs. An application with none says it itself, which is the
- * only sentence anybody can write about a vendor-hosted service.
+ * A `hostedOn` runs from an application or a container to a platform and
+ * nothing else: a platform inside a platform is `parentId`, the one
+ * containment, and a row saying the same thing twice is what `model/
+ * relations.ts` refuses. An application with containers does not run anywhere
+ * — the things it is made of do — so a `hostedOn` from one is refused rather
+ * than kept as a second answer beside theirs. An application with none says
+ * it itself, which is the only sentence anybody can write about a
+ * vendor-hosted service.
  */
 function hostingRefusal(model: Model, row: Relation): { ok: false; reason: CommandRefusal } | undefined {
   if (row.type !== 'hostedOn') return undefined
+  if (technologyEndsRefusal(row, (id) => model.elements[id])) return { ok: false, reason: 'command.technologyEnds' }
   return mayBeHosted(Object.values(model.elements), row.sourceId)
     ? undefined
     : { ok: false, reason: 'command.hostedOnContainers' }

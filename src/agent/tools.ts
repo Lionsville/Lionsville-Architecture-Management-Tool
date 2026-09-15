@@ -628,8 +628,11 @@ const SPECS = [
     tier: 'write',
     description:
       'Join two elements with a typed relation (ADR-0012): supports (an application covers a '
-      + 'capability), serves, realises, assigned (who is responsible), hostedOn (an application or a '
-      + 'component runs on a platform) or uses (it consumes one: a broker, a forge, a firewall). Dated when it only holds for '
+      + 'capability), serves, realises (a process is how a capability is done — or, ADR-0014, a platform is '
+      + 'how a platformService is delivered), assigned (an actor is responsible for a function, a step, or '
+      + 'maintains a platformService or a platform), hostedOn (an application or a component runs on a '
+      + 'platform — never a platform on a platform, which is parentId) or uses (an application or a '
+      + 'component consumes a platformService, or binds to one platform). Dated when it only holds for '
       + 'a while — the roadmap draws the window. One end may be an element another scope defines, as '
       + 'long as register.list or scopes.list knows the id: an organisation\'s capability supported by a '
       + 'landscape\'s application is written on the organisation. For a flow between two applications use '
@@ -1435,6 +1438,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.refinesEnds': 'A container interface has to sit under the interface it refines: source under source, target under target, each end either the same element or a component of it.',
   'command.refinesLevel': 'The interface named by "refines" is itself a refinement. An interface lands once; refine the application-level line instead.',
   'command.hostedOnContainers': 'An application that has components runs where those run: write the hostedOn row from the component. Only an application with no components — an outside system, a SaaS service, a bought package — says where it runs itself.',
+  'command.technologyEnds': 'hostedOn runs from an application or a component to a platform, and nothing else. A platform inside another platform is filed under it with parentId; a service consumed is a uses row.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

@@ -282,11 +282,13 @@ describe('apply — relations', () => {
    * whether or not this build's file format has a place for it yet.
    */
   it.each(RELATION_TYPES)('lands a %s row and gives it back on undo, window and all', (type) => {
-    const m = sample()
+    // With a platform to run on: where something runs is held to its ends
+    // (ADR-0014), and one type in this list is where it runs.
+    const m = ok(apply(sample(), { type: 'element.create', element: element('p', { kind: 'platform' }) })).model
     // From the component: an application with components may not say where it
-    // runs, and one type in this list is where it runs (ADR-0013).
+    // runs (ADR-0013).
     const row: Relation = {
-      id: `r-${type}`, type, sourceId: 'c', targetId: 'b',
+      id: `r-${type}`, type, sourceId: 'c', targetId: type === 'hostedOn' ? 'p' : 'b',
       validFrom: '2027-03-01', validUntil: '2027-12-31',
     }
     const landed = ok(apply(m, { type: 'relation.create', relation: row }))
@@ -893,3 +895,44 @@ describe('lifecycle dates (ADR-0009)', () => {
   })
 })
 
+
+describe('where something runs, held to its meaning (ADR-0013, ADR-0014)', () => {
+  const held = () => fromArrays({
+    name: 'Landscape',
+    elements: [
+      element('wms'), element('api', { kind: 'component', parentId: 'wms' }), element('crm'),
+      element('openshift', { kind: 'platform', platformArchetype: 'place' }),
+      element('ns', { kind: 'platform', parentId: 'openshift', platformArchetype: 'place' }),
+      element('containers', { kind: 'platformService' }),
+    ],
+    relations: [],
+    diagrams: [],
+  })
+  const hosted = (sourceId: string, targetId: string): Command =>
+    ({ type: 'relation.create', relation: { id: 'h1', type: 'hostedOn', sourceId, targetId } })
+
+  it('writes a container or a bare application onto a platform', () => {
+    expect(apply(held(), hosted('api', 'ns')).ok).toBe(true)
+    expect(apply(held(), hosted('crm', 'openshift')).ok).toBe(true)
+  })
+
+  it('refuses an application with containers: its containers say where', () => {
+    expect(apply(held(), hosted('wms', 'openshift'))).toEqual({ ok: false, reason: 'command.hostedOnContainers' })
+  })
+
+  it('refuses a platform on a platform, a row onto a service, and a row from anything else', () => {
+    // A platform inside a platform is `parentId`, the one containment.
+    expect(apply(held(), hosted('ns', 'openshift'))).toEqual({ ok: false, reason: 'command.technologyEnds' })
+    expect(apply(held(), hosted('api', 'containers'))).toEqual({ ok: false, reason: 'command.technologyEnds' })
+    expect(apply(held(), hosted('containers', 'openshift'))).toEqual({ ok: false, reason: 'command.technologyEnds' })
+    // And the same rule on an update that re-ends a row.
+    const model = apply(held(), hosted('api', 'ns'))
+    if (!model.ok) throw new Error('not written')
+    expect(apply(model.model, { type: 'relation.update', id: 'h1', patch: { targetId: 'containers' } }))
+      .toEqual({ ok: false, reason: 'command.technologyEnds' })
+  })
+
+  it('trusts an end this scope does not hold', () => {
+    expect(apply(held(), hosted('api', 'cluster-elsewhere')).ok).toBe(true)
+  })
+})

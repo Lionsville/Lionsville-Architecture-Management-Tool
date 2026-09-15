@@ -28,7 +28,7 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { isPlatformArchetype } from '../model/relations'
+import { isPlatformArchetype, technologyEndsRefusal } from '../model/relations'
 import { mayBeHosted } from '../model/hosting'
 import { COLOUR_BY } from '../model/overlay'
 import type { ColourBy } from '../model/overlay'
@@ -227,11 +227,17 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         return refused('agent.badArguments', 'a relation needs at least one end this scope holds')
       }
       if (sourceId === targetId) return refused('agent.badArguments', 'a relation needs two different elements')
-      // A technology row ends on a platform (ADR-0013), where this scope can
-      // see what the end is; an id the tree knows and this scope does not is
-      // trusted, as every other row's far end is.
-      if ((type === 'uses' || type === 'hostedOn') && model.elements[targetId] && model.elements[targetId].kind !== 'platform') {
-        return refused('agent.badArguments', `${type} ends on a platform; ${targetId} is a ${model.elements[targetId].kind}`)
+      // The technology rows' ends (ADR-0013, ADR-0014), judged where this scope
+      // can see what an end is; an id the tree knows and this scope does not
+      // is trusted, as every other row's far end is. `hostedOn` is refused
+      // with the writer's own key, so a tool call hears what a person hears.
+      const wrongEnds = technologyEndsRefusal({ type, sourceId, targetId }, (id) => model.elements[id])
+      if (wrongEnds === 'hostedOn') {
+        return refused('command.technologyEnds', `${sourceId} → ${targetId}`)
+      }
+      if (wrongEnds !== undefined) {
+        const kindOf = (id: string) => model.elements[id]?.kind ?? 'unknown'
+        return refused('agent.badArguments', `${type} does not run ${kindOf(sourceId)} → ${kindOf(targetId)}`)
       }
       // Where an application with components runs is its components' to say
       // (ADR-0013, redone). Refused here as well as by the writer, with the

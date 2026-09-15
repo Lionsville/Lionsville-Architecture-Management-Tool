@@ -57,6 +57,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'command.refinesEnds': 'Eine Container-Schnittstelle muss unter der Schnittstelle liegen, zu der sie gehört: beide Enden unter den jeweils entsprechenden Enden.',
   'command.refinesLevel': 'Diese Schnittstelle gehört selbst schon zu einer anderen. Eine Schnittstelle landet einmal.',
   'command.hostedOnContainers': 'Eine Anwendung mit Containern läuft dort, wo ihre Container laufen. Sagen Sie es am Container.',
+  'command.technologyEnds': 'Läuft auf geht von einer Anwendung oder einem Container zu einer Plattform. Eine Plattform in einer anderen ist darunter abgelegt, sie läuft nicht darauf.',
   'restore.absentThen': 'Dies war bei diesem Schnappschuss nicht im Projekt.',
   'restore.absentNow': 'Das Element ist nicht mehr im Projekt; stellen Sie das ganze Projekt wieder her, um es zurückzuholen.',
   'restore.locked': 'Diese Entscheidung wurde angenommen, abgelehnt oder ersetzt, und ein abgeschlossener Eintrag wird nicht geändert. Schreiben Sie eine neue, die sie ersetzt.',

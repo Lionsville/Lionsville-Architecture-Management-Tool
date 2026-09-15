@@ -59,8 +59,9 @@ export type { ImpliedInterface } from './implied'
 /** What a platform is, and what stands on it (ADR-0013, ADR-0014). */
 export {
   PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, isPlatformArchetype,
-  isTechnologyRelation, platformArchetypeOf,
+  isTechnologyRelation, platformArchetypeOf, technologyEndsRefusal,
 } from './relations'
+export type { KindOf } from './relations'
 
 /** What a stand-in may carry, and what the scope that defines it answers for (ADR-0012 §3). */
 export { OWNER_DETAIL, asStandIn } from './standIn'

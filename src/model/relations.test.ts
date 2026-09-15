@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import {
   PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, RELATION_LABEL, RELATION_TYPES,
   flowsOf, isFlow, isPlatformArchetype, isRelationType, isTechnologyRelation, platformArchetypeOf,
+  technologyEndsRefusal,
 } from './relations'
 import { nodeFigure } from './kinds'
 import type { Relation } from './types'
@@ -75,5 +76,51 @@ describe('what a platform is (ADR-0013, ADR-0014)', () => {
     // What a platform offers is drawn beside it, as the same chip (ADR-0014).
     expect(nodeFigure({ kind: 'platformService' })).toBe('managementTool')
     expect(nodeFigure({ kind: 'platformService' }, 'landscape')).toBe('managementTool')
+  })
+})
+
+describe('the ends of the technology rows (ADR-0014)', () => {
+  const kinds: Record<string, Relation['type'] | string> = {
+    wms: 'application', api: 'component', clerk: 'actor', pick: 'function',
+    openshift: 'platform', ns: 'platform', containers: 'platformService', flow: 'process',
+  }
+  const kindOf = (id: string) => (id in kinds ? { kind: kinds[id] as never } : undefined)
+  const row = (type: Relation['type'], sourceId: string, targetId: string) => ({ type, sourceId, targetId })
+
+  it('runs hostedOn from an application or a container to a platform, and nowhere else', () => {
+    expect(technologyEndsRefusal(row('hostedOn', 'api', 'ns'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('hostedOn', 'wms', 'openshift'), kindOf)).toBeUndefined()
+    // A platform inside a platform is `parentId`, the one containment.
+    expect(technologyEndsRefusal(row('hostedOn', 'ns', 'openshift'), kindOf)).toBe('hostedOn')
+    // Not on a service, and not from an actor.
+    expect(technologyEndsRefusal(row('hostedOn', 'api', 'containers'), kindOf)).toBe('hostedOn')
+    expect(technologyEndsRefusal(row('hostedOn', 'clerk', 'openshift'), kindOf)).toBe('hostedOn')
+  })
+
+  it('lets uses end on a platform or on the service it realises', () => {
+    expect(technologyEndsRefusal(row('uses', 'wms', 'containers'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('uses', 'api', 'openshift'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('uses', 'wms', 'pick'), kindOf)).toBe('uses')
+    expect(technologyEndsRefusal(row('uses', 'openshift', 'containers'), kindOf)).toBe('uses')
+  })
+
+  it('lets a platform realise a service, and leaves a process realising a function alone', () => {
+    expect(technologyEndsRefusal(row('realises', 'openshift', 'containers'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('realises', 'flow', 'pick'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('realises', 'openshift', 'pick'), kindOf)).toBe('realises')
+    expect(technologyEndsRefusal(row('realises', 'wms', 'containers'), kindOf)).toBe('realises')
+  })
+
+  it('lets an actor be assigned a service or a platform, and nobody else', () => {
+    expect(technologyEndsRefusal(row('assigned', 'clerk', 'containers'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('assigned', 'clerk', 'openshift'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('assigned', 'clerk', 'pick'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('assigned', 'wms', 'containers'), kindOf)).toBe('assigned')
+  })
+
+  it('trusts an end this scope does not hold, as every other row\'s far end is', () => {
+    expect(technologyEndsRefusal(row('hostedOn', 'api', 'elsewhere'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('hostedOn', 'elsewhere', 'openshift'), kindOf)).toBeUndefined()
+    expect(technologyEndsRefusal(row('flow', 'wms', 'openshift'), kindOf)).toBeUndefined()
   })
 })

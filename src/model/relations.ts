@@ -85,9 +85,55 @@ export function platformArchetypeOf(element: Pick<DesignElement, 'platformArchet
 
 /**
  * The two rows that join something to what runs it or what it consumes
- * (ADR-0013): an application or a component at one end, a platform at the
- * other. Never drawn on a canvas — the technology view lists them.
+ * (ADR-0013): an application or a component at one end, a platform — or,
+ * since ADR-0014, the service a platform realises — at the other. Never drawn
+ * on a canvas — the platform's report lists them.
  */
 export function isTechnologyRelation(relation: Pick<Relation, 'type'>): boolean {
   return relation.type === 'uses' || relation.type === 'hostedOn'
+}
+
+/** What the ends' kinds are, for a row judged against the model it goes into. */
+export type KindOf = (id: string) => Pick<DesignElement, 'kind'> | undefined
+
+/**
+ * Which of the technology rows' rules this row breaks, if any (ADR-0014 §2.3):
+ *
+ * | type       | from → to                                           |
+ * |------------|-----------------------------------------------------|
+ * | `hostedOn` | application \| component → platform                  |
+ * | `uses`     | application \| component → platform \| platformService |
+ * | `realises` | platform → platformService (beside process → function) |
+ * | `assigned` | actor → platformService \| platform (beside function \| step) |
+ *
+ * Judged on the ends this scope holds: an end nobody here holds is trusted,
+ * as every other row's far end is (ADR-0012 §5). `hostedOn` is the strict
+ * one, and the reducer refuses it — a platform inside a platform is
+ * `parentId`, the one containment, and a row saying the same thing twice is
+ * two ways of saying one thing. The other three are the agent's to hold an
+ * argument to, since a person's inspector cannot draw them wrong.
+ */
+export function technologyEndsRefusal(
+  row: Pick<Relation, 'type' | 'sourceId' | 'targetId'>,
+  kindOf: KindOf,
+): RelationType | undefined {
+  const source = kindOf(row.sourceId)?.kind
+  const target = kindOf(row.targetId)?.kind
+  const consumer = source === undefined || source === 'application' || source === 'component'
+  switch (row.type) {
+    case 'hostedOn':
+      return consumer && (target === undefined || target === 'platform') ? undefined : 'hostedOn'
+    case 'uses':
+      return consumer && (target === undefined || target === 'platform' || target === 'platformService')
+        ? undefined : 'uses'
+    case 'realises':
+      if (source === 'platform' && target !== undefined && target !== 'platformService') return 'realises'
+      if (target === 'platformService' && source !== undefined && source !== 'platform') return 'realises'
+      return undefined
+    case 'assigned':
+      if ((target === 'platformService' || target === 'platform') && source !== undefined && source !== 'actor') return 'assigned'
+      return undefined
+    default:
+      return undefined
+  }
 }

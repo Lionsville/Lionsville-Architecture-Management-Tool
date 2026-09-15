@@ -3663,6 +3663,7 @@
         },
         "name": "Enterprise bus",
         "owner": "Integration team",
+        "parentId": "openshift",
         "platformArchetype": "service"
       },
       {
@@ -3673,6 +3674,7 @@
         "lifecycle": "live",
         "name": "Event broker",
         "owner": "Platform team",
+        "parentId": "landing-zone",
         "platformArchetype": "service",
         "vendor": "Confluent"
       },
@@ -3705,29 +3707,11 @@
         "lifecycle": "live",
         "name": "OpenShift",
         "owner": "Platform team",
+        "parentId": "landing-zone",
         "platformArchetype": "place"
       }
     ],
-    "relations": [
-      {
-        "id": "h#1",
-        "sourceId": "openshift",
-        "targetId": "landing-zone",
-        "type": "hostedOn"
-      },
-      {
-        "id": "h#2",
-        "sourceId": "kafka",
-        "targetId": "landing-zone",
-        "type": "hostedOn"
-      },
-      {
-        "id": "h#3",
-        "sourceId": "esb",
-        "targetId": "openshift",
-        "type": "hostedOn"
-      }
-    ]
+    "relations": []
   },
   "platforms/scope.json": {
     "activeDiagramId": "",

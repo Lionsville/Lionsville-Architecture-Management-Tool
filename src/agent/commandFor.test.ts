@@ -1065,7 +1065,40 @@ describe('the physical view (ADR-0013)', () => {
     const hosted = roundTrip(withPlatforms, commandFor('relation.add', { type: 'hostedOn', sourceId: 'api', targetId: 'cluster' }, view(withPlatforms)))
     expect(Object.values(hosted.relations).find((r) => r.type === 'hostedOn')).toMatchObject({ sourceId: 'api', targetId: 'cluster' })
     roundTrip(withPlatforms, commandFor('relation.add', { type: 'uses', sourceId: 'billing', targetId: 'esb' }, view(withPlatforms)))
+    // The writer's own key (ADR-0014), so a tool call hears what a person hears.
     expect(commandFor('relation.add', { type: 'hostedOn', sourceId: 'api', targetId: 'crm' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'command.technologyEnds' })
+    expect(commandFor('relation.add', { type: 'hostedOn', sourceId: 'esb', targetId: 'cluster' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'command.technologyEnds' })
+    expect(commandFor('relation.add', { type: 'uses', sourceId: 'billing', targetId: 'crm' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  /**
+   * The three rows ADR-0014 adds to the table: a platform realises a service,
+   * a service is used, and an actor maintains a service or a platform.
+   */
+  it('joins a platform to the service it realises, a consumer to the service, and a team to either', () => {
+    const withService = fromArrays({
+      ...toArrays(withPlatforms),
+      elements: [
+        ...toArrays(withPlatforms).elements,
+        element('containers', 'Container platform', { kind: 'platformService' }),
+        element('platform-team', 'Platform team', { kind: 'actor' }),
+      ],
+    })
+    const rows = (model: Model) => Object.values(model.relations).map((r) => `${r.type}:${r.sourceId}>${r.targetId}`)
+    const realised = roundTrip(withService, commandFor('relation.add', { type: 'realises', sourceId: 'cluster', targetId: 'containers' }, view(withService)))
+    expect(rows(realised)).toContain('realises:cluster>containers')
+    const used = roundTrip(withService, commandFor('relation.add', { type: 'uses', sourceId: 'billing', targetId: 'containers' }, view(withService)))
+    expect(rows(used)).toContain('uses:billing>containers')
+    const kept = roundTrip(withService, commandFor('relation.add', { type: 'assigned', sourceId: 'platform-team', targetId: 'containers' }, view(withService)))
+    expect(rows(kept)).toContain('assigned:platform-team>containers')
+    roundTrip(withService, commandFor('relation.add', { type: 'assigned', sourceId: 'platform-team', targetId: 'cluster' }, view(withService)))
+    // And the wrong way round is refused before the reducer sees it.
+    expect(commandFor('relation.add', { type: 'realises', sourceId: 'billing', targetId: 'containers' }, view(withService)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('relation.add', { type: 'assigned', sourceId: 'billing', targetId: 'containers' }, view(withService)))
       .toMatchObject({ refusal: 'agent.badArguments' })
   })
 
