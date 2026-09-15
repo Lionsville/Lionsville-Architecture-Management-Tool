@@ -119,7 +119,20 @@ const RELATION_FIELDS = {
 /** What a line says and when it is there. Null clears any of them. */
 const CONNECTION_FIELDS = {
   label: { type: 'string', description: 'What flows, in a few words.' },
-  protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
+  protocol: {
+    type: 'string',
+    description: 'How: REST, AMQP, SFTP, a file drop. On the CONTAINER line (ADR-0013): an application-level '
+      + 'interface with refinements shows the set they carry and keeps none of its own, and the first refinement '
+      + 'to land clears it. One with no refinements keeps it.',
+  },
+  technology: { type: 'string', description: 'What the interface is built out of, in a few words. On the container line, as protocol is.' },
+  refines: {
+    type: 'string',
+    description: 'The id of the application-level interface this container-level line is part of (ADR-0013). '
+      + 'Each end must be the corresponding end of that line or a component filed under it — source under source, '
+      + 'target under target — and that line must not itself refine one: an interface lands once. Null detaches, '
+      + 'leaving the line an interface of its own.',
+  },
   isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
   validFrom: { type: 'string', description: 'The first day the line is there, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
   validUntil: { type: 'string', description: 'The last day it is there, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },
@@ -308,8 +321,11 @@ const SPECS = [
     name: 'connections.list',
     tier: 'read',
     description:
-      'The connections between elements: id, source, target, label, protocol, the days it is valid '
+      'The connections between elements: id, source, target, label, protocol, technology, the days it is valid '
       + 'where dated, and which plan dated it where a port did. '
+      + 'An application-level interface that has landed a level down carries its "refinements" nested — the container '
+      + 'lines that are part of it, each with its ends and its own protocol — and a container line says which '
+      + 'interface it "refines" (ADR-0013). '
       + 'Filter to those ending on one element, or to those drawn on one diagram.',
     inputSchema: {
       type: 'object',
@@ -505,7 +521,10 @@ const SPECS = [
     name: 'connect',
     tier: 'write',
     description:
-      'Draw a connection from one element to another, dated when the line is temporary. Answers with the connection\'s id.',
+      'Draw a connection from one element to another, dated when the line is temporary. Answers with the connection\'s id. '
+      + 'A line to or from a component is a container-level line: say with "refines" which application-level interface it is '
+      + 'part of, or leave it out and it is an interface of its own that roadmap.check will offer to draw the application '
+      + 'line for.',
     inputSchema: {
       type: 'object',
       properties: {

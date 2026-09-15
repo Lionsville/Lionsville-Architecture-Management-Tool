@@ -171,6 +171,31 @@ describe('connections.list', () => {
     expect(read('connections.list', { elementId: 'ghost' })).toMatchObject({ refusal: 'agent.unknownId' })
     expect(read('connections.list', { diagramId: 'ghost' })).toMatchObject({ refusal: 'agent.unknownId' })
   })
+
+  /**
+   * An interface and where it lands, from either end (ADR-0013): the
+   * application line carries what landed on it nested, because what an agent
+   * asks next is always what those say, and the landed line names the
+   * interface it is part of.
+   */
+  it('nests what landed on an interface, and says on the landing which interface it is', () => {
+    const landed = view({
+      ...host,
+      relations: [
+        { type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', label: 'orders', isBidirectional: false },
+        { type: 'flow', id: 'r1', sourceId: 'crm', targetId: 'billing-api', protocol: 'REST', technology: 'OpenAPI 3', refines: 'c1', isBidirectional: false },
+      ],
+    })
+    const rows = (read('connections.list', {}, landed) as {
+      connections: { id: string; refines?: string; refinements?: { id: string; target: string; protocol?: string }[] }[]
+    }).connections
+    expect(rows.find((c) => c.id === 'c1')!.refinements).toEqual([
+      { id: 'r1', sourceId: 'crm', source: 'CRM', targetId: 'billing-api', target: 'Billing API', protocol: 'REST', technology: 'OpenAPI 3' },
+    ])
+    expect(rows.find((c) => c.id === 'r1')!.refines).toBe('c1')
+    // A line nothing landed on says nothing about landings at all.
+    expect(rows.find((c) => c.id === 'r1')).not.toHaveProperty('refinements')
+  })
 })
 
 describe('diagrams.list', () => {

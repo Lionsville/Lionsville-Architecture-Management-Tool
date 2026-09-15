@@ -964,6 +964,53 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
   })
 })
 
+/**
+ * An interface landing a level down (ADR-0013, redone).
+ *
+ * The vocabulary is a mirror of the field, and the one thing worth pinning
+ * here is that the builder does NOT check the ends itself: the reducer is the
+ * writer and says no, so a second copy of the rule cannot drift from it.
+ */
+describe('landing an interface (ADR-0013)', () => {
+  const held = fromArrays(host)
+
+  it('lands a container line on the interface it is part of, and detaches it with null', () => {
+    const landed = roundTrip(held, commandFor('connect', {
+      sourceId: 'crm', targetId: 'api', refines: 'c1', protocol: 'REST', technology: 'OpenAPI 3',
+    }, view(held)))
+    const row = Object.values(landed.relations).find((r) => r.targetId === 'api')!
+    expect(row).toMatchObject({ refines: 'c1', protocol: 'REST', technology: 'OpenAPI 3' })
+    const detached = roundTrip(landed, commandFor('connection.update', { id: row.id, refines: null }, view(landed)))
+    expect(detached.relations[row.id].refines).toBeUndefined()
+  })
+
+  it('leaves the interface without a protocol of its own once the first line lands on it', () => {
+    // The reducer's doing, pinned in `model/reducer.test.ts`; what this says
+    // is that an agent's landing goes through the same writer and gets it.
+    const spoken = fromArrays({
+      ...host,
+      relations: [{ type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', protocol: 'SOAP', isBidirectional: false }],
+    })
+    const out = commandFor('connect', { sourceId: 'crm', targetId: 'api', refines: 'c1', protocol: 'REST' }, view(spoken))
+    const applied = apply(spoken, prepared(out).command)
+    expect(applied.ok).toBe(true)
+    expect(applied.ok && applied.model.relations.c1.protocol).toBeUndefined()
+    const undone = applied.ok ? apply(applied.model, applied.inverse) : undefined
+    expect(undone?.ok && toArrays(undone.model)).toStrictEqual(toArrays(spoken))
+  })
+
+  it('leaves the reducer to refuse a landing the ends do not allow', () => {
+    const out = commandFor('connect', { sourceId: 'api', targetId: 'crm', refines: 'c1' }, view(held))
+    expect(out).not.toHaveProperty('refusal')
+    expect(apply(held, prepared(out).command)).toMatchObject({ ok: false, reason: 'command.refinesEnds' })
+  })
+
+  it('refuses a refines that is not an id', () => {
+    expect(commandFor('connection.update', { id: 'c1', refines: 7 }, view(held)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+  })
+})
+
 describe('the physical view (ADR-0013)', () => {
   const withPlatforms = fromArrays({
     ...host,

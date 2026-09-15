@@ -1485,9 +1485,17 @@ function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAns
   const look = lineLook(args)
   if ('ok' in look) return look
   const patch: Partial<Relation> = { ...look }
-  for (const key of ['label', 'protocol'] as const) {
+  for (const key of ['label', 'protocol', 'technology'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string
+  }
+  // Which interface this one is part of (ADR-0013). Whether the ends satisfy
+  // the rule is the reducer's to say, and is left to it: it is the writer, and
+  // a second copy of the rule here is a second place for it to be wrong.
+  if (args.refines !== undefined) {
+    if (args.refines === null || args.refines === '') patch.refines = undefined
+    else if (typeof args.refines === 'string') patch.refines = args.refines
+    else return refused('agent.badArguments', '"refines" is the id of an interface, or null')
   }
   if (typeof args.isBidirectional === 'boolean') patch.isBidirectional = args.isBidirectional
   for (const key of ['validFrom', 'validUntil'] as const) {

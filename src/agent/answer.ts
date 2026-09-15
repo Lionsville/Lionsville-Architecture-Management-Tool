@@ -475,6 +475,13 @@ function datedBy(model: Model, arrays: HostModel): Map<string, Transition> {
 
 function connectionLine(model: Model, c: Relation, dated?: Map<string, Transition>) {
   const plan = dated?.get(c.id)
+  // Where it landed, and what landed on it (ADR-0013). An application line
+  // carries its refinements nested rather than as ids, because the question
+  // an agent asks next is always what they say — and a landed line says which
+  // interface it is part of, so the two directions read from either end.
+  const landings = model.order.relations
+    .map((id) => model.relations[id])
+    .filter((row) => row.refines === c.id)
   return {
     id: c.id,
     // What the row means (ADR-0012 §5). The list is still called `connections`
@@ -486,9 +493,24 @@ function connectionLine(model: Model, c: Relation, dated?: Map<string, Transitio
     target: nameOf(model, c.targetId),
     label: c.label,
     protocol: c.protocol,
+    technology: c.technology,
     isBidirectional: c.isBidirectional,
     validFrom: c.validFrom,
     validUntil: c.validUntil,
+    ...(c.refines !== undefined ? { refines: c.refines } : {}),
+    ...(landings.length > 0
+      ? {
+        refinements: landings.map((row) => ({
+          id: row.id,
+          sourceId: row.sourceId,
+          source: nameOf(model, row.sourceId),
+          targetId: row.targetId,
+          target: nameOf(model, row.targetId),
+          protocol: row.protocol,
+          technology: row.technology,
+        })),
+      }
+      : {}),
     ...(plan ? { planId: plan.id, plan: transitionLabel(plan) } : {}),
   }
 }
