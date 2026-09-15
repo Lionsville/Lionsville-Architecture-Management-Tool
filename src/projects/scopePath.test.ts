@@ -5,75 +5,51 @@ import {
 } from './scopePath'
 
 describe('scopeSegments', () => {
-  it('splits a path into its segments', () => {
+  it('splits a path into its segments, and gives the root none at all', () => {
     expect(scopeSegments('acme/rail/rolling-stock')).toEqual(['acme', 'rail', 'rolling-stock'])
-  })
-
-  it('gives the root no segments at all', () => {
     expect(scopeSegments(ROOT_SCOPE)).toEqual([])
   })
 })
 
 describe('parentScope', () => {
-  it('drops the last segment', () => {
+  it('drops the last segment, and answers the root one level down', () => {
     expect(parentScope('acme/rail/rolling-stock')).toBe('acme/rail')
-  })
-
-  it('answers the root for a scope one level down', () => {
     expect(parentScope('acme')).toBe(ROOT_SCOPE)
-  })
-
-  /** The one scope that has none, which is what makes it the organisation. */
-  it('answers undefined for the root itself', () => {
+    // The root is the one scope that has no parent, which is what makes it the
+    // organisation.
     expect(parentScope(ROOT_SCOPE)).toBeUndefined()
   })
 })
 
 describe('ancestorScopes', () => {
-  it('walks up, nearest first, and ends at the root', () => {
+  it('walks up, nearest first, ends at the root, and has nothing above it', () => {
     expect(ancestorScopes('acme/rail/rolling-stock')).toEqual(['acme/rail', 'acme', ROOT_SCOPE])
-  })
-
-  it('has nothing above the root', () => {
     expect(ancestorScopes(ROOT_SCOPE)).toEqual([])
   })
 })
 
 describe('joinScope', () => {
-  it('files a name under its parent', () => {
+  it('files a name under its parent, and under the root without a leading slash', () => {
     expect(joinScope('acme', 'rail')).toBe('acme/rail')
-  })
-
-  it('files a name under the root without a leading slash', () => {
     expect(joinScope(ROOT_SCOPE, 'acme')).toBe('acme')
   })
 })
 
 describe('isWithinScope', () => {
-  it('counts a scope as within itself', () => {
+  it('counts a scope as within itself and within anything above it, and the root as within nothing else', () => {
     expect(isWithinScope('acme/rail', 'acme/rail')).toBe(true)
-  })
-
-  it('counts a scope filed beneath one', () => {
     expect(isWithinScope('acme/rail/rolling-stock', 'acme')).toBe(true)
-  })
-
-  it('does not count a sibling whose name merely starts the same', () => {
+    // A sibling whose name merely starts the same is not beneath it.
     expect(isWithinScope('acme-rail', 'acme')).toBe(false)
-  })
-
-  it('counts everything as within the root', () => {
     expect(isWithinScope('acme/rail', ROOT_SCOPE)).toBe(true)
     expect(isWithinScope(ROOT_SCOPE, ROOT_SCOPE)).toBe(true)
   })
 })
 
 describe('isSafeScopePath', () => {
-  it('accepts the root, which is a scope like any other', () => {
+  it('accepts the root and a nested path of slugs', () => {
+    // The root is a scope like any other.
     expect(isSafeScopePath(ROOT_SCOPE)).toBe(true)
-  })
-
-  it('accepts a nested path of slugs', () => {
     expect(isSafeScopePath('acme/rail/rolling-stock-2')).toBe(true)
   })
 
@@ -93,14 +69,11 @@ describe('isSafeScopePath', () => {
     expect(isSafeScopePath(42)).toBe(false)
   })
 
-  it('refuses a segment the scope folder already uses', () => {
+  it('refuses a segment the scope folder already uses, and allows a name that contains one', () => {
     for (const reserved of RESERVED_SCOPE_NAMES) {
       expect(isSafeScopePath(reserved), reserved).toBe(false)
       expect(isSafeScopePath(`acme/${reserved}`), `acme/${reserved}`).toBe(false)
     }
-  })
-
-  it('allows a name that merely contains a reserved word', () => {
     expect(isSafeScopePath('decisions-board')).toBe(true)
   })
 })
@@ -114,25 +87,18 @@ describe('isReservedScopeName', () => {
 })
 
 describe('scopePathLabel', () => {
-  it('is the segment the scope is filed under', () => {
+  it('is the segment the scope is filed under, and empty for the root', () => {
     expect(scopePathLabel('acme/rail')).toBe('rail')
-  })
-
-  it('is empty for the root, which the store names from its folder', () => {
+    // The store names the root from its folder.
     expect(scopePathLabel(ROOT_SCOPE)).toBe('')
   })
 })
 
 describe('scopePathFor', () => {
-  it('slugs a typed name under its parent', () => {
+  it('slugs a typed name under its parent, and under the root for a first scope', () => {
     expect(scopePathFor('acme', 'Rolling Stock')).toBe('acme/rolling-stock')
-  })
-
-  it('files a first scope directly under the root', () => {
     expect(scopePathFor(ROOT_SCOPE, 'Acme Logistics')).toBe('acme-logistics')
-  })
-
-  it('does not land on a name already taken under that parent', () => {
+    // And never lands on a name already taken under that parent.
     expect(scopePathFor('acme', 'Rail', ['rail'])).toBe('acme/rail-2')
     expect(scopePathFor('acme', 'Rail', ['rail', 'rail-2'])).toBe('acme/rail-3')
   })

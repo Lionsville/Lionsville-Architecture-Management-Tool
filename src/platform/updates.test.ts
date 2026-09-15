@@ -12,17 +12,12 @@ import {
 } from './updates'
 
 describe('parseVersion', () => {
-  it('accepts a tag with or without its v', () => {
+  it('reads a tag with or without its v, fills in what it leaves out, and keeps the prerelease', () => {
     expect(parseVersion('v1.2.3')?.numbers).toEqual([1, 2, 3])
     expect(parseVersion('1.2.3')?.numbers).toEqual([1, 2, 3])
-  })
-
-  it('fills in missing segments', () => {
     expect(parseVersion('1.2')?.numbers).toEqual([1, 2, 0])
     expect(parseVersion('1')?.numbers).toEqual([1, 0, 0])
-  })
-
-  it('keeps the prerelease and drops the build metadata', () => {
+    // The prerelease is part of the order; the build metadata is not.
     expect(parseVersion('1.2.3-rc.1')?.prerelease).toBe('rc.1')
     expect(parseVersion('1.2.3+abc123')).toEqual({ numbers: [1, 2, 3], prerelease: '' })
   })
@@ -35,17 +30,11 @@ describe('parseVersion', () => {
 })
 
 describe('isNewerVersion', () => {
-  it('compares segment by segment, not as text', () => {
+  it('compares segment by segment, not as text, and prefers a release to its prerelease', () => {
     expect(isNewerVersion('1.10.0', '1.9.0')).toBe(true)
     expect(isNewerVersion('1.9.0', '1.10.0')).toBe(false)
     expect(isNewerVersion('2.0.0', '1.99.99')).toBe(true)
-  })
-
-  it('is false for the same version', () => {
     expect(isNewerVersion('1.2.3', 'v1.2.3')).toBe(false)
-  })
-
-  it('prefers a release over its own prerelease', () => {
     expect(isNewerVersion('1.2.3', '1.2.3-rc.1')).toBe(true)
     expect(isNewerVersion('1.2.3-rc.1', '1.2.3')).toBe(false)
   })
@@ -69,50 +58,33 @@ describe('pickDownloadAsset', () => {
     { name: 'latest-mac.yml', url: 'https://example.test/latest-mac.yml' },
   ]
 
-  it('takes the dmg on macOS', () => {
+  it('takes the installer this machine can run, on each of the three platforms', () => {
     expect(pickDownloadAsset(assets, 'darwin', 'arm64')?.url).toBe('https://example.test/mac.dmg')
-  })
-
-  it('takes the installer for this architecture on Windows', () => {
     expect(pickDownloadAsset(assets, 'win32', 'x64')?.url).toBe('https://example.test/win-x64.exe')
     expect(pickDownloadAsset(assets, 'win32', 'arm64')?.url).toBe('https://example.test/win-arm64.exe')
-  })
-
-  // electron-builder names the AppImage x86_64, not x64.
-  it('knows the words Linux uses for an architecture', () => {
-    expect(pickDownloadAsset(assets, 'linux', 'x64')?.url).toBe('https://example.test/linux.AppImage')
-  })
-
-  it('leaves the .deb to the package manager', () => {
-    const deb = pickDownloadAsset(assets, 'linux', 'x64')
-    expect(deb?.name.endsWith('.deb')).toBe(false)
-  })
-
-  it('does not offer a blockmap', () => {
+    // electron-builder names the AppImage x86_64, not x64.
+    const linux = pickDownloadAsset(assets, 'linux', 'x64')
+    expect(linux?.url).toBe('https://example.test/linux.AppImage')
+    // The .deb is the package manager's, and a blockmap is not an installer.
+    expect(linux?.name.endsWith('.deb')).toBe(false)
     expect(pickDownloadAsset(assets, 'win32', 'x64')?.name.endsWith('.blockmap')).toBe(false)
   })
 
-  it('is undefined when nothing matches', () => {
+  it('is undefined when nothing matches, and takes a lone file that names no architecture', () => {
     expect(pickDownloadAsset([], 'darwin', 'arm64')).toBeUndefined()
     expect(pickDownloadAsset(assets, 'aix', 'x64')).toBeUndefined()
-  })
-
-  it('takes the only candidate when it names no architecture at all', () => {
     const one = [{ name: 'tool.dmg', url: 'https://example.test/only.dmg' }]
     expect(pickDownloadAsset(one, 'darwin', 'arm64')?.url).toBe('https://example.test/only.dmg')
   })
 
-  // The release carries one AppImage and it is x86_64. Handing it to an arm64
-  // machine because it is the only file on the shelf gives that user a binary
-  // that will not run; the release page is the honest answer.
-  it('refuses a lone candidate built for someone else', () => {
+  it('refuses to hand over a file built for somebody else, or to guess between two', () => {
+    // The release carries one AppImage and it is x86_64. Handing it to an arm64
+    // machine because it is the only file on the shelf gives that user a binary
+    // that will not run; the release page is the honest answer.
     expect(pickDownloadAsset(assets, 'linux', 'arm64')).toBeUndefined()
     expect(pickDownloadAsset(assets, 'darwin', 'x64')).toBeUndefined()
-  })
-
-  // Two files, neither of them named for this machine: the release page and a
-  // human beat a rule guessing wrong.
-  it('refuses to choose between two unlabelled candidates', () => {
+    // Two files, neither of them named for this machine: the release page and a
+    // human beat a rule guessing wrong.
     const two = [
       { name: 'a.dmg', url: 'https://example.test/a.dmg' },
       { name: 'b.dmg', url: 'https://example.test/b.dmg' },
@@ -128,20 +100,15 @@ describe('readRelease', () => {
     assets: [{ name: 'tool-1.2.3-mac-arm64.dmg', browser_download_url: 'https://example.test/mac.dmg' }],
   }
 
-  it('reads the version without its v, and the installer for this machine', () => {
+  it('reads the version without its v and the installer for this machine, or the page instead', () => {
     expect(readRelease(payload, 'darwin', 'arm64')).toEqual({
       version: '1.2.3',
       pageUrl: 'https://github.com/o/r/releases/tag/v1.2.3',
       downloadUrl: 'https://example.test/mac.dmg',
     })
-  })
-
-  it('falls back to the release page when no asset fits', () => {
+    // No asset fits, or there are none at all: the release page still works.
     expect(readRelease(payload, 'win32', 'x64')?.downloadUrl)
       .toBe('https://github.com/o/r/releases/tag/v1.2.3')
-  })
-
-  it('survives a release with no assets at all', () => {
     expect(readRelease({ ...payload, assets: undefined }, 'darwin', 'arm64')?.downloadUrl)
       .toBe('https://github.com/o/r/releases/tag/v1.2.3')
   })
@@ -159,12 +126,9 @@ describe('readRelease', () => {
     }
   })
 
-  it('refuses a page URL that is not https', () => {
+  it('refuses a page URL that is not https, and drops an asset URL that is not', () => {
     expect(readRelease({ ...payload, html_url: 'javascript:alert(1)' }, 'darwin', 'arm64'))
       .toBeUndefined()
-  })
-
-  it('drops an asset whose URL is not https rather than opening it', () => {
     const poisoned = {
       ...payload,
       assets: [{ name: 'tool-mac-arm64.dmg', browser_download_url: 'file:///etc/passwd' }],
@@ -174,13 +138,10 @@ describe('readRelease', () => {
 })
 
 describe('readUpdateSettings', () => {
-  it('checks by default, whatever the file says or fails to say', () => {
+  it('checks by default, whatever the file says, and turns off only on an explicit false', () => {
     for (const stored of [undefined, null, {}, 'nonsense', { checkAutomatically: 'yes' }]) {
       expect(readUpdateSettings(stored)).toEqual(DEFAULT_UPDATE_SETTINGS)
     }
-  })
-
-  it('only turns checking off on an explicit false', () => {
     expect(readUpdateSettings({ checkAutomatically: false }).checkAutomatically).toBe(false)
   })
 
@@ -207,27 +168,20 @@ describe('readNewestRelease', () => {
     ...over,
   })
 
-  it('takes the newest release of any kind, prerelease or not', () => {
-    const list = [release('v1.3.0-beta.1', { prerelease: true }), release('v1.2.9')]
-    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.3.0-beta.1')
+  it('takes the newest by version, prerelease or not, and the stable above the beta it follows', () => {
+    const any = [release('v1.3.0-beta.1', { prerelease: true }), release('v1.2.9')]
+    expect(readNewestRelease(any, 'darwin', 'arm64')?.version).toBe('1.3.0-beta.1')
+    // Nobody on a beta is stranded on it once the stable arrives.
+    const both = [release('v1.3.0-beta.2', { prerelease: true }), release('v1.3.0')]
+    expect(readNewestRelease(both, 'darwin', 'arm64')?.version).toBe('1.3.0')
+    // The order the page lists them in says nothing.
+    const shuffled = [release('v1.2.0'), release('v1.4.0'), release('v1.3.0')]
+    expect(readNewestRelease(shuffled, 'darwin', 'arm64')?.version).toBe('1.4.0')
   })
 
-  it('puts a stable release above the beta it follows, so nobody is stranded', () => {
-    const list = [release('v1.3.0-beta.2', { prerelease: true }), release('v1.3.0')]
-    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.3.0')
-  })
-
-  it('goes by version, not by the order the page lists them in', () => {
-    const list = [release('v1.2.0'), release('v1.4.0'), release('v1.3.0')]
-    expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.4.0')
-  })
-
-  it('skips drafts, and an entry that is not a release', () => {
+  it('skips a draft or an entry that is not a release, and answers nothing for a non-list', () => {
     const list = [release('v9.0.0', { draft: true }), 'nonsense', null, release('not-a-version'), release('v1.1.0')]
     expect(readNewestRelease(list, 'darwin', 'arm64')?.version).toBe('1.1.0')
-  })
-
-  it('is nothing for a payload that is not a list, or a list with nothing in it', () => {
     expect(readNewestRelease({ message: 'rate limited' }, 'darwin', 'arm64')).toBeUndefined()
     expect(readNewestRelease([release('v2.0.0', { draft: true })], 'darwin', 'arm64')).toBeUndefined()
     expect(readNewestRelease([], 'darwin', 'arm64')).toBeUndefined()
@@ -237,43 +191,23 @@ describe('readNewestRelease', () => {
 describe('updateAvailable', () => {
   const release = { version: '1.2.3', pageUrl: 'https://x.test', downloadUrl: 'https://x.test/a.dmg' }
 
-  it('is true for a newer version nobody has skipped', () => {
+  it('is true only for a newer version nobody skipped, and a skip is of one version', () => {
     expect(updateAvailable(release, '1.2.2', {})).toBe(true)
-  })
-
-  it('is false for the version already running', () => {
     expect(updateAvailable(release, '1.2.3', {})).toBe(false)
-  })
-
-  it('is false for a version the user skipped', () => {
     expect(updateAvailable(release, '1.2.2', { skippedVersion: '1.2.3' })).toBe(false)
-  })
-
-  it('skips one version, not every later one', () => {
-    const later = { ...release, version: '1.3.0' }
-    expect(updateAvailable(later, '1.2.2', { skippedVersion: '1.2.3' })).toBe(true)
-  })
-
-  it('is false when there was no release to read', () => {
+    // Skipping 1.2.3 does not skip everything after it.
+    expect(updateAvailable({ ...release, version: '1.3.0' }, '1.2.2', { skippedVersion: '1.2.3' }))
+      .toBe(true)
     expect(updateAvailable(undefined, '1.2.2', {})).toBe(false)
   })
 })
 
 describe('shouldCheckForUpdates', () => {
-  it('checks in a packaged app', () => {
+  it('checks in a packaged app, and in nothing else', () => {
     expect(shouldCheckForUpdates(true, [], {})).toBe(true)
-  })
-
-  it('does not check in a dev run', () => {
     expect(shouldCheckForUpdates(false, [], {})).toBe(false)
-  })
-
-  // A dialog in front of the window the smoke is photographing.
-  it('does not check under --smoke', () => {
+    // A dialog in front of the window the smoke is photographing.
     expect(shouldCheckForUpdates(true, ['electron', '.', '--smoke'], {})).toBe(false)
-  })
-
-  it('does not check when the machine must not phone home', () => {
     expect(shouldCheckForUpdates(true, [], { LVARCH_NO_UPDATE: '1' })).toBe(false)
   })
 
