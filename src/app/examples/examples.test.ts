@@ -562,13 +562,11 @@ describe('a stakeholder tree over a landscape that already drew its actors', () 
     placement: (node.data as { placement: unknown }).placement,
   }))
 
-  it('lays every node out in the same place', () => {
+  it('lays every node out in the same place, with the same lines between them', () => {
     expect(where(buildNodes(args(model)))).toEqual(where(buildNodes(args(flat))))
-  })
-
-  it('draws the same lines between them', () => {
     expect(JSON.stringify(buildEdges(args(model)))).toBe(JSON.stringify(buildEdges(args(flat))))
   })
+
 })
 
 /**
@@ -639,29 +637,20 @@ describe('where a copy lands', () => {
     expect(copied[0].kind).toBe('organisation')
   })
 
-  it('files it under a child of a root that already has a name', () => {
+  it('files a copy under a child of the root it lands in, and gives a second one its own address', () => {
     const copied = copyExampleInto(example, root({ name: 'Globex' }))
     expect(copied.map((scope) => scope.path))
       .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
-  })
-
-  it('files it under a child of a root that already has scopes in it', () => {
-    const copied = copyExampleInto(example, root({ children: [
+    const copied2 = copyExampleInto(example, root({ children: [
       { path: 'retail', name: 'Retail', diagrams: 0, children: [] },
     ] }))
-    expect(copied[0].path).toBe('acme-logistics')
-  })
-
-  /** Not in the design's sentence; overwriting a board is the unrecoverable one. */
-  it('files it under a child of an unnamed root that already draws something', () => {
+    expect(copied2[0].path).toBe('acme-logistics')
+    // Not in the design's sentence; overwriting a board is the unrecoverable one.
     expect(copyExampleInto(example, root({ diagrams: 1 }))[0].path).toBe('acme-logistics')
-  })
-
-  it('gives a second copy its own address rather than writing over the first', () => {
-    const copied = copyExampleInto(example, root({ name: 'Globex', children: [
+    const copied3 = copyExampleInto(example, root({ name: 'Globex', children: [
       { path: 'acme-logistics', name: 'Acme Logistics', diagrams: 0, children: [] },
     ] }))
-    expect(copied.map((scope) => scope.path))
+    expect(copied3.map((scope) => scope.path))
       .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape', 'acme-logistics-2/platforms'])
   })
 

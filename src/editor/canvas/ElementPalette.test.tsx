@@ -319,19 +319,24 @@ describe('ElementPalette — the logo tray', () => {
     expect(screen.getByLabelText('Actor name')).toBeDefined();
   });
 
-  it('offers none on the domain group — a labelled region has no identity', () => {
+  it('places an actor with a picked mark or an uploaded key, and offers none on a domain group', () => {
     renderPalette({ onAddDomainGroup: vi.fn() });
     fireEvent.click(row('Domain group'));
     expect(screen.queryByRole('group', { name: 'Logo' })).toBeNull();
-  });
-
-  it('places an actor with a picked mark — the flip is wired, not just rendered', () => {
+    cleanup()
     const { onAdd } = renderPalette();
     fireEvent.click(row('Actor'));
     fireEvent.click(screen.getByLabelText('Crew'));
     fireEvent.click(screen.getByRole('button', { name: 'Add actor' }));
 
     expect(onAdd).toHaveBeenCalledWith('actor', { iconKey: 'rail-crew' });
+    cleanup()
+    const { onAdd: onAdd2 } = renderPalette({ logoLibrary: LIBRARY });
+    fireEvent.click(row('Application'));
+    fireEvent.click(screen.getByLabelText('Salesforce'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add application' }));
+
+    expect(onAdd2).toHaveBeenCalledWith('application', { iconKey: 'salesforce' });
   });
 
   it('lists uploaded library entries as images, never as inline markup', () => {
@@ -342,15 +347,6 @@ describe('ElementPalette — the logo tray', () => {
     const image = within(tile).getByRole('presentation');
     expect(image.tagName).toBe('IMG');
     expect(image.getAttribute('src')).toBe(LIBRARY[0].url);
-  });
-
-  it('places with an uploaded key', () => {
-    const { onAdd } = renderPalette({ logoLibrary: LIBRARY });
-    fireEvent.click(row('Application'));
-    fireEvent.click(screen.getByLabelText('Salesforce'));
-    fireEvent.click(screen.getByRole('button', { name: 'Add application' }));
-
-    expect(onAdd).toHaveBeenCalledWith('application', { iconKey: 'salesforce' });
   });
 
   it('shows the upload tile only when the host can handle it', () => {
@@ -372,9 +368,19 @@ describe('ElementPalette — the logo tray', () => {
 });
 
 describe('ElementPalette — dragging', () => {
-  it('places directly from a closed row, carrying only the kind', () => {
+  it('places directly from a closed row carrying only the kind, with no source discriminator', () => {
     renderPalette();
     expect(payloadFrom(row('Application'))).toEqual({ kind: 'application' });
+    cleanup()
+    renderPalette();
+    expect(payloadFrom(row('Application'))).not.toHaveProperty('source');
+    cleanup()
+    renderPalette();
+    const dt = dataTransfer();
+    const withoutDragImage = { ...dt, setDragImage: undefined };
+    fireEvent.dragStart(row('Application'), { dataTransfer: withoutDragImage });
+
+    expect(JSON.parse(withoutDragImage.data[PALETTE_DRAG_MIME])).toEqual({ kind: 'application' });
   });
 
   it('carries the tray choices once they are made', () => {
@@ -390,11 +396,6 @@ describe('ElementPalette — dragging', () => {
     });
   });
 
-  it('never sets a source discriminator — the row already knows its kind', () => {
-    renderPalette();
-    expect(payloadFrom(row('Application'))).not.toHaveProperty('source');
-  });
-
   it('hands a rendered preview to setDragImage instead of the row ghost', () => {
     renderPalette();
     const dt = dataTransfer();
@@ -406,14 +407,6 @@ describe('ElementPalette — dragging', () => {
     expect(node.textContent).toContain('Application');
   });
 
-  it('still drags when the browser offers no setDragImage', () => {
-    renderPalette();
-    const dt = dataTransfer();
-    const withoutDragImage = { ...dt, setDragImage: undefined };
-    fireEvent.dragStart(row('Application'), { dataTransfer: withoutDragImage });
-
-    expect(JSON.parse(withoutDragImage.data[PALETTE_DRAG_MIME])).toEqual({ kind: 'application' });
-  });
 });
 
 describe('ElementPalette — the collapsed rail', () => {

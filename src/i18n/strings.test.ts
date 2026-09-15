@@ -63,18 +63,8 @@ const placeholders = (value: string) =>
   (value.match(/\{(\w+)\}/g) ?? []).slice().sort().join(',');
 
 describe('the string registry', () => {
-  it('registers English, Dutch, Frisian and German', () => {
+  it('registers English, Dutch, Frisian and German, each by its own name, all in the toggle', () => {
     expect(languages.slice().sort()).toEqual(['de', 'en', 'fy', 'nl']);
-  });
-
-  it('names every registered language in the common vocabulary', () => {
-    for (const language of languages) {
-      expect(LANGUAGE_NAME[language], language).toBeDefined();
-      expect(LOCALE[language], language).toMatch(/^[a-z]{2}-[A-Z]{2}$/);
-    }
-  });
-
-  it('calls each language by its own name in every table', () => {
     // A proper noun: "Deutsch" on a Dutch screen, so a German finds it.
     for (const language of languages) {
       const own = STRINGS[language][LANGUAGE_NAME[language]];
@@ -82,11 +72,15 @@ describe('the string registry', () => {
         expect(STRINGS[other][LANGUAGE_NAME[language]]).toBe(own);
       }
     }
-  });
-
-  it('offers every registered language in the toggle', () => {
     // A language in the registry but not in LANGUAGES exists and is unreachable.
     expect([...LANGUAGES].sort()).toEqual(languages.slice().sort());
+  });
+
+  it('names every registered language in the common vocabulary', () => {
+    for (const language of languages) {
+      expect(LANGUAGE_NAME[language], language).toBeDefined();
+      expect(LOCALE[language], language).toMatch(/^[a-z]{2}-[A-Z]{2}$/);
+    }
   });
 
   it('recognises exactly the registered languages', () => {
@@ -143,13 +137,11 @@ describe('t', () => {
     expect(t('nl', 'toolbar.backTo', { name: 'Landschap' })).toBe('Terug naar Landschap');
   });
 
-  it('falls back to English for an unknown language', () => {
+  it('falls back to English for an unknown language, and to the key itself for an unknown key', () => {
     expect(t('fr' as Language, 'common.cancel')).toBe('Cancel');
-  });
-
-  it('returns the key itself when the key is unknown', () => {
     expect(t('en', 'no.such.key' as StringKey)).toBe('no.such.key');
   });
+
 });
 
 describe('interpolate', () => {
@@ -237,16 +229,13 @@ describe('the keymap and the tables agree', () => {
 });
 
 describe('the composition', () => {
-  it('loses no key: every slice’s keys are in the table', () => {
+  it('loses no key and adds none: the table is exactly the slices together', () => {
     const composed = new Set(keys);
     for (const [module, slice] of Object.entries(SLICES)) {
       for (const key of Object.keys(slice)) {
         expect(composed.has(key as StringKey), `${module} owns ${key}, which the table does not have`).toBe(true);
       }
     }
-  });
-
-  it('adds no key: the table is exactly the slices together', () => {
     const owned = new Set(Object.values(SLICES).flatMap((slice) => Object.keys(slice)));
     for (const key of keys) {
       expect(owned.has(key), `${key} is in the table but no module owns it`).toBe(true);

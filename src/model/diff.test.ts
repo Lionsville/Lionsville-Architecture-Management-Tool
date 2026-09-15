@@ -30,11 +30,8 @@ function model(over: Partial<HostModel> = {}): HostModel {
 }
 
 describe('diffModels', () => {
-  it('says nothing about two models that are the same', () => {
+  it('says nothing about two models that are the same, and names what arrived and what went', () => {
     expect(isUnchanged(diffModels(model(), model()))).toBe(true)
-  })
-
-  it('names an application that arrived and one that went', () => {
     const after = model({ elements: [element('crews', 'Crews'), element('planning', 'Planning')] })
     expect(diffModels(model(), after)).toEqual([
       { kind: 'added', what: 'element', id: 'planning', name: 'Planning' },
@@ -42,28 +39,20 @@ describe('diffModels', () => {
       // reason the diff carries a name at all.
       { kind: 'removed', what: 'element', id: 'reisinfo', name: 'Reisinformatie' },
     ])
-  })
-
-  it('says which fields of an application changed', () => {
-    const after = model({
+    const after2 = model({
       elements: [element('crews', 'Crew planning', { vendor: 'Acme' }), element('reisinfo', 'Reisinformatie')],
     })
-    expect(diffModels(model(), after)[0]).toEqual({
+    expect(diffModels(model(), after2)[0]).toEqual({
       kind: 'changed', what: 'element', id: 'crews', name: 'Crew planning',
       fields: ['name', 'vendor'],
     })
-  })
-
-  /**
-   * What a record IS is not a field on it (ADR-0012 §3). Left among the
-   * changed fields, "ref" would be one word in a list nobody reads closely —
-   * and it is the news that a scope stopped answering for something.
-   */
-  it('says when an element became a stand-in, and of where', () => {
-    const after = model({
+    // What a record IS is not a field on it (ADR-0012 §3). Left among the
+    // changed fields, "ref" would be one word in a list nobody reads closely —
+    // and it is the news that a scope stopped answering for something.
+    const after3 = model({
       elements: [element('crews', 'Crews', { ref: 'acme/retail' }), element('reisinfo', 'Reisinformatie')],
     })
-    expect(diffModels(model(), after)[0]).toMatchObject({
+    expect(diffModels(model(), after3)[0]).toMatchObject({
       kind: 'changed', what: 'element', id: 'crews', refChanged: { to: 'acme/retail' },
     })
   })
@@ -81,11 +70,22 @@ describe('diffModels', () => {
     expect(diffModels(drawn, model())[0]).toMatchObject({ refChanged: {} })
   })
 
-  it('names a connection by its ends when it has no label', () => {
+  it('names a connection by its ends, leaves a rename a rename, and reads in one order', () => {
     const after = model({ relations: [] })
     expect(diffModels(model(), after)).toEqual([
       { kind: 'removed', what: 'relation', id: 'c-1', name: 'Crews → Reisinformatie', relationType: 'flow' },
     ])
+    const renamed = model({ diagrams: [{ ...model().diagrams[0], name: 'Landscape' }] })
+    expect(diffModels(model(), renamed)).toEqual([
+      { kind: 'changed', what: 'diagram', id: 'l7', name: 'Landscape', fields: ['name'] },
+    ])
+    const after2 = model({
+      elements: [element('crews', 'Crews'), element('planning', 'Planning')],
+      relations: [],
+      diagrams: [{ ...model().diagrams[0], name: 'Board' }],
+    })
+    expect(diffModels(model(), after2).map((change) => change.what))
+      .toEqual(['element', 'element', 'relation', 'diagram'])
   })
 
   it('reports a decision by its title', () => {
@@ -129,13 +129,6 @@ describe('diffModels', () => {
     })
     expect(diffModels(model(), tidied)).toEqual([
       { kind: 'changed', what: 'geometry', id: 'l7', name: 'Landschap', count: 2 },
-    ])
-  })
-
-  it('does not call a renamed diagram a geometry change', () => {
-    const renamed = model({ diagrams: [{ ...model().diagrams[0], name: 'Landscape' }] })
-    expect(diffModels(model(), renamed)).toEqual([
-      { kind: 'changed', what: 'diagram', id: 'l7', name: 'Landscape', fields: ['name'] },
     ])
   })
 
@@ -221,15 +214,6 @@ describe('diffModels', () => {
     ])
   })
 
-  it('reads in one order however the models were built', () => {
-    const after = model({
-      elements: [element('crews', 'Crews'), element('planning', 'Planning')],
-      relations: [],
-      diagrams: [{ ...model().diagrams[0], name: 'Board' }],
-    })
-    expect(diffModels(model(), after).map((change) => change.what))
-      .toEqual(['element', 'element', 'relation', 'diagram'])
-  })
 })
 
 describe('countChanges', () => {

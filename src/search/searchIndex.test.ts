@@ -41,8 +41,10 @@ describe('matching against a folded haystack', () => {
 })
 
 describe('the index', () => {
-  it('is built once per model', () => {
+  it('is built once per model, and holds the elements in name order', () => {
     expect(searchIndex(model)).toBe(searchIndex(model))
+    const names = searchIndex(model).elements.map((e) => e.element.name)
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
   })
 
   it('keeps a row it has already folded when the model around it is replaced', () => {
@@ -55,11 +57,6 @@ describe('the index', () => {
     expect(after).not.toBe(before)
     const held = before.elements.find((e) => e.element === model.elements[1])
     expect(after.elements.find((e) => e.element === model.elements[1])).toBe(held)
-  })
-
-  it('holds the elements in name order', () => {
-    const names = searchIndex(model).elements.map((e) => e.element.name)
-    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
   })
 
   it('says which diagram carries an element, and which one first', () => {
@@ -86,32 +83,24 @@ describe('the index', () => {
 describe('taking the best matches', () => {
   const rows = ['a', 'b', 'c', 'd', 'e']
 
-  it('flattens the bands in order and cuts at the limit', () => {
+  it('flattens the bands in order, cuts at the limit, and stops scanning once the top band is full', () => {
     expect(bestMatches(rows, 3, 2, (row) => (row === 'a' || row === 'e' ? 1 : 0)))
       .toEqual(['b', 'c', 'd'])
-  })
-
-  it('drops what does not match', () => {
     expect(bestMatches(rows, 5, 1, (row) => (row === 'c' ? 0 : NO_MATCH))).toEqual(['c'])
-  })
-
-  it('stops scanning once the top band is full', () => {
     const seen: string[] = []
     bestMatches(rows, 2, 2, (row) => {
       seen.push(row)
       return 0
     })
     expect(seen).toEqual(['a', 'b'])
-  })
-
-  it('keeps scanning while only a lower band is filling', () => {
-    const seen: string[] = []
+    const seen2: string[] = []
     bestMatches(rows, 2, 2, (row) => {
-      seen.push(row)
+      seen2.push(row)
       return 1
     })
-    expect(seen).toEqual(rows)
+    expect(seen2).toEqual(rows)
   })
+
 })
 
 // --- the same answers as the code this replaced --------------------------------

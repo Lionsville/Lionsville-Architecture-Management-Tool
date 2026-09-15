@@ -268,7 +268,7 @@ describe('useCanvasShortcuts — dispatch', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('Escape deselects when something is selected', () => {
+  it('Escape deselects, Delete asks, Shift+Arrow nudges by 1px, and ? opens the help', () => {
     const { view, setSelection } = setup();
     fireEvent.keyDown(node(view), { key: 'Escape' });
     expect(setSelection).toHaveBeenCalledWith({
@@ -276,15 +276,23 @@ describe('useCanvasShortcuts — dispatch', () => {
       connectionIds: [],
       domainGroups: [],
     });
-  });
-
-  it('Delete routes a selected element to the confirm dialog', () => {
+    cleanup()
     const m = model();
-    const { view, onRequestDeleteElement } = setup({
+    const { view: view2, onRequestDeleteElement } = setup({
       selectedElement: m.elements[0],
     });
-    fireEvent.keyDown(node(view), { key: 'Delete' });
+    fireEvent.keyDown(node(view2), { key: 'Delete' });
     expect(onRequestDeleteElement).toHaveBeenCalledWith('a1');
+    cleanup()
+    const { view: view3, actions } = setup();
+    fireEvent.keyDown(node(view3), { key: 'ArrowUp', shiftKey: true });
+    expect(actions.movePlacements).toHaveBeenCalledWith([
+      { id: 'a1', x: 100, y: 199, zone: 'landscape', domainGroup: undefined },
+    ]);
+    cleanup()
+    const { view: view4, onShowHelp } = setup();
+    fireEvent.keyDown(node(view4), { key: '?', shiftKey: true });
+    expect(onShowHelp).toHaveBeenCalledTimes(1);
   });
 
   it('Delete removes a multi-selection via deleteSelection (no single-item ref set)', () => {
@@ -348,26 +356,12 @@ describe('useCanvasShortcuts — dispatch', () => {
     ]);
   });
 
-  it('Shift+Arrow nudges by 1px', () => {
-    const { view, actions } = setup();
-    fireEvent.keyDown(node(view), { key: 'ArrowUp', shiftKey: true });
-    expect(actions.movePlacements).toHaveBeenCalledWith([
-      { id: 'a1', x: 100, y: 199, zone: 'landscape', domainGroup: undefined },
-    ]);
-  });
-
   it('Mod+S force-saves and preventDefaults the browser save dialog', () => {
     const { view, onForceSave } = setup();
     const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true });
     node(view).dispatchEvent(event);
     expect(onForceSave).toHaveBeenCalledTimes(1);
     expect(event.defaultPrevented).toBe(true);
-  });
-
-  it('? opens the help overlay', () => {
-    const { view, onShowHelp } = setup();
-    fireEvent.keyDown(node(view), { key: '?', shiftKey: true });
-    expect(onShowHelp).toHaveBeenCalledTimes(1);
   });
 
   it('Shift+F10 and the Menu key both ask for the context menu, selection or not', () => {
@@ -521,37 +515,39 @@ describe('useCanvasShortcuts — reach (4B: every chord, not only force-save)', 
     Object.defineProperty(el, 'offsetParent', { configurable: true, get: () => document.body });
   }
 
-  it('fires ⌘Z from a subtree that swallows the event before the wrapper sees it', () => {
+  it('fires a chord from a subtree that swallows it, exactly once, and not twice through the wrapper', () => {
     // The reported bug: focus on an inspector button, ⌘Z does nothing. The
     // container listener never got the event; the document-level one does.
     const { view, undo } = setup();
     makeVisible(view.getByTestId('container'));
     fireEvent.keyDown(view.getByTestId('inspector-button'), { key: 'z', ...MOD });
     expect(undo).toHaveBeenCalledTimes(1);
+    cleanup()
+    const { view: view2, undo: undo2 } = setup();
+    makeVisible(view2.getByTestId('container'));
+    fireEvent.keyDown(node(view2), { key: 'z', ...MOD });
+    expect(undo2).toHaveBeenCalledTimes(1);
   });
 
-  it('dispatches exactly once when the event WOULD also reach the wrapper', () => {
-    const { view, undo } = setup();
-    makeVisible(view.getByTestId('container'));
-    fireEvent.keyDown(node(view), { key: 'z', ...MOD });
-    expect(undo).toHaveBeenCalledTimes(1);
-  });
-
-  it('still bails inside a text field, wherever that field lives', () => {
+  it('still bails inside a text field, leaves the rest of the page alone, and is inert while hidden', () => {
     const { view, undo } = setup();
     makeVisible(view.getByTestId('container'));
     fireEvent.keyDown(view.getByTestId('inspector-field'), { key: 'z', ...MOD });
     expect(undo).not.toHaveBeenCalled();
-  });
-
-  it('leaves the rest of the page alone — a chord typed elsewhere is not ours', () => {
-    const { view, undo } = setup();
-    makeVisible(view.getByTestId('container'));
+    cleanup()
+    const { view: view2, undo: undo2 } = setup();
+    makeVisible(view2.getByTestId('container'));
     const outside = document.createElement('button');
     document.body.appendChild(outside);
     fireEvent.keyDown(outside, { key: 'z', ...MOD });
-    expect(undo).not.toHaveBeenCalled();
+    expect(undo2).not.toHaveBeenCalled();
     outside.remove();
+    cleanup()
+    // No `makeVisible`: the document listener declines, and the fallback
+    // listener on the wrapper answers a chord aimed at the canvas.
+    const { view: view3, undo: undo3 } = setup();
+    fireEvent.keyDown(node(view3), { key: 'z', ...MOD });
+    expect(undo3).toHaveBeenCalledTimes(1);
   });
 
   it('force-save keeps its licence: it fires from a field and from outside', () => {
@@ -565,13 +561,6 @@ describe('useCanvasShortcuts — reach (4B: every chord, not only force-save)', 
     outside.remove();
   });
 
-  it('is inert while the editor is hidden — the container listener still serves it', () => {
-    // No `makeVisible`: the document listener declines, and the fallback
-    // listener on the wrapper answers a chord aimed at the canvas.
-    const { view, undo } = setup();
-    fireEvent.keyDown(node(view), { key: 'z', ...MOD });
-    expect(undo).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('useCanvasShortcuts — find (⌘F)', () => {

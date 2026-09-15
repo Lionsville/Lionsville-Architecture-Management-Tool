@@ -47,7 +47,7 @@ beforeEach(() => {
 })
 
 describe('readLogoFile — wat erin mag', () => {
-  it('reads an SVG into a library entry', async () => {
+  it('reads an SVG into a library entry, one exactly on the limit included', async () => {
     const entry = await read(file('Eigen Merk.svg', 'image/svg+xml'))
 
     expect(entry).toEqual({
@@ -55,6 +55,8 @@ describe('readLogoFile — wat erin mag', () => {
       label: 'Eigen Merk',
       url: 'data:image/svg+xml;base64,PHN2Zy8+',
     })
+    const entry2 = await read(file('rand.png', 'image/png', MAX_LOGO_BYTES))
+    expect(entry2.key).toBe('lib:rand')
   })
 
   it('reads a PNG just as well', async () => {
@@ -65,14 +67,21 @@ describe('readLogoFile — wat erin mag', () => {
     expect(entry.url).toBe('data:image/png;base64,AAA')
   })
 
-  it('refuses another format, with the key for the format', async () => {
+  it('refuses another format, a file with no type, a reader that stumbles and a result that is not a data URL', async () => {
     await expect(read(file('foto.jpg', 'image/jpeg'))).rejects.toThrow(
       new LogoError('shell.logoBadType'),
     )
-  })
-
-  it('refuses a file with no type — a disk does not always say what something is', async () => {
     await expect(read(file('logo', ''))).rejects.toThrow('shell.logoBadType')
+    readerFails = true
+    await expect(read(file('logo.svg', 'image/svg+xml'))).rejects.toThrow(
+      'shell.logoUnreadable',
+    )
+    // Without this guard an empty or strange result would land in the library as
+    // a valid logo and become an empty box on the drawing.
+    readerResult = ''
+    await expect(read(file('logo.svg', 'image/svg+xml'))).rejects.toThrow(
+      'shell.logoUnreadable',
+    )
   })
 
   it('refuses what is too big, and passes the sizes along as parameters', async () => {
@@ -87,26 +96,6 @@ describe('readLogoFile — wat erin mag', () => {
     expect(err?.params).toEqual({ size: 200, max: 200 })
   })
 
-  it('lets a file exactly on the limit through', async () => {
-    const entry = await read(file('rand.png', 'image/png', MAX_LOGO_BYTES))
-    expect(entry.key).toBe('lib:rand')
-  })
-
-  it('refuses when the reader stumbles', async () => {
-    readerFails = true
-    await expect(read(file('logo.svg', 'image/svg+xml'))).rejects.toThrow(
-      'shell.logoUnreadable',
-    )
-  })
-
-  it('refuses a result that is not a data URL', async () => {
-    // Without this guard an empty or strange result would land in the library as
-    // a valid logo and become an empty box on the drawing.
-    readerResult = ''
-    await expect(read(file('logo.svg', 'image/svg+xml'))).rejects.toThrow(
-      'shell.logoUnreadable',
-    )
-  })
 })
 
 describe('readLogoFile — sleutels', () => {
@@ -119,15 +108,13 @@ describe('readLogoFile — sleutels', () => {
     expect(taken.has('eigen-merk-2')).toBe(true)
   })
 
-  it('slugs away diacritics and odd characters', async () => {
+  it('slugs away diacritics and odd characters, always carrying the lib: prefix', async () => {
     const entry = await read(file('Reisinformatie (nieuw!).svg', 'image/svg+xml'), new Set())
     expect(entry.key).toBe('lib:reisinformatie-nieuw')
+    const entry2 = await read(file('x.png', 'image/png'))
+    expect(entry2.key.startsWith('lib:')).toBe(true)
   })
 
-  it('always carries the lib: prefix the package reads as an upload', async () => {
-    const entry = await read(file('x.png', 'image/png'))
-    expect(entry.key.startsWith('lib:')).toBe(true)
-  })
 })
 
 describe('logoLabel', () => {

@@ -205,18 +205,16 @@ describe('what is NOT a finding', () => {
     expect(findings[1]).toMatchObject({ id: 'r3', fields: ['no-cluster'] })
   })
 
-  it('does not call the root proposing something a proposal', () => {
+  it('does not call the root proposing something a proposal, nor an agreeing declaration stale', () => {
     const index = indexScopes([scope('', [element('returns', { kind: 'function' })])])
     expect(identityFindings(index).filter((f) => f.key === 'check.proposal')).toEqual([])
-  })
-
-  it('does not call a declaration that agrees with its master stale', () => {
-    const index = indexScopes([
+    const index2 = indexScopes([
       scope('', [element('erp', { name: 'ERP' })]),
       scope('retail', [element('erp', { name: 'ERP' })]),
     ])
-    expect(identityFindings(index).filter((f) => f.key === 'check.drift')).toEqual([])
+    expect(identityFindings(index2).filter((f) => f.key === 'check.drift')).toEqual([])
   })
+
 })
 
 describe('the owner\'s detail on a stand-in', () => {
@@ -248,18 +246,16 @@ describe('the owner\'s detail on a stand-in', () => {
    * A stand-in reported for having a lifecycle at all would be every stand-in
    * in every tree.
    */
-  it('says nothing about the three fields every record carries by default', () => {
+  it('says nothing about the three fields every record carries, and leaves a stand-in its own view', () => {
     const model = document({ elements: [standIn('erp', 'acme/retail', { name: 'ERP' })] })
     expect(documentFindings({ scope: 'acme/finance', model, index })).toEqual([])
-  })
-
-  it('leaves a stand-in its perspective and its presentation', () => {
-    const model = document({
+    // Its own perspective and its own presentation stay its own.
+    const withView = document({
       elements: [standIn('erp', 'acme/retail', {
         name: 'ERP', description: 'What it means to us.', accentColor: '#c0392b', parentId: 'x',
       })],
     })
-    expect(documentFindings({ scope: 'acme/finance', model, index })).toEqual([])
+    expect(documentFindings({ scope: 'acme/finance', model: withView, index })).toEqual([])
   })
 
   it('lists the owner\'s detail once, for both readers of it', () => {

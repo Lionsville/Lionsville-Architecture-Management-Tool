@@ -105,24 +105,16 @@ describe('working file logo library', () => {
   const base = { type: WORKING_FILE_TYPE, version: WORKING_FILE_VERSION, model: model() } as const
   const library = [{ key: 'lib:own-mark', label: 'Own mark', url: 'data:image/png;base64,AAA' }]
 
-  it('saves in the newest version this shell knows', () => {
+  it('saves in the newest version, and reads a library out of a file with one, junk or none', () => {
     expect(WORKING_FILE_VERSION).toBe(2)
-  })
-
-  it('reads the library out of a file that carries one', () => {
     expect(workingFileLogoLibrary({ ...base, logoLibrary: library })).toEqual(library)
-  })
-
-  it('gives a file without one an empty library instead of undefined', () => {
     expect(workingFileLogoLibrary(base)).toEqual([])
-  })
-
-  it('tolerates a file whose library field is junk', () => {
     // Hand-edited files exist. An empty library loses the marks; a crash loses
     // the whole diagram.
     const junk = { ...base, logoLibrary: 'nope' as unknown as [] }
     expect(workingFileLogoLibrary(junk)).toEqual([])
   })
+
 })
 
 /**
@@ -131,13 +123,19 @@ describe('working file logo library', () => {
  * exists.
  */
 describe('needsRemount', () => {
-  it('remount als de plaat opnieuw gelegd moet worden', () => {
+  it('remounts when the boards differ as a set, and not for the same ones in another order', () => {
     // The package's settle pass runs once per id per editor instance.
     expect(needsRemount(model(), model(), true)).toBe(true)
-  })
-
-  it('no remount for the same diagrams without a re-layout', () => {
     expect(needsRemount(model(), model(), false)).toBe(false)
+    const before = model()
+    const after = {
+      ...before,
+      diagrams: before.diagrams.map((d) => ({ ...d, id: `${d.id}-nieuw` })),
+    }
+    expect(needsRemount(before, after, false)).toBe(true)
+    const before2 = model()
+    const after2 = { ...before2, diagrams: [...before2.diagrams].reverse() }
+    expect(needsRemount(before2, after2, false)).toBe(false)
   })
 
   it('remounts when a diagram is added or removed', () => {
@@ -147,18 +145,4 @@ describe('needsRemount', () => {
     expect(needsRemount(after, before, false)).toBe(true)
   })
 
-  it('remounts when the ids differ, even with the same number of diagrams', () => {
-    const before = model()
-    const after = {
-      ...before,
-      diagrams: before.diagrams.map((d) => ({ ...d, id: `${d.id}-nieuw` })),
-    }
-    expect(needsRemount(before, after, false)).toBe(true)
-  })
-
-  it('looks at the set and not at the order', () => {
-    const before = model()
-    const after = { ...before, diagrams: [...before.diagrams].reverse() }
-    expect(needsRemount(before, after, false)).toBe(false)
-  })
 })
