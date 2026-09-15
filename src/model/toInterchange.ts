@@ -104,8 +104,10 @@ function tally<T extends string>(values: readonly T[]): { key: T; count: number 
  * different questions with different answers: a platform IS drawn on a canvas
  * and still has no box here, because the box it draws as is the management
  * tool's, and a management tool read back is an application — the format's
- * vocabulary is frozen by the contract. A flow's `via` leaves with it, and
- * so do the `uses` and `hostedOn` rows, being relations of another type.
+ * vocabulary is frozen by the contract. The `uses` and `hostedOn` rows leave
+ * with it, being relations of another type; a container line goes out as the
+ * flow it is, and what it says it is part of stays behind with every other
+ * field this format has no place for.
  */
 const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process', 'platform']
 
