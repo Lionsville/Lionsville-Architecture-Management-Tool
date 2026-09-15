@@ -1247,7 +1247,13 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     ?? only('areas', diagram.kind === 'sheet' || diagram.kind === 'map', 'a sheet or a map')
     ?? only('platformId', diagram.kind === 'technology', 'a technology view')
     ?? only('asOf', !laidOut || diagram.kind === 'technology', 'a board or a technology view')
+    ?? only('showDeployment', diagram.kind === 'container', 'a container diagram')
   if (wrong) return wrong
+
+  // Whether the deployment boxes are drawn (ADR-0013): a view setting, kept on
+  // the view, so a reader opening it gets the picture it was left showing.
+  if (typeof args.showDeployment === 'boolean') patch.showDeployment = args.showDeployment
+  else if (args.showDeployment === null) patch.showDeployment = undefined
 
   if (typeof args.platformId === 'string') {
     const platform = model.elements[args.platformId]

@@ -4,6 +4,7 @@ import { useStrings } from '../../i18n/LanguageContext';
 import { c4PanelFor } from '../export/c4Panel';
 import type { ElementSeedPatch } from '../useEditorState';
 import { C4InfoPanel } from './C4InfoPanel';
+import { DeploymentLayer } from './DeploymentLayer';
 import { DiagramCanvas, type DiagramCanvasProps } from './DiagramCanvas';
 
 type SharedProps = Omit<DiagramCanvasProps, 'resolveDrop' | 'onAddByDrop' | 'children'>;
@@ -13,7 +14,7 @@ type SharedProps = Omit<DiagramCanvasProps, 'resolveDrop' | 'onAddByDrop' | 'chi
  * built by graph.ts) and everything else is freely placeable — no zones.
  */
 export function ContainerCanvas(
-  props: SharedProps & { model: DesignModel; diagram: DesignDiagram },
+  props: SharedProps & { model: DesignModel; diagram: DesignDiagram; showDeployment?: boolean },
 ) {
   const { actions, model, diagram } = props;
   const { t, language } = useStrings();
@@ -31,6 +32,12 @@ export function ContainerCanvas(
   return (
     <DiagramCanvas {...props} onAddByDrop={onAddByDrop}>
       {info && <C4InfoPanel info={info} />}
+      {/* Where the containers run, around them (ADR-0013). Derived and
+          measured off the live nodes, so it follows a card as it is dragged
+          and there is no geometry to keep in step. */}
+      {(props.showDeployment ?? true) && (
+        <DeploymentLayer model={model} diagram={diagram} />
+      )}
     </DiagramCanvas>
   );
 }

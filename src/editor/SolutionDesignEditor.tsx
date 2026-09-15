@@ -216,6 +216,13 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const [showGrid, setShowGrid] = useState(initialPreferences.showGrid);
   // Lifecycle-badge toggle (U5): default on (informational).
   const [showLifecycle, setShowLifecycle] = useState(initialPreferences.showLifecycle);
+  /**
+   * The deployment toggle a reader flipped on a view they may not write
+   * (ADR-0013): what a view shows is theirs to change, and the stored answer
+   * is what everybody else opens it on. Keyed by diagram, so flipping one does
+   * not decide for the next.
+   */
+  const [deploymentShown, setDeploymentShown] = useState<Record<string, boolean>>({});
   // Panel collapse toggles (U7b): default expanded.
   const [paletteCollapsed, setPaletteCollapsed] = useState(initialPreferences.paletteCollapsed);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(initialPreferences.inspectorCollapsed);
@@ -282,6 +289,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   const readOnly = props.editing.readOnly ?? false;
   const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
+  const showDeployment = activeDiagram === undefined
+    ? true
+    : deploymentShown[activeDiagram.id] ?? activeDiagram.showDeployment ?? true;
 
   const { setSelection } = state;
   const requestRename = useCallback(
@@ -1262,6 +1272,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onOpenHelp={() => setHelpOpen(true)}
         showLifecycle={showLifecycle}
         onToggleLifecycle={() => setShowLifecycle((on) => !on)}
+        {...(activeDiagram?.kind === 'container'
+          ? {
+            showDeployment: showDeployment,
+            // A reader may change what a view SHOWS (the lifecycle toggle's
+            // rule), so the click always lands; the write that keeps it is
+            // the session's to refuse, which it does under readOnly.
+            onToggleDeployment: () => {
+              const next = !showDeployment;
+              setDeploymentShown((held) => ({ ...held, [activeDiagram.id]: next }));
+              state.actions.setShowDeployment(next);
+            },
+          }
+          : {})}
         asOf={activeDiagram.asOf}
         onAsOfChange={state.actions.setAsOf}
         onUndo={state.undo}
@@ -1331,6 +1354,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           mountEveryElement={capturing || exportOptions !== undefined}
           onElementDoubleClick={handleDoubleClick}
           onLineDoubleClick={handleLineDoubleClick}
+          showDeployment={showDeployment}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
           groupTidyOptions={groupTidyOptions}
@@ -1597,6 +1621,7 @@ function CanvasForDiagram({
   onElementDoubleClick,
   onLineDoubleClick,
   onOpenDocumentation,
+  showDeployment,
   onTidyGroup,
   groupTidyOptions,
   onGroupTidyOptionsChange,
@@ -1635,6 +1660,8 @@ function CanvasForDiagram({
   /** The way down from a landscape line (ADR-0013). */
   onLineDoubleClick(relationId: string): void;
   onOpenDocumentation(elementId: ElementId): void;
+  /** Whether a container diagram draws the deployment boxes (ADR-0013). */
+  showDeployment: boolean;
   /** Layer 7 only — undefined in read-only mode. */
   onTidyGroup?(name: string): void;
   groupTidyOptions: TidyOptions;
@@ -1699,7 +1726,7 @@ function CanvasForDiagram({
       onGroupTidyOptionsChange={onGroupTidyOptionsChange}
     />
   ) : (
-    <ContainerCanvas {...shared} />
+    <ContainerCanvas {...shared} showDeployment={showDeployment} />
   );
 }
 

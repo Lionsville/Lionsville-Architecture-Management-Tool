@@ -520,3 +520,14 @@ export function DocumentIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/** Boxes inside boxes: the deployment view (ADR-0013). */
+export function DeploymentIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="2" y="3" width="20" height="18" rx="2" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2.5" />
+      <rect x="6" y="7" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2.5" />
+      <rect x="9" y="10.5" width="6" height="3.5" rx="1" fill="currentColor" />
+    </svg>
+  );
+}

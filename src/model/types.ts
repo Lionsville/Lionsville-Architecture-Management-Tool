@@ -732,6 +732,15 @@ export interface DesignDiagram {
    * silently forget it. Applies to container diagrams as well as layer7.
    */
   autoRoute?: boolean;
+  /**
+   * Whether the deployment boxes are drawn (container diagrams, ADR-0013):
+   * the platforms this application's containers run on, as dashed groups
+   * around them. Absent = they are.
+   *
+   * Persisted per diagram for `autoRoute`'s reason: a reader who wants the
+   * plain C4 picture wants it every time they open the view, not once.
+   */
+  showDeployment?: boolean;
   /** Where it all ended up. A separate file, and a separate question (§6). */
   geometry: Geometry;
 }

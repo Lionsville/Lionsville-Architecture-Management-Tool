@@ -199,6 +199,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.confirm': 'Exporteren',
   'export.largeConfirm': 'Toch exporteren',
   'toolbar.lifecycleBadges': 'Levenscyclusbadges tonen of verbergen',
+  'toolbar.deployment': 'Deploymentkaders',
   'toolbar.asOf': 'Toont',
   'toolbar.asOfToday': 'Vandaag',
   'toolbar.asOfSet': 'Dit bord toont het landschap zoals het op {date} is.',

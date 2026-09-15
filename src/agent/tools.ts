@@ -921,6 +921,12 @@ const SPECS = [
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
         platformId: { type: 'string', description: 'A technology view: the platform it is about.' },
         asOf: { type: 'string', description: 'A board or a technology view: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
+        showDeployment: {
+          type: 'boolean',
+          description: 'A container diagram: whether the deployment boxes are drawn — the platforms its containers '
+            + 'are hostedOn, as dashed groups around them, nested the way the platforms nest (ADR-0013). '
+            + 'Absent or null: they are.',
+        },
       },
       required: ['id'],
       additionalProperties: false,

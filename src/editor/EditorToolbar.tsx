@@ -28,7 +28,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
 
@@ -111,6 +111,12 @@ export interface EditorToolbarProps {
   /** Lifecycle-badge toggle state + handler (U5); default on. */
   showLifecycle: boolean;
   onToggleLifecycle(): void;
+  /**
+   * The deployment boxes on a container diagram (ADR-0013); default on, and
+   * absent on every other kind of view — there is nothing to draw them around.
+   */
+  showDeployment?: boolean;
+  onToggleDeployment?(): void;
   /**
    * The day the board shows (ADR-0009); absent = today. Set it and the same
    * single model is drawn as it stood then — which is how a future diagram is
@@ -524,6 +530,24 @@ export function EditorToolbar(props: EditorToolbarProps) {
       >
         <LifecycleIcon />
       </IconButton>
+      {props.onToggleDeployment && (
+        <Tooltip title={t('toolbar.deployment')}>
+          <IconButton
+            size="small"
+            aria-label={t('toolbar.deployment')}
+            aria-pressed={props.showDeployment ?? true}
+            onClick={props.onToggleDeployment}
+            sx={{
+              color: (props.showDeployment ?? true) ? 'primary.main' : 'text.secondary',
+              backgroundColor: (props.showDeployment ?? true)
+                ? alpha(theme.palette.primary.main, 0.12)
+                : 'transparent',
+            }}
+          >
+            <DeploymentIcon />
+          </IconButton>
+        </Tooltip>
+      )}
       <Popover
         open={Boolean(legendAnchor)}
         anchorEl={legendAnchor}

@@ -383,6 +383,15 @@ export interface EditorActions {
    */
   setAutoRoute(on: boolean): void;
   /**
+   * Whether this container diagram draws the deployment boxes (ADR-0013):
+   * the platforms its containers run on, around them.
+   *
+   * A view setting, not content, so it is `undoable: false` for `setAutoRoute`'s
+   * reason — and persisted per diagram, because a reader who wants the plain
+   * C4 picture wants it every time they open the view.
+   */
+  setShowDeployment(on: boolean): void;
+  /**
    * The day the active diagram shows (ADR-0009); `undefined` means today.
    *
    * Undoable, unlike the routing mode above, and coalesced per diagram: what a
@@ -1351,6 +1360,14 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // switch live routing off (see the action's doc comment).
         dispatch({
           type: 'diagram.update', id: diagram.id, patch: { autoRoute: on }, undoable: false,
+        });
+      },
+
+      setShowDeployment(on) {
+        const diagram = currentDiagram();
+        if (!diagram || (diagram.showDeployment ?? true) === on) return;
+        dispatch({
+          type: 'diagram.update', id: diagram.id, patch: { showDeployment: on }, undoable: false,
         });
       },
 

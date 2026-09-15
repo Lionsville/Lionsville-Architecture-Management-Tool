@@ -199,6 +199,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'export.confirm': 'Exportieren',
   'export.largeConfirm': 'Trotzdem exportieren',
   'toolbar.lifecycleBadges': 'Lebenszyklus-Abzeichen ein- oder ausblenden',
+  'toolbar.deployment': 'Deployment-Rahmen',
   'toolbar.asOf': 'Zeigt',
   'toolbar.asOfToday': 'Heute',
   'toolbar.asOfSet': 'Dieses Board zeigt die Landschaft, wie sie am {date} steht.',

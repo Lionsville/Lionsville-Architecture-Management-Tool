@@ -34,6 +34,10 @@ export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
+/** The platforms a container diagram's containers run on, drawn around them (ADR-0013). */
+export { deploymentBoxes } from './deployment'
+export type { DeploymentBox } from './deployment'
+
 /** Where something runs, and who may say so (ADR-0013). */
 export { containersOf, hostingOf, mayBeHosted } from './hosting'
 export type { Hosting } from './hosting'

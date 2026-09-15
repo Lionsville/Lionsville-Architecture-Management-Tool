@@ -199,6 +199,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'export.confirm': 'Eksportearje',
   'export.largeConfirm': 'Dochs eksportearje',
   'toolbar.lifecycleBadges': 'Libbenssyklusbadges toane of ferbergje',
+  'toolbar.deployment': 'Deploymentramten',
   'toolbar.asOf': 'Toant',
   'toolbar.asOfToday': 'Hjoed',
   'toolbar.asOfSet': 'Dit boerd toant it lânskip sa’t it op {date} is.',

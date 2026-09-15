@@ -208,6 +208,7 @@ export const EN = {
   'export.confirm': 'Export',
   'export.largeConfirm': 'Export anyway',
   'toolbar.lifecycleBadges': 'Toggle lifecycle badges',
+  'toolbar.deployment': 'Deployment boxes',
   'toolbar.asOf': 'Showing',
   'toolbar.asOfToday': 'Today',
   'toolbar.asOfSet': 'This board shows the landscape as it stands on {date}.',
