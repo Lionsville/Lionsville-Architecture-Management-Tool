@@ -61,8 +61,7 @@ export const EN = {
   // --- context menus -------------------------------------------------------
   'menu.openContainer': 'Open container diagram',
   'menu.createContainer': 'Create container diagram',
-  'menu.openTechnology': 'Open technology view',
-  'menu.createTechnology': 'Create technology view',
+  'menu.platformReport': 'Platform report',
   'menu.openOwner': 'Open where it is defined',
   'menu.rename': 'Rename',
   'menu.startConnection': 'Start connection to…',

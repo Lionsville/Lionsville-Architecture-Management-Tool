@@ -412,7 +412,6 @@ describe('canPlaceKind', () => {
     for (const kind of ['application', 'actor', 'step', 'function', 'platform'] as const) {
       expect(canPlaceKind(kind, 'sheet'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
       expect(canPlaceKind(kind, 'map'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
-      expect(canPlaceKind(kind, 'technology'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
     }
   });
 

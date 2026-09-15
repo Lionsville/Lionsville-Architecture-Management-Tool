@@ -85,12 +85,11 @@ export interface EditorDiagramActions {
     onOpenMap?(diagramId: string): void;
     onCreateMap?(): void;
     /**
-     * A technology view, the third laid-out view (ADR-0013): open one, and
-     * make one about a platform. As the map's, with the platform named
-     * because a view of nothing has nothing to draw.
+     * A platform's report (ADR-0013, redone): what would be left standing if
+     * it went. Not a view — there is nothing to make and nothing in the tab
+     * strip — so this takes the platform, and the host draws the page.
      */
-    onOpenTechnology?(diagramId: string): void;
-    onCreateTechnology?(platformId: string): void;
+    onOpenPlatformReport?(platformId: string): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */

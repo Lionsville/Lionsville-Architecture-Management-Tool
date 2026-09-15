@@ -74,7 +74,6 @@ function view(model: Model, over: Partial<WriteView> = {}): WriteView {
     today: () => '2026-09-07',
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
-    technologyName: (name) => `${name} · technology`,
     ...over,
   }
 }
@@ -1080,23 +1079,11 @@ describe('the physical view (ADR-0013)', () => {
     roundTrip(withPlatforms, commandFor('relation.add', { type: 'hostedOn', sourceId: 'crm', targetId: 'cluster' }, view(withPlatforms)))
   })
 
-  it('makes a technology view about a platform, once, and refuses one about anything else', () => {
-    const first = commandFor('diagram.create', { kind: 'technology', platformId: 'esb' }, view(withPlatforms))
-    expect(answerOf(first)).toMatchObject({ kind: 'technology', name: 'ESB · technology', platformId: 'esb' })
-    const made = roundTrip(withPlatforms, first)
-    const id = made.order.diagrams.find((held) => made.diagrams[held].kind === 'technology')!
-    expect(made.diagrams[id]).toMatchObject({ kind: 'technology', platformId: 'esb' })
-    // Made and left for a person to open, so nothing is switched to.
-    expect(prepared(first).activeDiagramId).toBeUndefined()
-    expect(answerOf(commandFor('diagram.create', { kind: 'technology', platformId: 'esb' }, view(made)))).toMatchObject({ existed: true })
-    expect(commandFor('diagram.create', { kind: 'technology', platformId: 'billing' }, view(withPlatforms)))
+  it('offers no technology view to make: a platform has a report, not a diagram (ADR-0013)', () => {
+    // The first cut made it the fourth laid-out view kind. A table of text is
+    // not a picture, and offering one beside the sheet and the map promised
+    // one; `platform.report` answers the question instead.
+    expect(commandFor('diagram.create', { kind: 'technology', platformId: 'esb' }, view(withPlatforms)))
       .toMatchObject({ refusal: 'agent.badArguments' })
-    expect(commandFor('diagram.create', { kind: 'technology' }, view(withPlatforms)))
-      .toMatchObject({ refusal: 'agent.badArguments' })
-    // Its platform can change, its day can be set, and a sheet's fields are refused.
-    const moved = roundTrip(made, commandFor('diagram.update', { id, platformId: 'cluster', asOf: '2027-01-01' }, view(made)))
-    expect(moved.diagrams[id]).toMatchObject({ platformId: 'cluster', asOf: '2027-01-01' })
-    expect(commandFor('diagram.update', { id, journeyId: 'x' }, view(made))).toMatchObject({ refusal: 'agent.badArguments' })
-    expect(commandFor('diagram.update', { id, platformId: null }, view(made))).toMatchObject({ refusal: 'agent.badArguments' })
   })
 })

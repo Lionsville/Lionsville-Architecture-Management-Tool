@@ -18,9 +18,8 @@ export type DoubleClickTarget =
   | { kind: 'owner'; show: () => void }
   | { kind: 'container'; diagramId: string }
   | { kind: 'newContainer' }
-  /** A platform's own page (ADR-0013): what runs on it and what passes through it. */
-  | { kind: 'technology'; diagramId: string }
-  | { kind: 'newTechnology' };
+  /** A platform's report (ADR-0013): what would be left standing if it went. */
+  | { kind: 'platformReport'; platformId: ElementId };
 
 export function doubleClickTarget(
   model: { elements: readonly DesignElement[]; diagrams: readonly DesignDiagram[] },
@@ -29,13 +28,10 @@ export function doubleClickTarget(
 ): DoubleClickTarget | undefined {
   const element = model.elements.find((e) => e.id === elementId);
   if (!element) return undefined;
-  // What is inside a platform is what stands on it and what passes through
-  // it (ADR-0013) — the technology view, made here whoever defines the
-  // platform, because the rows it draws are this scope's own.
-  if (element.kind === 'platform') {
-    const view = model.diagrams.find((d) => d.kind === 'technology' && d.platformId === elementId);
-    return view ? { kind: 'technology', diagramId: view.id } : { kind: 'newTechnology' };
-  }
+  // What is inside a platform is what stands on it (ADR-0013). A report and
+  // not a view: it is derived from the rows this scope holds, whoever defines
+  // the platform, so there is nothing to make and nothing to find.
+  if (element.kind === 'platform') return { kind: 'platformReport', platformId: elementId };
   if (element.kind !== 'application') return { kind: 'documentation' };
   if (element.ref !== undefined) {
     const show = ownership?.ownerOf(elementId)?.onShow;

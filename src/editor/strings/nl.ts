@@ -56,8 +56,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'menu.openContainer': 'Containeraanzicht openen',
   'menu.createContainer': 'Containeraanzicht maken',
-  'menu.openTechnology': 'Technologieweergave openen',
-  'menu.createTechnology': 'Technologieweergave maken',
+  'menu.platformReport': 'Platformrapport',
   'menu.openOwner': 'Openen waar het gedefinieerd is',
   'menu.rename': 'Hernoemen',
   'menu.startConnection': 'Koppeling starten naar…',

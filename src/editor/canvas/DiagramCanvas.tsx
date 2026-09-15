@@ -1075,9 +1075,6 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
             hasContainerDiagram: model.diagrams.some(
               (d) => d.kind === 'container' && d.applicationElementId === element.id,
             ),
-            ...(element.kind === 'platform'
-              ? { hasTechnologyView: model.diagrams.some((d) => d.kind === 'technology' && d.platformId === element.id) }
-              : {}),
             ...(element.ref !== undefined ? { standIn: true } : {}),
             isBoundaryApplication:
               diagram.kind === 'container' && diagram.applicationElementId === element.id,

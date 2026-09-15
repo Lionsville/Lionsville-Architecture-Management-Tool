@@ -609,7 +609,7 @@ export interface DesignDiagram {
    * drags, nothing routes, and a deleted geometry file would change nothing
    * about any of them.
    */
-  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology';
+  kind: 'layer7' | 'container' | 'sheet' | 'map';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —
@@ -641,13 +641,6 @@ export interface DesignDiagram {
   /** Whether the exported PNG carries a title block at all. Absent = it does. */
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;
-  /**
-   * A technology view: the platform it is about (ADR-0013) — laid out like a
-   * sheet and a map, from the rows that name it: what is hosted on it, what
-   * uses it, and every flow that passes `via` it, split into what comes in
-   * and what goes out.
-   */
-  platformId?: ElementId;
   /**
    * A sheet: the journey drawn across the top — the `step` at the root of the
    * tree whose phases become the header row (ADR-0012 §6). Absent draws no

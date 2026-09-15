@@ -71,7 +71,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.logoAdded': 'Logo „{name}“ zur eigenen Bibliothek hinzugefügt.',
   'shell.copyOf': '{name} (Kopie)',
   'shell.containerDiagram': '{name} · Container',
-  'shell.technologyView': '{name} · Technologie',
   'shell.deleteDiagramTitle': 'Ansicht „{name}“ löschen?',
   'shell.lastLandscape': 'Dies ist die letzte Landschaft; sie kann nicht gelöscht werden.',
   'shell.deleteLandscapeBody':

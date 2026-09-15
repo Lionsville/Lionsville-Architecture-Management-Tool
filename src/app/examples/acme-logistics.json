@@ -82,16 +82,6 @@
     "- The warehouse system stops booking dock doors once the yard system does; until then both do, which is the plan's shadow run.",
     ""
   ],
-  "application-landscape/diagrams/esb-technology.geometry.json": {
-    "nodes": []
-  },
-  "application-landscape/diagrams/esb-technology.json": {
-    "id": "esb-technology",
-    "kind": "technology",
-    "members": [],
-    "name": "Enterprise bus · technology",
-    "platformId": "esb"
-  },
   "application-landscape/diagrams/landscape-2027.geometry.json": {
     "needsLayout": true,
     "nodes": []
@@ -2076,8 +2066,7 @@
     "diagrams": [
       "landscape",
       "landscape-2027",
-      "wms-containers",
-      "esb-technology"
+      "wms-containers"
     ],
     "interchange": {
       "formatVersion": "1"

@@ -109,7 +109,6 @@ function session(over: Partial<SessionView> = {}): SessionView & { model: () => 
     today: () => '2026-09-13',
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
-    technologyName: (name) => `${name} · technology`,
     revision: () => revision,
     history: () => past,
     undo: () => {},

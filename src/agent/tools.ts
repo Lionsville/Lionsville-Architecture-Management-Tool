@@ -400,6 +400,22 @@ const SPECS = [
     inputSchema: { type: 'object', properties: { id: PLAN_ID }, required: ['id'], additionalProperties: false },
   },
   {
+    name: 'platform.report',
+    tier: 'read',
+    description:
+      'One platform, and what would be left standing if it went (ADR-0013): what is filed under it, what it '
+      + 'stands on, what runs on it — the containers, each named beside its application, and the applications '
+      + 'that have no containers and say where they run themselves — what uses it, and the container-level '
+      + 'interfaces that cross it, each with the application-level interface it is part of. A report, not a '
+      + 'view: there is no diagram to inspect or render.',
+    inputSchema: {
+      type: 'object',
+      properties: { platformId: ID('platform') },
+      required: ['platformId'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'roadmap.check',
     tier: 'read',
     description:
@@ -884,7 +900,7 @@ const SPECS = [
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, or a technology view.', enum: ['layer7', 'container', 'sheet', 'map', 'technology'] },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, or an enterprise map.', enum: ['layer7', 'container', 'sheet', 'map'] },
         name: { type: 'string', description: 'For a landscape, a sheet or a map: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
         platformId: { type: 'string', description: 'For a technology view: the platform it is about.' },
@@ -919,7 +935,6 @@ const SPECS = [
         paper: { type: 'string', description: 'A sheet: the canvas it is laid out on. Null is the default, A2.', enum: ['A4', 'A3', 'A2', 'A1', 'A0', 'fit'] },
         columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the canvas.' },
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
-        platformId: { type: 'string', description: 'A technology view: the platform it is about.' },
         asOf: { type: 'string', description: 'A board or a technology view: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
         colourBy: {
           type: 'string',

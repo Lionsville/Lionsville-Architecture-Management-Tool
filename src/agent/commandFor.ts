@@ -28,7 +28,6 @@ import { HOME_ZONE, zoneForPoint } from '../model/zones'
 import { nodeFigure } from '../model/kinds'
 import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
-import { seedTechnologyDiagram } from '../model/technologyDiagram'
 import { isPlatformCategory } from '../model/relations'
 import { mayBeHosted } from '../model/hosting'
 import { COLOUR_BY } from '../model/overlay'
@@ -69,7 +68,6 @@ export type WriteView = ReadView & {
   /** What a container view is called, after its application. The shell owns the words. */
   readonly containerName: (applicationName: string) => string
   /** What a technology view is called, after its platform (ADR-0013). */
-  readonly technologyName: (platformName: string) => string
   /**
    * Does another scope answer for the fields this patch touches (ADR-0012 §10)?
    *
@@ -1235,7 +1233,7 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   const id = args.id as string
   const diagram = model.diagrams[id]
   if (!diagram) return refused('agent.unknownId', `diagram ${id}`)
-  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map' || diagram.kind === 'technology'
+  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map'
   const patch: Record<string, unknown> = {}
 
   const only = (field: string, allowed: boolean, what: string): AgentAnswer | undefined =>
@@ -1247,8 +1245,7 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     ?? only('areaSpans', diagram.kind === 'sheet', 'a sheet')
     ?? only('paper', diagram.kind === 'sheet', 'a sheet')
     ?? only('areas', diagram.kind === 'sheet' || diagram.kind === 'map', 'a sheet or a map')
-    ?? only('platformId', diagram.kind === 'technology', 'a technology view')
-    ?? only('asOf', !laidOut || diagram.kind === 'technology', 'a board or a technology view')
+    ?? only('asOf', !laidOut, 'a board')
     ?? only('showDeployment', diagram.kind === 'container', 'a container diagram')
     ?? only('colourBy', diagram.kind === 'layer7', 'a landscape')
   if (wrong) return wrong
@@ -1267,15 +1264,6 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   // the view too.
   if (typeof args.showDeployment === 'boolean') patch.showDeployment = args.showDeployment
   else if (args.showDeployment === null) patch.showDeployment = undefined
-
-  if (typeof args.platformId === 'string') {
-    const platform = model.elements[args.platformId]
-    if (!platform) return refused('agent.unknownId', `element ${args.platformId}`)
-    if (platform.kind !== 'platform') return refused('agent.badArguments', '"platformId" must name a platform')
-    patch.platformId = args.platformId
-  } else if (args.platformId === null || args.platformId === '') {
-    return refused('agent.badArguments', 'a technology view is about a platform; name another rather than none')
-  }
 
   if (args.journeyId === null || args.journeyId === '') patch.journeyId = undefined
   else if (typeof args.journeyId === 'string') {
@@ -1368,25 +1356,6 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     return {
       command: { type: 'diagram.create', diagram: toDiagram(map), origin: 'agent' },
       answer: json({ id: map.id, kind: 'map', name }),
-    }
-  }
-  if (args.kind === 'technology') {
-    const platformId = args.platformId as string | undefined
-    if (!platformId) return refused('agent.badArguments', '"platformId" is required for a technology view')
-    const platform = model.elements[platformId]
-    if (!platform) return refused('agent.unknownId', `element ${platformId}`)
-    if (platform.kind !== 'platform') return refused('agent.badArguments', '"platformId" must name a platform')
-    const existing = model.order.diagrams.find((id) =>
-      model.diagrams[id].kind === 'technology' && model.diagrams[id].platformId === platformId)
-    if (existing) {
-      return { command: transaction([]), answer: json({ id: existing, kind: 'technology', name: model.diagrams[existing].name, existed: true }) }
-    }
-    const diagram = seedTechnologyDiagram(toArrays(model), platformId, { id: view.makeId('tv'), name: view.technologyName })
-    if (!diagram) return refused('agent.unknownId', `element ${platformId}`)
-    // Laid out, like a sheet: made and left for a person to open.
-    return {
-      command: { type: 'diagram.create', diagram: toDiagram(diagram), origin: 'agent' },
-      answer: json({ id: diagram.id, kind: 'technology', name: diagram.name, platformId }),
     }
   }
   if (args.kind === 'layer7') {

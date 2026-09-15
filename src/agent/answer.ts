@@ -17,6 +17,8 @@ import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
 import { decisionsOf, groupsOf, placedList, placedOn, toArrays, transitionList } from '../model/normalised'
 import { hostingOf } from '../model/hosting'
+import { platformReport } from '../model/platformReport'
+import type { PlatformEnd } from '../model/platformReport'
 import { today } from '../model/lifecycle'
 import { findTransition, transitionLabel } from '../model/transition'
 import type { Transition } from '../model/transition'
@@ -36,7 +38,8 @@ import type { TreeView } from './tree'
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
-  | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'>
+  | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
+  | 'platform.report'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -224,6 +227,47 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         // Said in the answer, not only in the tool's description: an agent that
         // reads an empty list must not conclude the landscape is current.
         note: 'These are contradictions between dates. They cannot tell you whether a landscape is out of date.',
+      })
+    }
+
+    /**
+     * One platform, and what would be left standing if it went (ADR-0013).
+     *
+     * A report and not a view: the first cut made it the fourth laid-out view
+     * kind, which promised a picture and gave a table. Answered here so an
+     * agent reads exactly what the person reading the page reads.
+     */
+    case 'platform.report': {
+      const id = args.platformId as string
+      const platform = model.elements[id]
+      if (!platform) return refused('agent.unknownId', `element ${id}`)
+      if (platform.kind !== 'platform') {
+        return refused('agent.badArguments', `${id} is a ${platform.kind}, not a platform`)
+      }
+      const report = platformReport(view.current(), id, { today: today() })!
+      const end = (one: PlatformEnd) => ({
+        id: one.id,
+        name: one.name,
+        known: one.known,
+        ...(one.kind !== undefined ? { kind: one.kind } : {}),
+        ...(one.application !== undefined ? { application: one.application } : {}),
+      })
+      return json({
+        platform: { id: report.platform.id, name: report.platform.name, platformCategory: report.platform.platformCategory },
+        children: report.children.map(end),
+        standsOn: report.standsOn.map(end),
+        hosted: report.hosted.map(end),
+        users: report.users.map(end),
+        landings: report.landings.map((landing) => ({
+          id: landing.relation.id,
+          source: end(landing.source),
+          target: end(landing.target),
+          on: end(landing.on),
+          ...(landing.relation.protocol !== undefined ? { protocol: landing.relation.protocol } : {}),
+          ...(landing.relation.technology !== undefined ? { technology: landing.relation.technology } : {}),
+          ...(landing.partOf !== undefined ? { partOf: landing.partOf } : {}),
+        })),
+        counts: report.counts,
       })
     }
 

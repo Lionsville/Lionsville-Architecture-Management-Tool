@@ -145,8 +145,6 @@ export interface ElementMenuFacts {
   /** Which dashed group it is filed under, by id. */
   group?: string;
   hasContainerDiagram: boolean;
-  /** A platform: whether its technology view already exists (ADR-0013). */
-  hasTechnologyView?: boolean;
   /**
    * Another scope defines it (ADR-0012 §3): what is inside it is shown
    * there, so the entry that opens or makes a container diagram opens the
@@ -332,16 +330,13 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
       items.push({ id: 'open-container', label: t('menu.createContainer'), action: 'open-container' });
     }
   }
-  // A platform's inside is what stands on it and what passes through it
-  // (ADR-0013): the same entry, and the same action, because both open what
-  // a double-click opens. Made here whoever defines the platform, because
-  // the rows the page draws are this scope's own.
+  // What is on a platform, and what would be left standing if it went
+  // (ADR-0013, redone): the same entry and the same action as a container
+  // diagram's, because both open what a double-click opens. Always offered —
+  // a report is derived, so there is nothing to make and nothing missing, and
+  // a reader may read it.
   if (el.kind === 'platform') {
-    if (el.hasTechnologyView) {
-      items.push({ id: 'open-container', label: t('menu.openTechnology'), action: 'open-container' });
-    } else if (!ctx.readOnly) {
-      items.push({ id: 'open-container', label: t('menu.createTechnology'), action: 'open-container' });
-    }
+    items.push({ id: 'open-container', label: t('menu.platformReport'), action: 'open-container' });
   }
   if (ctx.readOnly) return items;
 

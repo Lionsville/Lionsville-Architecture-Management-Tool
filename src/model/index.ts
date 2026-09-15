@@ -79,11 +79,12 @@ export { boardsDrawing } from './drawnOn'
 /** What a container diagram holds, and what it draws once an interface lands. */
 export { hoistedEnd, landedInterfaces } from './containerDiagram'
 
-/** One platform, with everything on it (ADR-0013). */
-export { findTechnologyDiagram, seedTechnologyDiagram, technologyPage } from './technologyDiagram'
+/** One platform, and what would be left standing if it went (ADR-0013). */
+export { platformReport } from './platformReport'
 export type {
-  LaidOutTechnology, TechnologyDescribe, TechnologyDescription, TechnologyEnd, TechnologyOptions,
-} from './technologyDiagram'
+  PlatformDescribe, PlatformDescription, PlatformEnd, PlatformLanding, PlatformReport,
+  PlatformReportOptions,
+} from './platformReport'
 
 /** What the dates in a landscape contradict (ADR-0009). */
 export { findings } from './checks'

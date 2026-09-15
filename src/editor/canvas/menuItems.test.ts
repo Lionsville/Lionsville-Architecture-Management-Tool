@@ -98,12 +98,14 @@ describe('menuItemsFor — node', () => {
     expect(byId(items, 'open-container').action).toBe('open-container');
   });
 
-  it('offers a platform its technology view, to open or to make (ADR-0013)', () => {
-    const make = menuItemsFor(NODE, ctx({ element: app({ kind: 'platform', zone: 'management' }) }));
-    expect(byId(make, 'open-container').label).toBe('Create technology view');
-    const open = menuItemsFor(NODE, ctx({ element: app({ kind: 'platform', zone: 'management', hasTechnologyView: true }) }));
-    expect(byId(open, 'open-container').label).toBe('Open technology view');
-    expect(byId(open, 'open-container').action).toBe('open-container');
+  it('offers a platform its report, always (ADR-0013)', () => {
+    // Derived from the rows, so there is nothing to make and nothing missing —
+    // and a reader may read it.
+    const items = menuItemsFor(NODE, ctx({ element: app({ kind: 'platform', zone: 'management' }) }));
+    expect(byId(items, 'open-container').label).toBe('Platform report');
+    expect(byId(items, 'open-container').action).toBe('open-container');
+    const reading = menuItemsFor(NODE, ctx({ readOnly: true, element: app({ kind: 'platform', zone: 'management' }) }));
+    expect(byId(reading, 'open-container').label).toBe('Platform report');
   });
 
   it('offers no container entry for a non-application', () => {
