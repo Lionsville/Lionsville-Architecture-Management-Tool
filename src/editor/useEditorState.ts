@@ -272,6 +272,15 @@ export interface EditorActions {
   /** A landing stops being part of its interface, and stays as an interface of its own. */
   detachLanding(relationId: string): void;
   /**
+   * Where this container runs (ADR-0013): one platform, as one step.
+   *
+   * An existing row is MOVED rather than replaced, so its window and anything
+   * else on it rides along; `undefined` takes the row off. A second row from
+   * the same container is a migration window the model allows and this does
+   * not write — the record shows the first and says there are more.
+   */
+  setHostedOn(elementId: ElementId, platformId: ElementId | undefined): void;
+  /**
    * Paste a clipboard snapshot onto the active diagram: mints the keys the
    * copies will have in the file, remaps references (parent, endpoints),
    * offsets placements, then selects the pasted set.
@@ -987,6 +996,25 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const relation = currentModel().relations.find((c) => c.id === relationId);
         if (!relation || relation.refines === undefined) return;
         dispatch({ type: 'relation.update', id: relationId, patch: { refines: undefined } });
+      },
+
+      setHostedOn(elementId, platformId) {
+        const model = currentModel();
+        const held = model.relations.find((c) => c.type === 'hostedOn' && c.sourceId === elementId);
+        if (platformId === undefined) {
+          if (held) dispatch({ type: 'relation.delete', id: held.id });
+          return;
+        }
+        if (held) {
+          if (held.targetId !== platformId) {
+            dispatch({ type: 'relation.update', id: held.id, patch: { targetId: platformId } });
+          }
+          return;
+        }
+        dispatch({
+          type: 'relation.create',
+          relation: { id: ids.connection(), type: 'hostedOn', sourceId: elementId, targetId: platformId },
+        });
       },
 
       pasteClipboard(payload, offset) {

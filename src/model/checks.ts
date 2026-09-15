@@ -207,9 +207,20 @@ export function findings({ model, today }: CheckContext): Finding[] {
     const platform = standingOn(relation.targetId, relation)
     if (!thing || !platform) continue
     if (phaseAt(thing, retiredOn(platform)!) === 'retired') continue
+    // Reported on the application, by name, because that is what a person is
+    // looking for — and a container's row says WHICH of its containers is
+    // standing on nothing (ADR-0013, redone). A container whose application is
+    // already gone by then goes with it.
+    const parent = thing.kind === 'component' && thing.parentId !== undefined
+      ? byId.get(thing.parentId)
+      : undefined
+    if (parent && phaseAt(parent, retiredOn(platform)!) === 'retired') continue
     found.push({
-      kind: 'platformRetiresFirst', subject: 'element', id: thing.id, name: thing.name,
-      detail: platform.name, relationType: relation.type,
+      kind: 'platformRetiresFirst', subject: 'element',
+      id: parent?.id ?? thing.id,
+      name: parent?.name ?? thing.name,
+      detail: parent ? `${platform.name} · ${thing.name}` : platform.name,
+      relationType: relation.type,
     })
   }
 

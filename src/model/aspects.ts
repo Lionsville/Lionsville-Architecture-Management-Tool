@@ -1,4 +1,5 @@
 import type { AspectConfigEntry, DesignDiagram, DesignElement, ElementId, Relation } from './types';
+import { hostingOf } from './hosting';
 
 /**
  * The Lionsville aspect superset: every standard operational aspect a layer7
@@ -50,9 +51,12 @@ export function derivedPlatformAspect(
     model.elements.filter((held) => held.kind === 'platform').map((held) => [held.id, held]),
   );
   if (platforms.size === 0) return undefined;
-  const on = model.relations
-    .filter((row) => row.type === 'hostedOn' && row.sourceId === element.id)
-    .map((row) => platforms.get(row.targetId))
+  // The roll-up, not the element's own rows (ADR-0013, redone): an application
+  // does not run anywhere, the things it is made of do, and the badge has to
+  // say what they say or it says nothing anybody typed and nothing that is
+  // true either.
+  const on = hostingOf(model, element.id).platformIds
+    .map((id) => platforms.get(id))
     .filter((held): held is DesignElement => held !== undefined);
   if (on.length === 0) return { status: 'none', note: '', derived: true };
   const inside = on.filter((held) => !held.outside);

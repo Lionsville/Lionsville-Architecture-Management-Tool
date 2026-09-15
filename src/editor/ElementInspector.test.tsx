@@ -49,15 +49,17 @@ function makeActions(): {
   actions: EditorActions;
   updateElement: ReturnType<typeof vi.fn>;
   setDomainGroup: ReturnType<typeof vi.fn>;
+  setHostedOn: ReturnType<typeof vi.fn>;
 } {
   const updateElement = vi.fn();
   const setDomainGroup = vi.fn();
-  const actions = new Proxy({ updateElement, setDomainGroup } as Record<string | symbol, unknown>, {
+  const setHostedOn = vi.fn();
+  const actions = new Proxy({ updateElement, setDomainGroup, setHostedOn } as Record<string | symbol, unknown>, {
     get(target, prop) {
       return target[prop] ?? vi.fn();
     },
   }) as unknown as EditorActions;
-  return { actions, updateElement, setDomainGroup };
+  return { actions, updateElement, setDomainGroup, setHostedOn };
 }
 
 function renderInspector(
@@ -71,16 +73,22 @@ function renderInspector(
     layout?: 'tabs' | 'stacked';
     onOpenDocumentation?: (id: string) => void;
     others?: DesignElement[];
+    /** Rows the model holds — what the hosting roll-up is read from (ADR-0013). */
+    relations?: DesignModel['relations'];
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
-  const { actions, updateElement, setDomainGroup } = makeActions();
+  const { actions, updateElement, setDomainGroup, setHostedOn } = makeActions();
   const m = model(el, dia);
   const view = render(
     <ThemeProvider theme={createTheme()}>
       <ElementInspector
         element={el}
-        model={{ ...m, elements: [...m.elements, ...(opts.others ?? [])] }}
+        model={{
+          ...m,
+          elements: [...m.elements, ...(opts.others ?? [])],
+          relations: opts.relations ?? [],
+        }}
         diagram={dia}
         readOnly={opts.readOnly ?? false}
         actions={actions}
@@ -92,7 +100,7 @@ function renderInspector(
       />
     </ThemeProvider>,
   );
-  return { ...view, updateElement, setDomainGroup };
+  return { ...view, updateElement, setDomainGroup, setHostedOn };
 }
 
 const tab = (name: 'General' | 'Appearance' | 'Data') =>
@@ -540,5 +548,72 @@ describe('ElementInspector — the record on the page', () => {
   it('reads the party back into the panel\'s one line', () => {
     renderInspector(element({ outside: true, partyId: 'p1' }), { others: [actor('p1', 'ProRail')] });
     expect(screen.getByTestId('record-summary').textContent).toContain('Outside · ProRail');
+  });
+});
+
+
+/**
+ * Where it runs (ADR-0013, redone).
+ *
+ * A container says it; an application with containers is TOLD what they say,
+ * because it is not deployed anywhere itself, and one with no containers says
+ * it too. The control the reader is given is the whole of the difference.
+ */
+describe('ElementInspector — where it runs (ADR-0013)', () => {
+  const platform = (id: string, name: string): DesignElement =>
+    ({ id, kind: 'platform', name, lifecycle: 'live', isManaged: true, aspects: {} });
+  const openshift = platform('openshift', 'OpenShift');
+  const ns = platform('ns', 'Logistics namespace');
+  const container = (id: string, parentId: string): DesignElement =>
+    ({ id, kind: 'component', parentId, name: id, lifecycle: 'live', isManaged: true, aspects: {} });
+
+  it('gives a container the select, and writes the one platform it is told', () => {
+    const api = container('wms-api', 'wms');
+    const { setHostedOn } = renderInspector(api, { others: [openshift, ns] });
+    fireEvent.mouseDown(screen.getByLabelText('Hosted on'));
+    fireEvent.click(within(screen.getByRole('listbox')).getByText('Logistics namespace'));
+    expect(setHostedOn).toHaveBeenCalledWith('wms-api', 'ns');
+  });
+
+  it('tells an application with containers what they say, read only', () => {
+    const wms: DesignElement = { id: 'wms', kind: 'application', name: 'WMS', lifecycle: 'live', isManaged: true, aspects: {} };
+    renderInspector(wms, {
+      others: [openshift, ns, container('wms-api', 'wms'), container('wms-db', 'wms')],
+      relations: [
+        { id: 'h1', type: 'hostedOn', sourceId: 'wms-api', targetId: 'ns' },
+        { id: 'h2', type: 'hostedOn', sourceId: 'wms-db', targetId: 'openshift' },
+      ],
+    });
+    expect(screen.queryByLabelText('Hosted on')).toBeNull();
+    expect(screen.getByTestId('element-runs-on').textContent)
+      .toContain('Logistics namespace, OpenShift (2 containers)');
+  });
+
+  it('gives the select to an application with no containers — a SaaS service says it itself', () => {
+    const portal: DesignElement = { id: 'portal', kind: 'application', name: 'Portal', lifecycle: 'live', isManaged: true, aspects: {} };
+    renderInspector(portal, { others: [openshift] });
+    expect(screen.getByLabelText('Hosted on')).toBeDefined();
+  });
+
+  it('shows the first of several and says there are more — a migration window', () => {
+    const api = container('wms-api', 'wms');
+    renderInspector(api, {
+      others: [openshift, ns],
+      relations: [
+        { id: 'h1', type: 'hostedOn', sourceId: 'wms-api', targetId: 'ns' },
+        { id: 'h2', type: 'hostedOn', sourceId: 'wms-api', targetId: 'openshift' },
+      ],
+    });
+    expect(screen.getByText('It also runs on 1 more — a migration window')).toBeTruthy();
+  });
+
+  it('asks nothing at all in a scope that holds no platform', () => {
+    renderInspector(container('wms-api', 'wms'));
+    expect(screen.queryByLabelText('Hosted on')).toBeNull();
+  });
+
+  it('is read-only where the panel is', () => {
+    renderInspector(container('wms-api', 'wms'), { others: [openshift], readOnly: true });
+    expect(selectDisabled('Hosted on')).toBe(true);
   });
 });

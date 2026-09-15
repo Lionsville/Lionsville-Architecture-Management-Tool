@@ -41,6 +41,7 @@ import type { Transition } from './transition'
 import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from './normalised'
 import { boxesOf, decisionsOf, groupsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
+import { mayBeHosted } from './hosting'
 import { refinementRefusal } from './refines'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect, EdgeRoute,
@@ -58,6 +59,8 @@ export type CommandRefusal =
   | 'command.refinesEnds'
   /** A landing on a line that is itself a landing: an interface lands once. */
   | 'command.refinesLevel'
+  /** Where an application with containers runs is its containers' to say (ADR-0013). */
+  | 'command.hostedOnContainers'
 
 export type ApplyResult =
   | { ok: true; model: Model; inverse: Command }
@@ -287,7 +290,7 @@ export function apply(model: Model, command: Command): ApplyResult {
       // tree knows — an organisation's capability supported by a landscape's
       // application. Neither end held is a row about nothing.
       if (!model.elements[relation.sourceId] && !model.elements[relation.targetId]) return gone
-      const refused = landingRefusal(model, relation)
+      const refused = landingRefusal(model, relation) ?? hostingRefusal(model, relation)
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, relation.id, relation, at)
       return landed(
@@ -302,7 +305,7 @@ export function apply(model: Model, command: Command): ApplyResult {
       const held = model.relations[command.id]
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
-      const refused = landingRefusal(model, row)
+      const refused = landingRefusal(model, row) ?? hostingRefusal(model, row)
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, command.id, row)
       return landed(
@@ -853,6 +856,21 @@ function landingRefusal(model: Model, row: Relation): { ok: false; reason: Comma
   if (!refined) return gone
   const refusal = refinementRefusal(row, refined, (id) => model.elements[id])
   return refusal ? REFINES_REFUSAL[refusal] : undefined
+}
+
+/**
+ * Whether this row may say where something runs (ADR-0013, redone).
+ *
+ * An application with containers does not run anywhere — the things it is made
+ * of do — so a `hostedOn` from one is refused rather than kept as a second
+ * answer beside theirs. An application with none says it itself, which is the
+ * only sentence anybody can write about a vendor-hosted service.
+ */
+function hostingRefusal(model: Model, row: Relation): { ok: false; reason: CommandRefusal } | undefined {
+  if (row.type !== 'hostedOn') return undefined
+  return mayBeHosted(Object.values(model.elements), row.sourceId)
+    ? undefined
+    : { ok: false, reason: 'command.hostedOnContainers' }
 }
 
 /**

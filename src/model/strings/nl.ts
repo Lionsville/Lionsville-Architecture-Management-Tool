@@ -60,6 +60,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'command.datesOutOfOrder': 'Deze datums lopen terug: een applicatie kan niet uitgefaseerd zijn voordat zij live gaat.',
   'command.refinesEnds': 'Een koppelvlak op containerniveau moet onder het koppelvlak vallen waar het deel van is: beide uiteinden onder de bijbehorende uiteinden daarvan.',
   'command.refinesLevel': 'Dat koppelvlak is zelf al onderdeel van een ander. Een koppelvlak landt één keer.',
+  'command.hostedOnContainers': 'Een applicatie met containers draait waar haar containers draaien. Zeg het op de container.',
   'restore.absentThen': 'Dit stond bij die momentopname niet in het project.',
   'restore.absentNow': 'Het element staat niet meer in het project; zet het hele project terug om het terug te halen.',
   'restore.locked': 'Dit besluit is aanvaard, afgewezen of vervangen, en een afgesloten record wordt niet gewijzigd. Schrijf een nieuw besluit dat het vervangt.',

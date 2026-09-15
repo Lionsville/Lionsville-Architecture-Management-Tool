@@ -15,6 +15,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
+import { hostingOf, mayBeHosted } from '../model/hosting';
 import { PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, platformCategoryOf } from '../model/relations';
 import type { PlatformCategory } from '../model/types';
 import { LogoGrid } from './nodes/LogoGrid';
@@ -235,6 +236,12 @@ export function ElementInspector(props: ElementInspectorProps) {
   const derivedPlatform = aspectConfig.some((entry) => entry.key === 'platform')
     ? derivedPlatformAspect(element, props.model)
     : undefined;
+  // Where it runs, and what it could run on (ADR-0013, redone). The platforms
+  // this scope holds, definitions and stand-ins both: a shared cluster is
+  // drawn here and defined in the platform scope.
+  const platforms = props.model.elements.filter((held) => held.kind === 'platform');
+  const hosting = hostingOf(props.model, element.id);
+  const nameOfPlatform = (id: ElementId) => props.model.elements.find((held) => held.id === id)?.name ?? id;
   const showAspects = element.kind === 'application';
 
   const generalHasValues = Boolean(
@@ -388,6 +395,46 @@ export function ElementInspector(props: ElementInspectorProps) {
                 <MenuItem key={category} value={category}>{t(PLATFORM_CATEGORY_LABEL[category])}</MenuItem>
               ))}
             </TextField>
+          )}
+
+          {/* Where it runs (ADR-0013, redone). A container says it; an
+              application with containers is told what they say, because it is
+              not deployed anywhere itself; one with no containers — an outside
+              system, a SaaS service, a bought package — says it too, which is
+              the only sentence anybody can write about it. */}
+          {(element.kind === 'component' || element.kind === 'application') && platforms.length > 0 && (
+            mayBeHosted(props.model.elements, element.id) ? (
+              <Box>
+                <TextField
+                  select
+                  fullWidth
+                  label={t('field.hostedOn')}
+                  value={hosting.platformIds[0] ?? ''}
+                  disabled={readOnly || owned('hostedOn')}
+                  helperText={hosting.platformIds.length > 1
+                    ? t('field.hostedOnSeveral', { count: String(hosting.platformIds.length - 1) })
+                    : t('field.hostedOnHelp')}
+                  onChange={(e) => actions.setHostedOn(element.id, e.target.value || undefined)}
+                >
+                  <MenuItem value="">{t('common.none')}</MenuItem>
+                  {platforms.map((platform) => (
+                    <MenuItem key={platform.id} value={platform.id}>{platform.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            ) : (
+              <Box data-testid="element-runs-on">
+                <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.runsOn')}</Typography>
+                <Typography sx={{ fontSize: 13 }}>
+                  {hosting.platformIds.length === 0
+                    ? t('field.runsOnNothing')
+                    : t('field.runsOnContainers', {
+                      names: hosting.platformIds.map((id) => nameOfPlatform(id)).join(', '),
+                      count: String(hosting.containers),
+                    })}
+                </Typography>
+              </Box>
+            )
           )}
 
           {element.kind === 'application' && (

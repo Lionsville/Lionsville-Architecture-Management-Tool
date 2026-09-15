@@ -60,6 +60,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'command.datesOutOfOrder': 'Dizze datums rinne werom: in applikaasje kin net ôfboud wêze foardat se live giet.',
   'command.refinesEnds': 'In keppelflak op containernivo moat ûnder it keppelflak falle dêr\'t it diel fan is: beide einen ûnder de byhearrende einen dêrfan.',
   'command.refinesLevel': 'Dat keppelflak is sels al ûnderdiel fan in oar. In keppelflak lânet ien kear.',
+  'command.hostedOnContainers': 'In applikaasje mei containers rint dêr\'t har containers rinne. Sis it op de container.',
   'restore.absentThen': 'Dit stie by dy momintopname net yn it projekt.',
   'restore.absentNow': 'It elemint stiet net mear yn it projekt; set it hiele projekt werom om it werom te heljen.',
   'restore.locked': 'Dit beslút is oannommen, ôfwiisd of ferfongen, en in ôfsletten record wurdt net wizige. Skriuw in nij beslút dat it ferfangt.',

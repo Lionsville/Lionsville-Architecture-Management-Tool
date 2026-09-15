@@ -15,7 +15,8 @@
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import type { Diagram, Model } from '../model/normalised'
-import { decisionsOf, groupsOf, placedList, placedOn, transitionList } from '../model/normalised'
+import { decisionsOf, groupsOf, placedList, placedOn, toArrays, transitionList } from '../model/normalised'
+import { hostingOf } from '../model/hosting'
 import { today } from '../model/lifecycle'
 import { findTransition, transitionLabel } from '../model/transition'
 import type { Transition } from '../model/transition'
@@ -120,6 +121,13 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         // inside whatever kind it is (ADR-0012 §3) — a component's
         // application, a function's area, a step's phase, an actor's group.
         parent: element.parentId ? nameOf(model, element.parentId) : undefined,
+        // Where it runs (ADR-0013, redone). An application answers with the
+        // roll-up over its components, because that is where the rows are and
+        // an application is not deployed anywhere itself; one with no
+        // components answers with its own row, and a component always does.
+        ...(element.kind === 'application' || element.kind === 'component'
+          ? { runsOn: runsOn(model, element.id) }
+          : {}),
         connections: model.order.relations
           .map((id) => model.relations[id])
           .filter((c) => c.sourceId === element.id || c.targetId === element.id)
@@ -471,6 +479,19 @@ function datedBy(model: Model, arrays: HostModel): Map<string, Transition> {
     }
   }
   return out
+}
+
+/**
+ * Where something runs, said the way an agent reads it: the platforms by name,
+ * and where the answer came from (ADR-0013, redone).
+ */
+function runsOn(model: Model, elementId: string) {
+  const hosting = hostingOf(toArrays(model), elementId)
+  return {
+    platforms: hosting.platformIds.map((id) => ({ id, name: nameOf(model, id) })),
+    from: hosting.from,
+    ...(hosting.from === 'containers' ? { containers: hosting.containers } : {}),
+  }
 }
 
 function connectionLine(model: Model, c: Relation, dated?: Map<string, Transition>) {

@@ -183,4 +183,28 @@ describe('the platform aspect, read off the rows (ADR-0013)', () => {
     expect(shown.aspects).toEqual({ dr: { status: 'managed' }, platform: { status: 'managed', note: 'OpenShift', derived: true } });
     expect(typed.aspects).toEqual({ dr: { status: 'managed' } });
   });
+
+  /**
+   * The roll-up, not the element's own row (ADR-0013, redone). An application
+   * does not run anywhere — the things it is made of do — so the badge says
+   * what they say, and a row left on the application from before this rule is
+   * not a second answer beside them.
+   */
+  it('reads an application with containers off its containers', () => {
+    const api = element('orders-api', { kind: 'component', parentId: 'orders' });
+    const model = {
+      elements: [orders, api, cluster],
+      relations: [{ id: 'h1', type: 'hostedOn' as const, sourceId: 'orders-api', targetId: 'cluster' }],
+    };
+    expect(derivedPlatformAspect(orders, model))
+      .toEqual({ status: 'managed', note: 'OpenShift', derived: true });
+    expect(derivedPlatformAspect(api, model))
+      .toEqual({ status: 'managed', note: 'OpenShift', derived: true });
+  });
+
+  it('says none for an application whose containers stand on nothing, whatever its own row says', () => {
+    const api = element('orders-api', { kind: 'component', parentId: 'orders' });
+    const model = { elements: [orders, api, cluster], relations: [hosted('h1', 'cluster')] };
+    expect(derivedPlatformAspect(orders, model)).toEqual({ status: 'none', note: '', derived: true });
+  });
 });

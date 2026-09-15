@@ -286,8 +286,10 @@ describe('apply — relations', () => {
    */
   it.each(RELATION_TYPES)('lands a %s row and gives it back on undo, window and all', (type) => {
     const m = sample()
+    // From the component: an application with components may not say where it
+    // runs, and one type in this list is where it runs (ADR-0013).
     const row: Relation = {
-      id: `r-${type}`, type, sourceId: 'a', targetId: 'c',
+      id: `r-${type}`, type, sourceId: 'c', targetId: 'b',
       validFrom: '2027-03-01', validUntil: '2027-12-31',
     }
     const landed = ok(apply(m, { type: 'relation.create', relation: row }))

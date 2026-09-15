@@ -50,6 +50,22 @@ describe('a platform that retires before what stands on it (ADR-0013)', () => {
     }])
   })
 
+  it('is reported on the application and names the container that is left standing on nothing', () => {
+    // Hosting is a container-level fact (ADR-0013, redone), and a person
+    // looking for the problem is looking for the application.
+    const list = check(
+      [
+        platform('cluster', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'cluster2' }), platform('cluster2'),
+        element('wms'), element('wms-db', { kind: 'component', parentId: 'wms' }),
+      ],
+      [row('h1', 'hostedOn', 'wms-db', 'cluster')],
+    )
+    expect(list.filter((one) => one.kind === 'platformRetiresFirst')).toEqual([{
+      kind: 'platformRetiresFirst', subject: 'element', id: 'wms', name: 'wms',
+      detail: 'cluster · wms-db', relationType: 'hostedOn',
+    }])
+  })
+
   it('is not reported when the thing goes first, or the row closes in time, or the platform is not dated', () => {
     const list = check(
       [

@@ -34,6 +34,10 @@ export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
+/** Where something runs, and who may say so (ADR-0013). */
+export { containersOf, hostingOf, mayBeHosted } from './hosting'
+export type { Hosting } from './hosting'
+
 /** An interface, and where it lands a level down (ADR-0013). */
 export {
   applicationOf, candidateInterfaces, hasRefinements, isApplicationLine, isContainerLine,

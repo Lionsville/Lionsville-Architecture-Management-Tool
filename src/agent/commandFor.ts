@@ -30,6 +30,7 @@ import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
 import { seedTechnologyDiagram } from '../model/technologyDiagram'
 import { isPlatformCategory } from '../model/relations'
+import { mayBeHosted } from '../model/hosting'
 import { acceptImplied, impliedInterfaces } from '../model/implied'
 import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
@@ -231,6 +232,12 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       // trusted, as every other row's far end is.
       if ((type === 'uses' || type === 'hostedOn') && model.elements[targetId] && model.elements[targetId].kind !== 'platform') {
         return refused('agent.badArguments', `${type} ends on a platform; ${targetId} is a ${model.elements[targetId].kind}`)
+      }
+      // Where an application with components runs is its components' to say
+      // (ADR-0013, redone). Refused here as well as by the writer, with the
+      // writer's own key, so a tool call hears the sentence a person hears.
+      if (type === 'hostedOn' && !mayBeHosted(Object.values(model.elements), sourceId)) {
+        return refused('command.hostedOnContainers', `${sourceId} has components; write the row from one of them`)
       }
       const bare: Relation = { id: view.ids.connection(), type, sourceId, targetId }
       const patch = relationPatch(args, bare)

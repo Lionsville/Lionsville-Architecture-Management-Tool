@@ -60,6 +60,7 @@ export const EN = {
   'command.datesOutOfOrder': 'These dates run backwards: an application cannot retire before it goes live.',
   'command.refinesEnds': 'A container interface has to sit under the interface it is part of: its two ends under that interface\'s two ends, each under its own.',
   'command.refinesLevel': 'That interface is itself part of another one. An interface lands once.',
+  'command.hostedOnContainers': 'An application with containers runs where its containers run. Say where on the container instead.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',

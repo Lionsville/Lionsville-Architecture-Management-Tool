@@ -1403,6 +1403,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',
   'command.refinesEnds': 'A container interface has to sit under the interface it refines: source under source, target under target, each end either the same element or a component of it.',
   'command.refinesLevel': 'The interface named by "refines" is itself a refinement. An interface lands once; refine the application-level line instead.',
+  'command.hostedOnContainers': 'An application that has components runs where those run: write the hostedOn row from the component. Only an application with no components — an outside system, a SaaS service, a bought package — says where it runs itself.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

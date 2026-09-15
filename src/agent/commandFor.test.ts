@@ -1061,12 +1061,23 @@ describe('the physical view (ADR-0013)', () => {
     expect(after.elements.cluster.platformCategory).toBe('runtime')
   })
 
-  it('joins an application to what runs it and what it uses, and refuses a row that ends on no platform', () => {
-    const hosted = roundTrip(withPlatforms, commandFor('relation.add', { type: 'hostedOn', sourceId: 'billing', targetId: 'cluster' }, view(withPlatforms)))
-    expect(Object.values(hosted.relations).find((r) => r.type === 'hostedOn')).toMatchObject({ sourceId: 'billing', targetId: 'cluster' })
-    roundTrip(withPlatforms, commandFor('relation.add', { type: 'uses', sourceId: 'api', targetId: 'esb' }, view(withPlatforms)))
-    expect(commandFor('relation.add', { type: 'hostedOn', sourceId: 'billing', targetId: 'crm' }, view(withPlatforms)))
+  it('joins a container to what runs it and an application to what it uses, and refuses a row that ends on no platform', () => {
+    const hosted = roundTrip(withPlatforms, commandFor('relation.add', { type: 'hostedOn', sourceId: 'api', targetId: 'cluster' }, view(withPlatforms)))
+    expect(Object.values(hosted.relations).find((r) => r.type === 'hostedOn')).toMatchObject({ sourceId: 'api', targetId: 'cluster' })
+    roundTrip(withPlatforms, commandFor('relation.add', { type: 'uses', sourceId: 'billing', targetId: 'esb' }, view(withPlatforms)))
+    expect(commandFor('relation.add', { type: 'hostedOn', sourceId: 'api', targetId: 'crm' }, view(withPlatforms)))
       .toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('refuses to say where an application with components runs: that is its components\' to say', () => {
+    // `billing` has `api` filed under it (ADR-0013, redone). The refusal is
+    // the writer's own key, so an agent hears the sentence a person hears.
+    expect(commandFor('relation.add', { type: 'hostedOn', sourceId: 'billing', targetId: 'cluster' }, view(withPlatforms)))
+      .toMatchObject({ refusal: 'command.hostedOnContainers' })
+    // What it USES is still the application's own business.
+    roundTrip(withPlatforms, commandFor('relation.add', { type: 'uses', sourceId: 'billing', targetId: 'cluster' }, view(withPlatforms)))
+    // And an application with no components says where it runs itself.
+    roundTrip(withPlatforms, commandFor('relation.add', { type: 'hostedOn', sourceId: 'crm', targetId: 'cluster' }, view(withPlatforms)))
   })
 
   it('makes a technology view about a platform, once, and refuses one about anything else', () => {
