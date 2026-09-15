@@ -116,7 +116,8 @@ const container = document.getElementById('root')!
 const root = createRoot(container)
 
 /** The one line that chooses what the seams are filled with. */
-let shell = composeShell()
+const browserShell = composeShell()
+let shell = browserShell
 
 /**
  * The desktop's file channel, or nothing at all in a browser tab.
@@ -301,7 +302,11 @@ async function pullOnOpen(): Promise<PullOutcome | undefined> {
  */
 async function moveInto(folder: Shell, root: string): Promise<boolean> {
   if (readMigratedFolders(stored).includes(root)) return false
-  const tally = await migrateInto(shell.scopes, folder.scopes).catch((cause: unknown) => {
+  // From the boot's browser storage and never from `shell`: once a folder is
+  // open, `shell` IS that folder, and *Change…* to an empty one copied the
+  // open organisation into it — five scopes of somebody's landscape, in a
+  // folder chosen to start something else.
+  const tally = await migrateInto(browserShell.scopes, folder.scopes).catch((cause: unknown) => {
     shell.diagnostics.report({
       level: 'error', where: 'migration', message: 'copying into the folder failed', cause,
     })
