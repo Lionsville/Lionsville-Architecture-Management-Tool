@@ -379,8 +379,10 @@ sneltoetsen.
 ## Elementen
 
 Zeven soorten: applicatie, component, extern systeem, invoerkanaal,
-beheertool, actor, en de domeingroep die ze bijeenhoudt. Selecteer er een en de
-**inspector** rechts toont zijn velden in drie tabbladen.
+beheertool, actor, en de domeingroep die ze bijeenhoudt — en, sinds de
+fysieke weergave, een **platform**: een cluster, een broker, een bus, de
+tooling, waar applicaties op draaien en wat ze gebruiken. Selecteer er een en
+de **inspector** rechts toont zijn velden in drie tabbladen.
 
 - **Algemeen.** Naam, categorie, leverancier, technologie, levenscyclus
   (gepland, live, uitfaserend, uitgefaseerd; als badge, uitgefaseerde
@@ -417,6 +419,9 @@ Sleep van het handvat van een element naar een ander, of rechtsklik en kies
 **Verbinding starten naar…**. Een koppeling heeft een label, een protocol (wat
 je maar typt: REST, EDI, Kafka), een richting die de pijlpunten bepaalt, een
 kleur en een lijnstijl. Dubbelklik het label om het ter plekke te bewerken.
+**Via** noemt wat de koppeling draagt — de bus, de gateway, de broker, in
+volgorde — waar de scope een platform bevat; de lijn blijft één lijn, en de
+technologieweergave van het platform vermeldt hem (zie *Technologie*).
 
 Lijnen worden door een echte router om elementen heen gelegd en opnieuw gelegd
 als er iets verschuift. Als automatisch niet is wat je wilt:
@@ -794,6 +799,35 @@ gat.
 Kies een rij en hij opent rechts, zoals op het blad — *Ondersteund door…*
 inbegrepen, zodat een gat gedicht kan worden vanaf de pagina die het toont.
 Kies een kolomkop om de applicatie te openen, waar dit niveau hem heeft.
+
+### Technologie
+
+Waar de applicaties op staan is een **platform**: een cluster, een broker,
+een bus, een firewall, de tooling. Teken er een vanuit de laatste rij van het
+palet en het landt in de beheerlaag als de chip die die laag altijd al
+tekende; geef het een soort in de inspector — runtime, berichtenverkeer,
+integratie, netwerk, data, identiteit, tooling, observability. Een gedeeld
+platform wordt meestal gedefinieerd in een eigen scope en elders getekend als
+plaatsvervanger, zodat het team dat het cluster beheert het record bezit en
+elk landschap zegt dat het erop staat.
+
+Wat waar draait zijn twee rijen: een applicatie **draait op** een platform
+en **gebruikt** de diensten die ze afneemt. Wat een koppelvlak draagt staat op
+de verbinding zelf: **Via**. Daaruit is een **technologieweergave** gemaakt —
+dubbelklik op een platform, of **Technologieweergave maken** in zijn menu, en
+de pagina toont waar het op staat, wat eronder hangt, wat erop draait, wat
+het gebruikt, en elk koppelvlak dat erdoorheen loopt, met links wat binnenkomt
+en rechts wat eruit gaat, hoe het reist (punt-naar-punt, eventgedreven, via
+een bus, via een poort) en de rest van zijn pad. Een naam opent de pagina van
+dat ding waar deze scope het bevat. De weergave wordt uit de rijen opgemaakt,
+dus ze is nooit verouderd; haar tabblad staat bij de andere pagina's.
+
+Twee dingen volgen. De **platform**-badge op een kaart leest uit de rijen
+waar niemand hem heeft gezet — beheerd op je eigen platform, gedeeltelijk op
+een platform buiten de organisatie, geen op niets — en een status die je zelf
+zet wint. En de bevindingen van de roadmap krijgen een regel voor een
+applicatie, of een koppelvlak, die nog op een platform staat nadat dat is
+uitgefaseerd.
 
 ## Zoeken
 

@@ -408,7 +408,9 @@ zeigt jedes Tastenkürzel.
 ## Elemente
 
 Sieben Arten: Anwendung, Komponente, externes System, Eingabekanal,
-Verwaltungswerkzeug, Akteur, und die Domänengruppe, die sie hält. Wählen Sie
+Verwaltungswerkzeug, Akteur, und die Domänengruppe, die sie hält — und, seit
+der physischen Sicht, eine **Plattform**: ein Cluster, ein Broker, ein Bus,
+die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie
 eines aus, und der **Inspektor** rechts zeigt seine Felder in drei Reitern.
 
 - **Allgemein.** Name, Kategorie, Anbieter, Technologie, Lebenszyklus (geplant,
@@ -447,7 +449,10 @@ Ziehen Sie vom Anfasser eines Elements zu einem anderen, oder klicken Sie mit
 rechts und **Verbindung beginnen zu…**. Eine Verbindung trägt eine Beschriftung,
 ein Protokoll (was immer Sie tippen: REST, EDI, Kafka), eine Richtung, die die
 Pfeilspitzen setzt, eine Farbe und einen Linienstil. Doppelklicken Sie die
-Beschriftung, um sie an Ort und Stelle zu bearbeiten.
+Beschriftung, um sie an Ort und Stelle zu bearbeiten. **Über** nennt, was sie
+trägt — der Bus, das Gateway, der Broker, der Reihe nach — wo der Bereich eine
+Plattform enthält; die Linie bleibt eine Linie, und die Technologieansicht der
+Plattform führt sie auf (siehe *Technologie*).
 
 Linien werden von einem echten Router um Elemente herumgeführt und neu
 geführt, wenn sich etwas bewegt. Wenn automatisch nicht das ist, was Sie wollen:
@@ -856,6 +861,37 @@ Wählen Sie eine Zeile, und sie öffnet sich rechts, wie auf dem Blatt —
 *Unterstützt von…* eingeschlossen, sodass eine Lücke von der Seite aus
 geschlossen werden kann, die sie zeigt. Wählen Sie eine Spaltenüberschrift, um
 die Anwendung zu öffnen, wo dieser Bereich sie hält.
+
+### Technologie
+
+Worauf die Anwendungen stehen, ist eine **Plattform**: ein Cluster, ein
+Broker, ein Bus, eine Firewall, die Werkzeuge. Zeichnen Sie eine aus der
+letzten Zeile der Palette, und sie landet in der Verwaltungsebene als der
+Chip, den diese Ebene immer gezeichnet hat; geben Sie ihr im Inspektor eine
+Art — Laufzeit, Messaging, Integration, Netzwerk, Daten, Identität,
+Werkzeuge, Beobachtbarkeit. Eine geteilte Plattform wird meist in einem
+eigenen Bereich definiert und anderswo als Stellvertreter gezeichnet, so dass
+das Team, das den Cluster betreibt, den Datensatz besitzt und jede Landschaft
+sagt, dass sie darauf steht.
+
+Was wo läuft, sind zwei Zeilen: eine Anwendung **läuft auf** einer Plattform
+und **nutzt** die Dienste, die sie bezieht. Was eine Schnittstelle trägt,
+steht auf der Verbindung selbst: **Über**. Daraus besteht eine
+**Technologieansicht** — Doppelklick auf eine Plattform, oder
+**Technologieansicht erstellen** in ihrem Menü, und die Seite zeigt, worauf
+sie steht, was darunter hängt, was darauf läuft, was sie nutzt, und jede
+Schnittstelle, die hindurchläuft, mit dem, was links hereinkommt und rechts
+hinausgeht, wie sie reist (Punkt-zu-Punkt, ereignisgesteuert, über einen
+Bus, über ein Gateway) und dem Rest ihres Pfads. Ein Name öffnet die Seite
+des Dings, wo dieser Bereich es enthält. Die Ansicht wird aus den Zeilen
+gelegt, ist also nie veraltet; ihr Reiter steht bei den anderen Seiten.
+
+Zwei Dinge folgen daraus. Das **Plattform**-Abzeichen auf einer Karte liest
+aus den Zeilen, wo niemand es gesetzt hat — verwaltet auf der eigenen
+Plattform, teilweise auf einer außerhalb der Organisation, keine auf nichts
+— und ein selbst gesetzter Status gewinnt. Und die Befunde der Roadmap
+erhalten eine Zeile für eine Anwendung oder eine Schnittstelle, die noch auf
+einer Plattform steht, nachdem diese abgelöst wurde.
 
 ## Suchen
 

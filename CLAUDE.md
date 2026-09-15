@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4047 tests** and one of every config. The
+One codebase, in modules, with **4177 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4047 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4177 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -148,6 +148,8 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · fromInterchange · toInterchange · containerDiagram
+                    technologyDiagram   one platform, with what stands on it and
+                                      what passes through it (ADR-0013)
                     logo · logoRegistry · marks/    uploads, the icon registry
                     documentImage     a picture a document may hold, and its limits
                     clipboard · equality   what copies, and what counts as the same
@@ -194,6 +196,11 @@ src/business/     The business layer, and the arithmetic over its four trees
                                       up on the sections, the gap on the leaves
                     ui/               SheetPage, MapPage, FunctionInspector,
                                       captureSheet
+src/technology/   The physical view (ADR-0013): a platform's page. Laid out,
+                  never dragged; the arithmetic is the model's, because the
+                  agent asks for it too.
+                    ui/TechnologyPage what runs on it, what uses it, and every
+                                      interface through it, split at the platform
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -561,7 +568,8 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` — and, over the whole tree, `scopes.list` `register.list` `checks.list` |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
-| What a row between two elements is (ADR-0012 §5) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned`; `connect` / `connection.*` are the `flow` ones |
+| What a row between two elements is (ADR-0012 §5, ADR-0013) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones |
+| What a thing IS (ADR-0012 §4, ADR-0013) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform`; a platform carries a `platformCategory` and a flow carries `via`, the platforms it travels over |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
 | Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
@@ -569,7 +577,7 @@ identifiers is still a list of a customer's identifiers.
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
-| The four view kinds (ADR-0012 §6) | `layer7` · `container` drawn on a canvas; `sheet` · `map` **laid out**, no geometry, `areas` shared |
+| The five view kinds (ADR-0012 §6, ADR-0013) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry; a technology view is about one `platformId` |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -1002,3 +1010,18 @@ than making a container diagram here about somebody else's application; and a
 container diagram, which has no tab, is deleted from the boards table on its
 scope's home. `seedPlacement` moved into `model/placement.ts` for all this, so
 the shell and the palette agree on where a new card lands.
+
+Then the model gained the **physical view** (`docs/decisions/0013`). A
+`platform` is the seventh kind — a cluster, a broker, a bus, the tooling,
+with a closed `platformCategory` — drawn on a board as the chip the
+management band always drew; an application or a component is `hostedOn`
+one and `uses` others; and a flow carries `via`, the platforms it travels
+over, so an interface stays one row and the transport pattern is read off
+what carries it rather than stored. The **technology view** is the fourth
+laid-out view: one platform, what stands on it, and every interface through
+it split at the platform — made where the rows are, whoever defines the
+platform, and reached from the platform's card. A platform that retires
+before what stands on it is a finding, and the `platform` badge reads off
+the `hostedOn` rows where nobody typed it. The format did not turn: the
+fields are additive and ride through format 5; the number turns with the
+decision-record change, once.

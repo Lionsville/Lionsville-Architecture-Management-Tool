@@ -375,8 +375,10 @@ fluchtoets.
 ## Eleminten
 
 Sân soarten: applikaasje, komponint, ekstern systeem, ynfierkanaal, beharkark,
-akteur, en de domeingroep dy't se hâldt. Selektearje der ien en de **ynspektor**
-rjochts toant syn fjilden yn trije tabblêden.
+akteur, en de domeingroep dy't se hâldt — en, sûnt de fysike werjefte, in
+**platfoarm**: in kluster, in broker, in bus, de tooling, wêr't applikaasjes
+op draaie en wat se brûke. Selektearje der ien en de **ynspektor** rjochts
+toant syn fjilden yn trije tabblêden.
 
 - **Algemien.** Namme, kategory, leveransier, technology, libbenssyklus (pland,
   aktyf, ôfboud wurdend, ôfboud; toand as badge, ôfboude eleminten wurde
@@ -411,7 +413,10 @@ fuortsmite**. Fuortsmite freget earst, en seit hoefolle ferbiningen meigeane.
 Sleep fan it hânfet fan it iene elemint nei it oare, of rjochtsklik en
 **Ferbining begjinne nei…**. In ferbining draacht in label, in protokol (wat jo
 ek type: REST, EDI, Kafka), in rjochting dy't de pylkpunten bepaalt, in kleur en
-in linestyl. Dûbelklik op it label om it op it plak te bewurkjen.
+in linestyl. Dûbelklik op it label om it op it plak te bewurkjen. **Fia** neamt
+wat it draacht — de bus, de gateway, de broker, op folchoarder — wêr't de scope
+in platfoarm befettet; de line bliuwt ien line, en de technologywerjefte fan it
+platfoarm neamt him (sjoch *Technology*).
 
 Linen wurde troch in echte router om eleminten hinne lein en wurde opnij lein as
 der wat ferskoot. As automatysk net is wat jo wolle:
@@ -794,6 +799,34 @@ fan febrewaris.
 Kies in rige en it iepenet rjochts, lykas op it blêd — *Stipe troch…*
 ynbegrepen, dus in gat kin sletten wurde fan de side ôf dy't it toant. Kies in
 kolomkop om de applikaasje te iepenjen, dêr't dit ûnderdiel him hat.
+
+### Technology
+
+Wêr't de applikaasjes op steane is in **platfoarm**: in kluster, in broker,
+in bus, in firewall, de tooling. Tekenje der ien út de lêste rige fan it
+palet en it lânet yn de beharlaach as de chip dy't dy laach altyd al tekene;
+jou it in soarte yn de ynspektor — runtime, berjochteferkear, yntegraasje,
+netwurk, data, identiteit, tooling, observability. In dield platfoarm wurdt
+meast definiearre yn in eigen scope en earne oars tekene as plakferfanger, sadat
+it team dat it kluster beheart it rekord besit en elk lânskip seit dat it
+derop stiet.
+
+Wat wêr draait binne twa rigen: in applikaasje **draait op** in platfoarm en
+**brûkt** de tsjinsten dy't se ôfnimt. Wat in keppelflak draacht stiet op de
+ferbining sels: **Fia**. Dêrút is in **technologywerjefte** makke — dûbelklik
+op in platfoarm, of **Technologywerjefte meitsje** yn syn menu, en de side
+toant wêr't it op stiet, wat derûnder hinget, wat derop draait, wat it brûkt,
+en elk keppelflak dat derthrochhinne rint, mei links wat ynkomt en rjochts wat
+derút giet, hoe't it reizget (punt-nei-punt, eventdreaun, fia in bus, fia in
+poarte) en de rest fan syn paad. In namme iepenet de side fan dat ding wêr't
+dizze scope it befettet. De werjefte wurdt út de rigen opmakke, dus se is nea
+ferâldere; har tabblêd stiet by de oare siden.
+
+Twa dingen folgje. De **platfoarm**-badge op in kaart lêst út de rigen wêr't
+nimmen him set hat — beheard op jo eigen platfoarm, foar in part op ien
+bûten de organisaasje, gjin op neat — en in status dy't jo sels sette wint. En
+de befiningen fan de roadmap krije in rigel foar in applikaasje, of in
+keppelflak, dy't noch op in platfoarm stiet neidat dat útfasearre is.
 
 ## Sykje
 

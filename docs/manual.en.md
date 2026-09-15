@@ -363,8 +363,10 @@ selection by a grid step, Shift by one pixel. `?` shows every shortcut.
 ## Elements
 
 Seven kinds: application, component, external system, input channel,
-management tool, actor, and the domain group that holds them. Select one and
-the **inspector** on the right shows its fields in three tabs.
+management tool, actor, and the domain group that holds them — and, since
+the physical view, a **platform**: a cluster, a broker, a bus, the tooling,
+what the applications run on and what they use. Select one and the
+**inspector** on the right shows its fields in three tabs.
 
 - **General.** Name, category, vendor, technology, lifecycle (planned, live,
   retiring, retired; shown as a badge, retired elements dim), whether you
@@ -397,7 +399,10 @@ model**. Deleting asks first, and says how many connections go with it.
 Drag from one element's handle to another, or right-click and **Start
 connection to…**. A connection carries a label, a protocol (whatever you type:
 REST, EDI, Kafka), a direction that sets the arrowheads, a colour and a line
-style. Double-click the label to edit it in place.
+style. Double-click the label to edit it in place. **Via** names what carries
+it — the bus, the gateway, the broker, in order — where the scope holds a
+platform; the line stays one line, and the platform's technology view lists
+it (see *Technology*).
 
 Lines are routed around elements by a real router and re-route when something
 moves. When automatic is not what you want:
@@ -757,6 +762,33 @@ supporting something in March is a gap on February's map.
 Pick a row and it opens on the right, as on the sheet — *Supported by…*
 included, so a gap can be closed from the page that shows it. Pick a column
 heading to open the application, where this scope holds it.
+
+### Technology
+
+What the applications stand on is a **platform**: a cluster, a broker, a
+bus, a firewall, the tooling. Draw one from the palette's last row and it
+lands in the management band as the chip that band always drew; give it a
+sort on the inspector — runtime, messaging, integration, network, data,
+identity, tooling, observability. A shared platform is usually defined in a
+scope of its own and drawn elsewhere as a stand-in, so the team that runs
+the cluster owns its record and every landscape says it stands on it.
+
+What runs where is two rows: an application is **hosted on** a platform,
+and **uses** the services it consumes. What carries an interface is on the
+connection itself: **Via**. Those are what a **technology view** is made of
+— double-click a platform, or **Create technology view** on its menu, and
+the page shows what it stands on, what is under it, what runs on it, what
+uses it, and every interface that passes through it with what comes in on
+the left and what goes out on the right, how it travels (point-to-point,
+evented, mediated, gated) and the rest of its path. A name opens the
+thing's page where this scope holds it. The view is laid out from the
+rows, so it is never stale; its tab sits with the other pages.
+
+Two things follow. The **platform** badge on a card reads off the rows
+where nobody set it — managed on your own platform, partial on one outside
+the organisation, none on nothing — and a status you set wins. And the
+roadmap's findings gain a line for an application, or an interface, still
+standing on a platform after it has been retired.
 
 ## Search
 
