@@ -46,7 +46,7 @@ export type SmokeResult = { name: string; ok: boolean; detail: string }
 const STEP_TIMEOUT_MS = 20_000
 
 /**
- * The shipped example, as the smoke knows it: two scopes, and how many
+ * The shipped example, as the smoke knows it: three scopes, and how many
  * applications the landscape defines. The numbers are asserted, not just
  * "more than nothing" — the register answering 20 where 22 were written would
  * be a fold with a hole in it, and the run is where that gets noticed.
@@ -59,8 +59,8 @@ const EXAMPLE = {
   path: 'acme-logistics',
   landscape: 'acme-logistics/application-landscape',
   landscapeName: 'Application landscape',
-  /** The root, the example's organisation, and its landscape. */
-  scopes: 3,
+  /** The root, the example's organisation, its landscape and its platforms (ADR-0013). */
+  scopes: 4,
   applications: 22,
   activeDiagram: 'landscape',
 }

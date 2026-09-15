@@ -41,6 +41,13 @@ const EXAMPLE: ExampleProject = {
     'application-landscape/model.json': { elements: [], relations: [] },
     'application-landscape/diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
     'application-landscape/diagrams/l7.geometry.json': { nodes: [] },
+    // A domain beside the landscape, last in path order and with no board
+    // (ADR-0013): where a copy must NOT land.
+    'platforms/scope.json': {
+      type: 'lionsville-architecture', version: 5, name: 'Shared platforms',
+      kind: 'domain', activeDiagramId: '', diagrams: [],
+    },
+    'platforms/model.json': { elements: [], relations: [] },
   },
 }
 
@@ -251,6 +258,15 @@ describe('useOrganisation', () => {
       expect((await store.load(''))?.model.name).toBe('Globex')
       expect((await store.load('acme-logistics'))?.model.name).toBe('Acme Logistics')
       expect((await store.load('acme-logistics/application-landscape'))).toBeDefined()
+    })
+
+    it('lands in the scope that draws a board, not in the platform scope beside it (ADR-0013)', async () => {
+      const { held, store, entered } = mount()
+      await settle()
+      await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
+      await settle()
+      expect((await store.load('platforms'))?.model.name).toBe('Shared platforms')
+      expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: 'application-landscape' }))
     })
   })
 

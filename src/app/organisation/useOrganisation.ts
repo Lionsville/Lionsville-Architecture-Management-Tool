@@ -525,10 +525,16 @@ export function useOrganisation({
         onFailure('organisation.copyExample', new Error('the example did not read'))
         return
       }
-      const existing = await scopes.load(copy[copy.length - 1].path)
+      // The scope with the work in it is the last one that draws a board —
+      // not the last one in path order, which since ADR-0013 is the platform
+      // scope beside the landscape, a domain with no canvas to land on.
+      const landing = [...copy].reverse()
+        .find((scope) => scope.model.diagrams.some((diagram) => isBoardKind(diagram.kind)))
+        ?? copy[copy.length - 1]
+      const existing = await scopes.load(landing.path)
       if (existing) { onEnter(existing); return }
-      for (const scope of copy.slice(0, -1)) await scopes.save(scope)
-      createAndEnter(copy[copy.length - 1], s('shell.exampleCopied', { name: example.label }))
+      for (const scope of copy) if (scope !== landing) await scopes.save(scope)
+      createAndEnter(landing, s('shell.exampleCopied', { name: example.label }))
     })().catch((cause: unknown) => {
       onFailure('organisation.copyExample', cause)
       onStorageResult(false)
