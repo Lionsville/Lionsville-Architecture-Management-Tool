@@ -29,7 +29,6 @@ function element(id: string, name: string): DesignElement {
 
 const at = (id: string): PlacedNode => ({ id, x: 0, y: 0 })
 
-
 afterEach(() => cleanup())
 
 const model = (over: Partial<HostModel> = {}): HostModel => ({
@@ -63,7 +62,6 @@ function mount(initial = project(), takenInTree?: () => Iterable<string>) {
   render(<Host />)
   return { notify, session: () => session }
 }
-
 
 /** Renaming the one element — enough to watch a change land. */
 const rename = (name: string) =>
@@ -180,38 +178,28 @@ describe('useModelSession — the snapshot', () => {
  * quietly lost halfway through moving the session onto commands.
  */
 describe('useModelSession — where an id comes from', () => {
-  it('gives a name the key the file would have had', () => {
+  it('gives a name the key the file would have, and never one that is taken here or anywhere in the tree', () => {
     const { session } = mount()
     expect(session().ids.element('Warehouse')).toBe('warehouse')
-  })
-
-  it('does not hand out a key twice, even before the first one is in the model', () => {
-    const { session } = mount()
-    const first = session().ids.element('Warehouse')
-    const second = session().ids.element('Warehouse')
+    cleanup()
+    const { session: session2 } = mount()
+    const first = session2().ids.element('Warehouse')
+    const second = session2().ids.element('Warehouse')
     expect(second).not.toBe(first)
-  })
-
-  it('does not hand out a key the model already has', () => {
-    const { session } = mount()
-    expect(session().ids.element('Billing')).not.toBe('billing')
-  })
-
-  it('stays clear of the diagram ids, which share the same namespace', () => {
-    const { session } = mount()
-    expect(session().ids.element('d1')).not.toBe('d1')
-  })
-
-  /**
-   * ADR-0012 §2: an id names one thing across the whole organisation, not
-   * across one document. The landscape below has never heard of `warehouse`
-   * and must still not mint it, because a sibling domain defines it — and two
-   * definitions of one id are a conflict finding, which this app should not be
-   * in the business of creating by itself.
-   */
-  it('does not hand out a key another scope in the tree already has', () => {
-    const { session } = mount(project(), () => ['warehouse', 'erp'])
-    expect(session().ids.element('Warehouse')).toBe('warehouse-2')
+    cleanup()
+    const { session: session3 } = mount()
+    expect(session3().ids.element('Billing')).not.toBe('billing')
+    cleanup()
+    const { session: session4 } = mount()
+    expect(session4().ids.element('d1')).not.toBe('d1')
+    cleanup()
+    // ADR-0012 §2: an id names one thing across the whole organisation, not
+    // across one document. The landscape below has never heard of `warehouse`
+    // and must still not mint it, because a sibling domain defines it — and two
+    // definitions of one id are a conflict finding, which this app should not be
+    // in the business of creating by itself.
+    const { session: session5 } = mount(project(), () => ['warehouse', 'erp'])
+    expect(session5().ids.element('Warehouse')).toBe('warehouse-2')
   })
 
   it('reads the tree again for every ask, because the index is rebuilt under it', () => {
@@ -221,7 +209,6 @@ describe('useModelSession — where an id comes from', () => {
     held = ['depot']
     expect(session().ids.element('Depot')).toBe('depot-2')
   })
-
 
   it('lands what the editor drew under the id the editor already gave it', () => {
     const { session } = mount()

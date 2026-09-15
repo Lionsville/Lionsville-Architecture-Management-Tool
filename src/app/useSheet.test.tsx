@@ -161,7 +161,6 @@ describe('what the page may do', () => {
   })
 })
 
-
 describe('opening and closing', () => {
   it('opens one by id and hands the page the diagram', () => {
     const host = mount()
@@ -353,20 +352,18 @@ describe('coverage, ticked', () => {
     expect(rows(host, 'dunning', 'supports')).toEqual([])
   })
 
-  it('writes an assigned row from an actor', () => {
+  it('writes an assigned row from an actor, and takes it away again', () => {
     const host = opened()
     act(() => host.sheets().actions.setCoverage({
       type: 'assigned', sourceId: 'warehouse-team', functionId: 'dunning', on: true,
     }))
     expect(rows(host, 'dunning', 'assigned').map((r) => r.sourceId)).toEqual(['warehouse-team'])
-  })
-
-  it('takes a row away again', () => {
-    const host = opened()
-    act(() => host.sheets().actions.setCoverage({
+    cleanup()
+    const host2 = opened()
+    act(() => host2.sheets().actions.setCoverage({
       type: 'supports', sourceId: 'wms', functionId: 'picking', on: false,
     }))
-    expect(rows(host, 'picking', 'supports').map((r) => r.sourceId)).toEqual(['scanner'])
+    expect(rows(host2, 'picking', 'supports').map((r) => r.sourceId)).toEqual(['scanner'])
   })
 
   it('takes every row that says the same thing, as one step', () => {

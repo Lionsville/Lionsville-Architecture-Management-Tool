@@ -225,7 +225,7 @@ describe('the axis', () => {
 })
 
 describe('the checks', () => {
-  it('reports what the dates disagree about', () => {
+  it('reports what the dates disagree about, says so when they agree, and always says what it cannot tell', () => {
     setup({
       model: model({
         relations: [{ type: 'flow', id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }],
@@ -233,14 +233,10 @@ describe('the checks', () => {
     })
     expect(screen.getByText(/Warehouse Management retires on 2028-01-31 with 1 connections still live/))
       .toBeTruthy()
-  })
-
-  it('says the dates agree when they do', () => {
+    cleanup()
     setup()
     expect(screen.getByText('The dates agree with each other.')).toBeTruthy()
-  })
-
-  it('always says what it cannot tell you', () => {
+    cleanup()
     // A list that looked thorough is exactly what would make somebody trust it
     // past what it can do.
     setup()
@@ -280,19 +276,18 @@ describe('the checks', () => {
 })
 
 describe('a plan', () => {
-  it('is opened from its band', () => {
+  it('is opened from its band, and written with a title for the caller to open', () => {
     const { actions } = setup()
     fireEvent.click(screen.getByText(/Replace the warehouse system/))
     expect(actions.onOpenPlan).toHaveBeenCalledWith('tr-1')
-  })
-
-  it('is written with a title and left to the caller to open', () => {
-    const { actions } = setup()
+    cleanup()
+    const { actions: actions2 } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Move billing' } })
     fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })
-    expect(actions.addTransition).toHaveBeenCalledWith('Move billing')
+    expect(actions2.addTransition).toHaveBeenCalledWith('Move billing')
   })
+
 })
 
 describe('the window', () => {

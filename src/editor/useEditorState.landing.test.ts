@@ -96,18 +96,15 @@ describe('moving and removing a landing', () => {
     flow('r1', 'orders', 'wms-api', { refines: 'c16', protocol: 'REST' }),
   ];
 
-  it('moves the landed end to another container, and nothing else', () => {
+  it('moves the landed end to another container, and removes the landing on the way back', () => {
     const { result, host } = open(landed);
     act(() => result.current.actions.moveLanding('r1', 'wms-events'));
     expect(rows(host).find((r) => r.id === 'r1')).toMatchObject({
       sourceId: 'orders', targetId: 'wms-events', refines: 'c16', protocol: 'REST',
     });
-  });
-
-  it('removes the landing when it goes back to the boundary, leaving the interface written as it was', () => {
-    const { result, host } = open(landed);
-    act(() => result.current.actions.removeLanding('r1'));
-    expect(rows(host).map((r) => r.id)).toEqual(['c16']);
+    const { result: result2, host: host2 } = open(landed);
+    act(() => result2.current.actions.removeLanding('r1'));
+    expect(rows(host2).map((r) => r.id)).toEqual(['c16']);
   });
 
   it('detaches a landing into an interface of its own, keeping the line', () => {
@@ -119,32 +116,24 @@ describe('moving and removing a landing', () => {
 });
 
 describe('a container line drawn by hand', () => {
-  it('takes the one interface running that way, so the common case needs no answer', () => {
+  it('takes the one interface running that way, and lands nothing where there are several or none', () => {
     const { result, host } = open([flow('c16', 'orders', 'wms', { label: 'asks' })]);
     act(() => { result.current.actions.connect('orders', 'wms-events'); });
     const drawn = rows(host).find((r) => r.targetId === 'wms-events')!;
     expect(drawn.refines).toBe('c16');
-  });
-
-  it('asks nobody and lands nothing when several interfaces run that way', () => {
-    const { result, host } = open([
+    const { result: result2, host: host2 } = open([
       flow('c16', 'orders', 'wms', { label: 'asks' }),
       flow('c17', 'orders', 'wms', { label: 'tells' }),
     ]);
-    act(() => { result.current.actions.connect('orders', 'wms-events'); });
-    expect(rows(host).find((r) => r.targetId === 'wms-events')!.refines).toBeUndefined();
-  });
-
-  it('leaves a line with no interface to be part of as one of its own', () => {
-    const { result, host } = open([]);
-    act(() => { result.current.actions.connect('orders', 'wms-api'); });
-    expect(rows(host).find((r) => r.targetId === 'wms-api')!.refines).toBeUndefined();
-  });
-
-  it('leaves an application line alone: only a container line is ever part of one', () => {
-    const { result, host } = open([flow('c16', 'orders', 'wms', { label: 'asks' })]);
-    act(() => { result.current.actions.connect('orders', 'wms'); });
-    expect(rows(host).filter((r) => r.sourceId === 'orders' && r.targetId === 'wms')
+    act(() => { result2.current.actions.connect('orders', 'wms-events'); });
+    expect(rows(host2).find((r) => r.targetId === 'wms-events')!.refines).toBeUndefined();
+    const { result: result3, host: host3 } = open([]);
+    act(() => { result3.current.actions.connect('orders', 'wms-api'); });
+    expect(rows(host3).find((r) => r.targetId === 'wms-api')!.refines).toBeUndefined();
+    const { result: result4, host: host4 } = open([flow('c16', 'orders', 'wms', { label: 'asks' })]);
+    act(() => { result4.current.actions.connect('orders', 'wms'); });
+    expect(rows(host4).filter((r) => r.sourceId === 'orders' && r.targetId === 'wms')
       .every((r) => r.refines === undefined)).toBe(true);
   });
+
 });

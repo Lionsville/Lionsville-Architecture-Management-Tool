@@ -138,9 +138,12 @@ describe('ConnectionInspector — Direction dedup (D2)', () => {
     expect(two.updateConnection).toHaveBeenCalledWith('c1', { isBidirectional: false });
   });
 
-  it('shows bidirectional when isBidirectional is set', () => {
+  it('shows bidirectional from the one Direction control, with no switch competing with it', () => {
     renderInspector(connection({ isBidirectional: true }));
     expect(screen.getByLabelText('Direction').textContent).toContain('Bidirectional');
+    cleanup()
+    renderInspector(connection());
+    expect(screen.queryByLabelText('Bidirectional')).toBeNull();
   });
 
   it('the arrowhead override still round-trips sourceArrowhead / targetArrowhead', () => {
@@ -152,10 +155,6 @@ describe('ConnectionInspector — Direction dedup (D2)', () => {
     expect(updateConnection).toHaveBeenCalledWith('c1', { targetArrowhead: 'arrow' });
   });
 
-  it('there is no top-level Bidirectional switch competing with Direction', () => {
-    renderInspector(connection());
-    expect(screen.queryByLabelText('Bidirectional')).toBeNull();
-  });
 });
 
 describe('ConnectionInspector — ColorField colour (D4)', () => {
@@ -346,7 +345,6 @@ describe('ConnectionInspector — Leaves from / Arrives at', () => {
   });
 });
 
-
 /**
  * Which interface a container line is part of (ADR-0013, redone).
  *
@@ -386,26 +384,22 @@ describe('ConnectionInspector — part of which interface (ADR-0013)', () => {
     expect(options).toEqual(['“asks” from A', 'From A', 'New interface']);
   });
 
-  it('offers only a new interface when none runs that way', () => {
+  it('offers only a new interface when none runs that way, and the way out by name on a landed line', () => {
     renderInspector(landing(), { model: deep([landing()]) });
     fireEvent.mouseDown(screen.getByLabelText('Part of'));
     expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent))
       .toEqual(['New interface']);
-  });
-
-  it('writes the interface it is told it is part of', () => {
+    cleanup()
     const held = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
     const { updateConnection } = renderInspector(landing(), { model: deep([held, landing()]) });
     chooseOption('Part of', '“asks” from A');
     expect(updateConnection).toHaveBeenCalledWith('r1', { refines: 'c16' });
-  });
-
-  it('offers the way out by name on a landed line, and clears the field', () => {
-    const held = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
+    cleanup()
+    const held2 = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
     const landed = landing({ refines: 'c16' });
-    const { updateConnection } = renderInspector(landed, { model: deep([held, landed]) });
+    const { updateConnection: updateConnection2 } = renderInspector(landed, { model: deep([held2, landed]) });
     chooseOption('Part of', 'Detach from “asks”');
-    expect(updateConnection).toHaveBeenCalledWith('r1', { refines: undefined });
+    expect(updateConnection2).toHaveBeenCalledWith('r1', { refines: undefined });
   });
 
   it('is read-only where the panel is', () => {
@@ -413,7 +407,6 @@ describe('ConnectionInspector — part of which interface (ADR-0013)', () => {
     expect(selectDisabled('Part of')).toBe(true);
   });
 });
-
 
 /**
  * What an interface with landings shows instead of a protocol (ADR-0013).

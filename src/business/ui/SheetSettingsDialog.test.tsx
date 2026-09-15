@@ -63,48 +63,42 @@ describe('the journey it draws', () => {
     expect(list.getByRole('option', { name: 'None' })).toBeTruthy()
   })
 
-  it('points the sheet at the one that is chosen', () => {
+  it('points the sheet at the journey that is chosen, and clears it again', () => {
     // A scope with two journeys seeds none, which is the case this exists for.
     const { actions } = open({ ...SHEET, journeyId: undefined })
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /The journey across the top/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Ship a consignment' }))
     expect(actions.updateSheet).toHaveBeenCalledWith({ journeyId: 'ship' })
-  })
-
-  it('clears it again', () => {
-    const { actions } = open()
+    cleanup()
+    const { actions: actions2 } = open()
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /The journey across the top/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'None' }))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ journeyId: undefined })
+    expect(actions2.updateSheet).toHaveBeenCalledWith({ journeyId: undefined })
   })
+
 })
 
 describe('the areas, in order', () => {
-  it('takes one off the sheet', () => {
+  it('takes an area off, puts one back at the end, and moves one past its neighbour', () => {
     const { actions } = open()
     fireEvent.click(screen.getByLabelText('Draw Billing'))
     expect(actions.updateSheet).toHaveBeenCalledWith({ areas: ['fulfilment'] })
-  })
-
-  it('puts one that is not drawn back on, at the end', () => {
-    const { actions } = open({ ...SHEET, areas: ['fulfilment'] })
+    cleanup()
+    const { actions: actions2 } = open({ ...SHEET, areas: ['fulfilment'] })
     fireEvent.click(screen.getByLabelText('Draw Billing'))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ areas: ['fulfilment', 'billing'] })
-  })
-
-  it('moves one past its neighbour', () => {
-    const { actions } = open()
+    expect(actions2.updateSheet).toHaveBeenCalledWith({ areas: ['fulfilment', 'billing'] })
+    cleanup()
+    const { actions: actions3 } = open()
     fireEvent.click(screen.getByRole('button', { name: 'Billing: Move up' }))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ areas: ['billing', 'fulfilment'] })
-  })
-
-  it('writes the list down the first time it is touched, when the sheet named none', () => {
+    expect(actions3.updateSheet).toHaveBeenCalledWith({ areas: ['billing', 'fulfilment'] })
+    cleanup()
     // An absent list means every root; the moment somebody decides, it is a
     // decision and is stored as one.
-    const { actions } = open({ ...SHEET, areas: undefined })
+    const { actions: actions4 } = open({ ...SHEET, areas: undefined })
     fireEvent.click(screen.getByLabelText('Draw Fulfilment'))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ areas: ['billing'] })
+    expect(actions4.updateSheet).toHaveBeenCalledWith({ areas: ['billing'] })
   })
+
 })
 
 describe('the lanes, in order', () => {
@@ -127,17 +121,16 @@ describe('the lanes, in order', () => {
 })
 
 describe('the rail', () => {
-  it('is drawn unless the sheet says otherwise', () => {
+  it('is drawn unless the sheet says otherwise, and comes back', () => {
     const { actions } = open()
     fireEvent.click(screen.getByLabelText('Draw the stakeholder rail'))
     expect(actions.updateSheet).toHaveBeenCalledWith({ showActors: false })
+    cleanup()
+    const { actions: actions2 } = open({ ...SHEET, showActors: false })
+    fireEvent.click(screen.getByLabelText('Draw the stakeholder rail'))
+    expect(actions2.updateSheet).toHaveBeenCalledWith({ showActors: true })
   })
 
-  it('comes back', () => {
-    const { actions } = open({ ...SHEET, showActors: false })
-    fireEvent.click(screen.getByLabelText('Draw the stakeholder rail'))
-    expect(actions.updateSheet).toHaveBeenCalledWith({ showActors: true })
-  })
 })
 
 describe('the columns', () => {

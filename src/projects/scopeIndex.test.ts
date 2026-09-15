@@ -56,12 +56,18 @@ describe('the index — the rows about an id', () => {
 })
 
 describe('the index — who answers for an id', () => {
-  it('makes the one definition in the tree the master', () => {
+  it('makes the one definition the master, calls nothing stale without one, and has never heard of the rest', () => {
     const index = indexScopes([scope('retail', [element('erp', { name: 'ERP' })])])
     expect(index.lookup('erp')).toEqual({
       id: 'erp', kind: 'application', name: 'ERP',
       master: 'retail', declarations: [], drawnIn: [], stale: [],
     })
+    const index2 = indexScopes([scope('retail', [standIn('erp', 'finance', { name: 'ERP' })])])
+    expect(index2.lookup('erp')?.stale).toEqual([])
+    expect(indexScopes([scope('retail', [element('erp')])]).lookup('wms')).toBeUndefined()
+    const a = scope('retail', [element('erp', { name: 'Retail ERP' })])
+    const b = scope('', [element('erp', { name: 'The ERP' })])
+    expect(indexScopes([a, b]).entries()).toEqual(indexScopes([b, a]).entries())
   })
 
   /**
@@ -139,11 +145,6 @@ describe('the index — who answers for an id', () => {
     expect(index.lookup('erp')?.stale).toEqual(['', 'acme/hr', 'acme/legal'])
   })
 
-  it('calls nothing stale where there is no master to disagree with', () => {
-    const index = indexScopes([scope('retail', [standIn('erp', 'finance', { name: 'ERP' })])])
-    expect(index.lookup('erp')?.stale).toEqual([])
-  })
-
   it('answers with no master, and the cached name, for an id nobody defines', () => {
     const index = indexScopes([scope('retail', [standIn('erp', 'finance', { name: 'ERP' })])])
     expect(index.lookup('erp')?.master).toBeUndefined()
@@ -154,24 +155,21 @@ describe('the index — who answers for an id', () => {
     expect(index.lookup('erp')?.cachedRef).toBe('finance')
   })
 
-  it('has never heard of an id no scope holds', () => {
-    expect(indexScopes([scope('retail', [element('erp')])]).lookup('wms')).toBeUndefined()
-  })
-
-  it('does not depend on the order a store listed the scopes in', () => {
-    const a = scope('retail', [element('erp', { name: 'Retail ERP' })])
-    const b = scope('', [element('erp', { name: 'The ERP' })])
-    expect(indexScopes([a, b]).entries()).toEqual(indexScopes([b, a]).entries())
-  })
 })
 
 describe('the index — what it is read for', () => {
-  it('lists every application by name, and no function', () => {
+  it('lists every application by name and no function, and says what it was built from', () => {
     const index = indexScopes([
       scope('retail', [element('wms', { name: 'Warehouse' }), element('erp', { name: 'ERP' })]),
       scope('', [element('fulfilment', { kind: 'function', name: 'Ahead of both' })]),
     ])
     expect(index.register().map((entry) => entry.id)).toEqual(['erp', 'wms'])
+    const index2 = indexScopes([
+      scope('retail', [element('erp')], [row('c#1', 'flow', 'erp', 'erp')]),
+      scope('finance', [element('ledger')]),
+    ])
+    expect([...index2.takenIds()].sort()).toEqual(['c#1', 'erp', 'ledger'])
+    expect(indexScopes([scope('retail', []), scope('', [])]).scopes()).toEqual(['', 'retail'])
   })
 
   /**
@@ -190,14 +188,6 @@ describe('the index — what it is read for', () => {
     ])
     expect(index.lookup('post')).toMatchObject({ master: 'retail', outside: true, partyId: 'carrier' })
     expect(index.lookup('wms')?.outside).toBeUndefined()
-  })
-
-  it('says every id the tree has spoken for, rows included', () => {
-    const index = indexScopes([
-      scope('retail', [element('erp')], [row('c#1', 'flow', 'erp', 'erp')]),
-      scope('finance', [element('ledger')]),
-    ])
-    expect([...index.takenIds()].sort()).toEqual(['c#1', 'erp', 'ledger'])
   })
 
   /**
@@ -222,9 +212,6 @@ describe('the index — what it is read for', () => {
     expect(index.rowsTo('wms', ['flow']).map((held) => held.relation.id)).toEqual(['r2'])
   })
 
-  it('says which scopes it was built from', () => {
-    expect(indexScopes([scope('retail', []), scope('', [])]).scopes()).toEqual(['', 'retail'])
-  })
 })
 
 describe('the index — over whatever a store can say', () => {
