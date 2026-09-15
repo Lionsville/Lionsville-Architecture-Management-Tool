@@ -15,6 +15,7 @@ import { placedNodes,
   unionRects,
 } from '../model/placement';
 import { nodeFigure } from '../model/kinds';
+import { isFlow } from '../model/relations';
 import { edgeRoutesOf, isAutoRoute, routeSides, routeSource } from '../model/routes';
 import { relationLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
 
@@ -216,6 +217,11 @@ export function buildEdges(
   // the edges that will use it.
   const drawn: { connection: (typeof args.model.relations)[number]; route: EdgeRoute | undefined; stored: EdgeRoute | undefined }[] = [];
   for (const connection of args.model.relations) {
+    // Only a flow is a line (ADR-0012 §5). The rows that join an application
+    // to what runs it or what it uses are never drawn (ADR-0013): a platform
+    // on a board is a card, and its page is where those rows are listed —
+    // eleven applications hosted on one cluster is eleven lines to one chip.
+    if (!isFlow(connection)) continue;
     if (!placed.has(connection.sourceId) || !placed.has(connection.targetId)) continue;
     // A line with a window of its own is drawn only inside it: the sync and the
     // façade of a hybrid run are there for the months they are there for, and

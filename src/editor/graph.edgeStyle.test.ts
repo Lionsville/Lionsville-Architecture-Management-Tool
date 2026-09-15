@@ -106,3 +106,20 @@ describe('buildEdges — edge style (U4b)', () => {
     expect(anchors?.targetPosition).toBeDefined();
   });
 });
+
+describe('what is a line at all (ADR-0012 §5, ADR-0013)', () => {
+  it('draws a flow, and never a row that joins an application to what runs it or what it uses', () => {
+    const held = model(conn());
+    const withRows: DesignModel = {
+      ...held,
+      relations: [
+        conn(),
+        { id: 'h1', type: 'hostedOn', sourceId: 'a1', targetId: 'b1' },
+        { id: 'u1', type: 'uses', sourceId: 'a1', targetId: 'b1' },
+        { id: 's1', type: 'supports', sourceId: 'a1', targetId: 'b1' },
+      ],
+    };
+    const edges = buildEdges({ model: withRows, diagram: withRows.diagrams[0] } as Parameters<typeof buildEdges>[0]);
+    expect(edges.map((edge) => edge.id)).toEqual(['c1']);
+  });
+});
