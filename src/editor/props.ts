@@ -394,6 +394,15 @@ export interface EditorOwnership {
    */
   platformTree?: PlatformTree;
   /**
+   * Who uses a service from outside the team that maintains it, by name
+   * (ADR-0014): what the *Shared* tick shows beside itself where nobody has
+   * ticked. Read off the whole tree — the maintainer is a row in the platform
+   * scope and the consumers are rows in the landscapes — so the host works it
+   * out and hands it over. Absent in a shell with no tree; empty where the
+   * service is used only within its team, or not yet.
+   */
+  offeredBeyond?(serviceId: ElementId): readonly string[] | undefined;
+  /**
    * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
    * them: is there one to offer on this record, and one way to ask for it.
    *

@@ -23,6 +23,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.notDrawn': '{name} staat op geen enkele plaat in deze scope',
   'check.unmapped': '{name} is aan niemand toegewezen en door niemand opgepakt',
   'check.uncovered': 'Niets en niemand doet {name}',
+  'check.offeredNotShared': '{name} wordt gebruikt door {detail}, buiten het team dat het onderhoudt, en is niet als gedeeld gemarkeerd',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -44,6 +45,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.unmapped.other': '{count} niet toegewezen',
   'check.short.uncovered.one': '{count} niet gedekt',
   'check.short.uncovered.other': '{count} niet gedekt',
+  'check.short.offeredNotShared.one': '{count} aangeboden, niet als gedeeld gemarkeerd',
+  'check.short.offeredNotShared.other': '{count} aangeboden, niet als gedeeld gemarkeerd',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',

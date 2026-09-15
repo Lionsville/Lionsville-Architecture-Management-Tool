@@ -1102,6 +1102,19 @@ describe('the physical view (ADR-0013)', () => {
       .toMatchObject({ refusal: 'agent.badArguments' })
   })
 
+  it('marks a service shared, true or absent, and refuses the flag on anything else', () => {
+    const withService = fromArrays({
+      ...toArrays(withPlatforms),
+      elements: [...toArrays(withPlatforms).elements, element('containers', 'Container platform', { kind: 'platformService' })],
+    })
+    const on = roundTrip(withService, commandFor('element.update', { id: 'containers', shared: true }, view(withService)))
+    expect(on.elements.containers.shared).toBe(true)
+    const off = roundTrip(on, commandFor('element.update', { id: 'containers', shared: false }, view(on)))
+    expect('shared' in off.elements.containers).toBe(false)
+    expect(commandFor('element.update', { id: 'cluster', shared: true }, view(withService)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
   it('refuses to say where an application with components runs: that is its components\' to say', () => {
     // `billing` has `api` filed under it (ADR-0013, redone). The refusal is
     // the writer's own key, so an agent hears the sentence a person hears.

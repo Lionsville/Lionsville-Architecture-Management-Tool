@@ -145,6 +145,12 @@ export interface ElementInspectorProps {
     tip: string;
     onMove(): void;
   };
+  /**
+   * For a platform service: who uses it from outside the team that maintains
+   * it, by name (ADR-0014) — the derived answer the *Shared* tick shows beside
+   * itself where nobody has ticked. Absent where the host has no tree to read.
+   */
+  offeredBeyond?: readonly string[];
 }
 
 /** Tab label with an optional "set values" dot (mirrors the InspectorSection "●" badge). */
@@ -402,6 +408,36 @@ export function ElementInspector(props: ElementInspectorProps) {
                 <MenuItem key={archetype} value={archetype}>{t(PLATFORM_ARCHETYPE_LABEL[archetype])}</MenuItem>
               ))}
             </TextField>
+          )}
+
+          {/* Offered for use beyond the team that maintains it (ADR-0014).
+              Explicit, because organisations draw this line differently; and
+              where nobody has ticked, the rows still say — shown beside the
+              tick as a sentence, never written into the field, so a value
+              somebody typed wins and is left as typed. */}
+          {element.kind === 'platformService' && (
+            <Box data-testid="service-shared">
+              <FormControlLabel
+                control={
+                  <Switch
+                    size="small"
+                    checked={element.shared === true}
+                    disabled={readOnly || owned('shared')}
+                    onChange={(e) => update({ shared: e.target.checked ? true : undefined })}
+                  />
+                }
+                label={<Typography variant="caption">{t('field.shared')}</Typography>}
+              />
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }} data-testid="service-shared-derived">
+                {element.shared
+                  ? t('field.sharedHelp')
+                  : props.offeredBeyond === undefined
+                    ? t('field.sharedHelp')
+                    : props.offeredBeyond.length > 0
+                      ? t('field.sharedDerived', { names: props.offeredBeyond.join(', ') })
+                      : t('field.sharedWithin')}
+              </Typography>
+            </Box>
           )}
 
           {/* Where it runs (ADR-0013, redone). A container says it; an

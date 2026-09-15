@@ -197,6 +197,13 @@ describe('the index — what it is read for', () => {
     ])
     expect(index.lookup('openshift')?.platformArchetype).toBe('place')
     expect(index.lookup('bus')?.platformArchetype).toBeUndefined()
+    // And whether a service is offered beyond its team, likewise the master's.
+    const shared = indexScopes([
+      scope('platforms', [element('containers', { kind: 'platformService', shared: true }), element('own', { kind: 'platformService' })]),
+      scope('retail', [standIn('containers', 'platforms', { kind: 'platformService' })]),
+    ])
+    expect(shared.lookup('containers')?.shared).toBe(true)
+    expect(shared.lookup('own')?.shared).toBeUndefined()
   })
 
   /**

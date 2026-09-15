@@ -132,6 +132,8 @@ export type IndexEntry = {
    * whether it is a place from here, the way it reads what it is filed under.
    */
   platformArchetype?: PlatformArchetype
+  /** A service offered beyond the team that maintains it, as its master says (ADR-0014). */
+  shared?: true
   /**
    * Where the stand-ins say the definition was last seen — kept ONLY where
    * nobody defines it (§3).
@@ -249,7 +251,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
 
   type Definition = {
     path: ScopePath; depth: number; kind: ElementKind; name: string; parentId?: ElementId
-    outside?: true; partyId?: ElementId; platformArchetype?: PlatformArchetype
+    outside?: true; partyId?: ElementId; platformArchetype?: PlatformArchetype; shared?: true
   }
 
   const held = new Map<ElementId, Held>()
@@ -278,6 +280,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
           ...(element.outside ? { outside: element.outside } : {}),
           ...(element.partyId !== undefined ? { partyId: element.partyId } : {}),
           ...(element.platformArchetype !== undefined ? { platformArchetype: element.platformArchetype } : {}),
+          ...(element.shared ? { shared: element.shared } : {}),
         })
       } else {
         row.standIns.push({ path, kind: element.kind, name: element.name, ref: element.ref })
@@ -339,6 +342,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       ...(master?.outside ? { outside: master.outside } : {}),
       ...(master?.partyId !== undefined ? { partyId: master.partyId } : {}),
       ...(master?.platformArchetype !== undefined ? { platformArchetype: master.platformArchetype } : {}),
+      ...(master?.shared ? { shared: master.shared } : {}),
       ...(master === undefined && row.standIns[0] !== undefined ? { cachedRef: row.standIns[0].ref } : {}),
       drawnIn: row.standIns.map((one) => one.path),
       stale,

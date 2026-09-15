@@ -21,7 +21,7 @@ import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
-import { CHECK_LABEL, documentFindings, identityFindings } from '../projects/checks'
+import { CHECK_LABEL, documentFindings, identityFindings, offeredBeyond } from '../projects/checks'
 import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
@@ -603,6 +603,7 @@ export function ProjectWorkspace({
       bySubject.set(finding.id, s(CHECK_LABEL[finding.key], {
         name: finding.name,
         scope: finding.scopes?.[0] || s('common.organisation'),
+        detail: finding.detail ?? '',
       }))
     }
     const found = new Map<string, StandInNote>()
@@ -786,6 +787,11 @@ export function ProjectWorkspace({
       parentOf: (platformId) => index.lookup(platformId)?.parentId,
       archetypeOf: (platformId) => index.lookup(platformId)?.platformArchetype,
     },
+    // Who uses a service from another team (ADR-0014), off the rows the whole
+    // tree holds: what the *Shared* tick says beside itself.
+    offeredBeyond: (serviceId) => (index.lookup(serviceId)?.kind === 'platformService'
+      ? offeredBeyond(index, serviceId).outside.map((one) => one.name)
+      : undefined),
     gestures: {
       offered: (elementId) => gestureOffers(elementId).length > 0,
       label: s('gesture.move'),

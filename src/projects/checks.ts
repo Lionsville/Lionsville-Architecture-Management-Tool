@@ -67,6 +67,11 @@ export type CheckKey =
   | 'check.unmapped'
   /** A function with no `supports` and no `assigned`: nothing and nobody does it. */
   | 'check.uncovered'
+  /**
+   * A service used by another team's application and not marked shared
+   * (ADR-0014): being offered, whether or not anybody said so.
+   */
+  | 'check.offeredNotShared'
 
 /**
  * The sentence for each finding, published as a table (ADR-0012 §9).
@@ -91,6 +96,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.notDrawn': 'check.notDrawn',
   'check.unmapped': 'check.unmapped',
   'check.uncovered': 'check.uncovered',
+  'check.offeredNotShared': 'check.offeredNotShared',
 }
 
 /**
@@ -111,6 +117,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
   'check.notDrawn': { one: 'check.short.notDrawn.one', other: 'check.short.notDrawn.other' },
   'check.unmapped': { one: 'check.short.unmapped.one', other: 'check.short.unmapped.other' },
   'check.uncovered': { one: 'check.short.uncovered.one', other: 'check.short.uncovered.other' },
+  'check.offeredNotShared': { one: 'check.short.offeredNotShared.one', other: 'check.short.offeredNotShared.other' },
 }
 
 /**
@@ -132,6 +139,8 @@ export type Finding = {
   scopes?: ScopePath[]
   /** Which fields (`check.ownedElsewhere`), in the order this module lists them. */
   fields?: string[]
+  /** The other thing the sentence names — the consumers of an offering, by name. */
+  detail?: string
   /** True where this is worth knowing and is not a fault. See {@link CheckKey}. */
   information?: true
 }
@@ -221,9 +230,66 @@ export function identityFindings(index: ScopeIndex): Finding[] {
       // on the organisation sheet as not yet modelled at that level, which is
       // a conversation and not a fault.
       found.push({ key: 'check.proposal', scope: entry.master, id: entry.id, name: entry.name })
+    } else if (entry.kind === 'platformService' && !entry.shared) {
+      // Offered whether or not anybody ticked the box (ADR-0014): a value
+      // somebody typed wins and is left as typed, and where nobody has, the
+      // rows say. On the service, in the scope that answers for it, naming
+      // the consumers — because that is what the maintainer needs to know.
+      const { outside } = offeredBeyond(index, entry.id)
+      if (outside.length > 0) {
+        found.push({
+          key: 'check.offeredNotShared', scope: entry.master, id: entry.id, name: entry.name,
+          fields: outside.map((one) => one.id),
+          detail: outside.map((one) => one.name).join(', '),
+        })
+      }
     }
   }
   return found
+}
+
+/** Who maintains a service, and who uses it from another team (ADR-0014). */
+export type Offering = {
+  /** The actors it is `assigned` to, by id, in row order. */
+  maintainers: ElementId[]
+  /**
+   * The applications using it whose own team is another actor: a component's
+   * application, since a team owns applications and not containers. Each once,
+   * in row order. Empty where nothing is said to a maintainer, and where a
+   * consumer has no party to compare — the tree cannot say either way, and a
+   * finding that guessed would be one nobody could clear.
+   */
+  outside: { id: ElementId; name: string; partyId: ElementId }[]
+}
+
+/**
+ * Whether a service is being offered beyond its own team, read off the rows
+ * the tree holds rather than off a field (ADR-0014): the actor it is assigned
+ * to in the platform scope, and the applications using it wherever their
+ * landscapes wrote the row. Whose an application is comes from `partyId`,
+ * which already means which actor it belongs to.
+ *
+ * Shared with the register and the inspector's derived answer, so the tick,
+ * the finding and the row on the technology page cannot disagree.
+ */
+export function offeredBeyond(index: ScopeIndex, serviceId: ElementId): Offering {
+  const maintainers = [...new Set(index.rowsTo(serviceId, ['assigned']).map(({ relation }) => relation.sourceId))]
+  const outside: Offering['outside'] = []
+  if (maintainers.length === 0) return { maintainers, outside }
+  const seen = new Set<ElementId>()
+  for (const { relation } of index.rowsTo(serviceId, ['uses'])) {
+    const consumer = index.lookup(relation.sourceId)
+    if (!consumer) continue
+    const application = consumer.kind === 'component' && consumer.parentId !== undefined
+      ? index.lookup(consumer.parentId) ?? consumer
+      : consumer
+    if (seen.has(application.id)) continue
+    seen.add(application.id)
+    const partyId = application.partyId
+    if (partyId === undefined || maintainers.includes(partyId)) continue
+    outside.push({ id: application.id, name: application.name, partyId })
+  }
+  return { maintainers, outside }
 }
 
 /**

@@ -23,6 +23,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.notDrawn': '{name} steht auf keinem Bild in diesem Bereich',
   'check.unmapped': '{name} ist niemandem zugewiesen und von niemandem übernommen',
   'check.uncovered': 'Nichts und niemand erledigt {name}',
+  'check.offeredNotShared': '{name} wird von {detail} genutzt, außerhalb des Teams, das es pflegt, und ist nicht als geteilt markiert',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -44,6 +45,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.unmapped.other': '{count} nicht zugewiesen',
   'check.short.uncovered.one': '{count} nicht abgedeckt',
   'check.short.uncovered.other': '{count} nicht abgedeckt',
+  'check.short.offeredNotShared.one': '{count} angeboten, nicht als geteilt markiert',
+  'check.short.offeredNotShared.other': '{count} angeboten, nicht als geteilt markiert',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

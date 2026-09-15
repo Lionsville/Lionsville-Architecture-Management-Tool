@@ -628,6 +628,10 @@ function elementPatch(args: Args, held: DesignElement, view: ReadView): Partial<
     if (!isPlatformArchetype(args.platformArchetype)) return refused('agent.badArguments', '"platformArchetype" is not place, service or network')
     patch.platformArchetype = args.platformArchetype
   }
+  if (args.shared !== undefined) {
+    if (held.kind !== 'platformService') return refused('agent.badArguments', 'only a platformService is shared')
+    patch.shared = args.shared === true ? true : undefined
+  }
   if (typeof args.lifecycle === 'string') patch.lifecycle = args.lifecycle
   if (typeof args.isManaged === 'boolean') patch.isManaged = args.isManaged
   if (args.successorId === null || args.successorId === '') patch.successorId = undefined

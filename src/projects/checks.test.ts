@@ -13,7 +13,7 @@ import { laidOut } from '../model/testFixtures'
 import type { DesignElement, Relation } from '../model'
 import type { HostModel } from '../model/fromInterchange'
 import {
-  documentFindings, findingsByScope, identityFindings, OWNER_DETAIL, scopeFindings, tally,
+  documentFindings, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
 } from './checks'
 import { indexScopes } from './scopeIndex'
 import type { ScopeModel } from './scope'
@@ -320,5 +320,69 @@ describe('every finding about one scope', () => {
     })
     expect(keys(scopeFindings({ scope: 'finance', model, index })))
       .toEqual(['check.conflict', 'check.unattributed'])
+  })
+})
+
+/**
+ * An offering nobody marked shared (ADR-0014). The maintainer is an
+ * `assigned` row in the platform scope; the consumers are `uses` rows in the
+ * landscapes; whose an application is comes from `partyId`. A value somebody
+ * typed wins, and where nobody typed one the rows still say.
+ */
+describe('a service offered beyond its team', () => {
+  const row = (id: string, type: Relation['type'], sourceId: string, targetId: string): Relation =>
+    ({ id, type, sourceId, targetId })
+  const tree = (over: { shared?: true; assignedTo?: string } = {}): ScopeModel[] => [
+    scope('', [
+      element('platform-team', { kind: 'actor', name: 'Platform team' }),
+      element('warehouse-team', { kind: 'actor', name: 'Warehouse team' }),
+    ]),
+    scope('platforms', [
+      element('containers', { kind: 'platformService', name: 'Container platform', ...(over.shared ? { shared: true } : {}) }),
+      element('openshift', { kind: 'platform', name: 'OpenShift' }),
+    ], over.assignedTo === '' ? [] : [row('a1', 'assigned', over.assignedTo ?? 'platform-team', 'containers')]),
+    scope('warehouse', [
+      element('wms', { name: 'WMS', partyId: 'warehouse-team' }),
+      element('wms-api', { kind: 'component', parentId: 'wms', name: 'WMS API' }),
+      element('tooling', { name: 'Tooling', partyId: 'platform-team' }),
+      element('nobodys', { name: 'Nobody said whose' }),
+      standIn('containers', 'platforms', { kind: 'platformService', name: 'Container platform' }),
+    ], [
+      row('u1', 'uses', 'wms-api', 'containers'),
+      row('u2', 'uses', 'tooling', 'containers'),
+      row('u3', 'uses', 'nobodys', 'containers'),
+    ]),
+  ]
+
+  it('names the consumers whose team is another actor, a container by its application, and nobody else', () => {
+    const { maintainers, outside } = offeredBeyond(indexScopes(tree()), 'containers')
+    expect(maintainers).toEqual(['platform-team'])
+    // The platform team's own tooling is within; an application nobody has
+    // said whose is neither, because the tree cannot say.
+    expect(outside).toEqual([{ id: 'wms', name: 'WMS', partyId: 'warehouse-team' }])
+  })
+
+  it('is a finding on the service, in the scope that answers for it, naming the consumer', () => {
+    const found = identityFindings(indexScopes(tree())).filter((f) => f.key === 'check.offeredNotShared')
+    expect(found).toEqual([{
+      key: 'check.offeredNotShared', scope: 'platforms', id: 'containers', name: 'Container platform',
+      fields: ['wms'], detail: 'WMS',
+    }])
+  })
+
+  it('is not a finding once somebody has ticked shared, and a shared service with no takers is not one either', () => {
+    expect(keys(identityFindings(indexScopes(tree({ shared: true }))))).toEqual([])
+    const unused = tree({ shared: true })
+    unused[2].model.relations = []
+    expect(keys(identityFindings(indexScopes(unused)))).toEqual([])
+  })
+
+  it('says nothing where no maintainer is named, and judges by whoever the maintainer is', () => {
+    expect(offeredBeyond(indexScopes(tree({ assignedTo: '' })), 'containers').outside).toEqual([])
+    expect(keys(identityFindings(indexScopes(tree({ assignedTo: '' }))))).toEqual([])
+    // Maintained by the warehouse team instead: the WMS is within, and the
+    // platform team's tooling is the one from outside.
+    expect(offeredBeyond(indexScopes(tree({ assignedTo: 'warehouse-team' })), 'containers').outside.map((one) => one.id))
+      .toEqual(['tooling'])
   })
 })

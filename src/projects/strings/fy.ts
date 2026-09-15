@@ -23,6 +23,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'check.notDrawn': '{name} stiet op gjin inkelde plaat yn dizze scope',
   'check.unmapped': '{name} is oan nimmen tawiisd en troch nimmen oppakt',
   'check.uncovered': 'Neat en nimmen docht {name}',
+  'check.offeredNotShared': '{name} wurdt brûkt troch {detail}, bûten it team dat it ûnderhâldt, en is net as dield markearre',
 
   'check.short.conflict.one': '{count} konflikt',
   'check.short.conflict.other': '{count} konflikten',
@@ -44,6 +45,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'check.short.unmapped.other': '{count} net tawiisd',
   'check.short.uncovered.one': '{count} net dekt',
   'check.short.uncovered.other': '{count} net dekt',
+  'check.short.offeredNotShared.one': '{count} oanbean, net as dield markearre',
+  'check.short.offeredNotShared.other': '{count} oanbean, net as dield markearre',
 
   'gesture.unknownId': 'Dit nivo hat dat record net mear.',
   'gesture.notADefinition': 'Dit record ferwiist al nei in definysje earne oars.',

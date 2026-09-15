@@ -222,6 +222,20 @@ export interface DesignElement {
    * nothing draws no box it did not ask for.
    */
   platformArchetype?: PlatformArchetype;
+  /**
+   * A `platformService` only: offered for use beyond the team that maintains
+   * it (ADR-0014). `true` or absent, like `outside`, so nothing has to write
+   * down that a thing is its own team's.
+   *
+   * Explicit, because organisations draw this line differently and a model
+   * that guessed would be wrong in a way nobody could correct. Where nobody
+   * has said, the tree still knows: a service assigned to one actor and used
+   * by an application whose own team is another is being offered, which is a
+   * finding on the service (`check.offeredNotShared`) rather than a value —
+   * the same pattern as the platform badge, where a value somebody typed
+   * wins and is left as typed.
+   */
+  shared?: true;
   description?: string;
   /**
    * Nobody in this organisation owns it (ADR-0012 §3).

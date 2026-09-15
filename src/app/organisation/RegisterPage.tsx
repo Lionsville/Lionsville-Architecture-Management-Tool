@@ -222,6 +222,7 @@ function Row({ row, label, organisation, onOpen, onOpenPage, onLink, s }: {
     text: s(CHECK_LABEL[finding.key], {
       name: finding.name,
       scope: label(finding.scopes?.[0]),
+      detail: finding.detail ?? '',
       count: 0,
     }),
   }))

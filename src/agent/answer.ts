@@ -494,6 +494,7 @@ function elementLine(element: DesignElement) {
     vendor: element.vendor,
     technology: element.technology,
     platformArchetype: element.platformArchetype,
+    shared: element.shared,
     owner: element.owner,
     lifecycleDates: element.lifecycleDates,
     successorId: element.successorId,

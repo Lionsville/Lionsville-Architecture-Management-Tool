@@ -33,6 +33,7 @@ export const EN = {
   'check.notDrawn': '{name} is on no board in this scope',
   'check.unmapped': '{name} is assigned to nobody and claimed by nobody',
   'check.uncovered': 'Nothing and nobody does {name}',
+  'check.offeredNotShared': '{name} is used by {detail}, beyond the team that maintains it, and is not marked shared',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -60,6 +61,8 @@ export const EN = {
   'check.short.unmapped.other': '{count} unmapped',
   'check.short.uncovered.one': '{count} uncovered',
   'check.short.uncovered.other': '{count} uncovered',
+  'check.short.offeredNotShared.one': '{count} offered, not marked shared',
+  'check.short.offeredNotShared.other': '{count} offered, not marked shared',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

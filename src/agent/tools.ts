@@ -153,6 +153,7 @@ const ELEMENT_FIELDS = {
   vendor: { type: 'string', description: 'Who makes it.' },
   technology: { type: 'string', description: 'What it is built on.' },
   platformArchetype: { type: 'string', description: 'A platform only: what it is (ADR-0014) — a place something is hostedOn (a cluster, a namespace, an account: the deployment boxes draw these), a service something consumes (a broker, a bus, a vault), or a network. Service when unsaid.', enum: PLATFORM_ARCHETYPES },
+  shared: { type: 'boolean', description: 'A platformService only: offered for use beyond the team that maintains it (ADR-0014). False or null takes it off. Where unsaid, a service assigned to one actor and used by an application of another team is reported as check.offeredNotShared rather than assumed.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
   owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the folder.' },

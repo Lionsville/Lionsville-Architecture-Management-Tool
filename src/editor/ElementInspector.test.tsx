@@ -75,6 +75,8 @@ function renderInspector(
     others?: DesignElement[];
     /** Rows the model holds — what the hosting roll-up is read from (ADR-0013). */
     relations?: DesignModel['relations'];
+    /** Who uses a service from another team, as the host works it out (ADR-0014). */
+    offeredBeyond?: readonly string[];
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -97,6 +99,7 @@ function renderInspector(
         owned={opts.owned}
         layout={opts.layout}
         onOpenDocumentation={opts.onOpenDocumentation}
+        offeredBeyond={opts.offeredBeyond}
       />
     </ThemeProvider>,
   );
@@ -596,5 +599,44 @@ describe('ElementInspector — where it runs (ADR-0013)', () => {
   it('is read-only where the panel is', () => {
     renderInspector(container('wms-api', 'wms'), { others: [openshift], readOnly: true });
     expect(selectDisabled('Hosted on')).toBe(true);
+  });
+});
+
+/**
+ * The *Shared* tick on a platform service (ADR-0014): explicit, and where
+ * nobody has ticked, the derived answer beside it — never written into the
+ * field, so a value somebody typed wins and is left as typed.
+ */
+describe('ElementInspector — a service offered beyond its team', () => {
+  const service = () => element({ id: 'containers', kind: 'platformService', name: 'Container platform' });
+
+  it('offers the tick to a service only, and writes true or clears the field', () => {
+    const { updateElement } = renderInspector(service());
+    fireEvent.click(within(screen.getByTestId('service-shared')).getByRole('checkbox'));
+    expect(updateElement).toHaveBeenCalledWith('containers', { shared: true });
+    cleanup();
+    const ticked = renderInspector(element({ id: 'containers', kind: 'platformService', shared: true }));
+    fireEvent.click(within(screen.getByTestId('service-shared')).getByRole('checkbox'));
+    expect(ticked.updateElement).toHaveBeenCalledWith('containers', { shared: undefined });
+    cleanup();
+    renderInspector(element({ kind: 'platform' }));
+    expect(screen.queryByTestId('service-shared')).toBeNull();
+  });
+
+  it('says beside the tick who uses it from another team, where nobody has ticked', () => {
+    renderInspector(service(), { offeredBeyond: ['WMS', 'Billing'] });
+    expect(screen.getByTestId('service-shared-derived').textContent).toContain('WMS, Billing');
+    cleanup();
+    renderInspector(service(), { offeredBeyond: [] });
+    expect(screen.getByTestId('service-shared-derived').textContent).toContain('within its own team');
+    cleanup();
+    // Ticked: the answer is the person's, and the rows are not second-guessed.
+    renderInspector(element({ id: 'containers', kind: 'platformService', shared: true }), { offeredBeyond: ['WMS'] });
+    expect(screen.getByTestId('service-shared-derived').textContent).not.toContain('WMS');
+  });
+
+  it('disables the tick when read-only', () => {
+    renderInspector(service(), { readOnly: true });
+    expect((within(screen.getByTestId('service-shared')).getByRole('checkbox') as HTMLInputElement).disabled).toBe(true);
   });
 });
