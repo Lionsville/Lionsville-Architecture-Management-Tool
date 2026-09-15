@@ -8,7 +8,7 @@ import { laidOut } from '../model/testFixtures';
 import type { DesignElement, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 import {
-  containerDiagramMembers, findContainerDiagram, seedContainerDiagram,
+  containerDiagramMembers, findContainerDiagram, hoistedEnd, landedInterfaces, seedContainerDiagram,
 } from './containerDiagram'
 
 function el(id: string, kind: DesignElement['kind'], over: Partial<DesignElement> = {}): DesignElement {
@@ -51,6 +51,20 @@ describe('containerDiagramMembers', () => {
     expect(containerDiagramMembers(model(), 'crews')).toEqual(
       expect.arrayContaining(['crews-api', 'crews-ui']),
     )
+  })
+
+  it('leaves what the application runs on and uses off it: a platform is not context', () => {
+    // A platform on a container diagram is a dashed box around what it hosts
+    // (ADR-0013), never a card beside it.
+    const withPlatform = model({
+      elements: [...model().elements, el('openshift', 'platform')],
+      relations: [
+        ...model().relations,
+        { id: 'h1', type: 'hostedOn', sourceId: 'crews-api', targetId: 'openshift' },
+        { id: 'u1', type: 'uses', sourceId: 'crews', targetId: 'openshift' },
+      ],
+    })
+    expect(containerDiagramMembers(withPlatform, 'crews')).not.toContain('openshift')
   })
 
   it('replaces a component from elsewhere with its parent application', () => {
@@ -144,5 +158,47 @@ describe('findContainerDiagram', () => {
   it('gives nothing when there is none yet', () => {
     expect(findContainerDiagram(withContainer, 'reisinfo')).toBeUndefined()
     expect(findContainerDiagram(model(), 'crews')).toBeUndefined()
+  })
+})
+
+
+/**
+ * What the diagram draws once interfaces land on it (ADR-0013, redone). The
+ * canvas asks these two questions and nothing else, so this is where they are
+ * pinned; `editor/graph.landing.test.ts` pins what it does with the answers.
+ */
+describe('an interface landing on a container diagram', () => {
+  const view = { kind: 'container' as const, applicationElementId: 'crews' }
+  const held = (id: string) => model().elements.find((e) => e.id === id)
+  const placed = new Set(['crews', 'crews-api', 'crews-ui', 'reisinfo'])
+
+  it('hoists a component of another application to that application, and leaves its own alone', () => {
+    expect(hoistedEnd(held, view, 'reisinfo-api')).toBe('reisinfo')
+    expect(hoistedEnd(held, view, 'crews-api')).toBe('crews-api')
+    expect(hoistedEnd(held, view, 'reisinfo')).toBe('reisinfo')
+  })
+
+  it('hoists nothing on a view that is not a container diagram', () => {
+    expect(hoistedEnd(held, { kind: 'layer7' }, 'reisinfo-api')).toBe('reisinfo-api')
+  })
+
+  it('says which interfaces landed here, and therefore draw no line to the boundary', () => {
+    const relations: Relation[] = [
+      { ...link('r1', 'reisinfo', 'crews-api'), refines: 'c9' },
+      // A landing on ANOTHER application\'s container is not one here.
+      { ...link('r2', 'crews', 'reisinfo-api'), refines: 'c8' },
+      link('r3', 'reisinfo', 'crews-ui'),
+    ]
+    expect([...landedInterfaces(relations, held, view, placed)]).toEqual(['c9'])
+  })
+
+  it('leaves the boundary line alone when the container it landed on is not drawn today', () => {
+    const relations: Relation[] = [{ ...link('r1', 'reisinfo', 'crews-api'), refines: 'c9' }]
+    expect([...landedInterfaces(relations, held, view, new Set(['crews', 'reisinfo']))]).toEqual([])
+  })
+
+  it('says nothing at all about a view that is not a container diagram', () => {
+    const relations: Relation[] = [{ ...link('r1', 'reisinfo', 'crews-api'), refines: 'c9' }]
+    expect([...landedInterfaces(relations, held, { kind: 'layer7' }, placed)]).toEqual([])
   })
 })

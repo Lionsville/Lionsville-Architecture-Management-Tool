@@ -15,6 +15,7 @@ import { placedNodes,
   unionRects,
 } from '../model/placement';
 import { nodeFigure } from '../model/kinds';
+import { hoistedEnd, landedInterfaces } from '../model/containerDiagram';
 import { isFlow } from '../model/relations';
 import { edgeRoutesOf, isAutoRoute, routeSides, routeSource } from '../model/routes';
 import { relationLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
@@ -213,16 +214,37 @@ export function buildEdges(
         : placementRect(nodeFigure(element, placement.zone), placement),
     );
   }
+  // Where an interface lands on this diagram, and therefore what it does NOT
+  // draw to the boundary (ADR-0013). Both answers are the model's; on any view
+  // that is not a container diagram they are empty and nothing changes.
+  const landed = landedInterfaces(args.model.relations, (id) => elementsById.get(id), args.diagram, placed);
+  const endOf = (id: ElementId) => hoistedEnd((held) => elementsById.get(held), args.diagram, id);
   // Resolve what each edge DRAWS first, because the slot fan below must only see
   // the edges that will use it.
-  const drawn: { connection: (typeof args.model.relations)[number]; route: EdgeRoute | undefined; stored: EdgeRoute | undefined }[] = [];
+  const drawn: {
+    connection: (typeof args.model.relations)[number];
+    sourceId: ElementId;
+    targetId: ElementId;
+    route: EdgeRoute | undefined;
+    stored: EdgeRoute | undefined;
+  }[] = [];
   for (const connection of args.model.relations) {
     // Only a flow is a line (ADR-0012 §5). The rows that join an application
     // to what runs it or what it uses are never drawn (ADR-0013): a platform
     // on a board is a card, and its page is where those rows are listed —
     // eleven applications hosted on one cluster is eleven lines to one chip.
     if (!isFlow(connection)) continue;
-    if (!placed.has(connection.sourceId) || !placed.has(connection.targetId)) continue;
+    // The interface is drawn where it lands, or at the boundary, never both.
+    if (landed.has(connection.id)) continue;
+    // A container of another application draws at that application's box, the
+    // way the membership already hoists it — so one row appears on both
+    // diagrams, each hoisting the far end. Both ends hoisting to the same box
+    // is a row that says nothing here, and is not drawn: lines are never added
+    // to reduce ambiguity.
+    const sourceId = endOf(connection.sourceId);
+    const targetId = endOf(connection.targetId);
+    if (sourceId === targetId) continue;
+    if (!placed.has(sourceId) || !placed.has(targetId)) continue;
     // A line with a window of its own is drawn only inside it: the sync and the
     // façade of a hybrid run are there for the months they are there for, and
     // gone on a board dated after the cutover (ADR-0009). A line with no window
@@ -248,7 +270,7 @@ export function buildEdges(
       isAutoRoute(stored) &&
       (args.draggingElementIds?.has(connection.sourceId) ||
         args.draggingElementIds?.has(connection.targetId));
-    drawn.push({ connection, stored, route: preview ?? (suppressed ? undefined : stored) });
+    drawn.push({ connection, sourceId, targetId, stored, route: preview ?? (suppressed ? undefined : stored) });
   }
   // Only the edges that draw WITHOUT bends take a slot. A routed edge attaches
   // where its first leg arrives (`routeEndAnchor`) and never reads `anchors`, so
@@ -259,16 +281,16 @@ export function buildEdges(
   // which a preview carries verbatim and a suppression must not hide.
   const anchorInputs = drawn
     .filter(({ route }) => (route?.waypoints.length ?? 0) === 0)
-    .map(({ connection, stored, route }) => ({
+    .map(({ connection, sourceId, targetId, stored, route }) => ({
       id: connection.id,
-      sourceId: connection.sourceId,
-      targetId: connection.targetId,
+      sourceId,
+      targetId,
       ...routeSides(stored ?? route),
     }));
   const anchorsById = assignEdgeAnchors(anchorInputs, rectById);
 
   const edges: FloatingEdgeModel[] = [];
-  for (const { connection, route, stored } of drawn) {
+  for (const { connection, sourceId, targetId, route, stored } of drawn) {
     // Resolve the stroke once and reuse it for the arrowheads, so a custom edge
     // colour tints the line and its markers together (plan D1). NULL falls back
     // to the theme token exactly as before.
@@ -278,8 +300,8 @@ export function buildEdges(
     edges.push({
       id: connection.id,
       type: 'floating',
-      source: connection.sourceId,
-      target: connection.targetId,
+      source: sourceId,
+      target: targetId,
       selected: args.selectedConnectionIds?.has(connection.id) ?? false,
       reconnectable: !args.readOnly,
       markerEnd: heads.end ? marker : undefined,
