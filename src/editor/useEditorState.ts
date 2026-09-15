@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardGeometry } from '../model/zones';
 import { claimKey } from '../model/keys';
-import { placeOn } from '../model/commands';
+import { placeOn, transaction } from '../model/commands';
 import { memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, PlacedNode, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
@@ -10,7 +10,6 @@ import type { TidyResult } from '../layout/tidy';
 import { remapClipboard, type ClipboardPayload } from '../model/clipboard';
 import { idPolicy, idsIn } from '../model/keys';
 import type { IdPolicy } from '../model/keys';
-import { transaction } from '../model/commands';
 import type { Command } from '../model/commands';
 import { placedNodes,
   canPlaceKind,
@@ -281,6 +280,18 @@ export interface EditorActions {
    * not write — the record shows the first and says there are more.
    */
   setHostedOn(elementId: ElementId, platformId: ElementId | undefined): void;
+  /**
+   * What a platform realises (ADR-0014): the services, as one step. Rows for
+   * services no longer named are taken off, rows for new ones written, and a
+   * row that stays is left exactly as it was, window and all.
+   */
+  setRealises(platformId: ElementId, serviceIds: readonly ElementId[]): void;
+  /**
+   * Who maintains a service or a platform (ADR-0014): one actor, as one step,
+   * the way `setHostedOn` moves a row rather than replacing it; `undefined`
+   * takes the row off.
+   */
+  setMaintainedBy(elementId: ElementId, actorId: ElementId | undefined): void;
   /**
    * Paste a clipboard snapshot onto the active diagram: mints the keys the
    * copies will have in the file, remaps references (parent, endpoints),
@@ -1033,6 +1044,43 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         dispatch({
           type: 'relation.create',
           relation: { id: ids.connection(), type: 'hostedOn', sourceId: elementId, targetId: platformId },
+        });
+      },
+
+      setRealises(platformId, serviceIds) {
+        const model = currentModel();
+        const held = model.relations.filter((c) => c.type === 'realises' && c.sourceId === platformId);
+        const commands: Command[] = [];
+        for (const row of held) {
+          if (!serviceIds.includes(row.targetId)) commands.push({ type: 'relation.delete', id: row.id });
+        }
+        for (const serviceId of serviceIds) {
+          if (held.some((row) => row.targetId === serviceId)) continue;
+          commands.push({
+            type: 'relation.create',
+            relation: { id: ids.connection(), type: 'realises', sourceId: platformId, targetId: serviceId },
+          });
+        }
+        if (commands.length === 1) dispatch(commands[0]);
+        else if (commands.length > 1) dispatch(transaction(commands));
+      },
+
+      setMaintainedBy(elementId, actorId) {
+        const model = currentModel();
+        const held = model.relations.find((c) => c.type === 'assigned' && c.targetId === elementId);
+        if (actorId === undefined) {
+          if (held) dispatch({ type: 'relation.delete', id: held.id });
+          return;
+        }
+        if (held) {
+          if (held.sourceId !== actorId) {
+            dispatch({ type: 'relation.update', id: held.id, patch: { sourceId: actorId } });
+          }
+          return;
+        }
+        dispatch({
+          type: 'relation.create',
+          relation: { id: ids.connection(), type: 'assigned', sourceId: actorId, targetId: elementId },
         });
       },
 

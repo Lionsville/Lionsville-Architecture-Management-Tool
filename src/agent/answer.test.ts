@@ -211,6 +211,18 @@ describe('element.describe', () => {
     // Without a tree, the document's own rows are the whole answer.
     const alone = parsed('element.describe', { id: 'billing' }, view(technology)).leverages
     expect(alone.services).toEqual([{ id: 'containers', name: 'Container platform', platforms: [] }])
+
+    // And the service's report, from the other side (ADR-0014 §2.8).
+    const report = JSON.parse((answer('service.report', { serviceId: 'containers' }, withTree) as unknown as { content: { text: string }[] }).content[0].text)
+    expect(report).toMatchObject({
+      service: { id: 'containers', shared: true },
+      maintainers: [{ id: 'platform-team', name: 'Platform team' }],
+      realisedBy: [{ id: 'openshift', name: 'OpenShift' }],
+      consumers: [{ id: 'billing', via: { id: 'billing-api', name: 'Billing API' } }, { id: 'crm', name: 'CRM' }],
+      stranded: ['billing', 'crm'],
+      counts: { maintainers: 1, realisedBy: 1, consumers: 2, stranded: 2 },
+    })
+    expect(answer('service.report', { serviceId: 'openshift' }, withTree)).toMatchObject({ refusal: 'agent.badArguments' })
   })
 })
 

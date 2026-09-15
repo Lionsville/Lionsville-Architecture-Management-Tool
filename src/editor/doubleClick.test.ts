@@ -14,6 +14,7 @@ const model = {
     element('ops', { kind: 'actor' }),
     element('esb', { kind: 'platform' }),
     element('shared-bus', { kind: 'platform', ref: 'acme/platforms' }),
+    element('brokering', { kind: 'platformService' }),
   ],
   diagrams: [
     { id: 'l7', kind: 'layer7' as const, name: 'L', members: [], geometry: { nodes: [] } },
@@ -43,6 +44,8 @@ describe('doubleClickTarget', () => {
     // answer even where the platform is not.
     expect(doubleClickTarget(model, 'shared-bus', { ownerOf: () => ({ label: 'x', fields: [], onShow: () => {} }) }))
       .toEqual({ kind: 'platformReport', platformId: 'shared-bus' });
+    // And a service's, from the other side of the realises row (ADR-0014).
+    expect(doubleClickTarget(model, 'brokering', undefined)).toEqual({ kind: 'serviceReport', serviceId: 'brokering' });
   });
 
   it('falls through for a stand-in nobody can show, and opens a page for everything else', () => {

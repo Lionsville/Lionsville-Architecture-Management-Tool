@@ -338,6 +338,9 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
   if (el.kind === 'platform') {
     items.push({ id: 'open-container', label: t('menu.platformReport'), action: 'open-container' });
   }
+  if (el.kind === 'platformService') {
+    items.push({ id: 'open-container', label: t('menu.serviceReport'), action: 'open-container' });
+  }
   if (ctx.readOnly) return items;
 
   // A stand-in is offered what this scope answers for and nothing else

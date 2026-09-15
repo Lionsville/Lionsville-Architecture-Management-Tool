@@ -89,6 +89,13 @@ export { boardsDrawing } from './drawnOn'
 /** What a container diagram holds, and what it draws once an interface lands. */
 export { hoistedEnd, landedInterfaces } from './containerDiagram'
 
+/** One parent, always, and the loop refused before it is written (ADR-0012 §3, ADR-0014). */
+export { wouldCycle } from './tree'
+
+/** One platform service, and what would be stranded if it were withdrawn (ADR-0014). */
+export { serviceReport } from './serviceReport'
+export type { ServiceConsumer, ServiceReport, ServiceReportOptions } from './serviceReport'
+
 /** One platform, and what would be left standing if it went (ADR-0013). */
 export { platformReport } from './platformReport'
 export type {

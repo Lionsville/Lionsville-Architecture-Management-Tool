@@ -92,6 +92,8 @@ export interface EditorDiagramActions {
      * strip — so this takes the platform, and the host draws the page.
      */
     onOpenPlatformReport?(platformId: string): void;
+    /** A service's report (ADR-0014): what would be stranded if it were withdrawn. As the platform's. */
+    onOpenServiceReport?(serviceId: string): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */

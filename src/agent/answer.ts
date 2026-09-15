@@ -20,6 +20,7 @@ import { hostingOf } from '../model/hosting'
 import { consumersOf, leverageOf, platformsBehind } from '../model/leverage'
 import { platformReport } from '../model/platformReport'
 import type { PlatformDescription, PlatformEnd } from '../model/platformReport'
+import { serviceReport } from '../model/serviceReport'
 import { descendantPlatforms } from '../model/hosting'
 import type { PlatformTree } from '../model/hosting'
 import { today } from '../model/lifecycle'
@@ -42,7 +43,7 @@ import type { TreeView } from './tree'
 export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
   | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
-  | 'platform.report'>
+  | 'platform.report' | 'service.report'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -295,6 +296,43 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
           ...(landing.relation.technology !== undefined ? { technology: landing.relation.technology } : {}),
           ...(landing.partOf !== undefined ? { partOf: landing.partOf } : {}),
         })),
+        counts: report.counts,
+      })
+    }
+
+    /**
+     * One service, and what would be stranded if it were withdrawn
+     * (ADR-0014): the platform report's other side, over the tree's rows,
+     * since the consumers are the landscapes' rows.
+     */
+    case 'service.report': {
+      const id = args.serviceId as string
+      const service = model.elements[id]
+      if (!service) return refused('agent.unknownId', `element ${id}`)
+      if (service.kind !== 'platformService') {
+        return refused('agent.badArguments', `${id} is a ${service.kind}, not a platformService`)
+      }
+      const describe = (held: string): PlatformDescription | undefined => {
+        const entry = view.tree?.lookup(held)
+        if (!entry) return undefined
+        return {
+          name: entry.name, kind: entry.kind,
+          ...(entry.master !== undefined && entry.master !== view.scopePath ? { where: entry.master } : {}),
+        }
+      }
+      const report = serviceReport(view.current(), id, { today: today(), describe, elsewhere: rowsAbout(view, [id]) })!
+      const end = (one: PlatformEnd) => ({
+        id: one.id, name: one.name, known: one.known,
+        ...(one.kind !== undefined ? { kind: one.kind } : {}),
+        ...(one.where !== undefined ? { scope: one.where } : {}),
+      })
+      return json({
+        service: { id: report.service.id, name: report.service.name, shared: report.service.shared, ...(report.service.retiredOn ? { retiredOn: report.service.retiredOn } : {}) },
+        maintainers: report.maintainers.map(end),
+        realisedBy: report.realisedBy.map(end),
+        consumers: report.consumers.map((one) => ({ ...end(one), ...(one.via ? { via: one.via } : {}) })),
+        scopes: report.scopes,
+        stranded: report.stranded.map((one) => one.id),
         counts: report.counts,
       })
     }

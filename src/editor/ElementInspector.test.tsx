@@ -51,16 +51,19 @@ function makeActions(): {
   updateElement: ReturnType<typeof vi.fn>;
   setDomainGroup: ReturnType<typeof vi.fn>;
   setHostedOn: ReturnType<typeof vi.fn>;
+  setRealises: ReturnType<typeof vi.fn>;
+  setMaintainedBy: ReturnType<typeof vi.fn>;
 } {
   const updateElement = vi.fn();
   const setDomainGroup = vi.fn();
   const setHostedOn = vi.fn();
-  const actions = new Proxy({ updateElement, setDomainGroup, setHostedOn } as Record<string | symbol, unknown>, {
-    get(target, prop) {
-      return target[prop] ?? vi.fn();
-    },
-  }) as unknown as EditorActions;
-  return { actions, updateElement, setDomainGroup, setHostedOn };
+  const setRealises = vi.fn();
+  const setMaintainedBy = vi.fn();
+  const actions = new Proxy(
+    { updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy } as Record<string | symbol, unknown>,
+    { get(target, prop) { return target[prop] ?? vi.fn(); } },
+  ) as unknown as EditorActions;
+  return { actions, updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy };
 }
 
 function renderInspector(
@@ -83,7 +86,7 @@ function renderInspector(
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
-  const { actions, updateElement, setDomainGroup, setHostedOn } = makeActions();
+  const { actions, updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy } = makeActions();
   const m = model(el, dia);
   const view = render(
     <ThemeProvider theme={createTheme()}>
@@ -107,7 +110,7 @@ function renderInspector(
       />
     </ThemeProvider>,
   );
-  return { ...view, updateElement, setDomainGroup, setHostedOn };
+  return { ...view, updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy };
 }
 
 const tab = (name: 'General' | 'Appearance' | 'Data') =>
@@ -681,5 +684,70 @@ describe('ElementInspector — what an application leverages', () => {
     cleanup();
     renderInspector(element({ kind: 'platform' }), { others: technology() });
     expect(screen.queryByTestId('element-leverages')).toBeNull();
+  });
+});
+
+/**
+ * The technology layer's own controls (ADR-0014 §2.8): what a platform or a
+ * service sits in, refusing a loop rather than hiding it; what a platform
+ * realises; and who maintains either. Rows, written as one step each.
+ */
+describe('ElementInspector — a platform and a service, authored', () => {
+  const platform = (id: string, over: Partial<DesignElement> = {}) =>
+    element({ id, kind: 'platform', name: id, platformArchetype: 'place', ...over });
+  const cluster = () => platform('openshift', { name: 'OpenShift', parentId: 'account' });
+  const others = () => [
+    platform('account', { name: 'Cloud account' }),
+    platform('ns', { name: 'Namespace', parentId: 'openshift' }),
+    platform('shared', { name: 'Shared cluster', ref: 'platforms' }),
+    element({ id: 'containers', kind: 'platformService', name: 'Container platform' }),
+    element({ id: 'registry', kind: 'platformService', name: 'Registry' }),
+    element({ id: 'platform-team', kind: 'actor', name: 'Platform team' }),
+  ];
+
+  it('offers what it may sit in, over its own kind and never a stand-in, and refuses the loop', () => {
+    const { updateElement } = renderInspector(cluster(), { others: others() });
+    expect((screen.getByTestId('element-part-of') as HTMLInputElement).value).toBe('account');
+    fireEvent.mouseDown(screen.getByLabelText('Part of'));
+    const options = screen.getAllByRole('option').map((one) => [one.textContent, one.getAttribute('aria-disabled')]);
+    // The namespace under it would make a loop: shown, and disabled with the reason.
+    expect(options).toEqual([
+      ['Nothing — a root', null], ['Cloud account', null], ['Namespacewould make a loop', 'true'],
+    ]);
+    fireEvent.click(screen.getByRole('option', { name: 'Nothing — a root' }));
+    expect(updateElement).toHaveBeenCalledWith('openshift', { parentId: undefined });
+  });
+
+  it('shows what a platform realises, and writes the set as one step', () => {
+    const { setRealises } = renderInspector(cluster(), {
+      others: others(),
+      relations: [{ id: 'r1', type: 'realises', sourceId: 'openshift', targetId: 'containers' }],
+    });
+    const realises = screen.getByTestId('element-realises');
+    expect(realises.textContent).toContain('Container platform');
+    fireEvent.mouseDown(within(realises).getByRole('combobox'));
+    fireEvent.click(screen.getByRole('option', { name: 'Registry' }));
+    expect(setRealises).toHaveBeenCalledWith('openshift', ['containers', 'registry']);
+  });
+
+  it('names who maintains a service, and moves the row', () => {
+    const { setMaintainedBy } = renderInspector(
+      element({ id: 'containers', kind: 'platformService', name: 'Container platform' }),
+      { others: others().filter((held) => held.id !== 'containers') },
+    );
+    expect((screen.getByTestId('element-maintained-by') as HTMLInputElement).value).toBe('');
+    fireEvent.mouseDown(screen.getByLabelText('Maintained by'));
+    fireEvent.click(screen.getByRole('option', { name: 'Platform team' }));
+    expect(setMaintainedBy).toHaveBeenCalledWith('containers', 'platform-team');
+  });
+
+  it('offers none of it to a stand-in\'s tree, and none of it when read-only', () => {
+    renderInspector(platform('shared', { name: 'Shared cluster', ref: 'platforms' }), { others: others().filter((held) => held.id !== 'shared') });
+    expect(screen.queryByTestId('element-part-of')).toBeNull();
+    cleanup();
+    renderInspector(cluster(), { others: others(), readOnly: true });
+    expect(selectDisabled('Part of')).toBe(true);
+    expect(selectDisabled('Maintained by')).toBe(true);
+    expect((within(screen.getByTestId('element-realises')).getByRole('combobox') as HTMLInputElement).disabled).toBe(true);
   });
 });

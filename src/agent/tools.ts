@@ -439,6 +439,23 @@ const SPECS = [
     },
   },
   {
+    name: 'service.report',
+    tier: 'read',
+    description:
+      'One platform service, and what would be stranded if it were withdrawn (ADR-0014): who maintains it, '
+      + 'whether it is shared, what realises it this year — empty is a real gap — who consumes it by '
+      + 'application (a container\'s row counts for its application, said beside it) and from which '
+      + 'scopes, and which consumers are still on it on the day it goes, or all of them where no day is '
+      + 'set. A report, not a view: there is no diagram to inspect or render. The platform\'s side is '
+      + 'platform.report.',
+    inputSchema: {
+      type: 'object',
+      properties: { serviceId: ID('platformService') },
+      required: ['serviceId'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'roadmap.check',
     tier: 'read',
     description:

@@ -19,7 +19,9 @@ export type DoubleClickTarget =
   | { kind: 'container'; diagramId: string }
   | { kind: 'newContainer' }
   /** A platform's report (ADR-0013): what would be left standing if it went. */
-  | { kind: 'platformReport'; platformId: ElementId };
+  | { kind: 'platformReport'; platformId: ElementId }
+  /** A service's report (ADR-0014): what would be stranded if it were withdrawn. */
+  | { kind: 'serviceReport'; serviceId: ElementId };
 
 export function doubleClickTarget(
   model: { elements: readonly DesignElement[]; diagrams: readonly DesignDiagram[] },
@@ -32,6 +34,8 @@ export function doubleClickTarget(
   // not a view: it is derived from the rows this scope holds, whoever defines
   // the platform, so there is nothing to make and nothing to find.
   if (element.kind === 'platform') return { kind: 'platformReport', platformId: elementId };
+  // And the offering's, from the other side (ADR-0014): who leans on it.
+  if (element.kind === 'platformService') return { kind: 'serviceReport', serviceId: elementId };
   if (element.kind !== 'application') return { kind: 'documentation' };
   if (element.ref !== undefined) {
     const show = ownership?.ownerOf(elementId)?.onShow;

@@ -17,6 +17,7 @@ import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
 import { hostingOf, mayBeHosted } from '../model/hosting';
 import { describeLeverage, leverageOf } from '../model/leverage';
+import { wouldCycle } from '../model/tree';
 import type { LeverageLine } from '../model/leverage';
 import { PLATFORM_ARCHETYPES, PLATFORM_ARCHETYPE_LABEL, platformArchetypeOf } from '../model/relations';
 import type { PlatformArchetype } from '../model/types';
@@ -270,6 +271,22 @@ export function ElementInspector(props: ElementInspectorProps) {
       (id) => props.model.elements.find((held) => held.id === id)?.name,
     )
     : undefined;
+  // The technology layer's own controls (ADR-0014 §2.8). What a platform or
+  // a service sits in is the same kind's tree, over this scope's own records
+  // — a stand-in sits on the owner's tree and is not offered one here — with
+  // a loop shown and refused rather than hidden, as the sheet's inspector
+  // does. What a platform realises, and who maintains either, are rows.
+  const isTechnology = element.kind === 'platform' || element.kind === 'platformService';
+  const kin = isTechnology
+    ? props.model.elements.filter((held) => held.kind === element.kind && held.id !== element.id && held.ref === undefined)
+    : [];
+  const services = props.model.elements.filter((held) => held.kind === 'platformService');
+  const realised = props.model.relations
+    .filter((row) => row.type === 'realises' && row.sourceId === element.id)
+    .map((row) => services.find((held) => held.id === row.targetId))
+    .filter((held): held is DesignElement => held !== undefined);
+  const actors = props.model.elements.filter((held) => held.kind === 'actor');
+  const maintainer = props.model.relations.find((row) => row.type === 'assigned' && row.targetId === element.id)?.sourceId ?? '';
   const leverageText = leverage === undefined ? '' : [
     ...leverage.services.map((one) => (one.platforms.length
       ? `${one.name} (${one.platforms.map((platform) => platform.name).join(', ')})`
@@ -461,6 +478,66 @@ export function ElementInspector(props: ElementInspectorProps) {
                       : t('field.sharedWithin')}
               </Typography>
             </Box>
+          )}
+
+          {isTechnology && element.ref === undefined && (
+            <TextField
+              select
+              fullWidth
+              label={t('field.partOf')}
+              value={element.parentId ?? ''}
+              disabled={readOnly || owned('parentId')}
+              slotProps={{ htmlInput: { 'data-testid': 'element-part-of' } }}
+              onChange={(e) => update({ parentId: e.target.value === '' ? undefined : e.target.value })}
+            >
+              <MenuItem value="">{t('field.partOfNothing')}</MenuItem>
+              {kin.map((candidate) => {
+                const loops = wouldCycle(props.model.elements, element.id, candidate.id);
+                return (
+                  <MenuItem key={candidate.id} value={candidate.id} disabled={loops}>
+                    {candidate.name}
+                    {loops && (
+                      <Typography component="span" sx={{ fontSize: 10, color: 'text.secondary', ml: 1 }}>
+                        {t('field.parentCycle')}
+                      </Typography>
+                    )}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          )}
+
+          {element.kind === 'platform' && services.length > 0 && (
+            <Autocomplete
+              multiple
+              options={services}
+              getOptionLabel={(held) => held.name}
+              isOptionEqualToValue={(a, b) => a.id === b.id}
+              value={realised}
+              disabled={readOnly}
+              onChange={(_e, value) => actions.setRealises(element.id, value.map((held) => held.id))}
+              renderInput={(params) => (
+                <TextField {...params} label={t('field.realises')} helperText={t('field.realisesHelp')} />
+              )}
+              data-testid="element-realises"
+            />
+          )}
+
+          {isTechnology && actors.length > 0 && (
+            <TextField
+              select
+              fullWidth
+              label={t('field.maintainedBy')}
+              value={maintainer}
+              disabled={readOnly}
+              slotProps={{ htmlInput: { 'data-testid': 'element-maintained-by' } }}
+              onChange={(e) => actions.setMaintainedBy(element.id, e.target.value || undefined)}
+            >
+              <MenuItem value="">{t('field.maintainedByNone')}</MenuItem>
+              {actors.map((actor) => (
+                <MenuItem key={actor.id} value={actor.id}>{actor.name}</MenuItem>
+              ))}
+            </TextField>
           )}
 
           {/* Where it runs (ADR-0013, redone). A container says it; an

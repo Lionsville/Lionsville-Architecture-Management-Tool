@@ -14,3 +14,5 @@
  */
 export { PlatformReportPage } from './ui/PlatformReportPage'
 export type { PlatformReportPageProps } from './ui/PlatformReportPage'
+export { ServiceReportPage } from './ui/ServiceReportPage'
+export type { ServiceReportPageProps } from './ui/ServiceReportPage'

@@ -58,7 +58,7 @@ import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { MapPage, SheetPage } from '../business'
-import { PlatformReportPage } from '../technology'
+import { PlatformReportPage, ServiceReportPage } from '../technology'
 import type { Supporter } from '../business'
 import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
@@ -953,6 +953,13 @@ export function ProjectWorkspace({
    * card and from the finding that names it, and never created — every mark on
    * it is derived from the rows, so opening it is the whole of making it.
    */
+  const openServiceReport = useCallback((serviceId: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.close()
+    platformReading.openService(serviceId)
+  }, [plans.closeAll, sheets.close, maps.close, platformReading.openService])
   const openPlatformReport = useCallback((platformId: string) => {
     plans.closeAll()
     sheets.close()
@@ -1149,6 +1156,7 @@ export function ProjectWorkspace({
             onOpenMap: openMap,
             onCreateMap: createMap,
             onOpenPlatformReport: openPlatformReport,
+            onOpenServiceReport: openServiceReport,
           }}
           history={historyRequests}
           requests={{ focus: focusRequest, documentation: docRequest }}
@@ -1305,6 +1313,17 @@ export function ProjectWorkspace({
         today={todayDay}
         applications={applicationsInTree}
         onOpenDocumentation={(id) => openDocumentation(id, maps.mapId)}
+        windowChrome={pageChrome}
+      />
+      <ServiceReportPage
+        open={platformReading.serviceId !== undefined}
+        model={session.model}
+        serviceId={platformReading.serviceId}
+        onClose={() => { platformReading.close(); leaveIfNothingToDraw() }}
+        elsewhere={rowsThrough}
+        describe={describeForMap}
+        today={todayDay}
+        onOpenDocumentation={(id) => openDocumentation(id)}
         windowChrome={pageChrome}
       />
       <PlatformReportPage

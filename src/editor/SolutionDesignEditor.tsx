@@ -1131,6 +1131,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         // A page, not a board: handed to the host, which draws it (ADR-0013).
         // A report, not a board: handed to the host, which draws it (ADR-0013).
         case 'platformReport': props.diagrams.onOpenPlatformReport?.(target.platformId); return;
+        case 'serviceReport': props.diagrams.onOpenServiceReport?.(target.serviceId); return;
         default: return;
       }
     },
