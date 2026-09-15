@@ -29,9 +29,16 @@ import type { BuildGraphArgs } from '../../editor/graph'
 import type { DesignModel } from '../../model'
 import type { ScopeSummary } from '../../projects/scope'
 
+/** The scope with the applications in it — by what it is, since the platforms sit beside it (ADR-0013). */
+const landscapeOf = (example: (typeof EXAMPLES)[number]) =>
+  exampleScopes(example).find((scope) => scope.kind === 'landscape')!.model
+
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, example) => {
   const scopes = exampleScopes(example)
-  const project = scopes[scopes.length - 1]
+  // The landscape is the scope with the applications; since ADR-0013 the
+  // platforms are a sibling of it, so it is found by what it is rather than
+  // by being last.
+  const project = scopes.find((scope) => scope.kind === 'landscape')!
   const model = project.model
   const byId = new Map(model.elements.map((e) => [e.id, e]))
 
@@ -39,8 +46,30 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     // The one thing that would make every other check in this file vacuous,
     // and the one an example in a form the tool no longer writes would fail.
     expect(scopes.map((scope) => scope.path))
-      .toEqual(['acme-logistics', 'acme-logistics/application-landscape'])
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
     expect(model.diagrams.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * The physical view (ADR-0013): the platforms are a scope of their own,
+   * the landscape draws stand-ins of the ones it stands on, its applications
+   * say what runs them, and the interfaces that cross the bus and the
+   * broker say so — which is what the bus's technology view is made of.
+   */
+  it('keeps the platforms in a scope of their own, and the landscape says what it stands on', () => {
+    const platforms = scopes.find((scope) => scope.path === 'acme-logistics/platforms')!
+    expect(platforms.kind).toBe('domain')
+    expect(platforms.model.elements.every((e) => e.kind === 'platform' && e.ref === undefined)).toBe(true)
+    expect(platforms.model.elements.map((e) => e.platformCategory)).toContain('integration')
+    const standIns = model.elements.filter((e) => e.kind === 'platform')
+    expect(standIns.length).toBeGreaterThan(0)
+    expect(standIns.every((e) => e.ref === 'acme-logistics/platforms')).toBe(true)
+    expect(model.relations.some((r) => r.type === 'hostedOn')).toBe(true)
+    expect(model.relations.some((r) => r.type === 'flow' && r.via?.includes('esb'))).toBe(true)
+    const view = model.diagrams.find((d) => d.kind === 'technology')!
+    expect(view.platformId).toBe('esb')
+    expect(model.diagrams.filter((d) => d.kind === 'layer7')
+      .every((d) => d.members.some((m) => m.id === 'esb' && m.zone === 'management'))).toBe(true)
   })
 
   /**
@@ -84,7 +113,8 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
    */
   it('holds a stand-in of every capability and person it draws', () => {
     const standIns = model.elements.filter((e) => e.ref !== undefined)
-    const owned = new Set(scopes[0].model.elements.map((e) => e.id))
+    const owned = new Set(scopes.filter((scope) => scope !== project)
+      .flatMap((scope) => scope.model.elements.filter((e) => e.ref === undefined).map((e) => e.id)))
     expect(standIns.length).toBeGreaterThan(0)
     expect(standIns.every((e) => owned.has(e.id))).toBe(true)
     // Every `supports` row the landscape wrote lands on a record it holds.
@@ -153,7 +183,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working file', (_key, example) => {
   const scopes = exampleScopes(example)
-  const project = scopes[scopes.length - 1]
+  const project = scopes.find((scope) => scope.kind === 'landscape')!
 
   it('survives the indexed model byte for byte', () => {
     const indexed = { ...project, model: toArrays(fromArrays(project.model)) }
@@ -214,7 +244,7 @@ describe('the generated landscape against the shipped one', () => {
   // is the one the router and the derive pay for — a `supports` row is neither
   // routed nor derived, and counting the business layer in would make this a
   // statement about how many capabilities somebody wrote down.
-  const shipped = degrees(exampleScopes(example).at(-1)!.model.relations
+  const shipped = degrees(landscapeOf(example).relations
     .filter((c) => c.type === 'flow')
     .map((c) => ({ from: c.sourceId, to: c.targetId })))
   const generated = degrees(syntheticModel('small').relations.map((c) => ({
@@ -246,7 +276,7 @@ describe('the generated landscape against the shipped one', () => {
  * out to an answer rather than to its own source.
  */
 describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by example', (_key, example) => {
-  const model = exampleScopes(example).at(-1)!.model
+  const model = landscapeOf(example)
   const elementIds = new Set(model.elements.map((e) => e.id))
   const decisionIds = new Set((model.decisions ?? []).map((d) => d.id))
   const plans = model.transitions ?? []
@@ -426,7 +456,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet',
  * a new user opens.
  */
 describe('a stakeholder tree over a landscape that already drew its actors', () => {
-  const model = exampleScopes(EXAMPLES[0]).at(-1)!.model
+  const model = landscapeOf(EXAMPLES[0])
   const flat: DesignModel = {
     ...model,
     elements: model.elements.map((element) => (element.kind === 'actor'
@@ -476,12 +506,11 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s contradicts 
 
   it('says the landscape owns every application and the organisation every function', () => {
     const master = (id: string) => index.lookup(id)?.master
-    for (const element of scopes.at(-1)!.model.elements) {
-      if (element.ref !== undefined) continue
-      expect(master(element.id), element.id).toBe(`${example.path}/application-landscape`)
-    }
-    for (const element of scopes[0].model.elements) {
-      expect(master(element.id), element.id).toBe(example.path)
+    for (const scope of scopes) {
+      for (const element of scope.model.elements) {
+        if (element.ref !== undefined) continue
+        expect(master(element.id), element.id).toBe(scope.path)
+      }
     }
   })
 
@@ -521,7 +550,7 @@ describe('where a copy lands', () => {
   /** The common case: an empty folder, and somebody who wants to see the tool. */
   it('makes the example the organisation when the root is unnamed and empty', () => {
     const copied = copyExampleInto(example, root())
-    expect(copied.map((scope) => scope.path)).toEqual(['', 'application-landscape'])
+    expect(copied.map((scope) => scope.path)).toEqual(['', 'application-landscape', 'platforms'])
     expect(copied[0].model.name).toBe('Acme Logistics')
     expect(copied[0].kind).toBe('organisation')
   })
@@ -529,7 +558,7 @@ describe('where a copy lands', () => {
   it('files it under a child of a root that already has a name', () => {
     const copied = copyExampleInto(example, root({ name: 'Globex' }))
     expect(copied.map((scope) => scope.path))
-      .toEqual(['acme-logistics', 'acme-logistics/application-landscape'])
+      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
   })
 
   it('files it under a child of a root that already has scopes in it', () => {
@@ -549,7 +578,7 @@ describe('where a copy lands', () => {
       { path: 'acme-logistics', name: 'Acme Logistics', diagrams: 0, children: [] },
     ] }))
     expect(copied.map((scope) => scope.path))
-      .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape'])
+      .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape', 'acme-logistics-2/platforms'])
   })
 
   /**
@@ -569,7 +598,7 @@ describe('where a copy lands', () => {
 
     const refs = (scope: typeof asRoot[number]) =>
       [...new Set(scope.model.elements.map((e) => e.ref).filter((ref) => ref !== undefined))]
-    expect(refs(asRoot[1])).toEqual([''])
-    expect(refs(asChild[1])).toEqual(['acme-logistics'])
+    expect(refs(asRoot[1])).toEqual(['', 'platforms'])
+    expect(refs(asChild[1])).toEqual(['acme-logistics', 'acme-logistics/platforms'])
   })
 })

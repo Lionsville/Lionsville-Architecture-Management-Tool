@@ -82,6 +82,16 @@
     "- The warehouse system stops booking dock doors once the yard system does; until then both do, which is the plan's shadow run.",
     ""
   ],
+  "application-landscape/diagrams/esb-technology.geometry.json": {
+    "nodes": []
+  },
+  "application-landscape/diagrams/esb-technology.json": {
+    "id": "esb-technology",
+    "kind": "technology",
+    "members": [],
+    "name": "Enterprise bus · technology",
+    "platformId": "esb"
+  },
   "application-landscape/diagrams/landscape-2027.geometry.json": {
     "needsLayout": true,
     "nodes": []
@@ -163,6 +173,10 @@
         "zone": "inputChannels"
       },
       {
+        "id": "esb",
+        "zone": "management"
+      },
+      {
         "group": "master-data",
         "id": "fleet-register",
         "zone": "landscape"
@@ -172,12 +186,20 @@
         "zone": "management"
       },
       {
+        "id": "kafka",
+        "zone": "management"
+      },
+      {
         "group": "billing",
         "id": "legacy-rating",
         "zone": "landscape"
       },
       {
         "id": "observability",
+        "zone": "management"
+      },
+      {
+        "id": "openshift",
         "zone": "management"
       },
       {
@@ -326,6 +348,10 @@
         "zone": "inputChannels"
       },
       {
+        "id": "esb",
+        "zone": "management"
+      },
+      {
         "group": "master-data",
         "id": "fleet-register",
         "zone": "landscape"
@@ -335,12 +361,20 @@
         "zone": "management"
       },
       {
+        "id": "kafka",
+        "zone": "management"
+      },
+      {
         "group": "billing",
         "id": "legacy-rating",
         "zone": "landscape"
       },
       {
         "id": "observability",
+        "zone": "management"
+      },
+      {
+        "id": "openshift",
         "zone": "management"
       },
       {
@@ -773,6 +807,15 @@
       },
       {
         "aspects": {},
+        "id": "esb",
+        "isManaged": false,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Enterprise bus",
+        "ref": "acme-logistics/platforms"
+      },
+      {
+        "aspects": {},
         "id": "fleet-management",
         "isManaged": false,
         "kind": "function",
@@ -844,6 +887,15 @@
         "ref": "acme-logistics"
       },
       {
+        "aspects": {},
+        "id": "kafka",
+        "isManaged": false,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Event broker",
+        "ref": "acme-logistics/platforms"
+      },
+      {
         "aspects": {
           "dr": {
             "status": "none"
@@ -888,6 +940,15 @@
         "kind": "application",
         "lifecycle": "live",
         "name": "Observability"
+      },
+      {
+        "aspects": {},
+        "id": "openshift",
+        "isManaged": false,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "OpenShift",
+        "ref": "acme-logistics/platforms"
       },
       {
         "aspects": {},
@@ -1397,7 +1458,10 @@
         "protocol": "AMQP",
         "sourceId": "order-management",
         "targetId": "route-optimiser",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "kafka"
+        ]
       },
       {
         "id": "c#14",
@@ -1406,7 +1470,10 @@
         "protocol": "AMQP",
         "sourceId": "route-optimiser",
         "targetId": "dispatch",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "kafka"
+        ]
       },
       {
         "id": "c#15",
@@ -1415,7 +1482,10 @@
         "protocol": "AMQP",
         "sourceId": "dispatch",
         "targetId": "track-trace",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "kafka"
+        ]
       },
       {
         "id": "c#16",
@@ -1424,7 +1494,10 @@
         "protocol": "REST",
         "sourceId": "order-management",
         "targetId": "wms",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "esb"
+        ]
       },
       {
         "id": "c#17",
@@ -1433,7 +1506,10 @@
         "protocol": "AMQP",
         "sourceId": "wms",
         "targetId": "track-trace",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "kafka"
+        ]
       },
       {
         "id": "c#18",
@@ -1442,7 +1518,10 @@
         "protocol": "AMQP",
         "sourceId": "order-management",
         "targetId": "billing",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "kafka"
+        ]
       },
       {
         "id": "c#19",
@@ -1469,7 +1548,10 @@
         "protocol": "SOAP",
         "sourceId": "billing",
         "targetId": "legacy-rating",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "esb"
+        ]
       },
       {
         "id": "c#21",
@@ -1541,7 +1623,10 @@
         "protocol": "AS4",
         "sourceId": "order-management",
         "targetId": "customs",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "esb"
+        ]
       },
       {
         "id": "c#29",
@@ -1776,7 +1861,10 @@
         "protocol": "AS2",
         "sourceId": "edi-intake",
         "targetId": "order-management",
-        "type": "flow"
+        "type": "flow",
+        "via": [
+          "esb"
+        ]
       },
       {
         "id": "c#9",
@@ -1786,6 +1874,72 @@
         "sourceId": "driver-app",
         "targetId": "dispatch",
         "type": "flow"
+      },
+      {
+        "id": "h#1",
+        "sourceId": "order-management",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#10",
+        "sourceId": "slotting",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#11",
+        "sourceId": "yard",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#2",
+        "sourceId": "dispatch",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#3",
+        "sourceId": "route-optimiser",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#4",
+        "sourceId": "track-trace",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#5",
+        "sourceId": "wms",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#6",
+        "sourceId": "billing",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#7",
+        "sourceId": "tariff-engine",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#8",
+        "sourceId": "customer-master",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#9",
+        "sourceId": "fleet-register",
+        "targetId": "openshift",
+        "type": "hostedOn"
       },
       {
         "id": "r#1",
@@ -1944,24 +2098,37 @@
         "sourceId": "tariff-engine",
         "targetId": "quoting-and-tariffs",
         "type": "supports"
+      },
+      {
+        "id": "u#1",
+        "sourceId": "order-management",
+        "targetId": "kafka",
+        "type": "uses"
+      },
+      {
+        "id": "u#2",
+        "sourceId": "legacy-rating",
+        "targetId": "esb",
+        "type": "uses"
       }
     ]
   },
   "application-landscape/scope.json": {
-    "type": "lionsville-architecture",
-    "version": 5,
-    "name": "Application landscape",
-    "kind": "landscape",
-    "description": "The applications Acme runs, the business architecture above them, and the plan that replaces the rater.",
     "activeDiagramId": "landscape",
+    "description": "The applications Acme runs, the business architecture above them, and the plan that replaces the rater.",
     "diagrams": [
       "landscape",
       "landscape-2027",
-      "wms-containers"
+      "wms-containers",
+      "esb-technology"
     ],
     "interchange": {
       "formatVersion": "1"
-    }
+    },
+    "kind": "landscape",
+    "name": "Application landscape",
+    "type": "lionsville-architecture",
+    "version": 5
   },
   "application-landscape/transitions/0001-retire-the-legacy-rater.md": [
     "---",
@@ -3412,16 +3579,120 @@
       }
     ]
   },
-  "scope.json": {
-    "type": "lionsville-architecture",
-    "version": 5,
-    "name": "Acme Logistics",
-    "kind": "organisation",
-    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
+  "platforms/docs/esb.md": [
+    "The integration bus the legacy interfaces still cross. Being retired: what it carries moves to the broker or to a direct call, one interface at a time.",
+    ""
+  ],
+  "platforms/docs/kafka.md": [
+    "The shared Kafka cluster. Every event that crosses a domain boundary is a topic here, and the topic is the contract.",
+    ""
+  ],
+  "platforms/docs/landing-zone.md": [
+    "The hyperscaler account the cluster and the broker run in. Somebody else's to run; ours to configure.",
+    ""
+  ],
+  "platforms/docs/openshift.md": [
+    "The container platform every in-house application is deployed to. One cluster per environment; the namespaces are per team.",
+    ""
+  ],
+  "platforms/model.json": {
+    "elements": [
+      {
+        "aspects": {},
+        "id": "esb",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "lifecycleDates": {
+          "retiring": "2027-06-01"
+        },
+        "name": "Enterprise bus",
+        "owner": "Integration team",
+        "platformCategory": "integration"
+      },
+      {
+        "aspects": {},
+        "id": "kafka",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Event broker",
+        "owner": "Platform team",
+        "platformCategory": "messaging",
+        "vendor": "Confluent"
+      },
+      {
+        "aspects": {},
+        "id": "landing-zone",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Cloud landing zone",
+        "outside": true,
+        "owner": "Platform team",
+        "platformCategory": "runtime"
+      },
+      {
+        "aspects": {},
+        "id": "ns-logistics",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Logistics namespace",
+        "parentId": "openshift",
+        "platformCategory": "runtime"
+      },
+      {
+        "aspects": {},
+        "id": "openshift",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "OpenShift",
+        "owner": "Platform team",
+        "platformCategory": "runtime"
+      }
+    ],
+    "relations": [
+      {
+        "id": "h#1",
+        "sourceId": "openshift",
+        "targetId": "landing-zone",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#2",
+        "sourceId": "kafka",
+        "targetId": "landing-zone",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#3",
+        "sourceId": "esb",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      }
+    ]
+  },
+  "platforms/scope.json": {
     "activeDiagramId": "",
+    "description": "What the applications run on and what carries their interfaces: the cluster, the broker, the bus. Owned here, drawn everywhere.",
+    "diagrams": [],
+    "kind": "domain",
+    "name": "Shared platforms",
+    "type": "lionsville-architecture",
+    "version": 5
+  },
+  "scope.json": {
+    "activeDiagramId": "",
+    "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
     "diagrams": [
       "business-architecture",
       "enterprise-map"
-    ]
+    ],
+    "kind": "organisation",
+    "name": "Acme Logistics",
+    "type": "lionsville-architecture",
+    "version": 5
   }
 }
