@@ -238,3 +238,46 @@ describe('the list as a whole', () => {
     expect(kinds(list)).toEqual(['retiresWithDependants', 'successorMissing'])
   })
 })
+
+/**
+ * Container lines that add up to an interface nobody drew (ADR-0013, redone).
+ *
+ * Not a contradiction in the dates but a picture that is missing, and the
+ * cases that matter are the ones that must NOT fire: work that has landed
+ * properly, and two containers of one application talking to each other.
+ */
+describe('an interface the container lines imply', () => {
+  const component = (id: string, parentId: string) => element(id, { kind: 'component', parentId })
+  const held = [
+    element('wms'), element('billing'), element('orders'),
+    component('wms-api', 'wms'), component('wms-events', 'wms'), component('billing-ledger', 'billing'),
+  ]
+
+  it('says how many lines run between which two applications, once for the pair', () => {
+    const list = check(held, [
+      connection('x1', 'billing-ledger', 'wms-api'),
+      connection('x2', 'billing', 'wms-events'),
+    ]).filter((one) => one.kind === 'impliedInterface')
+    expect(list).toEqual([{
+      kind: 'impliedInterface', subject: 'relation', relationType: 'flow',
+      id: 'x1', name: 'billing', detail: 'wms', count: 2,
+    }])
+  })
+
+  it('says nothing about lines that have landed, or about two containers of one application', () => {
+    const list = check(held, [
+      connection('c16', 'orders', 'wms'),
+      connection('r1', 'orders', 'wms-api', { refines: 'c16' }),
+      connection('r2', 'wms-api', 'wms-events'),
+    ])
+    expect(kinds(list)).not.toContain('impliedInterface')
+  })
+
+  it('comes last: nothing is broken, a line is missing', () => {
+    const list = check(
+      [...held, element('gone', { lifecycleDates: { retired: '2026-10-01' } })],
+      [connection('d1', 'gone', 'wms'), connection('x1', 'billing-ledger', 'wms-api')],
+    )
+    expect(kinds(list).indexOf('impliedInterface')).toBe(kinds(list).length - 1)
+  })
+})

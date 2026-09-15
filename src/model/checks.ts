@@ -24,6 +24,7 @@
  * over a landscape, which is what this module is for.
  */
 import { relationLiveAt, isDay, phaseAt } from './lifecycle'
+import { impliedInterfaces } from './implied'
 import { isTechnologyRelation } from './relations'
 import { isTransitionFinished } from './transition'
 import type { Transition } from './transition'
@@ -45,6 +46,13 @@ export type FindingKind =
    * roll-up over its containers, a container by its own row.
    */
   | 'platformRetiresFirst'
+  /**
+   * Container interfaces run between two applications with no application
+   * interface written for them (ADR-0013, redone): work that started at the
+   * container diagram and never reached the landscape. Offered with an
+   * *Accept* that writes the line and lands every one of them on it.
+   */
+  | 'impliedInterface'
   /** A plan is still running after the day it was due to end. */
   | 'planOverdue'
 
@@ -205,6 +213,24 @@ export function findings({ model, today }: CheckContext): Finding[] {
     })
   }
 
+  // Container lines that add up to an interface nobody has drawn (ADR-0013).
+  // Not a contradiction in the dates, which is what the rest of this file is
+  // about, and here for the reason the file's own header gives: an agent asks
+  // for the findings too, and this is the list it asks for.
+  for (const implied of impliedInterfaces(model.relations, (id) => byId.get(id))) {
+    const source = byId.get(implied.sourceId)
+    const target = byId.get(implied.targetId)
+    found.push({
+      kind: 'impliedInterface', subject: 'relation', relationType: 'flow',
+      // The first of the lines: what a click opens, and what the accept is
+      // found again by.
+      id: implied.relations[0].id,
+      name: source?.name ?? implied.sourceId,
+      detail: target?.name ?? implied.targetId,
+      count: implied.relations.length,
+    })
+  }
+
   for (const transition of model.transitions ?? []) {
     if (isTransitionFinished(transition)) continue
     if (isDay(transition.to) && transition.to < today) {
@@ -225,6 +251,9 @@ export function findings({ model, today }: CheckContext): Finding[] {
     lineOutlivesEnd: 3,
     planOverdue: 4,
     successorMissing: 5,
+    // Last: nothing is broken, there is a picture missing. A landscape being
+    // drawn bottom-up would otherwise open with a list of its own progress.
+    impliedInterface: 6,
   }
   return found.sort((a, b) => severity[a.kind] - severity[b.kind] || a.name.localeCompare(b.name))
 }

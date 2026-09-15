@@ -121,5 +121,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.lineOutlivesEnd': 'De rij “{name}” ({type}) is nog geldig nadat {detail} is uitgefaseerd.',
   'check.planOverdue': '{name} zou op {detail} klaar zijn en loopt nog.',
   'check.platformRetiresFirst': '{name} staat nog op {detail} nadat dat is uitgefaseerd.',
+  'check.impliedInterface': '{count} koppelvlakken op containerniveau tussen {name} en {detail} zonder koppelvlak op applicatieniveau.',
   'check.staleness': 'Dit toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap verouderd is.',
 }

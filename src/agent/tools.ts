@@ -1370,6 +1370,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',
+  'command.refinesEnds': 'A container interface has to sit under the interface it refines: source under source, target under target, each end either the same element or a component of it.',
+  'command.refinesLevel': 'The interface named by "refines" is itself a refinement. An interface lands once; refine the application-level line instead.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

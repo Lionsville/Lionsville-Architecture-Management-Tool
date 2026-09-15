@@ -313,8 +313,39 @@ export interface DesignConnection {
   sourceId: ElementId;
   targetId: ElementId;
   label?: string;
-  /** `flow` only: what travels over the line. Ignored on any other type. */
+  /**
+   * `flow` only: what travels over the line. Ignored on any other type.
+   *
+   * On a **container line** since ADR-0013 was redone, because that is where
+   * it is known: an application interface that has landed shows the set its
+   * refinements carry and keeps none of its own, and the reducer takes it off
+   * the moment the first refinement lands. One that has not landed keeps it
+   * exactly as before, so every file written until now keeps its meaning.
+   */
   protocol?: string;
+  /**
+   * `flow` only: what the interface is built out of — a free-text note beside
+   * the protocol, mirroring the element's own field. On the container line,
+   * for `protocol`'s reason.
+   */
+  technology?: string;
+  /**
+   * `flow` only: the application interface this container line is part of, by
+   * its relation id (ADR-0013, redone).
+   *
+   * **An interface lands.** The landscape draws one functional line per
+   * interface; the container diagram draws where it arrives, one line per
+   * landing. This field is the whole of what says the two are the same
+   * interface going down and going up — nothing else is stored for it, and
+   * everything a page shows about a landing is derived from it.
+   *
+   * The reducer holds it to its meaning: each end of the refining line is the
+   * corresponding end of the refined line, or a `component` filed under it —
+   * source under source, target under target — and the line it names carries
+   * no `refines` of its own, so a landing is one level deep and never a
+   * chain.
+   */
+  refines?: string;
   /**
    * The days this line is there, `yyyy-mm-dd` and inclusive (ADR-0009, and on
    * every relation type since ADR-0012 §5).

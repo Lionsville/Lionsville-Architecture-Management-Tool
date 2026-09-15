@@ -300,6 +300,95 @@ describe('apply — relations', () => {
   })
 })
 
+/**
+ * An interface landing a level down (ADR-0013, redone).
+ *
+ * `refines` is the one field whose meaning depends on two other rows and two
+ * elements, so the writer holds it to that meaning — and the landing and the
+ * stripping of the interface's own protocol are ONE step, because a person who
+ * lands a line and presses ⌘Z expects both back.
+ */
+describe('apply — an interface landing (ADR-0013)', () => {
+  /** An interface from b to a, and two containers of a to land it on. */
+  const landing = () => fromArrays({
+    name: 'Design',
+    elements: [
+      element('a'), element('b'),
+      element('a-api', { kind: 'component', parentId: 'a' }),
+      element('a-events', { kind: 'component', parentId: 'a' }),
+      element('b-ui', { kind: 'component', parentId: 'b' }),
+    ],
+    relations: [connection('c#1', 'b', 'a', { protocol: 'REST', label: 'asks' })],
+    diagrams: [],
+  })
+
+  it('lands a container line under the interface it names, reversibly', () => {
+    const m = landing()
+    const row = connection('r#1', 'b', 'a-api', { refines: 'c#1', protocol: 'REST' })
+    reversible(m, { type: 'relation.create', relation: row })
+    const landed = ok(apply(m, { type: 'relation.create', relation: row }))
+    expect(landed.model.relations['r#1'].refines).toBe('c#1')
+  })
+
+  it('takes the interface\'s own protocol off as the first landing arrives, and gives it back on undo', () => {
+    const m = landing()
+    const landed = ok(apply(m, {
+      type: 'relation.create',
+      relation: connection('r#1', 'b-ui', 'a-api', { refines: 'c#1', protocol: 'AMQP' }),
+    }))
+    expect(landed.model.relations['c#1'].protocol).toBeUndefined()
+    expect(landed.model.relations['c#1'].label).toBe('asks')
+    const back = ok(apply(landed.model, landed.inverse))
+    expect(back.model).toStrictEqual(m)
+  })
+
+  it('takes it off when an existing line is told what it is part of', () => {
+    const drawn = ok(apply(landing(), {
+      type: 'relation.create', relation: connection('r#1', 'b', 'a-api', { protocol: 'REST' }),
+    }))
+    expect(drawn.model.relations['c#1'].protocol).toBe('REST')
+    const landed = ok(apply(drawn.model, { type: 'relation.update', id: 'r#1', patch: { refines: 'c#1' } }))
+    expect(landed.model.relations['c#1'].protocol).toBeUndefined()
+    expect(ok(apply(landed.model, landed.inverse)).model).toStrictEqual(drawn.model)
+  })
+
+  it('refuses a landing whose ends do not sit under the interface\'s, each under its own', () => {
+    const m = landing()
+    // The same two containers, the other way round.
+    expect(apply(m, { type: 'relation.create', relation: connection('r#1', 'a-api', 'b', { refines: 'c#1' }) }))
+      .toEqual({ ok: false, reason: 'command.refinesEnds' })
+    // A component of the wrong application at one end.
+    expect(apply(m, { type: 'relation.create', relation: connection('r#1', 'b', 'b-ui', { refines: 'c#1' }) }))
+      .toEqual({ ok: false, reason: 'command.refinesEnds' })
+    // And the same refusal when a landed line is re-ended into nonsense.
+    const landed = ok(apply(m, { type: 'relation.create', relation: connection('r#1', 'b', 'a-api', { refines: 'c#1' }) }))
+    expect(apply(landed.model, { type: 'relation.update', id: 'r#1', patch: { targetId: 'b-ui' } }))
+      .toEqual({ ok: false, reason: 'command.refinesEnds' })
+  })
+
+  it('refuses a chain, and a landing on a line that is not there', () => {
+    const m = landing()
+    const landed = ok(apply(m, { type: 'relation.create', relation: connection('r#1', 'b', 'a-api', { refines: 'c#1' }) }))
+    expect(apply(landed.model, {
+      type: 'relation.create', relation: connection('r#2', 'b', 'a-api', { refines: 'r#1' }),
+    })).toEqual({ ok: false, reason: 'command.refinesLevel' })
+    expect(apply(m, { type: 'relation.create', relation: connection('r#9', 'b', 'a-api', { refines: 'nowhere' }) }))
+      .toEqual({ ok: false, reason: 'command.gone' })
+  })
+
+  it('leaves no landing pointing at a line that is gone: they become interfaces of their own', () => {
+    const m = landing()
+    const landed = ok(applyAll(m, [
+      { type: 'relation.create', relation: connection('r#1', 'b', 'a-api', { refines: 'c#1' }) },
+      { type: 'relation.create', relation: connection('r#2', 'b', 'a-events', { refines: 'c#1' }) },
+    ]))
+    const gone = ok(apply(landed.model, { type: 'relation.delete', id: 'c#1' }))
+    expect(gone.model.relations['r#1'].refines).toBeUndefined()
+    expect(gone.model.relations['r#2'].refines).toBeUndefined()
+    expect(ok(apply(gone.model, gone.inverse)).model).toStrictEqual(landed.model)
+  })
+})
+
 describe('apply — geometry', () => {
   it('moves what is placed and adds what is not, reversibly', () => {
     const m = sample()

@@ -34,6 +34,15 @@ export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
+/** An interface, and where it lands a level down (ADR-0013). */
+export {
+  applicationOf, hasRefinements, isApplicationLine, isContainerLine, landingPlaces,
+  protocolsOf, refinementRefusal, refinementsOf,
+} from './refines'
+export type { Held, RefinementRefusal } from './refines'
+export { impliedInterfaces } from './implied'
+export type { ImpliedInterface } from './implied'
+
 /** What a platform is, and what stands on it (ADR-0013). */
 export {
   PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, isPlatformCategory,

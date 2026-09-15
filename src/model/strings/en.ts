@@ -58,6 +58,8 @@ export const EN = {
   'command.gone': 'That is no longer there',
   'command.lastLandscape': 'This is the last landscape; it cannot be deleted.',
   'command.datesOutOfOrder': 'These dates run backwards: an application cannot retire before it goes live.',
+  'command.refinesEnds': 'A container interface has to sit under the interface it is part of: its two ends under that interface\'s two ends, each under its own.',
+  'command.refinesLevel': 'That interface is itself part of another one. An interface lands once.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',

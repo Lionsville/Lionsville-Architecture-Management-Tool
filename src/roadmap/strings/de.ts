@@ -121,5 +121,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.lineOutlivesEnd': 'Die Zeile „{name}“ ({type}) ist noch gültig, nachdem {detail} abgeschaltet wurde.',
   'check.planOverdue': '{name} sollte am {detail} fertig sein und läuft noch.',
   'check.platformRetiresFirst': '{name} steht noch auf {detail}, nachdem es abgelöst wurde.',
+  'check.impliedInterface': '{count} Container-Schnittstellen zwischen {name} und {detail} ohne Schnittstelle auf Anwendungsebene.',
   'check.staleness': 'Dies zeigt, wo die Daten einander widersprechen. Ob eine Landschaft veraltet ist, kann es nicht sagen.',
 }
