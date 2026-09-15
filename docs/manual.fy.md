@@ -357,6 +357,13 @@ lânskip en de containerdiagrammen dêrûnder; rjochtsklik op in tabblêd om it 
 te neamen, te duplisearjen, fuort te smiten of de **diagramynstellingen** te
 iepenjen.
 
+Wêr't dy containers rinne wurdt deromhinne tekene: stipele **deploymentramten**,
+ien de platfoarm, nestele sa't de platfoarmen nestele binne — de namespace yn it
+kluster yn it akkount — mei in container dy't nearne op rint bûten elk ramt. Se
+wurde út de rigen ôflaat en binne net te ferpleatsen: in ramt stiet dêr't syn
+leden steane. De knop **Deploymentramten** yn de arkbalke hellet se fuort foar
+in lêzer dy't de keale C4-plaat wol, en de werjefte ûnthâldt it.
+
 **Dingen fine.** ⌘F / Ctrl+F iepenet de siker: typ in namme, kategory,
 leveransier of technology, Enter of in klik selektearret it elemint en it
 tekenflak skoot dernei ta, nei in oar diagram as dat moat. It palet hat syn
@@ -413,10 +420,26 @@ fuortsmite**. Fuortsmite freget earst, en seit hoefolle ferbiningen meigeane.
 Sleep fan it hânfet fan it iene elemint nei it oare, of rjochtsklik en
 **Ferbining begjinne nei…**. In ferbining draacht in label, in protokol (wat jo
 ek type: REST, EDI, Kafka), in rjochting dy't de pylkpunten bepaalt, in kleur en
-in linestyl. Dûbelklik op it label om it op it plak te bewurkjen. **Fia** neamt
-wat it draacht — de bus, de gateway, de broker, op folchoarder — wêr't de scope
-in platfoarm befettet; de line bliuwt ien line, en de technologywerjefte fan it
-platfoarm neamt him (sjoch *Technology*).
+in linestyl, en in technology. Dûbelklik op it label om it op it plak te
+bewurkjen.
+
+**Wêr't in keppelflak lânet.** It lânskip tekenet ien line de keppelflak, en
+wêr't it oankomt leit in nivo leger. Iepenje it containerdiagram fan de
+applikaasje en pak de ein fan de line dêr't er de rânebox rekket: lit him op in
+container los en it keppelflak lânet dêr, mei syn protokol mei. Pak him wer om
+him nei in oare container te ferpleatsen, of lit him werom op de rânebox los om
+de lâning fuort te heljen; **Lânet op ▸** yn it linemenu docht itselde sûnder
+slepen. In twadde lâning is in twadde line — tekenje der ien fan in kontekstbox
+nei in container, en it ynspeksjepaniel freget boppe-oan fan hokker keppelflak
+er diel is, mei it keppelflak dat dy kant út rint al oanfinkt.
+
+Sa gau as in keppelflak lâne is, lit it *Detail: 2 keppelflakken op it
+containerdiagram · REST, AMQP* sjen ynstee fan syn eigen protokolfjild, want de
+protokollen binne dy fan de lânings — en **Iepenje**, of in dûbelklik op de
+line sels, bringt jo derhinne. Containerlinen dy't jo tekenje sûnder te sizzen
+wêr't se by hearre binne keppelflakken op harsels; de befiningen fan de roadmap
+biede oan de applikaasjeline derfoar te tekenjen (sjoch *Wêr't de datums
+inoar tsjinsprekke*).
 
 Linen wurde troch in echte router om eleminten hinne lein en wurde opnij lein as
 der wat ferskoot. As automatysk net is wat jo wolle:
@@ -643,8 +666,14 @@ kursor.
 Under de as stiet in list mei tsjinstridichheden: in applikaasje dy't ôfboud
 wurdt wylst der noch ferbiningen live binne, in opfolger dy't pas oankomt neidat
 it ding dat er ferfangt fuort is, in ôfbou sûnder opfolger neamd, in ferbining
-dy't noch jildich is neidat ien fan har einen ôfboud is, en in plan dat oer de
-dei hinne is dat it klear wêze soe.
+dy't noch jildich is neidat ien fan har einen ôfboud is, in applikaasje dy't
+noch op in ôfboud platfoarm stiet, en in plan dat oer de dei hinne is dat it
+klear wêze soe.
+
+Ien rigel is gjin tsjinstridichheid mar in ûntbrekkende plaat: keppelflakken op
+containernivo tusken twa applikaasjes dêr't nimmen in applikaasjekeppelflak foar
+tekene hat. **Oernimme** tekenet it en lit elk fan dy linen deropp lânje, yn ien
+stap — of lit it stean, en der bart neat.
 
 It seit wêr't de datums inoar tsjinsprekke. It kin net sizze dat in lânskip
 ferâldere is — neat kin dat — en de side seit dat ûnder de list.
@@ -802,31 +831,44 @@ kolomkop om de applikaasje te iepenjen, dêr't dit ûnderdiel him hat.
 
 ### Technology
 
-Wêr't de applikaasjes op steane is in **platfoarm**: in kluster, in broker,
-in bus, in firewall, de tooling. Tekenje der ien út de lêste rige fan it
-palet en it lânet yn de beharlaach as de chip dy't dy laach altyd al tekene;
-jou it in soarte yn de ynspektor — runtime, berjochteferkear, yntegraasje,
-netwurk, data, identiteit, tooling, observability. In dield platfoarm wurdt
-meast definiearre yn in eigen scope en earne oars tekene as plakferfanger, sadat
-it team dat it kluster beheart it rekord besit en elk lânskip seit dat it
-derop stiet.
+Wêr't de applikaasjes op steane is in **platfoarm**: in kluster, in broker, in
+bus, in firewall, it ark. Tekenje der ien út de ûnderste rige fan it palet en er
+lânet yn de behearsbân as de chip dy't dy bân altyd al tekene; jou him yn it
+ynspeksjepaniel in soarte — runtime, messaging, yntegraasje, netwurk, data,
+identiteit, ark, observability. In dield platfoarm wurdt meastal yn in eigen
+scope definiearre en earne oars as stand-in tekene, sadat it team dat it kluster
+draait it record hat en elk lânskip seit dat it deropp stiet.
 
-Wat wêr draait binne twa rigen: in applikaasje **draait op** in platfoarm en
-**brûkt** de tsjinsten dy't se ôfnimt. Wat in keppelflak draacht stiet op de
-ferbining sels: **Fia**. Dêrút is in **technologywerjefte** makke — dûbelklik
-op in platfoarm, of **Technologywerjefte meitsje** yn syn menu, en de side
-toant wêr't it op stiet, wat derûnder hinget, wat derop draait, wat it brûkt,
-en elk keppelflak dat derthrochhinne rint, mei links wat ynkomt en rjochts wat
-derút giet, hoe't it reizget (punt-nei-punt, eventdreaun, fia in bus, fia in
-poarte) en de rest fan syn paad. In namme iepenet de side fan dat ding wêr't
-dizze scope it befettet. De werjefte wurdt út de rigen opmakke, dus se is nea
-ferâldere; har tabblêd stiet by de oare siden.
+**Wêr't wat rint stiet op de container.** In applikaasje rint nearne — de dingen
+dêr't se út bestiet rinne, en meastal op mear as ien plak — dus de kar *Rint op*
+stiet op it record fan in komponint, en in applikaasje krijt te hearren wat har
+containers sizze: *Rint op: OpenShift (3 containers)*. In applikaasje sûnder
+containers — in ekstern systeem, in ynkochte tsjinst — seit sels wêr't se rint,
+wat foar in tsjinst dy't de leveransier host de iennige wiere sin is dy't der is.
+**Brûkt** stiet dêr los fan en bliuwt op beide nivo's: in applikaasje brûkt de
+identity provider, in container brûkt in cache.
 
-Twa dingen folgje. De **platfoarm**-badge op in kaart lêst út de rigen wêr't
-nimmen him set hat — beheard op jo eigen platfoarm, foar in part op ien
-bûten de organisaasje, gjin op neat — en in status dy't jo sels sette wint. En
-de befiningen fan de roadmap krije in rigel foar in applikaasje, of in
-keppelflak, dy't noch op in platfoarm stiet neidat dat útfasearre is.
+**Kleurje op** yn de arkbalke fan it lânskip kleuret de kaarten: op platfoarm,
+sadat jo yn ien eachopslach sjogge hokker applikaasjes der ien diele, of op
+libbenssyklus fan de technyk, sadat de kaarten dy't op wat steane dat útfazearre
+wurdt amber wurde. De leginda sit ûnder deselde knop, en oansette feroaret neat
+as de plaat.
+
+**It platfoarmrapport** is wat der oerbliuwe soe as it platfoarm fuortfoel.
+Dûbelklik op de chip, of kies **Platfoarmrapport** yn it menu, en de side lit
+sjen wêr't it op stiet, wat derûnder sit, wat deropp rint — elke container
+neamd njonken syn applikaasje — wat it brûkt, en de keppelflakken op
+containernivo dy't deroerhinne rinne, elk mei it applikaasjekeppelflak dêr't it
+diel fan is. In namme iepenet de side fan dat ding dêr't dizze scope it hat. Der
+wurdt neat tekene en neat makke: it wurdt elke kear dat jo it iepenje út de
+rigen ôflaat, dus it is noait âld.
+
+Twa dingen folgje dêrút. De badge **platfoarm** op in kaart lêst ôf wêr't de
+containers fan in applikaasje op steane as nimmen him set hat — managed op in
+eigen platfoarm, foar in part op ien bûten de organisaasje, gjin op neat — en in
+status dy't jo sette wint. En de befiningen fan de roadmap krije in rigel foar in
+applikaasje dy't noch op in platfoarm stiet neidat dat útfazearre is, mei de
+container derby dy't nearne mear op stiet.
 
 ## Sykje
 

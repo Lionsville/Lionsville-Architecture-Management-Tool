@@ -346,6 +346,13 @@ of that diagram and its components sit inside. The tabs at the top list the
 landscape and the container diagrams under it; right-click a tab to rename,
 duplicate, delete or open the **diagram settings**.
 
+Where those containers run is drawn around them: dashed **deployment boxes**,
+one per platform, nested the way the platforms nest — the namespace inside the
+cluster inside the account — with a container that runs on nothing outside
+every box. They are worked out from the rows and cannot be moved: a box is
+where its members are. The **deployment** button in the toolbar takes them
+away for a reader who wants the plain C4 picture, and the view remembers.
+
 **Finding things.** ⌘F / Ctrl+F opens the finder: type a name, category,
 vendor or technology, Enter or a click selects the element and the canvas
 scrolls to it, switching diagram first if it has to. The palette has its own
@@ -398,11 +405,25 @@ model**. Deleting asks first, and says how many connections go with it.
 
 Drag from one element's handle to another, or right-click and **Start
 connection to…**. A connection carries a label, a protocol (whatever you type:
-REST, EDI, Kafka), a direction that sets the arrowheads, a colour and a line
-style. Double-click the label to edit it in place. **Via** names what carries
-it — the bus, the gateway, the broker, in order — where the scope holds a
-platform; the line stays one line, and the platform's technology view lists
-it (see *Technology*).
+REST, EDI, Kafka), a technology, a direction that sets the arrowheads, a colour
+and a line style. Double-click the label to edit it in place.
+
+**Where an interface lands.** The landscape draws one line per interface, and
+where it arrives is a level down. Open the application's container diagram and
+grab the end of the line where it meets the boundary box: drop it on a
+container and the interface lands there, taking its protocol with it. Grab it
+again to move it to another container, or drop it back on the boundary to take
+the landing away; **Lands on ▸** on the line's menu does the same without
+dragging. A second landing is a second line — draw one from a context box to a
+container, and the inspector asks at the top which interface it is part of,
+with the one running that way already ticked.
+
+Once an interface has landed it shows *Detail: 2 interfaces on the container
+diagram · REST, AMQP* in place of its own protocol field, because the
+protocols are the landings' — and **Open**, or a double-click on the line
+itself, goes there. Container lines you draw without saying what they are part
+of are interfaces of their own; the roadmap's findings offer to draw the
+application line for them (see *What the dates disagree about*).
 
 Lines are routed around elements by a real router and re-route when something
 moves. When automatic is not what you want:
@@ -619,7 +640,13 @@ drivers and the options you weighed.
 Under the axis is a list of contradictions: an application retiring with
 connections still live, a successor that does not arrive until after the thing it
 replaces is gone, a retirement with no successor named, a connection still valid
-after one of its ends has retired, and a plan past the day it was due to finish.
+after one of its ends has retired, an application still standing on a platform
+that has been retired, and a plan past the day it was due to finish.
+
+One entry is not a contradiction but a picture that is missing: container
+interfaces running between two applications with no application interface drawn
+for them. **Accept** draws it and lands every one of them on it, as one step —
+or leave it, and nothing happens.
 
 It says where the dates contradict each other. It cannot tell you that a landscape
 is out of date — nothing can — and the page says so under the list.
@@ -773,22 +800,34 @@ identity, tooling, observability. A shared platform is usually defined in a
 scope of its own and drawn elsewhere as a stand-in, so the team that runs
 the cluster owns its record and every landscape says it stands on it.
 
-What runs where is two rows: an application is **hosted on** a platform,
-and **uses** the services it consumes. What carries an interface is on the
-connection itself: **Via**. Those are what a **technology view** is made of
-— double-click a platform, or **Create technology view** on its menu, and
-the page shows what it stands on, what is under it, what runs on it, what
-uses it, and every interface that passes through it with what comes in on
-the left and what goes out on the right, how it travels (point-to-point,
-evented, mediated, gated) and the rest of its path. A name opens the
-thing's page where this scope holds it. The view is laid out from the
-rows, so it is never stale; its tab sits with the other pages.
+**Where something runs is said on the container.** An application is not
+deployed anywhere — the things it is made of are, and usually in more than
+one place — so the *Hosted on* choice is on a component's record, and an
+application is told what its containers say: *Runs on: OpenShift (3
+containers)*. An application with no containers at all — an outside system, a
+bought service — says where it runs itself, which for a vendor-hosted service
+is the only true sentence there is. **Uses** is separate and stays at both
+levels: an application uses the identity provider, a container uses a cache.
 
-Two things follow. The **platform** badge on a card reads off the rows
-where nobody set it — managed on your own platform, partial on one outside
-the organisation, none on nothing — and a status you set wins. And the
-roadmap's findings gain a line for an application, or an interface, still
-standing on a platform after it has been retired.
+**Colour by** in the landscape's toolbar tints the cards: by platform, so you
+can see at a glance which applications share one, or by technology lifecycle,
+so the ones standing on something retiring go amber. The legend is under the
+same button, and turning it on changes nothing but the picture.
+
+**A platform's report** is what would be left standing if it went.
+Double-click its chip, or **Platform report** on its menu, and the page shows
+what it stands on, what is under it, what runs on it — each container named
+beside its application — what uses it, and the container interfaces that cross
+it, each with the application interface it is part of. A name opens the
+thing's page where this scope holds it. Nothing is drawn or created: it is
+worked out from the rows every time you open it, so it is never stale.
+
+Two things follow. The **platform** badge on a card reads off what an
+application's containers stand on where nobody set it — managed on your own
+platform, partial on one outside the organisation, none on nothing — and a
+status you set wins. And the roadmap's findings gain a line for an application
+still standing on a platform after it has been retired, naming the container
+that is left standing on nothing.
 
 ## Search
 

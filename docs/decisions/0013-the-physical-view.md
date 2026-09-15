@@ -4,6 +4,56 @@
 * Date: 2026-09-15
 * Deciders: Wouter Simons
 
+**Redone, 15 September 2026.** The kind, the category, the two relations and
+the platform scope were built as written below, and the rest was tried on a
+real landscape and found wrong at the first look. What follows is what changed;
+where a section below disagrees with this, this is the record.
+
+* **`via` is withdrawn.** A flow carried the platforms it travelled over,
+  beside `protocol`. Two fields for one fact, and the one asked at the level
+  where nobody knows the answer: a person drawing an interface between two
+  applications is not asked which bus it crosses, because the interface has
+  not been built yet and the pair could disagree on the same line. §3 goes
+  with it — the transport pattern, its four names, and the dangling end a bus
+  could be. A file that still carries the field reads, and the field is
+  dropped on the next save.
+* **What carries an interface is where it lands.** A container-level flow may
+  say which application-level flow it is part of (`refines`, the one new
+  field), and only when its ends sit under that line's ends — source under
+  source, target under target, one level deep. The landscape keeps one
+  functional line per interface, with the label, the direction and the window;
+  the container diagram draws where it arrives, one line per landing and no
+  line to the boundary for an interface that has landed. Protocol and
+  technology move down to the landing, because that is the level at which
+  anybody knows them, and the interface shows the set its landings carry.
+  Nobody is asked twice: a landing on a container hosted on a broker is the
+  fact, and the platform's report reads it off the rows.
+* **Container lines imply an interface** where nobody has drawn one. Derived,
+  never written and never drawn — a line nobody agreed to is the clutter this
+  decision set out to remove — and offered as a finding with an *Accept* that
+  writes the application line and lands every one of them on it as one step.
+* **Hosting is a container-level fact.** An application is not deployed
+  anywhere; the things it is made of are, and usually in more than one place.
+  So the row is written from the container and the application's answer is the
+  roll-up over them, which the badge, the finding and the record all read. An
+  application with no containers — an outside system, a SaaS service, a bought
+  package — still says where it runs itself, because that is the only sentence
+  anybody can write about it, and the writer refuses the row from one that has
+  containers.
+* **The technology view is not a view.** §4 made a platform's page the fourth
+  laid-out view kind, which promised a picture and gave a table of text, and
+  made a person create one before they could read one. Three things replace
+  it. The deployment boxes: the platforms a container diagram's containers run
+  on, drawn around them as derived dashed groups nested the way the platforms
+  nest — Structurizr's deployment diagram over the canvas that exists. The
+  overlay: the landscape's cards tinted by the platform of their roll-up or by
+  the worst lifecycle among the platforms they stand on, with no new geometry
+  and no lines. And the report: one platform, what would be left standing if
+  it went, and the container interfaces that cross it each with the
+  application interface it is part of — reached from the platform's own card
+  and from the finding that names it, with nothing to create, because every
+  mark on it is derived from the rows.
+
 ## Context and Problem Statement
 
 Of the four views of 4+1, the model had the logical view and the scenarios
@@ -100,6 +150,9 @@ card and never a line's end.
 
 ### 3. Transport, on the flow
 
+*Superseded by the preamble: `via` is withdrawn, and what carries an interface
+is answered by where it lands.*
+
 A `flow` gains `via`: the platforms it travels over, in order — `[esb]`,
 `[gateway, kafka]`, absent for point-to-point. The interface stays **one**
 row from source to target and the landscape draws it as the functional
@@ -115,6 +168,9 @@ stand-in is ordinary; `via` an id nobody in the tree defines is a dangling
 end, kept and reported like any other.
 
 ### 4. The technology view
+
+*Superseded by the preamble: a platform has a report, not a view kind, and the
+pictures are the deployment boxes and the landscape overlay.*
 
 The fourth laid-out view, beside the sheet and the map: one platform, with
 what stands on it and what passes through it. Never drawn — every mark is
@@ -132,6 +188,10 @@ the rest of the tree wrote arrive through the index the way the map's do.
 The index answers for a platform with every flow that passes through it.
 
 ### 5. The check, and the badge
+
+*Superseded by the preamble in one respect: both read the roll-up over an
+application's containers rather than its own rows, and the finding names the
+container that is left standing on nothing.*
 
 A platform that retires before what stands on it or travels over it is a
 finding of the roadmap's — on the element for a `hostedOn` or `uses` row,
@@ -177,10 +237,17 @@ once, rather than here for fields that are additive.
   node* is a `hostedOn` row per environment, or a view per environment
   with `asOf`-like scoping, or an instance record of its own. The first
   organisation that runs two environments through this decides which.
-* **A `via` that names an application.** A domain with a bespoke
-  integration service it owns and has not promoted to the platform scope
-  cannot name it here. Platforms only, for now, which is the stricter and
-  more honest reading; the promote gesture is the way out.
+* **A landing three levels down.** `refines` is one level deep: a container
+  line names an application line, and the ends have to sit directly under its
+  ends. A component of a component has nowhere to say what it is part of
+  without a chain, and a chain makes "which landscape line is this" a walk
+  rather than a read. The first organisation that models two levels of
+  container decides whether the answer is a chain or a roll-up.
+* **A landing whose far end is another application's container**, where both
+  applications have a container diagram. It is one row shown on both, each
+  hoisting the far end to the other application's context box — which is
+  right — but a person selecting it on one has selected a row the other also
+  draws, and what *Lands on* means from the far side is not yet said.
 * **The management band's residents.** The forge and the monitoring an
   organisation draws there today are applications with flows on them; the
   example keeps them so. Whether a refresh should offer to make them

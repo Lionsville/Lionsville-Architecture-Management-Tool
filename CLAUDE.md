@@ -148,8 +148,14 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · fromInterchange · toInterchange · containerDiagram
-                    technologyDiagram   one platform, with what stands on it and
-                                      what passes through it (ADR-0013)
+                    platformReport    one platform, and what would be left
+                                      standing if it went (ADR-0013)
+                    refines · implied   which application interface a container
+                                      line is part of, and the one nobody drew
+                    hosting · deployment · overlay   the roll-up over an
+                                      application's containers, the boxes a
+                                      container diagram draws around them, and
+                                      what the landscape is coloured by
                     logo · logoRegistry · marks/    uploads, the icon registry
                     documentImage     a picture a document may hold, and its limits
                     clipboard · equality   what copies, and what counts as the same
@@ -196,11 +202,11 @@ src/business/     The business layer, and the arithmetic over its four trees
                                       up on the sections, the gap on the leaves
                     ui/               SheetPage, MapPage, FunctionInspector,
                                       captureSheet
-src/technology/   The physical view (ADR-0013): a platform's page. Laid out,
-                  never dragged; the arithmetic is the model's, because the
+src/technology/   The physical view (ADR-0013): a platform's report. Read,
+                  never drawn; the arithmetic is the model's, because the
                   agent asks for it too.
-                    ui/TechnologyPage what runs on it, what uses it, and every
-                                      interface through it, split at the platform
+                    ui/PlatformReportPage   what runs on it, what uses it, and
+                                      the container interfaces that cross it
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -565,11 +571,13 @@ identifiers is still a list of a customer's identifiers.
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
-| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` — and, over the whole tree, `scopes.list` `register.list` `checks.list` |
+| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` — and, over the whole tree, `scopes.list` `register.list` `checks.list` |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` |
-| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
+| Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `interface.accept` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5, ADR-0013) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones |
-| What a thing IS (ADR-0012 §4, ADR-0013) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform`; a platform carries a `platformCategory` and a flow carries `via`, the platforms it travels over |
+| What a thing IS (ADR-0012 §4, ADR-0013) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform`; a platform carries a `platformCategory` |
+| Where an interface arrives (ADR-0013) | a container-level flow **`refines`** the application-level one it is part of — ends under ends, one level deep. The landscape draws the interface, the container diagram draws the landings and no line to the boundary for one that has landed; `protocol` and `technology` live on the landing |
+| Where something runs (ADR-0013) | a **container** is `hostedOn` a platform; an application says so itself only when it has no containers, and its answer otherwise is the **roll-up** over them |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
 | Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
@@ -577,7 +585,7 @@ identifiers is still a list of a customer's identifiers.
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
-| The five view kinds (ADR-0012 §6, ADR-0013) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry; a technology view is about one `platformId` |
+| The four view kinds (ADR-0012 §6) | `layer7` · `container` drawn on a canvas; `sheet` · `map` **laid out**, no geometry. A platform has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -1014,14 +1022,38 @@ the shell and the palette agree on where a new card lands.
 Then the model gained the **physical view** (`docs/decisions/0013`). A
 `platform` is the seventh kind — a cluster, a broker, a bus, the tooling,
 with a closed `platformCategory` — drawn on a board as the chip the
-management band always drew; an application or a component is `hostedOn`
-one and `uses` others; and a flow carries `via`, the platforms it travels
-over, so an interface stays one row and the transport pattern is read off
-what carries it rather than stored. The **technology view** is the fourth
-laid-out view: one platform, what stands on it, and every interface through
-it split at the platform — made where the rows are, whoever defines the
-platform, and reached from the platform's card. A platform that retires
-before what stands on it is a finding, and the `platform` badge reads off
-the `hostedOn` rows where nobody typed it. The format did not turn: the
+management band always drew; a container is `hostedOn` one and an application
+or a container `uses` others. Only a flow is ever a line on a canvas: eleven
+applications hosted on one cluster is eleven rows and no lines, and a
+platform on a board is a card.
+
+The first cut of that also carried a `via` on the flow and made a platform's
+page a view kind, and both were wrong at the first look on a real landscape —
+the preamble on ADR-0013 says why. **An interface lands** instead: a
+container-level flow `refines` the application-level one it is part of, ends
+under ends and one level deep, and that one field is the whole of it. The
+landscape draws one functional line per interface with the label, the
+direction and the window; the container diagram draws where it arrives, one
+line per landing and none to the boundary for an interface that has landed;
+`protocol` and `technology` live on the landing, because that is the level at
+which anybody knows them. Container lines nobody has drawn an interface for
+**imply** one, which is a finding with an *Accept* rather than a ghost line.
+Hosting moved down with it: a container says where it runs and an
+application's answer is the **roll-up** over its containers, which the badge,
+the retiring-platform finding and the record all read; an application with no
+containers still says it itself, because "hosted by the vendor" is the only
+sentence anybody can write about a bought service.
+
+The pictures are two, and neither is a new view kind. The **deployment
+boxes** are the platforms a container diagram's containers run on, drawn
+around them as derived dashed groups nested the way the platforms nest —
+Structurizr's deployment diagram over the canvas that exists, never stored
+and never dragged. The **overlay** colours the landscape's cards by the
+platform of their roll-up or by the worst lifecycle among the platforms they
+stand on — LeanIX's picture, with no new geometry and no lines. What is left
+of the page is a **report**: one platform, what would be left standing if it
+went, and the container interfaces that cross it each with the application
+interface it is part of, reached from the platform's card and from the
+finding that names it, with nothing to create. The format did not turn: the
 fields are additive and ride through format 5; the number turns with the
 decision-record change, once.

@@ -361,6 +361,14 @@ landschap en de containerdiagrammen eronder; rechtsklik een tabblad om te
 hernoemen, te dupliceren, te verwijderen of de **diagraminstellingen** te
 openen.
 
+Waar die containers draaien wordt eromheen getekend: gestippelde
+**deploymentkaders**, één per platform, genest zoals de platformen genest zijn
+— de namespace in het cluster in het account — met een container die nergens op
+draait buiten elk kader. Ze worden uit de rijen afgeleid en zijn niet te
+verplaatsen: een kader staat waar zijn leden staan. De knop **Deploymentkaders**
+in de werkbalk haalt ze weg voor een lezer die de kale C4-plaat wil, en de
+weergave onthoudt het.
+
 **Zoeken.** ⌘F / Ctrl+F opent de zoeker: typ een naam, categorie, leverancier
 of technologie, Enter of een klik selecteert het element en de plaat schuift
 ernaartoe, zo nodig eerst naar een ander diagram. Het palet heeft zijn eigen
@@ -418,10 +426,27 @@ koppelingen meegaan.
 Sleep van het handvat van een element naar een ander, of rechtsklik en kies
 **Verbinding starten naar…**. Een koppeling heeft een label, een protocol (wat
 je maar typt: REST, EDI, Kafka), een richting die de pijlpunten bepaalt, een
-kleur en een lijnstijl. Dubbelklik het label om het ter plekke te bewerken.
-**Via** noemt wat de koppeling draagt — de bus, de gateway, de broker, in
-volgorde — waar de scope een platform bevat; de lijn blijft één lijn, en de
-technologieweergave van het platform vermeldt hem (zie *Technologie*).
+een technologie, een kleur en een lijnstijl. Dubbelklik het label om het ter
+plekke te bewerken.
+
+**Waar een koppelvlak landt.** Het landschap tekent één lijn per koppelvlak, en
+waar het aankomt ligt een niveau lager. Open het containerdiagram van de
+applicatie en pak het uiteinde van de lijn waar het de randbox raakt: laat het
+op een container los en het koppelvlak landt daar, met zijn protocol mee. Pak
+het opnieuw om het naar een andere container te verplaatsen, of laat het terug
+op de randbox los om de landing weg te halen; **Landt op ▸** in het lijnmenu
+doet hetzelfde zonder slepen. Een tweede landing is een tweede lijn — teken er
+een van een contextbox naar een container, en het inspectiepaneel vraagt
+bovenaan van welk koppelvlak hij deel is, met het koppelvlak dat die kant op
+loopt al aangevinkt.
+
+Zodra een koppelvlak is geland, toont het *Detail: 2 koppelvlakken op het
+containerdiagram · REST, AMQP* in plaats van zijn eigen protocolveld, want de
+protocollen zijn die van de landingen — en **Openen**, of een dubbelklik op de
+lijn zelf, brengt je erheen. Containerlijnen die je tekent zonder te zeggen
+waar ze bij horen zijn koppelvlakken op zichzelf; de bevindingen van de
+roadmap bieden aan de applicatielijn ervoor te tekenen (zie *Waar de datums
+elkaar tegenspreken*).
 
 Lijnen worden door een echte router om elementen heen gelegd en opnieuw gelegd
 als er iets verschuift. Als automatisch niet is wat je wilt:
@@ -646,8 +671,13 @@ besluit, met de afwegingen en de opties die u tegen elkaar hebt gezet.
 Onder de as staat een lijst met tegenstrijdigheden: een applicatie die uitfaseert
 terwijl er nog koppelingen live zijn, een opvolger die pas komt nadat wat hij
 vervangt weg is, een uitfasering zonder benoemde opvolger, een koppeling die nog
-geldig is nadat een van haar uiteinden is uitgefaseerd, en een plan dat over zijn
-einddatum heen is.
+geldig is nadat een van haar uiteinden is uitgefaseerd, een applicatie die nog
+op een uitgefaseerd platform staat, en een plan dat over zijn einddatum heen is.
+
+Eén regel is geen tegenstrijdigheid maar een ontbrekende plaat: koppelvlakken op
+containerniveau tussen twee applicaties waar niemand een applicatiekoppelvlak
+voor heeft getekend. **Overnemen** tekent het en laat elk van die lijnen erop
+landen, in één stap — of laat het staan, en er gebeurt niets.
 
 Het toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap
 verouderd is — dat kan niets — en de pagina zegt dat onder de lijst.
@@ -802,32 +832,46 @@ Kies een kolomkop om de applicatie te openen, waar dit niveau hem heeft.
 
 ### Technologie
 
-Waar de applicaties op staan is een **platform**: een cluster, een broker,
-een bus, een firewall, de tooling. Teken er een vanuit de laatste rij van het
-palet en het landt in de beheerlaag als de chip die die laag altijd al
-tekende; geef het een soort in de inspector — runtime, berichtenverkeer,
-integratie, netwerk, data, identiteit, tooling, observability. Een gedeeld
-platform wordt meestal gedefinieerd in een eigen scope en elders getekend als
-plaatsvervanger, zodat het team dat het cluster beheert het record bezit en
-elk landschap zegt dat het erop staat.
+Waar de applicaties op staan is een **platform**: een cluster, een broker, een
+bus, een firewall, het gereedschap. Teken er een uit de onderste rij van het
+palet en hij landt in de beheerlaag als de chip die die laag altijd al tekende;
+geef hem een soort in het inspectiepaneel — runtime, messaging, integratie,
+netwerk, data, identiteit, gereedschap, observability. Een gedeeld platform
+wordt meestal in een eigen scope gedefinieerd en elders als stand-in getekend,
+zodat het team dat het cluster draait het record bezit en elk landschap zegt
+dat het erop staat.
 
-Wat waar draait zijn twee rijen: een applicatie **draait op** een platform
-en **gebruikt** de diensten die ze afneemt. Wat een koppelvlak draagt staat op
-de verbinding zelf: **Via**. Daaruit is een **technologieweergave** gemaakt —
-dubbelklik op een platform, of **Technologieweergave maken** in zijn menu, en
-de pagina toont waar het op staat, wat eronder hangt, wat erop draait, wat
-het gebruikt, en elk koppelvlak dat erdoorheen loopt, met links wat binnenkomt
-en rechts wat eruit gaat, hoe het reist (punt-naar-punt, eventgedreven, via
-een bus, via een poort) en de rest van zijn pad. Een naam opent de pagina van
-dat ding waar deze scope het bevat. De weergave wordt uit de rijen opgemaakt,
-dus ze is nooit verouderd; haar tabblad staat bij de andere pagina's.
+**Waar iets draait staat op de container.** Een applicatie draait nergens — de
+dingen waaruit ze bestaat draaien, en meestal op meer dan één plek — dus de
+keuze *Draait op* staat op het record van een component, en een applicatie
+krijgt te horen wat haar containers zeggen: *Draait op: OpenShift (3
+containers)*. Een applicatie zonder containers — een extern systeem, een
+ingekochte dienst — zegt zelf waar ze draait, wat voor een dienst die de
+leverancier host de enige ware zin is die er is. **Gebruikt** staat daar los
+van en blijft op beide niveaus: een applicatie gebruikt de identity provider,
+een container gebruikt een cache.
 
-Twee dingen volgen. De **platform**-badge op een kaart leest uit de rijen
-waar niemand hem heeft gezet — beheerd op je eigen platform, gedeeltelijk op
-een platform buiten de organisatie, geen op niets — en een status die je zelf
-zet wint. En de bevindingen van de roadmap krijgen een regel voor een
-applicatie, of een koppelvlak, die nog op een platform staat nadat dat is
-uitgefaseerd.
+**Kleuren op** in de werkbalk van het landschap kleurt de kaarten: op platform,
+zodat je in één oogopslag ziet welke applicaties er een delen, of op
+levenscyclus van de techniek, zodat de kaarten die op iets staan dat uitgefaseerd
+wordt amber worden. De legenda zit onder dezelfde knop, en aanzetten verandert
+niets dan de plaat.
+
+**Het platformrapport** is wat er zou overblijven als het platform wegviel.
+Dubbelklik op de chip, of kies **Platformrapport** in het menu, en de pagina
+toont waar het op staat, wat eronder zit, wat erop draait — elke container
+genoemd naast zijn applicatie — wat het gebruikt, en de koppelvlakken op
+containerniveau die eroverheen lopen, elk met het applicatiekoppelvlak waar het
+deel van is. Een naam opent de pagina van dat ding waar deze scope het bevat.
+Er wordt niets getekend en niets gemaakt: het wordt elke keer dat je het opent
+uit de rijen afgeleid, dus het is nooit verouderd.
+
+Twee dingen volgen daaruit. De badge **platform** op een kaart leest af waar de
+containers van een applicatie op staan als niemand hem heeft gezet — managed op
+een eigen platform, gedeeltelijk op een platform buiten de organisatie, geen op
+niets — en een status die jij zet wint. En de bevindingen van de roadmap krijgen
+een regel voor een applicatie die nog op een platform staat nadat dat is
+uitgefaseerd, met de container erbij die nergens meer op staat.
 
 ## Zoeken
 

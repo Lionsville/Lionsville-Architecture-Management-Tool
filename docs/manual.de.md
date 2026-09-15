@@ -388,6 +388,15 @@ listen die Landschaft und die Container-Diagramme darunter; klicken Sie mit
 rechts auf einen Reiter, um umzubenennen, zu duplizieren, zu löschen oder die
 **Diagrammeinstellungen** zu öffnen.
 
+Wo diese Container laufen, wird um sie herum gezeichnet: gestrichelte
+**Deployment-Rahmen**, einer je Plattform, geschachtelt wie die Plattformen
+geschachtelt sind — der Namespace im Cluster im Konto — wobei ein Container,
+der auf nichts läuft, außerhalb jedes Rahmens sitzt. Sie werden aus den Zeilen
+abgeleitet und lassen sich nicht verschieben: ein Rahmen ist dort, wo seine
+Mitglieder sind. Die Schaltfläche **Deployment-Rahmen** in der Werkzeugleiste
+nimmt sie weg, wenn jemand das schlichte C4-Bild lesen möchte, und die Ansicht
+merkt es sich.
+
 **Dinge finden.** ⌘F / Ctrl+F öffnet den Sucher: Tippen Sie einen Namen, eine
 Kategorie, einen Anbieter oder eine Technologie, Enter oder ein Klick wählt das
 Element aus, und die Zeichenfläche scrollt dorthin, wobei sie zuerst das
@@ -449,10 +458,28 @@ Ziehen Sie vom Anfasser eines Elements zu einem anderen, oder klicken Sie mit
 rechts und **Verbindung beginnen zu…**. Eine Verbindung trägt eine Beschriftung,
 ein Protokoll (was immer Sie tippen: REST, EDI, Kafka), eine Richtung, die die
 Pfeilspitzen setzt, eine Farbe und einen Linienstil. Doppelklicken Sie die
-Beschriftung, um sie an Ort und Stelle zu bearbeiten. **Über** nennt, was sie
-trägt — der Bus, das Gateway, der Broker, der Reihe nach — wo der Bereich eine
-Plattform enthält; die Linie bleibt eine Linie, und die Technologieansicht der
-Plattform führt sie auf (siehe *Technologie*).
+Beschriftung, um sie an Ort und Stelle zu bearbeiten. Sie trägt außerdem eine
+Technologie.
+
+**Wo eine Schnittstelle landet.** Die Landkarte zeichnet eine Linie je
+Schnittstelle, und wo sie ankommt, liegt eine Ebene tiefer. Öffnen Sie das
+Container-Diagramm der Anwendung und greifen Sie das Ende der Linie dort, wo es
+den Rahmen berührt: lassen Sie es auf einem Container los, und die
+Schnittstelle landet dort — mit ihrem Protokoll. Greifen Sie es erneut, um es
+auf einen anderen Container zu verschieben, oder lassen Sie es wieder auf dem
+Rahmen los, um die Landung zu entfernen; **Landet auf ▸** im Linienmenü tut
+dasselbe ohne Ziehen. Eine zweite Landung ist eine zweite Linie — zeichnen Sie
+eine von einem Kontextkasten zu einem Container, und der Inspektor fragt ganz
+oben, zu welcher Schnittstelle sie gehört, mit der in dieser Richtung
+verlaufenden bereits angehakt.
+
+Sobald eine Schnittstelle gelandet ist, zeigt sie *Detail: 2 Schnittstellen im
+Containerdiagramm · REST, AMQP* anstelle ihres eigenen Protokollfeldes, denn
+die Protokolle gehören den Landungen — und **Öffnen**, oder ein Doppelklick auf
+die Linie selbst, führt dorthin. Container-Linien, die Sie zeichnen, ohne zu
+sagen, wozu sie gehören, sind eigenständige Schnittstellen; die Befunde der
+Roadmap bieten an, die Linie auf Anwendungsebene dafür zu zeichnen (siehe *Was
+die Daten einander widersprechen*).
 
 Linien werden von einem echten Router um Elemente herumgeführt und neu
 geführt, wenn sich etwas bewegt. Wenn automatisch nicht das ist, was Sie wollen:
@@ -695,8 +722,15 @@ Unter der Achse steht eine Liste von Widersprüchen: eine Anwendung, die
 abgeschaltet wird, während Verbindungen noch live sind, ein Nachfolger, der
 erst ankommt, nachdem das, was er ersetzt, weg ist, eine Abschaltung, für die
 kein Nachfolger benannt ist, eine Verbindung, die noch gültig ist, nachdem eines
-ihrer Enden abgeschaltet wurde, und ein Plan über den Tag hinaus, an dem er
+ihrer Enden abgeschaltet wurde, eine Anwendung, die noch auf einer
+abgeschalteten Plattform steht, und ein Plan über den Tag hinaus, an dem er
 fertig sein sollte.
+
+Ein Eintrag ist kein Widerspruch, sondern ein fehlendes Bild:
+Container-Schnittstellen zwischen zwei Anwendungen, für die niemand eine
+Schnittstelle auf Anwendungsebene gezeichnet hat. **Übernehmen** zeichnet sie
+und lässt jede dieser Linien darauf landen, in einem Schritt — oder lassen Sie
+es stehen, und nichts geschieht.
 
 Sie sagt, wo die Daten einander widersprechen. Sie kann Ihnen nicht sagen, dass
 eine Landschaft veraltet ist — nichts kann das — und die Seite sagt es unter
@@ -864,34 +898,46 @@ die Anwendung zu öffnen, wo dieser Bereich sie hält.
 
 ### Technologie
 
-Worauf die Anwendungen stehen, ist eine **Plattform**: ein Cluster, ein
-Broker, ein Bus, eine Firewall, die Werkzeuge. Zeichnen Sie eine aus der
-letzten Zeile der Palette, und sie landet in der Verwaltungsebene als der
-Chip, den diese Ebene immer gezeichnet hat; geben Sie ihr im Inspektor eine
-Art — Laufzeit, Messaging, Integration, Netzwerk, Daten, Identität,
-Werkzeuge, Beobachtbarkeit. Eine geteilte Plattform wird meist in einem
-eigenen Bereich definiert und anderswo als Stellvertreter gezeichnet, so dass
-das Team, das den Cluster betreibt, den Datensatz besitzt und jede Landschaft
-sagt, dass sie darauf steht.
+Worauf die Anwendungen stehen, ist eine **Plattform**: ein Cluster, ein Broker,
+ein Bus, eine Firewall, das Werkzeug. Zeichnen Sie eine aus der untersten Reihe
+der Palette, und sie landet im Management-Band als der Chip, den dieses Band
+schon immer gezeichnet hat; geben Sie ihr im Inspektor eine Art — Runtime,
+Messaging, Integration, Netzwerk, Daten, Identität, Werkzeug, Observability.
+Eine gemeinsam genutzte Plattform wird meist in einem eigenen Bereich definiert
+und anderswo als Stellvertreter gezeichnet, damit das Team, das den Cluster
+betreibt, den Datensatz besitzt und jede Landschaft sagt, worauf sie steht.
 
-Was wo läuft, sind zwei Zeilen: eine Anwendung **läuft auf** einer Plattform
-und **nutzt** die Dienste, die sie bezieht. Was eine Schnittstelle trägt,
-steht auf der Verbindung selbst: **Über**. Daraus besteht eine
-**Technologieansicht** — Doppelklick auf eine Plattform, oder
-**Technologieansicht erstellen** in ihrem Menü, und die Seite zeigt, worauf
-sie steht, was darunter hängt, was darauf läuft, was sie nutzt, und jede
-Schnittstelle, die hindurchläuft, mit dem, was links hereinkommt und rechts
-hinausgeht, wie sie reist (Punkt-zu-Punkt, ereignisgesteuert, über einen
-Bus, über ein Gateway) und dem Rest ihres Pfads. Ein Name öffnet die Seite
-des Dings, wo dieser Bereich es enthält. Die Ansicht wird aus den Zeilen
-gelegt, ist also nie veraltet; ihr Reiter steht bei den anderen Seiten.
+**Wo etwas läuft, steht am Container.** Eine Anwendung läuft nirgends — die
+Dinge, aus denen sie besteht, laufen, und meist an mehr als einem Ort — also
+steht die Auswahl *Läuft auf* am Datensatz einer Komponente, und einer Anwendung
+wird gesagt, was ihre Container sagen: *Läuft auf: OpenShift (3 Container)*.
+Eine Anwendung ohne Container — ein Fremdsystem, ein eingekaufter Dienst — sagt
+selbst, wo sie läuft, was bei einem vom Anbieter betriebenen Dienst der einzige
+wahre Satz ist. **Nutzt** ist davon getrennt und bleibt auf beiden Ebenen: eine
+Anwendung nutzt den Identitätsanbieter, ein Container nutzt einen Cache.
 
-Zwei Dinge folgen daraus. Das **Plattform**-Abzeichen auf einer Karte liest
-aus den Zeilen, wo niemand es gesetzt hat — verwaltet auf der eigenen
-Plattform, teilweise auf einer außerhalb der Organisation, keine auf nichts
-— und ein selbst gesetzter Status gewinnt. Und die Befunde der Roadmap
-erhalten eine Zeile für eine Anwendung oder eine Schnittstelle, die noch auf
-einer Plattform steht, nachdem diese abgelöst wurde.
+**Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten: nach
+Plattform, damit auf einen Blick zu sehen ist, welche Anwendungen sich eine
+teilen, oder nach Lebenszyklus der Technik, damit die Karten, die auf etwas
+auslaufendem stehen, bernsteinfarben werden. Die Legende steht unter derselben
+Schaltfläche, und das Einschalten ändert nichts als das Bild.
+
+**Der Plattformbericht** ist das, was übrig bliebe, wenn die Plattform ginge.
+Doppelklicken Sie den Chip, oder **Plattformbericht** in ihrem Menü, und die
+Seite zeigt, worauf sie steht, was darunter liegt, was auf ihr läuft — jeder
+Container neben seiner Anwendung genannt — was sie nutzt, und die
+Container-Schnittstellen, die über sie laufen, jede mit der Schnittstelle auf
+Anwendungsebene, zu der sie gehört. Ein Name öffnet die Seite des Dings, wo
+dieser Bereich es hält. Nichts wird gezeichnet und nichts angelegt: er wird bei
+jedem Öffnen aus den Zeilen abgeleitet und ist daher nie veraltet.
+
+Zweierlei folgt daraus. Das Abzeichen **Plattform** auf einer Karte liest ab,
+worauf die Container einer Anwendung stehen, wenn es niemand gesetzt hat —
+managed auf einer eigenen Plattform, teilweise auf einer außerhalb der
+Organisation, keine auf nichts — und ein von Ihnen gesetzter Status gewinnt. Und
+die Befunde der Roadmap erhalten eine Zeile für eine Anwendung, die noch auf
+einer Plattform steht, nachdem diese ausgelaufen ist, mit dem Container, der
+auf nichts mehr steht.
 
 ## Suchen
 
