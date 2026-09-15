@@ -32,28 +32,14 @@ const index = indexScopes([
 ])
 
 describe('mayEdit', () => {
-  it('gives the owning scope everything', () => {
+  it('gives the owning scope everything, a stand-in’s holder the owner, a declaration all of it', () => {
     expect(mayEdit('erp', 'acme/retail', index)).toEqual({ all: true })
-  })
-
-  it('gives a scope holding a stand-in the owner, and not everything', () => {
     expect(mayEdit('erp', 'acme/finance', index)).toEqual({ all: false, owner: 'acme/retail' })
-  })
-
-  /**
-   * A definition above the master. It yielded, and from then on its name is a
-   * cache the drift check watches — but it is still this scope's record, and
-   * §10's first rule says a definition this scope holds may be edited.
-   */
-  it('leaves a declaration fully editable', () => {
+    // A definition above the master. It yielded, and from then on its name is a
+    // cache the drift check watches — but it is still this scope's record, and
+    // §10's first rule says a definition this scope holds may be edited.
     expect(mayEdit('erp', '', index)).toEqual({ all: true })
-  })
-
-  it('still refuses the detail of a stand-in nobody defines, with no owner to name', () => {
     expect(mayEdit('crm', 'acme/legal', index)).toEqual({ all: false })
-  })
-
-  it('lets a scope edit an id the tree has never heard of', () => {
     expect(mayEdit('drawn-just-now', 'acme/finance', index)).toEqual({ all: true })
   })
 
@@ -86,13 +72,10 @@ describe('mayEditField', () => {
    * The two things a stand-in may say for itself: how this scope draws it,
    * and where it sits on this scope's own trees.
    */
-  it('allows the presentation and the placing', () => {
+  it('allows the presentation and the placing, and everything on a definition', () => {
     for (const field of ['accentColor', 'iconKey', 'parentId', 'order'] as const) {
       expect(mayEditField(field, 'erp', 'acme/finance', index), field).toBe(true)
     }
-  })
-
-  it('allows everything on a definition', () => {
     expect(mayEditField('lifecycle', 'erp', 'acme/retail', index)).toBe(true)
   })
 
@@ -121,18 +104,13 @@ describe('mayEditField', () => {
 })
 
 describe('mayApplyPatch', () => {
-  it('refuses a patch that touches one field of the owner\'s detail', () => {
+  it('refuses a patch that touches the owner’s detail, and allows one that touches none of it', () => {
     expect(mayApplyPatch({ description: 'ours', vendor: 'Someone' }, 'erp', 'acme/finance', index))
       .toEqual({ refused: 'check.ownedElsewhere', owner: 'acme/retail' })
-  })
-
-  it('allows one that touches none of it', () => {
     expect(mayApplyPatch({ accentColor: '#123456' }, 'erp', 'acme/finance', index)).toBe(true)
-  })
-
-  it('allows an empty patch, which changes nothing anywhere', () => {
     expect(mayApplyPatch({}, 'erp', 'acme/finance', index)).toBe(true)
   })
+
 })
 
 describe('isOwnerDetail', () => {

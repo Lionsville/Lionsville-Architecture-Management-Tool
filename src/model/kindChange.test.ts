@@ -48,29 +48,17 @@ describe('allowedKindsOn', () => {
 });
 
 describe('canChangeKind', () => {
-  it('allows a straightforward change', () => {
+  it('allows a straightforward change, and refuses the kind it already is or a diagram without it', () => {
     expect(canChangeKind(board(), layer7(), 'a2', 'actor')).toEqual({ ok: true });
-  });
-
-  it('refuses the kind it already is', () => {
     expect(canChangeKind(board(), layer7(), 'a1', 'application')).toEqual({
       ok: false,
       reason: 'kindChange.sameKind',
     });
-  });
-
-  it('refuses an element this diagram does not carry', () => {
     expect(canChangeKind(board(), layer7(), 'c2', 'actor')).toEqual({
       ok: false,
       reason: 'kindChange.notOnThisDiagram',
     });
-  });
-
-  it('refuses an unknown element', () => {
     expect(canChangeKind(board(), layer7(), 'nope', 'actor').ok).toBe(false);
-  });
-
-  it('refuses a kind this diagram does not hold', () => {
     // A component needs a parent application, so Layer 7 never offers one.
     expect(canChangeKind(board(), layer7(), 'a1', 'component')).toEqual({
       ok: false,
@@ -78,7 +66,7 @@ describe('canChangeKind', () => {
     });
   });
 
-  it('refuses an application that a container diagram is about', () => {
+  it('refuses what a container diagram is about, and what still belongs to an application', () => {
     const m = board();
     m.diagrams[0].members.push({ id: 'boundary', zone: 'landscape' });
     m.diagrams[0].geometry.nodes.push({ id: 'boundary', x: 0, y: 0 });
@@ -86,6 +74,20 @@ describe('canChangeKind', () => {
       ok: false,
       reason: 'kindChange.hasContainerDiagram',
     });
+    const m2 = board();
+    m2.elements = m2.elements.map((e) =>
+      e.id === 'c1' ? { ...e, kind: 'component' as const, parentId: 'a1' } : e,
+    );
+    expect(changeableKinds(m2, m2.diagrams[0], 'a1')).toEqual([]);
+    expect(canChangeKind(board(), container(), 'c2', 'actor')).toEqual({
+      ok: false,
+      reason: 'kindChange.hasParent',
+    });
+    const m3 = board();
+    m3.elements = m3.elements.map((e) =>
+      e.id === 'c2' ? { ...e, parentId: undefined } : e,
+    );
+    expect(canChangeKind(m3, m3.diagrams[1], 'c2', 'actor')).toEqual({ ok: true });
   });
 
   it('refuses an application that still has components, container view or not', () => {
@@ -110,28 +112,6 @@ describe('canChangeKind', () => {
     });
   });
 
-  it('leaves an application with components nothing to change into', () => {
-    const m = board();
-    m.elements = m.elements.map((e) =>
-      e.id === 'c1' ? { ...e, kind: 'component' as const, parentId: 'a1' } : e,
-    );
-    expect(changeableKinds(m, m.diagrams[0], 'a1')).toEqual([]);
-  });
-
-  it('refuses a component that still belongs to an application', () => {
-    expect(canChangeKind(board(), container(), 'c2', 'actor')).toEqual({
-      ok: false,
-      reason: 'kindChange.hasParent',
-    });
-  });
-
-  it('allows a parentless component to become something else', () => {
-    const m = board();
-    m.elements = m.elements.map((e) =>
-      e.id === 'c2' ? { ...e, parentId: undefined } : e,
-    );
-    expect(canChangeKind(m, m.diagrams[1], 'c2', 'actor')).toEqual({ ok: true });
-  });
 });
 
 describe('changeableKinds', () => {

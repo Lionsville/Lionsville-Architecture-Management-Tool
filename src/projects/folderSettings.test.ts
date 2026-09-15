@@ -29,26 +29,18 @@ describe('readLocalSettings', () => {
     expect(DEFAULT_LOCAL_SETTINGS.git.pushAfterSnapshot).toBe(false)
   })
 
-  it('reads what a machine has been told to do', () => {
+  it('reads what a machine has been told to do, falling to the safe default per key', () => {
     expect(readLocalSettings('{"version":1,"git":{"pullOnOpen":true,"pushAfterSnapshot":true}}'))
       .toEqual({ git: { pullOnOpen: true, pushAfterSnapshot: true } })
-  })
-
-  it('fails towards the safe default for anything that is not the file', () => {
     for (const text of ['', 'not json', '[]', '42', '{"git":"yes"}', '{"git":[]}']) {
       expect(readLocalSettings(text), JSON.stringify(text)).toEqual(DEFAULT_LOCAL_SETTINGS)
     }
-  })
-
-  it('keeps the flag it can read when the other is nonsense', () => {
     expect(readLocalSettings('{"git":{"pullOnOpen":true,"pushAfterSnapshot":"later"}}'))
       .toEqual({ git: { pullOnOpen: true, pushAfterSnapshot: false } })
-  })
-
-  it('reads a file from a newer build for the keys it recognises', () => {
     expect(readLocalSettings('{"version":99,"git":{"pullOnOpen":true,"rebase":true}}').git.pullOnOpen)
       .toBe(true)
   })
+
 })
 
 describe('localSettingsText', () => {
@@ -60,10 +52,14 @@ describe('localSettingsText', () => {
     expect(readLocalSettings(text)).toEqual({ git: { pullOnOpen: true, pushAfterSnapshot: false } })
   })
 
-  it('patches rather than replaces: the other flag stays', () => {
+  it('patches rather than replaces, keeps a newer version, and starts over on a file it cannot read', () => {
     const first = localSettingsText(undefined, { git: { pullOnOpen: true, pushAfterSnapshot: true } })
     const second = localSettingsText(first, { git: { pullOnOpen: false } })
     expect(readLocalSettings(second)).toEqual({ git: { pullOnOpen: false, pushAfterSnapshot: true } })
+    const newer = localSettingsText('{"version":7,"git":{}}', { git: { pullOnOpen: true } })
+    expect(JSON.parse(newer).version).toBe(7)
+    expect(JSON.parse(localSettingsText('not json', { git: { pushAfterSnapshot: true } })))
+      .toEqual({ version: LOCAL_SETTINGS_VERSION, git: { pushAfterSnapshot: true } })
   })
 
   it('carries keys this build does not recognise through unchanged', () => {
@@ -75,19 +71,9 @@ describe('localSettingsText', () => {
     expect(ours.git.pullOnOpen).toBe(true)
   })
 
-  it('does not downgrade the version a newer build wrote', () => {
-    const newer = localSettingsText('{"version":7,"git":{}}', { git: { pullOnOpen: true } })
-    expect(JSON.parse(newer).version).toBe(7)
-  })
-
   it('stamps its own version over an absent or nonsensical one', () => {
     expect(JSON.parse(localSettingsText('{"version":"one"}', {})).version).toBe(LOCAL_SETTINGS_VERSION)
     expect(JSON.parse(localSettingsText('{}', {})).version).toBe(LOCAL_SETTINGS_VERSION)
-  })
-
-  it('starts over when the existing text is not a file at all', () => {
-    expect(JSON.parse(localSettingsText('not json', { git: { pushAfterSnapshot: true } })))
-      .toEqual({ version: LOCAL_SETTINGS_VERSION, git: { pushAfterSnapshot: true } })
   })
 
   it('emits stable, readable JSON, so a settings change is one line in a diff', () => {
@@ -99,35 +85,30 @@ describe('localSettingsText', () => {
 })
 
 describe('readFolderSettings', () => {
-  it('tolerates an absent, empty or malformed file', () => {
+  it('tolerates an absent, empty or malformed file, and reads the name an older build wrote', () => {
     for (const text of [undefined, '', '{}', 'nonsense', '{"version":3,"remote":"x"}']) {
       expect(readFolderSettings(text), String(text)).toEqual({})
     }
-  })
-
-  /**
-   * The shared file is keyless again (ADR-0012 §1): its one key was the
-   * organisation's name, and the root scope's `scope.json` is where a name
-   * belongs. The one thing still read out of it is that name, for the 4 → 5
-   * pass to give the root it is about to write — and the pass takes the key
-   * away afterwards.
-   */
-  it('reads the name an older build wrote, for the pass that is about to drop it', () => {
+    // The shared file is keyless again (ADR-0012 §1): its one key was the
+    // organisation's name, and the root scope's `scope.json` is where a name
+    // belongs. The one thing still read out of it is that name, for the 4 → 5
+    // pass to give the root it is about to write — and the pass takes the key
+    // away afterwards.
     expect(readFolderSettings('{"version":1,"organisation":{"name":"  Acme  "}}'))
       .toEqual({ legacyOrganisationName: 'Acme' })
-  })
-
-  it('reads nothing out of a section with no usable name in it', () => {
     for (const held of ['{"organisation":"Acme"}', '{"organisation":{"name":7}}',
       '{"organisation":{"name":"   "}}', '{"organisation":{}}']) {
       expect(readFolderSettings(held), held).toEqual({})
     }
   })
+
 })
 
 describe('folderSettingsText', () => {
-  it('stamps this build\'s version on a file that had none', () => {
+  it('stamps this build’s version on a file that had none, as stable JSON', () => {
     expect(JSON.parse(folderSettingsText(undefined))).toEqual({ version: FOLDER_SETTINGS_VERSION })
+    const once = folderSettingsText('{"b":2,"a":1}')
+    expect(folderSettingsText('{"a":1,"b":2}')).toBe(once)
   })
 
   /**
@@ -149,8 +130,4 @@ describe('folderSettingsText', () => {
     expect(held.somethingLater).toBe(true)
   })
 
-  it('is stable JSON, so a settings change is one readable line in a diff', () => {
-    const once = folderSettingsText('{"b":2,"a":1}')
-    expect(folderSettingsText('{"a":1,"b":2}')).toBe(once)
-  })
 })

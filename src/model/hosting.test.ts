@@ -32,8 +32,10 @@ describe('what is filed under an application', () => {
 })
 
 describe('who may say where it runs', () => {
-  it('lets a container say it, always', () => {
+  it('lets a container say it, refuses an application whose containers do, and yes to a far end', () => {
     expect(mayBeHosted(elements, 'wms-api')).toBe(true)
+    expect(mayBeHosted(elements, 'wms')).toBe(false)
+    expect(mayBeHosted(elements, 'elsewhere')).toBe(true)
   })
 
   it('lets an application with no containers say it — a SaaS service, a bought package', () => {
@@ -41,13 +43,6 @@ describe('who may say where it runs', () => {
     expect(mayBeHosted(elements, 'partner')).toBe(true)
   })
 
-  it('refuses it to an application whose containers say it', () => {
-    expect(mayBeHosted(elements, 'wms')).toBe(false)
-  })
-
-  it('says yes about an id it does not hold: a far end is somebody else\'s business', () => {
-    expect(mayBeHosted(elements, 'elsewhere')).toBe(true)
-  })
 })
 
 describe('the roll-up', () => {
@@ -58,37 +53,23 @@ describe('the roll-up', () => {
     host('h4', 'portal', 'openshift'),
   ]
 
-  it('is the union of the containers\' places, without repeats, and counts them', () => {
+  it('is the union of the containers’ places without repeats, or the application’s own row', () => {
     expect(hostingOf({ elements, relations }, 'wms'))
       .toEqual({ platformIds: ['ns', 'openshift'], from: 'containers', containers: 3 })
-  })
-
-  it('counts only the containers that stand on something', () => {
     const some = [host('h1', 'wms-api', 'ns')]
     expect(hostingOf({ elements, relations: some }, 'wms'))
       .toEqual({ platformIds: ['ns'], from: 'containers', containers: 1 })
-  })
-
-  it('is the application\'s own row where it has no containers', () => {
     expect(hostingOf({ elements, relations }, 'portal'))
       .toEqual({ platformIds: ['openshift'], from: 'itself', containers: 0 })
-  })
-
-  it('is nothing for an application whose containers stand on nothing, and never its own row', () => {
     // A row somebody wrote before this rule existed is not read: the answer is
     // the containers', and saying otherwise would be two answers again.
     const stale = [host('old', 'wms', 'openshift')]
     expect(hostingOf({ elements, relations: stale }, 'wms'))
       .toEqual({ platformIds: [], from: 'containers', containers: 0 })
-  })
-
-  it('answers for a container with its own rows', () => {
     expect(hostingOf({ elements, relations }, 'wms-api'))
       .toEqual({ platformIds: ['ns'], from: 'itself', containers: 0 })
-  })
-
-  it('answers honestly about something nobody has hosted', () => {
     expect(hostingOf({ elements, relations: [] }, 'partner'))
       .toEqual({ platformIds: [], from: 'itself', containers: 0 })
   })
+
 })
