@@ -3,16 +3,11 @@
  *
  * A page, not a canvas, for the reason the map is one: every mark on it is
  * derived from the rows that name the platform by `model/technologyDiagram`,
- * and this file turns that answer into lists and a table — what stands on
- * it, what uses it, what it stands on, what is under it, and every interface
- * that passes through it, split at the platform into the half that comes in
- * and the half that goes out. The arithmetic is tested in node; what this
- * pins is what a reader is promised on screen.
+ * and this file turns that answer into lists — what stands on it, what uses
+ * it, what it stands on and what is under it. The arithmetic is tested in
+ * node; what this pins is what a reader is promised on screen.
  *
- * Read top to bottom: the platform and its sort, four short lists, then the
- * table — *from*, the platform, *to*, with the protocol, how it travels and
- * the rest of the path where the interface crosses more than one platform.
- * An interface that runs both ways is drawn once with a two-headed arrow.
+ * Read top to bottom: the platform and its sort, then the four short lists.
  *
  * It is all read. What a person changes about a platform is changed on the
  * landscape, where the rows are drawn; a name here opens the thing's page
@@ -29,8 +24,8 @@ import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { DesignDiagram, DesignModel, ElementId, Relation } from '../../model'
 import { technologyPage } from '../../model'
-import type { LaidOutTechnology, TechnologyDescribe, TechnologyEnd, TechnologyFlow } from '../../model'
-import { PLATFORM_CATEGORY_LABEL, TRANSPORT_LABEL } from '../../model'
+import type { LaidOutTechnology, TechnologyDescribe, TechnologyEnd } from '../../model'
+import { PLATFORM_CATEGORY_LABEL } from '../../model'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -179,18 +174,6 @@ function Body({ laidOut, openable, onOpen, t }: {
           </Box>
         ))}
       </Box>
-
-      <Box data-testid="technology-flows">
-        <Caption text={t('technology.flows')} />
-        {laidOut.flows.length === 0 ? (
-          <Box sx={{ py: 3 }}>
-            <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{t('technology.noFlows')}</Typography>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{t('technology.noFlowsHint')}</Typography>
-          </Box>
-        ) : (
-          <Flows flows={laidOut.flows} platform={platform} openable={openable} onOpen={onOpen} t={t} />
-        )}
-      </Box>
     </Box>
   )
 }
@@ -233,70 +216,5 @@ function Name({ end, openable, onOpen, t }: {
         {end.name}
       </Box>
     </Tooltip>
-  )
-}
-
-/**
- * The table: one row per interface, the platform in the middle, so a reader
- * sees what comes in on the left and what goes out on the right. A real
- * `<table>`, for the map's reason: a screen reader reads a matrix as one.
- */
-function Flows({ flows, platform, openable, onOpen, t }: {
-  flows: readonly TechnologyFlow[]
-  platform: TechnologyEnd
-  openable(end: TechnologyEnd): boolean
-  onOpen(id: ElementId): void
-  t: Translate
-}) {
-  const theme = useTheme()
-  const line = `1px solid ${theme.palette.divider}`
-  const head = {
-    textAlign: 'left', px: 1, pb: 0.5, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
-    textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap',
-  } as const
-  return (
-    <Box
-      component="table"
-      data-testid="technology-grid"
-      sx={{
-        borderCollapse: 'collapse', fontSize: 11.5, width: '100%',
-        '& td': { px: 1, height: 30, borderTop: line, whiteSpace: 'nowrap' },
-      }}
-    >
-      <thead>
-        <tr>
-          <Box component="th" sx={head}>{t('technology.from')}</Box>
-          <th />
-          <Box component="th" sx={{ ...head, textAlign: 'center' }}>{platform.name}</Box>
-          <th />
-          <Box component="th" sx={head}>{t('technology.to')}</Box>
-          <Box component="th" sx={head}>{t('technology.protocol')}</Box>
-          <Box component="th" sx={head}>{t('technology.transport')}</Box>
-          <Box component="th" sx={head}>{t('technology.path')}</Box>
-        </tr>
-      </thead>
-      <tbody>
-        {flows.map((flow) => {
-          const both = flow.relation.isBidirectional === true
-          const rest = flow.path.filter((one) => one.id !== platform.id)
-          return (
-            <Box component="tr" key={flow.relation.id} data-testid={`technology-flow-${flow.relation.id}`}>
-              <td><Name end={flow.source} openable={openable(flow.source)} onOpen={onOpen} t={t} /></td>
-              <Box component="td" sx={{ textAlign: 'center', color: 'text.secondary' }}>{both ? '↔' : '→'}</Box>
-              <Box component="td" sx={{ textAlign: 'center', fontWeight: 600 }}>{flow.relation.label ?? ''}</Box>
-              <Box component="td" sx={{ textAlign: 'center', color: 'text.secondary' }}>{both ? '↔' : '→'}</Box>
-              <td><Name end={flow.target} openable={openable(flow.target)} onOpen={onOpen} t={t} /></td>
-              <Box component="td" sx={{ color: 'text.secondary' }}>{flow.relation.protocol ?? ''}</Box>
-              <Box component="td" data-testid={`technology-transport-${flow.relation.id}`} sx={{ color: 'text.secondary' }}>
-                {t(TRANSPORT_LABEL[flow.transport])}
-              </Box>
-              <Box component="td" sx={{ color: 'text.secondary' }}>
-                {rest.map((one) => one.name).join(' → ')}
-              </Box>
-            </Box>
-          )
-        })}
-      </tbody>
-    </Box>
   )
 }

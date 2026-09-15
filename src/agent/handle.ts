@@ -204,7 +204,7 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
       return json(inspectMap(view.model, diagram, args.limit as number | undefined, session.today()))
     }
     if (diagram.kind === 'technology') {
-      return json(inspectTechnology(view.model, diagram, args.limit as number | undefined, session.today()))
+      return json(inspectTechnology(view.model, diagram, session.today()))
     }
     return json(inspect(view.model, diagram, args.limit as number | undefined))
   }

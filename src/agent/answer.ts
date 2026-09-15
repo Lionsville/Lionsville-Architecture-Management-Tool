@@ -486,7 +486,6 @@ function connectionLine(model: Model, c: Relation, dated?: Map<string, Transitio
     target: nameOf(model, c.targetId),
     label: c.label,
     protocol: c.protocol,
-    via: c.via,
     isBidirectional: c.isBidirectional,
     validFrom: c.validFrom,
     validUntil: c.validUntil,

@@ -315,10 +315,7 @@ export function documentFindings(deps: {
   // tree knows — that is a row reaching into another domain, which is what
   // organisation-wide ids are for — and a finding when nobody holds it at all.
   for (const relation of model.relations) {
-    // What carries a flow is an end of it for this purpose (ADR-0013): a bus
-    // nobody in the tree defines is as loose as a target nobody defines.
-    const via = relation.type === 'flow' && Array.isArray(relation.via) ? relation.via : []
-    for (const end of [relation.sourceId, relation.targetId, ...via]) {
+    for (const end of [relation.sourceId, relation.targetId]) {
       if (held.has(end) || index.lookup(end)) continue
       found.push({
         key: 'check.danglingEnd', scope, id: relation.id, name: nameOf(model, relation.id, end),

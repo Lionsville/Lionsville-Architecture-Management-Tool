@@ -1,44 +1,34 @@
 /**
- * What belongs on a technology view: one platform, with everything on it and
- * everything through it (ADR-0013).
+ * What belongs on a technology view: one platform, with everything on it
+ * (ADR-0013).
  *
  * The container diagram's twin in shape and the map's twin in nature. Like
  * the map it is *laid out*, never drawn: every mark on it is derived from the
- * rows that name the platform — `hostedOn` and `uses` rows ending on it, and
- * every flow whose `via` passes it — so the page is computed on open and is
- * never stale, and there is nothing to drag. This file is that computation,
- * in lists rather than pixels; the page turns a row into a line of a table.
- *
- * **A flow is split at the platform.** An interface stays one row from source
- * to target (`DesignConnection.via` says why), and what the ESB's page wants
- * is the same row seen from the bus: what comes in from the source, and what
- * goes out to the target. So each flow here is one entry with both ends, and
- * the page draws it as two halves. A flow that runs both ways comes and goes
- * on both sides. Nothing is stored for this; a change on the landscape and a
- * change here are the same change.
+ * rows that name the platform — the `hostedOn` and `uses` rows ending on it —
+ * so the page is computed on open and is never stale, and there is nothing to
+ * drag. This file is that computation, in lists rather than pixels; the page
+ * turns a row into a line of a table.
  *
  * **What the rows name, this scope may not hold.** The applications hosted on
- * a shared cluster are a landscape's, and so are the flows that cross the
- * organisation's bus (ADR-0012 §2) — so the rows arrive as a second list the
- * way `mapPage` takes them, and the names come from a `describe` the caller
- * hands in. An id nobody can describe is still an end, said by its id and
- * marked as unknown: a dangling end is a fact to draw, never one to drop.
+ * a shared cluster are a landscape's, not the platform scope's (ADR-0012 §2) —
+ * so the rows arrive as a second list the way `mapPage` takes them, and the
+ * names come from a `describe` the caller hands in. An id nobody can describe
+ * is still an end, said by its id and marked as unknown: a dangling end is a
+ * fact to draw, never one to drop.
  *
- * **Time is the day the view shows.** With `today` given, a flow with a
- * window counts only if it holds on that day, and an end that is gone on
- * that day takes its rows with it; with none, every row counts.
+ * **Time is the day the view shows.** With `today` given, a row with a window
+ * counts only if it holds on that day, and an end that is gone on that day
+ * takes its rows with it; with none, every row counts.
  */
 import type { HostModel } from './fromInterchange'
 import { isGoneOn, relationLiveAt } from './lifecycle'
-import { isTechnologyRelation, platformCategoryOf, transportOf, viaOf } from './relations'
-import type { TransportPattern } from './relations'
+import { isTechnologyRelation, platformCategoryOf } from './relations'
 import type { DesignDiagram, DesignElement, ElementId, PlatformCategory, Relation } from './types'
 
 /** What the view is told about an id it may not hold: a name, and whose it is. */
 export type TechnologyDescription = {
   name: string
   kind?: DesignElement['kind']
-  platformCategory?: PlatformCategory
   /** What to call the scope that answers for it, where that is not this one. */
   where?: string
 }
@@ -54,18 +44,6 @@ export type TechnologyEnd = {
   known: boolean
   /** The scope that answers for it, where that is not this one. */
   where?: string
-}
-
-/** One interface through the platform, seen from the platform. */
-export type TechnologyFlow = {
-  relation: Relation
-  source: TechnologyEnd
-  target: TechnologyEnd
-  /** The whole path, so the page can say "gateway → this → kafka". */
-  path: TechnologyEnd[]
-  /** Where this platform is on that path, from 0. */
-  at: number
-  transport: TransportPattern
 }
 
 export type TechnologyOptions = {
@@ -86,9 +64,7 @@ export type LaidOutTechnology = {
   hosted: TechnologyEnd[]
   /** What consumes it, by `uses`. */
   users: TechnologyEnd[]
-  /** Every flow that passes through it, by source name then target name. */
-  flows: TechnologyFlow[]
-  counts: { hosted: number; users: number; flows: number }
+  counts: { hosted: number; users: number }
 }
 
 /** The technology view already about this platform, if there is one. */
@@ -155,11 +131,6 @@ export function technologyPage(
       ...(told?.where !== undefined ? { where: told.where } : {}),
     }
   }
-  const categoryOf = (id: ElementId): PlatformCategory | undefined => {
-    const held = byId.get(id)
-    if (held?.kind === 'platform') return platformCategoryOf(held)
-    return describe?.(id)?.platformCategory
-  }
   /** Gone on the day the view shows: the day takes the row with it. */
   const gone = (id: ElementId) => {
     const held = byId.get(id)
@@ -185,21 +156,6 @@ export function technologyPage(
     return ids.map(end).sort(byName)
   }
 
-  const flows: TechnologyFlow[] = rows
-    .filter((relation) => viaOf(relation).includes(platformId))
-    .map((relation) => {
-      const via = viaOf(relation)
-      return {
-        relation,
-        source: end(relation.sourceId),
-        target: end(relation.targetId),
-        path: via.map(end),
-        at: via.indexOf(platformId),
-        transport: transportOf(relation, categoryOf),
-      }
-    })
-    .sort((a, b) => byName(a.source, b.source) || byName(a.target, b.target) || a.relation.id.localeCompare(b.relation.id))
-
   const hosted = endsOf((r) => r.type === 'hostedOn' && r.targetId === platformId, (r) => r.sourceId)
   const users = endsOf((r) => r.type === 'uses' && r.targetId === platformId, (r) => r.sourceId)
 
@@ -212,7 +168,6 @@ export function technologyPage(
     standsOn: endsOf((r) => isTechnologyRelation(r) && r.sourceId === platformId, (r) => r.targetId),
     hosted,
     users,
-    flows,
-    counts: { hosted: hosted.length, users: users.length, flows: flows.length },
+    counts: { hosted: hosted.length, users: users.length },
   }
 }

@@ -34,12 +34,11 @@ export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
-/** What a platform is, and how an interface travels (ADR-0013). */
+/** What a platform is, and what stands on it (ADR-0013). */
 export {
-  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, TRANSPORT_LABEL, isPlatformCategory,
-  isTechnologyRelation, platformCategoryOf, transportOf, viaOf,
+  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, isPlatformCategory,
+  isTechnologyRelation, platformCategoryOf,
 } from './relations'
-export type { TransportPattern } from './relations'
 
 /** What a stand-in may carry, and what the scope that defines it answers for (ADR-0012 §3). */
 export { OWNER_DETAIL, asStandIn } from './standIn'
@@ -55,11 +54,10 @@ export type { DatedPhase } from './lifecycle'
 /** Which boards draw a thing, on their own day (ADR-0009, ADR-0010). */
 export { boardsDrawing } from './drawnOn'
 
-/** One platform, with everything on it and through it (ADR-0013). */
+/** One platform, with everything on it (ADR-0013). */
 export { findTechnologyDiagram, seedTechnologyDiagram, technologyPage } from './technologyDiagram'
 export type {
-  LaidOutTechnology, TechnologyDescribe, TechnologyDescription, TechnologyEnd, TechnologyFlow,
-  TechnologyOptions,
+  LaidOutTechnology, TechnologyDescribe, TechnologyDescription, TechnologyEnd, TechnologyOptions,
 } from './technologyDiagram'
 
 /** What the dates in a landscape contradict (ADR-0009). */

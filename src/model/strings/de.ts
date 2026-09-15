@@ -34,10 +34,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'platformCategory.identity': 'Identität',
   'platformCategory.tooling': 'Werkzeuge',
   'platformCategory.observability': 'Beobachtbarkeit',
-  'transport.direct': 'Punkt-zu-Punkt',
-  'transport.evented': 'Ereignisgesteuert',
-  'transport.mediated': 'Über einen Bus',
-  'transport.gated': 'Über ein Gateway',
 
   'zone.actors': 'AKTEURE',
   'zone.inputChannels': 'EINGABEKANÄLE',

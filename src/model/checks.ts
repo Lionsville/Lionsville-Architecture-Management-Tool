@@ -24,7 +24,7 @@
  * over a landscape, which is what this module is for.
  */
 import { relationLiveAt, isDay, phaseAt } from './lifecycle'
-import { isTechnologyRelation, viaOf } from './relations'
+import { isTechnologyRelation } from './relations'
 import { isTransitionFinished } from './transition'
 import type { Transition } from './transition'
 import type { DesignElement, DesignModel, ElementId, Relation, RelationType } from './types'
@@ -39,10 +39,10 @@ export type FindingKind =
   /** A line is still valid on a day one of its ends is retired. */
   | 'lineOutlivesEnd'
   /**
-   * What it runs on, uses, or travels over retires before it does (ADR-0013):
-   * the technology risk every portfolio tool sells, over dates the model
-   * already has. On an element for a `hostedOn` or `uses` row, on a relation
-   * for a flow's `via`.
+   * What it runs on or uses retires before it does (ADR-0013): the technology
+   * risk every portfolio tool sells, over dates the model already has. On the
+   * element that is left standing on nothing — an application by way of the
+   * roll-up over its containers, a container by its own row.
    */
   | 'platformRetiresFirst'
   /** A plan is still running after the day it was due to end. */
@@ -194,34 +194,15 @@ export function findings({ model, today }: CheckContext): Finding[] {
     return platform
   }
   for (const relation of model.relations) {
-    if (isTechnologyRelation(relation)) {
-      const thing = byId.get(relation.sourceId)
-      const platform = standingOn(relation.targetId, relation)
-      if (!thing || !platform) continue
-      if (phaseAt(thing, retiredOn(platform)!) === 'retired') continue
-      found.push({
-        kind: 'platformRetiresFirst', subject: 'element', id: thing.id, name: thing.name,
-        detail: platform.name, relationType: relation.type,
-      })
-      continue
-    }
-    for (const id of viaOf(relation)) {
-      const platform = standingOn(id, relation)
-      if (!platform) continue
-      const source = byId.get(relation.sourceId)
-      const target = byId.get(relation.targetId)
-      // Both ends gone by then: the interface went with them, and there is
-      // nothing left to carry.
-      const day = retiredOn(platform)!
-      if (source && target && phaseAt(source, day) === 'retired' && phaseAt(target, day) === 'retired') continue
-      found.push({
-        kind: 'platformRetiresFirst', subject: 'relation', relationType: relation.type, id: relation.id,
-        name: relation.label || `${source?.name ?? relation.sourceId} → ${target?.name ?? relation.targetId}`,
-        detail: platform.name,
-      })
-      // Once per flow: the first platform to go is the one to say.
-      break
-    }
+    if (!isTechnologyRelation(relation)) continue
+    const thing = byId.get(relation.sourceId)
+    const platform = standingOn(relation.targetId, relation)
+    if (!thing || !platform) continue
+    if (phaseAt(thing, retiredOn(platform)!) === 'retired') continue
+    found.push({
+      kind: 'platformRetiresFirst', subject: 'element', id: thing.id, name: thing.name,
+      detail: platform.name, relationType: relation.type,
+    })
   }
 
   for (const transition of model.transitions ?? []) {

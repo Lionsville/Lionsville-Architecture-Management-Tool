@@ -44,15 +44,14 @@ describe('the index — the rows about an id', () => {
     expect(index.rowsOf('nobody')).toEqual([])
   })
 
-  it('answers for a platform with every flow that passes through it, wherever it was written (ADR-0013)', () => {
+  it('answers for a platform with every row that ends on it, wherever it was written (ADR-0013)', () => {
     const index = indexScopes([
       scope('platforms', [element('esb', { kind: 'platform' })]),
-      scope('retail', [element('erp'), element('wms')], [{ ...row('a', 'flow', 'erp', 'wms'), via: ['esb'] }]),
-      scope('finance', [element('ledger')], [{ ...row('b', 'flow', 'erp', 'ledger'), via: ['gateway', 'esb'] }, row('c', 'flow', 'ledger', 'erp')]),
+      scope('retail', [element('erp'), element('wms')], [row('a', 'uses', 'erp', 'esb')]),
+      scope('finance', [element('ledger')], [row('b', 'hostedOn', 'ledger', 'esb'), row('c', 'flow', 'ledger', 'erp')]),
     ])
     expect(index.rowsOf('esb').map((one) => `${one.scope}:${one.relation.id}`)).toEqual(['finance:b', 'retail:a'])
-    // Not an end, so not a row TO it.
-    expect(index.rowsTo('esb')).toEqual([])
+    expect(index.rowsTo('esb').map((one) => one.relation.id)).toEqual(['b', 'a'])
   })
 })
 

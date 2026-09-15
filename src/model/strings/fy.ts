@@ -34,10 +34,6 @@ export const FY: Record<keyof typeof EN, string> = {
   'platformCategory.identity': 'Identiteit',
   'platformCategory.tooling': 'Tooling',
   'platformCategory.observability': 'Observability',
-  'transport.direct': 'Punt-nei-punt',
-  'transport.evented': 'Eventdreaun',
-  'transport.mediated': 'Fia in bus',
-  'transport.gated': 'Fia in poarte',
 
   'zone.actors': 'AKTEUREN',
   'zone.inputChannels': 'YNFIERKANALEN',

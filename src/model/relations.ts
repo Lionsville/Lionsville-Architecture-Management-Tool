@@ -16,7 +16,7 @@
  * other tools and does not change — takes its flows through `flowsOf`.
  */
 import type { StringKey } from '../i18n/strings'
-import type { DesignElement, ElementId, PlatformCategory, Relation, RelationType } from './types'
+import type { DesignElement, PlatformCategory, Relation, RelationType } from './types'
 
 /**
  * Every type, in the order the vocabulary was decided in: the line this tool
@@ -98,41 +98,3 @@ export function platformCategoryOf(element: Pick<DesignElement, 'platformCategor
 export function isTechnologyRelation(relation: Pick<Relation, 'type'>): boolean {
   return relation.type === 'uses' || relation.type === 'hostedOn'
 }
-
-/** The platforms a flow travels over, in order; empty for point-to-point. */
-export function viaOf(relation: Pick<Relation, 'type' | 'via'>): ElementId[] {
-  return relation.type === 'flow' && Array.isArray(relation.via) ? relation.via : []
-}
-
-/**
- * How an interface travels, read off what carries it (ADR-0013).
- *
- * Derived and never stored, so a flow moved from the bus onto a topic
- * changes its pattern by changing the one fact that decides it. The order
- * of the rules is the order a reader would rank them: a broker anywhere on
- * the path makes it evented, whatever else is in the way; a bus or an API
- * platform without one makes it mediated; anything else on the path — a
- * gateway, a firewall, a network — only gates a line that is otherwise
- * direct. A platform this scope cannot see is read as `tooling`, which is
- * to say it gates.
- */
-export type TransportPattern = 'direct' | 'evented' | 'mediated' | 'gated'
-
-export function transportOf(
-  relation: Pick<Relation, 'type' | 'via'>,
-  categoryOf: (id: ElementId) => PlatformCategory | undefined,
-): TransportPattern {
-  const categories = viaOf(relation).map((id) => categoryOf(id) ?? 'tooling')
-  if (categories.length === 0) return 'direct'
-  if (categories.includes('messaging')) return 'evented'
-  if (categories.includes('integration')) return 'mediated'
-  return 'gated'
-}
-
-/** What each pattern is called — published, as the labels above are. */
-export const TRANSPORT_LABEL = {
-  direct: 'transport.direct',
-  evented: 'transport.evented',
-  mediated: 'transport.mediated',
-  gated: 'transport.gated',
-} as const satisfies Record<TransportPattern, StringKey>

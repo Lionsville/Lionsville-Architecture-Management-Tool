@@ -316,19 +316,6 @@ export interface DesignConnection {
   /** `flow` only: what travels over the line. Ignored on any other type. */
   protocol?: string;
   /**
-   * `flow` only: the platforms the interface travels over, in order
-   * (ADR-0013) — `[esb]`, `[gateway, kafka]`, absent for point-to-point.
-   *
-   * On the flow itself, so the interface stays ONE row from source to target
-   * and the landscape draws it as the functional line it always was; the
-   * technology view of a platform is every flow that names it here, split at
-   * the platform into an incoming half and an outgoing half — derived, never
-   * stored. `protocol` stays what it is: how the interface speaks, not what
-   * carries it. An id here this scope does not hold is a dangling end, kept
-   * and reported like any other.
-   */
-  via?: ElementId[];
-  /**
    * The days this line is there, `yyyy-mm-dd` and inclusive (ADR-0009, and on
    * every relation type since ADR-0012 §5).
    *

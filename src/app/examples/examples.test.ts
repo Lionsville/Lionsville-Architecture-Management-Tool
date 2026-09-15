@@ -69,7 +69,6 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(model.relations.some((r) => r.type === 'flow' && (r.sourceId === 'iam' || r.sourceId === 'observability'))).toBe(false)
     expect(model.relations.filter((r) => r.type === 'uses' && r.targetId === 'iam').length).toBeGreaterThan(0)
     expect(model.relations.some((r) => r.type === 'hostedOn')).toBe(true)
-    expect(model.relations.some((r) => r.type === 'flow' && r.via?.includes('esb'))).toBe(true)
     const view = model.diagrams.find((d) => d.kind === 'technology')!
     expect(view.platformId).toBe('esb')
     expect(model.diagrams.filter((d) => d.kind === 'layer7')

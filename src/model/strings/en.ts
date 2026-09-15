@@ -33,10 +33,6 @@ export const EN = {
   'platformCategory.identity': 'Identity',
   'platformCategory.tooling': 'Tooling',
   'platformCategory.observability': 'Observability',
-  'transport.direct': 'Point-to-point',
-  'transport.evented': 'Evented',
-  'transport.mediated': 'Mediated',
-  'transport.gated': 'Gated',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',

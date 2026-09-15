@@ -1,22 +1,22 @@
 /**
  * What a technology view holds (ADR-0013).
  *
- * The page is derived from the rows that name one platform, and the two
- * things worth pinning are the ones a reader would otherwise have to trust:
- * that a flow through the bus appears once, split at the bus, and that a row
- * written in another scope or ending on a thing nobody defines still lands
- * on the page rather than being dropped.
+ * The page is derived from the rows that name one platform, and the things
+ * worth pinning are the ones a reader would otherwise have to trust: that a
+ * row written in another scope lands on the page rather than being dropped,
+ * that the same row held from both sides appears once, and that a row ending
+ * on a thing nobody defines is still an end.
  */
 import { describe, expect, it } from 'vitest'
 import { findTechnologyDiagram, seedTechnologyDiagram, technologyPage } from './technologyDiagram'
-import { connection, element } from './testFixtures'
+import { element } from './testFixtures'
 import type { DesignDiagram, DesignElement, Relation } from './types'
 
 const platform = (id: string, over: Partial<DesignElement> = {}): DesignElement =>
   element(id, { kind: 'platform', name: id.toUpperCase(), isManaged: true, ...over })
 
-const row = (id: string, type: Relation['type'], sourceId: string, targetId: string): Relation =>
-  ({ id, type, sourceId, targetId })
+const row = (id: string, type: Relation['type'], sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation =>
+  ({ id, type, sourceId, targetId, ...over })
 
 const elements = [
   platform('esb', { platformCategory: 'integration' }),
@@ -26,10 +26,6 @@ const elements = [
   element('orders'), element('billing'), element('wms'), element('portal'),
 ]
 const relations: Relation[] = [
-  connection('c1', 'orders', 'billing', { via: ['esb'], protocol: 'SOAP' }),
-  connection('c2', 'wms', 'orders', { via: ['esb', 'kafka'] }),
-  connection('c3', 'portal', 'orders'),
-  connection('c4', 'billing', 'wms', { via: ['esb'], isBidirectional: true }),
   row('h1', 'hostedOn', 'orders', 'cluster'),
   row('h2', 'hostedOn', 'billing', 'cluster'),
   row('u1', 'uses', 'orders', 'kafka'),
@@ -40,31 +36,13 @@ const view = (platformId: string, over: Partial<DesignDiagram> = {}): DesignDiag
   ({ id: 'tv', kind: 'technology', name: 'ESB', platformId, members: [], geometry: { nodes: [] }, ...over })
 
 describe('the page of a platform', () => {
-  it('lists every flow that passes through it once, split at the platform, by source then target', () => {
-    const page = technologyPage({ elements, relations }, view('esb'))!
-    expect(page.flows.map((f) => [f.source.id, f.target.id, f.at])).toEqual([
-      ['billing', 'wms', 0],
-      ['orders', 'billing', 0],
-      ['wms', 'orders', 0],
-    ])
-    // The whole path is there, so the page can say what comes after the bus.
-    expect(page.flows[2].path.map((p) => p.id)).toEqual(['esb', 'kafka'])
-    expect(page.flows.map((f) => f.transport)).toEqual(['mediated', 'mediated', 'evented'])
-    expect(page.counts.flows).toBe(3)
-  })
-
-  it('leaves a point-to-point flow off every platform', () => {
-    for (const id of ['esb', 'kafka', 'cluster']) {
-      expect(technologyPage({ elements, relations }, view(id))!.flows.map((f) => f.relation.id)).not.toContain('c3')
-    }
-  })
-
   it('says what runs on it, what uses it, what it stands on, and what is under it', () => {
     const cluster = technologyPage({ elements, relations }, view('cluster'))!
     expect(cluster.hosted.map((e) => e.id)).toEqual(['billing', 'orders', 'esb'])
     expect(cluster.users.map((e) => e.id)).toEqual(['esb'])
     expect(cluster.children.map((e) => e.id)).toEqual(['ns-orders'])
     expect(cluster.platform.platformCategory).toBe('runtime')
+    expect(cluster.counts).toEqual({ hosted: 3, users: 1 })
     const esb = technologyPage({ elements, relations }, view('esb'))!
     expect(esb.standsOn.map((e) => e.id)).toEqual(['cluster'])
     expect(esb.hosted).toEqual([])
@@ -79,60 +57,46 @@ describe('the page of a platform', () => {
 describe('rows from the rest of the tree', () => {
   it('draws a row another scope wrote, named by the index, and never twice', () => {
     const elsewhere: Relation[] = [
-      connection('x1', 'crm', 'orders', { via: ['esb'] }),
       row('x2', 'hostedOn', 'crm', 'cluster'),
       // The same row this scope also holds: once.
-      connection('c1', 'orders', 'billing', { via: ['esb'] }),
+      row('h1', 'hostedOn', 'orders', 'cluster'),
     ]
     const describe = (id: string) => (id === 'crm' ? { name: 'CRM', kind: 'application' as const, where: 'sales' } : undefined)
-    const page = technologyPage({ elements, relations }, view('esb'), { elsewhere, describe })!
-    expect(page.flows.map((f) => f.relation.id)).toEqual(['c4', 'c1', 'c2', 'x1'])
-    const crm = page.flows.find((f) => f.relation.id === 'x1')!.source
-    expect(crm).toEqual({ id: 'crm', name: 'CRM', kind: 'application', known: true, where: 'sales' })
     const cluster = technologyPage({ elements, relations }, view('cluster'), { elsewhere, describe })!
     expect(cluster.hosted.map((e) => e.id)).toEqual(['billing', 'orders', 'crm', 'esb'])
+    expect(cluster.hosted.find((e) => e.id === 'crm'))
+      .toEqual({ id: 'crm', name: 'CRM', kind: 'application', known: true, where: 'sales' })
   })
 
   it('keeps a dangling end as an end, said by its id and marked unknown', () => {
     const page = technologyPage(
-      { elements, relations: [connection('d1', 'ghost', 'orders', { via: ['esb'] })] },
-      view('esb'),
+      { elements, relations: [row('d1', 'hostedOn', 'ghost', 'cluster')] },
+      view('cluster'),
     )!
-    expect(page.flows[0].source).toEqual({ id: 'ghost', name: 'ghost', known: false })
-  })
-
-  it('reads a platform it cannot see through the index, so the pattern is right', () => {
-    const page = technologyPage(
-      { elements, relations: [connection('d1', 'orders', 'billing', { via: ['esb', 'mq'] })] },
-      view('esb'),
-      { describe: (id) => (id === 'mq' ? { name: 'MQ', kind: 'platform', platformCategory: 'messaging' } : undefined) },
-    )!
-    expect(page.flows[0].transport).toBe('evented')
-    expect(page.flows[0].path.map((p) => p.name)).toEqual(['ESB', 'MQ'])
+    expect(page.hosted[0]).toEqual({ id: 'ghost', name: 'ghost', known: false })
   })
 })
 
 describe('the day the view shows', () => {
-  it('counts a windowed flow only on a day it holds, and drops the rows of a thing that is gone', () => {
+  it('counts a windowed row only on a day it holds, and drops the rows of a thing that is gone', () => {
     const dated: Relation[] = [
-      connection('w1', 'orders', 'billing', { via: ['esb'], validFrom: '2027-03-01' }),
+      row('w1', 'hostedOn', 'orders', 'cluster', { validFrom: '2027-03-01' }),
       row('h1', 'hostedOn', 'wms', 'cluster'),
     ]
     const withGone = elements.map((e) => (e.id === 'wms' ? { ...e, lifecycleDates: { retired: '2027-01-01' } } : e))
-    const before = technologyPage({ elements: withGone, relations: dated }, view('esb'), { today: '2027-02-01' })!
-    expect(before.flows).toEqual([])
-    const after = technologyPage({ elements: withGone, relations: dated }, view('esb'), { today: '2027-03-01' })!
-    expect(after.flows.map((f) => f.relation.id)).toEqual(['w1'])
-    const cluster = technologyPage({ elements: withGone, relations: dated }, view('cluster'), { today: '2027-03-01' })!
-    expect(cluster.hosted).toEqual([])
+    const before = technologyPage({ elements: withGone, relations: dated }, view('cluster'), { today: '2027-02-01' })!
+    expect(before.hosted).toEqual([])
+    const after = technologyPage({ elements: withGone, relations: dated }, view('cluster'), { today: '2027-03-01' })!
+    expect(after.hosted.map((e) => e.id)).toEqual(['orders'])
     // With no day, every row counts — what a view with nothing dated should do.
-    expect(technologyPage({ elements: withGone, relations: dated }, view('cluster'))!.hosted.map((e) => e.id)).toEqual(['wms'])
+    expect(technologyPage({ elements: withGone, relations: dated }, view('cluster'))!.hosted.map((e) => e.id))
+      .toEqual(['orders', 'wms'])
   })
 
   it('prefers the view\'s own day over today', () => {
-    const dated = [connection('w1', 'orders', 'billing', { via: ['esb'], validUntil: '2027-01-31' })]
-    const page = technologyPage({ elements, relations: dated }, view('esb', { asOf: '2027-01-15' }), { today: '2027-06-01' })!
-    expect(page.flows.map((f) => f.relation.id)).toEqual(['w1'])
+    const dated = [row('w1', 'hostedOn', 'orders', 'cluster', { validUntil: '2027-01-31' })]
+    const page = technologyPage({ elements, relations: dated }, view('cluster', { asOf: '2027-01-15' }), { today: '2027-06-01' })!
+    expect(page.hosted.map((e) => e.id)).toEqual(['orders'])
   })
 })
 

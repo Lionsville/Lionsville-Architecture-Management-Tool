@@ -50,17 +50,6 @@ describe('a platform that retires before what stands on it (ADR-0013)', () => {
     }])
   })
 
-  it('is reported on the interface, once, for the first platform on its path to go', () => {
-    const list = check(
-      [platform('esb', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'esb2' }), platform('esb2'), platform('kafka'), element('orders'), element('billing')],
-      [connection('c1', 'orders', 'billing', { via: ['kafka', 'esb'], label: 'invoices' })],
-    )
-    const found = list.filter((one) => one.kind === 'platformRetiresFirst')
-    expect(found).toEqual([{
-      kind: 'platformRetiresFirst', subject: 'relation', relationType: 'flow', id: 'c1', name: 'invoices', detail: 'esb',
-    }])
-  })
-
   it('is not reported when the thing goes first, or the row closes in time, or the platform is not dated', () => {
     const list = check(
       [
@@ -73,7 +62,6 @@ describe('a platform that retires before what stands on it (ADR-0013)', () => {
         row('h1', 'hostedOn', 'gone', 'cluster'),
         row('h2', 'hostedOn', 'moved', 'cluster', { validUntil: '2027-06-01' }),
         row('h3', 'hostedOn', 'stays', 'undated'),
-        connection('c1', 'gone', 'stays', { via: ['cluster'], validUntil: '2027-05-01' }),
       ],
     )
     expect(kinds(list)).not.toContain('platformRetiresFirst')

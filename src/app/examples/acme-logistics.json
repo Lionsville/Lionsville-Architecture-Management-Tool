@@ -1460,10 +1460,7 @@
         "protocol": "AMQP",
         "sourceId": "order-management",
         "targetId": "route-optimiser",
-        "type": "flow",
-        "via": [
-          "kafka"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#14",
@@ -1472,10 +1469,7 @@
         "protocol": "AMQP",
         "sourceId": "route-optimiser",
         "targetId": "dispatch",
-        "type": "flow",
-        "via": [
-          "kafka"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#15",
@@ -1484,10 +1478,7 @@
         "protocol": "AMQP",
         "sourceId": "dispatch",
         "targetId": "track-trace",
-        "type": "flow",
-        "via": [
-          "kafka"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#16",
@@ -1496,10 +1487,7 @@
         "protocol": "REST",
         "sourceId": "order-management",
         "targetId": "wms",
-        "type": "flow",
-        "via": [
-          "esb"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#17",
@@ -1508,10 +1496,7 @@
         "protocol": "AMQP",
         "sourceId": "wms",
         "targetId": "track-trace",
-        "type": "flow",
-        "via": [
-          "kafka"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#18",
@@ -1520,10 +1505,7 @@
         "protocol": "AMQP",
         "sourceId": "order-management",
         "targetId": "billing",
-        "type": "flow",
-        "via": [
-          "kafka"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#19",
@@ -1550,10 +1532,7 @@
         "protocol": "SOAP",
         "sourceId": "billing",
         "targetId": "legacy-rating",
-        "type": "flow",
-        "via": [
-          "esb"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#21",
@@ -1625,10 +1604,7 @@
         "protocol": "AS4",
         "sourceId": "order-management",
         "targetId": "customs",
-        "type": "flow",
-        "via": [
-          "esb"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#29",
@@ -1809,10 +1785,7 @@
         "protocol": "AS2",
         "sourceId": "edi-intake",
         "targetId": "order-management",
-        "type": "flow",
-        "via": [
-          "esb"
-        ]
+        "type": "flow"
       },
       {
         "id": "c#9",

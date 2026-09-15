@@ -1,4 +1,3 @@
-import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -155,12 +154,6 @@ export function ConnectionInspector({
   const typed = (field: string, patch: Partial<Omit<DesignConnection, 'id'>>) =>
     actions.updateConnection(connection.id, patch, fieldEdit(connection.id, field));
 
-  // What carries the interface (ADR-0013): the platforms this scope holds,
-  // in the order they were picked. The line stays one row; a technology
-  // view of any platform named here lists it.
-  const platforms = model.elements.filter((e) => e.kind === 'platform');
-  const via = (connection.via ?? [])
-    .map((id) => platforms.find((p) => p.id === id) ?? { id, name: id, kind: 'platform' as const });
   const route = routeFor(diagram, connection.id);
   const routeStatus: 'none' | 'auto' | 'manual' = route ? routeSource(route) : 'none';
   const bendCount = route?.waypoints.length ?? 0;
@@ -183,7 +176,7 @@ export function ConnectionInspector({
   }
 
   const generalHasValues = Boolean(
-    connection.label || connection.protocol || connection.via?.length || connection.validFrom || connection.validUntil,
+    connection.label || connection.protocol || connection.validFrom || connection.validUntil,
   );
   const appearanceHasValues = Boolean(
     connection.color ||
@@ -236,25 +229,6 @@ export function ConnectionInspector({
             placeholder={t('field.protocolPlaceholder')}
             onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
           />
-          {platforms.length > 0 && (
-            <Autocomplete
-              multiple
-              options={platforms}
-              value={via}
-              disabled={readOnly}
-              getOptionLabel={(option) => option.name}
-              isOptionEqualToValue={(option, chosen) => option.id === chosen.id}
-              onChange={(_e, chosen) => update({ via: chosen.length ? chosen.map((p) => p.id) : undefined })}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label={t('field.via')}
-                  placeholder={via.length ? undefined : t('field.viaPlaceholder')}
-                  helperText={t('field.viaHelp')}
-                />
-              )}
-            />
-          )}
           {/* The days this line is there (ADR-0009). Empty on almost every
               line: one with no window follows the elements it joins, and only
               the temporary lines of a hybrid run need their own. */}

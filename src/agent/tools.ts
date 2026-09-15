@@ -120,12 +120,6 @@ const RELATION_FIELDS = {
 const CONNECTION_FIELDS = {
   label: { type: 'string', description: 'What flows, in a few words.' },
   protocol: { type: 'string', description: 'How: REST, AMQP, SFTP, a file drop.' },
-  via: {
-    type: 'array',
-    description: 'What carries it (ADR-0013): the ids of the platforms the interface travels over, in order — the bus, the gateway then the broker. '
-      + 'The line stays one row from source to target; the transport pattern is read off this. Empty or null: point-to-point.',
-    items: { type: 'string' },
-  },
   isBidirectional: { type: 'boolean', description: 'Whether it flows both ways.' },
   validFrom: { type: 'string', description: 'The first day the line is there, yyyy-mm-dd (ADR-0009). Absent: it follows its ends.' },
   validUntil: { type: 'string', description: 'The last day it is there, yyyy-mm-dd, inclusive. Absent: it follows its ends.' },

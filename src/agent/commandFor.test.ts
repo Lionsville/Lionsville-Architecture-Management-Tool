@@ -998,25 +998,6 @@ describe('the physical view (ADR-0013)', () => {
       .toMatchObject({ refusal: 'agent.badArguments' })
   })
 
-  it('says what carries a flow, in order, and clears it with null or an empty list', () => {
-    const over = roundTrip(withPlatforms, commandFor('connection.update', { id: 'c1', via: ['esb', 'cluster'] }, view(withPlatforms)))
-    expect(over.relations.c1.via).toEqual(['esb', 'cluster'])
-    const cleared = roundTrip(over, commandFor('connection.update', { id: 'c1', via: [] }, view(over)))
-    expect(cleared.relations.c1.via).toBeUndefined()
-    const drawn = roundTrip(withPlatforms, commandFor('connect', { sourceId: 'billing', targetId: 'crm', via: ['esb'] }, view(withPlatforms)))
-    expect(Object.values(drawn.relations).some((r) => r.via?.[0] === 'esb')).toBe(true)
-  })
-
-  it('refuses a via that names no platform, or something nobody holds', () => {
-    expect(commandFor('connection.update', { id: 'c1', via: ['billing'] }, view(withPlatforms)))
-      .toMatchObject({ refusal: 'agent.badArguments' })
-    expect(commandFor('connection.update', { id: 'c1', via: ['nowhere'] }, view(withPlatforms)))
-      .toMatchObject({ refusal: 'agent.unknownId' })
-    // An id the tree knows and this scope does not is trusted, as every far end is.
-    const known = view(withPlatforms, { known: (id) => id === 'shared-bus' })
-    expect(roundTrip(withPlatforms, commandFor('connection.update', { id: 'c1', via: ['shared-bus'] }, known)).relations.c1.via).toEqual(['shared-bus'])
-  })
-
   it('makes a technology view about a platform, once, and refuses one about anything else', () => {
     const first = commandFor('diagram.create', { kind: 'technology', platformId: 'esb' }, view(withPlatforms))
     expect(answerOf(first)).toMatchObject({ kind: 'technology', name: 'ESB · technology', platformId: 'esb' })

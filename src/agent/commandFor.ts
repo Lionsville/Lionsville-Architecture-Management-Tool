@@ -139,7 +139,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       for (const id of [sourceId, targetId]) if (!model.elements[id]) return refused('agent.unknownId', `element ${id}`)
       if (sourceId === targetId) return refused('agent.badArguments', 'a connection needs two different elements')
       const bare: Relation = { id: view.ids.connection(), type: 'flow', sourceId, targetId, isBidirectional: false }
-      const patch = relationPatch(args, bare, view)
+      const patch = relationPatch(args, bare)
       if ('ok' in patch) return patch
       const relation: Relation = { ...bare, ...patch }
       for (const key of Object.keys(patch) as (keyof Relation)[]) if (relation[key] === undefined) delete relation[key]
@@ -152,7 +152,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const id = args.id as string
       const held = model.relations[id]
       if (!held) return refused('agent.unknownId', `connection ${id}`)
-      const patch = relationPatch(args, held, view)
+      const patch = relationPatch(args, held)
       if ('ok' in patch) return patch
       return {
         command: { type: 'relation.update', id, patch, origin: 'agent' },
@@ -167,7 +167,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         const id = item.id as string
         const held = model.relations[id]
         if (!held) return refused('agent.unknownId', `connection ${id}`)
-        const patch = relationPatch(item, held, view)
+        const patch = relationPatch(item, held)
         if ('ok' in patch) return withDetail(patch, `items[${index}]`)
         commands.push({ type: 'relation.update', id, patch })
         changed.push({ id, changed: Object.keys(patch) })
@@ -204,7 +204,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         return refused('agent.badArguments', `${type} ends on a platform; ${targetId} is a ${model.elements[targetId].kind}`)
       }
       const bare: Relation = { id: view.ids.connection(), type, sourceId, targetId }
-      const patch = relationPatch(args, bare, view)
+      const patch = relationPatch(args, bare)
       if ('ok' in patch) return patch
       const relation: Relation = { ...bare, ...patch }
       for (const key of Object.keys(patch) as (keyof Relation)[]) if (relation[key] === undefined) delete relation[key]
@@ -217,7 +217,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       const id = args.id as string
       const held = model.relations[id]
       if (!held) return refused('agent.unknownId', `relation ${id}`)
-      const patch = relationPatch(args, held, view)
+      const patch = relationPatch(args, held)
       if ('ok' in patch) return patch
       if (typeof args.type === 'string') patch.type = args.type as RelationType
       return {
@@ -1481,27 +1481,13 @@ function hexColour(value: unknown): string | '' | false {
  * the window has to be days and run forwards, checked against what the line
  * keeps for the half that was not given.
  */
-function relationPatch(args: Args, held: Relation, view?: WriteView): Partial<Relation> | AgentAnswer {
+function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAnswer {
   const look = lineLook(args)
   if ('ok' in look) return look
   const patch: Partial<Relation> = { ...look }
   for (const key of ['label', 'protocol'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string
-  }
-  // What carries it (ADR-0013): platforms, in order, each one this scope holds
-  // or the tree knows. Empty is point-to-point and is written as absence.
-  if (args.via !== undefined) {
-    if (args.via === null || (Array.isArray(args.via) && args.via.length === 0)) patch.via = undefined
-    else if (Array.isArray(args.via) && args.via.every((id) => typeof id === 'string')) {
-      const via = [...new Set(args.via as string[])]
-      for (const id of via) {
-        const known = view?.model.elements[id]
-        if (known && known.kind !== 'platform') return refused('agent.badArguments', `via names platforms; ${id} is a ${known.kind}`)
-        if (!known && !view?.known?.(id)) return refused('agent.unknownId', `element ${id}`)
-      }
-      patch.via = via
-    } else return refused('agent.badArguments', '"via" is a list of platform ids')
   }
   if (typeof args.isBidirectional === 'boolean') patch.isBidirectional = args.isBidirectional
   for (const key of ['validFrom', 'validUntil'] as const) {

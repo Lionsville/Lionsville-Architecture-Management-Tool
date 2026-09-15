@@ -8,12 +8,11 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, RELATION_LABEL, RELATION_TYPES, TRANSPORT_LABEL,
+  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, RELATION_LABEL, RELATION_TYPES,
   flowsOf, isFlow, isPlatformCategory, isRelationType, isTechnologyRelation, platformCategoryOf,
-  transportOf, viaOf,
 } from './relations'
 import { nodeFigure } from './kinds'
-import type { PlatformCategory, Relation } from './types'
+import type { Relation } from './types'
 
 const flow = (id: string, over: Partial<Relation> = {}): Relation =>
   ({ id, type: 'flow', sourceId: 'a', targetId: 'b', isBidirectional: false, ...over })
@@ -70,46 +69,5 @@ describe('what a platform is (ADR-0013)', () => {
     expect(nodeFigure(platform, 'landscape')).toBe('managementTool')
     expect(nodeFigure(platform, 'management')).toBe('managementTool')
     expect(nodeFigure(platform, 'externalSystems')).toBe('externalSystem')
-  })
-})
-
-describe('how an interface travels (ADR-0013)', () => {
-  const categories: Record<string, PlatformCategory> = {
-    esb: 'integration', kafka: 'messaging', gateway: 'network', firewall: 'network', cluster: 'runtime',
-  }
-  const category = (id: string) => categories[id]
-
-  it('reads the platforms off a flow, and nothing off any other row', () => {
-    expect(viaOf(flow('c1'))).toEqual([])
-    expect(viaOf(flow('c1', { via: ['esb'] }))).toEqual(['esb'])
-    // A `via` left on a row whose type changed is kept and ignored, like a protocol.
-    expect(viaOf({ type: 'supports', via: ['esb'] })).toEqual([])
-  })
-
-  it('is point-to-point with nothing in the way', () => {
-    expect(transportOf(flow('c1'), category)).toBe('direct')
-    expect(transportOf(flow('c1', { via: [] }), category)).toBe('direct')
-  })
-
-  it('is evented over a broker, whatever else is on the path', () => {
-    expect(transportOf(flow('c1', { via: ['kafka'] }), category)).toBe('evented')
-    expect(transportOf(flow('c1', { via: ['gateway', 'kafka', 'esb'] }), category)).toBe('evented')
-  })
-
-  it('is mediated over a bus with no broker on the path', () => {
-    expect(transportOf(flow('c1', { via: ['esb'] }), category)).toBe('mediated')
-    expect(transportOf(flow('c1', { via: ['gateway', 'esb'] }), category)).toBe('mediated')
-  })
-
-  it('is gated by anything else on the path, and by a platform this scope cannot see', () => {
-    expect(transportOf(flow('c1', { via: ['gateway'] }), category)).toBe('gated')
-    expect(transportOf(flow('c1', { via: ['firewall', 'cluster'] }), category)).toBe('gated')
-    expect(transportOf(flow('c1', { via: ['somewhere-else'] }), category)).toBe('gated')
-  })
-
-  it('has a label for every pattern', () => {
-    for (const pattern of ['direct', 'evented', 'mediated', 'gated'] as const) {
-      expect(TRANSPORT_LABEL[pattern]).toBe(`transport.${pattern}`)
-    }
   })
 })

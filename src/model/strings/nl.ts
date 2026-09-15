@@ -34,10 +34,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'platformCategory.identity': 'Identiteit',
   'platformCategory.tooling': 'Tooling',
   'platformCategory.observability': 'Observability',
-  'transport.direct': 'Punt-naar-punt',
-  'transport.evented': 'Eventgedreven',
-  'transport.mediated': 'Via een bus',
-  'transport.gated': 'Via een poort',
 
   'zone.actors': 'ACTOREN',
   'zone.inputChannels': 'INVOERKANALEN',
