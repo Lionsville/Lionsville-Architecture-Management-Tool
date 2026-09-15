@@ -120,5 +120,6 @@ export const FY: Record<keyof typeof EN, string> = {
   'check.successorMissing': '{name} wurdt ôfboud op {detail} en der is gjin opfolger neamd.',
   'check.lineOutlivesEnd': 'De rige “{name}” ({type}) is noch jildich neidat {detail} ôfboud is.',
   'check.planOverdue': '{name} soe op {detail} klear wêze en rint noch.',
+  'check.platformRetiresFirst': '{name} stiet noch op {detail} neidat dat útfasearre is.',
   'check.staleness': 'Dit toant wêr\'t de datums inoar tsjinsprekke. It kin net sjen oft in lânskip ferâldere is.',
 }

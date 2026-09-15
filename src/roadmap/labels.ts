@@ -34,5 +34,6 @@ export const CHECK_SENTENCE: Record<Finding['kind'], StringKey> = {
   successorTooLate: 'check.successorTooLate',
   successorMissing: 'check.successorMissing',
   lineOutlivesEnd: 'check.lineOutlivesEnd',
+  platformRetiresFirst: 'check.platformRetiresFirst',
   planOverdue: 'check.planOverdue',
 }

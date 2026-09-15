@@ -134,5 +134,6 @@ export const EN = {
   'check.successorMissing': '{name} retires on {detail} and nothing is named to replace it.',
   'check.lineOutlivesEnd': 'The row “{name}” ({type}) is still valid after {detail} has been retired.',
   'check.planOverdue': '{name} was due to finish on {detail} and is still running.',
+  'check.platformRetiresFirst': '{name} still stands on {detail} after it has been retired.',
   'check.staleness': 'These say where the dates contradict each other. They cannot tell you a landscape is out of date.',
 } as const

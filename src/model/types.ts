@@ -33,6 +33,12 @@ export type AspectStatus = 'managed' | 'partial' | 'none' | 'atRisk';
 /** Per-aspect state on an element; `note` is the per-application description. */
 export interface AspectEntry {
   status: AspectStatus;
+  /**
+   * Read off the rows rather than typed (ADR-0013): the platform badge of an
+   * application that says which platform it is hosted on. Never written to
+   * a file — `withDerivedAspects` adds it on the way to a screen.
+   */
+  derived?: true;
   note?: string;
 }
 

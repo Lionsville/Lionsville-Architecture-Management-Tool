@@ -31,7 +31,7 @@ export function AspectBadgeRow({
         const aspect = aspects[entry.key];
         const token = tokens.aspects[aspect?.status ?? 'unset'];
         const tooltip = aspect
-          ? `${entry.label}: ${STATUS_LABEL[aspect.status]}${aspect.note ? ` — ${aspect.note}` : ''}`
+          ? `${entry.label}: ${STATUS_LABEL[aspect.status]}${aspect.note ? ` — ${aspect.note}` : ''}${aspect.derived ? ' (from what it is hosted on)' : ''}`
           : `${entry.label}: not set`;
         return (
           <Tooltip key={entry.key} title={tooltip}>

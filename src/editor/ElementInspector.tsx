@@ -14,7 +14,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
-import { aspectConfigFor } from '../model/aspects';
+import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
 import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
@@ -227,6 +227,12 @@ export function ElementInspector(props: ElementInspectorProps) {
     props.diagram.kind === 'container' && props.diagram.applicationElementId === element.id;
 
   const setAspectCount = aspectConfig.filter((entry) => element.aspects[entry.key]).length;
+  // What the rows say about the platform where nobody typed it (ADR-0013),
+  // said beside the editor rather than put into it: the field stays empty,
+  // which is what makes the derived answer the one shown.
+  const derivedPlatform = aspectConfig.some((entry) => entry.key === 'platform')
+    ? derivedPlatformAspect(element, props.model)
+    : undefined;
   const showAspects = element.kind === 'application';
 
   const generalHasValues = Boolean(
@@ -538,6 +544,13 @@ export function ElementInspector(props: ElementInspectorProps) {
                 disabled={readOnly}
                 onChange={(aspects) => update({ aspects })}
               />
+              {derivedPlatform && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', pt: 1 }} data-testid="derived-platform">
+                  {derivedPlatform.status === 'none'
+                    ? t('aspect.derivedNone')
+                    : t('aspect.derivedFrom', { status: t(`aspect.${derivedPlatform.status}` as StringKey), name: derivedPlatform.note })}
+                </Typography>
+              )}
             </InspectorSection>
           )}
 

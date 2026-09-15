@@ -5,10 +5,13 @@ import {
   aspectKeyForLabel,
   aspectShortCode,
   DEFAULT_ASPECT_CONFIG,
+  derivedPlatformAspect,
   derivedShortCode,
   normaliseAspectConfig,
+  withDerivedAspects,
 } from './aspects';
-import { diagram } from './testFixtures';
+import { connection, diagram, element } from './testFixtures';
+import type { Relation } from './types';
 
 describe('ASPECT_SUPERSET', () => {
   it('pins the eight superset keys in canonical order', () => {
@@ -137,5 +140,47 @@ describe('normaliseAspectConfig', () => {
       .toEqual([{ key: 'dr', label: 'Continuity' }]);
     expect(normaliseAspectConfig([{ key: 'dr', label: 'Continuity', code: 'CONTINUITY' }]))
       .toEqual([{ key: 'dr', label: 'Continuity', code: 'CONTI' }]);
+  });
+});
+
+describe('the platform aspect, read off the rows (ADR-0013)', () => {
+  const cluster = element('cluster', { kind: 'platform', name: 'OpenShift' });
+  const cloud = element('cloud', { kind: 'platform', name: 'Hyperscaler', outside: true });
+  const orders = element('orders');
+  const hosted = (id: string, on: string): Relation => ({ id, type: 'hostedOn', sourceId: 'orders', targetId: on });
+
+  it('says nothing where the scope holds no platform at all', () => {
+    const model = { elements: [orders, element('billing')], relations: [connection('c1', 'orders', 'billing')] };
+    expect(derivedPlatformAspect(orders, model)).toBeUndefined();
+    expect(withDerivedAspects(orders, model)).toBe(orders);
+  });
+
+  it('reads managed from a platform of our own, partial from one outside, none from nothing', () => {
+    expect(derivedPlatformAspect(orders, { elements: [orders, cluster], relations: [hosted('h1', 'cluster')] }))
+      .toEqual({ status: 'managed', note: 'OpenShift', derived: true });
+    expect(derivedPlatformAspect(orders, { elements: [orders, cloud], relations: [hosted('h1', 'cloud')] }))
+      .toEqual({ status: 'partial', note: 'Hyperscaler', derived: true });
+    // Our own wins the sentence when it runs on both.
+    expect(derivedPlatformAspect(orders, { elements: [orders, cloud, cluster], relations: [hosted('h1', 'cloud'), hosted('h2', 'cluster')] })?.note)
+      .toBe('OpenShift');
+    expect(derivedPlatformAspect(orders, { elements: [orders, cluster], relations: [] }))
+      .toEqual({ status: 'none', note: '', derived: true });
+  });
+
+  it('yields to a status somebody typed, and says nothing about a platform or a person', () => {
+    const typed = element('orders', { aspects: { platform: { status: 'atRisk' } } });
+    const model = { elements: [typed, cluster], relations: [hosted('h1', 'cluster')] };
+    expect(derivedPlatformAspect(typed, model)).toBeUndefined();
+    expect(withDerivedAspects(typed, model).aspects.platform).toEqual({ status: 'atRisk' });
+    expect(derivedPlatformAspect(cluster, model)).toBeUndefined();
+    expect(derivedPlatformAspect(element('who', { kind: 'actor' }), model)).toBeUndefined();
+  });
+
+  it('adds the derived entry beside the typed ones without touching the record it was given', () => {
+    const typed = element('orders', { aspects: { dr: { status: 'managed' } } });
+    const model = { elements: [typed, cluster], relations: [hosted('h1', 'cluster')] };
+    const shown = withDerivedAspects(typed, model);
+    expect(shown.aspects).toEqual({ dr: { status: 'managed' }, platform: { status: 'managed', note: 'OpenShift', derived: true } });
+    expect(typed.aspects).toEqual({ dr: { status: 'managed' } });
   });
 });

@@ -34,6 +34,65 @@ function check(
 
 const kinds = (list: ReturnType<typeof findings>) => list.map((one) => one.kind)
 
+describe('a platform that retires before what stands on it (ADR-0013)', () => {
+  const platform = (id: string, over: Partial<DesignElement> = {}) => element(id, { kind: 'platform', ...over })
+  const row = (id: string, type: Relation['type'], sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation =>
+    ({ id, type, sourceId, targetId, ...over })
+
+  it('is reported on the application, for what it runs on and what it uses', () => {
+    const list = check(
+      [platform('cluster', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'cluster2' }), platform('cluster2'), element('orders'), element('kafka', { kind: 'platform' })],
+      [row('h1', 'hostedOn', 'orders', 'cluster'), row('u1', 'uses', 'orders', 'kafka')],
+    )
+    const found = list.filter((one) => one.kind === 'platformRetiresFirst')
+    expect(found).toEqual([{
+      kind: 'platformRetiresFirst', subject: 'element', id: 'orders', name: 'orders', detail: 'cluster', relationType: 'hostedOn',
+    }])
+  })
+
+  it('is reported on the interface, once, for the first platform on its path to go', () => {
+    const list = check(
+      [platform('esb', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'esb2' }), platform('esb2'), platform('kafka'), element('orders'), element('billing')],
+      [connection('c1', 'orders', 'billing', { via: ['kafka', 'esb'], label: 'invoices' })],
+    )
+    const found = list.filter((one) => one.kind === 'platformRetiresFirst')
+    expect(found).toEqual([{
+      kind: 'platformRetiresFirst', subject: 'relation', relationType: 'flow', id: 'c1', name: 'invoices', detail: 'esb',
+    }])
+  })
+
+  it('is not reported when the thing goes first, or the row closes in time, or the platform is not dated', () => {
+    const list = check(
+      [
+        platform('cluster', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'cluster2' }), platform('cluster2'),
+        platform('undated', { lifecycle: 'retired' }),
+        element('gone', { lifecycleDates: { retired: '2027-01-01' }, successorId: 'stays' }),
+        element('stays'), element('moved'),
+      ],
+      [
+        row('h1', 'hostedOn', 'gone', 'cluster'),
+        row('h2', 'hostedOn', 'moved', 'cluster', { validUntil: '2027-06-01' }),
+        row('h3', 'hostedOn', 'stays', 'undated'),
+        connection('c1', 'gone', 'stays', { via: ['cluster'], validUntil: '2027-05-01' }),
+      ],
+    )
+    expect(kinds(list)).not.toContain('platformRetiresFirst')
+  })
+
+  it('ranks under a retirement with dependants and above a line that outlives an end', () => {
+    const list = check(
+      [
+        platform('cluster', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'cluster2' }), platform('cluster2'),
+        element('orders'), element('old', { lifecycleDates: { retired: '2027-01-01' }, successorId: 'orders' }),
+      ],
+      [row('h1', 'hostedOn', 'orders', 'cluster'), connection('c1', 'old', 'orders', { validUntil: '2027-03-01' })],
+    )
+    const order = kinds(list)
+    expect(order.indexOf('retiresWithDependants')).toBeLessThan(order.indexOf('platformRetiresFirst'))
+    expect(order.indexOf('platformRetiresFirst')).toBeLessThan(order.indexOf('lineOutlivesEnd'))
+  })
+})
+
 describe('a retirement with things still plugged into it', () => {
   it('is reported, with how many', () => {
     const list = check(

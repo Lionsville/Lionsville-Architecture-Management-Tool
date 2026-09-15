@@ -349,6 +349,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'section.route': 'Route',
 
   'element.noData': 'Geen operationele gegevens voor dit element.',
+  'aspect.derivedFrom': 'Platform leest {status}, afgeleid van waar het op draait: {name}. Een hier gezette status wint.',
+  'aspect.derivedNone': 'Platform leest geen: het draait nog nergens op. Een hier gezette status wint.',
   'element.deleteApplication': 'Applicatie verwijderen…',
   'element.removeDelete': 'Weghalen / verwijderen…',
 

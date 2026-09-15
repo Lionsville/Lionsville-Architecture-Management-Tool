@@ -55,6 +55,13 @@ export type { DatedPhase } from './lifecycle'
 /** Which boards draw a thing, on their own day (ADR-0009, ADR-0010). */
 export { boardsDrawing } from './drawnOn'
 
+/** One platform, with everything on it and through it (ADR-0013). */
+export { findTechnologyDiagram, seedTechnologyDiagram, technologyPage } from './technologyDiagram'
+export type {
+  LaidOutTechnology, TechnologyDescribe, TechnologyDescription, TechnologyEnd, TechnologyFlow,
+  TechnologyOptions,
+} from './technologyDiagram'
+
 /** What the dates in a landscape contradict (ADR-0009). */
 export { findings } from './checks'
 export type { CheckContext, Finding, FindingKind, FindingSubject } from './checks'
@@ -94,6 +101,9 @@ export type { Replacement, ReplacementIds, ReplacementRequest } from './replacem
  * `waypoints`.
  */
 export { hasRouteContent } from './routes'
-export { ASPECT_SUPERSET, DEFAULT_ASPECT_CONFIG, aspectConfigFor, aspectShortCode } from './aspects'
+export {
+  ASPECT_SUPERSET, DEFAULT_ASPECT_CONFIG, aspectConfigFor, aspectShortCode, derivedPlatformAspect,
+  withDerivedAspects,
+} from './aspects'
 /** The one rule for "found", so every search in the app agrees on it. */
 export { fold, matchesQuery, queryTokens } from './textSearch'

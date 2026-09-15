@@ -3,7 +3,7 @@ import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, R
 import type { ElementNode, ElementNodeData, StandInNote } from './nodes/nodeData';
 import type { FloatingEdgeData } from './edges/FloatingEdge';
 import type { EdgeAnchors } from '../model/floatingEdgeMath';
-import { aspectConfigFor } from '../model/aspects';
+import { aspectConfigFor, withDerivedAspects } from '../model/aspects';
 import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
 import { assignEdgeAnchors } from '../model/floatingEdgeMath';
 import { placedNodes,
@@ -130,7 +130,9 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       selectable: true,
       selected: args.selectedElementIds?.has(element.id) ?? false,
       data: {
-        element,
+        // The platform badge is the rows' opinion where nobody typed one
+        // (ADR-0013); the same object where there is nothing to derive.
+        element: withDerivedAspects(element, args.model),
         placement,
         readOnly: args.readOnly,
         aspectConfig,

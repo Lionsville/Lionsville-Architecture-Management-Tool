@@ -362,6 +362,8 @@ export const EN = {
   'section.route': 'Route',
 
   'element.noData': 'No operational data for this element.',
+  'aspect.derivedFrom': 'Platform reads {status}, from what it is hosted on: {name}. A status set here wins.',
+  'aspect.derivedNone': 'Platform reads none: it is hosted on nothing yet. A status set here wins.',
   'element.deleteApplication': 'Delete application…',
   'element.removeDelete': 'Remove / delete…',
 

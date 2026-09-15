@@ -1,4 +1,4 @@
-import type { AspectConfigEntry, DesignDiagram } from './types';
+import type { AspectConfigEntry, DesignDiagram, DesignElement, ElementId, Relation } from './types';
 
 /**
  * The Lionsville aspect superset: every standard operational aspect a layer7
@@ -15,6 +15,53 @@ export const ASPECT_SUPERSET: readonly AspectConfigEntry[] = [
   { key: 'compliance', label: 'Compliance' },
   { key: 'cost', label: 'Cost' },
 ] as const;
+
+/**
+ * The platform aspect, read off the rows rather than typed (ADR-0013).
+ *
+ * The badge used to be the only thing the model could say about platforms:
+ * a status per application, set by hand, saying nothing about which. With
+ * `hostedOn` rows the fact is in the model, and the badge becomes the
+ * derived opinion: *managed* when it runs on a platform this organisation
+ * owns, *partial* when it runs on one outside it, *none* when it runs on
+ * nothing — and only where the scope holds any platform at all, so a
+ * landscape that has not started modelling technology hears nothing. A
+ * status somebody set by hand wins, and is left exactly as typed.
+ *
+ * Returns the element it was given when there is nothing to derive, so a
+ * caller comparing by reference sees no change where there is none.
+ */
+export function withDerivedAspects(
+  element: DesignElement,
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+): DesignElement {
+  const derived = derivedPlatformAspect(element, model);
+  if (!derived) return element;
+  return { ...element, aspects: { ...element.aspects, platform: derived } };
+}
+
+export function derivedPlatformAspect(
+  element: Pick<DesignElement, 'id' | 'kind' | 'aspects'>,
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+): { status: 'managed' | 'partial' | 'none'; note: string; derived: true } | undefined {
+  if (element.kind !== 'application' && element.kind !== 'component') return undefined;
+  if (element.aspects?.platform) return undefined;
+  const platforms = new Map<ElementId, DesignElement>(
+    model.elements.filter((held) => held.kind === 'platform').map((held) => [held.id, held]),
+  );
+  if (platforms.size === 0) return undefined;
+  const on = model.relations
+    .filter((row) => row.type === 'hostedOn' && row.sourceId === element.id)
+    .map((row) => platforms.get(row.targetId))
+    .filter((held): held is DesignElement => held !== undefined);
+  if (on.length === 0) return { status: 'none', note: '', derived: true };
+  const inside = on.filter((held) => !held.outside);
+  return {
+    status: inside.length > 0 ? 'managed' : 'partial',
+    note: (inside.length > 0 ? inside : on).map((held) => held.name).join(', '),
+    derived: true,
+  };
+}
 
 /** The original five — the fallback when a diagram has no aspectConfig. */
 export const DEFAULT_ASPECT_CONFIG: readonly AspectConfigEntry[] = ASPECT_SUPERSET.slice(0, 5);

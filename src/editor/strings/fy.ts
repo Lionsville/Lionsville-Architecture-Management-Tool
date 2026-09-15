@@ -349,6 +349,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'section.route': 'Rûte',
 
   'element.noData': 'Gjin operasjonele gegevens foar dit elemint.',
+  'aspect.derivedFrom': 'Platfoarm lêst {status}, ôflaat fan wêr\'t it op draait: {name}. In hjir sette status wint.',
+  'aspect.derivedNone': 'Platfoarm lêst gjin: it draait noch nearne op. In hjir sette status wint.',
   'element.deleteApplication': 'Applikaasje fuortsmite…',
   'element.removeDelete': 'Fuorthelje / fuortsmite…',
 
