@@ -48,7 +48,7 @@ const STEP_TIMEOUT_MS = 20_000
 /**
  * The shipped example, as the smoke knows it: three scopes, and how many
  * applications the landscape defines. The numbers are asserted, not just
- * "more than nothing" — the register answering 20 where 22 were written would
+ * "more than nothing" — the register answering 18 where 20 were written would
  * be a fold with a hole in it, and the run is where that gets noticed.
  */
 const EXAMPLE = {
@@ -61,7 +61,7 @@ const EXAMPLE = {
   landscapeName: 'Application landscape',
   /** The root, the example's organisation, its landscape and its platforms (ADR-0013). */
   scopes: 4,
-  applications: 22,
+  applications: 20,
   activeDiagram: 'landscape',
 }
 
@@ -502,7 +502,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   // --- the organisation, read across its scopes (ADR-0012 §2) -----------------
   //
   // The index is built at boot from every scope's model.json, and the register
-  // is that index filtered to applications. The landscape defines 22; the
+  // is that index filtered to applications. The landscape defines 20; the
   // organisation defines none and holds the business layer. A register that
   // answers 0 here is an index that never read the folder — which is the
   // symptom every cross-scope name, link and finding shows at once.
@@ -644,7 +644,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   results.push(await checkHere('the index is read for the new folder: the register fills after the switch', async () => {
     await copyExample()
     // The register answered 0 here for as long as the index read once at
-    // mount: the example is on disk in the new folder, so 22 is the only
+    // mount: the example is on disk in the new folder, so 20 is the only
     // right answer, and "some applications" would hide a partial read.
     const register = await until('the register after the switch', () => registerTotal(), (held) => held.total === EXAMPLE.applications)
     // The listing is read again after the copy, off the render path like the

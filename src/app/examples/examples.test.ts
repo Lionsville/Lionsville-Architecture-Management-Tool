@@ -61,9 +61,13 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(platforms.kind).toBe('domain')
     expect(platforms.model.elements.every((e) => e.kind === 'platform' && e.ref === undefined)).toBe(true)
     expect(platforms.model.elements.map((e) => e.platformCategory)).toContain('integration')
-    const standIns = model.elements.filter((e) => e.kind === 'platform')
+    const standIns = model.elements.filter((e) => e.kind === 'platform' && e.ref !== undefined)
     expect(standIns.length).toBeGreaterThan(0)
     expect(standIns.every((e) => e.ref === 'acme-logistics/platforms')).toBe(true)
+    // A technology the applications use is a platform they use, never a line
+    // on the landscape: nothing flows FROM the identity provider.
+    expect(model.relations.some((r) => r.type === 'flow' && (r.sourceId === 'iam' || r.sourceId === 'observability'))).toBe(false)
+    expect(model.relations.filter((r) => r.type === 'uses' && r.targetId === 'iam').length).toBeGreaterThan(0)
     expect(model.relations.some((r) => r.type === 'hostedOn')).toBe(true)
     expect(model.relations.some((r) => r.type === 'flow' && r.via?.includes('esb'))).toBe(true)
     const view = model.diagrams.find((d) => d.kind === 'technology')!
@@ -91,7 +95,9 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
       [...new Set(held.elements.filter((e) => e.ref === undefined).map((e) => e.kind))].sort()
     // A process beside the capabilities: its page holds the BPMN (ADR-0012 §7).
     expect(kinds(organisation.model)).toEqual(['actor', 'function', 'process', 'step'])
-    expect(kinds(model)).toEqual(['application', 'component'])
+    // The landscape's own platforms beside its applications (ADR-0013): the
+    // identity provider and the monitoring, which are its to run.
+    expect(kinds(model)).toEqual(['application', 'component', 'platform'])
     // The map beside the sheet: the organisation's capabilities against the
     // landscape's systems is the view ADR-0012 §6 was written for.
     expect(organisation.model.diagrams.map((d) => d.kind)).toEqual(['sheet', 'map'])

@@ -855,9 +855,10 @@
         "iconKey": "auth",
         "id": "iam",
         "isManaged": true,
-        "kind": "application",
+        "kind": "platform",
         "lifecycle": "live",
-        "name": "Identity & access"
+        "name": "Identity & access",
+        "platformCategory": "identity"
       },
       {
         "aspects": {},
@@ -937,9 +938,10 @@
         "iconKey": "monitoring",
         "id": "observability",
         "isManaged": true,
-        "kind": "application",
+        "kind": "platform",
         "lifecycle": "live",
-        "name": "Observability"
+        "name": "Observability",
+        "platformCategory": "observability"
       },
       {
         "aspects": {},
@@ -1674,60 +1676,6 @@
         "type": "flow"
       },
       {
-        "id": "c#33",
-        "isBidirectional": false,
-        "label": "monitors",
-        "protocol": "HTTPS",
-        "sourceId": "observability",
-        "targetId": "order-management",
-        "type": "flow"
-      },
-      {
-        "id": "c#34",
-        "isBidirectional": false,
-        "label": "monitors",
-        "protocol": "HTTPS",
-        "sourceId": "observability",
-        "targetId": "wms",
-        "type": "flow"
-      },
-      {
-        "id": "c#35",
-        "isBidirectional": false,
-        "label": "monitors",
-        "protocol": "HTTPS",
-        "sourceId": "observability",
-        "targetId": "dispatch",
-        "type": "flow"
-      },
-      {
-        "id": "c#36",
-        "isBidirectional": false,
-        "label": "authenticates",
-        "protocol": "OIDC",
-        "sourceId": "iam",
-        "targetId": "customer-portal",
-        "type": "flow"
-      },
-      {
-        "id": "c#37",
-        "isBidirectional": false,
-        "label": "authorises",
-        "protocol": "OIDC",
-        "sourceId": "iam",
-        "targetId": "order-management",
-        "type": "flow"
-      },
-      {
-        "id": "c#38",
-        "isBidirectional": false,
-        "label": "authorises",
-        "protocol": "OIDC",
-        "sourceId": "iam",
-        "targetId": "wms",
-        "type": "flow"
-      },
-      {
         "id": "c#39",
         "isBidirectional": false,
         "label": "reads stock and tasks",
@@ -2109,6 +2057,42 @@
         "id": "u#2",
         "sourceId": "legacy-rating",
         "targetId": "esb",
+        "type": "uses"
+      },
+      {
+        "id": "u#3",
+        "sourceId": "order-management",
+        "targetId": "observability",
+        "type": "uses"
+      },
+      {
+        "id": "u#4",
+        "sourceId": "wms",
+        "targetId": "observability",
+        "type": "uses"
+      },
+      {
+        "id": "u#5",
+        "sourceId": "dispatch",
+        "targetId": "observability",
+        "type": "uses"
+      },
+      {
+        "id": "u#6",
+        "sourceId": "customer-portal",
+        "targetId": "iam",
+        "type": "uses"
+      },
+      {
+        "id": "u#7",
+        "sourceId": "order-management",
+        "targetId": "iam",
+        "type": "uses"
+      },
+      {
+        "id": "u#8",
+        "sourceId": "wms",
+        "targetId": "iam",
         "type": "uses"
       }
     ]
