@@ -443,6 +443,9 @@
     "kind": "container",
     "members": [
       {
+        "id": "billing"
+      },
+      {
         "id": "order-management"
       },
       {
@@ -917,6 +920,15 @@
         "name": "Rating (legacy)",
         "owner": "Revenue systems",
         "successorId": "tariff-engine"
+      },
+      {
+        "aspects": {},
+        "id": "ns-logistics",
+        "isManaged": false,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Logistics namespace",
+        "ref": "acme-logistics/platforms"
       },
       {
         "aspects": {},
@@ -1474,7 +1486,6 @@
         "id": "c#16",
         "isBidirectional": false,
         "label": "requests picking and shipping",
-        "protocol": "REST",
         "sourceId": "order-management",
         "targetId": "wms",
         "type": "flow"
@@ -1664,6 +1675,7 @@
         "isBidirectional": false,
         "label": "scans",
         "protocol": "HTTPS",
+        "refines": "c#11",
         "sourceId": "scanners",
         "targetId": "wms-scan-service",
         "type": "flow"
@@ -1718,8 +1730,9 @@
         "isBidirectional": false,
         "label": "requests picking and shipping",
         "protocol": "REST",
+        "refines": "c#16",
         "sourceId": "order-management",
-        "targetId": "wms-integration",
+        "targetId": "wms-api",
         "type": "flow"
       },
       {
@@ -1727,8 +1740,9 @@
         "isBidirectional": false,
         "label": "writes replenishment tasks",
         "protocol": "REST",
+        "refines": "c#21",
         "sourceId": "slotting",
-        "targetId": "wms-integration",
+        "targetId": "wms-api",
         "type": "flow"
       },
       {
@@ -1742,12 +1756,41 @@
         "validUntil": "2027-06-30"
       },
       {
+        "id": "c#49",
+        "isBidirectional": false,
+        "label": "hears about movements",
+        "protocol": "AMQP",
+        "refines": "c#16",
+        "sourceId": "order-management",
+        "targetId": "wms-events",
+        "type": "flow"
+      },
+      {
         "id": "c#5",
         "isBidirectional": false,
         "label": "answers where a shipment is",
         "protocol": "HTTPS",
         "sourceId": "support-agent",
         "targetId": "track-trace",
+        "type": "flow"
+      },
+      {
+        "id": "c#50",
+        "isBidirectional": false,
+        "label": "books a dock door",
+        "protocol": "REST",
+        "refines": "c#22",
+        "sourceId": "wms-api",
+        "targetId": "yard",
+        "type": "flow"
+      },
+      {
+        "id": "c#51",
+        "isBidirectional": false,
+        "label": "asks for shipment weights",
+        "protocol": "REST",
+        "sourceId": "billing",
+        "targetId": "wms-integration",
         "type": "flow"
       },
       {
@@ -1805,8 +1848,80 @@
         "type": "hostedOn"
       },
       {
+        "id": "h#12",
+        "sourceId": "wms-api",
+        "targetId": "ns-logistics",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#13",
+        "sourceId": "wms-db",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#14",
+        "sourceId": "wms-events",
+        "targetId": "ns-logistics",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#15",
+        "sourceId": "wms-integration",
+        "targetId": "ns-logistics",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#16",
+        "sourceId": "wms-scan-service",
+        "targetId": "ns-logistics",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#17",
+        "sourceId": "wms-task-engine",
+        "targetId": "ns-logistics",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#18",
+        "sourceId": "wms-workstation",
+        "targetId": "ns-logistics",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#19",
+        "sourceId": "customer-portal",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
         "id": "h#2",
         "sourceId": "dispatch",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#20",
+        "sourceId": "driver-app",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#21",
+        "sourceId": "edi-intake",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#22",
+        "sourceId": "legacy-rating",
+        "targetId": "openshift",
+        "type": "hostedOn"
+      },
+      {
+        "id": "h#23",
+        "sourceId": "scanners",
         "targetId": "openshift",
         "type": "hostedOn"
       },
@@ -1819,12 +1934,6 @@
       {
         "id": "h#4",
         "sourceId": "track-trace",
-        "targetId": "openshift",
-        "type": "hostedOn"
-      },
-      {
-        "id": "h#5",
-        "sourceId": "wms",
         "targetId": "openshift",
         "type": "hostedOn"
       },

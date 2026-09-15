@@ -49,10 +49,12 @@ export function deploymentBoxes(
   model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
   diagram: Pick<DesignDiagram, 'kind' | 'applicationElementId'>,
   placed: ReadonlySet<ElementId>,
+  parentOf?: (platformId: ElementId) => ElementId | undefined,
 ): DeploymentBox[] {
   const subject = diagram.applicationElementId
   if (diagram.kind !== 'container' || subject === undefined) return []
   const byId = new Map(model.elements.map((element) => [element.id, element]))
+  const above = (platform: DesignElement) => platform.parentId ?? parentOf?.(platform.id)
 
   /** The platform, then what it sits in, outermost last. A loop stops itself. */
   const chainOf = (platformId: ElementId): DesignElement[] => {
@@ -62,7 +64,8 @@ export function deploymentBoxes(
     while (held?.kind === 'platform' && !seen.has(held.id)) {
       seen.add(held.id)
       chain.push(held)
-      held = held.parentId === undefined ? undefined : byId.get(held.parentId)
+      const up = above(held)
+      held = up === undefined ? undefined : byId.get(up)
     }
     return chain
   }

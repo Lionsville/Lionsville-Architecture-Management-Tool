@@ -776,6 +776,10 @@ export function ProjectWorkspace({
       }
     },
     noteFor: (elementId) => notes.get(elementId),
+    // What a platform is filed under, off the index (ADR-0013): the deployment
+    // boxes nest by the platform tree, and a landscape holds stand-ins of the
+    // platforms it stands on — the tree is the scope that defines them.
+    platformParentOf: (platformId) => index.lookup(platformId)?.parentId,
     gestures: {
       offered: (elementId) => gestureOffers(elementId).length > 0,
       label: s('gesture.move'),

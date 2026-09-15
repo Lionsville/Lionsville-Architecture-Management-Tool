@@ -1390,6 +1390,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onElementDoubleClick={handleDoubleClick}
           onLineDoubleClick={handleLineDoubleClick}
           showDeployment={showDeployment}
+          platformParentOf={props.ownership?.platformParentOf}
           overlayTints={overlayTints}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
@@ -1658,6 +1659,7 @@ function CanvasForDiagram({
   onLineDoubleClick,
   onOpenDocumentation,
   showDeployment,
+  platformParentOf,
   overlayTints,
   onTidyGroup,
   groupTidyOptions,
@@ -1699,6 +1701,8 @@ function CanvasForDiagram({
   onOpenDocumentation(elementId: ElementId): void;
   /** Whether a container diagram draws the deployment boxes (ADR-0013). */
   showDeployment: boolean;
+  /** The platform tree, where another scope answers for it (ADR-0013). */
+  platformParentOf?(platformId: ElementId): ElementId | undefined;
   /** The wash each card takes under the landscape's overlay (ADR-0013). */
   overlayTints: ReadonlyMap<ElementId, string>;
   /** Layer 7 only — undefined in read-only mode. */
@@ -1766,7 +1770,7 @@ function CanvasForDiagram({
       onGroupTidyOptionsChange={onGroupTidyOptionsChange}
     />
   ) : (
-    <ContainerCanvas {...shared} showDeployment={showDeployment} />
+    <ContainerCanvas {...shared} showDeployment={showDeployment} platformParentOf={platformParentOf} />
   );
 }
 

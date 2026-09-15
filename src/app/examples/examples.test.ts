@@ -16,6 +16,9 @@ import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
 import { copyExampleInto, EXAMPLES, exampleFiles, exampleScopes } from '.'
 import { fromArrays, toArrays } from '../../model/normalised'
+import { derivedPlatformAspect } from '../../model/aspects'
+import { deploymentBoxes } from '../../model/deployment'
+import { hostingOf } from '../../model/hosting'
 import { documentFindings, identityFindings } from '../../projects/checks'
 import { registerRows, registerSummary } from '../organisation/register'
 import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'
@@ -52,9 +55,8 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
 
   /**
    * The physical view (ADR-0013): the platforms are a scope of their own,
-   * the landscape draws stand-ins of the ones it stands on, its applications
-   * say what runs them, and the interfaces that cross the bus and the
-   * broker say so — which is what the bus's technology view is made of.
+   * the landscape draws stand-ins of the ones it stands on, and its containers
+   * say what runs them — which is what the bus's report is made of.
    */
   it('keeps the platforms in a scope of their own, and the landscape says what it stands on', () => {
     const platforms = scopes.find((scope) => scope.path === 'acme-logistics/platforms')!
@@ -71,6 +73,85 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(model.relations.some((r) => r.type === 'hostedOn')).toBe(true)
     expect(model.diagrams.filter((d) => d.kind === 'layer7')
       .every((d) => d.members.some((m) => m.id === 'esb' && m.zone === 'management'))).toBe(true)
+  })
+
+  /**
+   * An interface landing a level down (ADR-0013, redone), on the one landscape
+   * this repository ships — so the acceptance the record describes can be read
+   * off the example rather than performed.
+   */
+  it('lands its interfaces on the WMS containers, and shows the interface with two', () => {
+    const landings = model.relations.filter((r) => r.refines === 'c#16')
+    expect(landings.map((r) => [r.targetId, r.protocol])).toEqual([
+      ['wms-api', 'REST'], ['wms-events', 'AMQP'],
+    ])
+    // The interface keeps its label and its ends, and loses the protocol it
+    // can no longer answer for.
+    const held = model.relations.find((r) => r.id === 'c#16')!
+    expect(held).toMatchObject({ sourceId: 'order-management', targetId: 'wms' })
+    expect(held.protocol).toBeUndefined()
+    // Every landing sits under the interface it names.
+    const byId = new Map(model.elements.map((e) => [e.id, e]))
+    for (const landing of model.relations.filter((r) => r.refines !== undefined)) {
+      const held2 = model.relations.find((r) => r.id === landing.refines)!
+      expect(held2, landing.id).toBeDefined()
+      expect(held2.refines, landing.id).toBeUndefined()
+      const under = (end: string, over: string) =>
+        end === over || byId.get(end)?.parentId === over
+      expect(under(landing.sourceId, held2.sourceId), landing.id).toBe(true)
+      expect(under(landing.targetId, held2.targetId), landing.id).toBe(true)
+    }
+  })
+
+  it('says where its containers run, and leaves the outside systems to their owners', () => {
+    const on = (id: string) => model.relations
+      .filter((r) => r.type === 'hostedOn' && r.sourceId === id).map((r) => r.targetId)
+    // The namespace nested in the cluster, with the database on the cluster
+    // itself — which is what makes the deployment boxes nest.
+    expect(on('wms-api')).toEqual(['ns-logistics'])
+    expect(on('wms-db')).toEqual(['openshift'])
+    // An application with containers does not say where it runs; one without
+    // says it itself; a partner system is somebody else's to run.
+    expect(on('wms')).toEqual([])
+    expect(on('customer-portal')).toEqual(['openshift'])
+    expect(on('driver-app')).toEqual(['openshift'])
+    for (const id of ['partner-carriers', 'payments', 'customs', 'traffic-feed']) {
+      expect(on(id), id).toEqual([])
+    }
+  })
+
+  it('reads the WMS as managed off its containers, with nothing typed', () => {
+    const wms = model.elements.find((e) => e.id === 'wms')!
+    expect(wms.aspects.platform).toBeUndefined()
+    expect(hostingOf(model, 'wms')).toMatchObject({ from: 'containers', containers: 7 })
+    expect(derivedPlatformAspect(wms, model)).toMatchObject({ status: 'managed', derived: true })
+  })
+
+  it('nests the deployment boxes on the WMS container diagram', () => {
+    const diagram = model.diagrams.find((d) => d.id === 'wms-containers')!
+    const placed = new Set(diagram.members.map((m) => m.id))
+    // The tree is the platform scope's: a stand-in carries a name and a `ref`
+    // and nothing the owner answers for (§3), so the boxes are handed what the
+    // index says, exactly as the workspace hands the canvas.
+    const tree = indexScopes(scopes.map((scope) => ({ path: scope.path, model: scope.model })))
+    const parentOf = (id: string) => tree.lookup(id)?.parentId
+    const boxes = deploymentBoxes(model, diagram, placed, parentOf)
+    expect(boxes.map((box) => [box.id, box.depth])).toEqual([['openshift', 0], ['ns-logistics', 1]])
+    // The database is in the cluster's box and outside the namespace's.
+    expect(boxes.find((box) => box.id === 'openshift')!.memberIds).toContain('wms-db')
+    expect(boxes.find((box) => box.id === 'ns-logistics')!.memberIds).not.toContain('wms-db')
+  })
+
+  it('leaves one container interface for the roadmap to offer an interface for', () => {
+    const loose = model.relations.filter((r) => r.id === 'c#51')[0]
+    expect(loose).toMatchObject({ sourceId: 'billing', targetId: 'wms-integration' })
+    expect(loose.refines).toBeUndefined()
+    // Nobody has drawn the application line it implies.
+    expect(model.relations.some((r) => r.type === 'flow'
+      && ((r.sourceId === 'billing' && r.targetId === 'wms') || (r.sourceId === 'wms' && r.targetId === 'billing'))))
+      .toBe(false)
+    // And Billing is on the WMS's container diagram, so the line has an end to draw to.
+    expect(model.diagrams.find((d) => d.id === 'wms-containers')!.members.some((m) => m.id === 'billing')).toBe(true)
   })
 
   /**

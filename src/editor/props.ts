@@ -380,6 +380,18 @@ export interface EditorOwnership {
    */
   noteFor(elementId: ElementId): StandInNote | undefined;
   /**
+   * Which platform a platform is filed under, where the scope that defines it
+   * says so (ADR-0013).
+   *
+   * The deployment boxes nest by the platform tree, and a landscape holds
+   * stand-ins of the platforms it stands on — a stand-in carries a name and a
+   * `ref` and nothing the owner answers for (§3), and the tree is the owner's.
+   * So the host reads it off the index and hands it over, the way it hands
+   * over the words on a card. Absent in a shell with no tree, and the boxes
+   * then nest by whatever this scope holds itself.
+   */
+  platformParentOf?(platformId: ElementId): ElementId | undefined;
+  /**
    * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
    * them: is there one to offer on this record, and one way to ask for it.
    *

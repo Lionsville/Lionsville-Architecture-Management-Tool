@@ -31,6 +31,8 @@ const LABEL_ROOM = 18;
 export interface DeploymentLayerProps {
   model: DesignModel;
   diagram: DesignDiagram;
+  /** The platform tree, where another scope answers for it — see `model/deployment`. */
+  platformParentOf?(platformId: ElementId): ElementId | undefined;
 }
 
 export function DeploymentLayer(props: DeploymentLayerProps) {
@@ -48,7 +50,7 @@ export function DeploymentLayer(props: DeploymentLayerProps) {
     if (width === 0 || height === 0) continue;
     rects.set(node.id, { x: node.position.x, y: node.position.y, width, height });
   }
-  const boxes = deploymentBoxes(props.model, props.diagram, new Set(rects.keys()));
+  const boxes = deploymentBoxes(props.model, props.diagram, new Set(rects.keys()), props.platformParentOf);
   if (boxes.length === 0) return null;
   const deepest = boxes.reduce((held, box) => Math.max(held, box.depth), 0);
 

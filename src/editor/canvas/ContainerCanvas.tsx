@@ -14,7 +14,12 @@ type SharedProps = Omit<DiagramCanvasProps, 'resolveDrop' | 'onAddByDrop' | 'chi
  * built by graph.ts) and everything else is freely placeable — no zones.
  */
 export function ContainerCanvas(
-  props: SharedProps & { model: DesignModel; diagram: DesignDiagram; showDeployment?: boolean },
+  props: SharedProps & {
+    model: DesignModel;
+    diagram: DesignDiagram;
+    showDeployment?: boolean;
+    platformParentOf?(platformId: string): string | undefined;
+  },
 ) {
   const { actions, model, diagram } = props;
   const { t, language } = useStrings();
@@ -36,7 +41,7 @@ export function ContainerCanvas(
           measured off the live nodes, so it follows a card as it is dragged
           and there is no geometry to keep in step. */}
       {(props.showDeployment ?? true) && (
-        <DeploymentLayer model={model} diagram={diagram} />
+        <DeploymentLayer model={model} diagram={diagram} platformParentOf={props.platformParentOf} />
       )}
     </DiagramCanvas>
   );
