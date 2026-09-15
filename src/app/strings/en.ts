@@ -267,6 +267,17 @@ export const EN = {
     + 'sync and commit. Nothing is kept inside the app itself.',
   'folder.choose': 'Choose a folder…',
   'folder.recent': 'Recently used',
+  /**
+   * The folder pick asks before it copies. Both answers are safe and the body
+   * says so: the app keeps its own copy until somebody moves it on purpose.
+   */
+  'folder.adoptTitle': 'Bring your work into this folder?',
+  'folder.adoptBody':
+    'Your projects are kept inside the app at the moment. “{name}” can take a copy of '
+    + 'them, or open as it is. Nothing is deleted either way — the app keeps its copy until '
+    + 'you move it on purpose.',
+  'folder.adoptCopy': 'Copy my work in',
+  'folder.adoptSkip': 'Open the folder as it is',
   'picker.folder': 'Projects folder: {name}',
   'picker.noFolder': 'Projects are kept inside the app. Choose a folder to keep them as files.',
   'picker.chooseFolder': 'Choose folder…',

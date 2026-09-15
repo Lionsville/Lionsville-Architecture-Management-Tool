@@ -43,21 +43,13 @@ function mount(initial: unknown, options: {
 const settle = () => act(() => Promise.resolve().then(() => {}))
 
 describe('useShellPreferences — where the settings start', () => {
-  it('takes the language from the blob when there is one', () => {
+  it('takes the language from the blob or the browser, and starts on "system"', () => {
     expect(mount({ language: 'nl' }).prefs().language).toBe('nl')
-  })
-
-  it('asks the browser when there is not', () => {
     expect(mount({}, { browserLanguages: ['nl-NL', 'en'] }).prefs().language).toBe('nl')
-  })
-
-  it('starts on "system", so a screen set to dark is dark straight away', () => {
     expect(mount({}).prefs().themeMode).toBe('system')
-  })
-
-  it('ignores a theme the blob invented', () => {
     expect(mount({ themeMode: 'purple' }).prefs().themeMode).toBe('system')
   })
+
 })
 
 describe('useShellPreferences — writing', () => {

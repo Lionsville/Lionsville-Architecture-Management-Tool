@@ -89,11 +89,16 @@ describe('re-parenting', () => {
     expect(list.queryByRole('option', { name: 'Ship a consignment' })).toBeNull()
   })
 
-  it('writes the new parent as a change to the element', () => {
+  it('writes the new parent as a change, and lets a thing go back to the top of its tree', () => {
     const { actions } = open('picking')
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Invoicing' }))
     expect(actions.updateElement).toHaveBeenCalledWith('picking', { parentId: 'invoicing' })
+    cleanup()
+    const { actions: actions2 } = open('warehousing')
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /top-level/ }))
+    expect(actions2.updateElement).toHaveBeenCalledWith('warehousing', { parentId: undefined })
   })
 
   it('shows the parent that would make a loop, refused, with the reason', () => {
@@ -106,12 +111,6 @@ describe('re-parenting', () => {
     expect(loop.textContent).toContain('Already inside this one')
   })
 
-  it('lets a thing go back to the top of its tree', () => {
-    const { actions } = open('warehousing')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sits under/ }))
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /top-level/ }))
-    expect(actions.updateElement).toHaveBeenCalledWith('warehousing', { parentId: undefined })
-  })
 })
 
 describe('order among its neighbours', () => {
@@ -129,25 +128,29 @@ describe('order among its neighbours', () => {
 })
 
 describe('what the two kinds each add', () => {
-  it('gives a step the lane it is on, over the organisation’s actors', () => {
+  it('gives a step its lane and puts it back on the path everybody takes', () => {
     const { actions } = open('negotiate')
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Whose path/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Marketplace partner' }))
     expect(actions.updateElement).toHaveBeenCalledWith('negotiate', { lane: 'partner' })
-  })
-
-  it('puts a step back on the path everybody takes', () => {
-    const { actions } = open('negotiate')
+    cleanup()
+    const { actions: actions2 } = open('negotiate')
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Whose path/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /everybody/ }))
-    expect(actions.updateElement).toHaveBeenCalledWith('negotiate', { lane: undefined })
+    expect(actions2.updateElement).toHaveBeenCalledWith('negotiate', { lane: undefined })
   })
 
-  it('gives a function what covers it, with a way to each system', () => {
+  it('gives a function what covers it with a way to each system, and says so when nothing does', () => {
     const { actions } = open('picking')
     // The link, not the chip in the picker below it that says the same name.
     fireEvent.click(screen.getByRole('button', { name: 'Open Warehouse system' }))
     expect(actions.onOpenElement).toHaveBeenCalledWith('wms')
+    cleanup()
+    open('dunning')
+    expect(screen.getByTestId('sheet-inspector-coverage').textContent).toContain('Nothing and nobody yet')
+    cleanup()
+    open('negotiate')
+    expect(screen.queryByTestId('sheet-inspector-coverage')).toBeNull()
   })
 
   it('says of a capability that people do, that people do it', () => {
@@ -157,15 +160,6 @@ describe('what the two kinds each add', () => {
     expect(coverage.textContent).toContain('People, without a system')
   })
 
-  it('says of a capability nothing and nobody covers, that nothing does', () => {
-    open('dunning')
-    expect(screen.getByTestId('sheet-inspector-coverage').textContent).toContain('Nothing and nobody yet')
-  })
-
-  it('gives a step no coverage row — a journey is not covered, it is walked', () => {
-    open('negotiate')
-    expect(screen.queryByTestId('sheet-inspector-coverage')).toBeNull()
-  })
 })
 
 describe('readOnly', () => {
@@ -178,31 +172,35 @@ describe('readOnly', () => {
 })
 
 describe('what covers a capability, as something to tick', () => {
-  it('ticks an application into a supports row', () => {
+  it('ticks a supporter in and out, an application or an actor, held or not', () => {
     const { actions } = open('dunning')
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Finance system' }))
     expect(actions.setCoverage).toHaveBeenCalledWith({
       type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
     })
-  })
-
-  it('unticks one that is there', () => {
-    const { actions } = open('picking')
+    cleanup()
+    const { actions: actions2 } = open('picking')
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Supported by/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse system' }))
-    expect(actions.setCoverage).toHaveBeenCalledWith({
+    expect(actions2.setCoverage).toHaveBeenCalledWith({
       type: 'supports', sourceId: 'wms', functionId: 'picking', on: false,
     })
-  })
-
-  it('ticks an actor into an assigned row — people, which is an answer', () => {
-    const { actions } = open('dunning')
+    cleanup()
+    const { actions: actions3 } = open('dunning')
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Done by/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse team' }))
-    expect(actions.setCoverage).toHaveBeenCalledWith({
+    expect(actions3.setCoverage).toHaveBeenCalledWith({
       type: 'assigned', sourceId: 'warehouse-team', functionId: 'dunning', on: true,
     })
+    cleanup()
+    open('picking', false, undefined, undefined, {
+      applications: [{ id: 'wms', name: 'Warehouse system, as the landscape calls it', where: 'ops' }],
+    })
+    expect(screen.getByRole('button', { name: 'Open Warehouse system, as the landscape calls it' })).toBeTruthy()
+    cleanup()
+    open('negotiate')
+    expect(screen.queryByRole('combobox', { name: /Supported by/ })).toBeNull()
   })
 
   it('shows what is already ticked, as chips', () => {
@@ -263,50 +261,35 @@ describe('what covers a capability, as something to tick', () => {
     expect(actions.setCoverage).not.toHaveBeenCalled()
   })
 
-  it('names a supporter this scope does not hold, from the same list', () => {
-    open('picking', false, undefined, undefined, {
-      applications: [{ id: 'wms', name: 'Warehouse system, as the landscape calls it', where: 'ops' }],
-    })
-    expect(screen.getByRole('button', { name: 'Open Warehouse system, as the landscape calls it' })).toBeTruthy()
-  })
-
-  it('offers nothing to tick on a step — a journey is walked, not covered', () => {
-    open('negotiate')
-    expect(screen.queryByRole('combobox', { name: /Supported by/ })).toBeNull()
-  })
 })
 
 describe('the way to the page', () => {
-  it('opens the element’s own documentation, beside the heading', () => {
+  it('opens the element’s own documentation beside the heading, where the host has a page', () => {
     const onOpenDocumentation = vi.fn()
     open('dunning', false, undefined, undefined, { onOpenDocumentation })
     fireEvent.click(screen.getByRole('button', { name: 'Open the page of Chase a late payment' }))
     expect(onOpenDocumentation).toHaveBeenCalledWith('dunning')
-  })
-
-  it('is not offered where the host has no page to go to', () => {
+    cleanup()
     open('dunning')
     expect(screen.queryByTestId('sheet-open-page')).toBeNull()
   })
+
 })
 
 describe('a stakeholder', () => {
-  it('says whether it is part of this organisation', () => {
+  it('says whether a stakeholder is part of this organisation, and takes the mark off again', () => {
     const { actions } = open('warehouse-team')
     fireEvent.click(screen.getByLabelText('Outside the organisation'))
     expect(actions.updateElement).toHaveBeenCalledWith('warehouse-team', { outside: true })
-  })
-
-  it('takes the mark off again, rather than storing a false', () => {
-    const { actions } = open('partner')
+    cleanup()
+    const { actions: actions2 } = open('partner')
     fireEvent.click(screen.getByLabelText('Outside the organisation'))
-    expect(actions.updateElement).toHaveBeenCalledWith('partner', { outside: undefined })
-  })
-
-  it('is the only kind asked, because only a party can be outside', () => {
+    expect(actions2.updateElement).toHaveBeenCalledWith('partner', { outside: undefined })
+    cleanup()
     open('picking')
     expect(screen.queryByLabelText('Outside the organisation')).toBeNull()
   })
+
 })
 
 describe('deleting', () => {

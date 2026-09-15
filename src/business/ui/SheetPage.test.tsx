@@ -263,9 +263,12 @@ describe('the journey band', () => {
     expect(within(band).getByTestId('sheet-phase-deliver').textContent).toBe('Deliver')
   })
 
-  it('gives the common path the first row and names it', () => {
+  it('gives the common path the first row and names it, and marks what is done outside', () => {
     open()
     expect(within(screen.getByTestId('sheet-lane-common')).getByText('All customers')).toBeTruthy()
+    cleanup()
+    open()
+    expect(screen.getByLabelText('Partner fulfils — done outside the organisation')).toBeTruthy()
   })
 
   it('draws a row per lane, named after the actor whose path it is', () => {
@@ -279,11 +282,6 @@ describe('the journey band', () => {
     expect(screen.getByTestId('sheet-passthrough-key-account-pick')).toBeTruthy()
     // Before the fork there is no line either — that row is not drawn there at all.
     expect(screen.queryByTestId('sheet-passthrough-key-account-order')).toBeNull()
-  })
-
-  it('says of a step somebody outside does that it is done outside', () => {
-    open()
-    expect(screen.getByLabelText('Partner fulfils — done outside the organisation')).toBeTruthy()
   })
 
   it('says so plainly when the sheet has no journey yet', () => {
@@ -387,23 +385,20 @@ describe('the handle the agent reaches the page through', () => {
 })
 
 describe('choosing something', () => {
-  it('puts a capability in the inspector', () => {
+  it('puts what you choose in the inspector, and says what it is for until you do', () => {
     open()
     fireEvent.click(screen.getByTestId('sheet-capability-picking'))
     const inspector = screen.getByTestId('sheet-inspector')
     expect(within(inspector).getByDisplayValue('Picking')).toBeTruthy()
-  })
-
-  it('puts a step in the inspector, from its chevron', () => {
+    cleanup()
     open()
     fireEvent.click(screen.getByTestId('sheet-step-negotiate'))
     expect(within(screen.getByTestId('sheet-inspector')).getByDisplayValue('Negotiate the rate')).toBeTruthy()
-  })
-
-  it('says what the inspector is for until something is chosen', () => {
+    cleanup()
     open()
     expect(screen.getByText('Choose something on the sheet to see it here.')).toBeTruthy()
   })
+
 })
 
 /** A sheet of nothing: what a person sees on a project that has just begun. */
@@ -428,28 +423,34 @@ describe('making something', () => {
       .toBeTruthy()
   })
 
-  it('adds a phase at the end of the journey', () => {
+  it('adds a phase, a step on the common path or a lane, a capability and an area', () => {
     const { actions: acts } = open()
     fireEvent.click(screen.getByLabelText('Add a phase to Ship a consignment'))
     expect(acts.addElement).toHaveBeenCalledWith({
       kind: 'step', name: 'New phase', parentId: 'ship',
     })
-  })
-
-  it('adds a step to the path everybody takes', () => {
-    const { actions: acts } = open()
+    cleanup()
+    const { actions: acts2 } = open()
     fireEvent.click(screen.getByLabelText('Add a step in Order, All customers'))
-    expect(acts.addElement).toHaveBeenCalledWith({
+    expect(acts2.addElement).toHaveBeenCalledWith({
       kind: 'step', name: 'New step', parentId: 'order',
     })
-  })
-
-  it('adds a step to a lane, on that lane', () => {
-    const { actions: acts } = open()
+    cleanup()
+    const { actions: acts3 } = open()
     fireEvent.click(screen.getByLabelText('Add a step in Quote, Key account'))
-    expect(acts.addElement).toHaveBeenCalledWith({
+    expect(acts3.addElement).toHaveBeenCalledWith({
       kind: 'step', name: 'New step', parentId: 'quote', lane: 'key-account',
     })
+    cleanup()
+    const { actions: acts4 } = open()
+    fireEvent.click(screen.getByLabelText('Add a capability to Warehousing'))
+    expect(acts4.addElement).toHaveBeenCalledWith({
+      kind: 'function', name: 'New capability', parentId: 'warehousing',
+    })
+    cleanup()
+    const { actions: acts5 } = open()
+    fireEvent.click(screen.getByLabelText('New area'))
+    expect(acts5.addArea).toHaveBeenCalledWith('New area')
   })
 
   it('adds a grouping and a capability to an area', () => {
@@ -462,20 +463,6 @@ describe('making something', () => {
     expect(acts.addElement).toHaveBeenCalledWith({
       kind: 'function', name: 'New capability', parentId: 'fulfilment',
     })
-  })
-
-  it('adds a capability inside a grouping', () => {
-    const { actions: acts } = open()
-    fireEvent.click(screen.getByLabelText('Add a capability to Warehousing'))
-    expect(acts.addElement).toHaveBeenCalledWith({
-      kind: 'function', name: 'New capability', parentId: 'warehousing',
-    })
-  })
-
-  it('adds an area after the last one', () => {
-    const { actions: acts } = open()
-    fireEvent.click(screen.getByLabelText('New area'))
-    expect(acts.addArea).toHaveBeenCalledWith('New area')
   })
 
   it('adds a stakeholder to a group, once, after its last member', () => {

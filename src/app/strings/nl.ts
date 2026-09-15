@@ -185,6 +185,13 @@ export const NL: Record<keyof typeof EN, string> = {
     + 'back-uppen, synchroniseren en committen. In de app zelf blijft niets staan.',
   'folder.choose': 'Map kiezen…',
   'folder.recent': 'Onlangs gebruikt',
+  'folder.adoptTitle': 'Je werk meenemen naar deze map?',
+  'folder.adoptBody':
+    'Je projecten worden nu in de app zelf bewaard. “{name}” kan er een kopie van '
+    + 'krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — '
+    + 'de app houdt zijn eigen kopie tot je die zelf verplaatst.',
+  'folder.adoptCopy': 'Mijn werk erin kopiëren',
+  'folder.adoptSkip': 'De map openen zoals hij is',
   'picker.folder': 'Projectenmap: {name}',
   'picker.noFolder': 'Projecten staan in de app zelf. Kies een map om ze als bestanden te bewaren.',
   'picker.chooseFolder': 'Map kiezen…',

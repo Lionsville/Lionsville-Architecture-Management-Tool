@@ -185,6 +185,13 @@ export const DE: Record<keyof typeof EN, string> = {
     + 'sichern, synchronisieren und committen können. In der App selbst bleibt nichts.',
   'folder.choose': 'Ordner wählen…',
   'folder.recent': 'Zuletzt verwendet',
+  'folder.adoptTitle': 'Ihre Arbeit in diesen Ordner mitnehmen?',
+  'folder.adoptBody':
+    'Ihre Projekte liegen zurzeit in der App selbst. „{name}“ kann eine Kopie davon '
+    + 'bekommen oder so geöffnet werden, wie er ist. Gelöscht wird in beiden Fällen '
+    + 'nichts — die App behält ihre eigene Kopie, bis Sie sie absichtlich verschieben.',
+  'folder.adoptCopy': 'Meine Arbeit hineinkopieren',
+  'folder.adoptSkip': 'Ordner so öffnen, wie er ist',
   'picker.folder': 'Projektordner: {name}',
   'picker.noFolder': 'Projekte liegen in der App selbst. Wählen Sie einen Ordner, um sie als Dateien aufzubewahren.',
   'picker.chooseFolder': 'Ordner wählen…',

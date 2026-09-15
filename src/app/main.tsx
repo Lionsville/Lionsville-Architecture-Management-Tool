@@ -51,10 +51,10 @@ import {
 } from './composition'
 import type { DesktopDirectory, Shell } from './composition'
 import {
-  readLanguage, readLastScope, readMigratedFolders, readWorkingDirectory, withMigratedFolder,
-  withoutLastScope, withWorkingDirectory,
+  mayOfferAdoption, readLanguage, readLastScope, readWorkingDirectory, withDeclinedFolder,
+  withMigratedFolder, withoutLastScope, withWorkingDirectory,
 } from '../projects/preferences'
-import { migrated, migrateInto, upgradeProjects } from '../projects/migration'
+import { holdsScopes, migrated, migrateInto, upgradeProjects } from '../projects/migration'
 import { WITHOUT_ORGANISATION } from '../projects/folderSettings'
 import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
@@ -62,6 +62,7 @@ import { isOpenableScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { EXAMPLES } from './examples'
 import { App } from './App'
+import { AdoptFolder } from './AdoptFolder'
 import { BootFailure } from './BootFailure'
 
 /**
@@ -206,11 +207,11 @@ async function openBrowserFolder(): Promise<void> {
   // reported and a folder's name is not the folder's content.
   shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'a folder was chosen' })
   const inFolder = inBrowserFolder(shell, handle, handle.name)
-  // The same migration as the desktop's, and the same rule: copied once,
-  // nothing deleted. Keyed on the folder's name, which is all a tab knows
-  // about where it is — good enough to not copy twice into the same one.
+  // The same offer as the desktop's, and the same rule: asked at most once per
+  // folder, copied at most once anywhere, nothing deleted. Keyed on the
+  // folder's name, which is all a tab knows about where it is.
   let kept = withWorkingDirectory(stored, handle.name)
-  if (await moveInto(inFolder, handle.name)) kept = withMigratedFolder(kept, handle.name)
+  kept = withAdoption(kept, handle.name, await adoptInto(inFolder, handle.name, handle.name))
   stored = kept
   await shell.preferences.write(kept).catch(() => undefined)
   shell = inFolder
@@ -250,7 +251,7 @@ async function workIn(chosen: DesktopDirectory): Promise<void> {
     if (!files) return
     const inFolder = inWorkingDirectory(shell, files, chosen)
     let kept = withWorkingDirectory(stored, chosen.root)
-    if (await moveInto(inFolder, chosen.root)) kept = withMigratedFolder(kept, chosen.root)
+    kept = withAdoption(kept, chosen.root, await adoptInto(inFolder, chosen.root, chosen.name))
     stored = kept
     // Best effort, and the app still opens the folder if it fails: this run
     // works, the next one asks again.
@@ -297,29 +298,63 @@ async function pullOnOpen(): Promise<PullOutcome | undefined> {
 }
 
 /**
- * The scopes that were in browser storage, copied into the folder — once.
+ * What the pick should remember about this folder.
  *
- * Once per folder, which is what the preference records. Copying again would be
- * harmless in itself (nothing already in a folder is overwritten) but it would
- * resurrect projects the user deleted from the folder on purpose.
+ * `nothing to record` covers both "there was nothing to bring" and "the copy
+ * did not finish". Neither is an answer, and neither should stop the offer
+ * being made again.
+ */
+type Adoption = 'copied' | 'declined' | 'nothing to record'
+
+/** The pick's answer, folded into the blob the next boot reads. */
+function withAdoption(
+  kept: Record<string, unknown>, root: string, adoption: Adoption,
+): Record<string, unknown> {
+  if (adoption === 'copied') return withMigratedFolder(kept, root)
+  if (adoption === 'declined') return withDeclinedFolder(kept, root)
+  return kept
+}
+
+/**
+ * The scopes that were in browser storage, copied into the folder — once, and
+ * only when the person picking it says so.
+ *
+ * **Both halves of the old rule were wrong.** It copied as a side effect of
+ * choosing a folder, and it did so once *per folder*. A folder nobody has
+ * migrated into is every folder somebody has just made, so a folder chosen to
+ * start something new arrived with an organisation already in it — and the
+ * next empty folder got one too, being equally unmigrated. One folder per
+ * customer is exactly the case that must not carry the first customer's
+ * landscape into the second's.
+ *
+ * So: only while nothing has been rescued anywhere yet, only when there is
+ * something to rescue, and only when asked. The list of folders stays, because
+ * it is still the record of where the work went.
+ *
+ * **A no is remembered per folder**, because a browser hands out a folder
+ * permission that rarely survives a restart: the same folder is picked again on
+ * the next boot, and a question already answered must not be asked twice.
  *
  * Nothing is deleted from browser storage, here or later. Until somebody has
  * opened the migrated folder and seen their work in it, the old copy is the
  * only one that has certainly survived, and a drive can be unplugged.
  */
-async function moveInto(folder: Shell, root: string): Promise<boolean> {
-  if (readMigratedFolders(stored).includes(root)) return false
+async function adoptInto(folder: Shell, root: string, label: string): Promise<Adoption> {
+  if (!mayOfferAdoption(stored, root)) return 'nothing to record'
   // From the boot's browser storage and never from `shell`: once a folder is
   // open, `shell` IS that folder, and *Change…* to an empty one copied the
   // open organisation into it — five scopes of somebody's landscape, in a
   // folder chosen to start something else.
+  if (!await holdsScopes(browserShell.scopes)) return 'nothing to record'
+  if (!await askAdoption(label)) return 'declined'
   const tally = await migrateInto(browserShell.scopes, folder.scopes).catch((cause: unknown) => {
     shell.diagnostics.report({
       level: 'error', where: 'migration', message: 'copying into the folder failed', cause,
     })
     return undefined
   })
-  if (!tally) return false
+  // Recorded as neither: a copy that did not finish is one to offer again.
+  if (!tally) return 'nothing to record'
   // Counts, never names: this line goes to a log file the user is invited to
   // hand over.
   shell.diagnostics.report({
@@ -327,10 +362,33 @@ async function moveInto(folder: Shell, root: string): Promise<boolean> {
     where: 'migration',
     message: `copied ${tally.scopes} scopes, kept ${tally.kept}, failed ${tally.failed}`,
   })
-  // Marked as done even when there was nothing to copy: an empty browser store
-  // has been migrated, and asking again every time is how a folder acquires
-  // projects somebody threw away.
-  return migrated(tally) || tally.failed === 0
+  // A run that wrote nothing because the folder already held it all has rescued
+  // the work as surely as one that wrote every file.
+  return migrated(tally) || tally.failed === 0 ? 'copied' : 'nothing to record'
+}
+
+/**
+ * The question, on a screen of its own.
+ *
+ * Rendered where `BootFailure` is and for its reasons: this is the composition
+ * root, no app is mounted that would survive the answer — the store beneath it
+ * is the thing being decided — and a question behind a backdrop is a question
+ * that gets clicked away. The app mounts once, after the answer, against
+ * whichever store it chose.
+ */
+function askAdoption(label: string): Promise<boolean> {
+  const s = translator(readLanguage(stored)
+    ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
+  return new Promise<boolean>((resolve) => {
+    root.render(
+      <AdoptFolder
+        s={s}
+        folderName={label}
+        onCopy={() => resolve(true)}
+        onSkip={() => resolve(false)}
+      />,
+    )
+  })
 }
 
 /**

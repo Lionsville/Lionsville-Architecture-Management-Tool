@@ -213,42 +213,38 @@ describe('the other two triggers', () => {
     expect(view.writes).toHaveLength(1)
   })
 
-  it('closing the window with unsaved work is interrupted', () => {
+  it('interrupts the close with unsaved work, and not without, asking the store one last time', () => {
     const view = mount()
     view.edit('Edited')
 
     expect(view.close()).toBe(true)
-  })
-
-  it('closing with nothing outstanding is not', () => {
+    cleanup()
     // A prompt on every close is a prompt nobody reads by the third day.
     expect(mount().close()).toBe(false)
+    cleanup()
+    const view2 = mount()
+    view2.edit('Edited')
+    view2.close()
+
+    expect(view2.writes).toHaveLength(1)
   })
 
-  it('asks the store one last time on the way out', () => {
-    const view = mount()
-    view.edit('Edited')
-    view.close()
-
-    expect(view.writes).toHaveLength(1)
-  })
 })
 
 describe('forceSave', () => {
-  it('writes now, for the moments the editor knows there is something to lose', () => {
+  it('writes now for the moments the editor knows there is something to lose, and nothing otherwise', () => {
     const view = mount()
     view.edit('Edited')
     view.force()
 
     expect(view.writes).toHaveLength(1)
+    cleanup()
+    const view2 = mount()
+    view2.force()
+
+    expect(view2.writes).toHaveLength(0)
   })
 
-  it('writes nothing when there is nothing to write', () => {
-    const view = mount()
-    view.force()
-
-    expect(view.writes).toHaveLength(0)
-  })
 })
 
 describe('when somebody else changes the folder', () => {
@@ -324,29 +320,24 @@ describe('when somebody else changes the folder', () => {
 })
 
 describe('what the window is told', () => {
-  it('says there is nothing to lose while the document is clean', () => {
+  it('says there is nothing to lose while clean, that there is the moment there is, and takes it back', async () => {
     // The desktop window belongs to another process and cannot know unless it
     // is told; a browser tab has `beforeunload` and is told nothing.
     expect(mount().reported).toEqual([false])
-  })
-
-  it('says there is, the moment there is', () => {
+    cleanup()
     const view = mount()
     view.edit('Edited')
     expect(view.reported.at(-1)).toBe(true)
+    cleanup()
+    const view2 = mount()
+    view2.edit('Edited')
+    await view2.idle()
+    expect(view2.reported.at(-1)).toBe(false)
+    cleanup()
+    const view3 = mount()
+    view3.edit('Edited')
+    view3.unmount()
+    expect(view3.reported.at(-1)).toBe(false)
   })
 
-  it('takes it back once the write has landed', async () => {
-    const view = mount()
-    view.edit('Edited')
-    await view.idle()
-    expect(view.reported.at(-1)).toBe(false)
-  })
-
-  it('takes it back when the workspace goes, whatever it was holding', () => {
-    const view = mount()
-    view.edit('Edited')
-    view.unmount()
-    expect(view.reported.at(-1)).toBe(false)
-  })
 })

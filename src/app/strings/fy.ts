@@ -185,6 +185,13 @@ export const FY: Record<keyof typeof EN, string> = {
     + 'reservekopiearje, syngronisearje en committe kinne. Yn de app sels bliuwt neat stean.',
   'folder.choose': 'Map kieze…',
   'folder.recent': 'Koartlyn brûkt',
+  'folder.adoptTitle': 'Dyn wurk meinimme nei dizze map?',
+  'folder.adoptBody':
+    'Dyn projekten wurde no yn de app sels bewarre. “{name}” kin der in kopy fan '
+    + 'krije, of iepenje sa’t er is. Der wurdt yn gjin fan beide gefallen wat wiske — '
+    + 'de app hâldt syn eigen kopy oant do dy sels ferpleatst.',
+  'folder.adoptCopy': 'Myn wurk deryn kopiearje',
+  'folder.adoptSkip': 'De map iepenje sa’t er is',
   'picker.folder': 'Projektemap: {name}',
   'picker.noFolder': 'Projekten steane yn de app sels. Kies in map om se as bestannen te bewarjen.',
   'picker.chooseFolder': 'Map kieze…',

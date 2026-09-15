@@ -140,28 +140,30 @@ describe('ScopeSettingsDialog — filed under', () => {
     return { onSave }
   }
 
-  it('does not ask where the root goes, because there is nowhere above it', () => {
+  it('does not ask where the root goes, nor at all without a tree to offer', () => {
     openWithTree({ path: '', name: 'Acme Logistics' })
     expect(screen.queryByLabelText('Filed under')).toBeNull()
-  })
-
-  it('does not ask at all when it was given no tree to offer', () => {
+    cleanup()
     open()
     expect(screen.queryByLabelText('Filed under')).toBeNull()
   })
 
-  it('says nothing about the parent when the parent did not change', () => {
+  it('says nothing about the parent until it changes, and offers the kind as a word', () => {
     const { onSave } = openWithTree()
     save()
     expect(onSave.mock.calls[0][1].parent).toBeUndefined()
-  })
-
-  it('hands back the new parent when it did', () => {
-    const { onSave } = openWithTree()
+    cleanup()
+    const { onSave: onSave2 } = openWithTree()
     fireEvent.mouseDown(screen.getByLabelText('Filed under'))
     fireEvent.click(screen.getByRole('option', { name: 'Globex' }))
     save()
-    expect(onSave).toHaveBeenCalledWith('acme', expect.objectContaining({ parent: 'globex' }))
+    expect(onSave2).toHaveBeenCalledWith('acme', expect.objectContaining({ parent: 'globex' }))
+    cleanup()
+    const { onSave: onSave3 } = openWithTree({ kind: 'domain' })
+    fireEvent.mouseDown(screen.getByLabelText('What this is'))
+    fireEvent.click(screen.getByRole('option', { name: 'Programme' }))
+    save()
+    expect(onSave3).toHaveBeenCalledWith('acme', expect.objectContaining({ kind: 'programme' }))
   })
 
   /** A scope filed under itself, or under its own child, has no address at all. */
@@ -174,11 +176,4 @@ describe('ScopeSettingsDialog — filed under', () => {
     expect(options).not.toContain('Rail')
   })
 
-  it('offers the kind as a word, and hands it back', () => {
-    const { onSave } = openWithTree({ kind: 'domain' })
-    fireEvent.mouseDown(screen.getByLabelText('What this is'))
-    fireEvent.click(screen.getByRole('option', { name: 'Programme' }))
-    save()
-    expect(onSave).toHaveBeenCalledWith('acme', expect.objectContaining({ kind: 'programme' }))
-  })
 })

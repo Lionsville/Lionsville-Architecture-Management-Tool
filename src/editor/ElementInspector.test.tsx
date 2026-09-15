@@ -170,25 +170,22 @@ describe('ElementInspector — tab structure (U7a)', () => {
 });
 
 describe('ElementInspector — ColorField accent (U7a, D4)', () => {
-  it('writes a hex on change', () => {
+  it('writes a hex on change, clears it, and disables the clear when nothing is set', () => {
     const { updateElement } = renderInspector(element());
     openTab('Appearance');
     fireEvent.change(screen.getByLabelText('Accent colour'), { target: { value: '#ff0000' } });
     expect(updateElement).toHaveBeenCalledWith('e1', { accentColor: '#ff0000' });
-  });
-
-  it('clears to undefined via the inline clear affordance', () => {
-    const { updateElement } = renderInspector(element({ accentColor: '#ff0000' }));
+    cleanup()
+    const { updateElement: updateElement2 } = renderInspector(element({ accentColor: '#ff0000' }));
     openTab('Appearance');
     fireEvent.click(screen.getByLabelText('Clear accent colour'));
-    expect(updateElement).toHaveBeenCalledWith('e1', { accentColor: undefined });
-  });
-
-  it('disables the clear affordance when no accent is set', () => {
+    expect(updateElement2).toHaveBeenCalledWith('e1', { accentColor: undefined });
+    cleanup()
     renderInspector(element());
     openTab('Appearance');
     expect((screen.getByLabelText('Clear accent colour') as HTMLButtonElement).disabled).toBe(true);
   });
+
 });
 
 /**
@@ -199,22 +196,25 @@ describe('ElementInspector — ColorField accent (U7a, D4)', () => {
  * `updateElement`; the grid's own behaviour lives in `nodes/LogoGrid.test.tsx`.
  */
 describe('ElementInspector — icon picker (now a grid, in Appearance)', () => {
-  it('picking a tile writes its iconKey via updateElement', () => {
+  it('picking a tile writes its iconKey, the None tile clears it, and a reader hears each once', () => {
     const { updateElement } = renderInspector(element());
     openTab('Appearance');
 
     fireEvent.click(screen.getByLabelText('Database'));
 
     expect(updateElement).toHaveBeenCalledWith('e1', { iconKey: 'database' });
-  });
-
-  it('the None tile writes iconKey: undefined (clear-to-NULL path)', () => {
-    const { updateElement } = renderInspector(element({ iconKey: 'database' }));
+    cleanup()
+    const { updateElement: updateElement2 } = renderInspector(element({ iconKey: 'database' }));
     openTab('Appearance');
 
     fireEvent.click(within(screen.getByRole('group', { name: 'Icon' })).getByLabelText('None'));
 
-    expect(updateElement).toHaveBeenCalledWith('e1', { iconKey: undefined });
+    expect(updateElement2).toHaveBeenCalledWith('e1', { iconKey: undefined });
+    cleanup()
+    renderInspector(element());
+    openTab('Appearance');
+    const tile = screen.getByLabelText('Database');
+    expect(within(tile).queryByRole('img')).toBeNull();
   });
 
   it('renders for every kind — a deliberate flip from the three-kind gate', () => {
@@ -249,16 +249,10 @@ describe('ElementInspector — icon picker (now a grid, in Appearance)', () => {
     }
   });
 
-  it('draws the tile marks decoratively so a reader announces each tile once', () => {
-    renderInspector(element());
-    openTab('Appearance');
-    const tile = screen.getByLabelText('Database');
-    expect(within(tile).queryByRole('img')).toBeNull();
-  });
 });
 
 describe('ElementInspector — icon size', () => {
-  it('writes "large" for the body mark', () => {
+  it('writes "large" for the body mark, clears back to NULL, and dots Appearance on its own', () => {
     const { updateElement } = renderInspector(element({ iconKey: 'database' }));
     openTab('Appearance');
 
@@ -266,16 +260,17 @@ describe('ElementInspector — icon size', () => {
     fireEvent.click(within(screen.getByRole('listbox')).getByText('Large (body)'));
 
     expect(updateElement).toHaveBeenCalledWith('e1', { iconSize: 'large' });
-  });
-
-  it('clears back to NULL rather than storing an explicit "small"', () => {
-    const { updateElement } = renderInspector(element({ iconKey: 'database', iconSize: 'large' }));
+    cleanup()
+    const { updateElement: updateElement2 } = renderInspector(element({ iconKey: 'database', iconSize: 'large' }));
     openTab('Appearance');
 
     fireEvent.mouseDown(screen.getByLabelText('Icon size'));
     fireEvent.click(within(screen.getByRole('listbox')).getByText('Small (header)'));
 
-    expect(updateElement).toHaveBeenCalledWith('e1', { iconSize: undefined });
+    expect(updateElement2).toHaveBeenCalledWith('e1', { iconSize: undefined });
+    cleanup()
+    renderInspector(element({ iconSize: 'large' }));
+    expect(within(tab('Appearance')).queryByText('●')).not.toBeNull();
   });
 
   it('stays disabled until there is an icon to size', () => {
@@ -285,10 +280,6 @@ describe('ElementInspector — icon size', () => {
     expect(screen.getByText('Pick an icon first')).toBeDefined();
   });
 
-  it('dots the Appearance tab on its own', () => {
-    renderInspector(element({ iconSize: 'large' }));
-    expect(within(tab('Appearance')).queryByText('●')).not.toBeNull();
-  });
 });
 
 describe('ElementInspector — active tab resets on selection change', () => {
@@ -332,25 +323,20 @@ describe('ElementInspector — tab badges reflect set values', () => {
     expect(within(tab('Data')).queryByText('●')).toBeNull();
   });
 
-  it('dots General when identity/status/prose is set', () => {
+  it('dots the tab an override sits under, and the record’s own tab no longer', () => {
     renderInspector(element({ category: 'Core' }));
     expect(within(tab('General')).queryByText('●')).not.toBeNull();
-  });
-
-  it('does not dot General for the record, which is not under the tab any more', () => {
+    cleanup()
     renderInspector(element({ vendor: 'SAP' }));
     expect(within(tab('General')).queryByText('●')).toBeNull();
-  });
-
-  it('dots Appearance when an appearance override is set', () => {
+    cleanup()
     renderInspector(element({ accentColor: '#ff0000' }));
     expect(within(tab('Appearance')).queryByText('●')).not.toBeNull();
-  });
-
-  it('dots Data when an aspect is set', () => {
+    cleanup()
     renderInspector(element({ aspects: { platform: { status: 'managed' } } }));
     expect(within(tab('Data')).queryByText('●')).not.toBeNull();
   });
+
 });
 
 describe('ElementInspector — readOnly disables controls in every tab', () => {
@@ -551,7 +537,6 @@ describe('ElementInspector — the record on the page', () => {
   });
 });
 
-
 /**
  * Where it runs (ADR-0013, redone).
  *
@@ -567,12 +552,19 @@ describe('ElementInspector — where it runs (ADR-0013)', () => {
   const container = (id: string, parentId: string): DesignElement =>
     ({ id, kind: 'component', parentId, name: id, lifecycle: 'live', isManaged: true, aspects: {} });
 
-  it('gives a container the select, and writes the one platform it is told', () => {
+  it('gives the select to a container and to an application without one, and nothing without a platform', () => {
     const api = container('wms-api', 'wms');
     const { setHostedOn } = renderInspector(api, { others: [openshift, ns] });
     fireEvent.mouseDown(screen.getByLabelText('Hosted on'));
     fireEvent.click(within(screen.getByRole('listbox')).getByText('Logistics namespace'));
     expect(setHostedOn).toHaveBeenCalledWith('wms-api', 'ns');
+    cleanup()
+    const portal: DesignElement = { id: 'portal', kind: 'application', name: 'Portal', lifecycle: 'live', isManaged: true, aspects: {} };
+    renderInspector(portal, { others: [openshift] });
+    expect(screen.getByLabelText('Hosted on')).toBeDefined();
+    cleanup()
+    renderInspector(container('wms-api', 'wms'));
+    expect(screen.queryByLabelText('Hosted on')).toBeNull();
   });
 
   it('tells an application with containers what they say, read only', () => {
@@ -589,12 +581,6 @@ describe('ElementInspector — where it runs (ADR-0013)', () => {
       .toContain('Logistics namespace, OpenShift (2 containers)');
   });
 
-  it('gives the select to an application with no containers — a SaaS service says it itself', () => {
-    const portal: DesignElement = { id: 'portal', kind: 'application', name: 'Portal', lifecycle: 'live', isManaged: true, aspects: {} };
-    renderInspector(portal, { others: [openshift] });
-    expect(screen.getByLabelText('Hosted on')).toBeDefined();
-  });
-
   it('shows the first of several and says there are more — a migration window', () => {
     const api = container('wms-api', 'wms');
     renderInspector(api, {
@@ -605,11 +591,6 @@ describe('ElementInspector — where it runs (ADR-0013)', () => {
       ],
     });
     expect(screen.getByText('It also runs on 1 more — a migration window')).toBeTruthy();
-  });
-
-  it('asks nothing at all in a scope that holds no platform', () => {
-    renderInspector(container('wms-api', 'wms'));
-    expect(screen.queryByLabelText('Hosted on')).toBeNull();
   });
 
   it('is read-only where the panel is', () => {
