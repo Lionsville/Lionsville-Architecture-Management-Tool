@@ -606,6 +606,7 @@ export function App({
     active: project === undefined,
     at: home,
     onEnter: enter,
+    onTreeChanged: tree.refresh,
     notify: toasts.notify,
     onFailure: failed,
     onStorageResult: reportStorage,

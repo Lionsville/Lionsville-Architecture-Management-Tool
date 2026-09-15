@@ -60,6 +60,14 @@ export type OrganisationDialog =
 export type UseOrganisationInput = {
   scopes: ScopeLibrary
   /**
+   * A scope was written that was not there before — the example copied in,
+   * a scope or a board created. The shell reads the index again on it: a
+   * browser tab has no watcher to say so, and an index that never heard of
+   * the landscape just copied in answers "nobody" for every application on
+   * the organisation's map.
+   */
+  onTreeChanged?: () => void
+  /**
    * Is this screen the one on show?
    *
    * The tree is read whatever is up, because the open workspace's settings
@@ -141,7 +149,7 @@ export type Organisation = {
 }
 
 export function useOrganisation({
-  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s,
+  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged,
 }: UseOrganisationInput): Organisation {
   const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
   const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
@@ -232,10 +240,10 @@ export function useOrganisation({
   /** A new scope exists as soon as it is saved; otherwise a refresh loses it. */
   const createAndEnter = useCallback((fresh: ScopeSnapshot, message: string) => {
     void scopes.save(fresh).then(
-      () => { onEnter(fresh); refresh(); notify(message, 'success') },
+      () => { onEnter(fresh); refresh(); onTreeChanged?.(); notify(message, 'success') },
       (cause: unknown) => { onFailure('organisation.create', cause); onStorageResult(false) },
     )
-  }, [scopes, onEnter, refresh, notify, onFailure, onStorageResult])
+  }, [scopes, onEnter, refresh, onTreeChanged, notify, onFailure, onStorageResult])
 
   /**
    * Create a scope under another one.
@@ -313,12 +321,13 @@ export function useOrganisation({
       await scopes.save(next)
       onEnter(next, { page: 'board', id: diagram.id })
       refresh()
+      onTreeChanged?.()
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
     })().catch((cause: unknown) => {
       onFailure('organisation.board', cause)
       onStorageResult(false)
     })
-  }, [dialog, scopes, onEnter, refresh, notify, onFailure, onStorageResult, s])
+  }, [dialog, scopes, onEnter, refresh, notify, onFailure, onStorageResult, s, onTreeChanged])
 
   const askDeleteBoard = useCallback((path: ScopePath, board: { id: string; name: string }) => {
     setDialog({ kind: 'deleteBoard', path, board })

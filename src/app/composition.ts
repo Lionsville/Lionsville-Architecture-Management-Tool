@@ -273,7 +273,15 @@ export function inWorkingDirectory(
     return channel.files.onChanged((change) => {
       if (change.root !== directory.root || !change.path.startsWith(prefix)) return
       if (!wholeTree && !isFormatPath(change.path.slice(prefix.length))) return
-      if (channel.ours(change)) return
+      // Our own writes come back as news, and whether that is news depends on
+      // who asks. The open scope must not hear them: it just wrote them, and
+      // "changed on disk" would be the app interrupting itself. The tree
+      // MUST: the index is derived from every scope's records, this app's
+      // own writes included — an example copied in, a scope created, a
+      // landscape saved with one more application — and an index that only
+      // heard about other people's changes stood empty on the desktop until
+      // a restart, while every register, map and stand-in read from it.
+      if (!wholeTree && channel.ours(change)) return
       onChanged()
     })
   }

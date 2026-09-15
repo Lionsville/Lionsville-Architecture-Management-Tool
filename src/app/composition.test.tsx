@@ -66,6 +66,27 @@ describe('inWorkingDirectory — what a scope hears about', () => {
     expect(heard).toHaveLength(3)
   })
 
+  /**
+   * A write of ours comes back from the watcher with the fingerprint we
+   * remembered. The open scope must not hear it — that would be the app
+   * interrupting itself — and the tree must, because the index is built from
+   * what this app writes as much as from what anyone else does: the example
+   * copied in, a scope created, a landscape saved with one more application.
+   */
+  it('tells the tree about our own writes, and the open scope not', async () => {
+    const { shell, heard, report } = listening()
+    shell.watchProject!('acme', () => heard.push('acme'))
+    shell.watchProject!('', () => heard.push('tree'), true)
+    // Through the store, so the remembering wrapper sees the write; the fake
+    // channel stamps every write 'x', and the report carries the same stamp.
+    await shell.scopes.save({
+      path: 'acme', model: { name: 'Acme', elements: [], relations: [], diagrams: [] },
+      activeDiagramId: '', logoLibrary: [],
+    })
+    report('acme/model.json')
+    expect(heard).toEqual(['tree'])
+  })
+
   it('tells the organisation, opened on a page, about its own files only', () => {
     const { shell, heard, report } = listening()
     shell.watchProject!('', () => heard.push('root'))

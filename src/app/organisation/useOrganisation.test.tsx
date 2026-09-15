@@ -49,6 +49,7 @@ type Harness = {
   entered: ReturnType<typeof vi.fn>
   failures: string[]
   store: InMemoryScopeStore
+  treeChanged: ReturnType<typeof vi.fn>
 }
 
 function mount(
@@ -69,6 +70,7 @@ function mount(
 /** The same harness over a library somebody else built — one that counts its calls. */
 function mountWith(scopes: ScopeLibrary, store: InMemoryScopeStore, active = true): Harness {
   const entered = vi.fn<(scope: ScopeSnapshot, page?: InitialPage) => void>()
+  const treeChanged = vi.fn()
   const failures: string[] = []
   let current: Organisation | undefined
 
@@ -85,11 +87,12 @@ function mountWith(scopes: ScopeLibrary, store: InMemoryScopeStore, active = tru
       onFailure: (where) => { failures.push(where) },
       onStorageResult: () => {},
       s,
+      onTreeChanged: treeChanged,
     })
     return null
   }
   render(<Probe />)
-  return { held: () => current!, entered, failures, store }
+  return { held: () => current!, entered, failures, store, treeChanged }
 }
 
 /** Let the reads and writes the hook started settle. */
@@ -249,6 +252,21 @@ describe('useOrganisation', () => {
       expect((await store.load('acme-logistics'))?.model.name).toBe('Acme Logistics')
       expect((await store.load('acme-logistics/application-landscape'))).toBeDefined()
     })
+  })
+
+  /**
+   * The shell reads the index again on this: a browser tab has no watcher to
+   * say the tree changed, and an index that never heard of the landscape just
+   * copied in answers "nobody" for every application on the map.
+   */
+  it('says the tree changed once the example is written', async () => {
+    const { held, treeChanged } = mount([])
+    await settle()
+    expect(treeChanged).not.toHaveBeenCalled()
+    await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
+    await settle()
+    await settle()
+    expect(treeChanged).toHaveBeenCalled()
   })
 
   /**
