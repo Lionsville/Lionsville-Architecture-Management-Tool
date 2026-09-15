@@ -64,6 +64,7 @@ import { carryRefs } from './carryRefs'
 import { ChooseFolder } from './organisation/ChooseFolder'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { registerRows } from './organisation/register'
+import { technologyRows } from './organisation/technologyRegister'
 import { useOrganisation } from './organisation/useOrganisation'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -654,6 +655,8 @@ export function App({
    * read this; nothing commits it, and nothing loads for it.
    */
   const register = useMemo(() => registerRows(tree.index, identity), [tree.index, identity])
+  /** The technology register (ADR-0014 §2.6), the same fold over the same index. */
+  const technology = useMemo(() => technologyRows(tree.index, identity), [tree.index, identity])
 
   /**
    * The tree's records, read when a gesture asks (ADR-0012 §10), and the two
@@ -966,6 +969,7 @@ export function App({
             onGoHome={goHome}
             findings={treeFindings}
             register={register}
+            technology={technology}
             initiatives={initiatives}
             onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
             onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}

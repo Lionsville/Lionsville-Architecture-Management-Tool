@@ -63,6 +63,28 @@ export type TreeEntry = {
   readonly shared?: true
 }
 
+/** One row of the technology register (ADR-0014 §2.6): `app/organisation/technologyRegister`'s, structurally. */
+export type TreeTechnologyRow = {
+  readonly id: ElementId
+  readonly kind: 'platformService' | 'platform'
+  readonly name: string
+  readonly master?: string
+  readonly declarations: readonly string[]
+  readonly drawnIn: readonly string[]
+  readonly outside?: true
+  readonly party?: string
+  readonly findings: readonly { key: string }[]
+  readonly shared?: true
+  readonly maintainers: readonly { id: ElementId; name: string }[]
+  readonly consumers: { applications: number; scopes: number }
+  readonly realisedBy: readonly { id: ElementId; name: string }[]
+  readonly platformArchetype?: PlatformArchetype
+  readonly realises: readonly { id: ElementId; name: string }[]
+  readonly hosts: number
+  readonly partOf?: { id: ElementId; name: string }
+  readonly service?: { id: ElementId; name: string }
+}
+
 /** One finding of ADR-0012 §9: `projects/checks`'s, structurally. */
 export type TreeFinding = {
   readonly key: string
@@ -88,6 +110,8 @@ export type TreeView = {
   lookup(id: ElementId): TreeEntry | undefined
   /** Every application in the organisation, by name (§2). */
   register(): readonly TreeEntry[]
+  /** Every service and platform in the organisation, by name (ADR-0014 §2.6). Absent in a shell built before it. */
+  technology?(): readonly TreeTechnologyRow[]
   /** Every finding the tree and the open scope's document raise (§9). */
   findings(): readonly TreeFinding[]
   /** The plans flagged as initiatives in the scopes strictly below `path` (§7). */
@@ -159,6 +183,49 @@ export function listRegister(tree: TreeView | undefined, rawArgs: unknown): Agen
         ...(entry.conflict ? { conflict: entry.conflict } : {}),
         ...(entry.stale.length > 0 ? { stale: entry.stale } : {}),
         findings: about.get(entry.id) ?? [],
+      })
+    }
+  }
+  return json({ total, some: rows })
+}
+
+export function listTechnology(tree: TreeView | undefined, rawArgs: unknown): AgentAnswer {
+  const args = (rawArgs ?? {}) as Args
+  const limit = (args.limit as number | undefined) ?? REGISTER_LIMIT
+  const query = args.query as string | undefined
+  const kind = args.kind as string | undefined
+  const rows: unknown[] = []
+  let total = 0
+  for (const row of tree?.technology?.() ?? []) {
+    if (kind !== undefined && row.kind !== kind) continue
+    if (query !== undefined && !matchesQuery(query, [row.name, row.id, row.master, ...row.maintainers.map((one) => one.name)])) continue
+    total += 1
+    if (rows.length < limit) {
+      rows.push({
+        id: row.id,
+        kind: row.kind,
+        name: row.name,
+        master: row.master,
+        ...(row.master === '' ? { masterIsOrganisation: true } : {}),
+        declarations: row.declarations,
+        drawnIn: row.drawnIn,
+        ...(row.outside ? { outside: true } : {}),
+        ...(row.party !== undefined ? { party: row.party } : {}),
+        ...(row.kind === 'platformService'
+          ? {
+            shared: row.shared === true,
+            maintainers: row.maintainers,
+            consumers: row.consumers,
+            realisedBy: row.realisedBy,
+          }
+          : {
+            platformArchetype: row.platformArchetype,
+            realises: row.realises,
+            hosts: row.hosts,
+            ...(row.partOf !== undefined ? { partOf: row.partOf } : {}),
+            ...(row.service !== undefined ? { service: row.service } : {}),
+          }),
+        findings: row.findings.map((finding) => finding.key),
       })
     }
   }

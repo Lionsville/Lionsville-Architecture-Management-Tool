@@ -22,6 +22,7 @@ import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
 import { CHECK_LABEL, documentFindings, identityFindings, offeredBeyond } from '../projects/checks'
+import { technologyRows } from './organisation/technologyRegister'
 import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
@@ -529,6 +530,7 @@ export function ProjectWorkspace({
       })),
       lookup: (id) => indexRef.current.lookup(id),
       register: () => indexRef.current.register(),
+      technology: () => technologyRows(indexRef.current, identityFindings(indexRef.current)),
       initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
       rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
       findings: () => {

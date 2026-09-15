@@ -48,7 +48,7 @@ import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
 import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused, toolSpec } from './tools'
-import { listChecks, listRegister, listScopes, notOpen, scopeAsked, withoutScope } from './tree'
+import { listChecks, listRegister, listScopes, listTechnology, notOpen, scopeAsked, withoutScope } from './tree'
 import type { TreeView } from './tree'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
@@ -160,6 +160,7 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   // §9): answered from the index the shell holds, never from a load.
   if (request.tool === 'scopes.list') return listScopes(session.tree, view.scopePath)
   if (request.tool === 'register.list') return listRegister(session.tree, request.args)
+  if (request.tool === 'technology.list') return listTechnology(session.tree, request.args)
   if (request.tool === 'checks.list') return listChecks(session.tree, request.args)
 
   // `scope` on every tool: another scope's document, read as it stands on

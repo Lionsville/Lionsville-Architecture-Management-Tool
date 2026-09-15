@@ -248,11 +248,33 @@ const SPECS = [
       + 'answers for it (its master), the scopes above that declare it, the scopes that draw it as a '
       + 'stand-in, whether it is outside the organisation and whose it is, and the keys of the findings '
       + 'about it — defined twice, a stale cache, unattributed. Filter by a free-text query over name, id '
-      + 'and master.',
+      + 'and master. The services and platforms are technology.list, beside it.',
     inputSchema: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Only applications whose name, id or master contains every word.' },
+        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'technology.list',
+    tier: 'read',
+    description:
+      'Every platform service and platform in the organisation, derived from the whole tree (ADR-0014): '
+      + 'the scope that answers for it, the scopes that draw it, and what the rows say. A service: who '
+      + 'maintains it (assigned), whether it is shared, how many applications consume it and from how many '
+      + 'scopes, and what realises it — empty is a real gap. A platform: what it is, what it realises, how '
+      + 'many things are hosted on it or on anything filed under it, what it sits in, and the service it '
+      + 'belongs to. With the keys of the findings about it, including check.offeredNotShared. Beside '
+      + 'register.list, which is the applications. Filter by kind, or by a free-text query over name, id, '
+      + 'master and maintainer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', description: 'Only services, or only platforms. Default both.', enum: ['platformService', 'platform'] },
+        query: { type: 'string', description: 'Only rows whose name, id, master or maintainer contains every word.' },
         limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
@@ -1320,7 +1342,7 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 }
 
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
-export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'checks.list']
+export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list']
 
 export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => {
   const properties = {

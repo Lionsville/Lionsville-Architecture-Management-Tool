@@ -29,9 +29,10 @@ import type { Translate } from '../../i18n'
 import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisions'
 import { CHECK_SENTENCE, PLAN_STATUS_LABEL } from '../../roadmap'
 import { RELATION_LABEL } from '../../model'
-import { DecisionIcon, DocumentIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
+import { DecisionIcon, DeploymentIcon, DocumentIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
+import type { TechnologySummary } from './technologyRegister'
 
 export type OrganisationCardsProps = {
   pages: OrganisationPages
@@ -46,6 +47,11 @@ export type OrganisationCardsProps = {
    * shell and already read.
    */
   register: RegisterSummary
+  /**
+   * The technology register's numbers (ADR-0014 §2.6): the same fold over the
+   * same index as the register's, so the card says what the page says.
+   */
+  technology: TechnologySummary
   /** Plans below this scope flagged as initiatives (ADR-0012 §7): the roadmap card's second line. */
   initiatives?: number
   /**
@@ -56,13 +62,14 @@ export type OrganisationCardsProps = {
    * over what is beneath, so a scope that draws and holds nothing under it has
    * no use for it.
    */
-  shows: { business: boolean; documentation: boolean; register: boolean }
+  shows: { business: boolean; documentation: boolean; register: boolean; technology: boolean }
   onOpenBusiness: () => void
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
   onOpenDecisions: () => void
   onOpenRoadmap: () => void
   onOpenRegister: () => void
+  onOpenTechnology: () => void
   /** The documentation page, as the bar opens it. */
   onOpenDocumentation?: () => void
   s: Translate
@@ -102,8 +109,8 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, register, initiatives = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions, onOpenRoadmap,
-  onOpenRegister, onOpenDocumentation, s,
+  pages, ready, register, technology, initiatives = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
+  onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenDocumentation, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -243,6 +250,32 @@ export function OrganisationCards({
         ].filter(Boolean).join(' · ') || s('register.settled')}
         action={(
           <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register">
+            {s('picker.open')}
+          </Button>
+        )}
+      />}
+
+      {/* The technology beside the applications (ADR-0014 §2.6): every
+          service offered and every platform delivering one, over the whole
+          tree, off the same index. */}
+      {shows.technology && <OnePage
+        icon={<DeploymentIcon />}
+        title={s('org.technology')}
+        count={[
+          plural(s, { one: 'techRegister.servicesOne', other: 'techRegister.servicesOther' }, technology.services),
+          plural(s, { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther' }, technology.platforms),
+          plural(s, { one: 'techRegister.sharedOne', other: 'techRegister.sharedOther' }, technology.shared),
+        ].join(' · ')}
+        finding={[
+          technology.offeredNotShared > 0
+            ? plural(s, { one: 'techRegister.offeredOne', other: 'techRegister.offeredOther' }, technology.offeredNotShared)
+            : '',
+          technology.unrealised > 0
+            ? plural(s, { one: 'techRegister.unrealisedOne', other: 'techRegister.unrealisedOther' }, technology.unrealised)
+            : '',
+        ].filter(Boolean).join(' · ') || s('techRegister.settled')}
+        action={(
+          <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology">
             {s('picker.open')}
           </Button>
         )}

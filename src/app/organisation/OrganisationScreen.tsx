@@ -64,6 +64,9 @@ import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
 import { RegisterPage } from './RegisterPage'
+import { technologySummary, technologyWithin } from './technologyRegister'
+import type { TechnologyRow } from './technologyRegister'
+import { TechnologyPage } from './TechnologyPage'
 import { OrganisationCards } from './OrganisationCards'
 import { organisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
@@ -112,6 +115,11 @@ export type OrganisationScreenProps = {
    * applications in it — and the page says so in a sentence either way.
    */
   register?: readonly RegisterRow[]
+  /**
+   * The technology register (ADR-0014 §2.6): every service and platform in
+   * the tree, off the same index and handed in for the same reason.
+   */
+  technology?: readonly TechnologyRow[]
   /** How many plans below the root are initiatives (ADR-0012 §7), off the same index. */
   initiatives?: number
   /** Open a row where it is answered for, with the element selected. */
@@ -129,7 +137,7 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
-  overflow, agent, onGoHome, findings, register = [], initiatives = 0,
+  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
@@ -140,6 +148,7 @@ export function OrganisationScreen({
    * writes nor asks a store anything.
    */
   const [registerOpen, setRegisterOpen] = useState(false)
+  const [technologyOpen, setTechnologyOpen] = useState(false)
 
   /**
    * The scope whose home this is, out of the listing. The root is the listing
@@ -169,6 +178,8 @@ export function OrganisationScreen({
   const pages = useMemo(() => organisationPages(root, today), [root, today])
   const registerHere = useMemo(() => registerWithin(register, at), [register, at])
   const registerCounts = useMemo(() => registerSummary(registerHere), [registerHere])
+  const technologyHere = useMemo(() => technologyWithin(technology, at), [technology, at])
+  const technologyCounts = useMemo(() => technologySummary(technologyHere), [technologyHere])
   const counts = useMemo(() => countScopes(home), [home])
   const changed = useMemo(() => newestChange(home), [home])
 
@@ -197,6 +208,8 @@ export function OrganisationScreen({
     business: atRoot,
     documentation: draws,
     register: atRoot || home.children.length > 0,
+    // The technology is over the tree like the register, and beside it.
+    technology: atRoot || home.children.length > 0,
   }
   const named = home.name.trim().length > 0
   const heading = home.name.trim() || (atRoot ? s('picker.organisation') : scopePathLabel(home.path))
@@ -298,9 +311,11 @@ export function OrganisationScreen({
               onOpenDecisions={() => organisation.open(at, { page: 'decisions' })}
               onOpenRoadmap={() => organisation.open(at, { page: 'roadmap' })}
               register={registerCounts}
+              technology={technologyCounts}
               initiatives={initiatives}
               shows={shows}
               onOpenRegister={() => setRegisterOpen(true)}
+              onOpenTechnology={() => setTechnologyOpen(true)}
               onOpenDocumentation={() => organisation.open(at, { page: 'documentation' })}
               s={s}
             />}
@@ -417,6 +432,16 @@ export function OrganisationScreen({
         onOpen={onOpenRegisterRow}
         onOpenPage={onOpenRegisterPage}
         onLink={onLinkFromRegister}
+        s={s}
+        windowChrome={windowChrome}
+      />
+      <TechnologyPage
+        open={technologyOpen}
+        onClose={() => setTechnologyOpen(false)}
+        rows={technologyHere}
+        organisation={heading}
+        onOpen={onOpenRegisterRow}
+        onOpenPage={onOpenRegisterPage}
         s={s}
         windowChrome={windowChrome}
       />

@@ -67,6 +67,20 @@ function tree(): TreeView & { read: TreeView['read'] & { asked: string[] } } {
     ],
     lookup: (id) => entries[id as keyof typeof entries],
     register: () => [entries.erp, entries.wms],
+    technology: () => [
+      {
+        id: 'containers', kind: 'platformService', name: 'Container platform', master: 'acme/platforms',
+        declarations: [], drawnIn: ['acme/retail'], findings: [{ key: 'check.offeredNotShared' }],
+        maintainers: [{ id: 'platform-team', name: 'Platform team' }], consumers: { applications: 1, scopes: 1 },
+        realisedBy: [{ id: 'openshift', name: 'OpenShift' }], realises: [], hosts: 0,
+      },
+      {
+        id: 'openshift', kind: 'platform', name: 'OpenShift', master: 'acme/platforms',
+        declarations: [], drawnIn: [], findings: [], maintainers: [], consumers: { applications: 0, scopes: 0 },
+        realisedBy: [], platformArchetype: 'place', realises: [{ id: 'containers', name: 'Container platform' }], hosts: 3,
+        service: { id: 'containers', name: 'Container platform' },
+      },
+    ],
     initiativesBelow: () => [{
       scope: 'acme/retail',
       transition: {
@@ -161,6 +175,24 @@ describe('the three reads about the tree', () => {
   it('filters the register by a query', async () => {
     const out = parsed(await handle({ id: '1', tool: 'register.list', args: { query: 'retail' } }, session()))
     expect((out.some as { id: string }[]).map((row) => row.id)).toEqual(['wms'])
+  })
+
+  it('answers the technology with what a service and a platform are to each other, and filters by kind (ADR-0014)', async () => {
+    const out = parsed(await handle({ id: '1', tool: 'technology.list', args: {} }, session()))
+    expect(out.total).toBe(2)
+    const rows = out.some as Record<string, unknown>[]
+    expect(rows[0]).toMatchObject({
+      id: 'containers', kind: 'platformService', master: 'acme/platforms', shared: false,
+      maintainers: [{ id: 'platform-team', name: 'Platform team' }], consumers: { applications: 1, scopes: 1 },
+      realisedBy: [{ id: 'openshift', name: 'OpenShift' }], findings: ['check.offeredNotShared'],
+    })
+    expect(rows[1]).toMatchObject({ id: 'openshift', kind: 'platform', platformArchetype: 'place', hosts: 3, service: { id: 'containers' } })
+    expect(rows[1]).not.toHaveProperty('shared')
+    const platforms = parsed(await handle({ id: '1', tool: 'technology.list', args: { kind: 'platform' } }, session()))
+    expect((platforms.some as { id: string }[]).map((row) => row.id)).toEqual(['openshift'])
+    const byTeam = parsed(await handle({ id: '1', tool: 'technology.list', args: { query: 'platform team' } }, session()))
+    expect((byTeam.some as { id: string }[]).map((row) => row.id)).toEqual(['containers'])
+    expect(parsed(await handle({ id: '1', tool: 'technology.list', args: {} }, session({ tree: undefined }))).total).toBe(0)
   })
 
   it('lists the findings, leaving information out unless asked, and filters by scope and key', async () => {

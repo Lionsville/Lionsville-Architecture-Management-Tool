@@ -86,6 +86,50 @@ function withApplications(): ScopeSnapshot[] {
   ]
 }
 
+/** The organisation with a platform scope and a landscape leaning on it (ADR-0014). */
+function withTechnology(): ScopeSnapshot[] {
+  const el = (id: string, kind: 'platform' | 'platformService' | 'application' | 'actor' | 'component', name: string, over = {}) =>
+    ({ id, kind, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, ...over })
+  const root = organisation()
+  root.model.elements.push(el('platform-team', 'actor', 'Platform team'), el('warehouse-team', 'actor', 'Warehouse team'))
+  return [
+    root,
+    {
+      ...scope('platforms', 'Shared platforms'),
+      model: {
+        name: 'Shared platforms',
+        elements: [
+          el('containers', 'platformService', 'Container platform', { shared: true }),
+          el('brokering', 'platformService', 'Message brokering'),
+          el('openshift', 'platform', 'OpenShift', { platformArchetype: 'place' }),
+        ],
+        relations: [
+          { id: 'a1', type: 'assigned', sourceId: 'platform-team', targetId: 'containers' },
+          { id: 'a2', type: 'assigned', sourceId: 'platform-team', targetId: 'brokering' },
+          { id: 'r1', type: 'realises', sourceId: 'openshift', targetId: 'containers' },
+        ],
+        diagrams: [],
+      },
+    },
+    {
+      ...scope('warehouse', 'Warehouse'),
+      model: {
+        name: 'Warehouse',
+        elements: [
+          el('wms', 'application', 'Warehouse system', { partyId: 'warehouse-team' }),
+          el('containers', 'platformService', 'Container platform', { ref: 'platforms' }),
+          el('brokering', 'platformService', 'Message brokering', { ref: 'platforms' }),
+        ],
+        relations: [
+          { id: 'u1', type: 'uses', sourceId: 'wms', targetId: 'containers' },
+          { id: 'u2', type: 'uses', sourceId: 'wms', targetId: 'brokering' },
+        ],
+        diagrams: [board()],
+      },
+    },
+  ]
+}
+
 describe('the organisation screen — identity', () => {
   it('shows the root scope as the screen, name and description and links', async () => {
     renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
@@ -170,6 +214,35 @@ describe('the organisation screen — its own pages', () => {
     const table = await screen.findByTestId('register-table')
     expect(within(table).getByTestId('register-master-wms').textContent).toBe('retail')
     expect(table.textContent).toContain('Post office')
+  })
+
+  /**
+   * The technology beside the applications (ADR-0014 §2.6): every service
+   * and platform over the tree, who maintains each, which are shared, how
+   * many consume them — and the one used across a team boundary without
+   * anybody saying so.
+   */
+  it('counts the technology over every scope, and opens it', async () => {
+    renderApp({ scopes: new InMemoryScopeStore(withTechnology()), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(cards.textContent).toContain('2 services'))
+    expect(cards.textContent).toContain('1 platform')
+    expect(cards.textContent).toContain('1 shared')
+    expect(cards.textContent).toContain('1 offered, not marked shared')
+    expect(cards.textContent).toContain('1 with nothing realising it')
+
+    fireEvent.click(within(cards).getByTestId('open-technology'))
+    const table = await screen.findByTestId('technology-register-table')
+    expect(within(table).getByTestId('technology-master-containers').textContent).toBe('platforms')
+    expect(within(table).getByTestId('technology-who-containers').textContent).toBe('Platform team')
+    expect(within(table).getByTestId('technology-shared-containers').textContent).toBe('Shared')
+    expect(within(table).getByTestId('technology-use-containers').textContent).toBe('1 application · 1 scope')
+    expect(within(table).getByTestId('technology-realised-containers').textContent).toBe('OpenShift')
+    expect(within(table).getByTestId('technology-shared-brokering').textContent).toBe('Own team')
+    expect(within(table).getByTestId('technology-realised-brokering').textContent).toBe('Nothing realises it')
+    expect(within(table).getByTestId('technology-row-brokering').textContent).toContain('used by Warehouse system')
+    expect(within(table).getByTestId('technology-use-openshift').textContent).toBe('0 hosted')
+    expect(within(table).getByTestId('technology-realised-openshift').textContent).toBe('Container platform')
   })
 
   it('opens a register row\'s page in the scope that answers for it', async () => {
