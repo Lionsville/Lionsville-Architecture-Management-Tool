@@ -21,6 +21,7 @@ export const EN = {
   'newName.process': 'New process',
   'newName.application': 'New application',
   'newName.component': 'New component',
+  'newName.platform': 'New platform',
   'newName.domainGroup': 'New group',
 
   'lifecycle.planned': 'Planned',
@@ -152,8 +153,10 @@ export const EN = {
   'palette.noMatches': 'Nothing matches “{query}”',
   'palette.section.systems': 'Applications & components',
   'palette.section.people': 'People & context',
+  'palette.section.technology': 'Technology',
   'paletteDescription.application': 'A system the organisation runs or buys',
   'paletteDescription.component': 'A part inside one application',
+  'paletteDescription.platform': 'What applications run on or use: a cluster, a broker, a bus, the tooling',
   'paletteDescription.actor': 'A person or role using the landscape',
   'paletteDescription.domainGroup': 'A labelled area grouping the landscape',
   'palette.existing': 'Existing application…',

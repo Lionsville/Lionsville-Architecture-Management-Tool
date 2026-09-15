@@ -49,6 +49,11 @@ export const PALETTE_ITEMS: Record<PaletteKey, PaletteItem> = {
     labelKey: KIND_LABEL_KEYS.actor,
     descriptionKey: 'paletteDescription.actor',
   },
+  platform: {
+    key: 'platform',
+    labelKey: KIND_LABEL_KEYS.platform,
+    descriptionKey: 'paletteDescription.platform',
+  },
   domainGroup: {
     key: 'domainGroup',
     labelKey: 'kind.domainGroup',
@@ -95,6 +100,9 @@ export interface PaletteSection {
 export const PALETTE_SECTIONS: PaletteSection[] = [
   { id: 'systems', titleKey: 'palette.section.systems', keys: ['application', 'component'] },
   { id: 'people', titleKey: 'palette.section.people', keys: ['actor', 'domainGroup'] },
+  // What the applications stand on (ADR-0013): its own caption, because a
+  // cluster offered between an application and an actor reads as one of them.
+  { id: 'technology', titleKey: 'palette.section.technology', keys: ['platform'] },
 ];
 
 /**

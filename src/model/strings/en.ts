@@ -13,6 +13,7 @@ export const EN = {
   'kind.process': 'Process',
   'kind.application': 'Application',
   'kind.component': 'Component',
+  'kind.platform': 'Platform',
   'placement.notOnACanvas': 'A {kind} is not drawn on this sort of view.',
 
   // --- what a relation MEANS (ADR-0012 §5) ---------------------------------
@@ -21,6 +22,21 @@ export const EN = {
   'relation.serves': 'Serves',
   'relation.realises': 'Realises',
   'relation.assigned': 'Assigned to',
+  'relation.uses': 'Uses',
+  'relation.hostedOn': 'Hosted on',
+  // --- what a platform is, and how an interface travels (ADR-0013) ---------
+  'platformCategory.runtime': 'Runtime',
+  'platformCategory.messaging': 'Messaging',
+  'platformCategory.integration': 'Integration',
+  'platformCategory.network': 'Network',
+  'platformCategory.data': 'Data',
+  'platformCategory.identity': 'Identity',
+  'platformCategory.tooling': 'Tooling',
+  'platformCategory.observability': 'Observability',
+  'transport.direct': 'Point-to-point',
+  'transport.evented': 'Evented',
+  'transport.mediated': 'Mediated',
+  'transport.gated': 'Gated',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',

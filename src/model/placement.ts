@@ -16,7 +16,7 @@ import { HOME_ZONE, zoneRect, zoneSizes } from './zones';
 import type { BoardGeometry } from './zones';
 
 /**
- * The kinds a canvas can draw — and it is the same three it always drew.
+ * The kinds a canvas can draw — the three it always drew, and the platform.
  *
  * A `layer7` board and a `container` board are geometry: a box has a position,
  * a size and a band. The business kinds are not drawn that way at all
@@ -26,12 +26,17 @@ import type { BoardGeometry } from './zones';
  *
  * The actor is the exception and always was: it is a business kind by ADR-0012
  * §4 and it has stood in the top band of every landscape this tool has drawn.
+ * The platform is drawn because the management band already drew it (ADR-0013):
+ * the forge and the monitoring in that band were platforms wearing an
+ * application's kind, and a card there is how a landscape says what it stands
+ * on. The rows that join an application to one are not drawn — the technology
+ * view lists them — so a platform on a board is a card and never a line's end.
  */
 export const CANVAS_KINDS: readonly ElementKind[] & readonly CanvasKind[] =
-  ['application', 'component', 'actor'];
+  ['application', 'component', 'actor', 'platform'];
 
 /** One of {@link CANVAS_KINDS} — narrower than a kind, where a canvas is meant. */
-export type CanvasKind = 'application' | 'component' | 'actor';
+export type CanvasKind = 'application' | 'component' | 'actor' | 'platform';
 
 /**
  * Is a view of this kind a board — geometry a canvas draws (ADR-0012 §6)?

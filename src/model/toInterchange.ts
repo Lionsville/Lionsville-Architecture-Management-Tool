@@ -97,14 +97,17 @@ function tally<T extends string>(values: readonly T[]): { key: T; count: number 
 }
 
 /**
- * The kinds this format has no box for: the business layer (ADR-0012 §4).
+ * The kinds this format has no box for: the business layer (ADR-0012 §4) and
+ * the platform (ADR-0013).
  *
  * Written out rather than derived from what a canvas draws, because they are
- * different questions with the same answer today — the format's vocabulary is
- * frozen by the contract, and what a canvas may draw is this tool's own rule
- * and may yet grow.
+ * different questions with different answers: a platform IS drawn on a canvas
+ * and still has no box here, because the box it draws as is the management
+ * tool's, and a management tool read back is an application — the format's
+ * vocabulary is frozen by the contract. A flow's `via` leaves with it, and
+ * so do the `uses` and `hostedOn` rows, being relations of another type.
  */
-const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process']
+const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process', 'platform']
 
 export function toInterchange(model: HostModel): InterchangeExport {
   const keys = keyMap(model)

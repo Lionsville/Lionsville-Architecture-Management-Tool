@@ -17,6 +17,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'newName.process': 'Neuer Prozess',
   'newName.application': 'Neue Anwendung',
   'newName.component': 'Neue Komponente',
+  'newName.platform': 'Neue Plattform',
   'newName.domainGroup': 'Neue Gruppe',
 
   'lifecycle.planned': 'Geplant',
@@ -144,8 +145,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'palette.noMatches': 'Nichts passt zu „{query}“',
   'palette.section.systems': 'Anwendungen & Komponenten',
   'palette.section.people': 'Personen & Kontext',
+  'palette.section.technology': 'Technologie',
   'paletteDescription.application': 'Ein System, das die Organisation betreibt oder bezieht',
   'paletteDescription.component': 'Ein Teil innerhalb einer Anwendung',
+  'paletteDescription.platform': 'Worauf Anwendungen laufen oder was sie nutzen: ein Cluster, ein Broker, ein Bus, die Werkzeuge',
   'paletteDescription.actor': 'Eine Person oder Rolle, die die Landschaft nutzt',
   'paletteDescription.domainGroup': 'Ein beschrifteter Bereich, der die Landschaft gruppiert',
   'palette.existing': 'Vorhandene Anwendung…',

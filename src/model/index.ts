@@ -9,7 +9,7 @@
  */
 export type {
   AspectKey, AspectStatus, AspectEntry, AspectConfigEntry, ElementKind, Layer7Zone, ElementId,
-  Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType,
+  Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType, PlatformCategory,
   EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramMember, NodeGeometry, PlacedNode, DesignDiagram, SheetPaper,
   DesignModel, DiagramGroup, DiagramLine, DiagramSettings, DomainGroupRect, Geometry, RouteGeometry,
@@ -33,6 +33,13 @@ export {
 export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
+
+/** What a platform is, and how an interface travels (ADR-0013). */
+export {
+  PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, TRANSPORT_LABEL, isPlatformCategory,
+  isTechnologyRelation, platformCategoryOf, transportOf, viaOf,
+} from './relations'
+export type { TransportPattern } from './relations'
 
 /** What a stand-in may carry, and what the scope that defines it answers for (ADR-0012 §3). */
 export { OWNER_DETAIL, asStandIn } from './standIn'

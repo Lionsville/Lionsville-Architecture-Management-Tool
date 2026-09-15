@@ -116,6 +116,17 @@ export function ComponentGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
   );
 }
 
+/** Platform: three stacked layers — what the applications stand on (ADR-0013). */
+export function PlatformGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 4 3 8.5 12 13l9-4.5L12 4Z" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <path d="m3 12.5 9 4.5 9-4.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <path d="m3 16.5 9 4.5 9-4.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Domain group: the dashed rectangle the landscape draws around a group. */
 export function DomainGroupGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
   return (

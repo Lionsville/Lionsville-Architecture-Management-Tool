@@ -16,14 +16,15 @@
  * other tools and does not change — takes its flows through `flowsOf`.
  */
 import type { StringKey } from '../i18n/strings'
-import type { Relation, RelationType } from './types'
+import type { DesignElement, ElementId, PlatformCategory, Relation, RelationType } from './types'
 
 /**
  * Every type, in the order the vocabulary was decided in: the line this tool
- * has always drawn, then the four the business layer needs.
+ * has always drawn, the four the business layer needs, and the two the
+ * physical view needs (ADR-0013).
  */
 export const RELATION_TYPES: readonly RelationType[] = [
-  'flow', 'supports', 'serves', 'realises', 'assigned',
+  'flow', 'supports', 'serves', 'realises', 'assigned', 'uses', 'hostedOn',
 ]
 
 /**
@@ -37,6 +38,8 @@ export const RELATION_LABEL = {
   serves: 'relation.serves',
   realises: 'relation.realises',
   assigned: 'relation.assigned',
+  uses: 'relation.uses',
+  hostedOn: 'relation.hostedOn',
 } as const satisfies Record<RelationType, StringKey>
 
 export function isRelationType(held: unknown): held is RelationType {
@@ -52,3 +55,84 @@ export function isFlow(relation: Pick<Relation, 'type'>): boolean {
 export function flowsOf(relations: readonly Relation[]): Relation[] {
   return relations.filter(isFlow)
 }
+
+// --- the physical view (ADR-0013) -------------------------------------------
+
+/**
+ * Every sort of platform, in the order a page groups them: what runs things
+ * first, then what carries them, then what surrounds them.
+ */
+export const PLATFORM_CATEGORIES: readonly PlatformCategory[] = [
+  'runtime', 'messaging', 'integration', 'network', 'data', 'identity', 'tooling', 'observability',
+]
+
+/** What each category is called — published, for the reason `RELATION_LABEL` is. */
+export const PLATFORM_CATEGORY_LABEL = {
+  runtime: 'platformCategory.runtime',
+  messaging: 'platformCategory.messaging',
+  integration: 'platformCategory.integration',
+  network: 'platformCategory.network',
+  data: 'platformCategory.data',
+  identity: 'platformCategory.identity',
+  tooling: 'platformCategory.tooling',
+  observability: 'platformCategory.observability',
+} as const satisfies Record<PlatformCategory, StringKey>
+
+export function isPlatformCategory(held: unknown): held is PlatformCategory {
+  return typeof held === 'string' && (PLATFORM_CATEGORIES as readonly string[]).includes(held)
+}
+
+/**
+ * What sort of platform this is, with the answer a file that says nothing
+ * gets: `tooling`, the category with the fewest consequences.
+ */
+export function platformCategoryOf(element: Pick<DesignElement, 'platformCategory'>): PlatformCategory {
+  return element.platformCategory ?? 'tooling'
+}
+
+/**
+ * The two rows that join something to what runs it or what it consumes
+ * (ADR-0013): an application or a component at one end, a platform at the
+ * other. Never drawn on a canvas — the technology view lists them.
+ */
+export function isTechnologyRelation(relation: Pick<Relation, 'type'>): boolean {
+  return relation.type === 'uses' || relation.type === 'hostedOn'
+}
+
+/** The platforms a flow travels over, in order; empty for point-to-point. */
+export function viaOf(relation: Pick<Relation, 'type' | 'via'>): ElementId[] {
+  return relation.type === 'flow' && Array.isArray(relation.via) ? relation.via : []
+}
+
+/**
+ * How an interface travels, read off what carries it (ADR-0013).
+ *
+ * Derived and never stored, so a flow moved from the bus onto a topic
+ * changes its pattern by changing the one fact that decides it. The order
+ * of the rules is the order a reader would rank them: a broker anywhere on
+ * the path makes it evented, whatever else is in the way; a bus or an API
+ * platform without one makes it mediated; anything else on the path — a
+ * gateway, a firewall, a network — only gates a line that is otherwise
+ * direct. A platform this scope cannot see is read as `tooling`, which is
+ * to say it gates.
+ */
+export type TransportPattern = 'direct' | 'evented' | 'mediated' | 'gated'
+
+export function transportOf(
+  relation: Pick<Relation, 'type' | 'via'>,
+  categoryOf: (id: ElementId) => PlatformCategory | undefined,
+): TransportPattern {
+  const categories = viaOf(relation).map((id) => categoryOf(id) ?? 'tooling')
+  if (categories.length === 0) return 'direct'
+  if (categories.includes('messaging')) return 'evented'
+  if (categories.includes('integration')) return 'mediated'
+  return 'gated'
+}
+
+/** What each pattern is called — published, as the labels above are. */
+export const TRANSPORT_LABEL = {
+  direct: 'transport.direct',
+  evented: 'transport.evented',
+  mediated: 'transport.mediated',
+  gated: 'transport.gated',
+} as const satisfies Record<TransportPattern, StringKey>

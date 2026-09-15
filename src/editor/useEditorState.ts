@@ -414,6 +414,7 @@ export const DEFAULT_NAME_KEYS: Record<ElementKind, StringKey> = {
   process: 'newName.process',
   application: 'newName.application',
   component: 'newName.component',
+  platform: 'newName.platform',
 };
 
 export function defaultElementName(
@@ -434,6 +435,7 @@ export function defaultElementNames(
     process: defaultElementName('process', translate),
     application: defaultElementName('application', translate),
     component: defaultElementName('component', translate),
+    platform: defaultElementName('platform', translate),
   };
 }
 
@@ -451,6 +453,8 @@ const DEFAULT_MANAGED: Record<ElementKind, boolean> = {
   process: false,
   application: true,
   component: true,
+  // Somebody runs a cluster; whether it is this organisation is `outside`.
+  platform: true,
 };
 
 /**

@@ -409,10 +409,16 @@ describe('canPlaceKind', () => {
   });
 
   it('refuses every kind on a laid-out view, which holds no members at all', () => {
-    for (const kind of ['application', 'actor', 'step', 'function'] as const) {
+    for (const kind of ['application', 'actor', 'step', 'function', 'platform'] as const) {
       expect(canPlaceKind(kind, 'sheet'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
       expect(canPlaceKind(kind, 'map'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
+      expect(canPlaceKind(kind, 'technology'), kind).toEqual({ ok: false, reason: 'placement.notOnACanvas' });
     }
+  });
+
+  it('lets a platform onto a board, because the management band always drew one (ADR-0013)', () => {
+    expect(canPlaceKind('platform', 'layer7')).toEqual({ ok: true });
+    expect(canPlaceKind('platform', 'container')).toEqual({ ok: true });
   });
 
   it('excepts the actor, which has stood in the top band of every board', () => {

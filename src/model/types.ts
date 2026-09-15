@@ -68,6 +68,11 @@ export interface AspectConfigEntry {
  * make the depth, and depth is what the sheet draws from — an area, a
  * grouping, a capability; a journey, a phase, a step. The model does not know
  * those words.
+ *
+ * `platform` is the seventh, and the physical view's (ADR-0013): a cluster, a
+ * broker, a bus, a firewall, the tooling — what an application runs on and
+ * what it uses, which is somebody else's to own and this application's to
+ * name. A tree as well: a namespace under a cluster under a cloud account.
  */
 export type ElementKind =
   /** A party, stakeholder, role, team, or a group of them. */
@@ -80,7 +85,26 @@ export type ElementKind =
   | 'process'
   | 'application'
   /** A container inside an application (C4). */
-  | 'component';
+  | 'component'
+  /** Technology: what runs the applications and carries their interfaces (ADR-0013). */
+  | 'platform';
+/**
+ * What sort of technology a platform is (ADR-0013).
+ *
+ * A closed set, because two readers branch on it and neither may guess from a
+ * name: the ArchiMate mapping picks a node, a network or a technology service
+ * by it, and the technology view groups by it. `tooling` is the catch-all a
+ * platform lands in when nobody has said.
+ */
+export type PlatformCategory =
+  | 'runtime'
+  | 'messaging'
+  | 'integration'
+  | 'network'
+  | 'data'
+  | 'identity'
+  | 'tooling'
+  | 'observability';
 export type Layer7Zone =
   | 'actors'
   | 'inputChannels'
@@ -174,6 +198,12 @@ export interface DesignElement {
   category?: string;
   vendor?: string;
   technology?: string;
+  /**
+   * A `platform` only: what sort of technology it is (ADR-0013). Absent reads
+   * as `tooling`, through {@link ./relations.platformCategoryOf}, so a file
+   * that says nothing still exports and still groups.
+   */
+  platformCategory?: PlatformCategory;
   description?: string;
   /**
    * Nobody in this organisation owns it (ADR-0012 §3).
@@ -252,8 +282,16 @@ export type EdgeArrowhead = 'none' | 'arrow';
  * would carry neither. `flow` is the line this tool has always drawn — an
  * interface between two applications — and every other member is a statement
  * about coverage rather than about traffic.
+ *
+ * Two more since ADR-0013, and they are the physical view's: an application
+ * or a component `uses` a platform — a service consumed: the broker, the
+ * source forge, the firewall — and is `hostedOn` one — where it runs: a
+ * namespace, a machine, a cloud account. The distinction is the one every
+ * technology model in the market makes (ArchiMate's serving against its
+ * assignment), and it is the relation's to carry rather than the kind's.
  */
-export type RelationType = 'flow' | 'supports' | 'serves' | 'realises' | 'assigned';
+export type RelationType =
+  | 'flow' | 'supports' | 'serves' | 'realises' | 'assigned' | 'uses' | 'hostedOn';
 
 /**
  * A line's own fields, with nothing said about what it means.
@@ -271,6 +309,19 @@ export interface DesignConnection {
   label?: string;
   /** `flow` only: what travels over the line. Ignored on any other type. */
   protocol?: string;
+  /**
+   * `flow` only: the platforms the interface travels over, in order
+   * (ADR-0013) — `[esb]`, `[gateway, kafka]`, absent for point-to-point.
+   *
+   * On the flow itself, so the interface stays ONE row from source to target
+   * and the landscape draws it as the functional line it always was; the
+   * technology view of a platform is every flow that names it here, split at
+   * the platform into an incoming half and an outgoing half — derived, never
+   * stored. `protocol` stays what it is: how the interface speaks, not what
+   * carries it. An id here this scope does not hold is a dangling end, kept
+   * and reported like any other.
+   */
+  via?: ElementId[];
   /**
    * The days this line is there, `yyyy-mm-dd` and inclusive (ADR-0009, and on
    * every relation type since ADR-0012 §5).
@@ -526,14 +577,15 @@ export interface DesignDiagram {
    * What kind of view this is (ADR-0012 §6).
    *
    * `layer7` and `container` are drawn on a canvas and have geometry. A
-   * `sheet` and a `map` are **laid out**: the business architecture on one
-   * page, and functions against the applications that support them, each
-   * computed from the trees and the rows, so neither has coordinates at all
-   * and {@link DesignDiagram.geometry} stays empty on both. Nothing drags,
-   * nothing routes, and a deleted geometry file would change nothing about
-   * either.
+   * `sheet`, a `map` and a `technology` view are **laid out**: the business
+   * architecture on one page, functions against the applications that
+   * support them, and one platform with everything on it and through it,
+   * each computed from the trees and the rows, so none has coordinates at
+   * all and {@link DesignDiagram.geometry} stays empty on all three. Nothing
+   * drags, nothing routes, and a deleted geometry file would change nothing
+   * about any of them.
    */
-  kind: 'layer7' | 'container' | 'sheet' | 'map';
+  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —
@@ -565,6 +617,13 @@ export interface DesignDiagram {
   /** Whether the exported PNG carries a title block at all. Absent = it does. */
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;
+  /**
+   * A technology view: the platform it is about (ADR-0013) — laid out like a
+   * sheet and a map, from the rows that name it: what is hosted on it, what
+   * uses it, and every flow that passes `via` it, split into what comes in
+   * and what goes out.
+   */
+  platformId?: ElementId;
   /**
    * A sheet: the journey drawn across the top — the `step` at the root of the
    * tree whose phases become the header row (ADR-0012 §6). Absent draws no
