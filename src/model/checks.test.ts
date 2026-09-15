@@ -140,30 +140,24 @@ describe('a retirement with things still plugged into it', () => {
 })
 
 describe('a successor', () => {
-  it('is reported when it arrives after the thing it replaces has gone', () => {
+  it('is reported when it arrives after the thing it replaces has gone, but not on the day', () => {
     const list = check([
       element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'wms2' }),
       element('wms2', { lifecycle: 'planned', lifecycleDates: { live: '2028-06-01' } }),
     ])
     expect(list.find((one) => one.kind === 'successorTooLate'))
       .toMatchObject({ id: 'wms', detail: 'wms2' })
-  })
-
-  it('is accepted on the very day of the cutover', () => {
     // Same-day is the plan working, not a gap.
-    const list = check([
+    const sameDay = check([
       element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'wms2' }),
       element('wms2', { lifecycle: 'planned', lifecycleDates: { live: '2028-01-31' } }),
     ])
-    expect(kinds(list)).not.toContain('successorTooLate')
+    expect(kinds(sameDay)).not.toContain('successorTooLate')
   })
 
-  it('is reported as missing when a retirement names nobody', () => {
+  it('is reported as missing when a retirement names nobody, and not asked for otherwise', () => {
     const list = check([element('wms', { lifecycleDates: { retired: '2028-01-31' } })])
     expect(kinds(list)).toContain('successorMissing')
-  })
-
-  it('is not asked for at all when nothing retires', () => {
     expect(check([element('wms'), element('billing')])).toEqual([])
   })
 
@@ -215,10 +209,11 @@ describe('a plan', () => {
     elements: [], decisions: [], milestones: [], body: '', ...over,
   })
 
-  it('is reported when its window closed and it is still running', () => {
+  it('is reported when its window closed and it is still running, and left alone while open', () => {
     const list = check([], [], [plan({ to: '2026-06-01' })])
     expect(list.find((one) => one.kind === 'planOverdue'))
       .toMatchObject({ subject: 'transition', id: 'tr-1', detail: '2026-06-01' })
+    expect(kinds(check([], [], [plan({ to: '2027-06-01' })]))).toEqual([])
   })
 
   it('is left alone once it is done or abandoned', () => {
@@ -226,9 +221,6 @@ describe('a plan', () => {
     expect(kinds(check([], [], [plan({ to: '2026-06-01', status: 'abandoned' as const })]))).toEqual([])
   })
 
-  it('is left alone while its window is still open', () => {
-    expect(kinds(check([], [], [plan({ to: '2027-06-01' })]))).toEqual([])
-  })
 })
 
 describe('the list as a whole', () => {

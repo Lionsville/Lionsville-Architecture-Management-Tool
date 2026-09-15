@@ -26,7 +26,6 @@ import type { HostModel, InterchangeDoc } from './fromInterchange'
 import type { DesignElement, ElementKind } from './types'
 import { toInterchange } from './toInterchange'
 
-
 /**
  * Find or fail. The document's types are no longer `any`, so `find` returns
  * `T | undefined` — and a test that asks `'lifecycle' in <missing>` should
@@ -66,8 +65,13 @@ function sortKeys(value: unknown): unknown {
 const roundTrip = (input: InterchangeDoc) => toInterchange(fromInterchange(input)).doc
 
 describe('fromInterchange → toInterchange on a whole document', () => {
-  it('comes back deep-equal (compared on sorted keys)', () => {
+  it('comes back deep-equal, and normalises the order once and then holds still', () => {
     expect(sortKeys(roundTrip(source))).toEqual(sortKeys(source))
+    const first = roundTrip(source)
+    const second = roundTrip(first)
+
+    // byte-identical from the second export onwards: no drifting diffs
+    expect(JSON.stringify(second, null, 2)).toBe(JSON.stringify(first, null, 2))
   })
 
   it('differs from the source in field ORDER only — the one documented exception', () => {
@@ -81,14 +85,6 @@ describe('fromInterchange → toInterchange on a whole document', () => {
     const after = Object.keys(out.elements[0])
     expect([...after].sort()).toEqual([...before].sort())
     expect(after).toEqual(['key', 'kind', 'name', 'category', 'description', 'lifecycle', 'isManaged', 'iconType', 'aspects'])
-  })
-
-  it('normalises that order once and then holds still', () => {
-    const first = roundTrip(source)
-    const second = roundTrip(first)
-
-    // byte-identical from the second export onwards: no drifting diffs
-    expect(JSON.stringify(second, null, 2)).toBe(JSON.stringify(first, null, 2))
   })
 
   it('carries the document-level fields over untouched', () => {
@@ -265,8 +261,17 @@ describe('iconType', () => {
     ],
   }
 
-  it('round-trips a document that uses it', () => {
+  it('round-trips an icon, stays silent without one, and writes a key the editor set', () => {
     expect(sortKeys(roundTrip(withIcons))).toEqual(sortKeys(withIcons))
+    const out = roundTrip(withIcons)
+    expect('iconType' in elementByKey(out, 'kaal')).toBe(false)
+    const model = fromInterchange(withIcons)
+    model.elements = model.elements.map((e) =>
+      e.id === 'kaal' ? { ...e, iconKey: 'database' } : e)
+
+    const unasked = toInterchange(model).doc
+
+    expect(unasked.elements.find((e) => e.key === 'kaal')).toMatchObject({ iconType: 'database' })
   })
 
   it('reads it onto the element as iconKey', () => {
@@ -279,21 +284,6 @@ describe('iconType', () => {
     // glyph and the key survives the round trip.
     expect(byKey('toekomst')?.iconKey).toBe('iets-nieuws')
     expect(byKey('kaal')?.iconKey).toBeUndefined()
-  })
-
-  it('stays silent for an element with no icon', () => {
-    const out = roundTrip(withIcons)
-    expect('iconType' in elementByKey(out, 'kaal')).toBe(false)
-  })
-
-  it('writes a built-in key the editor just set, unasked', () => {
-    const model = fromInterchange(withIcons)
-    model.elements = model.elements.map((e) =>
-      e.id === 'kaal' ? { ...e, iconKey: 'database' } : e)
-
-    const out = toInterchange(model).doc
-
-    expect(out.elements.find((e) => e.key === 'kaal')).toMatchObject({ iconType: 'database' })
   })
 
   it('never writes an uploaded (lib:) key — that one lives in the working file', () => {
@@ -407,33 +397,23 @@ describe('per-diagram presentation settings', () => {
     })
   })
 
-  it('carries a renamed column and its badge code', () => {
+  it('carries a renamed column, a hidden row and an empty set, and says nothing where the source did', () => {
     const config = [{ key: 'dr', label: 'Continuity', code: 'CONT' }]
     expect(diagramByKey(roundTrip(withDiagram({ aspectConfig: config })), 'l7').aspectConfig)
       .toEqual(config)
-  })
-
-  /**
-   * The point of writing the empty array rather than pruning it: a document
-   * that says "no columns" must not come back saying "the default five".
-   */
-  it('keeps an empty column set empty across the round trip', () => {
+    // The point of writing the empty array rather than pruning it: a document
+    // that says "no columns" must not come back saying "the default five".
     const out = roundTrip(withDiagram({ aspectConfig: [] }))
     expect(diagramByKey(out, 'l7').aspectConfig).toEqual([])
-  })
-
-  it('carries a hidden aspect row, configuration and all', () => {
-    const config = [{ key: 'dr', label: 'Continuity' }]
-    const out = roundTrip(withDiagram({ showAspects: false, aspectConfig: config }))
-    expect(diagramByKey(out, 'l7')).toMatchObject({ showAspects: false, aspectConfig: config })
-  })
-
-  it('says nothing about any of it when the source said nothing', () => {
-    const out = diagramByKey(roundTrip(base), 'l7')
+    const continuity = [{ key: 'dr', label: 'Continuity' }]
+    const hidden = roundTrip(withDiagram({ showAspects: false, aspectConfig: continuity }))
+    expect(diagramByKey(hidden, 'l7')).toMatchObject({ showAspects: false, aspectConfig: continuity })
+    const out3 = diagramByKey(roundTrip(base), 'l7')
     for (const key of ['author', 'client', 'documentDate', 'showTitleBlock', 'aspectConfig', 'showAspects']) {
-      expect(key in out).toBe(false)
+      expect(key in out3).toBe(false)
     }
   })
+
 })
 
 describe('project-wide defaults', () => {

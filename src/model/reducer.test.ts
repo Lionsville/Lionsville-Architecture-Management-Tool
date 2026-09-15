@@ -83,10 +83,12 @@ describe('apply — elements', () => {
     expect(deleted.elements.b).toBeUndefined()
   })
 
-  it('puts a deleted element back where it was, not at the end', () => {
+  it('puts a deleted element back where it was, and all of it, in one step', () => {
     const m = sample()
     const forward = ok(apply(m, { type: 'element.delete', id: 'a' }))
     expect(ok(apply(forward.model, forward.inverse)).model.order.elements).toEqual(['a', 'b', 'c'])
+    const whole = sample()
+    reversible(whole, { type: 'element.delete', id: 'a' })
   })
 
   /**
@@ -114,11 +116,6 @@ describe('apply — elements', () => {
     expect(gone.order.diagrams).toEqual(['landscape'])
     expect(gone.diagrams.landscape.order.members).toEqual(['b'])
     expect(gone.diagrams.landscape.edgeRoutes).toBeUndefined()
-  })
-
-  it('puts all of that back, in one step', () => {
-    const m = sample()
-    reversible(m, { type: 'element.delete', id: 'a' })
   })
 
   it('refuses to touch an element that is not there', () => {
@@ -416,12 +413,20 @@ describe('apply — geometry', () => {
       .toEqual(['a', 'b', 'c'])
   })
 
-  it('sets and clears routes, reversibly', () => {
+  it('sets and clears routes and the board reversibly, and refuses a diagram that is not there', () => {
     const m = sample()
     reversible(m, {
       type: 'route.set', diagramId: 'landscape', routes: [route('c#1', { pinned: true })],
     })
     reversible(m, { type: 'route.clear', diagramId: 'landscape', relationIds: ['c#1'] })
+    const board = sample()
+    const laid = reversible(board, {
+      type: 'board.set', diagramId: 'landscape', patch: { zones: { actors: { size: 90 } } },
+    })
+    expect(laid.diagrams.landscape?.zones?.actors?.size).toBe(90)
+    reversible(laid, { type: 'board.set', diagramId: 'landscape', patch: { zones: undefined } })
+    expect(apply(sample(), placeOn('nope', [])))
+      .toEqual({ ok: false, reason: 'command.gone' })
   })
 
   /** An emptied optional list loses its key — see the note on the reducer. */
@@ -433,20 +438,6 @@ describe('apply — geometry', () => {
     expect('edgeRoutes' in cleared.model.diagrams.landscape).toBe(false)
     expect(ok(apply(cleared.model, cleared.inverse)).model.diagrams.landscape.order.routes)
       .toEqual(['c#1', 'c#2'])
-  })
-
-  it('sets and clears the board, reversibly', () => {
-    const m = sample()
-    const laid = reversible(m, {
-      type: 'board.set', diagramId: 'landscape', patch: { zones: { actors: { size: 90 } } },
-    })
-    expect(laid.diagrams.landscape?.zones?.actors?.size).toBe(90)
-    reversible(laid, { type: 'board.set', diagramId: 'landscape', patch: { zones: undefined } })
-  })
-
-  it('refuses geometry for a diagram that is not there', () => {
-    expect(apply(sample(), placeOn('nope', [])))
-      .toEqual({ ok: false, reason: 'command.gone' })
   })
 
   it('ignores a placement for an element the model does not hold', () => {
@@ -619,20 +610,21 @@ describe('apply — dashed groups', () => {
 })
 
 describe('apply — diagrams', () => {
-  it('creates, renames and deletes, each reversibly', () => {
+  it('creates, renames, duplicates and deletes a diagram, each reversibly', () => {
     const m = sample()
     const made = reversible(m, { type: 'diagram.create', diagram: toDiagram(diagram('second')) })
     expect(made.order.diagrams).toEqual(['landscape', 'inside-a', 'second'])
 
     reversible(m, { type: 'diagram.rename', id: 'landscape', name: 'The landscape' })
     reversible(m, { type: 'diagram.delete', id: 'inside-a' })
-  })
-
-  it('puts a duplicate next to its original, and takes it away again', () => {
-    const m = sample()
+    const copied = sample()
     const copy = { ...toDiagram(diagram('landscape-2')), name: 'Landscape (copy)' }
-    const made = reversible(m, { type: 'diagram.create', diagram: copy, at: 1 })
-    expect(made.order.diagrams).toEqual(['landscape', 'landscape-2', 'inside-a'])
+    const duplicate = reversible(copied, { type: 'diagram.create', diagram: copy, at: 1 })
+    expect(duplicate.order.diagrams).toEqual(['landscape', 'landscape-2', 'inside-a'])
+    const m3 = sample()
+    const on = reversible(m3, { type: 'diagram.update', id: 'landscape', patch: { autoRoute: true } })
+    expect(on.diagrams.landscape.autoRoute).toBe(true)
+    reversible(on, { type: 'diagram.update', id: 'landscape', patch: { autoRoute: undefined } })
   })
 
   it('refuses an empty name and a name that is the one it already has', () => {
@@ -663,27 +655,18 @@ describe('apply — diagrams', () => {
     expect(back).toStrictEqual(m)
   })
 
-  it('patches the machine-facing fields, reversibly', () => {
-    const m = sample()
-    const on = reversible(m, { type: 'diagram.update', id: 'landscape', patch: { autoRoute: true } })
-    expect(on.diagrams.landscape.autoRoute).toBe(true)
-    reversible(on, { type: 'diagram.update', id: 'landscape', patch: { autoRoute: undefined } })
-  })
 })
 
 describe('apply — decisions and the project', () => {
-  it('adds, updates and removes a decision, reversibly', () => {
+  it('adds, updates and removes a decision reversibly, leaving no empty key behind', () => {
     const m = sample()
     const added = reversible(m, { type: 'decision.add', decision: adr('d1', 1) })
     expect(added.order.decisions).toEqual(['d1'])
     reversible(added, { type: 'decision.update', id: 'd1', patch: { status: 'accepted' } })
     reversible(added, { type: 'decision.remove', id: 'd1' })
-  })
-
-  it('leaves no decisions key behind when the list empties', () => {
-    const m = sample()
-    const added = ok(apply(m, { type: 'decision.add', decision: adr('d1', 1) }))
-    expect('decisions' in ok(apply(added.model, added.inverse)).model).toBe(false)
+    const emptied = sample()
+    const only = ok(apply(emptied, { type: 'decision.add', decision: adr('d1', 1) }))
+    expect('decisions' in ok(apply(only.model, only.inverse)).model).toBe(false)
   })
 
   it('edits the project’s own fields, reversibly', () => {
@@ -856,22 +839,19 @@ describe('applyAll', () => {
   })
 })
 describe('lifecycle dates (ADR-0009)', () => {
-  it('takes dates that run forwards', () => {
+  it('takes dates that run forwards, and refuses ones that run backwards with a key', () => {
     const next = apply(sample(), {
       type: 'element.update', id: 'a',
       patch: { lifecycleDates: { live: '2027-04-01', retired: '2029-01-01' } },
     })
     expect(next.ok).toBe(true)
-  })
-
-  it('refuses dates that run backwards, with a key rather than a throw', () => {
     // Refused in the reducer and not in the inspector, so the agent, a paste
     // and an undo all get the same answer.
-    const next = apply(sample(), {
+    const backwards = apply(sample(), {
       type: 'element.update', id: 'a',
       patch: { lifecycleDates: { live: '2029-01-01', retired: '2027-04-01' } },
     })
-    expect(next).toEqual({ ok: false, reason: 'command.datesOutOfOrder' })
+    expect(backwards).toEqual({ ok: false, reason: 'command.datesOutOfOrder' })
   })
 
   it('judges the dates the element would END UP with, not the ones in the patch', () => {

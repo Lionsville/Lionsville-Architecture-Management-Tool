@@ -33,33 +33,21 @@ const PAGE = [
 ].join('\n');
 
 describe('shortDescription', () => {
-  it('is the "Short description" row of a leading header table', () => {
+  it('reads the "Short description" row of a leading header table, whatever it is labelled', () => {
     expect(shortDescription(PAGE)).toBe('The order of record from booking to invoice hand-off.');
-  });
-
-  it('finds the row below an empty header row, and regardless of case', () => {
     const md = '| | |\n|---|---|\n| Owner | Ops |\n| SHORT DESCRIPTION: | *One* line |';
     expect(shortDescription(md)).toBe('One line');
-  });
-
-  it('accepts the Dutch label', () => {
     expect(shortDescription('| Korte omschrijving | Eén regel |\n|---|---|')).toBe('Eén regel');
+    for (const language of LANGUAGES) {
+      expect(SHORT_DESCRIPTION_LABELS).toContain(STRINGS[language]['doc.shortDescription'].toLowerCase());
+    }
   });
 
-  it('falls back to the first paragraph, past a heading and a table without the row', () => {
+  it('falls back to the first thing said — a paragraph, a list item, past a fence', () => {
     const md = '| Owner | Ops |\n|---|---|\n\n# Title\n\nFirst *paragraph*\nwraps here.\n\nSecond paragraph.';
     expect(shortDescription(md)).toBe('First paragraph wraps here.');
-  });
-
-  it('reads a plain old one-line description unchanged', () => {
     expect(shortDescription('Turns tomorrow’s orders into runs.')).toBe('Turns tomorrow’s orders into runs.');
-  });
-
-  it('takes a list item as the first thing said, without its marker', () => {
     expect(shortDescription('- [ ] first\n- second')).toBe('first second');
-  });
-
-  it('skips a fenced block on the way to the first paragraph', () => {
     expect(shortDescription('```\ncode\n```\n\nWords.')).toBe('Words.');
   });
 
@@ -69,11 +57,6 @@ describe('shortDescription', () => {
     expect(shortDescription('| Owner | |\n|---|---|')).toBe('');
   });
 
-  it('recognises the label every language uses for the row', () => {
-    for (const language of LANGUAGES) {
-      expect(SHORT_DESCRIPTION_LABELS).toContain(STRINGS[language]['doc.shortDescription'].toLowerCase());
-    }
-  });
 });
 
 describe('stripInline', () => {
@@ -102,15 +85,12 @@ describe('hasDocumentation', () => {
 });
 
 describe('outline', () => {
-  it('lists ATX headings with their level and an anchor, ignoring fences', () => {
+  it('lists ATX headings with their level and a readable anchor, ignoring fences', () => {
     expect(outline(PAGE)).toEqual([
       { level: 2, text: 'Purpose', id: 'purpose' },
       { level: 2, text: 'Interfaces', id: 'interfaces' },
       { level: 3, text: 'Route Planner', id: 'route-planner' },
     ]);
-  });
-
-  it('makes a readable anchor out of a heading', () => {
     expect(headingId('Decisions & open issues')).toBe('decisions-open-issues');
     expect(headingId('Éen **vet** kopje')).toBe('éen-vet-kopje');
   });
@@ -149,24 +129,16 @@ describe('linkElementRefs', () => {
     { id: 'el-3', name: 'Billing' },
   ];
 
-  it('turns a known name into an element link, case-insensitively', () => {
+  it('turns a known name into an element link and leaves the rest of the text alone', () => {
     expect(linkElementRefs('see [[billing]] and [[Track & Trace]]', elements)).toBe(
       'see [billing](element:el-1) and [Track & Trace](element:el-2)',
     );
-  });
-
-  it('leaves an unknown name as written', () => {
     expect(linkElementRefs('see [[Nobody]]', elements)).toBe('see [[Nobody]]');
-  });
-
-  it('encodes an id that would not survive a URL', () => {
     expect(linkElementRefs('[[X]]', [{ id: 'a b/c', name: 'X' }])).toBe('[X](element:a%20b%2Fc)');
-  });
-
-  it('returns the same text when there is nothing to do', () => {
     const md = 'no refs here';
     expect(linkElementRefs(md, elements)).toBe(md);
   });
+
 });
 
 describe('documentTemplate', () => {

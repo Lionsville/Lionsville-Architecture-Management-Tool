@@ -105,18 +105,12 @@ describe('WebStorageScopeStore', () => {
       .toEqual(['', 'Aardvark', 'Zebra'])
   })
 
-  it('refuses visibly when storage will not write', async () => {
+  it('stays standing when storage will not write, enumerate or remove', async () => {
     // This is why save() returns a promise that can reject: the shell has to be
     // able to say, once, "everything works until you close this tab".
     const store = new WebStorageScopeStore(refusingStorage())
     await expect(store.save(sampleScope())).rejects.toBeInstanceOf(Error)
-  })
-
-  it('lists nothing rather than throwing when storage will not enumerate', async () => {
     expect(await listed(new WebStorageScopeStore(refusingStorage()))).toEqual([])
-  })
-
-  it('does not turn a failed remove() into a fault', async () => {
     await expect(new WebStorageScopeStore(refusingStorage()).remove(SAMPLE_PATH))
       .resolves.toBeUndefined()
   })

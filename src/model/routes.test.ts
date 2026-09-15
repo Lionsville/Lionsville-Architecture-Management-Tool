@@ -41,8 +41,11 @@ const end: Point = { x: 300, y: 0 };
 const EMPTY_VIEW = { members: [], geometry: { nodes: [] } };
 
 describe('waypointInsertionIndex', () => {
-  it('inserts on the only segment when there are no waypoints', () => {
+  it('inserts on the only segment when there are no waypoints, and breaks ties on the earliest', () => {
     expect(waypointInsertionIndex(start, [], end, { x: 150, y: 40 })).toBe(0);
+    const waypoints: Point[] = [{ x: 150, y: 0 }];
+    // Equidistant to both collinear segments → first one.
+    expect(waypointInsertionIndex(start, waypoints, end, { x: 150, y: 50 })).toBe(0);
   });
 
   it('picks the nearest segment of the polyline', () => {
@@ -55,11 +58,6 @@ describe('waypointInsertionIndex', () => {
     expect(waypointInsertionIndex(start, waypoints, end, { x: 260, y: 40 })).toBe(2);
   });
 
-  it('breaks ties deterministically on the earliest segment', () => {
-    const waypoints: Point[] = [{ x: 150, y: 0 }];
-    // Equidistant to both collinear segments → first one.
-    expect(waypointInsertionIndex(start, waypoints, end, { x: 150, y: 50 })).toBe(0);
-  });
 });
 
 describe('insert/move/remove waypoint', () => {
@@ -109,8 +107,11 @@ describe('routeFor', () => {
 });
 
 describe('roundedPolylinePath', () => {
-  it('renders a straight line for two points', () => {
+  it('renders a straight line for two points, and shrinks the radius rather than overshooting', () => {
     expect(roundedPolylinePath([start, end])).toBe('M 0,0 L 300,0');
+    const path = roundedPolylinePath([start, { x: 4, y: 0 }, { x: 4, y: 4 }], 8);
+    // Radius is limited to half the shortest adjacent segment (2px here).
+    expect(path).toContain('L 2,0 Q 4,0 4,2');
   });
 
   it('rounds interior corners with quadratic curves', () => {
@@ -120,11 +121,6 @@ describe('roundedPolylinePath', () => {
     expect(path.endsWith('L 100,100')).toBe(true);
   });
 
-  it('shrinks the radius on short segments instead of overshooting', () => {
-    const path = roundedPolylinePath([start, { x: 4, y: 0 }, { x: 4, y: 4 }], 8);
-    // Radius is limited to half the shortest adjacent segment (2px here).
-    expect(path).toContain('L 2,0 Q 4,0 4,2');
-  });
 });
 
 describe('route provenance', () => {
@@ -272,21 +268,24 @@ describe('moveSegment', () => {
     { x: 700, y: 400 },
   ];
 
-  it('moves a vertical leg in x only, both bounding points together', () => {
+  it('moves a leg along its own axis only, and takes the whole delta on a diagonal', () => {
     expect(moveSegment(polyline, 1, { x: 40, y: 30 })).toEqual([
       { x: 300, y: 150 },
       { x: 540, y: 150 },
       { x: 540, y: 400 },
       { x: 700, y: 400 },
     ]);
-  });
-
-  it('moves a horizontal leg in y only — the anchor point moves with it', () => {
     expect(moveSegment(polyline, 0, { x: 10, y: 25 })).toEqual([
       { x: 300, y: 175 },
       { x: 500, y: 175 },
       { x: 500, y: 400 },
       { x: 700, y: 400 },
+    ]);
+    const diagonal: Point[] = [{ x: 0, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 100 }];
+    expect(moveSegment(diagonal, 0, { x: 5, y: 7 })).toEqual([
+      { x: 5, y: 7 },
+      { x: 105, y: 107 },
+      { x: 200, y: 100 },
     ]);
   });
 
@@ -302,15 +301,6 @@ describe('moveSegment', () => {
     expect(moveSegment(polyline, 1, { x: 0, y: 10 })).toBe(polyline);
     expect(moveSegment(polyline, 9, { x: 10, y: 10 })).toBe(polyline);
     expect(moveSegment(polyline, -1, { x: 10, y: 10 })).toBe(polyline);
-  });
-
-  it('takes the whole delta on a diagonal leg', () => {
-    const diagonal: Point[] = [{ x: 0, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 100 }];
-    expect(moveSegment(diagonal, 0, { x: 5, y: 7 })).toEqual([
-      { x: 5, y: 7 },
-      { x: 105, y: 107 },
-      { x: 200, y: 100 },
-    ]);
   });
 
   it('carries collinear neighbours along, so they cannot turn diagonal', () => {
@@ -347,10 +337,18 @@ describe('snapOrthogonal / interiorOf', () => {
 });
 
 describe('jogFromStraight', () => {
-  it('shifts an aligned horizontal line perpendicular, a stub in from each end', () => {
+  it('shifts an aligned line perpendicular with a stub in from each end, either way round', () => {
     expect(jogFromStraight({ x: 300, y: 150 }, { x: 700, y: 150 }, { x: 0, y: 60 }, 'horizontal')).toEqual([
       { x: 300 + JOG_STUB, y: 210 },
       { x: 700 - JOG_STUB, y: 210 },
+    ]);
+    expect(jogFromStraight({ x: 200, y: 200 }, { x: 200, y: 600 }, { x: 40, y: 0 }, 'vertical')).toEqual([
+      { x: 240, y: 200 + JOG_STUB },
+      { x: 240, y: 600 - JOG_STUB },
+    ]);
+    expect(jogFromStraight({ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 0, y: 10 }, 'horizontal')).toEqual([
+      { x: 10, y: 10 },
+      { x: 30, y: 10 },
     ]);
   });
 
@@ -362,20 +360,6 @@ describe('jogFromStraight', () => {
     expect(jogFromStraight({ x: 200, y: 200 }, { x: 300, y: 600 }, { x: 0, y: -20 }, 'vertical')).toEqual([
       { x: 200, y: 380 },
       { x: 300, y: 380 },
-    ]);
-  });
-
-  it('mirrors for a vertical exit', () => {
-    expect(jogFromStraight({ x: 200, y: 200 }, { x: 200, y: 600 }, { x: 40, y: 0 }, 'vertical')).toEqual([
-      { x: 240, y: 200 + JOG_STUB },
-      { x: 240, y: 600 - JOG_STUB },
-    ]);
-  });
-
-  it('clamps the stub to a quarter of a short line', () => {
-    expect(jogFromStraight({ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 0, y: 10 }, 'horizontal')).toEqual([
-      { x: 10, y: 10 },
-      { x: 30, y: 10 },
     ]);
   });
 
@@ -446,15 +430,12 @@ describe('dragSegment — end legs stay orthogonal and attached', () => {
     expectOrthogonal(result!, A, B);
   });
 
-  it('moves an interior leg without touching the ends', () => {
+  it('moves an interior leg without touching the ends, and is undefined with nothing to follow', () => {
     expect(dragSegment(drawn, 1, { x: -60, y: 999 }, A, B)).toEqual([
       { x: 440, y: 150 },
       { x: 440, y: 400 },
       { x: 800, y: 400 },
     ]);
-  });
-
-  it('is undefined when the drag has nothing for the leg to follow', () => {
     expect(dragSegment(drawn, 1, { x: 0, y: 50 }, A, B)).toBeUndefined();
   });
 
@@ -555,11 +536,17 @@ describe('followNodeMove', () => {
     expect(routeEndAnchor(moved(A, 20, 30), after.waypoints[0])).toMatchObject({ x: 320, y: 180 });
   });
 
-  it('takes the node’s dx on a vertical end leg at the target end', () => {
+  it('takes the node’s move along the end leg, and the whole collinear run with it', () => {
     const B: Rect = { x: 700, y: 400, width: 200, height: 100 };
     const before = route([{ x: 500, y: 150 }, { x: 800, y: 300 }]);
     const after = followNodeMove(before, B, moved(B, 25, -10), false);
     expect(after.waypoints).toEqual([{ x: 500, y: 150 }, { x: 825, y: 300 }]);
+    const collinear = route([{ x: 400, y: 150 }, { x: 500, y: 150 }, { x: 500, y: 400 }]);
+    expect(followNodeMove(collinear, A, moved(A, 0, 30), true).waypoints).toEqual([
+      { x: 400, y: 180 },
+      { x: 500, y: 180 },
+      { x: 500, y: 400 },
+    ]);
   });
 
   it('carries the label along when it sits on the moved leg, and not otherwise', () => {
@@ -567,15 +554,6 @@ describe('followNodeMove', () => {
     expect(onLeg.labelPosition).toEqual({ x: 400, y: 180 });
     const elsewhere = followNodeMove(route([{ x: 500, y: 150 }, { x: 500, y: 400 }], { x: 500, y: 300 }), A, moved(A, 0, 30), true);
     expect(elsewhere.labelPosition).toEqual({ x: 500, y: 300 });
-  });
-
-  it('moves the whole collinear run at the end, not just the first bend', () => {
-    const before = route([{ x: 400, y: 150 }, { x: 500, y: 150 }, { x: 500, y: 400 }]);
-    expect(followNodeMove(before, A, moved(A, 0, 30), true).waypoints).toEqual([
-      { x: 400, y: 180 },
-      { x: 500, y: 180 },
-      { x: 500, y: 400 },
-    ]);
   });
 
   it('leaves a diagonal end leg, an empty route and a non-move exactly as they were', () => {
