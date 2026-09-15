@@ -57,6 +57,7 @@ import {
 import { migrated, migrateInto, upgradeProjects } from '../projects/migration'
 import { WITHOUT_ORGANISATION } from '../projects/folderSettings'
 import type { PullOutcome } from '../platform/sync'
+import { sourceKey } from '../platform/workingSource'
 import { isOpenableScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { EXAMPLES } from './examples'
@@ -163,12 +164,15 @@ let recentFolders: readonly DesktopDirectory[] = []
 /**
  * Choosing a folder, which starts the app again.
  *
- * Deliberately a fresh boot rather than a swap in place. The store is handed to
- * `App` as a prop and everything under it — the picker's list, the open
- * project, the session's undo stack — belongs to the projects in one folder;
- * switching folders is exactly the moment none of that should carry over. It is
- * the same reasoning as remounting the workspace when the project changes, one
- * level up.
+ * Deliberately a fresh mount rather than a swap in place, and `renderApp`
+ * is what makes it one: `App` is keyed on the working source, so a new
+ * folder is a new tree under it. The store is handed to `App` as a prop and
+ * everything under it — the picker's list, the open project, the session's
+ * undo stack, the index — belongs to the projects in one folder; switching
+ * folders is exactly the moment none of that should carry over. It is the
+ * same reasoning as remounting the workspace when the project changes, one
+ * level up. This comment said "fresh boot" for a while with nothing behind
+ * it, and the open organisation stayed open over the new folder's store.
  */
 function chooseWorkingDirectory(): void {
   // One catch around the whole of it, and not only around the picker: a throw
@@ -256,6 +260,9 @@ async function workIn(chosen: DesktopDirectory): Promise<void> {
       })
     })
     shell = inFolder
+    // The first-run screen and the Recent menu read this list; a folder
+    // granted just now belongs on it without a restart.
+    recentFolders = await files.recentDirectories().catch(() => recentFolders)
     // After the pull, so what is migrated is what the remote just handed over.
     const initialSync = await pullOnOpen()
     await upgradeFormat()
@@ -410,6 +417,9 @@ function renderApp(
   root.render(
     <StrictMode>
       <App
+        // A folder change is a fresh mount, not a swap in place: see
+        // `chooseWorkingDirectory` and `sourceKey`.
+        key={sourceKey(shell.source)}
         scopes={shell.scopes}
         preferences={shell.preferences}
         documents={shell.documents}

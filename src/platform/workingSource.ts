@@ -23,3 +23,19 @@ export type WorkingSource =
 
 export const BROWSER_STORAGE: WorkingSource = { kind: 'browserStorage' }
 export const IN_MEMORY: WorkingSource = { kind: 'memory' }
+
+/**
+ * What tells one working source from another, for the shell to be mounted
+ * under.
+ *
+ * The composition root renders `App` under this as its key, so a folder
+ * change is a fresh mount rather than a swap in place: the open scope, the
+ * session and its undo stack, the index, the organisation's listing and every
+ * watcher belong to one folder, and a hook that read its store once at mount
+ * would otherwise keep answering for the folder that was open at the boot.
+ * Two folders with the same name are two folders, so it is the root and not
+ * the name; the two fallbacks are one source each.
+ */
+export function sourceKey(source: WorkingSource): string {
+  return source.kind === 'folder' ? `folder:${source.root}` : source.kind
+}
