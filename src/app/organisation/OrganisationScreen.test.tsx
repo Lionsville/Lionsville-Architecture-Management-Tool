@@ -390,8 +390,10 @@ describe('the organisation screen — the shipped example', () => {
 
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.getByTestId('scope-application-landscape')).toBeDefined()
+    // The platform scope draws a board of its own since ADR-0014, and a
+    // scope that draws is counted by shape, whatever it calls itself.
     await waitFor(() => expect(screen.getByTestId('organisation-meta').textContent)
-      .toContain('1 landscape'))
+      .toContain('2 landscapes'))
     // The sheet is the ORGANISATION's now that a cross-scope id resolves
     // (ADR-0012 §1): the journey, the rail and the areas are what this level
     // holds, and the applications are the row beneath it.

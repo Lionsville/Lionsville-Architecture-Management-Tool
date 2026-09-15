@@ -128,9 +128,17 @@
     "kind": "layer7",
     "members": [
       {
+        "id": "address-validation",
+        "zone": "management"
+      },
+      {
         "group": "billing",
         "id": "billing",
         "zone": "landscape"
+      },
+      {
+        "id": "container-platform",
+        "zone": "management"
       },
       {
         "group": "master-data",
@@ -172,11 +180,19 @@
         "zone": "landscape"
       },
       {
-        "id": "iam",
+        "id": "identity",
+        "zone": "management"
+      },
+      {
+        "id": "integration-service",
         "zone": "management"
       },
       {
         "id": "kafka",
+        "zone": "management"
+      },
+      {
+        "id": "label-printing",
         "zone": "management"
       },
       {
@@ -185,7 +201,7 @@
         "zone": "landscape"
       },
       {
-        "id": "observability",
+        "id": "message-brokering",
         "zone": "management"
       },
       {
@@ -303,9 +319,17 @@
     "kind": "layer7",
     "members": [
       {
+        "id": "address-validation",
+        "zone": "management"
+      },
+      {
         "group": "billing",
         "id": "billing",
         "zone": "landscape"
+      },
+      {
+        "id": "container-platform",
+        "zone": "management"
       },
       {
         "group": "master-data",
@@ -347,11 +371,19 @@
         "zone": "landscape"
       },
       {
-        "id": "iam",
+        "id": "identity",
+        "zone": "management"
+      },
+      {
+        "id": "integration-service",
         "zone": "management"
       },
       {
         "id": "kafka",
+        "zone": "management"
+      },
+      {
+        "id": "label-printing",
         "zone": "management"
       },
       {
@@ -360,7 +392,7 @@
         "zone": "landscape"
       },
       {
-        "id": "observability",
+        "id": "message-brokering",
         "zone": "management"
       },
       {
@@ -519,16 +551,8 @@
     "Vehicles, trailers, telematics units and who is allowed to drive what.",
     ""
   ],
-  "application-landscape/docs/iam.md": [
-    "Single sign-on and the roles behind every screen above.",
-    ""
-  ],
   "application-landscape/docs/legacy-rating.md": [
     "The rating rules the tariff engine has not absorbed yet. Two customers still price here.",
-    ""
-  ],
-  "application-landscape/docs/observability.md": [
-    "Metrics, logs and traces for everything that has been onboarded.",
     ""
   ],
   "application-landscape/docs/order-management.md": [
@@ -606,6 +630,15 @@
   "application-landscape/model.json": {
     "elements": [
       {
+        "aspects": {},
+        "id": "address-validation",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Address validation",
+        "owner": "Warehouse team"
+      },
+      {
         "aspects": {
           "dr": {
             "status": "managed"
@@ -641,6 +674,24 @@
         "lifecycle": "live",
         "name": "Collections",
         "ref": "acme-logistics"
+      },
+      {
+        "aspects": {},
+        "id": "commercial-team",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Commercial team",
+        "ref": "acme-logistics"
+      },
+      {
+        "aspects": {},
+        "id": "container-platform",
+        "isManaged": false,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Container platform",
+        "ref": "acme-logistics/platforms"
       },
       {
         "aspects": {},
@@ -697,7 +748,8 @@
         "isManaged": true,
         "kind": "application",
         "lifecycle": "live",
-        "name": "Customer portal"
+        "name": "Customer portal",
+        "partyId": "commercial-team"
       },
       {
         "aspects": {},
@@ -840,18 +892,12 @@
       },
       {
         "aspects": {},
-        "explicit": {
-          "iconType": true,
-          "isManaged": false,
-          "lifecycle": false
-        },
-        "iconKey": "auth",
-        "id": "iam",
-        "isManaged": true,
-        "kind": "platform",
+        "id": "identity",
+        "isManaged": false,
+        "kind": "platformService",
         "lifecycle": "live",
-        "name": "Identity & access",
-        "platformArchetype": "service"
+        "name": "Identity",
+        "ref": "acme-logistics/platforms"
       },
       {
         "aspects": {},
@@ -873,6 +919,15 @@
       },
       {
         "aspects": {},
+        "id": "integration-service",
+        "isManaged": false,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Integration",
+        "ref": "acme-logistics/platforms"
+      },
+      {
+        "aspects": {},
         "id": "invoicing",
         "isManaged": false,
         "kind": "function",
@@ -888,6 +943,15 @@
         "lifecycle": "live",
         "name": "Event broker",
         "ref": "acme-logistics/platforms"
+      },
+      {
+        "aspects": {},
+        "id": "label-printing",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Label printing",
+        "owner": "Warehouse team"
       },
       {
         "aspects": {
@@ -923,6 +987,24 @@
       },
       {
         "aspects": {},
+        "id": "managed-database",
+        "isManaged": false,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Managed database",
+        "ref": "acme-logistics/platforms"
+      },
+      {
+        "aspects": {},
+        "id": "message-brokering",
+        "isManaged": false,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Message brokering",
+        "ref": "acme-logistics/platforms"
+      },
+      {
+        "aspects": {},
         "id": "ns-logistics",
         "isManaged": false,
         "kind": "platform",
@@ -932,18 +1014,12 @@
       },
       {
         "aspects": {},
-        "explicit": {
-          "iconType": true,
-          "isManaged": false,
-          "lifecycle": false
-        },
-        "iconKey": "monitoring",
         "id": "observability",
-        "isManaged": true,
-        "kind": "platform",
+        "isManaged": false,
+        "kind": "platformService",
         "lifecycle": "live",
         "name": "Observability",
-        "platformArchetype": "service"
+        "ref": "acme-logistics/platforms"
       },
       {
         "aspects": {},
@@ -989,7 +1065,8 @@
         "isManaged": true,
         "kind": "application",
         "lifecycle": "live",
-        "name": "Order Management"
+        "name": "Order Management",
+        "partyId": "commercial-team"
       },
       {
         "aspects": {},
@@ -1091,7 +1168,8 @@
         "isManaged": true,
         "kind": "application",
         "lifecycle": "live",
-        "name": "Handheld scanners"
+        "name": "Handheld scanners",
+        "partyId": "warehouse-team"
       },
       {
         "aspects": {
@@ -1113,7 +1191,8 @@
         "isManaged": true,
         "kind": "application",
         "lifecycle": "live",
-        "name": "Slotting & Replenishment"
+        "name": "Slotting & Replenishment",
+        "partyId": "warehouse-team"
       },
       {
         "aspects": {},
@@ -1249,6 +1328,15 @@
         "ref": "acme-logistics"
       },
       {
+        "aspects": {},
+        "id": "warehouse-team",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Warehouse team",
+        "ref": "acme-logistics"
+      },
+      {
         "aspects": {
           "dr": {
             "note": "Failover has never been rehearsed against a full shift.",
@@ -1275,7 +1363,8 @@
         "isManaged": true,
         "kind": "application",
         "lifecycle": "live",
-        "name": "Warehouse Management"
+        "name": "Warehouse Management",
+        "partyId": "warehouse-team"
       },
       {
         "aspects": {},
@@ -1406,7 +1495,8 @@
           "live": "2026-11-02"
         },
         "name": "Yard Management",
-        "owner": "Warehouse operations"
+        "owner": "Warehouse operations",
+        "partyId": "warehouse-team"
       },
       {
         "aspects": {},
@@ -1419,6 +1509,18 @@
       }
     ],
     "relations": [
+      {
+        "id": "a#8",
+        "sourceId": "warehouse-team",
+        "targetId": "label-printing",
+        "type": "assigned"
+      },
+      {
+        "id": "a#9",
+        "sourceId": "warehouse-team",
+        "targetId": "address-validation",
+        "type": "assigned"
+      },
       {
         "id": "c#1",
         "isBidirectional": false,
@@ -2066,12 +2168,6 @@
         "type": "supports"
       },
       {
-        "id": "r#25",
-        "sourceId": "iam",
-        "targetId": "identity-and-access",
-        "type": "supports"
-      },
-      {
         "id": "r#26",
         "sourceId": "observability",
         "targetId": "data-platform",
@@ -2122,13 +2218,43 @@
       {
         "id": "u#1",
         "sourceId": "order-management",
-        "targetId": "kafka",
+        "targetId": "message-brokering",
+        "type": "uses"
+      },
+      {
+        "id": "u#10",
+        "sourceId": "wms-api",
+        "targetId": "container-platform",
+        "type": "uses"
+      },
+      {
+        "id": "u#11",
+        "sourceId": "wms-events",
+        "targetId": "message-brokering",
+        "type": "uses"
+      },
+      {
+        "id": "u#12",
+        "sourceId": "scanners",
+        "targetId": "label-printing",
+        "type": "uses"
+      },
+      {
+        "id": "u#13",
+        "sourceId": "order-management",
+        "targetId": "address-validation",
+        "type": "uses"
+      },
+      {
+        "id": "u#14",
+        "sourceId": "billing",
+        "targetId": "managed-database",
         "type": "uses"
       },
       {
         "id": "u#2",
         "sourceId": "legacy-rating",
-        "targetId": "esb",
+        "targetId": "integration-service",
         "type": "uses"
       },
       {
@@ -2140,7 +2266,7 @@
       {
         "id": "u#4",
         "sourceId": "wms",
-        "targetId": "observability",
+        "targetId": "identity",
         "type": "uses"
       },
       {
@@ -2152,19 +2278,25 @@
       {
         "id": "u#6",
         "sourceId": "customer-portal",
-        "targetId": "iam",
+        "targetId": "identity",
         "type": "uses"
       },
       {
         "id": "u#7",
         "sourceId": "order-management",
-        "targetId": "iam",
+        "targetId": "identity",
         "type": "uses"
       },
       {
         "id": "u#8",
         "sourceId": "wms",
-        "targetId": "iam",
+        "targetId": "observability",
+        "type": "uses"
+      },
+      {
+        "id": "u#9",
+        "sourceId": "customer-portal",
+        "targetId": "container-platform",
         "type": "uses"
       }
     ]
@@ -2642,6 +2774,16 @@
         "scopes": [
           "retail"
         ]
+      },
+      {
+        "aspects": {},
+        "id": "commercial-team",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Commercial team",
+        "order": 9,
+        "parentId": "employees"
       },
       {
         "aspects": {},
@@ -3195,6 +3337,16 @@
       },
       {
         "aspects": {},
+        "id": "platform-team",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Platform team",
+        "order": 7,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
         "id": "port-and-rail-operators",
         "isManaged": false,
         "kind": "actor",
@@ -3518,6 +3670,16 @@
       },
       {
         "aspects": {},
+        "id": "warehouse-team",
+        "isManaged": true,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Warehouse team",
+        "order": 8,
+        "parentId": "employees"
+      },
+      {
+        "aspects": {},
         "id": "workplace",
         "isManaged": false,
         "kind": "function",
@@ -3634,8 +3796,79 @@
       }
     ]
   },
+  "platforms/diagrams/platforms.geometry.json": {
+    "needsLayout": true,
+    "nodes": []
+  },
+  "platforms/diagrams/platforms.json": {
+    "id": "platforms",
+    "kind": "layer7",
+    "members": [
+      {
+        "id": "cloud-environment",
+        "zone": "management"
+      },
+      {
+        "id": "container-platform",
+        "zone": "management"
+      },
+      {
+        "id": "esb",
+        "zone": "management"
+      },
+      {
+        "id": "iam",
+        "zone": "management"
+      },
+      {
+        "id": "identity",
+        "zone": "management"
+      },
+      {
+        "id": "integration-service",
+        "zone": "management"
+      },
+      {
+        "id": "kafka",
+        "zone": "management"
+      },
+      {
+        "id": "landing-zone",
+        "zone": "management"
+      },
+      {
+        "id": "managed-database",
+        "zone": "management"
+      },
+      {
+        "id": "message-brokering",
+        "zone": "management"
+      },
+      {
+        "id": "monitoring-stack",
+        "zone": "management"
+      },
+      {
+        "id": "ns-logistics",
+        "zone": "management"
+      },
+      {
+        "id": "observability",
+        "zone": "management"
+      },
+      {
+        "id": "openshift",
+        "zone": "management"
+      }
+    ],
+    "name": "Shared platforms"
+  },
   "platforms/docs/esb.md": [
     "The integration bus the legacy interfaces still cross. Being retired: what it carries moves to the broker or to a direct call, one interface at a time.",
+    ""
+  ],
+  "platforms/docs/iam.md": [
+    "Single sign-on and the roles behind every screen above.",
     ""
   ],
   "platforms/docs/kafka.md": [
@@ -3646,12 +3879,36 @@
     "The hyperscaler account the cluster and the broker run in. Somebody else's to run; ours to configure.",
     ""
   ],
+  "platforms/docs/monitoring-stack.md": [
+    "Metrics, logs and traces for everything that has been onboarded.",
+    ""
+  ],
   "platforms/docs/openshift.md": [
     "The container platform every in-house application is deployed to. One cluster per environment; the namespaces are per team.",
     ""
   ],
   "platforms/model.json": {
     "elements": [
+      {
+        "aspects": {},
+        "id": "cloud-environment",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Cloud environment",
+        "owner": "Platform team",
+        "shared": true
+      },
+      {
+        "aspects": {},
+        "id": "container-platform",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Container platform",
+        "owner": "Platform team",
+        "shared": true
+      },
       {
         "aspects": {},
         "id": "esb",
@@ -3665,6 +3922,37 @@
         "owner": "Integration team",
         "parentId": "openshift",
         "platformArchetype": "service"
+      },
+      {
+        "aspects": {},
+        "iconKey": "auth",
+        "id": "iam",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Identity & access",
+        "owner": "Platform team",
+        "platformArchetype": "service"
+      },
+      {
+        "aspects": {},
+        "id": "identity",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Identity",
+        "owner": "Platform team",
+        "shared": true
+      },
+      {
+        "aspects": {},
+        "id": "integration-service",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Integration",
+        "owner": "Platform team",
+        "shared": true
       },
       {
         "aspects": {},
@@ -3691,6 +3979,37 @@
       },
       {
         "aspects": {},
+        "id": "managed-database",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Managed database",
+        "owner": "Platform team",
+        "shared": true
+      },
+      {
+        "aspects": {},
+        "id": "message-brokering",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Message brokering",
+        "owner": "Platform team",
+        "shared": true
+      },
+      {
+        "aspects": {},
+        "iconKey": "monitoring",
+        "id": "monitoring-stack",
+        "isManaged": true,
+        "kind": "platform",
+        "lifecycle": "live",
+        "name": "Monitoring stack",
+        "owner": "Platform team",
+        "platformArchetype": "service"
+      },
+      {
+        "aspects": {},
         "id": "ns-logistics",
         "isManaged": true,
         "kind": "platform",
@@ -3698,6 +4017,16 @@
         "name": "Logistics namespace",
         "parentId": "openshift",
         "platformArchetype": "place"
+      },
+      {
+        "aspects": {},
+        "id": "observability",
+        "isManaged": true,
+        "kind": "platformService",
+        "lifecycle": "live",
+        "name": "Observability",
+        "owner": "Platform team",
+        "shared": true
       },
       {
         "aspects": {},
@@ -3709,14 +4038,104 @@
         "owner": "Platform team",
         "parentId": "landing-zone",
         "platformArchetype": "place"
+      },
+      {
+        "aspects": {},
+        "id": "platform-team",
+        "isManaged": false,
+        "kind": "actor",
+        "lifecycle": "live",
+        "name": "Platform team",
+        "ref": "acme-logistics"
       }
     ],
-    "relations": []
+    "relations": [
+      {
+        "id": "a#1",
+        "sourceId": "platform-team",
+        "targetId": "container-platform",
+        "type": "assigned"
+      },
+      {
+        "id": "a#2",
+        "sourceId": "platform-team",
+        "targetId": "message-brokering",
+        "type": "assigned"
+      },
+      {
+        "id": "a#3",
+        "sourceId": "platform-team",
+        "targetId": "integration-service",
+        "type": "assigned"
+      },
+      {
+        "id": "a#4",
+        "sourceId": "platform-team",
+        "targetId": "identity",
+        "type": "assigned"
+      },
+      {
+        "id": "a#5",
+        "sourceId": "platform-team",
+        "targetId": "observability",
+        "type": "assigned"
+      },
+      {
+        "id": "a#6",
+        "sourceId": "platform-team",
+        "targetId": "cloud-environment",
+        "type": "assigned"
+      },
+      {
+        "id": "a#7",
+        "sourceId": "platform-team",
+        "targetId": "managed-database",
+        "type": "assigned"
+      },
+      {
+        "id": "re#1",
+        "sourceId": "openshift",
+        "targetId": "container-platform",
+        "type": "realises"
+      },
+      {
+        "id": "re#2",
+        "sourceId": "kafka",
+        "targetId": "message-brokering",
+        "type": "realises"
+      },
+      {
+        "id": "re#3",
+        "sourceId": "esb",
+        "targetId": "integration-service",
+        "type": "realises"
+      },
+      {
+        "id": "re#4",
+        "sourceId": "landing-zone",
+        "targetId": "cloud-environment",
+        "type": "realises"
+      },
+      {
+        "id": "re#5",
+        "sourceId": "iam",
+        "targetId": "identity",
+        "type": "realises"
+      },
+      {
+        "id": "re#6",
+        "sourceId": "monitoring-stack",
+        "targetId": "observability",
+        "type": "realises"
+      }
+    ]
   },
   "platforms/scope.json": {
-    "activeDiagramId": "",
+    "activeDiagramId": "platforms",
     "description": "What the applications run on and what carries their interfaces: the cluster, the broker, the bus. Owned here, drawn everywhere.",
-    "diagrams": [],
+    "diagrams": [
+      "platforms"
+    ],
     "kind": "domain",
     "name": "Shared platforms",
     "type": "lionsville-architecture",

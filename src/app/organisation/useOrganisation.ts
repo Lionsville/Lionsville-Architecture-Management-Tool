@@ -525,12 +525,18 @@ export function useOrganisation({
         onFailure('organisation.copyExample', new Error('the example did not read'))
         return
       }
-      // The scope with the work in it is the last one that draws a board —
-      // not the last one in path order, which since ADR-0013 is the platform
-      // scope beside the landscape, a domain with no canvas to land on.
-      const landing = [...copy].reverse()
-        .find((scope) => scope.model.diagrams.some((diagram) => isBoardKind(diagram.kind)))
-        ?? copy[copy.length - 1]
+      // The scope with the work in it: of the scopes that draw a board, the
+      // one holding the most applications — not the last in path order, which
+      // since ADR-0013 is the platform scope beside the landscape, and since
+      // ADR-0014 draws a board of its own with the services and platforms on
+      // it. A tie goes to the first, which is the one nearest the root.
+      const drawing = copy.filter((scope) => scope.model.diagrams.some((diagram) => isBoardKind(diagram.kind)))
+      const applications = (scope: typeof copy[number]) =>
+        scope.model.elements.filter((element) => element.kind === 'application' && element.ref === undefined).length
+      const landing = drawing.reduce<typeof copy[number] | undefined>(
+        (best, scope) => (best === undefined || applications(scope) > applications(best) ? scope : best),
+        undefined,
+      ) ?? copy[copy.length - 1]
       const existing = await scopes.load(landing.path)
       if (existing) { onEnter(existing); return }
       for (const scope of copy) if (scope !== landing) await scopes.save(scope)

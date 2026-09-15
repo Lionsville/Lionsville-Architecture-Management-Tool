@@ -38,16 +38,25 @@ const EXAMPLE: ExampleProject = {
       type: 'lionsville-architecture', version: 5, name: 'Application landscape',
       kind: 'landscape', activeDiagramId: 'l7', diagrams: ['l7'],
     },
-    'application-landscape/model.json': { elements: [], relations: [] },
+    'application-landscape/model.json': {
+      elements: [{ id: 'wms', kind: 'application', name: 'WMS', lifecycle: 'live', isManaged: true, aspects: {} }],
+      relations: [],
+    },
     'application-landscape/diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
     'application-landscape/diagrams/l7.geometry.json': { nodes: [] },
-    // A domain beside the landscape, last in path order and with no board
-    // (ADR-0013): where a copy must NOT land.
+    // A domain beside the landscape, last in path order, with a board of its
+    // own and no applications on it (ADR-0013, ADR-0014): where a copy must
+    // NOT land.
     'platforms/scope.json': {
       type: 'lionsville-architecture', version: 5, name: 'Shared platforms',
-      kind: 'domain', activeDiagramId: '', diagrams: [],
+      kind: 'domain', activeDiagramId: 'p7', diagrams: ['p7'],
     },
-    'platforms/model.json': { elements: [], relations: [] },
+    'platforms/model.json': {
+      elements: [{ id: 'openshift', kind: 'platform', name: 'OpenShift', lifecycle: 'live', isManaged: true, aspects: {} }],
+      relations: [],
+    },
+    'platforms/diagrams/p7.json': { id: 'p7', kind: 'layer7', name: 'Platforms', members: [{ id: 'openshift', zone: 'management' }] },
+    'platforms/diagrams/p7.geometry.json': { nodes: [] },
   },
 }
 
@@ -260,7 +269,7 @@ describe('useOrganisation', () => {
       expect((await store.load('acme-logistics/application-landscape'))).toBeDefined()
     })
 
-    it('lands in the scope that draws a board, not in the platform scope beside it (ADR-0013)', async () => {
+    it('lands in the board-drawing scope with the applications, not in the platform scope beside it (ADR-0013, ADR-0014)', async () => {
       const { held, store, entered } = mount()
       await settle()
       await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })

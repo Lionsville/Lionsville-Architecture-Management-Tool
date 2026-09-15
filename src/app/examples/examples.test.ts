@@ -21,6 +21,9 @@ import { deploymentBoxes } from '../../model/deployment'
 import { hostingOf } from '../../model/hosting'
 import { documentFindings, identityFindings } from '../../projects/checks'
 import { registerRows, registerSummary } from '../organisation/register'
+import { technologyRows, technologySummary } from '../organisation/technologyRegister'
+import { offeredBeyond } from '../../projects/checks'
+import { describeLeverage, leverageOf } from '../../model/leverage'
 import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'
 import { indexScopes } from '../../projects/scopeIndex'
 import { stableJson } from '../../projects/fileText'
@@ -61,18 +64,97 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
   it('keeps the platforms in a scope of their own, and the landscape says what it stands on', () => {
     const platforms = scopes.find((scope) => scope.path === 'acme-logistics/platforms')!
     expect(platforms.kind).toBe('domain')
-    expect(platforms.model.elements.every((e) => e.kind === 'platform' && e.ref === undefined)).toBe(true)
-    expect(platforms.model.elements.map((e) => e.platformArchetype)).toContain('place')
-    const standIns = model.elements.filter((e) => e.kind === 'platform' && e.ref !== undefined)
+    const own = platforms.model.elements.filter((e) => e.ref === undefined)
+    expect(own.every((e) => e.kind === 'platform' || e.kind === 'platformService')).toBe(true)
+    expect(own.map((e) => e.platformArchetype)).toContain('place')
+    const standIns = model.elements.filter((e) => (e.kind === 'platform' || e.kind === 'platformService') && e.ref !== undefined)
     expect(standIns.length).toBeGreaterThan(0)
     expect(standIns.every((e) => e.ref === 'acme-logistics/platforms')).toBe(true)
-    // A technology the applications use is a platform they use, never a line
-    // on the landscape: nothing flows FROM the identity provider.
-    expect(model.relations.some((r) => r.type === 'flow' && (r.sourceId === 'iam' || r.sourceId === 'observability'))).toBe(false)
-    expect(model.relations.filter((r) => r.type === 'uses' && r.targetId === 'iam').length).toBeGreaterThan(0)
+    // A technology the applications use is a service they use, never a line
+    // on the landscape: nothing flows FROM the identity service.
+    expect(model.relations.some((r) => r.type === 'flow' && (r.sourceId === 'identity' || r.sourceId === 'observability'))).toBe(false)
+    expect(model.relations.filter((r) => r.type === 'uses' && r.targetId === 'identity').length).toBeGreaterThan(0)
     expect(model.relations.some((r) => r.type === 'hostedOn')).toBe(true)
     expect(model.diagrams.filter((d) => d.kind === 'layer7')
       .every((d) => d.members.some((m) => m.id === 'esb' && m.zone === 'management'))).toBe(true)
+  })
+
+  /**
+   * The technology layer with its offerings (ADR-0014 §4): the platform scope
+   * shows what is offered and what delivers it, each offering maintained by
+   * the platform team and shared; the consumers say which service; the
+   * platform tree is `parentId` and nothing else; and the two team-specific
+   * services show the contrast, one of them across a team boundary.
+   */
+  it('offers services in the platform scope, each maintained, shared and realised — but one', () => {
+    const platforms = scopes.find((scope) => scope.path === 'acme-logistics/platforms')!.model
+    const services = platforms.elements.filter((e) => e.kind === 'platformService')
+    expect(services.map((e) => e.name)).toEqual([
+      'Cloud environment', 'Container platform', 'Identity', 'Integration', 'Managed database', 'Message brokering', 'Observability',
+    ])
+    expect(services.every((e) => e.shared === true)).toBe(true)
+    for (const service of services) {
+      expect(platforms.relations.some((r) => r.type === 'assigned' && r.sourceId === 'platform-team' && r.targetId === service.id), service.id).toBe(true)
+    }
+    const realises = Object.fromEntries(platforms.relations.filter((r) => r.type === 'realises').map((r) => [r.sourceId, r.targetId]))
+    expect(realises).toEqual({
+      openshift: 'container-platform', kafka: 'message-brokering', esb: 'integration-service', 'landing-zone': 'cloud-environment',
+      iam: 'identity', 'monitoring-stack': 'observability',
+    })
+    // A subdivision of a place is not an offering; and one offering has nothing behind it yet.
+    expect(realises['ns-logistics']).toBeUndefined()
+    expect(Object.values(realises)).not.toContain('managed-database')
+    // The platform scope draws its services and platforms as chips, and nothing is a line there.
+    const board = platforms.diagrams.find((d) => d.kind === 'layer7')!
+    expect(board.members.every((m) => m.zone === 'management')).toBe(true)
+    expect(board.members.map((m) => m.id)).toContain('container-platform')
+    expect(platforms.relations.some((r) => r.type === 'flow')).toBe(false)
+  })
+
+  it('files the platforms under each other by parentId, and hosts nothing platform-on-platform', () => {
+    const platforms = scopes.find((scope) => scope.path === 'acme-logistics/platforms')!.model
+    const parent = (id: string) => platforms.elements.find((e) => e.id === id)?.parentId
+    expect(parent('openshift')).toBe('landing-zone')
+    expect(parent('kafka')).toBe('landing-zone')
+    expect(parent('esb')).toBe('openshift')
+    expect(parent('ns-logistics')).toBe('openshift')
+    for (const scope of scopes) {
+      const kinds = new Map(scope.model.elements.map((e) => [e.id, e.kind]))
+      expect(scope.model.relations.some((r) => r.type === 'hostedOn' && kinds.get(r.sourceId) === 'platform'), scope.path).toBe(false)
+    }
+  })
+
+  it('lets its applications say which service they use, and keeps where a container runs on the platform', () => {
+    const kinds = new Map(model.elements.map((e) => [e.id, e.kind]))
+    for (const row of model.relations.filter((r) => r.type === 'uses')) {
+      expect(kinds.get(row.targetId), row.id).toBe('platformService')
+    }
+    expect(model.relations.filter((r) => r.type === 'hostedOn').every((r) => kinds.get(r.targetId) === 'platform')).toBe(true)
+    // The WMS's record: derived through the services it uses, with nothing typed on it.
+    const line = describeLeverage(leverageOf(model, 'wms', {
+      elsewhere: scopes.flatMap((scope) => scope.model.relations.filter((r) => r.type === 'realises')),
+    }), (id) => scopes.flatMap((scope) => scope.model.elements).find((e) => e.id === id && e.ref === undefined)?.name)
+    expect(line.services.map((one) => one.name)).toEqual(['Container platform', 'Message brokering', 'Identity', 'Observability'])
+    expect(line.services.map((one) => one.platforms.map((p) => p.name))).toEqual([['OpenShift'], ['Event broker'], ['Identity & access'], ['Monitoring stack']])
+    expect(line.platforms).toEqual([])
+  })
+
+  it('keeps one service for the warehouse team alone, and shows one offered across a team boundary unmarked', () => {
+    const index = indexScopes(scopes.map((scope) => ({ path: scope.path, model: scope.model })))
+    const own = offeredBeyond(index, 'label-printing')
+    expect(own.maintainers).toEqual(['warehouse-team'])
+    expect(own.outside).toEqual([])
+    expect(model.elements.find((e) => e.id === 'label-printing')?.shared).toBeUndefined()
+    const offered = identityFindings(index).filter((f) => f.key === 'check.offeredNotShared')
+    expect(offered).toEqual([{
+      key: 'check.offeredNotShared', scope: 'acme-logistics/application-landscape', id: 'address-validation',
+      name: 'Address validation', fields: ['order-management'], detail: 'Order Management',
+    }])
+    // And the register reads all of it off the same index.
+    const rows = technologyRows(index, identityFindings(index))
+    expect(technologySummary(rows)).toMatchObject({ services: 9, platforms: 7, shared: 7, offeredNotShared: 1, unrealised: 3 })
+    expect(rows.find((row) => row.id === 'openshift')).toMatchObject({ hosts: 22, partOf: { id: 'landing-zone' }, service: { id: 'container-platform' } })
+    expect(rows.find((row) => row.id === 'container-platform')?.consumers).toEqual({ applications: 2, scopes: 1 })
   })
 
   /**
@@ -175,9 +257,10 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
       [...new Set(held.elements.filter((e) => e.ref === undefined).map((e) => e.kind))].sort()
     // A process beside the capabilities: its page holds the BPMN (ADR-0012 §7).
     expect(kinds(organisation.model)).toEqual(['actor', 'function', 'process', 'step'])
-    // The landscape's own platforms beside its applications (ADR-0013): the
-    // identity provider and the monitoring, which are its to run.
-    expect(kinds(model)).toEqual(['application', 'component', 'platform'])
+    // The landscape's own services beside its applications (ADR-0014): the
+    // two the warehouse team runs for itself; every platform is the platform
+    // scope's.
+    expect(kinds(model)).toEqual(['application', 'component', 'platformService'])
     // The map beside the sheet: the organisation's capabilities against the
     // landscape's systems is the view ADR-0012 §6 was written for.
     expect(organisation.model.diagrams.map((d) => d.kind)).toEqual(['sheet', 'map'])
@@ -208,7 +291,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     expect(model.relations.filter((r) => r.type === 'supports')
       .every((r) => held.has(r.sourceId) && held.has(r.targetId))).toBe(true)
     expect(standIns.filter((e) => e.kind === 'actor').map((e) => e.id))
-      .toEqual(['dispatcher', 'planner', 'support-agent', 'warehouse-lead'])
+      .toEqual(['commercial-team', 'dispatcher', 'planner', 'support-agent', 'warehouse-lead', 'warehouse-team'])
   })
 
   /**
@@ -523,7 +606,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet',
     // the same records the board places.
     const employees = page.actors.filter((row) => row.element.parentId === 'employees')
     expect(employees.map((row) => row.element.id)).toEqual(
-      ['planner', 'support-agent', 'dispatcher', 'warehouse-lead', 'drivers', 'warehouse-staff'],
+      ['planner', 'support-agent', 'dispatcher', 'warehouse-lead', 'drivers', 'warehouse-staff', 'platform-team', 'warehouse-team', 'commercial-team'],
     )
   })
 })
@@ -585,7 +668,9 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s contradicts 
   const index = indexScopes(scopes.map((scope) => ({ path: scope.path, model: scope.model })))
 
   it('has one master per id, every stand-in resolving, and no cache stale', () => {
-    expect(identityFindings(index)).toEqual([])
+    // The one finding the example ships on purpose (ADR-0014 §4): a service
+    // used across a team boundary and not marked shared.
+    expect(identityFindings(index).map((finding) => finding.key)).toEqual(['check.offeredNotShared'])
   })
 
   it('says the landscape owns every application and the organisation every function', () => {
