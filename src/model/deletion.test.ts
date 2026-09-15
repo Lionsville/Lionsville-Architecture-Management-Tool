@@ -22,18 +22,22 @@ const summary = (overrides: Partial<DeletionSummary> = {}): DeletionSummary => (
 });
 
 describe('deletionSummary', () => {
-  it('counts the selection', () => {
+  it('counts the selection and the connections that die with an endpoint, once each', () => {
     expect(
       deletionSummary(board, { elementIds: ['e1'], connectionIds: ['c2'], domainGroups: ['Sales'] }),
     ).toMatchObject({ elements: 1, connections: 1, domainGroups: 1 });
-  });
-
-  it('counts the connections that die with an endpoint', () => {
     // e2 sits between both connections, so both go with it.
     expect(
       deletionSummary(board, { elementIds: ['e2'], connectionIds: [], domainGroups: [] })
         .cascadingConnections,
     ).toBe(2);
+    expect(
+      deletionSummary(board, { elementIds: ['e1', 'e1'], connectionIds: [], domainGroups: [] })
+        .elements,
+    ).toBe(1);
+    expect(deletionSummary(board, { elementIds: [], connectionIds: [], domainGroups: [] })).toEqual(
+      summary(),
+    );
   });
 
   it('does not count an explicitly selected connection twice', () => {
@@ -46,23 +50,14 @@ describe('deletionSummary', () => {
     expect(result.cascadingConnections).toBe(0);
   });
 
-  it('ignores duplicate ids in the selection', () => {
-    expect(
-      deletionSummary(board, { elementIds: ['e1', 'e1'], connectionIds: [], domainGroups: [] })
-        .elements,
-    ).toBe(1);
-  });
-
-  it('is empty for an empty selection', () => {
-    expect(deletionSummary(board, { elementIds: [], connectionIds: [], domainGroups: [] })).toEqual(
-      summary(),
-    );
-  });
 });
 
 describe('needsDeleteConfirmation', () => {
-  it('asks before deleting a connection', () => {
+  it('asks before deleting a connection, and for nothing else', () => {
     expect(needsDeleteConfirmation(summary({ connections: 1 }))).toBe(true);
+    expect(needsDeleteConfirmation(summary({ elements: 1 }))).toBe(false);
+    expect(needsDeleteConfirmation(summary({ domainGroups: 3 }))).toBe(false);
+    expect(needsDeleteConfirmation(summary())).toBe(false);
   });
 
   it('asks before a multi-selection', () => {
@@ -70,17 +65,6 @@ describe('needsDeleteConfirmation', () => {
     expect(needsDeleteConfirmation(summary({ elements: 1, domainGroups: 1 }))).toBe(true);
   });
 
-  it('does not ask for a lone element — its own dialog asks a better question', () => {
-    expect(needsDeleteConfirmation(summary({ elements: 1 }))).toBe(false);
-  });
-
-  it('does not ask for group boxes alone — the members survive', () => {
-    expect(needsDeleteConfirmation(summary({ domainGroups: 3 }))).toBe(false);
-  });
-
-  it('does not ask for nothing', () => {
-    expect(needsDeleteConfirmation(summary())).toBe(false);
-  });
 });
 
 describe('describeDeletion', () => {
@@ -89,19 +73,13 @@ describe('describeDeletion', () => {
     expect(describeDeletion(summary({ connections: 2 }))).toBe('2 connections');
   });
 
-  it('joins two kinds with "and"', () => {
+  it('joins the kinds into a sentence, and says "nothing" for an empty summary', () => {
     expect(describeDeletion(summary({ elements: 3, connections: 1 }))).toBe(
       '3 elements and 1 connection',
     );
-  });
-
-  it('joins three kinds with commas and a final "and"', () => {
     expect(describeDeletion(summary({ elements: 2, connections: 1, domainGroups: 1 }))).toBe(
       '2 elements, 1 connection and 1 group',
     );
-  });
-
-  it('says "nothing" for an empty summary', () => {
     expect(describeDeletion(summary())).toBe('nothing');
   });
 

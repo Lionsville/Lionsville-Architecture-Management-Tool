@@ -99,8 +99,8 @@ export type ElementKind =
  *
  * A closed set, because two readers branch on it and neither may guess from a
  * name: the ArchiMate mapping picks a node, a network or a technology service
- * by it, and the technology view groups by it. `tooling` is the catch-all a
- * platform lands in when nobody has said.
+ * by it, and the deployment boxes label and group by it. `tooling` is the
+ * catch-all a platform lands in when nobody has said.
  */
 export type PlatformCategory =
   | 'runtime'
@@ -601,13 +601,16 @@ export interface DesignDiagram {
    * What kind of view this is (ADR-0012 §6).
    *
    * `layer7` and `container` are drawn on a canvas and have geometry. A
-   * `sheet`, a `map` and a `technology` view are **laid out**: the business
-   * architecture on one page, functions against the applications that
-   * support them, and one platform with everything on it and through it,
-   * each computed from the trees and the rows, so none has coordinates at
-   * all and {@link DesignDiagram.geometry} stays empty on all three. Nothing
-   * drags, nothing routes, and a deleted geometry file would change nothing
-   * about any of them.
+   * `sheet` and a `map` are **laid out**: the business architecture on one
+   * page, and functions against the applications that support them, each
+   * computed from the trees and the rows, so neither has coordinates at all
+   * and {@link DesignDiagram.geometry} stays empty on both. Nothing drags,
+   * nothing routes, and a deleted geometry file would change nothing about
+   * either of them.
+   *
+   * A platform's page is not among them and is not a kind: it is a report
+   * reached from the platform's own card, computed on open (ADR-0013,
+   * redone). A view that is not a picture is not a view.
    */
   kind: 'layer7' | 'container' | 'sheet' | 'map';
   name: string;

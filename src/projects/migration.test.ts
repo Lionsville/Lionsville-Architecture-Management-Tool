@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { sampleScope, scopeAt } from '../ports/ScopeStore.contract'
-import { copyScopesInto, migrated, migrateInto, upgradeProjects } from './migration'
+import { copyScopesInto, holdsScopes, migrated, migrateInto, upgradeProjects } from './migration'
 import type { UpgradeTarget } from './migration'
 import { bareScope, flattenScopes } from './scope'
 import type { ScopeSnapshot } from './scope'
@@ -75,6 +75,40 @@ describe('copyScopesInto', () => {
 
     expect(migrated(tally)).toBe(false)
     expect((await into.list()).children).toEqual([])
+  })
+})
+
+describe('holdsScopes', () => {
+  it('says no to a store nobody has saved anything in', async () => {
+    // The point of the helper, and the reason `list()` will not do: the root is
+    // in every listing and in no store, so a listing alone reads as content.
+    const empty = new InMemoryScopeStore()
+
+    expect(flattenScopes(await empty.list())).not.toHaveLength(0)
+    expect(await holdsScopes(empty)).toBe(false)
+  })
+
+  it('says yes as soon as one scope loads', async () => {
+    expect(await holdsScopes(new InMemoryScopeStore([sampleScope()]))).toBe(true)
+  })
+
+  it('says no when the store will not list', async () => {
+    // What hangs on the answer is whether to ask somebody a question. A read
+    // that failed is not a reason to ask one.
+    expect(await holdsScopes({
+      list: () => Promise.reject(new Error('gone')),
+      load: () => Promise.resolve(undefined),
+    })).toBe(false)
+  })
+
+  it('looks past the one scope that will not read', async () => {
+    const held = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
+
+    expect(await holdsScopes({
+      list: () => held.list(),
+      load: (path: ScopePath) =>
+        path === 'acme/one' ? Promise.reject(new Error('unreadable')) : held.load(path),
+    })).toBe(true)
   })
 })
 

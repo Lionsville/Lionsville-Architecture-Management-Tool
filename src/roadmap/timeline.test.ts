@@ -19,13 +19,21 @@ function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
 }
 
 describe('spansFor', () => {
-  it('walks a hybrid run: live, then retiring, then retired', () => {
+  it('walks a hybrid run, skipping the phases that were, and collapsing a same-day cutover', () => {
     const wms = element('wms', { lifecycleDates: { retiring: '2027-04-01', retired: '2028-01-31' } })
     expect(spansFor(wms, '2026-01-01')).toEqual([
       { phase: 'live', from: '2026-01-01', to: '2027-04-01' },
       { phase: 'retiring', from: '2027-04-01', to: '2028-01-31' },
       { phase: 'retired', from: '2028-01-31' },
     ])
+    const wms2 = element('wms2', { lifecycleDates: { retired: '2028-01-31' } })
+    expect(spansFor(wms2, '2026-01-01').map((s) => s.phase)).toEqual(['live', 'retired'])
+    const wms3 = element('wms3', { lifecycleDates: { retiring: '2028-01-31', retired: '2028-01-31' } })
+    expect(spansFor(wms3, '2026-01-01')).toEqual([
+      { phase: 'live', from: '2026-01-01', to: '2028-01-31' },
+      { phase: 'retired', from: '2028-01-31' },
+    ])
+    expect(spansFor(element('billing'), '2026-01-01')).toEqual([{ phase: 'live', from: '2026-01-01' }])
   })
 
   it('opens in the phase the element is in when the window starts', () => {
@@ -33,19 +41,6 @@ describe('spansFor', () => {
     expect(spansFor(wms, '2026-01-01')[0]).toEqual({ phase: 'planned', from: '2026-01-01', to: '2027-04-01' })
     // A window that opens after the go-live starts live, with no planned span.
     expect(spansFor(wms, '2027-06-01')).toEqual([{ phase: 'live', from: '2027-06-01' }])
-  })
-
-  it('makes no empty span for a phase that was skipped', () => {
-    const wms = element('wms', { lifecycleDates: { retired: '2028-01-31' } })
-    expect(spansFor(wms, '2026-01-01').map((s) => s.phase)).toEqual(['live', 'retired'])
-  })
-
-  it('collapses a same-day cutover into the phase it lands in', () => {
-    const wms = element('wms', { lifecycleDates: { retiring: '2028-01-31', retired: '2028-01-31' } })
-    expect(spansFor(wms, '2026-01-01')).toEqual([
-      { phase: 'live', from: '2026-01-01', to: '2028-01-31' },
-      { phase: 'retired', from: '2028-01-31' },
-    ])
   })
 
   it('does not start a new span where the phase has not changed', () => {
@@ -61,25 +56,17 @@ describe('spansFor', () => {
     ])
   })
 
-  it('is one unbroken span for an element with no dates', () => {
-    expect(spansFor(element('billing'), '2026-01-01')).toEqual([{ phase: 'live', from: '2026-01-01' }])
-  })
 })
 
 describe('rangeOf', () => {
-  it('covers everything with a month of air at each end', () => {
+  it('covers everything with a month of air at each end, and a year around today for nothing', () => {
     // A month past the 31st lands in March: the padding is air, and a couple of
     // extra days of it is not worth arithmetic that special-cases February.
     expect(rangeOf(['2027-04-01', '2028-01-31'], TODAY)).toEqual({ from: '2026-08-08', to: '2028-03-02' })
-  })
-
-  it('gives a year around today when there is nothing to cover', () => {
     expect(rangeOf([], TODAY)).toEqual({ from: '2026-03-08', to: '2027-03-08' })
-  })
-
-  it('ignores a date that is not a day', () => {
     expect(rangeOf(['soon', '2027-04-01', '2028-01-31'], TODAY).to).toBe('2028-03-02')
   })
+
 })
 
 describe('fractionOf', () => {
@@ -119,21 +106,18 @@ describe('roadmapOf', () => {
     }],
   }
 
-  it('gives a row only to what has something to say', () => {
+  it('gives a row only to what has something to say, and carries the plans through untouched', () => {
     // A landscape of four thousand elements with nine dates is a roadmap of a
     // handful of rows. The rest is on the canvas, where it belongs. Both change
     // first on the cutover day, so the tie falls to the name.
     expect(roadmapOf(model, TODAY).tracks.map((t) => t.element.id)).toEqual(['wms-new', 'wms-old'])
+    expect(roadmapOf(model, TODAY).transitions).toEqual(model.transitions)
   })
 
   it('covers the plans as well as the elements', () => {
     const { from, to } = roadmapOf(model, TODAY)
     expect(from <= '2027-01-15').toBe(true)
     expect(to >= '2028-01-31').toBe(true)
-  })
-
-  it('carries the plans through untouched', () => {
-    expect(roadmapOf(model, TODAY).transitions).toEqual(model.transitions)
   })
 
   it('has no rows at all for a landscape with no dates', () => {
@@ -218,16 +202,10 @@ describe('roadmapOf — the relations with a window', () => {
     ],
   }
 
-  it('gives a row to the rows that say something about time, and to no others', () => {
+  it('gives a row to what says something about time, by name, keeping an id nobody holds', () => {
     expect(roadmapOf(model, TODAY).relations.map((r) => r.relation.id)).toEqual(['sync', 'supports'])
-  })
-
-  it('carries both ends by name, so the row has a label without a second lookup', () => {
     const [first] = roadmapOf(model, TODAY).relations
     expect(first).toMatchObject({ sourceName: 'wms', targetName: 'fulfilment' })
-  })
-
-  it('keeps an id nobody holds rather than drawing a blank row', () => {
     const dangling = { elements: [], relations: [relation('r', 'supports', { validFrom: '2027-03-01' })] }
     expect(roadmapOf(dangling, TODAY).relations[0])
       .toMatchObject({ sourceName: 'wms', targetName: 'fulfilment' })
@@ -257,14 +235,12 @@ describe('within', () => {
   }
   const cut = within(roadmapOf(model, TODAY), '2027-01-01', '2028-12-31')
 
-  it('becomes the window', () => {
+  it('becomes the window, keeping what is there in it and the plans that touch it', () => {
     expect([cut.from, cut.to]).toEqual(['2027-01-01', '2028-12-31'])
-  })
-
-  it('keeps what is there during the window, and drops what is gone or not yet arrived', () => {
     // `early` was retired a year before the window opens; `late` does not go
     // live until after it closes. Neither has anything to say about 2027.
     expect(cut.tracks.map((t) => t.element.id)).toEqual(['long'])
+    expect(cut.transitions.map((p) => p.id)).toEqual(['b', 'c', 'd'])
   })
 
   it('keeps a track for a change inside the window even if the element is planned before it', () => {
@@ -289,9 +265,6 @@ describe('within', () => {
     expect(window_.relations.map((r) => r.relation.id)).toEqual(['onwards', 'during'])
   })
 
-  it('keeps the plans that touch the window, and the ones that say nothing about time', () => {
-    expect(cut.transitions.map((p) => p.id)).toEqual(['b', 'c', 'd'])
-  })
 })
 
 describe('shadowRunOf', () => {

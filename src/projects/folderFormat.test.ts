@@ -133,8 +133,12 @@ describe('projectFiles', () => {
     expect(textOf(files, MODEL_FILE)).not.toContain('Roster')
   })
 
-  it('writes an uploaded mark as an image a person can open', () => {
+  it('writes a mark and a picture as files a person can open, an SVG as the XML it is', () => {
     expect(textOf(scopeFiles(project()), 'logos/own.svg')).toBe('<svg/>')
+    const files = scopeFiles(project({
+      imageLibrary: [{ file: 'flow.svg', url: 'data:image/svg+xml;base64,PHN2Zy8+' }],
+    }))
+    expect(textOf(files, 'images/flow.svg')).toBe('<svg/>')
   })
 
   it('writes a document picture as the file its markdown names, and nothing in the header', () => {
@@ -144,13 +148,6 @@ describe('projectFiles', () => {
     expect(image && 'bytes' in image && [...image.bytes]).toEqual([1, 2])
     // The file name IS the reference, so `scope.json` has no list to drift.
     expect(textOf(files, SCOPE_FILE)).not.toContain('cutover')
-  })
-
-  it('writes an SVG picture as text, so it diffs as the XML it is', () => {
-    const files = scopeFiles(project({
-      imageLibrary: [{ file: 'flow.svg', url: 'data:image/svg+xml;base64,PHN2Zy8+' }],
-    }))
-    expect(textOf(files, 'images/flow.svg')).toBe('<svg/>')
   })
 
   it('will not write a picture whose name is not one it can read back', () => {
@@ -173,11 +170,13 @@ describe('projectFiles', () => {
     })
   })
 
-  it('sorts elements by id, so two people adding one do not both append', () => {
+  it('sorts elements by id, and writes an empty geometry file rather than none', () => {
     const shuffled = project()
     shuffled.model.elements = [...shuffled.model.elements].reverse()
     expect(textOf(scopeFiles(shuffled), MODEL_FILE))
       .toBe(textOf(scopeFiles(project()), MODEL_FILE))
+    expect(textOf(scopeFiles(project()), 'diagrams/containers.geometry.json'))
+      .toBe('{\n  "nodes": []\n}\n')
   })
 
   it('keeps a description inline when the element id cannot be a file name', () => {
@@ -188,10 +187,6 @@ describe('projectFiles', () => {
     expect(textOf(files, MODEL_FILE)).toContain('Nowhere to file this.')
   })
 
-  it('writes an empty geometry file rather than none, so a missing one means something', () => {
-    expect(textOf(scopeFiles(project()), 'diagrams/containers.geometry.json'))
-      .toBe('{\n  "nodes": []\n}\n')
-  })
 })
 
 /**
@@ -227,11 +222,12 @@ describe('the model\'s own vocabulary, written', () => {
     return { ...held, model }
   }
 
-  it('writes every relation with the type it has, under the name the model uses', () => {
+  it('writes every relation under the name the model uses, and gives the whole of it back', () => {
     expect(JSON.parse(textOf(scopeFiles(wider()), MODEL_FILE)).relations).toEqual([
       { id: 'c-1', type: 'flow', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: false },
       { id: 'r-1', type: 'supports', sourceId: 'crews', targetId: 'fulfilment', validFrom: '2027-03-01' },
     ])
+    expect(stableJson(scopeFromFolder(scopeFiles(wider()), REF))).toBe(stableJson(wider()))
   })
 
   it('writes a business kind as the kind it is, with its own fields', () => {
@@ -245,10 +241,6 @@ describe('the model\'s own vocabulary, written', () => {
     // Three facts that used to be one word: an application nobody here owns,
     // and whose it is (ADR-0012 §4).
     expect(rows.carrier).toMatchObject({ kind: 'application', outside: true, partyId: 'partner' })
-  })
-
-  it('gives the whole of it back, field for field', () => {
-    expect(stableJson(scopeFromFolder(scopeFiles(wider()), REF))).toBe(stableJson(wider()))
   })
 
   it('carries a kind of view this build has not heard of', () => {
@@ -279,28 +271,22 @@ describe('what one change touches', () => {
     expect(changed(before, scopeFiles(moved))).toEqual(['diagrams/l7.geometry.json'])
   })
 
-  it('renaming a dashed group: the definition, and not one coordinate', () => {
+  it('renaming a dashed group or a diagram: the definition, and not one coordinate', () => {
     // What format 3 could not do: the name was the key there, so a rename
     // rewrote every row that mentioned it. A member points at the id now.
     const renamed = project()
     const diagram = renamed.model.diagrams[0]
     renamed.model.diagrams[0] = { ...diagram, groups: [{ id: 'kern', name: 'Core' }] }
     expect(changed(before, scopeFiles(renamed))).toEqual(['diagrams/l7.json'])
+    const retitled = project()
+    retitled.model.diagrams[0] = { ...retitled.model.diagrams[0], name: 'Landscape' }
+    expect(changed(before, scopeFiles(retitled))).toEqual(['diagrams/l7.json'])
   })
 
-  it('editing a description: one markdown file', () => {
+  it('editing a description or accepting a decision: one markdown file each', () => {
     const edited = project()
     edited.model.elements[0] = element('crews', 'Crews', { description: 'Rewritten.' })
     expect(changed(before, scopeFiles(edited))).toEqual(['docs/crews.md'])
-  })
-
-  it('renaming a diagram: its definition, and not its coordinates', () => {
-    const renamed = project()
-    renamed.model.diagrams[0] = { ...renamed.model.diagrams[0], name: 'Landscape' }
-    expect(changed(before, scopeFiles(renamed))).toEqual(['diagrams/l7.json'])
-  })
-
-  it('accepting a decision: one markdown file', () => {
     const decided = project()
     decided.model.decisions = [{ ...DECISION, status: 'rejected' }]
     expect(changed(before, scopeFiles(decided))).toEqual(['decisions/0001-one-writer.md'])
@@ -353,9 +339,11 @@ describe('projectFromFolder', () => {
     ])
   })
 
-  it('takes the ref from where the folder is, not from anything inside it', () => {
+  it('takes the ref from where the folder is, and the tab order from the header', () => {
     const elsewhere = 'globex/moved'
     expect(scopeFromFolder(scopeFiles(project()), elsewhere)?.path).toEqual(elsewhere)
+    expect(scopeFromFolder(scopeFiles(project()), REF)?.model.diagrams.map((d) => d.id))
+      .toEqual(['l7', 'containers'])
   })
 
   it('treats a deleted geometry file as "lay it out again", with the view intact', () => {
@@ -370,18 +358,17 @@ describe('projectFromFolder', () => {
     expect(back?.model.diagrams[0].name).toBe('Landschap')
   })
 
-  it('keeps the tab order the header gives, not the order of the file names', () => {
-    expect(scopeFromFolder(scopeFiles(project()), REF)?.model.diagrams.map((d) => d.id))
-      .toEqual(['l7', 'containers'])
-  })
-
-  it('picks up a diagram somebody dropped in by hand, at the end', () => {
+  it('picks up a diagram or a mark somebody dropped in by hand', () => {
     const files = [...scopeFiles(project()), {
       path: 'diagrams/extra.json',
       text: stableJson({ id: 'extra', kind: 'layer7', name: 'By hand' }),
     }]
     expect(scopeFromFolder(files, REF)?.model.diagrams.map((d) => d.id))
       .toEqual(['l7', 'containers', 'extra'])
+    const withMark = [...scopeFiles(project()), { path: 'logos/Extra.png', bytes: new Uint8Array([1, 2]) }]
+    expect(scopeFromFolder(withMark, REF)?.logoLibrary).toContainEqual({
+      key: 'lib:extra', label: 'Extra', url: 'data:image/png;base64,AQI=',
+    })
   })
 
   it('files a plan as its own markdown file, and reads it back', () => {
@@ -391,14 +378,20 @@ describe('projectFromFolder', () => {
     expect(scopeFromFolder(files, REF)?.model.transitions).toEqual([PLAN])
   })
 
-  it('says nothing rather than nothing-at-all for a project with no plans', () => {
+  it('says nothing rather than nothing-at-all for a project with no plans and no pictures', () => {
     const back = scopeFromFolder(scopeFiles(project({ model: { transitions: [] } as never })), REF)
     expect(back?.model && 'transitions' in back.model).toBe(false)
+    // Absent, not empty: there is no `images/` folder to write the difference
+    // into, so a round trip must not invent one.
+    const noPictures = scopeFromFolder(scopeFiles(project({ imageLibrary: [] })), REF)
+    expect(noPictures && 'imageLibrary' in noPictures).toBe(false)
   })
 
-  it('ignores a README in the transitions folder rather than reading it as a plan', () => {
+  it('ignores a README in the transitions or the decisions folder rather than reading it', () => {
     const files = [...scopeFiles(project()), { path: 'transitions/README.md', text: 'Notes.\n' }]
     expect(scopeFromFolder(files, REF)?.model.transitions).toHaveLength(1)
+    const withNotes = [...scopeFiles(project()), { path: 'decisions/README.md', text: 'Notes.\n' }]
+    expect(scopeFromFolder(withNotes, REF)?.model.decisions).toHaveLength(1)
   })
 
   it('reads the pictures back off the folder, which is their whole index', () => {
@@ -417,25 +410,6 @@ describe('projectFromFolder', () => {
       { file: 'cutover.png', url: 'data:image/png;base64,AQI=' },
       { file: 'whiteboard.jpg', url: 'data:image/jpeg;base64,AwQ=' },
     ])
-  })
-
-  it('says nothing rather than nothing-at-all for a project with no pictures', () => {
-    // Absent, not empty: there is no `images/` folder to write the difference
-    // into, so a round trip must not invent one.
-    const back = scopeFromFolder(scopeFiles(project({ imageLibrary: [] })), REF)
-    expect(back && 'imageLibrary' in back).toBe(false)
-  })
-
-  it('picks up a mark somebody dropped in by hand', () => {
-    const files = [...scopeFiles(project()), { path: 'logos/Extra.png', bytes: new Uint8Array([1, 2]) }]
-    expect(scopeFromFolder(files, REF)?.logoLibrary).toContainEqual({
-      key: 'lib:extra', label: 'Extra', url: 'data:image/png;base64,AQI=',
-    })
-  })
-
-  it('ignores a README in the decisions folder rather than reading it as a record', () => {
-    const files = [...scopeFiles(project()), { path: 'decisions/README.md', text: 'Notes.\n' }]
-    expect(scopeFromFolder(files, REF)?.model.decisions).toHaveLength(1)
   })
 
   it('refuses a folder written by a newer version of this tool', () => {

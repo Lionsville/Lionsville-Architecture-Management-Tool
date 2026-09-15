@@ -101,6 +101,35 @@ export function migrated(tally: MigrationTally): boolean {
   return tally.scopes > 0
 }
 
+/**
+ * Whether this source holds a scope anybody has saved.
+ *
+ * Not `list()` on its own: the root of a store that has never had one saved is
+ * in every listing and in no store, so a listing cannot tell an empty folder
+ * from a full one. The answer is the first path that loads, and it stops there
+ * — this is asked at a folder pick, with somebody waiting on it.
+ *
+ * A source that will not list holds nothing this caller can act on, which is
+ * `false` rather than a throw: what hangs on the answer is whether to ask a
+ * question, and a question raised by a failed read is one nobody can answer.
+ */
+export async function holdsScopes(source: ScopeSource): Promise<boolean> {
+  let summaries: readonly ScopeSummary[]
+  try {
+    summaries = flattenScopes(await source.list())
+  } catch {
+    return false
+  }
+  for (const summary of summaries) {
+    try {
+      if (await source.load(summary.path)) return true
+    } catch {
+      // One scope that will not read says nothing about the rest of them.
+    }
+  }
+  return false
+}
+
 // --- out of an older format, and into this one ------------------------------
 
 /**
