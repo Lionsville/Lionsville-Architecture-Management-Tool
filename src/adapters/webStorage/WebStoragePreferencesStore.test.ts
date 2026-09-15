@@ -13,32 +13,20 @@ function fakeStorage(seed: Record<string, string> = {}): KeyValueStorage {
 }
 
 describe('WebStoragePreferencesStore', () => {
-  it('returns undefined while nothing is stored', async () => {
+  it('gives back what was written, and undefined for nothing, half a file or the wrong shape', async () => {
     await expect(new WebStoragePreferencesStore(fakeStorage()).read()).resolves.toBeUndefined()
-  })
-
-  it('gives back what was written', async () => {
     const store = new WebStoragePreferencesStore(fakeStorage())
     await store.write({ language: 'nl', themeMode: 'dark', minimap: true })
     expect(await store.read()).toEqual({ language: 'nl', themeMode: 'dark', minimap: true })
-  })
-
-  it('ignores half-written JSON', async () => {
-    const store = new WebStoragePreferencesStore(fakeStorage({ [PREFERENCES_KEY]: '{no' }))
-    await expect(store.read()).resolves.toBeUndefined()
-  })
-
-  it('ignores a stored value that is not an object', async () => {
-    const store = new WebStoragePreferencesStore(fakeStorage({ [PREFERENCES_KEY]: '42' }))
-    await expect(store.read()).resolves.toBeUndefined()
-  })
-
-  it('carries fields it does not recognise straight through', async () => {
+    const store2 = new WebStoragePreferencesStore(fakeStorage({ [PREFERENCES_KEY]: '{no' }))
+    await expect(store2.read()).resolves.toBeUndefined()
+    const store3 = new WebStoragePreferencesStore(fakeStorage({ [PREFERENCES_KEY]: '42' }))
+    await expect(store3.read()).resolves.toBeUndefined()
     // The package vets its own part; this layer must not prune, or an older
     // shell loses a newer one's settings.
-    const store = new WebStoragePreferencesStore(fakeStorage())
-    await store.write({ language: 'en', somethingNew: { deep: true } })
-    expect(await store.read()).toEqual({ language: 'en', somethingNew: { deep: true } })
+    const store4 = new WebStoragePreferencesStore(fakeStorage())
+    await store4.write({ language: 'en', somethingNew: { deep: true } })
+    expect(await store4.read()).toEqual({ language: 'en', somethingNew: { deep: true } })
   })
 
   it('refuses visibly when storage is full', async () => {

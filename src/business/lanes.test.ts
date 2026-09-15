@@ -37,37 +37,31 @@ const laneBy = (id: string | undefined) =>
     .lanes.find((lane) => lane.actorId === id)!
 
 describe('journeyOf', () => {
-  it('reads the phases across the top in the journey’s own order', () => {
+  it('reads the phases across the top, the common row first, then the lanes the sheet names', () => {
     expect(journeyOf(shipping(), 'ship').phases.map((p) => p.id))
       .toEqual(['order', 'quote', 'pick', 'deliver'])
-  })
-
-  it('puts the common row first, then the lanes in the sheet’s order', () => {
     const { lanes } = journeyOf(shipping(), 'ship', ['partner', 'key-account'])
     expect(lanes.map((lane) => lane.actorId)).toEqual([undefined, 'partner', 'key-account'])
-  })
-
-  it('gives the common row the steps that name no lane', () => {
     expect(laneBy(undefined).cells.map((cell) => cell.steps.map((s) => s.id))).toEqual([
       ['take-order', 'confirm'], ['standard-rate'], ['pick-goods'], ['hand-over'],
     ])
+    // A step that names a lane is a fact; leaving the row out would lose it.
+    const { lanes: lanes2 } = journeyOf(shipping(), 'ship', ['partner'])
+    expect(lanes2.map((lane) => lane.actorId)).toEqual([undefined, 'partner', 'key-account'])
   })
 
-  it('derives a lane’s fork and join from where it has steps', () => {
+  it('derives a lane’s fork and join from where it has steps, and draws nothing outside the span', () => {
     expect(laneBy('key-account')).toMatchObject({ fork: 'quote', join: 'deliver' })
+    // *order* is outside the key account's span entirely: no steps, and not a
+    // pass-through either, which is a different thing a page draws differently.
+    const order = laneBy('key-account').cells[0]
+    expect(order).toMatchObject({ phaseId: 'order', steps: [], passThrough: false })
   })
 
   it('draws a phase inside the span with no step of its own as a pass-through', () => {
     const cells = laneBy('key-account').cells
     expect(cells.map((cell) => cell.passThrough)).toEqual([false, false, true, false])
     expect(cells[2].steps).toEqual([])
-  })
-
-  it('draws nothing outside the span — a lane before its fork is not a hole', () => {
-    // *order* is outside the key account's span entirely: no steps, and not a
-    // pass-through either, which is a different thing a page draws differently.
-    const order = laneBy('key-account').cells[0]
-    expect(order).toMatchObject({ phaseId: 'order', steps: [], passThrough: false })
   })
 
   it('forks and joins in the same phase for a lane with one step', () => {
@@ -81,12 +75,6 @@ describe('journeyOf', () => {
     const empty = lanes.find((lane) => lane.actorId === 'nobody')!
     expect(empty.fork).toBeUndefined()
     expect(empty.cells.every((cell) => cell.steps.length === 0 && !cell.passThrough)).toBe(true)
-  })
-
-  it('draws a lane the sheet did not ask for, after the ones it did', () => {
-    // A step that names a lane is a fact; leaving the row out would lose it.
-    const { lanes } = journeyOf(shipping(), 'ship', ['partner'])
-    expect(lanes.map((lane) => lane.actorId)).toEqual([undefined, 'partner', 'key-account'])
   })
 
   it('is the common row alone for a journey where nothing names a lane', () => {

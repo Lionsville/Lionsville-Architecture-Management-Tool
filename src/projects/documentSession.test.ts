@@ -54,16 +54,14 @@ describe('attaching and detaching', () => {
 })
 
 describe('editing and saving', () => {
-  it('goes dirty on an edit', () => {
+  it('goes dirty on an edit and stays dirty, is saving while a write is in flight', () => {
     expect(play(attached, { type: 'edited' }).status).toBe('dirty')
-  })
-
-  it('stays dirty however many edits arrive', () => {
     expect(play(attached, { type: 'edited' }, { type: 'edited' }).status).toBe('dirty')
-  })
-
-  it('is saving while a write is in flight', () => {
     expect(play(attached, { type: 'edited' }, { type: 'saveRequested' }).status).toBe('saving')
+    const state = play(attached, { type: 'edited' }, { type: 'saveRequested' },
+      { type: 'saveFailed', reason: 'EACCES' }, { type: 'saveRequested' })
+
+    expect(state.lastError).toBeUndefined()
   })
 
   it('is clean again when the write lands, and records what is on disk', () => {
@@ -83,13 +81,6 @@ describe('editing and saving', () => {
 
     expect(state.status).toBe('dirty')
     expect(state.lastError).toBe('EACCES')
-  })
-
-  it('clears the last error when the next save starts', () => {
-    const state = play(attached, { type: 'edited' }, { type: 'saveRequested' },
-      { type: 'saveFailed', reason: 'EACCES' }, { type: 'saveRequested' })
-
-    expect(state.lastError).toBeUndefined()
   })
 
   it('does not start a second write on top of one in flight', () => {
@@ -133,23 +124,20 @@ describe('an edit that arrives while the write is in flight', () => {
 })
 
 describe('a change that came from us', () => {
-  it('is ignored — every save round-trips through the watcher', () => {
+  it('is ignored — every save round-trips through the watcher — but a real change is not', () => {
     const landed = print({ mtimeMs: 2_000, sha256: 'bbb' })
     const state = play(attached, { type: 'edited' }, { type: 'saveRequested' },
       { type: 'saveSucceeded', fingerprint: landed },
       { type: 'externalChangeDetected', fingerprint: landed })
 
     expect(state.status).toBe('clean')
-  })
-
-  it('is not confused with a real change that happens to share an mtime', () => {
-    const landed = print({ mtimeMs: 2_000, sha256: 'bbb' })
+    const landed2 = print({ mtimeMs: 2_000, sha256: 'bbb' })
     const theirs = print({ mtimeMs: 2_000, sha256: 'ccc' })
-    const state = play(attached, { type: 'saveRequested' },
-      { type: 'saveSucceeded', fingerprint: landed },
+    const state2 = play(attached, { type: 'saveRequested' },
+      { type: 'saveSucceeded', fingerprint: landed2 },
       { type: 'externalChangeDetected', fingerprint: theirs })
 
-    expect(state.status).toBe('external-changed')
+    expect(state2.status).toBe('external-changed')
   })
 
   it('compares all four fields, because no one of them is enough alone', () => {
@@ -170,38 +158,26 @@ describe('a change that came from somebody else', () => {
     expect(play(attached, theirs).status).toBe('external-changed')
   })
 
-  it('is a conflict when we have unsaved edits', () => {
+  it('is a conflict when we have unsaved edits or a write in flight, and nothing without a file', () => {
     expect(play(attached, { type: 'edited' }, theirs).status).toBe('conflict')
-  })
-
-  it('is a conflict when a write of ours is in flight', () => {
     // Whatever that write does, there are now two versions of the document.
     expect(play(attached, { type: 'edited' }, { type: 'saveRequested' }, theirs).status).toBe('conflict')
-  })
-
-  it('is ignored entirely when no file is attached', () => {
     expect(play(theirs).status).toBe('no-file')
   })
 
-  it('does not escalate when reported twice before anyone answers', () => {
+  it('does not escalate when reported twice, nor again during a conflict', () => {
     const twice = play(attached, theirs, {
       type: 'externalChangeDetected', fingerprint: print({ mtimeMs: 10_000, sha256: 'yyy' }),
     })
     expect(twice.status).toBe('external-changed')
-  })
-
-  it('does not escalate when reported again during a conflict', () => {
     const state = play(attached, { type: 'edited' }, theirs, {
       type: 'externalChangeDetected', fingerprint: print({ mtimeMs: 11_000, sha256: 'xxx' }),
     })
     expect(state.status).toBe('conflict')
   })
 
-  it('becomes a conflict as soon as we type after hearing about it', () => {
+  it('becomes a conflict as soon as we type, and rather than letting a save clobber theirs', () => {
     expect(play(attached, theirs, { type: 'edited' }).status).toBe('conflict')
-  })
-
-  it('becomes a conflict rather than letting a save clobber theirs', () => {
     // Writing over a file we have been told is newer is the one way to destroy
     // somebody else's work without ever being asked about it.
     expect(play(attached, theirs, { type: 'saveRequested' }).status).toBe('conflict')

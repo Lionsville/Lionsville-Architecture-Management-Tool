@@ -72,21 +72,17 @@ describe('an interface that has landed', () => {
     flow('r1', 'orders', 'wms-api', { refines: 'c16', protocol: 'REST' }),
   ];
 
-  it('draws the landing and no line to the boundary for it', () => {
+  it('draws the landing and no line to the boundary, one line per landing, hoisting the far end', () => {
     expect(ends(interfaceAndLanding, containers())).toEqual([['r1', 'orders', 'wms-api']]);
-  });
-
-  it('draws one line per landing, and still nothing to the boundary', () => {
     const twice = [...interfaceAndLanding, flow('r2', 'orders', 'wms-events', { refines: 'c16', protocol: 'AMQP' })];
     expect(ends(twice, containers())).toEqual([
       ['r1', 'orders', 'wms-api'],
       ['r2', 'orders', 'wms-events'],
     ]);
-  });
-
-  it('hoists a landing that ends on the other application\'s container to its context box', () => {
     const deep = [flow('c16', 'orders', 'wms'), flow('r1', 'orders-ui', 'wms-api', { refines: 'c16' })];
     expect(ends(deep, containers())).toEqual([['r1', 'orders', 'wms-api']]);
+    const inside = [flow('x1', 'orders-ui', 'orders')];
+    expect(ends(inside, containers())).toEqual([]);
   });
 
   it('keeps the boundary line of an interface that landed somewhere else', () => {
@@ -99,10 +95,6 @@ describe('an interface that has landed', () => {
     expect(ends(elsewhere, containers()).map((one) => one[0])).toEqual(['r1', 'c20']);
   });
 
-  it('draws nothing for a row whose two ends hoist to the same box', () => {
-    const inside = [flow('x1', 'orders-ui', 'orders')];
-    expect(ends(inside, containers())).toEqual([]);
-  });
 });
 
 describe('the landscape, with landings in the model', () => {
@@ -130,7 +122,6 @@ describe('the day the board shows', () => {
   });
 });
 
-
 /**
  * Which end of a line may be grabbed (ADR-0013).
  *
@@ -151,20 +142,12 @@ describe('the end a drag may take hold of', () => {
     expect(grabbable([flow('c20', 'wms', 'orders')], 'c20')).toBe('source');
   });
 
-  it('is a landing\'s own end, never the other application\'s', () => {
+  it('is the landing’s own end, either end where the diagram says nothing, and neither for a reader', () => {
     const landed = [flow('c16', 'orders', 'wms'), flow('r1', 'orders', 'wms-api', { refines: 'c16' })];
     expect(grabbable(landed, 'r1')).toBe('target');
-  });
-
-  it('is either end of a line this diagram has nothing to say about', () => {
     expect(grabbable([flow('x1', 'wms-api', 'wms-events')], 'x1')).toBe(true);
-  });
-
-  it('is neither end on a landscape, where both are ordinary', () => {
     expect(grabbable([flow('c16', 'orders', 'wms')], 'c16', landscape())).toBe(true);
-  });
-
-  it('is neither end for a reader', () => {
     expect(grabbable([flow('c16', 'orders', 'wms')], 'c16', containers(), true)).toBe(false);
   });
+
 });
