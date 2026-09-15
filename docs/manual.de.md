@@ -898,46 +898,85 @@ die Anwendung zu öffnen, wo dieser Bereich sie hält.
 
 ### Technologie
 
-Worauf die Anwendungen stehen, ist eine **Plattform**: ein Cluster, ein Broker,
-ein Bus, eine Firewall, das Werkzeug. Zeichnen Sie eine aus der untersten Reihe
-der Palette, und sie landet im Management-Band als der Chip, den dieses Band
-schon immer gezeichnet hat; geben Sie ihr im Inspektor eine Art — Runtime,
-Messaging, Integration, Netzwerk, Daten, Identität, Werkzeug, Observability.
-Eine gemeinsam genutzte Plattform wird meist in einem eigenen Bereich definiert
-und anderswo als Stellvertreter gezeichnet, damit das Team, das den Cluster
-betreibt, den Datensatz besitzt und jede Landschaft sagt, worauf sie steht.
+Worauf die Anwendungen stehen, ist eine **Plattform** — ein Cluster, ein
+Namespace, ein Broker, ein Cloud-Konto, eine Firewall — und was ein
+Plattformteam anbietet, ist ein **Plattformdienst**: *Containerplattform*,
+*Messaging*, *Verwaltete Datenbank*, *Identität*. Es sind zwei verschiedene
+Dinge auf derselben Ebene. Ein Dienst ist, was ein Team anfragt und wofür ein
+Plattformteam verantwortlich ist; eine Plattform ist, was ihn dieses Jahr
+liefert, und kann nächstes Jahr ersetzt werden, ohne dass der Dienst seinen
+Namen ändert. Beide kommen aus der untersten Reihe der Palette und landen als
+Chip im Management-Band, der Dienst mit einem eigenen Zeichen, damit die
+beiden auf einen Blick zu unterscheiden sind. Eine Plattform sagt im
+Inspektor, was sie ist — ein *Ort*, an dem etwas läuft, ein *Dienst*, den
+etwas nutzt, oder ein *Netzwerk*; ein Dienst, wenn nichts gesagt ist — und
+wovon sie **Teil** ist, was einen Namespace in der App unter seinen Cluster
+bringt; eine Plattform **realisiert** die Dienste, die sie liefert. Eine
+gemeinsam genutzte Plattform oder ein solcher Dienst wird meist in einem
+eigenen Bereich definiert und anderswo als Stellvertreter gezeichnet, damit
+das Team, das sie betreibt, den Datensatz besitzt.
 
-**Wo etwas läuft, steht am Container.** Eine Anwendung läuft nirgends — die
-Dinge, aus denen sie besteht, laufen, und meist an mehr als einem Ort — also
-steht die Auswahl *Läuft auf* am Datensatz einer Komponente, und einer Anwendung
-wird gesagt, was ihre Container sagen: *Läuft auf: OpenShift (3 Container)*.
-Eine Anwendung ohne Container — ein Fremdsystem, ein eingekaufter Dienst — sagt
-selbst, wo sie läuft, was bei einem vom Anbieter betriebenen Dienst der einzige
-wahre Satz ist. **Nutzt** ist davon getrennt und bleibt auf beiden Ebenen: eine
-Anwendung nutzt den Identitätsanbieter, ein Container nutzt einen Cache.
+**Eine Anwendung sagt zu jeder Frage eines.** Wo ein Container läuft, ist
+*Läuft auf*, am Datensatz der Komponente, und einer Anwendung wird gesagt,
+was ihre Container sagen: *Läuft auf: OpenShift (3 Container)*. Was eine
+Anwendung nutzt, ist **Nutzt**, und das nennt den Dienst, nicht das Produkt:
+ein Team fragt Messaging an, und welcher Broker das liefert, ist Sache des
+Plattformteams, einmal gesagt als *Realisiert*. Von welchen Plattformen eine
+Anwendung tatsächlich abhängt, wird aus beidem abgeleitet — die Zeile *Stützt
+sich auf* am Datensatz liest *Containerplattform (OpenShift), Messaging
+(Event broker)*, ohne dass an der Anwendung etwas getippt wurde. Eine
+Plattform direkt zu nutzen bleibt erlaubt, für das Team, das sich wirklich an
+eine Instanz bindet; der Inspektor bietet zuerst Dienste an.
 
-**Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten: nach
-Plattform, damit auf einen Blick zu sehen ist, welche Anwendungen sich eine
-teilen, oder nach Lebenszyklus der Technik, damit die Karten, die auf etwas
-auslaufendem stehen, bernsteinfarben werden. Die Legende steht unter derselben
-Schaltfläche, und das Einschalten ändert nichts als das Bild.
+**Geteilt** an einem Dienst sagt, dass er zur Nutzung außerhalb des Teams
+angeboten wird, das ihn pflegt — *Gepflegt von* nennt dieses Team.
+Organisationen ziehen diese Linie unterschiedlich, also ist das Häkchen
+Ihres; und wo niemand es gesetzt hat, sagen es die Zeilen dennoch. Ein Dienst,
+den ein Team pflegt und den eine Anwendung eines anderen Teams nutzt, wird
+angeboten, ob es jemand gesagt hat oder nicht, und die Roadmap und das
+Technologieregister zeigen das als Befund mit den Nutzern — ein Gespräch, das
+zu führen ist, nie ein Häkchen, das das Werkzeug für Sie setzt. Ein geteilter
+Dienst, den noch niemand außerhalb des eigenen Teams nutzt, ist gewöhnlich und
+kein Befund.
 
-**Der Plattformbericht** ist das, was übrig bliebe, wenn die Plattform ginge.
-Doppelklicken Sie den Chip, oder **Plattformbericht** in ihrem Menü, und die
-Seite zeigt, worauf sie steht, was darunter liegt, was auf ihr läuft — jeder
-Container neben seiner Anwendung genannt — was sie nutzt, und die
-Container-Schnittstellen, die über sie laufen, jede mit der Schnittstelle auf
-Anwendungsebene, zu der sie gehört. Ein Name öffnet die Seite des Dings, wo
-dieser Bereich es hält. Nichts wird gezeichnet und nichts angelegt: er wird bei
-jedem Öffnen aus den Zeilen abgeleitet und ist daher nie veraltet.
+**Das Technologieregister**, eine Karte auf dem Organisationsbildschirm neben
+dem Register der Anwendungen, ist jeder Dienst und jede Plattform im ganzen
+Baum: wer jeden pflegt, welche geteilt sind, wie viele Anwendungen sie nutzen
+und aus wie vielen Bereichen, was jeden realisiert — nichts, das einen Dienst
+realisiert, ist eine echte Lücke und wird als solche gezeigt — und, bei einer
+Plattform, was sie hostet samt allem, was darunter abgelegt ist. Jedes Mal aus
+den Ordnern abgeleitet, also kann es ihnen nicht widersprechen.
 
-Zweierlei folgt daraus. Das Abzeichen **Plattform** auf einer Karte liest ab,
-worauf die Container einer Anwendung stehen, wenn es niemand gesetzt hat —
-managed auf einer eigenen Plattform, teilweise auf einer außerhalb der
-Organisation, keine auf nichts — und ein von Ihnen gesetzter Status gewinnt. Und
-die Befunde der Roadmap erhalten eine Zeile für eine Anwendung, die noch auf
-einer Plattform steht, nachdem diese ausgelaufen ist, mit dem Container, der
-auf nichts mehr steht.
+**Zwei Berichte, einer von jeder Seite.** Doppelklicken Sie den Chip einer
+Plattform, oder **Plattformbericht** in ihrem Menü, für das, was übrig bliebe,
+wenn sie ginge: worin sie liegt, was darunter liegt, was auf ihr oder darunter
+läuft — jeder Container neben seiner Anwendung und dem Namespace, in dem er
+liegt — was sie nutzt, und die Container-Schnittstellen, die über sie laufen,
+jede mit der Schnittstelle auf Anwendungsebene, zu der sie gehört.
+Doppelklicken Sie den Chip eines Dienstes, oder **Dienstbericht**, für das,
+was strandete, würde er zurückgezogen: wer ihn pflegt, was ihn realisiert, wer
+sich darauf stützt und aus welchen Bereichen, und welche Nutzer am Tag seines
+Rückzugs noch darauf säßen. Keiner von beiden wird gezeichnet oder angelegt;
+beide werden bei jedem Öffnen aus den Zeilen abgeleitet.
+
+**Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten nach
+Plattform — dem Cluster, nicht dem Namespace — oder nach Lebenszyklus der
+Technik, damit die Karten, die auf etwas Auslaufendem stehen, bernsteinfarben
+werden, die ganze Kette mitgezählt. Das Abzeichen **Plattform** liest ab,
+worauf die Container stehen, wenn es niemand gesetzt hat, und die Befunde der
+Roadmap melden eine Anwendung, die noch auf einer Plattform steht, nachdem
+diese oder etwas darüber ausgelaufen ist, mit der Plattform, die tatsächlich
+geht.
+
+**Was ein Plattformteam damit macht.** Definieren Sie die Dienste, die Sie
+anbieten, in einem eigenen Bereich, jeden Ihrem Team zugewiesen und als
+geteilt markiert; legen Sie die Cluster, Broker und Konten, die sie liefern,
+mit *Teil von* untereinander ab und sagen Sie, was jedes realisiert. Jede
+Landschaft zeichnet Ihre Dienste dann als Stellvertreter, und ihre Anwendungen
+sagen, welche sie nutzen; das Register sagt Ihnen, wer sich worauf stützt, der
+Dienstbericht, wer strandete, bevor Sie einen zurückziehen, und der Befund,
+welche Dinge Ihres eigenen Teams andere Teams stillschweigend zu nutzen
+begonnen haben.
 
 ## Suchen
 

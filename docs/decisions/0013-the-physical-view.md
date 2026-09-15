@@ -3,6 +3,12 @@
 * Status: accepted
 * Date: 2026-09-15
 * Deciders: Wouter Simons
+* Superseded in part, 15 September 2026, by ADR-0014: §1's closed category
+  is replaced by a three-value archetype and the offering becomes a kind of
+  its own; §2's relation ends gain three rows and `hostedOn` is held to
+  application | component → platform; and the report's shape described in
+  the preamble below now gathers over the platform and everything filed
+  under it.
 
 **Redone, 15 September 2026.** The kind, the category, the two relations and
 the platform scope were built as written below, and the rest was tried on a
@@ -114,6 +120,10 @@ Option 1.
 
 ### 1. A seventh kind
 
+*Superseded in part by ADR-0014: the closed category below is replaced by
+`platformArchetype` — place, service or network — and what sort of technology
+a platform is became the service it realises.*
+
 `platform` joins the six of ADR-0012 §4: a cluster, a broker, a bus, a
 firewall, the tooling — what an application runs on and what it uses. A
 tree like the others, so a namespace sits under a cluster under a cloud
@@ -135,6 +145,11 @@ leaves out the business layer, because a management tool read back is an
 application and the format's vocabulary is a contract.
 
 ### 2. Two relations
+
+*Superseded in part by ADR-0014: `uses` may end on a service, a platform
+`realises` a service, an actor is `assigned` a service or a platform, and
+`hostedOn` is held to application | component → platform — never a platform
+on a platform, which is `parentId`.*
 
 In the table of ADR-0012 §5:
 

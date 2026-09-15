@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4177 tests** and one of every config. The
+One codebase, in modules, with **3945 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4177 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3945 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -148,14 +148,21 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · fromInterchange · toInterchange · containerDiagram
-                    platformReport    one platform, and what would be left
-                                      standing if it went (ADR-0013)
+                    platformReport · serviceReport   one platform, and what
+                                      would be left standing if it went
+                                      (ADR-0013); one service, and what would
+                                      be stranded if it were withdrawn (ADR-0014)
+                    leverage          what an application leverages: the
+                                      services it uses and the platforms behind
+                                      them, derived (ADR-0014)
+                    tree              one parent, always, and the loop refused
                     refines · implied   which application interface a container
                                       line is part of, and the one nobody drew
                     hosting · deployment · overlay   the roll-up over an
-                                      application's containers, the boxes a
-                                      container diagram draws around them, and
-                                      what the landscape is coloured by
+                                      application's containers, the platform
+                                      tree every reader walks (ADR-0014), the
+                                      boxes a container diagram draws around
+                                      them, and what the landscape is coloured by
                     logo · logoRegistry · marks/    uploads, the icon registry
                     documentImage     a picture a document may hold, and its limits
                     clipboard · equality   what copies, and what counts as the same
@@ -202,11 +209,13 @@ src/business/     The business layer, and the arithmetic over its four trees
                                       up on the sections, the gap on the leaves
                     ui/               SheetPage, MapPage, FunctionInspector,
                                       captureSheet
-src/technology/   The physical view (ADR-0013): a platform's report. Read,
-                  never drawn; the arithmetic is the model's, because the
-                  agent asks for it too.
+src/technology/   The physical view (ADR-0013, ADR-0014): a platform's report
+                  and a service's. Read, never drawn; the arithmetic is the
+                  model's, because the agent asks for it too.
                     ui/PlatformReportPage   what runs on it, what uses it, and
                                       the container interfaces that cross it
+                    ui/ServiceReportPage    who maintains it, what realises it,
+                                      who leans on it, and what would be stranded
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -293,6 +302,9 @@ src/app/          The shell around the editor.
                                       in the tree, derived (ADR-0012 §2); a page
                                       here rather than under `projects/ui/`,
                                       which may not import React
+                                      technologyRegister · TechnologyPage   every
+                                      service and platform in the tree, the same
+                                      fold over the same index (ADR-0014)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
@@ -571,13 +583,15 @@ identifiers is still a list of a customer's identifiers.
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
-| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` — and, over the whole tree, `scopes.list` `register.list` `checks.list` |
+| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `register.list` `technology.list` `checks.list` |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `interface.accept` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
-| What a row between two elements is (ADR-0012 §5, ADR-0013) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones |
-| What a thing IS (ADR-0012 §4, ADR-0013) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform`; a platform carries a `platformCategory` |
+| What a row between two elements is (ADR-0012 §5, ADR-0013, ADR-0014) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones. A platform `realises` a service, an application or a container `uses` a service (or binds to one platform), an actor is `assigned` a service or a platform; `hostedOn` is application \| component → platform and nothing else — a platform inside a platform is `parentId` |
+| What a thing IS (ADR-0012 §4, ADR-0013, ADR-0014) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform` · `platformService`; a platform carries a `platformArchetype` (`place` · `service` · `network`, `service` when unsaid), a service may be `shared` |
 | Where an interface arrives (ADR-0013) | a container-level flow **`refines`** the application-level one it is part of — ends under ends, one level deep. The landscape draws the interface, the container diagram draws the landings and no line to the boundary for one that has landed; `protocol` and `technology` live on the landing |
 | Where something runs (ADR-0013) | a **container** is `hostedOn` a platform; an application says so itself only when it has no containers, and its answer otherwise is the **roll-up** over them |
+| What an application leverages (ADR-0014) | derived, never stored: the services it `uses`, itself or through its containers, and the platforms that `realise` each — `model/leverage.ts`; the record's *Leverages* line and `element.describe`'s `leverages` |
+| Offered beyond its team (ADR-0014) | `shared` on a service, typed and left as typed; where nobody typed it, a service `assigned` to one actor and used by another team's application is `check.offeredNotShared`, a finding and never a value |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
 | Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
@@ -1057,3 +1071,34 @@ interface it is part of, reached from the platform's card and from the
 finding that names it, with nothing to create. The format did not turn: the
 fields are additive and ride through format 5; the number turns with the
 decision-record change, once.
+
+Then the technology layer gained its **offerings** (`docs/decisions/0014`).
+The layer had instances and no offerings: OpenShift existed and *Container
+platform* — what a team asks for, what a platform team is accountable for,
+what could be delivered by something else next year — did not, and a closed
+category was standing in for the catalogue the enterprise should author. So
+`platformService` is the eighth kind, on the technology layer with the
+platform and never a business function: a tree, dated, a chip in the
+management band with a mark of its own. A platform `realises` a service, an
+application or a container `uses` a service, an actor is `assigned` either;
+`hostedOn` is held to application | component → platform, and a platform
+inside a platform is `parentId` and nothing else. The category became a
+three-value **archetype** — place, service, network, `service` when unsaid —
+because after the offering exists that is the only distinction left for the
+model to make, and exactly two readers branch on it.
+
+An application says one thing per question and the rest is computed: which
+platforms it depends on is read through the services it uses and what
+realises them, never stored, and the record shows it as one line. A service
+is **shared** when somebody says so, and where nobody has, the rows still
+say: one assigned to one actor and used by another team's application is
+`check.offeredNotShared`, a finding rather than a value, because it is a
+conversation and not a fact the tool may write. Every reader walks the
+platform tree now — the report over everything filed under a platform, the
+retiring-platform finding up the chain, the overlay by the outermost platform
+the organisation runs — and a stand-in, which carries no `parentId`, is told
+the tree by the host off the index. The **technology register** is the same
+fold over the same index as the application register, beside it on the
+organisation screen and as `technology.list`; the service has a report of
+its own, `service.report`, for the question a platform team owns: this is
+being withdrawn, who leans on it.

@@ -831,44 +831,77 @@ kolomkop om de applikaasje te iepenjen, dêr't dit ûnderdiel him hat.
 
 ### Technology
 
-Wêr't de applikaasjes op steane is in **platfoarm**: in kluster, in broker, in
-bus, in firewall, it ark. Tekenje der ien út de ûnderste rige fan it palet en er
-lânet yn de behearsbân as de chip dy't dy bân altyd al tekene; jou him yn it
-ynspeksjepaniel in soarte — runtime, messaging, yntegraasje, netwurk, data,
-identiteit, ark, observability. In dield platfoarm wurdt meastal yn in eigen
-scope definiearre en earne oars as stand-in tekene, sadat it team dat it kluster
-draait it record hat en elk lânskip seit dat it deropp stiet.
+Wêr't de applikaasjes op steane is in **platfoarm** — in kluster, in namespace,
+in broker, in cloudakkount, in firewall — en wat in platfoarmteam oanbiedt is
+in **platfoarmtsjinst**: *Containerplatfoarm*, *Berjochteferkear*, *Beheard
+database*, *Identiteit*. It binne twa ferskillende dingen op deselde laach. In
+tsjinst is wat in team freget en dêr't in platfoarmteam foar ferantwurdlik is;
+in platfoarm is wat dy dit jier leveret, en kin takom jier ferfongen wurde
+sûnder dat de tsjinst fan namme feroaret. Beide komme út de ûnderste rige fan
+it palet en lânje as chip yn de behearsbân, de tsjinst mei in eigen merkteken
+sadat de twa yn ien eachopslach útinoar te hâlden binne. In platfoarm seit yn
+it ynspeksjepaniel wat it is — in *plak* dêr't wat yn draait, in *tsjinst* dy't
+wat brûkt, of in *netwurk*; in tsjinst as neat sein is — en wêr't it
+**ûnderdiel fan** is, wat makket dat in namespace yn de app ûnder syn kluster
+kin; in platfoarm **realisearret** de tsjinsten dy't it leveret. In dield
+platfoarm of dielde tsjinst wurdt meastal yn in eigen scope definiearre en earne
+oars as stand-in tekene, sadat it team dat it draait it record hat.
 
-**Wêr't wat rint stiet op de container.** In applikaasje rint nearne — de dingen
-dêr't se út bestiet rinne, en meastal op mear as ien plak — dus de kar *Rint op*
-stiet op it record fan in komponint, en in applikaasje krijt te hearren wat har
-containers sizze: *Rint op: OpenShift (3 containers)*. In applikaasje sûnder
-containers — in ekstern systeem, in ynkochte tsjinst — seit sels wêr't se rint,
-wat foar in tsjinst dy't de leveransier host de iennige wiere sin is dy't der is.
-**Brûkt** stiet dêr los fan en bliuwt op beide nivo's: in applikaasje brûkt de
-identity provider, in container brûkt in cache.
+**In applikaasje seit ien ding de fraach.** Wêr't in container draait is
+*Draait op*, op it record fan de komponint, en in applikaasje krijt te hearren
+wat har containers sizze: *Draait op: OpenShift (3 containers)*. Wat in
+applikaasje brûkt is **Brûkt**, en dat neamt de tsjinst, net it produkt: in team
+freget om berjochteferkear, en hokker broker dat leveret is de saak fan it
+platfoarmteam, ien kear sein as *Realisearret*. Fan hokker platfoarmen in
+applikaasje wier ôfhinget wurdt út dy twa ôflaat — de rigel *Makket gebrûk fan*
+op it record lêst *Containerplatfoarm (OpenShift), Berjochteferkear (Event
+broker)* sûnder dat der wat op de applikaasje typt is. In platfoarm streekrjocht
+brûke mei noch altyd, foar it team dat him wier oan ien eksimplaar bynt; it
+ynspeksjepaniel biedt earst tsjinsten oan.
 
-**Kleurje op** yn de arkbalke fan it lânskip kleuret de kaarten: op platfoarm,
-sadat jo yn ien eachopslach sjogge hokker applikaasjes der ien diele, of op
-libbenssyklus fan de technyk, sadat de kaarten dy't op wat steane dat útfazearre
-wurdt amber wurde. De leginda sit ûnder deselde knop, en oansette feroaret neat
-as de plaat.
+**Dield** op in tsjinst seit dat er oanbean wurdt foar gebrûk bûten it team dat
+him ûnderhâldt — *Underholden troch* neamt dat team. Organisaasjes lûke dy line
+ferskillend, dus it finkje is fan jo; en dêr't nimmen it set hat, sizze de rigen
+it dochs. In tsjinst dy't troch it iene team ûnderholden wurdt en brûkt wurdt
+troch in applikaasje fan in oar team wurdt oanbean, oft immen dat no sein hat of
+net, en de roadmap en it technologyregister toane dat as befining mei de brûkers
+derby — in petear om te fieren, nea in finkje dat it ark foar jo set. In dielde
+tsjinst dy't noch nimmen bûten it eigen team brûkt is gewoan, en gjin befining.
 
-**It platfoarmrapport** is wat der oerbliuwe soe as it platfoarm fuortfoel.
-Dûbelklik op de chip, of kies **Platfoarmrapport** yn it menu, en de side lit
-sjen wêr't it op stiet, wat derûnder sit, wat deropp rint — elke container
-neamd njonken syn applikaasje — wat it brûkt, en de keppelflakken op
-containernivo dy't deroerhinne rinne, elk mei it applikaasjekeppelflak dêr't it
-diel fan is. In namme iepenet de side fan dat ding dêr't dizze scope it hat. Der
-wurdt neat tekene en neat makke: it wurdt elke kear dat jo it iepenje út de
-rigen ôflaat, dus it is noait âld.
+**It technologyregister**, in kaart op it organisaasjeskerm njonken it register
+fan applikaasjes, is elke tsjinst en elk platfoarm yn de hiele beam: wa't elk
+ûnderhâldt, hokker dield binne, hoefolle applikaasjes se brûke en út hoefolle
+scopes, wat elk realisearret — neat dat in tsjinst realisearret is in echt gat,
+en sa wurdt it toand — en, foar in platfoarm, wat it host mei alles wat derûnder
+falt. Elke kear út de mappen ôflaat, dus it kin der net mei yn tsjinspraak wêze.
 
-Twa dingen folgje dêrút. De badge **platfoarm** op in kaart lêst ôf wêr't de
-containers fan in applikaasje op steane as nimmen him set hat — managed op in
-eigen platfoarm, foar in part op ien bûten de organisaasje, gjin op neat — en in
-status dy't jo sette wint. En de befiningen fan de roadmap krije in rigel foar in
-applikaasje dy't noch op in platfoarm stiet neidat dat útfazearre is, mei de
-container derby dy't nearne mear op stiet.
+**Twa rapporten, fan elke kant ien.** Dûbelklik op de chip fan in platfoarm, of
+kies **Platfoarmrapport** yn it menu, foar wat der oerbliuwe soe as it fuortfoel:
+wêr't it yn sit, wat derûnder sit, wat derop of derûnder draait — elke container
+neamd njonken syn applikaasje en de namespace dêr't er yn sit — wat it brûkt, en
+de keppelflakken op containernivo dy't deroerhinne rinne, elk mei it
+applikaasjekeppelflak dêr't it diel fan is. Dûbelklik op de chip fan in tsjinst,
+of kies **Tsjinstrapport**, foar wat der strâne soe as er ynlutsen waard: wa't
+him ûnderhâldt, wat him realisearret, wa't derop leunt en út hokker scopes, en
+hokker brûkers der noch op sitte soene op de dei dat er ferdwynt. Gjin fan
+beiden wurdt tekene of makke; beide wurde elke kear dat jo se iepenje út de
+rigen ôflaat.
+
+**Kleurje op** yn de arkbalke fan it lânskip kleuret de kaarten op platfoarm —
+it kluster, net de namespace — of op libbenssyklus fan de technyk, sadat de
+kaarten dy't op wat steane dat útfazearre wurdt amber wurde, de hiele keatling
+meirekkene. De badge **platfoarm** lêst ôf wêr't de containers op steane as
+nimmen him set hat, en de befiningen fan de roadmap melde in applikaasje dy't
+noch op in platfoarm stiet neidat dat, of wat derboppe, útfazearre is, mei it
+platfoarm derby dat wier ferdwynt.
+
+**Wat in platfoarmteam dermei docht.** Definiearje de tsjinsten dy't jo oanbiede
+yn in eigen scope, elk tawiisd oan jo team en markearre as dield; set de
+klusters, brokers en akkounts dy't se leverje mei *Underdiel fan* ûnder elkoar
+en sis wat elk realisearret. Elk lânskip tekenet jo tsjinsten dan as stand-in en
+syn applikaasjes sizze hokker se brûke; it register fertelt jo wa't op wat
+leunt, it tsjinstrapport wa't strâne soe foardat jo der ien ynlûke, en de
+befining hokker dingen fan jo eigen team oare teams stilwei brûke binne gien.
 
 ## Sykje
 

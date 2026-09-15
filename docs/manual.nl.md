@@ -832,46 +832,83 @@ Kies een kolomkop om de applicatie te openen, waar dit niveau hem heeft.
 
 ### Technologie
 
-Waar de applicaties op staan is een **platform**: een cluster, een broker, een
-bus, een firewall, het gereedschap. Teken er een uit de onderste rij van het
-palet en hij landt in de beheerlaag als de chip die die laag altijd al tekende;
-geef hem een soort in het inspectiepaneel — runtime, messaging, integratie,
-netwerk, data, identiteit, gereedschap, observability. Een gedeeld platform
-wordt meestal in een eigen scope gedefinieerd en elders als stand-in getekend,
-zodat het team dat het cluster draait het record bezit en elk landschap zegt
-dat het erop staat.
+Waar de applicaties op staan is een **platform** — een cluster, een namespace,
+een broker, een cloudaccount, een firewall — en wat een platformteam aanbiedt
+is een **platformdienst**: *Containerplatform*, *Berichtenverkeer*, *Beheerde
+database*, *Identiteit*. Het zijn twee verschillende dingen op dezelfde laag.
+Een dienst is wat een team vraagt en waar een platformteam voor
+verantwoordelijk is; een platform is wat die dit jaar levert, en kan volgend
+jaar vervangen worden zonder dat de dienst van naam verandert. Beide komen uit
+de onderste rij van het palet en landen als chip in de beheerlaag, de dienst
+met een eigen merkteken zodat de twee in één oogopslag uit elkaar te houden
+zijn. Een platform zegt in het inspectiepaneel wat het is — een *plek* waar
+iets in draait, een *dienst* die iets gebruikt, of een *netwerk*; een dienst
+als niets gezegd is — en waar het **onderdeel van** is, wat maakt dat een
+namespace in de app onder zijn cluster kan; een platform **realiseert** de
+diensten die het levert. Een gedeeld platform of gedeelde dienst wordt meestal
+in een eigen scope gedefinieerd en elders als stand-in getekend, zodat het
+team dat het draait het record bezit.
 
-**Waar iets draait staat op de container.** Een applicatie draait nergens — de
-dingen waaruit ze bestaat draaien, en meestal op meer dan één plek — dus de
-keuze *Draait op* staat op het record van een component, en een applicatie
-krijgt te horen wat haar containers zeggen: *Draait op: OpenShift (3
-containers)*. Een applicatie zonder containers — een extern systeem, een
-ingekochte dienst — zegt zelf waar ze draait, wat voor een dienst die de
-leverancier host de enige ware zin is die er is. **Gebruikt** staat daar los
-van en blijft op beide niveaus: een applicatie gebruikt de identity provider,
-een container gebruikt een cache.
+**Een applicatie zegt één ding per vraag.** Waar een container draait is
+*Draait op*, op het record van de component, en een applicatie krijgt te
+horen wat haar containers zeggen: *Draait op: OpenShift (3 containers)*. Wat
+een applicatie gebruikt is **Gebruikt**, en dat noemt de dienst, niet het
+product: een team vraagt om berichtenverkeer, en welke broker dat levert is de
+zaak van het platformteam, één keer gezegd als *Realiseert*. Van welke
+platforms een applicatie werkelijk afhangt wordt uit die twee afgeleid — de
+regel *Maakt gebruik van* op het record leest *Containerplatform (OpenShift),
+Berichtenverkeer (Event broker)* zonder dat er iets op de applicatie getypt
+is. Een platform rechtstreeks gebruiken mag nog steeds, voor het team dat
+zich echt aan één exemplaar bindt; het inspectiepaneel biedt eerst diensten
+aan.
 
-**Kleuren op** in de werkbalk van het landschap kleurt de kaarten: op platform,
-zodat je in één oogopslag ziet welke applicaties er een delen, of op
-levenscyclus van de techniek, zodat de kaarten die op iets staan dat uitgefaseerd
-wordt amber worden. De legenda zit onder dezelfde knop, en aanzetten verandert
-niets dan de plaat.
+**Gedeeld** op een dienst zegt dat hij wordt aangeboden voor gebruik buiten
+het team dat hem onderhoudt — *Onderhouden door* noemt dat team. Organisaties
+trekken die lijn verschillend, dus het vinkje is van jou; en waar niemand het
+gezet heeft, zeggen de rijen het alsnog. Een dienst die door het ene team
+wordt onderhouden en gebruikt wordt door een applicatie van een ander team
+wordt aangeboden, of iemand dat nu gezegd heeft of niet, en de roadmap en het
+technologieregister tonen dat als bevinding met de gebruikers erbij — een
+gesprek om te voeren, nooit een vinkje dat het gereedschap voor je zet. Een
+gedeelde dienst die nog niemand buiten het eigen team gebruikt is gewoon, en
+geen bevinding.
 
-**Het platformrapport** is wat er zou overblijven als het platform wegviel.
-Dubbelklik op de chip, of kies **Platformrapport** in het menu, en de pagina
-toont waar het op staat, wat eronder zit, wat erop draait — elke container
-genoemd naast zijn applicatie — wat het gebruikt, en de koppelvlakken op
-containerniveau die eroverheen lopen, elk met het applicatiekoppelvlak waar het
-deel van is. Een naam opent de pagina van dat ding waar deze scope het bevat.
-Er wordt niets getekend en niets gemaakt: het wordt elke keer dat je het opent
-uit de rijen afgeleid, dus het is nooit verouderd.
+**Het technologieregister**, een kaart op het organisatiescherm naast het
+register van applicaties, is elke dienst en elk platform in de hele boom: wie
+elk onderhoudt, welke gedeeld zijn, hoeveel applicaties ze gebruiken en uit
+hoeveel scopes, wat elk realiseert — niets dat een dienst realiseert is een
+echt gat, en zo wordt het getoond — en, voor een platform, wat het host met
+alles wat eronder valt. Elke keer uit de mappen afgeleid, dus het kan er niet
+mee in tegenspraak zijn.
 
-Twee dingen volgen daaruit. De badge **platform** op een kaart leest af waar de
-containers van een applicatie op staan als niemand hem heeft gezet — managed op
-een eigen platform, gedeeltelijk op een platform buiten de organisatie, geen op
-niets — en een status die jij zet wint. En de bevindingen van de roadmap krijgen
-een regel voor een applicatie die nog op een platform staat nadat dat is
-uitgefaseerd, met de container erbij die nergens meer op staat.
+**Twee rapporten, van elke kant één.** Dubbelklik op de chip van een
+platform, of kies **Platformrapport** in het menu, voor wat er zou overblijven
+als het wegviel: waar het in zit, wat eronder zit, wat erop of eronder draait
+— elke container genoemd naast zijn applicatie en de namespace waar hij in
+zit — wat het gebruikt, en de koppelvlakken op containerniveau die eroverheen
+lopen, elk met het applicatiekoppelvlak waar het deel van is. Dubbelklik op de
+chip van een dienst, of kies **Dienstrapport**, voor wat er zou stranden als
+hij werd ingetrokken: wie hem onderhoudt, wat hem realiseert, wie erop leunt
+en uit welke scopes, en welke gebruikers er nog op zouden zitten op de dag dat
+hij verdwijnt. Geen van beide wordt getekend of gemaakt; beide worden elke
+keer dat je ze opent uit de rijen afgeleid.
+
+**Kleuren op** in de werkbalk van het landschap kleurt de kaarten op platform
+— het cluster, niet de namespace — of op levenscyclus van de techniek, zodat
+de kaarten die op iets staan dat uitgefaseerd wordt amber worden, de hele
+keten meegerekend. De badge **platform** leest af waar de containers op staan
+als niemand hem heeft gezet, en de bevindingen van de roadmap melden een
+applicatie die nog op een platform staat nadat dat, of iets erboven, is
+uitgefaseerd, met het platform erbij dat werkelijk verdwijnt.
+
+**Wat een platformteam ermee doet.** Definieer de diensten die je aanbiedt in
+een eigen scope, elk toegewezen aan je team en gemarkeerd als gedeeld; zet de
+clusters, brokers en accounts die ze leveren met *Onderdeel van* onder elkaar
+en zeg wat elk realiseert. Elk landschap tekent je diensten dan als stand-in
+en zijn applicaties zeggen welke ze gebruiken; het register vertelt je wie op
+wat leunt, het dienstrapport wie er zou stranden vóór je er een intrekt, en de
+bevinding welke dingen van je eigen team andere teams stilletjes zijn gaan
+gebruiken.
 
 ## Zoeken
 

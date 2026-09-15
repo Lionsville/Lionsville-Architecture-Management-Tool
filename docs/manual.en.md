@@ -792,42 +792,77 @@ heading to open the application, where this scope holds it.
 
 ### Technology
 
-What the applications stand on is a **platform**: a cluster, a broker, a
-bus, a firewall, the tooling. Draw one from the palette's last row and it
-lands in the management band as the chip that band always drew; give it a
-sort on the inspector — runtime, messaging, integration, network, data,
-identity, tooling, observability. A shared platform is usually defined in a
-scope of its own and drawn elsewhere as a stand-in, so the team that runs
-the cluster owns its record and every landscape says it stands on it.
+What the applications stand on is a **platform** — a cluster, a namespace, a
+broker, a cloud account, a firewall — and what a platform team offers is a
+**platform service**: *Container platform*, *Message brokering*, *Managed
+database*, *Identity*. The two are different things on the same layer. A
+service is what a team asks for and a platform team is accountable for; a
+platform is what delivers it this year, and could be replaced next year
+without the service changing its name. Both come from the palette's last
+row and land in the management band as chips, the service with a mark of
+its own so the two are told apart at a glance. A platform says what it is
+on the inspector — a *place* something runs in, a *service* something
+consumes, or a *network*; a service when unsaid — and what it is **part
+of**, which is how a namespace goes under its cluster in the app; a platform
+**realises** the services it delivers. A shared platform or service is
+usually defined in a scope of its own, drawn elsewhere as a stand-in, so the
+team that runs it owns its record.
 
-**Where something runs is said on the container.** An application is not
-deployed anywhere — the things it is made of are, and usually in more than
-one place — so the *Hosted on* choice is on a component's record, and an
-application is told what its containers say: *Runs on: OpenShift (3
-containers)*. An application with no containers at all — an outside system, a
-bought service — says where it runs itself, which for a vendor-hosted service
-is the only true sentence there is. **Uses** is separate and stays at both
-levels: an application uses the identity provider, a container uses a cache.
+**An application says one thing per question.** Where a container runs is
+*Hosted on*, on the component's record, and an application is told what its
+containers say: *Runs on: OpenShift (3 containers)*. What an application
+consumes is **Uses**, and it names the service, not the product: a team asks
+for message brokering, and which broker delivers it is the platform team's
+business, said once as *Realises*. Which platforms an application actually
+depends on is worked out from the two — the record's *Leverages* line reads
+*Container platform (OpenShift), Message brokering (Event broker)* with
+nothing typed on the application. Using a platform directly is still
+allowed for the team that genuinely binds to one instance; the inspector
+offers services first.
 
-**Colour by** in the landscape's toolbar tints the cards: by platform, so you
-can see at a glance which applications share one, or by technology lifecycle,
-so the ones standing on something retiring go amber. The legend is under the
-same button, and turning it on changes nothing but the picture.
+**Shared** on a service says it is offered for use beyond the team that
+maintains it — *Maintained by* names that team. Organisations draw this line
+differently, so it is yours to tick; and where nobody has, the rows still
+say. A service maintained by one team and used by an application belonging
+to another is being offered whether anybody said so or not, and the roadmap
+and the technology register show it as a finding naming the consumers — a
+conversation to have, never a box the tool ticks for you. A shared service
+nobody outside its team uses yet is an ordinary thing and no finding.
 
-**A platform's report** is what would be left standing if it went.
-Double-click its chip, or **Platform report** on its menu, and the page shows
-what it stands on, what is under it, what runs on it — each container named
-beside its application — what uses it, and the container interfaces that cross
-it, each with the application interface it is part of. A name opens the
-thing's page where this scope holds it. Nothing is drawn or created: it is
-worked out from the rows every time you open it, so it is never stale.
+**The technology register**, a card on the organisation screen beside the
+register of applications, is every service and platform across the whole
+tree: who maintains each, which are shared, how many applications consume
+them and from how many scopes, what realises each — nothing realising a
+service is a real gap, shown as one — and, for a platform, what it hosts
+with everything filed under it. Derived from the folders every time, so it
+cannot disagree with them.
 
-Two things follow. The **platform** badge on a card reads off what an
-application's containers stand on where nobody set it — managed on your own
-platform, partial on one outside the organisation, none on nothing — and a
-status you set wins. And the roadmap's findings gain a line for an application
-still standing on a platform after it has been retired, naming the container
-that is left standing on nothing.
+**Two reports, one from each side.** Double-click a platform's chip, or
+**Platform report** on its menu, for what would be left standing if it went:
+what it sits in, what is under it, what runs on it or anything under it —
+each container named beside its application and the namespace it sits in —
+what uses it, and the container interfaces that cross it, each with the
+application interface it is part of. Double-click a service's chip, or
+**Service report**, for what would be stranded if it were withdrawn: who
+maintains it, what realises it, who leans on it and from which scopes, and
+which consumers would still be on it on the day it goes. Neither is drawn
+or created; both are worked out from the rows every time you open them.
+
+**Colour by** in the landscape's toolbar tints the cards by platform — the
+cluster, not the namespace — or by technology lifecycle, so the cards
+standing on something retiring go amber, the whole chain counted. The
+**platform** badge reads off the roll-up where nobody set it, and the
+roadmap's findings flag an application still standing on a platform after it
+or anything above it has retired, naming the platform that actually goes.
+
+**What a platform team does with it.** Define the services you offer in a
+scope of your own, each assigned to your team and marked shared; file the
+clusters, brokers and accounts that deliver them under each other with
+*Part of* and say what each realises. Every landscape then draws your
+services as stand-ins and its applications say which they use; the register
+tells you who leans on what, the service report tells you who would be
+stranded before you withdraw one, and the finding tells you which of your
+own team's things other teams have quietly come to depend on.
 
 ## Search
 
