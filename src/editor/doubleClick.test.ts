@@ -12,10 +12,13 @@ const model = {
     element('wms', { ref: 'acme/logistics' }),
     element('ghost', { ref: 'nowhere' }),
     element('ops', { kind: 'actor' }),
+    element('esb', { kind: 'platform' }),
+    element('shared-bus', { kind: 'platform', ref: 'acme/platforms' }),
   ],
   diagrams: [
     { id: 'l7', kind: 'layer7' as const, name: 'L', members: [], geometry: { nodes: [] } },
     { id: 'cd-erp', kind: 'container' as const, name: 'ERP', applicationElementId: 'erp', members: [], geometry: { nodes: [] } },
+    { id: 'tv-esb', kind: 'technology' as const, name: 'ESB', platformId: 'esb', members: [], geometry: { nodes: [] } },
   ],
 };
 
@@ -32,6 +35,12 @@ describe('doubleClickTarget', () => {
     expect(target?.kind).toBe('owner');
     if (target?.kind === 'owner') target.show();
     expect(show).toHaveBeenCalled();
+  });
+
+  it('opens the technology view a platform has, or makes one — here, whoever defines it (ADR-0013)', () => {
+    expect(doubleClickTarget(model, 'esb', undefined)).toEqual({ kind: 'technology', diagramId: 'tv-esb' });
+    expect(doubleClickTarget(model, 'shared-bus', { ownerOf: () => ({ label: 'x', fields: [], onShow: () => {} }) }))
+      .toEqual({ kind: 'newTechnology' });
   });
 
   it('falls through for a stand-in nobody can show, and opens a page for everything else', () => {

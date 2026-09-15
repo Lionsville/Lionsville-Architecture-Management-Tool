@@ -84,6 +84,13 @@ export interface EditorDiagramActions {
     /** The enterprise map, the second laid-out view: open one, and make one. As the sheet's. */
     onOpenMap?(diagramId: string): void;
     onCreateMap?(): void;
+    /**
+     * A technology view, the third laid-out view (ADR-0013): open one, and
+     * make one about a platform. As the map's, with the platform named
+     * because a view of nothing has nothing to draw.
+     */
+    onOpenTechnology?(diagramId: string): void;
+    onCreateTechnology?(platformId: string): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */

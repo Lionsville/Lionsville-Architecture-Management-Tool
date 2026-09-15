@@ -16,6 +16,7 @@ import { NL as platform } from '../platform/strings/nl'
 import { NL as projects } from '../projects/strings/nl'
 import { NL as search } from '../search/strings/nl'
 import { NL as business } from '../business/strings/nl'
+import { NL as technology } from '../technology/strings/nl'
 
 export const NL = {
   ...adapters,
@@ -30,4 +31,5 @@ export const NL = {
   ...projects,
   ...search,
   ...business,
+  ...technology,
 } as const

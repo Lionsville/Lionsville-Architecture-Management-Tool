@@ -16,6 +16,7 @@ import { DE as platform } from '../platform/strings/de'
 import { DE as projects } from '../projects/strings/de'
 import { DE as search } from '../search/strings/de'
 import { DE as business } from '../business/strings/de'
+import { DE as technology } from '../technology/strings/de'
 
 export const DE = {
   ...adapters,
@@ -30,4 +31,5 @@ export const DE = {
   ...projects,
   ...search,
   ...business,
+  ...technology,
 } as const

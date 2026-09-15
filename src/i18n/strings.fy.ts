@@ -16,6 +16,7 @@ import { FY as platform } from '../platform/strings/fy'
 import { FY as projects } from '../projects/strings/fy'
 import { FY as search } from '../search/strings/fy'
 import { FY as business } from '../business/strings/fy'
+import { FY as technology } from '../technology/strings/fy'
 
 export const FY = {
   ...adapters,
@@ -30,4 +31,5 @@ export const FY = {
   ...projects,
   ...search,
   ...business,
+  ...technology,
 } as const

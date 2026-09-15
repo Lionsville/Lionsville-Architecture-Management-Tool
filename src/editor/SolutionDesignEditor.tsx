@@ -1044,6 +1044,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
         case 'owner': target.show(); return;
         case 'container': props.document.onActiveDiagramChange(target.diagramId); return;
         case 'newContainer': props.diagrams.onCreateContainer(elementId); return;
+        // A page, not a board: handed to the host, which draws it (ADR-0013).
+        case 'technology': props.diagrams.onOpenTechnology?.(target.diagramId); return;
+        case 'newTechnology': props.diagrams.onCreateTechnology?.(elementId); return;
         default: return;
       }
     },
@@ -1193,6 +1196,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onCreateSheet={props.diagrams.onCreateSheet}
         onOpenMap={props.diagrams.onOpenMap}
         onCreateMap={props.diagrams.onCreateMap}
+        onOpenTechnology={props.diagrams.onOpenTechnology}
         // Caught, not `void`ed: `handleTidy` rethrows so the unattended caller in
         // `useAutoLayout` can tell "laid out" from "did not", and `void` discards the
         // value without attaching a rejection handler — so a failed Tidy reported its

@@ -116,6 +116,8 @@ export type InitialPage =
   | { page: 'sheet'; id?: string }
   /** The enterprise map, likewise. */
   | { page: 'map'; id?: string }
+  /** A technology view by id (ADR-0013); there is no "the one to make", because one is about a platform. */
+  | { page: 'technology'; id: string }
   /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
   | { page: 'plan'; id: string }
   /**

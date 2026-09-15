@@ -15,6 +15,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
+import { PLATFORM_CATEGORIES, PLATFORM_CATEGORY_LABEL, platformCategoryOf } from '../model/relations';
+import type { PlatformCategory } from '../model/types';
 import { LogoGrid } from './nodes/LogoGrid';
 import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
@@ -371,6 +373,23 @@ export function ElementInspector(props: ElementInspectorProps) {
       {sectionTitle(t('tab.general'))}
       {show(0) && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* What sort of technology (ADR-0013): a closed set, because the
+              ArchiMate mapping and the technology view both branch on it.
+              Tooling when unsaid, which is what the select shows. */}
+          {element.kind === 'platform' && (
+            <TextField
+              select
+              label={t('field.platformCategory')}
+              value={platformCategoryOf(element)}
+              disabled={readOnly || owned('platformCategory')}
+              onChange={(e) => update({ platformCategory: e.target.value as PlatformCategory })}
+            >
+              {PLATFORM_CATEGORIES.map((category) => (
+                <MenuItem key={category} value={category}>{t(PLATFORM_CATEGORY_LABEL[category])}</MenuItem>
+              ))}
+            </TextField>
+          )}
+
           {element.kind === 'application' && (
             <Autocomplete
               freeSolo

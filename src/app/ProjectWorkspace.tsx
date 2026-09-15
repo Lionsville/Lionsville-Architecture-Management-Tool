@@ -57,6 +57,7 @@ import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { MapPage, SheetPage } from '../business'
+import { TechnologyPage } from '../technology'
 import type { Supporter } from '../business'
 import type { MapDescribe } from '../business'
 import type { SheetHandle } from '../business'
@@ -80,6 +81,7 @@ import { useLibrary } from './useLibrary'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
 import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
 import { useMap } from './useMap'
+import { useTechnology } from './useTechnology'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
 import { useNearlyFullNotice } from './useStorageNotice'
@@ -331,6 +333,8 @@ export function ProjectWorkspace({
   // The map's inspector edits a capability with the sheet's own actions: a
   // rename from either page is the same command.
   const maps = useMap({ session, makeId, s })
+  // A platform's page (ADR-0013): read only, so it needs nobody's actions.
+  const technology = useTechnology({ session, makeId, s })
 
   /**
    * The picture behind an image source, or nothing — which is the whole of the
@@ -426,6 +430,7 @@ export function ProjectWorkspace({
   const onSheetHandle = useCallback((handle: SheetHandle | undefined) => { sheetHandle.current = handle }, [])
   const openSheetPage = sheets.open
   const openMapPage = maps.open
+  const openTechnologyPage = technology.open
   const renderer = useMemo<RendererView>(() => {
     const current = (): EditorHandle => {
       const held = editorHandle.current
@@ -472,6 +477,7 @@ export function ProjectWorkspace({
       async sheet(diagramId, options) {
         const asked = session.current().diagrams.find((diagram) => diagram.id === diagramId)
         if (asked?.kind === 'map') openMapPage(diagramId)
+        else if (asked?.kind === 'technology') openTechnologyPage(diagramId)
         else openSheetPage(diagramId)
         const deadline = Date.now() + 5_000
         while (Date.now() < deadline) {
@@ -482,7 +488,7 @@ export function ProjectWorkspace({
         throw new RendererRefused('gone')
       },
     }
-  }, [session, openSheetPage, openMapPage])
+  }, [session, openSheetPage, openMapPage, openTechnologyPage])
 
   useAgentGateway(agent, useMemo(() => ({
     indexed: session.indexed,
@@ -634,6 +640,20 @@ export function ProjectWorkspace({
     for (const element of session.model.elements) {
       if (element.kind !== 'function') continue
       for (const row of index.rowsTo(element.id, ['supports', 'assigned'])) found.push(row.relation)
+    }
+    return found
+  }, [index, session.model.elements])
+  /**
+   * The rows the rest of the organisation wrote that name a platform this
+   * scope holds (ADR-0013): what runs on the shared cluster is a landscape's
+   * row, and so is every interface that crosses the shared bus. Per platform
+   * this scope holds, for the reason the rows above are per function.
+   */
+  const rowsThrough = useMemo(() => {
+    const found: Relation[] = []
+    for (const element of session.model.elements) {
+      if (element.kind !== 'platform') continue
+      for (const row of index.rowsOf(element.id)) found.push(row.relation)
     }
     return found
   }, [index, session.model.elements])
@@ -870,32 +890,51 @@ export function ProjectWorkspace({
     plans.closeAll()
     sheets.close()
     maps.close()
+    technology.close()
     showDecision(adrId)
-  }, [plans.closeAll, sheets.close, maps.close, showDecision])
+  }, [plans.closeAll, sheets.close, maps.close, technology.close, showDecision])
   const openRoadmap = useCallback(() => {
     setAdrPage({ open: false })
     sheets.close()
     maps.close()
+    technology.close()
     plans.openRoadmap()
-  }, [plans.openRoadmap, sheets.close, maps.close])
+  }, [plans.openRoadmap, sheets.close, maps.close, technology.close])
   const openSheet = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
     maps.close()
+    technology.close()
     sheets.open(id)
-  }, [plans.closeAll, maps.close, sheets.open])
+  }, [plans.closeAll, maps.close, technology.close, sheets.open])
   const openMap = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
     sheets.close()
+    technology.close()
     maps.open(id)
-  }, [plans.closeAll, sheets.close, maps.open])
+  }, [plans.closeAll, sheets.close, technology.close, maps.open])
   const createMap = useCallback(() => {
     setAdrPage({ open: false })
     plans.closeAll()
     sheets.close()
+    technology.close()
     maps.create()
-  }, [plans.closeAll, sheets.close, maps.create])
+  }, [plans.closeAll, sheets.close, technology.close, maps.create])
+  const openTechnology = useCallback((id: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.close()
+    technology.open(id)
+  }, [plans.closeAll, sheets.close, maps.close, technology.open])
+  const createTechnology = useCallback((platformId: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.close()
+    technology.create(platformId)
+  }, [plans.closeAll, sheets.close, maps.close, technology.create])
 
   /**
    * The page this was opened for, shown once.
@@ -919,6 +958,7 @@ export function ProjectWorkspace({
       if (initialPage.id) openMap(initialPage.id)
       else createMap()
     }
+    if (initialPage.page === 'technology') openTechnology(initialPage.id)
     // Over the roadmap, so closing the plan lands on the roadmap and closing
     // that leaves a scope that draws nothing, rather than on an empty board.
     if (initialPage.page === 'plan') {
@@ -934,7 +974,7 @@ export function ProjectWorkspace({
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, plans.openPlan, focusElement, openDocumentation, gestures])
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, openTechnology, plans.openPlan, focusElement, openDocumentation, gestures])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -1085,6 +1125,8 @@ export function ProjectWorkspace({
             onCreateSheet: sheets.create,
             onOpenMap: openMap,
             onCreateMap: createMap,
+            onOpenTechnology: openTechnology,
+            onCreateTechnology: createTechnology,
           }}
           history={historyRequests}
           requests={{ focus: focusRequest, documentation: docRequest }}
@@ -1240,6 +1282,18 @@ export function ProjectWorkspace({
         today={todayDay}
         applications={applicationsInTree}
         onOpenDocumentation={(id) => openDocumentation(id, maps.mapId)}
+        windowChrome={pageChrome}
+      />
+      <TechnologyPage
+        open={technology.viewId !== undefined}
+        model={session.model}
+        view={technology.view}
+        onClose={() => { technology.close(); leaveIfNothingToDraw() }}
+        onHandle={onSheetHandle}
+        elsewhere={rowsThrough}
+        describe={describeForMap}
+        today={todayDay}
+        onOpenDocumentation={(id) => openDocumentation(id, technology.viewId)}
         windowChrome={pageChrome}
       />
       <ChooseBoardDialog

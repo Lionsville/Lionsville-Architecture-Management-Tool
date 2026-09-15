@@ -98,6 +98,14 @@ describe('menuItemsFor — node', () => {
     expect(byId(items, 'open-container').action).toBe('open-container');
   });
 
+  it('offers a platform its technology view, to open or to make (ADR-0013)', () => {
+    const make = menuItemsFor(NODE, ctx({ element: app({ kind: 'platform', zone: 'management' }) }));
+    expect(byId(make, 'open-container').label).toBe('Create technology view');
+    const open = menuItemsFor(NODE, ctx({ element: app({ kind: 'platform', zone: 'management', hasTechnologyView: true }) }));
+    expect(byId(open, 'open-container').label).toBe('Open technology view');
+    expect(byId(open, 'open-container').action).toBe('open-container');
+  });
+
   it('offers no container entry for a non-application', () => {
     const items = menuItemsFor(NODE, ctx({ element: app({ kind: 'actor', zone: 'actors' }) }));
     expect(ids(items)).not.toContain('open-container');

@@ -16,7 +16,10 @@ export type DoubleClickTarget =
   | { kind: 'documentation' }
   | { kind: 'owner'; show: () => void }
   | { kind: 'container'; diagramId: string }
-  | { kind: 'newContainer' };
+  | { kind: 'newContainer' }
+  /** A platform's own page (ADR-0013): what runs on it and what passes through it. */
+  | { kind: 'technology'; diagramId: string }
+  | { kind: 'newTechnology' };
 
 export function doubleClickTarget(
   model: { elements: readonly DesignElement[]; diagrams: readonly DesignDiagram[] },
@@ -25,6 +28,13 @@ export function doubleClickTarget(
 ): DoubleClickTarget | undefined {
   const element = model.elements.find((e) => e.id === elementId);
   if (!element) return undefined;
+  // What is inside a platform is what stands on it and what passes through
+  // it (ADR-0013) — the technology view, made here whoever defines the
+  // platform, because the rows it draws are this scope's own.
+  if (element.kind === 'platform') {
+    const view = model.diagrams.find((d) => d.kind === 'technology' && d.platformId === elementId);
+    return view ? { kind: 'technology', diagramId: view.id } : { kind: 'newTechnology' };
+  }
   if (element.kind !== 'application') return { kind: 'documentation' };
   if (element.ref !== undefined) {
     const show = ownership?.ownerOf(elementId)?.onShow;
