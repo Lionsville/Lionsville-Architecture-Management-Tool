@@ -122,5 +122,6 @@ export const FY: Record<keyof typeof EN, string> = {
   'check.planOverdue': '{name} soe op {detail} klear wêze en rint noch.',
   'check.platformRetiresFirst': '{name} stiet noch op {detail} neidat dat útfasearre is.',
   'check.impliedInterface': '{count} keppelflakken op containernivo tusken {name} en {detail} sûnder keppelflak op applikaasjenivo.',
+  'check.accept': 'Oernimme',
   'check.staleness': 'Dit toant wêr\'t de datums inoar tsjinsprekke. It kin net sjen oft in lânskip ferâldere is.',
 }

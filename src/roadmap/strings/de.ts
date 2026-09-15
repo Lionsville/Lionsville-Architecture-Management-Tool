@@ -122,5 +122,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.planOverdue': '{name} sollte am {detail} fertig sein und läuft noch.',
   'check.platformRetiresFirst': '{name} steht noch auf {detail}, nachdem es abgelöst wurde.',
   'check.impliedInterface': '{count} Container-Schnittstellen zwischen {name} und {detail} ohne Schnittstelle auf Anwendungsebene.',
+  'check.accept': 'Übernehmen',
   'check.staleness': 'Dies zeigt, wo die Daten einander widersprechen. Ob eine Landschaft veraltet ist, kann es nicht sagen.',
 }

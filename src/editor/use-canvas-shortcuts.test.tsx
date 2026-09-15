@@ -36,6 +36,10 @@ function diagram(m: DesignModel): DesignDiagram {
 function stubActions(): EditorActions {
   return {
     addElement: vi.fn(),
+    landInterface: vi.fn(),
+    moveLanding: vi.fn(),
+    removeLanding: vi.fn(),
+    detachLanding: vi.fn(),
     setAutoRoute: vi.fn(),
   setAsOf: vi.fn(),
     updateElement: vi.fn(),

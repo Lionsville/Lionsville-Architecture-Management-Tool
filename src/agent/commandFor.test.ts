@@ -1009,6 +1009,30 @@ describe('landing an interface (ADR-0013)', () => {
     expect(commandFor('connection.update', { id: 'c1', refines: 7 }, view(held)))
       .toMatchObject({ refusal: 'agent.badArguments' })
   })
+
+  it('accepts the interface a container line implies, and lands every one of them on it', () => {
+    const bottomUp = fromArrays({
+      ...host,
+      relations: [
+        { type: 'flow', id: 'x1', sourceId: 'crm', targetId: 'api', isBidirectional: false },
+        { type: 'flow', id: 'x2', sourceId: 'crm', targetId: 'api', label: 'asks', isBidirectional: false },
+      ],
+    })
+    const out = commandFor('interface.accept', { id: 'x2' }, view(bottomUp))
+    const after = roundTrip(bottomUp, out)
+    const made = Object.values(after.relations).find((r) => r.targetId === 'billing')!
+    // The label of the first line that has one, and both container lines landed.
+    expect(made).toMatchObject({ sourceId: 'crm', targetId: 'billing', label: 'asks' })
+    expect(after.relations.x1.refines).toBe(made.id)
+    expect(after.relations.x2.refines).toBe(made.id)
+  })
+
+  it('refuses a line that is not a container line without an interface', () => {
+    expect(commandFor('interface.accept', { id: 'c1' }, view(held)))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(commandFor('interface.accept', { id: 'nowhere' }, view(held)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+  })
 })
 
 describe('the physical view (ADR-0013)', () => {

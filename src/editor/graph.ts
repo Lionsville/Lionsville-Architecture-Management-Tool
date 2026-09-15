@@ -289,6 +289,25 @@ export function buildEdges(
     }));
   const anchorsById = assignEdgeAnchors(anchorInputs, rectById);
 
+  // Which end of a line may be grabbed on a container diagram (ADR-0013). An
+  // interface's boundary end is grabbed to land it and a landing's own end is
+  // grabbed to move it; the FAR end of either is the other application's, and
+  // dragging it would re-end the functional line, which is never what the
+  // gesture means. Anywhere else, both ends as before.
+  const subject = args.diagram.kind === 'container' ? args.diagram.applicationElementId : undefined;
+  const grabbable = (connection: (typeof args.model.relations)[number]): boolean | 'source' | 'target' => {
+    if (args.readOnly) return false;
+    if (subject === undefined) return true;
+    const own = (id: ElementId) => {
+      const element = elementsById.get(id);
+      return element?.kind === 'component' && element.parentId === subject;
+    };
+    const end = connection.refines !== undefined ? own : (id: ElementId) => id === subject;
+    if (end(connection.sourceId)) return 'source';
+    if (end(connection.targetId)) return 'target';
+    return true;
+  };
+
   const edges: FloatingEdgeModel[] = [];
   for (const { connection, sourceId, targetId, route, stored } of drawn) {
     // Resolve the stroke once and reuse it for the arrowheads, so a custom edge
@@ -303,7 +322,7 @@ export function buildEdges(
       source: sourceId,
       target: targetId,
       selected: args.selectedConnectionIds?.has(connection.id) ?? false,
-      reconnectable: !args.readOnly,
+      reconnectable: grabbable(connection),
       markerEnd: heads.end ? marker : undefined,
       markerStart: heads.start ? marker : undefined,
       data: {

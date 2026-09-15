@@ -252,6 +252,21 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     case 'reset-label-position':
       if (connectionId) actions.setEdgeLabelPosition(connectionId, undefined);
       return;
+    // Where an interface arrives a level down (ADR-0013): the drag without the
+    // drag. No container named is the way back to the boundary, which removes
+    // the container line rather than re-ending it.
+    case 'lands-on': {
+      if (!connectionId) return;
+      const connection = model.relations.find((c) => c.id === connectionId);
+      if (!connection) return;
+      if (args.containerId === undefined) {
+        if (connection.refines !== undefined) actions.removeLanding(connectionId);
+        return;
+      }
+      if (connection.refines !== undefined) actions.moveLanding(connectionId, args.containerId);
+      else actions.landInterface(connectionId, args.containerId);
+      return;
+    }
     case 'delete-connection':
       if (!connectionId) return;
       if (host.requestDeleteConnection) host.requestDeleteConnection(connectionId);

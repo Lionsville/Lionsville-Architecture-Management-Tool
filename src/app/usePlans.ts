@@ -18,8 +18,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../i18n'
 import {
-  addDays, isDay, nextTransitionNumber, portCommands, portsOf, replacementCommands, shiftDays,
-  transaction, transitionList, transitionsOf, unplannedPorts, unportCommands,
+  acceptImplied, addDays, impliedInterfaces, isDay, nextTransitionNumber, portCommands, portsOf,
+  replacementCommands, shiftDays, transaction, transitionList, transitionsOf, unplannedPorts,
+  unportCommands,
 } from '../model'
 import type { Command, DesignElement, ElementId, Transition } from '../model'
 import type { MakeId } from '../model/keys'
@@ -101,6 +102,24 @@ export function usePlans(deps: {
       session.dispatch({ type: 'diagram.update', id, patch: { asOf: day }, coalesce: `asOf:${id}` })
     },
     onOpenElement(id) { leaveFor(() => navigate.toElement(id)) },
+    /**
+     * *Accept* on an implied interface (ADR-0013): the application line
+     * written and every container line landed on it, as one step.
+     *
+     * The finding names the first of those lines, so the pair is found again
+     * from the same arithmetic the finding came from rather than from anything
+     * carried on the finding itself.
+     */
+    acceptInterface(relationId) {
+      const model = session.indexed()
+      const elements = Object.values(model.elements)
+      const relations = model.order.relations.map((id) => model.relations[id])
+      const implied = impliedInterfaces(relations, (id) => model.elements[id])
+        .find((one) => one.relations.some((row) => row.id === relationId))
+      if (!implied) return
+      const nameOf = (id: ElementId) => elements.find((element) => element.id === id)?.name ?? id
+      session.dispatch(acceptImplied(implied, makeId('c'), nameOf))
+    },
   }), [session, makeId, s, navigate, leaveFor])
 
   /**

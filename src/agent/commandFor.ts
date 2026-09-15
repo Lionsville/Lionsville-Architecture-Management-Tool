@@ -30,6 +30,7 @@ import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
 import { seedTechnologyDiagram } from '../model/technologyDiagram'
 import { isPlatformCategory } from '../model/relations'
+import { acceptImplied, impliedInterfaces } from '../model/implied'
 import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
@@ -173,6 +174,34 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
         changed.push({ id, changed: Object.keys(patch) })
       }
       return { command: transaction(commands, { origin: 'agent' }), answer: json({ updated: changed }) }
+    }
+    /**
+     * The application interface the container lines imply, written, with every
+     * one of them landed on it (ADR-0013). One step, one undo, and the same
+     * arithmetic the finding came from — so an agent that accepts a finding
+     * gets exactly what a person pressing *Accept* gets.
+     */
+    case 'interface.accept': {
+      const id = args.id as string
+      if (!model.relations[id]) return refused('agent.unknownId', `connection ${id}`)
+      const relations = model.order.relations.map((held) => model.relations[held])
+      const implied = impliedInterfaces(relations, (held) => model.elements[held])
+        .find((one) => one.relations.some((row) => row.id === id))
+      if (!implied) {
+        return refused('agent.badArguments', `${id} is not a container-level line without an application interface`)
+      }
+      const made = view.ids.connection()
+      const nameOf = (held: ElementId) => model.elements[held]?.name ?? held
+      const command = acceptImplied(implied, made, nameOf)
+      return {
+        command: { ...command, origin: 'agent' },
+        answer: json({
+          id: made,
+          sourceId: implied.sourceId,
+          targetId: implied.targetId,
+          refinements: implied.relations.map((row) => row.id),
+        }),
+      }
     }
     case 'connection.remove': {
       const id = args.id as string

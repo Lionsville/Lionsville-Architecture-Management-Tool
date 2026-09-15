@@ -67,6 +67,8 @@ function renderInspector(
     routes?: EdgeRoute[];
     onResetRoute?: ResetRouteSpy | null;
     onSetRouteSides?: SetRouteSidesSpy | null;
+    /** A landscape of two applications unless a test needs containers on it. */
+    model?: DesignModel;
   } = {},
 ) {
   const { actions, updateConnection, setRouteSource } = makeActions();
@@ -80,7 +82,7 @@ function renderInspector(
     <ThemeProvider theme={createTheme()}>
       <ConnectionInspector
         connection={conn}
-        model={model()}
+        model={opts.model ?? model()}
         diagram={diagram(opts.routes)}
         readOnly={opts.readOnly ?? false}
         actions={actions}
@@ -341,5 +343,73 @@ describe('ConnectionInspector — Leaves from / Arrives at', () => {
       routes: [{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top', targetSide: 'left' }],
     });
     expect(screen.queryByTestId('route-sides')).toBeNull();
+  });
+});
+
+
+/**
+ * Which interface a container line is part of (ADR-0013, redone).
+ *
+ * Asked at the top of General, because it decides what the rest of the panel
+ * means: a line that is part of an interface carries the protocol, and the
+ * interface carries the label and the window. Never asked about an application
+ * line — that IS the interface.
+ */
+describe('ConnectionInspector — part of which interface (ADR-0013)', () => {
+  const deep = (relations: Relation[]): DesignModel => ({
+    name: 'SD',
+    diagrams: [],
+    elements: [
+      { id: 'a1', kind: 'application', name: 'A', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1', kind: 'application', name: 'B', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'b1-api', kind: 'component', parentId: 'b1', name: 'B API', lifecycle: 'live', isManaged: false, aspects: {} },
+    ],
+    relations,
+  });
+
+  const landing = (over: Partial<Relation> = {}) =>
+    connection({ id: 'r1', sourceId: 'a1', targetId: 'b1-api', ...over });
+
+  it('is not asked about an application line', () => {
+    renderInspector(connection(), { model: deep([]) });
+    expect(screen.queryByLabelText('Part of')).toBeNull();
+  });
+
+  it('offers the interfaces running that way, and a new one of its own', () => {
+    const interfaces: Relation[] = [
+      connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' }),
+      connection({ id: 'c17', sourceId: 'a1', targetId: 'b1' }),
+    ];
+    renderInspector(landing(), { model: deep([...interfaces, landing()]) });
+    fireEvent.mouseDown(screen.getByLabelText('Part of'));
+    const options = within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual(['“asks” from A', 'From A', 'New interface']);
+  });
+
+  it('offers only a new interface when none runs that way', () => {
+    renderInspector(landing(), { model: deep([landing()]) });
+    fireEvent.mouseDown(screen.getByLabelText('Part of'));
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent))
+      .toEqual(['New interface']);
+  });
+
+  it('writes the interface it is told it is part of', () => {
+    const held = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
+    const { updateConnection } = renderInspector(landing(), { model: deep([held, landing()]) });
+    chooseOption('Part of', '“asks” from A');
+    expect(updateConnection).toHaveBeenCalledWith('r1', { refines: 'c16' });
+  });
+
+  it('offers the way out by name on a landed line, and clears the field', () => {
+    const held = connection({ id: 'c16', sourceId: 'a1', targetId: 'b1', label: 'asks' });
+    const landed = landing({ refines: 'c16' });
+    const { updateConnection } = renderInspector(landed, { model: deep([held, landed]) });
+    chooseOption('Part of', 'Detach from “asks”');
+    expect(updateConnection).toHaveBeenCalledWith('r1', { refines: undefined });
+  });
+
+  it('is read-only where the panel is', () => {
+    renderInspector(landing(), { model: deep([landing()]), readOnly: true });
+    expect(selectDisabled('Part of')).toBe(true);
   });
 });

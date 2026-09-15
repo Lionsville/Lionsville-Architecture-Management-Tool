@@ -407,7 +407,9 @@ const SPECS = [
       + 'successor that goes live after the thing it replaces is gone, a retirement with no '
       + 'successor named, a connection valid after one of its ends has retired, and a plan past '
       + 'the day it was due to finish. It reports contradictions only — it cannot tell you a '
-      + 'landscape is out of date.',
+      + 'landscape is out of date. It also reports an "impliedInterface": container-level lines '
+      + 'running between two applications with no application-level interface written for them, '
+      + 'which interface.accept draws.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
@@ -574,6 +576,16 @@ const SPECS = [
       required: ['items'],
       additionalProperties: false,
     },
+  },
+  {
+    name: 'interface.accept',
+    tier: 'write',
+    description:
+      'Draw the application-level interface that a set of container-level lines implies, and land every one of '
+      + 'them on it, as ONE step (ADR-0013). Name any one of those lines — roadmap.check reports them as an '
+      + '"impliedInterface" finding and names the first. The new line takes the label of the first line that has '
+      + 'one, and runs both ways if any of them does.',
+    inputSchema: { type: 'object', properties: { id: ID('container-level connection') }, required: ['id'], additionalProperties: false },
   },
   {
     name: 'connection.remove',

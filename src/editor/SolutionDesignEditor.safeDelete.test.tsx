@@ -181,3 +181,51 @@ describe('SolutionDesignEditor — confirming a multi-delete', () => {
     expect(within(dialog()).getByRole('button', { name: 'Delete from model' })).toBeDefined();
   });
 });
+
+
+/**
+ * An interface with container interfaces under it is two questions rather than
+ * one (ADR-0013, redone): they can go with it, or stay as interfaces of their
+ * own. The second is the plain delete — the writer clears their `refines`
+ * itself — and the first is one step with it.
+ */
+describe('SolutionDesignEditor — deleting an interface that has landed', () => {
+  function landed(): DesignModel {
+    const held = model();
+    return {
+      ...held,
+      elements: [
+        ...held.elements,
+        { id: 'b1-api', kind: 'component', parentId: 'b1', name: 'Carrier API', lifecycle: 'live', isManaged: false, aspects: {} },
+      ],
+      relations: [
+        ...held.relations,
+        { type: 'flow', id: 'r1', sourceId: 'a1', targetId: 'b1-api', refines: 'c1', isBidirectional: false },
+      ],
+    };
+  }
+
+  it('says how many are part of it, and keeps them when told to', async () => {
+    const { host, asked } = renderEditor({ model: landed() });
+    await measured();
+    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
+
+    expect(within(dialog()).getByText(/1 container interface is part of it/)).toBeDefined();
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Keep them' }));
+    expect(asked().map((c) => c.type)).toEqual(['relation.delete']);
+    // The writer leaves no landing pointing at a line that is gone.
+    expect(host.current.model.relations.find((c) => c.id === 'r1')?.refines).toBeUndefined();
+  });
+
+  it('takes them with it when told to, as one step', async () => {
+    const { host, asked } = renderEditor({ model: landed() });
+    await measured();
+    fireEvent.contextMenu(screen.getByTestId('rf__edge-c1'));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'Connection menu' })).getByText('Delete connection'));
+
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Delete it too' }));
+    expect(asked().every((c) => c.type === 'relation.delete')).toBe(true);
+    expect(host.current.model.relations).toEqual([]);
+  });
+});

@@ -36,11 +36,12 @@ export {
 
 /** An interface, and where it lands a level down (ADR-0013). */
 export {
-  applicationOf, hasRefinements, isApplicationLine, isContainerLine, landingPlaces,
-  protocolsOf, refinementRefusal, refinementsOf,
+  applicationOf, candidateInterfaces, hasRefinements, isApplicationLine, isContainerLine,
+  landedEnd, landingGesture, landingPlaces, landingRow, protocolsOf, refinementRefusal,
+  refinementsOf,
 } from './refines'
-export type { Held, RefinementRefusal } from './refines'
-export { impliedInterfaces } from './implied'
+export type { Held, LandingGesture, RefinementRefusal } from './refines'
+export { acceptImplied, impliedInterfaces } from './implied'
 export type { ImpliedInterface } from './implied'
 
 /** What a platform is, and what stands on it (ADR-0013). */
@@ -62,6 +63,9 @@ export type { DatedPhase } from './lifecycle'
 
 /** Which boards draw a thing, on their own day (ADR-0009, ADR-0010). */
 export { boardsDrawing } from './drawnOn'
+
+/** What a container diagram holds, and what it draws once an interface lands. */
+export { hoistedEnd, landedInterfaces } from './containerDiagram'
 
 /** One platform, with everything on it (ADR-0013). */
 export { findTechnologyDiagram, seedTechnologyDiagram, technologyPage } from './technologyDiagram'

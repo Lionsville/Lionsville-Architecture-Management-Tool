@@ -33,6 +33,7 @@ import { edgeRoutesOf,
 import { clampCanvasSize, clampZoneSize, RESIZABLE_ZONES } from '../model/zones';
 import { canChangeKind, placementForKind } from '../model/kindChange';
 import { nodeFigure } from '../model/kinds';
+import { candidateInterfaces, isContainerLine, landedEnd, landingRow } from '../model/refines';
 
 /**
  * A set of selected canvas items. Elements, connections and domain groups live
@@ -253,6 +254,23 @@ export interface EditorActions {
    * geometry step: a reconnect changes topology, so the live pass follows.
    */
   reconnect(id: string, endpoints: { sourceId: ElementId; targetId: ElementId }, sides?: RouteSides): void;
+  /**
+   * An interface leaves the boundary and lands on one of this application's
+   * containers (ADR-0013): a container line refining it, carrying the protocol
+   * and the direction down, and taking the boundary line's route with it. The
+   * interface itself is never re-ended — it is the functional line.
+   */
+  landInterface(interfaceId: string, containerId: ElementId): void;
+  /** A landing grabbed again and dropped on another container of the same application. */
+  moveLanding(relationId: string, containerId: ElementId): void;
+  /**
+   * A landing dropped back on the boundary box: the container line goes, and
+   * the interface attaches to the boundary again by derivation, with nothing
+   * written for it.
+   */
+  removeLanding(relationId: string): void;
+  /** A landing stops being part of its interface, and stays as an interface of its own. */
+  detachLanding(relationId: string): void;
   /**
    * Paste a clipboard snapshot onto the active diagram: mints the keys the
    * copies will have in the file, remaps references (parent, endpoints),
@@ -866,12 +884,22 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         const diagram = currentDiagram();
         // A line drawn on a canvas is a flow: the four other relation types
         // (ADR-0012 §5) say what covers what and are not drawn here.
+        const held = (id: ElementId) => model.elements.find((e) => e.id === id);
+        const drawn = { id: ids.connection(), sourceId, targetId };
+        // A container line drawn between two applications is almost always
+        // part of the interface already running between them (ADR-0013), so
+        // where exactly one runs that way it takes it and the inspector shows
+        // it ticked. Where several do, or none, it is left for the person:
+        // several is a question, and none is an interface of its own that the
+        // roadmap offers to draw the application line for.
+        const candidates = isContainerLine({ type: 'flow', sourceId, targetId }, held)
+          ? candidateInterfaces(model.relations, drawn, held)
+          : [];
         const connection: Relation = {
-          id: ids.connection(),
+          ...drawn,
           type: 'flow',
-          sourceId,
-          targetId,
           isBidirectional: false,
+          ...(candidates.length === 1 ? { refines: candidates[0].id } : {}),
         };
         geometry(transaction([
           { type: 'relation.create', relation: connection },
@@ -903,6 +931,62 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
             ? routeCommands(diagram.id, [routeWithSides(stored, id, routeSides(sides))])
             : []),
         ]));
+      },
+
+      landInterface(interfaceId, containerId) {
+        const diagram = currentDiagram();
+        const subject = diagram?.applicationElementId;
+        if (!diagram || diagram.kind !== 'container' || subject === undefined) return;
+        const model = currentModel();
+        const relation = model.relations.find((c) => c.id === interfaceId);
+        const container = model.elements.find((e) => e.id === containerId);
+        if (!relation) return;
+        if (container?.kind !== 'component' || container.parentId !== subject) return;
+        const row = landingRow(relation, subject, containerId, ids.connection());
+        // The shape the reader was looking at goes with the line: the boundary
+        // line's route becomes the landing's, rather than being left behind on
+        // a line this diagram no longer draws.
+        const stored = routeFor(diagram, interfaceId);
+        geometry(transaction([
+          { type: 'relation.create', relation: row },
+          ...(stored
+            ? [
+              ...routeCommands(diagram.id, [{ ...stored, relationId: row.id }]),
+              { type: 'route.clear' as const, diagramId: diagram.id, relationIds: [interfaceId] },
+            ]
+            : []),
+        ]));
+        setSelection(selectConnection(row.id));
+      },
+
+      moveLanding(relationId, containerId) {
+        const diagram = currentDiagram();
+        const subject = diagram?.applicationElementId;
+        if (!diagram || subject === undefined) return;
+        const model = currentModel();
+        const relation = model.relations.find((c) => c.id === relationId);
+        const container = model.elements.find((e) => e.id === containerId);
+        if (!relation) return;
+        if (container?.kind !== 'component' || container.parentId !== subject) return;
+        const end = landedEnd(relation, subject, (id) => model.elements.find((e) => e.id === id));
+        if (!end) return;
+        geometry({
+          type: 'relation.update',
+          id: relationId,
+          patch: end === 'source' ? { sourceId: containerId } : { targetId: containerId },
+        });
+      },
+
+      removeLanding(relationId) {
+        if (!currentModel().relations.some((c) => c.id === relationId)) return;
+        geometry({ type: 'relation.delete', id: relationId });
+        setSelection(EMPTY_SELECTION);
+      },
+
+      detachLanding(relationId) {
+        const relation = currentModel().relations.find((c) => c.id === relationId);
+        if (!relation || relation.refines === undefined) return;
+        dispatch({ type: 'relation.update', id: relationId, patch: { refines: undefined } });
       },
 
       pasteClipboard(payload, offset) {

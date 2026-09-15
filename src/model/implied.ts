@@ -18,6 +18,8 @@
  * Pure, so the roadmap's page, the agent's `roadmap.check` and the accept
  * itself all read the same answer.
  */
+import { transaction } from './commands'
+import type { Command } from './commands'
 import { applicationOf, isContainerLine } from './refines'
 import type { Held } from './refines'
 import type { ElementId, Relation } from './types'
@@ -70,4 +72,42 @@ export function impliedInterfaces(relations: readonly Relation[], held: Held): I
     if (relation.isBidirectional === true || found.sourceId !== source) found.isBidirectional = true
   }
   return [...byPair.values()]
+}
+
+
+/**
+ * Accepting one: the application interface written, and every container line
+ * landed on it, as ONE step.
+ *
+ * The label is the first one any of the container lines carries — somebody has
+ * already said what flows there, and asking again would be asking twice — and
+ * the two names otherwise, which is at least true.
+ */
+export function acceptImplied(
+  implied: ImpliedInterface,
+  id: string,
+  nameOf: (elementId: ElementId) => string,
+): Command {
+  const said = implied.relations.find((row) => row.label !== undefined && row.label !== '')?.label
+  const label = said ?? `${nameOf(implied.sourceId)} → ${nameOf(implied.targetId)}`
+  return transaction([
+    {
+      type: 'relation.create',
+      relation: {
+        id,
+        type: 'flow',
+        sourceId: implied.sourceId,
+        targetId: implied.targetId,
+        label,
+        ...(implied.isBidirectional ? { isBidirectional: true } : {}),
+      },
+    },
+    // After the line exists: the writer refuses a landing on a row that is not
+    // there, and would be right to.
+    ...implied.relations.map((row) => ({
+      type: 'relation.update' as const,
+      id: row.id,
+      patch: { refines: id },
+    })),
+  ])
 }

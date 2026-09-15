@@ -136,5 +136,6 @@ export const EN = {
   'check.planOverdue': '{name} was due to finish on {detail} and is still running.',
   'check.platformRetiresFirst': '{name} still stands on {detail} after it has been retired.',
   'check.impliedInterface': '{count} container interfaces between {name} and {detail} without an application interface.',
+  'check.accept': 'Accept',
   'check.staleness': 'These say where the dates contradict each other. They cannot tell you a landscape is out of date.',
 } as const

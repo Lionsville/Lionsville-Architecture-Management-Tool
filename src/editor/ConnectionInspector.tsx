@@ -18,6 +18,7 @@ import type {
   EdgeRouting,
 } from '../model/types';
 import { routeFor, routeSource, type AttachSidesPatch } from '../model/routes';
+import { candidateInterfaces, isContainerLine } from '../model/refines';
 import { ColorField } from './ColorField';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
@@ -154,6 +155,23 @@ export function ConnectionInspector({
   const typed = (field: string, patch: Partial<Omit<DesignConnection, 'id'>>) =>
     actions.updateConnection(connection.id, patch, fieldEdit(connection.id, field));
 
+  // Which interface this line is part of, a level down (ADR-0013). Only a
+  // container line is ever asked: an application interface IS the interface,
+  // and the landscape draws it.
+  const held = (id: string) => model.elements.find((e) => e.id === id);
+  // Only a flow is drawn on a canvas (ADR-0012 §5), so the line this panel is
+  // about is one — which is why the type is supplied rather than read off a
+  // shape that does not carry it.
+  const isContainer = isContainerLine({ ...connection, type: 'flow' }, held);
+  const candidates = isContainer ? candidateInterfaces(model.relations, connection, held) : [];
+  const partOfOption = (row: (typeof candidates)[number]) => (
+    row.label
+      ? t('field.partOfOption', { label: row.label, name: name(row.sourceId) })
+      : t('field.partOfUnlabelled', { name: name(row.sourceId) })
+  );
+  const landedOn = connection.refines === undefined
+    ? undefined
+    : model.relations.find((c) => c.id === connection.refines);
   const route = routeFor(diagram, connection.id);
   const routeStatus: 'none' | 'auto' | 'manual' = route ? routeSource(route) : 'none';
   const bendCount = route?.waypoints.length ?? 0;
@@ -176,7 +194,8 @@ export function ConnectionInspector({
   }
 
   const generalHasValues = Boolean(
-    connection.label || connection.protocol || connection.validFrom || connection.validUntil,
+    connection.label || connection.protocol || connection.technology
+      || connection.refines || connection.validFrom || connection.validUntil,
   );
   const appearanceHasValues = Boolean(
     connection.color ||
@@ -210,6 +229,31 @@ export function ConnectionInspector({
 
       {activeTab === 0 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* Where this line belongs, asked first because it decides what the
+              rest of the panel means: a line that is part of an interface
+              carries the protocol, and the interface carries the label and the
+              window (ADR-0013). The last option is the way out — a new
+              interface of its own, which is also how a landed line detaches. */}
+          {isContainer && (
+            <TextField
+              select
+              label={t('field.partOf')}
+              value={landedOn ? landedOn.id : ''}
+              fullWidth
+              disabled={readOnly}
+              helperText={t('field.partOfHelp')}
+              onChange={(e) => update({ refines: e.target.value || undefined })}
+            >
+              {candidates.map((row) => (
+                <MenuItem key={row.id} value={row.id}>{partOfOption(row)}</MenuItem>
+              ))}
+              <MenuItem value="">
+                {landedOn
+                  ? t('field.detachFrom', { label: landedOn.label ?? name(landedOn.sourceId) })
+                  : t('field.newInterface')}
+              </MenuItem>
+            </TextField>
+          )}
           <TextField
             label={t('field.label')}
             value={connection.label ?? ''}
@@ -228,6 +272,14 @@ export function ConnectionInspector({
             disabled={readOnly}
             placeholder={t('field.protocolPlaceholder')}
             onChange={(e) => typed('protocol', { protocol: e.target.value || undefined })}
+          />
+          <TextField
+            label={t('field.technology')}
+            value={connection.technology ?? ''}
+            fullWidth
+            disabled={readOnly}
+            helperText={t('field.technologyHelp')}
+            onChange={(e) => typed('technology', { technology: e.target.value || undefined })}
           />
           {/* The days this line is there (ADR-0009). Empty on almost every
               line: one with no window follows the elements it joins, and only

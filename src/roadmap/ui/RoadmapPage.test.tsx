@@ -57,6 +57,7 @@ function setup(over: Partial<RoadmapPageProps> & { mode?: 'light' | 'dark' } = {
     onOpenPlan: vi.fn(),
     setAsOf: vi.fn(),
     onOpenElement: vi.fn(),
+    acceptInterface: vi.fn(),
     ...over.actions,
   }
   const view = renderShell(
@@ -244,6 +245,37 @@ describe('the checks', () => {
     // past what it can do.
     setup()
     expect(screen.getByText(/cannot tell you a landscape is out of date/)).toBeTruthy()
+  })
+
+  /**
+   * The one finding with something to do about it (ADR-0013, redone): the
+   * application interface nobody drew, offered rather than drawn, because a
+   * line nobody agreed to is the clutter this step removes.
+   */
+  describe('an interface the container lines imply', () => {
+    const implied = () => model({
+      elements: [
+        element('wms-old', 'Warehouse Management'), element('billing', 'Billing'),
+        element('billing-ledger', 'Ledger', { kind: 'component', parentId: 'billing' }),
+      ],
+      transitions: [],
+      relations: [
+        { type: 'flow', id: 'x1', sourceId: 'billing-ledger', targetId: 'wms-old', isBidirectional: false },
+      ],
+    })
+
+    it('says how many run between which two applications, and offers to accept it', () => {
+      const acceptInterface = vi.fn()
+      setup({ model: implied(), actions: { acceptInterface } as never })
+      expect(screen.getByText(/1 container interfaces between Billing and Warehouse Management/)).toBeTruthy()
+      fireEvent.click(screen.getByTestId('accept-interface-x1'))
+      expect(acceptInterface).toHaveBeenCalledWith('x1')
+    })
+
+    it('offers nothing to a reader', () => {
+      setup({ model: implied(), readOnly: true })
+      expect(screen.queryByTestId('accept-interface-x1')).toBeNull()
+    })
   })
 })
 

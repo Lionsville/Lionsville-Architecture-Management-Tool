@@ -62,6 +62,7 @@ import { LanguageProvider, useStrings } from '../i18n/LanguageContext';
 import { ElementSearchDialog } from '../search/ui/ElementSearchDialog';
 import { PanelResizer } from './PanelResizer';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
+import { refinementsOf } from '../model/refines';
 import { DeleteElementDialog } from './DeleteElementDialog';
 import { EditorToolbar, type LayoutAction } from './EditorToolbar';
 import { DiagramSettingsDialog } from './DiagramSettingsDialog';
@@ -126,6 +127,14 @@ interface ConfirmDeleteState {
   summary: DeletionSummary;
   subject?: string;
   run(): void;
+  /**
+   * An interface with landings is two questions rather than one (ADR-0013):
+   * the container interfaces under it can go with it, or stay as interfaces of
+   * their own. Absent means there are none and the dialog asks the one
+   * question it has always asked.
+   */
+  landings?: number;
+  runWithLandings?(): void;
 }
 
 function EditorBody(props: SolutionDesignEditorProps) {
@@ -415,7 +424,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
         connectionIds: [connectionId],
         domainGroups: [],
       });
-      if (!needsDeleteConfirmation(summary)) {
+      // What has landed on it (ADR-0013). Keeping them is the plain delete —
+      // the writer clears their `refines` itself, so they simply become
+      // interfaces of their own — and taking them too is one step with it.
+      const landings = refinementsOf(state.model.relations, connectionId);
+      if (!needsDeleteConfirmation(summary) && landings.length === 0) {
         state.actions.deleteConnection(connectionId);
         return;
       }
@@ -423,6 +436,16 @@ function EditorBody(props: SolutionDesignEditorProps) {
         summary,
         subject: connection?.label || undefined,
         run: () => state.actions.deleteConnection(connectionId),
+        ...(landings.length > 0
+          ? {
+            landings: landings.length,
+            runWithLandings: () => state.actions.deleteSelection({
+              elementIds: [],
+              connectionIds: [connectionId, ...landings.map((row) => row.id)],
+              domainGroups: [],
+            }),
+          }
+          : {}),
       });
     },
     [readOnly, state.model, state.actions],
@@ -1395,10 +1418,15 @@ function EditorBody(props: SolutionDesignEditorProps) {
         <ConfirmDeleteDialog
           summary={confirmDelete.summary}
           subject={confirmDelete.subject}
+          landings={confirmDelete.landings}
           onConfirm={() => {
             confirmDelete.run();
             setConfirmDelete(undefined);
           }}
+          onConfirmWithLandings={confirmDelete.runWithLandings && (() => {
+            confirmDelete.runWithLandings?.();
+            setConfirmDelete(undefined);
+          })}
           onClose={() => setConfirmDelete(undefined)}
         />
       )}

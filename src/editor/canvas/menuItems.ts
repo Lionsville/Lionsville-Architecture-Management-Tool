@@ -50,6 +50,7 @@ export type MenuActionId =
   | 'set-direction'
   | 'edit-label'
   | 'reset-label-position'
+  | 'lands-on'
   | 'delete-connection'
   // pane
   | 'paste-here'
@@ -99,6 +100,11 @@ export interface MenuActionArgs {
   attachSide?: AttachSide;
   alignAxis?: AlignAxis;
   distributeAxis?: DistributeAxis;
+  /**
+   * "Lands on ▸": the container an interface lands on, or that a landing moves
+   * to (ADR-0013). `undefined` on the last entry — back to the boundary.
+   */
+  containerId?: ElementId;
 }
 
 export interface MenuItem {
@@ -174,6 +180,16 @@ export interface ConnectionMenuFacts {
   /** The side each end is fixed to (`EdgeRoute.sourceSide`); absent = automatic. */
   sourceSide?: AttachSide;
   targetSide?: AttachSide;
+  /**
+   * The containers of this diagram's own application, for *Lands on ▸*
+   * (ADR-0013). Empty or absent hides the entry: a landscape line has nowhere
+   * to land, and an application with no containers has nothing to land on.
+   */
+  landsOn?: readonly { id: ElementId; name: string }[];
+  /** This line IS a landing — the entry moves it, and offers the way back. */
+  isLanding?: boolean;
+  /** Which container it is on now, for the check mark. */
+  landedOn?: ElementId;
 }
 
 export interface SelectionMenuFacts {
@@ -490,6 +506,7 @@ function lineItems(ctx: MenuContext, handleIndex: number | undefined): MenuItem[
         { id: 'direction-reverse', label: t('menu.reverse'), checked: false, action: 'set-direction', args: { direction: 'reverse' } },
       ],
     },
+    ...landsOnSubmenu(c, t),
     sep('sep-label'),
     { id: 'edit-label', label: t('menu.editLabel'), action: 'edit-label' },
     {
@@ -504,6 +521,34 @@ function lineItems(ctx: MenuContext, handleIndex: number | undefined): MenuItem[
     { id: 'delete-connection', label: t('menu.deleteConnection'), shortcut: key('delete'), danger: true, action: 'delete-connection' },
   );
   return items;
+}
+
+/**
+ * Lands on ▸ — where this interface arrives a level down (ADR-0013).
+ *
+ * The drag without the drag: picking a container lands the interface there, or
+ * moves a landing that is already on one. A landing's last entry is the way
+ * back to the boundary, which removes the container line and lets the boundary
+ * line reappear by derivation.
+ */
+function landsOnSubmenu(c: ConnectionMenuFacts, t: Translate): MenuItem[] {
+  const containers = c.landsOn ?? []
+  if (containers.length === 0) return []
+  const children: MenuItem[] = containers.map((container) => ({
+    id: `lands-on-${container.id}`,
+    label: container.name,
+    checked: c.landedOn === container.id,
+    action: 'lands-on',
+    args: { containerId: container.id },
+  }))
+  if (c.isLanding) {
+    children.push(sep('sep-lands-on'), {
+      id: 'lands-on-boundary',
+      label: t('menu.backToBoundary'),
+      action: 'lands-on',
+    })
+  }
+  return [{ id: 'lands-on', label: t('menu.landsOn'), children }]
 }
 
 /**

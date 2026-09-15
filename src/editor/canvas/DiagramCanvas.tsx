@@ -24,6 +24,7 @@ import { getNodeTokens } from '../theme/tokens';
 import { buildEdges, buildNodes, type FloatingEdgeModel } from '../graph';
 import { placedNodes, domainGroupRectMap } from '../../model/placement';
 import { today } from '../../model/lifecycle';
+import { landedEnd, landingGesture, landingPlaces } from '../../model/refines';
 import {
   insertWaypointOnDrawn,
   routeFor,
@@ -775,6 +776,32 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     (oldEdge: Edge, newConnection: Connection) => {
       if (!newConnection.source || !newConnection.target) return;
       if (newConnection.source === newConnection.target) return;
+      // On a container diagram the same drag means four different things
+      // (ADR-0013), and which one is a question about the model rather than
+      // about the canvas: an interface leaving the boundary to land on a
+      // container, a landing moving to another container, a landing dropped
+      // back on the boundary, or an ordinary reconnect.
+      const relation = props.model.relations.find((c) => c.id === oldEdge.id);
+      if (relation) {
+        const gesture = landingGesture(
+          props.diagram,
+          relation,
+          { sourceId: newConnection.source, targetId: newConnection.target },
+          (id) => props.model.elements.find((e) => e.id === id),
+        );
+        if (gesture.kind === 'land') {
+          actions.landInterface(gesture.interfaceId, gesture.containerId);
+          return;
+        }
+        if (gesture.kind === 'move') {
+          actions.moveLanding(oldEdge.id, gesture.containerId);
+          return;
+        }
+        if (gesture.kind === 'unland') {
+          actions.removeLanding(oldEdge.id);
+          return;
+        }
+      }
       const sides = altConnectRef.current ? sidesFromHandles(newConnection) : undefined;
       actions.reconnect(
         oldEdge.id,
@@ -782,7 +809,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         sides,
       );
     },
-    [actions],
+    [actions, props.model, props.diagram],
   );
 
   const { onAddByDrop, onAddDomainGroupByDrop, onAddExistingAt, onPaletteDragOver } = props;
@@ -1047,6 +1074,16 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         const connection = model.relations.find((c) => c.id === target.connectionId);
         const route = routeFor(diagram, target.connectionId);
         if (connection) {
+          // Where this interface could land, and where it is (ADR-0013). Only
+          // on a container diagram, and only for a line that is this
+          // application's business: the interface at its boundary, or a
+          // landing already on one of its containers.
+          const subject = diagram.kind === 'container' ? diagram.applicationElementId : undefined;
+          const here = subject !== undefined
+            && (connection.refines !== undefined
+              ? landedEnd(connection, subject, (id) => model.elements.find((e) => e.id === id)) !== undefined
+              : connection.sourceId === subject || connection.targetId === subject);
+          const containers = here && subject !== undefined ? landingPlaces(model.elements, subject) : [];
           ctx.connection = {
             routing: connection.routing,
             isBidirectional: connection.isBidirectional ?? false,
@@ -1054,6 +1091,18 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
             hasLabelPosition: route?.labelPosition !== undefined,
             route: route ? routeSource(route) : 'none',
             ...routeSides(route),
+            ...(containers.length > 0
+              ? {
+                landsOn: containers.map((container) => ({ id: container.id, name: container.name })),
+                ...(connection.refines !== undefined
+                  ? {
+                    isLanding: true,
+                    landedOn: containers.find((container) =>
+                      container.id === connection.sourceId || container.id === connection.targetId)?.id,
+                  }
+                  : {}),
+              }
+              : {}),
           };
         }
       } else if (target.kind === 'selection') {

@@ -79,6 +79,12 @@ export type RoadmapActions = {
   setAsOf(day: string | undefined): void
   /** Show an element on the canvas. */
   onOpenElement(id: ElementId): void
+  /**
+   * *Accept* an interface the container lines imply (ADR-0013): write the
+   * application line and land every one of them on it, as one step. Named by
+   * the first of those lines, which is what the finding carries.
+   */
+  acceptInterface(relationId: string): void
 }
 
 /**
@@ -168,8 +174,11 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const scrubDay = props.asOf && isDay(props.asOf) ? props.asOf : today
   const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false }
   const bar = barChromeFor(chrome)
+  // Nothing dated and nothing to report. A landscape being drawn bottom-up has
+  // no dates at all and can still have a finding worth reading (ADR-0013), and
+  // a page that has something to tell you is not empty.
   const empty = whole.tracks.length === 0 && whole.relations.length === 0 && whole.transitions.length === 0
-    && below.length === 0
+    && below.length === 0 && problems.length === 0
 
   return (
     <PageDialog
@@ -485,6 +494,19 @@ export function RoadmapPage(props: RoadmapPageProps) {
                             ? t(RELATION_LABEL[problem.relationType])
                             : '',
                         })}
+                        {/* The one finding with something to do about it: the
+                            application line nobody drew, written from the
+                            container lines that imply it (ADR-0013). */}
+                        {problem.kind === 'impliedInterface' && !readOnly && (
+                          <Button
+                            size="small"
+                            data-testid={`accept-interface-${problem.id}`}
+                            sx={{ ml: 1, py: 0, minWidth: 0, fontSize: 12 }}
+                            onClick={() => actions.acceptInterface(problem.id)}
+                          >
+                            {t('check.accept')}
+                          </Button>
+                        )}
                       </Box>
                     ))}
                   </Box>
