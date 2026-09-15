@@ -71,9 +71,13 @@ describe('link', () => {
     expect(held.owner).toBe('acme/rail')
   })
 
-  it('takes the scope it should yield to when one is named', () => {
+  it('takes the scope it should yield to, and refuses what nothing defines or is already a stand-in', () => {
     const held = planned(plan({ gesture: 'link', id: 'wms', scope: 'acme/road', to: 'acme' }))
     expect(held.command).toMatchObject({ ref: 'acme', name: 'WMS' })
+    const models = [scope('', [element('only')])]
+    expect(refusal(plan({ gesture: 'link', id: 'only', scope: '' }, models))).toBe('gesture.noMaster')
+    expect(refusal(plan({ gesture: 'link', id: 'fulfilment', scope: 'acme/rail' })))
+      .toBe('gesture.notADefinition')
   })
 
   it('refuses a scope that does not define it, and one that is this scope', () => {
@@ -83,15 +87,6 @@ describe('link', () => {
       .toBe('gesture.noMaster')
   })
 
-  it('refuses a record nothing else defines', () => {
-    const models = [scope('', [element('only')])]
-    expect(refusal(plan({ gesture: 'link', id: 'only', scope: '' }, models))).toBe('gesture.noMaster')
-  })
-
-  it('refuses a record that is already a stand-in', () => {
-    expect(refusal(plan({ gesture: 'link', id: 'fulfilment', scope: 'acme/rail' })))
-      .toBe('gesture.notADefinition')
-  })
 })
 
 describe('promote', () => {
@@ -109,13 +104,13 @@ describe('promote', () => {
   })
 
   /** Two scopes were written, so ⌘Z stops at it (§10). */
-  it('asks for a barrier on the stack', () => {
+  it('asks for a barrier, refuses a scope it is not filed under or a declaration overtaken', () => {
     expect(held().barrier).toBe(true)
-  })
-
-  it('refuses a scope this one is not filed under', () => {
     expect(refusal(plan({ gesture: 'promote', id: 'wms', scope: 'acme/rail', to: 'acme/road' })))
       .toBe('gesture.notAnAncestor')
+    // Somebody deeper answers for it: this record is a copy, not the thing.
+    expect(refusal(plan({ gesture: 'promote', id: 'wms', scope: 'acme', to: '' })))
+      .toBe('gesture.notAMaster')
   })
 
   /**
@@ -130,12 +125,6 @@ describe('promote', () => {
       : one))
     expect(refusal(plan({ gesture: 'promote', id: 'wms', scope: 'acme/rail', to: 'acme' }, withDetail)))
       .toBe('gesture.wouldConflict')
-  })
-
-  /** Somebody deeper answers for it: this record is a copy, not the thing. */
-  it('refuses a declaration that has been overtaken', () => {
-    expect(refusal(plan({ gesture: 'promote', id: 'wms', scope: 'acme', to: '' })))
-      .toBe('gesture.notAMaster')
   })
 
   /**

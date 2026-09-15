@@ -37,11 +37,16 @@ const view = { kind: 'container' as const, applicationElementId: 'wms' }
 const placed = new Set(['wms', 'wms-api', 'wms-events', 'wms-db', 'wms-loose', 'orders'])
 
 describe('the boxes a container diagram draws', () => {
-  it('nests them the way the platforms nest, outermost first', () => {
+  it('nests the boxes the way the platforms nest, leaving what stands on nothing outside them', () => {
     const boxes = deploymentBoxes({ elements, relations }, view, placed)
     expect(boxes.map((box) => [box.name, box.depth])).toEqual([
       ['Cloud account', 0], ['OpenShift', 1], ['Logistics namespace', 2],
     ])
+    const boxes2 = deploymentBoxes({ elements, relations }, view, placed)
+    expect(boxes2.some((box) => box.memberIds.includes('wms-loose'))).toBe(false)
+    const today = new Set(['wms', 'wms-db'])
+    const boxes3 = deploymentBoxes({ elements, relations }, view, today)
+    expect(boxes3.map((box) => box.name)).toEqual(['Cloud account', 'OpenShift'])
   })
 
   it('puts a container in its own box and in every box that one sits in', () => {
@@ -52,20 +57,13 @@ describe('the boxes a container diagram draws', () => {
     expect(members.account).toEqual(['wms-api', 'wms-events', 'wms-db'])
   })
 
-  it('leaves a container hosted on nothing outside every box', () => {
-    const boxes = deploymentBoxes({ elements, relations }, view, placed)
-    expect(boxes.some((box) => box.memberIds.includes('wms-loose'))).toBe(false)
-  })
-
-  it('draws nothing for another application\'s containers: their deployment is not this picture', () => {
+  it('draws nothing for another application’s containers, nor off a container view, nor down a loop', () => {
     const boxes = deploymentBoxes({ elements, relations }, view, placed)
     expect(boxes.some((box) => box.memberIds.includes('orders-ui'))).toBe(false)
-  })
-
-  it('takes a box with the container the board is not drawing today', () => {
-    const today = new Set(['wms', 'wms-db'])
-    const boxes = deploymentBoxes({ elements, relations }, view, today)
-    expect(boxes.map((box) => box.name)).toEqual(['Cloud account', 'OpenShift'])
+    expect(deploymentBoxes({ elements, relations }, { kind: 'layer7' }, placed)).toEqual([])
+    const looped = elements.map((e) => (e.id === 'account' ? { ...e, parentId: 'ns' } : e))
+    const boxes2 = deploymentBoxes({ elements: looped, relations }, view, placed)
+    expect(boxes2.map((box) => box.id).sort()).toEqual(['account', 'ns', 'openshift'])
   })
 
   it('says the platform\'s sort, for the box to wear', () => {
@@ -76,13 +74,4 @@ describe('the boxes a container diagram draws', () => {
     expect(boxes.find((box) => box.id === 'openshift')?.platformCategory).toBe('tooling')
   })
 
-  it('draws nothing on a view that is not a container diagram', () => {
-    expect(deploymentBoxes({ elements, relations }, { kind: 'layer7' }, placed)).toEqual([])
-  })
-
-  it('survives a platform filed under itself rather than looping for ever', () => {
-    const looped = elements.map((e) => (e.id === 'account' ? { ...e, parentId: 'ns' } : e))
-    const boxes = deploymentBoxes({ elements: looped, relations }, view, placed)
-    expect(boxes.map((box) => box.id).sort()).toEqual(['account', 'ns', 'openshift'])
-  })
 })

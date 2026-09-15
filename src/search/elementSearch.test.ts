@@ -28,8 +28,10 @@ describe('searchElements', () => {
     expect(searchElements(board, '   ', 'd1')).toEqual([]);
   });
 
-  it('matches on the name', () => {
+  it('matches on the name, folding case and accents, narrowing on a second token', () => {
     expect(ids('reisinformatie')).toEqual(['a']);
+    expect(ids('RÉISINFORMATIE')).toEqual(['a']);
+    expect(ids('reis planner')).toEqual(['d']);
   });
 
   it('matches on category, vendor and technology', () => {
@@ -38,22 +40,16 @@ describe('searchElements', () => {
     expect(ids('travel')).toEqual(['a', 'd']);
   });
 
-  it('folds case and accents', () => {
-    expect(ids('RÉISINFORMATIE')).toEqual(['a']);
-  });
-
-  it('narrows on a second token rather than widening', () => {
-    expect(ids('reis planner')).toEqual(['d']);
-  });
-
   it('puts elements on the active diagram first', () => {
     // Both are "Travel"; 'a' is on d1 and 'd' is on d2.
     expect(ids('travel', 'd1')).toEqual(['a', 'd']);
     expect(ids('travel', 'd2')).toEqual(['d', 'a']);
   });
 
-  it('prefers a name that starts with the query', () => {
+  it('prefers a name that starts with the query, honours the limit, and answers nothing for no match', () => {
     expect(ids('reis')).toEqual(['a', 'd']);
+    expect(searchElements(board, 'a', 'd1', 2)).toHaveLength(2);
+    expect(ids('zzzzqqq')).toEqual([]);
   });
 
   it('reports the diagram a hit will be focused on', () => {
@@ -83,11 +79,4 @@ describe('searchElements', () => {
     expect(plain.detail).toBeUndefined();
   });
 
-  it('honours the limit', () => {
-    expect(searchElements(board, 'a', 'd1', 2)).toHaveLength(2);
-  });
-
-  it('returns nothing when nothing matches', () => {
-    expect(ids('zzzzqqq')).toEqual([]);
-  });
 });

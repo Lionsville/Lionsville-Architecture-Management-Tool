@@ -114,17 +114,15 @@ describe('restoring one diagram', () => {
       .toEqual({ ok: false, reason: 'restore.absentThen' })
   })
 
-  it('is one undo step that puts the mess back exactly', () => {
+  it('is one undo step that puts the mess back exactly, named after what it restored', () => {
     const { model, inverse } = restored(then(), now(), { what: 'diagram', id: 'd1' })
     const undone = apply(model, inverse)
     expect(undone.ok && toArrays(undone.model)).toEqual(now())
-  })
-
-  it('is named after what it restored, not after what that took', () => {
     const result = restoreCommand(fromArrays(then()), fromArrays(now()), { what: 'diagram', id: 'd1' }, '2026-09-03')
     expect(result.ok && summarise([result.command], fromArrays(now())))
       .toEqual({ key: 'activity.diagramRestored', name: 'Warehouse', asOf: '2026-09-03' })
   })
+
 })
 
 describe('restoring one description', () => {
@@ -147,21 +145,16 @@ describe('restoring one description', () => {
 })
 
 describe('restoring one decision', () => {
-  it('brings the record to what the snapshot held', () => {
+  it('brings the record to what the snapshot held, adds it back when it went, and refuses a locked one', () => {
     const { after } = restored(then(), now(), { what: 'decision', id: 'adr-1' })
     expect(after.decisions).toEqual([decision()])
-  })
-
-  it('adds it back when it was removed since', () => {
-    const { after } = restored(then(), now({ decisions: [] }), { what: 'decision', id: 'adr-1' })
-    expect(after.decisions).toEqual([decision()])
-  })
-
-  it('refuses a locked record rather than opening a back door', () => {
+    const { after: after2 } = restored(then(), now({ decisions: [] }), { what: 'decision', id: 'adr-1' })
+    expect(after2.decisions).toEqual([decision()])
     const later = now({ decisions: [decision({ status: 'accepted', body: 'Final.' })] })
     expect(restoreCommand(fromArrays(then()), fromArrays(later), { what: 'decision', id: 'adr-1' }, '2026-09-03'))
       .toEqual({ ok: false, reason: 'restore.locked' })
   })
+
 })
 
 describe('restoring the whole project', () => {

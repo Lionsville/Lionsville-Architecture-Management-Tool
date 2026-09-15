@@ -27,36 +27,28 @@ function plan(over: Partial<Transition> = {}): Transition {
 const roundTrip = (one: Transition) => transitionFromFile(transitionFileText(one), transitionPath(one))
 
 describe('transitionPath', () => {
-  it('leads with the number, so the folder sorts and a README is not a plan', () => {
+  it('leads with the number so the folder sorts, and has something to call an untitled plan', () => {
     expect(transitionPath(plan())).toBe('transitions/0003-replace-the-warehouse-system.md')
-  })
-
-  it('has something to call a plan with no title yet', () => {
     expect(transitionPath(plan({ title: '   ' }))).toBe('transitions/0003-plan.md')
   })
+
 })
 
 describe('the round trip', () => {
-  it('reads back exactly what was written', () => {
+  it('reads back exactly what was written, optional fields or none, in the same bytes twice', () => {
     expect(roundTrip(plan())).toEqual(plan())
+    const bare = plan({
+      from: undefined, to: undefined, owner: undefined,
+      elements: [], decisions: [], milestones: [], body: '',
+    })
+    expect(roundTrip(bare)).toEqual(bare)
+    expect(transitionFileText(plan())).toBe(transitionFileText(plan()))
   })
 
   it('keeps the initiative flag, and only when set', () => {
     expect(roundTrip(plan({ initiative: true }))!.initiative).toBe(true)
     expect(roundTrip(plan())).not.toHaveProperty('initiative')
     expect(transitionFileText(plan({ initiative: true }))).toContain('initiative: true')
-  })
-
-  it('reads back a plan with nothing optional on it', () => {
-    const bare = plan({
-      from: undefined, to: undefined, owner: undefined,
-      elements: [], decisions: [], milestones: [], body: '',
-    })
-    expect(roundTrip(bare)).toEqual(bare)
-  })
-
-  it('writes the same bytes twice', () => {
-    expect(transitionFileText(plan())).toBe(transitionFileText(plan()))
   })
 
   it('puts the title in the heading, so it renders as a plan anywhere', () => {
@@ -67,14 +59,15 @@ describe('the round trip', () => {
 })
 
 describe('a file somebody edited by hand', () => {
-  it('takes the number off the file name when the front matter lost it', () => {
+  it('takes the number off the file name, is no plan without one, and drops a nameless row', () => {
     const text = '---\nstatus: running\n---\n\n# TR-0007 — Written by hand\n\nBody.\n'
     const back = transitionFromFile(text, 'transitions/0007-written-by-hand.md')
     expect(back).toMatchObject({ number: 7, title: 'Written by hand', status: 'running' })
-  })
-
-  it('is not a plan at all when nothing says which number it is', () => {
     expect(transitionFromFile('# Notes\n\nSome notes.\n', 'transitions/notes.md')).toBeUndefined()
+    const text2 = [
+      '---', 'number: 2', 'elements:', '  - role: retires', '---', '', '# TR-0002 — Odd', '', 'Body.', '',
+    ].join('\n')
+    expect(transitionFromFile(text2, 'transitions/0002-odd.md')!.elements).toEqual([])
   })
 
   it('falls back rather than failing on a status or a role it does not know', () => {
@@ -88,10 +81,4 @@ describe('a file somebody edited by hand', () => {
     expect(back.elements).toEqual([{ elementId: 'a', role: 'changes' }])
   })
 
-  it('drops an element row with no id rather than keeping a nameless one', () => {
-    const text = [
-      '---', 'number: 2', 'elements:', '  - role: retires', '---', '', '# TR-0002 — Odd', '', 'Body.', '',
-    ].join('\n')
-    expect(transitionFromFile(text, 'transitions/0002-odd.md')!.elements).toEqual([])
-  })
 })

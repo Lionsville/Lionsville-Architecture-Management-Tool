@@ -37,21 +37,36 @@ describe('summarise', () => {
     expect(summarise([transaction([])], before())).toEqual({ key: 'activity.nothing' })
   })
 
-  it('names a new element after the element, which only the command knows', () => {
+  it('names a change after the row it is about, as it was rather than as it became', () => {
     expect(summarise([{
       type: 'element.create', element: element('warehouse', 'Warehouse'),
     }], before())).toMatchObject({ key: 'activity.elementAdded', name: 'Warehouse' })
-  })
-
-  it('names a delete after what it deleted — the model after it cannot', () => {
     expect(summarise([{ type: 'element.delete', id: 'billing' }], before()))
       .toMatchObject({ key: 'activity.elementDeleted', name: 'Billing' })
-  })
-
-  it('names an edit after the row as it was, not as it became', () => {
     expect(summarise([{
       type: 'element.update', id: 'billing', patch: { name: 'Invoicing' },
     }], before())).toMatchObject({ key: 'activity.elementChanged', name: 'Billing' })
+    // An update to something deleted in the same breath: a log line is not the
+    // place to say "unknown".
+    expect(summarise([{ type: 'relation.update', id: 'gone', patch: { label: 'x' } }], before()))
+      .toEqual({ key: 'activity.relationChanged' })
+    // A link gives the record the master's name, so the log has to read the
+    // name this scope had for it — otherwise the line is about a thing nobody
+    // here had ever called that.
+    expect(summarise(
+      [{ type: 'element.link', id: 'crm', name: 'Retail CRM', ref: 'acme/retail' }],
+      before(),
+    )).toEqual({ key: 'activity.elementLinked', name: 'CRM' })
+    // By the count, not by the first row: a refresh is one gesture over however
+    // many stand-ins had gone stale, and "refreshed CRM" for a step that
+    // rewrote nine of them would describe a ninth of what happened.
+    expect(summarise([{
+      type: 'standin.refresh',
+      entries: [
+        { id: 'crm', name: 'CRM', ref: 'acme/retail' },
+        { id: 'billing', name: 'Billing', ref: 'acme/finance' },
+      ],
+    }], before())).toEqual({ key: 'activity.standInsRefreshed', count: 2 })
   })
 
   it('takes a transaction’s name from its subject, not its consequences', () => {
@@ -98,13 +113,6 @@ describe('summarise', () => {
     }], before())).toEqual({ key: 'activity.rowAdded', typeKey: 'relation.supports' })
   })
 
-  it('names a row it no longer holds as the flow it almost certainly was', () => {
-    // An update to something deleted in the same breath: a log line is not the
-    // place to say "unknown".
-    expect(summarise([{ type: 'relation.update', id: 'gone', patch: { label: 'x' } }], before()))
-      .toEqual({ key: 'activity.relationChanged' })
-  })
-
   it('has a name for every command in the vocabulary', () => {
     // A step with no words is a step the list would show as blank, and the one
     // way that happens is a command nobody thought about here.
@@ -134,30 +142,4 @@ describe('summarise', () => {
     }
   })
 
-  /**
-   * A link gives the record the master's name, so the log has to read the
-   * name this scope had for it — otherwise the line is about a thing nobody
-   * here had ever called that.
-   */
-  it('names a link by what this scope called the thing before it', () => {
-    expect(summarise(
-      [{ type: 'element.link', id: 'crm', name: 'Retail CRM', ref: 'acme/retail' }],
-      before(),
-    )).toEqual({ key: 'activity.elementLinked', name: 'CRM' })
-  })
-
-  /**
-   * By the count, not by the first row: a refresh is one gesture over however
-   * many stand-ins had gone stale, and "refreshed CRM" for a step that
-   * rewrote nine of them would describe a ninth of what happened.
-   */
-  it('names a refresh by how many stand-ins it wrote', () => {
-    expect(summarise([{
-      type: 'standin.refresh',
-      entries: [
-        { id: 'crm', name: 'CRM', ref: 'acme/retail' },
-        { id: 'billing', name: 'Billing', ref: 'acme/finance' },
-      ],
-    }], before())).toEqual({ key: 'activity.standInsRefreshed', count: 2 })
-  })
 })

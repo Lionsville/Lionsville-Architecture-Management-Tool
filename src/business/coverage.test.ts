@@ -18,38 +18,26 @@ const rows = () => [
 ]
 
 describe('coverageOf', () => {
-  it('counts the systems and the people behind one capability', () => {
+  it('counts the systems and the people behind a capability, in one pass over the rows', () => {
     const found = coverageOf(rows()).get('picking')
     expect(found).toEqual({
       supportedBy: ['wms', 'scanner'],
       assignedTo: ['clerk'],
       coverage: 'covered',
     })
-  })
-
-  it('calls a capability that is only people MANUAL, which is an answer', () => {
     // Not a finding. A map that drew this red would be telling an organisation
     // to buy software for the thing it does by hand.
     expect(coverageOf(rows()).get('claims')).toMatchObject({
       supportedBy: [], assignedTo: ['claims-team'], coverage: 'manual',
     })
-  })
-
-  it('says nothing about a capability no row names', () => {
     expect(coverageOf(rows()).has('forecasting')).toBe(false)
-  })
-
-  it('counts an end this scope does not hold, rather than dropping it', () => {
     // A relation may name an id this scope holds only as a stand-in, or not at
     // all (ADR-0012 §5) — dropping it here would make a domain's own sheet say
     // its capabilities are uncovered.
     expect(coverageOf([relation('s', 'supports', 'somebody-elses-erp', 'picking')]).get('picking'))
       .toMatchObject({ supportedBy: ['somebody-elses-erp'], coverage: 'covered' })
-  })
-
-  it('reads the rows in one pass, not one pass per function', () => {
-    const found = coverageOf(rows())
-    expect([...found.keys()]).toEqual(['picking', 'claims'])
+    const found2 = coverageOf(rows())
+    expect([...found2.keys()]).toEqual(['picking', 'claims'])
   })
 
   /**
@@ -71,15 +59,13 @@ describe('coverageOf', () => {
 })
 
 describe('coverageFor', () => {
-  it('answers UNCOVERED for a capability nothing and nobody does', () => {
+  it('answers UNCOVERED for what nothing does, and the same as the map for what is covered', () => {
     expect(coverageFor(rows(), 'forecasting')).toEqual({
       supportedBy: [], assignedTo: [], coverage: 'uncovered',
     })
-  })
-
-  it('answers the same thing the map does for one that is covered', () => {
     expect(coverageFor(rows(), 'picking').coverage).toBe('covered')
   })
+
 })
 
 describe('a fact said twice', () => {

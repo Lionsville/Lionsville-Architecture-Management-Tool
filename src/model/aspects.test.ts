@@ -44,18 +44,18 @@ describe('aspectConfigFor (rendering fallback)', () => {
     expect(aspectConfigFor(undefined)).toEqual(DEFAULT_ASPECT_CONFIG);
   });
 
-  it('uses the configured order and entries when present', () => {
+  it('uses the configured order, treats an empty config as no columns, and keeps it through a hide', () => {
     const config = [
       { key: 'cost', label: 'Cost' },
       { key: 'custom-sla', label: 'SLA' },
     ];
     expect(aspectConfigFor(diagram('d1', { aspectConfig: config }))).toEqual(config);
-  });
-
-  // Changed deliberately: an empty config used to mean the same as no config,
-  // which left "this landscape tracks none of these" impossible to say.
-  it('treats an empty config as no columns, not as the default five', () => {
+    // Changed deliberately: an empty config used to mean the same as no config,
+    // which left "this landscape tracks none of these" impossible to say.
     expect(aspectConfigFor(diagram('d1', { aspectConfig: [] }))).toEqual([]);
+    const config2 = [{ key: 'cost', label: 'Cost' }];
+    const hidden = diagram('d1', { showAspects: false, aspectConfig: config2 });
+    expect(aspectConfigFor({ ...hidden, showAspects: true })).toEqual(config2);
   });
 
   it('shows nothing when the diagram hides aspects, config or not', () => {
@@ -64,11 +64,6 @@ describe('aspectConfigFor (rendering fallback)', () => {
     expect(aspectConfigFor(diagram('d1', { showAspects: false, aspectConfig: config }))).toEqual([]);
   });
 
-  it('keeps the configuration through a hide, so unhiding restores it', () => {
-    const config = [{ key: 'cost', label: 'Cost' }];
-    const hidden = diagram('d1', { showAspects: false, aspectConfig: config });
-    expect(aspectConfigFor({ ...hidden, showAspects: true })).toEqual(config);
-  });
 });
 
 describe('aspectShortCode', () => {
@@ -86,11 +81,8 @@ describe('aspectShortCode', () => {
 });
 
 describe('aspectShortCode overrides', () => {
-  it('prefers an explicit code over the curated one', () => {
+  it('prefers an explicit code over the curated one, and ignores a blank one', () => {
     expect(aspectShortCode({ key: 'dr', label: 'Continuity', code: 'CONT' })).toBe('CONT');
-  });
-
-  it('ignores a blank code', () => {
     expect(aspectShortCode({ key: 'dr', label: 'Disaster recovery', code: '  ' })).toBe('DR');
   });
 
@@ -101,8 +93,9 @@ describe('aspectShortCode overrides', () => {
 });
 
 describe('aspectKeyForLabel', () => {
-  it('prefixes custom so it can never collide with a superset key', () => {
+  it('prefixes custom so it can never collide, and still yields a key for an unsluggable label', () => {
     expect(aspectKeyForLabel('Service levels', [])).toBe('custom-service-levels');
+    expect(aspectKeyForLabel('!!!', [])).toBe('custom-aspect');
   });
 
   it('strips diacritics and punctuation', () => {
@@ -115,20 +108,14 @@ describe('aspectKeyForLabel', () => {
     expect(aspectKeyForLabel('SLA', ['custom-sla', 'custom-sla-2'])).toBe('custom-sla-3');
   });
 
-  it('still yields a key when the label has nothing sluggable in it', () => {
-    expect(aspectKeyForLabel('!!!', [])).toBe('custom-aspect');
-  });
 });
 
 describe('normaliseAspectConfig', () => {
-  it('drops unlabelled rows and trims the rest', () => {
+  it('drops unlabelled rows, trims the rest, and keeps the first of a duplicated key', () => {
     expect(normaliseAspectConfig([
       { key: 'dr', label: '  Continuity  ' },
       { key: 'custom-blank', label: '   ' },
     ])).toEqual([{ key: 'dr', label: 'Continuity' }]);
-  });
-
-  it('keeps the first of a duplicated key', () => {
     expect(normaliseAspectConfig([
       { key: 'dr', label: 'First' },
       { key: 'dr', label: 'Second' },
