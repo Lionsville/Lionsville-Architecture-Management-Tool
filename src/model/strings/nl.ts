@@ -17,6 +17,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kind.application': 'Applicatie',
   'kind.component': 'Component',
   'kind.platform': 'Platform',
+  'kind.platformService': 'Platformdienst',
   'placement.notOnACanvas': 'Een {kind} wordt niet op dit soort weergave getekend.',
 
   'relation.flow': 'Koppeling',

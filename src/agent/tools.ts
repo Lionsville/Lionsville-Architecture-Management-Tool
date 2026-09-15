@@ -87,7 +87,7 @@ const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `Th
  * The four business kinds are records rather than boxes — a sheet is laid out
  * from the tree, not dragged — so `element.add` makes one and draws nothing.
  */
-const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component', 'platform'] as const
+const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component', 'platform', 'platformService'] as const
 const PLATFORM_ARCHETYPES = ['place', 'service', 'network'] as const
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
@@ -491,6 +491,9 @@ const SPECS = [
       + 'than dragged, so it needs no diagram and can be added while a scope\'s home is on screen. '
       + 'A platform — a cluster, a broker, a bus, the tooling (ADR-0013) — is drawn as the chip of the '
       + 'management band and lands there; what runs on it and what passes through it are rows, not lines. '
+      + 'A platformService (ADR-0014) is the offering a platform realises — container platform, message '
+      + 'brokering, managed database — what a team asks for and a platform team is accountable for; the same '
+      + 'chip, a tree by parentId like every kind. '
       + 'Answers with the id, and with whether it was drawn.',
     inputSchema: {
       type: 'object',

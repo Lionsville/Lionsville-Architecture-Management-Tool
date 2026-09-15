@@ -14,6 +14,7 @@ export const EN = {
   'kind.application': 'Application',
   'kind.component': 'Component',
   'kind.platform': 'Platform',
+  'kind.platformService': 'Platform service',
   'placement.notOnACanvas': 'A {kind} is not drawn on this sort of view.',
 
   // --- what a relation MEANS (ADR-0012 §5) ---------------------------------

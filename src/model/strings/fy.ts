@@ -17,6 +17,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'kind.application': 'Applikaasje',
   'kind.component': 'Komponint',
   'kind.platform': 'Platfoarm',
+  'kind.platformService': 'Platfoarmtsjinst',
   'placement.notOnACanvas': 'In {kind} wurdt net op dit soarte werjefte tekene.',
 
   'relation.flow': 'Keppeling',

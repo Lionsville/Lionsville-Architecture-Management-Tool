@@ -18,6 +18,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'newName.application': 'Neue Anwendung',
   'newName.component': 'Neue Komponente',
   'newName.platform': 'Neue Plattform',
+  'newName.platformService': 'Neuer Plattformdienst',
   'newName.domainGroup': 'Neue Gruppe',
 
   'lifecycle.planned': 'Geplant',
@@ -152,6 +153,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'paletteDescription.application': 'Ein System, das die Organisation betreibt oder bezieht',
   'paletteDescription.component': 'Ein Teil innerhalb einer Anwendung',
   'paletteDescription.platform': 'Worauf Anwendungen laufen oder was sie nutzen: ein Cluster, ein Broker, ein Bus, die Werkzeuge',
+  'paletteDescription.platformService': 'Was ein Plattformteam anbietet und ein Team anfragt: Containerplattform, Messaging, verwaltete Datenbank',
   'paletteDescription.actor': 'Eine Person oder Rolle, die die Landschaft nutzt',
   'paletteDescription.domainGroup': 'Ein beschrifteter Bereich, der die Landschaft gruppiert',
   'palette.existing': 'Vorhandene Anwendung…',

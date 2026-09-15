@@ -457,6 +457,7 @@ export const DEFAULT_NAME_KEYS: Record<ElementKind, StringKey> = {
   application: 'newName.application',
   component: 'newName.component',
   platform: 'newName.platform',
+  platformService: 'newName.platformService',
 };
 
 export function defaultElementName(
@@ -478,6 +479,7 @@ export function defaultElementNames(
     application: defaultElementName('application', translate),
     component: defaultElementName('component', translate),
     platform: defaultElementName('platform', translate),
+    platformService: defaultElementName('platformService', translate),
   };
 }
 
@@ -497,6 +499,8 @@ const DEFAULT_MANAGED: Record<ElementKind, boolean> = {
   component: true,
   // Somebody runs a cluster; whether it is this organisation is `outside`.
   platform: true,
+  // And somebody is accountable for an offering (ADR-0014).
+  platformService: true,
 };
 
 /**

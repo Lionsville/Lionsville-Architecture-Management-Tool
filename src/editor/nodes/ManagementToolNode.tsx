@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
 import { getNodeTokens } from '../theme/tokens';
-import { WrenchGlyph } from './glyphs';
+import { ServiceGlyph, WrenchGlyph } from './glyphs';
 import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
 import { shownDescription } from './nodeData';
@@ -38,8 +38,14 @@ export const ManagementToolNode = memo(function ManagementToolNode({
         overflow: 'hidden',
       }}
     >
-      {/* A resolved mark takes the leading wrench slot; unknown/absent → wrench. */}
-      <NodeIcon element={element} size={iconSlotSize(element, 13)} fallback={<WrenchGlyph />} />
+      {/* A resolved mark takes the leading slot; unknown/absent → the wrench
+          the band has always drawn, or the service's own mark (ADR-0014), so
+          what is offered and what delivers it are told apart at a glance. */}
+      <NodeIcon
+        element={element}
+        size={iconSlotSize(element, 13)}
+        fallback={element.kind === 'platformService' ? <ServiceGlyph size={13} /> : <WrenchGlyph />}
+      />
       <Box sx={{ minWidth: 0 }}>
         <Typography
           sx={{

@@ -18,6 +18,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'newName.application': 'Nije applikaasje',
   'newName.component': 'Nij komponint',
   'newName.platform': 'Nij platfoarm',
+  'newName.platformService': 'Nije platfoarmtsjinst',
   'newName.domainGroup': 'Nije groep',
 
   'lifecycle.planned': 'Pland',
@@ -152,6 +153,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'paletteDescription.application': 'In systeem dat de organisaasje draait of ôfnimt',
   'paletteDescription.component': 'In ûnderdiel binnen ien applikaasje',
   'paletteDescription.platform': 'Wêr\'t applikaasjes op draaie of wat se brûke: in kluster, in broker, in bus, de tooling',
+  'paletteDescription.platformService': 'Wat in platfoarmteam oanbiedt en in team freget: containerplatfoarm, berjochteferkear, beheard database',
   'paletteDescription.actor': 'In persoan of rol dy’t it lânskip brûkt',
   'paletteDescription.domainGroup': 'In beneamd flak dat it lânskip groepearret',
   'palette.existing': 'Besteande applikaasje…',

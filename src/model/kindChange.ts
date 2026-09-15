@@ -78,7 +78,7 @@ export type KindChangeCheck =
  * row of buttons: `canChangeKind` below refuses a kind the diagram may not show,
  * and the palette offers exactly what the rule allows by importing these.
  */
-export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform'];
+export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform', 'platformService'];
 
 /**
  * C4 container-diagram kinds.
@@ -87,7 +87,7 @@ export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform']
  * a container view has no bands to say "somebody else's", so on one of these
  * the fact does it — `outside` on the record, which the inspector offers.
  */
-export const CONTAINER_PALETTE: CanvasKind[] = ['component', 'actor', 'application', 'platform'];
+export const CONTAINER_PALETTE: CanvasKind[] = ['component', 'actor', 'application', 'platform', 'platformService'];
 
 /** The kinds a diagram of this sort may show. */
 export function allowedKindsOn(diagram: Pick<DesignDiagram, 'kind'>): readonly CanvasKind[] {

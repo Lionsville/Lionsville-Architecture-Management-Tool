@@ -72,5 +72,8 @@ describe('what a platform is (ADR-0013, ADR-0014)', () => {
     expect(nodeFigure(platform, 'landscape')).toBe('managementTool')
     expect(nodeFigure(platform, 'management')).toBe('managementTool')
     expect(nodeFigure(platform, 'externalSystems')).toBe('externalSystem')
+    // What a platform offers is drawn beside it, as the same chip (ADR-0014).
+    expect(nodeFigure({ kind: 'platformService' })).toBe('managementTool')
+    expect(nodeFigure({ kind: 'platformService' }, 'landscape')).toBe('managementTool')
   })
 })

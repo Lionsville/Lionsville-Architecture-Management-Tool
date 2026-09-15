@@ -14,9 +14,9 @@ import type { StringKey, Translate } from '../i18n/strings'
 import { DEFAULT_TRANSLATE } from '../i18n/strings'
 import type { DesignDiagram, DesignElement, ElementId, ElementKind, Layer7Zone } from './types'
 
-/** Every kind, in the order ADR-0012 §4 names them, and ADR-0013's last. */
+/** Every kind, in the order ADR-0012 §4 names them, then ADR-0013's and ADR-0014's. */
 export const ELEMENT_KINDS: readonly ElementKind[] = [
-  'actor', 'step', 'function', 'process', 'application', 'component', 'platform',
+  'actor', 'step', 'function', 'process', 'application', 'component', 'platform', 'platformService',
 ]
 
 export function isElementKind(held: unknown): held is ElementKind {
@@ -31,6 +31,7 @@ export const KIND_LABEL_KEYS: Record<ElementKind, StringKey> = {
   application: 'kind.application',
   component: 'kind.component',
   platform: 'kind.platform',
+  platformService: 'kind.platformService',
 }
 
 /** An element kind's name, in the given language (English when none is given). */
@@ -85,7 +86,9 @@ export function nodeFigure(
   // (ADR-0013): the tooling that band held was platforms all along, and a
   // cluster in the open landscape is the same sort of thing as a forge in
   // the band above it — a thing the applications stand on, not one of them.
-  if (element.kind === 'platform') return 'managementTool'
+  // The service a platform realises is a chip there too (ADR-0014): what is
+  // offered sits beside what delivers it, and neither is an application.
+  if (element.kind === 'platform' || element.kind === 'platformService') return 'managementTool'
   // A stand-in draws as whatever band it sits in, and NOT as an external
   // system by virtue of its `ref`: the card of another domain's application
   // on an overview is the application's card, with where it is from as a

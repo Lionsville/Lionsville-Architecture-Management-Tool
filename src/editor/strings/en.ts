@@ -22,6 +22,7 @@ export const EN = {
   'newName.application': 'New application',
   'newName.component': 'New component',
   'newName.platform': 'New platform',
+  'newName.platformService': 'New platform service',
   'newName.domainGroup': 'New group',
 
   'lifecycle.planned': 'Planned',
@@ -160,6 +161,7 @@ export const EN = {
   'paletteDescription.application': 'A system the organisation runs or buys',
   'paletteDescription.component': 'A part inside one application',
   'paletteDescription.platform': 'What applications run on or use: a cluster, a broker, a bus, the tooling',
+  'paletteDescription.platformService': 'What a platform team offers and a team asks for: container platform, message brokering, managed database',
   'paletteDescription.actor': 'A person or role using the landscape',
   'paletteDescription.domainGroup': 'A labelled area grouping the landscape',
   'palette.existing': 'Existing application…',

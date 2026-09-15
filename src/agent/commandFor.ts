@@ -434,8 +434,9 @@ function addElement(args: Args, view: WriteView): Prepared | AgentAnswer {
     name,
     lifecycle: 'live',
     // Managed unless nobody here runs it: a person or a team, a
-    // responsibility, a journey, or a system — or a platform — somebody else owns.
-    isManaged: (kind === 'application' || kind === 'component' || kind === 'platform') && !outside,
+    // responsibility, a journey, or a system — or a platform, or what it
+    // offers — somebody else owns.
+    isManaged: (kind === 'application' || kind === 'component' || kind === 'platform' || kind === 'platformService') && !outside,
     aspects: {},
     ...(parentId !== undefined
       ? { parentId }

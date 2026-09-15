@@ -18,6 +18,7 @@ import {
   DomainGroupGlyph,
   PersonGlyph,
   PlatformGlyph,
+  ServiceGlyph,
 } from '../nodes/glyphs';
 import { ColorField } from '../ColorField';
 import { defaultGroupName } from './domainGroupPlacement';
@@ -111,6 +112,7 @@ const KIND_GLYPHS: Record<PaletteKey, FC<{ size?: number; strokeWidth?: number }
   application: ApplicationGlyph,
   component: ComponentGlyph,
   platform: PlatformGlyph,
+  platformService: ServiceGlyph,
   domainGroup: DomainGroupGlyph,
 };
 

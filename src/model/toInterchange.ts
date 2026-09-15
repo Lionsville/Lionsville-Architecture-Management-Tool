@@ -97,8 +97,8 @@ function tally<T extends string>(values: readonly T[]): { key: T; count: number 
 }
 
 /**
- * The kinds this format has no box for: the business layer (ADR-0012 §4) and
- * the platform (ADR-0013).
+ * The kinds this format has no box for: the business layer (ADR-0012 §4), the
+ * platform (ADR-0013) and the service it realises (ADR-0014).
  *
  * Written out rather than derived from what a canvas draws, because they are
  * different questions with different answers: a platform IS drawn on a canvas
@@ -109,7 +109,7 @@ function tally<T extends string>(values: readonly T[]): { key: T; count: number 
  * flow it is, and what it says it is part of stays behind with every other
  * field this format has no place for.
  */
-const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process', 'platform']
+const NOT_IN_THE_FORMAT: readonly ElementKind[] = ['step', 'function', 'process', 'platform', 'platformService']
 
 export function toInterchange(model: HostModel): InterchangeExport {
   const keys = keyMap(model)

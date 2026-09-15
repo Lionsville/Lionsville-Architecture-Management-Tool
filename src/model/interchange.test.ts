@@ -475,6 +475,9 @@ describe('what an export leaves behind (ADR-0012 §4, §5)', () => {
       el('picking', 'function', { parentId: 'fulfilment' }),
       el('ship', 'step'),
       el('clerk', 'actor'),
+      // The technology layer has no box in this format either (ADR-0013, ADR-0014).
+      el('openshift', 'platform'),
+      el('containers', 'platformService'),
     ]
     model.relations = [
       ...model.relations,
@@ -494,7 +497,10 @@ describe('what an export leaves behind (ADR-0012 §4, §5)', () => {
   it('says what it left behind, counted by type and by kind', () => {
     const { omitted } = toInterchange(withBusiness())
     expect(omitted.relations).toEqual([{ type: 'supports', count: 2 }, { type: 'assigned', count: 1 }])
-    expect(omitted.elements).toEqual([{ kind: 'function', count: 2 }, { kind: 'step', count: 1 }])
+    expect(omitted.elements).toEqual([
+      { kind: 'function', count: 2 }, { kind: 'step', count: 1 },
+      { kind: 'platform', count: 1 }, { kind: 'platformService', count: 1 },
+    ])
   })
 
   it('says nothing at all about a landscape that has no business layer on it', () => {

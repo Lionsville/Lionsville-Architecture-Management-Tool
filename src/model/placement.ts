@@ -31,12 +31,15 @@ import type { BoardGeometry } from './zones';
  * application's kind, and a card there is how a landscape says what it stands
  * on. The rows that join an application to one are not drawn — the technology
  * view lists them — so a platform on a board is a card and never a line's end.
+ * The service a platform realises is the same chip (ADR-0014), for the same
+ * reason and with the same rows: what is offered is drawn where what delivers
+ * it is drawn.
  */
 export const CANVAS_KINDS: readonly ElementKind[] & readonly CanvasKind[] =
-  ['application', 'component', 'actor', 'platform'];
+  ['application', 'component', 'actor', 'platform', 'platformService'];
 
 /** One of {@link CANVAS_KINDS} — narrower than a kind, where a canvas is meant. */
-export type CanvasKind = 'application' | 'component' | 'actor' | 'platform';
+export type CanvasKind = 'application' | 'component' | 'actor' | 'platform' | 'platformService';
 
 /**
  * Is a view of this kind a board — geometry a canvas draws (ADR-0012 §6)?

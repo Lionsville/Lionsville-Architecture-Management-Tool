@@ -127,6 +127,19 @@ export function PlatformGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
   );
 }
 
+/**
+ * Platform service: a hexagon with a point at its heart — the offering, as
+ * against the layers that deliver it (ADR-0014).
+ */
+export function ServiceGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+    </svg>
+  );
+}
+
 /** Domain group: the dashed rectangle the landscape draws around a group. */
 export function DomainGroupGlyph({ size = 14, strokeWidth = 2 }: GlyphProps) {
   return (

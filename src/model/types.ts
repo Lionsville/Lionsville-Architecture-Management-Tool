@@ -79,6 +79,16 @@ export interface AspectConfigEntry {
  * broker, a bus, a firewall, the tooling — what an application runs on and
  * what it uses, which is somebody else's to own and this application's to
  * name. A tree as well: a namespace under a cluster under a cloud account.
+ *
+ * `platformService` is the eighth (ADR-0014): the offering — *Container
+ * platform*, *Message brokering*, *Managed Postgres* — what a team asks for
+ * and a platform team is accountable for, independent of the product that
+ * delivers it this year. In TOGAF's terms the platform is the solution
+ * building block and this is the architecture building block; in ArchiMate's
+ * it is the technology service. A tree like every other kind, and on the
+ * technology layer with the platform: a business function is what the
+ * enterprise does, a technology service is what a platform team offers, and
+ * the two never share a layer.
  */
 export type ElementKind =
   /** A party, stakeholder, role, team, or a group of them. */
@@ -93,7 +103,9 @@ export type ElementKind =
   /** A container inside an application (C4). */
   | 'component'
   /** Technology: what runs the applications and carries their interfaces (ADR-0013). */
-  | 'platform';
+  | 'platform'
+  /** Technology offered: what a platform team is accountable for, and a platform realises (ADR-0014). */
+  | 'platformService';
 /**
  * What a platform IS, as far as the model needs to know (ADR-0014).
  *
