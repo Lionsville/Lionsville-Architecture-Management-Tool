@@ -20,4 +20,5 @@ export const FY: Record<keyof typeof EN, string> = {
   'technology.protocol': 'Hoe',
   'technology.partOf': 'Diel fan',
   'technology.itsOwn': 'In keppelflak op himsels',
+  'technology.on': 'op {name}',
 }

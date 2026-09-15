@@ -307,9 +307,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const colourBy: ColourBy | undefined = held === 'none'
     ? undefined
     : held ?? activeDiagram?.colourBy;
+  const platformTree = props.ownership?.platformTree;
   const overlay = useMemo(
-    () => (activeDiagram ? overlayBands(state.model, activeDiagram, colourBy, activeDiagram.asOf ?? today()) : []),
-    [state.model, activeDiagram, colourBy],
+    () => (activeDiagram ? overlayBands(state.model, activeDiagram, colourBy, activeDiagram.asOf ?? today(), platformTree) : []),
+    [state.model, activeDiagram, colourBy, platformTree],
   );
   const overlayTints = useMemo(() => {
     const tints = new Map<ElementId, string>();

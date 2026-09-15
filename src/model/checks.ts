@@ -24,6 +24,8 @@
  * over a landscape, which is what this module is for.
  */
 import { relationLiveAt, isDay, phaseAt } from './lifecycle'
+import { ancestorPlatforms } from './hosting'
+import type { PlatformTree } from './hosting'
 import { impliedInterfaces } from './implied'
 import { isTechnologyRelation } from './relations'
 import { isTransitionFinished } from './transition'
@@ -86,6 +88,12 @@ export type CheckContext = {
   model: Pick<DesignModel, 'elements' | 'relations'> & { transitions?: Transition[] }
   /** The day "now" is, so a test is not at the mercy of the clock. */
   today: string
+  /**
+   * The platform tree where this scope holds stand-ins (ADR-0014 §2.7): a
+   * container in a namespace goes when the cluster goes, and the namespace
+   * drawn here carries no `parentId` of its own.
+   */
+  platformTree?: PlatformTree
 }
 
 /** The day an element is gone, if it has one. */
@@ -113,7 +121,7 @@ function liveOn(
  * "Worst" is by kind rather than by count: a retirement with things still
  * plugged into it is an outage, and a plan a week overdue is a conversation.
  */
-export function findings({ model, today }: CheckContext): Finding[] {
+export function findings({ model, today, platformTree = {} }: CheckContext): Finding[] {
   const byId = new Map(model.elements.map((element) => [element.id, element]))
   const found: Finding[] = []
 
@@ -194,12 +202,20 @@ export function findings({ model, today }: CheckContext): Finding[] {
   // The platform goes before the thing standing on it (ADR-0013). Counted
   // on the platform's last day: a thing not gone by then is left standing on
   // nothing. A row with its own window that closes in time is, as above, the
-  // correct answer and not an instance.
+  // correct answer and not an instance. A platform goes when anything above
+  // it goes (ADR-0014 §2.7): the earliest day in its chain, and the finding
+  // names the platform that actually goes.
   const standingOn = (id: ElementId, relation: Relation): DesignElement | undefined => {
     const platform = byId.get(id)
-    const gone = platform ? retiredOn(platform) : undefined
-    if (!platform || gone === undefined || !relationLiveAt(relation, gone)) return undefined
-    return platform
+    if (!platform) return undefined
+    const chain = platform.kind === 'platform' ? [platform, ...ancestorPlatforms(model.elements, id, platformTree)] : [platform]
+    let goes: DesignElement | undefined
+    for (const one of chain) {
+      const day = retiredOn(one)
+      if (day !== undefined && (goes === undefined || day < retiredOn(goes)!)) goes = one
+    }
+    if (goes === undefined || !relationLiveAt(relation, retiredOn(goes)!)) return undefined
+    return goes
   }
   for (const relation of model.relations) {
     if (!isTechnologyRelation(relation)) continue

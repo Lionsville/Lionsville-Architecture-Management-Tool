@@ -24,7 +24,7 @@ function model(over: Partial<DesignModel> = {}): DesignModel {
     name: 'Landscape',
     diagrams: [],
     elements: [
-      element('esb', { kind: 'platform', name: 'Enterprise bus' }),
+      element('esb', { kind: 'platform', name: 'Enterprise bus', parentId: 'cluster' }),
       element('cluster', { kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
       element('orders', { name: 'Order management' }), element('billing', { name: 'Billing' }),
       element('wms', { name: 'WMS' }),
@@ -32,7 +32,6 @@ function model(over: Partial<DesignModel> = {}): DesignModel {
       element('billing-ledger', { kind: 'component', parentId: 'billing', name: 'Ledger' }),
     ],
     relations: [
-      { id: 'h1', type: 'hostedOn', sourceId: 'esb', targetId: 'cluster' },
       { id: 'u1', type: 'uses', sourceId: 'wms', targetId: 'esb' },
       { id: 'h2', type: 'hostedOn', sourceId: 'orders-api', targetId: 'esb' },
       { id: 'c16', type: 'flow', sourceId: 'billing', targetId: 'orders', label: 'invoices' },
@@ -75,9 +74,14 @@ describe('the report', () => {
     expect(within(screen.getByTestId('technology-children')).getByText('Nothing yet')).toBeTruthy()
   })
 
-  it('names a container beside the application it belongs to', () => {
+  it('names a container beside the application it belongs to, and the place under it that it sits on', () => {
     open()
     expect(screen.getByTestId('technology-hosted').textContent).toContain('Orders API · Order management')
+    // The cluster's report gathers the bus filed under it (ADR-0014 §2.7).
+    cleanup()
+    open({ platformId: 'cluster' })
+    expect(screen.getByTestId('technology-hosted').textContent).toContain('Orders API · Order management · on Enterprise bus')
+    expect(screen.getByTestId('technology-summary').textContent).toContain('1 hosted · 1 using it · 2 interfaces across it')
   })
 
   it('draws a row per interface across it, with the interface it is part of', () => {

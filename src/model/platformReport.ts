@@ -27,10 +27,19 @@
  * **Time is the day it is read.** With `today` given, a row with a window
  * counts only if it holds on that day, and an end that is gone on that day
  * takes its rows with it; with none, every row counts.
+ *
+ * **The tree is walked** (ADR-0014 §2.7). A cluster's report is about the
+ * cluster and everything filed under it: what is hosted in its namespaces,
+ * what uses them, and every interface landing there — each row naming the
+ * descendant it actually sits on, because "retire the cluster" is a question
+ * about all of it. What the platform stands on is the chain above it, since
+ * `parentId` is the one containment.
  */
 import type { HostModel } from './fromInterchange'
+import { ancestorPlatforms, descendantPlatforms } from './hosting'
+import type { PlatformTree } from './hosting'
 import { isGoneOn, relationLiveAt } from './lifecycle'
-import { isTechnologyRelation, platformArchetypeOf } from './relations'
+import { platformArchetypeOf } from './relations'
 import { isContainerLine } from './refines'
 import type { DesignElement, ElementId, PlatformArchetype, Relation } from './types'
 
@@ -44,9 +53,12 @@ export type PlatformDescription = {
    * What the platform is, as the scope that defines it says (ADR-0014). A
    * stand-in carries nothing the owner answers for, so a report read in the
    * landscape that stands on the cluster is told this the way it is told the
-   * name.
+   * name — and what it is filed under, and whether it is the organisation's,
+   * for the same reason.
    */
   platformArchetype?: PlatformArchetype
+  parentId?: ElementId
+  outside?: true
 }
 
 export type PlatformDescribe = (id: ElementId) => PlatformDescription | undefined
@@ -62,6 +74,12 @@ export type PlatformEnd = {
   where?: string
   /** For a container: the application it is part of, named. */
   application?: { id: ElementId; name: string }
+  /**
+   * The descendant it actually sits on, where that is not the platform the
+   * report is about (ADR-0014 §2.7): a container in the namespace, on the
+   * cluster's report.
+   */
+  place?: { id: ElementId; name: string }
 }
 
 /**
@@ -90,16 +108,17 @@ export type PlatformReport = {
   platform: PlatformEnd & { platformArchetype: PlatformArchetype }
   /** The platforms filed under this one — a namespace under a cluster. */
   children: PlatformEnd[]
-  /** What this platform itself stands on and consumes. */
+  /** The platforms this one sits in, nearest first: the chain above it. */
   standsOn: PlatformEnd[]
   /**
-   * What runs here: the containers, each named beside its application, and the
-   * applications that have no containers and say where they run themselves.
+   * What runs here or under here: the containers, each named beside its
+   * application and the descendant it sits on, and the applications that have
+   * no containers and say where they run themselves.
    */
   hosted: PlatformEnd[]
-  /** What consumes it, by `uses`. */
+  /** What consumes it or anything under it, by `uses`. */
   users: PlatformEnd[]
-  /** The container interfaces that cross it, by the container they land on. */
+  /** The container interfaces that cross it or anything under it, by the container they land on. */
   landings: PlatformLanding[]
   counts: { hosted: number; users: number; landings: number }
 }
@@ -118,8 +137,13 @@ export function platformReport(
   if (!platform) return undefined
   const day = options.today
   const describe = options.describe
+  // The tree, where this scope holds a stand-in that carries no `parentId`.
+  const tree: PlatformTree = { parentOf: (id) => describe?.(id)?.parentId }
+  // The platform and everything filed under it: what the report is about.
+  const under = descendantPlatforms(model.elements, platformId, tree)
+  const about = new Set<ElementId>([platformId, ...under.map((one) => one.id)])
 
-  const end = (id: ElementId): PlatformEnd => {
+  const end = (id: ElementId, on?: ElementId): PlatformEnd => {
     const held = byId.get(id)
     const told = describe?.(id)
     // The scope's own record first, and the index's word for whose it is: a
@@ -129,6 +153,7 @@ export function platformReport(
     const kind = held?.kind ?? told?.kind
     const parentId = held?.kind === 'component' ? held.parentId : undefined
     const parent = parentId === undefined ? undefined : byId.get(parentId)
+    const place = on === undefined || on === platformId ? undefined : byId.get(on)
     return {
       id, name, known: held !== undefined || told !== undefined,
       ...(kind !== undefined ? { kind } : {}),
@@ -136,6 +161,7 @@ export function platformReport(
       ...(parentId !== undefined
         ? { application: { id: parentId, name: describe?.(parentId)?.name ?? parent?.name ?? parentId } }
         : {}),
+      ...(place !== undefined ? { place: { id: place.id, name: describe?.(place.id)?.name ?? place.name } } : {}),
     }
   }
   /** Gone on the day it is read: the day takes the row with it. */
@@ -158,25 +184,34 @@ export function platformReport(
   }
 
   const byName = (a: PlatformEnd, b: PlatformEnd) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
-  const endsOf = (matching: (relation: Relation) => boolean, pick: (relation: Relation) => ElementId) => {
-    const ids = [...new Set(rows.filter(matching).map(pick))]
-    return ids.map(end).sort(byName)
+  /**
+   * The sources of the rows of one type ending on the platform or anything
+   * under it, each once — the first row wins where a thing sits in two
+   * places — named with the descendant it sits on.
+   */
+  const endsOf = (type: Relation['type']) => {
+    const where = new Map<ElementId, ElementId>()
+    for (const row of rows) {
+      if (row.type !== type || !about.has(row.targetId) || where.has(row.sourceId)) continue
+      where.set(row.sourceId, row.targetId)
+    }
+    return [...where].map(([id, on]) => end(id, on)).sort(byName)
   }
 
-  const hosted = endsOf((r) => r.type === 'hostedOn' && r.targetId === platformId, (r) => r.sourceId)
-  const users = endsOf((r) => r.type === 'uses' && r.targetId === platformId, (r) => r.sourceId)
+  const hosted = endsOf('hostedOn')
+  const users = endsOf('uses')
 
-  // What crosses it: the container lines that touch something hosted here.
-  // Read from the landings rather than from anything stored on the line, which
-  // is what makes "what goes over the bus" answerable without asking anybody
-  // to say it twice.
-  const here = new Set(hosted.map((one) => one.id))
+  // What crosses it: the container lines that touch something hosted here or
+  // under here. Read from the landings rather than from anything stored on
+  // the line, which is what makes "what goes over the bus" answerable without
+  // asking anybody to say it twice.
+  const here = new Map(hosted.map((one) => [one.id, one]))
   const held = (id: ElementId) => byId.get(id)
   const landings: PlatformLanding[] = rows
     .filter((relation) => isContainerLine(relation, held))
     .filter((relation) => here.has(relation.sourceId) || here.has(relation.targetId))
     .map((relation) => {
-      const on = here.has(relation.sourceId) ? relation.sourceId : relation.targetId
+      const on = here.get(relation.sourceId) ?? here.get(relation.targetId)!
       const partOf = relation.refines === undefined
         ? undefined
         : rows.find((row) => row.id === relation.refines)
@@ -184,7 +219,7 @@ export function platformReport(
         relation,
         source: end(relation.sourceId),
         target: end(relation.targetId),
-        on: end(on),
+        on,
         ...(relation.refines !== undefined
           ? { partOf: { id: relation.refines, ...(partOf?.label !== undefined ? { label: partOf.label } : {}) } }
           : {}),
@@ -200,11 +235,12 @@ export function platformReport(
       // a stand-in, which says nothing about what the thing is.
       platformArchetype: describe?.(platformId)?.platformArchetype ?? platformArchetypeOf(platform),
     },
-    children: model.elements
-      .filter((e) => e.kind === 'platform' && e.parentId === platformId && !gone(e.id))
+    children: under
+      .filter((e) => (e.parentId ?? tree.parentOf?.(e.id)) === platformId && !gone(e.id))
       .map((e) => end(e.id))
       .sort(byName),
-    standsOn: endsOf((r) => isTechnologyRelation(r) && r.sourceId === platformId, (r) => r.targetId),
+    // The chain above it, nearest first: `parentId` is the one containment.
+    standsOn: ancestorPlatforms(model.elements, platformId, tree).map((e) => end(e.id)),
     hosted,
     users,
     landings,

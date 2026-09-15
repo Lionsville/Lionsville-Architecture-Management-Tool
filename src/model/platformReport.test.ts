@@ -36,22 +36,53 @@ const relations: Relation[] = [
   row('h1', 'hostedOn', 'orders-api', 'cluster'),
   row('h2', 'hostedOn', 'portal', 'cluster'),
   row('u1', 'uses', 'orders', 'kafka'),
-  row('u2', 'uses', 'esb', 'cluster'),
-  row('h3', 'hostedOn', 'esb', 'cluster'),
+  row('u2', 'uses', 'billing', 'cluster'),
 ]
 
 describe('the report on a platform', () => {
   it('says what runs on it, what uses it, what it stands on, and what is under it', () => {
     const cluster = platformReport({ elements, relations }, 'cluster')!
-    expect(cluster.hosted.map((e) => e.id)).toEqual(['esb', 'orders-api', 'portal'])
-    expect(cluster.users.map((e) => e.id)).toEqual(['esb'])
+    expect(cluster.hosted.map((e) => e.id)).toEqual(['orders-api', 'portal'])
+    expect(cluster.users.map((e) => e.id)).toEqual(['billing'])
     expect(cluster.children.map((e) => e.id)).toEqual(['ns-orders'])
     expect(cluster.platform.platformArchetype).toBe('place')
-    const esb = platformReport({ elements, relations }, 'esb')!
-    expect(esb.standsOn.map((e) => e.id)).toEqual(['cluster'])
-    expect(esb.hosted).toEqual([])
+    // The chain above it, nearest first: `parentId` is the one containment.
+    const ns = platformReport({ elements, relations }, 'ns-orders')!
+    expect(ns.standsOn.map((e) => e.id)).toEqual(['cluster'])
+    expect(ns.hosted).toEqual([])
     // Unsaid is a service (ADR-0014).
-    expect(esb.platform.platformArchetype).toBe('service')
+    expect(platformReport({ elements, relations }, 'esb')!.platform.platformArchetype).toBe('service')
+  })
+
+  /**
+   * The tree is walked (ADR-0014 §2.7): a cluster's report is about the
+   * cluster and its namespaces, each row naming the descendant it sits on —
+   * because "retire the cluster" is a question about all of it.
+   */
+  it('gathers what is hosted on, uses and crosses anything filed under it, naming the place', () => {
+    const under: Relation[] = [
+      ...relations,
+      row('h4', 'hostedOn', 'billing-ledger', 'ns-orders'),
+      row('u3', 'uses', 'wms', 'ns-orders'),
+      flow('r9', 'billing-ledger', 'orders-api', { protocol: 'REST' }),
+    ]
+    const cluster = platformReport({ elements, relations: under }, 'cluster')!
+    expect(cluster.hosted.map((e) => [e.id, e.place?.id])).toEqual([['billing-ledger', 'ns-orders'], ['orders-api', undefined], ['portal', undefined]])
+    expect(cluster.users.map((e) => [e.id, e.place?.name])).toEqual([['billing', undefined], ['wms', 'NS-ORDERS']])
+    expect(cluster.landings.map((one) => [one.relation.id, one.on.id, one.on.place?.id])).toEqual([['r9', 'billing-ledger', 'ns-orders']])
+    // The namespace's own report is only about the namespace.
+    expect(platformReport({ elements, relations: under }, 'ns-orders')!.hosted.map((e) => e.id)).toEqual(['billing-ledger'])
+  })
+
+  it('walks the tree the index holds, where this scope holds a stand-in that carries no parent', () => {
+    const standIn = elements.map((e) => (e.id === 'ns-orders' ? { ...e, ref: 'platforms', parentId: undefined } : e))
+    const under = [...relations, row('h4', 'hostedOn', 'billing-ledger', 'ns-orders')]
+    expect(platformReport({ elements: standIn, relations: under }, 'cluster')!.hosted.map((e) => e.id)).toEqual(['orders-api', 'portal'])
+    const describe = (id: string) => (id === 'ns-orders' ? { name: 'Orders namespace', kind: 'platform' as const, parentId: 'cluster' } : undefined)
+    const told = platformReport({ elements: standIn, relations: under }, 'cluster', { describe })!
+    expect(told.hosted.map((e) => [e.id, e.place?.name])).toEqual([['billing-ledger', 'Orders namespace'], ['orders-api', undefined], ['portal', undefined]])
+    expect(told.children.map((e) => e.id)).toEqual(['ns-orders'])
+    expect(platformReport({ elements: standIn, relations: under }, 'ns-orders', { describe })!.standsOn.map((e) => e.id)).toEqual(['cluster'])
   })
 
   it('takes what the platform is from the tree, where this scope holds only a stand-in', () => {
@@ -112,7 +143,7 @@ describe('rows from the rest of the tree', () => {
     ]
     const describe = (id: string) => (id === 'crm' ? { name: 'CRM', kind: 'application' as const, where: 'sales' } : undefined)
     const cluster = platformReport({ elements, relations }, 'cluster', { elsewhere, describe })!
-    expect(cluster.hosted.map((e) => e.id)).toEqual(['crm', 'esb', 'orders-api', 'portal'])
+    expect(cluster.hosted.map((e) => e.id)).toEqual(['crm', 'orders-api', 'portal'])
     expect(cluster.hosted.find((e) => e.id === 'crm'))
       .toEqual({ id: 'crm', name: 'CRM', kind: 'application', known: true, where: 'sales' })
   })

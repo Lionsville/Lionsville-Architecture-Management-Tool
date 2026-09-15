@@ -17,7 +17,8 @@
  * Presentation, and nothing else: the band an element falls in is derived on
  * every render from the rows, and which overlay is up is a setting on the view.
  */
-import { hostingOf } from './hosting'
+import { ancestorPlatforms, hostingOf, rootPlatformsOf } from './hosting'
+import type { PlatformTree } from './hosting'
 import { phaseAt } from './lifecycle'
 import type { DesignDiagram, DesignElement, ElementId, Lifecycle, Relation } from './types'
 
@@ -48,11 +49,20 @@ export type OverlayBand = {
 /** Worst first: what a card on several platforms takes. */
 const WORST: readonly Lifecycle[] = ['retired', 'retiring', 'planned', 'live']
 
+/**
+ * The bands, over the platform tree (ADR-0014 §2.7): a card is coloured by
+ * the outermost platform the organisation runs — the cluster, not the
+ * namespace — and takes the worst phase of every platform in the chain its
+ * containers sit in, so a card in a namespace goes amber when the cluster is
+ * retiring. `tree` is what the scope that defines a platform says, where
+ * this scope holds only a stand-in.
+ */
 export function overlayBands(
   model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
   diagram: Pick<DesignDiagram, 'kind' | 'members'>,
   colourBy: ColourBy | undefined,
   today?: string,
+  tree: PlatformTree = {},
 ): OverlayBand[] {
   if (colourBy === undefined || diagram.kind !== 'layer7') return []
   const byId = new Map(model.elements.map((element) => [element.id, element]))
@@ -73,14 +83,15 @@ export function overlayBands(
       .filter((held): held is DesignElement => held !== undefined)
     if (platforms.length === 0) { put('none', '\uffff', element.id); continue }
     if (colourBy === 'platform') {
-      // The first: a card on two platforms during a migration is drawn where
-      // it mostly is, and the second is a fact the record says rather than a
-      // second colour on one card.
-      const platform = platforms[0]
-      put(platform.id, platform.name, element.id, { name: platform.name })
+      // The root, and the first: a card on two platforms during a migration
+      // is drawn where it mostly is, and the second is a fact the record says
+      // rather than a second colour on one card.
+      const root = byId.get(rootPlatformsOf(model, element.id, tree)[0]) ?? platforms[0]
+      put(root.id, root.name, element.id, { name: root.name })
       continue
     }
-    const phases = platforms.map((platform) => (today ? phaseAt(platform, today) : platform.lifecycle))
+    const chain = platforms.flatMap((platform) => [platform, ...ancestorPlatforms(model.elements, platform.id, tree)])
+    const phases = chain.map((platform) => (today ? phaseAt(platform, today) : platform.lifecycle))
     const worst = WORST.find((phase) => phases.includes(phase)) ?? 'live'
     put(worst, String(WORST.indexOf(worst)), element.id, { phase: worst })
   }

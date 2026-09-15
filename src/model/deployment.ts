@@ -30,8 +30,12 @@
  * question ADR-0013 keeps. The shape here takes them without changing: a
  * second grouping level is one more entry in the chain each container walks.
  */
+import { platformParentOf } from './hosting'
+import type { PlatformTree } from './hosting'
 import { platformArchetypeOf } from './relations'
-import type { DesignDiagram, DesignElement, ElementId, PlatformArchetype, Relation } from './types'
+import type { DesignDiagram, DesignElement, ElementId, Relation } from './types'
+
+export type { PlatformTree } from './hosting'
 
 export type DeploymentBox = {
   /** The platform the box IS. */
@@ -43,15 +47,6 @@ export type DeploymentBox = {
   memberIds: ElementId[]
 }
 
-/**
- * What the scope that defines a platform says about it, where this scope
- * holds only a stand-in: what it is filed under, and what it is. Both are the
- * owner's detail (ADR-0012 §3), so both come from the index by way of the host.
- */
-export type PlatformTree = {
-  parentOf?(platformId: ElementId): ElementId | undefined
-  archetypeOf?(platformId: ElementId): PlatformArchetype | undefined
-}
 
 /**
  * The boxes this container diagram draws, outermost first — so a box is
@@ -70,7 +65,7 @@ export function deploymentBoxes(
   const subject = diagram.applicationElementId
   if (diagram.kind !== 'container' || subject === undefined) return []
   const byId = new Map(model.elements.map((element) => [element.id, element]))
-  const above = (platform: DesignElement) => platform.parentId ?? tree.parentOf?.(platform.id)
+  const above = (platform: DesignElement) => platformParentOf(platform, tree)
   const isPlace = (platform: DesignElement) =>
     (tree.archetypeOf?.(platform.id) ?? platformArchetypeOf(platform)) === 'place'
 

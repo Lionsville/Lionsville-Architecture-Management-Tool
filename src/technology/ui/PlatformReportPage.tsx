@@ -191,7 +191,8 @@ function Name({ end, openable, onOpen, t }: {
   t: Translate
 }) {
   const label = end.known ? end.name : `${end.name} — ${t('technology.unknown')}`
-  const where = end.application ? `${label} · ${end.application.name}` : label
+  const within = end.application ? `${label} · ${end.application.name}` : label
+  const where = end.place ? `${within} · ${t('technology.on', { name: end.place.name })}` : within
   return (
     <Tooltip title={end.where ? `${where} · ${end.where}` : where}>
       <Box
@@ -210,6 +211,11 @@ function Name({ end, openable, onOpen, t }: {
         {end.name}
         {end.application && (
           <Box component="span" sx={{ color: 'text.secondary' }}>{` · ${end.application.name}`}</Box>
+        )}
+        {/* The descendant it actually sits on (ADR-0014 §2.7): a container in
+            the namespace, on the cluster's report. */}
+        {end.place && (
+          <Box component="span" sx={{ color: 'text.secondary' }}>{` · ${t('technology.on', { name: end.place.name })}`}</Box>
         )}
       </Box>
     </Tooltip>

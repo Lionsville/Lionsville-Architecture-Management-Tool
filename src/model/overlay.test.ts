@@ -98,3 +98,33 @@ describe('when it says nothing at all', () => {
     expect(overlayBands({ elements, relations }, board('container'), 'platform')).toEqual([])
   })
 })
+
+/**
+ * Over the platform tree (ADR-0014 §2.7): a card is coloured by the cluster
+ * and not the namespace, the account above the cluster is somebody else's,
+ * and a namespace inherits the phase of what it sits in.
+ */
+describe('colouring over the platform tree', () => {
+  const tree = [
+    ...elements,
+    platform('account', 'Cloud account', { outside: true }),
+    platform('ns', 'Logistics namespace', { parentId: 'openshift', platformArchetype: 'place' }),
+  ].map((e) => (e.id === 'openshift' ? { ...e, parentId: 'account' } : e))
+  const rows = [host('h1', 'wms-api', 'ns'), host('h2', 'portal', 'openshift'), host('h3', 'billing', 'azure')]
+
+  it('names the outermost platform the organisation runs, not the namespace and not the account', () => {
+    const bands = overlayBands({ elements: tree, relations: rows }, board(), 'platform')
+    expect(bands.map((band) => band.key)).toEqual(['azure', 'openshift', 'none'])
+    expect(overlayBandOf(bands).get('wms')?.name).toBe('OpenShift')
+  })
+
+  it('takes the worst phase of the whole chain, and asks the tree about a stand-in', () => {
+    const retiring = tree.map((e) => (e.id === 'openshift' ? { ...e, lifecycle: 'retiring' as const } : e))
+    expect(overlayBandOf(overlayBands({ elements: retiring, relations: rows }, board(), 'technologyLifecycle')).get('wms')?.phase).toBe('retiring')
+    const standIn = retiring.map((e) => (e.id === 'ns' ? { ...e, ref: 'platforms', parentId: undefined } : e))
+    expect(overlayBandOf(overlayBands({ elements: standIn, relations: rows }, board(), 'technologyLifecycle')).get('wms')?.phase).toBe('live')
+    const parentOf = (id: string) => (id === 'ns' ? 'openshift' : undefined)
+    expect(overlayBandOf(overlayBands({ elements: standIn, relations: rows }, board(), 'technologyLifecycle', undefined, { parentOf })).get('wms')?.phase).toBe('retiring')
+    expect(overlayBandOf(overlayBands({ elements: standIn, relations: rows }, board(), 'platform', undefined, { parentOf })).get('wms')?.name).toBe('OpenShift')
+  })
+})

@@ -23,4 +23,5 @@ export const EN = {
   'technology.protocol': 'How',
   'technology.partOf': 'Part of',
   'technology.itsOwn': 'An interface of its own',
+  'technology.on': 'on {name}',
 } as const

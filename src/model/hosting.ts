@@ -16,7 +16,7 @@
  * Pure, and the one answer three readers share: the badge on the card, the
  * retiring-platform finding, and the record's *Runs on* line.
  */
-import type { DesignElement, ElementId, Relation } from './types'
+import type { DesignElement, ElementId, PlatformArchetype, Relation } from './types'
 
 /** The containers filed under an application, in the order the model holds them. */
 export function containersOf(
@@ -83,4 +83,100 @@ export function hostingOf(
     if (!ids.includes(row.targetId)) ids.push(row.targetId)
   }
   return { platformIds: ids, from: 'containers', containers: standing.size }
+}
+
+// --- the platform tree (ADR-0014 §2.7) ---------------------------------------
+
+/**
+ * What the scope that defines a platform says about it, where this scope
+ * holds only a stand-in: what it is filed under, what it is, and whether it
+ * is the organisation's. All three are the owner's detail (ADR-0012 §3), so
+ * all three come from the index by way of the host, and every reader that
+ * walks the tree takes this beside the model. Absent in a shell with no
+ * tree, and the walk then goes by whatever this scope holds itself.
+ */
+export type PlatformTree = {
+  parentOf?(platformId: ElementId): ElementId | undefined
+  archetypeOf?(platformId: ElementId): PlatformArchetype | undefined
+  outsideOf?(platformId: ElementId): boolean | undefined
+}
+
+/** What a platform is filed under: its own record's answer, or the tree's. */
+export function platformParentOf(
+  platform: Pick<DesignElement, 'id' | 'parentId'>,
+  tree: PlatformTree = {},
+): ElementId | undefined {
+  return platform.parentId ?? tree.parentOf?.(platform.id)
+}
+
+/**
+ * The platforms this one sits in, nearest first and outermost last — the
+ * chain every reader walks (ADR-0014 §2.7): the report's *stands on*, the
+ * retirement a container inherits, the root the landscape is coloured by.
+ * Only platforms, only ones this scope holds, and a loop stops itself.
+ */
+export function ancestorPlatforms(
+  elements: readonly DesignElement[],
+  platformId: ElementId,
+  tree: PlatformTree = {},
+): DesignElement[] {
+  const byId = new Map(elements.map((element) => [element.id, element]))
+  const chain: DesignElement[] = []
+  const seen = new Set<ElementId>([platformId])
+  let held = byId.get(platformId)
+  while (held?.kind === 'platform') {
+    const up = platformParentOf(held, tree)
+    if (up === undefined || seen.has(up)) break
+    seen.add(up)
+    held = byId.get(up)
+    if (held?.kind === 'platform') chain.push(held)
+  }
+  return chain
+}
+
+/**
+ * Every platform filed under this one, at any depth, in the model's own
+ * order. Read by walking each platform's chain upward rather than by
+ * children, because a stand-in carries no `parentId` and the tree's answer
+ * is per platform, upward.
+ */
+export function descendantPlatforms(
+  elements: readonly DesignElement[],
+  platformId: ElementId,
+  tree: PlatformTree = {},
+): DesignElement[] {
+  return elements.filter((element) => (
+    element.kind === 'platform' && element.id !== platformId
+    && ancestorPlatforms(elements, element.id, tree).some((above) => above.id === platformId)
+  ))
+}
+
+/**
+ * The coarse answer to where something runs: the outermost platform the
+ * organisation runs, for each place its containers sit (ADR-0014 §2.7).
+ *
+ * A namespace sits in a cluster sits in a cloud account, and the landscape is
+ * coloured by the cluster: the namespace is the precise place, which the
+ * record and the deployment boxes keep, and the account is somebody else's —
+ * so the walk stops at the last platform that is not `outside`, and only a
+ * chain that is outside throughout answers with its top. Once each, in the
+ * order the precise places were in.
+ */
+export function rootPlatformsOf(
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+  elementId: ElementId,
+  tree: PlatformTree = {},
+): ElementId[] {
+  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  const outside = (platform: DesignElement) => platform.outside === true || tree.outsideOf?.(platform.id) === true
+  const roots: ElementId[] = []
+  for (const id of hostingOf(model, elementId).platformIds) {
+    const held = byId.get(id)
+    if (!held) { if (!roots.includes(id)) roots.push(id); continue }
+    const chain = [held, ...ancestorPlatforms(model.elements, id, tree)]
+    const ours = chain.filter((platform) => !outside(platform))
+    const root = (ours.length > 0 ? ours : chain)[(ours.length > 0 ? ours : chain).length - 1]
+    if (!roots.includes(root.id)) roots.push(root.id)
+  }
+  return roots
 }

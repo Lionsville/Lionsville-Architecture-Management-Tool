@@ -28,7 +28,7 @@ import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/fromInterchange'
 import type { Transition } from '../model/transition'
 import { matchesQuery } from '../model/textSearch'
-import type { ElementId, ElementKind, Relation, RelationType } from '../model/types'
+import type { ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model/types'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 
@@ -55,6 +55,12 @@ export type TreeEntry = {
   readonly conflict?: readonly string[]
   readonly outside?: true
   readonly partyId?: ElementId
+  /** What the master files it under (ADR-0013): a namespace under a cluster. */
+  readonly parentId?: ElementId
+  /** What a platform is, as its master says (ADR-0014). */
+  readonly platformArchetype?: PlatformArchetype
+  /** A service offered beyond its team, as its master says (ADR-0014). */
+  readonly shared?: true
 }
 
 /** One finding of ADR-0012 §9: `projects/checks`'s, structurally. */

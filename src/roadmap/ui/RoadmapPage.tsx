@@ -42,6 +42,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
+import type { PlatformTree } from '../../model/hosting'
 import { CHECK_SENTENCE } from '../labels'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
 
@@ -113,6 +114,8 @@ export type RoadmapPageProps = {
   onOpenInitiative?(scope: string, planId: string): void
   /** The day "now" is; the caller reads the clock so this stays testable. */
   today: string
+  /** The platform tree where this scope holds stand-ins (ADR-0014 §2.7), for the retiring-platform finding. */
+  platformTree?: PlatformTree
   /** The day the open board is showing, so the scrubber starts where it is. */
   asOf?: string
   readOnly: boolean
@@ -164,9 +167,10 @@ export function RoadmapPage(props: RoadmapPageProps) {
     () => (cut ? within(whole, window_.from, window_.to) : whole),
     [whole, cut, window_.from, window_.to],
   )
+  const platformTree = props.platformTree
   const problems = useMemo(
-    () => findings({ model, today }),
-    [model, today],
+    () => findings({ model, today, ...(platformTree ? { platformTree } : {}) }),
+    [model, today, platformTree],
   )
 
   const span = daysBetween(roadmap.from, roadmap.to)

@@ -19,7 +19,9 @@ import { decisionsOf, groupsOf, placedList, placedOn, toArrays, transitionList }
 import { hostingOf } from '../model/hosting'
 import { consumersOf, leverageOf, platformsBehind } from '../model/leverage'
 import { platformReport } from '../model/platformReport'
-import type { PlatformEnd } from '../model/platformReport'
+import type { PlatformDescription, PlatformEnd } from '../model/platformReport'
+import { descendantPlatforms } from '../model/hosting'
+import type { PlatformTree } from '../model/hosting'
 import { today } from '../model/lifecycle'
 import { findTransition, transitionLabel } from '../model/transition'
 import type { Transition } from '../model/transition'
@@ -230,7 +232,9 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
     case 'roadmap.check': {
       const arrays = view.current()
       return json({
-        findings: findings({ model: arrays, today: today() }),
+        // Over the platform tree the index holds (ADR-0014 §2.7): a stand-in
+        // of a namespace carries no `parentId` of its own.
+        findings: findings({ model: arrays, today: today(), platformTree: treeOf(view) }),
         // Said in the answer, not only in the tool's description: an agent that
         // reads an empty list must not conclude the landscape is current.
         note: 'These are contradictions between dates. They cannot tell you whether a landscape is out of date.',
@@ -251,13 +255,30 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       if (platform.kind !== 'platform') {
         return refused('agent.badArguments', `${id} is a ${platform.kind}, not a platform`)
       }
-      const report = platformReport(view.current(), id, { today: today() })!
+      // Told what the tree knows about every id the rows name (ADR-0012 §2),
+      // and handed the rows the rest of the tree wrote about the platform and
+      // what is filed under it (ADR-0014 §2.7).
+      const arrays = view.current()
+      const describe = (held: string): PlatformDescription | undefined => {
+        const entry = view.tree?.lookup(held)
+        if (!entry) return undefined
+        return {
+          name: entry.name, kind: entry.kind,
+          ...(entry.master !== undefined && entry.master !== view.scopePath ? { where: entry.master } : {}),
+          ...(entry.platformArchetype !== undefined ? { platformArchetype: entry.platformArchetype } : {}),
+          ...(entry.parentId !== undefined ? { parentId: entry.parentId } : {}),
+          ...(entry.outside ? { outside: entry.outside } : {}),
+        }
+      }
+      const about = [id, ...descendantPlatforms(arrays.elements, id, treeOf(view)).map((one) => one.id)]
+      const report = platformReport(arrays, id, { today: today(), describe, elsewhere: rowsAbout(view, about) })!
       const end = (one: PlatformEnd) => ({
         id: one.id,
         name: one.name,
         known: one.known,
         ...(one.kind !== undefined ? { kind: one.kind } : {}),
         ...(one.application !== undefined ? { application: one.application } : {}),
+        ...(one.place !== undefined ? { place: one.place } : {}),
       })
       return json({
         platform: { id: report.platform.id, name: report.platform.name, platformArchetype: report.platform.platformArchetype },
@@ -549,6 +570,15 @@ function runsOn(model: Model, elementId: string) {
 /** The rows the rest of the tree wrote about an id, where there is a tree to ask. */
 function rowsAbout(view: ReadView, ids: readonly string[]): Relation[] {
   return ids.flatMap((id) => [...(view.tree?.rowsTo?.(id) ?? [])])
+}
+
+/** The platform tree as the index holds it (ADR-0014 §2.7), for the readers that walk it. */
+function treeOf(view: ReadView): PlatformTree {
+  return {
+    parentOf: (id) => view.tree?.lookup(id)?.parentId,
+    archetypeOf: (id) => view.tree?.lookup(id)?.platformArchetype,
+    outsideOf: (id) => view.tree?.lookup(id)?.outside,
+  }
 }
 
 /**

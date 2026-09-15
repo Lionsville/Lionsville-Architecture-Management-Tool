@@ -723,9 +723,12 @@ export function ProjectWorkspace({
       name: entry.name,
       kind: entry.kind,
       ...(master !== undefined && master !== project.path ? { where: scopeLabel(master) } : {}),
-      // What a platform is, as its master says (ADR-0014): a stand-in here
+      // What a platform is, what it is filed under and whether it is the
+      // organisation's, as its master says (ADR-0014): a stand-in here
       // carries nothing the owner answers for.
       ...(entry.platformArchetype !== undefined ? { platformArchetype: entry.platformArchetype } : {}),
+      ...(entry.parentId !== undefined ? { parentId: entry.parentId } : {}),
+      ...(entry.outside ? { outside: entry.outside } : {}),
     }
   }, [index, project.path, scopeLabel])
 
@@ -787,6 +790,7 @@ export function ProjectWorkspace({
     platformTree: {
       parentOf: (platformId) => index.lookup(platformId)?.parentId,
       archetypeOf: (platformId) => index.lookup(platformId)?.platformArchetype,
+      outsideOf: (platformId) => index.lookup(platformId)?.outside,
     },
     // Who uses a service from another team (ADR-0014), off the rows the whole
     // tree holds: what the *Shared* tick says beside itself.
@@ -1242,6 +1246,7 @@ export function ProjectWorkspace({
         fromBelow={initiativesBelow}
         onOpenInitiative={onOpenScope ? (scope, id) => onOpenScope(scope, { page: 'plan', id }) : undefined}
         today={todayDay}
+        platformTree={ownership.platformTree}
         asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
         readOnly={false}
         actions={plans.roadmapActions}

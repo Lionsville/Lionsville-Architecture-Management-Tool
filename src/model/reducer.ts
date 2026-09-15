@@ -810,6 +810,22 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
     })
   }
 
+  // What was filed under a platform or a service comes out from under it
+  // (ADR-0014 §2.7), the way a landing on a deleted interface becomes an
+  // interface of its own: `parentId` is the one containment on the
+  // technology layer, and a namespace pointing at a cluster that is gone
+  // would sit under nothing every reader could walk to. The same step, so
+  // one undo puts the tree back whole.
+  if (element.kind === 'platform' || element.kind === 'platformService') {
+    for (const childId of next.order.elements) {
+      const child = next.elements[childId]
+      if (child.parentId !== id) continue
+      const { row, inverse } = patched(child, { parentId: undefined })
+      next = withElements(next, put(next.elements, next.order.elements, childId, row))
+      undo.push({ type: 'element.update', id: childId, patch: inverse })
+    }
+  }
+
   return { ok: true, model: next, inverse: transaction(undo, meta) }
 }
 

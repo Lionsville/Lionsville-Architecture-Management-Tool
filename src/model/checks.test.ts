@@ -83,6 +83,35 @@ describe('a platform that retires before what stands on it (ADR-0013)', () => {
     expect(kinds(list)).not.toContain('platformRetiresFirst')
   })
 
+  /**
+   * A platform goes when anything above it goes (ADR-0014 §2.7): retire the
+   * cluster and the containers in its namespaces are flagged, naming the
+   * cluster — and the namespace drawn here as a stand-in is told by the tree
+   * what it sits in.
+   */
+  it('flags what sits under a retiring platform, naming the platform that actually goes', () => {
+    const tree = [
+      platform('cluster', { lifecycleDates: { retired: '2027-06-30' }, successorId: 'cluster2' }), platform('cluster2'),
+      platform('ns', { parentId: 'cluster' }),
+      platform('later', { parentId: 'cluster', lifecycleDates: { retired: '2028-01-01' }, successorId: 'cluster2' }),
+      element('wms'), element('wms-db', { kind: 'component', parentId: 'wms' }), element('orders'),
+    ]
+    const list = check(tree, [row('h1', 'hostedOn', 'wms-db', 'ns'), row('h2', 'hostedOn', 'orders', 'later')])
+    expect(list.filter((one) => one.kind === 'platformRetiresFirst')).toEqual([
+      { kind: 'platformRetiresFirst', subject: 'element', id: 'orders', name: 'orders', detail: 'cluster', relationType: 'hostedOn' },
+      { kind: 'platformRetiresFirst', subject: 'element', id: 'wms', name: 'wms', detail: 'cluster · wms-db', relationType: 'hostedOn' },
+    ])
+    // A stand-in of the namespace carries no parent: the tree says.
+    const standIn = tree.map((e) => (e.id === 'ns' ? { ...e, ref: 'platforms', parentId: undefined } : e))
+    expect(kinds(findings({ model: { elements: standIn, relations: [row('h1', 'hostedOn', 'wms-db', 'ns')] }, today: TODAY })))
+      .not.toContain('platformRetiresFirst')
+    const told = findings({
+      model: { elements: standIn, relations: [row('h1', 'hostedOn', 'wms-db', 'ns')] }, today: TODAY,
+      platformTree: { parentOf: (id) => (id === 'ns' ? 'cluster' : undefined) },
+    })
+    expect(told.filter((one) => one.kind === 'platformRetiresFirst').map((one) => one.detail)).toEqual(['cluster · wms-db'])
+  })
+
   it('ranks under a retirement with dependants and above a line that outlives an end', () => {
     const list = check(
       [

@@ -936,3 +936,35 @@ describe('where something runs, held to its meaning (ADR-0013, ADR-0014)', () =>
     expect(apply(held(), hosted('api', 'cluster-elsewhere')).ok).toBe(true)
   })
 })
+
+describe('deleting a platform or a service takes its children out from under it (ADR-0014)', () => {
+  const held = () => fromArrays({
+    name: 'Platforms',
+    elements: [
+      element('account', { kind: 'platform' }),
+      element('openshift', { kind: 'platform', parentId: 'account' }),
+      element('ns', { kind: 'platform', parentId: 'openshift' }),
+      element('data', { kind: 'platformService' }),
+      element('postgres', { kind: 'platformService', parentId: 'data' }),
+      element('wms'), element('api', { kind: 'component', parentId: 'wms' }),
+    ],
+    relations: [],
+    diagrams: [],
+  })
+
+  it('clears the parent of what was filed under it, in the same step, and one undo puts the tree back', () => {
+    const before = held()
+    const gone = ok(apply(before, { type: 'element.delete', id: 'openshift' }))
+    expect(gone.model.elements.ns.parentId).toBeUndefined()
+    expect(gone.model.elements.account.parentId).toBeUndefined()
+    const back = ok(apply(gone.model, gone.inverse))
+    expect(JSON.stringify(toArrays(back.model))).toBe(JSON.stringify(toArrays(before)))
+    const service = ok(apply(before, { type: 'element.delete', id: 'data' }))
+    expect(service.model.elements.postgres.parentId).toBeUndefined()
+  })
+
+  it('leaves a component under an application alone: that is not this rule\'s', () => {
+    const gone = ok(apply(held(), { type: 'element.delete', id: 'wms' }))
+    expect(gone.model.elements.api.parentId).toBe('wms')
+  })
+})

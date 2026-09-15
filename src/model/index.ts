@@ -40,11 +40,14 @@ export type { ColourBy, OverlayBand } from './overlay'
 
 /** The platforms a container diagram's containers run on, drawn around them (ADR-0013). */
 export { deploymentBoxes } from './deployment'
-export type { DeploymentBox, PlatformTree } from './deployment'
+export type { DeploymentBox } from './deployment'
 
-/** Where something runs, and who may say so (ADR-0013). */
-export { containersOf, hostingOf, mayBeHosted } from './hosting'
-export type { Hosting } from './hosting'
+/** Where something runs, and who may say so (ADR-0013); the platform tree every reader walks (ADR-0014). */
+export {
+  ancestorPlatforms, containersOf, descendantPlatforms, hostingOf, mayBeHosted, platformParentOf,
+  rootPlatformsOf,
+} from './hosting'
+export type { Hosting, PlatformTree } from './hosting'
 
 /** What an application leverages: the services it uses, and the platforms behind them (ADR-0014). */
 export {

@@ -20,4 +20,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'technology.protocol': 'Hoe',
   'technology.partOf': 'Onderdeel van',
   'technology.itsOwn': 'Een koppelvlak op zichzelf',
+  'technology.on': 'op {name}',
 }

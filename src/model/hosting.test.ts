@@ -7,7 +7,7 @@
  * sentence anybody can write about a vendor-hosted service.
  */
 import { describe, expect, it } from 'vitest'
-import { containersOf, hostingOf, mayBeHosted } from './hosting'
+import { ancestorPlatforms, containersOf, descendantPlatforms, hostingOf, mayBeHosted, rootPlatformsOf } from './hosting'
 import { element } from './testFixtures'
 import type { DesignElement, Relation } from './types'
 
@@ -72,4 +72,50 @@ describe('the roll-up', () => {
       .toEqual({ platformIds: [], from: 'itself', containers: 0 })
   })
 
+})
+
+/**
+ * The platform tree every reader walks (ADR-0014 §2.7): `parentId` is the one
+ * containment, a stand-in carries none and is told by the tree, and the
+ * coarse answer stops at the edge of the organisation.
+ */
+describe('the platform tree', () => {
+  const account = element('account', { kind: 'platform', name: 'Cloud account', outside: true })
+  const tree = [...elements, account].map((e) => (e.id === 'openshift' ? { ...e, parentId: 'account' } : e))
+  const relations = [host('h1', 'wms-api', 'ns'), host('h2', 'wms-db', 'openshift'), host('h3', 'portal', 'account')]
+
+  it('walks up to the outermost platform, nearest first, and stops at a loop', () => {
+    expect(ancestorPlatforms(tree, 'ns').map((e) => e.id)).toEqual(['openshift', 'account'])
+    expect(ancestorPlatforms(tree, 'account')).toEqual([])
+    const looped = tree.map((e) => (e.id === 'account' ? { ...e, parentId: 'ns' } : e))
+    expect(ancestorPlatforms(looped, 'ns').map((e) => e.id)).toEqual(['openshift', 'account'])
+  })
+
+  it('asks the tree where a stand-in carries no parent of its own', () => {
+    const standIns = tree.map((e) => (e.id === 'ns' ? { ...e, ref: 'platforms', parentId: undefined } : e))
+    expect(ancestorPlatforms(standIns, 'ns')).toEqual([])
+    const parentOf = (id: string) => (id === 'ns' ? 'openshift' : undefined)
+    expect(ancestorPlatforms(standIns, 'ns', { parentOf }).map((e) => e.id)).toEqual(['openshift', 'account'])
+    expect(descendantPlatforms(standIns, 'account', { parentOf }).map((e) => e.id)).toEqual(['openshift', 'ns'])
+  })
+
+  it('lists everything filed under a platform at any depth, in the model\'s order', () => {
+    expect(descendantPlatforms(tree, 'account').map((e) => e.id)).toEqual(['openshift', 'ns'])
+    expect(descendantPlatforms(tree, 'openshift').map((e) => e.id)).toEqual(['ns'])
+    expect(descendantPlatforms(tree, 'ns')).toEqual([])
+  })
+
+  it('answers the coarse place with the outermost platform the organisation runs, once each', () => {
+    // The namespace and the cluster both roll up to the cluster: the account
+    // above it is somebody else's, and the landscape is coloured by ours.
+    expect(rootPlatformsOf({ elements: tree, relations }, 'wms')).toEqual(['openshift'])
+    // A chain that is outside throughout answers with its top.
+    expect(rootPlatformsOf({ elements: tree, relations }, 'portal')).toEqual(['account'])
+    // And a place this scope does not hold is named as the row names it.
+    expect(rootPlatformsOf({ elements: tree, relations: [host('h9', 'partner', 'elsewhere')] }, 'partner')).toEqual(['elsewhere'])
+    // What the tree says about a stand-in counts here too.
+    const standIns = tree.map((e) => (e.id === 'account' ? { ...e, ref: 'platforms', outside: undefined } : e))
+    expect(rootPlatformsOf({ elements: standIns, relations }, 'wms')).toEqual(['account'])
+    expect(rootPlatformsOf({ elements: standIns, relations }, 'wms', { outsideOf: (id) => id === 'account' })).toEqual(['openshift'])
+  })
 })

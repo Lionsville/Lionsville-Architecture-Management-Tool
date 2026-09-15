@@ -20,4 +20,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'technology.protocol': 'Wie',
   'technology.partOf': 'Teil von',
   'technology.itsOwn': 'Eine eigenständige Schnittstelle',
+  'technology.on': 'auf {name}',
 }
