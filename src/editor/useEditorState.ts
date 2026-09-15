@@ -34,6 +34,7 @@ import { clampCanvasSize, clampZoneSize, RESIZABLE_ZONES } from '../model/zones'
 import { canChangeKind, placementForKind } from '../model/kindChange';
 import { nodeFigure } from '../model/kinds';
 import { candidateInterfaces, isContainerLine, landedEnd, landingRow } from '../model/refines';
+import type { ColourBy } from '../model/overlay';
 
 /**
  * A set of selected canvas items. Elements, connections and domain groups live
@@ -391,6 +392,11 @@ export interface EditorActions {
    * C4 picture wants it every time they open the view.
    */
   setShowDeployment(on: boolean): void;
+  /**
+   * What the landscape's cards are tinted by (ADR-0013); `undefined` is
+   * nothing. A view setting like the one above, and kept the same way.
+   */
+  setColourBy(by: ColourBy | undefined): void;
   /**
    * The day the active diagram shows (ADR-0009); `undefined` means today.
    *
@@ -1368,6 +1374,14 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         if (!diagram || (diagram.showDeployment ?? true) === on) return;
         dispatch({
           type: 'diagram.update', id: diagram.id, patch: { showDeployment: on }, undoable: false,
+        });
+      },
+
+      setColourBy(by) {
+        const diagram = currentDiagram();
+        if (!diagram || diagram.colourBy === by) return;
+        dispatch({
+          type: 'diagram.update', id: diagram.id, patch: { colourBy: by }, undoable: false,
         });
       },
 

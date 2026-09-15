@@ -62,6 +62,12 @@ export interface ElementNodeData extends Record<string, unknown> {
   phase: Lifecycle;
   /** See {@link StandInNote}. Absent on a record this scope defines. */
   note?: StandInNote;
+  /**
+   * The wash this card takes under the landscape's *Colour by* overlay
+   * (ADR-0013): a resolved colour, so the card paints it without knowing what
+   * it means. Absent = no overlay, which is every card on every other view.
+   */
+  overlayTint?: string;
 }
 
 export type ElementNode = Node<ElementNodeData>;

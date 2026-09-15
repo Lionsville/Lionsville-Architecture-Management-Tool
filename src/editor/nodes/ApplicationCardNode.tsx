@@ -49,6 +49,13 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: tokens.card.bg,
+        // The overlay's wash, laid OVER the card's own ground (ADR-0013): a
+        // colour that says which group the card is in, never one that replaces
+        // what the card says. A flat gradient rather than `color-mix`, which
+        // this build's browser target does not have.
+        ...(data.overlayTint
+          ? { backgroundImage: `linear-gradient(${data.overlayTint}, ${data.overlayTint})` }
+          : {}),
         border: `1px solid ${tokens.card.border}`,
         borderRadius: shapeRadiusFor('application', element.shapeVariant, false),
         overflow: 'hidden',

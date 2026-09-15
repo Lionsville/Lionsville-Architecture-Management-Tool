@@ -31,6 +31,8 @@ import { seedContainerDiagram } from '../model/containerDiagram'
 import { seedTechnologyDiagram } from '../model/technologyDiagram'
 import { isPlatformCategory } from '../model/relations'
 import { mayBeHosted } from '../model/hosting'
+import { COLOUR_BY } from '../model/overlay'
+import type { ColourBy } from '../model/overlay'
 import { acceptImplied, impliedInterfaces } from '../model/implied'
 import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
@@ -1248,10 +1250,21 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     ?? only('platformId', diagram.kind === 'technology', 'a technology view')
     ?? only('asOf', !laidOut || diagram.kind === 'technology', 'a board or a technology view')
     ?? only('showDeployment', diagram.kind === 'container', 'a container diagram')
+    ?? only('colourBy', diagram.kind === 'layer7', 'a landscape')
   if (wrong) return wrong
 
+  // What the cards are tinted by (ADR-0013): presentation, kept on the view,
+  // so a reader opening it gets the picture it was left showing.
+  if (args.colourBy === null || args.colourBy === '') patch.colourBy = undefined
+  else if (typeof args.colourBy === 'string') {
+    if (!COLOUR_BY.includes(args.colourBy as ColourBy)) {
+      return refused('agent.badArguments', `"colourBy" is one of ${COLOUR_BY.join(', ')}`)
+    }
+    patch.colourBy = args.colourBy
+  }
+
   // Whether the deployment boxes are drawn (ADR-0013): a view setting, kept on
-  // the view, so a reader opening it gets the picture it was left showing.
+  // the view too.
   if (typeof args.showDeployment === 'boolean') patch.showDeployment = args.showDeployment
   else if (args.showDeployment === null) patch.showDeployment = undefined
 

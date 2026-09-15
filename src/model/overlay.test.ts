@@ -1,0 +1,100 @@
+/**
+ * What the overlay bands say (ADR-0013, redone).
+ *
+ * Derived on every render, so what matters is the order — the palette slot a
+ * band takes must not move because another card was added — and that the two
+ * questions really are different: one groups by which platform, the other by
+ * how healthy it is.
+ */
+import { describe, expect, it } from 'vitest'
+import { overlayBandOf, overlayBands } from './overlay'
+import { element } from './testFixtures'
+import type { DesignDiagram, DesignElement, Relation } from './types'
+
+const platform = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement =>
+  element(id, { kind: 'platform', name, ...over })
+const container = (id: string, parentId: string): DesignElement =>
+  element(id, { kind: 'component', parentId, name: id })
+const host = (id: string, sourceId: string, targetId: string): Relation =>
+  ({ id, type: 'hostedOn', sourceId, targetId })
+
+const elements = [
+  element('wms', { name: 'WMS' }), element('portal', { name: 'Portal' }),
+  element('billing', { name: 'Billing' }), element('partner', { name: 'Partner', outside: true }),
+  container('wms-api', 'wms'),
+  platform('openshift', 'OpenShift'),
+  platform('azure', 'Azure', { lifecycle: 'retiring' }),
+]
+const relations = [
+  host('h1', 'wms-api', 'openshift'),
+  host('h2', 'portal', 'openshift'),
+  host('h3', 'billing', 'azure'),
+]
+const board = (kind: DesignDiagram['kind'] = 'layer7'): Pick<DesignDiagram, 'kind' | 'members'> => ({
+  kind,
+  members: [{ id: 'wms' }, { id: 'portal' }, { id: 'billing' }, { id: 'partner' }, { id: 'openshift' }],
+})
+
+describe('colouring by platform', () => {
+  it('gives one band per platform, and one for the cards on nothing', () => {
+    const bands = overlayBands({ elements, relations }, board(), 'platform')
+    expect(bands.map((band) => [band.key, band.name, band.slot])).toEqual([
+      ['azure', 'Azure', 0],
+      ['openshift', 'OpenShift', 1],
+      ['none', undefined, 2],
+    ])
+  })
+
+  it('puts a card in the band of what its CONTAINERS run on', () => {
+    const bands = overlayBandOf(overlayBands({ elements, relations }, board(), 'platform'))
+    expect(bands.get('wms')?.key).toBe('openshift')
+    expect(bands.get('portal')?.key).toBe('openshift')
+    expect(bands.get('partner')?.key).toBe('none')
+  })
+
+  it('orders the bands by name, so a card added above nobody changes colour, and keeps "on nothing" last', () => {
+    const more = [...elements, element('crm', { name: 'CRM' }), platform('aws', 'AWS')]
+    const bands = overlayBands(
+      { elements: more, relations: [...relations, host('h4', 'crm', 'aws')] },
+      { ...board(), members: [...board().members, { id: 'crm' }] },
+      'platform',
+    )
+    expect(bands.map((band) => band.key)).toEqual(['aws', 'azure', 'openshift', 'none'])
+  })
+
+  it('colours nothing that is not an application: a platform chip is not tinted by itself', () => {
+    const bands = overlayBandOf(overlayBands({ elements, relations }, board(), 'platform'))
+    expect(bands.has('openshift')).toBe(false)
+  })
+})
+
+describe('colouring by technology lifecycle', () => {
+  it('takes the worst phase among the platforms a card stands on', () => {
+    const bands = overlayBandOf(overlayBands({ elements, relations }, board(), 'technologyLifecycle'))
+    expect(bands.get('billing')?.phase).toBe('retiring')
+    expect(bands.get('wms')?.phase).toBe('live')
+    expect(bands.get('partner')?.key).toBe('none')
+  })
+
+  it('reads the phase on the day the board shows, not the one stored', () => {
+    const dated = elements.map((e) => (
+      e.id === 'openshift' ? { ...e, lifecycleDates: { retiring: '2027-06-01' } } : e
+    ))
+    const before = overlayBandOf(overlayBands({ elements: dated, relations }, board(), 'technologyLifecycle', '2027-01-01'))
+    expect(before.get('wms')?.phase).toBe('live')
+    const after = overlayBandOf(overlayBands({ elements: dated, relations }, board(), 'technologyLifecycle', '2027-09-01'))
+    expect(after.get('wms')?.phase).toBe('retiring')
+  })
+
+  it('lists the bands worst first', () => {
+    const bands = overlayBands({ elements, relations }, board(), 'technologyLifecycle')
+    expect(bands.map((band) => band.key)).toEqual(['retiring', 'live', 'none'])
+  })
+})
+
+describe('when it says nothing at all', () => {
+  it('is empty with no overlay chosen, and on a view that is not a landscape', () => {
+    expect(overlayBands({ elements, relations }, board(), undefined)).toEqual([])
+    expect(overlayBands({ elements, relations }, board('container'), 'platform')).toEqual([])
+  })
+})

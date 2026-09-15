@@ -54,7 +54,7 @@ export type ProjectPatch = Partial<{
  * `diagram.rename` and `diagram.settings` — because they carry rules.
  */
 export type DiagramPatch = Partial<Pick<Diagram,
-  'autoRoute' | 'applicationElementId' | 'asOf' | 'showDeployment'
+  'autoRoute' | 'applicationElementId' | 'asOf' | 'showDeployment' | 'colourBy'
   // A sheet is laid out from these four the way a landscape is laid out from
   // its coordinates (ADR-0012 §6): they say what the page is OF, so they are
   // the sheet's equivalent of a drag and belong on the same patch.

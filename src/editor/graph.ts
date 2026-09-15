@@ -91,6 +91,13 @@ export interface BuildGraphArgs {
    * every canvas test.
    */
   noteFor?(elementId: ElementId): StandInNote | undefined;
+  /**
+   * The wash each card takes under the landscape's *Colour by* overlay
+   * (ADR-0013), by element id. A map rather than a function for `noteFor`'s
+   * reason inverted: the caller memoises it once, so every card that is not in
+   * it compares equal and stays out of a re-render.
+   */
+  overlayTints?: ReadonlyMap<ElementId, string>;
 }
 
 const BOUNDARY_PADDING = 56;
@@ -116,6 +123,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       args.diagram.kind === 'container' && args.diagram.applicationElementId === element.id;
     const figure = nodeFigure(element, placement.zone);
     const note = args.noteFor?.(element.id);
+    const tint = args.overlayTints?.get(element.id);
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
       : placementRect(figure, placement);
@@ -147,6 +155,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
         showLifecycle: args.showLifecycle ?? true,
         phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
         ...(note !== undefined ? { note } : {}),
+        ...(tint !== undefined ? { overlayTint: tint } : {}),
       },
     });
   }
@@ -452,6 +461,7 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
     // and replaces it only when the tree changes, so this costs one comparison
     // rather than two string compares per card per derive.
     held.note === next.note &&
+    held.overlayTint === next.overlayTint &&
     held.resizeLimits.min.width === next.resizeLimits.min.width &&
     held.resizeLimits.min.height === next.resizeLimits.min.height &&
     held.resizeLimits.max.width === next.resizeLimits.max.width &&

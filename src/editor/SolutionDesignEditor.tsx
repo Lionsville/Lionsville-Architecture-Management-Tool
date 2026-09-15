@@ -17,6 +17,10 @@ import type { StandInNote } from './nodes/nodeData';
 import { ContainerCanvas } from './canvas/ContainerCanvas';
 import { Layer7Canvas } from './canvas/Layer7Canvas';
 import { doubleClickTarget, lineDoubleClickTarget } from './doubleClick';
+import { overlayBands } from '../model/overlay';
+import type { ColourBy } from '../model/overlay';
+import { overlayTint } from './theme/overlayColors';
+import { today } from '../model/lifecycle';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
 import { newDomainGroup } from './canvas/domainGroupPlacement';
 import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
@@ -292,6 +296,28 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const showDeployment = activeDiagram === undefined
     ? true
     : deploymentShown[activeDiagram.id] ?? activeDiagram.showDeployment ?? true;
+  /**
+   * The landscape coloured by what its applications stand on (ADR-0013). A
+   * reader may change what a view shows, so the chosen overlay is theirs where
+   * the write is refused — the same shape the deployment toggle takes.
+   */
+  const [colourShown, setColourShown] = useState<Record<string, ColourBy | 'none'>>({});
+  const held = activeDiagram === undefined ? undefined : colourShown[activeDiagram.id];
+  const colourBy: ColourBy | undefined = held === 'none'
+    ? undefined
+    : held ?? activeDiagram?.colourBy;
+  const overlay = useMemo(
+    () => (activeDiagram ? overlayBands(state.model, activeDiagram, colourBy, activeDiagram.asOf ?? today()) : []),
+    [state.model, activeDiagram, colourBy],
+  );
+  const overlayTints = useMemo(() => {
+    const tints = new Map<ElementId, string>();
+    for (const band of overlay) {
+      const colour = overlayTint(theme, band);
+      for (const id of band.memberIds) tints.set(id, colour);
+    }
+    return tints;
+  }, [overlay, theme]);
 
   const { setSelection } = state;
   const requestRename = useCallback(
@@ -1272,6 +1298,16 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onOpenHelp={() => setHelpOpen(true)}
         showLifecycle={showLifecycle}
         onToggleLifecycle={() => setShowLifecycle((on) => !on)}
+        {...(activeDiagram?.kind === 'layer7'
+          ? {
+            colourBy,
+            overlayBands: overlay,
+            onColourByChange: (by: ColourBy | undefined) => {
+              setColourShown((kept) => ({ ...kept, [activeDiagram.id]: by ?? 'none' }));
+              state.actions.setColourBy(by);
+            },
+          }
+          : {})}
         {...(activeDiagram?.kind === 'container'
           ? {
             showDeployment: showDeployment,
@@ -1355,6 +1391,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onElementDoubleClick={handleDoubleClick}
           onLineDoubleClick={handleLineDoubleClick}
           showDeployment={showDeployment}
+          overlayTints={overlayTints}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
           groupTidyOptions={groupTidyOptions}
@@ -1622,6 +1659,7 @@ function CanvasForDiagram({
   onLineDoubleClick,
   onOpenDocumentation,
   showDeployment,
+  overlayTints,
   onTidyGroup,
   groupTidyOptions,
   onGroupTidyOptionsChange,
@@ -1662,6 +1700,8 @@ function CanvasForDiagram({
   onOpenDocumentation(elementId: ElementId): void;
   /** Whether a container diagram draws the deployment boxes (ADR-0013). */
   showDeployment: boolean;
+  /** The wash each card takes under the landscape's overlay (ADR-0013). */
+  overlayTints: ReadonlyMap<ElementId, string>;
   /** Layer 7 only — undefined in read-only mode. */
   onTidyGroup?(name: string): void;
   groupTidyOptions: TidyOptions;
@@ -1704,6 +1744,7 @@ function CanvasForDiagram({
     onElementDoubleClick,
     onLineDoubleClick,
     onOpenDocumentation,
+    overlayTints,
     onTidy,
     onRouteConnections,
     onRouteConnectionsAll,

@@ -741,6 +741,15 @@ export interface DesignDiagram {
    * plain C4 picture wants it every time they open the view, not once.
    */
   showDeployment?: boolean;
+  /**
+   * What the landscape's cards are tinted by (layer7, ADR-0013): the platform
+   * of their roll-up, or the worst lifecycle among the platforms they stand
+   * on. Absent = nothing, which is what every board opens as.
+   *
+   * Presentation and nothing else: no geometry, no rows, and the bands are
+   * derived on every render from the rows themselves.
+   */
+  colourBy?: 'platform' | 'technologyLifecycle';
   /** Where it all ended up. A separate file, and a separate question (§6). */
   geometry: Geometry;
 }

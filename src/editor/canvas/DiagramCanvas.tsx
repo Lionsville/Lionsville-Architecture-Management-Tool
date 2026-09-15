@@ -307,6 +307,8 @@ export interface DiagramCanvasProps {
    * which is what it does everywhere else.
    */
   onLineDoubleClick?(relationId: string): void;
+  /** The wash each card takes under the landscape's overlay (ADR-0013). */
+  overlayTints?: ReadonlyMap<ElementId, string>;
   /** "Open documentation" on an element: the editor shows its page. */
   onOpenDocumentation?(elementId: ElementId): void;
   /**
@@ -486,12 +488,13 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         edgeColor: tokens.edge.stroke,
         showLifecycle: props.showLifecycle,
         asOfDay,
+        overlayTints: props.overlayTints,
         noteFor: props.noteFor,
       }, lastNodes.current);
       lastNodes.current = next;
       return next;
     },
-    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor],
+    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor, props.overlayTints],
   );
   const derivedEdges = useMemo(
     () => {

@@ -531,3 +531,15 @@ export function DeploymentIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/** Swatches: the landscape's colour-by overlay (ADR-0013). */
+export function PaletteIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor" opacity="0.85" />
+      <rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor" opacity="0.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor" opacity="0.3" />
+      <rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}

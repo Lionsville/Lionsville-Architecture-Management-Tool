@@ -34,6 +34,10 @@ export {
   RELATION_LABEL, RELATION_TYPES, flowsOf, isFlow, isRelationType,
 } from './relations'
 
+/** What the landscape's cards are tinted by (ADR-0013). */
+export { COLOUR_BY, overlayBandOf, overlayBands } from './overlay'
+export type { ColourBy, OverlayBand } from './overlay'
+
 /** The platforms a container diagram's containers run on, drawn around them (ADR-0013). */
 export { deploymentBoxes } from './deployment'
 export type { DeploymentBox } from './deployment'

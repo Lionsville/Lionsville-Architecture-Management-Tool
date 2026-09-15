@@ -921,6 +921,13 @@ const SPECS = [
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
         platformId: { type: 'string', description: 'A technology view: the platform it is about.' },
         asOf: { type: 'string', description: 'A board or a technology view: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
+        colourBy: {
+          type: 'string',
+          description: 'A landscape: what the application cards are tinted by (ADR-0013) — "platform" groups them '
+            + 'by what they run on, "technologyLifecycle" by the worst phase among the platforms they stand on. '
+            + 'Null: nothing. Presentation only; no rows change.',
+          enum: ['platform', 'technologyLifecycle'],
+        },
         showDeployment: {
           type: 'boolean',
           description: 'A container diagram: whether the deployment boxes are drawn — the platforms its containers '

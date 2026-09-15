@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { placedNodes } from '../model/placement';
+import type { ColourBy, OverlayBand } from '../model/overlay';
+import { overlayTint } from './theme/overlayColors';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -28,7 +30,7 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
 
@@ -117,6 +119,14 @@ export interface EditorToolbarProps {
    */
   showDeployment?: boolean;
   onToggleDeployment?(): void;
+  /**
+   * What the landscape's cards are tinted by (ADR-0013), and the bands that
+   * came out of it for the legend. Absent on every view that is not a
+   * landscape — there is nothing there to colour.
+   */
+  colourBy?: ColourBy;
+  onColourByChange?(by: ColourBy | undefined): void;
+  overlayBands?: readonly OverlayBand[];
   /**
    * The day the board shows (ADR-0009); absent = today. Set it and the same
    * single model is drawn as it stood then — which is how a future diagram is
@@ -530,6 +540,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
       >
         <LifecycleIcon />
       </IconButton>
+      {props.onColourByChange && (
+        <ColourByControl
+          colourBy={props.colourBy}
+          onChange={props.onColourByChange}
+          bands={props.overlayBands ?? []}
+        />
+      )}
       {props.onToggleDeployment && (
         <Tooltip title={t('toolbar.deployment')}>
           <IconButton
@@ -961,6 +978,94 @@ function AsOfControl(
 }
 
 /** Lifecycle colour key: one swatch + label + note per state (plan D4). */
+/**
+ * *Colour by* — LeanIX\'s picture of a landscape (ADR-0013, redone).
+ *
+ * The control and its legend are one thing: a wash of colour on forty cards
+ * says nothing without the list that names the hues, so the list is under the
+ * same button rather than somewhere else on the bar. Nothing here writes a
+ * row — what a view SHOWS is a reader\'s to change, which is why it is offered
+ * read-only too.
+ */
+function ColourByControl(props: {
+  colourBy: ColourBy | undefined;
+  onChange(by: ColourBy | undefined): void;
+  bands: readonly OverlayBand[];
+}) {
+  const { t } = useStrings();
+  const theme = useTheme();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const on = props.colourBy !== undefined;
+  return (
+    <>
+      <Tooltip title={t('toolbar.colourBy')}>
+        <IconButton
+          size="small"
+          aria-label={t('toolbar.colourBy')}
+          aria-pressed={on}
+          onClick={(e) => setAnchor(e.currentTarget)}
+          sx={{
+            color: on ? 'primary.main' : 'text.secondary',
+            backgroundColor: on ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
+          }}
+        >
+          <PaletteIcon />
+        </IconButton>
+      </Tooltip>
+      <Popover
+        open={Boolean(anchor)}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        slotProps={{ paper: { sx: { p: 1, mt: 0.5, minWidth: 200 } } }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          {COLOUR_BY_OPTIONS.map((option) => (
+            <MenuItem
+              key={option.value ?? 'none'}
+              dense
+              selected={props.colourBy === option.value}
+              onClick={() => { props.onChange(option.value); setAnchor(null); }}
+            >
+              {t(option.labelKey)}
+            </MenuItem>
+          ))}
+          {props.bands.length > 0 && (
+            <Box sx={{ mt: 0.75, pt: 0.75, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {props.bands.map((band) => (
+                <Box key={band.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }} data-testid={`overlay-legend-${band.key}`}>
+                  <Box sx={{
+                    width: 14, height: 14, borderRadius: '3px', flexShrink: 0,
+                    backgroundColor: overlayTint(theme, band),
+                    border: `1px solid ${theme.palette.divider}`,
+                  }} />
+                  <Typography sx={{ fontSize: 11 }}>
+                    {band.name ?? (band.phase ? t(LIFECYCLE_LABEL[band.phase]) : t('overlay.onNothing'))}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Popover>
+    </>
+  );
+}
+
+const COLOUR_BY_OPTIONS: { value: ColourBy | undefined; labelKey: StringKey }[] = [
+  { value: undefined, labelKey: 'common.none' },
+  { value: 'platform', labelKey: 'overlay.platform' },
+  { value: 'technologyLifecycle', labelKey: 'overlay.technologyLifecycle' },
+];
+
+const LIFECYCLE_LABEL = {
+  planned: 'lifecycle.planned',
+  live: 'lifecycle.live',
+  retiring: 'lifecycle.retiring',
+  retired: 'lifecycle.retired',
+} as const satisfies Record<Lifecycle, StringKey>;
+
 function LifecycleLegend() {
   const { t } = useStrings();
   const tokens = getNodeTokens(useTheme());
