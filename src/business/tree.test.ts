@@ -24,23 +24,18 @@ describe('inOrder', () => {
     ]).map((e) => e.id)).toEqual(['a', 'c'])
   })
 
-  it('leaves what said nothing in the order the list had', () => {
-    // The reason `order` is optional: a list nobody ordered is not renumbered
-    // to say so, and two people do not both renumber it.
-    expect(inOrder([
-      capability('b', 'B', 'x'),
-      capability('a', 'A', 'x'),
-    ]).map((e) => e.id)).toEqual(['b', 'a'])
-  })
-
-  it('draws what said an order before what did not', () => {
+  it('draws what said an order before what did not, and keeps the list order otherwise', () => {
     expect(inOrder([
       capability('silent', 'Silent', 'x'),
       capability('third', 'Third', 'x', { order: 3 }),
     ]).map((e) => e.id)).toEqual(['third', 'silent'])
-  })
-
-  it('keeps a tie in the order the list had, so two reads agree', () => {
+    // The reason `order` is optional: a list nobody ordered is not renumbered
+    // to say so, and two people do not both renumber it. A tie holds the list
+    // order too, so two reads agree.
+    expect(inOrder([
+      capability('b', 'B', 'x'),
+      capability('a', 'A', 'x'),
+    ]).map((e) => e.id)).toEqual(['b', 'a'])
     expect(inOrder([
       capability('b', 'B', 'x', { order: 3 }),
       capability('a', 'A', 'x', { order: 3 }),
@@ -49,15 +44,9 @@ describe('inOrder', () => {
 })
 
 describe('childrenOf', () => {
-  it('answers what sits directly under one, in order', () => {
+  it('answers what sits directly under one in order, the roots for no parent, nothing for a leaf', () => {
     expect(childrenOf(areas(), 'fulfilment').map((e) => e.id)).toEqual(['transport', 'warehousing'])
-  })
-
-  it('answers the roots for no parent at all', () => {
     expect(childrenOf(areas(), undefined).map((e) => e.id)).toEqual(['fulfilment', 'billing'])
-  })
-
-  it('answers nothing for a leaf', () => {
     expect(childrenOf(areas(), 'picking')).toEqual([])
   })
 })
@@ -69,18 +58,13 @@ describe('depthOf', () => {
     expect(depthOf(areas(), 'picking')).toBe(2)
   })
 
-  it('says nothing about a chain that does not end at a root', () => {
+  it('says nothing about a chain that does not end at a root, or about a loop', () => {
     // A parent this scope does not hold is a dangling end (ADR-0012 §5): kept
     // and reported, never dropped — and not a thing with a depth.
     expect(depthOf([capability('orphan', 'Orphan', 'somewhere-else')], 'orphan')).toBeUndefined()
     expect(depthOf(areas(), 'nobody')).toBeUndefined()
-  })
-
-  it('says nothing about a loop instead of counting forever', () => {
-    const looped = [
-      capability('a', 'A', 'b'),
-      capability('b', 'B', 'a'),
-    ]
+    // And a loop is answered, not counted forever.
+    const looped = [capability('a', 'A', 'b'), capability('b', 'B', 'a')]
     expect(depthOf(looped, 'a')).toBeUndefined()
   })
 })
@@ -98,11 +82,8 @@ describe('descendantsOf', () => {
 })
 
 describe('wouldCycle', () => {
-  it('refuses a thing under itself', () => {
+  it('refuses a thing under itself, or under something already under it', () => {
     expect(wouldCycle(areas(), 'fulfilment', 'fulfilment')).toBe(true)
-  })
-
-  it('refuses a thing under something already under it', () => {
     expect(wouldCycle(areas(), 'fulfilment', 'picking')).toBe(true)
   })
 
@@ -133,12 +114,10 @@ describe('moveAmongSiblings', () => {
       .toEqual([{ id: 'x', order: 1 }, { id: 'z', order: 2 }, { id: 'y', order: 3 }])
   })
 
-  it('writes nothing at either end, so there is nothing to undo', () => {
+  it('writes nothing at either end, or for something the scope does not hold', () => {
+    // So there is nothing to undo.
     expect(moveAmongSiblings(areas(), 'transport', -1)).toEqual([])
     expect(moveAmongSiblings(areas(), 'warehousing', 1)).toEqual([])
-  })
-
-  it('writes nothing for something the scope does not hold', () => {
     expect(moveAmongSiblings(areas(), 'nobody', 1)).toEqual([])
   })
 
@@ -162,12 +141,9 @@ describe('flatten', () => {
     ])
   })
 
-  it('is one root and what is under it, counted from that root', () => {
+  it('is one root and what is under it counted from there, and empty for a root nobody holds', () => {
     expect(flatten(areas(), 'warehousing').map(({ element, depth }) => [element.id, depth]))
       .toEqual([['warehousing', 0], ['picking', 1], ['packing', 1]])
-  })
-
-  it('is empty for a root the scope does not hold', () => {
     expect(flatten(areas(), 'nobody')).toEqual([])
   })
 })

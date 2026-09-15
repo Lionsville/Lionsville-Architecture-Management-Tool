@@ -43,14 +43,12 @@ function model(over: Partial<HostModel> = {}): HostModel {
 }
 
 describe('containerDiagramMembers', () => {
-  it('puts the application first', () => {
+  it('puts the application first and brings its own components along, in a stable order', () => {
     expect(containerDiagramMembers(model(), 'crews')[0]).toBe('crews')
-  })
-
-  it('brings its own components along', () => {
     expect(containerDiagramMembers(model(), 'crews')).toEqual(
       expect.arrayContaining(['crews-api', 'crews-ui']),
     )
+    expect(containerDiagramMembers(model(), 'crews')).toEqual(containerDiagramMembers(model(), 'crews'))
   })
 
   it('leaves what the application runs on and uses off it: a platform is not context', () => {
@@ -74,68 +72,41 @@ describe('containerDiagramMembers', () => {
     expect(members).not.toContain('reisinfo-api')
   })
 
-  it('brings a connected external system along as it is', () => {
+  it('brings a connected external system along as it is, and leaves what is attached to nothing out', () => {
     expect(containerDiagramMembers(model(), 'crews')).toContain('extern')
-  })
-
-  it('leaves out whatever is attached to nothing', () => {
     expect(containerDiagramMembers(model(), 'crews')).not.toContain('losstaand')
+    expect(containerDiagramMembers(model(), 'losstaand')).toEqual(['losstaand'])
   })
 
-  it('names nobody twice, not even with two connections to the same neighbour', () => {
-    const m = model({
+  it('looks in both directions, names nobody twice, and ignores a connection to nothing', () => {
+    // `extern → crews` points inward, `crews-api → reisinfo-api` outward.
+    expect(containerDiagramMembers(model(), 'crews'))
+      .toEqual(expect.arrayContaining(['extern', 'reisinfo']))
+    const twice = model({
       relations: [
         link('c1', 'crews-api', 'reisinfo-api'),
         link('c2', 'crews-ui', 'reisinfo-api'),
         link('c3', 'crews', 'reisinfo'),
       ],
     })
-    const members = containerDiagramMembers(m, 'crews')
-    expect(members.filter((id) => id === 'reisinfo')).toHaveLength(1)
-  })
-
-  it('looks at connections in both directions', () => {
-    // `extern → crews` points inward, `crews-api → reisinfo-api` outward.
-    const members = containerDiagramMembers(model(), 'crews')
-    expect(members).toEqual(expect.arrayContaining(['extern', 'reisinfo']))
-  })
-
-  it('gives the same order on every call', () => {
-    expect(containerDiagramMembers(model(), 'crews')).toEqual(containerDiagramMembers(model(), 'crews'))
-  })
-
-  it('yields only itself for an application with no components or neighbours', () => {
-    expect(containerDiagramMembers(model(), 'losstaand')).toEqual(['losstaand'])
-  })
-
-  it('ignores a connection to something that does not exist', () => {
-    const m = model({ relations: [link('c1', 'crews', 'spook')] })
-    expect(containerDiagramMembers(m, 'crews')).toEqual(['crews', 'crews-api', 'crews-ui'])
+    expect(containerDiagramMembers(twice, 'crews').filter((id) => id === 'reisinfo')).toHaveLength(1)
+    const ghost = model({ relations: [link('c1', 'crews', 'spook')] })
+    expect(containerDiagramMembers(ghost, 'crews')).toEqual(['crews', 'crews-api', 'crews-ui'])
   })
 })
 
 describe('seedContainerDiagram', () => {
   const make = { id: 'cd-1', name: (n: string) => `${n} · containers` }
 
-  it('makes a container diagram that points at its application', () => {
+  it('makes a diagram that points at its application, holds its members, and asks for a layout', () => {
     const diagram = seedContainerDiagram(model(), 'crews', make)
     expect(diagram).toMatchObject({ id: 'cd-1', kind: 'container', applicationElementId: 'crews' })
-  })
-
-  it('lets the caller make the name, because the caller knows the language', () => {
-    expect(seedContainerDiagram(model(), 'crews', make)?.name).toBe('crews · containers')
-  })
-
-  it('asks for a layout — there are no coordinates yet', () => {
-    const diagram = seedContainerDiagram(model(), 'crews', make)
+    // The caller makes the name, because the caller knows the language.
+    expect(diagram?.name).toBe('crews · containers')
+    expect(diagram?.members.map((m) => m.id)).toEqual(containerDiagramMembers(model(), 'crews'))
+    // There are no coordinates yet.
     expect(diagram?.geometry.needsLayout).toBe(true)
     expect(diagram?.geometry.nodes).toEqual([])
-  })
-
-  it('places exactly the members, in the same order', () => {
-    const diagram = seedContainerDiagram(model(), 'crews', make)
-    expect(diagram?.members.map((m) => m.id))
-      .toEqual(containerDiagramMembers(model(), 'crews'))
   })
 
   it('returns nothing for an application that does not exist', () => {
@@ -151,11 +122,8 @@ describe('findContainerDiagram', () => {
     ],
   })
 
-  it('finds the diagram belonging to the application', () => {
+  it('finds the diagram belonging to the application, and nothing where there is none yet', () => {
     expect(findContainerDiagram(withContainer, 'crews')?.id).toBe('cd')
-  })
-
-  it('gives nothing when there is none yet', () => {
     expect(findContainerDiagram(withContainer, 'reisinfo')).toBeUndefined()
     expect(findContainerDiagram(model(), 'crews')).toBeUndefined()
   })
@@ -192,13 +160,9 @@ describe('an interface landing on a container diagram', () => {
     expect([...landedInterfaces(relations, held, view, placed)]).toEqual(['c9'])
   })
 
-  it('leaves the boundary line alone when the container it landed on is not drawn today', () => {
+  it('leaves the boundary line alone off a container view, or where the container is not drawn', () => {
     const relations: Relation[] = [{ ...link('r1', 'reisinfo', 'crews-api'), refines: 'c9' }]
     expect([...landedInterfaces(relations, held, view, new Set(['crews', 'reisinfo']))]).toEqual([])
-  })
-
-  it('says nothing at all about a view that is not a container diagram', () => {
-    const relations: Relation[] = [{ ...link('r1', 'reisinfo', 'crews-api'), refines: 'c9' }]
     expect([...landedInterfaces(relations, held, { kind: 'layer7' }, placed)]).toEqual([])
   })
 })
