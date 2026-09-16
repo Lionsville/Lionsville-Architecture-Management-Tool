@@ -164,6 +164,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.newLandscape': 'Landschaft',
   'toolbar.newSheet': 'Geschäftsarchitektur',
   'toolbar.newMap': 'Unternehmenskarte',
+  'toolbar.newTechnology': 'Technologielandschaft',
   'toolbar.readOnly': 'Schreibgeschützt',
   'toolbar.undo': 'Rückgängig',
   'toolbar.undoTip': 'Rückgängig (⌘Z)',

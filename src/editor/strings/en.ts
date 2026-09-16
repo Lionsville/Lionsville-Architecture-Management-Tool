@@ -173,6 +173,7 @@ export const EN = {
   'toolbar.newLandscape': 'Landscape',
   'toolbar.newSheet': 'Business architecture',
   'toolbar.newMap': 'Enterprise map',
+  'toolbar.newTechnology': 'Technology landscape',
   'toolbar.readOnly': 'Read-only',
   'toolbar.undo': 'Undo',
   'toolbar.undoTip': 'Undo (⌘Z)',

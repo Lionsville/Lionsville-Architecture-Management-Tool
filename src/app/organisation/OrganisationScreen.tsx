@@ -316,6 +316,10 @@ export function OrganisationScreen({
               shows={shows}
               onOpenRegister={() => setRegisterOpen(true)}
               onOpenTechnology={() => setTechnologyOpen(true)}
+              onOpenTechnologyLandscape={() => organisation.open(
+                at,
+                { page: 'technology', ...(pages.technology.landscapeId ? { id: pages.technology.landscapeId } : {}) },
+              )}
               onOpenDocumentation={() => organisation.open(at, { page: 'documentation' })}
               s={s}
             />}

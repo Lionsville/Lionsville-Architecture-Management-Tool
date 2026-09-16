@@ -86,6 +86,9 @@ export interface EditorDiagramActions {
     /** The enterprise map, the second laid-out view: open one, and make one. As the sheet's. */
     onOpenMap?(diagramId: string): void;
     onCreateMap?(): void;
+    /** The technology landscape (ADR-0015), the third laid-out view: open one, and make one. As the map's. */
+    onOpenTechnology?(diagramId: string): void;
+    onCreateTechnology?(): void;
     /**
      * A platform's report (ADR-0013, redone): what would be left standing if
      * it went. Not a view — there is nothing to make and nothing in the tab

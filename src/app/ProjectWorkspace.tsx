@@ -58,7 +58,7 @@ import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { MapPage, SheetPage } from '../business'
-import { PlatformReportPage, ServiceReportPage } from '../technology'
+import { PlatformReportPage, ServiceReportPage, TechnologyLandscapePage } from '../technology'
 import type { Supporter } from '../business'
 import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
@@ -81,6 +81,7 @@ import { useLibrary } from './useLibrary'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
 import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
 import { useMap } from './useMap'
+import { useTechnologyLandscape } from './useTechnologyLandscape'
 import { usePlatformReport } from './usePlatformReport'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
@@ -333,6 +334,8 @@ export function ProjectWorkspace({
   // The map's inspector edits a capability with the sheet's own actions: a
   // rename from either page is the same command.
   const maps = useMap({ session, makeId, s })
+  // The technology landscape (ADR-0015): read only, so it needs nobody's actions either.
+  const landscapes = useTechnologyLandscape({ session, makeId, s })
   // A platform's page (ADR-0013): read only, so it needs nobody's actions.
   const platformReading = usePlatformReport()
 
@@ -430,6 +433,7 @@ export function ProjectWorkspace({
   const onSheetHandle = useCallback((handle: SheetHandle | undefined) => { sheetHandle.current = handle }, [])
   const openSheetPage = sheets.open
   const openMapPage = maps.open
+  const openLandscapePage = landscapes.open
   const renderer = useMemo<RendererView>(() => {
     const current = (): EditorHandle => {
       const held = editorHandle.current
@@ -476,6 +480,7 @@ export function ProjectWorkspace({
       async sheet(diagramId, options) {
         const asked = session.current().diagrams.find((diagram) => diagram.id === diagramId)
         if (asked?.kind === 'map') openMapPage(diagramId)
+        else if (asked?.kind === 'technology') openLandscapePage(diagramId)
         else openSheetPage(diagramId)
         const deadline = Date.now() + 5_000
         while (Date.now() < deadline) {
@@ -486,7 +491,7 @@ export function ProjectWorkspace({
         throw new RendererRefused('gone')
       },
     }
-  }, [session, openSheetPage, openMapPage])
+  }, [session, openSheetPage, openMapPage, openLandscapePage])
 
   useAgentGateway(agent, useMemo(() => ({
     indexed: session.indexed,
@@ -917,37 +922,59 @@ export function ProjectWorkspace({
     plans.closeAll()
     sheets.close()
     maps.close()
+    landscapes.close()
     platformReading.close()
     showDecision(adrId)
-  }, [plans.closeAll, sheets.close, maps.close, platformReading.close, showDecision])
+  }, [plans.closeAll, sheets.close, maps.close, landscapes.close, platformReading.close, showDecision])
   const openRoadmap = useCallback(() => {
     setAdrPage({ open: false })
     sheets.close()
     maps.close()
+    landscapes.close()
     platformReading.close()
     plans.openRoadmap()
-  }, [plans.openRoadmap, sheets.close, maps.close, platformReading.close])
+  }, [plans.openRoadmap, sheets.close, maps.close, landscapes.close, platformReading.close])
   const openSheet = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
     maps.close()
+    landscapes.close()
     platformReading.close()
     sheets.open(id)
-  }, [plans.closeAll, maps.close, platformReading.close, sheets.open])
+  }, [plans.closeAll, maps.close, landscapes.close, platformReading.close, sheets.open])
   const openMap = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
     sheets.close()
+    landscapes.close()
     platformReading.close()
     maps.open(id)
-  }, [plans.closeAll, sheets.close, platformReading.close, maps.open])
+  }, [plans.closeAll, sheets.close, landscapes.close, platformReading.close, maps.open])
   const createMap = useCallback(() => {
     setAdrPage({ open: false })
     plans.closeAll()
     sheets.close()
+    landscapes.close()
     platformReading.close()
     maps.create()
-  }, [plans.closeAll, sheets.close, platformReading.close, maps.create])
+  }, [plans.closeAll, sheets.close, landscapes.close, platformReading.close, maps.create])
+  /** The technology landscape (ADR-0015): the third laid-out page, opened and made the map's way. */
+  const openTechnology = useCallback((id: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.close()
+    platformReading.close()
+    landscapes.open(id)
+  }, [plans.closeAll, sheets.close, maps.close, platformReading.close, landscapes.open])
+  const createTechnology = useCallback(() => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    sheets.close()
+    maps.close()
+    platformReading.close()
+    landscapes.create()
+  }, [plans.closeAll, sheets.close, maps.close, platformReading.close, landscapes.create])
   /**
    * A platform's report (ADR-0013, redone): reached from the platform's own
    * card and from the finding that names it, and never created — every mark on
@@ -958,14 +985,16 @@ export function ProjectWorkspace({
     plans.closeAll()
     sheets.close()
     maps.close()
+    landscapes.close()
     platformReading.openService(serviceId)
-  }, [plans.closeAll, sheets.close, maps.close, platformReading.openService])
+  }, [plans.closeAll, sheets.close, maps.close, landscapes.close, platformReading.openService])
   const openPlatformReport = useCallback((platformId: string) => {
     plans.closeAll()
     sheets.close()
     maps.close()
+    landscapes.close()
     platformReading.open(platformId)
-  }, [plans.closeAll, sheets.close, maps.close, platformReading.open])
+  }, [plans.closeAll, sheets.close, maps.close, landscapes.close, platformReading.open])
 
   /**
    * The page this was opened for, shown once.
@@ -989,6 +1018,10 @@ export function ProjectWorkspace({
       if (initialPage.id) openMap(initialPage.id)
       else createMap()
     }
+    if (initialPage.page === 'technology') {
+      if (initialPage.id) openTechnology(initialPage.id)
+      else createTechnology()
+    }
     // Over the roadmap, so closing the plan lands on the roadmap and closing
     // that leaves a scope that draws nothing, rather than on an empty board.
     if (initialPage.page === 'plan') {
@@ -1004,7 +1037,7 @@ export function ProjectWorkspace({
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, plans.openPlan, focusElement, openDocumentation, gestures])
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, openTechnology, createTechnology, plans.openPlan, focusElement, openDocumentation, gestures])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -1155,6 +1188,8 @@ export function ProjectWorkspace({
             onCreateSheet: sheets.create,
             onOpenMap: openMap,
             onCreateMap: createMap,
+            onOpenTechnology: openTechnology,
+            onCreateTechnology: createTechnology,
             onOpenPlatformReport: openPlatformReport,
             onOpenServiceReport: openServiceReport,
           }}
@@ -1313,6 +1348,21 @@ export function ProjectWorkspace({
         today={todayDay}
         applications={applicationsInTree}
         onOpenDocumentation={(id) => openDocumentation(id, maps.mapId)}
+        windowChrome={pageChrome}
+      />
+      <TechnologyLandscapePage
+        open={landscapes.diagramId !== undefined}
+        model={session.model}
+        diagram={landscapes.diagram}
+        readOnly={false}
+        onClose={() => { landscapes.close(); leaveIfNothingToDraw() }}
+        onHandle={onSheetHandle}
+        elsewhere={rowsThrough}
+        describe={describeForMap}
+        tree={ownership.platformTree}
+        onOpenDocumentation={(id) => openDocumentation(id, landscapes.diagramId)}
+        onOpenServiceReport={openServiceReport}
+        onOpenPlatformReport={openPlatformReport}
         windowChrome={pageChrome}
       />
       <ServiceReportPage

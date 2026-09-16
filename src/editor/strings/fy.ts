@@ -164,6 +164,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'toolbar.newLandscape': 'Lânskip',
   'toolbar.newSheet': 'Bedriuwsarsjitektuer',
   'toolbar.newMap': 'Bedriuwskaart',
+  'toolbar.newTechnology': 'Technologylânskip',
   'toolbar.readOnly': 'Allinnich-lêze',
   'toolbar.undo': 'Ûngedien meitsje',
   'toolbar.undoTip': 'Ûngedien meitsje (⌘Z)',

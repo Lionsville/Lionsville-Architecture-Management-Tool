@@ -70,6 +70,8 @@ export type OrganisationCardsProps = {
   onOpenRoadmap: () => void
   onOpenRegister: () => void
   onOpenTechnology: () => void
+  /** The technology landscape: the technology card's second door (ADR-0015). */
+  onOpenTechnologyLandscape: () => void
   /** The documentation page, as the bar opens it. */
   onOpenDocumentation?: () => void
   s: Translate
@@ -110,7 +112,7 @@ function tallyLine<T extends string>(
 
 export function OrganisationCards({
   pages, ready, register, technology, initiatives = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
-  onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenDocumentation, s,
+  onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape, onOpenDocumentation, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -275,9 +277,16 @@ export function OrganisationCards({
             : '',
         ].filter(Boolean).join(' · ') || s('techRegister.settled')}
         action={(
-          <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology">
-            {s('picker.open')}
-          </Button>
+          <Stack direction="row" spacing={0.5}>
+            <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology">
+              {s('picker.open')}
+            </Button>
+            {/* The landscape is the same layer as a picture — who uses what,
+                what is offered, what delivers it — behind the same card. */}
+            <Button size="small" onClick={onOpenTechnologyLandscape} sx={quiet} data-testid="open-technology-landscape">
+              {pages.technology.landscapeId ? s('org.technologyLandscape') : s('org.technologyLandscapeMake')}
+            </Button>
+          </Stack>
         )}
       />}
     </Stack>

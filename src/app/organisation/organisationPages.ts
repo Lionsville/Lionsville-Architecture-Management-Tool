@@ -67,6 +67,10 @@ export type OrganisationPages = {
     /** The first thing the dates disagree about — `findings` answers worst first. */
     finding?: Finding
   }
+  /** The technology landscape to open (ADR-0015). Absent means there is one to make. */
+  technology: {
+    landscapeId?: string
+  }
   /** What a landscape's home says about its pages. */
   documentation: {
     /** Records with a description of their own. */
@@ -119,6 +123,11 @@ export function organisationPages(
       byStatus: tally(ADR_STATUSES, decisions),
       ...(decisions.length
         ? { latest: [...decisions].sort((a, b) => a.number - b.number)[decisions.length - 1] }
+        : {}),
+    },
+    technology: {
+      ...(diagrams.find((diagram) => diagram.kind === 'technology')
+        ? { landscapeId: diagrams.find((diagram) => diagram.kind === 'technology')!.id }
         : {}),
     },
     documentation: {
