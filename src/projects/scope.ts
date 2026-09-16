@@ -206,7 +206,9 @@ export function flattenScopes(root: ScopeSummary): ScopeSummary[] {
  * a domain's decisions, documents and plans unreachable.
  */
 export function isOpenableScope(scope: ScopeSnapshot | undefined): scope is ScopeSnapshot {
-  return !!scope && scope.model.diagrams.some((diagram) => isBoardKind(diagram.kind))
+  // Any view: since ADR-0016 a laid-out view is drawn in the tab, so a scope
+  // holding only a technology landscape has something to open on.
+  return !!scope && scope.model.diagrams.length > 0
 }
 
 /**
@@ -230,12 +232,11 @@ export function isStoredScope(value: unknown): value is ScopeSnapshot {
  * a better answer than a blank canvas.
  */
 export function resolveActive(model: HostModel, preferred?: string): string {
-  // A board, always: a sheet or a map is a page over the canvas (ADR-0012 §6),
-  // and a scope holding only those has no active diagram — the empty answer,
-  // which is what a scope that draws nothing has always given.
-  const boards = model.diagrams.filter((d) => isBoardKind(d.kind))
-  if (preferred && boards.some((d) => d.id === preferred)) return preferred
-  return boards[0]?.id ?? ''
+  // Any view (ADR-0016): a laid-out one is drawn in the tab. A board first
+  // where there is one, because a scope with a landscape opens on it.
+  const views = [...model.diagrams].sort((a, b) => Number(isBoardKind(b.kind)) - Number(isBoardKind(a.kind)))
+  if (preferred && views.some((d) => d.id === preferred)) return preferred
+  return views[0]?.id ?? ''
 }
 
 /**

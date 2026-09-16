@@ -53,6 +53,16 @@ export function isBoardKind(kind: DesignDiagram['kind']): boolean {
   return kind === 'layer7' || kind === 'container';
 }
 
+/**
+ * The other three: laid out from the model, no geometry (ADR-0012 §6,
+ * ADR-0015). Since ADR-0016 one of these can be the active view as readily
+ * as a board — it is drawn in the tab, not over it — so "is this a board"
+ * and "can this be open" are two questions again, and this is the second.
+ */
+export function isLaidOutKind(kind: DesignDiagram['kind']): boolean {
+  return kind === 'sheet' || kind === 'map' || kind === 'technology';
+}
+
 /** Why a kind cannot go on a view. A key, as every refusal from `model/` is. */
 export type PlacementRefusal = 'placement.notOnACanvas';
 

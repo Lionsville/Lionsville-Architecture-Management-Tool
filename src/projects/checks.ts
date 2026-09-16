@@ -447,7 +447,12 @@ export function tally(findings: readonly Finding[]): Partial<Record<CheckKey, nu
 
 /** Is this element a member of any view in this scope? */
 function drawnIn(model: HostModel, id: ElementId): boolean {
-  return model.diagrams.some((diagram) => diagram.members.some((member) => member.id === id))
+  if (model.diagrams.some((diagram) => diagram.members.some((member) => member.id === id))) return true
+  // A technology landscape draws every service and platform the scope holds
+  // (ADR-0015), so one of those is drawn wherever the scope has the view.
+  const kind = model.elements.find((element) => element.id === id)?.kind
+  return (kind === 'platform' || kind === 'platformService')
+    && model.diagrams.some((diagram) => diagram.kind === 'technology')
 }
 
 /** A dangling row, named by its label or by the two ends it claims to join. */

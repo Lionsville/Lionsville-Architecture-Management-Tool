@@ -180,16 +180,18 @@ describe('resolveActive', () => {
     expect(resolveActive({ ...model, diagrams: [] })).toBe('')
   })
 
-  it('answers a board, never a laid-out view — and nothing where there is no board', () => {
-    // A sheet is a page over the canvas (ADR-0012 §6); an organisation holding
-    // only a sheet and a map would otherwise open on the sheet drawn as a
-    // column of cards.
+  it('answers a board first, a laid-out view when asked for or alone, and nothing where there is no view', () => {
+    // A laid-out view is drawn in the tab since ADR-0016, so it can be the
+    // active one; a scope with a landscape still opens on the landscape
+    // unless a sheet was asked for.
     const sheet = { id: 'sh', kind: 'sheet' as const, name: 'Sheet', members: [], geometry: { nodes: [] } }
     const withSheet = { ...model, diagrams: [sheet, ...model.diagrams] }
     expect(resolveActive(withSheet)).toBe('l7')
-    expect(resolveActive(withSheet, 'sh')).toBe('l7')
-    expect(resolveActive({ ...model, diagrams: [sheet] })).toBe('')
-    expect(isOpenableScope({ ...sampleScope(), model: { ...model, diagrams: [sheet] } })).toBe(false)
+    expect(resolveActive(withSheet, 'sh')).toBe('sh')
+    expect(resolveActive({ ...model, diagrams: [sheet] })).toBe('sh')
+    expect(resolveActive({ ...model, diagrams: [] })).toBe('')
+    expect(isOpenableScope({ ...sampleScope(), model: { ...model, diagrams: [sheet] } })).toBe(true)
+    expect(isOpenableScope({ ...sampleScope(), model: { ...model, diagrams: [] } })).toBe(false)
   })
 })
 

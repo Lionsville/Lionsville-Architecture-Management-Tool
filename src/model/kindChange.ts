@@ -89,9 +89,20 @@ export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform',
  */
 export const CONTAINER_PALETTE: CanvasKind[] = ['component', 'actor', 'application', 'platform', 'platformService'];
 
+/**
+ * What the technology landscape authors (ADR-0016): the layer's two kinds,
+ * made without a placement because the view lays them out. The other
+ * laid-out views author nothing from the palette — the sheet has gestures
+ * of its own, and the map is read.
+ */
+export const TECHNOLOGY_PALETTE: CanvasKind[] = ['platform', 'platformService'];
+
 /** The kinds a diagram of this sort may show. */
 export function allowedKindsOn(diagram: Pick<DesignDiagram, 'kind'>): readonly CanvasKind[] {
-  return diagram.kind === 'layer7' ? LAYER7_PALETTE : CONTAINER_PALETTE;
+  if (diagram.kind === 'layer7') return LAYER7_PALETTE;
+  if (diagram.kind === 'technology') return TECHNOLOGY_PALETTE;
+  if (diagram.kind === 'container') return CONTAINER_PALETTE;
+  return [];
 }
 
 /** May this element become `kind` on this diagram, and if not, why not? */

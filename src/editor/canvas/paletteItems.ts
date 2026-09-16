@@ -117,4 +117,4 @@ export const PALETTE_SECTIONS: PaletteSection[] = [
  * not show — and a palette that owned its own copy would be a second answer to
  * the same question.
  */
-export { CONTAINER_PALETTE, LAYER7_PALETTE } from '../../model/kindChange';
+export { CONTAINER_PALETTE, LAYER7_PALETTE, TECHNOLOGY_PALETTE } from '../../model/kindChange';
