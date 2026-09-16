@@ -852,7 +852,13 @@ or created; both are worked out from the rows every time you open them.
 what is offered, and what delivers it, in three bands on one page. *Landscape*
 on the technology card makes one in the scope whose services and platforms
 it should draw — the platform scope, usually — and it is listed among the
-tabs like the sheet and the map, and among the boards on that scope's home. The top band is every application the
+tabs like the sheet and the map, and among the boards on that scope's home.
+Choosing the tab shows it in place of the canvas, like every other tab; a
+platform scope needs no board at all. It is **authored on**: the palette
+beside it offers a platform and a platform service, a `+` on either band
+adds one, a `+` inside a group files it under that group, and the inspector
+on the right edits the one you choose — name, description, lifecycle,
+*shared*, what it is, what it is part of, what it realises, who maintains it. The top band is every application the
 rows connect to those services and platforms, from every landscape in the
 organisation, in a box per domain; the middle band is the services, nested
 where they nest; the bottom band is the platforms, nested where the tree

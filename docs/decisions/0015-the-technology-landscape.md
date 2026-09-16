@@ -135,7 +135,9 @@ to be tuned on a real landscape.
 Made from the technology card on a scope's home (*Landscape* beside
 *Open*), from the editor's `+`, and by the agent's `diagram.create` with
 `kind: technology`; listed among the tabs like the other laid-out views,
-where choosing it opens the page and never activates a canvas. Read by
+where choosing it opens the page and never activates a canvas (*amended by
+ADR-0016:* choosing the tab shows it in place of the canvas, and it is
+authored on). Read by
 the agent as `diagram.inspect` — the three bands and the lines, bounded —
 and drawn by `diagram.render`. The page's capture moved to
 `widgets/capturePage` on the way, because rasterising a laid-out page

@@ -898,7 +898,13 @@ wat wordt aangeboden en wat het levert, in drie banden op één pagina.
 *Landschap* op de technologiekaart maakt er een in de scope waarvan het de
 diensten en platformen moet tekenen — meestal de platformscope — en het staat
 tussen de tabbladen zoals het blad en de kaart, en tussen de borden op de
-home van die scope. De bovenste band is elke
+home van die scope. Het tabblad kiezen toont het op de plek van het canvas,
+zoals elk ander tabblad; een platformscope heeft geen bord nodig. Er wordt
+**op gewerkt**: het palet ernaast biedt een platform en een platformdienst,
+een `+` op een van beide banden voegt er een toe, een `+` in een groep zet
+hem onder die groep, en de inspector rechts bewerkt wat je kiest — naam,
+beschrijving, levenscyclus, *gedeeld*, wat het is, waar het deel van is, wat
+het realiseert, wie het onderhoudt. De bovenste band is elke
 applicatie die de regels aan die diensten en platformen verbinden, uit elk
 landschap in de organisatie, in een vak per domein; de middelste band zijn de
 diensten, genest waar ze nesten; de onderste band zijn de platformen, genest

@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3974 tests** and one of every config. The
+One codebase, in modules, with **3982 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3974 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3982 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -177,7 +177,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
-                    props.ts          what the editor is handed (13 groups)
+                    props.ts          what the editor is handed (13 groups); `pages`
+                                      is the slot a laid-out view is drawn through
+                                      in place of the canvas (ADR-0016)
                     useEditorState    the selection, and gestures said as commands
                     testing/          editorHost: the editor over a real reducer
 src/documentation/  Descriptions as documents.
@@ -606,7 +608,7 @@ identifiers is still a list of a customer's identifiers.
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
-| The five view kinds (ADR-0012 §6, ADR-0015) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
+| The five view kinds (ADR-0012 §6, ADR-0015, ADR-0016) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest. Any of the five is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot, and the technology landscape keeps the palette and the inspector docked, so it is authored on. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -1123,3 +1125,16 @@ where a service delivered by two platforms turned out to need the hosting
 chain to say which — `narrowRealisers`, so the record's *Leverages* line says
 the same. The page's capture moved to `widgets/capturePage` on the way,
 because rasterising a laid-out page knows nothing about what the page is of.
+
+Then a laid-out view became **a tab** (`docs/decisions/0016`). The sheet,
+the map and the technology landscape had been pages over the editor — a
+dialog with a back button, the canvas left on whatever board it was on —
+and a scope with no board was not openable at all, which is why the
+example's platform scope kept a chip board it had no use for. Any view can
+be the active one now: the editor takes a `pages.render` slot the
+workspace fills, draws what comes back where the canvas would be, and keeps
+its palette and inspector docked beside the one view that authors — the
+technology landscape, whose palette offers the layer's two kinds, made
+with no placement and edited with the inspector every kind has. The three
+hooks hold no state of their own any more; which view is up is the
+session's. The platform scope's one view is its landscape.
