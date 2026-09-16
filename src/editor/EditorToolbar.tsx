@@ -62,6 +62,8 @@ export interface EditorToolbarProps {
   /** The technology landscape (ADR-0015), listed among the tabs like the other laid-out views. */
   onOpenTechnology?(diagramId: string): void;
   onCreateTechnology?(): void;
+  /** The active view is laid out (ADR-0016): the canvas's controls have nothing to act on. */
+  laidOut?: boolean;
   /** Offer a business architecture beside a landscape under the `+`. */
   onCreateSheet?(): void;
   onTidy(): void;
@@ -285,11 +287,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
           <Tabs
             value={props.activeDiagram.id}
             onChange={(_e, value: string) => {
-              // A sheet is opened, never made active: the canvas would have
-              // nothing to draw, and the host owns the page that draws it.
-              if (sheets.some((d) => d.id === value)) props.onOpenSheet?.(value);
-              else if (maps.some((d) => d.id === value)) props.onOpenMap?.(value);
-              else if (technology.some((d) => d.id === value)) props.onOpenTechnology?.(value);
+              // A laid-out view is a tab like any other since ADR-0016: the
+              // host draws it in place of the canvas. The host's openers stay
+              // for whatever else it does on the way — closing a page over
+              // the editor, say — and the plain change is the fallback.
+              if (sheets.some((d) => d.id === value)) (props.onOpenSheet ?? props.onActiveDiagramChange)(value);
+              else if (maps.some((d) => d.id === value)) (props.onOpenMap ?? props.onActiveDiagramChange)(value);
+              else if (technology.some((d) => d.id === value)) (props.onOpenTechnology ?? props.onActiveDiagramChange)(value);
               else props.onActiveDiagramChange(value);
             }}
             variant="scrollable"
@@ -422,7 +426,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </Tooltip>
         </>
       )}
-      {!props.readOnly && (
+      {!props.readOnly && !props.laidOut && (
         <TidySplitButton
           busy={props.busy}
           onTidy={props.onTidy}
@@ -434,7 +438,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           boundaryLabels={isContainer}
         />
       )}
-      {!props.readOnly && (
+      {!props.readOnly && !props.laidOut && (
         <Tooltip title={t('toolbar.routeOnlyTip')}>
           <span>
             <IconButton
@@ -448,7 +452,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </span>
         </Tooltip>
       )}
-      {!props.readOnly && (
+      {!props.readOnly && !props.laidOut && (
         <Tooltip
           title={
             (props.autoRoute ? t('toolbar.autoRouteOn') : t('toolbar.autoRouteOff')) +
@@ -476,6 +480,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           <SearchIcon />
         </IconButton>
       </Tooltip>
+      {!props.laidOut && (<>
       <Tooltip title={props.showMinimap ? t('toolbar.minimapOn') : t('toolbar.minimapOff')}>
         <IconButton
           size="small"
@@ -571,6 +576,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </IconButton>
         </Tooltip>
       )}
+      </>)}
       <Popover
         open={Boolean(legendAnchor)}
         anchorEl={legendAnchor}

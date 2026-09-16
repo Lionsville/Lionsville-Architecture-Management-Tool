@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardGeometry } from '../model/zones';
 import { claimKey } from '../model/keys';
 import { placeOn, transaction } from '../model/commands';
-import { memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
+import { isBoardKind, memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
+import type { CanvasKind } from '../model/placement';
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, PlacedNode, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
 import { DEFAULT_TRANSLATE, translator, type StringKey, type Translate } from '../i18n/strings';
@@ -30,7 +31,7 @@ import { edgeRoutesOf,
   type RouteSides,
 } from '../model/routes';
 import { clampCanvasSize, clampZoneSize, RESIZABLE_ZONES } from '../model/zones';
-import { canChangeKind, placementForKind } from '../model/kindChange';
+import { allowedKindsOn, canChangeKind, placementForKind } from '../model/kindChange';
 import { nodeFigure } from '../model/kinds';
 import { candidateInterfaces, isContainerLine, landedEnd, landingRow } from '../model/refines';
 import type { ColourBy } from '../model/overlay';
@@ -148,6 +149,8 @@ export interface ElementSeed {
    * it on a container view, which has no bands to say it with.
    */
   outside?: true;
+  /** Filed under this one: a service under its parent, a namespace in its cluster (ADR-0016). */
+  parentId?: ElementId;
   position?: { x: number; y: number };
   zone?: Layer7Zone;
   /** The dashed group's id (ADR-0012 §6). */
@@ -641,8 +644,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // sheet is laid out from the tree rather than dragged. The palette
         // never offers one, so this is the rule behind the rows rather than a
         // second copy of it — and it is a refusal the caller can read, never a
-        // throw.
-        if (!canPlaceKind(seed.kind, diagram.kind).ok) return;
+        // throw. A laid-out view that authors (ADR-0016) makes the record and
+        // no placement: the view lays it out.
+        const laidOut = !isBoardKind(diagram.kind);
+        if (laidOut ? !allowedKindsOn(diagram).includes(seed.kind as CanvasKind) : !canPlaceKind(seed.kind, diagram.kind).ok) return;
         // The name first, because the id is derived from it: an element gets the
         // key the file would have given it, at the moment it is drawn.
         const name =
@@ -657,10 +662,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           lifecycle: 'live',
           isManaged: DEFAULT_MANAGED[seed.kind],
           aspects: {},
-          parentId:
+          parentId: seed.parentId ?? (
             seed.kind === 'component' && diagram.kind === 'container'
               ? diagram.applicationElementId
-              : undefined,
+              : undefined),
           // Pre-seed style (U7c/D10) — undefined when the palette tray was empty,
           // identical to the pre-D10 default (inherit). Fully editable afterwards
           // in the inspector Appearance tab (one source of truth).
@@ -669,6 +674,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           iconSize: seed.iconSize,
           shapeVariant: seed.shapeVariant,
         };
+        if (laidOut) {
+          dispatch({ type: 'element.create', element });
+          setSelection(selectElement(id));
+          return;
+        }
         const placement = seedPlacement(seed, diagram, id);
         geometry(transaction([
           { type: 'element.create', element },

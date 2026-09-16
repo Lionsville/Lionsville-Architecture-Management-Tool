@@ -23,6 +23,33 @@ import type { Transition } from '../model/transition';
 import type { PlatformTree } from '../model/deployment';
 import type { LeverageLine } from '../model/leverage';
 import type { WindowChrome } from '../platform/windowChrome';
+import type { DesignDiagram } from '../model/types';
+import type { CanvasKind } from '../model/placement';
+
+/**
+ * What a laid-out view is handed when it is drawn in the tab (ADR-0016):
+ * the editor's own selection and its palette, so the technology landscape
+ * is authored with the inspector every other kind has.
+ */
+export interface PageView {
+  readOnly: boolean;
+  /** The editor's selected element, where it is one this scope holds. */
+  selectedId?: ElementId;
+  onSelect(elementId: ElementId | undefined): void;
+  /** Make one of the kinds the view authors, filed under `parentId` where given. */
+  onAdd(seed: { kind: CanvasKind; parentId?: ElementId }): void;
+}
+
+/**
+ * The laid-out views, drawn in the tab (ADR-0016). The editor may not import
+ * the modules that draw them, so the host hands over the drawing as a slot,
+ * the way the documentation page takes its inspector; the editor keeps the
+ * tab strip, and for a view that authors — the technology landscape — its
+ * palette and its inspector beside the page.
+ */
+export interface EditorPages {
+  render(diagram: DesignDiagram, view: PageView): ReactNode;
+}
 
 /**
  * Undo and redo, as the editor sees them.
@@ -462,6 +489,8 @@ export interface SolutionDesignEditorProps {
   document: EditorDocument;
   editing: EditorEditing;
   diagrams: EditorDiagramActions;
+  /** The laid-out views, drawn in the tab. Absent = a laid-out tab shows nothing. */
+  pages?: EditorPages;
   history?: EditorHistoryRequests;
   requests?: EditorRequests;
   plans?: EditorPlans;

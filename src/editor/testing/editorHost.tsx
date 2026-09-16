@@ -16,9 +16,7 @@ import { useCallback, useRef, useState } from 'react'
 import { renderHook } from '@testing-library/react'
 import { apply, fromArrays, toArrays, transaction } from '../../model'
 import type { Command, DesignModel, Model } from '../../model'
-import type {
-  EditorHistory, EditorRequests, SolutionDesignEditorProps,
-} from '../props'
+import type { EditorHistory, EditorPages, EditorRequests, SolutionDesignEditorProps } from '../props'
 import type { EditorPreferences } from '../preferences'
 import type { DiagramSettings, ElementId, UploadedLogo } from '../../model/types'
 import type { Language } from '../../i18n/strings'
@@ -40,6 +38,8 @@ export type HostedEditorProps = {
   model: DesignModel
   activeDiagramId?: string
   readOnly?: boolean
+  /** The laid-out views, drawn in the tab (ADR-0016). */
+  pages?: EditorPages
   ids?: IdPolicy
   onActiveDiagramChange?(diagramId: string): void
   onCreateContainerDiagram?(applicationElementId: ElementId): void
@@ -202,6 +202,7 @@ export function hostedProps(
       onExportImagesMissing: o.onExportImagesMissing,
     },
     renderMarkdown: o.renderMarkdown,
+    pages: o.pages,
     exportTitleBlock: o.exportTitleBlock,
     windowChrome: o.windowChrome,
     onForceSave: o.onForceSave,

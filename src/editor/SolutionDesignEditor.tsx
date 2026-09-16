@@ -24,7 +24,8 @@ import { overlayTint } from './theme/overlayColors';
 import { today } from '../model/lifecycle';
 import { ElementPalette, type DomainGroupSeed, type PaletteSeed } from './canvas/ElementPalette';
 import { newDomainGroup } from './canvas/domainGroupPlacement';
-import { CONTAINER_PALETTE, LAYER7_PALETTE } from './canvas/paletteItems';
+import { allowedKindsOn } from '../model/kindChange';
+import { isBoardKind } from '../model/placement';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
 import { type ClipboardPayload } from '../model/clipboard';
 import { exportBitmapSize, exportDiagramPng, exportFooterHeight } from './export/exportPng';
@@ -83,6 +84,7 @@ import { FIELDS_COLUMN } from '../documentation/ui/DocumentationPage';
 import {
   defaultElementNames,
   selectElement,
+  EMPTY_SELECTION,
   selectionCount,
   useEditorState,
   type CommitToken,
@@ -294,6 +296,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   const readOnly = props.editing.readOnly ?? false;
   const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
+  // A laid-out view in the tab (ADR-0016). The technology landscape authors
+  // the layer's two kinds, so it keeps the palette and the inspector docked;
+  // the sheet and the map carry their own and take the whole body.
+  const laidOut = activeDiagram !== undefined && !isBoardKind(activeDiagram.kind);
+  const docked = activeDiagram?.kind === 'technology';
   const showDeployment = activeDiagram === undefined
     ? true
     : deploymentShown[activeDiagram.id] ?? activeDiagram.showDeployment ?? true;
@@ -1285,6 +1292,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onCreateMap={props.diagrams.onCreateMap}
         onOpenTechnology={props.diagrams.onOpenTechnology}
         onCreateTechnology={props.diagrams.onCreateTechnology}
+        laidOut={laidOut}
         // Caught, not `void`ed: `handleTidy` rethrows so the unattended caller in
         // `useAutoLayout` can tell "laid out" from "did not", and `void` discards the
         // value without attaching a rejection handler — so a failed Tidy reported its
@@ -1350,9 +1358,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
         onLanguageChange={props.language?.onChange}
       />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {!readOnly && (
+        {!readOnly && (docked || !laidOut) && (
           <ElementPalette
-            kinds={activeDiagram.kind === 'layer7' ? LAYER7_PALETTE : CONTAINER_PALETTE}
+            kinds={[...allowedKindsOn(activeDiagram)]}
             onAdd={handlePaletteAdd}
             onAddDomainGroup={activeDiagram.kind === 'layer7' ? addDomainGroup : undefined}
             onAddExisting={activeDiagram.kind === 'layer7' ? props.ownership?.onAddExisting : undefined}
@@ -1367,7 +1375,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         {/* The seam only exists while the panel is open: a rail is a fixed
             48 px of chevron, and a resize handle on it would promise a width
             you cannot have. */}
-        {!readOnly && !paletteCollapsed && (
+        {!readOnly && (docked || !laidOut) && !paletteCollapsed && (
           <PanelResizer
             kind="palette"
             side="left"
@@ -1379,6 +1387,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
         {/* The board under the export's theme while the dialog is open, and
             its own the rest of the time. Nested on purpose: the palette and
             the inspector stay in the window's theme, the picture does not. */}
+        {/* A laid-out view is drawn in the tab (ADR-0016): the host's page
+            where the canvas would be, and the palette and the inspector kept
+            beside it only where the view authors. */}
+        {laidOut ? (
+          <Box data-testid="laid-out-view" sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {props.pages?.render(activeDiagram, {
+              readOnly,
+              ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
+              onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
+              onAdd: (seed) => state.actions.addElement(seed),
+            })}
+          </Box>
+        ) : (
         <ThemeProvider theme={exportTheme}>
         <CanvasForDiagram
           diagram={activeDiagram}
@@ -1419,7 +1440,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
           onAddExistingAt={readOnly ? undefined : props.ownership?.onAddExisting}
         />
         </ThemeProvider>
-        {!inspectorCollapsed && (
+        )}
+        {(docked || !laidOut) && !inspectorCollapsed && (
           <PanelResizer
             kind="inspector"
             side="right"
@@ -1428,7 +1450,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             label={t('inspector.resize')}
           />
         )}
-        <InspectorPanel
+        {(docked || !laidOut) && <InspectorPanel
           collapsed={inspectorCollapsed}
           onToggleCollapsed={() => setInspectorCollapsed((on) => !on)}
           width={inspectorWidth}
@@ -1486,7 +1508,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           ) : (
             <InspectorEmptyState />
           )}
-        </InspectorPanel>
+        </InspectorPanel>}
       </Box>
       {deleteElement && (
         <DeleteElementDialog
