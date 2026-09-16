@@ -3863,6 +3863,15 @@
     ],
     "name": "Shared platforms"
   },
+  "platforms/diagrams/technology-landscape.geometry.json": {
+    "nodes": []
+  },
+  "platforms/diagrams/technology-landscape.json": {
+    "id": "technology-landscape",
+    "kind": "technology",
+    "members": [],
+    "name": "Technology landscape"
+  },
   "platforms/docs/esb.md": [
     "The integration bus the legacy interfaces still cross. Being retired: what it carries moves to the broker or to a direct call, one interface at a time.",
     ""
@@ -4134,7 +4143,8 @@
     "activeDiagramId": "platforms",
     "description": "What the applications run on and what carries their interfaces: the cluster, the broker, the bus. Owned here, drawn everywhere.",
     "diagrams": [
-      "platforms"
+      "platforms",
+      "technology-landscape"
     ],
     "kind": "domain",
     "name": "Shared platforms",
