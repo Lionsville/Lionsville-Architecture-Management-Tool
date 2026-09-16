@@ -963,7 +963,8 @@ beide werden bei jedem Öffnen aus den Zeilen abgeleitet.
 angeboten wird und was es liefert, in drei Bändern auf einer Seite.
 *Landschaft* auf der Technologiekarte legt eine im Bereich an, dessen Dienste
 und Plattformen sie zeichnen soll — meist dem Plattformbereich — und sie
-steht unter den Reitern wie das Blatt und die Karte. Das obere Band ist jede
+steht unter den Reitern wie das Blatt und die Karte, und unter den Tafeln auf
+der Startseite dieses Bereichs. Das obere Band ist jede
 Anwendung, die die Zeilen mit diesen Diensten und Plattformen verbinden, aus
 jeder Landschaft der Organisation, in einem Kasten je Domäne; das mittlere
 Band sind die Dienste, verschachtelt, wo sie sich verschachteln; das untere

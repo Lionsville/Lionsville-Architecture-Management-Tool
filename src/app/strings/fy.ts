@@ -400,6 +400,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'org.boardName': 'Namme',
   'org.viewLayer7': 'Lânskip',
   'org.viewContainer': 'Containers',
+  'org.viewTechnology': 'Technologylânskip · opmakke út de rigels',
   'org.viewAsOf': 'Per {date}',
   'org.viewToday': 'Hjoed',
   'org.onItOne': '{count} derop',

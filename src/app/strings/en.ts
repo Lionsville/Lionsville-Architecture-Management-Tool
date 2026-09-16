@@ -527,6 +527,7 @@ export const EN = {
   'org.boardName': 'Name',
   'org.viewLayer7': 'Landscape',
   'org.viewContainer': 'Containers',
+  'org.viewTechnology': 'Technology landscape · laid out from the rows',
   'org.viewAsOf': 'As of {date}',
   'org.viewToday': 'Today',
   'org.onItOne': '{count} on it',

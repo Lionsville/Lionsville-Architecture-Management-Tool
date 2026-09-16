@@ -891,7 +891,7 @@ rigen ôflaat.
 oanbean wurdt en wat it leveret, yn trije bannen op ien side. *Lânskip* op de
 technologykaart makket der ien yn de scope dêr't it de tsjinsten en platfoarms
 fan tekenje moat — meastal de platfoarmscope — en it stiet tusken de ljeppers
-lykas it blêd en de kaart. De boppeste bân is elke applikaasje dy't de rigels
+lykas it blêd en de kaart, en tusken de boerden op de thússide fan dy scope. De boppeste bân is elke applikaasje dy't de rigels
 oan dy tsjinsten en platfoarms ferbine, út elk lânskip yn de organisaasje, yn
 in fak per domein; de middelste bân binne de tsjinsten, nêste dêr't se nêste;
 de ûnderste bân binne de platfoarms, nêste dêr't de beam nêstet, in bûtensteander

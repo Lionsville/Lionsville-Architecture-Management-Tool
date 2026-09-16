@@ -303,6 +303,25 @@ describe('a domain’s home', () => {
     fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
   })
+
+  /**
+   * A technology landscape is laid out and never the active board
+   * (ADR-0015), so a scope that draws lists it among its boards with the
+   * kind said and no count, and its row opens the page rather than the
+   * canvas.
+   */
+  it('lists a technology landscape among the boards, and its row opens the page', async () => {
+    const platforms = scope('platforms', 'Platforms')
+    platforms.model.diagrams.push({ id: 'tl', kind: 'technology', name: 'Technology landscape', members: [], geometry: { nodes: [] } })
+    show([...TREE(), platforms])
+    fireEvent.click(await screen.findByTestId('home-platforms'))
+    const row = await screen.findByTestId('board-tl')
+    expect(row.textContent).toContain('Technology landscape · laid out from the rows')
+    expect(row.textContent).not.toContain('on it')
+    fireEvent.click(within(row).getByRole('button', { name: 'Open' }))
+    await waitFor(() => expect(screen.getByTestId('landscape-topbar')).toBeDefined())
+    expect(screen.getByTestId('landscape-summary').textContent).toBe('0 applications · 0 services · 0 platforms')
+  })
 })
 
 /**

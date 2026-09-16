@@ -334,8 +334,15 @@ export function OrganisationScreen({
               never given (§1). */}
           {root && root.path === at && (
             <BoardsTable
-              boards={root.model.diagrams.filter((diagram) => isBoardKind(diagram.kind))}
-              onOpen={(id) => organisation.open(at, { page: 'board', id })}
+              boards={root.model.diagrams.filter((diagram) => isBoardKind(diagram.kind) || diagram.kind === 'technology')}
+              // A technology landscape is laid out and never the active
+              // board (ADR-0015): its row opens the page, not the canvas.
+              onOpen={(id) => organisation.open(
+                at,
+                root.model.diagrams.find((diagram) => diagram.id === id)?.kind === 'technology'
+                  ? { page: 'technology', id }
+                  : { page: 'board', id },
+              )}
               onAdd={() => organisation.addBoard(at)}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
               language={language}
@@ -544,7 +551,7 @@ function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontSize: 13, fontWeight: 500 }}>{board.name}</Typography>
             <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-              {[
+              {board.kind === 'technology' ? s('org.viewTechnology') : [
                 s(board.kind === 'container' ? 'org.viewContainer' : 'org.viewLayer7'),
                 // The day the board shows. A board with no date moves with
                 // the calendar, and says so rather than printing today's.

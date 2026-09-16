@@ -897,7 +897,8 @@ keer dat je ze opent uit de rijen afgeleid.
 wat wordt aangeboden en wat het levert, in drie banden op één pagina.
 *Landschap* op de technologiekaart maakt er een in de scope waarvan het de
 diensten en platformen moet tekenen — meestal de platformscope — en het staat
-tussen de tabbladen zoals het blad en de kaart. De bovenste band is elke
+tussen de tabbladen zoals het blad en de kaart, en tussen de borden op de
+home van die scope. De bovenste band is elke
 applicatie die de regels aan die diensten en platformen verbinden, uit elk
 landschap in de organisatie, in een vak per domein; de middelste band zijn de
 diensten, genest waar ze nesten; de onderste band zijn de platformen, genest

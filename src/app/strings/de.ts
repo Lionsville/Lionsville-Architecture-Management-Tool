@@ -400,6 +400,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.boardName': 'Name',
   'org.viewLayer7': 'Landschaft',
   'org.viewContainer': 'Container',
+  'org.viewTechnology': 'Technologielandschaft · aus den Zeilen gesetzt',
   'org.viewAsOf': 'Stand {date}',
   'org.viewToday': 'Heute',
   'org.onItOne': '{count} darauf',
