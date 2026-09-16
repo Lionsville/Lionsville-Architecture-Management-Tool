@@ -81,8 +81,8 @@ import { findOnSheet } from '../find'
 import type { SheetBand, SheetHit } from '../find'
 import type { Relation } from '../../model'
 import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
-import type { SheetShot } from './captureSheet'
-import { captureSheet } from './captureSheet'
+import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
+import { captureSheet } from '../../widgets/capturePage'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
 import type { FunctionInspectorProps, NewLane, SheetActions, Supporter } from './FunctionInspector'
 import { LaneDialog } from './LaneDialog'
@@ -132,21 +132,9 @@ export type SheetPageProps = {
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
-export type SheetHandle = {
-  /** Which sheet is on screen, so a caller can tell it is the one it asked for. */
-  readonly diagramId: string
-  capture(options: SheetCaptureOptions): Promise<SheetShot>
-}
-
-export type SheetCaptureOptions = {
-  maxPixels: number
-  /**
-   * Lay the page out at this width in CSS pixels before drawing it — the
-   * long side of an A1 is 3179 (`business/grid.paperWidth`). Absent draws
-   * the page as it stands, at the window's width.
-   */
-  width?: number
-}
+/** The handle every laid-out page hands over; the sheet's was the first (`widgets/capturePage`). */
+export type SheetHandle = PageHandle
+export type SheetCaptureOptions = PageCaptureOptions
 
 /** The rail, the lane labels and the notch: the design's own numbers, in one place. */
 const RAIL = { default: 178, min: 120, max: 420 } as const

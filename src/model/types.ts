@@ -634,11 +634,14 @@ export interface DesignDiagram {
    * nothing routes, and a deleted geometry file would change nothing about
    * either of them.
    *
-   * A platform's page is not among them and is not a kind: it is a report
-   * reached from the platform's own card, computed on open (ADR-0013,
-   * redone). A view that is not a picture is not a view.
+   * A `technology` view is laid out too (ADR-0015): the applications, the
+   * services they use and the platforms that deliver them, in three bands,
+   * read from the rows every time. A platform's page is still not among
+   * them and is not a kind: it is a report reached from the platform's own
+   * card, computed on open (ADR-0013, redone). A view that is not a picture
+   * is not a view — and the technology landscape is one.
    */
-  kind: 'layer7' | 'container' | 'sheet' | 'map';
+  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —

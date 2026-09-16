@@ -4,7 +4,7 @@
  * stored, over this scope's rows and the tree's.
  */
 import { describe, expect, it } from 'vitest'
-import { consumersOf, describeLeverage, leverageOf, platformsBehind, platformsBoundTo, servicesOf } from './leverage'
+import { consumersOf, describeLeverage, leverageOf, narrowRealisers, platformsBehind, platformsBoundTo, servicesOf } from './leverage'
 import { element } from './testFixtures'
 import type { DesignElement, Relation } from './types'
 
@@ -90,5 +90,38 @@ describe('who consumes a service', () => {
   it('names a consumer another scope holds as the row names it', () => {
     const elsewhere = [row('x1', 'uses', 'crm', 'containers')]
     expect(consumersOf(model, 'containers', { elsewhere })).toEqual(['wms', 'portal', 'crm'])
+  })
+})
+
+describe('a service delivered more than once (ADR-0015)', () => {
+  const twice = {
+    elements: [
+      ...elements,
+      element('landing-zone', { kind: 'platform', name: 'Landing zone', platformArchetype: 'place' }),
+      element('aws', { kind: 'platform', name: 'AWS', platformArchetype: 'place' }),
+      element('cloud', { kind: 'platformService', name: 'Cloud environment' }),
+      { ...elements.find((one) => one.id === 'openshift')!, parentId: 'landing-zone' },
+    ].filter((one, at, all) => all.findIndex((other) => other.id === one.id) === at || one.parentId === 'landing-zone'),
+    relations: [
+      ...relations,
+      row('r3', 'realises', 'landing-zone', 'cloud'),
+      row('r4', 'realises', 'aws', 'cloud'),
+      row('u6', 'uses', 'wms', 'cloud'),
+      row('u7', 'uses', 'portal', 'cloud'),
+    ],
+  }
+  // The duplicate openshift without the parent is filtered above; keep the parented one.
+  twice.elements = twice.elements.filter((one) => one.id !== 'openshift' || one.parentId === 'landing-zone')
+
+  it('narrows to the realiser under the root the application runs in', () => {
+    expect(narrowRealisers(['landing-zone', 'aws'], ['ns'], (id) => (id === 'ns' ? ['ns', 'openshift', 'landing-zone'] : [id]))).toEqual(['landing-zone'])
+    // WMS runs on OpenShift, which sits in the landing zone.
+    expect(leverageOf(twice, 'wms').services.find((one) => one.id === 'cloud')!.platformIds).toEqual(['landing-zone'])
+  })
+
+  it('answers every realiser where nothing says where it runs, or where none shares the root', () => {
+    expect(leverageOf(twice, 'portal').services.find((one) => one.id === 'cloud')!.platformIds).toEqual(['landing-zone', 'aws'])
+    expect(narrowRealisers(['a', 'b'], ['elsewhere'], (id) => [id])).toEqual(['a', 'b'])
+    expect(narrowRealisers(['a'], ['elsewhere'], (id) => [id])).toEqual(['a'])
   })
 })

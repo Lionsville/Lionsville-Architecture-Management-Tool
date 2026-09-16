@@ -28,12 +28,42 @@
  * application's dependency as much as its `hostedOn` is the application's
  * place.
  */
-import { containersOf } from './hosting'
+import { ancestorPlatforms, containersOf, hostingOf } from './hosting'
+import type { PlatformTree } from './hosting'
 import type { DesignElement, ElementId, Relation } from './types'
 
 export type LeverageOptions = {
   /** Rows written in other scopes that name the ids asked about (ADR-0012 §2). */
   elsewhere?: readonly Relation[]
+  /**
+   * The platform tree, for the one case that needs it: a service delivered by
+   * more than one platform, where the place the application runs decides
+   * which one it leverages (ADR-0015). Absent, every realiser is answered.
+   */
+  tree?: PlatformTree
+}
+
+/**
+ * Which of a service's realisers an application actually stands on.
+ *
+ * *Cloud environment* realised by an Azure subscription and an AWS account
+ * is one offering delivered twice, and an application uses the offering. Its
+ * hosting chain says which delivery: the realiser that shares a root with
+ * the place its containers run is the one, and the others are somebody
+ * else's. Where the chain says nothing — no hosting, or no realiser under
+ * the same root — all of them are answered, which is the honest ambiguity.
+ * A service realised once is never narrowed.
+ */
+export function narrowRealisers(
+  realisers: readonly ElementId[],
+  hostedOn: readonly ElementId[],
+  chainOf: (platformId: ElementId) => readonly ElementId[],
+): ElementId[] {
+  if (realisers.length < 2 || hostedOn.length === 0) return [...realisers]
+  const rootOf = (id: ElementId) => { const chain = chainOf(id); return chain[chain.length - 1] ?? id }
+  const roots = new Set(hostedOn.map(rootOf))
+  const same = realisers.filter((id) => roots.has(rootOf(id)))
+  return same.length > 0 ? same : [...realisers]
 }
 
 type Rows = { elements: readonly DesignElement[]; relations: readonly Relation[] }
@@ -125,9 +155,11 @@ export type Leverage = {
 
 /** What an application leverages: the services, the platforms behind each, and any platform bound to directly. */
 export function leverageOf(model: Rows, applicationId: ElementId, options: LeverageOptions = {}): Leverage {
+  const hostedOn = hostingOf(model, applicationId).platformIds
+  const chainOf = (id: ElementId) => [id, ...ancestorPlatforms(model.elements, id, options.tree ?? {}).map((one) => one.id)]
   return {
     services: servicesOf(model, applicationId, options)
-      .map((id) => ({ id, platformIds: platformsBehind(model, id, options) })),
+      .map((id) => ({ id, platformIds: narrowRealisers(platformsBehind(model, id, options), hostedOn, chainOf) })),
     platformIds: platformsBoundTo(model, applicationId, options),
   }
 }

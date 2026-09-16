@@ -51,9 +51,19 @@ export type { Hosting, PlatformTree } from './hosting'
 
 /** What an application leverages: the services it uses, and the platforms behind them (ADR-0014). */
 export {
-  consumersOf, describeLeverage, leverageOf, platformsBehind, platformsBoundTo, servicesOf,
+  consumersOf, describeLeverage, leverageOf, narrowRealisers, platformsBehind, platformsBoundTo, servicesOf,
 } from './leverage'
 export type { Leverage, LeverageLine, LeverageOptions } from './leverage'
+
+/** The technology landscape: the three bands, the lines between them, and what a card touches (ADR-0015). */
+export {
+  FOLD_ABOVE, applicationList, landscapeEdges, nodeKey, platformList, seedTechnologyLandscape, serviceList, startsFolded,
+  technologyLandscape, touchedBy,
+} from './technologyLandscape'
+export type {
+  LandscapeApplication, LandscapeEdge, LandscapeEdgeKind, LandscapeGroup, LandscapePlatform, LandscapeService,
+  LandscapeView, NodeKey, TechnologyLandscape, TechnologyLandscapeOptions,
+} from './technologyLandscape'
 
 /** An interface, and where it lands a level down (ADR-0013). */
 export {

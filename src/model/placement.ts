@@ -44,7 +44,7 @@ export type CanvasKind = 'application' | 'component' | 'actor' | 'platform' | 'p
 /**
  * Is a view of this kind a board — geometry a canvas draws (ADR-0012 §6)?
  *
- * The other two kinds are laid out, hold no members and are never the active
+ * The other kinds are laid out, hold no members and are never the active
  * diagram: the shell opens them as pages over the canvas. One predicate,
  * because "does this scope draw anything" and "may a card go here" are the
  * same question, and a scope holding only a sheet was answering yes to both.

@@ -1,5 +1,10 @@
 /**
- * The sheet as a picture, for an agent that asked to see it (ADR-0007).
+ * A laid-out page as a picture, for an agent that asked to see it (ADR-0007).
+ *
+ * The sheet's first, and now every page that is laid out rather than drawn
+ * — the map, the technology landscape — which is why it lives among the
+ * widgets: a page is a DOM node with a size, and rasterising one knows
+ * nothing about what the page is of.
  *
  * The canvas gives an agent a PNG by rasterising React Flow's viewport and
  * handing back the transform beside it, so a pixel maps to a flow coordinate.
@@ -25,6 +30,23 @@ export type SheetShot = {
   width: number
   height: number
   pixelRatio: number
+}
+
+export type PageCaptureOptions = {
+  maxPixels: number
+  /**
+   * Lay the page out at this width in CSS pixels before drawing it — the
+   * long side of an A1 is 3179 (`business/grid.paperWidth`). Absent draws
+   * the page as it stands, at the window's width.
+   */
+  width?: number
+}
+
+/** What a laid-out page hands the host, so the agent's renderer can ask it for a picture. */
+export type PageHandle = {
+  /** Which view is on screen, so a caller can tell it is the one it asked for. */
+  readonly diagramId: string
+  capture(options: PageCaptureOptions): Promise<SheetShot>
 }
 
 /**

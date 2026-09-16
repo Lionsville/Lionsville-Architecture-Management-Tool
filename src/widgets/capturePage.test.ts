@@ -29,7 +29,7 @@ const toCanvas = vi.fn(async () => fakeCanvas())
 
 vi.mock('html-to-image', () => ({ toCanvas: (...args: unknown[]) => toCanvas(...(args as [])) }))
 
-const { captureSheet, sheetPixelRatio } = await import('./captureSheet')
+const { captureSheet, sheetPixelRatio } = await import('./capturePage')
 
 afterEach(() => {
   toCanvas.mockClear()

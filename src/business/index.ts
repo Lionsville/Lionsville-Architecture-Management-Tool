@@ -42,8 +42,8 @@ export { SheetPage } from './ui/SheetPage'
 export type { SheetHandle, SheetPageProps } from './ui/SheetPage'
 export { MapPage } from './ui/MapPage'
 export type { MapPageProps } from './ui/MapPage'
-export { captureSheet, sheetPixelRatio } from './ui/captureSheet'
-export type { SheetShot } from './ui/captureSheet'
+export { captureSheet, sheetPixelRatio } from '../widgets/capturePage'
+export type { SheetShot } from '../widgets/capturePage'
 export { FunctionInspector, INSPECTOR_WIDTH } from './ui/FunctionInspector'
 export type {
   CoverageChange, FunctionInspectorProps, NewElement, NewLane, SheetActions, Supporter,
