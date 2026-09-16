@@ -9,7 +9,6 @@ import { useCallback, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { DesignDiagram, DiagramSettings } from '../model'
 import { duplicateDiagram, toDiagram, transaction } from '../model'
-import { isBoardKind } from '../model/placement'
 import { findContainerDiagram, seedContainerDiagram } from '../model/containerDiagram'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -134,7 +133,7 @@ export function useDiagramActions(deps: {
     // The active diagram gone? Then on to the first one that remains.
     if (session.currentActiveId() === id) {
       const left = session.indexed()
-      session.setActiveDiagramId(left.order.diagrams.find((held) => isBoardKind(left.diagrams[held].kind)) ?? id)
+      session.setActiveDiagramId(left.order.diagrams[0] ?? id)
     }
     notify(s('shell.deleted', { name: target.name }), 'success')
   }, [deleteId, session, notify, s])

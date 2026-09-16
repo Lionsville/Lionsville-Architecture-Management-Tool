@@ -5,15 +5,12 @@
  * workspace's own header gives: what a page may do, which one is up and where
  * a person lands on leaving it belong in one place with a test of its own.
  *
- * **A sheet is a diagram, and it is not the active diagram.** It is in
- * `model.diagrams` and it has a tab in the same strip, because a view is a
- * view and the strip is where you reach one. But it is laid out rather than
- * drawn (§6), so the canvas has nothing to draw for it and
- * `session.activeDiagramId` is left pointing at a board: choosing its tab
- * opens a page over the editor, exactly as the roadmap and a plan open one.
- * That is what keeps `needsRemount`, the editor's own key and the agent's
- * renderer handle out of this entirely — the editor is never unmounted for a
- * sheet, so an agent can still be told to render a landscape while one is up.
+ * **A sheet is a diagram, and since ADR-0016 it is the active one while it
+ * is up.** It is in `model.diagrams` and it has a tab in the same strip,
+ * because a view is a view and the strip is where you reach one; laid out
+ * rather than drawn (§6), it is drawn in the tab in place of the canvas,
+ * through the slot the workspace hands the editor. So which sheet is up is
+ * `session.activeDiagramId`, read here, and nothing else.
  *
  * Every change it makes is a `Command` through the same dispatch a keystroke
  * on the canvas takes, so a capability renamed on the sheet is one undo step
@@ -21,7 +18,7 @@
  * follow the same rule and answer with the id they minted, because the page
  * selects what it just made and puts the cursor in its name.
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { mayRemove, moveAmongSiblings, nextOrder, rootsOfKind, seedSheet } from '../business'
 import type { NewElement, SheetActions } from '../business'
 import { toDiagram, transaction } from '../model'
@@ -31,12 +28,11 @@ import type { Translate } from '../i18n'
 import type { ModelSession } from './useModelSession'
 
 export type Sheets = {
-  /** The sheet being read, or nothing. */
+  /** The sheet that is the active view, or nothing. */
   sheetId: string | undefined
   sheet: DesignDiagram | undefined
   open: (id: string) => void
-  close: () => void
-  /** Make one over what the scope already holds, and open it. */
+  /** Make one over what the scope already holds, and make it the active view. */
   create: () => void
   actions: SheetActions
 }
@@ -54,16 +50,13 @@ export function useSheet(deps: {
   showElement: (id: ElementId, leave: () => void) => void
 }): Sheets {
   const { session, makeId, s, showElement } = deps
-  const [sheetId, setSheetId] = useState<string | undefined>(undefined)
-
-  const close = useCallback(() => setSheetId(undefined), [])
+  const active = session.model.diagrams.find((diagram) => diagram.id === session.activeDiagramId)
+  const sheetId = active?.kind === 'sheet' ? active.id : undefined
 
   const create = useCallback(() => {
     const sheet = seedSheet(session.current().elements, { id: makeId('sh'), name: s('shell.newSheet') })
-    // No `activeDiagramId`: a sheet is opened as a page, and making it active
-    // would hand the canvas a view it cannot draw.
-    if (!session.dispatch({ type: 'diagram.create', diagram: toDiagram(sheet) })) return
-    setSheetId(sheet.id)
+    // Made and shown: the tab strip lists it and the editor draws it in the tab.
+    session.dispatch({ type: 'diagram.create', diagram: toDiagram(sheet) }, { activeDiagramId: sheet.id })
   }, [session, makeId, s])
 
   const actions = useMemo<SheetActions>(() => {
@@ -97,10 +90,10 @@ export function useSheet(deps: {
       },
 
       onOpenElement(id) {
-        // Leaving the page for the board, the way a plan's page leaves it —
-        // and for a board that actually draws it, which is the shell's
-        // question to answer: the sheet only says what it does on the way out.
-        showElement(id, () => setSheetId(undefined))
+        // To a board that actually draws it, which is the shell's question to
+        // answer; the board it chooses becomes the active view, which is what
+        // leaves the sheet.
+        showElement(id, () => {})
       },
 
       addElement(seed) {
@@ -231,8 +224,7 @@ export function useSheet(deps: {
     sheet: sheetId === undefined
       ? undefined
       : session.model.diagrams.find((diagram) => diagram.id === sheetId),
-    open: setSheetId,
-    close,
+    open: session.setActiveDiagramId,
     create,
     actions,
   }

@@ -334,15 +334,10 @@ export function OrganisationScreen({
               never given (§1). */}
           {root && root.path === at && (
             <BoardsTable
-              boards={root.model.diagrams.filter((diagram) => isBoardKind(diagram.kind) || diagram.kind === 'technology')}
-              // A technology landscape is laid out and never the active
-              // board (ADR-0015): its row opens the page, not the canvas.
-              onOpen={(id) => organisation.open(
-                at,
-                root.model.diagrams.find((diagram) => diagram.id === id)?.kind === 'technology'
-                  ? { page: 'technology', id }
-                  : { page: 'board', id },
-              )}
+              // Every view, the laid-out ones too: since ADR-0016 each is a
+              // tab the editor draws, so each row opens the scope on it.
+              boards={root.model.diagrams}
+              onOpen={(id) => organisation.open(at, { page: 'board', id })}
               onAdd={() => organisation.addBoard(at)}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
               language={language}
@@ -511,6 +506,9 @@ export function OrganisationScreen({
  * them. What a row says is what tells two boards of one landscape apart: the
  * kind, the day it shows (ADR-0009) and how much is on it.
  */
+/** What a laid-out view's row says instead of a day and a count: the kind, and that it is laid out. */
+const LAID_OUT_LABEL = { sheet: 'org.viewSheet', map: 'org.viewMap', technology: 'org.viewTechnology' } as const
+
 function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
@@ -551,7 +549,7 @@ function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontSize: 13, fontWeight: 500 }}>{board.name}</Typography>
             <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-              {board.kind === 'technology' ? s('org.viewTechnology') : [
+              {!isBoardKind(board.kind) ? s(LAID_OUT_LABEL[board.kind as keyof typeof LAID_OUT_LABEL]) : [
                 s(board.kind === 'container' ? 'org.viewContainer' : 'org.viewLayer7'),
                 // The day the board shows. A board with no date moves with
                 // the calendar, and says so rather than printing today's.

@@ -62,10 +62,10 @@ describe('making one', () => {
     expect(host.views().diagram?.id).toBe('tl-1')
   })
 
-  it('leaves the canvas on the board it was on', () => {
+  it('becomes the active view, drawn in the tab (ADR-0016)', () => {
     const host = mount()
     act(() => host.views().create())
-    expect(host.activeId()).toBe('d1')
+    expect(host.activeId()).toBe('tl-1')
   })
 
   it('is one step, and undoing it takes the view back off', () => {
@@ -79,10 +79,10 @@ describe('making one', () => {
 })
 
 describe('opening and closing', () => {
-  it('opens by id and closes to nothing', () => {
+  it('opens by id, and a board active leaves it', () => {
     const host = mount()
     act(() => host.views().create())
-    act(() => host.views().close())
+    act(() => host.views().open('d1'))
     expect(host.views().diagramId).toBeUndefined()
     act(() => host.views().open('tl-1'))
     expect(host.views().diagram?.name).toBe('Technology landscape')

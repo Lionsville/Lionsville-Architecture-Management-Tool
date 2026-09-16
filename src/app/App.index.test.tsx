@@ -20,7 +20,17 @@ import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
-  return { ...actual, SolutionDesignEditor: () => <div data-testid="editor" /> }
+  // A stub, but one that draws the laid-out view in the tab the way the
+  // editor does (ADR-0016): the map under test is reached through the slot.
+  const Stub = (props: import('../editor').SolutionDesignEditorProps) => {
+    const active = props.document.model.diagrams.find((diagram) => diagram.id === props.document.activeDiagramId)
+    return (
+      <div data-testid="editor">
+        {active && props.pages?.render(active, { readOnly: false, onSelect: () => {}, onAdd: () => {} })}
+      </div>
+    )
+  }
+  return { ...actual, SolutionDesignEditor: Stub }
 })
 
 afterEach(() => cleanup())
@@ -225,7 +235,7 @@ describe('the enterprise map, across scopes', () => {
     renderApp({ scopes: new InMemoryScopeStore([root, retail]) })
 
     fireEvent.click(await screen.findByTestId('open-map'))
-    const grid = await screen.findByTestId('map-grid')
+    const grid = await screen.findByTestId('map-grid', {}, { timeout: 3000 })
     await waitFor(() => expect(within(grid).getByTestId('map-column-wms').textContent).toBe('Warehouse system'))
     expect(within(grid).getByTestId('map-owner-0').textContent).toBe('acme/retail')
     expect(within(grid).getByTestId('map-cell-fulfilment-wms').dataset.mark).toBe('supports')

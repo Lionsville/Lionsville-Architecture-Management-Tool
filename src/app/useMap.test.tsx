@@ -62,10 +62,10 @@ describe('making one', () => {
     expect(host.maps().map?.id).toBe('mp-1')
   })
 
-  it('leaves the canvas on the board it was on', () => {
+  it('becomes the active view, drawn in the tab (ADR-0016)', () => {
     const host = mount()
     act(() => host.maps().create())
-    expect(host.activeId()).toBe('d1')
+    expect(host.activeId()).toBe('mp-1')
   })
 
   it('is one step, and undoing it takes the map back off', () => {
@@ -81,10 +81,10 @@ describe('making one', () => {
 })
 
 describe('opening and closing', () => {
-  it('opens by id and closes to nothing', () => {
+  it('opens by id, and a board active leaves it', () => {
     const host = mount()
     act(() => host.maps().create())
-    act(() => host.maps().close())
+    act(() => host.maps().open('d1'))
     expect(host.maps().mapId).toBeUndefined()
     act(() => host.maps().open('mp-1'))
     expect(host.maps().map?.name).toBe('Enterprise map')

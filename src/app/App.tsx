@@ -581,7 +581,10 @@ export function App({
   const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
     // Opened for one board: the session starts on it, the way a tab click
     // would leave it — no step on the stack, and nothing dirty for it.
-    setProject(page?.page === 'board' ? { ...next, activeDiagramId: page.id } : next)
+    const asked = page !== undefined && 'id' in page && page.id !== undefined
+      && (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology')
+      ? page.id : undefined
+    setProject(asked !== undefined ? { ...next, activeDiagramId: asked } : next)
     setInitialPage(page)
     prefs.writePreference({ lastScope: next.path })
   }, [prefs])

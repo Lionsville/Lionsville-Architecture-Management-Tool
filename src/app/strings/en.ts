@@ -528,6 +528,8 @@ export const EN = {
   'org.viewLayer7': 'Landscape',
   'org.viewContainer': 'Containers',
   'org.viewTechnology': 'Technology landscape · laid out from the rows',
+  'org.viewSheet': 'Business architecture · laid out from the trees',
+  'org.viewMap': 'Enterprise map · laid out from the rows',
   'org.viewAsOf': 'As of {date}',
   'org.viewToday': 'Today',
   'org.onItOne': '{count} on it',

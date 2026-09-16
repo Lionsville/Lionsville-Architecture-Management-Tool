@@ -13,7 +13,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import { EditorRefused, SolutionDesignEditor } from '../editor'
-import type { EditorHandle, EditorOwnership, StandInNote } from '../editor'
+import type { ReactNode } from 'react'
+import type { EditorHandle, EditorOwnership, PageView, StandInNote } from '../editor'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Language, Translate } from '../i18n'
@@ -27,8 +28,7 @@ import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
 import { decisionsOf, decisionsToCommands, describeLeverage, leverageOf, transaction, transitionsOf } from '../model'
-import { isBoardKind } from '../model/placement'
-import type { DesignElement, ElementId, PlatformDescription, Relation } from '../model'
+import type { DesignElement, ElementId, PlatformDescription, Relation, DesignDiagram } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
@@ -425,15 +425,12 @@ export function ProjectWorkspace({
   const editorHandle = useRef<EditorHandle | undefined>(undefined)
   const onEditorHandle = useCallback((handle: EditorHandle | undefined) => { editorHandle.current = handle }, [])
   /**
-   * The same arrangement for the laid-out pages, which are pages rather than a
-   * canvas. One ref for both: the sheet and the map are never up together, and
-   * the agent asks for a picture by diagram id, which says which page.
+   * The same arrangement for the laid-out views, which are drawn in the tab
+   * in place of the canvas (ADR-0016). One ref for all of them: only one is
+   * the active view, and the agent asks for a picture by diagram id.
    */
   const sheetHandle = useRef<SheetHandle | undefined>(undefined)
   const onSheetHandle = useCallback((handle: SheetHandle | undefined) => { sheetHandle.current = handle }, [])
-  const openSheetPage = sheets.open
-  const openMapPage = maps.open
-  const openLandscapePage = landscapes.open
   const renderer = useMemo<RendererView>(() => {
     const current = (): EditorHandle => {
       const held = editorHandle.current
@@ -471,17 +468,14 @@ export function ProjectWorkspace({
       },
       focus: (elementId) => setFocusRequest((prev) => ({ id: elementId, nonce: (prev?.nonce ?? 0) + 1 })),
       /**
-       * A sheet is a page, not the canvas: open it, wait for it to hand over
-       * its handle, and rasterise what it drew. Nothing is laid out
-       * asynchronously here, so the wait is for React rather than for a
-       * worker — but it is still a wait, and a page that never arrives is a
-       * refusal rather than a hang.
+       * A laid-out view is drawn in the tab, not on the canvas: make it the
+       * active view, wait for it to hand over its handle, and rasterise what
+       * it drew. Nothing is laid out asynchronously here, so the wait is for
+       * React rather than for a worker — but it is still a wait, and a page
+       * that never arrives is a refusal rather than a hang.
        */
       async sheet(diagramId, options) {
-        const asked = session.current().diagrams.find((diagram) => diagram.id === diagramId)
-        if (asked?.kind === 'map') openMapPage(diagramId)
-        else if (asked?.kind === 'technology') openLandscapePage(diagramId)
-        else openSheetPage(diagramId)
+        if (session.currentActiveId() !== diagramId) session.setActiveDiagramId(diagramId)
         const deadline = Date.now() + 5_000
         while (Date.now() < deadline) {
           const held = sheetHandle.current
@@ -491,7 +485,7 @@ export function ProjectWorkspace({
         throw new RendererRefused('gone')
       },
     }
-  }, [session, openSheetPage, openMapPage, openLandscapePage])
+  }, [session])
 
   useAgentGateway(agent, useMemo(() => ({
     indexed: session.indexed,
@@ -920,61 +914,45 @@ export function ProjectWorkspace({
   // The toolbar's pages are one at a time, and the sheet and the map are two of them.
   const openDecisions = useCallback((adrId?: string) => {
     plans.closeAll()
-    sheets.close()
-    maps.close()
-    landscapes.close()
     platformReading.close()
     showDecision(adrId)
-  }, [plans.closeAll, sheets.close, maps.close, landscapes.close, platformReading.close, showDecision])
+  }, [plans.closeAll, platformReading.close, showDecision])
   const openRoadmap = useCallback(() => {
     setAdrPage({ open: false })
-    sheets.close()
-    maps.close()
-    landscapes.close()
     platformReading.close()
     plans.openRoadmap()
-  }, [plans.openRoadmap, sheets.close, maps.close, landscapes.close, platformReading.close])
+  }, [plans.openRoadmap, platformReading.close])
   const openSheet = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
-    maps.close()
-    landscapes.close()
     platformReading.close()
-    sheets.open(id)
-  }, [plans.closeAll, maps.close, landscapes.close, platformReading.close, sheets.open])
+    session.setActiveDiagramId(id)
+  }, [plans.closeAll, platformReading.close, session])
   const openMap = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
-    sheets.close()
-    landscapes.close()
     platformReading.close()
-    maps.open(id)
-  }, [plans.closeAll, sheets.close, landscapes.close, platformReading.close, maps.open])
+    session.setActiveDiagramId(id)
+  }, [plans.closeAll, platformReading.close, session])
   const createMap = useCallback(() => {
     setAdrPage({ open: false })
     plans.closeAll()
-    sheets.close()
-    landscapes.close()
     platformReading.close()
     maps.create()
-  }, [plans.closeAll, sheets.close, landscapes.close, platformReading.close, maps.create])
+  }, [plans.closeAll, platformReading.close, maps.create])
   /** The technology landscape (ADR-0015): the third laid-out page, opened and made the map's way. */
   const openTechnology = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
-    sheets.close()
-    maps.close()
     platformReading.close()
-    landscapes.open(id)
-  }, [plans.closeAll, sheets.close, maps.close, platformReading.close, landscapes.open])
+    session.setActiveDiagramId(id)
+  }, [plans.closeAll, platformReading.close, session])
   const createTechnology = useCallback(() => {
     setAdrPage({ open: false })
     plans.closeAll()
-    sheets.close()
-    maps.close()
     platformReading.close()
     landscapes.create()
-  }, [plans.closeAll, sheets.close, maps.close, platformReading.close, landscapes.create])
+  }, [plans.closeAll, platformReading.close, landscapes.create])
   /**
    * A platform's report (ADR-0013, redone): reached from the platform's own
    * card and from the finding that names it, and never created — every mark on
@@ -983,18 +961,12 @@ export function ProjectWorkspace({
   const openServiceReport = useCallback((serviceId: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
-    sheets.close()
-    maps.close()
-    landscapes.close()
     platformReading.openService(serviceId)
-  }, [plans.closeAll, sheets.close, maps.close, landscapes.close, platformReading.openService])
+  }, [plans.closeAll, platformReading.openService])
   const openPlatformReport = useCallback((platformId: string) => {
     plans.closeAll()
-    sheets.close()
-    maps.close()
-    landscapes.close()
     platformReading.open(platformId)
-  }, [plans.closeAll, sheets.close, maps.close, landscapes.close, platformReading.open])
+  }, [plans.closeAll, platformReading.open])
 
   /**
    * The page this was opened for, shown once.
@@ -1047,7 +1019,7 @@ export function ProjectWorkspace({
    * going back to where they were opened from. A scope with a board closes its
    * pages onto that board, as it always has.
    */
-  const drawsNothing = !session.model.diagrams.some((diagram) => isBoardKind(diagram.kind))
+  const drawsNothing = session.model.diagrams.length === 0
   const leaveIfNothingToDraw = useCallback(
     () => { if (drawsNothing) onGoHome(project.path) },
     [drawsNothing, onGoHome, project.path],
@@ -1133,6 +1105,73 @@ export function ProjectWorkspace({
     canUndo: session.canUndo, canRedo: session.canRedo,
   }), [session.undo, session.redo, session.canUndo, session.canRedo])
 
+  /**
+   * The laid-out views, drawn in the tab (ADR-0016): the editor hands back
+   * the active diagram and its own selection, and this draws the page where
+   * the canvas would be. Rebuilt per render, as the editor's other props are.
+   */
+  const renderPage = (diagram: DesignDiagram, view: PageView): ReactNode => {
+    if (diagram.kind === 'sheet') {
+      return (
+        <SheetPage
+          open inline
+          model={session.model}
+          sheet={diagram}
+          readOnly={view.readOnly}
+          actions={sheets.actions}
+          onClose={() => {}}
+          onHandle={onSheetHandle}
+          ownerOf={ownership.ownerOf}
+          elsewhere={rowsElsewhere}
+          applications={applicationsInTree}
+          onOpenDocumentation={(id) => openDocumentation(id, diagram.id)}
+          onSave={files.savePicture}
+        />
+      )
+    }
+    if (diagram.kind === 'map') {
+      return (
+        <MapPage
+          open inline
+          model={session.model}
+          map={diagram}
+          readOnly={view.readOnly}
+          actions={sheets.actions}
+          onClose={() => {}}
+          onHandle={onSheetHandle}
+          ownerOf={ownership.ownerOf}
+          elsewhere={rowsElsewhere}
+          describe={describeForMap}
+          today={todayDay}
+          applications={applicationsInTree}
+          onOpenDocumentation={(id) => openDocumentation(id, diagram.id)}
+        />
+      )
+    }
+    if (diagram.kind === 'technology') {
+      return (
+        <TechnologyLandscapePage
+          open inline
+          model={session.model}
+          diagram={diagram}
+          readOnly={view.readOnly}
+          {...(view.selectedId !== undefined ? { selectedId: view.selectedId } : {})}
+          onSelect={view.onSelect}
+          onAdd={view.onAdd}
+          onClose={() => {}}
+          onHandle={onSheetHandle}
+          elsewhere={rowsThrough}
+          describe={describeForMap}
+          tree={ownership.platformTree}
+          onOpenDocumentation={(id) => openDocumentation(id, diagram.id)}
+          onOpenServiceReport={openServiceReport}
+          onOpenPlatformReport={openPlatformReport}
+        />
+      )
+    }
+    return null
+  }
+
   return (
     <>
       <Box ref={toolbarRef} sx={{ flex: '0 0 auto' }}>
@@ -1177,6 +1216,7 @@ export function ProjectWorkspace({
             onActiveDiagramChange: session.setActiveDiagramId,
           }}
           editing={{ dispatch: session.dispatch, history, ids: session.ids }}
+          pages={{ render: renderPage }}
           diagrams={{
             onCreateContainer: diagrams.onCreateContainerDiagram,
             onCreateLayer7: diagrams.onCreateLayer7Diagram,
@@ -1318,52 +1358,6 @@ export function ProjectWorkspace({
         onClose={plans.closePlan}
         windowChrome={pageChrome}
         initiativeToggle={project.path !== ''}
-      />
-      <SheetPage
-        open={sheets.sheetId !== undefined}
-        model={session.model}
-        sheet={sheets.sheet}
-        readOnly={false}
-        actions={sheets.actions}
-        onClose={() => { sheets.close(); leaveIfNothingToDraw() }}
-        onHandle={onSheetHandle}
-        ownerOf={ownership.ownerOf}
-        elsewhere={rowsElsewhere}
-        applications={applicationsInTree}
-        onOpenDocumentation={(id) => openDocumentation(id, sheets.sheetId)}
-        onSave={files.savePicture}
-        windowChrome={pageChrome}
-      />
-      <MapPage
-        open={maps.mapId !== undefined}
-        model={session.model}
-        map={maps.map}
-        readOnly={false}
-        actions={sheets.actions}
-        onClose={() => { maps.close(); leaveIfNothingToDraw() }}
-        onHandle={onSheetHandle}
-        ownerOf={ownership.ownerOf}
-        elsewhere={rowsElsewhere}
-        describe={describeForMap}
-        today={todayDay}
-        applications={applicationsInTree}
-        onOpenDocumentation={(id) => openDocumentation(id, maps.mapId)}
-        windowChrome={pageChrome}
-      />
-      <TechnologyLandscapePage
-        open={landscapes.diagramId !== undefined}
-        model={session.model}
-        diagram={landscapes.diagram}
-        readOnly={false}
-        onClose={() => { landscapes.close(); leaveIfNothingToDraw() }}
-        onHandle={onSheetHandle}
-        elsewhere={rowsThrough}
-        describe={describeForMap}
-        tree={ownership.platformTree}
-        onOpenDocumentation={(id) => openDocumentation(id, landscapes.diagramId)}
-        onOpenServiceReport={openServiceReport}
-        onOpenPlatformReport={openPlatformReport}
-        windowChrome={pageChrome}
       />
       <ServiceReportPage
         open={platformReading.serviceId !== undefined}

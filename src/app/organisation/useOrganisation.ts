@@ -350,7 +350,7 @@ export function useOrganisation({
         ...held,
         model: { ...held.model, diagrams },
         activeDiagramId: held.activeDiagramId === board.id
-          ? diagrams.find((diagram) => isBoardKind(diagram.kind))?.id ?? ''
+          ? diagrams[0]?.id ?? ''
           : held.activeDiagramId,
       }
       await scopes.save(next)

@@ -401,6 +401,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.viewLayer7': 'Landschaft',
   'org.viewContainer': 'Container',
   'org.viewTechnology': 'Technologielandschaft · aus den Zeilen gesetzt',
+  'org.viewSheet': 'Geschäftsarchitektur · aus den Bäumen gesetzt',
+  'org.viewMap': 'Unternehmenskarte · aus den Zeilen gesetzt',
   'org.viewAsOf': 'Stand {date}',
   'org.viewToday': 'Heute',
   'org.onItOne': '{count} darauf',

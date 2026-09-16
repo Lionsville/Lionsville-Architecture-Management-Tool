@@ -401,6 +401,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'org.viewLayer7': 'Lânskip',
   'org.viewContainer': 'Containers',
   'org.viewTechnology': 'Technologylânskip · opmakke út de rigels',
+  'org.viewSheet': 'Bedriuwsarsjitektuer · opmakke út de beammen',
+  'org.viewMap': 'Bedriuwskaart · opmakke út de rigels',
   'org.viewAsOf': 'Per {date}',
   'org.viewToday': 'Hjoed',
   'org.onItOne': '{count} derop',

@@ -87,12 +87,10 @@ describe('making one', () => {
     expect(host.sheets().sheetId).toBe('sh-1')
   })
 
-  it('leaves the canvas on the board it was on', () => {
-    // A sheet has no geometry: making it active would hand the editor a view
-    // it cannot draw, and unmount the canvas an agent may be rendering.
+  it('becomes the active view, drawn in the tab (ADR-0016)', () => {
     const host = mount()
     act(() => host.sheets().create())
-    expect(host.activeId()).toBe('d1')
+    expect(host.activeId()).toBe('sh-1')
   })
 
   it('is one step, and undoing it takes the sheet back off', () => {
@@ -149,29 +147,29 @@ describe('what the page may do', () => {
     const host = opened()
     act(() => host.sheets().actions.onOpenElement('wms'))
     expect(host.showElement).toHaveBeenCalledWith('wms', expect.any(Function))
-    // Not closed yet: the shell closes it only when a board here is about
-    // to show, and leaves it up under a page or a choice.
+    // Still up: the shell leaves it when the board it chooses becomes the
+    // active view, and the sheet has nothing to do on the way out.
     expect(host.sheets().sheetId).toBe('sh-1')
     act(() => (host.showElement.mock.calls[0][1] as () => void)())
-    expect(host.sheets().sheetId).toBeUndefined()
+    expect(host.sheets().sheetId).toBe('sh-1')
   })
 })
 
-describe('opening and closing', () => {
-  it('opens one by id and hands the page the diagram', () => {
+describe('opening and leaving', () => {
+  it('opens one by id, and a board active leaves it', () => {
     const host = mount()
     act(() => host.sheets().create())
-    act(() => host.sheets().close())
+    act(() => host.sheets().open('d1'))
     expect(host.sheets().sheet).toBeUndefined()
 
     act(() => host.sheets().open('sh-1'))
     expect(host.sheets().sheet?.name).toBe('Business architecture')
   })
 
-  it('hands the page nothing when the sheet was deleted under it', () => {
+  it('hands the page nothing when the active view is not a sheet', () => {
     const host = mount()
     act(() => host.sheets().open('never-made'))
-    expect(host.sheets().sheetId).toBe('never-made')
+    expect(host.sheets().sheetId).toBeUndefined()
     expect(host.sheets().sheet).toBeUndefined()
   })
 })
@@ -421,7 +419,7 @@ describe('from nothing to a covered capability', () => {
           sheet={sheets.sheet}
           readOnly={false}
           actions={sheets.actions}
-          onClose={sheets.close}
+          onClose={() => sheets.open('d1')}
         />
       ) : null
     }

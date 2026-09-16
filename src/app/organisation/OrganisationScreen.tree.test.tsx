@@ -438,13 +438,14 @@ describe('the boards on a landscape’s home', () => {
     expect(within(screen.getByTestId('boards')).getByTestId('board-now')).toBeDefined()
   })
 
-  it('lists every board with the day it shows, and no laid-out view', async () => {
+  it('lists every board with the day it shows, and a laid-out view with its kind (ADR-0016)', async () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))
     const boards = await screen.findByTestId('boards')
     expect(within(boards).getByTestId('board-now').textContent).toContain('Today')
     expect(within(boards).getByTestId('board-next').textContent).toContain('2028')
-    expect(within(boards).queryByTestId('board-sheet')).toBeNull()
+    expect(within(boards).getByTestId('board-sheet').textContent).toContain('Business architecture · laid out from the trees')
+    expect(within(boards).getByTestId('board-sheet').textContent).not.toContain('on it')
   })
 
   it('opens the row’s own board, not the one that was active', async () => {
