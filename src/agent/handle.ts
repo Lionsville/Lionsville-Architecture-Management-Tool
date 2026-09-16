@@ -44,6 +44,7 @@ import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
 import { inspectSheet } from './inspectSheet'
 import { inspectMap } from './inspectMap'
+import { inspectTechnology } from './inspectTechnology'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
@@ -202,6 +203,7 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
     if (diagram.kind === 'map') {
       return json(inspectMap(view.model, diagram, args.limit as number | undefined, session.today()))
     }
+    if (diagram.kind === 'technology') return json(inspectTechnology(view.model, diagram, args.limit as number | undefined))
     return json(inspect(view.model, diagram, args.limit as number | undefined))
   }
 
@@ -489,7 +491,7 @@ async function seeing(
   const diagram = diagramOf(model, args, session.activeDiagramId())
   if (!diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
 
-  if (diagram.kind === 'sheet' || diagram.kind === 'map') {
+  if (diagram.kind === 'sheet' || diagram.kind === 'map' || diagram.kind === 'technology') {
     return await seeSheet(tool, diagram, args, renderer)
   }
 

@@ -940,16 +940,15 @@ const SPECS = [
       'Add a diagram: a new landscape by name, a C4 container view of one application seeded with its '
       + 'components and laid out on first open, a business architecture sheet over the journey and the '
       + 'areas this project already holds, an enterprise map — every function against the applications '
-      + 'that support it, with the gaps — or a technology view of one platform: what runs on it, what uses '
-      + 'it, and every interface that passes through it (ADR-0013). The first two are switched to; the '
+      + 'that support it, with the gaps — or a technology landscape: the applications, the services they '
+      + 'use and the platforms that deliver them, in three bands (ADR-0015). The first two are switched to; the '
       + 'other three are pages rather than boards, so they are made and left for a person to open. Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, or an enterprise map.', enum: ['layer7', 'container', 'sheet', 'map'] },
-        name: { type: 'string', description: 'For a landscape, a sheet or a map: its name.' },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, or a technology landscape.', enum: ['layer7', 'container', 'sheet', 'map', 'technology'] },
+        name: { type: 'string', description: 'For a landscape, a sheet, a map or a technology landscape: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
-        platformId: { type: 'string', description: 'For a technology view: the platform it is about.' },
       },
       required: ['kind'],
       additionalProperties: false,
@@ -968,8 +967,8 @@ const SPECS = [
       + '`areaSpans` maps an area id to the columns it takes, its capabilities side by side inside it — on '
       + 'paper an area not named there is widened until the page fits the paper\'s short side. '
       + 'A map takes `areas` as its sections. Absent journeyId or areas is the honest default: no '
-      + 'journey band, every root. A technology view takes `platformId`, the platform it is about. Each list given replaces that list whole; null clears a field. A board '
-      + 'or a technology view takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
+      + 'journey band, every root. A technology landscape takes nothing here: everything on it is derived. Each list given replaces that list whole; null clears a field. A board '
+      + 'takes `asOf`, the day it draws the model as of. Where a card sits is element.place, not this.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1084,7 +1083,10 @@ const SPECS = [
       + 'On a business architecture sheet, which is laid out and has no geometry, it reports the page '
       + 'instead: the stakeholder rail, the journey with a row per lane, and every area with what '
       + 'covers each capability. On an enterprise map it reports the rows — every function in tree '
-      + 'order with the applications supporting it, rolled up on the sections — and the columns.',
+      + 'order with the applications supporting it, rolled up on the sections — and the columns. On a '
+      + 'technology landscape it reports the three bands — the applications by the scope that answers for '
+      + 'each, the services nested by parent, the platforms nested where the tree nests — and the lines '
+      + 'between them, every one a row that exists.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1101,7 +1103,7 @@ const SPECS = [
       'A picture of a diagram as the app draws it, as a PNG, with the transform it was drawn with so a '
       + 'pixel maps back to a flow coordinate. Crop to some elements or to a region: a whole landscape '
       + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible. '
-      + 'A business architecture sheet or an enterprise map is drawn whole — neither has coordinates to '
+      + 'A business architecture sheet, an enterprise map or a technology landscape is drawn whole — none has coordinates to '
       + 'crop to — and the crop arguments are ignored for one. A sheet takes `pageWidth`: the CSS width it is '
       + 'laid out at before drawing, so its areas tile as they would on paper (A1 is 3179, A0 is 4494); '
       + 'raise maxPixels with it, or the picture is scaled down to fit the budget.',

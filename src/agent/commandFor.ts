@@ -34,6 +34,7 @@ import { COLOUR_BY } from '../model/overlay'
 import type { ColourBy } from '../model/overlay'
 import { acceptImplied, impliedInterfaces } from '../model/implied'
 import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
+import { seedTechnologyLandscape } from '../model/technologyLandscape'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../model/porting'
 import { replacementCommands } from '../model/replacement'
 import {
@@ -1244,7 +1245,7 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   const id = args.id as string
   const diagram = model.diagrams[id]
   if (!diagram) return refused('agent.unknownId', `diagram ${id}`)
-  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map'
+  const laidOut = diagram.kind === 'sheet' || diagram.kind === 'map' || diagram.kind === 'technology'
   const patch: Record<string, unknown> = {}
 
   const only = (field: string, allowed: boolean, what: string): AgentAnswer | undefined =>
@@ -1367,6 +1368,16 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     return {
       command: { type: 'diagram.create', diagram: toDiagram(map), origin: 'agent' },
       answer: json({ id: map.id, kind: 'map', name }),
+    }
+  }
+  if (args.kind === 'technology') {
+    const name = typeof args.name === 'string' ? args.name.trim() : ''
+    if (!name) return refused('agent.badArguments', '"name" is required for a technology landscape')
+    const landscape = seedTechnologyLandscape({ id: view.makeId('tl'), name })
+    // Laid out, like the map: made and left for a person to open (ADR-0015).
+    return {
+      command: { type: 'diagram.create', diagram: toDiagram(landscape), origin: 'agent' },
+      answer: json({ id: landscape.id, kind: 'technology', name }),
     }
   }
   if (args.kind === 'layer7') {
