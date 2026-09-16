@@ -1350,10 +1350,10 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     const name = typeof args.name === 'string' ? args.name.trim() : ''
     if (!name) return refused('agent.badArguments', '"name" is required for a sheet')
     const sheet = seedSheet(toArrays(model).elements, { id: view.makeId('sh'), name })
-    // No `activeDiagramId`: a sheet is laid out and the canvas cannot draw one,
-    // so making it active would leave the window on a view it has nothing for.
+    // Switched to, as a board is: a laid-out view is drawn in the tab (ADR-0016).
     return {
       command: { type: 'diagram.create', diagram: toDiagram(sheet), origin: 'agent' },
+      activeDiagramId: sheet.id,
       answer: json({
         id: sheet.id, kind: 'sheet', name,
         journeyId: sheet.journeyId, areas: sheet.areas ?? [],
@@ -1364,9 +1364,9 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     const name = typeof args.name === 'string' ? args.name.trim() : ''
     if (!name) return refused('agent.badArguments', '"name" is required for a map')
     const map = seedMap({ id: view.makeId('mp'), name })
-    // Laid out, like a sheet: made and left for a person to open.
     return {
       command: { type: 'diagram.create', diagram: toDiagram(map), origin: 'agent' },
+      activeDiagramId: map.id,
       answer: json({ id: map.id, kind: 'map', name }),
     }
   }
@@ -1374,9 +1374,9 @@ function createDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     const name = typeof args.name === 'string' ? args.name.trim() : ''
     if (!name) return refused('agent.badArguments', '"name" is required for a technology landscape')
     const landscape = seedTechnologyLandscape({ id: view.makeId('tl'), name })
-    // Laid out, like the map: made and left for a person to open (ADR-0015).
     return {
       command: { type: 'diagram.create', diagram: toDiagram(landscape), origin: 'agent' },
+      activeDiagramId: landscape.id,
       answer: json({ id: landscape.id, kind: 'technology', name }),
     }
   }

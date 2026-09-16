@@ -269,14 +269,17 @@ describe('diagram.create', () => {
     expect(held.indexed().diagrams['sh-new-1'].kind).toBe('sheet')
   })
 
-  it('leaves the window on the board it was on', async () => {
-    // A sheet is a page; making it active would hand the canvas a view it
-    // cannot draw. The dispatch is watched for the option rather than the id.
+  it('switches to the sheet it made, as it does to a board (ADR-0016)', async () => {
+    // A laid-out view is drawn in the tab, so the window lands on it. The
+    // dispatch is watched for the option rather than the id.
     const dispatch = vi.fn(() => undefined)
     await handle(
       { id: '1', tool: 'diagram.create', args: { kind: 'sheet', name: 'Sheet' } }, session({ dispatch }),
     )
-    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'diagram.create' }), undefined)
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'diagram.create' }),
+      expect.objectContaining({ activeDiagramId: expect.stringMatching(/^sh/) }),
+    )
   })
 
   it('asks for a name, as a landscape does', async () => {

@@ -941,8 +941,8 @@ const SPECS = [
       + 'components and laid out on first open, a business architecture sheet over the journey and the '
       + 'areas this project already holds, an enterprise map — every function against the applications '
       + 'that support it, with the gaps — or a technology landscape: the applications, the services they '
-      + 'use and the platforms that deliver them, in three bands (ADR-0015). The first two are switched to; the '
-      + 'other three are pages rather than boards, so they are made and left for a person to open. Answers with the id.',
+      + 'use and the platforms that deliver them, in three bands (ADR-0015). Every kind is switched to once made: '
+      + 'the laid-out three are drawn in their tab like a board (ADR-0016). Answers with the id.',
     inputSchema: {
       type: 'object',
       properties: {
