@@ -3796,73 +3796,6 @@
       }
     ]
   },
-  "platforms/diagrams/platforms.geometry.json": {
-    "needsLayout": true,
-    "nodes": []
-  },
-  "platforms/diagrams/platforms.json": {
-    "id": "platforms",
-    "kind": "layer7",
-    "members": [
-      {
-        "id": "cloud-environment",
-        "zone": "management"
-      },
-      {
-        "id": "container-platform",
-        "zone": "management"
-      },
-      {
-        "id": "esb",
-        "zone": "management"
-      },
-      {
-        "id": "iam",
-        "zone": "management"
-      },
-      {
-        "id": "identity",
-        "zone": "management"
-      },
-      {
-        "id": "integration-service",
-        "zone": "management"
-      },
-      {
-        "id": "kafka",
-        "zone": "management"
-      },
-      {
-        "id": "landing-zone",
-        "zone": "management"
-      },
-      {
-        "id": "managed-database",
-        "zone": "management"
-      },
-      {
-        "id": "message-brokering",
-        "zone": "management"
-      },
-      {
-        "id": "monitoring-stack",
-        "zone": "management"
-      },
-      {
-        "id": "ns-logistics",
-        "zone": "management"
-      },
-      {
-        "id": "observability",
-        "zone": "management"
-      },
-      {
-        "id": "openshift",
-        "zone": "management"
-      }
-    ],
-    "name": "Shared platforms"
-  },
   "platforms/diagrams/technology-landscape.geometry.json": {
     "nodes": []
   },
@@ -4140,10 +4073,9 @@
     ]
   },
   "platforms/scope.json": {
-    "activeDiagramId": "platforms",
+    "activeDiagramId": "technology-landscape",
     "description": "What the applications run on and what carries their interfaces: the cluster, the broker, the bus. Owned here, drawn everywhere.",
     "diagrams": [
-      "platforms",
       "technology-landscape"
     ],
     "kind": "domain",
@@ -4152,7 +4084,7 @@
     "version": 5
   },
   "scope.json": {
-    "activeDiagramId": "",
+    "activeDiagramId": "business-architecture",
     "description": "A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.",
     "diagrams": [
       "business-architecture",

@@ -104,10 +104,9 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s', (_key, exa
     // A subdivision of a place is not an offering; and one offering has nothing behind it yet.
     expect(realises['ns-logistics']).toBeUndefined()
     expect(Object.values(realises)).not.toContain('managed-database')
-    // The platform scope draws its services and platforms as chips, and nothing is a line there.
-    const board = platforms.diagrams.find((d) => d.kind === 'layer7')!
-    expect(board.members.every((m) => m.zone === 'management')).toBe(true)
-    expect(board.members.map((m) => m.id)).toContain('container-platform')
+    // The platform scope draws its stack as the technology landscape alone
+    // (ADR-0016): no board, and nothing is a line there.
+    expect(platforms.diagrams.map((d) => d.kind)).toEqual(['technology'])
     expect(platforms.relations.some((r) => r.type === 'flow')).toBe(false)
   })
 
