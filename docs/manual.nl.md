@@ -893,6 +893,26 @@ en uit welke scopes, en welke gebruikers er nog op zouden zitten op de dag dat
 hij verdwijnt. Geen van beide wordt getekend of gemaakt; beide worden elke
 keer dat je ze opent uit de rijen afgeleid.
 
+**Het technologielandschap** is het plaatje van dat alles: wie wat gebruikt,
+wat wordt aangeboden en wat het levert, in drie banden op één pagina.
+*Landschap* op de technologiekaart maakt er een in de scope waarvan het de
+diensten en platformen moet tekenen — meestal de platformscope — en het staat
+tussen de tabbladen zoals het blad en de kaart. De bovenste band is elke
+applicatie die de regels aan die diensten en platformen verbinden, uit elk
+landschap in de organisatie, in een vak per domein; de middelste band zijn de
+diensten, genest waar ze nesten; de onderste band zijn de platformen, genest
+waar de boom nest, een buitenstaander gestippeld. Niets wordt getekend of
+gesleept: elke kaart en elke lijn wordt elke keer uit de regels gelezen. **In
+rust zijn er geen lijnen** — de kaarten dragen de aantallen — en over een
+kaart zweven toont haar lijnen, klikken zet ze vast, dempt alles wat ze niet
+raken en opent het record rechts, van waaruit de rapporten openen. *Diensten
+verbergen* vouwt de middelste band tot een strook en tekent waar elke
+applicatie werkelijk op steunt rechtstreeks naar de platformen, zoals de
+regel *Steunt op* op het record het leest; *Alle lijnen* is de nooduitgang.
+Boven de veertig applicaties beginnen de domeinen dichtgevouwen tot één vak
+elk met een aantal, en filteren op naam opent de treffers; een domeintitel
+vouwt met de hand open en dicht.
+
 **Kleuren op** in de werkbalk van het landschap kleurt de kaarten op platform
 — het cluster, niet de namespace — of op levenscyclus van de techniek, zodat
 de kaarten die op iets staan dat uitgefaseerd wordt amber worden, de hele

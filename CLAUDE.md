@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3945 tests** and one of every config. The
+One codebase, in modules, with **3973 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3945 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 3973 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -154,7 +154,10 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       be stranded if it were withdrawn (ADR-0014)
                     leverage          what an application leverages: the
                                       services it uses and the platforms behind
-                                      them, derived (ADR-0014)
+                                      them, derived (ADR-0014); narrowed by where
+                                      it runs when a service is delivered twice
+                    technologyLandscape   the three bands, the lines between
+                                      them and what a card touches (ADR-0015)
                     tree              one parent, always, and the loop refused
                     refines · implied   which application interface a container
                                       line is part of, and the one nobody drew
@@ -216,6 +219,9 @@ src/technology/   The physical view (ADR-0013, ADR-0014): a platform's report
                                       the container interfaces that cross it
                     ui/ServiceReportPage    who maintains it, what realises it,
                                       who leans on it, and what would be stranded
+                    ui/TechnologyLandscapePage   the layer's one view (ADR-0015):
+                                      applications, services, platforms, no lines
+                                      at rest
 src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
                     searchIndex       the haystack, folded once per model
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
@@ -277,7 +283,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     updates           is this newer, which file is mine — the
                                       desktop's update check, without its fetch
                     agentServer       the server's three states, and mcp.json's shape
-src/widgets/      Presentation with no opinions: icons, one confirm dialog.
+src/widgets/      Presentation with no opinions: icons, one confirm dialog, and
+                  a laid-out page rasterised (`capturePage`).
 src/ports/        The seams. Interfaces only, no implementations.
                     ScopeStore        …and `models?()`, the tree's `model.json`
                                       files and nothing else — what the index is
@@ -599,7 +606,7 @@ identifiers is still a list of a customer's identifiers.
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
-| The four view kinds (ADR-0012 §6) | `layer7` · `container` drawn on a canvas; `sheet` · `map` **laid out**, no geometry. A platform has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
+| The five view kinds (ADR-0012 §6, ADR-0015) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `milestone.add` `milestone.update` `milestone.remove` |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -1102,3 +1109,17 @@ fold over the same index as the application register, beside it on the
 organisation screen and as `technology.list`; the service has a report of
 its own, `service.report`, for the question a platform team owns: this is
 being withdrawn, who leans on it.
+
+Then the layer got its **picture** (`docs/decisions/0015`). `technology` is
+the fifth view kind, laid out like the sheet and the map: three bands — the
+applications in a box per scope that answers for them, the services nested
+by parent, the platforms nested where the tree nests — read from the rows
+every time, with the applications arriving from the rest of the tree's rows
+the way the reports take them. It draws **no lines at rest**: the cards
+carry counts, hovering previews, clicking pins and dims, *All lines* is the
+escape hatch, and above forty applications the domains start folded. Hiding
+the service band draws the leverage straight to the platforms, which is
+where a service delivered by two platforms turned out to need the hosting
+chain to say which — `narrowRealisers`, so the record's *Leverages* line says
+the same. The page's capture moved to `widgets/capturePage` on the way,
+because rasterising a laid-out page knows nothing about what the page is of.

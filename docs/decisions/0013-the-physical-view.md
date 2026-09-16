@@ -49,7 +49,10 @@ where a section below disagrees with this, this is the record.
 * **The technology view is not a view.** §4 made a platform's page the fourth
   laid-out view kind, which promised a picture and gave a table of text, and
   made a person create one before they could read one. Three things replace
-  it. The deployment boxes: the platforms a container diagram's containers run
+  it. (*Amended by ADR-0015:* the kind came back a year's worth of days
+  later as a picture — the technology landscape, three bands over the whole
+  layer, laid out and never a table per platform. The report stays a
+  report.) The deployment boxes: the platforms a container diagram's containers run
   on, drawn around them as derived dashed groups nested the way the platforms
   nest — Structurizr's deployment diagram over the canvas that exists. The
   overlay: the landscape's cards tinted by the platform of their roll-up or by

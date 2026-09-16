@@ -887,6 +887,25 @@ hokker brûkers der noch op sitte soene op de dei dat er ferdwynt. Gjin fan
 beiden wurdt tekene of makke; beide wurde elke kear dat jo se iepenje út de
 rigen ôflaat.
 
+**It technologylânskip** is it plaatsje fan dat alles: wa wat brûkt, wat
+oanbean wurdt en wat it leveret, yn trije bannen op ien side. *Lânskip* op de
+technologykaart makket der ien yn de scope dêr't it de tsjinsten en platfoarms
+fan tekenje moat — meastal de platfoarmscope — en it stiet tusken de ljeppers
+lykas it blêd en de kaart. De boppeste bân is elke applikaasje dy't de rigels
+oan dy tsjinsten en platfoarms ferbine, út elk lânskip yn de organisaasje, yn
+in fak per domein; de middelste bân binne de tsjinsten, nêste dêr't se nêste;
+de ûnderste bân binne de platfoarms, nêste dêr't de beam nêstet, in bûtensteander
+stippele. Neat wurdt tekene of sleept: elke kaart en elke line wurdt elke kear
+út de rigels lêzen. **Yn rêst binne der gjin linen** — de kaarten drage de
+oantallen — en oer in kaart sweve toant har linen, klikken set se fêst, dimt
+alles wat se net reitsje en iepenet it rekord rjochts, dêr't de rapporten út
+iepenje. *Tsjinsten ferbergje* fâldet de middelste bân ta in stripe en tekenet
+wêr't elke applikaasje wier op stipet streekrjocht nei de platfoarms, sa't de
+rigel *Stipet op* op it rekord it lêst; *Alle linen* is de needútgong. Boppe de
+fjirtich applikaasjes begjinne de domeinen tichtfâlde ta ien fak elk mei in
+oantal, en filterjen op namme iepenet de treffers; in domeintitel fâldet mei
+de hân iepen en ticht.
+
 **Kleurje op** yn de arkbalke fan it lânskip kleuret de kaarten op platfoarm —
 it kluster, net de namespace — of op libbenssyklus fan de technyk, sadat de
 kaarten dy't op wat steane dat útfazearre wurdt amber wurde, de hiele keatling

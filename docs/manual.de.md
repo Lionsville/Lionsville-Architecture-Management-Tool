@@ -959,6 +959,27 @@ sich darauf stützt und aus welchen Bereichen, und welche Nutzer am Tag seines
 Rückzugs noch darauf säßen. Keiner von beiden wird gezeichnet oder angelegt;
 beide werden bei jedem Öffnen aus den Zeilen abgeleitet.
 
+**Die Technologielandschaft** ist das Bild von alledem: wer was nutzt, was
+angeboten wird und was es liefert, in drei Bändern auf einer Seite.
+*Landschaft* auf der Technologiekarte legt eine im Bereich an, dessen Dienste
+und Plattformen sie zeichnen soll — meist dem Plattformbereich — und sie
+steht unter den Reitern wie das Blatt und die Karte. Das obere Band ist jede
+Anwendung, die die Zeilen mit diesen Diensten und Plattformen verbinden, aus
+jeder Landschaft der Organisation, in einem Kasten je Domäne; das mittlere
+Band sind die Dienste, verschachtelt, wo sie sich verschachteln; das untere
+Band sind die Plattformen, verschachtelt, wo der Baum es tut, eine äußere
+gestrichelt. Nichts wird gezeichnet oder gezogen: jede Karte und jede Linie
+wird jedes Mal aus den Zeilen gelesen. **In Ruhe gibt es keine Linien** — die
+Karten tragen die Zahlen — und das Überfahren einer Karte zeigt ihre Linien,
+ein Klick heftet sie an, dämpft alles, was sie nicht berühren, und öffnet
+rechts den Datensatz, aus dem die Berichte öffnen. *Dienste ausblenden* klappt
+das mittlere Band zu einem Streifen und zeichnet, worauf sich jede Anwendung
+tatsächlich stützt, direkt zu den Plattformen, so wie die Zeile *Stützt sich
+auf* am Datensatz es liest; *Alle Linien* ist der Notausgang. Über vierzig
+Anwendungen beginnen die Domänen eingeklappt zu je einem Kasten mit Zahl, und
+ein Filter nach Namen öffnet die Treffer; ein Domänentitel klappt von Hand
+auf und zu.
+
 **Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten nach
 Plattform — dem Cluster, nicht dem Namespace — oder nach Lebenszyklus der
 Technik, damit die Karten, die auf etwas Auslaufendem stehen, bernsteinfarben

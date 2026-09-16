@@ -848,6 +848,25 @@ maintains it, what realises it, who leans on it and from which scopes, and
 which consumers would still be on it on the day it goes. Neither is drawn
 or created; both are worked out from the rows every time you open them.
 
+**The technology landscape** is the picture of all of it: who uses what,
+what is offered, and what delivers it, in three bands on one page. *Landscape*
+on the technology card makes one in the scope whose services and platforms
+it should draw — the platform scope, usually — and it is listed among the
+tabs like the sheet and the map. The top band is every application the
+rows connect to those services and platforms, from every landscape in the
+organisation, in a box per domain; the middle band is the services, nested
+where they nest; the bottom band is the platforms, nested where the tree
+nests, an outside one dashed. Nothing is drawn or dragged: every card and
+every line is read from the rows each time. **There are no lines at rest** —
+the cards carry the counts — and hovering a card previews its lines, clicking
+pins them, dims everything they do not touch and opens the record on the
+right, from which the reports open. *Hide services* folds the middle band to
+a strip and draws what each application actually leverages straight to the
+platforms, the way the record's *Leverages* line reads it; *All lines* is the
+escape hatch. Above forty applications the domains start folded into one box
+each with a count, and filtering by name opens the matches; a domain title
+folds and unfolds by hand.
+
 **Colour by** in the landscape's toolbar tints the cards by platform — the
 cluster, not the namespace — or by technology lifecycle, so the cards
 standing on something retiring go amber, the whole chain counted. The
