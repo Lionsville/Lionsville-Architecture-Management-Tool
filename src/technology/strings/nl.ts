@@ -105,4 +105,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'landscape.legendLeverages': 'steunt op (afgeleid)',
   'landscape.legendBinds': 'gebonden aan één platform',
   'landscape.legendHosting': 'draait op',
+  'landscape.addService': 'Een dienst toevoegen',
+  'landscape.addServiceUnder': 'Een dienst toevoegen onder {name}',
+  'landscape.addPlatform': 'Een platform toevoegen',
+  'landscape.addPlatformUnder': 'Een platform toevoegen onder {name}',
 }

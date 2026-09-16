@@ -50,11 +50,24 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
+import { AddIcon } from '../../widgets/icons'
 import { captureSheet } from '../../widgets/capturePage'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 
 export type TechnologyLandscapePageProps = {
   open: boolean
+  /**
+   * Drawn in the tab rather than as a page over the editor (ADR-0016): no
+   * dialog, no back button; the editor's inspector edits the chosen service
+   * or platform, so the record on the right is kept only for what this scope
+   * does not hold — an application, a domain.
+   */
+  inline?: boolean
+  /** The editor's selected element, and the way to choose one — with `inline`. */
+  selectedId?: ElementId
+  onSelect?(elementId: ElementId | undefined): void
+  /** Make a service or a platform, filed under `parentId` where given. Absent = no `+` on the bands. */
+  onAdd?(seed: { kind: 'platform' | 'platformService'; parentId?: ElementId }): void
   model: DesignModel
   /** Absent while the page is closing, or when the view was deleted under it. */
   diagram: DesignDiagram | undefined
@@ -148,7 +161,29 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const dims = selected !== undefined ? touched : undefined
   const hides = (key: NodeKey) => onlyTouched && dims !== undefined && !dims.has(key)
 
-  const choose = useCallback((key: NodeKey) => setSelected((held) => (held === key ? undefined : key)), [])
+  const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
+  const onSelect = props.onSelect
+  const choose = useCallback((key: NodeKey) => {
+    setSelected((was) => {
+      const next = was === key ? undefined : key
+      // What this scope holds is the editor's selection as well (ADR-0016);
+      // an application or a domain is this page's alone.
+      if (onSelect) {
+        const id = next === undefined ? undefined : next.slice(next.indexOf(':') + 1)
+        onSelect(id !== undefined && held.has(id) && !next!.startsWith('group:') ? id : undefined)
+      }
+      return next
+    })
+  }, [onSelect, held])
+  // And the other way: a card the editor selected — one the palette just
+  // made, say — is chosen here.
+  const selectedId = props.selectedId
+  useEffect(() => {
+    if (!landscape || selectedId === undefined) return
+    if (serviceList(landscape).some(({ node }) => node.id === selectedId)) setSelected(nodeKey.service(selectedId))
+    else if (platformList(landscape).some(({ node }) => node.id === selectedId)) setSelected(nodeKey.platform(selectedId))
+  }, [landscape, selectedId])
+  const add = props.readOnly ? undefined : props.onAdd
   const fold = useCallback((key: string) => setFolded((held) => {
     const next = new Set(held)
     if (next.has(key)) next.delete(key); else next.add(key)
@@ -196,23 +231,26 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const menuDomains = landscape !== undefined && landscape.groups.length > CHIPS_BEFORE_MENU
   const [domainMenu, setDomainMenu] = useState(false)
 
+  const Frame = props.inline ? InlineFrame : PageDialog
   return (
-    <PageDialog open={props.open} topInset={chrome.topInset} onClose={props.onClose} aria-label={t('landscape.page')}>
+    <Frame open={props.open} topInset={chrome.topInset} onClose={props.onClose} aria-label={t('landscape.page')}>
       <Box
         data-testid="landscape-topbar"
         sx={{
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
+          pl: props.inline ? undefined : `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: !props.inline && bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
         }}
       >
-        <Tooltip title={t('landscape.close')}>
-          <IconButton size="small" aria-label={t('landscape.close')} onClick={props.onClose}>
-            <BackIcon />
-          </IconButton>
-        </Tooltip>
+        {!props.inline && (
+          <Tooltip title={t('landscape.close')}>
+            <IconButton size="small" aria-label={t('landscape.close')} onClick={props.onClose}>
+              <BackIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{diagram?.name ?? t('landscape.page')}</Typography>
         {landscape && (
           <Typography data-testid="landscape-summary" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
@@ -319,24 +357,29 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
 
               <Band title={t('landscape.services')} note={services ? undefined : t('landscape.servicesHidden', { count: landscape.counts.services })}
                 testId="landscape-band-services" action={(
-                  <Button size="small" data-testid="landscape-services-band" onClick={(event) => { event.stopPropagation(); setServices((held) => !held) }} sx={{ fontSize: 11, py: 0 }}>
-                    {services ? t('landscape.hideServices') : t('landscape.showServices')}
-                  </Button>
+                  <>
+                    {add && services && <AddButton label={t('landscape.addService')} testId="landscape-add-service" onClick={() => add({ kind: 'platformService' })} />}
+                    <Button size="small" data-testid="landscape-services-band" onClick={(event) => { event.stopPropagation(); setServices((held) => !held) }} sx={{ fontSize: 11, py: 0 }}>
+                      {services ? t('landscape.hideServices') : t('landscape.showServices')}
+                    </Button>
+                  </>
                 )}>
                 {services && (landscape.services.length === 0 ? <Empty text={t('landscape.noServices')} /> : (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
                     {landscape.services.map((service) => (
-                      <ServiceNode key={service.id} service={service} selected={selected} dims={dims} onChoose={choose} t={t} theme={theme} />
+                      <ServiceNode key={service.id} service={service} selected={selected} dims={dims} onChoose={choose} onAdd={add} t={t} theme={theme} />
                     ))}
                   </Box>
                 ))}
               </Band>
 
-              <Band title={t('landscape.platforms')} testId="landscape-band-platforms" last>
+              <Band title={t('landscape.platforms')} testId="landscape-band-platforms" last action={
+                add ? <AddButton label={t('landscape.addPlatform')} testId="landscape-add-platform" onClick={() => add({ kind: 'platform' })} /> : undefined
+              }>
                 {landscape.platforms.length === 0 ? <Empty text={t('landscape.noPlatforms')} /> : (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
                     {landscape.platforms.map((platform) => (
-                      <PlatformNode key={platform.id} platform={platform} selected={selected} dims={dims} onChoose={choose} t={t} theme={theme} />
+                      <PlatformNode key={platform.id} platform={platform} selected={selected} dims={dims} onChoose={choose} onAdd={add} t={t} theme={theme} />
                     ))}
                   </Box>
                 )}
@@ -347,7 +390,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
           )}
         </Box>
 
-        {landscape && selected !== undefined && (
+        {landscape && selected !== undefined && !(props.inline && held.has(selected.slice(selected.indexOf(':') + 1)) && !selected.startsWith('group:')) && (
           <Inspector landscape={landscape} model={model} selected={selected} view={view} t={t}
             {...(props.onOpenDocumentation ? { onOpenDocumentation: props.onOpenDocumentation } : {})}
             {...(props.onOpenServiceReport ? { onOpenServiceReport: props.onOpenServiceReport } : {})}
@@ -363,7 +406,22 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
           </Box>
         ))}
       </Box>
-    </PageDialog>
+    </Frame>
+  )
+}
+
+/** The page in the tab: the same column, with no dialog around it. */
+function InlineFrame({ children }: { children?: React.ReactNode; open?: boolean; topInset?: number; onClose?(): void; 'aria-label'?: string }) {
+  return <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>{children}</Box>
+}
+
+function AddButton({ label, testId, onClick }: { label: string; testId: string; onClick(): void }) {
+  return (
+    <Tooltip title={label}>
+      <IconButton size="small" aria-label={label} data-testid={testId} data-sheet-add onClick={(event) => { event.stopPropagation(); onClick() }} sx={{ p: 0.25 }}>
+        <AddIcon />
+      </IconButton>
+    </Tooltip>
   )
 }
 
@@ -575,15 +633,18 @@ function lifecycleTag(lifecycle: LandscapeService['lifecycle'], t: Translate) {
   return <Tag text={t(key)} tone={tone} />
 }
 
-function ServiceNode({ service, selected, dims, onChoose, t, theme }: {
-  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; t: Translate; theme: Theme
+type OnAdd = ((seed: { kind: 'platform' | 'platformService'; parentId?: ElementId }) => void) | undefined
+
+function ServiceNode({ service, selected, dims, onChoose, onAdd, t, theme }: {
+  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; onAdd: OnAdd; t: Translate; theme: Theme
 }) {
   const card = <ServiceCard service={service} selected={selected} dims={dims} onChoose={onChoose} t={t} />
   if (service.children.length === 0) return card
   return (
     <Box data-testid={`landscape-service-group-${service.id}`} sx={{ border: 1, borderStyle: 'dashed', borderColor: 'divider', borderRadius: 1.5, p: 1, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start' }}>
       {card}
-      {service.children.map((child) => <ServiceNode key={child.id} service={child} selected={selected} dims={dims} onChoose={onChoose} t={t} theme={theme} />)}
+      {service.children.map((child) => <ServiceNode key={child.id} service={child} selected={selected} dims={dims} onChoose={onChoose} onAdd={onAdd} t={t} theme={theme} />)}
+      {onAdd && <AddButton label={t('landscape.addServiceUnder', { name: service.name })} testId={`landscape-add-service-${service.id}`} onClick={() => onAdd({ kind: 'platformService', parentId: service.id })} />}
     </Box>
   )
 }
@@ -607,8 +668,8 @@ function ServiceCard({ service, selected, dims, onChoose, t }: {
   )
 }
 
-function PlatformNode({ platform, selected, dims, onChoose, t, theme }: {
-  platform: LandscapePlatform; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; t: Translate; theme: Theme
+function PlatformNode({ platform, selected, dims, onChoose, onAdd, t, theme }: {
+  platform: LandscapePlatform; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; onAdd: OnAdd; t: Translate; theme: Theme
 }) {
   const key = nodeKey.platform(platform.id)
   const tags = (
@@ -636,7 +697,8 @@ function PlatformNode({ platform, selected, dims, onChoose, t, theme }: {
         <Box component="span" sx={{ fontWeight: 700 }}>{platform.name}</Box>
         {tags}
       </Box>
-      {platform.children.map((child) => <PlatformNode key={child.id} platform={child} selected={selected} dims={dims} onChoose={onChoose} t={t} theme={theme} />)}
+      {platform.children.map((child) => <PlatformNode key={child.id} platform={child} selected={selected} dims={dims} onChoose={onChoose} onAdd={onAdd} t={t} theme={theme} />)}
+      {onAdd && <AddButton label={t('landscape.addPlatformUnder', { name: platform.name })} testId={`landscape-add-platform-${platform.id}`} onClick={() => onAdd({ kind: 'platform', parentId: platform.id })} />}
     </Box>
   )
 }

@@ -105,4 +105,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.legendLeverages': 'stützt sich auf (abgeleitet)',
   'landscape.legendBinds': 'an eine Plattform gebunden',
   'landscape.legendHosting': 'läuft auf',
+  'landscape.addService': 'Einen Dienst hinzufügen',
+  'landscape.addServiceUnder': 'Einen Dienst unter {name} hinzufügen',
+  'landscape.addPlatform': 'Eine Plattform hinzufügen',
+  'landscape.addPlatformUnder': 'Eine Plattform unter {name} hinzufügen',
 }

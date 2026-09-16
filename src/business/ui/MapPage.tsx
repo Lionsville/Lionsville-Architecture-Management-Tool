@@ -45,10 +45,13 @@ import type { LaidOutMap, MapColumn, MapDescribe, MapRow } from '../map'
 import { captureSheet } from '../../widgets/capturePage'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
 import type { FunctionInspectorProps, SheetActions, Supporter } from './FunctionInspector'
+import { InlineFrame } from './SheetPage'
 import type { SheetCaptureOptions, SheetHandle } from './SheetPage'
 
 export type MapPageProps = {
   open: boolean
+  /** Drawn in the tab rather than as a page over the editor (ADR-0016). */
+  inline?: boolean
   model: DesignModel
   /** Absent while the page is closing, or when the map was deleted under it. */
   map: DesignDiagram | undefined
@@ -123,8 +126,9 @@ export function MapPage(props: MapPageProps) {
     : model.elements.find((element) => element.id === selectedId)
   const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
 
+  const Frame = props.inline ? InlineFrame : PageDialog
   return (
-    <PageDialog
+    <Frame
       open={props.open}
       topInset={chrome.topInset}
       onClose={props.onClose}
@@ -134,17 +138,19 @@ export function MapPage(props: MapPageProps) {
         data-testid="map-topbar"
         sx={{
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
+          pl: props.inline ? undefined : `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: !props.inline && bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
         }}
       >
-        <Tooltip title={t('map.close')}>
-          <IconButton size="small" aria-label={t('map.close')} onClick={props.onClose}>
-            <BackIcon />
-          </IconButton>
-        </Tooltip>
+        {!props.inline && (
+          <Tooltip title={t('map.close')}>
+            <IconButton size="small" aria-label={t('map.close')} onClick={props.onClose}>
+              <BackIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{map?.name ?? t('map.page')}</Typography>
         {laidOut && laidOut.rows.length > 0 && (
           <Typography data-testid="map-summary" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
@@ -191,7 +197,7 @@ export function MapPage(props: MapPageProps) {
           ownerOf={props.ownerOf}
         />
       </Box>
-    </PageDialog>
+    </Frame>
   )
 }
 

@@ -108,4 +108,8 @@ export const EN = {
   'landscape.legendLeverages': 'leverages (derived)',
   'landscape.legendBinds': 'binds to one platform',
   'landscape.legendHosting': 'hosted on',
+  'landscape.addService': 'Add a service',
+  'landscape.addServiceUnder': 'Add a service under {name}',
+  'landscape.addPlatform': 'Add a platform',
+  'landscape.addPlatformUnder': 'Add a platform under {name}',
 } as const

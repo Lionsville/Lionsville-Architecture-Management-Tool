@@ -170,3 +170,37 @@ describe('the record on the right', () => {
     expect(screen.getByTestId('landscape-application-wms').hidden).toBe(false)
   })
 })
+
+describe('in the tab (ADR-0016)', () => {
+  it('adds a service or a platform from the bands, filed under a group’s parent', () => {
+    const onAdd = vi.fn()
+    open({ inline: true, onAdd })
+    fireEvent.click(screen.getByTestId('landscape-add-service'))
+    expect(onAdd).toHaveBeenLastCalledWith({ kind: 'platformService' })
+    fireEvent.click(screen.getByTestId('landscape-add-platform-landing-zone'))
+    expect(onAdd).toHaveBeenLastCalledWith({ kind: 'platform', parentId: 'landing-zone' })
+    expect(screen.queryByLabelText('Close the technology landscape')).toBeNull()
+  })
+
+  it('hands what this scope holds to the editor’s selection, and keeps its own record for the rest', () => {
+    const onSelect = vi.fn()
+    open({ inline: true, onSelect })
+    fireEvent.click(screen.getByTestId('landscape-service-containers'))
+    expect(onSelect).toHaveBeenLastCalledWith('containers')
+    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+    fireEvent.click(screen.getByTestId('landscape-application-wms'))
+    expect(onSelect).toHaveBeenLastCalledWith(undefined)
+    expect(screen.getByTestId('landscape-inspector-title').textContent).toBe('Warehouse Management')
+  })
+
+  it('chooses the card the editor selected', () => {
+    open({ inline: true, selectedId: 'kafka' })
+    expect(screen.getByTestId('landscape-lines').querySelectorAll('path').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
+  })
+
+  it('offers nothing to add when read only', () => {
+    open({ inline: true, onAdd: vi.fn(), readOnly: true })
+    expect(screen.queryByTestId('landscape-add-service')).toBeNull()
+  })
+})

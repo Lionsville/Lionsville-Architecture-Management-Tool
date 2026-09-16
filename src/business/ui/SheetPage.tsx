@@ -92,6 +92,11 @@ import { SheetSettingsDialog } from './SheetSettingsDialog'
 
 export type SheetPageProps = {
   open: boolean
+  /**
+   * Drawn in the tab rather than as a page over the editor (ADR-0016): no
+   * dialog, no back button, no window chrome — the tab strip is the way out.
+   */
+  inline?: boolean
   model: DesignModel
   /** Absent while the page is closing, or when the sheet was deleted under it. */
   sheet: DesignDiagram | undefined
@@ -307,8 +312,9 @@ export function SheetPage(props: SheetPageProps) {
     props.onSave({ name: `${fileSafe(sheet.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
   }, [sheet, props.onSave, capture])
 
+  const Frame = props.inline ? InlineFrame : PageDialog
   return (
-    <PageDialog
+    <Frame
       open={props.open}
       topInset={chrome.topInset}
       onClose={props.onClose}
@@ -318,17 +324,19 @@ export function SheetPage(props: SheetPageProps) {
         data-testid="sheet-topbar"
         sx={{
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
+          pl: props.inline ? undefined : `${12 + bar.controlsInset}px`,
+          WebkitAppRegion: !props.inline && bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
           borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
         }}
       >
-        <Tooltip title={t('sheet.close')}>
-          <IconButton size="small" aria-label={t('sheet.close')} onClick={props.onClose}>
-            <BackIcon />
-          </IconButton>
-        </Tooltip>
+        {!props.inline && (
+          <Tooltip title={t('sheet.close')}>
+            <IconButton size="small" aria-label={t('sheet.close')} onClick={props.onClose}>
+              <BackIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{sheet?.name ?? t('sheet.page')}</Typography>
         <Box sx={{ flex: 1 }} />
         {sheet && (
@@ -566,8 +574,13 @@ export function SheetPage(props: SheetPageProps) {
           onClose={() => setExportOpen(false)}
         />
       )}
-    </PageDialog>
+    </Frame>
   )
+}
+
+/** The page in the tab: the same column, with no dialog around it. */
+export function InlineFrame({ children }: { children?: React.ReactNode; open?: boolean; topInset?: number; onClose?(): void; 'aria-label'?: string }) {
+  return <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>{children}</Box>
 }
 
 /**

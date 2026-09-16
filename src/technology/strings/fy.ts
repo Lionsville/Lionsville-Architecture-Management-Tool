@@ -105,4 +105,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'landscape.legendLeverages': 'stipet op (ôflaat)',
   'landscape.legendBinds': 'bûn oan ien platfoarm',
   'landscape.legendHosting': 'draait op',
+  'landscape.addService': 'In tsjinst tafoegje',
+  'landscape.addServiceUnder': 'In tsjinst tafoegje ûnder {name}',
+  'landscape.addPlatform': 'In platfoarm tafoegje',
+  'landscape.addPlatformUnder': 'In platfoarm tafoegje ûnder {name}',
 }
