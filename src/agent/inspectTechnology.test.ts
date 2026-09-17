@@ -37,7 +37,7 @@ describe('the report', () => {
     expect(report.kind).toBe('technology')
     expect(report.groups.some).toEqual([{
       scope: undefined,
-      applications: [{ id: 'wms', name: 'WMS', known: true, uses: ['containers', 'postgres'], binds: [], hostedOn: ['openshift'] }],
+      applications: [{ id: 'wms', name: 'WMS', known: true, uses: ['containers', 'postgres'], implied: [], binds: [], hostedOn: ['openshift'] }],
     }])
     expect(report.services.some.map((one) => [one.id, one.depth, one.shared, one.consumers])).toEqual([
       ['containers', 0, true, 1], ['data', 0, false, 0], ['postgres', 1, false, 1],

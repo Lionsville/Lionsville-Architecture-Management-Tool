@@ -26,11 +26,11 @@ export type TechnologyReport = {
   diagramId: string
   name: string
   kind: 'technology'
-  groups: { total: number; some: { scope: string | undefined; applications: { id: ElementId; name: string; known: boolean; uses: ElementId[]; binds: ElementId[]; hostedOn: ElementId[] }[] }[] }
+  groups: { total: number; some: { scope: string | undefined; applications: { id: ElementId; name: string; known: boolean; uses: ElementId[]; implied: ElementId[]; binds: ElementId[]; hostedOn: ElementId[] }[] }[] }
   services: { total: number; some: { id: ElementId; name: string; depth: number; shared: boolean; consumers: number; realisedBy: ElementId[] }[] }
   platforms: { total: number; some: { id: ElementId; name: string; depth: number; archetype: LandscapePlatform['archetype']; outside: boolean; realises: ElementId[]; applications: number }[] }
   /** Every line the page would draw with the service band open and hosting shown, as rows. */
-  edges: { total: number; some: { from: string; to: string; kind: LandscapeEdge['kind']; count: number; via?: ElementId[] }[] }
+  edges: { total: number; some: { from: string; to: string; kind: LandscapeEdge['kind']; count: number; via?: ElementId[]; implied?: true }[] }
 }
 
 export function inspectTechnology(model: Model, diagram: Diagram, limit = TECHNOLOGY_LIMIT): TechnologyReport {
@@ -60,7 +60,7 @@ export function inspectTechnology(model: Model, diagram: Diagram, limit = TECHNO
       total: page.groups.length,
       some: page.groups.slice(0, limit).map((group) => ({
         scope: group.label,
-        applications: group.applications.slice(0, limit).map(({ id, name, known, uses, binds, hostedOn }) => ({ id, name, known, uses, binds, hostedOn })),
+        applications: group.applications.slice(0, limit).map(({ id, name, known, uses, implied, binds, hostedOn }) => ({ id, name, known, uses, implied, binds, hostedOn })),
       })),
     },
     services: { total: services.length, some: services.slice(0, limit) },

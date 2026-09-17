@@ -112,4 +112,7 @@ export const EN = {
   'landscape.addServiceUnder': 'Add a service under {name}',
   'landscape.addPlatform': 'Add a platform',
   'landscape.addPlatformUnder': 'Add a platform under {name}',
+  'landscape.implied': 'Implied by hosting',
+  'landscape.impliedNote': 'implied by hosting',
+  'landscape.legendImplied': 'uses (implied by hosting)',
 } as const

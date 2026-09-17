@@ -109,4 +109,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'landscape.addServiceUnder': 'Een dienst toevoegen onder {name}',
   'landscape.addPlatform': 'Een platform toevoegen',
   'landscape.addPlatformUnder': 'Een platform toevoegen onder {name}',
+  'landscape.implied': 'Impliciet door hosting',
+  'landscape.impliedNote': 'impliciet door hosting',
+  'landscape.legendImplied': 'gebruikt (impliciet door hosting)',
 }

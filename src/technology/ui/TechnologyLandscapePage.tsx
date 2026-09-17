@@ -330,7 +330,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                 {paths.map((drawn) => (
                   <g key={drawn.key}>
                     <path d={drawn.d} fill="none" stroke={strokeOf(drawn.edge.kind, theme)} strokeWidth={drawn.edge.from === focus || drawn.edge.to === focus ? 2.2 : 1.4}
-                      strokeDasharray={dashOf(drawn.edge.kind)} opacity={0.85}>
+                      strokeDasharray={drawn.edge.implied ? '1 3' : dashOf(drawn.edge.kind)} opacity={0.85}>
                       <title>{drawn.title}</title>
                     </path>
                     {drawn.edge.count > 1 && (
@@ -405,6 +405,10 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
             {t(LEGEND[kind])}
           </Box>
         ))}
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+          <svg width={26} height={4}><line x1={0} y1={2} x2={26} y2={2} stroke={strokeOf('uses', theme)} strokeWidth={2} strokeDasharray="1 3" /></svg>
+          {t('landscape.legendImplied')}
+        </Box>
       </Box>
     </Frame>
   )
@@ -510,7 +514,7 @@ function drawEdges(board: HTMLElement, edges: readonly LandscapeEdge[]): Drawn[]
       d: `M${one.sx},${one.sy} C${one.sx},${one.sy + dy} ${one.tx},${one.ty - dy} ${one.tx},${one.ty}`,
       mid: { x: (one.sx + one.tx) / 2, y: (one.sy + one.ty) / 2 },
       edge: one.edge,
-      title: `${one.edge.kind}${one.edge.via ? ` · ${one.edge.via.join(', ')}` : ''}${one.edge.count > 1 ? ` × ${one.edge.count}` : ''}`,
+      title: `${one.edge.kind}${one.edge.implied ? ' · implied' : ''}${one.edge.via ? ` · ${one.edge.via.join(', ')}` : ''}${one.edge.count > 1 ? ` × ${one.edge.count}` : ''}`,
     }
   })
 }
@@ -604,7 +608,7 @@ function ApplicationCard({ app, colour, selected, dims, hidden, onChoose, nameOf
   onChoose(key: NodeKey): void; nameOf(id: ElementId): string; t: Translate
 }) {
   const key = nodeKey.application(app.id)
-  const uses = app.uses.length + app.binds.length
+  const uses = app.uses.length + app.implied.length + app.binds.length
   return (
     <Box data-node={key} data-testid={`landscape-application-${app.id}`} {...cardData(key, dims, hidden)} onClick={(event) => { event.stopPropagation(); onChoose(key) }}
       sx={{ ...cardSx(key, selected, dims, hidden), width: 144, bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderTop: 3, borderTopColor: colour, borderRadius: 1, px: 0.875, py: 0.5 }}>
@@ -736,6 +740,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
         <>
           <Caption text={t('landscape.hostedOn')} />{list(app.hostedOn)}
           <Caption text={t('landscape.uses')} />{list(app.uses)}
+          {app.implied.length > 0 && <><Caption text={t('landscape.implied')} />{list(app.implied)}</>}
           {app.binds.length > 0 && <><Caption text={t('landscape.binds')} />{list(app.binds)}</>}
           <Caption text={t('landscape.leverages')} />
           {list(stands.map((edge) => edge.to.slice('platform:'.length)), (of) => {
@@ -751,7 +756,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
     if (group) {
       title = group.label ?? t('landscape.thisScope')
       const used = new Map<ElementId, number>()
-      for (const app of group.applications) for (const of of app.uses) used.set(of, (used.get(of) ?? 0) + 1)
+      for (const app of group.applications) for (const of of [...app.uses, ...app.implied]) used.set(of, (used.get(of) ?? 0) + 1)
       body = (
         <>
           <Caption text={t('landscape.applications')} />{list(group.applications.map((app) => app.id))}
@@ -766,13 +771,17 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
     if (service) {
       title = service.name
       report = onOpenServiceReport && held.has(id) ? () => onOpenServiceReport(id) : undefined
-      const users = applicationList(landscape).filter((app) => app.uses.includes(id))
+      const users = applicationList(landscape).filter((app) => app.uses.includes(id) || app.implied.includes(id))
       body = (
         <>
           {service.summary && <Typography sx={{ fontSize: 12.5, mb: 1 }}>{service.summary}</Typography>}
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>{lifecycleTag(service.lifecycle, t)}{service.shared && <Tag text={t('landscape.shared')} tone="service" />}</Box>
           <Caption text={t('landscape.realisedBy')} />{list(service.realisedBy)}
-          <Caption text={t('landscape.usedBy')} />{list(users.map((app) => app.id), (of) => users.find((app) => app.id === of)?.where)}
+          <Caption text={t('landscape.usedBy')} />
+          {list(users.map((app) => app.id), (of) => {
+            const app = users.find((one) => one.id === of)
+            return [app?.where, app?.implied.includes(id) ? t('landscape.impliedNote') : undefined].filter(Boolean).join(' · ') || undefined
+          })}
         </>
       )
     }

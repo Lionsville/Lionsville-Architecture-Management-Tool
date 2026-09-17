@@ -109,4 +109,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'landscape.addServiceUnder': 'In tsjinst tafoegje ûnder {name}',
   'landscape.addPlatform': 'In platfoarm tafoegje',
   'landscape.addPlatformUnder': 'In platfoarm tafoegje ûnder {name}',
+  'landscape.implied': 'Ymplisyt troch hosting',
+  'landscape.impliedNote': 'ymplisyt troch hosting',
+  'landscape.legendImplied': 'brûkt (ymplisyt troch hosting)',
 }
