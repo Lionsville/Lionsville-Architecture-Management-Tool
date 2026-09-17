@@ -97,7 +97,7 @@ export type { DatedPhase } from './lifecycle'
 export { boardsDrawing } from './drawnOn'
 
 /** What a container diagram holds, and what it draws once an interface lands. */
-export { hoistedEnd, landedInterfaces } from './containerDiagram'
+export { hoistedEnd, landedInterfaces, removeContainerDiagram } from './containerDiagram'
 
 /** One parent, always, and the loop refused before it is written (ADR-0012 §3, ADR-0014). */
 export { wouldCycle } from './tree'

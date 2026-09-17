@@ -7,6 +7,10 @@
  * *another* application does not belong here, its parent application does. That
  * is an agreement about the format, not screen work.
  */
+import { transaction } from './commands'
+import type { Command } from './commands'
+import { acceptImplied, impliedInterfaces } from './implied'
+import type { Held } from './refines'
 import type { DesignDiagram, DesignElement, ElementId, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 
@@ -85,6 +89,70 @@ export function seedContainerDiagram(
     // looked yet, so the editor lays them out on first open (ADR-0012 §6).
     geometry: { nodes: [], needsLayout: true },
   }
+}
+
+
+/**
+ * Taking the container diagram off an application, and leaving the application
+ * standing.
+ *
+ * The inverse of {@link seedContainerDiagram}, and deliberately not the same
+ * thing as deleting the application: somebody who has decided they do not want
+ * to model the inside of this system wants the detail gone, not the system.
+ * Deleting the application is what `deleteElement` does, and it takes this
+ * diagram with it — this is the other direction, and it is the one the boards
+ * table asks for.
+ *
+ * Three things, in one step, because they are one decision:
+ *
+ * 1. **The interfaces move up first.** A container line that refined nothing
+ *    was carrying an interface the landscape never heard about (`implied.ts`),
+ *    and dropping the containers would drop it with them — so every interface
+ *    those lines imply is written as a real application line before anything
+ *    is removed. A line that had already landed needs nothing: its interface
+ *    is on the landscape already, and only the landing goes.
+ * 2. **The containers go**, and the reducer's own cascade takes their lines,
+ *    their memberships and their placements with them.
+ * 3. **The diagram goes.**
+ *
+ * The order is what makes it safe rather than tidy: the writer refuses a
+ * landing on a row that is not there, and a relation deleted in step 2 cannot
+ * be landed in step 1 afterwards.
+ *
+ * `newId` is called once per interface written, for the same reason
+ * `seedContainerDiagram` takes its id from outside.
+ */
+export function removeContainerDiagram(
+  model: HostModel,
+  diagramId: string,
+  newId: () => string,
+): Command | undefined {
+  const diagram = model.diagrams.find((d) => d.id === diagramId)
+  if (!diagram || diagram.kind !== 'container') return undefined
+  const drop: Command = { type: 'diagram.delete', id: diagramId }
+  const applicationId = diagram.applicationElementId
+  if (applicationId === undefined) return drop
+
+  const byId = new Map(model.elements.map((e) => [e.id, e]))
+  const held: Held = (id) => byId.get(id)
+  const containers = model.elements
+    .filter((e) => e.kind === 'component' && e.parentId === applicationId)
+    .map((e) => e.id)
+  if (containers.length === 0) return drop
+  const going = new Set(containers)
+
+  // Only the interfaces this application's containers were carrying. Another
+  // pair's unrefined lines are somebody else's finding and stay one: accepting
+  // them here would write rows nobody asked for, on a screen about one view.
+  const promoted = impliedInterfaces(model.relations, held)
+    .filter((row) => row.relations.some((line) => going.has(line.sourceId) || going.has(line.targetId)))
+    .map((row) => acceptImplied(row, newId(), (id) => byId.get(id)?.name ?? id))
+
+  return transaction([
+    ...promoted,
+    ...containers.map((id): Command => ({ type: 'element.delete', id })),
+    drop,
+  ])
 }
 
 

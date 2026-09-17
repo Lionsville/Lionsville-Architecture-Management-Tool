@@ -30,6 +30,7 @@ import {
 } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
+import { apply, fromArrays, removeContainerDiagram, toArrays } from '../../model'
 import type { DesignDiagram } from '../../model'
 import { isBoardKind } from '../../model/placement'
 import { normaliseLinks } from '../../projects/links'
@@ -345,12 +346,25 @@ export function useOrganisation({
     void (async () => {
       const held = await scopes.load(path)
       if (!held) return
-      const diagrams = held.model.diagrams.filter((diagram) => diagram.id !== board.id)
+      // A container view is the DETAIL of an application, not the application:
+      // the containers go, the interfaces they were carrying are written on the
+      // landscape first, and the application stays where it was drawn
+      // (`model/containerDiagram.ts`). A landscape has no such insides, so it
+      // is the plain drop it always was.
+      const taken = new Set(idsIn(held.model))
+      const command = removeContainerDiagram(held.model, board.id, () => claimKey('interface', taken))
+        ?? { type: 'diagram.delete' as const, id: board.id }
+      const result = apply(fromArrays(held.model), command)
+      if (!result.ok) {
+        notify(s(result.reason), 'error')
+        return
+      }
+      const model = toArrays(result.model)
       const next: ScopeSnapshot = {
         ...held,
-        model: { ...held.model, diagrams },
+        model,
         activeDiagramId: held.activeDiagramId === board.id
-          ? diagrams[0]?.id ?? ''
+          ? model.diagrams[0]?.id ?? ''
           : held.activeDiagramId,
       }
       await scopes.save(next)

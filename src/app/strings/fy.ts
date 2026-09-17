@@ -77,7 +77,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.deleteLandscapeBody':
     'De pleatsings, groepen en rûtes fan dit lânskip geane ferlern. De eleminten sels bliuwe yn it model, en containeroansichten bliuwe stean.',
   'shell.deleteContainerBody':
-    'De pleatsings en rûtes fan dit containeroansicht geane ferlern. De eleminten sels bliuwe yn it model.',
+    'De containers op dit oansicht geane mei, en de keppelflakken dy’t se droegen ferhúzje nei de applikaasje. De applikaasje sels bliuwt op it lânskip.',
   'shell.sourceFolder': 'Map · {name}',
   'shell.sourceBrowser': 'Yn dizze brouwer',
   'shell.sourceMemory': 'Nearne bewarre',

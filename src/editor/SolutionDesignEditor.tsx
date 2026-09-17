@@ -53,6 +53,7 @@ import {
 } from '../layout/elkLayout';
 import { aspectConfigFor } from '../model/aspects';
 import {
+  deletableSelection,
   deletionSummary,
   needsDeleteConfirmation,
   type DeletionSummary,
@@ -497,8 +498,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
   );
 
   const requestDeleteSelection = useCallback(
-    (selection: Selection) => {
+    (asked: Selection) => {
       if (readOnly) return;
+      // Dropped before it is counted, so the sentence says what will actually
+      // go: a container view's boundary application is not its contents.
+      const selection = deletableSelection(asked, activeDiagram);
       const summary = deletionSummary(state.model, selection);
       if (!needsDeleteConfirmation(summary)) {
         state.actions.deleteSelection(selection);
@@ -506,7 +510,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       }
       setConfirmDelete({ summary, run: () => state.actions.deleteSelection(selection) });
     },
-    [readOnly, state.model, state.actions],
+    [readOnly, state.model, state.actions, activeDiagram],
   );
 
   // --- palette (docked left panel, D1) -------------------------------------

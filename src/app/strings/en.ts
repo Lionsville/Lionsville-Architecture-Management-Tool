@@ -123,7 +123,7 @@ export const EN = {
   'shell.deleteLandscapeBody':
     'The placements, groups and routes of this landscape are lost. The elements themselves stay in the model, and container views remain.',
   'shell.deleteContainerBody':
-    'The placements and routes of this container view are lost. The elements themselves stay in the model.',
+    'The containers on this view go with it, and the interfaces they carried move up to the application. The application itself stays on the landscape.',
   /**
    * What you are working from — the first thing on the bar, because it was
    * the one thing the bar did not say (ADR-0005). A folder by its name: the

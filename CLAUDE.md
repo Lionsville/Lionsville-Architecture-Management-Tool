@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **3989 tests** and one of every config. The
+One codebase, in modules, with **4006 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3989 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4006 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -599,7 +599,7 @@ identifiers is still a list of a customer's identifiers.
 | What a thing IS (ADR-0012 §4, ADR-0013, ADR-0014) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform` · `platformService`; a platform carries a `platformArchetype` (`place` · `service` · `network`, `service` when unsaid), a service may be `shared` |
 | Where an interface arrives (ADR-0013) | a container-level flow **`refines`** the application-level one it is part of — ends under ends, one level deep. The landscape draws the interface, the container diagram draws the landings and no line to the boundary for one that has landed; `protocol` and `technology` live on the landing |
 | Where something runs (ADR-0013) | a **container** is `hostedOn` a platform; an application says so itself only when it has no containers, and its answer otherwise is the **roll-up** over them |
-| What an application leverages (ADR-0014, ADR-0017) | derived, never stored: the services it `uses`, itself or through its containers, and the platforms that `realise` each — and, marked `implied`, the services realised by what it is `hostedOn` or anything above it — `model/leverage.ts`; the record's *Leverages* line and `element.describe`'s `leverages` |
+| What an application leverages (ADR-0014) | derived, never stored: the services it `uses`, itself or through its containers, and the platforms that `realise` each — `model/leverage.ts`; the record's *Leverages* line and `element.describe`'s `leverages` |
 | Offered beyond its team (ADR-0014) | `shared` on a service, typed and left as typed; where nobody typed it, a service `assigned` to one actor and used by another team's application is `check.offeredNotShared`, a finding and never a value |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
@@ -1138,12 +1138,3 @@ technology landscape, whose palette offers the layer's two kinds, made
 with no placement and edited with the inspector every kind has. The three
 hooks hold no state of their own any more; which view is up is the
 session's. The platform scope's one view is its landscape.
-
-Then hosting started to **imply the service** (`docs/decisions/0017`). A
-container on a cloud leverages the cloud service the cloud realises, whether
-or not anybody wrote a `uses` row: `impliedServicesOf` reads it through the
-hosting chain, the record says *(implied by hosting)*, the landscape draws
-it dotted and counts it. And the pickers know the organisation: *Hosted on*
-lists every platform another scope answers for, and choosing one writes
-the stand-in in the same step as the row; the library beside the palette
-lists the tree's platforms and services after its applications.

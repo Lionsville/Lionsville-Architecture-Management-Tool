@@ -69,6 +69,17 @@ describe('the rule a landing has to satisfy', () => {
     expect(refinementRefusal(flow('r1', 'wms-api', 'orders'), landscape, held)).toBe('ends')
   })
 
+  it('holds either way round once the interface says it runs both ways', () => {
+    // Which is the same reading `candidateInterfaces` offers, and what
+    // `acceptImplied` needs to land the lines that made a pair two-way in the
+    // first place: without it the inspector offers a landing the writer refuses.
+    const twoWay = { ...landscape, isBidirectional: true }
+    expect(refinementRefusal(flow('r1', 'orders', 'wms-api'), twoWay, held)).toBeUndefined()
+    expect(refinementRefusal(flow('r2', 'wms-api', 'orders-ui'), twoWay, held)).toBeUndefined()
+    // Still about the ends, not a free pass: Billing is neither of them.
+    expect(refinementRefusal(flow('r3', 'billing', 'wms-api'), twoWay, held)).toBe('ends')
+  })
+
   it('refuses a component of an application the interface does not name', () => {
     expect(refinementRefusal(flow('r1', 'orders', 'orders-ui'), landscape, held)).toBe('ends')
     expect(refinementRefusal(flow('r1', 'billing', 'wms-api'), landscape, held)).toBe('ends')

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { connection, element, model } from './testFixtures';
 import {
+  deletableSelection,
   describeDeletion,
   deletionSummary,
   needsDeleteConfirmation,
@@ -19,6 +20,35 @@ const summary = (overrides: Partial<DeletionSummary> = {}): DeletionSummary => (
   cascadingConnections: 0,
   standIns: 0,
   ...overrides,
+});
+
+/**
+ * The one element a delete may never take off a container diagram: the
+ * application the diagram is about. Every other guard against this is on a
+ * path that carries ONE element; a selection walks straight past them.
+ */
+describe('deletableSelection', () => {
+  const view = { kind: 'container' as const, applicationElementId: 'e1' };
+  const whole = { elementIds: ['e1', 'e2'], connectionIds: ['c1'], domainGroups: ['Sales'] };
+
+  it('drops the boundary application and keeps the rest of the gesture', () => {
+    expect(deletableSelection(whole, view)).toEqual({
+      elementIds: ['e2'], connectionIds: ['c1'], domainGroups: ['Sales'],
+    });
+  });
+
+  it('is the same selection everywhere else, and says so by identity', () => {
+    expect(deletableSelection(whole, { kind: 'layer7' })).toBe(whole);
+    expect(deletableSelection(whole, undefined)).toBe(whole);
+    expect(deletableSelection(whole, { kind: 'container' })).toBe(whole);
+    const elsewhere = { ...whole, elementIds: ['e2'] };
+    expect(deletableSelection(elsewhere, view)).toBe(elsewhere);
+  });
+
+  it('may be asked twice: the path that counts and the path that writes both do', () => {
+    const once = deletableSelection(whole, view);
+    expect(deletableSelection(once, view)).toBe(once);
+  });
 });
 
 describe('deletionSummary', () => {

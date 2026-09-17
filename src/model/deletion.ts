@@ -1,5 +1,5 @@
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
-import type { DesignModel, ElementId } from './types';
+import type { DesignDiagram, DesignModel, ElementId } from './types';
 
 /**
  * What a delete is about to take away. Counted here, phrased here, and decided
@@ -38,6 +38,36 @@ export interface DeletionSummary {
    * number is drawn.
    */
   standIns: number;
+}
+
+/**
+ * The same selection, minus the one element this diagram may never lose: the
+ * application its container view is about.
+ *
+ * A container diagram's boundary box IS the application, so select-all, a
+ * rubber band over the whole board and Cut all hand the application to a delete
+ * that would take it out of the model — and out of the landscape, and take
+ * every interface ending on it along (`reducer.deleteElement`). The menu's
+ * *Remove from diagram* and the single-element dialog have both said no to that
+ * since they existed; this is the same no, said where a selection passes.
+ *
+ * Dropped from the selection rather than refused whole, because the rest of the
+ * gesture is perfectly meaningful — clearing a container view's contents is
+ * exactly what somebody selecting all of it is asking for, and the boundary is
+ * not contents. Removing the view itself is `removeContainerDiagram`, from the
+ * boards table.
+ *
+ * Generic in the selection so the editor's own `Selection` survives the trip,
+ * and idempotent, so the path that summarises and the path that writes may both
+ * ask.
+ */
+export function deletableSelection<S extends DeletionSelection>(
+  selection: S,
+  diagram: Pick<DesignDiagram, 'kind' | 'applicationElementId'> | undefined,
+): S {
+  const boundary = diagram?.kind === 'container' ? diagram.applicationElementId : undefined;
+  if (boundary === undefined || !selection.elementIds.includes(boundary)) return selection;
+  return { ...selection, elementIds: selection.elementIds.filter((id) => id !== boundary) };
 }
 
 export function deletionSummary(model: DesignModel, selection: DeletionSelection): DeletionSummary {

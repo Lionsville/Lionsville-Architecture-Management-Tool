@@ -77,7 +77,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.deleteLandscapeBody':
     'De plaatsingen, groepen en routes van dit landschap gaan verloren. De elementen zelf blijven in het model, en containeraanzichten blijven staan.',
   'shell.deleteContainerBody':
-    'De plaatsingen en routes van dit containeraanzicht gaan verloren. De elementen zelf blijven in het model.',
+    'De containers op dit aanzicht gaan mee, en de koppelvlakken die zij droegen verhuizen naar de applicatie. De applicatie zelf blijft op het landschap.',
   'shell.sourceFolder': 'Map · {name}',
   'shell.sourceBrowser': 'In deze browser',
   'shell.sourceMemory': 'Nergens bewaard',

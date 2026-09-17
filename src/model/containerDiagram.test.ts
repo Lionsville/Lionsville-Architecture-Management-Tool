@@ -8,8 +8,12 @@ import { laidOut } from '../model/testFixtures';
 import type { DesignElement, Relation } from '.'
 import type { HostModel } from './fromInterchange'
 import {
-  containerDiagramMembers, findContainerDiagram, hoistedEnd, landedInterfaces, seedContainerDiagram,
+  containerDiagramMembers, findContainerDiagram, hoistedEnd, landedInterfaces,
+  removeContainerDiagram, seedContainerDiagram,
 } from './containerDiagram'
+import { apply } from './reducer'
+import { fromArrays, toArrays } from './normalised'
+import { placedNodes } from './placement'
 
 function el(id: string, kind: DesignElement['kind'], over: Partial<DesignElement> = {}): DesignElement {
   return { id, kind, name: id, lifecycle: 'live', isManaged: true, aspects: {}, ...over }
@@ -164,5 +168,110 @@ describe('an interface landing on a container diagram', () => {
     const relations: Relation[] = [{ ...link('r1', 'reisinfo', 'crews-api'), refines: 'c9' }]
     expect([...landedInterfaces(relations, held, view, new Set(['crews', 'reisinfo']))]).toEqual([])
     expect([...landedInterfaces(relations, held, { kind: 'layer7' }, placed)]).toEqual([])
+  })
+})
+
+
+/**
+ * The other direction (`removeContainerDiagram`): somebody has decided not to
+ * model the inside of this system after all. The detail goes; the system stays
+ * on the landscape, and so does everything the landscape knew about it —
+ * including the interfaces only the container lines were carrying.
+ *
+ * Run through the reducer rather than read off the command, because what makes
+ * this safe is the ORDER: an interface written after its landings were deleted
+ * would be an interface with nothing on it, and a landing written after its
+ * interface was deleted is a refusal that takes the whole step with it.
+ */
+describe('removing a container diagram', () => {
+  /** Crews and Reisinfo on the landscape, Crews\'s two containers on a view. */
+  function withView(over: Partial<HostModel> = {}): HostModel {
+    const base = model({
+      diagrams: [laidOut({
+        id: 'l7',
+        kind: 'layer7',
+        name: 'Landschap',
+        placements: [
+          { id: 'crews', zone: 'landscape', x: 100, y: 100 },
+          { id: 'reisinfo', zone: 'landscape', x: 400, y: 100 },
+        ],
+      })],
+      ...over,
+    })
+    const view = seedContainerDiagram(base, 'crews', { id: 'cd', name: (name) => `${name} · containers` })!
+    return { ...base, diagrams: [...base.diagrams, view] }
+  }
+
+  function removed(held: HostModel, id = 'cd'): HostModel {
+    const command = removeContainerDiagram(held, id, () => 'i1')
+    if (!command) throw new Error('nothing to do')
+    const result = apply(fromArrays(held), command)
+    if (!result.ok) throw new Error(result.reason)
+    return toArrays(result.model)
+  }
+
+  it('takes the view and the containers, and leaves the application where it was drawn', () => {
+    const after = removed(withView())
+    expect(after.diagrams.map((d) => d.id)).toEqual(['l7'])
+    expect(after.elements.map((e) => e.id)).not.toContain('crews-api')
+    expect(after.elements.map((e) => e.id)).not.toContain('crews-ui')
+    expect(after.elements.map((e) => e.id)).toContain('crews')
+    expect(placedNodes(after.diagrams[0]).map((p) => p.id)).toContain('crews')
+  })
+
+  it('leaves the application\'s own lines alone: deleting it is what takes those', () => {
+    // `c2` ends on Crews itself, not on a container of it.
+    expect(removed(withView()).relations.map((r) => r.id)).toContain('c2')
+  })
+
+  it('writes the interface the container lines were carrying onto the two applications', () => {
+    const after = removed(withView())
+    expect(after.relations.find((r) => r.id === 'i1')).toMatchObject({
+      type: 'flow', sourceId: 'crews', targetId: 'reisinfo',
+    })
+    // And the container line itself went with the container it was drawn from.
+    expect(after.relations.map((r) => r.id)).not.toContain('c1')
+  })
+
+  it('writes nothing for a line that had already landed: its interface is on the landscape', () => {
+    const landed = withView({
+      relations: [
+        link('i0', 'crews', 'reisinfo'),
+        { ...link('c1', 'crews-api', 'reisinfo-api'), refines: 'i0' },
+      ],
+    })
+    const after = removed(landed)
+    expect(after.relations.map((r) => r.id)).toEqual(['i0'])
+    expect(after.relations[0].refines).toBeUndefined()
+  })
+
+  it('carries a two-way pair up as one two-way interface', () => {
+    const both = withView({
+      relations: [
+        link('c1', 'crews-api', 'reisinfo-api'),
+        link('c3', 'reisinfo-api', 'crews-ui'),
+      ],
+    })
+    expect(removed(both).relations).toEqual([
+      expect.objectContaining({ id: 'i1', sourceId: 'crews', targetId: 'reisinfo', isBidirectional: true }),
+    ])
+  })
+
+  it('leaves another pair\'s unrefined lines to their own finding', () => {
+    const elsewhere = withView({
+      relations: [link('c4', 'reisinfo-api', 'losstaand')],
+    })
+    const after = removed(elsewhere)
+    expect(after.relations.map((r) => r.id)).toEqual(['c4'])
+    expect(after.relations[0].refines).toBeUndefined()
+  })
+
+  it('is the plain drop where the application has no containers, and nothing at all for a landscape', () => {
+    const bare = withView({
+      elements: model().elements.filter((e) => e.kind !== 'component' || e.parentId !== 'crews'),
+    })
+    expect(removeContainerDiagram(bare, 'cd', () => 'i1')).toEqual({ type: 'diagram.delete', id: 'cd' })
+    expect(removeContainerDiagram(withView(), 'l7', () => 'i1')).toBeUndefined()
+    expect(removeContainerDiagram(withView(), 'nope', () => 'i1')).toBeUndefined()
   })
 })

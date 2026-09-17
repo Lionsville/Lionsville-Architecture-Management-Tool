@@ -80,14 +80,15 @@ export type RefinementRefusal = 'ends' | 'level'
  * Both ends have to sit under the interface's ends, each under its own:
  * a container line from the WMS's API to Order management is part of the
  * interface from the WMS to Order management, and the same two containers
- * the other way round are part of the interface the other way round. A line
- * that already refines something may not be refined in turn — an interface
- * lands once, and a chain would make "which landscape line is this" a walk
- * rather than a read.
+ * the other way round are part of the interface the other way round — unless
+ * the interface says it runs both ways, which is precisely the sentence that
+ * makes either direction part of it. A line that already refines something may
+ * not be refined in turn — an interface lands once, and a chain would make
+ * "which landscape line is this" a walk rather than a read.
  */
 export function refinementRefusal(
   refining: Pick<Relation, 'sourceId' | 'targetId'>,
-  refined: Pick<Relation, 'sourceId' | 'targetId' | 'refines'>,
+  refined: Pick<Relation, 'sourceId' | 'targetId' | 'refines' | 'isBidirectional'>,
   held: Held,
 ): RefinementRefusal | undefined {
   if (refined.refines !== undefined) return 'level'
@@ -96,8 +97,16 @@ export function refinementRefusal(
     const element = held(end)
     return element?.kind === 'component' && element.parentId === over
   }
-  if (!under(refining.sourceId, refined.sourceId) || !under(refining.targetId, refined.targetId)) return 'ends'
-  return undefined
+  const sitsUnder = (source: ElementId, target: ElementId) =>
+    under(refining.sourceId, source) && under(refining.targetId, target)
+  if (sitsUnder(refined.sourceId, refined.targetId)) return undefined
+  // A two-way interface answers EITHER way, which is what saying it runs both
+  // ways means — the same reading `candidateInterfaces` already offers below.
+  // Without this the inspector offers a landing the writer then refuses, and
+  // `acceptImplied` cannot land the lines that made it two-way in the first
+  // place.
+  if (refined.isBidirectional === true && sitsUnder(refined.targetId, refined.sourceId)) return undefined
+  return 'ends'
 }
 
 /** The containers of one application that an interface could land on. */

@@ -34,6 +34,7 @@ import { clampCanvasSize, clampZoneSize, RESIZABLE_ZONES } from '../model/zones'
 import { allowedKindsOn, canChangeKind, placementForKind } from '../model/kindChange';
 import { nodeFigure } from '../model/kinds';
 import { candidateInterfaces, isContainerLine, landedEnd, landingRow } from '../model/refines';
+import { deletableSelection } from '../model/deletion';
 import type { ColourBy } from '../model/overlay';
 
 /**
@@ -1142,10 +1143,14 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         setSelection(EMPTY_SELECTION);
       },
 
-      deleteSelection(selection) {
+      deleteSelection(asked) {
+        const diagram = currentDiagram();
+        // The boundary application never goes with the contents, whichever
+        // gesture handed it over — Cut reaches here without passing the
+        // confirmation that already dropped it (`model/deletion.ts`).
+        const selection = deletableSelection(asked, diagram);
         if (isSelectionEmpty(selection)) return;
         const model = currentModel();
-        const diagram = currentDiagram();
         const held = new Set(model.elements.map((e) => e.id));
         const doomed = selection.elementIds.filter((id) => held.has(id));
         const gone = new Set(doomed);

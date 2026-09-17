@@ -77,7 +77,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.deleteLandscapeBody':
     'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containeransichten bleiben bestehen.',
   'shell.deleteContainerBody':
-    'Die Platzierungen und Routen dieser Containeransicht gehen verloren. Die Elemente selbst bleiben im Modell.',
+    'Die Container dieser Ansicht gehen mit, und die Schnittstellen, die sie trugen, wandern auf die Anwendung. Die Anwendung selbst bleibt auf der Landschaft.',
   'shell.sourceFolder': 'Ordner · {name}',
   'shell.sourceBrowser': 'In diesem Browser',
   'shell.sourceMemory': 'Nirgends gespeichert',

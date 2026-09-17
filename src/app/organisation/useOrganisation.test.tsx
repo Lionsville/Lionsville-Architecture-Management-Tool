@@ -212,6 +212,44 @@ describe('useOrganisation', () => {
    * landscape never reaches it; its home is where it goes. The active board
    * moves on, so the scope is not entered next on a board that is not there.
    */
+  /**
+   * The detail goes, the application stays, and the interface its container
+   * lines were carrying is written on the landscape rather than dropped with
+   * them (`model/containerDiagram.ts`). Deleting the application is the other
+   * gesture, and it is the one that takes this view with it.
+   */
+  it('takes the containers with the view, and carries their interface up to the application', async () => {
+    const { held, store } = mount([{
+      path: 'retail',
+      model: {
+        name: 'Retail',
+        elements: [
+          { id: 'erp', kind: 'application', name: 'ERP', lifecycle: 'live', isManaged: true, aspects: {} },
+          { id: 'crm', kind: 'application', name: 'CRM', lifecycle: 'live', isManaged: true, aspects: {} },
+          { id: 'erp-api', kind: 'component', parentId: 'erp', name: 'API', lifecycle: 'live', isManaged: true, aspects: {} },
+        ],
+        relations: [{ id: 'x1', type: 'flow', sourceId: 'erp-api', targetId: 'crm', label: 'orders' }],
+        diagrams: [
+          { id: 'l7', kind: 'layer7', name: 'Now', members: [{ id: 'erp' }, { id: 'crm' }], geometry: { nodes: [] } },
+          { id: 'cd', kind: 'container', name: 'ERP', applicationElementId: 'erp',
+            members: [{ id: 'erp' }, { id: 'erp-api' }, { id: 'crm' }], geometry: { nodes: [] } },
+        ],
+      },
+      activeDiagramId: 'cd', logoLibrary: [],
+    }])
+    await settle()
+    act(() => held().askDeleteBoard('retail', { id: 'cd', name: 'ERP' }))
+    await act(async () => { held().confirmDeleteBoard(); await Promise.resolve() })
+    await settle()
+    const retail = await store.load('retail')
+    expect(retail?.model.diagrams.map((d) => d.id)).toEqual(['l7'])
+    expect(retail?.model.elements.map((e) => e.id)).toEqual(['erp', 'crm'])
+    // The container line went with its container; what it meant did not.
+    expect(retail?.model.relations).toEqual([
+      expect.objectContaining({ type: 'flow', sourceId: 'erp', targetId: 'crm', label: 'orders' }),
+    ])
+  })
+
   it('takes a board off a scope from its home, and moves the active board on', async () => {
     const { held, store } = mount([{
       path: 'retail',
