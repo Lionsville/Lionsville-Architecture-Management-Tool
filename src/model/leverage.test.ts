@@ -4,7 +4,7 @@
  * stored, over this scope's rows and the tree's.
  */
 import { describe, expect, it } from 'vitest'
-import { consumersOf, describeLeverage, leverageOf, narrowRealisers, platformsBehind, platformsBoundTo, servicesOf } from './leverage'
+import { consumersOf, describeLeverage, impliedServicesOf, leverageOf, narrowRealisers, platformsBehind, platformsBoundTo, servicesOf } from './leverage'
 import { element } from './testFixtures'
 import type { DesignElement, Relation } from './types'
 
@@ -123,5 +123,32 @@ describe('a service delivered more than once (ADR-0015)', () => {
     expect(leverageOf(twice, 'portal').services.find((one) => one.id === 'cloud')!.platformIds).toEqual(['landing-zone', 'aws'])
     expect(narrowRealisers(['a', 'b'], ['elsewhere'], (id) => [id])).toEqual(['a', 'b'])
     expect(narrowRealisers(['a'], ['elsewhere'], (id) => [id])).toEqual(['a'])
+  })
+})
+
+describe('what hosting implies (ADR-0017)', () => {
+  const hosted = {
+    elements: [
+      ...elements,
+      element('landing-zone', { kind: 'platform', name: 'Landing zone', platformArchetype: 'place' }),
+      element('cloud', { kind: 'platformService', name: 'Cloud environment' }),
+    ].map((one) => (one.id === 'openshift' ? { ...one, parentId: 'landing-zone' } : one)),
+    relations: [...relations, row('r3', 'realises', 'landing-zone', 'cloud')],
+  }
+
+  it('reads the services realised by what an application stands on, or anything above it', () => {
+    // WMS API is hosted on OpenShift, which sits in the landing zone: the
+    // cloud environment is leveraged whether or not anybody wrote it down.
+    expect(impliedServicesOf(hosted, 'wms')).toEqual(['cloud'])
+    expect(leverageOf(hosted, 'wms').services.find((one) => one.id === 'cloud')).toEqual({ id: 'cloud', platformIds: ['landing-zone'], implied: true })
+    // Said out loud, it is no longer implied.
+    const said = { ...hosted, relations: [...hosted.relations, row('u8', 'uses', 'wms', 'cloud')] }
+    expect(impliedServicesOf(said, 'wms')).toEqual([])
+    expect(leverageOf(said, 'wms').services.find((one) => one.id === 'cloud')?.implied).toBeUndefined()
+  })
+
+  it('names the implied ones on the line', () => {
+    const line = describeLeverage(leverageOf(hosted, 'wms'), (id) => hosted.elements.find((one) => one.id === id)?.name)
+    expect(line.services.find((one) => one.id === 'cloud')).toMatchObject({ name: 'Cloud environment', implied: true })
   })
 })

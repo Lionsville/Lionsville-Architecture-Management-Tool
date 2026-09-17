@@ -51,7 +51,7 @@ export type { Hosting, PlatformTree } from './hosting'
 
 /** What an application leverages: the services it uses, and the platforms behind them (ADR-0014). */
 export {
-  consumersOf, describeLeverage, leverageOf, narrowRealisers, platformsBehind, platformsBoundTo, servicesOf,
+  consumersOf, describeLeverage, impliedServicesOf, leverageOf, narrowRealisers, platformsBehind, platformsBoundTo, servicesOf,
 } from './leverage'
 export type { Leverage, LeverageLine, LeverageOptions } from './leverage'
 

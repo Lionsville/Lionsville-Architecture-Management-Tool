@@ -57,6 +57,8 @@ export type LandscapeApplication = {
   where?: string
   /** The services it uses, itself or through its containers, that this scope holds. */
   uses: ElementId[]
+  /** The services its hosting implies (ADR-0017): realised by what it is hosted on or anything above, and not said. */
+  implied: ElementId[]
   /** The platforms it binds to directly, beside the services. */
   binds: ElementId[]
   /** The platforms it or its containers are hosted on, that this scope holds. */
@@ -128,6 +130,8 @@ export type LandscapeEdge = {
   count: number
   /** For a leverage: the services it is read through. */
   via?: ElementId[]
+  /** A `uses` nobody wrote: implied by where the application is hosted (ADR-0017). */
+  implied?: true
 }
 
 /** How the page is showing the landscape: what the edges depend on. */
@@ -196,7 +200,7 @@ export function technologyLandscape(
         name: own?.name ?? told?.name ?? id,
         known: own !== undefined || told !== undefined,
         ...(told?.where !== undefined ? { where: told.where } : {}),
-        uses: [], binds: [], hostedOn: [],
+        uses: [], implied: [], binds: [], hostedOn: [],
       }
       applications.set(id, held)
     }
@@ -221,10 +225,22 @@ export function technologyLandscape(
     once(realises.get(platform) ?? (realises.set(platform, []), realises.get(platform)!), service)
   }
 
+  const chainOf = (platformId: ElementId) => [platformId, ...ancestorPlatforms(model.elements, platformId, tree).map((one) => one.id)]
+  // What the hosting implies (ADR-0017): the services realised by the
+  // platform an application stands on, or anything above it — less what it
+  // says itself.
+  for (const app of applications.values()) {
+    const above = new Set<ElementId>()
+    for (const id of app.hostedOn) for (const one of chainOf(id)) above.add(one)
+    for (const [platform, services] of realises) {
+      if (!above.has(platform)) continue
+      for (const service of services) if (!app.uses.includes(service)) once(app.implied, service)
+    }
+  }
+
   // Which platforms an application stands on: the leverage, narrowed by
   // where it runs when a service is delivered more than once, and beside it
   // what it binds to and what hosts it.
-  const chainOf = (platformId: ElementId) => [platformId, ...ancestorPlatforms(model.elements, platformId, tree).map((one) => one.id)]
   const standing = new Map<ElementId, Set<ElementId>>()
   const stands = (platform: ElementId, app: ElementId) => {
     const held = standing.get(platform) ?? (standing.set(platform, new Set()), standing.get(platform)!)
@@ -238,7 +254,9 @@ export function technologyLandscape(
   }
 
   const consumers = new Map<ElementId, number>()
-  for (const app of applications.values()) for (const service of app.uses) consumers.set(service, (consumers.get(service) ?? 0) + 1)
+  for (const app of applications.values()) {
+    for (const service of [...app.uses, ...app.implied]) consumers.set(service, (consumers.get(service) ?? 0) + 1)
+  }
 
   // The groups: this scope first, then the others by name.
   const groups = new Map<string, LandscapeGroup>()
@@ -348,15 +366,15 @@ export function landscapeEdges(landscape: TechnologyLandscape, view: LandscapeVi
   for (const { node } of serviceList(landscape)) realisedBy.set(node.id, node.realisedBy)
 
   const merged = new Map<string, LandscapeEdge>()
-  const add = (from: NodeKey, to: NodeKey, kind: LandscapeEdgeKind, via?: ElementId) => {
-    const key = `${from}|${to}|${kind}`
+  const add = (from: NodeKey, to: NodeKey, kind: LandscapeEdgeKind, via?: ElementId, implied?: true) => {
+    const key = `${from}|${to}|${kind}${implied ? '|implied' : ''}`
     const held = merged.get(key)
     if (held) {
       held.count += 1
       if (via !== undefined && held.via && !held.via.includes(via)) held.via.push(via)
       return
     }
-    merged.set(key, { from, to, kind, count: 1, ...(via !== undefined ? { via: [via] } : {}) })
+    merged.set(key, { from, to, kind, count: 1, ...(via !== undefined ? { via: [via] } : {}), ...(implied ? { implied } : {}) })
   }
 
   for (const group of landscape.groups) {
@@ -370,6 +388,9 @@ export function landscapeEdges(landscape: TechnologyLandscape, view: LandscapeVi
           }
         }
       }
+      // Implied by hosting: drawn as a use nobody wrote, with the band open;
+      // with it hidden, the hosting itself is the line.
+      if (view.services) for (const service of app.implied) add(from, nodeKey.service(service), 'uses', undefined, true)
       for (const platform of app.binds) add(from, nodeKey.platform(platform), 'binds')
       if (view.hosting) for (const platform of app.hostedOn) add(from, nodeKey.platform(platform), 'hostedOn')
     }

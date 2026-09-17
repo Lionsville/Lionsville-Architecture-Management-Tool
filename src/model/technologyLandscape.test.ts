@@ -93,7 +93,8 @@ describe('the three bands', () => {
     const services = serviceList(landscape()).map(({ node, depth }) => [node.id, depth])
     expect(services).toEqual([['cloud', 0], ['containers', 0], ['data', 0], ['postgres', 1], ['brokering', 0]])
     const cloud = landscape().services[0]
-    expect(cloud).toMatchObject({ summary: 'An account with a landing zone.', shared: true, consumers: 1, realisedBy: ['landing-zone', 'aws'] })
+    // Two consumers: the portal says so, and WMS is hosted under the landing zone that realises it (ADR-0017).
+    expect(cloud).toMatchObject({ summary: 'An account with a landing zone.', shared: true, consumers: 2, realisedBy: ['landing-zone', 'aws'] })
     expect(landscape().counts).toEqual({ applications: 3, services: 5, platforms: 7 })
   })
 
@@ -125,7 +126,7 @@ describe('the three bands', () => {
 describe('the lines', () => {
   it('draws uses and realises with the service band open, once each', () => {
     const edges = landscapeEdges(landscape(), open)
-    expect(edges.filter((edge) => edge.kind === 'uses').map((edge) => `${edge.from}>${edge.to}`)).toEqual([
+    expect(edges.filter((edge) => edge.kind === 'uses' && !edge.implied).map((edge) => `${edge.from}>${edge.to}`)).toEqual([
       'application:portal>service:cloud', 'application:portal>service:postgres',
       'application:wms>service:containers', 'application:wms>service:postgres', 'application:wms>service:brokering',
     ])
@@ -153,6 +154,7 @@ describe('the lines', () => {
     expect(edges.filter((edge) => edge.from === 'group:logistics').map((edge) => [edge.to, edge.kind, edge.count])).toEqual([
       ['platform:kafka', 'binds', 1],
       ['service:containers', 'uses', 1], ['service:postgres', 'uses', 1], ['service:brokering', 'uses', 1],
+      ['service:cloud', 'uses', 1],
       ['platform:ns', 'hostedOn', 1],
     ])
     const both = landscapeEdges(
@@ -166,8 +168,8 @@ describe('the lines', () => {
 describe('what a card touches', () => {
   it('lights an application\'s services and the platforms behind them', () => {
     expect([...touchedBy(landscape(), nodeKey.application('wms'), open)].sort()).toEqual([
-      'application:wms', 'platform:az-postgres', 'platform:kafka', 'platform:openshift', 'platform:rds',
-      'service:brokering', 'service:containers', 'service:postgres',
+      'application:wms', 'platform:aws', 'platform:az-postgres', 'platform:kafka', 'platform:landing-zone', 'platform:openshift', 'platform:rds',
+      'service:brokering', 'service:cloud', 'service:containers', 'service:postgres',
     ])
   })
 
@@ -183,5 +185,19 @@ describe('what a card touches', () => {
   it('folds above the threshold and not at it', () => {
     expect(startsFolded(FOLD_ABOVE)).toBe(false)
     expect(startsFolded(FOLD_ABOVE + 1)).toBe(true)
+  })
+})
+
+describe('what hosting implies (ADR-0017)', () => {
+  it('counts a hosted application as a consumer of what its platform realises, and draws the use as implied', () => {
+    // WMS API is hosted in the namespace under OpenShift under the landing
+    // zone; the zone realises the cloud environment WMS never said it uses.
+    const wms = applicationList(landscape()).find((app) => app.id === 'wms')!
+    expect(wms.implied).toEqual(['cloud'])
+    expect(landscape().services[0].consumers).toBe(2)
+    const edge = landscapeEdges(landscape(), open).find((one) => one.from === 'application:wms' && one.to === 'service:cloud')
+    expect(edge).toMatchObject({ kind: 'uses', implied: true })
+    // With the band hidden nothing is drawn for it: the hosting is the line.
+    expect(landscapeEdges(landscape(), { ...open, services: false }).some((one) => one.implied)).toBe(false)
   })
 })

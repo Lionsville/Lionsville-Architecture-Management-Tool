@@ -147,10 +147,36 @@ export function consumersOf(model: Rows, serviceId: ElementId, options: Leverage
 }
 
 export type Leverage = {
-  /** The services it uses, each with the platforms behind it. */
-  services: { id: ElementId; platformIds: ElementId[] }[]
+  /**
+   * The services it uses, each with the platforms behind it — and, marked
+   * `implied`, the services its hosting implies (ADR-0017): a container on
+   * Azure Cloud leverages the cloud service Azure Cloud realises, whether or
+   * not anybody wrote a `uses` row for it.
+   */
+  services: { id: ElementId; platformIds: ElementId[]; implied?: true }[]
   /** The platforms it binds to directly, beside the services. */
   platformIds: ElementId[]
+}
+
+/**
+ * The services an application's hosting implies: what the platforms it is
+ * hosted on, or anything above them in the tree, realise — less what it
+ * says it uses itself, which is the same fact said out loud. In row order,
+ * once each.
+ */
+export function impliedServicesOf(model: Rows, applicationId: ElementId, options: LeverageOptions = {}): ElementId[] {
+  const said = new Set(servicesOf(model, applicationId, options))
+  const platforms = new Set<ElementId>()
+  for (const id of hostingOf(model, applicationId).platformIds) {
+    platforms.add(id)
+    for (const above of ancestorPlatforms(model.elements, id, options.tree ?? {})) platforms.add(above.id)
+  }
+  const ids: ElementId[] = []
+  for (const row of rowsOf(model, options)) {
+    if (row.type !== 'realises' || !platforms.has(row.sourceId) || said.has(row.targetId) || ids.includes(row.targetId)) continue
+    ids.push(row.targetId)
+  }
+  return ids
 }
 
 /** What an application leverages: the services, the platforms behind each, and any platform bound to directly. */
@@ -158,15 +184,19 @@ export function leverageOf(model: Rows, applicationId: ElementId, options: Lever
   const hostedOn = hostingOf(model, applicationId).platformIds
   const chainOf = (id: ElementId) => [id, ...ancestorPlatforms(model.elements, id, options.tree ?? {}).map((one) => one.id)]
   return {
-    services: servicesOf(model, applicationId, options)
-      .map((id) => ({ id, platformIds: narrowRealisers(platformsBehind(model, id, options), hostedOn, chainOf) })),
+    services: [
+      ...servicesOf(model, applicationId, options)
+        .map((id) => ({ id, platformIds: narrowRealisers(platformsBehind(model, id, options), hostedOn, chainOf) })),
+      ...impliedServicesOf(model, applicationId, options)
+        .map((id) => ({ id, platformIds: narrowRealisers(platformsBehind(model, id, options), hostedOn, chainOf), implied: true as const })),
+    ],
     platformIds: platformsBoundTo(model, applicationId, options),
   }
 }
 
 /** The same, said by name, for a line a person reads. */
 export type LeverageLine = {
-  services: { id: ElementId; name: string; platforms: { id: ElementId; name: string }[] }[]
+  services: { id: ElementId; name: string; platforms: { id: ElementId; name: string }[]; implied?: true }[]
   platforms: { id: ElementId; name: string }[]
 }
 
@@ -176,7 +206,9 @@ export function describeLeverage(
 ): LeverageLine {
   const named = (id: ElementId) => ({ id, name: nameOf(id) ?? id })
   return {
-    services: leverage.services.map((one) => ({ ...named(one.id), platforms: one.platformIds.map(named) })),
+    services: leverage.services.map((one) => ({
+      ...named(one.id), platforms: one.platformIds.map(named), ...(one.implied ? { implied: true as const } : {}),
+    })),
     platforms: leverage.platformIds.map(named),
   }
 }
