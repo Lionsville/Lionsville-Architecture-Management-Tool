@@ -913,6 +913,17 @@ fjirtich applikaasjes begjinne de domeinen tichtfâlde ta ien fak elk mei in
 oantal, en filterjen op namme iepenet de treffers; in domeintitel fâldet mei
 de hân iepen en ticht.
 
+**Hoste op in platfoarm dat in oare scope definiearret.** *Draait op* toant,
+ûnder *Earne oars yn de organisaasje*, elk platfoarm dat de rest fan de
+beam definiearret, plakken earst en elk mei syn scope; ien kieze skriuwt de
+stand-in foar dy, yn deselde stap as de rigel. De biblioteek neist it palet
+toant de platfoarms en tsjinsten fan de beam nei de applikaasjes. En
+**hosting ymplisearret de tsjinst**: in kontener op Azure Cloud stipet op de
+cloudtsjinst dy't Azure Cloud realisearret, oft immen no in *Brûkt*-rigel
+skreau of net — it rekord seit *(ymplisyt troch hosting)*, it
+technologylânskip tekenet it stippele en telt it mei, en in letter skreaune
+*Brûkt*-rigel is itselde feit lûdop sein.
+
 **Kleurje op** yn de arkbalke fan it lânskip kleuret de kaarten op platfoarm —
 it kluster, net de namespace — of op libbenssyklus fan de technyk, sadat de
 kaarten dy't op wat steane dat útfazearre wurdt amber wurde, de hiele keatling

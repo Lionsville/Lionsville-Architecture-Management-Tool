@@ -920,6 +920,17 @@ Boven de veertig applicaties beginnen de domeinen dichtgevouwen tot één vak
 elk met een aantal, en filteren op naam opent de treffers; een domeintitel
 vouwt met de hand open en dicht.
 
+**Gehost op een platform dat een andere scope definieert.** *Draait op*
+toont, onder *Elders in de organisatie*, elk platform dat de rest van de
+boom definieert, plekken eerst en elk met zijn scope; er een kiezen
+schrijft de stand-in voor je, in dezelfde stap als de regel. De bibliotheek
+naast het palet toont de platformen en diensten van de boom na de
+applicaties. En **hosting impliceert de dienst**: een container op Azure
+Cloud steunt op de clouddienst die Azure Cloud realiseert, of iemand nu een
+*Gebruikt*-regel schreef of niet — het record zegt *(impliciet door
+hosting)*, het technologielandschap tekent het gestippeld en telt het mee,
+en een later geschreven *Gebruikt*-regel is hetzelfde feit hardop gezegd.
+
 **Kleuren op** in de werkbalk van het landschap kleurt de kaarten op platform
 — het cluster, niet de namespace — of op levenscyclus van de techniek, zodat
 de kaarten die op iets staan dat uitgefaseerd wordt amber worden, de hele

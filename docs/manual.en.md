@@ -873,6 +873,17 @@ escape hatch. Above forty applications the domains start folded into one box
 each with a count, and filtering by name opens the matches; a domain title
 folds and unfolds by hand.
 
+**Hosted on a platform another scope defines.** *Hosted on* lists, under
+*Elsewhere in the organisation*, every platform the rest of the tree
+defines, places first and each with its scope; choosing one writes the
+stand-in for you, in the same step as the row. The library beside the
+palette lists the tree's platforms and services after its applications.
+And **hosting implies the service**: a container on Azure Cloud leverages
+the cloud service Azure Cloud realises, whether or not anybody wrote a
+*Uses* row — the record says *(implied by hosting)*, the technology
+landscape draws it dotted and counts it, and a *Uses* row written later is
+the same fact said out loud.
+
 **Colour by** in the landscape's toolbar tints the cards by platform — the
 cluster, not the namespace — or by technology lifecycle, so the cards
 standing on something retiring go amber, the whole chain counted. The

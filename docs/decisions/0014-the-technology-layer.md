@@ -237,6 +237,9 @@ boxes; the *Colour by* overlay; the platform report as a report rather than a
 view kind; the federated model in every respect; the interchange leaving
 technology out. The business layer is not touched.
 
+*Amended by ADR-0017:* what an application is hosted on implies the
+services that platform realises, derived beside the ones it uses.
+
 *Amended by ADR-0015:* the layer has one view kind after all — the
 technology landscape, laid out over the whole layer rather than a page per
 platform. The two reports stay reports.

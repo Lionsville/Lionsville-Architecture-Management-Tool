@@ -987,6 +987,18 @@ Anwendungen beginnen die Domänen eingeklappt zu je einem Kasten mit Zahl, und
 ein Filter nach Namen öffnet die Treffer; ein Domänentitel klappt von Hand
 auf und zu.
 
+**Auf einer Plattform gehostet, die ein anderer Bereich definiert.** *Läuft
+auf* listet unter *Anderswo in der Organisation* jede Plattform, die der
+Rest des Baums definiert, Orte zuerst und jede mit ihrem Bereich; eine zu
+wählen schreibt den Platzhalter für Sie, im selben Schritt wie die Zeile.
+Die Bibliothek neben der Palette listet die Plattformen und Dienste des
+Baums nach den Anwendungen. Und **Hosting impliziert den Dienst**: ein
+Container auf Azure Cloud stützt sich auf den Cloud-Dienst, den Azure Cloud
+realisiert, ob jemand eine *Nutzt*-Zeile schrieb oder nicht — der Datensatz
+sagt *(durch Hosting impliziert)*, die Technologielandschaft zeichnet es
+gepunktet und zählt es, und eine später geschriebene *Nutzt*-Zeile ist
+dieselbe Tatsache, laut gesagt.
+
 **Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten nach
 Plattform — dem Cluster, nicht dem Namespace — oder nach Lebenszyklus der
 Technik, damit die Karten, die auf etwas Auslaufendem stehen, bernsteinfarben
