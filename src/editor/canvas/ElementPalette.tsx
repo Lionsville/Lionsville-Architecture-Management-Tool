@@ -307,7 +307,11 @@ export function ElementPalette({
     () =>
       PALETTE_SECTIONS.map((section) => ({
         ...section,
-        keys: section.keys.filter((key) => available.includes(key) && matches(key)),
+        // In the order the diagram offers them: the technology landscape
+        // lists the offering above what delivers it, as its bands do.
+        keys: section.keys
+          .filter((key) => available.includes(key) && matches(key))
+          .sort((a, b) => available.indexOf(a as CanvasKind) - available.indexOf(b as CanvasKind)),
       })).filter((section) => section.keys.length > 0 || (section.id === 'systems' && existingMatches)),
     [available, matches, existingMatches],
   );

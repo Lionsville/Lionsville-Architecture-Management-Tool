@@ -95,7 +95,7 @@ export const CONTAINER_PALETTE: CanvasKind[] = ['component', 'actor', 'applicati
  * laid-out views author nothing from the palette — the sheet has gestures
  * of its own, and the map is read.
  */
-export const TECHNOLOGY_PALETTE: CanvasKind[] = ['platform', 'platformService'];
+export const TECHNOLOGY_PALETTE: CanvasKind[] = ['platformService', 'platform'];
 
 /** The kinds a diagram of this sort may show. */
 export function allowedKindsOn(diagram: Pick<DesignDiagram, 'kind'>): readonly CanvasKind[] {

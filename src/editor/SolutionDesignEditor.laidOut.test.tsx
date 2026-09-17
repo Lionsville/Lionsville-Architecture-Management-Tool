@@ -69,6 +69,9 @@ describe('the technology landscape in the tab', () => {
   it('offers the layer’s two kinds, and makes one with no placement, selected', () => {
     const { host, last } = renderEditor(TECHNOLOGY);
     expect(screen.queryByRole('button', { name: 'Application' })).toBeNull();
+    // The offering above what delivers it, as the bands are.
+    const rows = screen.getAllByRole('button', { name: /^Platform( service)?$/ }).map((row) => row.textContent);
+    expect(rows).toEqual(['Platform service', 'Platform']);
     fireEvent.click(screen.getByRole('button', { name: 'Platform service' }));
     fireEvent.click(screen.getByRole('button', { name: /Add platform service/ }));
     const made = host.current.model.elements.find((element) => element.kind === 'platformService');
