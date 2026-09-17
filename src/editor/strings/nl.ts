@@ -157,7 +157,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'paletteDescription.platformService': 'Wat een platformteam aanbiedt en een team vraagt: containerplatform, berichtenverkeer, beheerde database',
   'paletteDescription.actor': 'Een persoon of rol die het landschap gebruikt',
   'paletteDescription.domainGroup': 'Een benoemd vlak dat het landschap groepeert',
-  'palette.existing': 'Bestaande applicatie…',
+  'palette.existing': 'Bestaande applicatie of platform…',
   'paletteDescription.existing': 'Een applicatie die de organisatie al heeft, hier getekend',
 
   'toolbar.newDiagram': 'Nieuw Layer 7-aanzicht',
@@ -335,6 +335,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.platformArchetypeHelp': 'Een plek waar iets op draait, een dienst die iets gebruikt, of een netwerk',
   'field.hostedOn': 'Draait op',
   'field.hostedOnHelp': 'Waar deze draait; een applicatie draait waar haar containers draaien',
+  'field.hostedOnElsewhere': 'Elders in de organisatie',
+  'field.leveragesImplied': '(impliciet door hosting)',
   'field.hostedOnSeveral': 'Draait ook op {count} andere — een migratieperiode',
   'field.runsOn': 'Draait op',
   'field.runsOnContainers': '{names} ({count} containers)',

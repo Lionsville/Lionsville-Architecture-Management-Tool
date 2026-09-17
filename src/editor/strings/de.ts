@@ -157,7 +157,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'paletteDescription.platformService': 'Was ein Plattformteam anbietet und ein Team anfragt: Containerplattform, Messaging, verwaltete Datenbank',
   'paletteDescription.actor': 'Eine Person oder Rolle, die die Landschaft nutzt',
   'paletteDescription.domainGroup': 'Ein beschrifteter Bereich, der die Landschaft gruppiert',
-  'palette.existing': 'Vorhandene Anwendung…',
+  'palette.existing': 'Vorhandene Anwendung oder Plattform…',
   'paletteDescription.existing': 'Eine Anwendung, die die Organisation bereits hat, hier gezeichnet',
 
   'toolbar.newDiagram': 'Neues Layer-7-Diagramm',
@@ -335,6 +335,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.platformArchetypeHelp': 'Ein Ort, auf dem etwas läuft, ein Dienst, den etwas nutzt, oder ein Netzwerk',
   'field.hostedOn': 'Läuft auf',
   'field.hostedOnHelp': 'Wo dieser läuft; eine Anwendung läuft dort, wo ihre Container laufen',
+  'field.hostedOnElsewhere': 'Anderswo in der Organisation',
+  'field.leveragesImplied': '(durch Hosting impliziert)',
   'field.hostedOnSeveral': 'Läuft auch auf {count} weiteren — ein Migrationsfenster',
   'field.runsOn': 'Läuft auf',
   'field.runsOnContainers': '{names} ({count} Container)',

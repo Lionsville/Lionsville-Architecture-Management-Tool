@@ -5,6 +5,7 @@ import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ElementInspector } from './ElementInspector';
+import type { ElementInspectorProps } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
 import type { LeverageLine } from '../model/leverage';
@@ -83,6 +84,8 @@ function renderInspector(
     offeredBeyond?: readonly string[];
     /** What an application leverages, as the host works it out over the tree (ADR-0014). */
     leverage?: LeverageLine;
+    /** The technology the rest of the organisation defines (ADR-0017). */
+    technology?: ElementInspectorProps['technology'];
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -107,6 +110,7 @@ function renderInspector(
         onOpenDocumentation={opts.onOpenDocumentation}
         offeredBeyond={opts.offeredBeyond}
         leverage={opts.leverage}
+        technology={opts.technology}
       />
     </ThemeProvider>,
   );
@@ -575,6 +579,29 @@ describe('ElementInspector — where it runs (ADR-0013)', () => {
     cleanup()
     renderInspector(container('wms-api', 'wms'));
     expect(screen.queryByLabelText('Hosted on')).toBeNull();
+  });
+
+  it('offers the platforms the rest of the organisation defines, and hands the stand-in over with the row (ADR-0017)', () => {
+    const azure: DesignElement = { id: 'azure', kind: 'platform', name: 'Azure Cloud', ref: 'platforms', lifecycle: 'live', isManaged: false, aspects: {} };
+    const { setHostedOn } = renderInspector(container('wms-api', 'wms'), {
+      others: [openshift],
+      technology: {
+        elsewhere: [
+          { id: 'azure', name: 'Azure Cloud', kind: 'platform', place: true, where: 'platforms' },
+          { id: 'cloud', name: 'Cloud service', kind: 'platformService', place: false, where: 'platforms' },
+          // Held here already: listed once, among this scope's own.
+          { id: 'openshift', name: 'OpenShift', kind: 'platform', place: true, where: 'platforms' },
+        ],
+        standInFor: (id) => (id === 'azure' ? azure : undefined),
+      },
+    });
+    fireEvent.mouseDown(screen.getByLabelText('Hosted on'));
+    const listbox = within(screen.getByRole('listbox'));
+    expect(listbox.getByText('Elsewhere in the organisation')).toBeDefined();
+    expect(listbox.getAllByText('OpenShift')).toHaveLength(1);
+    expect(listbox.queryByText('Cloud service')).toBeNull();
+    fireEvent.click(listbox.getByText('Azure Cloud'));
+    expect(setHostedOn).toHaveBeenCalledWith('wms-api', 'azure', azure);
   });
 
   it('tells an application with containers what they say, read only', () => {

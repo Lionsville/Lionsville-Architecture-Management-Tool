@@ -16,7 +16,7 @@ import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
 import type { StandInNote } from './nodes/nodeData';
 import type {
-  DesignModel, DiagramSettings, DocumentImage, ElementId, Layer7Zone,
+  DesignElement, DesignModel, DiagramSettings, DocumentImage, ElementId, Layer7Zone,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
@@ -444,6 +444,18 @@ export interface EditorOwnership {
    * rows.
    */
   leverageOf?(applicationId: ElementId): LeverageLine | undefined;
+  /**
+   * The technology the rest of the organisation defines (ADR-0017): every
+   * platform and service another scope answers for and this scope does not
+   * hold yet, so *Hosted on* can name Azure Cloud from a landscape that has
+   * never drawn it. `standInFor` is the record this scope would keep of one
+   * — the two caches and nothing of the owner's detail — which the action
+   * writes in the same step as the row. Absent in a shell with no tree.
+   */
+  technology?: {
+    elsewhere: readonly { id: ElementId; name: string; kind: 'platform' | 'platformService'; place: boolean; where: string }[];
+    standInFor(id: ElementId): DesignElement | undefined;
+  };
   /**
    * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
    * them: is there one to offer on this record, and one way to ask for it.

@@ -146,13 +146,14 @@ export function useLibrary(deps: {
         const held = model.elements.find((element) => element.id === plan.id)
         if (!held) return
         const said = s('library.drawn', { name: plan.name })
-        if (held.ref === undefined || atRef.current) land(held, false, said)
+        if (held.ref === undefined || atRef.current || held.kind !== 'application') land(held, false, said)
         else setChoice({ kind: 'placing', element: held, create: false, said })
         return
       }
       case 'standIn': {
         const said = s('library.standsIn', { name: plan.element.name, scope: scopeLabel(plan.owner) })
-        if (atRef.current) land(plan.element, true, said)
+        // A platform or a service has one band, the management one: no question.
+        if (atRef.current || plan.element.kind !== 'application') land(plan.element, true, said)
         else setChoice({ kind: 'placing', element: plan.element, create: true, said })
         return
       }

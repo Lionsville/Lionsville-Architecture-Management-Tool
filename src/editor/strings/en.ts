@@ -165,7 +165,7 @@ export const EN = {
   'paletteDescription.platformService': 'What a platform team offers and a team asks for: container platform, message brokering, managed database',
   'paletteDescription.actor': 'A person or role using the landscape',
   'paletteDescription.domainGroup': 'A labelled area grouping the landscape',
-  'palette.existing': 'Existing application…',
+  'palette.existing': 'Existing application or platform…',
   'paletteDescription.existing': 'An application the organisation already has, drawn here',
 
   // --- toolbar -------------------------------------------------------------
@@ -348,6 +348,8 @@ export const EN = {
   'field.platformArchetypeHelp': 'A place something runs on, a service something consumes, or a network',
   'field.hostedOn': 'Hosted on',
   'field.hostedOnHelp': 'Where this one runs; an application runs where its containers run',
+  'field.hostedOnElsewhere': 'Elsewhere in the organisation',
+  'field.leveragesImplied': '(implied by hosting)',
   'field.hostedOnSeveral': 'It also runs on {count} more — a migration window',
   'field.runsOn': 'Runs on',
   'field.runsOnContainers': '{names} ({count} containers)',

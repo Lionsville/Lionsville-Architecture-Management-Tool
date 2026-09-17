@@ -78,6 +78,7 @@ import { useSheet } from './useSheet'
 import { useShowElement } from './useShowElement'
 import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
 import { useLibrary } from './useLibrary'
+import { standInOf } from '../projects/library'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
 import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
 import { useMap } from './useMap'
@@ -805,6 +806,23 @@ export function ProjectWorkspace({
       leverageOf(session.model, applicationId, { elsewhere: rowsThrough }),
       (id) => index.lookup(id)?.name ?? session.model.elements.find((held) => held.id === id)?.name,
     ),
+    // The technology the rest of the organisation defines (ADR-0017): every
+    // platform and service another scope answers for, named with its scope,
+    // and the stand-in this scope would keep of one.
+    technology: {
+      elsewhere: index.entries()
+        .filter((entry) => (entry.kind === 'platform' || entry.kind === 'platformService')
+          && entry.master !== undefined && entry.master !== project.path)
+        .map((entry) => ({
+          id: entry.id, name: entry.name, kind: entry.kind as 'platform' | 'platformService',
+          place: entry.platformArchetype === 'place', where: scopeLabel(entry.master!),
+        })),
+      standInFor: (id) => {
+        const entry = index.lookup(id)
+        const ref = entry?.master ?? entry?.cachedRef
+        return entry && ref !== undefined ? standInOf(entry, ref) : undefined
+      },
+    },
     gestures: {
       offered: (elementId) => gestureOffers(elementId).length > 0,
       label: s('gesture.move'),
@@ -812,7 +830,7 @@ export function ProjectWorkspace({
       onMove: (elementId) => gestureChoose(elementId),
     },
     onAddExisting: library.open,
-  }), [session, project.path, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, library.open, ownerDescriptions])
+  }), [session, project.path, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, library.open, ownerDescriptions, scopeLabel])
 
   const snapshots = useProjectHistory({
     history: projectHistory,

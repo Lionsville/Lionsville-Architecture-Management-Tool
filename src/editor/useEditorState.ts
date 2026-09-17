@@ -282,7 +282,8 @@ export interface EditorActions {
    * the same container is a migration window the model allows and this does
    * not write — the record shows the first and says there are more.
    */
-  setHostedOn(elementId: ElementId, platformId: ElementId | undefined): void;
+  /** With `standIn`, a platform another scope defines: the stand-in is written in the same step as the row (ADR-0017). */
+  setHostedOn(elementId: ElementId, platformId: ElementId | undefined, standIn?: DesignElement): void;
   /**
    * What a platform realises (ADR-0014): the services, as one step. Rows for
    * services no longer named are taken off, rows for new ones written, and a
@@ -1038,23 +1039,29 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         dispatch({ type: 'relation.update', id: relationId, patch: { refines: undefined } });
       },
 
-      setHostedOn(elementId, platformId) {
+      setHostedOn(elementId, platformId, standIn) {
         const model = currentModel();
         const held = model.relations.find((c) => c.type === 'hostedOn' && c.sourceId === elementId);
         if (platformId === undefined) {
           if (held) dispatch({ type: 'relation.delete', id: held.id });
           return;
         }
+        // A platform this scope does not hold yet arrives as its stand-in,
+        // in the same step as the row that names it.
+        const arrives: Command[] = standIn !== undefined && standIn.id === platformId
+          && !model.elements.some((e) => e.id === platformId)
+          ? [{ type: 'element.create', element: standIn }]
+          : [];
         if (held) {
           if (held.targetId !== platformId) {
-            dispatch({ type: 'relation.update', id: held.id, patch: { targetId: platformId } });
+            dispatch(transaction([...arrives, { type: 'relation.update', id: held.id, patch: { targetId: platformId } }]));
           }
           return;
         }
-        dispatch({
-          type: 'relation.create',
-          relation: { id: ids.connection(), type: 'hostedOn', sourceId: elementId, targetId: platformId },
-        });
+        dispatch(transaction([
+          ...arrives,
+          { type: 'relation.create', relation: { id: ids.connection(), type: 'hostedOn', sourceId: elementId, targetId: platformId } },
+        ]));
       },
 
       setRealises(platformId, serviceIds) {

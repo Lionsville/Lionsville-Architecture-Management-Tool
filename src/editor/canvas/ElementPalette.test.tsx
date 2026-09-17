@@ -121,12 +121,12 @@ describe('ElementPalette — the calm panel', () => {
 describe('ElementPalette — the register row', () => {
   it('is there only when the host offers a register, and presses straight through', () => {
     renderPalette();
-    expect(screen.queryByRole('button', { name: 'Existing application…' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Existing application or platform…' })).toBeNull();
 
     cleanup();
     const onAddExisting = vi.fn();
     renderPalette({ onAddExisting });
-    const button = screen.getByRole('button', { name: 'Existing application…' });
+    const button = screen.getByRole('button', { name: 'Existing application or platform…' });
     expect(button.getAttribute('draggable')).not.toBe('true');
     fireEvent.click(button);
     expect(onAddExisting).toHaveBeenCalledTimes(1);
@@ -135,7 +135,7 @@ describe('ElementPalette — the register row', () => {
   it('is found by the filter in either language, and keeps its section up when every kind is filtered out', () => {
     renderPalette({ onAddExisting: vi.fn() });
     fireEvent.change(screen.getByLabelText('Search the palette'), { target: { value: 'bestaande' } });
-    expect(screen.getByRole('button', { name: 'Existing application…' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Existing application or platform…' })).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Application', expanded: false })).toBeNull();
     expect(screen.queryByText('Nothing matches “bestaande”')).toBeNull();
   });
@@ -144,7 +144,7 @@ describe('ElementPalette — the register row', () => {
     const onAddExisting = vi.fn();
     const onToggleCollapsed = vi.fn();
     renderPalette({ onAddExisting, collapsed: true, onToggleCollapsed });
-    fireEvent.click(screen.getByRole('button', { name: 'Existing application…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Existing application or platform…' }));
     expect(onAddExisting).toHaveBeenCalledTimes(1);
     expect(onToggleCollapsed).not.toHaveBeenCalled();
   });

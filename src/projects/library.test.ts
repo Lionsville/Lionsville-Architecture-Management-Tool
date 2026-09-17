@@ -35,8 +35,8 @@ describe('libraryRows', () => {
   it('lists every application in the organisation that is not on this board, and says which this scope holds', () => {
     const rows = libraryRows(index, { elements: [element('crm', { ref: '' })] }, board('portal'))
     expect(rows.map((row) => row.id)).toEqual(['crm', 'ledger', 'erp', 'wms'])
-    expect(rows.find((row) => row.id === 'crm')).toEqual({ id: 'crm', name: 'CRM', master: '', held: true })
-    expect(rows.find((row) => row.id === 'ledger')).toEqual({ id: 'ledger', name: 'Ledger', held: false })
+    expect(rows.find((row) => row.id === 'crm')).toEqual({ id: 'crm', name: 'CRM', kind: 'application', master: '', held: true })
+    expect(rows.find((row) => row.id === 'ledger')).toEqual({ id: 'ledger', name: 'Ledger', kind: 'application', held: false })
   })
 })
 
@@ -111,5 +111,22 @@ describe('planFromLibrary', () => {
     })
     expect(sheet).toEqual({ refused: 'library.notABoard' })
     expect(isLibraryRefusal(sheet)).toBe(true)
+  })
+})
+
+describe('the technology in the library (ADR-0017)', () => {
+  it('lists every platform and service the tree defines, after the applications', () => {
+    const tree = indexScopes([
+      scope('', []),
+      scope('platforms', [
+        element('azure', { kind: 'platform', name: 'Azure Cloud' }),
+        element('cloud', { kind: 'platformService', name: 'Cloud service' }),
+      ]),
+      scope('retail', [element('crm', { name: 'CRM' })]),
+    ])
+    const rows = libraryRows(tree, { elements: [] }, { members: [] })
+    expect(rows.map((row) => [row.id, row.kind, row.master])).toEqual([
+      ['crm', 'application', 'retail'], ['azure', 'platform', 'platforms'], ['cloud', 'platformService', 'platforms'],
+    ])
   })
 })

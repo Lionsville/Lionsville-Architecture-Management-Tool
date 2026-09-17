@@ -9,9 +9,9 @@ import type { LibraryRow } from '../../projects/library'
 afterEach(() => cleanup())
 
 const rows: LibraryRow[] = [
-  { id: 'crm', name: 'CRM', master: '', held: true },
-  { id: 'shelf', name: 'Shelf planner', master: 'acme/retail/stores', held: false },
-  { id: 'ledger', name: 'Ledger', held: false },
+  { id: 'crm', name: 'CRM', kind: 'application', master: '', held: true },
+  { id: 'shelf', name: 'Shelf planner', kind: 'application', master: 'acme/retail/stores', held: false },
+  { id: 'ledger', name: 'Ledger', kind: 'application', held: false },
 ]
 
 function mount(choice: Parameters<typeof AddFromLibraryDialog>[0]['choice'], over: Partial<Parameters<typeof AddFromLibraryDialog>[0]> = {}) {

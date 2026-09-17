@@ -6,12 +6,14 @@ import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import MenuItem from '@mui/material/MenuItem';
+import ListSubheader from '@mui/material/ListSubheader';
 import Switch from '@mui/material/Switch';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { EditorOwnership } from './props';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, NodeIconSize, NodeShapeVariant } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import { aspectConfigFor, derivedPlatformAspect } from '../model/aspects';
@@ -154,6 +156,8 @@ export interface ElementInspectorProps {
    * itself where nobody has ticked. Absent where the host has no tree to read.
    */
   offeredBeyond?: readonly string[];
+  /** The technology the rest of the organisation defines, for *Hosted on* (ADR-0017). */
+  technology?: EditorOwnership['technology'];
   /**
    * For an application or a container: what it leverages, as the host works
    * it out over the whole tree (ADR-0014). Absent = read off this scope's own
@@ -260,6 +264,13 @@ export function ElementInspector(props: ElementInspectorProps) {
   const platforms = props.model.elements
     .filter((held) => held.kind === 'platform')
     .sort((a, b) => Number(isPlace(b)) - Number(isPlace(a)));
+  // And the platforms the rest of the organisation defines (ADR-0017), the
+  // places first likewise, so a container can be hosted on a cloud its
+  // landscape has never drawn; choosing one writes the stand-in.
+  const heldIds = new Set(props.model.elements.map((held) => held.id));
+  const platformsElsewhere = (props.technology?.elsewhere ?? [])
+    .filter((one) => one.kind === 'platform' && !heldIds.has(one.id))
+    .sort((a, b) => Number(b.place) - Number(a.place));
   const hosting = hostingOf(props.model, element.id);
   const nameOfPlatform = (id: ElementId) => props.model.elements.find((held) => held.id === id)?.name ?? id;
   // What it leverages (ADR-0014): the services it uses and the platforms
@@ -288,9 +299,9 @@ export function ElementInspector(props: ElementInspectorProps) {
   const actors = props.model.elements.filter((held) => held.kind === 'actor');
   const maintainer = props.model.relations.find((row) => row.type === 'assigned' && row.targetId === element.id)?.sourceId ?? '';
   const leverageText = leverage === undefined ? '' : [
-    ...leverage.services.map((one) => (one.platforms.length
+    ...leverage.services.map((one) => `${one.platforms.length
       ? `${one.name} (${one.platforms.map((platform) => platform.name).join(', ')})`
-      : one.name)),
+      : one.name}${one.implied ? ` ${t('field.leveragesImplied')}` : ''}`),
     ...leverage.platforms.map((one) => one.name),
   ].join(' · ');
   const showAspects = element.kind === 'application';
@@ -545,7 +556,7 @@ export function ElementInspector(props: ElementInspectorProps) {
               not deployed anywhere itself; one with no containers — an outside
               system, a SaaS service, a bought package — says it too, which is
               the only sentence anybody can write about it. */}
-          {(element.kind === 'component' || element.kind === 'application') && platforms.length > 0 && (
+          {(element.kind === 'component' || element.kind === 'application') && (platforms.length > 0 || platformsElsewhere.length > 0) && (
             mayBeHosted(props.model.elements, element.id) ? (
               <Box>
                 <TextField
@@ -557,11 +568,24 @@ export function ElementInspector(props: ElementInspectorProps) {
                   helperText={hosting.platformIds.length > 1
                     ? t('field.hostedOnSeveral', { count: String(hosting.platformIds.length - 1) })
                     : t('field.hostedOnHelp')}
-                  onChange={(e) => actions.setHostedOn(element.id, e.target.value || undefined)}
+                  onChange={(e) => {
+                    const chosen = e.target.value || undefined;
+                    const standIn = chosen !== undefined && !heldIds.has(chosen) ? props.technology?.standInFor(chosen) : undefined;
+                    if (standIn) actions.setHostedOn(element.id, chosen, standIn);
+                    else actions.setHostedOn(element.id, chosen);
+                  }}
+                  inputProps={{ 'data-testid': 'hosted-on' }}
                 >
                   <MenuItem value="">{t('common.none')}</MenuItem>
                   {platforms.map((platform) => (
                     <MenuItem key={platform.id} value={platform.id}>{platform.name}</MenuItem>
+                  ))}
+                  {platformsElsewhere.length > 0 && <ListSubheader>{t('field.hostedOnElsewhere')}</ListSubheader>}
+                  {platformsElsewhere.map((platform) => (
+                    <MenuItem key={platform.id} value={platform.id} data-testid={`hosted-on-elsewhere-${platform.id}`}>
+                      {platform.name}
+                      <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>{platform.where}</Typography>
+                    </MenuItem>
                   ))}
                 </TextField>
               </Box>

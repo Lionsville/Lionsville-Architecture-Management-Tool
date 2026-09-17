@@ -157,7 +157,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'paletteDescription.platformService': 'Wat in platfoarmteam oanbiedt en in team freget: containerplatfoarm, berjochteferkear, beheard database',
   'paletteDescription.actor': 'In persoan of rol dy’t it lânskip brûkt',
   'paletteDescription.domainGroup': 'In beneamd flak dat it lânskip groepearret',
-  'palette.existing': 'Besteande applikaasje…',
+  'palette.existing': 'Besteande applikaasje of platfoarm…',
   'paletteDescription.existing': 'In applikaasje dy\'t de organisaasje al hat, hjir tekene',
 
   'toolbar.newDiagram': 'Nij Layer 7-diagram',
@@ -335,6 +335,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'field.platformArchetypeHelp': 'In plak dêr\'t wat op draait, in tsjinst dy\'t wat brûkt, of in netwurk',
   'field.hostedOn': 'Rint op',
   'field.hostedOnHelp': 'Wêr\'t dizze rint; in applikaasje rint dêr\'t har containers rinne',
+  'field.hostedOnElsewhere': 'Earne oars yn de organisaasje',
+  'field.leveragesImplied': '(ymplisyt troch hosting)',
   'field.hostedOnSeveral': 'Rint ek op {count} oaren — in migraasjefinster',
   'field.runsOn': 'Rint op',
   'field.runsOnContainers': '{names} ({count} containers)',

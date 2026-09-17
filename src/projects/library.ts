@@ -37,6 +37,8 @@ import type { ScopePath } from './scopePath'
 export type LibraryRow = {
   id: ElementId
   name: string
+  /** An application, or — since ADR-0017 — a platform or a service the tree defines. */
+  kind: 'application' | 'platform' | 'platformService'
   /** The scope that answers for it; absent where nobody does. */
   master?: ScopePath
   /** This scope holds a record of it already — it is only not on this board. */
@@ -91,11 +93,18 @@ export function libraryRows(
 ): LibraryRow[] {
   const drawn = new Set(diagram.members.map((member) => member.id))
   const held = new Set(model.elements.map((element) => element.id))
-  return index.register()
+  // The register, and the technology beside it (ADR-0017): a landscape draws
+  // a stand-in of the cloud it stands on the way it draws one of a system it
+  // talks to.
+  const technology = index.entries()
+    .filter((entry) => entry.kind === 'platform' || entry.kind === 'platformService')
+    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+  return [...index.register(), ...technology]
     .filter((entry) => !drawn.has(entry.id))
     .map((entry) => ({
       id: entry.id,
       name: entry.name,
+      kind: entry.kind as LibraryRow['kind'],
       ...(entry.master !== undefined ? { master: entry.master } : {}),
       held: held.has(entry.id),
     }))
@@ -168,7 +177,7 @@ export function rowsToImport(
  * The record a scope keeps of a thing another scope defines: the two caches
  * and nothing of the owner's detail (`model/standIn.ts`).
  */
-function standInOf(entry: IndexEntry, ref: string): DesignElement {
+export function standInOf(entry: IndexEntry, ref: string): DesignElement {
   return {
     id: entry.id, kind: entry.kind, name: entry.name, ref,
     lifecycle: 'live', isManaged: false, aspects: {},

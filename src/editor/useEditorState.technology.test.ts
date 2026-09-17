@@ -56,3 +56,25 @@ describe('setMaintainedBy', () => {
     expect(rows(host.current.model)).toEqual([]);
   });
 });
+
+describe('setHostedOn with a stand-in (ADR-0017)', () => {
+  const azure = { id: 'azure', kind: 'platform' as const, name: 'Azure Cloud', ref: 'platforms', lifecycle: 'live' as const, isManaged: false, aspects: {} };
+
+  it('writes the stand-in and the row as one step, and not the stand-in twice', () => {
+    const { result, host } = renderEditorState({ ...model(), elements: [...model().elements, el('api', 'component')] }, { activeDiagramId: 'l7' });
+    act(() => result.current.actions.setHostedOn('api', 'azure', azure));
+    expect(host.current.model.elements.some((one) => one.id === 'azure' && one.ref === 'platforms')).toBe(true);
+    expect(rows(host.current.model)).toEqual(['hostedOn:api>azure']);
+    act(() => host.current.history.undo());
+    expect(host.current.model.elements.some((one) => one.id === 'azure')).toBe(false);
+    expect(rows(host.current.model)).toEqual([]);
+    // Moving a row onto it brings it too; once held, it is not made again.
+    act(() => result.current.actions.setHostedOn('api', 'openshift'));
+    act(() => result.current.actions.setHostedOn('api', 'azure', azure));
+    expect(rows(host.current.model)).toEqual(['hostedOn:api>azure']);
+    const held = host.current.model.elements.filter((one) => one.id === 'azure').length;
+    act(() => result.current.actions.setHostedOn('api', 'openshift'));
+    act(() => result.current.actions.setHostedOn('api', 'azure', azure));
+    expect(host.current.model.elements.filter((one) => one.id === 'azure').length).toBe(held);
+  });
+});

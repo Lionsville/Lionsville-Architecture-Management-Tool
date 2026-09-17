@@ -1472,6 +1472,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               move={moveFor(props.ownership, state.selectedElement.id)}
               offeredBeyond={props.ownership?.offeredBeyond?.(state.selectedElement.id)}
               leverage={props.ownership?.leverageOf?.(state.selectedElement.id)}
+              technology={props.ownership?.technology}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector

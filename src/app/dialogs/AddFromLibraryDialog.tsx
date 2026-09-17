@@ -95,8 +95,9 @@ export function AddFromLibraryDialog({
   const rows = choice?.kind === 'picking' ? choice.rows : []
   const shown = rows.filter((row) => matchesQuery(query, [row.name, row.id]))
   const where = (row: LibraryRow) => {
-    if (row.held) return s('library.heldHere')
-    if (row.master !== undefined) return s('library.definedIn', { scope: scopeLabel(row.master) })
+    const kind = row.kind === 'application' ? '' : `${s(row.kind === 'platform' ? 'kind.platform' : 'kind.platformService')} · `
+    if (row.held) return kind + s('library.heldHere')
+    if (row.master !== undefined) return kind + s('library.definedIn', { scope: scopeLabel(row.master) })
     return s('library.nobodyDefines')
   }
   return (
