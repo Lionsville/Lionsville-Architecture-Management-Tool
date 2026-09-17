@@ -448,6 +448,13 @@ describe('the boards on a landscape’s home', () => {
     expect(within(boards).getByTestId('board-sheet').textContent).not.toContain('on it')
   })
 
+  it('opens a board from its name as well as from Open', async () => {
+    show([scope('', 'Acme Logistics', false), twoBoards()])
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    fireEvent.click(await screen.findByTestId('board-name-next'))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+  })
+
   it('opens the row’s own board, not the one that was active', async () => {
     show([scope('', 'Acme Logistics', false), twoBoards()])
     fireEvent.click(await screen.findByTestId('home-finance'))

@@ -547,7 +547,20 @@ function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
           sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider' }}
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 500 }}>{board.name}</Typography>
+            {/* The name opens it too: a row whose only door is the button at
+                the far end is a row people click on and nothing happens. */}
+            <Typography
+              component="button"
+              type="button"
+              onClick={() => onOpen(board.id)}
+              data-testid={`board-name-${board.id}`}
+              sx={{
+                fontSize: 13, fontWeight: 500, font: 'inherit', color: 'inherit', background: 'none', border: 0,
+                p: 0, cursor: 'pointer', textAlign: 'left', '&:hover': { color: 'primary.main' },
+              }}
+            >
+              {board.name}
+            </Typography>
             <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
               {!isBoardKind(board.kind) ? s(LAID_OUT_LABEL[board.kind as keyof typeof LAID_OUT_LABEL]) : [
                 s(board.kind === 'container' ? 'org.viewContainer' : 'org.viewLayer7'),

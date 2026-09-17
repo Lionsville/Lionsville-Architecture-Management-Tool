@@ -85,7 +85,10 @@ function OnePage({ icon, title, count, finding, action }: {
   action?: ReactNode
 }) {
   return (
-    <Card variant="outlined" sx={{ flex: '1 1 200px', minWidth: 180, p: 1.5 }}>
+    // One cell of the grid, the whole cell: every card the same height as its
+    // row, with the action pinned to the bottom so the buttons line up whatever
+    // the count above them wrapped to.
+    <Card variant="outlined" sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
         <Box sx={{ color: 'text.secondary', display: 'flex' }}>{icon}</Box>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{title}</Typography>
@@ -96,7 +99,7 @@ function OnePage({ icon, title, count, finding, action }: {
       <Typography sx={{ fontSize: 11, color: 'text.secondary', minHeight: 16, mb: 1 }}>
         {finding ?? ''}
       </Typography>
-      {action}
+      <Box sx={{ mt: 'auto' }}>{action}</Box>
     </Card>
   )
 }
@@ -136,7 +139,10 @@ export function OrganisationCards({
   const finding = pages.roadmap.finding
 
   return (
-    <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', gap: 1.5, mb: 4 }} data-testid="organisation-cards">
+    // A grid rather than a wrapping row: equal columns, so six cards are two
+    // rows of three the same size and left-aligned, not four and two wider ones
+    // starting half a gutter in.
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards">
       {shows.documentation && (
         <OnePage
           icon={<DocumentIcon />}
@@ -289,6 +295,6 @@ export function OrganisationCards({
           </Stack>
         )}
       />}
-    </Stack>
+    </Box>
   )
 }
