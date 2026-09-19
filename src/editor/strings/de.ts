@@ -137,9 +137,11 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'palette.aside': 'Elementpalette',
   'palette.addToCanvas': 'Zur Zeichenfläche hinzufügen',
+  'palette.how': 'Ziehen Sie eine Art auf die Zeichenfläche, oder klicken Sie sie an, um sie zuerst zu benennen.',
+  'palette.name': 'Name',
   'palette.expand': 'Palette ausklappen',
   'palette.collapse': 'Palette einklappen',
-  'palette.place': 'Platzieren',
+  'palette.place': 'Zur Zeichenfläche hinzufügen',
   'palette.add': '{name} hinzufügen',
   'palette.openOptions': 'Optionen für {name} öffnen',
   'palette.nameField': 'Name für {name}',
@@ -261,6 +263,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'canvas.minimap': 'Übersichtskarte',
   'node.actorFigure': 'Akteurfigur',
   'node.external': 'EXTERN',
+  'node.dragToConnect': 'Ziehen, um zu verbinden',
   'node.externalTip': 'Ein externes System: außerhalb dieser Organisation, gezeichnet wegen der Schnittstellen, die es mit ihr hat.',
   'node.fromTip': 'Hier gezeichnet, definiert in {name}.',
   'node.hasContainer': 'Hat ein Container-Diagramm — Doppelklick zum Öffnen',
@@ -273,6 +276,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.resize': 'Breite des Inspektors anpassen',
   'inspector.empty':
     'Wählen Sie ein Element oder eine Verbindung aus, um die Eigenschaften zu bearbeiten. Doppelklicken Sie eine Anwendung, um ihr Container-Diagramm zu öffnen.',
+  'inspector.emptyHint': 'Umschalt-Klick fügt ein Element der Auswahl hinzu oder nimmt es wieder heraus.',
   'inspector.selected': '{count} ausgewählt',
   'inspector.elementsOne': '{count} Element',
   'inspector.elementsOther': '{count} Elemente',
@@ -512,7 +516,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'help.title': 'Tastenkürzel',
   'help.intro':
-    'Klicken Sie mit rechts auf ein Element, eine Linie, eine Domänengruppe, einen Diagrammreiter oder die leere Zeichenfläche für ein Menü mit allem, was dort möglich ist. Die Tastenkürzel unten stehen neben den passenden Menüeinträgen.',
+    'Klicken Sie mit rechts auf ein Element, eine Linie, eine Domänengruppe, einen Diagrammreiter oder die leere Zeichenfläche für ein Menü mit allem, was dort möglich ist. Die Tastenkürzel unten stehen neben den passenden Menüeinträgen. Ziehen Sie vom Rand eines Elements zu einem anderen, um sie zu verbinden, oder klicken Sie mit rechts und wählen Sie Verbindung beginnen nach…',
   'shortcutGroup.selection': 'Auswahl',
   'shortcutGroup.edit': 'Bearbeiten',
   'shortcutGroup.view': 'Ansicht',

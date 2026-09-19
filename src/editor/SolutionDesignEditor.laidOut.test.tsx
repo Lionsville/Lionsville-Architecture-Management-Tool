@@ -70,7 +70,8 @@ describe('the technology landscape in the tab', () => {
     const { host, last } = renderEditor(TECHNOLOGY);
     expect(screen.queryByRole('button', { name: 'Application' })).toBeNull();
     // The offering above what delivers it, as the bands are.
-    const rows = screen.getAllByRole('button', { name: /^Platform( service)?$/ }).map((row) => row.textContent);
+    // By accessible name: the row's second line is its description, hidden from the name.
+    const rows = screen.getAllByRole('button', { name: /^Platform( service)?$/ }).map((row) => row.getAttribute('aria-label') ?? row.querySelector('p')?.textContent);
     expect(rows).toEqual(['Platform service', 'Platform']);
     fireEvent.click(screen.getByRole('button', { name: 'Platform service' }));
     fireEvent.click(screen.getByRole('button', { name: /Add platform service/ }));

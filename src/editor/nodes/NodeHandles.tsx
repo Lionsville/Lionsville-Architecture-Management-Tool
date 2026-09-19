@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
+import { useStrings } from '../../i18n/LanguageContext';
 
 /**
  * Four connection points — one per side — each backed by an overlapping
@@ -22,7 +23,12 @@ const SIDES = [
 ] as const;
 
 export function NodeHandles({ connectable }: { connectable: boolean }) {
+  const { t } = useStrings();
   const tokens = getNodeTokens(useTheme());
+  // The one hint a handle gives: a dot on a card's edge says nothing about
+  // what dragging it does. A title and not a Tooltip, because a handle is
+  // React Flow's element and the browser's own tip is enough for one line.
+  const hint = connectable ? t('node.dragToConnect') : undefined;
   const style: React.CSSProperties = {
     width: 9,
     height: 9,
@@ -34,8 +40,8 @@ export function NodeHandles({ connectable }: { connectable: boolean }) {
     <>
       {SIDES.map(({ pos, source, target }) => (
         <Fragment key={pos}>
-          <Handle type="target" position={pos} id={target} style={style} isConnectable={connectable} />
-          <Handle type="source" position={pos} id={source} style={style} isConnectable={connectable} />
+          <Handle type="target" position={pos} id={target} style={style} isConnectable={connectable} title={hint} />
+          <Handle type="source" position={pos} id={source} style={style} isConnectable={connectable} title={hint} />
         </Fragment>
       ))}
     </>

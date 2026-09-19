@@ -137,9 +137,11 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'palette.aside': 'Elementenpalet',
   'palette.addToCanvas': 'Aan het canvas toevoegen',
+  'palette.how': 'Sleep een soort naar het canvas, of klik erop om het eerst een naam te geven.',
+  'palette.name': 'Naam',
   'palette.expand': 'Palet uitklappen',
   'palette.collapse': 'Palet inklappen',
-  'palette.place': 'Plaatsen',
+  'palette.place': 'Aan het canvas toevoegen',
   'palette.add': '{name} toevoegen',
   'palette.openOptions': 'Opties voor {name} openen',
   'palette.nameField': 'Naam van {name}',
@@ -261,6 +263,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'canvas.minimap': 'Overzichtskaartje',
   'node.actorFigure': 'Actorfiguur',
   'node.external': 'EXTERN',
+  'node.dragToConnect': 'Sleep om te koppelen',
   'node.externalTip': 'Een extern systeem: buiten deze organisatie, getekend om de koppelingen die het ermee heeft.',
   'node.fromTip': 'Hier getekend, gedefinieerd in {name}.',
   'node.hasContainer': 'Heeft een containeraanzicht — dubbelklik om te openen',
@@ -273,6 +276,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.resize': 'Breedte van de inspector aanpassen',
   'inspector.empty':
     'Selecteer een element of koppeling om de eigenschappen te bewerken. Dubbelklik een applicatie om haar containeraanzicht te openen.',
+  'inspector.emptyHint': 'Shift-klik om een element aan de selectie toe te voegen of er weer uit te halen.',
   'inspector.selected': '{count} geselecteerd',
   'inspector.elementsOne': '{count} element',
   'inspector.elementsOther': '{count} elementen',
@@ -512,7 +516,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'help.title': 'Sneltoetsen',
   'help.intro':
-    'Klik met rechts op een element, een lijn, een domeingroep, een tabblad of het lege canvas voor een menu met alles wat daar kan. De sneltoetsen hieronder staan naast de bijbehorende menu-ingangen.',
+    'Klik met rechts op een element, een lijn, een domeingroep, een tabblad of het lege canvas voor een menu met alles wat daar kan. De sneltoetsen hieronder staan naast de bijbehorende menu-ingangen. Sleep vanaf de rand van een element naar een ander om ze te koppelen, of rechtsklik en kies Koppeling starten naar…',
   'shortcutGroup.selection': 'Selectie',
   'shortcutGroup.edit': 'Bewerken',
   'shortcutGroup.view': 'Beeld',

@@ -103,6 +103,11 @@ export function InspectorEmptyState() {
       <Typography variant="body2" color="text.secondary">
         {t('inspector.empty')}
       </Typography>
+      {/* Said here so it can be read before the gesture is known, not only
+          once a second element is already selected. */}
+      <Typography variant="body2" color="text.secondary">
+        {t('inspector.emptyHint')}
+      </Typography>
     </Box>
   );
 }

@@ -463,6 +463,9 @@ export function ElementPalette({
                   <Box component="span" sx={{ display: 'block', opacity: 0.75 }}>
                     {paletteDescription(key, t)}
                   </Box>
+                  <Box component="span" sx={{ display: 'block', opacity: 0.75, mt: 0.5 }}>
+                    {t('palette.how')}
+                  </Box>
                 </>
               }
             >
@@ -554,9 +557,15 @@ export function ElementPalette({
           <Box sx={{ display: 'flex', color: 'text.secondary' }}>
             <Glyph size={15} strokeWidth={GLYPH_STROKE} />
           </Box>
-          <Typography sx={{ fontSize: 13, lineHeight: 1.4, flex: 1, textAlign: 'left' }}>
-            {rowLabel}
-          </Typography>
+          <Box sx={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+            <Typography sx={{ fontSize: 13, lineHeight: 1.4 }}>{rowLabel}</Typography>
+            {/* The same sentence the rail's tooltip carries: expanding the
+                palette used to drop it, and a row with a name and nothing
+                else is a row you have to already understand. */}
+            <Typography aria-hidden sx={{ fontSize: 10.5, lineHeight: 1.3, color: 'text.secondary' }} data-testid={`palette-description-${key}`}>
+              {paletteDescription(key, t)}
+            </Typography>
+          </Box>
           <Box
             sx={{
               display: 'flex',
@@ -609,10 +618,11 @@ export function ElementPalette({
                 />
               </LogoLibraryProvider>
             )}
-            {/* No visible "Name" caption: the placeholder already shows the name
-                you get if you leave it alone, and a labelled group around one
-                field would collide with the inspector's own Name field for
-                anything querying by label. */}
+            {/* A visible caption, because three unlabelled controls is what
+                the tray is now. A caption and not a <label>: the input keeps
+                its own aria-label, so the inspector's Name field stays the one
+                thing "Name" finds by label. */}
+            <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mb: -0.75 }}>{t('palette.name')}</Typography>
             <InputBase
               value={draft.name ?? ''}
               onChange={(event) => patchDraft(key, { name: event.target.value })}
@@ -700,6 +710,11 @@ export function ElementPalette({
           </Tooltip>
         )}
       </Box>
+      {/* How to add, said once: click opens a tray and drag places, and the
+          only cue for either was the grab cursor. */}
+      <Typography sx={{ fontSize: 11, color: 'text.secondary', pl: 2, pr: 1, pb: 1 }} data-testid="palette-how">
+        {t('palette.how')}
+      </Typography>
 
       {/* The filter. Only in the expanded panel: the rail has no labels to
           filter and no room for a field.

@@ -129,6 +129,36 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(nameInput.value).toBe('New application');
   });
 
+  /**
+   * The palette says how it works. Click opens a tray and drag places, and
+   * the only cue for either was the grab cursor; expanding the palette used
+   * to drop the descriptions the rail's tooltips carried; and Place said
+   * nothing about where.
+   */
+  it('says how to add, describes every kind in both states, and its button says Add to canvas', async () => {
+    renderEditor();
+    expect(screen.getByTestId('palette-how').textContent).toBe('Drag a kind onto the canvas, or click it to name it first.');
+    expect(screen.getByTestId('palette-description-application').textContent).toBe('A system the organisation runs or buys');
+    fireEvent.click(screen.getByRole('button', { name: 'Application', expanded: false }));
+    expect(screen.getByText('Name')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Add application' }).textContent).toBe('Add to canvas');
+    // Collapsed to the rail: the tooltip on a kind carries its description and the same caption.
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse palette' }));
+    fireEvent.mouseOver(screen.getByRole('button', { name: 'Open application options' }));
+    expect(await screen.findByText('A system the organisation runs or buys')).toBeDefined();
+    expect(await screen.findByText('Drag a kind onto the canvas, or click it to name it first.')).toBeDefined();
+  });
+
+  it('gives every connection handle a hint saying what dragging it does', async () => {
+    renderEditor({ model: modelWithPlacement('d1') });
+    const handle = await waitFor(() => {
+      const held = document.querySelector('.react-flow__handle');
+      if (!held) throw new Error('no handle yet');
+      return held;
+    });
+    expect(handle.getAttribute('title')).toBe('Drag to connect');
+  });
+
   it('adds actors into the actors zone', () => {
     const { landed } = renderEditor();
     placeFromPalette('Actor');

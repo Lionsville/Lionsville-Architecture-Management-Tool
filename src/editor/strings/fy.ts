@@ -137,9 +137,11 @@ export const FY: Record<keyof typeof EN, string> = {
 
   'palette.aside': 'Elemintepalet',
   'palette.addToCanvas': 'Oan it tekenflak taheakje',
+  'palette.how': 'Sleep in soarte nei it tekenflak, of klik derop om it earst in namme te jaan.',
+  'palette.name': 'Namme',
   'palette.expand': 'Palet útklappe',
   'palette.collapse': 'Palet ynklappe',
-  'palette.place': 'Pleatse',
+  'palette.place': 'Oan it tekenflak taheakje',
   'palette.add': '{name} taheakje',
   'palette.openOptions': 'Opsjes foar {name} iepenje',
   'palette.nameField': 'Namme fan {name}',
@@ -261,6 +263,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'canvas.minimap': 'Oersichtskaart',
   'node.actorFigure': 'Akteurfiguer',
   'node.external': 'EKSTERN',
+  'node.dragToConnect': 'Sleep om te keppeljen',
   'node.externalTip': 'In ekstern systeem: bûten dizze organisaasje, tekene om de keppelings dy\'t it dermei hat.',
   'node.fromTip': 'Hjir tekene, definiearre yn {name}.',
   'node.hasContainer': 'Hat in containerdiagram — dûbelklik om te iepenjen',
@@ -273,6 +276,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'inspector.resize': 'Breedte fan de ynspektor oanpasse',
   'inspector.empty':
     'Selektearje in elemint of ferbining om de eigenskippen te bewurkjen. Dûbelklik in applikaasje om har containerdiagram te iepenjen.',
+  'inspector.emptyHint': 'Shift-klik om in elemint oan de seleksje ta te foegjen of der wer út te heljen.',
   'inspector.selected': '{count} selektearre',
   'inspector.elementsOne': '{count} elemint',
   'inspector.elementsOther': '{count} eleminten',
@@ -512,7 +516,7 @@ export const FY: Record<keyof typeof EN, string> = {
 
   'help.title': 'Fluchtoetsen',
   'help.intro':
-    'Klik mei rjochts op in elemint, in line, in domeingroep, in diagramtabblêd of it lege tekenflak foar in menu mei alles wat dêr kin. De fluchtoetsen hjirûnder steane neist de byhearrende menu-yngongen.',
+    'Klik mei rjochts op in elemint, in line, in domeingroep, in diagramtabblêd of it lege tekenflak foar in menu mei alles wat dêr kin. De fluchtoetsen hjirûnder steane neist de byhearrende menu-yngongen. Sleep fan de râne fan in elemint nei in oar om se te keppeljen, of rjochtsklik en kies Keppeling begjinne nei…',
   'shortcutGroup.selection': 'Seleksje',
   'shortcutGroup.edit': 'Bewurkje',
   'shortcutGroup.view': 'Byld',

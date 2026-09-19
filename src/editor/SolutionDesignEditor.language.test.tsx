@@ -75,7 +75,7 @@ describe('SolutionDesignEditor — language', () => {
     renderEditor();
     expect(screen.getByLabelText('Fit view')).toBeDefined();
     expect(screen.getByLabelText('Element palette')).toBeDefined();
-    expect(screen.getByText('Add to canvas')).toBeDefined();
+    expect(screen.getAllByText('Add to canvas').length).toBeGreaterThan(0);
   });
 
   it('speaks Dutch when asked — toolbar tooltip, palette rows and zone bands', () => {

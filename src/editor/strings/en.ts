@@ -145,9 +145,11 @@ export const EN = {
   // --- palette -------------------------------------------------------------
   'palette.aside': 'Element palette',
   'palette.addToCanvas': 'Add to canvas',
+  'palette.how': 'Drag a kind onto the canvas, or click it to name it first.',
+  'palette.name': 'Name',
   'palette.expand': 'Expand palette',
   'palette.collapse': 'Collapse palette',
-  'palette.place': 'Place',
+  'palette.place': 'Add to canvas',
   'palette.add': 'Add {name}',
   'palette.openOptions': 'Open {name} options',
   'palette.nameField': '{name} name',
@@ -271,6 +273,7 @@ export const EN = {
   'canvas.minimap': 'Minimap',
   'node.actorFigure': 'Actor figure',
   'node.external': 'EXTERNAL',
+  'node.dragToConnect': 'Drag to connect',
   'node.externalTip': 'An external system: outside this organisation, drawn for the interfaces it has with it.',
   'node.fromTip': 'Drawn here, defined in {name}.',
   'node.hasContainer': 'Has a container diagram — double-click to open',
@@ -284,6 +287,7 @@ export const EN = {
   'inspector.resize': 'Resize inspector',
   'inspector.empty':
     'Select an element or connection to edit its properties. Double-click an application to open its container diagram.',
+  'inspector.emptyHint': 'Shift-click to add an element to the selection or take it out again.',
   'inspector.selected': '{count} selected',
   'inspector.elementsOne': '{count} element',
   'inspector.elementsOther': '{count} elements',
@@ -528,7 +532,7 @@ export const EN = {
 
   'help.title': 'Keyboard shortcuts',
   'help.intro':
-    'Right-click an element, a line, a domain group, a diagram tab or the empty canvas for a menu of everything you can do there. The shortcuts below appear beside the matching menu entries.',
+    'Right-click an element, a line, a domain group, a diagram tab or the empty canvas for a menu of everything you can do there. The shortcuts below appear beside the matching menu entries. Drag from the edge of an element to another to connect them, or right-click and choose Start connection to…',
   'shortcutGroup.selection': 'Selection',
   'shortcutGroup.edit': 'Edit',
   'shortcutGroup.view': 'View',
