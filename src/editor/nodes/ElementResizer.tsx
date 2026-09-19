@@ -36,7 +36,15 @@ export function ElementResizer({
       maxWidth={limits.max.width}
       maxHeight={limits.max.height}
       lineStyle={{ borderColor: tokens.card.selectedRing }}
-      handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
+      // The handles too, or they fall through to the library's own blue and
+      // the ring and its corners disagree about which colour selection is.
+      handleStyle={{
+        width: 8,
+        height: 8,
+        borderRadius: 2,
+        backgroundColor: tokens.card.selectedRing,
+        borderColor: tokens.card.bg,
+      }}
       onResizeEnd={(_event, params) =>
         resize.commitResize(elementId, {
           x: params.x,
