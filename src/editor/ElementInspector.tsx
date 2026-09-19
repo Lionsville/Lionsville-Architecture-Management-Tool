@@ -471,7 +471,9 @@ export function ElementInspector(props: ElementInspectorProps) {
         value={activeTab}
         onChange={(_e, value: number) => setActiveTab(value)}
         variant="fullWidth"
-        sx={{ minHeight: 40, mb: 0.5, '& .MuiTab-root': { minHeight: 40, py: 0.5, minWidth: 0 } }}
+        // Tight letter-spacing and padding before a label clips: at a narrow
+        // panel the tabs read ‹PPEARANCE otherwise.
+        sx={{ minHeight: 40, mb: 0.5, '& .MuiTab-root': { minHeight: 40, py: 0.5, px: 0.5, minWidth: 0, letterSpacing: 0, fontSize: 11.5 } }}
       >
         <Tab label={<TabLabel text={t('tab.general')} />} />
         <Tab label={<TabLabel text={t('tab.appearance')} />} />

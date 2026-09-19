@@ -23,6 +23,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
 import { LOCALE } from '../i18n'
 import type { Language, StringKey, Translate } from '../i18n'
@@ -126,10 +127,16 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   onGoHome: (path: ScopePath) => void
   s: Translate
 }) {
+  // Narrow windows: the crumbs give way before anything else does, the
+  // leftmost first — an ancestor's name is the one a reader can most afford
+  // to lose — each to an ellipsis rather than a wrap.
+  const shrinking = (order: number) => ({
+    minWidth: 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  } as const)
   return (
-    <Box data-testid="crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0 }}>
-      {crumbs.map((crumb) => (
-        <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+    <Box data-testid="crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flexShrink: 1 }}>
+      {crumbs.map((crumb, index) => (
+        <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(crumbs.length - index + 1) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
             <Button
               size="small"
@@ -137,8 +144,9 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
               onClick={() => onGoHome(crumb.path)}
               data-testid={`crumb-${crumb.path}`}
               sx={{
-                fontSize: 13, fontWeight: 500, minWidth: 0, px: 0.75, py: 0,
+                fontSize: 13, fontWeight: 500, px: 0.75, py: 0,
                 textTransform: 'none', color: 'text.secondary',
+                ...shrinking(1), display: 'block',
               }}
             >
               {crumb.name}
@@ -156,7 +164,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
           color="inherit"
           onClick={() => onGoHome(currentPath)}
           data-testid="crumb-current"
-          sx={{ fontSize: 13, fontWeight: 700, minWidth: 0, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary' }}
+          sx={{ fontSize: 13, fontWeight: 700, px: 0.5, py: 0, textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
         >
           {current}
         </Button>
@@ -260,8 +268,16 @@ export function ShellToolbar({
   overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
+  // Half a screen: the status collapses to a dot that says the same thing on
+  // hover, before the bar has to wrap or clip.
+  const narrow = useMediaQuery('(max-width: 1100px)')
 
   const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+  const statusText = saveFailed
+    ? s('shell.saveRefused')
+    : STATUS_LABEL[status]
+      ? s(STATUS_LABEL[status]!)
+      : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')
 
   return (
     <Box data-testid="shell-toolbar" sx={{
@@ -284,16 +300,15 @@ export function ShellToolbar({
           {s('settings.open')}
         </Button>
       </Tooltip>
-      <Typography
-        sx={{ fontSize: 11, color: alarming(status, saveFailed) ? 'error.main' : 'text.secondary' }}
-        data-testid="saved-indicator"
-      >
-        {saveFailed
-          ? s('shell.saveRefused')
-          : STATUS_LABEL[status]
-            ? s(STATUS_LABEL[status]!)
-            : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')}
-      </Typography>
+      <Tooltip title={narrow ? statusText : ''}>
+        <Typography
+          sx={{ fontSize: 11, color: alarming(status, saveFailed) ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap', flexShrink: 0 }}
+          data-testid="saved-indicator"
+          aria-label={narrow ? statusText : undefined}
+        >
+          {narrow ? '●' : statusText}
+        </Typography>
+      </Tooltip>
       <Box sx={{ flex: 1 }} />
       {([
         ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],

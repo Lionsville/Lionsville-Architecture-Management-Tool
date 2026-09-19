@@ -133,7 +133,10 @@ export function TechnologyPage(props: TechnologyPageProps) {
           )}
 
           {shown.length > 0 && (
-            <Box component="table" data-testid="technology-register-table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            // Eight columns: at half a screen the table scrolls sideways rather
+            // than pushing its findings column off the page.
+            <Box sx={{ overflowX: 'auto' }}>
+            <Box component="table" data-testid="technology-register-table" sx={{ width: '100%', minWidth: 960, borderCollapse: 'collapse', fontSize: 13 }}>
               <Box component="thead">
                 <Box component="tr" sx={{ '& th': { textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'text.secondary', borderBottom: 1, borderColor: 'divider', py: 0.75, textTransform: 'uppercase', letterSpacing: 0.6 } }}>
                   <Box component="th">{s('techRegister.colName')}</Box>
@@ -151,6 +154,7 @@ export function TechnologyPage(props: TechnologyPageProps) {
                   <Row key={row.id} row={row} label={label} onOpen={onOpen} onOpenPage={onOpenPage} s={s} />
                 ))}
               </Box>
+            </Box>
             </Box>
           )}
         </Box>

@@ -23,6 +23,8 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { DocumentIcon, EyeIcon } from '../../widgets/icons'
 import Typography from '@mui/material/Typography'
 import type { DocumentImage } from '../../model/types'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -75,6 +77,7 @@ export type DocumentSourceProps = {
 export function DocumentSource(props: DocumentSourceProps) {
   const { value, onChange, onAddImage, images, preview } = props
   const { t } = useStrings()
+  const narrow = useMediaQuery('(max-width: 1100px)')
   const ownRef = useRef<HTMLTextAreaElement>(null)
   const areaRef = props.textareaRef ?? ownRef
 
@@ -165,10 +168,32 @@ export function DocumentSource(props: DocumentSourceProps) {
         <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
           {onAddImage ? t('doc.markdownImageHint') : t('doc.markdownHint')}
         </Typography>
-        <Button size="small" onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
-          {t('doc.insertBusinessCase')}
-        </Button>
-        {images && (
+        {/* Half a screen: the three words become three glyphs with the words
+            as tooltips, rather than a toolbar three rows tall. */}
+        {narrow ? (
+          <Tooltip title={t('doc.insertBusinessCase')}>
+            <IconButton size="small" aria-label={t('doc.insertBusinessCase')} onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
+              <DocumentIcon size={16} />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <Button size="small" onClick={() => insertAtCaret(`\n\n${businessCaseTemplate()}\n\n`)}>
+            {t('doc.insertBusinessCase')}
+          </Button>
+        )}
+        {images && (narrow ? (
+          <Tooltip title={`${t('doc.pictures')} (${library.length})`}>
+            <IconButton
+              size="small"
+              aria-label={`${t('doc.pictures')} (${library.length})`}
+              aria-pressed={showPictures}
+              color={showPictures ? 'primary' : 'default'}
+              onClick={() => setShowPictures((open) => !open)}
+            >
+              <span aria-hidden style={{ fontSize: 14, lineHeight: 1 }}>▣</span>
+            </IconButton>
+          </Tooltip>
+        ) : (
           <Button
             size="small"
             variant={showPictures ? 'contained' : 'text'}
@@ -178,13 +203,25 @@ export function DocumentSource(props: DocumentSourceProps) {
           >
             {t('doc.pictures')} ({library.length})
           </Button>
-        )}
+        ))}
         {props.extra}
-        {preview && (
+        {preview && (narrow ? (
+          <Tooltip title={preview.shown ? t('doc.hidePreview') : t('doc.showPreview')}>
+            <IconButton
+              size="small"
+              aria-label={preview.shown ? t('doc.hidePreview') : t('doc.showPreview')}
+              aria-pressed={preview.shown}
+              color={preview.shown ? 'primary' : 'default'}
+              onClick={preview.onToggle}
+            >
+              <EyeIcon />
+            </IconButton>
+          </Tooltip>
+        ) : (
           <Button size="small" variant="outlined" aria-pressed={preview.shown} onClick={preview.onToggle}>
             {preview.shown ? t('doc.hidePreview') : t('doc.showPreview')}
           </Button>
-        )}
+        ))}
         <MarkdownHelp images={Boolean(onAddImage)} />
       </Box>
 
