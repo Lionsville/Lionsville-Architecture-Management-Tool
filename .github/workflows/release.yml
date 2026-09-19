@@ -240,6 +240,16 @@ jobs:
             Write-Host "NuGet provider bootstrap unavailable, continuing: $($_.Exception.Message)"
           }
 
+          # Nor is PSGallery reliably registered any more: the windows-2025
+          # image that built v2.1.0 with it present answered the v2.2.0 build
+          # two days later with "No repository with the name 'PSGallery' was
+          # found". `Register-PSRepository -Default` puts the gallery back
+          # under its well-known name, and is the one form of the cmdlet that
+          # takes no URL to get wrong.
+          if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+            Write-Host 'PSGallery is not registered on this image; registering it.'
+            Register-PSRepository -Default -ErrorAction Stop
+          }
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module -Name TrustedSigning -Force -Scope CurrentUser -AllowClobber
 
