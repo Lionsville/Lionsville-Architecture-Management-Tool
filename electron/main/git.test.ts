@@ -158,6 +158,20 @@ describe.skipIf(!available)('git in a working directory', () => {
     expect(files.find((file) => file.path === 'scope.json')?.text).toBe('{"name":"Before"}')
   })
 
+  it('reads the root scope back too, whose folder is the root itself', async () => {
+    // The organisation is the scope at the top, and its prefix is nothing. Git
+    // refuses an empty pathspec, so this is the one read with none — and it
+    // still comes back as the folder's own files, relative to the root.
+    await initRepository(root)
+    await writeFile(join(root, 'scope.json'), '{"name":"Acme"}', 'utf8')
+    await project('scope.json', '{}')
+    const sha = await snapshot(root, 'Root and one landscape')
+
+    const files = await filesAt(root, sha!, '')
+    expect(files.map((file) => file.path).sort()).toEqual(['.gitignore', 'acme/landscape/scope.json', 'scope.json'])
+    expect(files.find((file) => file.path === 'scope.json')?.text).toBe('{"name":"Acme"}')
+  })
+
   it('leaves the marks out of what it reads back', async () => {
     // A diff of the architecture does not need the bitmaps, and reading them as
     // text would be a lie about what they are.

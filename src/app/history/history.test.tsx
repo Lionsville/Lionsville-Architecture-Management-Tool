@@ -16,6 +16,7 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-libra
 import { InMemoryProjectHistory } from '../../adapters/memory/InMemoryProjectHistory'
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import type { HostModel } from '../../model/hostModel'
+import type { HostCommand } from '../../platform/hostCommands'
 import type { ScopeSnapshot } from '../../projects/scope'
 import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
 import { renderApp } from '../testing/renderShell'
@@ -87,6 +88,31 @@ function show(history?: ProjectHistory) {
 }
 
 /**
+ * The desktop: a menu bar of its own, whose items arrive as commands on the
+ * stream — and which offers *Snapshot…* whatever the shell can do, because the
+ * menu decides nothing (`platform/menu.ts`). With `open: false` the
+ * organisation screen is up rather than a landscape.
+ */
+function showDesktop(history: ProjectHistory, options: { open?: boolean } = {}) {
+  const listeners: ((command: HostCommand) => void)[] = []
+  const projects = new InMemoryScopeStore([project()])
+  const view = renderApp({
+    scopes: projects,
+    initialProject: options.open === false ? undefined : project(),
+    history,
+    hostMenu: true,
+    commands: (listener) => {
+      listeners.push(listener)
+      return () => { listeners.splice(listeners.indexOf(listener), 1) }
+    },
+  })
+  const send = (command: HostCommand) => act(() => { for (const held of [...listeners]) held(command) })
+  /** The machine has answered whether it has a git: one microtask after the mount. */
+  const settled = () => act(async () => { await Promise.resolve() })
+  return { ...view, projects, send, settled }
+}
+
+/**
  * The Save menu is gone (ADR-0005): on the web the items live in the toolbar's
  * overflow, which carries the same list as the desktop's File menu.
  */
@@ -114,6 +140,75 @@ describe('what the menu offers', () => {
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
     expect(screen.getByText('History…')).toBeDefined()
+  })
+
+  it('offers both on the organisation screen too: a snapshot is of the folder', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([project()]), history: fakeHistory().history })
+    await screen.findByTestId('shell-toolbar')
+    await openSaveMenu()
+    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
+    expect(screen.getByText('History…')).toBeDefined()
+  })
+})
+
+describe('from the menu bar', () => {
+  it('says so on a machine with no git, rather than doing nothing', async () => {
+    // The desktop's menu offers the item regardless; a click that vanished
+    // would look like a broken app rather than a missing program.
+    const view = showDesktop(fakeHistory({ available: () => Promise.resolve(false) }).history)
+    await view.settled()
+    view.send({ type: 'snapshot' })
+    expect(await screen.findByText(/This machine has no git/)).toBeDefined()
+    expect(screen.queryByLabelText('What changed')).toBeNull()
+  })
+
+  it('takes a snapshot of the folder from the organisation screen', async () => {
+    // A snapshot is of the folder, so it means the same from the front door as
+    // from inside a landscape — and the screen writes straight through, so
+    // there is nothing to save first.
+    const held = fakeHistory({ keeping: () => Promise.resolve(true) })
+    const view = showDesktop(held.history, { open: false })
+    await screen.findByTestId('shell-toolbar')
+    await view.settled()
+    view.send({ type: 'snapshot' })
+    await screen.findByLabelText('What changed')
+    fireEvent.click(screen.getByText('Take snapshot'))
+
+    await waitFor(() => expect(held.calls.snapshots).toEqual(['Snapshot']))
+    expect(await screen.findByText('Snapshot taken.')).toBeDefined()
+  })
+
+  it('opens the history from the organisation screen, over the home scope’s own document', async () => {
+    const held = fakeHistory({
+      entries: [{ id: 'abc1234', subject: 'Before the merger', at: 1_757_000_000_000, author: 'W. Simons', labels: [] }],
+      keeping: () => Promise.resolve(true),
+      projectAt: (path) => Promise.resolve({
+        ...project(),
+        path,
+        model: model({
+          elements: [{
+            id: 'crews', kind: 'application', name: 'Crews',
+            lifecycle: 'live', isManaged: true, aspects: {},
+          }],
+        }),
+      }),
+    })
+    const view = showDesktop(held.history, { open: false })
+    await screen.findByTestId('shell-toolbar')
+    await view.settled()
+    view.send({ type: 'history' })
+
+    expect(within(await screen.findByTestId('history-list')).getByText('Before the merger')).toBeDefined()
+    // The root holds nothing now, and the snapshot held Crews: removed since.
+    expect(await screen.findByText('Removed Crews')).toBeDefined()
+  })
+
+  it('says so on a machine with no git from the organisation screen too', async () => {
+    const view = showDesktop(fakeHistory({ available: () => Promise.resolve(false) }).history, { open: false })
+    await screen.findByTestId('shell-toolbar')
+    await view.settled()
+    view.send({ type: 'history' })
+    expect(await screen.findByText(/This machine has no git/)).toBeDefined()
   })
 })
 

@@ -894,7 +894,7 @@ export function ProjectWorkspace({
    * not a second route but the route. It is deliberately not a switch over
    * every command — the ones this workspace does not own fall through to
    * whoever does. A history item on a machine that cannot keep one is
-   * ignored rather than answered with a dialog that would go nowhere.
+   * answered by the hook with a word about why (`useProjectHistory`).
    */
   useEffect(() => commands?.((command) => {
     switch (command.type) {
@@ -902,8 +902,8 @@ export function ProjectWorkspace({
       case 'export': files.saveWorkingFile(); break
       case 'open': documentPicker.open(); break
       case 'openDocument': files.openDocument(command.name, command.bytes); break
-      case 'snapshot': if (snapshots.available) snapshots.openDialog(); break
-      case 'history': if (snapshots.available) snapshots.openPage(); break
+      case 'snapshot': snapshots.openDialog(); break
+      case 'history': snapshots.openPage(); break
     }
   }), [commands, forceSave, files, documentPicker, snapshots])
 

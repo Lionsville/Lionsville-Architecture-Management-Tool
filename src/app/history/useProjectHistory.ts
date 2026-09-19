@@ -39,6 +39,13 @@ function dayOf(at: number): string {
 export type ProjectHistoryState = {
   /** Can this machine keep a history at all? Nothing is offered when it cannot. */
   available: boolean
+  /**
+   * Known NOT to be able to: there is no seam, or the machine has no git. Not
+   * the same as `!available`, which is also true for the moment before the
+   * machine has answered — and a warning about a git that is merely still
+   * being looked for would be wrong.
+   */
+  unavailable: boolean
   /** Is this folder keeping one yet? The dialog explains the first time. */
   keeping: boolean
   dialogOpen: boolean
@@ -99,7 +106,8 @@ export function useProjectHistory(deps: {
 }): ProjectHistoryState {
   const { history, index, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
 
-  const [available, setAvailable] = useState(false)
+  /** Undefined until the machine has answered; a menu item can be chosen before it has. */
+  const [available, setAvailable] = useState<boolean | undefined>(undefined)
   const [keeping, setKeeping] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pageOpen, setPageOpen] = useState(false)
@@ -113,14 +121,29 @@ export function useProjectHistory(deps: {
   const recorded = useRef(0)
 
   useEffect(() => {
-    if (!history) return
+    if (!history) { setAvailable(false); return }
     void history.available().then(async (can) => {
       setAvailable(can)
       if (can) setKeeping(await history.keeping())
     }, () => setAvailable(false))
   }, [history])
 
+  /**
+   * Whether an item that was offered anyway can be honoured. The desktop's
+   * menu bar decides nothing (`platform/menu.ts`), so *Snapshot…* is there on a
+   * machine with no git and has to answer with a word rather than with
+   * silence — an item that does nothing looks like a broken app, not like a
+   * missing program. A machine still being asked answers nothing yet; the
+   * answer is milliseconds away and a wrong warning would outlive it.
+   */
+  const refused = useCallback((): boolean => {
+    if (available === true) return false
+    if (!history || available === false) notify(s('history.unavailable'), 'warning')
+    return true
+  }, [available, history, notify, s])
+
   const openDialog = useCallback(() => {
+    if (refused()) return
     // Drafted now rather than held: the log has grown since the dialog was last
     // open, and a stale draft is worse than none.
     const drafted = draftCommitMessage(steps().slice(recorded.current).map((held) => held.summary), s)
@@ -130,7 +153,7 @@ export function useProjectHistory(deps: {
     // nothing happened HERE would be a dead end.
     setDraft(drafted || s('history.defaultMessage'))
     setDialogOpen(true)
-  }, [steps, s])
+  }, [refused, steps, s])
 
   const take = useCallback((message: string) => {
     if (!history) return
@@ -186,12 +209,12 @@ export function useProjectHistory(deps: {
   }, [history, project, index, notify, s])
 
   const openPage = useCallback((of?: HistorySubject) => {
-    if (!history) return
+    if (refused()) return
     setChosen(undefined)
     setSubjectState(of)
     setPageOpen(true)
     list(of)
-  }, [history, list])
+  }, [refused, list])
 
   /**
    * The restore itself. A refusal is a toast and nothing else; a success
@@ -237,7 +260,8 @@ export function useProjectHistory(deps: {
   }, [list])
 
   return {
-    available,
+    available: available === true,
+    unavailable: available === false,
     keeping,
     dialogOpen,
     pageOpen,

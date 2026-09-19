@@ -272,9 +272,10 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
 
   ipcMain.handle('git:filesAt', (_event, root: unknown, sha: unknown, prefix: unknown) => {
     if (!isGranted(root) || typeof sha !== 'string' || typeof prefix !== 'string') return []
-    // A sha is forty hex characters and a prefix is a path we wrote. Anything
+    // A sha is forty hex characters and a prefix is a path we wrote — or
+    // nothing, for the root scope, whose folder is the root itself. Anything
     // else is somebody trying an argument on for size.
-    if (!/^[0-9a-f]{7,40}$/.test(sha) || !/^[A-Za-z0-9_\-./]+$/.test(prefix) || prefix.includes('..')) {
+    if (!/^[0-9a-f]{7,40}$/.test(sha) || !/^[A-Za-z0-9_\-./]*$/.test(prefix) || prefix.includes('..')) {
       return []
     }
     return filesAt(root, sha, prefix)

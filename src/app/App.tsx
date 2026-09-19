@@ -18,12 +18,14 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { translator } from '../i18n'
 import type { StringKey } from '../i18n'
-import type { ElementId } from '../model'
+import type { Command, ElementId, StepSummary } from '../model'
+import { apply, fromArrays, toArrays } from '../model'
+import type { HostModel } from '../model/hostModel'
 import type { AncestorRecords } from '../decisions/adrScope'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
 import {
-  flattenScopes, isProjectOrder, moveScope, namesUnder, renameScope, setScopeDefaults,
+  bareScope, flattenScopes, isProjectOrder, moveScope, namesUnder, renameScope, setScopeDefaults,
 } from '../projects/scope'
 import type {
   ProjectOrder, ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary,
@@ -60,6 +62,9 @@ import type { WorkingSource } from '../platform/workingSource'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { CrashControls } from './ErrorBoundary'
+import { HistoryPage } from './history/HistoryPage'
+import { SnapshotDialog } from './history/SnapshotDialog'
+import { useProjectHistory } from './history/useProjectHistory'
 import { carryRefs } from './carryRefs'
 import { ChooseFolder } from './organisation/ChooseFolder'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
@@ -288,6 +293,13 @@ export type AppProps = {
   onTitle?: (organisation: string, scope?: string) => void
 }
 
+/** The organisation screen has no command log: the history drafts its default message. */
+const NO_STEPS = (): readonly { summary: StepSummary }[] => []
+/** …and nothing waiting to be written: the screen writes straight through. */
+const SAVED = (): Promise<void> => Promise.resolve()
+/** What the history page compares against before the home's document has been read. */
+const EMPTY_MODEL: HostModel = { name: '', elements: [], relations: [], diagrams: [] }
+
 function localToday(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -444,12 +456,21 @@ export function App({
   const bus = useHostCommands(commands)
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [agentOpen, setAgentOpen] = useState(false)
+  /**
+   * The folder's history, from the organisation screen (`homeHistory`, below).
+   * Through a ref so the subscription does not chase the hook's identity: the
+   * commands are only ever answered here while no scope is open, and the
+   * workspace answers them itself while one is.
+   */
+  const homeHistoryRef = useRef<{ openDialog: () => void; openPage: () => void } | undefined>(undefined)
   useEffect(() => bus.on((command) => {
     if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
     if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
     if (command.type === 'preferences') setPrefsOpen(true)
     if (command.type === 'connectAgent') setAgentOpen(true)
+    if (command.type === 'snapshot') homeHistoryRef.current?.openDialog()
+    if (command.type === 'history') homeHistoryRef.current?.openPage()
   }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs])
 
   /**
@@ -619,6 +640,52 @@ export function App({
     s,
   })
   refreshTree.current = organisation.refresh
+
+  /**
+   * Snapshots and the history, while the organisation screen is up.
+   *
+   * A snapshot is of the FOLDER (ADR-0003), so it means the same thing from
+   * here as from inside a landscape: the menu offers it on both, and an item
+   * that was offered has to work. What differs is what stands behind the
+   * page: the home scope's own document — the organisation's business layer,
+   * or a domain's records — which the screen has already read for its cards,
+   * and which is written straight through, so there is nothing to save first.
+   * A restore is one write of that document, the way the settings dialog
+   * writes it. Inert while a scope is open: the workspace has its own, and
+   * the seam is withheld from this one so the two never both answer.
+   */
+  const homeDocument = useCallback(
+    () => organisation.root ?? bareScope(home, organisation.tree.name),
+    [organisation.root, organisation.tree.name, home],
+  )
+  const restoreIntoHome = useCallback((command: Command) => {
+    const held = organisation.root
+    if (!held) return
+    const result = apply(fromArrays(held.model), command)
+    if (!result.ok) { toasts.notify(s(result.reason), 'error'); return }
+    void projects.save({ ...held, model: toArrays(result.model) }).then(
+      () => { organisation.refresh(); tree.refresh() },
+      (cause: unknown) => failedRef.current('organisation.restore', cause, 'group.saveFailed'),
+    )
+  }, [organisation, projects, tree, toasts, s])
+  const homeHistory = useProjectHistory({
+    history: project ? undefined : history,
+    index: tree.index,
+    project: homeDocument,
+    steps: NO_STEPS,
+    save: SAVED,
+    indexed: () => fromArrays(homeDocument().model),
+    dispatch: restoreIntoHome,
+    notify: toasts.notify,
+    s,
+    onTaken: sync.afterSnapshot,
+  })
+  homeHistoryRef.current = project ? undefined : homeHistory
+  const homeModel: HostModel = organisation.root?.model ?? EMPTY_MODEL
+  const scopeLabel = useCallback(
+    (path: ScopePath) => (path === ROOT_SCOPE ? organisation.tree.name : scopePathLabel(path)),
+    [organisation.tree.name],
+  )
 
   /**
    * Open another scope by its path — what *Open …* beside a field another
@@ -980,9 +1047,8 @@ export function App({
             // reachable with nothing open (ADR-0007).
             overflow={hostMenu ? undefined : {
               themeMode: prefs.themeMode,
-              // No history: snapshots and the history page are about the scope
-              // that is open, and none is.
-              can: { folders: Boolean(onChooseWorkingDirectory), history: false },
+              // The folder's history, from its front door too (`homeHistory`).
+              can: { folders: Boolean(onChooseWorkingDirectory), history: homeHistory.available },
               onCommand: bus.send,
             }}
             agent={agentBar}
@@ -1001,6 +1067,34 @@ export function App({
           />
         )}
         </ErrorBoundary>
+        {!project && (
+          <>
+            <SnapshotDialog
+              open={homeHistory.dialogOpen}
+              keeping={homeHistory.keeping}
+              draft={homeHistory.draft}
+              onCancel={homeHistory.closeDialog}
+              onTake={homeHistory.take}
+              s={s}
+            />
+            <HistoryPage
+              open={homeHistory.pageOpen}
+              onClose={homeHistory.closePage}
+              entries={homeHistory.entries}
+              chosen={homeHistory.chosen}
+              onChoose={homeHistory.choose}
+              current={homeModel}
+              subject={homeHistory.subject}
+              onSubjectChange={homeHistory.setSubject}
+              scopes={homeHistory.places.map((place) => scopeLabel(place.path))}
+              onRestore={homeHistory.restore}
+              onLabel={homeHistory.label}
+              language={prefs.language}
+              s={s}
+              windowChrome={windowChrome}
+            />
+          </>
+        )}
         <SyncNotice
           open={sync.diverged}
           onTakeTheirs={() => sync.resolve('theirs')}

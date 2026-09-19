@@ -328,7 +328,10 @@ export async function label(root: string, sha: string, name: string): Promise<La
  */
 export async function filesAt(root: string, sha: string, prefix: string): Promise<GitFile[]> {
   if (!await isRepository(root)) return []
-  const listing = await git(root, ['ls-tree', '-r', '--name-only', sha, '--', prefix])
+  // The organisation itself is the root scope, whose folder IS the root: an
+  // empty prefix means the whole tree, and git refuses an empty pathspec
+  // rather than reading it that way — so the pathspec is left out.
+  const listing = await git(root, ['ls-tree', '-r', '--name-only', sha, ...(prefix ? ['--', prefix] : [])])
   const paths = listing.split('\n').filter((path) => path && !path.endsWith('.png'))
   const files: GitFile[] = []
   for (const path of paths) {
