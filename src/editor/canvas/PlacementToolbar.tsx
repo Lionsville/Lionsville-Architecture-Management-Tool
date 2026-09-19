@@ -50,7 +50,9 @@ const ALIGN_BUTTONS: Array<{
 /**
  * Canvas-overlay placement toolbar (top-centre): grid-snap toggle plus the
  * align/distribute groups. Rendered only when the canvas is editable; the
- * align/distribute buttons disable until the selection qualifies.
+ * align/distribute groups appear once two or more things are selected —
+ * eight disabled buttons on an empty board were a row a person tried to
+ * work out rather than a row that said "select two things first".
  */
 export function PlacementToolbar(props: PlacementToolbarProps) {
   const theme = useTheme();
@@ -95,6 +97,7 @@ export function PlacementToolbar(props: PlacementToolbarProps) {
           </IconButton>
         </Tooltip>
 
+        {props.canAlign && (<>
         <Divider orientation="vertical" flexItem sx={{ mx: 0.25 }} />
 
         {ALIGN_BUTTONS.map(({ axis, labelKey, Icon }) => (
@@ -138,6 +141,7 @@ export function PlacementToolbar(props: PlacementToolbarProps) {
             </IconButton>
           </span>
         </Tooltip>
+        </>)}
       </Paper>
     </Panel>
   );

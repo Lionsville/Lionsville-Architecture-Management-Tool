@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import {
   Background,
   BackgroundVariant,
-  Controls,
   MiniMap,
   ReactFlow,
   applyEdgeChanges,
@@ -66,6 +65,7 @@ import { dispatchMenuAction, type MenuActionHost } from './useMenuActions';
 import { GRID_SIZE } from './gridSize';
 import { isRectFullyVisible, toRect } from './viewportFit';
 import { ViewportMemory, type Viewport } from './viewportMemory';
+import { ZoomControls } from './ZoomControls';
 import { useDragRoutePreview } from './useDragRoutePreview';
 import { NodeResizeContext, type NodeResizeApi } from './NodeResizeContext';
 import { RouteEditingContext, type RouteEditingApi } from './RouteEditingContext';
@@ -1646,7 +1646,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
               style={{ border: `1px solid ${tokens.card.border}`, borderRadius: 4 }}
             />
           )}
-          <Controls showInteractive={false} />
+          <ZoomControls />
           {!props.readOnly && (
             <PlacementToolbar
               snapToGrid={props.snapToGrid}

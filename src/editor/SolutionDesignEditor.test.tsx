@@ -149,6 +149,21 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(await screen.findByText('Drag a kind onto the canvas, or click it to name it first.')).toBeDefined();
   });
 
+  it('has zoom controls of its own, in the reader\'s language, and none of React Flow\'s', () => {
+    renderEditor();
+    expect(screen.getByLabelText('Zoom in')).toBeDefined();
+    expect(screen.getByLabelText('Zoom out')).toBeDefined();
+    expect(screen.getByLabelText('Fit the board to the window')).toBeDefined();
+    expect(document.querySelector('.react-flow__controls')).toBeNull();
+  });
+
+  it('shows no align bar while nothing is selected', () => {
+    renderEditor({ model: modelWithPlacement('d1') });
+    expect(screen.getByLabelText('Toggle grid visibility')).toBeDefined();
+    expect(screen.queryByLabelText('Align left')).toBeNull();
+    expect(screen.queryByLabelText('Distribute horizontally')).toBeNull();
+  });
+
   it('gives every connection handle a hint saying what dragging it does', async () => {
     renderEditor({ model: modelWithPlacement('d1') });
     const handle = await waitFor(() => {
