@@ -24,6 +24,17 @@
 /** The file a folder holds when it is a scope. */
 export const SCOPE_FILE = 'scope.json'
 
+/**
+ * The version that file carries — here for the same reason `SCOPE_FILE` is.
+ *
+ * `projects/folderFormat.ts` owns what the number MEANS and re-exports this
+ * one; main only ever needs to say it, and a second spelling of it is one
+ * spelling and one oversight. The smoke test is what asks: it reads a header
+ * off the disk to prove the format wrote what it says it writes, and it had
+ * the number typed into it until ADR-0018 turned it.
+ */
+export const SCOPE_FORMAT_VERSION = 6
+
 /** What the tool writes into every file it owns, so a folder says what it is. */
 const TOOL = 'lionsville-architecture'
 

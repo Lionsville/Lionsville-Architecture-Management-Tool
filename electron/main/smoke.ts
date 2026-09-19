@@ -38,6 +38,7 @@ import type { BrowserWindow } from 'electron'
 import { sendCommand } from './appMenu'
 import { grantDirectory } from './files'
 import { logFilePath } from './log'
+import { SCOPE_FORMAT_VERSION } from '../../src/platform/scopeHeader'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 
 export type SmokeResult = { name: string; ok: boolean; detail: string }
@@ -302,12 +303,12 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   results.push(await checkHere('the example becomes the organisation, as the format writes it', async () => {
     const seen = await copyExample()
-    // What the format writes, where it writes it (ADR-0003, format 5): the
+    // What the format writes, where it writes it (ADR-0003, ADR-0018): the
     // organisation at the root, the landscape filed under it, a view as two
     // files, a description as markdown, a decision and a plan as numbered
     // records. Read off the disk, not asked of the app.
     const organisation = JSON.parse(await onDisk(first, `${EXAMPLE.path}/scope.json`)) as { name?: string; type?: string; version?: number }
-    if (organisation.type !== 'lionsville-architecture' || organisation.version !== 5) throw new Error(`header: ${JSON.stringify(organisation)}`)
+    if (organisation.type !== 'lionsville-architecture' || organisation.version !== SCOPE_FORMAT_VERSION) throw new Error(`header: ${JSON.stringify(organisation)}`)
     if (organisation.name !== EXAMPLE.organisation) throw new Error(`the example's organisation is called ${organisation.name}`)
     const landscape = JSON.parse(await onDisk(first, `${EXAMPLE.landscape}/scope.json`)) as { name?: string }
     if (landscape.name !== EXAMPLE.landscapeName) throw new Error(`the landscape is called ${landscape.name}`)

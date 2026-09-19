@@ -61,7 +61,7 @@ import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
-import { SCOPE_FILE } from '../platform/scopeHeader'
+import { SCOPE_FILE, SCOPE_FORMAT_VERSION } from '../platform/scopeHeader'
 import { slug } from '../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
@@ -127,7 +127,7 @@ export const SCOPE_FOLDERS: readonly string[] = [
  * the honest answer, and the version in the root's `scope.json` is the only
  * place such a build can learn to give it.
  */
-export const SCOPE_FORMAT_VERSION = 6
+export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
 const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6]
