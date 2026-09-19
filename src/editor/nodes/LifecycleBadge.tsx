@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
 import { useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { useStrings } from '../../i18n/LanguageContext';
@@ -22,9 +23,11 @@ export function LifecycleBadge({ lifecycle, show }: { lifecycle: Lifecycle; show
   const tokens = getNodeTokens(useTheme());
   if (!show || lifecycle === 'live') return null;
   const token = tokens.lifecycle[lifecycle];
+  const word = t(`lifecycle.${lifecycle}` as StringKey);
   return (
+    <Tooltip title={t('node.lifecycleAria', { name: word })}>
     <Box
-      aria-label={t('node.lifecycleAria', { name: t(`lifecycle.${lifecycle}` as StringKey) })}
+      aria-label={t('node.lifecycleAria', { name: word })}
       sx={{
         position: 'absolute',
         top: 3,
@@ -38,7 +41,6 @@ export function LifecycleBadge({ lifecycle, show }: { lifecycle: Lifecycle; show
         borderRadius: '3px',
         textTransform: 'uppercase',
         whiteSpace: 'nowrap',
-        pointerEvents: 'none',
         color: token.fg,
         backgroundColor: token.bg,
         border: `1px solid ${token.border}`,
@@ -46,5 +48,6 @@ export function LifecycleBadge({ lifecycle, show }: { lifecycle: Lifecycle; show
     >
       {lifecycle}
     </Box>
+    </Tooltip>
   );
 }

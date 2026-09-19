@@ -1,4 +1,4 @@
-import type { AspectConfigEntry, DesignDiagram, DesignElement, ElementId, Relation } from './types';
+import type { AspectConfigEntry, AspectStatus, DesignDiagram, DesignElement, ElementId, Relation } from './types';
 import { hostingOf } from './hosting';
 
 /**
@@ -120,10 +120,44 @@ export function aspectShortCode(entry: AspectConfigEntry): string {
   return derivedShortCode(entry.label);
 }
 
-/** The code a label would get on its own, for showing as a placeholder. */
+/**
+ * The code a label would get on its own, for showing as a placeholder.
+ *
+ * A name a person can read gives its initials when it has two or more words
+ * — `Self-healing` → SH, `Disaster recovery` → DR — and its first three
+ * letters when it has one, `Observability` → OBS; a short single word is
+ * itself. The first three letters of a two-word name (`SEL`) was a code
+ * nobody could read back, and the legend is not where a person should have
+ * to go for a badge on every card.
+ */
 export function derivedShortCode(label: string): string {
-  const cleaned = label.replace(/[^a-zA-Z0-9/€]/g, '');
-  return (cleaned.length <= 5 ? cleaned : cleaned.slice(0, 3)).toUpperCase();
+  const words = label.split(/[^a-zA-Z0-9€]+/).filter((word) => word.length > 0);
+  if (words.length >= 2) return words.map((word) => word[0]).join('').slice(0, ASPECT_CODE_MAX).toUpperCase();
+  const cleaned = words[0] ?? '';
+  return (cleaned.length <= ASPECT_CODE_MAX ? cleaned : cleaned.slice(0, 3)).toUpperCase();
+}
+
+/** The four a badge can say, in the order every legend lists them. */
+export const ASPECT_STATUSES: readonly AspectStatus[] = ['managed', 'partial', 'atRisk', 'none'];
+
+/**
+ * What the badges on this board mean: each column's code with its long name,
+ * in the board's own order, and the statuses a badge can show.
+ *
+ * One function, because two things draw it — the toolbar's legend popover
+ * and the export's key under the title block — and a legend drawn from two
+ * lists is a legend that disagrees with itself. Empty columns for a board
+ * that shows no aspects: a container diagram, a landscape whose settings
+ * hide them, or one with no columns left.
+ */
+export function badgeLegend(
+  diagram: Pick<DesignDiagram, 'kind' | 'showAspects' | 'aspectConfig'> | undefined,
+): { columns: { code: string; label: string }[]; statuses: readonly AspectStatus[] } {
+  const shown = diagram?.kind === 'layer7' && diagram.showAspects !== false;
+  const columns = shown
+    ? aspectConfigFor(diagram as DesignDiagram).map((entry) => ({ code: aspectShortCode(entry), label: entry.label }))
+    : [];
+  return { columns, statuses: ASPECT_STATUSES };
 }
 
 /** How wide a badge code may be before it stops fitting a card's cell. */

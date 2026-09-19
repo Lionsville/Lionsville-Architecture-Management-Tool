@@ -543,3 +543,15 @@ export function PaletteIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/** A key: three swatches with a line beside each, for "what the badges mean". */
+export function LegendIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="4" y="5" width="4" height="4" rx="1" fill="currentColor" />
+      <rect x="4" y="10.5" width="4" height="4" rx="1" fill="currentColor" opacity="0.6" />
+      <rect x="4" y="16" width="4" height="4" rx="1" fill="currentColor" opacity="0.3" />
+      <path d="M11 7h9M11 12.5h9M11 18h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}

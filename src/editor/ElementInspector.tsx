@@ -174,14 +174,21 @@ export interface ElementInspectorProps {
   leverage?: LeverageLine;
 }
 
-/** Tab label with an optional "set values" dot (mirrors the InspectorSection "●" badge). */
-function TabLabel({ text, dot }: { text: string; dot: boolean }) {
+/**
+ * A tab's label, with the Data tab's `n/m` beside it — the counter its
+ * section already shows, so "3/5" reads the same in both places. The dot the
+ * three tabs used to carry meant "has values" and was explained nowhere;
+ * General and Appearance carry nothing now, because nothing there counts.
+ */
+function TabLabel({ text, count }: { text: string; count?: string }) {
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
       {text}
-      {dot && (
-        <Box component="span" aria-hidden sx={{ fontSize: 9, lineHeight: 1, color: 'primary.main' }}>
-          ●
+      {count && (
+        // Out of the tab's accessible name: the section inside says the same
+        // count to a screen reader, and "Data0/5" is not a tab's name.
+        <Box component="span" data-testid="tab-count" aria-hidden sx={{ fontSize: 10, lineHeight: 1, color: 'text.secondary' }}>
+          {count}
         </Box>
       )}
     </Box>
@@ -321,14 +328,7 @@ export function ElementInspector(props: ElementInspectorProps) {
   ].join(' · ');
   const showAspects = element.kind === 'application';
 
-  const generalHasValues = Boolean(
-    element.description || element.category || element.isManaged || placement?.group,
-  );
   const summary = recordSummary(element, props.model, t);
-  const appearanceHasValues = Boolean(
-    element.accentColor || element.shapeVariant || element.iconKey || element.iconSize,
-  );
-  const dataHasValues = setAspectCount > 0;
 
   const stacked = props.layout === 'stacked';
   const show = (tab: number) => stacked || activeTab === tab;
@@ -449,9 +449,9 @@ export function ElementInspector(props: ElementInspectorProps) {
         variant="fullWidth"
         sx={{ minHeight: 40, mb: 0.5, '& .MuiTab-root': { minHeight: 40, py: 0.5, minWidth: 0 } }}
       >
-        <Tab label={<TabLabel text={t('tab.general')} dot={generalHasValues} />} />
-        <Tab label={<TabLabel text={t('tab.appearance')} dot={appearanceHasValues} />} />
-        <Tab label={<TabLabel text={t('tab.data')} dot={dataHasValues} />} />
+        <Tab label={<TabLabel text={t('tab.general')} />} />
+        <Tab label={<TabLabel text={t('tab.appearance')} />} />
+        <Tab label={<TabLabel text={t('tab.data')} count={showAspects ? `${setAspectCount}/${aspectConfig.length}` : undefined} />} />
       </Tabs>}
 
       {sectionTitle(t('tab.general'))}

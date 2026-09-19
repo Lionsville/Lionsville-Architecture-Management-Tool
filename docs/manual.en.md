@@ -127,7 +127,7 @@ same one.
 
 **The scope that writes it down answers for it.** That record carries the
 detail: what phase it is in and on which dates, who owns it, which vendor sells
-it, what it is built on, its maturity. Change any of it there and everywhere
+it, what it is built on, its operational aspects. Change any of it there and everywhere
 that draws it says the new thing.
 
 **Everywhere else holds a stand-in** — a card that draws the thing without
@@ -332,7 +332,7 @@ One open project: a bar at the top, the editor below it.
 | In the bar | What it does |
 |---|---|
 | **Projects…** | Back to the organisation screen |
-| **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
+| **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
 | **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your whole working folder in one file, every scope of it. On the desktop the menu also offers **Snapshot…** and **History…** |
 | **Open…** | Loads either, and recognises which by what is in the file rather than by its name |
 | **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken. Read-only: ⌘Z is how you go back |
@@ -415,7 +415,7 @@ what the applications run on and what they use. Select one and the
   retiring, retired; shown as a badge, retired elements dim), whether you
   manage it, the description (see *Documentation*), and where it sits.
 - **Appearance.** Accent colour, shape, icon, icon size.
-- **Data.** The **maturity aspects** of an application: for each column of this
+- **Data.** The **operational aspects** of an application: for each column of this
   diagram, managed, partial, none or at risk, with a note. The columns are set
   per diagram in its settings.
 
@@ -951,7 +951,7 @@ Right-click a diagram tab, **Diagram settings…**.
 - **On the drawing.** Author, client and date for the title block of a PNG
   export, each falling back to the project's default or the day of export when
   left empty, and whether to draw the title block at all.
-- **Maturity columns.** The aspect columns applications on this diagram carry:
+- **Operational aspects.** The aspect columns applications on this diagram carry:
   add a standard one (platform, CI/CD, DR, security, monitoring, backup,
   compliance, cost), add your own, rename, reorder, or switch the badges off
   altogether. Renaming a column keeps every status already recorded against

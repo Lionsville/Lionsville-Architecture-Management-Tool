@@ -30,7 +30,9 @@ import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
-import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LegendIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
+import { badgeLegend } from '../model/aspects';
+import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
 import { useStrings } from '../i18n/LanguageContext';
 import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
 
@@ -176,12 +178,6 @@ export interface EditorToolbarProps {
   onLanguageChange?(language: Language): void;
 }
 
-const LIFECYCLE_LEGEND: { key: Lifecycle; labelKey: StringKey; noteKey: StringKey }[] = [
-  { key: 'planned', labelKey: 'lifecycle.planned', noteKey: 'lifecycleNote.planned' },
-  { key: 'live', labelKey: 'lifecycle.live', noteKey: 'lifecycleNote.live' },
-  { key: 'retiring', labelKey: 'lifecycle.retiring', noteKey: 'lifecycleNote.retiring' },
-  { key: 'retired', labelKey: 'lifecycle.retired', noteKey: 'lifecycleNote.retired' },
-];
 
 /**
  * Top bar: Layer 7 diagram tabs (breadcrumb when drilled into a container
@@ -197,8 +193,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const technology = props.onOpenTechnology ? props.model.diagrams.filter((d) => d.kind === 'technology') : [];
   const tabs = [...layer7Diagrams, ...sheets, ...maps, ...technology];
   const isContainer = props.activeDiagram.kind === 'container';
-  // Legend opens on hover of the toggle (which itself toggles on click), so the
-  // one control doubles as its own key (plan D4).
+  // The legend is a button of its own beside the lifecycle toggle: a control
+  // whose hover explained the colours and whose click did something else
+  // read as neither, and it named no column.
   const [legendAnchor, setLegendAnchor] = useState<HTMLElement | null>(null);
   // Right-click on a Layer 7 tab: the diagram menu, built by the same pure
   // builder as the canvas menus and drawn by the same component. A container
@@ -558,26 +555,33 @@ export function EditorToolbar(props: EditorToolbarProps) {
         </span>
       </Tooltip>
       <AsOfControl asOf={props.asOf} onChange={props.onAsOfChange} readOnly={props.readOnly} />
-      <IconButton
-        size="small"
-        aria-label={t('toolbar.lifecycleBadges')}
-        aria-pressed={props.showLifecycle}
-        onClick={props.onToggleLifecycle}
-        onMouseEnter={(e) => setLegendAnchor(e.currentTarget)}
-        onMouseLeave={() => setLegendAnchor(null)}
-        // Keyboard users tabbing to the control get the legend too (click still
-        // only toggles badge visibility, never opens the popover).
-        onFocus={(e) => setLegendAnchor(e.currentTarget)}
-        onBlur={() => setLegendAnchor(null)}
-        sx={{
-          color: props.showLifecycle ? 'primary.main' : 'text.secondary',
-          backgroundColor: props.showLifecycle
-            ? alpha(theme.palette.primary.main, 0.12)
-            : 'transparent',
-        }}
-      >
-        <LifecycleIcon />
-      </IconButton>
+      <Tooltip title={t('toolbar.lifecycleTip')}>
+        <IconButton
+          size="small"
+          aria-label={t('toolbar.lifecycleBadges')}
+          aria-pressed={props.showLifecycle}
+          onClick={props.onToggleLifecycle}
+          sx={{
+            color: props.showLifecycle ? 'primary.main' : 'text.secondary',
+            backgroundColor: props.showLifecycle
+              ? alpha(theme.palette.primary.main, 0.12)
+              : 'transparent',
+          }}
+        >
+          <LifecycleIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={t('toolbar.legend')}>
+        <IconButton
+          size="small"
+          aria-label={t('toolbar.legend')}
+          aria-haspopup="dialog"
+          aria-expanded={Boolean(legendAnchor)}
+          onClick={(e) => setLegendAnchor(e.currentTarget)}
+        >
+          <LegendIcon />
+        </IconButton>
+      </Tooltip>
       {props.onColourByChange && (
         <ColourByControl
           colourBy={props.colourBy}
@@ -610,11 +614,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
         onClose={() => setLegendAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        disableRestoreFocus
-        sx={{ pointerEvents: 'none' }}
-        slotProps={{ paper: { sx: { p: 1, mt: 0.5 } } }}
+        slotProps={{ paper: { sx: { p: 1.5, mt: 0.5 }, 'data-testid': 'badge-legend' } as never }}
       >
-        <LifecycleLegend />
+        <BadgeLegend diagram={props.activeDiagram} showLifecycle={props.showLifecycle} />
       </Popover>
       <Tooltip title={t('toolbar.shortcuts')}>
         <IconButton size="small" aria-label={t('toolbar.shortcuts')} onClick={props.onOpenHelp}>
@@ -1138,33 +1140,55 @@ const LIFECYCLE_LABEL = {
   retired: 'lifecycle.retired',
 } as const satisfies Record<Lifecycle, StringKey>;
 
-function LifecycleLegend() {
+/**
+ * What the badges mean, for this board: each column's code with its long
+ * name, in the board's order, then the four statuses a badge can show, then
+ * the lifecycle colours. The same `badgeLegend` the export's key is drawn
+ * from, so the two cannot disagree; a board with no aspect columns says so
+ * rather than listing nothing.
+ */
+function BadgeLegend({ diagram, showLifecycle }: { diagram: DesignDiagram; showLifecycle: boolean }) {
   const { t } = useStrings();
   const tokens = getNodeTokens(useTheme());
+  const legend = badgeLegend(diagram);
+  const swatch = (token: { bg: string; border: string }) => (
+    <Box sx={{ width: 14, height: 14, borderRadius: '3px', flexShrink: 0, backgroundColor: token.bg, border: `1px solid ${token.border}` }} />
+  );
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 180 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 220 }}>
       <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
+        {t('toolbar.legendAspects')}
+      </Typography>
+      {legend.columns.length === 0 && (
+        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('toolbar.legendNone')}</Typography>
+      )}
+      {legend.columns.map((column) => (
+        <Box key={column.code + column.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ width: 38, textAlign: 'center', fontSize: 9, fontWeight: 700, lineHeight: '14px', borderRadius: '3px', color: tokens.aspects.unset.fg, backgroundColor: tokens.aspects.unset.bg, border: `1px solid ${tokens.aspects.unset.border}` }}>
+            {column.code}
+          </Box>
+          <Typography sx={{ fontSize: 11 }}>{column.label}</Typography>
+        </Box>
+      ))}
+      {legend.columns.length > 0 && legend.statuses.map((status) => (
+        <Box key={status} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          {swatch(tokens.aspects[status])}
+          <Typography sx={{ fontSize: 11 }}>{t(ASPECT_STATUS_LABEL[status])}</Typography>
+        </Box>
+      ))}
+      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mt: 0.75 }}>
         {t('field.lifecycle')}
       </Typography>
-      {LIFECYCLE_LEGEND.map(({ key, labelKey, noteKey }) => {
-        const token = tokens.lifecycle[key];
-        return (
-          <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Box
-              sx={{
-                width: 14,
-                height: 14,
-                borderRadius: '3px',
-                flexShrink: 0,
-                backgroundColor: token.bg,
-                border: `1px solid ${token.border}`,
-              }}
-            />
-            <Typography sx={{ fontSize: 11, fontWeight: 600 }}>{t(labelKey)}</Typography>
-            <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>— {t(noteKey)}</Typography>
-          </Box>
-        );
-      })}
+      {!showLifecycle && (
+        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('toolbar.legendLifecycleHidden')}</Typography>
+      )}
+      {LIFECYCLE_LEGEND.map(({ key, labelKey, noteKey }) => (
+        <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          {swatch(tokens.lifecycle[key])}
+          <Typography sx={{ fontSize: 11, fontWeight: 600 }}>{t(labelKey)}</Typography>
+          <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>— {t(noteKey)}</Typography>
+        </Box>
+      ))}
     </Box>
   );
 }

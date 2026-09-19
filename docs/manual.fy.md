@@ -340,7 +340,7 @@ Ien iepen projekt: in balke boppe-oan, de editor dêrûnder.
 | Yn de balke | Wat it docht |
 |---|---|
 | **Projekten…** | Werom nei it organisaasjeskerm |
-| **Ynstellings…** | De namme fan dit ûnderdiel en wêr't it ûnderbrocht is, en syn standerts: de skriuwer dy't op in eksportearre diagram neamd wurdt, en de ripenskolommen dêr't in nij lânskip mei begjint. In ûnderdiel ferpleatse bringt it ûnder by in oar en lit de ynhâld ûnoanrekke |
+| **Ynstellings…** | De namme fan dit ûnderdiel en wêr't it ûnderbrocht is, en syn standerts: de skriuwer dy't op in eksportearre diagram neamd wurdt, en de operasjonele aspekten dêr't in nij lânskip mei begjint. In ûnderdiel ferpleatse bringt it ûnder by in oar en lit de ynhâld ûnoanrekke |
 | **Bewarje…** | **Wurkbestân** (`.lvarch`) is alles: geometry, opmak, jo eigen logo's, fêstsette rûtes — jo hiele wurkmap yn ien bestân, elke scope deryn. Op de desktop biedt it menu ek **Momintopname…** en **Skiednis…** |
 | **Iepenje…** | Laadt ien fan beide, en werkent hokker oan wat der yn it bestân stiet en net oan de namme |
 | **Aktiviteit** | Wat der sûnt it iepenjen oan dit projekt feroare is — in list mei beneamde stappen en de tiid dat elk set is. Allinnich-lêze: ⌘Z is hoe't jo weromgeane |
@@ -426,7 +426,7 @@ toant syn fjilden yn trije tabblêden.
   dimd), oft jo it beheare, de beskriuwing (sjoch *Dokumintaasje*), en wêr't it
   stiet.
 - **Werjefte.** Aksintkleur, foarm, ikoan, ikoangrutte.
-- **Gegevens.** De **ripensaspekten** fan in applikaasje: foar elke kolom fan
+- **Gegevens.** De **operasjonele aspekten** fan in applikaasje: foar elke kolom fan
   dit diagram beheard, foar in part, gjin of op risiko, mei in oantekening. De
   kolommen wurde per diagram ynsteld yn syn ynstellingen.
 
@@ -992,7 +992,7 @@ Rjochtsklik op in diagramtabblêd, **Diagramynstellingen…**.
   PNG-eksport, elk mei as weromfal de standert fan it projekt of de dei fan
   eksportearjen as it leech bliuwt, en oft it titelblok überhaupt tekene wurde
   moat.
-- **Ripenskolommen.** De aspektkolommen dy't applikaasjes op dit diagram
+- **Operasjonele aspekten.** De aspektkolommen dy't applikaasjes op dit diagram
   drage: foegje in standert ta (platfoarm, CI/CD, DR, feiligens, monitoring,
   backup, compliance, kosten), foegje jo eigen ta, neam om, feroarje de
   folchoarder, of set de badges hielendal út. In kolom omneame hâldt elke

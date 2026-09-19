@@ -269,7 +269,7 @@ describe('ElementInspector — icon picker (now a grid, in Appearance)', () => {
 });
 
 describe('ElementInspector — icon size', () => {
-  it('writes "large" for the body mark, clears back to NULL, and dots Appearance on its own', () => {
+  it('writes "large" for the body mark, and clears back to NULL', () => {
     const { updateElement } = renderInspector(element({ iconKey: 'database' }));
     openTab('Appearance');
 
@@ -285,9 +285,6 @@ describe('ElementInspector — icon size', () => {
     fireEvent.click(within(screen.getByRole('listbox')).getByText('Small (header)'));
 
     expect(updateElement2).toHaveBeenCalledWith('e1', { iconSize: undefined });
-    cleanup()
-    renderInspector(element({ iconSize: 'large' }));
-    expect(within(tab('Appearance')).queryByText('●')).not.toBeNull();
   });
 
   it('stays disabled until there is an icon to size', () => {
@@ -332,26 +329,27 @@ describe('ElementInspector — active tab resets on selection change', () => {
   });
 });
 
-describe('ElementInspector — tab badges reflect set values', () => {
-  it('shows no dots when nothing is set', () => {
+/**
+ * The tabs used to carry a dot meaning "has values", explained nowhere. The
+ * Data tab carries the `n/m` its section already shows — tried against the
+ * dot, the counter is the one a person can read without being told — and
+ * the other two carry nothing, because nothing there counts.
+ */
+describe('ElementInspector — the Data tab counts its aspects', () => {
+  it('shows no dots anywhere, and 0/5 on Data for an application with nothing set', () => {
     renderInspector(element());
-    expect(within(tab('General')).queryByText('●')).toBeNull();
-    expect(within(tab('Appearance')).queryByText('●')).toBeNull();
-    expect(within(tab('Data')).queryByText('●')).toBeNull();
+    expect(screen.queryByText('●')).toBeNull();
+    expect(within(tab('General')).queryByTestId('tab-count')).toBeNull();
+    expect(within(tab('Appearance')).queryByTestId('tab-count')).toBeNull();
+    expect(within(tab('Data')).getByTestId('tab-count').textContent).toBe('0/5');
   });
 
-  it('dots the tab an override sits under, and the record’s own tab no longer', () => {
-    renderInspector(element({ category: 'Core' }));
-    expect(within(tab('General')).queryByText('●')).not.toBeNull();
+  it('counts the aspects set, and says nothing on a kind that has none', () => {
+    renderInspector(element({ aspects: { platform: { status: 'managed' }, cicd: { status: 'partial' } } }));
+    expect(within(tab('Data')).getByTestId('tab-count').textContent).toBe('2/5');
     cleanup()
-    renderInspector(element({ vendor: 'SAP' }));
-    expect(within(tab('General')).queryByText('●')).toBeNull();
-    cleanup()
-    renderInspector(element({ accentColor: '#ff0000' }));
-    expect(within(tab('Appearance')).queryByText('●')).not.toBeNull();
-    cleanup()
-    renderInspector(element({ aspects: { platform: { status: 'managed' } } }));
-    expect(within(tab('Data')).queryByText('●')).not.toBeNull();
+    renderInspector(element({ kind: 'actor' }));
+    expect(within(tab('Data')).queryByTestId('tab-count')).toBeNull();
   });
 
 });

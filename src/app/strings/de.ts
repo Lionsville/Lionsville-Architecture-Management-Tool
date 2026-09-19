@@ -225,7 +225,7 @@ export const DE: Record<keyof typeof EN, string> = {
     'Worauf ein Diagramm in diesem Projekt zurückgreift. Eine Änderung hier schreibt nie ein bereits eingerichtetes Diagramm um.',
   'settings.defaultAuthor': 'Autor',
   'settings.defaultAuthorHelp': 'Wird auf einem exportierten Diagramm ohne eigenen Autor genannt.',
-  'settings.defaultColumns': 'Die Reifegradspalten, mit denen eine neue Landschaft beginnt.',
+  'settings.defaultColumns': 'Die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt.',
 
   'prefs.title': 'Einstellungen',
   'prefs.general': 'ALLGEMEIN',

@@ -141,7 +141,7 @@ der es verwendet, zeigt auf dasselbe.
 
 **Der Bereich, der es aufschreibt, verantwortet es.** Dieser Datensatz trägt die
 Details: in welcher Phase es ist und an welchen Daten, wer es verantwortet,
-welcher Anbieter es verkauft, worauf es gebaut ist, seinen Reifegrad. Ändern Sie
+welcher Anbieter es verkauft, worauf es gebaut ist, seine betrieblichen Aspekte. Ändern Sie
 davon etwas dort, und überall, wo es gezeichnet wird, steht das Neue.
 
 **Überall sonst steht ein Platzhalter** — eine Karte, die das Ding zeichnet,
@@ -372,7 +372,7 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 | In der Leiste | Was es tut |
 |---|---|
 | **Projekte…** | Zurück zum Organisationsbildschirm |
-| **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die Reifegradspalten, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
+| **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
 | **Speichern…** | **Arbeitsdatei** (`.lvarch`) ist alles: Geometrie, Gestaltung, Ihre eigenen Logos, fixierte Routen — Ihr ganzer Arbeitsordner in einer Datei, jeder Bereich darin. Auf dem Desktop bietet das Menü auch **Momentaufnahme…** und **Verlauf…** |
 | **Öffnen…** | Lädt beides und erkennt am Inhalt der Datei, welches von beiden es ist, nicht am Namen |
 | **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen. Nur lesend: ⌘Z ist der Weg zurück |
@@ -466,7 +466,7 @@ eines aus, und der **Inspektor** rechts zeigt seine Felder in drei Reitern.
   Elemente werden abgeblendet), ob Sie es verwalten, die Beschreibung (siehe
   *Dokumentation*), und wo es sitzt.
 - **Darstellung.** Akzentfarbe, Form, Symbol, Symbolgröße.
-- **Daten.** Die **Reifegrad-Aspekte** einer Anwendung: für jede Spalte dieses
+- **Daten.** Die **betrieblichen Aspekte** einer Anwendung: für jede Spalte dieses
   Diagramms verwaltet, teilweise, keiner oder gefährdet, mit einer Notiz. Die
   Spalten werden je Diagramm in dessen Einstellungen festgelegt.
 
@@ -1074,7 +1074,7 @@ Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.
   PNG-Exports, die leer gelassen jeweils auf den Standardwert des Projekts oder
   den Tag des Exports zurückfallen, und ob der Titelblock überhaupt gezeichnet
   wird.
-- **Reifegradspalten.** Die Aspektspalten, die Anwendungen auf diesem Diagramm
+- **Betriebliche Aspekte.** Die Aspektspalten, die Anwendungen auf diesem Diagramm
   tragen: eine Standardspalte hinzufügen (Plattform, CI/CD, DR, Sicherheit,
   Monitoring, Backup, Compliance, Kosten), eine eigene hinzufügen, umbenennen,
   umsortieren oder die Abzeichen ganz ausschalten. Eine Spalte umzubenennen

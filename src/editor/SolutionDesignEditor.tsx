@@ -6,11 +6,11 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import type {
-  AspectStatus, DesignDiagram, ElementId, ElementKind, Lifecycle, Rect, UploadedLogo,
+  DesignDiagram, ElementId, ElementKind, Rect, UploadedLogo,
 } from '../model/types';
 import type { PlatformTree } from '../model/deployment';
 import type { Theme } from '@mui/material/styles';
-import type { StringKey, Translate } from '../i18n';
+import type { Translate } from '../i18n';
 import type { ExportLegend } from './props';
 import { EditorRefused } from './props';
 import type { EditorHandle, EditorRequests, ExistingAt, SolutionDesignEditorProps } from './props';
@@ -51,7 +51,6 @@ import { MAX_CONNECTORS_PER_TIER, type SkippedTier } from '../layout/libavoidRou
 import {
   cancelElkLayout, canCancelElkLayout, isLayoutRefusal, MAX_TIDY_NODES,
 } from '../layout/elkLayout';
-import { aspectConfigFor } from '../model/aspects';
 import {
   deletableSelection,
   deletionSummary,
@@ -92,6 +91,8 @@ import {
   type Selection,
 } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
+import { badgeLegend } from '../model/aspects';
+import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
 import { selectAllContent } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
 import { useAutoLayout } from './useAutoLayout';
@@ -1648,23 +1649,19 @@ function exportLegendFor(
   const legend: ExportLegend = {
     labels: { aspects: t('export.aspects'), lifecycle: t('export.lifecycle') },
   };
-  if (diagram.kind === 'layer7' && diagram.showAspects !== false && aspectConfigFor(diagram).length > 0) {
-    legend.aspects = aspectConfigFor(diagram).map((entry) => entry.label).join(' · ');
-    legend.statuses = ASPECT_LEGEND.map(([status, key]) => ({ label: t(key), token: tokens.aspects[status] }));
+  // The same legend the toolbar's popover draws (`badgeLegend`): each code
+  // with its long name, so the key on a print says what a badge means
+  // rather than listing names a reader has to match to codes.
+  const key = badgeLegend(diagram);
+  if (key.columns.length > 0) {
+    legend.aspects = key.columns.map((column) => `${column.code} ${column.label}`).join(' · ');
+    legend.statuses = key.statuses.map((status) => ({ label: t(ASPECT_STATUS_LABEL[status]), token: tokens.aspects[status] }));
   }
   if (showLifecycle) {
-    legend.lifecycle = LIFECYCLE_LEGEND.map(([stage, key]) => ({ label: t(key), token: tokens.lifecycle[stage] }));
+    legend.lifecycle = LIFECYCLE_LEGEND.map(({ key: stage, labelKey }) => ({ label: t(labelKey), token: tokens.lifecycle[stage] }));
   }
   return legend.statuses || legend.lifecycle ? legend : undefined;
 }
-
-const ASPECT_LEGEND: [AspectStatus, StringKey][] = [
-  ['managed', 'aspect.managed'], ['partial', 'aspect.partial'], ['atRisk', 'aspect.atRisk'], ['none', 'aspect.none'],
-];
-const LIFECYCLE_LEGEND: [Lifecycle, StringKey][] = [
-  ['planned', 'lifecycle.planned'], ['live', 'lifecycle.live'],
-  ['retiring', 'lifecycle.retiring'], ['retired', 'lifecycle.retired'],
-];
 
 /**
  * The preview's long edge, in image pixels. Enough to judge a sheet, and a

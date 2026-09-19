@@ -164,7 +164,7 @@ describe('DiagramSettingsDialog — what it saves', () => {
   it('saves an empty column set, which is how a landscape says it tracks none', () => {
     const { onSave } = open({ aspectConfig: [{ key: 'dr', label: 'Continuity' }] });
     fireEvent.click(screen.getByRole('button', { name: 'Remove Continuity' }));
-    expect(screen.getByText(/no maturity badges at all/)).toBeDefined();
+    expect(screen.getByText(/no operational aspects at all/)).toBeDefined();
     save();
     expect(onSave.mock.calls[0][1].aspectConfig).toEqual([]);
   });
@@ -196,7 +196,7 @@ describe('DiagramSettingsDialog — what it saves', () => {
 
   it('hides the badges without discarding the columns', () => {
     const { onSave } = open({ aspectConfig: [{ key: 'dr', label: 'Continuity' }] });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Show maturity badges' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show the operational aspects' }));
     save();
     expect(onSave.mock.calls[0][1]).toMatchObject({
       showAspects: false,
@@ -212,10 +212,10 @@ describe('DiagramSettingsDialog — what it saves', () => {
 });
 
 describe('DiagramSettingsDialog — a container diagram', () => {
-  it('offers the title block but no maturity columns', () => {
+  it('offers the title block but no operational aspects', () => {
     const { onSave } = open({ kind: 'container', name: 'App · containers' });
     expect(screen.getByLabelText('Author')).toBeDefined();
-    expect(screen.queryByText('MATURITY COLUMNS')).toBeNull();
+    expect(screen.queryByText('OPERATIONAL ASPECTS')).toBeNull();
     save();
     expect(onSave.mock.calls[0][1].aspectConfig).toBeUndefined();
   });

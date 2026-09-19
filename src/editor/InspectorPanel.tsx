@@ -2,13 +2,9 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
-import { getNodeTokens } from './theme/tokens';
 import { PANEL_LIMITS } from './panels';
 import { useStrings } from '../i18n/LanguageContext';
-import type { StringKey } from '../i18n/strings';
-import type { AspectStatus } from '../model/types';
 
 export const INSPECTOR_WIDTH = PANEL_LIMITS.inspector.default;
 /** Collapsed rail width (U7b, D5): wide enough for the expand chevron only. */
@@ -94,54 +90,19 @@ export function InspectorPanel({
   );
 }
 
-const LEGEND: { status: AspectStatus; labelKey: StringKey }[] = [
-  { status: 'managed', labelKey: 'aspect.managed' },
-  { status: 'partial', labelKey: 'aspect.partial' },
-  { status: 'atRisk', labelKey: 'aspect.atRisk' },
-  { status: 'none', labelKey: 'aspect.none' },
-];
-
-/** Empty state with a small aspect-badge legend. */
+/**
+ * The empty state: what to do, and nothing else. The badge legend that used
+ * to sit here — a hard-coded PLT and the four colours — vanished on the first
+ * click and named no column; it is the toolbar's legend button now, drawn
+ * from the board's own columns (`badgeLegend`).
+ */
 export function InspectorEmptyState() {
   const { t } = useStrings();
-  const tokens = getNodeTokens(useTheme());
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
       <Typography variant="body2" color="text.secondary">
         {t('inspector.empty')}
       </Typography>
-      <Box>
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-          {t('inspector.aspectBadges')}
-        </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
-          {LEGEND.map(({ status, labelKey }) => {
-            const token = tokens.aspects[status];
-            return (
-              <Box key={status} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 34,
-                    textAlign: 'center',
-                    fontSize: 8,
-                    fontWeight: 700,
-                    lineHeight: '14px',
-                    borderRadius: '3px',
-                    color: token.fg,
-                    backgroundColor: token.bg,
-                    border: `1px solid ${token.border}`,
-                  }}
-                >
-                  PLT
-                </Box>
-                <Typography variant="caption" color="text.secondary">
-                  {t(labelKey)}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Box>
-      </Box>
     </Box>
   );
 }

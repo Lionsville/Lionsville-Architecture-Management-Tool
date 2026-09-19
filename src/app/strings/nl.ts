@@ -225,7 +225,7 @@ export const NL: Record<keyof typeof EN, string> = {
     'Waar een aanzicht in dit project op terugvalt. Dit herschrijft nooit een aanzicht dat al is ingesteld.',
   'settings.defaultAuthor': 'Auteur',
   'settings.defaultAuthorHelp': 'Vermeld op een geëxporteerd aanzicht zonder eigen auteur.',
-  'settings.defaultColumns': 'De volwassenheidskolommen waarmee een nieuw landschap begint.',
+  'settings.defaultColumns': 'De operationele aspecten waarmee een nieuw landschap begint.',
 
   'prefs.title': 'Voorkeuren',
   'prefs.general': 'ALGEMEEN',

@@ -313,7 +313,7 @@ export const EN = {
     'What a diagram in this project falls back on. Changing these never rewrites a diagram that has already been configured.',
   'settings.defaultAuthor': 'Author',
   'settings.defaultAuthorHelp': 'Named on an exported diagram that has no author of its own.',
-  'settings.defaultColumns': 'The maturity columns a new landscape starts with.',
+  'settings.defaultColumns': 'The operational aspects a new landscape starts with.',
 
   // --- preferences, in three scopes (ADR-0005) ------------------------------
   'prefs.title': 'Preferences',

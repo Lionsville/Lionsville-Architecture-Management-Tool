@@ -349,7 +349,7 @@ Eén open project: een balk bovenin, de editor eronder.
 | In de balk | Wat hij doet |
 |---|---|
 | **Projecten…** | Terug naar het organisatiescherm |
-| **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
+| **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de operationele aspecten waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
 | **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je hele werkmap in één bestand, elke scope erin. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
 | **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |
 | **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
@@ -435,7 +435,7 @@ de **inspector** rechts toont zijn velden in drie tabbladen.
   elementen dimmen), of je het beheert, de omschrijving (zie *Documentatie*) en
   waar het staat.
 - **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte.
-- **Gegevens.** De **volwassenheidsaspecten** van een applicatie: per kolom van
+- **Gegevens.** De **operationele aspecten** van een applicatie: per kolom van
   dit diagram beheerd, deels, geen of risico, met een notitie. De kolommen
   stel je per diagram in bij de diagraminstellingen.
 
@@ -1003,7 +1003,7 @@ Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 - **Op de tekening.** Auteur, opdrachtgever en datum voor het titelblok van een
   PNG-export — leeg gelaten vallen ze terug op de standaard van het project of
   de dag van export — en of het titelblok überhaupt getekend wordt.
-- **Volwassenheidskolommen.** De aspectkolommen die applicaties op dit diagram
+- **Operationele aspecten.** De aspectkolommen die applicaties op dit diagram
   dragen: voeg een standaardkolom toe (platform, CI/CD, DR, beveiliging,
   monitoring, back-up, compliance, kosten), voeg een eigen kolom toe, hernoem,
   herschik, of zet de badges helemaal uit. Een kolom hernoemen bewaart elke

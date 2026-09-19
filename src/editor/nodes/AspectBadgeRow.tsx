@@ -3,20 +3,16 @@ import Tooltip from '@mui/material/Tooltip';
 import { useTheme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { aspectShortCode } from '../../model/aspects';
-import type { AspectConfigEntry, AspectStatus, DesignElement } from '../../model/types';
+import type { AspectConfigEntry, DesignElement } from '../../model/types';
+import { useStrings } from '../../i18n/LanguageContext';
+import { ASPECT_STATUS_LABEL } from '../aspectLegend';
 
 /**
  * Compact aspect strip rendered from the diagram's configured aspect columns
- * (order + labels). Unset aspects render muted; the tooltip carries the
- * status and the per-application note.
+ * (order + labels). Unset aspects render muted; the tooltip carries the long
+ * name and the status in one line, in the reader's language, with the
+ * per-application note after it — the card's own 8px code stays as it is.
  */
-const STATUS_LABEL: Record<AspectStatus, string> = {
-  managed: 'managed',
-  partial: 'partial',
-  atRisk: 'at risk',
-  none: 'none',
-};
-
 export function AspectBadgeRow({
   aspects,
   config,
@@ -24,6 +20,7 @@ export function AspectBadgeRow({
   aspects: DesignElement['aspects'];
   config: readonly AspectConfigEntry[];
 }) {
+  const { t } = useStrings();
   const tokens = getNodeTokens(useTheme());
   return (
     <Box sx={{ display: 'flex', gap: '2px', px: 0.5, pb: 0.5 }}>
@@ -31,8 +28,8 @@ export function AspectBadgeRow({
         const aspect = aspects[entry.key];
         const token = tokens.aspects[aspect?.status ?? 'unset'];
         const tooltip = aspect
-          ? `${entry.label}: ${STATUS_LABEL[aspect.status]}${aspect.note ? ` — ${aspect.note}` : ''}${aspect.derived ? ' (from what it is hosted on)' : ''}`
-          : `${entry.label}: not set`;
+          ? `${entry.label}: ${t(ASPECT_STATUS_LABEL[aspect.status])}${aspect.note ? ` — ${aspect.note}` : ''}${aspect.derived ? ` (${t('aspect.derivedTip')})` : ''}`
+          : `${entry.label}: ${t('aspect.notSet')}`;
         return (
           <Tooltip key={entry.key} title={tooltip}>
             <Box

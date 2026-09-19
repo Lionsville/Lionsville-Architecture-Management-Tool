@@ -225,7 +225,7 @@ export const FY: Record<keyof typeof EN, string> = {
     'Wêr’t in oansicht yn dit projekt op weromfalt. Dit skriuwt nea in oansicht oer dat al ynsteld is.',
   'settings.defaultAuthor': 'Skriuwer',
   'settings.defaultAuthorHelp': 'Neamd op in eksportearre oansicht sûnder eigen skriuwer.',
-  'settings.defaultColumns': 'De folwoeksenheidskolommen dêr’t in nij lânskip mei begjint.',
+  'settings.defaultColumns': 'De operasjonele aspekten dêr’t in nij lânskip mei begjint.',
 
   'prefs.title': 'Foarkarren',
   'prefs.general': 'ALGEMIEN',

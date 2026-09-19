@@ -6,6 +6,7 @@ import {
   aspectShortCode,
   DEFAULT_ASPECT_CONFIG,
   derivedPlatformAspect,
+  badgeLegend,
   derivedShortCode,
   normaliseAspectConfig,
   withDerivedAspects,
@@ -89,6 +90,15 @@ describe('aspectShortCode overrides', () => {
   it('derivedShortCode matches what an unset code produces', () => {
     expect(derivedShortCode('Observability')).toBe('OBS');
     expect(aspectShortCode({ key: 'custom-x', label: 'Observability' })).toBe('OBS');
+  });
+
+  it('derivedShortCode takes the initials of two or more words, and a short word whole', () => {
+    // SEL for "Self-healing" was a code nobody could read back.
+    expect(derivedShortCode('Self-healing')).toBe('SH');
+    expect(derivedShortCode('Disaster recovery')).toBe('DR');
+    expect(derivedShortCode('Cost')).toBe('COST');
+    expect(derivedShortCode('Data residency and sovereignty')).toBe('DRAS');
+    expect(derivedShortCode('')).toBe('');
   });
 });
 
@@ -193,5 +203,26 @@ describe('the platform aspect, read off the rows (ADR-0013)', () => {
     const api = element('orders-api', { kind: 'component', parentId: 'orders' });
     const model = { elements: [orders, api, cluster], relations: [hosted('h1', 'cluster')] };
     expect(derivedPlatformAspect(orders, model)).toEqual({ status: 'none', note: '', derived: true });
+  });
+});
+
+/**
+ * One legend for the toolbar's popover and the export's key: the board's
+ * columns as code and long name, in its order, and the four statuses.
+ */
+describe('badgeLegend', () => {
+  it('lists the board’s columns with their codes, and nothing for a board that shows none', () => {
+    const board = { kind: 'layer7' as const, aspectConfig: [
+      { key: 'monitoring', label: 'Monitoring' },
+      { key: 'custom-self-healing', label: 'Self-healing' },
+      { key: 'dr', label: 'Continuity', code: 'CT' },
+    ] };
+    expect(badgeLegend(board)).toEqual({
+      columns: [{ code: 'MON', label: 'Monitoring' }, { code: 'SH', label: 'Self-healing' }, { code: 'CT', label: 'Continuity' }],
+      statuses: ['managed', 'partial', 'atRisk', 'none'],
+    });
+    expect(badgeLegend({ ...board, showAspects: false }).columns).toEqual([]);
+    expect(badgeLegend({ kind: 'container' as const }).columns).toEqual([]);
+    expect(badgeLegend(undefined).columns).toEqual([]);
   });
 });

@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
@@ -46,9 +47,11 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
           size={iconSlotSize(element, 13)}
           fallback={<GlobeGlyph />}
         />
-        <Typography sx={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8 }}>
-          {note ? note.from : t('node.external')}
-        </Typography>
+        <Tooltip title={note ? t('node.fromTip', { name: note.from }) : t('node.externalTip')}>
+          <Typography sx={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8 }}>
+            {note ? note.from : t('node.external')}
+          </Typography>
+        </Tooltip>
         <Box sx={{ flex: 1 }} />
         {/* Drift, or a stand-in nobody defines (ADR-0012 §9). A glyph and the
             finding's own sentence as its title: it is worth noticing on a
