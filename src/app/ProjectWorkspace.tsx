@@ -846,8 +846,8 @@ export function ProjectWorkspace({
   })
 
   const documentPicker = useFilePicker({
-    // A working file is a zip now; the JSON entries are the older versions and
-    // the interchange format, both of which still open.
+    // A working file is a zip now; the JSON entries are versions 1 and 2, which
+    // still open.
     accept: '.lvarch,.json,application/json,application/zip',
     onPick: files.openFile,
     testId: 'document-input',
@@ -872,7 +872,6 @@ export function ProjectWorkspace({
     switch (command.type) {
       case 'save': forceSave(); break
       case 'export': files.saveWorkingFile(); break
-      case 'exportInterchange': files.saveInterchange(); break
       case 'open': documentPicker.open(); break
       case 'openDocument': files.openDocument(command.name, command.bytes); break
       case 'snapshot': if (snapshots.available) snapshots.openDialog(); break

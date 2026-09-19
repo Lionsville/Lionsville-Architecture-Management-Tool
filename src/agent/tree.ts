@@ -25,7 +25,7 @@
  * arrangement `ownedElsewhere` and `RendererView` use.
  */
 import type { Adr } from '../model/adr'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
 import { matchesQuery } from '../model/textSearch'
 import type { ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model/types'

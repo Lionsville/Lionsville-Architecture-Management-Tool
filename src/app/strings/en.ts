@@ -75,10 +75,6 @@ export const EN = {
     '{count} container views were removed: their applications left the model. Undo does not bring those views back.',
   'shell.duplicated': '“{name}” duplicated.',
   'shell.deleted': '“{name}” deleted.',
-  'shell.savedInterchange':
-    'Interchange document saved — topology and semantics; geometry and styling travel in the working file.',
-  'shell.savedInterchangeLeftOut':
-    'Interchange document saved — it carries applications and the flows between them, so this stayed behind: {left}.',
   /**
    * A count and what it counts, with no grammar between them. The label is a
    * relation's type or an element's kind, translated from the table its module
@@ -88,7 +84,6 @@ export const EN = {
   'shell.savedPicture': 'Picture saved.',
   'shell.savedWorkingFile': 'Working file saved — everything, including geometry, styling and your own logos.',
   'shell.workingFileLoaded': 'Working file “{name}” loaded.',
-  'shell.interchangeLoaded': 'Interchange document “{name}” loaded; the boards will be laid out again.',
   'shell.processFailed': 'The document could not be processed: {message}',
   /**
    * A save that did not happen. Separate from `shell.notSaved`, which is the

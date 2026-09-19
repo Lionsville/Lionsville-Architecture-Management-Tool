@@ -49,17 +49,11 @@ export const FY: Record<keyof typeof EN, string> = {
     '{count} containeroansichten binne fuortsmiten: har applikaasjes giene út it model. Dy oansichten komme mei Ungedien meitsje net werom.',
   'shell.duplicated': '“{name}” duplisearre.',
   'shell.deleted': '“{name}” fuortsmiten.',
-  'shell.savedInterchange':
-    'Interchange-dokumint bewarre — topology en semantyk; geometry en opmak reizgje mei yn it wurkbestân.',
-  'shell.savedInterchangeLeftOut':
-    'Útwikselingsdokumint bewarre — it draacht applikaasjes en de keppelingen dertusken, dus dit bleau efter: {left}.',
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Ôfbylding bewarre.',
   'shell.savedWorkingFile':
     'Wurkbestân bewarre — alles, ynklusyf geometry, opmak en eigen logo’s.',
   'shell.workingFileLoaded': 'Wurkbestân “{name}” laden.',
-  'shell.interchangeLoaded':
-    'Interchange-dokumint “{name}” laden; de boerden wurde opnij lein.',
   'shell.processFailed': 'It dokumint koe net ferwurke wurde: {message}',
   'shell.saveFileFailed': 'It bestân koe net bewarre wurde: {message}',
   'shell.moveLeftCopy': 'Ferpleatst — mar de kopy yn de âlde groep koe net fuortsmiten wurde: {message}',

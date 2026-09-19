@@ -15,7 +15,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.open': 'Openen…',
   'menu.save': 'Bewaren',
   'menu.exportWorkingFile': 'Werkbestand exporteren…',
-  'menu.exportInterchange': 'Interchange-document exporteren…',
   'menu.snapshot': 'Momentopname…',
   'menu.history': 'Geschiedenis…',
   'menu.connectAgent': 'Agent koppelen…',

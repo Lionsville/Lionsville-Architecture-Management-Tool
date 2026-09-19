@@ -12,7 +12,7 @@ import type { Command } from './commands'
 import { acceptImplied, impliedInterfaces } from './implied'
 import type { Held } from './refines'
 import type { DesignDiagram, DesignElement, ElementId, Relation } from '.'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 
 /** The container diagram already belonging to this application, if there is one. */
 export function findContainerDiagram(

@@ -35,7 +35,7 @@
  * about all of it. What the platform stands on is the chain above it, since
  * `parentId` is the one containment.
  */
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import { ancestorPlatforms, descendantPlatforms } from './hosting'
 import type { PlatformTree } from './hosting'
 import { isGoneOn, relationLiveAt } from './lifecycle'

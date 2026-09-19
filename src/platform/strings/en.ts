@@ -18,7 +18,6 @@ export const EN = {
   'menu.open': 'Open…',
   'menu.save': 'Save',
   'menu.exportWorkingFile': 'Export Working File…',
-  'menu.exportInterchange': 'Export Interchange Document…',
   'menu.snapshot': 'Snapshot…',
   'menu.history': 'History…',
   'menu.connectAgent': 'Connect an Agent…',

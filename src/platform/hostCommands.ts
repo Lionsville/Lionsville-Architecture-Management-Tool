@@ -28,8 +28,6 @@ export type HostCommand =
   | { type: 'save' }
   /** Hand the project over as a working file. */
   | { type: 'export' }
-  /** Hand it over as an interchange document — topology and semantics only. */
-  | { type: 'exportInterchange' }
   /** Ask for a file to open. The renderer has a picker; the host needs none. */
   | { type: 'open' }
   /**

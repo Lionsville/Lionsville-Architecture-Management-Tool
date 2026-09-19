@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { fromArrays } from '../model/normalised'
 import { NODE_SIZES } from '../model/placement'
 import { boundsOf, inspect } from './inspect'

@@ -67,7 +67,6 @@ export const FILE_MENU: readonly MenuEntry[] = [
   item('menu.open', { type: 'open' }, 'CmdOrCtrl+O'),
   item('menu.save', { type: 'save' }, 'CmdOrCtrl+S'),
   item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E'),
-  item('menu.exportInterchange', { type: 'exportInterchange' }),
   { kind: 'separator' },
   item('menu.snapshot', { type: 'snapshot' }, undefined, 'history'),
   item('menu.history', { type: 'history' }, undefined, 'history'),

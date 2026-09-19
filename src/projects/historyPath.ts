@@ -26,7 +26,7 @@
  * their own.
  */
 import type { ElementId } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { adrPathPattern } from './adrFile'
 import {
   descriptionPath, diagramStems, DIAGRAMS_FOLDER, GEOMETRY_SUFFIX, MODEL_FILE,

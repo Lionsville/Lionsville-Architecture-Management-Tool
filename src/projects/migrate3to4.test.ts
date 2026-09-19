@@ -15,7 +15,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Adr } from '../decisions/adr'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
 import { adrFileText, adrPath } from './adrFile'
 import { stableJson, textFromBytes } from './fileText'

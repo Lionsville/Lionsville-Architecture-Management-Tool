@@ -15,7 +15,6 @@ export const FY: Record<keyof typeof EN, string> = {
   'menu.open': 'Iepenje…',
   'menu.save': 'Bewarje',
   'menu.exportWorkingFile': 'Wurkbestân eksportearje…',
-  'menu.exportInterchange': 'Interchange-dokumint eksportearje…',
   'menu.snapshot': 'Momintopname…',
   'menu.history': 'Skiednis…',
   'menu.connectAgent': 'Agent keppelje…',

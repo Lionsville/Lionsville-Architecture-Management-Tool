@@ -15,7 +15,7 @@ import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryProjectHistory } from '../../adapters/memory/InMemoryProjectHistory'
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
-import type { HostModel } from '../../model/fromInterchange'
+import type { HostModel } from '../../model/hostModel'
 import type { ScopeSnapshot } from '../../projects/scope'
 import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
 import { renderApp } from '../testing/renderShell'

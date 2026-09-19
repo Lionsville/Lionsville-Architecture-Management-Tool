@@ -10,7 +10,6 @@ import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
   'shell.workingFileNoDiagrams': 'Dit werkbestand heeft geen aanzichten.',
-  'shell.interchangeNoDiagrams': 'Dit document heeft geen aanzichten.',
   'git.andMore': ' en nog {count}',
 
   'check.conflict': '{name} wordt ook in {scope} gedefinieerd',
@@ -66,5 +65,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'standIn.definedIn': 'Gedefinieerd in {scope} — de details worden daar beheerd.',
   'standIn.open': '{scope} openen',
   'standIn.from': 'uit {scope}',
-  'shell.unknownFile': 'Dit bestand is geen interchange-document en geen werkbestand.',
+  'shell.unknownFile': 'Dit bestand is geen werkbestand.',
 }

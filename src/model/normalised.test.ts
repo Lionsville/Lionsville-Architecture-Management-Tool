@@ -5,7 +5,7 @@ import {
   memberList, routeList, routesOf, toArrays,
 } from './normalised'
 import type { Model } from './normalised'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import { connection, diagram, element, placement } from './testFixtures'
 import type { Adr } from './adr'
 

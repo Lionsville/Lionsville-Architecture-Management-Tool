@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
 import { apply, fromArrays, restoreCommand } from '../../model'
 import { diffModels } from '../../model/diff'
-import type { HostModel } from '../../model/fromInterchange'
+import type { HostModel } from '../../model/hostModel'
 import { BUDGET, measure } from '../../model/testing/measure'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { scopeFiles, scopeFromFolder } from '../../projects/folderFormat'

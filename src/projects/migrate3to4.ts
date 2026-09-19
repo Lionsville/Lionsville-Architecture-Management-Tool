@@ -37,7 +37,7 @@ import type {
   DesignDiagram, DiagramGroup, DiagramMember, DomainGroupRect, EdgeRoute, Geometry, NodeGeometry,
   Relation,
 } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { FIGURE_MEANS, isNodeFigure } from '../model/kinds'
 import { claimKey } from '../model/keys'
 import { splitRoutes } from '../model/routes'

@@ -13,7 +13,7 @@ import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import type { DesignElement, PlacedNode } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
 import { useDiagramActions } from './useDiagramActions'
 import type { DiagramActions } from './useDiagramActions'

@@ -38,7 +38,7 @@ import type {
   DesignDiagram, DesignElement, DiagramGroup, DomainGroupRect, ElementId, PlacedNode,
   Relation, Layer7Zone,
 } from '../types'
-import type { HostModel } from '../fromInterchange'
+import type { HostModel } from '../hostModel'
 import { slug } from '../keys'
 import { memberOf, nodeGeometryOf } from '../placement'
 import type { NodeFigure } from '../kinds'

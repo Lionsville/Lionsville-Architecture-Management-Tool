@@ -16,11 +16,9 @@ import { reasonOf } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
 import { readImageFile, takenImageFiles } from '../model/documentImage'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
-import { toInterchange } from '../model/toInterchange'
 import type { ScopePath } from '../projects/scopePath'
 import { openDocumentBytes, workingFileBytes, WORKING_FILE_MEDIA_TYPE } from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
-import { interchangeSaved } from './interchangeNotice'
 import { messageFor } from './messageFor'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
@@ -41,7 +39,6 @@ export type ProjectFileChannel = {
 
 export type ProjectFiles = {
   saveWorkingFile: () => void
-  saveInterchange: () => void
   /** A picture of a page — the sheet at a paper size — through the same gateway, so the desktop gets a save dialog. */
   savePicture: (doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => void
   openFile: (file: File) => void
@@ -119,44 +116,21 @@ export function useProjectFiles(deps: {
   }, [session, handOver])
 
   /**
-   * The exchange document — and, since ADR-0012, what it could not carry.
-   *
-   * The format holds applications and the flows between them, and a project may
-   * now hold a business layer besides. A person handed a smaller document than
-   * their project has to be told so at the moment they ask for it, which is why
-   * the toast is built from the export rather than fixed.
-   */
-  const saveInterchange = useCallback(() => {
-    const project = session.snapshot()
-    const { doc, omitted } = toInterchange(project.model)
-    handOver({
-      name: fileNameFor(project.path, '.json'),
-      text: JSON.stringify(doc, null, 2) + '\n',
-      mediaType: 'application/json',
-    }, interchangeSaved(omitted, s))
-  }, [session, handOver, s])
-
-  /**
    * Open a chosen file into the project you are in.
    *
-   * The file supplies the content; the open project supplies where it is filed
-   * and — for an interchange document, which carries no marks — the mark
-   * library. Recognising the file and deciding whether to lay out again sit in
+   * The file supplies the content; the open project supplies where it is filed.
+   * Recognising the file and deciding whether to lay out again sit in
    * `openProjectDocument`, testable without a browser.
    */
   const openDocument = useCallback((name: string, bytes: Uint8Array) => {
     try {
       // Bytes and not text, because what a file IS is a question about its
-      // content: a version-3 zip, an older JSON document, or an interchange
-      // file from another tool. The extension is a hint, and a renamed file is
-      // still what it is.
+      // content: a version-3 zip or an older JSON document. The extension is a
+      // hint, and a renamed file is still what it is.
       const result = openDocumentBytes(bytes, session.snapshot())
       if (!result.ok) { notify(s(result.messageKey), 'error'); return }
       session.adopt(result.scope, result.relayout)
-      notify(s(
-        result.kind === 'workingFile' ? 'shell.workingFileLoaded' : 'shell.interchangeLoaded',
-        { name },
-      ), 'success')
+      notify(s('shell.workingFileLoaded', { name }), 'success')
     } catch (err) {
       notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
     }
@@ -208,5 +182,5 @@ export function useProjectFiles(deps: {
     handOver(doc, s('shell.savedPicture'))
   }, [handOver, s])
 
-  return { saveWorkingFile, saveInterchange, savePicture, openFile, openDocument, addLogo, addImage, removeImage }
+  return { saveWorkingFile, savePicture, openFile, openDocument, addLogo, addImage, removeImage }
 }

@@ -27,7 +27,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { bareScope, flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'

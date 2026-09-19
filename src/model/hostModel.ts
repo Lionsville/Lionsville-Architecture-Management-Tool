@@ -8,8 +8,46 @@
  * (ADR-0002). The reducer does all of it now, over the indexed model, and hands
  * back the command that undoes it.
  */
-import type { UploadedLogo } from '.'
-import type { HostModel, InterchangeDoc } from './fromInterchange'
+import type { DesignDiagram, DesignModel, UploadedLogo } from '.'
+import type { Adr } from './adr'
+import type { Transition } from './transition'
+
+/**
+ * What the shell keeps beside the design itself.
+ *
+ * These lived in the interchange reader while there was one, because the
+ * document was where a project came from and this was the part of it the model
+ * had no field for. There is no document any more (ADR-0018) and they are
+ * simply what a scope holds: the working file is the only thing this tool
+ * reads or writes, and it carries all of it.
+ */
+export interface HostExtras {
+  formatVersion?: unknown
+  description?: string
+  /**
+   * Project-wide defaults, both of them answers to "and what about the next
+   * diagram?".
+   *
+   * `defaultAuthor` is who a diagram names when it has not been given an author
+   * of its own; `defaultAspectConfig` is the column set a newly created
+   * landscape starts with. Neither is ever read in place of a diagram's own
+   * answer — they seed and they fall back, they do not override.
+   */
+  defaultAuthor?: string
+  defaultAspectConfig?: DesignDiagram['aspectConfig']
+  adrLinks?: unknown[]
+  /**
+   * The project's decision records — the landscape level's and every subject's,
+   * told apart by `subjectId`.
+   */
+  decisions?: Adr[]
+  /** The project's plans (ADR-0009). */
+  transitions?: Transition[]
+  /** Per element key: which fields the source document carried explicitly. */
+  explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
+}
+
+export type HostModel = DesignModel & HostExtras
 
 /**
  * The working file: everything, including geometry and styling.
@@ -92,10 +130,6 @@ export function isWorkingFile(x: unknown): x is WorkingFile {
 /** The uploaded logos from a working file; absent when nothing was uploaded. */
 export function workingFileLogoLibrary(file: WorkingFile): UploadedLogo[] {
   return Array.isArray(file.logoLibrary) ? file.logoLibrary : []
-}
-
-export function isInterchange(x: unknown): x is InterchangeDoc {
-  return !!x && typeof x === 'object' && 'formatVersion' in (x as object) && 'elements' in (x as object)
 }
 
 /**

@@ -132,14 +132,13 @@ export function registerLogoPack(pack: LogoPack): void {
 
 /**
  * True when `key` names a mark this build knows — the closed `iconType`
- * vocabulary of the interchange format, packs included.
+ * vocabulary, packs included.
  *
  * Which means a pack's keys stop being writable if the pack stops being
- * registered. That is the honest answer rather than a leak: an export is a
- * document another tool reads, and a key nothing in this build can draw is not
- * vocabulary. A key the SOURCE document carried is written back either way
- * (`toInterchange`), so removing a pack never silently strips a document of
- * what it arrived with.
+ * registered. That is the honest answer rather than a leak: a key nothing in
+ * this build can draw is not vocabulary. A key a file arrived carrying is kept
+ * in `explicitFields` either way, so removing a pack never silently strips a
+ * document of what it came with.
  */
 export function isBuiltInLogoKey(key: string | undefined): boolean {
   return key !== undefined && byKey.has(key);

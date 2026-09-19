@@ -21,7 +21,7 @@
  * asks. A row with its own window that closes in time is the correct answer
  * and not an instance.
  */
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import { isDay, isGoneOn, relationLiveAt } from './lifecycle'
 import type { PlatformDescribe, PlatformEnd } from './platformReport'
 import type { ElementId, Relation } from './types'

@@ -40,7 +40,7 @@ import {
   adrsFor, formatAdrNumber, newAdr, nextAdrNumber, removeAdr, setAdrStatus, sortAdrs, updateAdr,
 } from '../adr'
 import type { Adr, AdrStatus } from '../adr'
-import type { HostModel } from '../../model/fromInterchange'
+import type { HostModel } from '../../model/hostModel'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'

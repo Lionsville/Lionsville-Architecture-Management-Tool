@@ -9,9 +9,9 @@
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import type { DesignElement, PlacedNode, Relation } from '.'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import {
-  isInterchange, isWorkingFile, needsRemount, workingFileLogoLibrary,
+  isWorkingFile, needsRemount, workingFileLogoLibrary,
   WORKING_FILE_TYPE, WORKING_FILE_VERSION,
 } from './hostModel'
 
@@ -44,7 +44,7 @@ function model(over: Partial<HostModel> = {}): HostModel {
   }
 }
 
-describe('isWorkingFile / isInterchange', () => {
+describe('isWorkingFile', () => {
   it('recognises a working file by its type tag and version', () => {
     expect(isWorkingFile({ type: WORKING_FILE_TYPE, version: 1, model: model() })).toBe(true)
     expect(isWorkingFile({ type: 'something-else' })).toBe(false)
@@ -79,16 +79,7 @@ describe('isWorkingFile / isInterchange', () => {
     expect(isWorkingFile({ type: 'some-other-tool', version: 1, model: model() })).toBe(false)
   })
 
-  it('recognises an interchange document by formatVersion + elements', () => {
-    expect(isInterchange({ formatVersion: '1', elements: [] })).toBe(true)
-    expect(isInterchange({ formatVersion: '1' })).toBe(false)
-    expect(isInterchange({ elements: [] })).toBe(false)
-    expect(isInterchange(null)).toBe(false)
-  })
-
-  it('does not mistake one for the other', () => {
-    const workingFile = { type: WORKING_FILE_TYPE, version: 1, model: model() }
-    expect(isInterchange(workingFile)).toBe(false)
+  it('does not mistake another tool\'s document for a working file', () => {
     expect(isWorkingFile({ formatVersion: '1', elements: [] })).toBe(false)
   })
 })

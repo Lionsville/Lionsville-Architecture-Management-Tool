@@ -11,7 +11,7 @@ import { summarise } from './activity'
 import { transaction } from './commands'
 import type { Command } from './commands'
 import { fromArrays } from './normalised'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 
 const element = (id: string, name: string) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const,

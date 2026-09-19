@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import type { Adr } from '../model/adr'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { Relation } from '../model/types'
 import { fromArrays, toArrays } from '../model/normalised'
 import { syntheticModel } from '../model/testing/synthetic'

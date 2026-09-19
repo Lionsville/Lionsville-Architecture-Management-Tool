@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures'
 import type { DesignElement, Relation } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import {
   documentFindings, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
 } from './checks'

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import type { DesignElement, Relation } from '.'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import {
   containerDiagramMembers, findContainerDiagram, hoistedEnd, landedInterfaces,
   removeContainerDiagram, seedContainerDiagram,

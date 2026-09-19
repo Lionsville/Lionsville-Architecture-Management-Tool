@@ -102,15 +102,14 @@ export function nodeFigure(
 /**
  * What a figure's name MEANS, read back.
  *
- * The six names above are also the vocabulary the interchange document holds,
- * written when a figure and a kind were the same word: a name read out of one
- * becomes the kind it always was plus the fact that carried it, and
- * {@link nodeFigure} writes it back.
+ * The six names above were the interchange document's vocabulary too, written
+ * when a figure and a kind were the same word: a name read out of one becomes
+ * the kind it always was plus the fact that carried it, and {@link nodeFigure}
+ * writes it back.
  *
- * Permanent, unlike the working format's own use of it — that one went at
- * format 4, and `projects/migrate3to4.ts` is the last reader of it — because
- * the interchange is a contract with other tools and does not change
- * (ADR-0012 §11).
+ * The document is gone (ADR-0018) and this stays, because it is what a
+ * format-3 working file on somebody's disk says: `projects/migrate3to4.ts` is
+ * the reader that still needs it, and a fold is not allowed to forget.
  */
 export const FIGURE_MEANS: Record<NodeFigure, { kind: ElementKind; outside?: true }> = {
   application: { kind: 'application' },
@@ -128,9 +127,8 @@ export function isNodeFigure(held: unknown): held is NodeFigure {
 /**
  * The band each element sits in, from the first view that puts it in one.
  *
- * What the interchange export needs and should not work out for itself: a
- * card's band is half of what it is drawn as, and an element is written to the
- * document once however many boards it is on. Diagram order, so the answer is
+ * A card's band is half of what it is drawn as, and an element is written out
+ * once however many boards it is on. Diagram order, so the answer is
  * the model's own and not a set's iteration order; only a band counts, because
  * an element in the open landscape has said nothing about what it is, which is
  * the whole point of retiring the two kinds.

@@ -19,7 +19,7 @@
 import { fold, queryTokens } from '../model'
 import type { ElementKind } from '../model'
 import type { Adr, AdrStatus } from '../decisions/adr'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { bestMatches, ancestorDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
 import type { AdrEntry, AdrScope } from './searchIndex'
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { placeOn } from '../model/commands';
 import { placedOn } from '../model/normalised';
 import { apply, fromArrays, toArrays } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { BUDGET, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 import type { SyntheticSpec } from '../model/testing/synthetic'

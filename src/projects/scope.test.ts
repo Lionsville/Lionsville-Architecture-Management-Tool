@@ -6,54 +6,16 @@
  * `FileReader`, toasts and React state — and therefore only checkable by hand.
  */
 import { describe, expect, it } from 'vitest'
-import type { InterchangeDoc } from '../model/fromInterchange'
 import {
   bareScope, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
   moveScope, movedPaths, namesUnder, newestChange,
-  openScopeDocument, renameScope, resolveActive, scopeFromDocument, scopeTree, setScopeDefaults,
+  openScopeDocument, renameScope, resolveActive, scopeTree, setScopeDefaults,
   sortScopes, subtreeTotals, summarise, toWorkingFile,
 } from './scope'
 import type { ScopeSummary } from './scope'
 import { sampleScope } from '../ports/ScopeStore.contract'
 
-/**
- * Somebody else's format, written out here rather than taken from the shipped
- * example — the example is a project folder now (ADR-0012 §11), and an
- * interchange document is precisely the thing it is no longer.
- */
-const doc: InterchangeDoc = {
-  formatVersion: 'solution-design/v1',
-  design: { name: 'Warehouse landscape', description: 'What another tool exported.' },
-  elements: [
-    { key: 'order-management', kind: 'application', name: 'Order Management' },
-    { key: 'wms', kind: 'application', name: 'Warehouse Management' },
-    { key: 'portal', kind: 'inputChannel', name: 'Customer Portal' },
-  ],
-  connections: [{ key: 'c-1', sourceKey: 'order-management', targetKey: 'wms' }],
-  diagrams: [{
-    key: 'landscape',
-    kind: 'layer7',
-    name: 'Landscape',
-    places: [
-      { elementKey: 'portal', zone: 'inputChannels' },
-      { elementKey: 'order-management', zone: 'landscape', domainGroup: 'Order to delivery' },
-      { elementKey: 'wms', zone: 'landscape', domainGroup: 'Order to delivery' },
-    ],
-  }],
-}
 const REF = 'acme-logistics/landscape'
-
-describe('scopeFromDocument', () => {
-  it('turns an interchange document into a usable scope, filed where it was told', () => {
-    const scope = scopeFromDocument(doc, REF)
-    expect(scope.model.diagrams.length).toBeGreaterThan(0)
-    expect(scope.activeDiagramId).toBe(scope.model.diagrams[0].id)
-    expect(scope.logoLibrary).toEqual([])
-    expect(scope.path).toEqual(REF)
-    // The document is the only thing here that carries a name.
-    expect(scope.model.name).toBe('Warehouse landscape')
-  })
-})
 
 describe('emptyScope', () => {
   const fresh = emptyScope(REF, { design: 'New design', diagram: 'Landscape' }, 'landscape')
@@ -244,26 +206,6 @@ describe('openScopeDocument — working file', () => {
     const empty = { ...toWorkingFile(into), model: { ...into.model, diagrams: [] } }
     expect(openScopeDocument(empty, into))
       .toEqual({ ok: false, messageKey: 'shell.workingFileNoDiagrams' })
-  })
-})
-
-describe('openScopeDocument — interchange', () => {
-  const into = sampleScope()
-
-  it('lays out again, and keeps a copy of the marks of the project it lands in', () => {
-    const result = openScopeDocument(doc, into)
-    // Such a document carries no geometry.
-    expect(result.ok && result.relayout).toBe(true)
-    expect(result.ok && result.kind).toBe('interchange')
-    // The marks belong to this browser and not to the document: opening an
-    // interchange file must not throw away your own — nor share the array.
-    expect(result.ok && result.scope.logoLibrary).toEqual(into.logoLibrary)
-    expect(result.ok && result.scope.logoLibrary).not.toBe(into.logoLibrary)
-  })
-
-  it('refuses an interchange document without diagrams', () => {
-    expect(openScopeDocument({ ...doc, diagrams: [] }, into))
-      .toEqual({ ok: false, messageKey: 'shell.interchangeNoDiagrams' })
   })
 })
 

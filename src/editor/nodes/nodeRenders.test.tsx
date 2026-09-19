@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { ReactFlow, type NodeTypes } from '@xyflow/react';
 import { apply, fromArrays, toArrays } from '../../model';
-import type { HostModel } from '../../model/fromInterchange';
+import type { HostModel } from '../../model/hostModel';
 import { connection, diagram, element, model, placement } from '../../model/testFixtures';
 import { buildNodes } from '../graph';
 import type { ElementNode, ElementNodeProps } from './nodeData';

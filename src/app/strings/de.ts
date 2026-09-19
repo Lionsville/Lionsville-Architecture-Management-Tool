@@ -49,17 +49,11 @@ export const DE: Record<keyof typeof EN, string> = {
     '{count} Containeransichten wurden entfernt: ihre Anwendungen haben das Modell verlassen. Rückgängig bringt diese Ansichten nicht zurück.',
   'shell.duplicated': '„{name}“ dupliziert.',
   'shell.deleted': '„{name}“ gelöscht.',
-  'shell.savedInterchange':
-    'Interchange-Dokument gespeichert — Topologie und Semantik; Geometrie und Gestaltung reisen in der Arbeitsdatei mit.',
-  'shell.savedInterchangeLeftOut':
-    'Austauschdokument gespeichert — es trägt Anwendungen und die Flüsse dazwischen, deshalb blieb dies zurück: {left}.',
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Bild gespeichert.',
   'shell.savedWorkingFile':
     'Arbeitsdatei gespeichert — alles, einschließlich Geometrie, Gestaltung und eigener Logos.',
   'shell.workingFileLoaded': 'Arbeitsdatei „{name}“ geladen.',
-  'shell.interchangeLoaded':
-    'Interchange-Dokument „{name}“ geladen; die Tafeln werden neu angeordnet.',
   'shell.processFailed': 'Das Dokument konnte nicht verarbeitet werden: {message}',
   'shell.saveFileFailed': 'Die Datei konnte nicht gespeichert werden: {message}',
   'shell.moveLeftCopy': 'Verschoben — aber die Kopie in der alten Gruppe konnte nicht entfernt werden: {message}',

@@ -29,12 +29,12 @@
  * are ADR-0012 §2's, which is beta 3. So the split here is the one that costs
  * nothing: a name above a document.
  *
- * **An example is a project folder, not an interchange document.** It was the
- * latter until format 4, and the interchange is a contract with other tools
- * that knows nothing about the business layer, plans or decisions — which is
- * why the plans and the decisions had to ride beside the document in this file,
- * in TypeScript, as a second mechanism. The working form has a place for all of
- * it, so there is one mechanism and the example is the thing the tool writes.
+ * **An example is a project folder.** It was an interchange document until
+ * format 4, and that format knew nothing about the business layer, plans or
+ * decisions — which is why the plans and the decisions had to ride beside the
+ * document in this file, in TypeScript, as a second mechanism. The working form
+ * has a place for all of it, so there is one mechanism and the example is the
+ * thing the tool writes. The document itself went with ADR-0018.
  *
  * The file is the folder's files, by path: an object per `.json` and an array
  * of lines per `.md`. Not the text of each file as one string, because a JSON

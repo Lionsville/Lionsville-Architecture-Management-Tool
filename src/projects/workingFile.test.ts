@@ -203,17 +203,6 @@ describe('openDocumentBytes', () => {
     expect('customerName' in held.scope.model).toBe(false)
   })
 
-  it('still imports an interchange document, and lays it out again', () => {
-    const doc = stableJson({
-      formatVersion: 'solution-design/v1',
-      design: { name: 'Imported' },
-      elements: [{ key: 'crews', kind: 'application', name: 'Crews' }],
-      diagrams: [{ key: 'l7', kind: 'layer7', name: 'Landschap', places: [{ elementKey: 'crews' }] }],
-    })
-    const held = openDocumentBytes(bytesFromText(doc), into)
-    expect(held.ok && held.kind).toBe('interchange')
-    expect(held.ok && held.relayout).toBe(true)
-  })
 
   it('refuses a zip that is not a project', () => {
     const held = openDocumentBytes(zipSync({ 'notes.txt': bytesFromText('hello') }), into)

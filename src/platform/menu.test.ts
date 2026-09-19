@@ -17,7 +17,7 @@ describe('offered', () => {
   it('carries the whole list on a desktop that can do everything', () => {
     expect(labels(offered(FILE_MENU, 'desktop', { history: true, folders: true }))).toEqual([
       'menu.openFolder', '<recentFolders>', '<separator>',
-      'menu.open', 'menu.save', 'menu.exportWorkingFile', 'menu.exportInterchange', '<separator>',
+      'menu.open', 'menu.save', 'menu.exportWorkingFile', '<separator>',
       'menu.snapshot', 'menu.history', '<separator>',
       'menu.connectAgent',
     ])

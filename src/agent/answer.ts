@@ -13,7 +13,7 @@
  * markdown inside it.
  */
 import type { Adr } from '../model/adr'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { Diagram, Model } from '../model/normalised'
 import { decisionsOf, groupsOf, placedList, placedOn, toArrays, transitionList } from '../model/normalised'
 import { hostingOf } from '../model/hosting'

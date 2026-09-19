@@ -24,7 +24,7 @@ import { apply, fromArrays, summarise, toArrays, transaction } from '../model'
 import { idPolicy } from '../model/keys'
 import type { IdPolicy } from '../model/keys'
 import { needsRemount } from '../model/hostModel'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { Notify } from './useToasts'
 
@@ -166,7 +166,7 @@ export function useModelSession(deps: {
  = useState<Model>(() => fromArrays(initialProject.model))
   const [activeId, setActiveId] = useState(initialProject.activeDiagramId)
   // The mark library is shell state, not model state: it belongs to this browser
-  // and to the working file, not to the interchange document.
+  // and travels in the working file.
   const [logoLibrary, setLogoLibrary] = useState<UploadedLogo[]>(initialProject.logoLibrary)
   const [imageLibrary, setImageLibrary] = useState<DocumentImage[]>(initialProject.imageLibrary ?? [])
   const [editorKey, setEditorKey] = useState(0)

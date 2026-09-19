@@ -17,9 +17,7 @@
  * Every older version keeps opening, and lands on format 5 through the folds
  * (`migrate3to4.ts`, `migrate4to5.ts`): a version-3 or -4 zip is a folder the
  * migration reads, and versions 1 and 2 are a single JSON document
- * `openScopeDocument` has read since there was one. So is an interchange
- * document, which is a different thing again — someone else's format, which we
- * import rather than open.
+ * `openScopeDocument` has read since there was one.
  *
  * **One scope, not a subtree.** A `.lvarch` is the scope's own folder: the
  * scopes filed under it are not in it, and a zip somebody hands over with them
@@ -100,10 +98,9 @@ function folderIn(bytes: Uint8Array): FolderFile[] | undefined {
 /**
  * A file the user chose, landed into the project they had open.
  *
- * One door for all of it: a zip of whatever version, a version-1 or -2 JSON
- * document, and an interchange document from another tool. Which one it is, is a question
- * about the bytes and not about the extension — a file that was renamed is
- * still what it is.
+ * One door for all of it: a zip of whatever version, and a version-1 or -2 JSON
+ * document. Which one it is, is a question about the bytes and not about the
+ * extension — a file that was renamed is still what it is.
  *
  * `into` is the scope being replaced: the file supplies the content, the open
  * scope supplies where it is filed.

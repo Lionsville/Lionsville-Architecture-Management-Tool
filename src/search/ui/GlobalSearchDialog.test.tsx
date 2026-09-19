@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../../i18n'
-import type { HostModel } from '../../model/fromInterchange'
+import type { HostModel } from '../../model/hostModel'
 import type { Adr } from '../../decisions/adr'
 import { GlobalSearchDialog } from './GlobalSearchDialog'
 import { renderShell } from '../../app/testing/renderShell'

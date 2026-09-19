@@ -58,7 +58,7 @@ import type {
   DocumentImage, DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
 } from '../model'
 import { imageMediaType, isImageFile } from '../model/documentImage'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { SCOPE_FILE } from '../platform/scopeHeader'

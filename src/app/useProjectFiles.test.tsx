@@ -17,7 +17,7 @@ import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import type { UploadedLogo } from '../model'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { WORKING_FILE_TYPE, WORKING_FILE_VERSION } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
 import { workingFileBytes } from '../projects/workingFile'
@@ -103,13 +103,6 @@ describe('saving a document out', () => {
     expect(notify).toHaveBeenCalledWith('Picture saved.', 'success')
   })
 
-  it('holds the interchange document to the same standard', async () => {
-    const { files, notify } = mount({ save: () => Promise.reject(new Error('cancelled')) })
-    act(() => files().saveInterchange())
-    await settle()
-    expect(notify).toHaveBeenCalledWith('The file could not be saved: cancelled', 'error')
-  })
-
   it('names the file after the project, not after a constant', async () => {
     const save = vi.fn((_doc: SavedDocument) => Promise.resolve())
     const { files } = mount({ save })
@@ -153,19 +146,6 @@ describe('opening a file', () => {
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('Working file'), 'success')
   })
 
-  it('adopts an interchange document and asks for a fresh layout', async () => {
-    const document = JSON.stringify({
-      formatVersion: 1,
-      elements: [{ id: 'e1', name: 'Thing', kind: 'application' }],
-      connections: [],
-      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [{ id: 'e1', x: 0, y: 0 }] })],
-    })
-    const { files, session } = mount({ readBytes: () => Promise.resolve(bytes(document)) })
-    act(() => files().openFile(file('x.json')))
-    await settle()
-    expect(session.adopt).toHaveBeenCalledWith(expect.anything(), true)
-  })
-
   it('refuses a file that is not a document of any kind', async () => {
     // This used to name the JSON syntax error. A file is now recognised by its
     // bytes rather than by an assumption that it is text — a working file is a
@@ -174,7 +154,7 @@ describe('opening a file', () => {
     const { files, notify, session } = mount({ readBytes: () => Promise.resolve(bytes('{ not json')) })
     act(() => files().openFile(file()))
     await settle()
-    expect(notify.mock.calls[0][0]).toContain('neither an interchange document nor a working file')
+    expect(notify.mock.calls[0][0]).toContain('not a working file')
     expect(notify.mock.calls[0][1]).toBe('error')
     expect(session.adopt).not.toHaveBeenCalled()
   })
@@ -184,11 +164,10 @@ describe('opening a file', () => {
     const { files, notify } = mount({ readBytes: () => Promise.resolve(bytes(future)) })
     act(() => files().openFile(file()))
     await settle()
-    // Today it is reported as "neither one nor the other", which is honest but
-    // not helpful: a newer file is a recognisable case and deserves its own
+    // Today it is reported as "not a working file", which is honest but not
+    // helpful: a newer file is a recognisable case and deserves its own
     // sentence. Pinned here so the day that changes is a deliberate one.
-    expect(notify).toHaveBeenCalledWith(
-      'This file is neither an interchange document nor a working file.', 'error')
+    expect(notify).toHaveBeenCalledWith('This file is not a working file.', 'error')
   })
 
   it('says so when the file could not be read at all', async () => {

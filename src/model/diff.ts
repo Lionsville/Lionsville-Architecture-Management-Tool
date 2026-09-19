@@ -24,7 +24,7 @@
  * Pure, and no words in it. Each change names what and which; the sentence is
  * the caller's, in the caller's language.
  */
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'

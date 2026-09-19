@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { DEFAULT_TRANSLATE } from '../i18n/strings'
 import type { Adr } from '../model/adr'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import { idPolicy } from '../model/keys'
 import { boxList, placedOn, fromArrays, toArrays } from '../model/normalised'
 import { groupRectAround, placementRect, unionRects } from '../model/placement'

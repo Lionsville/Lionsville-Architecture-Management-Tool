@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { countChanges, diffModels, isUnchanged } from './diff'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import type { DesignElement } from './types'
 
 const element = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement =>

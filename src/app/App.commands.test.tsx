@@ -92,14 +92,6 @@ describe('commands from the host', () => {
     expect(view.documents.saved[0].mediaType).toBe('application/zip')
   })
 
-  it('the interchange export hands over topology and semantics only', async () => {
-    const view = show()
-    view.send({ type: 'exportInterchange' })
-
-    await waitFor(() => expect(view.documents.saved).toHaveLength(1))
-    expect(view.documents.saved[0].name).toBe('acme-landscape.json')
-  })
-
   it('the theme is chosen outright, from the View menu or the overflow', async () => {
     const view = show({ initialPreferences: { themeMode: 'light' } })
     view.send({ type: 'theme', mode: 'dark' })

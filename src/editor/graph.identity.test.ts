@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { placeOn } from '../model/commands';
 import { apply, fromArrays, toArrays } from '../model';
-import type { HostModel } from '../model/fromInterchange';
+import type { HostModel } from '../model/hostModel';
 import { connection, diagram, element, model, placement } from '../model/testFixtures';
 import { buildEdges, buildNodes } from './graph';
 

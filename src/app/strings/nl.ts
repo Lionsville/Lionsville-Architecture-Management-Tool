@@ -49,17 +49,11 @@ export const NL: Record<keyof typeof EN, string> = {
     '{count} containeraanzichten zijn verwijderd: hun applicaties gingen uit het model. Die aanzichten komen met Ongedaan maken niet terug.',
   'shell.duplicated': '“{name}” gedupliceerd.',
   'shell.deleted': '“{name}” verwijderd.',
-  'shell.savedInterchange':
-    'Interchange-document bewaard — topologie en semantiek; geometrie en opmaak reizen mee in het werkbestand.',
-  'shell.savedInterchangeLeftOut':
-    'Uitwisselingsdocument opgeslagen — het draagt applicaties en de koppelingen ertussen, dus dit bleef achter: {left}.',
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Afbeelding bewaard.',
   'shell.savedWorkingFile':
     'WorkingFile bewaard — alles, inclusief geometrie, opmaak en eigen logo’s.',
   'shell.workingFileLoaded': 'WorkingFile “{name}” geladen.',
-  'shell.interchangeLoaded':
-    'Interchange-document “{name}” geladen; de platen worden opnieuw gelegd.',
   'shell.processFailed': 'Het document kon niet worden verwerkt: {message}',
   'shell.saveFileFailed': 'Het bestand kon niet worden bewaard: {message}',
   'shell.moveLeftCopy': 'Verplaatst — maar de kopie in de oude groep kon niet worden verwijderd: {message}',

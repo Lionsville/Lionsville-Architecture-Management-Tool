@@ -8,7 +8,7 @@ import { edgeRoutesOf } from '../model/routes';
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
 import type { Adr } from './adr'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import { fromArrays, toArrays } from './normalised'
 import type { Model } from './normalised'
 import { apply } from './reducer'

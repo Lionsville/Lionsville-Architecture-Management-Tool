@@ -19,13 +19,10 @@
 import type {
   AspectConfigEntry, DesignElement, DocumentImage, Relation, Transition, UploadedLogo,
 } from '../model'
-import type { Adr } from '../model/adr'
-import { fromInterchange } from '../model/fromInterchange'
-import type { HostModel, InterchangeDoc } from '../model/fromInterchange'
 import {
-  WORKING_FILE_TYPE, WORKING_FILE_VERSION, isInterchange, isWorkingFile, workingFileLogoLibrary,
+  WORKING_FILE_TYPE, WORKING_FILE_VERSION, isWorkingFile, workingFileLogoLibrary,
 } from '../model/hostModel'
-import type { WorkingFile } from '../model/hostModel'
+import type { HostModel, WorkingFile } from '../model/hostModel'
 import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, ROOT_SCOPE } from './scopePath'
@@ -239,27 +236,6 @@ export function resolveActive(model: HostModel, preferred?: string): string {
   return views[0]?.id ?? ''
 }
 
-/**
- * A scope from an interchange document — how an import becomes something you
- * can work in and save.
- *
- * The document describes a landscape and says what it is called; where it is
- * filed is this call's to decide, and nothing in the document has an opinion.
- */
-export function scopeFromDocument(
-  doc: InterchangeDoc,
-  path: ScopePath,
-  /** Plans to open with, which the interchange format does not carry (ADR-0009). */
-  transitions?: readonly Transition[],
-  /** Decision records, kept beside the document for the same reason. */
-  decisions?: readonly Adr[],
-): ScopeSnapshot {
-  const model = fromInterchange(doc)
-  if (transitions?.length) model.transitions = [...transitions]
-  if (decisions?.length) model.decisions = [...decisions]
-  return { path, model, activeDiagramId: resolveActive(model), logoLibrary: [] }
-}
-
 /** A scope with one landscape in it, for "new scope". */
 export function emptyScope(
   path: ScopePath,
@@ -320,23 +296,22 @@ export function toWorkingFile(scope: ScopeSnapshot): WorkingFile {
  * What comes back from an opened file.
  *
  * `relayout` belongs to the outcome and not to the caller: a working file
- * carries its own geometry and must be left alone, an interchange document has
- * none and has to be laid out again. That is a property of what you opened.
+ * carries its own geometry and must be left alone. It is a property of what you
+ * opened, and it stays on the outcome because a file that carries no geometry
+ * is a shape this reader may have to know again.
  *
  * A refusal carries a KEY and not a sentence. This layer does not know the
  * shell's language; the shell turns it into words at the moment of showing it.
  */
 export type OpenResult =
-  | { ok: true; scope: ScopeSnapshot; relayout: boolean; kind: 'workingFile' | 'interchange' }
-  | { ok: false; messageKey: 'shell.workingFileNoDiagrams' | 'shell.interchangeNoDiagrams' | 'shell.unknownFile' }
+  | { ok: true; scope: ScopeSnapshot; relayout: boolean; kind: 'workingFile' }
+  | { ok: false; messageKey: 'shell.workingFileNoDiagrams' | 'shell.unknownFile' }
 
 /**
  * A read and parsed file, landed into the scope it was opened from.
  *
  * `into` is the scope being replaced: the file supplies the content, the open
- * scope supplies where it is filed and — for an interchange document, which by
- * agreement carries neither marks nor pictures — the two libraries, which
- * belong to this scope rather than to the document.
+ * scope supplies where it is filed.
  */
 export function openScopeDocument(
   parsed: unknown,
@@ -353,22 +328,6 @@ export function openScopeDocument(
         model: parsed.model,
         activeDiagramId: resolveActive(parsed.model, parsed.activeDiagramId),
         logoLibrary: workingFileLogoLibrary(parsed),
-      },
-    }
-  }
-  if (isInterchange(parsed)) {
-    const model = fromInterchange(parsed)
-    if (!model.diagrams.length) return { ok: false, messageKey: 'shell.interchangeNoDiagrams' }
-    return {
-      ok: true,
-      kind: 'interchange',
-      relayout: true,
-      scope: {
-        path: into.path,
-        model,
-        activeDiagramId: resolveActive(model),
-        logoLibrary: [...into.logoLibrary],
-        ...(into.imageLibrary?.length ? { imageLibrary: [...into.imageLibrary] } : {}),
       },
     }
   }

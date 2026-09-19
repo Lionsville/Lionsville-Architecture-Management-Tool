@@ -10,12 +10,12 @@
  * What is left imports nothing, which is the point: every module may read these
  * types, and none of them drags React in by doing so.
  *
- * The field names here are also the interchange format's, which is a contract
- * with other tools rather than branding. They do not get renamed — with the
- * one exception ADR-0012 §5 makes: `connections` became `relations`, because
- * the list stopped being only connections. The interchange document keeps the
- * old name — `fromInterchange.ts` owns its own shapes — and the working format
- * followed the model at version 4.
+ * These field names were the interchange format's as well, while there was one
+ * (ADR-0018). They are the working file's now, and the same rule holds for the
+ * same reason: a name in a file somebody has on disk does not get renamed for
+ * tidiness. The one exception ADR-0012 §5 makes is `connections`, which became
+ * `relations` because the list stopped being only connections; the working
+ * format followed the model at version 4.
  */
 
 /** The Lionsville aspect superset; element aspect keys may also be custom slugs. */

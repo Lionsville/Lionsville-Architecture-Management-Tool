@@ -3,7 +3,7 @@
  * order, and what the snippet shows a reader about why it matched.
  */
 import { describe, expect, it } from 'vitest'
-import type { HostModel } from '../model/fromInterchange'
+import type { HostModel } from '../model/hostModel'
 import type { Adr } from '../decisions/adr'
 import { searchAll, snippet } from './search'
 

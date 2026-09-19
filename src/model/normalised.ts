@@ -34,7 +34,7 @@ import type {
 } from './types'
 import { edgeRouteRows, splitRoutes } from './routes'
 import type { Adr } from './adr'
-import type { HostModel } from './fromInterchange'
+import type { HostModel } from './hostModel'
 import type { Transition } from './transition'
 
 export type RelationId = string

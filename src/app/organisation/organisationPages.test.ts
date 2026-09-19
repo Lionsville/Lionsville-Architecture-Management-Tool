@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { organisationPages } from './organisationPages'
 import { laidOut } from '../../model/testFixtures'
 import type { DesignElement } from '../../model'
-import type { HostModel } from '../../model/fromInterchange'
+import type { HostModel } from '../../model/hostModel'
 import type { ScopeSnapshot } from '../../projects/scope'
 
 const TODAY = '2026-09-12'

@@ -10,7 +10,6 @@ import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
   'shell.workingFileNoDiagrams': 'Diese Arbeitsdatei enthält keine Ansichten.',
-  'shell.interchangeNoDiagrams': 'Dieses Dokument enthält keine Ansichten.',
   'git.andMore': ' und {count} weitere',
 
   'check.conflict': '{name} ist auch in {scope} definiert',
@@ -66,5 +65,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'standIn.definedIn': 'Definiert in {scope} — die Details werden dort verantwortet.',
   'standIn.open': '{scope} öffnen',
   'standIn.from': 'aus {scope}',
-  'shell.unknownFile': 'Diese Datei ist weder ein Interchange-Dokument noch eine Arbeitsdatei.',
+  'shell.unknownFile': 'Diese Datei ist keine Arbeitsdatei.',
 }
