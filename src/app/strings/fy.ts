@@ -383,6 +383,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'org.describeTechnology': 'Elke platfoarmtsjinst en elk platfoarm yn de organisaasje: wat oanbean wurdt, wat it leveret, en wa\'t derop leunt.',
   'org.attention': 'Freget oandacht',
   'org.attentionOpen': 'Iepenje wêr\'t it te ferhelpen is',
+  'org.attentionMore': 'Alle {count} toane',
   'org.businessMake': 'In plaat meitsje\u2026',
   'org.map': 'Kaart',
   'org.mapMake': 'In kaart meitsje\u2026',

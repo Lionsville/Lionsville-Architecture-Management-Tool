@@ -383,6 +383,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.describeTechnology': 'Jeder Plattformdienst und jede Plattform in der Organisation: was angeboten wird, was es liefert, und wer sich darauf stützt.',
   'org.attention': 'Braucht Aufmerksamkeit',
   'org.attentionOpen': 'Dort öffnen, wo es zu beheben ist',
+  'org.attentionMore': 'Alle {count} anzeigen',
   'org.businessMake': 'Ein Blatt anlegen\u2026',
   'org.map': 'Karte',
   'org.mapMake': 'Eine Karte anlegen\u2026',

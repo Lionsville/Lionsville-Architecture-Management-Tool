@@ -4,9 +4,17 @@
  *
  * Not shown at all when there is nothing — a heading over an empty list would
  * be a warning about nothing, and a "no problems" line would be saying so
- * before the index has been read.
+ * before the index has been read. Folded past a handful: an organisation
+ * whose business layer is still being agreed can have forty capabilities
+ * proposed by its domains, and forty sentences would push the tree off the
+ * screen — the first few say what kind of thing is wrong, and the count says
+ * how much.
  */
+const SHOWN_FOLDED = 6
+
+import { useState } from 'react'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
@@ -20,14 +28,16 @@ export function NeedsAttention({ items, onOpen, s }: {
   onOpen?: (scope: ScopePath, id: ElementId) => void
   s: Translate
 }) {
+  const [unfolded, setUnfolded] = useState(false)
   if (items.length === 0) return null
+  const shown = unfolded ? items : items.slice(0, SHOWN_FOLDED)
   return (
     <Box sx={{ mb: 4 }} data-testid="needs-attention">
       <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase', color: 'warning.main' }}>
         {s('org.attention')}
       </Typography>
       <Stack spacing={0.25}>
-        {items.map((item) => (
+        {shown.map((item) => (
           <Typography
             key={`${item.key}|${item.scope}|${item.id}`}
             component="button"
@@ -47,6 +57,11 @@ export function NeedsAttention({ items, onOpen, s }: {
           </Typography>
         ))}
       </Stack>
+      {items.length > shown.length && (
+        <Button size="small" onClick={() => setUnfolded(true)} data-testid="attention-more" sx={{ mt: 0.5, fontSize: 11 }}>
+          {s('org.attentionMore', { count: items.length })}
+        </Button>
+      )}
     </Box>
   )
 }

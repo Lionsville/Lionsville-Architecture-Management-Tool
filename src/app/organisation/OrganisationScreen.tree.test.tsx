@@ -250,6 +250,19 @@ describe('what the organisation says needs attention', () => {
     expect(attention.textContent).not.toContain('Warehouse')
   })
 
+  it('folds past six sentences, and shows them all on request', async () => {
+    const held = TREE()
+    const at = (path: string) => held.find((scope) => scope.path === path)!
+    // Eight stand-ins of things nobody defines: eight findings on one scope.
+    at('finance').model.elements = Array.from({ length: 8 }, (_, n) => element(`ghost-${n}`, `Ghost ${n}`, 'nowhere'))
+    show(held)
+    const attention = await screen.findByTestId('needs-attention')
+    expect(within(attention).getAllByTestId(/^attention-finance-/)).toHaveLength(6)
+    fireEvent.click(within(attention).getByTestId('attention-more'))
+    expect(within(attention).getAllByTestId(/^attention-finance-/)).toHaveLength(8)
+    expect(within(attention).queryByTestId('attention-more')).toBeNull()
+  })
+
   it('shows no block at all on a tree nobody has found anything in', async () => {
     show()
     await screen.findByTestId('scope-finance')

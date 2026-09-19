@@ -383,6 +383,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.describeTechnology': 'Elke platformdienst en elk platform in de organisatie: wat wordt aangeboden, wat het levert, en wie erop leunt.',
   'org.attention': 'Vraagt aandacht',
   'org.attentionOpen': 'Openen waar het te herstellen is',
+  'org.attentionMore': 'Alle {count} tonen',
   'org.businessMake': 'Een plaat maken\u2026',
   'org.map': 'Kaart',
   'org.mapMake': 'Een kaart maken\u2026',
