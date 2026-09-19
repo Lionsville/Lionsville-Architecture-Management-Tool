@@ -55,15 +55,24 @@ function mount(initial = project()) {
   let actions!: DiagramActions
   let current!: () => HostModel
   let activeId!: () => string
+  let history!: () => readonly { summary: { key: string; name?: string } }[]
+  let undo!: () => void
+  let dispatch!: ReturnType<typeof useModelSession>['dispatch']
   function Host() {
     const session = useModelSession({ initialProject: initial, notify, s: translator('en') })
     actions = useDiagramActions({ session, notify, s: translator('en'), makeId: (p) => `${p}-new` })
     current = session.current
     activeId = session.currentActiveId
+    history = session.history
+    undo = session.undo
+    dispatch = session.dispatch
     return null
   }
   render(<Host />)
-  return { notify, actions: () => actions, model: () => current(), activeId: () => activeId() }
+  return {
+    notify, actions: () => actions, model: () => current(), activeId: () => activeId(),
+    history: () => history(), undo: () => undo(), dispatch: (...args: Parameters<typeof dispatch>) => dispatch(...args),
+  }
 }
 
 describe('creating a landscape', () => {
@@ -106,6 +115,43 @@ describe('a container view', () => {
     act(() => view.actions().onCreateContainerDiagram('billing'))
     expect(view.model().diagrams.map((d) => d.id)).toContain('cd-new')
     expect(view.activeId()).toBe('cd-new')
+  })
+
+  it('is a step like any other: named in Activity, and taken back by undo', () => {
+    // Made on purpose, from the menu or the inspector — and because it goes
+    // through the same command as every change, it is one line in the
+    // Activity list and one ⌘Z, which a view made silently by a double-click
+    // never was.
+    const view = mount()
+    act(() => view.actions().onCreateContainerDiagram('billing'))
+    const last = view.history().at(-1)
+    expect(last?.summary).toEqual({ key: 'activity.diagramAdded', name: 'Billing · containers' })
+    act(() => view.undo())
+    expect(view.model().diagrams.map((d) => d.id)).toEqual(['d1', 'd2'])
+  })
+
+  it('is deleted with its containers, and the application can go afterwards', () => {
+    // The containers are the view's detail, not the application's: they leave
+    // with it, so the application stands with nothing inside and the delete
+    // dialog no longer says "delete or re-parent its components first".
+    const held = model()
+    held.elements = [
+      ...held.elements,
+      { id: 'billing-api', kind: 'component', name: 'API', parentId: 'billing', lifecycle: 'live', isManaged: true, aspects: {} },
+    ]
+    held.diagrams = [
+      ...held.diagrams,
+      laidOut({ id: 'cd1', kind: 'container', name: 'Billing — containers', applicationElementId: 'billing', placements: [at('billing-api')] }),
+    ]
+    const view = mount(project(held))
+    act(() => view.actions().requestDeleteDiagram('cd1'))
+    act(() => view.actions().confirmDeleteDiagram())
+    expect(view.model().diagrams.map((d) => d.id)).toEqual(['d1', 'd2'])
+    expect(view.model().elements.some((e) => e.parentId === 'billing')).toBe(false)
+    expect(view.notify).toHaveBeenCalledWith('“Billing — containers” deleted.', 'success')
+    let gone: HostModel | undefined
+    act(() => { gone = view.dispatch({ type: 'element.delete', id: 'billing' }) })
+    expect(gone?.elements.some((e) => e.id === 'billing')).toBe(false)
   })
 
   it('is not made twice: the second ask just opens the one that exists', () => {

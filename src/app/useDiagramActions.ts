@@ -9,7 +9,8 @@ import { useCallback, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { DesignDiagram, DiagramSettings } from '../model'
 import { duplicateDiagram, toDiagram, transaction } from '../model'
-import { findContainerDiagram, seedContainerDiagram } from '../model/containerDiagram'
+import { findContainerDiagram, removeContainerDiagram, seedContainerDiagram } from '../model/containerDiagram'
+import { claimKey, idsIn } from '../model/keys'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
@@ -128,8 +129,17 @@ export function useDiagramActions(deps: {
     if (!id) return
     const target = session.indexed().diagrams[id]
     if (!target) return
-    // The reducer refuses the last landscape, and says so itself.
-    if (!session.dispatch({ type: 'diagram.delete', id })) return
+    // A container view is the DETAIL of an application, not the application:
+    // its containers go with it and the interfaces they carried are written on
+    // the landscape first (`model/containerDiagram.ts`) — the same step the
+    // boards table takes, so the application stands afterwards with nothing
+    // inside it and can be deleted like any other. A landscape is the plain
+    // drop; the reducer refuses the last one, and says so itself.
+    const current = session.current()
+    const taken = new Set(idsIn(current))
+    const command = removeContainerDiagram(current, id, () => claimKey('interface', taken))
+      ?? { type: 'diagram.delete' as const, id }
+    if (!session.dispatch(command)) return
     // The active diagram gone? Then on to the first one that remains.
     if (session.currentActiveId() === id) {
       const left = session.indexed()
