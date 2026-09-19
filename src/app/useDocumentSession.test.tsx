@@ -55,9 +55,9 @@ function mount(
 
   /** Only what the hook reaches for. `snapshot` is a function on purpose: the
       hook must ask at save time, not at render time. */
-  function Host({ model }: { model: unknown }) {
+  function Host({ model, active = 'd1' }: { model: unknown; active?: string }) {
     const session: SavableSession = {
-      model, activeDiagramId: 'd1', logoLibrary, snapshot: () => latest.current,
+      model, activeDiagramId: active, logoLibrary, snapshot: () => latest.current,
     }
     hook = useDocumentSession({
       session,
@@ -92,6 +92,8 @@ function mount(
     takeTheirs: () => act(() => hook.takeTheirs()),
     keepMine: () => act(() => hook.keepMine()),
     unmount: () => view.unmount(),
+    /** Another tab up, the document as it was. */
+    switchTab: (id: string) => act(() => { view.rerender(<Host model={latest.current.model} active={id} />) }),
     // The callback returns nothing on purpose: `act` given a promise becomes
     // the async form, which has to be awaited, and one that is not leaves React
     // unable to render anything afterwards.
@@ -118,6 +120,16 @@ describe('a document that has just been opened', () => {
 
     await view.idle()
 
+    expect(view.writes).toHaveLength(0)
+  })
+
+  it('is not made dirty by switching tabs: which diagram is up rides with the next save', async () => {
+    // Opening a landscape used to say "Unsaved changes" and then "Saved" a
+    // few seconds later, on a document nobody had touched.
+    const view = mount()
+    view.switchTab('d2')
+    expect(view.status()).toBe('clean')
+    expect(view.reported).not.toContain(true)
     expect(view.writes).toHaveLength(0)
   })
 

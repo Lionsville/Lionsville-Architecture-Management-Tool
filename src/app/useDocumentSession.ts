@@ -119,7 +119,7 @@ export function useDocumentSession(deps: {
   const {
     session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork,
   } = deps
-  const { model, activeDiagramId, logoLibrary, snapshot } = session
+  const { model, logoLibrary, snapshot } = session
 
   const [state, dispatch] = useReducer(documentSession, snapshot().path, openSession)
 
@@ -178,6 +178,13 @@ export function useDocumentSession(deps: {
    *
    * Not on the first render, though: the project was just read from the store
    * and is not dirty because it was drawn.
+   *
+   * Nor on switching tabs. Which diagram is up is written with the document
+   * (`activeDiagramId`, so a reopen lands where you were), but merely opening
+   * a landscape used to say "Unsaved changes" and then "Saved" a few seconds
+   * later, which reads as a fault on a document nobody touched. The tab still
+   * rides along with the next save; only a change to what the document SAYS
+   * arms the wait.
    */
   const opened = useRef(true)
   useEffect(() => {
@@ -186,10 +193,10 @@ export function useDocumentSession(deps: {
     apply({ type: 'edited' })
     const timer = window.setTimeout(() => saving.current('idle'), AUTOSAVE_IDLE_MS)
     return () => window.clearTimeout(timer)
-    // These three and nothing else. Everything the body reaches for besides
+    // These two and nothing else. Everything the body reaches for besides
     // them is a path or is stable for the life of the hook; a dependency that
     // changed identity per render would read as an edit per render.
-  }, [model, activeDiagramId, logoLibrary])
+  }, [model, logoLibrary])
 
   /**
    * The two cases the effect above cannot cover, and they are the same case: a
