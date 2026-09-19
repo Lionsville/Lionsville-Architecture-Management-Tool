@@ -224,15 +224,15 @@ describe('what the organisation says needs attention', () => {
   it('says each finding as a sentence naming the record, and no row counts them', async () => {
     show(withFindings())
     const attention = await screen.findByTestId('needs-attention')
-    expect(attention.textContent).toContain('Finance ERP is also defined in Retail')
-    expect(attention.textContent).toContain('Nothing in this organisation defines CRM')
+    expect(attention.textContent).toContain('Finance ERP is defined both here and in Retail — keep one definition')
+    expect(attention.textContent).toContain('CRM stands in for something nothing in the organisation defines')
     expect(screen.queryByTestId('findings-finance')).toBeNull()
   })
 
   it('puts a conflict on both scopes, since neither is the wrong one', async () => {
     show(withFindings())
     const attention = await screen.findByTestId('needs-attention')
-    expect(attention.textContent).toContain('ERP is also defined in Finance')
+    expect(attention.textContent).toContain('ERP is defined both here and in Finance')
     expect(within(attention).getByTestId('attention-retail-erp')).toBeDefined()
     expect(within(attention).getByTestId('attention-finance-erp')).toBeDefined()
   })

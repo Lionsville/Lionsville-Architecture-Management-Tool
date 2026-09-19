@@ -212,7 +212,7 @@ describe('the organisation screen — its own pages', () => {
     // tally on the card: the card keeps the counts.
     expect(cards.textContent).not.toContain('unattributed')
     const attention = await screen.findByTestId('needs-attention')
-    expect(attention.textContent).toContain('Nobody has said whose Post office is')
+    expect(attention.textContent).toContain('Post office is outside the organisation and nobody has said whose it is')
 
     fireEvent.click(within(cards).getByTestId('open-register'))
     const table = await screen.findByTestId('register-table')
@@ -235,7 +235,7 @@ describe('the organisation screen — its own pages', () => {
     // The two findings are sentences under the cards, each naming the service.
     const attention = await screen.findByTestId('needs-attention')
     expect(attention.textContent).toContain('Message brokering is used by')
-    expect(attention.textContent).toContain('is not marked shared')
+    expect(attention.textContent).toContain('is not marked shared — mark it shared, or move it')
     expect(attention.textContent).toContain('Message brokering is offered, but no platform delivers it')
 
     fireEvent.click(within(cards).getByTestId('open-technology'))
@@ -246,7 +246,7 @@ describe('the organisation screen — its own pages', () => {
     expect(within(table).getByTestId('technology-use-containers').textContent).toBe('1 application · 1 scope')
     expect(within(table).getByTestId('technology-realised-containers').textContent).toBe('OpenShift')
     expect(within(table).getByTestId('technology-shared-brokering').textContent).toBe('Own team')
-    expect(within(table).getByTestId('technology-realised-brokering').textContent).toBe('Nothing realises it')
+    expect(within(table).getByTestId('technology-realised-brokering').textContent).toBe('Nothing delivers it')
     expect(within(table).getByTestId('technology-row-brokering').textContent).toContain('used by Warehouse system')
     expect(within(table).getByTestId('technology-use-openshift').textContent).toBe('0 hosted')
     expect(within(table).getByTestId('technology-realised-openshift').textContent).toBe('Container platform')

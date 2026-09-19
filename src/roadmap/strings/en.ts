@@ -21,7 +21,7 @@ export const EN = {
   'roadmap.noPlans': 'No plans yet.',
   'roadmap.planFrom': 'From',
   'roadmap.planTo': 'To',
-  'roadmap.planPorted': '{done} of {total} interfaces ported',
+  'roadmap.planPorted': '{done} of {total} interfaces moved',
   'roadmap.windowFrom': 'Show from',
   'roadmap.windowTo': 'Show to',
   'roadmap.windowClear': 'Whole axis',
@@ -40,7 +40,7 @@ export const EN = {
   'roadmap.shiftDays': 'Days to move it, forwards or back',
   'roadmap.shiftHelp': 'Moves the window and every milestone, and the dates on what it introduces and retires. One step.',
   'roadmap.delete': 'Delete this plan',
-  'roadmap.deleteConfirm': 'Delete “{name}”? The dates it set on applications stay as they are.',
+  'roadmap.deleteConfirm': 'Delete “{name}”?',
   'roadmap.scrubHelp': 'Drag to move the board behind this page to a day.',
 
   // The statuses of a plan. A plan does not lock when it ends (ADR-0009).
@@ -127,7 +127,8 @@ export const EN = {
 `,
 
   // The checks. Each one names a contradiction, never staleness.
-  'check.title': 'What the dates disagree about',
+  'check.title': 'Where the dates disagree',
+  'roadmap.deleteBody': 'The plan and its milestones go. The dates it set on applications stay as they are, and you can undo this.',
   'check.none': 'The dates agree with each other.',
   'check.retiresWithDependants': '{name} retires on {detail} with {count} connections still live.',
   'check.successorTooLate': 'What replaces {name} does not go live until after it is gone: {detail}.',

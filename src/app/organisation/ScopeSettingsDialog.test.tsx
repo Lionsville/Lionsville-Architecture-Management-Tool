@@ -45,11 +45,11 @@ describe('ScopeSettingsDialog', () => {
    */
   it('says out loud that the address does not change, and names the root by the folder it is', () => {
     open({ path: 'acme/rail' })
-    expect(screen.getByText(/The address \(acme\/rail\) does not change/)).toBeDefined()
+    expect(screen.getByText(/the address \(acme\/rail\) stays/)).toBeDefined()
     cleanup()
     // The root has no segment to show, and `/` is where it is.
     open({ path: '', name: 'Acme Logistics' })
-    expect(screen.getByText(/The address \(\/\) does not change/)).toBeDefined()
+    expect(screen.getByText(/the address \(\/\) stays/)).toBeDefined()
   })
 
   /**

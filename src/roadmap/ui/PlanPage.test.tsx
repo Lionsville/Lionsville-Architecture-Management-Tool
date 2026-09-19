@@ -192,7 +192,7 @@ describe('milestones and decisions', () => {
 describe('the interfaces', () => {
   it('lists every line on what the plan retires, with where it has gone', () => {
     setup()
-    expect(screen.getByText('1 of 2 interfaces ported')).toBeTruthy()
+    expect(screen.getByText('1 of 2 interfaces moved')).toBeTruthy()
     const orders = screen.getByTestId('port-c-orders')
     expect(orders.textContent).toContain('Billing · orders')
     expect(orders.textContent).toContain('Not yet planned')
@@ -242,7 +242,7 @@ describe('the body', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     // Full page: the facts and the interfaces are out of the way.
     expect(screen.queryByDisplayValue('Logistics IT')).toBeNull()
-    expect(screen.queryByText('1 of 2 interfaces ported')).toBeNull()
+    expect(screen.queryByText('1 of 2 interfaces moved')).toBeNull()
     expect(screen.getByLabelText('Plan source (markdown)')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Show the facts' }))
     expect(screen.getByDisplayValue('Logistics IT')).toBeTruthy()

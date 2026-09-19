@@ -210,7 +210,7 @@ export function PlanPage(props: PlanPageProps) {
       <ConfirmDialog
         open={deleting}
         title={plan ? t('roadmap.deleteConfirm', { name: plan.title }) : ''}
-        body=""
+        body={t('roadmap.deleteBody')}
         confirmLabel={t('roadmap.delete')}
         cancelLabel={t('common.cancel')}
         onCancel={() => setDeleting(false)}

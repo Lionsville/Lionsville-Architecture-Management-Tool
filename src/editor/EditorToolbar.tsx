@@ -999,7 +999,7 @@ function AsOfControl(
   const dated = Boolean(asOf);
   return (
     <>
-      <Tooltip title={dated ? t('toolbar.asOfSet', { date: asOf ?? '' }) : t('toolbar.asOfToday')}>
+      <Tooltip title={dated ? t('toolbar.asOfSet', { date: asOf ?? '' }) : t('toolbar.asOfTodayTip')}>
         <Button
           size="small"
           aria-label={t('toolbar.asOf')}
@@ -1072,7 +1072,7 @@ function ColourByControl(props: {
   const on = props.colourBy !== undefined;
   return (
     <>
-      <Tooltip title={t('toolbar.colourBy')}>
+      <Tooltip title={t('toolbar.colourByTip')}>
         <IconButton
           size="small"
           aria-label={t('toolbar.colourBy')}

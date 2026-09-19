@@ -21,7 +21,7 @@ export const EN = {
   'relation.flow': 'Flow',
   'relation.supports': 'Supports',
   'relation.serves': 'Serves',
-  'relation.realises': 'Realises',
+  'relation.realises': 'Delivers',
   'relation.assigned': 'Assigned to',
   'relation.uses': 'Uses',
   'relation.hostedOn': 'Hosted on',

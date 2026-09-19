@@ -23,7 +23,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'relation.flow': 'Keppeling',
   'relation.supports': 'Stipet',
   'relation.serves': 'Betsjinnet',
-  'relation.realises': 'Realisearret',
+  'relation.realises': 'Leveret',
   'relation.assigned': 'Tawiisd oan',
   'relation.uses': 'Brûkt',
   'relation.hostedOn': 'Draait op',

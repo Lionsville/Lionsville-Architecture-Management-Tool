@@ -23,7 +23,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'relation.flow': 'Verbindung',
   'relation.supports': 'Unterstützt',
   'relation.serves': 'Bedient',
-  'relation.realises': 'Realisiert',
+  'relation.realises': 'Liefert',
   'relation.assigned': 'Zugewiesen an',
   'relation.uses': 'Nutzt',
   'relation.hostedOn': 'Läuft auf',

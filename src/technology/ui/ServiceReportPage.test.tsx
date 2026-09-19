@@ -73,7 +73,7 @@ describe('the report', () => {
     expect(screen.getByText('Own team')).toBeTruthy()
     expect(screen.getByText('Withdrawn on 2027-06-30')).toBeTruthy()
     expect(within(screen.getByTestId('service-maintainers')).getByText('Nobody named')).toBeTruthy()
-    expect(within(screen.getByTestId('service-realisedBy')).getByText('Nothing realises it yet')).toBeTruthy()
+    expect(within(screen.getByTestId('service-realisedBy')).getByText('Nothing delivers it yet')).toBeTruthy()
   })
 
   it('draws a row per consumer with the container, the scope and whether it would be stranded', () => {

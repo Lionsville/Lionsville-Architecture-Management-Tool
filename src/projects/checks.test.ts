@@ -400,13 +400,13 @@ describe('findingSentence', () => {
 
   it('fills the name, the scope as the caller names it, and the detail', () => {
     expect(findingSentence({ key: 'check.conflict', scope: 'retail', id: 'erp', name: 'ERP', scopes: ['finance'] }, s, scopeName))
-      .toBe('ERP is also defined in FINANCE')
+      .toBe('ERP is defined both here and in FINANCE — keep one definition and make the other a stand-in with Link…')
     expect(findingSentence({ key: 'check.offeredNotShared', scope: 'p', id: 'b', name: 'Brokering', detail: 'WMS' }, s, scopeName))
-      .toBe('Brokering is used by WMS, beyond the team that maintains it, and is not marked shared')
+      .toBe('Brokering is used by WMS, beyond the team that maintains it, and is not marked shared — mark it shared, or move it')
   })
 
   it('names the organisation where a finding names no other scope', () => {
     expect(findingSentence({ key: 'check.ownedElsewhere', scope: 'retail', id: 'x', name: 'X' }, s, scopeName))
-      .toBe('the organisation answers for this')
+      .toBe('This is kept in the organisation — change it there')
   })
 })

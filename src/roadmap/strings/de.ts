@@ -17,7 +17,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'roadmap.noPlans': 'Noch keine Pläne.',
   'roadmap.planFrom': 'Von',
   'roadmap.planTo': 'Bis',
-  'roadmap.planPorted': '{done} von {total} Schnittstellen übertragen',
+  'roadmap.planPorted': '{done} von {total} Schnittstellen verschoben',
   'roadmap.windowFrom': 'Anzeigen ab',
   'roadmap.windowTo': 'Anzeigen bis',
   'roadmap.windowClear': 'Ganze Zeitachse',
@@ -36,7 +36,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'roadmap.shiftDays': 'Anzahl Tage, vor oder zurück',
   'roadmap.shiftHelp': 'Verschiebt das Zeitfenster und jeden Meilenstein, sowie die Daten dessen, was er einführt und abschaltet. Ein Schritt.',
   'roadmap.delete': 'Diesen Plan löschen',
-  'roadmap.deleteConfirm': '„{name}“ löschen? Die Daten, die er auf Anwendungen gesetzt hat, bleiben bestehen.',
+  'roadmap.deleteConfirm': '„{name}“ löschen?',
   'roadmap.scrubHelp': 'Ziehen, um das Board hinter dieser Seite auf einen Tag zu bringen.',
   'plan.draft': 'Entwurf',
   'plan.agreed': 'Vereinbart',
@@ -113,7 +113,8 @@ export const DE: Record<keyof typeof EN, string> = {
 
 ## Rückfallplan
 `,
-  'check.title': 'Worin sich die Daten widersprechen',
+  'check.title': 'Wo sich die Daten widersprechen',
+  'roadmap.deleteBody': 'Der Plan und seine Meilensteine gehen. Die Daten, die er auf Anwendungen gesetzt hat, bleiben bestehen, und Sie können dies rückgängig machen.',
   'check.none': 'Die Daten stimmen miteinander überein.',
   'check.retiresWithDependants': '{name} wird am {detail} abgeschaltet, während noch {count} Verbindungen live sind.',
   'check.successorTooLate': 'Der Nachfolger von {name} geht erst live, nachdem es weg ist: {detail}.',

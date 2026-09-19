@@ -480,7 +480,9 @@ export function AdrPage(props: AdrPageProps) {
         />
         <ConfirmDialog
           open={Boolean(deleting)}
-          title={deleting ? s('adr.deleteTitle', { name: formatAdrNumber(deleting.number) }) : ''}
+          // The number and the title: a person confirming a delete should not
+          // have to remember which record ADR-0007 was.
+          title={deleting ? s('adr.deleteTitle', { name: `${formatAdrNumber(deleting.number)} ${deleting.title}` }) : ''}
           body={s('adr.deleteBody')}
           confirmLabel={s('adr.delete')}
           cancelLabel={s('common.cancel')}

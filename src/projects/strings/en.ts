@@ -22,17 +22,17 @@ export const EN = {
    * called and `{scope}` the other scope the finding names — the organisation
    * itself where the path is the root's, which is the empty string.
    */
-  'check.conflict': '{name} is also defined in {scope}',
-  'check.drift': 'The name here is not what {scope} calls it any more',
-  'check.dangling': 'Nothing in this organisation defines {name}',
-  'check.danglingEnd': 'A row on {name} ends on something nothing holds',
-  'check.proposal': '{name} is not a capability the organisation has named',
-  'check.ownedElsewhere': '{scope} answers for this',
-  'check.unattributed': 'Nobody has said whose {name} is',
-  'check.notDrawn': '{name} is on no board in this scope',
-  'check.unmapped': '{name} is assigned to nobody and claimed by nobody',
-  'check.uncovered': 'Nothing and nobody does {name}',
-  'check.offeredNotShared': '{name} is used by {detail}, beyond the team that maintains it, and is not marked shared',
+  'check.conflict': '{name} is defined both here and in {scope} — keep one definition and make the other a stand-in with Link…',
+  'check.drift': 'The copy of {name} here no longer matches {scope} — refresh it, or change it there',
+  'check.dangling': '{name} stands in for something nothing in the organisation defines — define it here, or delete the stand-in',
+  'check.danglingEnd': 'A row on {name} ends on something this scope does not hold — delete the row, or draw what it points to',
+  'check.proposal': '{name} is a capability this domain proposes and the organisation has not named — add it to the organisation\'s business architecture, or rename it to one that is there',
+  'check.ownedElsewhere': 'This is kept in {scope} — change it there',
+  'check.unattributed': '{name} is outside the organisation and nobody has said whose it is — name the party on its page',
+  'check.notDrawn': '{name} is defined here and drawn on no board — add it to a board, or leave it as a record',
+  'check.unmapped': '{name} is assigned to nobody and claimed by no domain — assign it, or hand it to a domain',
+  'check.uncovered': 'Nothing and nobody does {name} — connect an application that supports it, or assign a person',
+  'check.offeredNotShared': '{name} is used by {detail}, beyond the team that maintains it, and is not marked shared — mark it shared, or move it',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -90,7 +90,7 @@ export const EN = {
   'library.alreadyDrawn': '{name} is on this board already.',
   'library.notABoard': 'A card is drawn on a landscape or a container view.',
 
-  'standIn.definedIn': 'Defined in {scope} — its detail is answered for there.',
+  'standIn.definedIn': 'Defined in {scope} — its detail is kept there.',
   'standIn.open': 'Open {scope}',
   /** Under a stand-in's name on a card, small: where the thing really lives. */
   'standIn.from': 'from {scope}',

@@ -6,6 +6,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Link from '@mui/material/Link';
 import ListSubheader from '@mui/material/ListSubheader';
 import Switch from '@mui/material/Switch';
 import Tab from '@mui/material/Tab';
@@ -351,14 +352,19 @@ export function ElementInspector(props: ElementInspectorProps) {
               facts read as one of them. Only beside the canvas — on the page
               itself there is nowhere further to go. */}
           {!stacked && props.onOpenDocumentation && (
-            <Button
-              size="small"
-              data-testid="open-details"
-              sx={{ fontSize: 11, minWidth: 0, px: 0.5, py: 0, whiteSpace: 'nowrap', textTransform: 'none' }}
-              onClick={() => props.onOpenDocumentation?.(element.id)}
-            >
-              {t('record.open')} ›
-            </Button>
+            <Tooltip title={t('record.openTip')}>
+              {/* A span takes the tooltip's label, so the button's name stays its own text. */}
+              <span>
+                <Button
+                  size="small"
+                  data-testid="open-details"
+                  sx={{ fontSize: 11, minWidth: 0, px: 0.5, py: 0, whiteSpace: 'nowrap', textTransform: 'none' }}
+                  onClick={() => props.onOpenDocumentation?.(element.id)}
+                >
+                  {t('record.open')} ›
+                </Button>
+              </span>
+            </Tooltip>
           )}
         </Box>
         <TextField
@@ -426,7 +432,25 @@ export function ElementInspector(props: ElementInspectorProps) {
           }}
         >
           <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>
-            {summary.length ? summary.join(' · ') : t('record.empty')}
+            {summary.length
+              ? summary.join(' · ')
+              : (!stacked && props.onOpenDocumentation
+                // A way to fill it in, where an empty record used to be a
+                // sentence and nothing else: the page is where the owner,
+                // the vendor and the dates are kept.
+                ? (
+                  <Link
+                    component="button"
+                    type="button"
+                    underline="hover"
+                    data-testid="record-empty-add"
+                    sx={{ font: 'inherit', textAlign: 'left' }}
+                    onClick={() => props.onOpenDocumentation?.(element.id)}
+                  >
+                    {t('record.emptyAdd')}
+                  </Link>
+                )
+                : t('record.empty'))}
           </Typography>
         </Box>
       )}

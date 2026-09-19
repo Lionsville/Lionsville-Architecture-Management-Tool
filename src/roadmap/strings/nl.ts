@@ -17,7 +17,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'roadmap.noPlans': 'Nog geen plannen.',
   'roadmap.planFrom': 'Van',
   'roadmap.planTo': 'Tot',
-  'roadmap.planPorted': '{done} van {total} koppelingen overgezet',
+  'roadmap.planPorted': '{done} van {total} koppelingen verplaatst',
   'roadmap.windowFrom': 'Toon vanaf',
   'roadmap.windowTo': 'Toon tot',
   'roadmap.windowClear': 'Hele as',
@@ -36,7 +36,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'roadmap.shiftDays': 'Aantal dagen, vooruit of terug',
   'roadmap.shiftHelp': 'Verschuift het venster en elke mijlpaal, en de datums van wat het invoert en uitfaseert. Eén stap.',
   'roadmap.delete': 'Dit plan verwijderen',
-  'roadmap.deleteConfirm': '“{name}” verwijderen? De datums die het op applicaties zette blijven staan.',
+  'roadmap.deleteConfirm': '“{name}” verwijderen?',
   'roadmap.scrubHelp': 'Sleep om het bord achter deze pagina naar een dag te brengen.',
   'plan.draft': 'Concept',
   'plan.agreed': 'Akkoord',
@@ -113,7 +113,8 @@ export const NL: Record<keyof typeof EN, string> = {
 
 ## Terugvalscenario
 `,
-  'check.title': 'Waarover de datums het oneens zijn',
+  'check.title': 'Waar de datums het oneens zijn',
+  'roadmap.deleteBody': 'Het plan en zijn mijlpalen verdwijnen. De datums die het op applicaties zette blijven staan, en je kunt dit ongedaan maken.',
   'check.none': 'De datums zijn onderling consistent.',
   'check.retiresWithDependants': '{name} wordt uitgefaseerd op {detail} terwijl er nog {count} koppelingen live zijn.',
   'check.successorTooLate': 'De opvolger van {name} gaat pas live nadat het weg is: {detail}.',

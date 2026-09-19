@@ -82,6 +82,7 @@ describe('the three bands', () => {
     expect(screen.getByTestId('landscape-lines').querySelectorAll('path')).toHaveLength(0)
     fireEvent.click(screen.getByTestId('landscape-service-containers'))
     const titles = [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
+    // The model's own word on the line, as the agent reads it; the legend says "delivers".
     expect(titles).toEqual(['uses', 'uses', 'uses', 'realises'])
     // What the selection does not touch is dimmed; what it does is not.
     expect(screen.getByTestId('landscape-platform-kafka').dataset.dimmed).toBe('true')

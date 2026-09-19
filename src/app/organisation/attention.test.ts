@@ -36,8 +36,8 @@ describe('attentionItems', () => {
     ])
     const items = attentionItems(findings, [], [], '', s, scopeName)
     expect(items.map((item) => [item.scope, item.id, item.text])).toEqual([
-      ['finance', 'crm', 'Nothing in this organisation defines CRM'],
-      ['retail', 'erp', 'ERP is also defined in finance'],
+      ['finance', 'crm', 'CRM stands in for something nothing in the organisation defines — define it here, or delete the stand-in'],
+      ['retail', 'erp', 'ERP is defined both here and in finance — keep one definition and make the other a stand-in with Link…'],
     ])
   })
 
@@ -52,8 +52,8 @@ describe('attentionItems', () => {
     ]
     const items = attentionItems(undefined, register, technology, '', s, scopeName)
     expect(items.map((item) => item.text)).toEqual([
-      'Message brokering is offered, but no platform delivers it \u2014 add the platform that realises it, or withdraw the service.',
-      'Nobody has said whose Post office is',
+      'Message brokering is offered, but no platform delivers it \u2014 add the platform that delivers it, or withdraw the service.',
+      'Post office is outside the organisation and nobody has said whose it is — name the party on its page',
     ])
     expect(items.map((item) => [item.scope, item.id])).toEqual([['platforms', 'brokering'], ['retail', 'post']])
   })
