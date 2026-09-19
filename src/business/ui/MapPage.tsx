@@ -157,6 +157,11 @@ export function MapPage(props: MapPageProps) {
             {t('map.summary', laidOut.counts)}
           </Typography>
         )}
+        {laidOut && laidOut.rows.length > 0 && (
+          <Typography data-testid="map-legend" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
+            {t('map.legend')}
+          </Typography>
+        )}
         <Box sx={{ flex: 1 }} />
       </Box>
 

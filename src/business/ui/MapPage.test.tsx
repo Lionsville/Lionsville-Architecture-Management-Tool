@@ -91,6 +91,8 @@ describe('the grid', () => {
   it('adds up the leaves in the top bar', () => {
     open()
     expect(screen.getByTestId('map-summary').textContent).toBe('2 covered · 1 by people · 1 uncovered')
+    // The filled and hollow marks, explained where they are drawn.
+    expect(screen.getByTestId('map-legend').textContent).toBe('● supports it · ○ supports something under it')
   })
 
   it('names the owners across the top when the systems are somebody else’s', () => {

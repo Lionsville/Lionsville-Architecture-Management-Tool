@@ -138,6 +138,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'map.coverage': 'Abdeckung',
   'map.thisScope': 'Diese Ebene',
   'map.summary': '{covered} abgedeckt · {manual} durch Menschen · {uncovered} ungedeckt',
+  'map.legend': '● unterstützt es · ○ unterstützt etwas darunter',
   'map.uncovered': 'ungedeckt',
   'map.byPeople': 'Menschen',
   'map.gapsOne': '1 Lücke',

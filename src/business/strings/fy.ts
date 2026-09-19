@@ -138,6 +138,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'map.coverage': 'Dekking',
   'map.thisScope': 'Dit nivo',
   'map.summary': '{covered} dutsen · {manual} troch minsken · {uncovered} net dutsen',
+  'map.legend': '● stipet it · ○ stipet wat derûnder',
   'map.uncovered': 'net dutsen',
   'map.byPeople': 'minsken',
   'map.gapsOne': '1 gat',
