@@ -54,6 +54,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.savedWorkingFile':
     'Arbeitsdatei gespeichert — alles, einschließlich Geometrie, Gestaltung und eigener Logos.',
   'shell.workingFileLoaded': 'Arbeitsdatei „{name}“ geladen.',
+  'shell.workingSetLoaded': 'Arbeitsdatei „{name}“ geladen, mit {count} Scopes darunter.',
+  'shell.workingSetNotHere': 'Diese Datei enthält einen ganzen Arbeitssatz und lässt sich nur in einem Arbeitsordner öffnen.',
   'shell.processFailed': 'Das Dokument konnte nicht verarbeitet werden: {message}',
   'shell.saveFileFailed': 'Die Datei konnte nicht gespeichert werden: {message}',
   'shell.moveLeftCopy': 'Verschoben — aber die Kopie in der alten Gruppe konnte nicht entfernt werden: {message}',

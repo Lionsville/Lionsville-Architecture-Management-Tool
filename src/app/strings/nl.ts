@@ -54,6 +54,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.savedWorkingFile':
     'WorkingFile bewaard — alles, inclusief geometrie, opmaak en eigen logo’s.',
   'shell.workingFileLoaded': 'WorkingFile “{name}” geladen.',
+  'shell.workingSetLoaded': 'WorkingFile “{name}” geladen, met {count} scopes eronder.',
+  'shell.workingSetNotHere': 'Dit bestand bevat een hele werkset en kan alleen in een werkmap worden geopend.',
   'shell.processFailed': 'Het document kon niet worden verwerkt: {message}',
   'shell.saveFileFailed': 'Het bestand kon niet worden bewaard: {message}',
   'shell.moveLeftCopy': 'Verplaatst — maar de kopie in de oude groep kon niet worden verwijderd: {message}',

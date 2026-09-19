@@ -78,10 +78,22 @@ export function useProjectFiles(deps: {
    * the file then holds the open scope alone — which is what it held before.
    */
   workingSet?: () => Promise<ScopeSnapshot[]>
+  /**
+   * Write the scopes a file brought with it, and say the tree changed
+   * (ADR-0018).
+   *
+   * The session can only replace the scope it has open; the ones filed under it
+   * are somebody else's to write, and that somebody is the shell, which owns
+   * the store. Absent where there is nothing to write into — the web without a
+   * folder, a test — and a file that carries a set is then **refused** rather
+   * than opened for its top scope alone. Half a working set is the loss this
+   * whole arrangement exists to prevent.
+   */
+  adoptWorkingSet?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
   notify: Notify
   s: Translate
 }): ProjectFiles {
-  const { session, documents, workingSet, notify, s } = deps
+  const { session, documents, workingSet, adoptWorkingSet, notify, s } = deps
 
   /**
    * Hand a document over, and say what happened — after it happened.
@@ -149,12 +161,30 @@ export function useProjectFiles(deps: {
       // hint, and a renamed file is still what it is.
       const result = openDocumentBytes(bytes, session.snapshot())
       if (!result.ok) { notify(s(result.messageKey), 'error'); return }
-      session.adopt(result.scope, result.relayout)
-      notify(s('shell.workingFileLoaded', { name }), 'success')
+      const rest = result.rest ?? []
+      if (rest.length && !adoptWorkingSet) {
+        notify(s('shell.workingSetNotHere'), 'error')
+        return
+      }
+      if (!rest.length) {
+        session.adopt(result.scope, result.relayout)
+        notify(s('shell.workingFileLoaded', { name }), 'success')
+        return
+      }
+      // The scopes under it first. The open one is adopted last, because that
+      // is the one the screen is about to redraw from and it should not do so
+      // over a tree that is still half written.
+      void adoptWorkingSet!(rest).then(
+        () => {
+          session.adopt(result.scope, result.relayout)
+          notify(s('shell.workingSetLoaded', { name, count: String(rest.length) }), 'success')
+        },
+        (err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'),
+      )
     } catch (err) {
       notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
     }
-  }, [session, notify, s])
+  }, [session, adoptWorkingSet, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

@@ -58,6 +58,7 @@ function fakeSession() {
 function mount(
   documents: Partial<ProjectFileChannel>,
   workingSet?: () => Promise<ScopeSnapshot[]>,
+  adoptWorkingSet?: (scopes: readonly ScopeSnapshot[]) => Promise<void>,
 ) {
   const notify = vi.fn()
   const session = fakeSession()
@@ -70,7 +71,12 @@ function mount(
   let files!: ProjectFiles
   function Host() {
     files = useProjectFiles({
-      session, documents: channel, ...(workingSet ? { workingSet } : {}), notify, s: translator('en'),
+      session,
+      documents: channel,
+      ...(workingSet ? { workingSet } : {}),
+      ...(adoptWorkingSet ? { adoptWorkingSet } : {}),
+      notify,
+      s: translator('en'),
     })
     return null
   }
@@ -247,6 +253,66 @@ describe('opening a file', () => {
     await settle()
     expect(notify).toHaveBeenCalledWith(
       'The document could not be processed: unreadable', 'error')
+  })
+})
+
+describe('opening a working set', () => {
+  const file = (name = 'x.lvarch') => new File([''], name)
+  /** A file holding the organisation and one scope filed under it. */
+  const setBytes = () => workingFileBytes([organisation(), { ...snapshot(), path: 'acme' }])
+
+  it('writes the scopes that came with it, then adopts the one at the top', async () => {
+    const adopt = vi.fn((_scopes: readonly ScopeSnapshot[]) => Promise.resolve())
+    const { files, notify, session } = mount(
+      { readBytes: () => Promise.resolve(setBytes()) }, undefined, adopt,
+    )
+    act(() => files().openFile(file('acme.lvarch')))
+    await settle()
+    await settle()
+    expect(adopt).toHaveBeenCalledTimes(1)
+    expect(adopt.mock.calls[0][0].map((scope) => scope.path)).toEqual(['acme/landscape/acme'])
+    expect(session.adopt).toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith(
+      'Working file “acme.lvarch” loaded, with 1 scopes filed under it.', 'success')
+  })
+
+  it('refuses it where there is nowhere to write the rest, rather than opening half of it', async () => {
+    // Half a working set is the loss this whole arrangement exists to prevent:
+    // the scope at the top would open, the ones under it would be gone, and
+    // nothing would have said so.
+    const { files, notify, session } = mount({ readBytes: () => Promise.resolve(setBytes()) })
+    act(() => files().openFile(file('acme.lvarch')))
+    await settle()
+    await settle()
+    expect(session.adopt).not.toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith(
+      'This file holds a whole working set, which can only be opened into a working folder.', 'error')
+  })
+
+  it('says so, and adopts nothing, when a scope could not be written', async () => {
+    const { files, notify, session } = mount(
+      { readBytes: () => Promise.resolve(setBytes()) },
+      undefined,
+      () => Promise.reject(new Error('disk full')),
+    )
+    act(() => files().openFile(file('acme.lvarch')))
+    await settle()
+    await settle()
+    expect(session.adopt).not.toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith('The document could not be processed: disk full', 'error')
+  })
+
+  it('takes the ordinary one-scope file the way it always did', async () => {
+    const one = workingFileBytes([snapshot()])
+    const adopt = vi.fn((_scopes: readonly ScopeSnapshot[]) => Promise.resolve())
+    const { files, notify, session } = mount(
+      { readBytes: () => Promise.resolve(one) }, undefined, adopt,
+    )
+    act(() => files().openFile(file('one.lvarch')))
+    await settle()
+    expect(adopt).not.toHaveBeenCalled()
+    expect(session.adopt).toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith('Working file “one.lvarch” loaded.', 'success')
   })
 })
 

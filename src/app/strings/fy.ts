@@ -54,6 +54,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.savedWorkingFile':
     'Wurkbestân bewarre — alles, ynklusyf geometry, opmak en eigen logo’s.',
   'shell.workingFileLoaded': 'Wurkbestân “{name}” laden.',
+  'shell.workingSetLoaded': 'Wurkbestân “{name}” laden, mei {count} scopes derunder.',
+  'shell.workingSetNotHere': 'Dit bestân bêtsjut in hiele wurkset en kin allinne yn in wurkmap iepene wurde.',
   'shell.processFailed': 'It dokumint koe net ferwurke wurde: {message}',
   'shell.saveFileFailed': 'It bestân koe net bewarre wurde: {message}',
   'shell.moveLeftCopy': 'Ferpleatst — mar de kopy yn de âlde groep koe net fuortsmiten wurde: {message}',

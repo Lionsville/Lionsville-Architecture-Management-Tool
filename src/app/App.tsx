@@ -671,6 +671,17 @@ export function App({
   const readTreeModels = useCallback(() => treeModels(projects), [projects])
   /** Every scope in full, for the working file (ADR-0018). Read on the gesture, never held. */
   const readWorkingSet = useCallback(() => treeScopes(projects), [projects])
+  /**
+   * The scopes an opened working file brought with it, written where they say
+   * they belong (ADR-0018).
+   *
+   * Shallowest first, which is the order `openDocumentBytes` answers in: a
+   * child written before its parent would be filed under a folder that is not a
+   * scope yet.
+   */
+  const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[]) => {
+    for (const scope of held) await projects.save(scope)
+  }, [projects])
   const treeChanged = useCallback(() => {
     refreshTree.current()
     tree.refresh()
@@ -943,6 +954,7 @@ export function App({
             scopes={organisation.tree}
             models={readTreeModels}
             workingSet={readWorkingSet}
+            onAdoptScopes={adoptScopes}
             onOpenSettings={organisation.refresh}
             onTreeChanged={treeChanged}
             onApplySettings={applyProjectSettings}

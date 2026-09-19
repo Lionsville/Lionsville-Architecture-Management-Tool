@@ -84,6 +84,8 @@ export const EN = {
   'shell.savedPicture': 'Picture saved.',
   'shell.savedWorkingFile': 'Working file saved — everything, including geometry, styling and your own logos.',
   'shell.workingFileLoaded': 'Working file “{name}” loaded.',
+  'shell.workingSetLoaded': 'Working file “{name}” loaded, with {count} scopes filed under it.',
+  'shell.workingSetNotHere': 'This file holds a whole working set, which can only be opened into a working folder.',
   'shell.processFailed': 'The document could not be processed: {message}',
   /**
    * A save that did not happen. Separate from `shell.notSaved`, which is the
