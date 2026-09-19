@@ -1107,6 +1107,29 @@ Zwei Wege hinaus, für zwei Zwecke.
   Megapixel und braucht eine Weile zum Zeichnen, deshalb sagt der Dialog, wie
   groß das Bild wird, und seine Schaltfläche fragt, bevor sie beginnt.
 
+## Mit einem Agenten arbeiten
+
+Ihr Coding-Agent — Claude Code, Codex, Cursor oder ein anderer MCP-Client —
+kann sich mit der Desktop-App verbinden (*Einen Agenten verbinden…* in der
+Leiste oder das Symbol neben dem Menü) und in der Organisation arbeiten,
+während Sie zusehen. Er liest jeden Bereich und kann die App bewegen wie
+Sie: einen Bereich öffnen, zu einem Board oder einem Blatt wechseln, die
+Entscheidungen oder die Roadmap öffnen, einen Bericht ansehen. Sie müssen
+dafür nichts vorher öffnen.
+
+Solange er die App bewegt oder das Modell ändert, sagt ein Streifen am
+unteren Fensterrand das, mit dem Namen des Agenten und — wenn er es gesagt
+hat — womit er beschäftigt ist. Was Sie inzwischen anklicken, kann ändern,
+was der Agent als Nächstes sieht; deshalb steht der Streifen dort, damit Sie
+es wissen, bevor Sie klicken. **Stopp** auf diesem Streifen beendet die
+Sitzung des Agenten: der Streifen verschwindet, der Agent erfährt es beim
+nächsten Aufruf und soll berichten, wie weit er gekommen ist, statt
+weiterzumachen. Er kann fragen, ob er fortfahren darf; sagen Sie ja, beginnt
+eine neue Sitzung und der Streifen ist wieder da.
+
+Alles, was ein Agent ändert, steht unter seinem Namen in der Aktivität und
+wird wie bisher mit ⌘Z rückgängig gemacht.
+
 ## Einstellungen
 
 Raster, Einrasten, Lebenszyklus-Abzeichen, eingeklappte Panels und ihre Breiten,

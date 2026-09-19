@@ -1034,6 +1034,27 @@ Twee uitgangen, voor twee doelen.
   tekenen, dus de dialoog zegt hoe groot de afbeelding wordt en de knop vraagt
   het eerst.
 
+## Werken met een agent
+
+Uw codeeragent — Claude Code, Codex, Cursor of een andere MCP-client — kan
+verbinding maken met de desktop-app (*Een agent koppelen…* op de balk, of
+het symbool naast het menu) en in de organisatie werken terwijl u meekijkt.
+De agent leest elke scope en kan de app bewegen zoals u dat doet: een scope
+openen, naar een bord of een blad gaan, de besluiten of de roadmap openen,
+een rapport bekijken. U hoeft er niets voor open te zetten.
+
+Zolang de agent de app beweegt of het model wijzigt, zegt een strook onder
+in het venster dat, met de naam van de agent en — als die dat heeft gezegd —
+waar hij mee bezig is. Wat u ondertussen aanklikt, kan veranderen wat de
+agent daarna ziet; daarom staat de strook er, zodat u het weet voordat u
+klikt. **Stoppen** op die strook beëindigt de sessie van de agent: de strook
+verdwijnt, de agent hoort het bij zijn volgende aanroep en wordt geacht te
+melden hoe ver hij was in plaats van door te gaan. Hij kan vragen om verder
+te mogen; zegt u dat, dan begint een nieuwe sessie en is de strook terug.
+
+Alles wat een agent wijzigt, staat in Activiteit onder zijn naam en wordt
+ongedaan gemaakt met ⌘Z, zoals altijd.
+
 ## Voorkeuren
 
 Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun

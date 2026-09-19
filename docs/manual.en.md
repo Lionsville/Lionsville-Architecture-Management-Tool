@@ -983,6 +983,26 @@ Two ways out, for two purposes.
   and takes a while to draw, so the dialog says how big the image will be and
   its button asks before it starts.
 
+## Working with an agent
+
+Your coding agent — Claude Code, Codex, Cursor or any other MCP client — can
+connect to the desktop app (*Connect an agent…* on the bar, or the glyph
+beside the menu) and work in the organisation while you watch. It reads
+every scope, and it can move the app the way you do: open a scope, switch to
+a board or a sheet, open the decisions or the roadmap, look at a report. It
+does not need you to open anything for it first.
+
+While it is moving the app or changing the model, a strip along the bottom
+of the window says so, with the agent's name and — when it said — what it is
+doing. Anything you click meanwhile can change what the agent sees next, so
+the strip is there to tell you before you do. **Stop** on that strip ends the
+agent's session: the strip goes, the agent is told on its next call, and it
+is expected to report where it got to rather than carry on. It may ask you
+to continue; when you say so, it starts a new session and the strip is back.
+
+Everything an agent changes shows in Activity under its name and is undone
+with ⌘Z, as before.
+
 ## Preferences
 
 Grid, snapping, lifecycle badges, collapsed panels and their widths, the

@@ -1022,6 +1022,27 @@ Twa wegen nei bûten, foar twa doelen.
   duorret efkes om te tekenjen, dus it finster seit hoe grut de ôfbylding wurdt
   en syn knop freget foardat it begjint.
 
+## Wurkje mei in agent
+
+Jo kodearaagent — Claude Code, Codex, Cursor of in oare MCP-kliïnt — kin
+ferbining meitsje mei de desktop-app (*In agent keppelje…* op de balke, of
+it symboal njonken it menu) en yn de organisaasje wurkje wylst jo tasjogge.
+De agent lêst elke scope en kin de app bewege sa't jo dat dogge: in scope
+iepenje, nei in boerd of in blêd gean, de besluten of de roadmap iepenje, in
+rapport besjen. Jo hoege der neat foar iepen te setten.
+
+Salang't de agent de app beweecht of it model wiziget, seit in strook ûnder
+yn it finster dat, mei de namme fan de agent en — as dy dat sein hat — wêr't
+er mei dwaande is. Wat jo yntusken oanklikke, kin feroarje wat de agent
+dêrnei sjocht; dêrom stiet de strook der, sadat jo it witte foardat jo
+klikke. **Stopje** op dy strook einiget de sesje fan de agent: de strook
+ferdwynt, de agent heart it by syn folgjende oanrop en wurdt achte te melden
+hoe fier oft er wie yn stee fan troch te gean. Hy kin freegje om fierder te
+meien; sizze jo dat, dan begjint in nije sesje en is de strook werom.
+
+Alles wat in agent wiziget, stiet yn Aktiviteit ûnder syn namme en wurdt
+ûngedien makke mei ⌘Z, sa't altyd.
+
 ## Foarkarren
 
 Roaster, útlinjen, libbenssyklusbadges, ynklapte panielen en har breedten, de

@@ -235,6 +235,9 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                     inspect           the layout report, in geometry not pixels
                     handle · renderer   one request in, one answer out; the four
                                       things only the canvas can do, as a view
+                    screen · shell · driving   the app as a screen and a
+                                      destination, moving it, and the session
+                                      the person can stop (ADR-0019)
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
 src/projects/     A scope: open, save, order, summarise, address, remember.
@@ -592,8 +595,9 @@ identifiers is still a list of a customer's identifiers.
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
-| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `register.list` `technology.list` `checks.list` |
-| Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` |
+| Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `views.list` `register.list` `technology.list` `checks.list` |
+| Agent tools, drive (ADR-0019) | `app.current` `app.open` `session.start` `session.end` — where the app is (a **screen**: the open scope, its view, the page over it, or the home that is up), moving it to a **destination** (`scope` · `page` · `id`, the same three words an `InitialPage` says), and the **driving session** the banner shows and the person's Stop ends; a driving call after a Stop is refused `agent.stopped` until `session.start` |
+| Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` — and with nothing open at all, `agent.noProject`, whose sentence says to call `app.open` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `interface.accept` `relation.add` `relation.update` `relation.remove` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5, ADR-0013, ADR-0014) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones. A platform `realises` a service, an application or a container `uses` a service (or binds to one platform), an actor is `assigned` a service or a platform; `hostedOn` is application \| component → platform and nothing else — a platform inside a platform is `parentId` |
 | What a thing IS (ADR-0012 §4, ADR-0013, ADR-0014) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform` · `platformService`; a platform carries a `platformArchetype` (`place` · `service` · `network`, `service` when unsaid), a service may be `shared` |
