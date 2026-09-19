@@ -26,6 +26,10 @@ afterEach(() => cleanup())
 
 const TODAY = () => '2026-09-12'
 
+// The two tests that copy the shipped example get this instead of the 5s
+// default; see the comment on the first of them.
+const COPY_THE_EXAMPLE_BUDGET = 20_000
+
 const board = () => laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [] })
 
 function scope(path: string, name: string, over: Partial<ScopeSnapshot> = {}): ScopeSnapshot {
@@ -389,6 +393,11 @@ describe('the organisation screen — a fresh folder', () => {
     expect(screen.queryByTestId('needs-attention')).toBeNull()
   })
 
+  // Copying the shipped example is the heaviest thing this file does: every
+  // scope of it is written and the editor for the landing scope is mounted.
+  // Under a second here; six on a starved CI runner (the v2.2.0 release run
+  // took 239s for a suite that takes 40s locally). The budget matches the
+  // work, as libavoidRouter.test.ts does, rather than the runner's mood.
   it('offers no examples once the folder holds architecture of its own', async () => {
     const scopes = new InMemoryScopeStore([])
     renderApp({ scopes, today: TODAY, examples: EXAMPLES })
@@ -399,7 +408,7 @@ describe('the organisation screen — a fresh folder', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.queryByText('Examples')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Copy into this folder…' })).toBeNull()
-  })
+  }, COPY_THE_EXAMPLE_BUDGET)
 })
 
 /**
@@ -433,5 +442,5 @@ describe('the organisation screen — the shipped example', () => {
     expect(cards).toContain('Business architecture')
     expect(cards).toContain('1 journey')
     expect(cards).not.toContain('Nothing at this level yet.')
-  })
+  }, COPY_THE_EXAMPLE_BUDGET)
 })
