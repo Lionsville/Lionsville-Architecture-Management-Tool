@@ -21,7 +21,7 @@
  * is the standing storage notice the shell already draws along the bottom, and
  * inventing a second one that guessed would hide affordances that work.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -153,6 +153,21 @@ export function OrganisationScreen({
    */
   const [registerOpen, setRegisterOpen] = useState(false)
   const [technologyOpen, setTechnologyOpen] = useState(false)
+  /**
+   * How tall this screen's bar is, measured the way the workspace measures
+   * its own: the register and the technology pages open BELOW it, so the
+   * crumbs stay and the way home is the same as from every other page. They
+   * used to cover it and leave a lone ‹, and the register opened over a
+   * backdrop as a dialog would. Zero until measured, as in the workspace.
+   */
+  const [barHeight, setBarHeight] = useState(0)
+  const barRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => setBarHeight(node.getBoundingClientRect().height))
+    observer.observe(node)
+    setBarHeight(node.getBoundingClientRect().height)
+  }, [])
+  const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, topInset: barHeight }), [windowChrome, barHeight])
 
   /**
    * The scope whose home this is, out of the listing. The root is the listing
@@ -244,6 +259,7 @@ export function OrganisationScreen({
       bgcolor: 'background.default', display: 'flex', flexDirection: 'column',
     }}>
       <OrganisationBar
+        barRef={barRef}
         tree={tree}
         home={home}
         heading={heading}
@@ -487,7 +503,7 @@ export function OrganisationScreen({
         onOpenPage={onOpenRegisterPage}
         onLink={onLinkFromRegister}
         s={s}
-        windowChrome={windowChrome}
+        windowChrome={pageChrome}
       />
       <TechnologyPage
         open={technologyOpen}
@@ -497,7 +513,7 @@ export function OrganisationScreen({
         onOpen={onOpenRegisterRow}
         onOpenPage={onOpenRegisterPage}
         s={s}
-        windowChrome={windowChrome}
+        windowChrome={pageChrome}
       />
       <NewScopeDialog
         open={dialog.kind === 'newScope'}
@@ -715,8 +731,10 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  tree, home, heading, level, source, onChooseWorkingDirectory, onGoHome, onSettings, overflow, agent, s, windowChrome,
+  barRef, tree, home, heading, level, source, onChooseWorkingDirectory, onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
+  /** Measured, so the pages that open under it know how far down to start. */
+  barRef: (node: HTMLDivElement | null) => void
   tree: ScopeSummary
   home: ScopeSummary
   heading: string
@@ -734,7 +752,7 @@ function OrganisationBar({
   const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
   const crumbs = useMemo(() => crumbsFor(home.path, flattenScopes(tree), s), [home.path, tree, s])
   return (
-    <Box data-testid="shell-toolbar" sx={{
+    <Box ref={barRef} data-testid="shell-toolbar" sx={{
       display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
       borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flex: '0 0 auto',
       // The window controls are painted over this bar's start, so the first
