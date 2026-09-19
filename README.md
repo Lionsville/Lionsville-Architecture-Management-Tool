@@ -8,9 +8,9 @@ own machine and goes no further than you send it.
 It runs as a desktop app on macOS, Windows and Linux, and in a browser from
 source.
 
-![The Acme Logistics example open in the desktop app: an application landscape
-in Layer-7 bands, with domain groups, lifecycle badges, routed connections and
-the right-click menu of a connection open](docs/screenshot-landscape.png)
+![The Acme Logistics example open: an application landscape in Layer-7 bands,
+with domain groups, lifecycle badges, routed connections, the right-click menu
+of an application open and the inspector beside it](docs/screenshot-landscape.png)
 
 *The shipped example, `Acme Logistics` — a fictional landscape you can open,
 copy and take apart.*
