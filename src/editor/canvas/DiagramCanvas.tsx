@@ -6,6 +6,8 @@ import {
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
+  getNodesBounds,
+  getViewportForBounds,
   useReactFlow,
   type Connection,
   type Edge,
@@ -66,6 +68,11 @@ import { GRID_SIZE } from './gridSize';
 import { isRectFullyVisible, toRect } from './viewportFit';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { ZoomControls } from './ZoomControls';
+import { FIT_ALL } from './fitAll';
+
+/** The zoom the canvas allows, said once for React Flow and for the framing above. */
+const MIN_ZOOM = 0.15;
+const MAX_ZOOM = 2.5;
 import { useDragRoutePreview } from './useDragRoutePreview';
 import { NodeResizeContext, type NodeResizeApi } from './NodeResizeContext';
 import { RouteEditingContext, type RouteEditingApi } from './RouteEditingContext';
@@ -306,6 +313,12 @@ export interface DiagramCanvasProps {
   /** The element menu's *Create container diagram*; absent under `readOnly`. */
   onCreateContainer?(elementId: ElementId): void;
   /**
+   * Where each diagram was left, kept by the editor for the session
+   * (`viewportMemory.ts`): this canvas is mounted anew per diagram, so the
+   * memory has to live above it. Absent = every diagram is fitted on open.
+   */
+  viewports?: ViewportMemory;
+  /**
    * A double-click on a LINE, on a landscape: the way down to where the
    * interface lands (ADR-0013). Absent leaves the double-click adding a bend,
    * which is what it does everywhere else.
@@ -435,27 +448,22 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getZoom, setViewport } =
     useReactFlow();
 
-  // Where each diagram was left, for the session (`viewportMemory.ts`): the
-  // one canvas draws every diagram, so the transform has to be put back by
-  // hand when the diagram under it changes. The id in force is read through a
-  // ref so a change React Flow reports after the switch is filed under the
-  // diagram that is now up rather than the one the callback was made for.
-  const viewports = useRef(new ViewportMemory());
+  // Where each diagram was left, for the session (`viewportMemory.ts`). The
+  // memory is the editor's, not this component's: the canvas is mounted anew
+  // for every diagram, so a ref here would forget on every switch. On mount,
+  // a diagram left before is put back where it was; one never visited is
+  // fitted by React Flow's own initial fit, told to count the nodes it has
+  // not drawn (`FIT_ALL`) — on a virtualised board it otherwise framed the
+  // handful that happened to be in view. The id in force is read through a
+  // ref so a change React Flow reports late is filed under the right diagram.
+  const viewports = props.viewports;
   const viewportOwner = useRef(props.diagram.id);
   viewportOwner.current = props.diagram.id;
-  const shownDiagram = useRef(props.diagram.id);
-  useEffect(() => {
-    if (shownDiagram.current === props.diagram.id) return;
-    shownDiagram.current = props.diagram.id;
-    const kept = viewports.current.recall(props.diagram.id);
-    // The nodes of the new diagram are measured a frame later; fitting before
-    // that frames nothing. A kept transform needs no measurement.
-    if (kept) void setViewport(kept);
-    else requestAnimationFrame(() => void fitView({ padding: 0.1 }));
-  }, [props.diagram.id, fitView, setViewport]);
+  const kept = useRef(viewports?.recall(props.diagram.id));
+  const restored = useRef(false);
   const handleViewportChange = useCallback((viewport: Viewport) => {
-    viewports.current.keep(viewportOwner.current, viewport);
-  }, []);
+    viewports?.keep(viewportOwner.current, viewport);
+  }, [viewports]);
 
   // Which nodes are mid-drag, for the waypoint-free preview. React Flow reports
   // drag state on every position change, so this is read from the changes rather
@@ -575,6 +583,31 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     setNodes(derivedNodes);
   }, [derivedNodes, selectedElementIds, selectedConnectionIds]);
   useEffect(() => setEdges(derivedEdges), [derivedEdges]);
+
+  // The first framing, once the nodes are in: a diagram left before is put
+  // back where it was, and one never visited is fitted — by us rather than
+  // by React Flow's `fitView` prop, which fits the moment the first nodes
+  // are measured and, on a canvas the browser has not laid out yet, fits a
+  // board into a container of no size at all: maximum zoom on one corner,
+  // which is what a landscape opened from its home looked like. So the fit
+  // waits for the container to have a size, a frame at a time.
+  useEffect(() => {
+    if (restored.current || nodes.length === 0) return;
+    restored.current = true;
+    if (kept.current) { void setViewport(kept.current); return; }
+    // From the nodes' own positions and declared sizes, not from what React
+    // Flow has measured: a frame after the nodes land, its store has sizes for
+    // none of them yet, and a fit over nothing is maximum zoom on a corner.
+    let tries = 0;
+    const attempt = () => {
+      const box = containerRef.current?.getBoundingClientRect();
+      if ((!box || box.width === 0 || box.height === 0) && tries++ < 60) { requestAnimationFrame(attempt); return; }
+      const bounds = getNodesBounds(nodes);
+      if (!box || !(bounds.width > 0) || !(bounds.height > 0)) { void fitView(FIT_ALL); return; }
+      void setViewport(getViewportForBounds(bounds, box.width, box.height, MIN_ZOOM, MAX_ZOOM, FIT_ALL.padding));
+    };
+    requestAnimationFrame(attempt);
+  }, [nodes, fitView, setViewport]);
 
   // Mirror the latest nodes for handlers that must read them synchronously
   // (helper-line math) without becoming a re-subscribing callback dependency.
@@ -1335,7 +1368,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       setSelection: onSelectionChange,
       translate: t,
       nodeBounds: () => getNodes().map(nodeBoundsOf),
-      fitView: () => void fitView({ padding: 0.1, duration: 300 }),
+      fitView: () => void fitView({ ...FIT_ALL, duration: 300 }),
       clipboardRef,
       pasteCountRef,
       addElementAt: (kind, position) => onAddByDrop(kind, position),
@@ -1583,9 +1616,9 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}
           onlyRenderVisibleElements={virtualise}
-          fitView
-          minZoom={0.15}
-          maxZoom={2.5}
+          // The first framing is ours (see the effect on `nodes` above).
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
           deleteKeyCode={null}
           // The keymap owns arrow keys (nudge → movePlacements, persisted). RF's
           // built-in arrow-key node move is visual-only (never committed), so we

@@ -92,6 +92,8 @@ import {
 } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
 import { badgeLegend } from '../model/aspects';
+import { FIT_ALL } from './canvas/fitAll';
+import { ViewportMemory } from './canvas/viewportMemory';
 import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
 import { selectAllContent } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
@@ -202,6 +204,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
   );
   const [deleteTarget, setDeleteTarget] = useState<ElementId | undefined>(undefined);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Where each diagram was left, for the session (`viewportMemory.ts`): Back
+  // to landscape used to put the landscape under the container's transform.
+  const viewports = useRef(new ViewportMemory());
   // "Rename diagram…" from a tab: the dialog lives here, the rename lands on the host.
   const [settingsDiagramId, setSettingsDiagramId] = useState<string | undefined>(undefined);
   const [renameDiagramTarget, setRenameDiagramTarget] = useState<{ id: string; name: string } | undefined>(
@@ -613,7 +618,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         // the failure above is the more useful of the two.
         reportSkippedTiers(result.skipped);
       }
-      requestAnimationFrame(() => fitView({ padding: 0.1, duration: 300 }));
+      requestAnimationFrame(() => fitView({ ...FIT_ALL, duration: 300 }));
     } catch (error) {
       // A cancel is the answer to a question the user asked; a toast saying the
       // thing they stopped did not finish is noise. A board past the cap gets
@@ -1318,7 +1323,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         autoRoute={autoRoute}
         onToggleAutoRoute={handleToggleAutoRoute}
         autoRouteNote={autoRouteNote}
-        onFitView={() => fitView({ padding: 0.1, duration: 300 })}
+        onFitView={() => fitView({ ...FIT_ALL, duration: 300 })}
         onExport={openExport}
         exportBusy={exporting}
         onOpenHelp={() => setHelpOpen(true)}
@@ -1429,6 +1434,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           mountEveryElement={capturing || exportOptions !== undefined}
           onElementDoubleClick={handleDoubleClick}
           onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
+          viewports={viewports.current}
           onLineDoubleClick={handleLineDoubleClick}
           showDeployment={showDeployment}
           platformTree={props.ownership?.platformTree}
@@ -1699,6 +1705,7 @@ function CanvasForDiagram({
   mountEveryElement,
   onElementDoubleClick,
   onCreateContainer,
+  viewports,
   onLineDoubleClick,
   onOpenDocumentation,
   showDeployment,
@@ -1740,6 +1747,7 @@ function CanvasForDiagram({
   mountEveryElement: boolean;
   onElementDoubleClick(elementId: ElementId): void;
   onCreateContainer?(elementId: ElementId): void;
+  viewports?: ViewportMemory;
   /** The way down from a landscape line (ADR-0013). */
   onLineDoubleClick(relationId: string): void;
   onOpenDocumentation(elementId: ElementId): void;
@@ -1790,6 +1798,7 @@ function CanvasForDiagram({
     mountEveryElement,
     onElementDoubleClick,
     onCreateContainer,
+    viewports,
     onLineDoubleClick,
     onOpenDocumentation,
     overlayTints,

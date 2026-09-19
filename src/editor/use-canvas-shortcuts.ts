@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { placedNodes } from '../model/placement';
 import { useReactFlow } from '@xyflow/react';
+import { FIT_ALL } from './canvas/fitAll';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { serializeSelection, type ClipboardPayload } from '../model/clipboard';
 import type {
@@ -366,7 +367,7 @@ function dispatch(
       void view.zoomOut({ duration: 150 });
       return;
     case 'fit-view':
-      void view.fitView({ padding: 0.1, duration: 300 });
+      void view.fitView({ ...FIT_ALL, duration: 300 });
       return;
     case 'zoom-100':
       void view.zoomTo(1, { duration: 300 });

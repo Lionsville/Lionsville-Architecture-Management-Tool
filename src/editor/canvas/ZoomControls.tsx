@@ -4,6 +4,7 @@ import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
 import { FitIcon } from '../../widgets/icons';
 import { useStrings } from '../../i18n/LanguageContext';
+import { FIT_ALL } from './fitAll';
 
 /**
  * Zoom in, zoom out, fit — ours, in the corner React Flow's `<Controls>`
@@ -26,7 +27,7 @@ export function ZoomControls() {
       <Paper elevation={2} sx={{ display: 'flex', flexDirection: 'column', p: 0.25, borderRadius: 2 }} data-testid="zoom-controls">
         {button(t('canvas.zoomIn'), () => void zoomIn({ duration: 150 }), <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>+</span>, 'zoom-in')}
         {button(t('canvas.zoomOut'), () => void zoomOut({ duration: 150 }), <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>−</span>, 'zoom-out')}
-        {button(t('canvas.zoomFit'), () => void fitView({ padding: 0.1, duration: 300 }), <FitIcon size={16} />, 'zoom-fit')}
+        {button(t('canvas.zoomFit'), () => void fitView({ ...FIT_ALL, duration: 300 }), <FitIcon size={16} />, 'zoom-fit')}
       </Paper>
     </Panel>
   );
