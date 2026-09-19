@@ -1,30 +1,32 @@
 /**
- * The binding between the agent seam and the live session (ADR-0007).
+ * The binding between the agent seam and the app (ADR-0007, ADR-0019).
  *
- * A few lines on purpose: subscribe to the gateway, hand each request to the
- * handler in `agent/` together with a narrow view of the session, and send
- * back what it says. The view reads the session through its `current()`-style
- * accessors rather than through props, so a request that arrives between two
- * renders is answered against the model as it stands and not as it last drew.
- *
- * With no project open the shell binds the same hook to no session, and every
- * request is refused with `agent.noProject` — a client is waiting, and a
- * refusal it can read beats a timeout it has to guess about.
+ * A few lines on purpose: subscribe to the gateway once, and hand each
+ * request to the handler in `agent/` together with the session that is open
+ * at that moment and the shell around it. The session is read through a
+ * getter rather than held, because the workspace that owns it remounts on
+ * every scope switch — and an agent's `app.open` is what causes the switch,
+ * so the subscription must outlive it. With no scope open the handler is
+ * given no session, and answers what it can about the organisation.
  */
 import { useEffect, useRef } from 'react'
 import { handle } from '../agent/handle'
 import type { SessionView } from '../agent/handle'
-import { refused } from '../agent/tools'
+import type { ShellView } from '../agent/shell'
 import type { AgentGateway } from '../ports/AgentGateway'
 
-export function useAgentGateway(gateway: AgentGateway | undefined, session: SessionView | undefined): void {
-  // A ref, so a session whose accessors are rebuilt on render does not mean
+export function useAgentGateway(
+  gateway: AgentGateway | undefined,
+  session: () => SessionView | undefined,
+  shell: ShellView | undefined,
+): void {
+  // Refs, so a shell whose accessors are rebuilt on render does not mean
   // resubscribing on render: the subscription is per gateway, the view per call.
-  const view = useRef(session)
-  view.current = session
+  const current = useRef({ session, shell })
+  current.current = { session, shell }
 
   useEffect(() => gateway?.on((request) => {
-    const held = view.current
-    return held ? handle(request, held) : Promise.resolve(refused('agent.noProject'))
+    const held = current.current
+    return handle(request, held.session(), held.shell)
   }), [gateway])
 }

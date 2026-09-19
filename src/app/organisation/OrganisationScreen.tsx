@@ -130,6 +130,14 @@ export type OrganisationScreenProps = {
   onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
   /** Open a row's page — the record and its document — where it is answered for. */
   onOpenRegisterPage?: (scope: ScopePath, id: ElementId) => void
+  /**
+   * An agent asked for one of this screen's two pages (ADR-0019). A request
+   * with a nonce, because the same page asked for twice is two requests and
+   * a prop that did not change is none.
+   */
+  pageRequest?: { page: 'register' | 'technologyRegister'; nonce: number }
+  /** Which of the two pages is up, whenever that changes — so the shell can say where the app is. */
+  onPageChange?: (page: 'register' | 'technologyRegister' | undefined) => void
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
   onLinkFromRegister?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
   /** The day, injected so a card's finding is not at the mercy of the clock. */
@@ -142,7 +150,7 @@ export type OrganisationScreenProps = {
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0,
-  onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister,
+  onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
@@ -168,6 +176,17 @@ export function OrganisationScreen({
     setBarHeight(node.getBoundingClientRect().height)
   }, [])
   const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, topInset: barHeight }), [windowChrome, barHeight])
+  // An agent's request for either page (ADR-0019), and the answer back: which
+  // one is up, said on every change and taken back when this screen goes.
+  useEffect(() => {
+    if (!pageRequest) return
+    setRegisterOpen(pageRequest.page === 'register')
+    setTechnologyOpen(pageRequest.page === 'technologyRegister')
+  }, [pageRequest])
+  useEffect(() => {
+    onPageChange?.(registerOpen ? 'register' : technologyOpen ? 'technologyRegister' : undefined)
+  }, [onPageChange, registerOpen, technologyOpen])
+  useEffect(() => () => onPageChange?.(undefined), [onPageChange])
 
   /**
    * The scope whose home this is, out of the listing. The root is the listing

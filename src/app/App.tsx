@@ -77,7 +77,11 @@ import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
 import type { MakeId } from './useDiagramActions'
 import type { ProjectFileChannel } from './useProjectFiles'
-import { useAgentGateway } from './useAgentGateway'
+import { useAgentShell } from './useAgentShell'
+import type { WorkspaceAgentView } from './useAgentShell'
+import { AgentDrivingBanner } from './AgentDrivingBanner'
+import type { Destination, Screen } from '../agent/screen'
+import type { TreeView } from '../agent/tree'
 import { useGlobalErrors } from './useGlobalErrors'
 import { useHostCommands } from './useHostCommands'
 import type { CommandStream } from './useHostCommands'
@@ -117,8 +121,12 @@ export type ShellDiagnostics = {
  * other.
  */
 export type InitialPage =
-  | { page: 'decisions' }
+  /** The decisions page, on one record when an id is given (ADR-0019). */
+  | { page: 'decisions'; id?: string }
   | { page: 'roadmap' }
+  /** A platform's report, or a service's (ADR-0013, ADR-0014): derived, opened by id, never made. */
+  | { page: 'platform'; id: ElementId }
+  | { page: 'service'; id: ElementId }
   /** A sheet by id, or — with none — the one the scope is about to be given. */
   | { page: 'sheet'; id?: string }
   /** The enterprise map, likewise. */
@@ -301,6 +309,29 @@ export type AppProps = {
 const NO_STEPS = (): readonly { summary: StepSummary }[] => []
 /** …and nothing waiting to be written: the screen writes straight through. */
 const SAVED = (): Promise<void> => Promise.resolve()
+/**
+ * The page a scope opens on for an agent's destination (ADR-0019): the same
+ * three words, so the two vocabularies cannot drift. A home page is the
+ * shell's own business and never reaches here.
+ */
+export function initialPageFor(to: Destination): InitialPage | undefined {
+  switch (to.page) {
+    case 'board': return to.id !== undefined ? { page: 'board', id: to.id } : undefined
+    case 'sheet': return { page: 'sheet', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'map': return { page: 'map', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'technology': return { page: 'technology', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'decisions': return { page: 'decisions', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'roadmap': return { page: 'roadmap' }
+    case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
+    case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
+    case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }
+    case 'documentation': return { page: 'documentation' }
+    case 'platform': return to.id !== undefined ? { page: 'platform', id: to.id } : undefined
+    case 'service': return to.id !== undefined ? { page: 'service', id: to.id } : undefined
+    default: return undefined
+  }
+}
+
 /** What the history page compares against before the home's document has been read. */
 const EMPTY_MODEL: HostModel = { name: '', elements: [], relations: [], diagrams: [] }
 
@@ -590,10 +621,6 @@ export function App({
   // The second fact the host is told, after unsaved work: which theme is on.
   useEffect(() => { onThemeMode?.(prefs.themeMode) }, [onThemeMode, prefs.themeMode])
 
-  // An agent asking while no project is open is told so. The workspace binds
-  // the same seam to its session while one is; the two never overlap.
-  useAgentGateway(project ? undefined : agent, undefined)
-
   const [order, setOrder] = useState<ProjectOrder>(() => {
     const stored = (prefs.preferences as Record<string, unknown> | undefined)?.projectOrder
     return isProjectOrder(stored) ? stored : 'name'
@@ -733,6 +760,35 @@ export function App({
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => tree.index.initiativesBelow(home).length, [tree.index, home])
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])
+  /**
+   * The tree, for the agent while nothing is open (ADR-0019): the same index
+   * the workspace hands it, minus the open document's own findings, which
+   * there is no document for. Through a ref, so the shell object the handler
+   * keeps reaches the current listing and index.
+   */
+  const treeRef = useRef({ tree: organisation.tree, index: tree.index, identity })
+  treeRef.current = { tree: organisation.tree, index: tree.index, identity }
+  const shellTree = useMemo<TreeView>(() => ({
+    scopes: () => flattenScopes(treeRef.current.tree).map((held) => ({
+      path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
+    })),
+    lookup: (id) => treeRef.current.index.lookup(id),
+    register: () => treeRef.current.index.register(),
+    technology: () => technologyRows(treeRef.current.index, treeRef.current.identity),
+    initiativesBelow: (path) => treeRef.current.index.initiativesBelow(path),
+    rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
+    findings: () => treeRef.current.identity,
+    read: async (path) => {
+      const held = await projects.load(path)
+      if (!held) return undefined
+      const above = await Promise.all(ancestorScopes(path).map((one) => projects.load(one)))
+      return {
+        model: held.model,
+        activeDiagramId: held.activeDiagramId,
+        ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []),
+      }
+    },
+  }), [projects])
 
   /**
    * The register, derived over the same index and in the same one pass
@@ -970,6 +1026,63 @@ export function App({
     () => flattenScopes(organisation.tree).find((scope) => scope.path === home)?.name,
     [organisation.tree, home],
   )
+  /**
+   * The agent at the shell (ADR-0019): where the app is, moving it, and the
+   * driving session with its Stop. Which of the organisation screen's two
+   * pages is up is the one fact about that screen the shell has to hold,
+   * because an agent may ask for either and may ask where it stands.
+   */
+  const [orgPage, setOrgPage] = useState<'register' | 'technologyRegister' | undefined>(undefined)
+  const [orgPageRequest, setOrgPageRequest] = useState<{ page: 'register' | 'technologyRegister'; nonce: number } | undefined>(undefined)
+  const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
+  const screenNow = useCallback((): Screen => {
+    const held = agentSessionRef.current
+    if (project && held) {
+      const model = held.current()
+      const active = model.diagrams.find((diagram) => diagram.id === held.activeDiagramId())
+      const page = held.page()
+      return {
+        open: { path: project.path, name: model.name, ...(active ? { view: { id: active.id, name: active.name, kind: active.kind } } : {}) },
+        ...(page ? { page } : {}),
+      }
+    }
+    if (project) return { open: { path: project.path, name: project.model.name } }
+    return {
+      home: { path: home, name: home === ROOT_SCOPE ? organisation.tree.name : (homeName ?? scopePathLabel(home)) },
+      ...(orgPage ? { page: { page: orgPage } } : {}),
+    }
+  }, [project, home, homeName, organisation.tree.name, orgPage])
+  const openFor = useCallback((to: Destination & { scope: string }) => {
+    if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
+      const page = to.page
+      goHome(to.scope)
+      setOrgPageRequest((prev) => (page === 'home' ? undefined : { page, nonce: (prev?.nonce ?? 0) + 1 }))
+      return
+    }
+    const held = agentSessionRef.current
+    if (project && project.path === to.scope && held) {
+      held.show(to)
+      return
+    }
+    openScopeAt(to.scope, initialPageFor(to))
+  }, [goHome, project, openScopeAt])
+  const agentStopped = useCallback((client: string | undefined) => {
+    toasts.notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
+  }, [toasts, s])
+  const agentShell = useAgentShell({
+    gateway: agent,
+    status: agentStatus,
+    tree: shellTree,
+    screen: screenNow,
+    open: openFor,
+    onStopped: agentStopped,
+  })
+  const registerAgent = agentShell.register
+  const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
+    agentSessionRef.current = view
+    registerAgent(view)
+  }, [registerAgent])
+
   useEffect(() => {
     if (project) onTitle?.(groupName, project.model.name)
     else if (home === ROOT_SCOPE) onTitle?.(organisation.tree.name)
@@ -1020,7 +1133,7 @@ export function App({
             onUnsavedWork={onUnsavedWork}
             history={history}
             onSnapshotTaken={sync.afterSnapshot}
-            agent={agent}
+            onAgentSession={registerAgentSession}
             agentBar={agentBar}
             documents={documents}
             notify={toasts.notify}
@@ -1074,6 +1187,8 @@ export function App({
             onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
             onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
             onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
+            pageRequest={orgPageRequest}
+            onPageChange={setOrgPage}
             today={todayDay}
             language={prefs.language}
             s={s}
@@ -1115,6 +1230,7 @@ export function App({
           onKeepOurs={() => sync.resolve('ours')}
           s={s}
         />
+        <AgentDrivingBanner driving={agentShell.driving} onStop={agentShell.stop} s={s} />
         {source.kind === 'memory' && (
           /* Along the bottom rather than above the toolbar: on the desktop that
              bar is the title bar, and anything pushed above it lands under the

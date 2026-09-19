@@ -17,6 +17,7 @@ import type { ReactNode } from 'react'
 import type { EditorHandle, EditorOwnership, PageView, StandInNote } from '../editor'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
+import type { Destination } from '../agent/screen'
 import type { Language, Translate } from '../i18n'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
@@ -38,7 +39,6 @@ import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { HostCommand } from '../platform/hostCommands'
-import type { AgentGateway } from '../ports/AgentGateway'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { AdrPage } from '../decisions/ui/AdrPage'
@@ -68,7 +68,7 @@ import { ShellToolbar } from './ShellToolbar'
 import type { Crumb, ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
 import type { ProjectSaver } from './useDocumentSession'
-import { useAgentGateway } from './useAgentGateway'
+import type { WorkspaceAgentView } from './useAgentShell'
 import { useDiagramActions } from './useDiagramActions'
 import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
@@ -137,11 +137,13 @@ export type ProjectWorkspaceProps = {
   /** A snapshot succeeded. The shell decides whether that means a push. */
   onSnapshotTaken?: () => void
   /**
-   * Where an agent's tool calls arrive (ADR-0007). Absent in a browser tab.
-   * Bound here, to the session, because a request is answered against the
-   * project that is open.
+   * The agent's view of this session (ADR-0007, ADR-0019), handed up as
+   * soon as it exists and taken back on unmount. The shell binds the seam,
+   * because the subscription must outlive a scope switch and an agent's
+   * `app.open` is what causes one; what the workspace owns is the session,
+   * the page over the canvas and how to show another.
    */
-  agent?: AgentGateway
+  onAgentSession?: (view: WorkspaceAgentView | undefined) => void
   /** The glyph on the bar: the server's state, and the way to the dialog. */
   agentBar?: ToolbarAgent
   documents: ProjectFileChannel
@@ -266,7 +268,7 @@ function localToday(): string {
 
 export function ProjectWorkspace({
   project, projects, index, watch, commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
-  onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
+  onSnapshotTaken, onAgentSession, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
   onOpenSettings, onTreeChanged = () => {},
   onApplySettings, makeId, ancestorDecisions,
@@ -519,83 +521,6 @@ export function ProjectWorkspace({
     }
   }, [session])
 
-  useAgentGateway(agent, useMemo(() => ({
-    indexed: session.indexed,
-    current: session.current,
-    activeDiagramId: session.currentActiveId,
-    scopePath: () => project.path,
-    ancestorDecisions: () => ancestorRecords,
-    blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
-    dispatch: session.dispatch,
-    ids: session.ids,
-    makeId,
-    today,
-    translate: s,
-    containerName: (name: string) => s('shell.containerDiagram', { name }),
-    // ADR-0012 §10, as the agent's half of the one rule: what the inspector
-    // greys out is what an `element.update` is refused for. Read through the
-    // ref so a rebuilt index reaches a request arriving between two renders.
-    ownedElsewhere: (id: string, patch: Partial<DesignElement>) => {
-      const held = session.indexed().elements[id]
-      const answer = mayApplyPatch(patch, id, project.path, indexRef.current, held)
-      return answer === true ? undefined : { owner: answer.owner }
-    },
-    renderer,
-    revision: session.revision,
-    history: session.history,
-    undo: session.undo,
-    images: session.currentImages,
-    addImage: (image) => session.setImageLibrary((library) => [...library, image]),
-    save: forceSave,
-    /**
-     * The tree, for the agent (ADR-0012, step 13). Through the ref, as
-     * `ownedElsewhere` is, so a rebuilt index reaches a request arriving
-     * between two renders. The findings are the tree's plus the open scope's
-     * own document's, the way its page shows them; another scope's document
-     * findings would be a load per call, and the identity findings about it
-     * are in the same list already.
-     */
-    tree: {
-      scopes: () => flattenScopes(scopes).map((held) => ({
-        path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
-      })),
-      lookup: (id) => indexRef.current.lookup(id),
-      register: () => indexRef.current.register(),
-      technology: () => technologyRows(indexRef.current, identityFindings(indexRef.current)),
-      initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
-      rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
-      findings: () => {
-        const model = session.current()
-        const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
-        return [
-          ...identityFindings(indexRef.current),
-          ...documentFindings({
-            scope: project.path, model, index: indexRef.current,
-            business: {
-              unmapped: unmappedFunctions(model.elements).map((held) => held.id),
-              uncovered: model.elements
-                .filter((held) => held.kind === 'function' && (coverage.get(held.id)?.coverage ?? 'uncovered') === 'uncovered')
-                .map((held) => held.id),
-            },
-          }),
-        ]
-      },
-      // A read for one call, the scope and its ancestors' records: what the
-      // open scope was handed at open, done again for the one asked about.
-      read: async (path) => {
-        const load = projects.load
-        if (!load) return undefined
-        const held = await load(path)
-        if (!held) return undefined
-        const above = await Promise.all(ancestorScopes(path).map((one) => load(one)))
-        return {
-          model: held.model,
-          activeDiagramId: held.activeDiagramId,
-          ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []),
-        }
-      },
-    },
-  }), [session, project.path, ancestorRecords, documentStatus, makeId, today, s, renderer, forceSave, scopes, projects]))
 
   /**
    * Who answers for each record on this board (ADR-0012 §10).
@@ -980,12 +905,18 @@ export function ProjectWorkspace({
     platformReading.close()
     plans.openRoadmap()
   }, [plans.openRoadmap, platformReading.close])
-  const openSheet = useCallback((id: string) => {
+  /** Every page beside the canvas shut, so the tab shows: what opening a view does first. */
+  const closePages = useCallback(() => {
     setAdrPage({ open: false })
     plans.closeAll()
     platformReading.close()
+  }, [plans.closeAll, platformReading.close])
+  /** A view on its tab, whichever kind: a board, a sheet, a map or a landscape (ADR-0016). */
+  const openView = useCallback((id: string) => {
+    closePages()
     session.setActiveDiagramId(id)
-  }, [plans.closeAll, platformReading.close, session])
+  }, [closePages, session])
+  const openSheet = openView
   const openMap = useCallback((id: string) => {
     setAdrPage({ open: false })
     plans.closeAll()
@@ -1027,6 +958,122 @@ export function ProjectWorkspace({
   }, [plans.closeAll, platformReading.open])
 
   /**
+   * The agent's view of this session (ADR-0007, ADR-0019): what the handler
+   * needs from the session, and the two things only this screen knows —
+   * which page is up, and how to show another. Handed up to the shell,
+   * which binds the seam; below the pages because it names their state.
+   */
+  const agentView = useMemo<WorkspaceAgentView>(() => ({
+    indexed: session.indexed,
+    current: session.current,
+    activeDiagramId: session.currentActiveId,
+    scopePath: () => project.path,
+    ancestorDecisions: () => ancestorRecords,
+    blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
+    dispatch: session.dispatch,
+    ids: session.ids,
+    makeId,
+    today,
+    translate: s,
+    containerName: (name: string) => s('shell.containerDiagram', { name }),
+    // ADR-0012 §10, as the agent's half of the one rule: what the inspector
+    // greys out is what an `element.update` is refused for. Read through the
+    // ref so a rebuilt index reaches a request arriving between two renders.
+    ownedElsewhere: (id: string, patch: Partial<DesignElement>) => {
+      const held = session.indexed().elements[id]
+      const answer = mayApplyPatch(patch, id, project.path, indexRef.current, held)
+      return answer === true ? undefined : { owner: answer.owner }
+    },
+    renderer,
+    revision: session.revision,
+    history: session.history,
+    undo: session.undo,
+    images: session.currentImages,
+    addImage: (image) => session.setImageLibrary((library) => [...library, image]),
+    save: forceSave,
+    page: () => {
+      if (adrPage.open) return { page: 'decisions', ...(adrPage.adrId !== undefined ? { id: adrPage.adrId } : {}) }
+      if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
+      if (plans.roadmapOpen) return { page: 'roadmap' }
+      if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
+      if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
+      return undefined
+    },
+    show: (to: Destination & { scope: string }) => {
+      switch (to.page) {
+        case 'board': case 'sheet': case 'map': case 'technology':
+          if (to.id !== undefined) openView(to.id)
+          break
+        case 'decisions': openDecisions(to.id); break
+        case 'roadmap': openRoadmap(); break
+        case 'plan': openRoadmap(); if (to.id !== undefined) plans.openPlan(to.id); break
+        case 'element': closePages(); if (to.id !== undefined) showElement.show(to.id); break
+        case 'document': closePages(); openDocumentation(to.id); break
+        case 'documentation': closePages(); openDocumentation(); break
+        case 'platform': if (to.id !== undefined) openPlatformReport(to.id); break
+        case 'service': if (to.id !== undefined) openServiceReport(to.id); break
+        default: closePages()
+      }
+    },
+    /**
+     * The tree, for the agent (ADR-0012, step 13). Through the ref, as
+     * `ownedElsewhere` is, so a rebuilt index reaches a request arriving
+     * between two renders. The findings are the tree's plus the open scope's
+     * own document's, the way its page shows them; another scope's document
+     * findings would be a load per call, and the identity findings about it
+     * are in the same list already.
+     */
+    tree: {
+      scopes: () => flattenScopes(scopes).map((held) => ({
+        path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
+      })),
+      lookup: (id) => indexRef.current.lookup(id),
+      register: () => indexRef.current.register(),
+      technology: () => technologyRows(indexRef.current, identityFindings(indexRef.current)),
+      initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
+      rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
+      findings: () => {
+        const model = session.current()
+        const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
+        return [
+          ...identityFindings(indexRef.current),
+          ...documentFindings({
+            scope: project.path, model, index: indexRef.current,
+            business: {
+              unmapped: unmappedFunctions(model.elements).map((held) => held.id),
+              uncovered: model.elements
+                .filter((held) => held.kind === 'function' && (coverage.get(held.id)?.coverage ?? 'uncovered') === 'uncovered')
+                .map((held) => held.id),
+            },
+          }),
+        ]
+      },
+      // A read for one call, the scope and its ancestors' records: what the
+      // open scope was handed at open, done again for the one asked about.
+      read: async (path) => {
+        const load = projects.load
+        if (!load) return undefined
+        const held = await load(path)
+        if (!held) return undefined
+        const above = await Promise.all(ancestorScopes(path).map((one) => load(one)))
+        return {
+          model: held.model,
+          activeDiagramId: held.activeDiagramId,
+          ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []),
+        }
+      },
+    },
+  }), [
+    session, project.path, ancestorRecords, documentStatus, makeId, today, s, renderer, forceSave, scopes, projects,
+    adrPage, plans.planId, plans.roadmapOpen, plans.openPlan, platformReading.platformId, platformReading.serviceId,
+    openView, openDecisions, openRoadmap, closePages, showElement.show, openDocumentation, openPlatformReport, openServiceReport,
+  ])
+  useEffect(() => {
+    onAgentSession?.(agentView)
+    return () => onAgentSession?.(undefined)
+  }, [onAgentSession, agentView])
+
+  /**
    * The page this was opened for, shown once.
    *
    * An effect and not a seeded `useState`, because two of the three are owned
@@ -1038,7 +1085,7 @@ export function ProjectWorkspace({
   useEffect(() => {
     if (!initialPage || openedFor.current) return
     openedFor.current = true
-    if (initialPage.page === 'decisions') openDecisions()
+    if (initialPage.page === 'decisions') openDecisions(initialPage.id)
     if (initialPage.page === 'roadmap') openRoadmap()
     if (initialPage.page === 'sheet') {
       if (initialPage.id) openSheet(initialPage.id)
@@ -1060,6 +1107,9 @@ export function ProjectWorkspace({
     }
     // A row of the register, opened where it is answered for.
     if (initialPage.page === 'element') showElement.show(initialPage.id)
+    // A report, reached by an agent or a link (ADR-0019): derived, so opening it is the whole of it.
+    if (initialPage.page === 'platform') openPlatformReport(initialPage.id)
+    if (initialPage.page === 'service') openServiceReport(initialPage.id)
     if (initialPage.page === 'document') openDocumentation(initialPage.id)
     if (initialPage.page === 'documentation') openDocumentation()
     // Not a page: the register's *Link…*, which can only be done by the
@@ -1067,7 +1117,7 @@ export function ProjectWorkspace({
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, openTechnology, createTechnology, plans.openPlan, focusElement, openDocumentation, gestures])
+  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, openTechnology, createTechnology, plans.openPlan, focusElement, openDocumentation, gestures, openPlatformReport, openServiceReport])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.

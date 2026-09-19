@@ -450,6 +450,13 @@ export const EN = {
   'agent.newToken': 'New token',
   'agent.newTokenNote': 'Every agent configured before now needs the new token.',
   'agent.changeFailed': 'That could not be changed: {message}',
+  /** The banner while an agent moves the app or changes the model (ADR-0019). */
+  'agent.someone': 'An agent',
+  'agent.driving': '{name} is driving the app.',
+  'agent.drivingFor': '{name} is driving the app: {purpose}',
+  'agent.drivingHint': 'What you click meanwhile can change what it does. Stop ends its session and tells it so.',
+  'agent.stop': 'Stop',
+  'agent.stoppedToast': '{name} was stopped. It hears so on its next call, and may ask to continue.',
 
   // --- the shell's top bar: the three pages beside the canvas -------------
   'shell.documentation': 'Documentation',
