@@ -1,6 +1,8 @@
 # Cutting a release
 
-Draft a release on GitHub with a tag of the form `v1.2.3`, write the notes,
+Draft a release on GitHub with a tag of the form `v1.2.3`, write the notes
+(`docs/release-notes/next.md` collects them between releases; paste it in and
+empty it),
 press **Publish release**. That is the whole procedure. About twenty minutes
 later the release page carries:
 
