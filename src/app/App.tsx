@@ -30,7 +30,7 @@ import type {
 } from '../projects/scope'
 import { findingsByScope, identityFindings } from '../projects/checks'
 import { applyRefPatch } from '../projects/readdress'
-import { treeModels } from '../projects/scopeIndex'
+import { treeModels, treeScopes } from '../projects/scopeIndex'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
 import {
@@ -669,6 +669,8 @@ export function App({
    * the index everything below it decides ownership by.
    */
   const readTreeModels = useCallback(() => treeModels(projects), [projects])
+  /** Every scope in full, for the working file (ADR-0018). Read on the gesture, never held. */
+  const readWorkingSet = useCallback(() => treeScopes(projects), [projects])
   const treeChanged = useCallback(() => {
     refreshTree.current()
     tree.refresh()
@@ -940,6 +942,7 @@ export function App({
             onOpenScope={openScopeAt}
             scopes={organisation.tree}
             models={readTreeModels}
+            workingSet={readWorkingSet}
             onOpenSettings={organisation.refresh}
             onTreeChanged={treeChanged}
             onApplySettings={applyProjectSettings}

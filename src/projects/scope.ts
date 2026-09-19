@@ -304,7 +304,24 @@ export function toWorkingFile(scope: ScopeSnapshot): WorkingFile {
  * shell's language; the shell turns it into words at the moment of showing it.
  */
 export type OpenResult =
-  | { ok: true; scope: ScopeSnapshot; relayout: boolean; kind: 'workingFile' }
+  | {
+    ok: true
+    /** The scope at the top of the file — the one that becomes the open one. */
+    scope: ScopeSnapshot
+    /**
+     * The scopes filed under it, if the file carried any (ADR-0018), already
+     * addressed relative to where {@link OpenResult.scope} landed.
+     *
+     * Absent rather than empty for a file that holds one scope, which is every
+     * `.lvarch` written before format 6 and every one written from a scope with
+     * nothing under it. A caller that only knows how to replace one scope is
+     * then not quietly dropping anything — there is nothing to drop — and one
+     * that does know is told plainly that there is.
+     */
+    rest?: readonly ScopeSnapshot[]
+    relayout: boolean
+    kind: 'workingFile'
+  }
   | { ok: false; messageKey: 'shell.workingFileNoDiagrams' | 'shell.unknownFile' }
 
 /**

@@ -20,6 +20,7 @@ import type { UploadedLogo } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { WORKING_FILE_TYPE, WORKING_FILE_VERSION } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
+import { unzipSync } from 'fflate'
 import { workingFileBytes } from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { useProjectFiles } from './useProjectFiles'
@@ -54,7 +55,10 @@ function fakeSession() {
   } as unknown as ModelSession & { adopt: ReturnType<typeof vi.fn> }
 }
 
-function mount(documents: Partial<ProjectFileChannel>) {
+function mount(
+  documents: Partial<ProjectFileChannel>,
+  workingSet?: () => Promise<ScopeSnapshot[]>,
+) {
   const notify = vi.fn()
   const session = fakeSession()
   const channel: ProjectFileChannel = {
@@ -65,12 +69,22 @@ function mount(documents: Partial<ProjectFileChannel>) {
   }
   let files!: ProjectFiles
   function Host() {
-    files = useProjectFiles({ session, documents: channel, notify, s: translator('en') })
+    files = useProjectFiles({
+      session, documents: channel, ...(workingSet ? { workingSet } : {}), notify, s: translator('en'),
+    })
     return null
   }
   render(<Host />)
   return { files: () => files, notify, session }
 }
+
+/** The organisation, with the open scope filed under it — what a store holds. */
+const organisation = (): ScopeSnapshot => ({
+  path: '',
+  model: { ...model(), name: 'Acme Logistics' },
+  activeDiagramId: 'd1',
+  logoLibrary: [],
+})
 
 const bytes = (text: string) => new TextEncoder().encode(text)
 
@@ -108,7 +122,7 @@ describe('saving a document out', () => {
     const { files } = mount({ save })
     act(() => files().saveWorkingFile())
     await settle()
-    expect(save.mock.calls[0][0].name).toBe('acme-landscape.lvarch')
+    expect(save.mock.calls[0][0].name).toBe('landscape.lvarch')
   })
 
   it('hands the working file over as the zip it is', async () => {
@@ -123,6 +137,63 @@ describe('saving a document out', () => {
   })
 })
 
+describe('exporting the whole working set', () => {
+  const saveSpy = () => vi.fn((_doc: SavedDocument) => Promise.resolve())
+
+  it('writes every scope the store holds, not only the one that is open', async () => {
+    const save = saveSpy()
+    const { files } = mount({ save }, () => Promise.resolve([organisation(), snapshot()]))
+    act(() => files().saveWorkingFile())
+    await settle()
+    await settle()
+    const written = unzipSync(save.mock.calls[0][0].bytes as Uint8Array)
+    expect(Object.keys(written)).toContain('scope.json')
+    expect(Object.keys(written)).toContain('acme/landscape/scope.json')
+  })
+
+  it('names the file after the organisation, so the root does not export as `.lvarch`', async () => {
+    const save = saveSpy()
+    const { files } = mount({ save }, () => Promise.resolve([organisation(), snapshot()]))
+    act(() => files().saveWorkingFile())
+    await settle()
+    await settle()
+    expect(save.mock.calls[0][0].name).toBe('acme-logistics.lvarch')
+  })
+
+  it('takes the open scope from the session, not from the store', async () => {
+    // The store holds what was last written; the session holds what is on
+    // screen. An export that quietly left out the last ten minutes would be
+    // worse than one that refused.
+    const stale: ScopeSnapshot = { ...snapshot(), model: { ...model(), name: 'Stale' } }
+    const save = saveSpy()
+    const { files } = mount({ save }, () => Promise.resolve([organisation(), stale]))
+    act(() => files().saveWorkingFile())
+    await settle()
+    await settle()
+    const written = unzipSync(save.mock.calls[0][0].bytes as Uint8Array)
+    const header = JSON.parse(new TextDecoder().decode(written['acme/landscape/scope.json']))
+    expect(header.name).toBe('Landscape')
+  })
+
+  it('falls back to the open scope alone where there is no store to ask', async () => {
+    const save = saveSpy()
+    const { files } = mount({ save })
+    act(() => files().saveWorkingFile())
+    await settle()
+    await settle()
+    expect(Object.keys(unzipSync(save.mock.calls[0][0].bytes as Uint8Array))).toContain('scope.json')
+    expect(save.mock.calls[0][0].name).toBe('landscape.lvarch')
+  })
+
+  it('says so, once, when the store cannot be read', async () => {
+    const { files, notify } = mount({}, () => Promise.reject(new Error('folder gone')))
+    act(() => files().saveWorkingFile())
+    await settle()
+    await settle()
+    expect(notify).toHaveBeenCalledWith('The file could not be saved: folder gone', 'error')
+  })
+})
+
 describe('opening a file', () => {
   const workingFile = () => JSON.stringify({
     type: WORKING_FILE_TYPE, version: WORKING_FILE_VERSION, model: model(), activeDiagramId: 'd1',
@@ -131,7 +202,7 @@ describe('opening a file', () => {
 
   it('adopts a version-3 working file — a zip — and keeps its geometry', async () => {
     const { files, session } = mount({
-      readBytes: () => Promise.resolve(workingFileBytes(snapshot())),
+      readBytes: () => Promise.resolve(workingFileBytes([snapshot()])),
     })
     act(() => files().openFile(file()))
     await settle()

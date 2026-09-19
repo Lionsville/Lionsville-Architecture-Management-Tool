@@ -16,6 +16,7 @@ import {
   fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile,
 } from '../../../electron/main/fileStore'
 import { describeScopeStore, sampleScope } from '../../ports/ScopeStore.contract'
+import { SCOPE_FORMAT_VERSION } from '../../projects/folderFormat'
 import { flattenScopes } from '../../projects/scope'
 import { FileSystemScopeStore } from '../fileSystem/FileSystemScopeStore'
 import type { DesktopFiles } from './channel'
@@ -73,7 +74,7 @@ describe('IpcDirectoryHandle', () => {
 
     const { readFileSync } = await import('node:fs')
     const header = readFileSync(join(folder, 'acme-logistics/landscape/scope.json'), 'utf8')
-    expect(JSON.parse(header)).toMatchObject({ name: 'Application landscape', version: 5 })
+    expect(JSON.parse(header)).toMatchObject({ name: 'Application landscape', version: SCOPE_FORMAT_VERSION })
   })
 
   it('reads back a scope another program wrote into the folder', async () => {

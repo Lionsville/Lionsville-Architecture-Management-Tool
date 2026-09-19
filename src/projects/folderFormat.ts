@@ -105,18 +105,32 @@ export const SCOPE_FOLDERS: readonly string[] = [
 ]
 
 /**
- * 5, and the same 5 as the working file's version — the single `.lvarch` is a
- * scope's folder in a zip, so there is one number for one shape rather than two
- * that have to be kept in step.
+ * 6, and the same 6 as the working file's version — a `.lvarch` is a folder in
+ * a zip, so there is one number for one shape rather than two that have to be
+ * kept in step.
  *
  * It turned from 4 when the three records became one (ADR-0012 §1), as it
  * turned from 3 when the model stopped fitting in it. The rule is at the top of
  * `docs/plan-2.0.0.md`: 2.x breaks the format as often as the model needs it
- * to, as long as every older version opens and migrates. An older build meeting
- * one of these sees no project, which is the same honest answer `isWorkingFile`
- * gives a file it does not know.
+ * to, as long as every older version opens and migrates.
+ *
+ * **6 is 5, with children allowed in the container.** A scope's own folder did
+ * not change by one file: what changed is that a `.lvarch` may now hold the
+ * scopes filed under the one at its top (ADR-0018), where before it held
+ * exactly one. So {@link readableHeader} reads both as they stand and there is
+ * no fold between them — a 5 IS a 6 that has no children in it.
+ *
+ * The number still has to turn, and this is the case the version exists for. A
+ * build that reads 5 and no more, handed a tree, would read the scope at the
+ * top, see nothing it recognised beside it, and save that back over a working
+ * directory — dropping every scope under it without a word. Refusing to open is
+ * the honest answer, and the version in the root's `scope.json` is the only
+ * place such a build can learn to give it.
  */
-export const SCOPE_FORMAT_VERSION = 5
+export const SCOPE_FORMAT_VERSION = 6
+
+/** The versions of a scope's own folder this build reads without folding. */
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -502,7 +516,7 @@ function readableHeader(held: Record<string, unknown> | undefined): ScopeFile | 
   const header = headerOf(held)
   if (!header) return undefined
   const version = header.version
-  if (version !== undefined && version !== SCOPE_FORMAT_VERSION) return undefined
+  if (version !== undefined && !READABLE_SCOPE_VERSIONS.includes(version)) return undefined
   return header
 }
 

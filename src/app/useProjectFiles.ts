@@ -15,11 +15,12 @@ import type { Translate } from '../i18n'
 import { reasonOf } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
 import { readImageFile, takenImageFiles } from '../model/documentImage'
-import { WORKING_FILE_EXTENSION } from '../model/hostModel'
-import type { ScopePath } from '../projects/scopePath'
-import { openDocumentBytes, workingFileBytes, WORKING_FILE_MEDIA_TYPE } from '../projects/workingFile'
+import {
+  openDocumentBytes, workingFileBytes, workingFileName, WORKING_FILE_MEDIA_TYPE,
+} from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { messageFor } from './messageFor'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { ModelSession } from './useModelSession'
 import type { Notify } from './useToasts'
 
@@ -64,24 +65,23 @@ export type ProjectFiles = {
   removeImage: (file: string) => void
 }
 
-/**
- * A filename from the project itself rather than a constant.
- *
- * One fixed name was fine while there was one project and one customer. With
- * several, two exports in a row would overwrite each other in the download
- * folder and nobody could tell which landscape they were looking at.
- */
-function fileNameFor(path: ScopePath, suffix: string): string {
-  return `${path.replace(/\//g, '-')}${suffix}`
-}
-
 export function useProjectFiles(deps: {
   session: ModelSession
   documents: ProjectFileChannel
+  /**
+   * Every scope in the working set, read when an export asks for it
+   * (ADR-0018).
+   *
+   * Read on the gesture rather than held, like `models` beside it: the whole
+   * tree in memory is what ADR-0004 keeps catching, and an export is a decision
+   * rather than a keystroke. Absent in a test and where there is no store, and
+   * the file then holds the open scope alone — which is what it held before.
+   */
+  workingSet?: () => Promise<ScopeSnapshot[]>
   notify: Notify
   s: Translate
 }): ProjectFiles {
-  const { session, documents, notify, s } = deps
+  const { session, documents, workingSet, notify, s } = deps
 
   /**
    * Hand a document over, and say what happened — after it happened.
@@ -99,21 +99,41 @@ export function useProjectFiles(deps: {
   }, [documents, notify, s])
 
   /**
-   * The working file: the project folder, zipped (ADR-0003).
+   * The working file: the working folder, zipped (ADR-0003, ADR-0018).
    *
    * The same bytes the folder holds, so an export is something a person can
    * unzip and read, and opening it somewhere else rebuilds the folder exactly —
    * marks and all, which the old single JSON document carried as base64 and the
    * folder does not have to.
+   *
+   * The whole set and not the open scope. A landscape exported alone carries
+   * stand-ins whose definitions are in a scope that did not come with it, and
+   * the person who opens it finds a drawing referring to things that are not
+   * there. The organisation is the level at which that cannot happen, so it is
+   * the level this writes.
+   *
+   * The open scope comes from the session rather than from the store, because
+   * the store holds what was last written and the session holds what is on
+   * screen. Exporting is not saving, and an export that quietly left out the
+   * last ten minutes would be worse than one that refused.
    */
   const saveWorkingFile = useCallback(() => {
-    const project = session.snapshot()
-    handOver({
-      name: fileNameFor(project.path, WORKING_FILE_EXTENSION),
-      bytes: workingFileBytes(project),
-      mediaType: WORKING_FILE_MEDIA_TYPE,
-    }, s('shell.savedWorkingFile'))
-  }, [session, handOver])
+    const live = session.snapshot()
+    const set = workingSet ? workingSet() : Promise.resolve([])
+    void set.then(
+      (stored) => {
+        const scopes = stored.some((scope) => scope.path === live.path)
+          ? stored.map((scope) => (scope.path === live.path ? live : scope))
+          : [live, ...stored]
+        handOver({
+          name: workingFileName(scopes[0]),
+          bytes: workingFileBytes(scopes),
+          mediaType: WORKING_FILE_MEDIA_TYPE,
+        }, s('shell.savedWorkingFile'))
+      },
+      (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
+    )
+  }, [session, workingSet, handOver, notify, s])
 
   /**
    * Open a chosen file into the project you are in.

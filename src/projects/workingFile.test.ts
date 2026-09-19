@@ -10,9 +10,9 @@ import { laidOut } from '../model/testFixtures';
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { bytesFromText, stableJson, textFromBytes } from './fileText'
-import { scopeFiles } from './folderFormat'
+import { SCOPE_FORMAT_VERSION, scopeFiles } from './folderFormat'
 import type { ScopeSnapshot } from './scope'
-import { isZip, openDocumentBytes, workingFileBytes } from './workingFile'
+import { isZip, openDocumentBytes, workingFileBytes, workingFileName } from './workingFile'
 
 function project(over: Partial<ScopeSnapshot> = {}): ScopeSnapshot {
   return {
@@ -32,23 +32,67 @@ function project(over: Partial<ScopeSnapshot> = {}): ScopeSnapshot {
   }
 }
 
+/** A scope filed under {@link project}, for the tree cases. */
+function under(path: string, name: string): ScopeSnapshot {
+  return {
+    path, activeDiagramId: 'l7', logoLibrary: [],
+    model: {
+      name,
+      elements: [{ id: `${name}-thing`, kind: 'application', name, lifecycle: 'live', isManaged: true, aspects: {} }],
+      relations: [],
+      diagrams: [laidOut({ id: 'l7', kind: 'layer7', name, placements: [{ id: `${name}-thing`, x: 0, y: 0 }] })],
+    },
+  }
+}
+
+/**
+ * The whole working set, the way the store hands it over: the organisation at
+ * the root, and two scopes filed under it.
+ */
+const tree = (): ScopeSnapshot[] => [
+  { ...project(), path: '' },
+  under('retail', 'Retail'),
+  under('retail/warehouse', 'Warehouse'),
+]
+
+describe('workingFileName', () => {
+  it('is the name of the scope at the top, and never the path it was filed at', () => {
+    // The path named the file until ADR-0018, and the organisation's path is
+    // the empty string — so exporting from the top wrote a file called
+    // `.lvarch`: hidden, nameless, and gone the moment macOS's save panel
+    // wrote it. A name is a thing every scope has.
+    expect(workingFileName({ ...project(), path: '' })).toBe('application-landscape.lvarch')
+    expect(workingFileName(project())).toBe('application-landscape.lvarch')
+  })
+
+  it.each([
+    ['a name with punctuation in it', 'Acme Logistics B.V.', 'acme-logistics-b-v.lvarch'],
+    ['a name with accents that decompose', 'Café Zuid', 'cafe-zuid.lvarch'],
+    ['a letter that is not an accented one', 'Sørlandet', 's-rlandet.lvarch'],
+    ['a name that slugs to nothing', '???', 'element.lvarch'],
+  ])('%s', (_what, name, expected) => {
+    const held = project()
+    expect(workingFileName({ ...held, model: { ...held.model, name } })).toBe(expected)
+  })
+})
+
 describe('workingFileBytes', () => {
   it('is a zip', () => {
-    expect(isZip(workingFileBytes(project()))).toBe(true)
+    expect(isZip(workingFileBytes([project()]))).toBe(true)
     expect(isZip(bytesFromText('{"type":"lionsville-architecture"}'))).toBe(false)
   })
 
   it('is the same file twice — an export can be compared, and committed', () => {
     // Zip entries carry an mtime; `Date.now()` in it would make every export
     // of an unchanged project a different file.
-    expect(workingFileBytes(project())).toEqual(workingFileBytes(project()))
+    expect(workingFileBytes([project()])).toEqual(workingFileBytes([project()]))
   })
 
   it('carries the folder, so it can be unzipped and read without this tool', () => {
-    const entries = unzipSync(workingFileBytes(project()))
+    const entries = unzipSync(workingFileBytes([project()]))
     expect(Object.keys(entries).sort()).toEqual(scopeFiles(project()).map((f) => f.path))
     expect(JSON.parse(textFromBytes(entries['scope.json'])))
-      .toMatchObject({ type: WORKING_FILE_TYPE, version: 5 })
+      .toMatchObject({ type: WORKING_FILE_TYPE, version: SCOPE_FORMAT_VERSION })
     expect(textFromBytes(entries['docs/crews.md'])).toBe('Roster.\n')
   })
 
@@ -67,15 +111,82 @@ describe('workingFileBytes', () => {
         }],
       },
     })
-    const entries = Object.keys(unzipSync(workingFileBytes(full)))
+    const entries = Object.keys(unzipSync(workingFileBytes([full])))
     expect(entries).toContain('decisions/0001-one-writer.md')
     expect(entries).toContain('transitions/0001-replace-the-warehouse-system.md')
     expect(entries).toContain('images/cutover.png')
     expect(entries).toContain('logos/own.png')
-    const back = openDocumentBytes(workingFileBytes(full), project())
+    const back = openDocumentBytes(workingFileBytes([full]), project())
     expect(back.ok && back.scope.model.decisions?.[0]?.title).toBe('One writer')
     expect(back.ok && back.scope.model.transitions?.[0]?.title).toBe('Replace the warehouse system')
     expect(back.ok && back.scope.imageLibrary?.[0]?.file).toBe('cutover.png')
+  })
+})
+
+describe('workingFileBytes — the whole set', () => {
+  it('files every scope where it sits under the one at the top', () => {
+    const entries = Object.keys(unzipSync(workingFileBytes(tree()))).sort()
+    // The root's own files have no prefix; the others carry their path.
+    expect(entries).toContain('scope.json')
+    expect(entries).toContain('retail/scope.json')
+    expect(entries).toContain('retail/warehouse/scope.json')
+    expect(entries).toContain('retail/warehouse/model.json')
+  })
+
+  it('addresses the scopes relative to the top one, not from the organisation', () => {
+    // A file is something you hand to somebody else, and where the scope at its
+    // top was filed in YOUR tree is none of their business — the same reason
+    // `toWorkingFile` never wrote the path.
+    const held = [project(), under('acme-logistics/landscape/eu', 'Europe')]
+    const entries = Object.keys(unzipSync(workingFileBytes(held))).sort()
+    expect(entries).toContain('scope.json')
+    expect(entries).toContain('eu/scope.json')
+    expect(entries.some((path) => path.startsWith('acme-logistics/'))).toBe(false)
+  })
+
+  it('is still one scope at the top of the zip when it is handed one scope', () => {
+    // Every `.lvarch` written before format 6 looks like this, and one written
+    // from a scope with nothing under it still does.
+    const entries = Object.keys(unzipSync(workingFileBytes([project()])))
+    expect(entries).toContain('scope.json')
+    expect(entries.every((path) => !path.includes('/scope.json'))).toBe(true)
+  })
+})
+
+describe('openDocumentBytes — the whole set', () => {
+  const into = (): ScopeSnapshot => ({ ...project(), path: 'somewhere' })
+
+  it('reads the tree back, filed under the scope it was opened into', () => {
+    const held = openDocumentBytes(workingFileBytes(tree()), into())
+    expect(held.ok).toBe(true)
+    if (!held.ok) return
+    expect(held.scope.path).toBe('somewhere')
+    expect(held.rest?.map((scope) => scope.path))
+      .toEqual(['somewhere/retail', 'somewhere/retail/warehouse'])
+  })
+
+  it('brings every scope back whole, not just its name', () => {
+    const held = openDocumentBytes(workingFileBytes(tree()), into())
+    if (!held.ok) throw new Error('did not open')
+    const warehouse = held.rest?.find((scope) => scope.path.endsWith('warehouse'))
+    expect(warehouse?.model.name).toBe('Warehouse')
+    expect(warehouse?.model.diagrams).toHaveLength(1)
+    expect(warehouse?.model.elements.map((element) => element.id)).toEqual(['Warehouse-thing'])
+  })
+
+  it('survives the round trip: what went in is what comes out', () => {
+    const held = openDocumentBytes(workingFileBytes(tree()), { ...project(), path: '' })
+    if (!held.ok) throw new Error('did not open')
+    const back = [held.scope, ...(held.rest ?? [])]
+    expect(back.map((scope) => scope.path)).toEqual(tree().map((scope) => scope.path))
+    expect(workingFileBytes(back)).toEqual(workingFileBytes(tree()))
+  })
+
+  it('says nothing came with it when the file holds one scope', () => {
+    // Absent rather than empty, so a caller that can only replace one scope
+    // knows it is not quietly dropping anything.
+    const held = openDocumentBytes(workingFileBytes([project()]), into())
+    expect(held.ok && held.rest).toBeUndefined()
   })
 })
 
@@ -83,7 +194,7 @@ describe('openDocumentBytes', () => {
   const into = project({ model: { ...project().model, name: 'The one that was open' } })
 
   it('opens what it wrote, with its marks', () => {
-    const held = openDocumentBytes(workingFileBytes(project()), into)
+    const held = openDocumentBytes(workingFileBytes([project()]), into)
     expect(held.ok).toBe(true)
     expect(held.ok && held.kind).toBe('workingFile')
     expect(held.ok && stableJson(held.scope)).toBe(stableJson(project()))
@@ -91,7 +202,7 @@ describe('openDocumentBytes', () => {
 
   it('files what it opened where the open project is filed', () => {
     const elsewhere = { ...into, path: 'globex/theirs' }
-    const held = openDocumentBytes(workingFileBytes(project()), elsewhere)
+    const held = openDocumentBytes(workingFileBytes([project()]), elsewhere)
     expect(held.ok && held.scope.path).toEqual('globex/theirs')
   })
 

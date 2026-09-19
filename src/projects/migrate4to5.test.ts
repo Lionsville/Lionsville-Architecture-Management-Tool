@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { parseJson } from './fileText'
-import { isFormatPath, SCOPE_FILE, scopeFiles } from './folderFormat'
+import { isFormatPath, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import { foldFolderToFormat5, GROUP_FILE, isSupersededPath, openScopeFolder, PROJECT_FILE } from './migrate4to5'
 
@@ -71,7 +71,7 @@ describe('a project folder', () => {
     const held = headerOf(foldFolderToFormat5(v4())!)
     expect(held).toMatchObject({
       type: 'lionsville-architecture',
-      version: 5,
+      version: SCOPE_FORMAT_VERSION,
       name: 'Application landscape',
       kind: 'landscape',
       description: 'The landscape as it stands.',
@@ -114,7 +114,7 @@ describe('a group folder', () => {
   it('becomes a scope that says it is a domain, and keeps what it said about itself', () => {
     const held = headerOf(foldFolderToFormat5(group())!)
     expect(held).toMatchObject({
-      version: 5,
+      version: SCOPE_FORMAT_VERSION,
       name: 'Acme Logistics',
       kind: 'domain',
       client: 'Acme Logistics BV',
@@ -201,9 +201,9 @@ describe('a format-3 folder', () => {
     },
   ]
 
-  it('lands at format 5, through both folds', () => {
+  it('lands at the current format, through both folds', () => {
     const scope = openScopeFolder(v3(), REF)!
-    expect(headerOf(foldFolderToFormat5(v3())!).version).toBe(5)
+    expect(headerOf(foldFolderToFormat5(v3())!).version).toBe(SCOPE_FORMAT_VERSION)
     expect(scope.model.elements[0]).toMatchObject({ kind: 'application' })
     expect(scope.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
     expect(scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])

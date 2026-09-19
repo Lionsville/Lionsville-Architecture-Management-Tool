@@ -90,6 +90,19 @@ export function joinScope(parent: ScopePath, name: string): ScopePath {
 }
 
 /**
+ * A descendant's path, where the descendant is named by a path of its own
+ * rather than by one segment — what opening a tree under a scope needs
+ * (ADR-0018), where `retail/warehouse` inside a file lands under `acme`.
+ *
+ * `joinScope` is the one-segment case and stays, because that is what creating
+ * a scope does and a name with a `/` in it there would be a bug rather than a
+ * path.
+ */
+export function joinScopePath(parent: ScopePath, relative: ScopePath): ScopePath {
+  return [...scopeSegments(parent), ...scopeSegments(relative)].join('/')
+}
+
+/**
  * A file inside a scope, addressed from the root of the tree.
  *
  * The root's own files have no prefix at all, which is why this is a function

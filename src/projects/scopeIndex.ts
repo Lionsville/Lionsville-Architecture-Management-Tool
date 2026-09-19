@@ -418,6 +418,21 @@ export async function treeModels(source: IndexSource): Promise<ScopeModel[]> {
 }
 
 /**
+ * Every scope the source holds, in full and in tree order.
+ *
+ * {@link treeModels} beside it reads one file per scope because the index only
+ * needs the records; this reads whole scopes because the working file IS whole
+ * scopes (ADR-0018) — every view, every description, every decision, every
+ * mark. So there is no `models()` fast path here: a store that has one is
+ * answering a narrower question than this one asks.
+ */
+export async function treeScopes(source: IndexSource): Promise<ScopeSnapshot[]> {
+  const paths = flattenScopes(await source.list()).map((scope) => scope.path)
+  const loaded = await Promise.all(paths.map((path) => source.load(path)))
+  return loaded.filter((scope): scope is ScopeSnapshot => scope !== undefined)
+}
+
+/**
  * Which scope answers for this id, from anywhere in the tree.
  *
  * The one question `mayEdit` and every read-only field in an inspector asks,

@@ -179,6 +179,12 @@ export type ProjectWorkspaceProps = {
    * not a keystroke. Absent in a test, and nothing is then offered.
    */
   models?: () => Promise<ScopeModel[]>
+  /**
+   * Every scope in full, read when an export asks (ADR-0018). Beside `models`
+   * and for the opposite reason: that one is the thin read the index wants,
+   * this is the whole thing the working file is made of.
+   */
+  workingSet?: () => Promise<ScopeSnapshot[]>
   /** Called when the dialog opens, so the caller can refresh that list. */
   onOpenSettings: () => void
   /**
@@ -252,7 +258,7 @@ function localToday(): string {
 export function ProjectWorkspace({
   project, projects, index, watch, commands, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
-  onGoHome, crumbs, onOpenScope, scopes, models, onOpenSettings, onTreeChanged = () => {},
+  onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onOpenSettings, onTreeChanged = () => {},
   onApplySettings, makeId, ancestorDecisions,
   groupName, groupClient,
   diagnostics, hostControls, today = localToday, initialPage, windowChrome,
@@ -288,7 +294,7 @@ export function ProjectWorkspace({
   // two requests. Declared here because the agent's renderer view, below,
   // points with it too.
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | undefined>(undefined)
-  const files = useProjectFiles({ session, documents, notify, s })
+  const files = useProjectFiles({ session, documents, ...(workingSet ? { workingSet } : {}), notify, s })
   // Declared here rather than beside the other pages, because the agent's
   // renderer view below points into both: at the canvas, and at the sheet.
   const focusElement = useCallback((id: string) => {

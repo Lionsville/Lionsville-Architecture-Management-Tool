@@ -88,7 +88,7 @@ describe('commands from the host', () => {
     view.send({ type: 'export' })
 
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
-    expect(view.documents.saved[0].name).toBe('acme-landscape.lvarch')
+    expect(view.documents.saved[0].name).toBe('landscape.lvarch')
     expect(view.documents.saved[0].mediaType).toBe('application/zip')
   })
 
@@ -124,7 +124,7 @@ describe('commands from the host', () => {
     view.send({
       type: 'openDocument',
       name: 'theirs.lvarch',
-      bytes: workingFileBytes(project('From a colleague')),
+      bytes: workingFileBytes([project('From a colleague')]),
     })
 
     await waitFor(() => expect(screen.getByText('From a colleague')).toBeDefined())
@@ -194,7 +194,7 @@ describe('the overflow on the web', () => {
     fireEvent.click(screen.getByText('Export Working File…'))
 
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
-    expect(view.documents.saved[0].name).toBe('acme-landscape.lvarch')
+    expect(view.documents.saved[0].name).toBe('landscape.lvarch')
   })
 
   it('offers no folder where none can be chosen, and no history where none can be kept', async () => {
