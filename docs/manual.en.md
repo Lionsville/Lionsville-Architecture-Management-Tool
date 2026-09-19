@@ -35,8 +35,9 @@ Scopes **nest**, and every one of them is the same document — the organisation
 at the top, a **domain** under it, a **landscape** under that, as deep as your
 work needs.
 
-The screen is the organisation's home rather than a list of documents, and it
-has four parts.
+The screen is the organisation's home rather than a list of documents. A line
+under the name says what it is and where things live — as files in the folder
+named on the bar, or in this browser — and then it has five parts.
 
 ![The organisation screen: the name and links at the top, the organisation's own pages as cards, the tree of domains and landscapes, and the examples last](screenshot-organisation.png)
 
@@ -45,34 +46,53 @@ to somebody else, how many domains and landscapes are filed under it, when
 anything in it last changed, the description, and its links. A folder nobody has
 named yet asks for a name here instead of showing a heading.
 
-**Its own pages**, as four cards. **Business architecture** counts the journeys,
-areas, functions and stakeholders the organisation itself holds and says how
-many functions nobody has handed to a domain yet; **Decisions** counts its
-records by status and names the newest; **Roadmap** counts its plans and shows
-the first thing their dates disagree about. **Register** counts every
-application in the whole folder, how many a domain answers for and how many are
-somebody else's, and says what the register disagrees about. Each card opens
-what it counts; closing the page brings you back here.
+**Its own pages**, as cards. Each says in a sentence what is behind its
+**Open**, then counts: **Business architecture** the journeys, areas, functions
+and stakeholders the organisation itself holds, and how many functions nobody
+has handed to a domain yet; **Decisions** its records by status, naming the
+newest; **Roadmap** its plans, and the first thing their dates disagree about;
+**Register** every application in the whole folder, how many a domain answers
+for and how many are somebody else's; **Technology** every platform service and
+platform, and how many are shared. A scope that draws has a **Documentation**
+card too. Each card opens what it counts; closing the page brings you back
+here.
 
-**The tree**, beneath: one row per scope, the children indented, with a chevron
-to fold a domain shut. A row says how much is inside it — landscapes and
-diagrams over the whole subtree for a domain, diagrams for a landscape — and
-when it last changed. Under that, where there is anything to say, it carries
-its **findings**: how many names two scopes both claim, how many copies have
-gone stale, and the rest of *One name across the organisation* below.
-**Order** lists by name or by what you changed most recently.
+**Needs attention**, under the cards, when there is anything to attend to:
+one sentence per thing the organisation contradicts about itself — a name two
+scopes both define, a copy gone stale, an application nobody has said whose it
+is, a service used across a team boundary without being marked shared, a
+service no platform delivers. Each sentence is a button that opens the scope it
+is about with the record selected, so the place to fix it is one click away.
+The rest of *One name across the organisation* below says what each means.
+
+**Domains and landscapes**, beneath: one row per scope, the children indented,
+with a chevron to fold a domain shut. A row says how much is inside it —
+landscapes and diagrams over the whole subtree for a domain, diagrams for a
+landscape — and when it last changed. **Order** lists by name or by what you
+changed most recently. An organisation with nothing filed under it yet says so
+in a sentence. A scope that draws lists its **Boards** above the tree instead,
+one row each, and **New board…** offers the same kinds the editor's `+` tab
+does: a landscape, a business architecture, an enterprise map or a technology
+landscape.
 
 - **Open** enters a scope that draws something. A scope that draws nothing is a
   domain: everything filed under it is listed, and there is no canvas to show.
-- **New scope…** asks for a name and which scope to file it under. Every row has
-  one of its own, which is the quick way to add under that scope.
+- **New domain or landscape…** asks for a name and which scope to file it
+  under. Every row has one of its own, which is the quick way to add under
+  that scope.
 - **Settings…** on any row holds its name, what it is (organisation, domain,
   programme, landscape — a word for the screen, nothing behaves differently),
   a client, a description, links, and **Filed under**, which moves it.
-- **Delete** removes the scope and everything filed under it: its folder on the
-  desktop, its records in the browser. A working file you saved elsewhere is not
+- **Delete** removes the scope and everything filed under it, and the
+  confirmation says so: its folder on disk, or, in a browser without a folder,
+  its records from this browser. A working file you saved elsewhere is not
   touched. The organisation itself cannot be deleted — it is the folder you
   opened.
+
+The chip at the right of the bar names the folder your projects are files in;
+snapshots go into its history. **Work from another folder…** beside it points
+the app at a different one, and a browser that has no folder offers **Choose
+folder…** instead.
 
 **Examples**, last. Copying one into an empty, unnamed folder makes the example
 *the* organisation; copying it into a folder that is already something files it

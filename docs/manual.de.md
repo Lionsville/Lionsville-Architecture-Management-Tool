@@ -39,7 +39,9 @@ ganz oben, eine **Domäne** darunter, eine **Landschaft** darunter, so tief, wie
 Ihre Arbeit es braucht.
 
 Der Bildschirm ist das Zuhause der Organisation und keine Liste von
-Dokumenten, und er hat vier Teile.
+Dokumenten. Eine Zeile unter dem Namen sagt, was er ist und wo alles liegt —
+als Dateien in dem Ordner, den die Leiste nennt, oder in diesem Browser — und
+dann hat er fünf Teile.
 
 ![Der Organisationsbildschirm: der Name und die Links oben, die eigenen Seiten der Organisation als Karten, der Baum der Domänen und Landschaften, und zuletzt die Beispiele](screenshot-organisation.png)
 
@@ -49,39 +51,59 @@ darunter abgelegt sind, wann sich zuletzt etwas darin geändert hat, die
 Beschreibung und ihre Links. Ein Ordner, den noch niemand benannt hat, fragt
 hier nach einem Namen, statt eine Überschrift zu zeigen.
 
-**Ihre eigenen Seiten**, als vier Karten. **Geschäftsarchitektur** zählt die
-Kundenreisen, Bereiche, Funktionen und Beteiligten, die die Organisation selbst
-hält, und sagt, wie viele Funktionen noch keiner Domäne übergeben wurden;
-**Entscheidungen** zählt ihre Einträge nach Status und nennt den neuesten;
-**Fahrplan** zählt ihre Pläne und zeigt das Erste, worüber deren Daten uneins
-sind. **Register** zählt jede Anwendung im ganzen Ordner, wie viele davon eine
-Domäne verantwortet und wie viele jemand anderem gehören, und sagt, worin sich
-das Register widerspricht. Jede Karte öffnet, was sie zählt; das Schließen der
-Seite bringt Sie hierher zurück.
+**Ihre eigenen Seiten**, als Karten. Jede sagt in einem Satz, was hinter
+**Öffnen** liegt, und zählt dann: **Geschäftsarchitektur** die Kundenreisen,
+Bereiche, Funktionen und Beteiligten, die die Organisation selbst hält, und wie
+viele Funktionen noch keiner Domäne übergeben wurden; **Entscheidungen** ihre
+Einträge nach Status, mit dem neuesten beim Namen; **Fahrplan** ihre Pläne und
+das Erste, worüber deren Daten uneins sind; **Register** jede Anwendung im
+ganzen Ordner, wie viele davon eine Domäne verantwortet und wie viele jemand
+anderem gehören; **Technologie** jeden Plattformdienst und jede Plattform, und
+wie viele geteilt sind. Ein Bereich, der zeichnet, hat auch eine Karte
+**Dokumentation**. Jede Karte öffnet, was sie zählt; das Schließen der Seite
+bringt Sie hierher zurück.
 
-**Der Baum**, darunter: eine Zeile je Bereich, die Kinder eingerückt, mit einem
-Pfeil, um eine Domäne zuzuklappen. Eine Zeile sagt, wie viel darin steckt —
-Landschaften und Diagramme über den ganzen Teilbaum bei einer Domäne, Diagramme
-bei einer Landschaft — und wann sie sich zuletzt geändert hat. Darunter, wo es
-etwas zu sagen gibt, trägt sie ihre **Befunde**: wie viele Namen zwei Bereiche
-beide beanspruchen, wie viele Kopien veraltet sind, und den Rest von *Ein Name
-in der ganzen Organisation* weiter unten. **Reihenfolge** sortiert nach Name
-oder nach dem, was Sie zuletzt geändert haben.
+**Braucht Aufmerksamkeit**, unter den Karten, sobald es etwas gibt: ein Satz je
+Sache, in der sich die Organisation selbst widerspricht — ein Name, den zwei
+Bereiche beide definieren, eine veraltete Kopie, eine Anwendung, von der niemand
+gesagt hat, wem sie gehört, ein Dienst, der über eine Teamgrenze hinweg genutzt
+wird, ohne als geteilt markiert zu sein, ein Dienst, den keine Plattform
+liefert. Jeder Satz ist eine Schaltfläche, die den betreffenden Bereich mit
+dem ausgewählten Datensatz öffnet, sodass der Ort zum Beheben einen Klick
+entfernt ist. Der Rest von *Ein Name in der ganzen Organisation* weiter unten
+sagt, was jeder bedeutet.
+
+**Domänen und Landschaften**, darunter: eine Zeile je Bereich, die Kinder
+eingerückt, mit einem Pfeil, um eine Domäne zuzuklappen. Eine Zeile sagt, wie
+viel darin steckt — Landschaften und Diagramme über den ganzen Teilbaum bei
+einer Domäne, Diagramme bei einer Landschaft — und wann sie sich zuletzt
+geändert hat. **Reihenfolge** sortiert nach Name oder nach dem, was Sie zuletzt
+geändert haben. Eine Organisation, unter der noch nichts abgelegt ist, sagt das
+in einem Satz. Ein Bereich, der zeichnet, listet über dem Baum stattdessen seine
+**Tafeln**, eine Zeile je Tafel, und **Neue Tafel…** bietet dieselben Arten wie
+der `+`-Reiter des Editors: eine Landschaft, eine Geschäftsarchitektur, eine
+Unternehmenskarte oder eine Technologielandschaft.
 
 - **Öffnen** betritt einen Bereich, der etwas zeichnet. Ein Bereich, der nichts
   zeichnet, ist eine Domäne: alles, was darunter abgelegt ist, wird aufgelistet,
   und es gibt keine Zeichenfläche zu zeigen.
-- **Neuer Bereich…** fragt nach einem Namen und danach, unter welchem Bereich er
-  abgelegt wird. Jede Zeile hat einen eigenen, was der schnelle Weg ist, unter
-  diesem Bereich etwas hinzuzufügen.
+- **Neue Domäne oder Landschaft…** fragt nach einem Namen und danach, unter
+  welchem Bereich sie abgelegt wird. Jede Zeile hat einen eigenen Eintrag, was
+  der schnelle Weg ist, unter diesem Bereich etwas hinzuzufügen.
 - **Einstellungen…** auf jeder Zeile enthält den Namen, was es ist
   (Organisation, Domäne, Programm, Landschaft — ein Wort für den Bildschirm,
   nichts verhält sich anders), einen Auftraggeber, eine Beschreibung, Links und
   **Abgelegt unter**, was ihn verschiebt.
-- **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist: seinen
-  Ordner auf dem Desktop, seine Einträge im Browser. Eine anderswo gespeicherte
-  Arbeitsdatei bleibt unberührt. Die Organisation selbst kann nicht gelöscht
-  werden — sie ist der Ordner, den Sie geöffnet haben.
+- **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist, und
+  die Bestätigung sagt das auch: seinen Ordner auf der Festplatte, oder, in
+  einem Browser ohne Ordner, seine Einträge aus diesem Browser. Eine anderswo
+  gespeicherte Arbeitsdatei bleibt unberührt. Die Organisation selbst kann nicht
+  gelöscht werden — sie ist der Ordner, den Sie geöffnet haben.
+
+Das Etikett rechts in der Leiste nennt den Ordner, in dem Ihre Projekte als
+Dateien liegen; Schnappschüsse gehen in seinen Verlauf. **Aus einem anderen
+Ordner arbeiten…** daneben richtet die App auf einen anderen aus, und ein
+Browser ohne Ordner bietet stattdessen **Ordner wählen…**.
 
 **Beispiele**, zuletzt. Eines in einen leeren, unbenannten Ordner zu kopieren
 macht das Beispiel zu *der* Organisation; es in einen Ordner zu kopieren, der

@@ -35,8 +35,9 @@ de bedriuwsarsjitektuer en alles wat derop stiet. Underdielen **nestelje**, en
 elk fan har is itselde dokumint — de organisaasje boppe-oan, in **domein**
 dêrûnder, in **lânskip** dêr wer ûnder, sa djip as jo wurk freget.
 
-It skerm is it thús fan de organisaasje en gjin list mei dokuminten, en it
-bestiet út fjouwer dielen.
+It skerm is it thús fan de organisaasje en gjin list mei dokuminten. In rigel
+ûnder de namme seit wat it is en wêr't alles stiet — as bestannen yn de map
+dy't de balke neamt, of yn dizze brouwer — en dêrnei bestiet it út fiif dielen.
 
 ![It organisaasjeskerm: de namme en de keppelings boppe-oan, de eigen siden fan de organisaasje as kaarten, de beam fan domeinen en lânskippen, en de foarbylden ûnderoan](screenshot-organisation.png)
 
@@ -45,39 +46,56 @@ binne, hoefolle domeinen en lânskippen derûnder falle, wannear't der foar it
 lêst wat feroare, de beskriuwing en de keppelings. In map dy't noch gjin namme
 hat freget der hjir om yn plak fan in kop te toanen.
 
-**De eigen siden**, as fjouwer kaarten. **Bedriuwsarsjitektuer** telt de
-klantreizen, gebieten, funksjes en belanghawwenden dy't de organisaasje sels
-hat, en seit hoefolle funksjes noch oan gjin inkeld domein tawiisd binne;
-**Besluten** telt de fêstlizzingen per status en neamt de nijste; **Roadmap**
-telt de plannen en toant it earste dêr't har datums it net oer iens binne.
-**Register** telt elke applikaasje yn de hiele map, hoefolle troch in domein
-behearre wurde en hoefolle fan in oar binne, en seit wêr't it register it net
-oer iens is. Elke kaart iepenet wat er telt; as jo de side slute binne jo wer
-hjir.
+**De eigen siden**, as kaarten. Elke kaart seit yn ien sin wat der efter
+**Iepenje** sit, en telt dan: **Bedriuwsarsjitektuer** de klantreizen,
+gebieten, funksjes en belanghawwenden dy't de organisaasje sels hat, en
+hoefolle funksjes noch oan gjin inkeld domein tawiisd binne; **Besluten** de
+fêstlizzingen per status, mei de nijste derby; **Roadmap** de plannen, en it
+earste dêr't har datums it net oer iens binne; **Register** elke applikaasje yn
+de hiele map, hoefolle troch in domein behearre wurde en hoefolle fan in oar
+binne; **Technology** elke platfoarmtsjinst en elk platfoarm, en hoefolle
+dield binne. In ûnderdiel dat tekenet hat ek in kaart **Dokumintaasje**. Elke
+kaart iepenet wat er telt; as jo de side slute binne jo wer hjir.
 
-**De beam**, dêrûnder: ien rige per ûnderdiel, de bern ynsprongen, mei in
-pylkje om in domein tichtklappe te kinnen. In rige seit hoefolle deryn sit —
-lânskippen en diagrammen oer de hiele tûke foar in domein, diagrammen foar in
-lânskip — en wannear't der foar it lêst wat feroare. Dêrûnder, dêr't der wat te
-sizzen is, draacht er syn **befiningen**: hoefolle nammen twa ûnderdielen beide
-opeaskje, hoefolle kopyen ferâldere binne, en de rest fan *Ien namme yn de hiele
-organisaasje* hjirûnder. **Folchoarder** set op namme of op wat jo it lêst
-wizige hawwe.
+**Freget oandacht**, ûnder de kaarten, sa gau't der wat is om nei te sjen: ien
+sin per ding dêr't de organisaasje harsels yn tsjinsprekt — in namme dy't twa
+ûnderdielen beide definiearje, in ferâldere kopy, in applikaasje dêr't nimmen
+fan sein hat fan wa't se is, in tsjinst dy't oer in teamgrins brûkt wurdt
+sûnder as dield markearre te wêzen, in tsjinst dy't gjin inkeld platfoarm
+leveret. Elke sin is in knop dy't it ûnderdiel iepenet dêr't it oer giet, mei
+it rekord selektearre, sadat it plak om it te ferhelpen ien klik fierder is. De
+rest fan *Ien namme yn de hiele organisaasje* hjirûnder seit wat elk betsjut.
+
+**Domeinen en lânskippen**, dêrûnder: ien rige per ûnderdiel, de bern
+ynsprongen, mei in pylkje om in domein tichtklappe te kinnen. In rige seit
+hoefolle deryn sit — lânskippen en diagrammen oer de hiele tûke foar in domein,
+diagrammen foar in lânskip — en wannear't der foar it lêst wat feroare.
+**Folchoarder** set op namme of op wat jo it lêst wizige hawwe. In organisaasje
+dêr't noch neat by ûnderbrocht is seit dat yn ien sin. In ûnderdiel dat tekenet
+toant boppe de beam syn **Boerden**, ien rige elk, en **Nij boerd…** biedt
+deselde soarten as it `+`-tabblêd fan de editor: in lânskip, in
+bedriuwsarsjitektuer, in enterprisekaart of in technologylânskip.
 
 - **Iepenje** giet in ûnderdiel yn dat wat tekenet. In ûnderdiel dat neat
   tekenet is in domein: alles wat derûnder falt wurdt neamd, en der is gjin
   tekenflak om te toanen.
-- **Nij ûnderdiel…** freget om in namme en ûnder hokker ûnderdiel it falle
-  moat. Elke rige hat der ien fan himsels, en dat is de koarte wei om ûnder dat
-  ûnderdiel wat ta te foegjen.
+- **Nij domein of lânskip…** freget om in namme en ûnder hokker ûnderdiel it
+  falle moat. Elke rige hat der ien fan himsels, en dat is de koarte wei om
+  ûnder dat ûnderdiel wat ta te foegjen.
 - **Ynstellings…** op elke rige hâldt de namme, wat it is (organisaasje,
   domein, programma, lânskip — in wurd foar it skerm, der hâldt him neat oars),
   in klant, in beskriuwing, keppelings, en **Underbrocht by**, dat it
   ferpleatst.
-- **Fuortsmite** hellet it ûnderdiel fuort mei alles wat derûnder falt: syn map
-  op de desktop, syn records yn de brouwer. In wurkbestân dat jo earne oars
-  bewarre hawwe wurdt net oanrekke. De organisaasje sels kin net fuortsmiten
-  wurde — dat is de map dy't jo iepene hawwe.
+- **Fuortsmite** hellet it ûnderdiel fuort mei alles wat derûnder falt, en de
+  befêstiging seit dat ek: syn map op skiif, of, yn in brouwer sûnder map, syn
+  records út dizze brouwer. In wurkbestân dat jo earne oars bewarre hawwe wurdt
+  net oanrekke. De organisaasje sels kin net fuortsmiten wurde — dat is de map
+  dy't jo iepene hawwe.
+
+It label rjochts yn de balke neamt de map dêr't jo projekten as bestannen yn
+steane; momintopnamen geane yn har skiednis. **Fanút in oare map wurkje…**
+dernjonken wiist de app nei in oare map, en in brouwer sûnder map biedt yn plak
+dêrfan **Map kieze…**.
 
 **Foarbylden**, as lêste. Ien kopiearje yn in lege map sûnder namme makket it
 foarbyld *de* organisaasje; ien kopiearje yn in map dy't al wat is bringt it

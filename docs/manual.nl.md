@@ -37,46 +37,68 @@ vraagt.
 
 ![Het organisatiescherm: de naam en koppelingen bovenaan, de eigen pagina's van de organisatie als kaarten, de boom van domeinen en landschappen, en de voorbeelden onderaan](screenshot-organisation.png)
 
-Het scherm is het thuis van de organisatie en geen lijst met documenten, en het
-bestaat uit vier delen.
+Het scherm is het thuis van de organisatie en geen lijst met documenten. Een
+regel onder de naam zegt wat het is en waar alles staat — als bestanden in de
+map die de balk noemt, of in deze browser — en daarna bestaat het uit vijf
+delen.
 
 **Wie het is**, bovenaan: de naam, de klant als de tekeningen voor iemand anders
 gemaakt zijn, hoeveel domeinen en landschappen eronder vallen, wanneer er voor
 het laatst iets veranderde, de omschrijving en de koppelingen. Een map die nog
 geen naam heeft vraagt er hier om in plaats van een lege kop te tonen.
 
-**De eigen pagina's**, als vier kaarten. **Bedrijfsarchitectuur** telt de
-klantreizen, gebieden, functies en belanghebbenden die de organisatie zelf
-heeft, en zegt hoeveel functies nog aan geen enkel domein zijn toegewezen;
-**Besluiten** telt de vastleggingen per status en noemt de nieuwste; **Roadmap**
-telt de plannen en toont het eerste waarover hun datums het oneens zijn.
-**Register** telt elke applicatie in de hele map, hoeveel er door een domein
-worden beheerd en hoeveel van iemand anders zijn, en zegt waarover het register
-het niet eens is. Elke kaart opent wat hij telt; als je de pagina sluit ben je
-weer hier.
+**De eigen pagina's**, als kaarten. Elke kaart zegt in één zin wat er achter
+**Openen** zit, en telt dan: **Bedrijfsarchitectuur** de klantreizen, gebieden,
+functies en belanghebbenden die de organisatie zelf heeft, en hoeveel functies
+nog aan geen enkel domein zijn toegewezen; **Besluiten** de vastleggingen per
+status, met de nieuwste erbij; **Roadmap** de plannen, en het eerste waarover
+hun datums het oneens zijn; **Register** elke applicatie in de hele map,
+hoeveel er door een domein worden beheerd en hoeveel van iemand anders zijn;
+**Technologie** elke platformdienst en elk platform, en hoeveel er gedeeld
+zijn. Een onderdeel dat tekent heeft ook een kaart **Documentatie**. Elke kaart
+opent wat hij telt; als je de pagina sluit ben je weer hier.
 
-**De boom**, eronder: één regel per onderdeel, de kinderen ingesprongen, met een
-pijltje om een domein dicht te klappen. Een regel zegt hoeveel erin zit —
-landschappen en diagrammen over de hele tak voor een domein, diagrammen voor een
-landschap — en wanneer het laatst iets veranderde. Daaronder draagt de regel,
-waar er iets te melden is, zijn **bevindingen**: hoeveel namen twee onderdelen
-allebei claimen, hoeveel kopieën verouderd zijn, en de rest van *Eén naam in de
-hele organisatie* hieronder. **Volgorde** sorteert op naam of op wat je het
-laatst hebt gewijzigd.
+**Vraagt aandacht**, onder de kaarten, zodra er iets is om naar te kijken: één
+zin per ding waarin de organisatie zichzelf tegenspreekt — een naam die twee
+onderdelen allebei definiëren, een verouderde kopie, een applicatie waarvan
+niemand heeft gezegd van wie ze is, een dienst die over een teamgrens wordt
+gebruikt zonder als gedeeld gemarkeerd te zijn, een dienst die geen enkel
+platform levert. Elke zin is een knop die het onderdeel opent waar het over
+gaat, met het record geselecteerd, zodat de plek om het te herstellen één klik
+verder is. De rest van *Eén naam in de hele organisatie* hieronder zegt wat
+elk betekent.
+
+**Domeinen en landschappen**, eronder: één regel per onderdeel, de kinderen
+ingesprongen, met een pijltje om een domein dicht te klappen. Een regel zegt
+hoeveel erin zit — landschappen en diagrammen over de hele tak voor een domein,
+diagrammen voor een landschap — en wanneer het laatst iets veranderde.
+**Volgorde** sorteert op naam of op wat je het laatst hebt gewijzigd. Een
+organisatie waar nog niets bij is ondergebracht zegt dat in één zin. Een
+onderdeel dat tekent toont boven de boom zijn **Borden**, één regel elk, en
+**Nieuw bord…** biedt dezelfde soorten als het `+`-tabblad van de editor: een
+landschap, een bedrijfsarchitectuur, een enterprisekaart of een
+technologielandschap.
 
 - **Openen** gaat een onderdeel in dat iets tekent. Een onderdeel dat niets
   tekent is een domein: alles wat eronder valt staat eronder, en er is geen bord
   om te tonen.
-- **Nieuw onderdeel…** vraagt om een naam en om waaronder het valt. Elke regel
-  heeft er zelf een, en dat is de snelle manier om er iets onder te hangen.
+- **Nieuw domein of landschap…** vraagt om een naam en om waaronder het valt.
+  Elke regel heeft er zelf een, en dat is de snelle manier om er iets onder te
+  hangen.
 - **Instellingen…** op elke regel bevat de naam, wat het is (organisatie,
   domein, programma, landschap — een woord voor het scherm, er gedraagt zich
   niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
   bij**, waarmee je het verplaatst.
-- **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt: op de
-  desktop de map, in de browser de records. Een werkbestand dat je elders hebt
-  bewaard blijft staan. De organisatie zelf kun je niet verwijderen — dat is de
-  map die je hebt geopend.
+- **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt, en de
+  bevestiging zegt dat ook: zijn map op schijf, of, in een browser zonder map,
+  zijn records uit deze browser. Een werkbestand dat je elders hebt bewaard
+  blijft staan. De organisatie zelf kun je niet verwijderen — dat is de map die
+  je hebt geopend.
+
+Het label rechts in de balk noemt de map waarin je projecten als bestanden
+staan; momentopnamen gaan in haar geschiedenis. **Vanuit een andere map
+werken…** ernaast wijst de app naar een andere map, en een browser zonder map
+biedt in plaats daarvan **Map kiezen…**.
 
 **Voorbeelden**, als laatste. Een voorbeeld in een lege map zonder naam
 kopiëren maakt het voorbeeld *de* organisatie; kopiëren in een map die al iets
