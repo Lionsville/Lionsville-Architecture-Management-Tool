@@ -6,7 +6,7 @@ import {
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
-  getNodesBounds,
+  getNodesBounds as boundsOfNodes,
   getViewportForBounds,
   useReactFlow,
   type Connection,
@@ -461,6 +461,9 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   viewportOwner.current = props.diagram.id;
   const kept = useRef(viewports?.recall(props.diagram.id));
   const restored = useRef(false);
+  // React Flow's own initial fit is done (or was not asked for): only then is
+  // a framing of ours not overwritten by it a moment later.
+  const [initialised, setInitialised] = useState(false);
   const handleViewportChange = useCallback((viewport: Viewport) => {
     viewports?.keep(viewportOwner.current, viewport);
   }, [viewports]);
@@ -592,7 +595,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   // which is what a landscape opened from its home looked like. So the fit
   // waits for the container to have a size, a frame at a time.
   useEffect(() => {
-    if (restored.current || nodes.length === 0) return;
+    if (!initialised || restored.current || nodes.length === 0) return;
     restored.current = true;
     if (kept.current) { void setViewport(kept.current); return; }
     // From the nodes' own positions and declared sizes, not from what React
@@ -602,12 +605,18 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     const attempt = () => {
       const box = containerRef.current?.getBoundingClientRect();
       if ((!box || box.width === 0 || box.height === 0) && tries++ < 60) { requestAnimationFrame(attempt); return; }
-      const bounds = getNodesBounds(nodes);
-      if (!box || !(bounds.width > 0) || !(bounds.height > 0)) { void fitView(FIT_ALL); return; }
+      // Still no size — a hidden canvas, or a test with no layout: nothing to
+      // frame into, and a viewport worked out from zero is not a viewport.
+      if (!box || box.width === 0 || box.height === 0) return;
+      // The pure helper over the nodes as given, with their declared sizes —
+      // not the instance's `getNodesBounds`, which reads what React Flow has
+      // measured and is what this correction exists to get past.
+      const bounds = boundsOfNodes(nodes);
+      if (!(bounds.width > 0) || !(bounds.height > 0)) { void fitView(FIT_ALL); return; }
       void setViewport(getViewportForBounds(bounds, box.width, box.height, MIN_ZOOM, MAX_ZOOM, FIT_ALL.padding));
     };
     requestAnimationFrame(attempt);
-  }, [nodes, fitView, setViewport]);
+  }, [initialised, nodes, fitView, setViewport]);
 
   // Mirror the latest nodes for handlers that must read them synchronously
   // (helper-line math) without becoming a re-subscribing callback dependency.
@@ -1616,7 +1625,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}
           onlyRenderVisibleElements={virtualise}
-          // The first framing is ours (see the effect on `nodes` above).
+          // A diagram left before is put back where it was; any other gets
+          // React Flow's fit — told to count the nodes it has not drawn — and
+          // the framing above corrects it where it fit into no size at all.
+          fitView={!kept.current}
+          fitViewOptions={FIT_ALL}
+          onInit={() => setInitialised(true)}
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
           deleteKeyCode={null}
