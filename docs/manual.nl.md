@@ -320,7 +320,7 @@ Eén open project: een balk bovenin, de editor eronder.
 |---|---|
 | **Projecten…** | Terug naar het organisatiescherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de volwassenheidskolommen waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
-| **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je projectmap in één bestand. **Interchange-document** is alleen topologie en semantiek, de vorm voor review en versiebeheer. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
+| **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je hele werkmap in één bestand, elke scope erin. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
 | **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |
 | **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
 | **Thema** | Licht, donker of systeem. Systeem volgt je computer en schakelt mee |
@@ -405,7 +405,7 @@ de **inspector** rechts toont zijn velden in drie tabbladen.
 categorie en trefwoord in beide talen, in twee maten: klein in de kop, groot
 voorop de kaart voor een plaat die van een afstand gelezen wordt. **Upload a
 logo** in de kiezer voegt een eigen SVG of PNG toe (tot 200 kB). Geüploade
-logo's reizen mee in het werkbestand, nooit in het interchange-document.
+logo's reizen mee in het werkbestand.
 
 **Meer tegelijk.** Selecteer meerdere elementen en de inspector biedt
 levenscyclus, kleur, pictogram en domeingroep voor allemaal, elk één stap in
@@ -973,18 +973,17 @@ Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 
 ## Bewaren, exporteren, delen
 
-Drie uitgangen, voor drie doelen.
+Twee uitgangen, voor twee doelen.
 
 - **Het werkbestand** (`.lvarch`) is alles, en is wat je aan iemand geeft die
-  verder gaat bewerken. Het is je projectmap in één bestand — een zip — zodat
-  iedereen het kan uitpakken en lezen zonder deze tool. Werkbestanden van
-  eerdere versies openen gewoon.
-- **Het interchange-document** draagt topologie en semantiek en geen geometrie
-  of opmaak: een diff ervan laat zien wat er aan de architectuur veranderde,
-  niet wat er op de plaat verschoof. Een ingebouwd pictogram reist mee als
-  `iconType`; een geüpload logo niet. Wat deze tool in een document niet kent
-  overleeft een rondreis ongewijzigd, en een document zonder pictogrammen komt
-  woordelijk gelijk terug.
+  verder gaat bewerken. Het is je **hele werkmap** in één bestand — een zip —
+  zodat iedereen het kan uitpakken en lezen zonder deze tool. Het bevat elke
+  scope, in welke je ook zit als je exporteert: een landschap op zichzelf
+  verwijst naar applicaties die een niveau hoger gedefinieerd zijn, en een
+  bestand met alleen dat landschap erin zou op andermans machine opengaan vol
+  namen die nergens heen wijzen. Het bestand heet naar je organisatie.
+  Werkbestanden van eerdere versies openen gewoon, en een bestand met één
+  scope erin opent nog steeds als die scope.
 - **PNG-export** (de downloadknop) opent een dialoog met een voorbeeld van de
   plaat zoals die vertrekt: in het lichte of het donkere thema, los van wat er
   op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of

@@ -343,7 +343,7 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 |---|---|
 | **Projekte…** | Zurück zum Organisationsbildschirm |
 | **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die Reifegradspalten, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
-| **Speichern…** | **Arbeitsdatei** (`.lvarch`) ist alles: Geometrie, Gestaltung, Ihre eigenen Logos, fixierte Routen — der Ordner Ihres Bereichs in einer Datei. **Interchange-Dokument** ist nur Topologie und Semantik, die Form für Review und Versionsverwaltung. Auf dem Desktop bietet das Menü auch **Momentaufnahme…** und **Verlauf…** |
+| **Speichern…** | **Arbeitsdatei** (`.lvarch`) ist alles: Geometrie, Gestaltung, Ihre eigenen Logos, fixierte Routen — Ihr ganzer Arbeitsordner in einer Datei, jeder Bereich darin. Auf dem Desktop bietet das Menü auch **Momentaufnahme…** und **Verlauf…** |
 | **Öffnen…** | Lädt beides und erkennt am Inhalt der Datei, welches von beiden es ist, nicht am Namen |
 | **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen. Nur lesend: ⌘Z ist der Weg zurück |
 | **Design** | Hell, dunkel oder System. System folgt Ihrem Rechner und wechselt mit ihm |
@@ -435,8 +435,7 @@ eines aus, und der **Inspektor** rechts zeigt seine Felder in drei Reitern.
 und Stichwort in beiden Sprachen, in zwei Größen: klein in der Kopfzeile, groß
 als Auftakt der Karte für ein Diagramm, das aus der Entfernung gelesen wird.
 **Ein Logo hochladen** in der Auswahl fügt Ihr eigenes SVG oder PNG hinzu (bis
-200 kB). Hochgeladene Logos reisen in der Arbeitsdatei mit, nie im
-Interchange-Dokument.
+200 kB). Hochgeladene Logos reisen in der Arbeitsdatei mit.
 
 **Mehrere auf einmal.** Wählen Sie mehrere Elemente aus, und der Inspektor
 bietet Lebenszyklus, Farbe, Symbol und Domänengruppe für alle, je ein
@@ -1044,19 +1043,18 @@ Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.
 
 ## Speichern, Exportieren, Weitergeben
 
-Drei Wege hinaus, für drei Zwecke.
+Zwei Wege hinaus, für zwei Zwecke.
 
 - **Die Arbeitsdatei** (`.lvarch`) ist alles und ist das, was Sie jemandem
-  geben, der weiterbearbeiten wird. Sie ist Ihr Projektordner in einer Datei —
-  ein Zip — sodass jeder sie entpacken und lesen kann, was darin ist, ohne
-  dieses Werkzeug. Arbeitsdateien aus früheren Versionen lassen sich weiterhin
-  öffnen.
-- **Das Interchange-Dokument** trägt Topologie und Semantik und keine Geometrie
-  oder Gestaltung: ein Diff davon zeigt, was sich an der Architektur geändert
-  hat, nicht, was sich auf der Zeichenfläche bewegt hat. Ein eingebautes Symbol
-  reist als `iconType` mit; ein hochgeladenes Logo nicht. Was dieses Werkzeug in
-  einem Dokument nicht versteht, überlebt einen Rundgang unberührt, und ein
-  Dokument, das keine Symbole verwendet, kommt wortwörtlich zurück.
+  geben, der weiterbearbeiten wird. Sie ist Ihr **ganzer Arbeitsordner** in
+  einer Datei — ein Zip — sodass jeder sie entpacken und lesen kann, was darin
+  ist, ohne dieses Werkzeug. Sie enthält jeden Bereich, in welchem Sie beim
+  Exportieren auch stehen: eine Landschaft für sich verweist auf Anwendungen,
+  die eine Ebene höher definiert sind, und eine Datei mit nur dieser Landschaft
+  darin ginge auf dem Rechner eines anderen voller Namen auf, die ins Leere
+  zeigen. Die Datei heißt nach Ihrer Organisation. Arbeitsdateien aus früheren
+  Versionen lassen sich weiterhin öffnen, und eine Datei mit einem einzigen
+  Bereich öffnet weiterhin als dieser Bereich.
 - **PNG-Export** (die Download-Schaltfläche) öffnet einen Dialog mit einer
   Vorschau des Bildes, wie es hinausgeht: im hellen oder im dunklen Design,
   unabhängig von dem auf dem Bildschirm, mit der Beschriftung jeder Linie oder

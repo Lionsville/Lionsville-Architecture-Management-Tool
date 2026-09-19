@@ -305,7 +305,7 @@ One open project: a bar at the top, the editor below it.
 |---|---|
 | **Projects…** | Back to the organisation screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the maturity columns a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your scope's folder in one file. **Interchange document** is topology and semantics only, the form for review and version control. On the desktop the menu also offers **Snapshot…** and **History…** |
+| **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your whole working folder in one file, every scope of it. On the desktop the menu also offers **Snapshot…** and **History…** |
 | **Open…** | Loads either, and recognises which by what is in the file rather than by its name |
 | **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken. Read-only: ⌘Z is how you go back |
 | **Theme** | Light, dark or system. System follows your computer and switches with it |
@@ -386,8 +386,7 @@ what the applications run on and what they use. Select one and the
 **Icons.** Around a hundred built-in marks, searchable by name, category and
 keyword in both languages, in two sizes: small in the header, large leading the
 card for a diagram read from a distance. **Upload a logo** in the picker adds
-your own SVG or PNG (up to 200 kB). Uploaded logos travel in the working file,
-never in the interchange document.
+your own SVG or PNG (up to 200 kB). Uploaded logos travel in the working file.
 
 **More than one at a time.** Select several elements and the inspector offers
 lifecycle, colour, icon and domain group for all of them, one undo step each.
@@ -924,17 +923,17 @@ Right-click a diagram tab, **Diagram settings…**.
 
 ## Saving, exporting, sharing
 
-Three ways out, for three purposes.
+Two ways out, for two purposes.
 
 - **The working file** (`.lvarch`) is everything and is what you hand to
-  someone who will edit further. It is your project folder in one file — a zip
-  — so anybody can unpack it and read what is inside without this tool.
-  Working files from earlier versions still open.
-- **The interchange document** carries topology and semantics and no geometry
-  or styling: a diff of it shows what changed about the architecture, not what
-  moved on the canvas. A built-in icon travels as `iconType`; an uploaded logo
-  does not. What this tool does not understand in a document survives a round
-  trip untouched, and a document that uses no icons comes back word for word.
+  someone who will edit further. It is your **whole working folder** in one
+  file — a zip — so anybody can unpack it and read what is inside without this
+  tool. It holds every scope, whichever one you are in when you export: a
+  landscape on its own refers to applications defined a level up, and a file
+  with only the landscape in it would open on someone else's machine full of
+  names pointing at nothing. The file is named after your organisation.
+  Working files from earlier versions still open, and one holding a single
+  scope still opens as that scope.
 - **PNG export** (the download button) opens a dialog with a preview of the
   picture as it will leave: in the light or the dark theme regardless of the
   one on screen, with every line's label or only the bare lines, with or

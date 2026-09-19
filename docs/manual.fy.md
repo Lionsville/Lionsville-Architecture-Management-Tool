@@ -315,7 +315,7 @@ Ien iepen projekt: in balke boppe-oan, de editor dêrûnder.
 |---|---|
 | **Projekten…** | Werom nei it organisaasjeskerm |
 | **Ynstellings…** | De namme fan dit ûnderdiel en wêr't it ûnderbrocht is, en syn standerts: de skriuwer dy't op in eksportearre diagram neamd wurdt, en de ripenskolommen dêr't in nij lânskip mei begjint. In ûnderdiel ferpleatse bringt it ûnder by in oar en lit de ynhâld ûnoanrekke |
-| **Bewarje…** | **Wurkbestân** (`.lvarch`) is alles: geometry, opmak, jo eigen logo's, fêstsette rûtes — de map fan jo ûnderdiel yn ien bestân. **Interchange-dokumint** is allinnich topology en semantyk, de foarm foar review en ferzjebehear. Op de desktop biedt it menu ek **Momintopname…** en **Skiednis…** |
+| **Bewarje…** | **Wurkbestân** (`.lvarch`) is alles: geometry, opmak, jo eigen logo's, fêstsette rûtes — jo hiele wurkmap yn ien bestân, elke scope deryn. Op de desktop biedt it menu ek **Momintopname…** en **Skiednis…** |
 | **Iepenje…** | Laadt ien fan beide, en werkent hokker oan wat der yn it bestân stiet en net oan de namme |
 | **Aktiviteit** | Wat der sûnt it iepenjen oan dit projekt feroare is — in list mei beneamde stappen en de tiid dat elk set is. Allinnich-lêze: ⌘Z is hoe't jo weromgeane |
 | **Tema** | Ljocht, tsjuster of systeem. Systeem folget jo kompjûter en skeakelet dermei mei |
@@ -400,7 +400,7 @@ toant syn fjilden yn trije tabblêden.
 trefwurd yn beide talen, yn twa grutten: lyts yn de kop, grut foarop it
 kaartsje foar in diagram dat fan in ôfstân lêzen wurdt. **In logo oplade** yn
 de kiezer foeget jo eigen SVG of PNG ta (oant 200 kB). Opladen logo's reizgje
-mei yn it wurkbestân, nea yn it interchange-dokumint.
+mei yn it wurkbestân.
 
 **Mear as ien tagelyk.** Selektearje ferskate eleminten en de ynspektor biedt
 libbenssyklus, kleur, ikoan en domeingroep foar allegear, elk ien stap yn
@@ -966,18 +966,16 @@ Rjochtsklik op in diagramtabblêd, **Diagramynstellingen…**.
 
 ## Bewarje, eksportearje, diele
 
-Trije wegen nei bûten, foar trije doelen.
+Twa wegen nei bûten, foar twa doelen.
 
 - **It wurkbestân** (`.lvarch`) is alles en is wat jo jouwe oan ien dy't fierder
-  bewurket. It is jo projektmap yn ien bestân — in zip — dus elkenien kin it
-  útpakke en lêze wat deryn sit sûnder dit ark. Wurkbestannen fan eardere
-  ferzjes iepenje noch.
-- **It interchange-dokumint** draacht topology en semantyk en gjin geometry of
-  opmak: in diff derfan toant wat der oan de arsjitektuer feroare is, net wat
-  der op it tekenflak ferskood is. In ynboud ikoan reizget mei as `iconType`;
-  in opladen logo net. Wat dit ark net begrypt yn in dokumint oerlibbet in
-  rûngong ûnoanrekke, en in dokumint dat gjin ikoanen brûkt komt wurd foar wurd
-  werom.
+  bewurket. It is jo **hiele wurkmap** yn ien bestân — in zip — dus elkenien kin
+  it útpakke en lêze wat deryn sit sûnder dit ark. It hâldt elke scope, yn hokker
+  jo ek sitte as jo eksportearje: in lânskip op himsels ferwiist nei applikaasjes
+  dy't in nivo heger definieare binne, en in bestân mei allinnich dat lânskip
+  deryn soe op immen oars syn masine iepengean fol nammen dy't nearne hinne
+  wize. It bestân hjit nei jo organisaasje. Wurkbestannen fan eardere ferzjes
+  iepenje noch, en in bestân mei ien scope deryn iepenet noch as dy scope.
 - **PNG-eksport** (de downloadknop) iepenet in finster mei in foarbyld fan de
   plaat sa't dy fuortgiet: yn it ljochte of it tsjustere tema los fan dat op it
   skerm, mei it label fan elke line of allinnich de keale linen, mei of sûnder
