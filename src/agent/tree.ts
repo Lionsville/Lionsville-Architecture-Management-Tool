@@ -143,12 +143,13 @@ export function withoutScope(args: unknown): unknown {
   return rest
 }
 
-export function listScopes(tree: TreeView | undefined, open: string): AgentAnswer {
+/** `open` is the scope's path, or nothing while a home is up and no scope is open (ADR-0019). */
+export function listScopes(tree: TreeView | undefined, open: string | undefined): AgentAnswer {
   const scopes = (tree?.scopes() ?? []).map((scope) => ({
     ...scope,
-    open: scope.path === open,
+    open: open !== undefined && scope.path === open,
   }))
-  return json({ open, total: scopes.length, scopes })
+  return json({ ...(open !== undefined ? { open } : { open: null, hint: 'nothing is open; app.open opens a scope' }), total: scopes.length, scopes })
 }
 
 const REGISTER_LIMIT = 200

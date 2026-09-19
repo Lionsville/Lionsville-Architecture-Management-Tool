@@ -66,14 +66,23 @@ export type ServerIdentity = { name: string; version: string }
 
 /** The one sentence a client is handed on connect, so it knows what it is talking to. */
 export const INSTRUCTIONS =
-  'This is the Lionsville Architecture Management Tool with a project open on screen. '
+  'This is the Lionsville Architecture Management Tool, running on the person\'s screen. It holds an '
+  + 'organisation of scopes, each with views (boards, business sheets, enterprise maps, technology '
+  + 'landscapes), records, decisions and plans; one scope at a time is open in the workspace, or a scope\'s '
+  + 'home screen is up with nothing open. Start with app.current to see where the app is, scopes.list and '
+  + 'views.list for what there is, and app.open to move it — to a scope, a view or a page — the way a '
+  + 'person would with the tree and the tabs. A write, a picture or undo needs its scope open; a read with '
+  + 'scope set is answered from disk without opening anything. '
   + 'Read the landscape with the read tools, and prefer ids from elements.list over guessing. '
   + 'Every change you make shows in the app\'s Activity list and is undone with ⌘Z, or with undo while the '
   + 'newest steps are yours. Every mutation answers with the project\'s revision; pass it as ifRevision '
   + 'when a call must not land on a project that has moved on, and use batch to land several changes as one step. '
-  + 'The project is one scope of an organisation: scopes.list names the others, every tool takes scope to read '
-  + 'another one, register.list is every application across the tree, and checks.list is what the tree '
-  + 'contradicts about itself.'
+  + 'register.list is every application across the tree, technology.list every service and platform, and '
+  + 'checks.list what the tree contradicts about itself. '
+  + 'The person is watching and may click while you work. Your first call that moves the app or changes '
+  + 'the model puts a banner on their screen naming you; session.start lets you say why, and session.end '
+  + 'takes the banner down when you are done. If they press Stop, your next call is refused with '
+  + 'agent.stopped: tell them where you got to and wait to be asked before you continue.'
 
 /** The see-tier tools that change nothing: a report, and a picture. */
 const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render']

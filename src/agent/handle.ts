@@ -39,6 +39,9 @@ import type { Translate } from '../i18n/strings'
 import { formatAdrNumber } from '../decisions/adr'
 import { answer } from './answer'
 import type { ReadTool } from './answer'
+import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
+import type { ShellView } from './shell'
+import { drives } from './driving'
 import { commandFor } from './commandFor'
 import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
@@ -142,7 +145,26 @@ const RENDER_PADDING = 40
 /** Around the named elements, so their neighbours are in the picture too. */
 const CROP_MARGIN = 60
 
-export async function handle(request: AgentRequest, session: SessionView): Promise<AgentAnswer> {
+/**
+ * One request, answered. `session` is the open scope's, or nothing while a
+ * home is up; `shell` is the app around it (ADR-0019), absent in a test that
+ * has no screen. A call that drives — moves the app or changes the model —
+ * passes the driving session first: refused while the person's Stop stands,
+ * counted otherwise, and answered `agent.stopped` mid-flight if Stop is
+ * pressed while it runs.
+ */
+export async function handle(request: AgentRequest, session: SessionView | undefined, shell?: ShellView): Promise<AgentAnswer> {
+  if (!shell || !isToolName(request.tool) || !drives(request.tool)) return answerRequest(request, session, shell)
+  // A write with nothing open goes nowhere and is refused below; it should
+  // not put a banner up on the way. Only moving the app drives from a home.
+  if (!session && toolSpec(request.tool).tier !== 'drive') return answerRequest(request, session, shell)
+  const gate = shell.driving.admit(request.tool, shell.client())
+  if (gate) return refused(gate)
+  return untilStopped(shell, answerRequest(request, session, shell))
+}
+
+async function answerRequest(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
+  if (!session) return withoutSession(request, shell)
   const view = {
     model: session.indexed(),
     current: session.current,
@@ -152,10 +174,16 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
     tree: session.tree,
   }
   if (request.tool === RESOURCE_LIST) return listResources(view.model, view.ancestorDecisions, view.scopePath)
-  if (request.tool === RESOURCE_READ) return readResource(view, request.args, session)
+  if (request.tool === RESOURCE_READ) return readResource(view, request.args, session.tree)
 
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const spec = toolSpec(request.tool)
+
+  // The app itself (ADR-0019): where it is, what there is to open, and
+  // moving it. Before the scope logic, because `app.open`'s scope is where
+  // to go and `views.list`'s is a filter over the tree.
+  const about = aboutTheApp(request, session, shell)
+  if (about) return about
 
   // Three reads about the tree rather than about a document (ADR-0012 §2,
   // §9): answered from the index the shell holds, never from a load.
@@ -169,18 +197,7 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   const asked = scopeAsked(request.args)
   if (asked !== undefined && asked !== view.scopePath) {
     if (spec.tier !== 'read' || SESSION_BOUND.includes(request.tool)) return notOpen(asked)
-    const wrong = checkArguments(spec.inputSchema, request.args)
-    if (wrong) return refused('agent.badArguments', wrong)
-    const held = await session.tree?.read(asked)
-    if (!held) return refused('agent.unknownScope', asked || 'the organisation')
-    return answer(request.tool as ReadTool, withoutScope(request.args), {
-      model: fromArrays(held.model),
-      current: () => held.model,
-      activeDiagramId: held.activeDiagramId,
-      scopePath: asked,
-      ancestorDecisions: held.ancestorDecisions,
-      tree: session.tree,
-    })
+    return readElsewhere(request.tool as ReadTool, request.args, asked, session.tree)
   }
   // Three reads that need the session rather than the model: the log, the
   // pictures, and the revision on the orientation answer.
@@ -240,6 +257,69 @@ export async function handle(request: AgentRequest, session: SessionView): Promi
   if (!trial.ok) return refused(trial.reason)
   session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
   return withRevision(prepared.answer, session)
+}
+
+/**
+ * The tools that are about the app rather than a document (ADR-0019), with
+ * or without a session. Nothing, for any other tool.
+ */
+function aboutTheApp(
+  request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined,
+): Promise<AgentAnswer> | AgentAnswer | undefined {
+  if (!isToolName(request.tool)) return undefined
+  const wrongFirst = (then: () => Promise<AgentAnswer> | AgentAnswer) => {
+    const wrong = checkArguments(toolSpec(request.tool as ToolName).inputSchema, request.args)
+    return wrong ? refused('agent.badArguments', wrong) : then()
+  }
+  switch (request.tool) {
+    case 'app.current': return wrongFirst(() => currentApp(session, shell))
+    case 'views.list': return wrongFirst(() => listViews(request.args, session, shell?.tree ?? session?.tree))
+    case 'app.open': return wrongFirst(() => openApp(request.args, session, shell))
+    case 'session.start': return wrongFirst(() => startSession(request.args, session, shell))
+    case 'session.end': return wrongFirst(() => endSession(shell))
+    default: return undefined
+  }
+}
+
+/**
+ * Nothing is open: a home is on screen (ADR-0019). The tree still answers,
+ * a read with `scope` set is answered from that scope's document, the app
+ * can be asked where it is and moved — and everything that needs a session
+ * is refused with `agent.noProject`, whose sentence now says what to do.
+ */
+async function withoutSession(request: AgentRequest, shell: ShellView | undefined): Promise<AgentAnswer> {
+  const tree = shell?.tree
+  if (request.tool === RESOURCE_LIST) return json({ resources: [] })
+  if (request.tool === RESOURCE_READ) return readResource(undefined, request.args, tree)
+  if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
+  const about = aboutTheApp(request, undefined, shell)
+  if (about) return about
+  if (request.tool === 'scopes.list') return listScopes(tree, undefined)
+  if (request.tool === 'register.list') return listRegister(tree, request.args)
+  if (request.tool === 'technology.list') return listTechnology(tree, request.args)
+  if (request.tool === 'checks.list') return listChecks(tree, request.args)
+  const asked = scopeAsked(request.args)
+  const spec = toolSpec(request.tool)
+  if (asked !== undefined && spec.tier === 'read' && !SESSION_BOUND.includes(request.tool)) {
+    return readElsewhere(request.tool as ReadTool, request.args, asked, tree)
+  }
+  return refused('agent.noProject')
+}
+
+/** A read over a scope that is not open, answered from its document as it stands on disk. */
+async function readElsewhere(tool: ReadTool, args: unknown, asked: string, tree: TreeView | undefined): Promise<AgentAnswer> {
+  const wrong = checkArguments(toolSpec(tool).inputSchema, args)
+  if (wrong) return refused('agent.badArguments', wrong)
+  const held = await tree?.read(asked)
+  if (!held) return refused('agent.unknownScope', asked || 'the organisation')
+  return answer(tool, withoutScope(args), {
+    model: fromArrays(held.model),
+    current: () => held.model,
+    activeDiagramId: held.activeDiagramId,
+    scopePath: asked,
+    ancestorDecisions: held.ancestorDecisions,
+    tree,
+  })
 }
 
 function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteView {
@@ -676,9 +756,9 @@ function listResources(model: Model, ancestorDecisions: readonly Adr[], scopePat
 }
 
 async function readResource(
-  view: { model: Model; ancestorDecisions: readonly Adr[]; scopePath: string },
+  view: { model: Model; ancestorDecisions: readonly Adr[]; scopePath: string } | undefined,
   args: unknown,
-  session: SessionView,
+  tree: TreeView | undefined,
 ): Promise<AgentAnswer> {
   const uri = (args as { uri?: unknown } | undefined)?.uri
   if (typeof uri !== 'string' || !uri.startsWith(RESOURCE_SCHEME)) return refused('agent.unknownId', String(uri))
@@ -689,9 +769,14 @@ async function readResource(
   if (at === -1) return refused('agent.unknownId', uri)
   const scope = segments.slice(0, at).join('/')
   const path = segments.slice(at)
-  let { model, ancestorDecisions } = view
-  if (at > 0 && scope !== view.scopePath) {
-    const held = await session.tree?.read(scope)
+  let model: Model
+  let ancestorDecisions: readonly Adr[]
+  if (view && (at === 0 || scope === view.scopePath)) {
+    ({ model, ancestorDecisions } = view)
+  } else {
+    // With nothing open, a URI with no path is read as the organisation's,
+    // whose own URIs have none (ADR-0019): `scope` is already '' then.
+    const held = await tree?.read(scope)
     if (!held) return refused('agent.unknownScope', scope)
     model = fromArrays(held.model)
     ancestorDecisions = held.ancestorDecisions

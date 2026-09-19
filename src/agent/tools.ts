@@ -24,7 +24,12 @@
  */
 import type { CommandRefusal } from '../model/reducer'
 
-export type ToolTier = 'read' | 'write' | 'see'
+/**
+ * Read answers from the model; write is one command; see is what only the
+ * renderer can do; drive is the app itself — where it is, and moving it
+ * between scopes and pages (ADR-0019).
+ */
+export type ToolTier = 'read' | 'write' | 'see' | 'drive'
 
 /** One argument, as JSON Schema says it and as {@link checkArguments} checks it. */
 export type ArgumentSchema =
@@ -232,6 +237,16 @@ const SPECS = [
     inputSchema: NO_ARGUMENTS,
   },
   {
+    name: 'app.current',
+    tier: 'drive',
+    description:
+      'Where the app is: the scope open in the workspace with the view on its tab and the page over it, or '
+      + '— with nothing open — whose home screen is up; plus who is connected, whether a driving session is '
+      + 'running and whether the person stopped one. Call this first when a tool was refused with '
+      + 'agent.noProject or agent.scopeNotOpen: app.open moves the app, and this says where it stands.',
+    inputSchema: NO_ARGUMENTS,
+  },
+  {
     name: 'scopes.list',
     tier: 'read',
     description:
@@ -239,6 +254,28 @@ const SPECS = [
       + 'it holds, and which one is open in the app. A path is what `scope` takes on every other tool; "" is '
       + 'the organisation itself.',
     inputSchema: NO_ARGUMENTS,
+  },
+  {
+    name: 'views.list',
+    tier: 'read',
+    description:
+      'Every view in the organisation, scope by scope: boards (layer7 and container), business sheets, '
+      + 'enterprise maps and technology landscapes, each with its id, name and kind, and which is on the tab '
+      + 'in its scope. The overview a person gets from the organisation screen and the tabs, in one answer; '
+      + 'app.open takes a row\'s scope and id. Reads every scope that holds a view, so ask once and keep it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scope: { type: 'string', description: 'Only this scope and the scopes filed under it, by path; "" is the organisation.' },
+        kind: {
+          type: 'string',
+          description: 'Only views of this kind.',
+          enum: ['layer7', 'container', 'sheet', 'map', 'technology'],
+        },
+        limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
+      },
+      additionalProperties: false,
+    },
   },
   {
     name: 'register.list',
@@ -1319,6 +1356,64 @@ const SPECS = [
       additionalProperties: false,
     },
   },
+
+  // --- the drive tier: the app as a screen, and the session the person can stop (ADR-0019) ------
+  {
+    name: 'app.open',
+    tier: 'drive',
+    description:
+      'Move the app: open a scope, and in it a view or a page — what a person does with the tree, the tabs '
+      + 'and the cards. `scope` is a path from scopes.list (default: the open one); `page` is what to show '
+      + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology (a view, by '
+      + 'id, or the only one of that kind), decisions (optionally on one record), roadmap, plan (by id), '
+      + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
+      + 'platform or service (a report, by id), register or technologyRegister (the organisation-wide '
+      + 'lists, on the home). With no page a scope opens on its canvas, or on its home when it draws '
+      + 'nothing. Answers with app.current once the app has arrived. Starts a driving session, which the '
+      + 'person sees as a banner and can stop.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scope: { type: 'string', description: 'Which scope, by path; "" is the organisation. Default: the one open.' },
+        page: {
+          type: 'string',
+          description: 'What to show there. Default: the canvas, or the home of a scope with no views.',
+          enum: [
+            'home', 'board', 'sheet', 'map', 'technology',
+            'decisions', 'roadmap', 'plan', 'element', 'document', 'documentation',
+            'platform', 'service', 'register', 'technologyRegister',
+          ],
+        },
+        id: { type: 'string', description: 'The view, element, plan or decision the page is about, where it is about one.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'session.start',
+    tier: 'drive',
+    description:
+      'Say what you are about to do. A driving session starts by itself on the first call that moves the '
+      + 'app or changes the model; this one starts it on purpose and puts your reason on the banner the '
+      + 'person sees, which is the courteous way to begin. After the person pressed Stop, every driving '
+      + 'call is refused with agent.stopped until this is called again — do that only when they have asked '
+      + 'you to continue.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        purpose: { type: 'string', description: 'What you are doing, in one short sentence for the person to read.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'session.end',
+    tier: 'drive',
+    description:
+      'You are done driving: the banner goes, and the person has the app to themselves. Reads keep working; '
+      + 'the next call that drives starts a new session.',
+    inputSchema: NO_ARGUMENTS,
+  },
 ] as const satisfies readonly { name: string; tier: ToolTier; description: string; inputSchema: InputSchema }[]
 
 export type ToolName = (typeof SPECS)[number]['name']
@@ -1361,13 +1456,20 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 }
 
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
-export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list']
+export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list']
+
+/**
+ * About the app rather than a document (ADR-0019): `app.open` spells `scope`
+ * as its destination, and the other three are about whatever is on screen.
+ * No revision to guard either — none of them writes the model.
+ */
+export const ABOUT_THE_APP: readonly string[] = ['app.current', 'app.open', 'session.start', 'session.end']
 
 export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => {
   const properties = {
     ...tool.inputSchema.properties,
-    ...(TREE_WIDE.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
-    ...(tool.tier === 'read' || LOOKS_ONLY.includes(tool.name) ? {} : { ifRevision: REVISION_GUARD }),
+    ...(TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
+    ...(tool.tier === 'read' || tool.tier === 'drive' || LOOKS_ONLY.includes(tool.name) ? {} : { ifRevision: REVISION_GUARD }),
   }
   return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
 })
@@ -1431,6 +1533,8 @@ export type AgentRefusal =
   | 'agent.stale'
   | 'agent.notYours'
   | 'agent.saveFailed'
+  /** The person pressed Stop on the driving banner (ADR-0019), and nobody has asked to start again. */
+  | 'agent.stopped'
   /** A change, a picture or undo addressed to a scope that is not the one open in the app (ADR-0012, step 13). */
   | 'agent.scopeNotOpen'
   /** `scope` names a path the tree has no scope at. */
@@ -1453,7 +1557,12 @@ export type AgentRefusal =
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.off': 'The app is not accepting agent connections. Turn them on in Connect an agent.',
-  'agent.noProject': 'No project is open in the app.',
+  'agent.noProject':
+    'No scope is open in the app. app.current says whose home is up, scopes.list and views.list say what '
+    + 'there is, and app.open opens one; a read with scope set is answered without opening anything.',
+  'agent.stopped':
+    'The person pressed Stop on the agent banner and ended the session. Do not carry on by yourself: tell '
+    + 'them where you got to, and call session.start only when they ask you to continue. Reads still answer.',
   'agent.readOnly': 'The project is read-only; nothing can be changed.',
   'agent.conflict': 'The project changed on disk and the person is deciding which version stands. Try again afterwards.',
   'agent.unknownTool': 'No such tool.',
