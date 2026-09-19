@@ -77,9 +77,11 @@ export type OrganisationCardsProps = {
   s: Translate
 }
 
-function OnePage({ icon, title, count, finding, action }: {
+function OnePage({ icon, title, description, count, finding, action }: {
   icon: ReactNode
   title: string
+  /** What you find behind *Open*, in the card's own voice, above the counts. */
+  description: string
   count?: string
   finding?: string
   action?: ReactNode
@@ -93,6 +95,9 @@ function OnePage({ icon, title, count, finding, action }: {
         <Box sx={{ color: 'text.secondary', display: 'flex' }}>{icon}</Box>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{title}</Typography>
       </Stack>
+      <Typography sx={{ fontSize: 12, mb: 0.75 }} data-testid="card-description">
+        {description}
+      </Typography>
       <Typography sx={{ fontSize: 11, color: 'text.secondary', minHeight: 16 }}>
         {count ?? ''}
       </Typography>
@@ -147,6 +152,7 @@ export function OrganisationCards({
         <OnePage
           icon={<DocumentIcon />}
           title={s('shell.documentation')}
+          description={s('org.describeDocumentation')}
           count={ready
             ? s(pages.documentation.described === 1 ? 'org.describedOne' : 'org.describedOther', {
               count: pages.documentation.described, total: pages.documentation.elements,
@@ -163,6 +169,7 @@ export function OrganisationCards({
       {shows.business && <OnePage
         icon={<SheetIcon />}
         title={s('org.business')}
+        description={s('org.describeBusiness')}
         count={businessCount}
         finding={businessFinding}
         action={(
@@ -185,6 +192,7 @@ export function OrganisationCards({
       <OnePage
         icon={<DecisionIcon />}
         title={s('shell.decisions')}
+        description={s('org.describeDecisions')}
         count={nothing ? s('org.nothingHere') : ready
           ? [
             plural(s, { one: 'org.recordsOne', other: 'org.recordsOther' }, pages.decisions.total),
@@ -206,6 +214,7 @@ export function OrganisationCards({
       <OnePage
         icon={<TimelineIcon />}
         title={s('shell.roadmap')}
+        description={s('org.describeRoadmap')}
         count={[
           nothing ? s('org.nothingHere') : ready
             ? [
@@ -243,19 +252,14 @@ export function OrganisationCards({
       {shows.register && <OnePage
         icon={<RegisterIcon />}
         title={s('org.register')}
+        description={s('org.describeRegister')}
+        // The counts only: what the register disagrees about is said under
+        // the cards, as sentences (`NeedsAttention`), not tallied here.
         count={[
           plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, register.applications),
           plural(s, { one: 'register.ownedOne', other: 'register.ownedOther' }, register.ownedByADomain),
           plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, register.outside),
         ].join(' · ')}
-        finding={[
-          register.definedTwice > 0
-            ? plural(s, { one: 'register.definedTwiceOne', other: 'register.definedTwiceOther' }, register.definedTwice)
-            : '',
-          register.unattributed > 0
-            ? plural(s, { one: 'register.unattributedOne', other: 'register.unattributedOther' }, register.unattributed)
-            : '',
-        ].filter(Boolean).join(' · ') || s('register.settled')}
         action={(
           <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register">
             {s('picker.open')}
@@ -269,19 +273,12 @@ export function OrganisationCards({
       {shows.technology && <OnePage
         icon={<DeploymentIcon />}
         title={s('org.technology')}
+        description={s('org.describeTechnology')}
         count={[
           plural(s, { one: 'techRegister.servicesOne', other: 'techRegister.servicesOther' }, technology.services),
           plural(s, { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther' }, technology.platforms),
           plural(s, { one: 'techRegister.sharedOne', other: 'techRegister.sharedOther' }, technology.shared),
         ].join(' · ')}
-        finding={[
-          technology.offeredNotShared > 0
-            ? plural(s, { one: 'techRegister.offeredOne', other: 'techRegister.offeredOther' }, technology.offeredNotShared)
-            : '',
-          technology.unrealised > 0
-            ? plural(s, { one: 'techRegister.unrealisedOne', other: 'techRegister.unrealisedOther' }, technology.unrealised)
-            : '',
-        ].filter(Boolean).join(' · ') || s('techRegister.settled')}
         action={(
           <Stack direction="row" spacing={0.5}>
             <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology">

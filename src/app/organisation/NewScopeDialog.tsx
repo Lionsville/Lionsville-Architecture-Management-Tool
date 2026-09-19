@@ -58,7 +58,7 @@ export function NewScopeDialog({
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>{s('picker.newScope')}</DialogTitle>
+      <DialogTitle>{s('picker.newScopeTitle')}</DialogTitle>
       <DialogContent>
         <Stack spacing={1}>
           <ScopeField

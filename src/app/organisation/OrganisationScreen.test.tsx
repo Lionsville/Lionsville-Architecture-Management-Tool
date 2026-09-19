@@ -208,7 +208,11 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(cards.textContent).toContain('2 applications'))
     expect(cards.textContent).toContain('2 owned by a domain')
     expect(cards.textContent).toContain('1 outside')
-    expect(cards.textContent).toContain('1 outside and unattributed')
+    // What the register disagrees about is a sentence under the cards, not a
+    // tally on the card: the card keeps the counts.
+    expect(cards.textContent).not.toContain('unattributed')
+    const attention = await screen.findByTestId('needs-attention')
+    expect(attention.textContent).toContain('Nobody has said whose Post office is')
 
     fireEvent.click(within(cards).getByTestId('open-register'))
     const table = await screen.findByTestId('register-table')
@@ -228,8 +232,11 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(cards.textContent).toContain('2 services'))
     expect(cards.textContent).toContain('1 platform')
     expect(cards.textContent).toContain('1 shared')
-    expect(cards.textContent).toContain('1 offered, not marked shared')
-    expect(cards.textContent).toContain('1 with nothing realising it')
+    // The two findings are sentences under the cards, each naming the service.
+    const attention = await screen.findByTestId('needs-attention')
+    expect(attention.textContent).toContain('Message brokering is used by')
+    expect(attention.textContent).toContain('is not marked shared')
+    expect(attention.textContent).toContain('Message brokering is offered, but no platform delivers it')
 
     fireEvent.click(within(cards).getByTestId('open-technology'))
     const table = await screen.findByTestId('technology-register-table')
@@ -337,7 +344,7 @@ describe('the organisation screen — a fresh folder', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Globex')
   })
 
-  it('shows no tree, and the examples underneath', async () => {
+  it('says the tree is empty, with the examples underneath', async () => {
     renderApp({
       scopes: new InMemoryScopeStore([]),
       today: TODAY,
@@ -354,7 +361,32 @@ describe('the organisation screen — a fresh folder', () => {
     })
     expect(await screen.findByText('Examples')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
-    expect(screen.queryByText('Domains and landscapes')).toBeNull()
+    // Flipped: the heading used to be hidden on an empty tree, which left the
+    // empty-tree sentence with nowhere to show. It is under its heading now.
+    expect(screen.getByText('Domains and landscapes')).toBeDefined()
+    expect(screen.getByTestId('tree-empty').textContent).toBe('Nothing is filed under the organisation yet. Add a domain or a landscape below it.')
+  })
+
+  /**
+   * The first screen every desktop session lands on, read by somebody who
+   * has never seen it: one line saying what it is and where things live, a
+   * sentence on every card saying what is behind Open, and the empty tree
+   * saying it is empty rather than showing nothing.
+   */
+  it('explains itself: the subtitle, a description on every card, and the empty tree', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]), today: TODAY })
+    const subtitle = await screen.findByTestId('organisation-subtitle')
+    expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
+    expect(subtitle.textContent).toContain('Each domain and landscape below is a scope of its own')
+    const cards = await screen.findByTestId('organisation-cards')
+    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(6))
+    const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
+    expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
+    expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')
+    expect(screen.getByTestId('tree-empty').textContent).toContain('Nothing is filed under Acme Logistics yet.')
+    expect(screen.getByRole('button', { name: 'New domain or landscape…' })).toBeDefined()
+    // Nothing to attend to, so no block at all — not an empty heading.
+    expect(screen.queryByTestId('needs-attention')).toBeNull()
   })
 
   it('offers no examples once the folder holds architecture of its own', async () => {

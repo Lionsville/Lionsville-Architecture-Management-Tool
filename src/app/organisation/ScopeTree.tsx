@@ -11,12 +11,11 @@
  * remembered it would open next week with half the tree hidden for a reason
  * nobody can reconstruct.
  *
- * **Every row carries its finding line**, and the whole tree's findings are
- * worked out ONCE and handed in as a map (ADR-0012 §9). A row that asked for
- * its own would be a fold over the organisation per row, which is the shape
- * ADR-0004 keeps catching — and a row that said something reassuring without
- * an index behind it would be saying it without looking, which is why a tree
- * handed nothing says nothing rather than "no problems".
+ * A row says how much is in it and when it changed, and nothing about what
+ * the tree contradicts: the findings used to be counted here in the warning
+ * colour, which said that something was wrong and nothing about what, and
+ * could not be pressed. They are sentences under the cards now
+ * (`NeedsAttention`), each a way to the thing it is about.
  */
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -28,8 +27,6 @@ import Typography from '@mui/material/Typography'
 import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
-import { CHECK_SHORT, tally } from '../../projects/checks'
-import type { CheckKey, Finding } from '../../projects/checks'
 import { flattenScopes, subtreeTotals } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
 import { ROOT_SCOPE, scopeSegments } from '../../projects/scopePath'
@@ -43,6 +40,8 @@ export type ScopeTreeProps = {
    * is the scope whose home this sits on — the root, or a domain beneath it.
    */
   tree: ScopeSummary
+  /** What the top of the tree is called, for the sentence an empty one shows. */
+  name: string
   collapsed: ReadonlySet<ScopePath>
   onToggleCollapsed: (path: ScopePath) => void
   /** Onto the scope's canvas. Offered only where there is one. */
@@ -55,35 +54,8 @@ export type ScopeTreeProps = {
   onAddUnder: (path: ScopePath) => void
   onSettings: (scope: ScopeSummary) => void
   onDelete: (scope: ScopeSummary) => void
-  /**
-   * What the tree contradicts about itself, by the scope it is about
-   * (ADR-0012 §9) — `projects/checks.findingsByScope`.
-   *
-   * Worked out once for the whole organisation by whoever holds the index, so
-   * a row is a map lookup. Absent means nothing has been read yet, and a row
-   * then says nothing at all about findings rather than saying there are none.
-   */
-  findings?: ReadonlyMap<ScopePath, readonly Finding[]>
   language: Language
   s: Translate
-}
-
-/**
- * The finding line for one row: how many of each, faults only.
- *
- * Information (`check.notDrawn`) is deliberately left out: a row saying "and
- * four things are on no board" would be four things nobody has to do anything
- * about, printed beside two that somebody does. The register page is where
- * that belongs, and it is step 10's.
- */
-export function findingLine(
-  findings: readonly Finding[] | undefined, s: Translate,
-): string | undefined {
-  const counts = tally((findings ?? []).filter((finding) => !finding.information))
-  const parts = (Object.keys(counts) as CheckKey[])
-    .sort()
-    .map((key) => plural(s, CHECK_SHORT[key], counts[key] ?? 0))
-  return parts.length ? parts.join(' · ') : undefined
 }
 
 /** When a scope last changed, in the person's own locale. */
@@ -132,7 +104,7 @@ function visibleRows(tree: ScopeSummary, collapsed: ReadonlySet<ScopePath>): Sco
 }
 
 export function ScopeTree({
-  tree, collapsed, onToggleCollapsed, onOpen, onHome, onAddUnder, onSettings, onDelete, findings,
+  tree, name, collapsed, onToggleCollapsed, onOpen, onHome, onAddUnder, onSettings, onDelete,
   language, s,
 }: ScopeTreeProps) {
   const rows = visibleRows(tree, collapsed)
@@ -142,8 +114,8 @@ export function ScopeTree({
 
   if (rows.length === 0) {
     return (
-      <Typography sx={{ fontSize: 13, color: 'text.secondary', py: 2 }}>
-        {s('org.treeEmpty')}
+      <Typography sx={{ fontSize: 13, color: 'text.secondary', py: 2 }} data-testid="tree-empty">
+        {s('org.treeEmpty', { name })}
       </Typography>
     )
   }
@@ -210,17 +182,6 @@ export function ScopeTree({
               <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
                 {metaOf(scope, s)} · {whenChanged(scope.updatedAt, language, s)}
               </Typography>
-              {/* A line of its own, in the warning colour: it is about what
-                  the tree contradicts, which is a different kind of fact from
-                  how many boards are in it (ADR-0012 §9). */}
-              {findingLine(findings?.get(scope.path), s) && (
-                <Typography
-                  data-testid={`findings-${scope.path}`}
-                  sx={{ fontSize: 11, color: 'warning.main' }}
-                >
-                  {findingLine(findings?.get(scope.path), s)}
-                </Typography>
-              )}
             </Box>
 
             {scope.diagrams > 0 && (

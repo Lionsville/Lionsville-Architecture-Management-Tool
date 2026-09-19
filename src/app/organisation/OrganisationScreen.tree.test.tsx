@@ -110,7 +110,7 @@ describe('the tree', () => {
 
   it('creates a scope under the row whose button was pressed', async () => {
     const { store } = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'New scope under Retail' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'New domain or landscape under Retail' }))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
@@ -123,7 +123,7 @@ describe('the tree', () => {
    */
   it('makes a domain on purpose when the landscape is unticked', async () => {
     const { store } = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'New scope under Retail' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'New domain or landscape under Retail' }))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape' }))
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
@@ -136,11 +136,11 @@ describe('the tree', () => {
   /** Refused where a person can see it, rather than quietly suffixed. */
   it('will not create a scope named after one of the folders a scope writes into', async () => {
     show()
-    // Wait for the tree: before it lands the screen shows its own "New scope…"
-    // in place of the heading, and clicking that one clicks a button React is
-    // about to replace.
+    // Wait for the tree: before it lands the heading's button is the one for
+    // an empty tree, and clicking that one clicks a button React is about to
+    // replace.
     await screen.findByTestId('scope-retail')
-    fireEvent.click(screen.getByRole('button', { name: 'New scope…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New domain or landscape…' }))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Decisions' } })
     expect(await screen.findByText(/cannot be called that/)).toBeDefined()
     expect(screen.getByRole('button', { name: 'Create' })).toHaveProperty('disabled', true)
@@ -187,13 +187,16 @@ describe('the tree', () => {
 })
 
 /**
- * The finding line the tree waited a whole beta for (ADR-0012 §9).
+ * What the tree contradicts about itself (ADR-0012 §9), said under the cards.
  *
- * What matters here beyond the words: the whole organisation is folded ONCE
- * and every row reads a map, and a conflict is a finding on both scopes,
- * because neither of them is the one that is wrong.
+ * The rows used to count these in the warning colour — "1 conflict · 1
+ * undefined" — which told a newcomer something was wrong and nothing about
+ * what, and could not be pressed. Each is a sentence now, and a way to the
+ * scope and the record it is about. The whole organisation is still folded
+ * ONCE; and a conflict is still a finding on both scopes, because neither of
+ * them is the one that is wrong.
  */
-describe('what a row says the tree contradicts', () => {
+describe('what the organisation says needs attention', () => {
   function element(id: string, name: string, ref?: string) {
     return {
       id, kind: 'application' as const, name, lifecycle: 'live' as const,
@@ -218,29 +221,39 @@ describe('what a row says the tree contradicts', () => {
     return held
   }
 
-  it('counts the findings on the scope each is about', async () => {
+  it('says each finding as a sentence naming the record, and no row counts them', async () => {
     show(withFindings())
-    const finance = await screen.findByTestId('findings-finance')
-    expect(finance.textContent).toContain('1 conflict')
-    expect(finance.textContent).toContain('1 undefined')
+    const attention = await screen.findByTestId('needs-attention')
+    expect(attention.textContent).toContain('Finance ERP is also defined in Retail')
+    expect(attention.textContent).toContain('Nothing in this organisation defines CRM')
+    expect(screen.queryByTestId('findings-finance')).toBeNull()
   })
 
   it('puts a conflict on both scopes, since neither is the wrong one', async () => {
     show(withFindings())
-    await screen.findByTestId('findings-finance')
-    expect(screen.getByTestId('findings-retail').textContent).toContain('1 conflict')
+    const attention = await screen.findByTestId('needs-attention')
+    expect(attention.textContent).toContain('ERP is also defined in Finance')
+    expect(within(attention).getByTestId('attention-retail-erp')).toBeDefined()
+    expect(within(attention).getByTestId('attention-finance-erp')).toBeDefined()
   })
 
-  it('says nothing at all about a scope with nothing wrong', async () => {
+  it('opens the scope the finding is about, with the record selected', async () => {
     show(withFindings())
-    await screen.findByTestId('findings-finance')
-    expect(screen.queryByTestId('findings-retail/warehouse')).toBeNull()
+    const attention = await screen.findByTestId('needs-attention')
+    fireEvent.click(within(attention).getByTestId('attention-finance-crm'))
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Finance'))
   })
 
-  it('says nothing on a tree nobody has found anything in', async () => {
+  it('says nothing about a scope with nothing wrong', async () => {
+    show(withFindings())
+    const attention = await screen.findByTestId('needs-attention')
+    expect(attention.textContent).not.toContain('Warehouse')
+  })
+
+  it('shows no block at all on a tree nobody has found anything in', async () => {
     show()
     await screen.findByTestId('scope-finance')
-    expect(screen.queryByTestId('findings-finance')).toBeNull()
+    expect(screen.queryByTestId('needs-attention')).toBeNull()
   })
 })
 
@@ -270,7 +283,7 @@ describe('a domain’s home', () => {
     const { store } = show()
     fireEvent.click(await screen.findByTestId('home-retail'))
     expect(screen.getByRole('button', { name: 'Settings for Retail' })).toBeDefined()
-    fireEvent.click(screen.getByRole('button', { name: 'New scope…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New domain or landscape…' }))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
@@ -477,7 +490,10 @@ describe('a scope’s first landscape', () => {
   // Every one of these lands on the canvas, and jsdom has no layout for it.
 
   const makeOne = async (name?: string) => {
+    // New board… offers the kinds the editor's + tab does; a landscape is the
+    // first, and the only one that asks for a name here.
     fireEvent.click(await screen.findByTestId('new-board'))
+    fireEvent.click(await screen.findByTestId('new-board-landscape'))
     const field = await screen.findByLabelText('Name')
     expect((field as HTMLInputElement).value).toBe('New landscape')
     if (name) fireEvent.change(field, { target: { value: name } })

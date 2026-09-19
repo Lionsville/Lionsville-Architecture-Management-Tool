@@ -30,7 +30,7 @@
  * That is the same rule the index follows in the other direction, and it keeps
  * this module testable with two plain arrays.
  */
-import type { StringKey } from '../i18n'
+import type { StringKey, Translate } from '../i18n'
 import { OWNER_DETAIL } from '../model'
 import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'
@@ -97,6 +97,27 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.unmapped': 'check.unmapped',
   'check.uncovered': 'check.uncovered',
   'check.offeredNotShared': 'check.offeredNotShared',
+}
+
+/**
+ * One finding as the sentence a person reads, filled in.
+ *
+ * The one place the table above is turned into words, so every screen that
+ * says a finding says the same thing: the register, the technology page, the
+ * organisation screen's *Needs attention* and a stand-in's note on a board.
+ * `scopeName` is the caller's, because what to call a scope — its name, or
+ * the word for the organisation — is the screen's vocabulary and not this
+ * module's.
+ */
+export function findingSentence(
+  finding: Finding, s: Translate, scopeName: (path: ScopePath) => string,
+): string {
+  return s(CHECK_LABEL[finding.key], {
+    name: finding.name,
+    scope: scopeName(finding.scopes?.[0] ?? ''),
+    detail: finding.detail ?? '',
+    count: 0,
+  })
 }
 
 /**

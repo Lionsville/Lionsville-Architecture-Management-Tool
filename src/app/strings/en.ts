@@ -129,7 +129,9 @@ export const EN = {
   'shell.sourceFolder': 'Folder · {name}',
   'shell.sourceBrowser': 'In this browser',
   'shell.sourceMemory': 'Not kept anywhere',
-  'shell.sourceTip': 'Where this project is kept',
+  'shell.sourceTipFolder': 'Your projects are files in this folder. Snapshots go into its history.',
+  'shell.sourceTipBrowser': 'Your projects are kept in this browser\'s storage. Save a working file to keep them anywhere else.',
+  'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a working file before you close this tab.',
   /**
    * The bar's way back. Each scope above the open one is a crumb, and the
    * organisation is the first: pressing one lands on that scope's home.
@@ -141,13 +143,8 @@ export const EN = {
   'shell.exampleCopied': 'Example \u201c{name}\u201d copied to a project of your own.',
 
   // --- projects and the picker ---------------------------------------------
-  'picker.title': 'Projects',
-  'picker.subtitle': 'Pick up where you left off, or start something new.',
-  'picker.empty': 'Nothing here yet. Start from an example, or create a project.',
-  'picker.yours': 'Your projects',
   'picker.examples': 'Examples',
   'picker.open': 'Open',
-  'picker.copy': 'Copy to a project',
   'picker.order': 'Order',
   'picker.orderName': 'Name',
   'picker.orderUpdated': 'Recently changed',
@@ -276,20 +273,20 @@ export const EN = {
     + 'you move it on purpose.',
   'folder.adoptCopy': 'Copy my work in',
   'folder.adoptSkip': 'Open the folder as it is',
-  'picker.folder': 'Projects folder: {name}',
-  'picker.noFolder': 'Projects are kept inside the app. Choose a folder to keep them as files.',
   'picker.chooseFolder': 'Choose folder…',
-  'picker.changeFolder': 'Change…',
+  'picker.changeFolder': 'Work from another folder…',
   'picker.never': 'Not saved yet',
   'picker.changed': 'Changed {when}',
   'picker.delete': 'Delete',
   'picker.deleteTitle': 'Delete \u201c{name}\u201d?',
-  'picker.deleteBody': 'This removes the project from this browser. A working file you saved elsewhere is not affected.',
+  'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A working file you saved elsewhere is not touched.',
+  'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',
   'shell.scopeCreated': '\u201c{name}\u201d created.',
-  'picker.newScope': 'New scope\u2026',
+  'picker.newScope': 'New domain or landscape\u2026',
+  'picker.newScopeTitle': 'New domain or landscape',
   'picker.scopeName': 'Name',
   'picker.under': 'Filed under',
-  'picker.addUnder': 'New scope under {name}',
+  'picker.addUnder': 'New domain or landscape under {name}',
   'picker.organisation': 'This organisation',
   'picker.reservedName': 'A scope cannot be called that \u2014 the folder is already used for what a scope holds.',
   /** Off makes a domain on purpose: a scope that files others and draws nothing itself. */
@@ -487,6 +484,10 @@ export const EN = {
   'org.nameThis': 'Name this organisation',
   'org.forClient': 'For {name}',
   'org.lastChanged': 'Last changed {when}',
+  'org.subtitle': 'Everything here is kept {where}. Each domain and landscape below is a scope of its own, with its own boards, pages and decisions.',
+  'org.whereFolder': 'as files in the folder above',
+  'org.whereBrowser': 'in this browser',
+  'org.whereMemory': 'nowhere yet \u2014 save a working file to keep it',
   'org.domainsOne': '{count} domain',
   'org.domainsOther': '{count} domains',
   'org.landscapesOne': '{count} landscape',
@@ -496,6 +497,14 @@ export const EN = {
 
   // The organisation's own pages, as cards.
   'org.business': 'Business architecture',
+  'org.describeDocumentation': 'A page for every record on this scope\'s boards: its owner, vendor, dates and description.',
+  'org.describeBusiness': 'What the organisation does: its journeys, the areas they pass through, the functions in each, and who is accountable.',
+  'org.describeDecisions': 'The architecture decisions taken here, numbered, with their status and the reasoning behind each.',
+  'org.describeRoadmap': 'The plans for changing this landscape on a time axis, with what each one introduces and retires.',
+  'org.describeRegister': 'Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.',
+  'org.describeTechnology': 'Every platform service and platform in the organisation: what is offered, what delivers it, and who leans on it.',
+  'org.attention': 'Needs attention',
+  'org.attentionOpen': 'Open it where it can be fixed',
   'org.businessMake': 'Make a sheet\u2026',
   'org.map': 'Map',
   'org.mapMake': 'Make a map\u2026',
@@ -517,9 +526,13 @@ export const EN = {
    * The table on a landscape's home: every board, one row each, so a future
    * version of the landscape is a row beside the current one.
    */
-  'org.views': 'Landscapes',
+  'org.boards': 'Boards',
   /** The way to a scope's first board: the canvas's own button is behind a canvas it is never given. */
-  'org.newBoard': 'New landscape\u2026',
+  'org.newBoard': 'New board\u2026',
+  'org.newBoardLandscape': 'Landscape\u2026',
+  'org.newBoardSheet': 'Business architecture',
+  'org.newBoardMap': 'Enterprise map',
+  'org.newBoardTechnology': 'Technology landscape',
   'org.noBoards': 'Nothing drawn at this level yet.',
   'org.boardName': 'Name',
   'org.viewLayer7': 'Landscape',
@@ -549,7 +562,7 @@ export const EN = {
 
   // The tree of scopes beneath.
   'org.tree': 'Domains and landscapes',
-  'org.treeEmpty': 'Nothing filed under this organisation yet. Create a scope, or copy an example.',
+  'org.treeEmpty': 'Nothing is filed under {name} yet. Add a domain or a landscape below it.',
   'org.expand': 'Show what is under {name}',
   'org.collapse': 'Hide what is under {name}',
 
@@ -611,6 +624,7 @@ export const EN = {
   'techRegister.unrealisedOne': '{count} with nothing realising it',
   'techRegister.unrealisedOther': '{count} with nothing realising them',
   'techRegister.settled': 'Nothing the technology disagrees about.',
+  'techRegister.unrealisedSentence': '{name} is offered, but no platform delivers it \u2014 add the platform that realises it, or withdraw the service.',
   'techRegister.empty': 'No platform service or platform is defined anywhere in this organisation yet.',
   'techRegister.noMatch': 'Nothing in the technology matches \u201c{query}\u201d.',
   'techRegister.byKind': 'By kind',

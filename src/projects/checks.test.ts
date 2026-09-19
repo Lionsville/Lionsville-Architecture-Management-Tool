@@ -9,11 +9,12 @@
  * below builds one tree with one of each and reads the whole answer.
  */
 import { describe, expect, it } from 'vitest'
+import { translator } from '../i18n'
 import { laidOut } from '../model/testFixtures'
 import type { DesignElement, Relation } from '../model'
 import type { HostModel } from '../model/hostModel'
 import {
-  documentFindings, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
+  documentFindings, findingSentence, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
 } from './checks'
 import { indexScopes } from './scopeIndex'
 import type { ScopeModel } from './scope'
@@ -384,5 +385,28 @@ describe('a service offered beyond its team', () => {
     // platform team's tooling is the one from outside.
     expect(offeredBeyond(indexScopes(tree({ assignedTo: 'warehouse-team' })), 'containers').outside.map((one) => one.id))
       .toEqual(['tooling'])
+  })
+})
+
+/**
+ * One finding as words: the table's sentence with the record's name, the
+ * other scope it names as the caller calls it, and the detail where there is
+ * one — so the register, the technology page and the organisation screen all
+ * say the same sentence.
+ */
+describe('findingSentence', () => {
+  const s = translator('en')
+  const scopeName = (path: string) => (path === '' ? 'the organisation' : path.toUpperCase())
+
+  it('fills the name, the scope as the caller names it, and the detail', () => {
+    expect(findingSentence({ key: 'check.conflict', scope: 'retail', id: 'erp', name: 'ERP', scopes: ['finance'] }, s, scopeName))
+      .toBe('ERP is also defined in FINANCE')
+    expect(findingSentence({ key: 'check.offeredNotShared', scope: 'p', id: 'b', name: 'Brokering', detail: 'WMS' }, s, scopeName))
+      .toBe('Brokering is used by WMS, beyond the team that maintains it, and is not marked shared')
+  })
+
+  it('names the organisation where a finding names no other scope', () => {
+    expect(findingSentence({ key: 'check.ownedElsewhere', scope: 'retail', id: 'x', name: 'X' }, s, scopeName))
+      .toBe('the organisation answers for this')
   })
 })

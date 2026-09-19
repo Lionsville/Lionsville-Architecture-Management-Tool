@@ -56,6 +56,8 @@ import IconButton from '@mui/material/IconButton'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import type { ExampleProject } from '../examples'
 import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
@@ -68,6 +70,8 @@ import { technologySummary, technologyWithin } from './technologyRegister'
 import type { TechnologyRow } from './technologyRegister'
 import { TechnologyPage } from './TechnologyPage'
 import { OrganisationCards } from './OrganisationCards'
+import { attentionItems } from './attention'
+import { NeedsAttention } from './NeedsAttention'
 import { organisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
 import { ScopeTree } from './ScopeTree'
@@ -182,6 +186,25 @@ export function OrganisationScreen({
   const technologyCounts = useMemo(() => technologySummary(technologyHere), [technologyHere])
   const counts = useMemo(() => countScopes(home), [home])
   const changed = useMemo(() => newestChange(home), [home])
+  /**
+   * What to call a scope a finding names: its name where the tree has one,
+   * the word for the organisation at the root. The screen's vocabulary, so
+   * the sentence builder is handed it rather than knowing it.
+   */
+  const scopeName = useMemo(() => {
+    const names = new Map(flattenScopes(tree).map((scope) => [scope.path, scope.name]))
+    return (path: ScopePath) => (path === ROOT_SCOPE
+      ? s('common.organisation')
+      : names.get(path) || scopePathLabel(path))
+  }, [tree, s])
+  /**
+   * The findings, as sentences under the cards (ADR-0012 §9). Read off what
+   * the shell already holds: the tree's findings and the technology rows.
+   */
+  const attention = useMemo(
+    () => attentionItems(findings, register, technology, at, s, scopeName),
+    [findings, register, technology, at, s, scopeName],
+  )
 
   /**
    * Does this scope have a canvas? Off its own document, which is read for
@@ -266,6 +289,20 @@ export function OrganisationScreen({
             ].filter(Boolean).join(' · ')}
           </Typography>
 
+          {/* What this screen is, and where things live: the first sentence
+              every desktop session reads, so it says it plainly. At the root
+              only — a domain's home is reached from here and needs no second
+              explanation. */}
+          {atRoot && (
+            <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1, maxWidth: 720 }} data-testid="organisation-subtitle">
+              {s('org.subtitle', {
+                where: s(source?.kind === 'folder'
+                  ? 'org.whereFolder'
+                  : source?.kind === 'memory' ? 'org.whereMemory' : 'org.whereBrowser'),
+              })}
+            </Typography>
+          )}
+
           {home.description && (
             <Typography sx={{ fontSize: 13, mt: 1.5, maxWidth: 720 }}>
               {home.description}
@@ -325,6 +362,11 @@ export function OrganisationScreen({
             />}
           </Box>
 
+          {/* What the tree contradicts about itself, once, as sentences a
+              person can act on — where the cards used to count them and the
+              rows used to colour them. */}
+          <NeedsAttention items={attention} onOpen={onOpenRegisterRow} s={s} />
+
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —
               a future version of the landscape sits beside the current one
@@ -339,41 +381,53 @@ export function OrganisationScreen({
               boards={root.model.diagrams}
               onOpen={(id) => organisation.open(at, { page: 'board', id })}
               onAdd={() => organisation.addBoard(at)}
+              // The same kinds the editor's + tab offers (ADR-0016): a page
+              // opened with no id is the one the scope is about to be given.
+              onAddSheet={() => organisation.open(at, { page: 'sheet' })}
+              onAddMap={() => organisation.open(at, { page: 'map' })}
+              onAddTechnology={() => organisation.open(at, { page: 'technology' })}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
               language={language}
               s={s}
             />
           )}
 
-          {/* The tree. A fresh folder has none, and says so with the examples
-              underneath rather than with an empty heading. */}
-          {home.children.length > 0 && (
+          {/* The tree, under its heading whether or not there is anything in
+              it yet: an empty organisation says so in a sentence, with the
+              examples underneath at the root. A landscape's home has no tree
+              and no heading — it draws, and files nothing. */}
+          {(atRoot || level === 'domain' || home.children.length > 0) && (
             <>
               <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
                   {s('org.tree')}
                 </Typography>
-                <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('picker.order')}</Typography>
-                <ToggleButtonGroup
-                  size="small"
-                  exclusive
-                  value={order}
-                  onChange={(_e, next: ProjectOrder | null) => { if (next) onOrderChange(next) }}
-                  aria-label={s('picker.order')}
-                >
-                  <ToggleButton value="name" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-                    {s('picker.orderName')}
-                  </ToggleButton>
-                  <ToggleButton value="updated" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-                    {s('picker.orderUpdated')}
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                {home.children.length > 0 && (
+                  <>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('picker.order')}</Typography>
+                    <ToggleButtonGroup
+                      size="small"
+                      exclusive
+                      value={order}
+                      onChange={(_e, next: ProjectOrder | null) => { if (next) onOrderChange(next) }}
+                      aria-label={s('picker.order')}
+                    >
+                      <ToggleButton value="name" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
+                        {s('picker.orderName')}
+                      </ToggleButton>
+                      <ToggleButton value="updated" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
+                        {s('picker.orderUpdated')}
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                  </>
+                )}
                 <Button size="small" variant="contained" onClick={() => organisation.addUnder(at)}>
                   {s('picker.newScope')}
                 </Button>
               </Stack>
               <ScopeTree
                 tree={ordered}
+                name={named || !atRoot ? heading : s('common.organisation')}
                 collapsed={organisation.collapsed}
                 onToggleCollapsed={organisation.toggleCollapsed}
                 onOpen={(path) => organisation.open(path)}
@@ -381,16 +435,10 @@ export function OrganisationScreen({
                 onAddUnder={organisation.addUnder}
                 onSettings={organisation.editScope}
                 onDelete={organisation.askDelete}
-                findings={findings}
                 language={language}
                 s={s}
               />
             </>
-          )}
-          {home.children.length === 0 && (
-            <Button size="small" variant="contained" onClick={() => organisation.addUnder(at)}>
-              {s('picker.newScope')}
-            </Button>
           )}
 
           {/* The examples are for a folder with nothing in it yet. Once the
@@ -482,7 +530,12 @@ export function OrganisationScreen({
       <ConfirmDialog
         open={dialog.kind === 'delete'}
         title={s('picker.deleteTitle', { name: dialog.kind === 'delete' ? dialog.target.name : '' })}
-        body={s('picker.deleteBody')}
+        // What goes, said in full: the scope, everything filed under it, and
+        // its folder — and "from this browser" only where that is where it is.
+        body={s(
+          source?.kind === 'folder' ? 'picker.deleteBodyFolder' : 'picker.deleteBodyBrowser',
+          { name: dialog.kind === 'delete' ? dialog.target.name : '' },
+        )}
         confirmLabel={s('common.delete')}
         cancelLabel={s('common.cancel')}
         onCancel={organisation.closeDialog}
@@ -509,11 +562,15 @@ export function OrganisationScreen({
 /** What a laid-out view's row says instead of a day and a count: the kind, and that it is laid out. */
 const LAID_OUT_LABEL = { sheet: 'org.viewSheet', map: 'org.viewMap', technology: 'org.viewTechnology' } as const
 
-function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
+function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnology, onDelete, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
-  /** A board for this scope — the only way to its first one. */
+  /** A landscape for this scope — the only way to its first one. */
   onAdd: () => void
+  /** The laid-out kinds, the same three the editor's + tab offers (ADR-0016). */
+  onAddSheet: () => void
+  onAddMap: () => void
+  onAddTechnology: () => void
   /**
    * A container diagram only: a landscape is deleted from its tab, where the
    * last one is refused, and a container diagram has no tab and no last one.
@@ -522,15 +579,30 @@ function BoardsTable({ boards, onOpen, onAdd, onDelete, language, s }: {
   language: Language
   s: Translate
 }) {
+  const [newMenu, setNewMenu] = useState<HTMLElement | null>(null)
+  const pick = (make: () => void) => () => { setNewMenu(null); make() }
   return (
     <Box sx={{ mb: 4 }} data-testid="boards">
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
-          {s('org.views')}
+          {s('org.boards')}
         </Typography>
-        <Button size="small" variant="outlined" onClick={onAdd} data-testid="new-board">
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={(event) => setNewMenu(event.currentTarget)}
+          aria-haspopup="menu"
+          aria-expanded={Boolean(newMenu)}
+          data-testid="new-board"
+        >
           {s('org.newBoard')}
         </Button>
+        <Menu open={Boolean(newMenu)} anchorEl={newMenu} onClose={() => setNewMenu(null)} MenuListProps={{ dense: true }}>
+          <MenuItem onClick={pick(onAdd)} data-testid="new-board-landscape">{s('org.newBoardLandscape')}</MenuItem>
+          <MenuItem onClick={pick(onAddSheet)}>{s('org.newBoardSheet')}</MenuItem>
+          <MenuItem onClick={pick(onAddMap)}>{s('org.newBoardMap')}</MenuItem>
+          <MenuItem onClick={pick(onAddTechnology)}>{s('org.newBoardTechnology')}</MenuItem>
+        </Menu>
       </Stack>
       {boards.length === 0 && (
         <Typography sx={{ fontSize: 12, color: 'text.secondary', py: 0.75 }} data-testid="boards-empty">
@@ -684,7 +756,9 @@ function OrganisationBar({
       <Box sx={{ flex: 1 }} />
 
       {source && (
-        <Tooltip title={s('shell.sourceTip')}>
+        <Tooltip title={s(source.kind === 'folder'
+          ? 'shell.sourceTipFolder'
+          : source.kind === 'memory' ? 'shell.sourceTipMemory' : 'shell.sourceTipBrowser')}>
           <Typography
             data-testid="working-source"
             sx={{
