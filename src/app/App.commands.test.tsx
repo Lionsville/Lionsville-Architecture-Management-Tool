@@ -16,7 +16,7 @@ import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { HostCommand } from '../platform/hostCommands'
-import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import { translator } from '../i18n'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -108,6 +108,43 @@ describe('commands from the host', () => {
     await waitFor(() => expect(reported.at(-1)).toBe('light'))
   })
 
+  it('reports whether a scope is open, so the items about one can be enabled only then', async () => {
+    // The third fact main is told (ADR-0005, amended): true with the project
+    // open, false once the person is back on the organisation's home.
+    const reported: boolean[] = []
+    show({ onScopeOpen: (open) => reported.push(open) })
+    expect(reported).toEqual([true])
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(reported.at(-1)).toBe(false))
+  })
+
+  it('opens the manual in the app\'s language, outside the app', () => {
+    const view = show({ initialPreferences: { language: 'nl' } })
+    view.send({ type: 'manual' })
+    expect(view.hostControls.openExternal).toHaveBeenCalledWith(
+      'https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/blob/main/docs/manual.nl.md',
+    )
+  })
+
+  it('Undo from the host takes back the last step, and a focused field keeps its own', async () => {
+    const view = show()
+    const named = async () => (await view.projects.load('acme/landscape'))?.model.diagrams[0].name
+    act(() => { screen.getByTestId('edit-the-diagram').click() })
+    view.send({ type: 'save' })
+    await waitFor(async () => expect(await named()).toBe('Edited'))
+    // A text field with focus gets the page's own undo, as Electron's role gave it.
+    view.hostControls.editInField.mockReturnValueOnce(true)
+    view.send({ type: 'undo' })
+    expect(view.hostControls.editInField).toHaveBeenCalledWith('undo')
+    view.send({ type: 'save' })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(await named()).toBe('Edited')
+    // Nothing focused: the app's one stack.
+    view.send({ type: 'undo' })
+    view.send({ type: 'save' })
+    await waitFor(async () => expect(await named()).toBe('L7'))
+  })
+
   it('Save writes now rather than waiting for the idle timer', async () => {
     const view = show()
     act(() => { screen.getByTestId('edit-the-diagram').click() })
@@ -172,7 +209,7 @@ describe('the overflow on the web', () => {
 
   const openOverflow = async () => {
     fireEvent.click(screen.getByTestId('overflow-button'))
-    await waitFor(() => expect(screen.getByText('Export Working File…')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Save a Copy of the Working File…')).toBeDefined())
   }
 
   it('reaches every item the desktop menu bar carries', async () => {
@@ -181,7 +218,8 @@ describe('the overflow on the web', () => {
     // Wait for the history to have answered, so its two items are offered.
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
 
-    const expected = offered(FILE_MENU, 'web', { history: true, folders: true })
+    const can = { history: true, folders: true, scope: true }
+    const expected = [...offered(FILE_MENU, 'web', can), ...offered(HELP_MENU, 'web', can)]
       .flatMap((entry) => (entry.kind === 'item' ? [s(entry.label)] : []))
     for (const label of expected) expect(screen.getByText(label), label).toBeDefined()
     for (const item of THEME_ITEMS) expect(screen.getByText(s(item.label))).toBeDefined()
@@ -191,7 +229,7 @@ describe('the overflow on the web', () => {
   it('sends the same command the menu bar would', async () => {
     const view = show({ history })
     await openOverflow()
-    fireEvent.click(screen.getByText('Export Working File…'))
+    fireEvent.click(screen.getByText('Save a Copy of the Working File…'))
 
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
     expect(view.documents.saved[0].name).toBe('landscape.lvarch')

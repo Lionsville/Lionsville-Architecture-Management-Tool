@@ -92,6 +92,7 @@ import {
   type Selection,
 } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
+import { selectAllContent } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
 import { useAutoLayout } from './useAutoLayout';
 import { useLiveRouting } from './useLiveRouting';
@@ -1103,10 +1104,21 @@ function EditorBody(props: SolutionDesignEditorProps) {
       tidy: () => (busy ? Promise.reject(new EditorRefused('busy')) : handleTidy(undefined, true)),
       routeEdges: () => (busy ? Promise.reject(new EditorRefused('busy')) : handleRouteEdges()),
       capture: captureBoard,
+      // The same three doors the Delete key takes (`use-canvas-shortcuts`):
+      // one element to the remove-or-delete question, a line and a selection
+      // to the confirmation.
+      deleteSelection: () => {
+        if (readOnly || !activeDiagram) return;
+        if (state.selectedElement) setDeleteTarget(state.selectedElement.id);
+        else if (state.selectedConnection) requestDeleteConnection(state.selectedConnection.id);
+        else requestDeleteSelection(state.selection);
+      },
+      selectAll: () => { if (activeDiagram) state.setSelection(selectAllContent(state.model, activeDiagram)); },
+      showShortcuts: () => setHelpOpen(true),
     };
     onHandle(handle);
     return () => onHandle(undefined);
-  }, [onHandle, activeDiagram?.id, busy, handleTidy, handleRouteEdges, captureBoard]);
+  }, [onHandle, activeDiagram, busy, handleTidy, handleRouteEdges, captureBoard, readOnly, state, requestDeleteConnection, requestDeleteSelection]);
 
   /**
    * The way down from a landscape line (ADR-0013): where this interface
@@ -1171,6 +1183,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
     onRequestRename: () => requestMenu('rename'),
     onOpenSearch: () => setSearchOpen(true),
     onOpenDocumentation: openDocumentation,
+    hostOwnsUndo: props.editing.history.keysOwnedByHost,
   });
 
   // Attach both the wrapper ref (used by the PNG export) and the shortcut hook's

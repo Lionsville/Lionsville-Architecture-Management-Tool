@@ -78,6 +78,7 @@ const commands: DesktopCommands = {
   },
   reportUnsaved: (unsaved) => { void ipcRenderer.invoke('app:unsaved', unsaved) },
   reportTheme: (mode: ThemeMode) => { void ipcRenderer.invoke('app:theme', mode) },
+  reportScopeOpen: (open) => { void ipcRenderer.invoke('app:scopeOpen', open) },
 }
 
 const history: DesktopHistory = {

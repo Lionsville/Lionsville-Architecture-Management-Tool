@@ -34,7 +34,9 @@
  * read — an empty answer there is the exact symptom the switch tests exist to
  * catch.
  */
+import { Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
+import { productName } from '../../package.json'
 import { sendCommand } from './appMenu'
 import { grantDirectory } from './files'
 import { logFilePath } from './log'
@@ -230,6 +232,28 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   // --- the platform: what app:// has to give the renderer ---------------------
   section('the platform')
+
+  // The menu bar, as a person reads it: the app menu named after the product
+  // rather than the package, a Help menu with the manual, the shortcuts and
+  // the update check in one place, and an Edit menu whose Undo is ours.
+  results.push(await checkHere('the menu bar names the product, and carries Help and Edit', async () => {
+    const menu = Menu.getApplicationMenu()
+    if (!menu) throw new Error('no application menu')
+    const labels = menu.items.map((held) => held.label)
+    if (process.platform === 'darwin' && menu.items[0]?.label !== productName) {
+      throw new Error(`the app menu is "${menu.items[0]?.label}", not "${productName}"`)
+    }
+    const under = (name: string) => menu.items.find((held) => held.label === name)?.submenu?.items.map((held) => held.label) ?? []
+    const help = under('Help')
+    for (const want of ['User Manual', 'Keyboard Shortcuts…', 'Check for Updates…']) {
+      if (!help.includes(want)) throw new Error(`no "${want}" in Help: ${help.join(' · ') || labels.join(' · ')}`)
+    }
+    const edit = under('Edit')
+    for (const want of ['Undo', 'Redo', 'Cut', 'Copy', 'Paste', 'Delete', 'Select All']) {
+      if (!edit.includes(want)) throw new Error(`no "${want}" in Edit: ${edit.join(' · ')}`)
+    }
+    return `${labels.join(' · ')}; Help: ${help.join(' · ')}`
+  }))
 
   results.push(await check(window, 'origin is a standard app:// scheme', `
     (() => {

@@ -42,6 +42,7 @@ import type { ScopePath } from '../projects/scopePath'
 import { crumbsFor } from './ShellToolbar'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { ThemeMode } from '../platform/theme'
+import { manualUrl } from '../platform/manual'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
 import type { PullOutcome } from '../platform/sync'
 import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
@@ -61,7 +62,7 @@ import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
-import type { CrashControls } from './ErrorBoundary'
+import type { HostControls } from '../ports/HostControls'
 import { HistoryPage } from './history/HistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { useProjectHistory } from './history/useProjectHistory'
@@ -190,7 +191,8 @@ export type AppProps = {
   documents: ProjectFileChannel
   diagnostics: ShellDiagnostics
   /** What the crash fallback can do about it: reload, and copy the trail. */
-  hostControls: CrashControls
+  /** The host's three: reload and the clipboard for the crash page, and a way out to the manual. */
+  hostControls: HostControls
   /**
    * What you are working from (ADR-0005): a folder by name, the browser's
    * storage, or memory. `memory` means storage refused at boot — a private
@@ -234,6 +236,8 @@ export type AppProps = {
   onUnsavedWork?: (unsaved: boolean) => void
   /** Tell the host which theme is on, so its View menu's radio can be right. */
   onThemeMode?: (mode: ThemeMode) => void
+  /** Whether a scope is open, for the menu bar's items that act on one (ADR-0005, amended). */
+  onScopeOpen?: (open: boolean) => void
   /** Work in a folder the user has already granted. The Recent submenu. */
   onOpenWorkingDirectory?: (root: string) => void
   /** Folders this machine has worked in before, for the first-run screen. */
@@ -309,7 +313,7 @@ function localToday(): string {
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
-  commands, hostMenu = false, onUnsavedWork, onThemeMode, onOpenWorkingDirectory, recentFolders,
+  commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, today = localToday,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME, onTitle,
@@ -471,7 +475,16 @@ export function App({
     if (command.type === 'connectAgent') setAgentOpen(true)
     if (command.type === 'snapshot') homeHistoryRef.current?.openDialog()
     if (command.type === 'history') homeHistoryRef.current?.openPage()
-  }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs])
+    // In the app's language, which is why it is answered here and not by the
+    // menu bar: main does not know which one is on.
+    if (command.type === 'manual') hostControls.openExternal(manualUrl(prefs.language))
+  }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs, hostControls])
+  /**
+   * The third fact main is told (ADR-0005, amended): whether a scope is open,
+   * so the File and Edit items about one are enabled only while it is. Said
+   * on every change and once at the start, the way the theme is.
+   */
+  useEffect(() => { onScopeOpen?.(project !== undefined) }, [onScopeOpen, project])
 
   /**
    * The server's three facts (ADR-0007), asked once and then told. Held here
@@ -998,9 +1011,10 @@ export function App({
             index={tree.index}
             watch={watchOpenProject}
             commands={bus.on}
+            hostMenu={hostMenu}
             overflow={hostMenu ? undefined : {
               themeMode: prefs.themeMode,
-              can: { folders: Boolean(onChooseWorkingDirectory) },
+              can: { folders: Boolean(onChooseWorkingDirectory), scope: true },
               onCommand: bus.send,
             }}
             onUnsavedWork={onUnsavedWork}
@@ -1048,7 +1062,7 @@ export function App({
             overflow={hostMenu ? undefined : {
               themeMode: prefs.themeMode,
               // The folder's history, from its front door too (`homeHistory`).
-              can: { folders: Boolean(onChooseWorkingDirectory), history: homeHistory.available },
+              can: { folders: Boolean(onChooseWorkingDirectory), history: homeHistory.available, scope: false },
               onCommand: bus.send,
             }}
             agent={agentBar}

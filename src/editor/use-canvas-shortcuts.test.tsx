@@ -611,3 +611,23 @@ describe('useCanvasShortcuts — it does not silence anybody else', () => {
     expect(seen).toEqual(['Escape']);
   });
 });
+
+/**
+ * A host with a menu bar owns ⌘Z and ⌘⇧Z (ADR-0005, amended): on macOS its
+ * accelerator fires whether or not the page handled the key, so the canvas
+ * must not act on them too — every press undid twice on the first desktop
+ * check. Everything else stays the canvas's.
+ */
+describe('with a host that owns undo', () => {
+  it('passes ⌘Z and ⌘⇧Z through, and keeps ⌘A', () => {
+    const { view, undo, redo, setSelection } = setup({ hostOwnsUndo: true });
+    const z = fireEvent.keyDown(view.getByTestId('node'), { key: 'z', ...MOD });
+    fireEvent.keyDown(view.getByTestId('node'), { key: 'z', shiftKey: true, ...MOD });
+    expect(undo).not.toHaveBeenCalled();
+    expect(redo).not.toHaveBeenCalled();
+    // Not prevented either: the browser's own handling is left as it was.
+    expect(z).toBe(true);
+    fireEvent.keyDown(view.getByTestId('node'), { key: 'a', ...MOD });
+    expect(setSelection).toHaveBeenCalled();
+  });
+});

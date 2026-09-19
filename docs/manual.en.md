@@ -13,8 +13,16 @@ this manual is also in [Dutch](manual.nl.md), [Frisian](manual.fy.md) and
 The app checks that page for a newer version in the background and tells you
 when there is one — **Download…** opens the installer in your browser, **Skip
 This Version** says not this one, and the checkbox in that dialog turns the
-automatic check off. Nothing installs itself. **Check for Updates…** in the app
-menu asks on request.
+automatic check off. Nothing installs itself. **Check for Updates…** in the
+Help menu asks on request.
+
+**The menus** on the desktop are in English for now. **File** holds the
+folder, the working file, snapshots and history; its items about the open
+scope — Open…, Save, Save a Copy of the Working File… — are greyed out while
+nothing is open. **Edit** holds Undo, Redo, Delete and Select All, which act on
+the app's own undo stack and on the canvas, beside Cut, Copy and Paste.
+**Help** holds this manual, in the app's language, the keyboard shortcuts and
+the update check.
 
 **Browser.** From a clone of the repository, `npm run setup` once and then
 `npm run dev`; open <http://127.0.0.1:5200>. Where the browser offers it —
@@ -953,8 +961,9 @@ Right-click a diagram tab, **Diagram settings…**.
 
 Two ways out, for two purposes.
 
-- **The working file** (`.lvarch`) is everything and is what you hand to
-  someone who will edit further. It is your **whole working folder** in one
+- **The working file** (`.lvarch`, **File › Save a Copy of the Working
+  File…**) is everything and is what you hand to someone who will edit
+  further. It is your **whole working folder** in one
   file — a zip — so anybody can unpack it and read what is inside without this
   tool. It holds every scope, whichever one you are in when you export: a
   landscape on its own refers to applications defined a level up, and a file

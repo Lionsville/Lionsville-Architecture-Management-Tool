@@ -14,7 +14,15 @@ De app kijkt op de achtergrond of daar een nieuwere versie staat en zegt het als
 die er is — **Download…** opent het installatiebestand in je browser, **Skip
 This Version** zegt deze niet, en het vinkje in dat venster zet de automatische
 controle uit. Er installeert zichzelf niets. **Check for Updates…** in het
-appmenu vraagt het op verzoek.
+Help-menu vraagt het op verzoek.
+
+**De menu's** op de desktop zijn voorlopig Engels. **File** bevat de map, het
+werkbestand, momentopnamen en geschiedenis; de items over het geopende
+onderdeel — Open…, Save, Save a Copy of the Working File… — zijn grijs zolang
+er niets open is. **Edit** bevat Undo, Redo, Delete en Select All, die werken
+op de eigen ongedaan-maak-stapel van de app en op het canvas, naast Cut, Copy
+en Paste. **Help** bevat deze handleiding, in de taal van de app, de
+sneltoetsen en de updatecontrole.
 
 **Browser.** Vanuit een kloon van de repository eenmalig `npm run setup`, daarna
 `npm run dev`; open <http://127.0.0.1:5200>. Waar de browser het aanbiedt —

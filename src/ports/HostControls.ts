@@ -16,4 +16,18 @@ export interface HostControls {
 
   /** Put text on the clipboard. Rejects if the host refuses. */
   copyText(text: string): Promise<void>
+
+  /**
+   * Open a page outside the app — the manual, in the default browser. A
+   * browser tab opens a new tab; the desktop hands the URL to the system,
+   * which is what its window-open handler does with every `https:` link.
+   */
+  openExternal(url: string): void
+
+  /**
+   * The page's own undo or redo, in the text field that has focus — what
+   * Electron's Edit roles did. Answers false where no field has focus, so the
+   * caller takes the app's one undo stack instead (ADR-0005, amended).
+   */
+  editInField(action: 'undo' | 'redo'): boolean
 }

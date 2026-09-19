@@ -62,6 +62,14 @@ export interface CanvasShortcutHandlers {
   onRequestRename(): void;
   /** ⌘F: the element finder. Absent = the chord is still swallowed, and inert. */
   onOpenSearch?(): void;
+  /**
+   * The host's menu bar carries ⌘Z and ⌘⇧Z and fires them itself (ADR-0005,
+   * amended). On macOS a menu accelerator fires whether or not the page
+   * handled the key, so if this hook acted too every press would undo twice;
+   * with this set, the two chords pass through untouched and the host's
+   * command is the one undo.
+   */
+  hostOwnsUndo?: boolean;
   /** Enter: the documentation page for the selected element. */
   onOpenDocumentation?(elementId: ElementId): void;
 }
@@ -77,6 +85,9 @@ const ALWAYS_PREVENT = new Set([
   // The browser's find bar over a canvas of SVG finds nothing; ⌘F is ours.
   'find',
 ]);
+
+/** The chords a host's menu bar may own instead of this hook. */
+const HOST_MAY_OWN = new Set(['undo', 'redo', 'redo-alt']);
 
 /**
  * Events the document listener has already dispatched, so the fallback listener
@@ -227,6 +238,7 @@ export function useCanvasShortcuts(
         // Escape/deselect (React Flow's own Escape never fires from the
         // inspector, so the editor must still deselect) and force-save.
         if (editable && def.id !== 'deselect' && !forceSave) return;
+        if (h.hostOwnsUndo && HOST_MAY_OWN.has(def.id)) return;
         if (ALWAYS_PREVENT.has(def.id)) event.preventDefault();
         if (def.when && !def.when(ctx)) return;
         event.preventDefault();
@@ -271,6 +283,7 @@ export function useCanvasShortcuts(
         // inspector, so the editor must still deselect (and close the panel)
         // when Escape arrives from an input.
         if (editable && def.id !== 'deselect') return;
+        if (h.hostOwnsUndo && HOST_MAY_OWN.has(def.id)) return;
         if (ALWAYS_PREVENT.has(def.id)) event.preventDefault();
         if (def.when && !def.when(ctx)) return;
         event.preventDefault();

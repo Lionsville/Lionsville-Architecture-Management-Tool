@@ -15,7 +15,15 @@ De app sjocht op de eftergrûn oft dêr in nijere ferzje stiet en seit it as dy
 der is — **Download…** iepenet it ynstallaasjebestân yn jo brouwer, **Skip
 This Version** seit dizze net, en it finkje yn dat finster set de automatyske
 kontrôle út. Der ynstallearret himsels neat. **Check for Updates…** yn it
-appmenu freget it op fersyk.
+Help-menu freget it op fersyk.
+
+**De menu's** op de desktop binne foarearst Ingelsk. **File** hâldt de map, it
+wurkbestân, momintopnamen en skiednis; syn items oer it iepene ûnderdiel —
+Open…, Save, Save a Copy of the Working File… — binne griis salang't der neat
+iepen is. **Edit** hâldt Undo, Redo, Delete en Select All, dy't wurkje op de
+eigen ûngedien-meitsje-steapel fan de app en op it tekenflak, njonken Cut, Copy
+en Paste. **Help** hâldt dizze hantlieding, yn de taal fan de app, de
+fluchtoetsen en de updatekontrôle.
 
 **Brouwer.** Fanút in kloon fan de repository ien kear `npm run setup`, dêrnei
 `npm run dev`; iepenje <http://127.0.0.1:5200>. Dêr't de brouwer it oanbiedt —

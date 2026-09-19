@@ -129,8 +129,11 @@ export type ShellHarness = {
   documents: ReturnType<typeof recordingDocuments>
   diagnostics: RecordingDiagnostics
   hostControls: {
+    id: string
     reload: Mock<() => void>
     copyText: Mock<(text: string) => Promise<void>>
+    openExternal: Mock<(url: string) => void>
+    editInField: Mock<(action: 'undo' | 'redo') => boolean>
   }
 }
 
@@ -142,8 +145,11 @@ export function shellHarness(projects: readonly ScopeSnapshot[] = []): ShellHarn
     documents: recordingDocuments(),
     diagnostics: new RecordingDiagnostics(),
     hostControls: {
+      id: 'test',
       reload: vi.fn(() => {}),
       copyText: vi.fn((_text: string) => Promise.resolve()),
+      openExternal: vi.fn((_url: string) => {}),
+      editInField: vi.fn((_action: 'undo' | 'redo') => false),
     },
   }
 }

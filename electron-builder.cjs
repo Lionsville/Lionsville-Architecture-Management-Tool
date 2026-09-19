@@ -53,9 +53,13 @@ const azure = {
 }
 const signWin = Object.values(azure).every(Boolean)
 
+// The product's name is package.json's, which main reads too for the app
+// menu: one place, so About <name> and the bundle cannot disagree.
+const { productName } = require('./package.json')
+
 module.exports = {
   appId: 'nl.lionsville.architecture',
-  productName: 'Lionsville Architecture Management Tool',
+  productName,
   copyright: 'Copyright © Lionsville Group BV',
 
   directories: {

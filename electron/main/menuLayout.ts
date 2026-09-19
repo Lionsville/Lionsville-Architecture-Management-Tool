@@ -42,3 +42,15 @@ export function fileMenuSlot(
   if (existing !== -1) return { index: existing, replace: true }
   return { index: platform === 'darwin' ? 1 : 0, replace: false }
 }
+
+/**
+ * Where a menu of ours goes that Electron builds a default for as well — Edit
+ * and Help. Over the default where there is one, for the reason File takes
+ * its slot: two Edit menus is a bar with a wrong one in it. Where there is
+ * none, at the end, which is where Help belongs and where Edit would be the
+ * only thing left to place.
+ */
+export function replacingSlot(items: readonly PlaceableItem[], role: 'editmenu' | 'help'): FileMenuSlot {
+  const existing = items.findIndex((item) => roleOf(item) === role)
+  return existing !== -1 ? { index: existing, replace: true } : { index: items.length, replace: false }
+}

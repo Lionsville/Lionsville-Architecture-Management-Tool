@@ -16,7 +16,15 @@ gibt, und sagt es Ihnen, wenn es eine gibt — **Download…** öffnet das
 Installationsprogramm in Ihrem Browser, **Skip This Version** sagt: diese
 nicht, und das Kontrollkästchen in diesem Dialog schaltet die automatische
 Prüfung aus. Nichts installiert sich von selbst. **Check for Updates…** im
-App-Menü fragt auf Wunsch nach.
+Hilfe-Menü fragt auf Wunsch nach.
+
+**Die Menüs** auf dem Desktop sind vorerst englisch. **File** hält den Ordner,
+die Arbeitsdatei, Schnappschüsse und den Verlauf; seine Einträge zum
+geöffneten Bereich — Open…, Save, Save a Copy of the Working File… — sind
+ausgegraut, solange nichts geöffnet ist. **Edit** hält Undo, Redo, Delete und
+Select All, die auf den eigenen Rückgängig-Stapel der App und auf die
+Zeichenfläche wirken, neben Cut, Copy und Paste. **Help** hält dieses
+Handbuch, in der Sprache der App, die Tastenkürzel und die Update-Prüfung.
 
 **Browser.** Aus einem Klon des Repositorys einmal `npm run setup`, danach
 `npm run dev`; öffnen Sie <http://127.0.0.1:5200>. Wo der Browser es anbietet

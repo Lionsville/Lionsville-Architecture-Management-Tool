@@ -118,7 +118,10 @@ function showDesktop(history: ProjectHistory, options: { open?: boolean } = {}) 
  */
 const openSaveMenu = async () => {
   fireEvent.click(screen.getByTestId('overflow-button'))
-  await waitFor(() => expect(screen.getByText('Export Working File…')).toBeDefined())
+  // The menu itself, not one of its items: with no scope open the items about
+  // one are not offered (ADR-0005, amended), and this opens it on the
+  // organisation screen too.
+  await screen.findByTestId('overflow-menu')
 }
 
 describe('what the menu offers', () => {

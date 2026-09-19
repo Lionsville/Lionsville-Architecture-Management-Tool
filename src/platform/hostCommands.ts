@@ -46,6 +46,20 @@ export type HostCommand =
   | { type: 'theme'; mode: ThemeMode }
   /** Open the dialog that explains and enables an agent's way in (ADR-0007). */
   | { type: 'connectAgent' }
+  /**
+   * The Edit menu's four, sent as commands rather than left as the roles
+   * Electron gives them: the roles act on the DOM, and the app's one undo
+   * stack and the canvas's selection are not in the DOM. Cut, Copy and
+   * Paste keep their roles — the clipboard belongs to the page.
+   */
+  | { type: 'undo' }
+  | { type: 'redo' }
+  | { type: 'deleteSelection' }
+  | { type: 'selectAll' }
+  /** Help: the manual, in the app's language, in the default browser. */
+  | { type: 'manual' }
+  /** Help: the shortcut overlay the `?` button already opens. */
+  | { type: 'shortcuts' }
 
 /**
  * Somewhere to send them, and two things to send back.
@@ -55,9 +69,10 @@ export type HostCommand =
  * whether closing it would lose anything — a browser tab has `beforeunload` for
  * exactly that conversation, and a desktop window has to have it out loud.
  *
- * The theme is the second fact, and it should not quietly become the tenth: a
- * menu that shows a radio has to know which one is on, and main asks nothing
- * else.
+ * The theme is the second fact, and whether a scope is open the third — the
+ * File menu's Open…, Save and Save a Copy… do nothing with nothing open, and
+ * disabled is the honest state and the platform's convention. Main asks
+ * nothing else, and these three should not quietly become the tenth.
  */
 export type HostCommands = {
   /** Every command, until the returned function is called. */
@@ -66,4 +81,6 @@ export type HostCommands = {
   reportUnsaved(unsaved: boolean): void
   /** Which theme is on, so the View menu's radio can be right. */
   reportTheme(mode: ThemeMode): void
+  /** Is a scope open, so the items about one can be enabled only while it is. */
+  reportScopeOpen(open: boolean): void
 }

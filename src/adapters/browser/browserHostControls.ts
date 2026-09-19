@@ -16,5 +16,17 @@ export function browserHostControls(): HostControls {
       if (!clipboard) return Promise.reject(new Error('no clipboard in this context'))
       return clipboard.writeText(text)
     },
+    // `noopener`, because the opened page would otherwise hold a handle on this
+    // window; on the desktop the window-open handler passes it to the system.
+    openExternal: (url) => { window.open(url, '_blank', 'noopener,noreferrer') },
+    editInField: (action) => {
+      const held = document.activeElement
+      const editable = held instanceof HTMLInputElement
+        || held instanceof HTMLTextAreaElement
+        || (held instanceof HTMLElement && held.isContentEditable)
+      if (!editable) return false
+      document.execCommand(action)
+      return true
+    },
   }
 }

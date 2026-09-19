@@ -50,7 +50,8 @@ import { MoveRecordDialog } from './dialogs/MoveRecordDialog'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ErrorBoundary } from './ErrorBoundary'
 import { messageFor } from './messageFor'
-import type { CrashControls, CrashTrail } from './ErrorBoundary'
+import type { CrashTrail } from './ErrorBoundary'
+import type { HostControls } from '../ports/HostControls'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -114,6 +115,8 @@ export type ProjectWorkspaceProps = {
    * handles what it owns.
    */
   commands?: (listener: (command: HostCommand) => void) => () => void
+  /** The host has a menu bar of its own, which carries ⌘Z and ⌘⇧Z (ADR-0005, amended). */
+  hostMenu?: boolean
   /**
    * The menu, for a host with no menu bar. Absent on the desktop. The
    * workspace fills in the one capability it knows — whether there is a
@@ -234,7 +237,7 @@ export type ProjectWorkspaceProps = {
    * the save menu and the pages beside it alive when it does.
    */
   diagnostics: CrashTrail
-  hostControls: CrashControls
+  hostControls: HostControls
   /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
   today?: () => string
   /**
@@ -262,7 +265,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, commands, overflow, onUnsavedWork, history: projectHistory,
+  project, projects, index, watch, commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, agent, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
   onOpenSettings, onTreeChanged = () => {},
@@ -904,8 +907,18 @@ export function ProjectWorkspace({
       case 'openDocument': files.openDocument(command.name, command.bytes); break
       case 'snapshot': snapshots.openDialog(); break
       case 'history': snapshots.openPage(); break
+      // The Edit menu's four (ADR-0005, amended): the app's one undo stack,
+      // and the canvas's selection through the editor's handle. A key the
+      // canvas handles never reaches the menu, so these fire from the menu
+      // item and from the key with nothing focused, and never twice.
+      // A text field that has focus keeps its own undo, as the role gave it.
+      case 'undo': if (!hostControls.editInField('undo')) session.undo(); break
+      case 'redo': if (!hostControls.editInField('redo')) session.redo(); break
+      case 'deleteSelection': editorHandle.current?.deleteSelection(); break
+      case 'selectAll': editorHandle.current?.selectAll(); break
+      case 'shortcuts': editorHandle.current?.showShortcuts(); break
     }
-  }), [commands, forceSave, files, documentPicker, snapshots])
+  }), [commands, forceSave, files, documentPicker, snapshots, session, hostControls])
 
   /**
    * The PNG still succeeds when a mark could not be embedded — the element falls
@@ -1148,7 +1161,8 @@ export function ProjectWorkspace({
   const history = useMemo(() => ({
     undo: session.undo, redo: session.redo,
     canUndo: session.canUndo, canRedo: session.canRedo,
-  }), [session.undo, session.redo, session.canUndo, session.canRedo])
+    keysOwnedByHost: hostMenu,
+  }), [session.undo, session.redo, session.canUndo, session.canRedo, hostMenu])
 
   /**
    * The laid-out views, drawn in the tab (ADR-0016): the editor hands back

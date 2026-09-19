@@ -20,6 +20,53 @@ record described and nothing had needed: `writeFolder` takes a patch, carries
 every key it does not name through, and has exactly one caller — the 4 → 5
 pass, dropping the key it has just read.
 
+**Amended 19 September 2026: the menu decides nothing, and is told three
+facts.** The rule stands; what changed is what the renderer reports and what
+the bar carries.
+
+* **Three facts, and why each.** Main was told the unsaved state (so closing
+  the window can ask) and the theme (so the View radio can be right). It is
+  now told, the same way, **whether a scope is open** — because Open…, Save
+  and Save a Copy of the Working File… act on one, and with nothing open they
+  did nothing, in silence. Disabled is the honest state and the platform's
+  convention; the web's overflow applies the same rule through `offered`'s
+  capabilities, where `scope` joined `history` and `folders`. Snapshot… and
+  History… are the folder's and work from its home, so they need no scope.
+  Nothing else is reported, and the *Consequences* below still hold: this is
+  the third fact, and there should not quietly be a tenth.
+* **The app's name.** `app.setName` runs before the menu is built, from the
+  `productName` in `package.json` — the one place the builder reads it too —
+  so the macOS app menu says *About Lionsville Architecture Management Tool*
+  rather than the package name.
+* **Edit is ours.** Electron's Undo, Redo, Delete and Select All are roles
+  bound to the DOM, and the app's one undo stack and the canvas's selection
+  are not in the DOM, so Edit › Undo did nothing. The four are `HostCommand`s
+  now, routed by the workspace to the session's stack and to the editor's
+  handle; Cut, Copy and Paste keep their roles, because the clipboard belongs
+  to the page. ⌘Z and ⌘⇧Z moved with Undo and Redo, and that took one more
+  decision: on macOS a menu accelerator fires whether or not the page handled
+  the key — the first desktop check undid twice per press — so a chord on a
+  menu item has exactly one owner. The canvas leaves the two chords to the
+  menu bar when the host says it carries them (`keysOwnedByHost`), the
+  renderer gives a focused text field its own undo before touching the stack,
+  and Delete and Select All carry no chord at all: those stay the canvas's,
+  and ⌘A on a menu item would select every card while a person selects the
+  text in a field.
+* **Help is ours, on every platform.** *User Manual* opens the manual in the
+  app's language in the default browser — a command the renderer answers,
+  since main does not know the language — *Keyboard Shortcuts…* sends the
+  command the `?` button already handles, and *Check for Updates…* moved here
+  from the app menu on macOS so it is in one place. The web's overflow carries
+  the first two under a *Help* heading.
+* **View, packaged.** Reload, Force Reload and Toggle Developer Tools leave a
+  packaged build; they stay in development. Actual Size, the zooms, Full
+  Screen and the theme radios stay.
+* **Save a Copy of the Working File…** is what *Export Working File…* did,
+  and now says so.
+* **English only, still.** The native menu stays English until a channel for
+  the language exists; that is out of scope here and is said in the release
+  notes.
+
 ## Context and Problem Statement
 
 There is no preferences screen. What a user can configure is real but scattered,

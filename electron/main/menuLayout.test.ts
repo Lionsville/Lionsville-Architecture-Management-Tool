@@ -6,7 +6,7 @@
  * Close Window.
  */
 import { describe, expect, it } from 'vitest'
-import { fileMenuSlot } from './menuLayout'
+import { fileMenuSlot, replacingSlot } from './menuLayout'
 
 /** The default macOS menu bar, with the roles spelled as Electron returns them. */
 const macDefaults = [
@@ -33,4 +33,14 @@ describe('fileMenuSlot', () => {
       .toEqual({ index: 0, replace: false })
   })
 
+})
+
+describe('replacingSlot', () => {
+  it('takes the place of the default Edit and Help menus, and goes last where there is none', () => {
+    expect(replacingSlot(macDefaults, 'editmenu')).toEqual({ index: 2, replace: true })
+    expect(replacingSlot([{ role: 'filemenu' }, { role: 'editMenu' }, { role: 'help' }], 'help'))
+      .toEqual({ index: 2, replace: true })
+    expect(replacingSlot([{ role: 'filemenu' }, { role: 'Help' }], 'editmenu'))
+      .toEqual({ index: 2, replace: false })
+  })
 })

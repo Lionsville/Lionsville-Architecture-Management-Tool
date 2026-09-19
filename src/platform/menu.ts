@@ -11,7 +11,8 @@
  *   platform puts it ({@link preferencesPlacement}), and the theme is three
  *   radio items in the View menu Electron already builds.
  * - The toolbar's overflow, one `⋯`, present on the web and absent on the
- *   desktop, carrying the same list. On the web the overflow is load-bearing:
+ *   desktop, carrying the same list, with Help under a heading of its own. On
+ *   the web the overflow is load-bearing:
  *   anything moved out of the toolbar and into a menu bar disappears there
  *   unless something is put in its place, and this is that something.
  *
@@ -29,8 +30,11 @@ import type { ThemeMode } from './theme'
 
 export type MenuHost = 'desktop' | 'web'
 
-/** What an item needs the shell to have before it is worth offering. */
-export type MenuNeed = 'history' | 'folders'
+/**
+ * What an item needs the shell to have before it is worth offering: a history
+ * to keep, a folder to choose, a scope open to act on.
+ */
+export type MenuNeed = 'history' | 'folders' | 'scope'
 
 export type MenuItemSpec = {
   readonly kind: 'item'
@@ -39,7 +43,7 @@ export type MenuItemSpec = {
   /** Electron's accelerator syntax. The web shows none. */
   readonly accelerator?: string
   readonly on: readonly MenuHost[]
-  readonly needs?: MenuNeed
+  readonly needs?: readonly MenuNeed[]
 }
 
 export type MenuEntry =
@@ -55,25 +59,61 @@ export type MenuEntry =
 const BOTH: readonly MenuHost[] = ['desktop', 'web']
 
 function item(
-  label: StringKey, command: HostCommand, accelerator?: string, needs?: MenuNeed,
+  label: StringKey, command: HostCommand, accelerator?: string, needs?: readonly MenuNeed[],
 ): MenuItemSpec {
   return { kind: 'item', label, command, accelerator, on: BOTH, needs }
 }
 
 export const FILE_MENU: readonly MenuEntry[] = [
-  item('menu.openFolder', { type: 'chooseFolder' }, 'CmdOrCtrl+Shift+O', 'folders'),
+  item('menu.openFolder', { type: 'chooseFolder' }, 'CmdOrCtrl+Shift+O', ['folders']),
   { kind: 'recentFolders' },
   { kind: 'separator' },
-  item('menu.open', { type: 'open' }, 'CmdOrCtrl+O'),
-  item('menu.save', { type: 'save' }, 'CmdOrCtrl+S'),
-  item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E'),
+  // The three about the open scope: with nothing open they did nothing, in
+  // silence. Snapshot… and History… are the folder's and work from its home.
+  item('menu.open', { type: 'open' }, 'CmdOrCtrl+O', ['scope']),
+  item('menu.save', { type: 'save' }, 'CmdOrCtrl+S', ['scope']),
+  item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E', ['scope']),
   { kind: 'separator' },
-  item('menu.snapshot', { type: 'snapshot' }, undefined, 'history'),
-  item('menu.history', { type: 'history' }, undefined, 'history'),
+  item('menu.snapshot', { type: 'snapshot' }, undefined, ['history']),
+  item('menu.history', { type: 'history' }, undefined, ['history']),
   { kind: 'separator' },
   // On both hosts, and needing nothing: in a browser tab the dialog explains
   // and says the desktop app is where an agent can connect (ADR-0007).
   item('menu.connectAgent', { type: 'connectAgent' }),
+]
+
+/**
+ * The Edit menu's four that are the app's rather than the page's. Rendered
+ * by the desktop's menu bar only — on the web the keyboard already reaches
+ * them, and the overflow is not an Edit menu. Cut, Copy and Paste stay
+ * Electron's roles beside these (`appMenu.ts`), because the clipboard is the
+ * page's.
+ *
+ * Only Undo and Redo carry their accelerators. On macOS a menu accelerator
+ * fires whether or not the page handled the key, so a chord on a menu item
+ * has exactly one owner: the canvas leaves ⌘Z and ⌘⇧Z to the menu bar
+ * (`keysOwnedByHost`), and the renderer hands them to a text field that has
+ * focus. Delete and ⌘A stay the canvas's — ⌘A on a menu item would select
+ * every card while a person selects the text in a field.
+ */
+export const EDIT_ITEMS: {
+  readonly undo: MenuItemSpec; readonly redo: MenuItemSpec
+  readonly delete: MenuItemSpec; readonly selectAll: MenuItemSpec
+} = {
+  undo: item('menu.undo', { type: 'undo' }, 'CmdOrCtrl+Z', ['scope']),
+  redo: item('menu.redo', { type: 'redo' }, 'Shift+CmdOrCtrl+Z', ['scope']),
+  delete: item('menu.editDelete', { type: 'deleteSelection' }, undefined, ['scope']),
+  selectAll: item('menu.editSelectAll', { type: 'selectAll' }, undefined, ['scope']),
+}
+
+/**
+ * Help, on both hosts: the manual in the app's language, and the shortcut
+ * overlay the `?` button opens. Check for Updates… sits under these on the
+ * desktop and is main's own, not a command (`appMenu.ts`).
+ */
+export const HELP_MENU: readonly MenuEntry[] = [
+  item('menu.userManual', { type: 'manual' }),
+  item('menu.shortcuts', { type: 'shortcuts' }, undefined, ['scope']),
 ]
 
 /**
@@ -100,6 +140,8 @@ export type MenuCapabilities = {
   readonly history: boolean
   /** Can a folder be chosen here at all? */
   readonly folders: boolean
+  /** Is a scope open, for the items that act on one? */
+  readonly scope: boolean
 }
 
 /**
@@ -123,7 +165,7 @@ export function offered(
       continue
     }
     if (!entry.on.includes(host)) continue
-    if (entry.needs && !can[entry.needs]) continue
+    if (entry.needs?.some((need) => !can[need])) continue
     kept.push(entry)
   }
   while (kept.length > 0 && kept[kept.length - 1].kind === 'separator') kept.pop()

@@ -23,7 +23,8 @@ import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { installAppMenu, reportTheme, sendCommand } from './appMenu'
+import { installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
+import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { log, logFilePath } from './log'
@@ -326,9 +327,14 @@ void app.whenReady().then(() => {
   registerAgentChannel()
   void startAgent()
 
+  // The name the app menu reads — About <name>, Hide <name> — from the one
+  // place the builder reads it too. Without this a development run says the
+  // package name, and a packaged one whatever the bundle happened to be called.
+  app.setName(productName)
   const menu = () => installAppMenu({
     recents: recentDirectories(),
     onCheckForUpdates: checkForUpdatesNow,
+    packaged: app.isPackaged,
   })
   menu()
 
@@ -345,6 +351,8 @@ void app.whenReady().then(() => {
 
   // The second fact the renderer reports, so the View menu's radio is right.
   ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) reportTheme(held) })
+  // And the third: whether a scope is open, so the items about one are enabled only while it is.
+  ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
 
   ipcMain.handle('app:listening', () => {
     listening = true

@@ -495,6 +495,7 @@ function renderApp(
         hostMenu={Boolean(commands)}
         onUnsavedWork={commands?.reportUnsaved}
         onThemeMode={commands?.reportTheme}
+        onScopeOpen={commands?.reportScopeOpen}
         history={shell.history}
         folderSettings={shell.folderSettings}
         updateSettings={shell.updateSettings}

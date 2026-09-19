@@ -37,7 +37,7 @@ marketplace partner's beside the common path, and the areas that serve it.*
 <sub>Version 2.1.0 · the release page also has a Windows ARM64 installer, a Linux AppImage and the notes.</sub></p>
 
 The desktop app checks that release page for a newer version in the background —
-switchable off, and **Check for Updates…** in the app menu asks on request. It
+switchable off, and **Check for Updates…** in the Help menu asks on request. It
 tells you and hands you the installer; it never installs anything behind your
 back.
 

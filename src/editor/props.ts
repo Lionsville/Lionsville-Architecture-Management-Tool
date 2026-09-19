@@ -63,6 +63,14 @@ export interface EditorHistory {
   redo(): void;
   canUndo: boolean;
   canRedo: boolean;
+  /**
+   * The host's menu bar carries ⌘Z and ⌘⇧Z and fires them itself, so the
+   * canvas must leave the two chords alone or every press undoes twice (on
+   * macOS a menu accelerator fires whether or not the page handled the key).
+   * The web, which has no menu bar, leaves this unset and the canvas keeps
+   * the keys.
+   */
+  keysOwnedByHost?: boolean;
 }
 
 /** Creating, renaming, duplicating and deleting the diagram tabs. */
@@ -192,6 +200,14 @@ export interface EditorHandle {
    * with {@link EditorRefused} when the window cannot draw.
    */
   capture(options: { bounds: Rect; pixelRatio: number; padding: number }): Promise<Blob>;
+  /**
+   * The three a host's Edit and Help menus ask for, as the keys do them: the
+   * selection to the same delete dialogs the Delete key reaches, everything
+   * on the board selected, and the shortcut overlay the `?` button opens.
+   */
+  deleteSelection(): void;
+  selectAll(): void;
+  showShortcuts(): void;
 }
 
 /** Why the editor would not do what the handle asked. */

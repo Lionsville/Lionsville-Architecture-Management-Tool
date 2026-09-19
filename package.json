@@ -1,5 +1,6 @@
 {
   "name": "lionsville-architecture-management-tool",
+  "productName": "Lionsville Architecture Management Tool",
   "private": true,
   "version": "0.0.0",
   "description": "Layer-7 application landscapes and the C4 container diagrams under them.",

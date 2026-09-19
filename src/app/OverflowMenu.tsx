@@ -21,7 +21,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
 import type { Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
-import { FILE_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
 
@@ -36,6 +36,7 @@ export function OverflowMenu({ themeMode, can, onCommand, s }: OverflowMenuProps
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
   const entries = offered(FILE_MENU, 'web', can)
+  const help = offered(HELP_MENU, 'web', can)
 
   return (
     <>
@@ -83,6 +84,14 @@ export function OverflowMenu({ themeMode, can, onCommand, s }: OverflowMenuProps
         <MenuItem onClick={choose(PREFERENCES_ITEM.command)}>
           <ListItemText primary={s(PREFERENCES_ITEM.label)} primaryTypographyProps={{ fontSize: 13 }} />
         </MenuItem>
+        {/* Help, under its own heading: the same two the desktop's Help menu carries. */}
+        {help.length > 0 && <Divider />}
+        {help.length > 0 && <ListSubheader sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>}
+        {help.map((entry) => (entry.kind === 'item' ? (
+          <MenuItem key={entry.label} onClick={choose(entry.command)}>
+            <ListItemText primary={s(entry.label)} primaryTypographyProps={{ fontSize: 13 }} />
+          </MenuItem>
+        ) : null))}
       </Menu>
     </>
   )

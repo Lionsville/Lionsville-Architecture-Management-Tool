@@ -17,7 +17,7 @@ export const EN = {
   'menu.noRecent': 'No Recent Folders',
   'menu.open': 'Open…',
   'menu.save': 'Save',
-  'menu.exportWorkingFile': 'Export Working File…',
+  'menu.exportWorkingFile': 'Save a Copy of the Working File…',
   'menu.snapshot': 'Snapshot…',
   'menu.history': 'History…',
   'menu.connectAgent': 'Connect an Agent…',
@@ -31,4 +31,14 @@ export const EN = {
   'menu.checkForUpdates': 'Check for Updates…',
   /** The web's overflow button, which carries the same list as the menu bar. */
   'menu.more': 'More',
+  // Edit: the four that are the app's, beside the clipboard roles.
+  'menu.edit': 'Edit',
+  'menu.undo': 'Undo',
+  'menu.redo': 'Redo',
+  'menu.editDelete': 'Delete',
+  'menu.editSelectAll': 'Select All',
+  // Help, on both hosts.
+  'menu.help': 'Help',
+  'menu.userManual': 'User Manual',
+  'menu.shortcuts': 'Keyboard Shortcuts…',
 } as const
