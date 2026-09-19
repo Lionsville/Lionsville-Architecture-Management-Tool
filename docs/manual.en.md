@@ -340,11 +340,19 @@ Bands resize by dragging their edge.
 palette or from the canvas menu, give it a colour, drag applications in, tidy it
 on its own. Removing a group leaves its elements where they are.
 
-**Container diagrams.** Double-click an application to open the container
-diagram underneath it, or to create one. The application becomes the boundary
-of that diagram and its components sit inside. The tabs at the top list the
-landscape and the container diagrams under it; right-click a tab to rename,
-duplicate, delete or open the **diagram settings**.
+**Container diagrams.** An application can have a container diagram
+underneath it: the application becomes the boundary of that diagram and its
+components sit inside. You make one on purpose — right-click the application
+and choose **Create container diagram**, or press the button of that name on
+the inspector's General tab — and it is a step in Activity like any other, so
+⌘Z takes it back. A card that has one carries a small mark; double-click the
+card to open it. Double-clicking never creates one. A landscape tab lists its
+container diagrams under a chevron: right-click an entry there, or press the
+chevron after the name once the diagram is open, to rename it, open its
+**diagram settings** or delete it. Deleting one takes its components with it
+and keeps the application. Right-click a landscape tab for the same menu, with
+duplicate as well. **Back to landscape** returns to the view exactly as you
+left it.
 
 Where those containers run is drawn around them: dashed **deployment boxes**,
 one per platform, nested the way the platforms nest — the namespace inside the

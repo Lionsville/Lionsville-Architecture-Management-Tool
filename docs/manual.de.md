@@ -381,12 +381,21 @@ eine aus der Palette oder aus dem Menü der Zeichenfläche hinzu, geben Sie ihr
 eine Farbe, ziehen Sie Anwendungen hinein, räumen Sie sie für sich auf. Eine
 Gruppe zu entfernen lässt ihre Elemente, wo sie sind.
 
-**Container-Diagramme.** Doppelklicken Sie eine Anwendung, um das
-Container-Diagramm darunter zu öffnen oder eines anzulegen. Die Anwendung wird
-zur Grenze dieses Diagramms, und ihre Komponenten sitzen darin. Die Reiter oben
-listen die Landschaft und die Container-Diagramme darunter; klicken Sie mit
-rechts auf einen Reiter, um umzubenennen, zu duplizieren, zu löschen oder die
-**Diagrammeinstellungen** zu öffnen.
+**Container-Diagramme.** Eine Anwendung kann ein Container-Diagramm unter
+sich haben: die Anwendung wird zur Grenze dieses Diagramms, und ihre
+Komponenten sitzen darin. Sie legen eines bewusst an — klicken Sie mit rechts
+auf die Anwendung und wählen Sie **Container-Diagramm erstellen**, oder drücken
+Sie die Schaltfläche dieses Namens auf dem Reiter Allgemein des Inspektors —
+und es ist ein Schritt in der Aktivität wie jeder andere, den ⌘Z zurücknimmt.
+Eine Karte, die eines hat, trägt eine kleine Marke; doppelklicken Sie die
+Karte, um es zu öffnen. Ein Doppelklick legt nie eines an. Ein Landschaftsreiter
+listet seine Container-Diagramme unter einem Pfeil: klicken Sie dort mit rechts
+auf einen Eintrag, oder drücken Sie den Pfeil hinter dem Namen, sobald das
+Diagramm offen ist, um es umzubenennen, seine **Diagrammeinstellungen** zu
+öffnen oder es zu löschen. Löschen nimmt die Komponenten mit und lässt die
+Anwendung stehen. Klicken Sie mit rechts auf einen Landschaftsreiter für
+dasselbe Menü, mit Duplizieren dazu. **Zurück zur Landschaft** bringt Sie
+genau zu der Ansicht zurück, die Sie verlassen haben.
 
 Wo diese Container laufen, wird um sie herum gezeichnet: gestrichelte
 **Deployment-Rahmen**, einer je Plattform, geschachtelt wie die Plattformen

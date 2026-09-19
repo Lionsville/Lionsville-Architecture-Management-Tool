@@ -350,12 +350,20 @@ der ien ta út it palet of út it tekenflakmenu, jou it in kleur, sleep der
 applikaasjes yn, rêd it op himsels op. In groep fuorthelje lit har eleminten
 stean dêr't se steane.
 
-**Containerdiagrammen.** Dûbelklik op in applikaasje om it containerdiagram
-dêrûnder te iepenjen, of om der ien te meitsjen. De applikaasje wurdt de grins
-fan dat diagram en har komponinten sitte deryn. De tabblêden boppe-oan neame it
-lânskip en de containerdiagrammen dêrûnder; rjochtsklik op in tabblêd om it om
-te neamen, te duplisearjen, fuort te smiten of de **diagramynstellingen** te
-iepenjen.
+**Containerdiagrammen.** In applikaasje kin in containerdiagram ûnder har
+hawwe: de applikaasje wurdt de grins fan dat diagram en har komponinten sitte
+deryn. Do makkest der mei opsetsin ien — rjochtsklik op de applikaasje en kies
+**Containerdiagram meitsje**, of druk op de knop mei dy namme op it tabblêd
+Algemien fan de ynspektor — en it is in stap yn Aktiviteit lykas elke oare,
+dus ⌘Z nimt it werom. In kaart dy't der ien hat draacht in lyts merkteken;
+dûbelklik op de kaart om it te iepenjen. Dûbelklikken makket der nea ien. In
+lânskipstabblêd neamt syn containerdiagrammen ûnder in pylkje: rjochtsklik dêr
+op in rigel, of druk op it pylkje efter de namme sa gau't it diagram iepen is,
+om it om te neamen, de **diagramynstellingen** te iepenjen of it fuort te
+smiten. Fuortsmiten nimt de komponinten mei en lit de applikaasje stean.
+Rjochtsklik op in lânskipstabblêd foar itselde menu, mei duplisearjen derby.
+**Werom nei it lânskip** bringt dy werom nei de werjefte krekt sa'tsto dy
+ferlietst.
 
 Wêr't dy containers rinne wurdt deromhinne tekene: stipele **deploymentramten**,
 ien de platfoarm, nestele sa't de platfoarmen nestele binne — de namespace yn it

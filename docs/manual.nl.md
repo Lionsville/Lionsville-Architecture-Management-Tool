@@ -354,12 +354,20 @@ vergroot je door aan hun rand te slepen.
 een toe uit het palet of het plaatmenu, geef hem een kleur, sleep applicaties
 erin, leg hem apart netjes. Een groep weghalen laat zijn elementen staan.
 
-**Containerdiagrammen.** Dubbelklik op een applicatie om het containerdiagram
-eronder te openen, of er een te maken. De applicatie wordt de grens van dat
-diagram en haar componenten staan erin. De tabbladen bovenin tonen het
-landschap en de containerdiagrammen eronder; rechtsklik een tabblad om te
-hernoemen, te dupliceren, te verwijderen of de **diagraminstellingen** te
-openen.
+**Containerdiagrammen.** Een applicatie kan een containerdiagram onder zich
+hebben: de applicatie wordt de grens van dat diagram en haar componenten staan
+erin. Je maakt er bewust een — rechtsklik de applicatie en kies
+**Containeraanzicht maken**, of druk op de knop met die naam op het tabblad
+Algemeen van de inspector — en het is een stap in Activiteit als elke andere,
+dus ⌘Z neemt het terug. Een kaart die er een heeft draagt een klein merkteken;
+dubbelklik de kaart om het te openen. Dubbelklikken maakt er nooit een. Een
+landschapstabblad toont zijn containerdiagrammen onder een pijltje: rechtsklik
+daar op een regel, of druk op het pijltje achter de naam zodra het diagram open
+is, om het te hernoemen, de **diagraminstellingen** te openen of het te
+verwijderen. Verwijderen neemt de componenten mee en laat de applicatie staan.
+Rechtsklik een landschapstabblad voor hetzelfde menu, met dupliceren erbij.
+**Terug naar het landschap** brengt je terug naar het aanzicht precies zoals je
+het verliet.
 
 Waar die containers draaien wordt eromheen getekend: gestippelde
 **deploymentkaders**, één per platform, genest zoals de platformen genest zijn
