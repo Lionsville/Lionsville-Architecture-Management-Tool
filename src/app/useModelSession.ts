@@ -179,6 +179,14 @@ export function useModelSession(deps: {
   logoRef.current = logoLibrary
   const imageRef = useRef(imageLibrary)
   imageRef.current = imageLibrary
+  /**
+   * What the scope says about itself that no edit here touches: its kind, who
+   * its drawings are addressed to, its links. The organisation screen writes
+   * these; the session only carries them, so that an autosave writes back the
+   * scope it was opened as. Left out, the first autosave after "this scope is
+   * a team" wrote a `scope.json` with no kind, and the setting was forgotten.
+   */
+  const headerRef = useRef(scopeHeader(initialProject))
 
   /**
    * The arrays for one indexed model, kept until that model is replaced. Not a
@@ -355,6 +363,7 @@ export function useModelSession(deps: {
     setLogoLibrary(project.logoLibrary)
     imageRef.current = project.imageLibrary ?? []
     setImageLibrary(project.imageLibrary ?? [])
+    headerRef.current = scopeHeader(project)
     if (remount) setEditorKey((k) => k + 1)
   }, [setActiveDiagramId, asArrays])
 
@@ -367,6 +376,7 @@ export function useModelSession(deps: {
   const path = initialProject.path
   const snapshot = useCallback((): ScopeSnapshot => ({
     path,
+    ...headerRef.current,
     model: toArrays(modelRef.current),
     activeDiagramId: activeRef.current,
     logoLibrary: logoRef.current,
@@ -391,6 +401,18 @@ export function useModelSession(deps: {
     currentLibrary: () => logoRef.current,
     currentImages: () => imageRef.current,
     snapshot, adopt,
+  }
+}
+
+/**
+ * The fields of a scope that are about the scope rather than its document,
+ * absent where absent so the file is written back as it was read.
+ */
+function scopeHeader(project: ScopeSnapshot): Pick<ScopeSnapshot, 'kind' | 'client' | 'links'> {
+  return {
+    ...(project.kind !== undefined ? { kind: project.kind } : {}),
+    ...(project.client !== undefined ? { client: project.client } : {}),
+    ...(project.links !== undefined ? { links: project.links } : {}),
   }
 }
 

@@ -166,6 +166,28 @@ describe('useModelSession — the snapshot', () => {
     act(() => session().setLogoLibrary([{ key: 'lib:house', label: 'house', url: 'data:,' }]))
     expect(session().snapshot().logoLibrary).toHaveLength(1)
   })
+
+  it('writes the scope back as the scope it was opened as: kind, client, links', () => {
+    // The organisation screen sets these; an autosave from the editor must not
+    // erase them. It did: a team became a scope of no kind on the first edit.
+    const opened = project({
+      kind: 'team', client: 'Acme BV', links: [{ label: 'Wiki', url: 'https://example.test/wiki' }],
+    })
+    const { session } = mount(opened)
+    act(() => { session().dispatch(rename('Renamed')) })
+    const written = session().snapshot()
+    expect(written.kind).toBe('team')
+    expect(written.client).toBe('Acme BV')
+    expect(written.links).toEqual(opened.links)
+  })
+
+  it('takes the header of a project it adopts, and drops one it no longer has', () => {
+    const { session } = mount(project({ kind: 'team', client: 'Acme BV' }))
+    act(() => session().adopt(project({ kind: 'domain' }), false))
+    const written = session().snapshot()
+    expect(written.kind).toBe('domain')
+    expect(written).not.toHaveProperty('client')
+  })
 })
 
 /**
