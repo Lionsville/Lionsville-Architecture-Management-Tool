@@ -65,6 +65,7 @@ import { useContextMenu, type ContextMenuState, type MenuOpenEvent } from './use
 import { dispatchMenuAction, type MenuActionHost } from './useMenuActions';
 import { GRID_SIZE } from './gridSize';
 import { isRectFullyVisible, toRect } from './viewportFit';
+import { ViewportMemory, type Viewport } from './viewportMemory';
 import { useDragRoutePreview } from './useDragRoutePreview';
 import { NodeResizeContext, type NodeResizeApi } from './NodeResizeContext';
 import { RouteEditingContext, type RouteEditingApi } from './RouteEditingContext';
@@ -302,6 +303,8 @@ export interface DiagramCanvasProps {
    */
   onPaletteDragOver?(position: Point | null): void;
   onElementDoubleClick?(elementId: ElementId): void;
+  /** The element menu's *Create container diagram*; absent under `readOnly`. */
+  onCreateContainer?(elementId: ElementId): void;
   /**
    * A double-click on a LINE, on a landscape: the way down to where the
    * interface lands (ADR-0013). Absent leaves the double-click adding a bend,
@@ -429,8 +432,30 @@ export function parseDragPayload(raw: string): DragPayload {
 export function DiagramCanvas(props: DiagramCanvasProps) {
   const theme = useTheme();
   const tokens = getNodeTokens(theme);
-  const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getZoom } =
+  const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getZoom, setViewport } =
     useReactFlow();
+
+  // Where each diagram was left, for the session (`viewportMemory.ts`): the
+  // one canvas draws every diagram, so the transform has to be put back by
+  // hand when the diagram under it changes. The id in force is read through a
+  // ref so a change React Flow reports after the switch is filed under the
+  // diagram that is now up rather than the one the callback was made for.
+  const viewports = useRef(new ViewportMemory());
+  const viewportOwner = useRef(props.diagram.id);
+  viewportOwner.current = props.diagram.id;
+  const shownDiagram = useRef(props.diagram.id);
+  useEffect(() => {
+    if (shownDiagram.current === props.diagram.id) return;
+    shownDiagram.current = props.diagram.id;
+    const kept = viewports.current.recall(props.diagram.id);
+    // The nodes of the new diagram are measured a frame later; fitting before
+    // that frames nothing. A kept transform needs no measurement.
+    if (kept) void setViewport(kept);
+    else requestAnimationFrame(() => void fitView({ padding: 0.1 }));
+  }, [props.diagram.id, fitView, setViewport]);
+  const handleViewportChange = useCallback((viewport: Viewport) => {
+    viewports.current.keep(viewportOwner.current, viewport);
+  }, []);
 
   // Which nodes are mid-drag, for the waypoint-free preview. React Flow reports
   // drag state on every position change, so this is read from the changes rather
@@ -887,7 +912,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     [onAddByDrop, onAddDomainGroupByDrop, onPaletteDragOver, screenToFlowPosition],
   );
 
-  const { onElementDoubleClick } = props;
+  const { onElementDoubleClick, onCreateContainer } = props;
   const handleNodeDoubleClick = useCallback(
     (_event: unknown, node: Node) => onElementDoubleClick?.(node.id),
     [onElementDoubleClick],
@@ -1318,6 +1343,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       addExistingAt: onAddExistingAt ? (position) => onAddExistingAt({ position }) : undefined,
       resolveDrop,
       openApplication: onElementDoubleClick,
+      createContainer: onCreateContainer,
       openDocumentation: onOpenDocumentation,
       requestRename: onRequestRename,
       requestDelete: onRequestDeleteElement,
@@ -1356,6 +1382,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       onAddExistingAt,
       resolveDrop,
       onElementDoubleClick,
+      onCreateContainer,
       onOpenDocumentation,
       onRequestRename,
       onRequestDeleteElement,
@@ -1574,6 +1601,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           snapGrid={[GRID_SIZE, GRID_SIZE]}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onViewportChange={handleViewportChange}
           onSelectionChange={handleSelectionChange}
           onPaneClick={handlePaneClick}
           onNodeDragStart={handleNodeDragStart}

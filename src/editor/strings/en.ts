@@ -238,6 +238,8 @@ export const EN = {
   'toolbar.containerView': 'Container view',
   'toolbar.backTo': 'Back to {name}',
   'toolbar.backToLandscape': 'Back to landscape',
+  'toolbar.containerMenu': 'Rename, settings or delete this container diagram',
+  'toolbar.containerMenuOf': 'Menu of the container diagram of {name}',
 
   // --- canvas --------------------------------------------------------------
   'canvas.connectHint': 'Click a target element — Esc cancels',
@@ -341,6 +343,7 @@ export const EN = {
   'field.detailOne': 'Detail: 1 interface on the container diagram · {protocols}',
   'field.detailOther': 'Detail: {count} interfaces on the container diagram · {protocols}',
   'field.detailOpen': 'Open',
+  'field.noContainer': 'Nothing is drawn inside it yet. A container diagram is where its components go.',
   'field.newInterface': 'New interface',
   'field.detachFrom': 'Detach from “{label}”',
   'field.technologyHelp': 'What it is built out of: OpenAPI 3, a Kafka topic, an SFTP drop',

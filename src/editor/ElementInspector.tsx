@@ -159,6 +159,14 @@ export interface ElementInspectorProps {
   /** The technology the rest of the organisation defines, for *Hosted on* (ADR-0017). */
   technology?: EditorOwnership['technology'];
   /**
+   * Make this application's container diagram. Offered as a button on the
+   * General tab of an application that has none, because a view is made on
+   * purpose: a double-click on the card only OPENS one (`doubleClick.ts`),
+   * and a card with nothing inside gives no hint — this button is the hint.
+   * Absent where the host cannot, and under `readOnly`.
+   */
+  onCreateContainer?(elementId: ElementId): void;
+  /**
    * For an application or a container: what it leverages, as the host works
    * it out over the whole tree (ADR-0014). Absent = read off this scope's own
    * rows, which is the answer a shell with no tree can give.
@@ -247,6 +255,13 @@ export function ElementInspector(props: ElementInspectorProps) {
   ];
   const isBoundaryApp =
     props.diagram.kind === 'container' && props.diagram.applicationElementId === element.id;
+  // A definition this scope draws the inside of, with no inside drawn yet. A
+  // stand-in's inside is the owning scope's business (ADR-0012 §3).
+  const offerContainer = Boolean(props.onCreateContainer)
+    && !readOnly
+    && element.kind === 'application'
+    && element.ref === undefined
+    && !props.model.diagrams.some((d) => d.kind === 'container' && d.applicationElementId === element.id);
 
   const setAspectCount = aspectConfig.filter((entry) => element.aspects[entry.key]).length;
   // What the rows say about the platform where nobody typed it (ADR-0013),
@@ -692,6 +707,21 @@ export function ElementInspector(props: ElementInspectorProps) {
                   )}
                 />
               )}
+            </Box>
+          )}
+
+          {offerContainer && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                {t('field.noContainer')}
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => props.onCreateContainer?.(element.id)}
+              >
+                {t('menu.createContainer')}
+              </Button>
             </Box>
           )}
         </Box>

@@ -229,6 +229,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.containerView': 'Containeraanzicht',
   'toolbar.backTo': 'Terug naar {name}',
   'toolbar.backToLandscape': 'Terug naar het landschap',
+  'toolbar.containerMenu': 'Dit containeraanzicht hernoemen, instellen of verwijderen',
+  'toolbar.containerMenuOf': 'Menu van het containeraanzicht van {name}',
 
   'canvas.connectHint': 'Klik een doelelement aan — Esc annuleert',
   'canvas.gridOn': 'Raster: aan',
@@ -328,6 +330,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.detailOne': 'Detail: 1 koppelvlak op het containerdiagram · {protocols}',
   'field.detailOther': 'Detail: {count} koppelvlakken op het containerdiagram · {protocols}',
   'field.detailOpen': 'Openen',
+  'field.noContainer': 'Er is nog niets in getekend. Een containeraanzicht is waar haar componenten staan.',
   'field.newInterface': 'Nieuw koppelvlak',
   'field.detachFrom': 'Losmaken van “{label}”',
   'field.technologyHelp': 'Waar het van gemaakt is: OpenAPI 3, een Kafka-topic, een SFTP-drop',

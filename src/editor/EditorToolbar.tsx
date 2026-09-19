@@ -201,8 +201,12 @@ export function EditorToolbar(props: EditorToolbarProps) {
   // one control doubles as its own key (plan D4).
   const [legendAnchor, setLegendAnchor] = useState<HTMLElement | null>(null);
   // Right-click on a Layer 7 tab: the diagram menu, built by the same pure
-  // builder as the canvas menus and drawn by the same component.
-  const [tabMenu, setTabMenu] = useState<{ diagramId: string; screen: Point } | null>(null);
+  // builder as the canvas menus and drawn by the same component. A container
+  // diagram has no tab, so the same menu opens from its entry in the
+  // container-views dropdown and from its own header: a container view is a
+  // tab in everything but shape, and rename, settings and delete are what a
+  // tab offers.
+  const [tabMenu, setTabMenu] = useState<{ diagramId: string; kind: DesignDiagram['kind']; screen: Point } | null>(null);
   const [duplicateAsOf, setDuplicateAsOf] = useState<{ diagramId: string; day: string } | null>(null);
   const [newMenu, setNewMenu] = useState<HTMLElement | null>(null);
   const platform = useMemo(() => detectPlatform(), []);
@@ -215,30 +219,41 @@ export function EditorToolbar(props: EditorToolbarProps) {
               readOnly: props.readOnly,
               platform,
               t,
-              diagramKind: 'layer7',
+              diagramKind: tabMenu.kind,
               tab: {
                 canRename: Boolean(props.onRenameDiagram),
                 canConfigure: Boolean(props.onOpenDiagramSettings),
-                canDuplicate: Boolean(props.onDuplicateDiagram),
+                // A second container view about the same application would be
+                // two answers to "what is inside it"; the finder takes the first.
+                canDuplicate: Boolean(props.onDuplicateDiagram) && tabMenu.kind !== 'container',
                 canDelete: Boolean(props.onDeleteDiagram),
                 canHistory: Boolean(props.onDiagramHistory),
-                isLastLandscape: layer7Diagrams.length <= 1,
+                isLastLandscape: tabMenu.kind === 'layer7' && layer7Diagrams.length <= 1,
               },
             },
           )
         : [],
     [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, props.onDiagramHistory, layer7Diagrams.length],
   );
+  const hasTabMenu = !props.readOnly && Boolean(
+    props.onRenameDiagram || props.onOpenDiagramSettings
+      || props.onDuplicateDiagram || props.onDeleteDiagram || props.onDiagramHistory);
   const openTabMenu = (event: React.MouseEvent, diagramId: string) => {
-    if (props.readOnly) return;
-    if (!props.onRenameDiagram && !props.onOpenDiagramSettings
-      && !props.onDuplicateDiagram && !props.onDeleteDiagram && !props.onDiagramHistory) return;
+    if (!hasTabMenu) return;
     event.preventDefault();
-    setTabMenu({ diagramId, screen: { x: event.clientX, y: event.clientY } });
+    const kind = props.model.diagrams.find((d) => d.id === diagramId)?.kind ?? 'layer7';
+    setTabMenu({ diagramId, kind, screen: { x: event.clientX, y: event.clientY } });
+  };
+  /** The same menu from a button rather than a right-click: it opens under the button. */
+  const openTabMenuBelow = (element: HTMLElement, diagramId: string) => {
+    if (!hasTabMenu) return;
+    const box = element.getBoundingClientRect();
+    const kind = props.model.diagrams.find((d) => d.id === diagramId)?.kind ?? 'layer7';
+    setTabMenu({ diagramId, kind, screen: { x: box.left, y: box.bottom } });
   };
   const handleTabMenuSelect = (item: MenuItemModel) => {
     if (!tabMenu) return;
-    const diagram = tabs.find((d) => d.id === tabMenu.diagramId);
+    const diagram = props.model.diagrams.find((d) => d.id === tabMenu.diagramId);
     if (!diagram) return;
     switch (item.action) {
       case 'rename-diagram':
@@ -277,11 +292,22 @@ export function EditorToolbar(props: EditorToolbarProps) {
       }}
     >
       {isContainer ? (
-        <Breadcrumb
-          model={props.model}
-          activeDiagram={props.activeDiagram}
-          onActiveDiagramChange={props.onActiveDiagramChange}
-        />
+        <>
+          <Breadcrumb
+            model={props.model}
+            activeDiagram={props.activeDiagram}
+            onActiveDiagramChange={props.onActiveDiagramChange}
+            onMenu={hasTabMenu ? openTabMenuBelow : undefined}
+          />
+          <ContextMenu
+            open={tabMenu !== null}
+            position={tabMenu?.screen ?? null}
+            items={tabMenuItems}
+            onSelect={handleTabMenuSelect}
+            onClose={() => setTabMenu(null)}
+            ariaLabel={t('menu.tabLabel')}
+          />
+        </>
       ) : (
         <>
           <Tabs
@@ -310,6 +336,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
                     model={props.model}
                     onActiveDiagramChange={props.onActiveDiagramChange}
                     onOpenDiagramSettings={props.readOnly ? undefined : props.onOpenDiagramSettings}
+                    onContainerMenu={hasTabMenu ? openTabMenu : undefined}
                   />
                 }
               />
@@ -758,12 +785,18 @@ function TabLabel({
   model,
   onActiveDiagramChange,
   onOpenDiagramSettings,
+  onContainerMenu,
 }: {
   diagram: DesignDiagram;
   model: DesignModel;
   onActiveDiagramChange(diagramId: string): void;
   /** Absent when the host offers no settings, and when the editor is read-only. */
   onOpenDiagramSettings?(diagramId: string): void;
+  /**
+   * Right-click on a container view's entry: the diagram menu a tab has,
+   * for a view that has no tab. Absent where there is no menu to offer.
+   */
+  onContainerMenu?(event: React.MouseEvent, diagramId: string): void;
 }) {
   const { t } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -823,6 +856,14 @@ function TabLabel({
                   setAnchor(null);
                   onActiveDiagramChange(container.id);
                 }}
+                onContextMenu={onContainerMenu && ((event: React.MouseEvent) => {
+                  // The dropdown is a portal in the DOM and a child of the tab
+                  // in React's tree, so without this the tab's own right-click
+                  // handler fires next and opens the landscape's menu instead.
+                  event.stopPropagation();
+                  setAnchor(null);
+                  onContainerMenu(event, container.id);
+                })}
               >
                 <ListItemText
                   primary={nameOf(container)}
@@ -860,10 +901,17 @@ function Breadcrumb({
   model,
   activeDiagram,
   onActiveDiagramChange,
+  onMenu,
 }: {
   model: DesignModel;
   activeDiagram: DesignDiagram;
   onActiveDiagramChange(diagramId: string): void;
+  /**
+   * This view's own menu — rename, settings, delete — under a chevron after
+   * its name, because a container diagram has no tab to right-click. Absent
+   * under `readOnly` and where the host offers none of the three.
+   */
+  onMenu?(anchor: HTMLElement, diagramId: string): void;
 }) {
   const { t } = useStrings();
   const application = model.elements.find((e) => e.id === activeDiagram.applicationElementId);
@@ -908,6 +956,18 @@ function Breadcrumb({
       <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
         {application?.name ?? activeDiagram.name}
       </Typography>
+      {onMenu && (
+        <Tooltip title={t('toolbar.containerMenu')}>
+          <IconButton
+            size="small"
+            aria-label={t('toolbar.containerMenuOf', { name: application?.name ?? activeDiagram.name })}
+            aria-haspopup="menu"
+            onClick={(event) => onMenu(event.currentTarget, activeDiagram.id)}
+          >
+            <CaretIcon />
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   );
 }

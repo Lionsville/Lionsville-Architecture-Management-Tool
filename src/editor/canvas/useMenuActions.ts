@@ -58,6 +58,8 @@ export interface MenuActionHost {
   resolveDrop?(elementId: ElementId, center: Point): Pick<PlacementMove, 'zone' | 'group'>;
   /** The double-click path: open or create the application's container diagram. */
   openApplication?(elementId: ElementId): void;
+  /** Make the application's container diagram, on purpose (the menu's *Create container diagram*). */
+  createContainer?(elementId: ElementId): void;
   /** "Open documentation": the editor shows the element's page. */
   openDocumentation?(elementId: ElementId): void;
   requestRename?(elementId: ElementId): void;
@@ -132,6 +134,9 @@ export function dispatchMenuAction(item: MenuItem, state: ContextMenuState, host
     // --- node -----------------------------------------------------------------
     case 'open-container':
       if (elementId) host.openApplication?.(elementId);
+      return;
+    case 'create-container':
+      if (elementId) host.createContainer?.(elementId);
       return;
     case 'open-documentation':
       if (elementId) host.openDocumentation?.(elementId);

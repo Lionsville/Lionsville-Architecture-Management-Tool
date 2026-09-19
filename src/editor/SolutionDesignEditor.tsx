@@ -1111,24 +1111,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
   /**
    * The way down from a landscape line (ADR-0013): where this interface
    * actually arrives, with its landings selected — the target's container
-   * diagram, the source's failing that, and an offer to make the target's
-   * where neither exists.
+   * diagram, the source's failing that, and nothing where neither exists.
    */
   const handleLineDoubleClick = useCallback(
     (relationId: string) => {
       if (!activeDiagram) return;
       const target = lineDoubleClickTarget(state.model, activeDiagram, relationId);
       if (!target) return;
-      if (target.kind === 'newContainer') {
-        if (!readOnly) props.diagrams.onCreateContainer(target.applicationId);
-        return;
-      }
       // Selected first, then the switch: the selection is pruned by what the
       // model holds rather than by what the board draws, so it survives.
       state.setSelection({ elementIds: [], connectionIds: [...target.select], domainGroups: [] });
       props.document.onActiveDiagramChange(target.diagramId);
     },
-    [state, activeDiagram, readOnly, props.diagrams, props.document],
+    [state, activeDiagram, props.document],
   );
 
   const handleDoubleClick = useCallback(
@@ -1138,7 +1133,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
         case 'documentation': openDocumentation(elementId); return;
         case 'owner': target.show(); return;
         case 'container': props.document.onActiveDiagramChange(target.diagramId); return;
-        case 'newContainer': props.diagrams.onCreateContainer(elementId); return;
         // A page, not a board: handed to the host, which draws it (ADR-0013).
         // A report, not a board: handed to the host, which draws it (ADR-0013).
         case 'platformReport': props.diagrams.onOpenPlatformReport?.(target.platformId); return;
@@ -1420,6 +1414,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           showEdgeLabels={exportOptions ? exportOptions.showLabels : showEdgeLabels}
           mountEveryElement={capturing || exportOptions !== undefined}
           onElementDoubleClick={handleDoubleClick}
+          onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
           onLineDoubleClick={handleLineDoubleClick}
           showDeployment={showDeployment}
           platformTree={props.ownership?.platformTree}
@@ -1477,6 +1472,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               offeredBeyond={props.ownership?.offeredBeyond?.(state.selectedElement.id)}
               leverage={props.ownership?.leverageOf?.(state.selectedElement.id)}
               technology={props.ownership?.technology}
+              onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
             />
           ) : state.selectedConnection ? (
             <ConnectionInspector
@@ -1692,6 +1688,7 @@ function CanvasForDiagram({
   showEdgeLabels,
   mountEveryElement,
   onElementDoubleClick,
+  onCreateContainer,
   onLineDoubleClick,
   onOpenDocumentation,
   showDeployment,
@@ -1732,6 +1729,7 @@ function CanvasForDiagram({
   /** See `DiagramCanvasProps.mountEveryElement`: true while a PNG is captured. */
   mountEveryElement: boolean;
   onElementDoubleClick(elementId: ElementId): void;
+  onCreateContainer?(elementId: ElementId): void;
   /** The way down from a landscape line (ADR-0013). */
   onLineDoubleClick(relationId: string): void;
   onOpenDocumentation(elementId: ElementId): void;
@@ -1781,6 +1779,7 @@ function CanvasForDiagram({
     showEdgeLabels,
     mountEveryElement,
     onElementDoubleClick,
+    onCreateContainer,
     onLineDoubleClick,
     onOpenDocumentation,
     overlayTints,

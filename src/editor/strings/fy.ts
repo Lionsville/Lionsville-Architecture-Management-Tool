@@ -229,6 +229,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'toolbar.containerView': 'Containerwerjefte',
   'toolbar.backTo': 'Werom nei {name}',
   'toolbar.backToLandscape': 'Werom nei it lânskip',
+  'toolbar.containerMenu': 'Dit containerdiagram omneame, ynstelle of fuortsmite',
+  'toolbar.containerMenuOf': 'Menu fan it containerdiagram fan {name}',
 
   'canvas.connectHint': 'Klik in doelelemint oan — Esc annulearret',
   'canvas.gridOn': 'Roaster: oan',
@@ -328,6 +330,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'field.detailOne': 'Detail: 1 keppelflak op it containerdiagram · {protocols}',
   'field.detailOther': 'Detail: {count} keppelflakken op it containerdiagram · {protocols}',
   'field.detailOpen': 'Iepenje',
+  'field.noContainer': 'Der is noch neat yn tekene. In containerdiagram is wêr\'t har komponinten steane.',
   'field.newInterface': 'Nij keppelflak',
   'field.detachFrom': 'Losmeitsje fan “{label}”',
   'field.technologyHelp': 'Wêr\'t it fan makke is: OpenAPI 3, in Kafka-topic, in SFTP-drop',

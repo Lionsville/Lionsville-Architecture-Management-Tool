@@ -485,7 +485,25 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     expect(landed().edgeRoutes.find((r) => r.relationId === 'c1')?.waypoints.length).toBe(2);
   });
 
-  it('offers to make the target\'s container diagram when neither end has one', async () => {
+  it('makes nothing for a double-click on a card that has no container diagram', async () => {
+    // The count is the whole assertion: a view that appeared here would be
+    // one the person never asked for, outside what they were doing.
+    const model = modelWithPlacement('d1');
+    model.diagrams = model.diagrams.filter((d) => d.kind !== 'container');
+    const onCreateContainerDiagram = vi.fn();
+    const onActiveDiagramChange = vi.fn();
+    const { host } = renderEditor({ model, onCreateContainerDiagram, onActiveDiagramChange });
+
+    fireEvent.doubleClick(await screen.findByText('Webshop'));
+
+    expect(onCreateContainerDiagram).not.toHaveBeenCalled();
+    expect(onActiveDiagramChange).not.toHaveBeenCalled();
+    expect(host.current.model.diagrams).toHaveLength(1);
+  });
+
+  it('makes nothing when neither end has a container diagram', async () => {
+    // A view is made on purpose, from the menu or the inspector; a gesture
+    // that reads as "look inside" must not leave one behind.
     const model = routedModel('auto');
     model.diagrams = model.diagrams.filter((d) => d.kind !== 'container');
     const onCreateContainerDiagram = vi.fn();
@@ -493,7 +511,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
 
     fireEvent.doubleClick(await screen.findByTestId('rf__edge-c1'));
 
-    expect(onCreateContainerDiagram).toHaveBeenCalledWith('b1');
+    expect(onCreateContainerDiagram).not.toHaveBeenCalled();
   });
 });
 

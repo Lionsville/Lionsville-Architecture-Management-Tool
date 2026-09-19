@@ -8,6 +8,14 @@
  * else's application, and the owning scope's is the one that says what is
  * inside. A stand-in nobody defines has nowhere to go and falls through to
  * what a definition gets.
+ *
+ * A double-click OPENS and never makes. It used to seed a container diagram
+ * for an application that had none, which is a new view in the model made by
+ * a gesture that reads as "look inside" — and the first thing a person did
+ * with the view they had not asked for was look for a way to delete it. An
+ * application with nothing inside answers `undefined` here: the menu's
+ * *Create container diagram* and the inspector's button are where one is
+ * made, on purpose, and both go through the same command.
  */
 import { refinementsOf } from '../model';
 import type { DesignDiagram, DesignElement, ElementId, Relation } from '../model';
@@ -17,7 +25,6 @@ export type DoubleClickTarget =
   | { kind: 'documentation' }
   | { kind: 'owner'; show: () => void }
   | { kind: 'container'; diagramId: string }
-  | { kind: 'newContainer' }
   /** A platform's report (ADR-0013): what would be left standing if it went. */
   | { kind: 'platformReport'; platformId: ElementId }
   /** A service's report (ADR-0014): what would be stranded if it were withdrawn. */
@@ -44,7 +51,7 @@ export function doubleClickTarget(
   const existing = model.diagrams.find(
     (d) => d.kind === 'container' && d.applicationElementId === elementId,
   );
-  return existing ? { kind: 'container', diagramId: existing.id } : { kind: 'newContainer' };
+  return existing ? { kind: 'container', diagramId: existing.id } : undefined;
 }
 
 
@@ -60,16 +67,16 @@ export function doubleClickTarget(
  * The target first because that is where an interface lands — the source calls
  * and the target answers — and the source second rather than nowhere, since a
  * line whose target has no container diagram and whose source has one still
- * has somewhere to go. Neither: an offer to make the target's, which is what a
- * double-click on the application itself would give.
+ * has somewhere to go. Neither: nothing, for the reason a double-click on the
+ * card makes nothing — a view is made on purpose, from the menu or the
+ * inspector, never as the side effect of looking for one.
  *
  * Only on a landscape. On a container diagram a double-click on a line adds a
  * bend, which is what it has always done and what a line being drawn there
  * needs.
  */
 export type LineDoubleClickTarget =
-  | { kind: 'container'; diagramId: string; select: readonly string[] }
-  | { kind: 'newContainer'; applicationId: ElementId };
+  | { kind: 'container'; diagramId: string; select: readonly string[] };
 
 export function lineDoubleClickTarget(
   model: {
@@ -89,15 +96,6 @@ export function lineDoubleClickTarget(
   for (const end of [relation.targetId, relation.sourceId]) {
     const view = containerFor(end);
     if (view) return { kind: 'container', diagramId: view.id, select };
-  }
-  // A record another scope answers for is not ours to open up (ADR-0012 §3):
-  // a container diagram made here would be a second one about somebody else's
-  // application, which is the rule a double-click on the card already obeys.
-  for (const end of [relation.targetId, relation.sourceId]) {
-    const element = model.elements.find((e) => e.id === end);
-    if (element?.kind === 'application' && element.ref === undefined) {
-      return { kind: 'newContainer', applicationId: end };
-    }
   }
   return undefined;
 }

@@ -229,6 +229,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.containerView': 'Container-Ansicht',
   'toolbar.backTo': 'Zurück zu {name}',
   'toolbar.backToLandscape': 'Zurück zur Landschaft',
+  'toolbar.containerMenu': 'Dieses Container-Diagramm umbenennen, einstellen oder löschen',
+  'toolbar.containerMenuOf': 'Menü des Container-Diagramms von {name}',
 
   'canvas.connectHint': 'Klicken Sie ein Zielelement an — Esc bricht ab',
   'canvas.gridOn': 'Raster: an',
@@ -328,6 +330,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.detailOne': 'Detail: 1 Schnittstelle im Containerdiagramm · {protocols}',
   'field.detailOther': 'Detail: {count} Schnittstellen im Containerdiagramm · {protocols}',
   'field.detailOpen': 'Öffnen',
+  'field.noContainer': 'Darin ist noch nichts gezeichnet. Ein Container-Diagramm ist, wo ihre Komponenten stehen.',
   'field.newInterface': 'Neue Schnittstelle',
   'field.detachFrom': 'Von „{label}“ lösen',
   'field.technologyHelp': 'Woraus sie gebaut ist: OpenAPI 3, ein Kafka-Topic, ein SFTP-Ablageort',

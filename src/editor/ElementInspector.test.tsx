@@ -86,6 +86,8 @@ function renderInspector(
     leverage?: LeverageLine;
     /** The technology the rest of the organisation defines (ADR-0017). */
     technology?: ElementInspectorProps['technology'];
+    /** Make the application's container diagram, on purpose. */
+    onCreateContainer?: (id: string) => void;
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -108,6 +110,7 @@ function renderInspector(
         owned={opts.owned}
         layout={opts.layout}
         onOpenDocumentation={opts.onOpenDocumentation}
+        onCreateContainer={opts.onCreateContainer}
         offeredBeyond={opts.offeredBeyond}
         leverage={opts.leverage}
         technology={opts.technology}
@@ -776,5 +779,50 @@ describe('ElementInspector — a platform and a service, authored', () => {
     expect(selectDisabled('Part of')).toBe(true);
     expect(selectDisabled('Maintained by')).toBe(true);
     expect((within(screen.getByTestId('element-realises')).getByRole('combobox') as HTMLInputElement).disabled).toBe(true);
+  });
+});
+
+/**
+ * A container diagram is made on purpose. A double-click on the card only
+ * opens one, so the card with nothing inside gives no hint — the General tab
+ * carries the button, and only where making one is this scope's to do.
+ */
+describe('Create container diagram on the General tab', () => {
+  it('is offered for an application that has none, and asks the host by id', () => {
+    const onCreateContainer = vi.fn();
+    renderInspector(element(), { onCreateContainer });
+    fireEvent.click(screen.getByText('Create container diagram'));
+    expect(onCreateContainer).toHaveBeenCalledWith('e1');
+    expect(screen.getByText(/Nothing is drawn inside it yet/).textContent).toContain('container diagram');
+  });
+
+  it('is absent once the application has one, for a stand-in, for another kind, and read-only', () => {
+    const onCreateContainer = vi.fn();
+    const cd = laidOut({ id: 'cd1', kind: 'container', name: 'Inside', applicationElementId: 'e1', placements: [] });
+    const dia = diagram();
+    const el = element();
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <ElementInspector
+          element={el}
+          model={{ ...model(el, dia), diagrams: [dia, cd] }}
+          diagram={dia}
+          readOnly={false}
+          actions={makeActions().actions}
+          onRequestDelete={vi.fn()}
+          onCreateContainer={onCreateContainer}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.queryByText('Create container diagram')).toBeNull();
+    cleanup();
+    renderInspector(element({ ref: 'acme/other' }), { onCreateContainer });
+    expect(screen.queryByText('Create container diagram')).toBeNull();
+    cleanup();
+    renderInspector(element({ kind: 'actor' }), { onCreateContainer });
+    expect(screen.queryByText('Create container diagram')).toBeNull();
+    cleanup();
+    renderInspector(element(), { onCreateContainer, readOnly: true });
+    expect(screen.queryByText('Create container diagram')).toBeNull();
   });
 });

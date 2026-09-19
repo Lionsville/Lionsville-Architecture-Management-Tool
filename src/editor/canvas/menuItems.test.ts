@@ -94,8 +94,10 @@ describe('menuItemsFor — node', () => {
       'open-documentation', 'open-container', 'start-connection', 'icon', 'move-to-zone',
       'copy', 'cut', 'remove-from-diagram', 'delete-from-model',
     ]);
-    expect(byId(items, 'open-container').label).toBe('Create container diagram');
-    expect(byId(items, 'open-container').action).toBe('open-container');
+    // Its own action: a double-click opens and never makes, so making is
+    // said by name and routed to the host's create, not to the open path.
+    expect(byId(items, 'create-container').label).toBe('Create container diagram');
+    expect(byId(items, 'create-container').action).toBe('create-container');
   });
 
   it('offers a platform its report, always (ADR-0013)', () => {

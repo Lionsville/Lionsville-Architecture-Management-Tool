@@ -23,9 +23,11 @@ const model = {
 };
 
 describe('doubleClickTarget', () => {
-  it('opens the container diagram an application has, or makes one', () => {
+  it('opens the container diagram an application has, and makes nothing for one that has none', () => {
     expect(doubleClickTarget(model, 'erp', undefined)).toEqual({ kind: 'container', diagramId: 'cd-erp' });
-    expect(doubleClickTarget({ ...model, diagrams: [] }, 'erp', undefined)).toEqual({ kind: 'newContainer' });
+    // A view is made on purpose — from the menu or the inspector — never as
+    // the side effect of looking for one.
+    expect(doubleClickTarget({ ...model, diagrams: [] }, 'erp', undefined)).toBeUndefined();
   });
 
   it('shows a stand-in where it is defined, and never makes a container diagram here for it', () => {
@@ -49,7 +51,7 @@ describe('doubleClickTarget', () => {
   });
 
   it('falls through for a stand-in nobody can show, and opens a page for everything else', () => {
-    expect(doubleClickTarget(model, 'ghost', { ownerOf: () => undefined })).toEqual({ kind: 'newContainer' });
+    expect(doubleClickTarget(model, 'ghost', { ownerOf: () => undefined })).toBeUndefined();
     expect(doubleClickTarget(model, 'ops', undefined)).toEqual({ kind: 'documentation' });
     expect(doubleClickTarget(model, 'nope', undefined)).toBeUndefined();
   });
@@ -59,8 +61,9 @@ describe('doubleClickTarget', () => {
  * The way down from a landscape line (ADR-0013, redone).
  *
  * The target first — an interface lands at the end that answers — then the
- * source, then an offer to make the target's. On a container diagram the
- * gesture is not this one at all: a double-click there adds a bend.
+ * source, then nothing: a view is made on purpose, not by looking for one. On
+ * a container diagram the gesture is not this one at all: a double-click
+ * there adds a bend.
  */
 describe('a double-click on a line', () => {
   const flow = (id: string, sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation =>
@@ -81,7 +84,7 @@ describe('a double-click on a line', () => {
     ],
   });
 
-  it('opens the container diagram at the end that has one, and offers to make one where neither does', () => {
+  it('opens the container diagram at the end that has one, and nothing where neither does', () => {
     const relations = [
       flow('c1', 'billing', 'erp'),
       flow('r1', 'billing', 'erp-api', { refines: 'c1' }),
@@ -94,18 +97,10 @@ describe('a double-click on a line', () => {
       .toEqual({ kind: 'container', diagramId: 'cd-erp', select: ['r1'] });
     const model = held([flow('c3', 'erp', 'billing')]);
     const bare = { ...model, diagrams: model.diagrams.filter((d) => d.kind !== 'container') };
-    expect(lineDoubleClickTarget(bare, board('layer7'), 'c3'))
-      .toEqual({ kind: 'newContainer', applicationId: 'billing' });
+    expect(lineDoubleClickTarget(bare, board('layer7'), 'c3')).toBeUndefined();
   });
 
-  it('does not offer to open somebody else’s application, and says nothing on a container diagram', () => {
-    // A stand-in is answered for elsewhere (ADR-0012 §3), and a container
-    // diagram made here would be a second one about their application — the
-    // rule a double-click on the card already obeys.
-    const model = held([flow('c4', 'billing', 'wms')]);
-    const bare = { ...model, diagrams: model.diagrams.filter((d) => d.kind !== 'container') };
-    expect(lineDoubleClickTarget(bare, board('layer7'), 'c4'))
-      .toEqual({ kind: 'newContainer', applicationId: 'billing' });
+  it('says nothing on a container diagram', () => {
     expect(lineDoubleClickTarget(held([flow('c1', 'billing', 'erp')]), board('container'), 'c1'))
       .toBeUndefined();
   });

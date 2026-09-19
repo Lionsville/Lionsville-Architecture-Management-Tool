@@ -27,6 +27,7 @@ export type MenuActionId =
   // node
   | 'open-documentation'
   | 'open-container'
+  | 'create-container'
   | 'rename'
   | 'start-connection'
   | 'pick-icon'
@@ -327,7 +328,9 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
     } else if (el.hasContainerDiagram) {
       items.push({ id: 'open-container', label: t('menu.openContainer'), action: 'open-container' });
     } else if (!ctx.readOnly) {
-      items.push({ id: 'open-container', label: t('menu.createContainer'), action: 'open-container' });
+      // Its own action, not the open one: a double-click OPENS and never
+      // makes (`doubleClick.ts`), so making is said here, by name.
+      items.push({ id: 'create-container', label: t('menu.createContainer'), action: 'create-container' });
     }
   }
   // What is on a platform, and what would be left standing if it went
