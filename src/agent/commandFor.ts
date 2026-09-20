@@ -15,7 +15,7 @@
  */
 import type { Adr, AdrSigner, AdrVerdict } from '../model/adr'
 import type { Command } from '../model/commands'
-import { placeOn, transaction } from '../model/commands'
+import { causesToCommands, observationsToCommands, placeOn, transaction } from '../model/commands'
 import { claimKey } from '../model/keys'
 import type { IdPolicy, MakeId } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
@@ -40,7 +40,14 @@ import {
   findTransition, nextTransitionNumber, transitionLabel, transitionsFrom as planTransitionsFrom,
 } from '../model/transition'
 import type { Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus } from '../model/transition'
-import { boxesOf, decisionsOf, groupList, placedOn, transitionList } from '../model/normalised'
+import { boxesOf, causeList, decisionsOf, fromArrays, groupList, observationList, placedOn, transitionList } from '../model/normalised'
+import type { CauseLink, CauseState, CauseStrength, ObservationImpact } from '../model/observation'
+import {
+  absorbShared, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause, newObservation,
+  nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, setShared, unlinkCause,
+  updateCause, updateObservation,
+} from '../observations/observation'
+import type { Analysis, CausePatch, ObservationPatch } from '../observations/observation'
 import { businessCaseTemplate } from '../documentation/businessCase'
 import type {
   DesignDiagram, DesignElement, DiagramGroup, PlacedNode, DomainGroupRect, EdgeLineStyle,
@@ -52,7 +59,7 @@ import { formatAdrNumber, isAdrDeletable, isAdrLocked, newAdr, nextAdrNumber, tr
 import { alignNodes, distributeNodes } from '../layout/alignDistribute'
 import type { AlignAxis, DistributeAxis, NodeBounds } from '../layout/alignDistribute'
 import type { Translate } from '../i18n/strings'
-import { planEntry } from './answer'
+import { causeLine, findCause, findObservation, observationLine, planEntry } from './answer'
 import type { ReadView } from './answer'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -343,6 +350,17 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       }
     }
     case 'decision.propose': return proposeDecision(args, view)
+    case 'observation.record':
+    case 'observation.update':
+    case 'observation.seen':
+    case 'observation.merge':
+    case 'observation.remove':
+    case 'cause.add':
+    case 'cause.update':
+    case 'cause.link':
+    case 'cause.unlink':
+    case 'cause.remove':
+      return observationCommand(tool, args, view)
     case 'decision.transition': return transitionDecision(args, view)
     case 'decision.update': return updateDecision(args, view)
     case 'decision.remove': {
@@ -1169,6 +1187,165 @@ function ungroup(args: Args, view: WriteView): Prepared | AgentAnswer {
   return {
     command: transaction(commands, { origin: 'agent' }),
     answer: json({ diagramId: diagram.id, name, dissolved: named === undefined, unfiled: leaving }),
+  }
+}
+
+/**
+ * Observations and causes (ADR-0021): every verb is a rule over the two lists,
+ * and the change is the difference between the lists before and after, said as
+ * one transaction — one undo step, one Activity line, the way the page commits.
+ */
+function observationCommand(tool: ToolName, args: Args, view: WriteView): Prepared | AgentAnswer {
+  const { model } = view
+  const before: Analysis = { observations: observationList(model), causes: causeList(model) }
+  const observationOf = (idOrLabel: unknown) => findObservation(before.observations, String(idOrLabel))
+  const causeOf = (idOrLabel: unknown) => findCause(before.causes, String(idOrLabel))
+  const linkOf = (id: unknown, scope: unknown, strength: unknown): CauseLink | AgentAnswer => {
+    const held = strength === undefined ? 'normal' : strength as CauseStrength
+    if (typeof scope === 'string') {
+      const shared = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
+        .find((one) => one.scope === scope && one.observation.id === id)
+      if (!shared) return refused('agent.unknownId', `shared observation ${String(id)} in ${scope}`)
+      return { id: shared.observation.id, scope, strength: held }
+    }
+    const target = observationOf(id) ?? causeOf(id)
+    if (!target) return refused('agent.unknownId', `observation or cause ${String(id)}`)
+    return { id: target.id, strength: held }
+  }
+  const finish = (after: Analysis, answer: unknown): Prepared | AgentAnswer => {
+    const commands = [...observationsToCommands(model, after.observations), ...causesToCommands(model, after.causes)]
+    if (commands.length === 0) return refused('agent.badArguments', 'nothing changed')
+    return { command: transaction(commands, { origin: 'agent' }), answer: json(answer) }
+  }
+  const observationAnswer = (after: Analysis, id: string) => (
+    observationLine(after.observations.find((one) => one.id === id)!, after.causes, after.observations)
+  )
+  const causeAnswer = (after: Analysis, id: string) => (
+    causeLine(after.causes.find((one) => one.id === id)!, after.causes, fromArrays({ ...toArrays(model), observations: after.observations, causes: after.causes }))
+  )
+
+  switch (tool) {
+    case 'observation.record': {
+      const title = (args.title as string).trim()
+      if (!title) return refused('agent.badArguments', '"title" must not be blank')
+      const date = typeof args.date === 'string' ? args.date : view.today()
+      if (!isDay(date)) return refused('agent.badArguments', `date ${date} is not yyyy-mm-dd`)
+      const fresh = newObservation({
+        id: view.makeId('ob'), number: nextObservationNumber(before.observations), title, date, t: view.translate,
+        ...(typeof args.where === 'string' ? { where: args.where } : {}),
+        ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
+        ...(args.shared === true ? { shared: true } : {}),
+        ...(typeof args.body === 'string' ? { body: args.body } : {}),
+      })
+      const after = { ...before, observations: [...before.observations, fresh] }
+      return finish(after, observationAnswer(after, fresh.id))
+    }
+    case 'observation.update': {
+      const held = observationOf(args.id)
+      if (!held) return refused('agent.unknownId', `observation ${String(args.id)}`)
+      const patch: ObservationPatch = {}
+      if (typeof args.title === 'string') {
+        if (!args.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
+        patch.title = args.title
+      }
+      if (typeof args.body === 'string') patch.body = args.body
+      if (typeof args.where === 'string') patch.where = args.where
+      if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
+      if (typeof args.date === 'string') {
+        if (!isDay(args.date)) return refused('agent.badArguments', `date ${args.date} is not yyyy-mm-dd`)
+        patch.date = args.date
+      }
+      let observations = updateObservation(before.observations, held.id, patch)
+      if (typeof args.shared === 'boolean') observations = setShared(observations, held.id, args.shared, view.today())
+      const after = { ...before, observations }
+      return finish(after, observationAnswer(after, held.id))
+    }
+    case 'observation.seen': {
+      const held = observationOf(args.id)
+      if (!held) return refused('agent.unknownId', `observation ${String(args.id)}`)
+      const after = { ...before, observations: seenAgain(before.observations, held.id, view.today(), args.note as string | undefined) }
+      return finish(after, observationAnswer(after, held.id))
+    }
+    case 'observation.merge': {
+      const into = observationOf(args.into)
+      if (!into) return refused('agent.unknownId', `observation ${String(args.into)}`)
+      if (typeof args.fromScope === 'string') {
+        const shared = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
+          .find((one) => one.scope === args.fromScope && one.observation.id === args.id)
+        if (!shared) return refused('agent.unknownId', `shared observation ${String(args.id)} in ${args.fromScope}`)
+        const after = absorbShared(before, shared, into.id, view.today())
+        if (after === before) return refused('agent.badArguments', `${String(args.id)} cannot be merged into ${into.id}`)
+        return finish(after, observationAnswer(after, into.id))
+      }
+      const from = observationOf(args.id)
+      if (!from) return refused('agent.unknownId', `observation ${String(args.id)}`)
+      const after = mergeObservations(before, from.id, into.id, view.today())
+      if (after === before) return refused('agent.badArguments', `${from.id} cannot be merged into ${into.id}`)
+      return finish(after, observationAnswer(after, into.id))
+    }
+    case 'observation.remove': {
+      const held = observationOf(args.id)
+      if (!held) return refused('agent.unknownId', `observation ${String(args.id)}`)
+      return finish(removeObservation(before, held.id), { id: held.id, label: formatObservationNumber(held.number), title: held.title, removed: true })
+    }
+    case 'cause.add': {
+      const title = (args.title as string).trim()
+      if (!title) return refused('agent.badArguments', '"title" must not be blank')
+      const fresh = newCause({
+        id: view.makeId('ca'), number: nextCauseNumber(before.causes), title, t: view.translate,
+        ...(typeof args.body === 'string' ? { body: args.body } : {}),
+      })
+      if (typeof args.state === 'string') fresh.state = args.state as CauseState
+      let causes = [...before.causes, fresh]
+      for (const row of (args.explains as { id: string; scope?: string; strength?: string }[] | undefined) ?? []) {
+        const link = linkOf(row.id, row.scope, row.strength)
+        if ('ok' in link) return link
+        causes = linkCause(causes, fresh.id, link)
+      }
+      const after = { ...before, causes }
+      return finish(after, causeAnswer(after, fresh.id))
+    }
+    case 'cause.update': {
+      const held = causeOf(args.id)
+      if (!held) return refused('agent.unknownId', `cause ${String(args.id)}`)
+      const patch: CausePatch = {}
+      if (typeof args.title === 'string') {
+        if (!args.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
+        patch.title = args.title
+      }
+      if (typeof args.body === 'string') patch.body = args.body
+      if (typeof args.state === 'string') patch.state = args.state as CauseState
+      const after = { ...before, causes: updateCause(before.causes, held.id, patch) }
+      return finish(after, causeAnswer(after, held.id))
+    }
+    case 'cause.link': {
+      const held = causeOf(args.id)
+      if (!held) return refused('agent.unknownId', `cause ${String(args.id)}`)
+      const link = linkOf(args.explains, args.scope, args.strength)
+      if ('ok' in link) return link
+      const causes = linkCause(before.causes, held.id, link)
+      if (JSON.stringify(causes) === JSON.stringify(before.causes)) {
+        return refused('agent.badArguments', `${held.id} cannot explain ${link.id}: a cause does not explain itself, and a loop is not an explanation`)
+      }
+      const after = { ...before, causes }
+      return finish(after, causeAnswer(after, held.id))
+    }
+    case 'cause.unlink': {
+      const held = causeOf(args.id)
+      if (!held) return refused('agent.unknownId', `cause ${String(args.id)}`)
+      const target: { id: string; scope?: string } = typeof args.scope === 'string'
+        ? { id: String(args.explains), scope: args.scope }
+        : { id: (observationOf(args.explains) ?? causeOf(args.explains))?.id ?? String(args.explains) }
+      const after = { ...before, causes: unlinkCause(before.causes, held.id, target.id, target.scope) }
+      return finish(after, causeAnswer(after, held.id))
+    }
+    case 'cause.remove': {
+      const held = causeOf(args.id)
+      if (!held) return refused('agent.unknownId', `cause ${String(args.id)}`)
+      return finish(removeCause(before, held.id), { id: held.id, label: formatCauseNumber(held.number), title: held.title, removed: true })
+    }
+    default:
+      return refused('agent.badArguments', `${tool} is not an observation tool`)
   }
 }
 

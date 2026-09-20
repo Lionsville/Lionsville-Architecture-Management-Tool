@@ -19,7 +19,7 @@
 /** The pages an agent can ask for. `home` is a scope's own screen, with nothing open. */
 export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology',
-  'decisions', 'roadmap', 'plan', 'element', 'document', 'documentation',
+  'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
   'platform', 'service', 'register', 'technologyRegister',
 ] as const
 
@@ -44,6 +44,7 @@ export type Destination = {
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
 export type ScreenPage =
   | { readonly page: 'decisions'; readonly id?: string }
+  | { readonly page: 'observations'; readonly id?: string }
   | { readonly page: 'roadmap' }
   | { readonly page: 'plan'; readonly id: string }
   | { readonly page: 'platform'; readonly id: string }
@@ -97,6 +98,7 @@ export function arrived(screen: Screen, to: Destination, scope: string): boolean
   if (VIEW_PAGES.includes(page)) return screen.page === undefined && (to.id === undefined || screen.open.view?.id === to.id)
   switch (page) {
     case 'decisions': return screen.page?.page === 'decisions'
+    case 'observations': return screen.page?.page === 'observations'
     case 'roadmap': return screen.page?.page === 'roadmap'
     case 'plan':
     case 'platform':

@@ -38,12 +38,18 @@ import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, text, toolSpec } from './tools'
 import { identityOf } from './tree'
 import type { TreeView } from './tree'
+import { causeList, observationList, observationsOf } from '../model/normalised'
+import type { Cause, Observation } from '../model/observation'
+import {
+  absorbedBy, explainedBy, formatCauseNumber, formatObservationNumber, isMerged, isRootCause,
+} from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
   | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
-  | 'platform.report' | 'service.report'>
+  | 'platform.report' | 'service.report'
+  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -64,7 +70,7 @@ export type ReadView = {
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
-  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'rowsTo'>
+  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'observationsBelow' | 'rowsTo'>
 }
 
 type Args = Record<string, unknown>
@@ -198,6 +204,51 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       return json({
         diagrams: model.order.diagrams.map((id) => diagramLine(model.diagrams[id], view.activeDiagramId)),
       })
+
+    case 'observations.list': {
+      const impact = args.impact as string | undefined
+      const analysed = args.analysed as boolean | undefined
+      const own = observationList(model)
+      const causes = causeList(model)
+      const wanted = (observation: Observation, scope?: string) => {
+        if (impact !== undefined && observation.impact !== impact) return false
+        if (analysed === undefined) return true
+        return (explainedBy(causes, observation.id, scope).length > 0) === analysed
+      }
+      const rows = own
+        .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
+        .filter((one) => wanted(one))
+        .map((one) => observationLine(one, causes, own))
+      const fromBelow = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
+        .filter(({ scope, observation }) => !absorbedBy(own, observation.id, scope) && wanted(observation, scope))
+        .map(({ scope, observation }) => ({ scope, ...observationLine(observation, causes, own, scope) }))
+      return json({ observations: rows, ...(fromBelow.length > 0 ? { fromBelow } : {}) })
+    }
+
+    case 'observation.read': {
+      const own = observationList(model)
+      const observation = findObservation(own, args.id as string)
+      if (!observation) return refused('agent.unknownId', `observation ${String(args.id)}`)
+      return json({ ...observationLine(observation, causeList(model), own), body: observation.body, history: observation.history })
+    }
+
+    case 'causes.list': {
+      const state = args.state as string | undefined
+      const causes = causeList(model)
+      return json({
+        causes: causes
+          .filter((one) => state === undefined || one.state === state)
+          .filter((one) => args.root !== true || isRootCause(one, causes))
+          .map((one) => causeLine(one, causes, model)),
+      })
+    }
+
+    case 'cause.read': {
+      const causes = causeList(model)
+      const cause = findCause(causes, args.id as string)
+      if (!cause) return refused('agent.unknownId', `cause ${String(args.id)}`)
+      return json({ ...causeLine(cause, causes, model), body: cause.body })
+    }
 
     case 'plans.list': {
       const wanted = args.status as string | undefined
@@ -488,6 +539,65 @@ function nameOf(model: Model, id: ElementId): string | undefined {
  * caller that wrote a fence reads back what the page will show without
  * opening the page.
  */
+/** An observation by its id or by what people call it — `OB-3`, `ob-0003`, or the bare number. */
+export function findObservation(list: readonly Observation[], idOrLabel: string): Observation | undefined {
+  const held = list.find((one) => one.id === idOrLabel)
+  if (held) return held
+  const number = /^(?:ob-?)?(\d+)$/i.exec(idOrLabel.trim())
+  return number ? list.find((one) => one.number === Number(number[1])) : undefined
+}
+
+export function findCause(list: readonly Cause[], idOrLabel: string): Cause | undefined {
+  const held = list.find((one) => one.id === idOrLabel)
+  if (held) return held
+  const number = /^(?:ca-?)?(\d+)$/i.exec(idOrLabel.trim())
+  return number ? list.find((one) => one.number === Number(number[1])) : undefined
+}
+
+/** One observation as a list answers it, with the causes of this scope that explain it (ADR-0021). */
+export function observationLine(observation: Observation, causes: readonly Cause[], own: readonly Observation[], scope?: string) {
+  const merged = scope === undefined ? absorbedBy(own, observation.id) : undefined
+  return {
+    id: observation.id,
+    label: formatObservationNumber(observation.number),
+    title: observation.title,
+    date: observation.date,
+    ...(observation.where ? { where: observation.where } : {}),
+    impact: observation.impact,
+    seen: observation.seen,
+    shared: observation.shared === true,
+    ...(merged ? { mergedInto: merged.id } : {}),
+    causes: explainedBy(causes, observation.id, scope).map((cause) => ({
+      id: cause.id,
+      label: formatCauseNumber(cause.number),
+      title: cause.title,
+      strength: cause.explains.find((link) => link.id === observation.id && link.scope === scope)?.strength,
+    })),
+  }
+}
+
+/** One cause as a list answers it: what it explains, what explains it, and whether it is a root (ADR-0021). */
+export function causeLine(cause: Cause, causes: readonly Cause[], model: Model) {
+  const observations = observationsOf(model)
+  return {
+    id: cause.id,
+    label: formatCauseNumber(cause.number),
+    title: cause.title,
+    state: cause.state,
+    root: isRootCause(cause, causes),
+    explains: cause.explains.map((link) => {
+      const held = link.scope === undefined ? observations[link.id] ?? causes.find((one) => one.id === link.id) : undefined
+      return {
+        id: link.id,
+        ...(link.scope !== undefined ? { scope: link.scope } : {}),
+        strength: link.strength,
+        ...(held ? { title: held.title, label: 'number' in held && 'state' in held ? formatCauseNumber(held.number) : formatObservationNumber(held.number) } : {}),
+      }
+    }),
+    explainedBy: explainedBy(causes, cause.id).map((other) => ({ id: other.id, label: formatCauseNumber(other.number), title: other.title })),
+  }
+}
+
 export function planEntry(plan: Transition, arrays: HostModel) {
   const named = new Map(arrays.elements.map((element) => [element.id, element.name]))
   return {

@@ -214,12 +214,16 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
   const decision = asked.id !== undefined
     ? [...(model.decisions ?? []), ...ancestors].find((held) => held.id === asked.id)
     : undefined
+  const observed = asked.id !== undefined
+    ? [...(model.observations ?? []), ...(model.causes ?? [])].find((held) => held.id === asked.id)
+    : undefined
 
   if (asked.page === undefined) {
     if (diagram) return { page: pageOf(diagram), id: diagram.id }
     if (element) return { page: 'element', id: element.id }
     if (plan) return { page: 'plan', id: plan.id }
     if (decision) return { page: 'decisions', id: decision.id }
+    if (observed) return { page: 'observations', id: observed.id }
     return refused('agent.unknownId', `${asked.id} in ${where}`)
   }
   const page = asked.page
@@ -237,6 +241,9 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
   switch (page) {
     case 'decisions':
       if (asked.id !== undefined && !decision) return refused('agent.unknownId', `decision ${asked.id} in ${where}`)
+      return asked.id !== undefined ? { page, id: asked.id } : { page }
+    case 'observations':
+      if (asked.id !== undefined && !observed) return refused('agent.unknownId', `observation or cause ${asked.id} in ${where}`)
       return asked.id !== undefined ? { page, id: asked.id } : { page }
     case 'plan':
       return plan ? { page, id: plan.id } : refused('agent.unknownId', `plan ${asked.id} in ${where}`)
