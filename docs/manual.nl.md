@@ -121,7 +121,7 @@ adres, zodat een verplaatsing geen spoor van verouderde kopieën achterlaat. Bij
 het starten opent de app het onderdeel dat je open had.
 
 Zes namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
-`diagrams`, `docs`, `decisions`, `transitions`, `images` en `logos`.
+`diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` en `logos`.
 
 ## Eén naam in de hele organisatie
 
@@ -598,6 +598,48 @@ titel, tekst en beoordelaars. De tekst is markdown, met dezelfde
 `[[Naam]]`-verwijzingen als documentatie; **Hulp bij opmaak** naast de bron
 toont de syntaxis, mermaid-diagrammen inbegrepen. Wijzigingen worden met dit
 onderdeel bewaard.
+
+## Waarnemingen
+
+**Waarnemingen** in de bovenbalk opent wat het team in deze scope gezien
+heeft — en, als team geanalyseerd, wat erachter zit. De pagina heeft twee
+tabbladen. Het **register** is een tabel die uit de records gelezen wordt:
+nummer, titel, de dag waarop het voor het eerst gezien is, waar, de impact,
+hoe vaak het gezien is en de oorzaken waarnaar het geanalyseerd is; het
+record dat je kiest opent ernaast. De **analyse** is een tekening: de
+waarnemingen links als cirkels, de oorzaken waarnaar ze geanalyseerd zijn in
+de banen rechts ervan, en de grondoorzaken als laatste.
+
+Een waarneming is een genummerd record (`OB-0007`) met een titel, een datum,
+een plaats, een impact — *klein*, *groot* of *kritiek* — en een markdowntekst
+voor wat er gezien is, het bewijs en de eerste gedachten. **Opnieuw gezien**
+telt er één bij en schrijft de dag in de **geschiedenis** van het record:
+het gedateerde overzicht onderaan elke waarneming — vastgelegd, opnieuw
+gezien, gedeeld, samengevoegd. De teller bepaalt de tint van de cirkel in de
+tekening; de impact de grootte.
+
+Twee waarnemingen die hetzelfde blijken te zijn worden **samengevoegd**:
+kies de waarneming waar het dezelfde van is, en de keren dat het gezien is
+en de oorzaken gaan over. Beide records zeggen dat met de datum. Het
+samengevoegde record blijft — daar staat de oorspronkelijke tekst — en wordt
+als samengevoegd gelezen, niet verwijderd; *Samengevoegde tonen* haalt het
+terug in het register.
+
+Een waarneming is **lokaal** in haar scope tenzij je haar **deelt**. Gedeeld
+leest elke scope erboven haar — onder *Gedeeld vanuit …* — en kan haar daar
+aan een eigen oorzaak koppelen en samenvoegen met een eigen waarneming. Ze
+wordt nog steeds gewijzigd waar ze woont; de lezer erboven toont haar zonder
+Bewerken en biedt aan haar scope te openen. Niets stroomt naar beneden.
+
+Een **oorzaak** (`CA-0003`) is wat het team zegt dat achter één of meer
+waarnemingen zit, of achter andere oorzaken. Ze begint **aangenomen** en
+wordt **geverifieerd** zodra ze gecontroleerd is. **Koppelen aan een
+oorzaak…** op een waarneming noemt een bestaande oorzaak of een nieuwe, met
+de sterkte van het verband — sterk, normaal of zwak, de dikte van de lijn.
+**Koppelen aan een diepere oorzaak…** op een oorzaak doet hetzelfde een
+niveau verder. Een oorzaak die door niets verklaard wordt is een
+**grondoorzaak**, als laatste getekend met de dikkere rand; koppel haar aan
+een diepere en ze is er geen meer.
 
 ## Tijd, en de dag die een bord toont
 

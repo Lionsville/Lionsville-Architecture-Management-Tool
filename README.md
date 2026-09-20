@@ -125,6 +125,18 @@ rejected, and accepted → superseded by a named successor), and the three end
 states lock the record rather than trusting anybody to leave it alone. Numbers
 run per list and are never reused.
 
+### Observations, and what lies behind them
+
+Every scope keeps a register of **observations** — what a team saw, where,
+how often and how much it matters — and analyses them, as a team, into
+**causes** and causes of causes until a **root cause** stands at the end.
+The analysis is drawn: observations on the left, causes in lanes, roots on
+the right, with the weight of each line saying how firmly one explains the
+other. Two observations that turn out to be the same are merged with the
+history kept; an observation is local unless it is explicitly shared with the
+scopes above, which can then analyse it or merge it into their own
+(`docs/decisions/0021`).
+
 ### One search over all of it
 
 **⌘K** searches everything a project knows at once — element names, the prose
@@ -217,6 +229,7 @@ translation. Light, dark and system themes.
 <your folder>/<group>/<project>/project.json · model.json
                                 diagrams/<id>.json · <id>.placements.json
                                 docs/<element>.md · decisions/NNNN-<slug>.md
+                                observations/NNNN-<slug>.md · observations/causes/NNNN-<slug>.md
                                 logos/<key>.svg
 ```
 

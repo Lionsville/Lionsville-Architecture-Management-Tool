@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4006 tests** and one of every config. The
+One codebase, in modules, with **4146 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -191,6 +191,12 @@ src/documentation/  Descriptions as documents.
                                       from its own coordinates; never laid out
                     ui/               DocumentationPage, MarkdownField, blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
+src/observations/ What was seen, and what lies behind it (ADR-0021).
+                    observation       numbering, seen again, sharing upward, merging
+                                      with history, links from a cause to what it
+                                      explains, root causes derived
+                    graph             lanes and rows for the picture, no force
+                    ui/ObservationsPage  the register, the analysis, the readers
 src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).
                     timeline          rows and spans, in days rather than pixels;
                                       a window, and a plan's shadow run
@@ -439,7 +445,7 @@ declines to *enter* it because the canvas has nothing to show
 (`isOpenableScope`).
 
 **Reserved names.** A child scope may not be called `diagrams`, `docs`,
-`decisions`, `transitions`, `images` or `logos` — a folder cannot be both. The
+`decisions`, `transitions`, `observations`, `images` or `logos` — a folder cannot be both. The
 rule is in `scopePath.ts` and is refused at the dialog, not suffixed quietly.
 
 **A name has one home.** `model.name` is what the scope is called, and
@@ -607,9 +613,9 @@ identifiers is still a list of a customer's identifiers.
 | Offered beyond its team (ADR-0014) | `shared` on a service, typed and left as typed; where nobody typed it, a service `assigned` to one actor and used by another team's application is `check.offeredNotShared`, a finding and never a value |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
-| Working-folder format | **5** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it |
-| What one scope's folder holds | `scope.json` · `model.json` · the six folders below · the scopes filed under it |
-| A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `images` `logos` |
+| Working-folder format | **7** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021) |
+| What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
+| A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
 | The five view kinds (ADR-0012 §6, ADR-0015, ADR-0016) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest. Any of the five is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot, and the technology landscape keeps the palette and the inspector docked, so it is authored on. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
@@ -618,6 +624,9 @@ identifiers is still a list of a customer's identifiers.
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen; flagged `initiative`, it is drawn on the roadmap of every scope above it (ADR-0012 §7) |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
+| What was seen, and why (ADR-0021) | an **observation**, `OB-0001` on screen, `seen` times, local unless `shared` — then read by every scope above; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`; a **root cause** is derived: explains something, explained by nothing. Merging is an `absorbed` event on the survivor and a `merged` one on the other; a shared one absorbed above is written on the survivor only |
+| Observations on disk | `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md`, flat, numbers per scope |
+| Agent tools, observations (ADR-0021) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.merge` `observation.remove` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |
 | Agent resources | `lvarch://<scope path>/element/<id>/description`, `lvarch://<scope path>/decision/<id>`; the organisation's path is empty, and no path on read means the open scope |

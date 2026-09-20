@@ -128,7 +128,7 @@ eine Spur veralteter Kopien hinterlässt. Beim Start öffnet die App den Bereich
 wieder, den Sie geöffnet hatten.
 
 Sechs Namen werden abgelehnt, weil die eigenen Ordner eines Bereichs sie schon
-verwenden: `diagrams`, `docs`, `decisions`, `transitions`, `images` und
+verwenden: `diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` und
 `logos`.
 
 ## Ein Name in der ganzen Organisation
@@ -636,6 +636,49 @@ Text und Prüfer, die dieses Bereichs und die der darüberliegenden. Texte sind
 Markdown, mit denselben `[[Name]]`-Links wie die Dokumentation; **Hilfe zur
 Formatierung** neben dem Quelltext zeigt die Syntax, Mermaid-Diagramme
 eingeschlossen. Änderungen werden mit diesem Bereich gespeichert.
+
+## Beobachtungen
+
+**Beobachtungen** in der oberen Leiste öffnet, was das Team in diesem Scope
+gesehen hat — und, im Team analysiert, was dahintersteckt. Die Seite hat zwei
+Reiter. Das **Register** ist eine Tabelle, die aus den Datensätzen gelesen
+wird: Nummer, Titel, der Tag, an dem es zuerst gesehen wurde, wo, die
+Auswirkung, wie oft es gesehen wurde und die Ursachen, zu denen es analysiert
+wurde; der gewählte Datensatz öffnet sich daneben. Die **Analyse** ist ein
+Bild: die Beobachtungen links als Kreise, die Ursachen, zu denen sie
+analysiert wurden, in den Bahnen rechts davon, und die Grundursachen zuletzt.
+
+Eine Beobachtung ist ein nummerierter Datensatz (`OB-0007`) mit Titel, Datum,
+Ort, einer Auswirkung — *gering*, *erheblich* oder *kritisch* — und einem
+Markdown-Text für das Gesehene, die Belege und erste Gedanken. **Erneut
+gesehen** zählt eins dazu und schreibt den Tag in die **Geschichte** des
+Datensatzes: das datierte Verzeichnis am Ende jeder Beobachtung —
+festgehalten, erneut gesehen, geteilt, zusammengeführt. Die Zahl bestimmt die
+Tönung des Kreises im Bild; die Auswirkung seine Größe.
+
+Zwei Beobachtungen, die sich als dasselbe erweisen, werden
+**zusammengeführt**: Wählen Sie die, mit der sie identisch ist, und die
+Sichtungen und Ursachen gehen über. Beide Datensätze sagen das mit dem Datum.
+Der zusammengeführte Datensatz bleibt — dort steht der ursprüngliche Wortlaut
+— und wird als zusammengeführt gelesen, nicht gelöscht; *Zusammengeführte
+zeigen* holt ihn ins Register zurück.
+
+Eine Beobachtung ist **lokal** in ihrem Scope, solange Sie sie nicht
+**teilen**. Geteilt liest jeder Scope darüber sie — unter *Geteilt aus …* —
+und kann sie dort mit einer eigenen Ursache verknüpfen und in eine eigene
+Beobachtung zusammenführen. Geändert wird sie weiterhin dort, wo sie lebt;
+der Leser darüber zeigt sie ohne Bearbeiten und bietet an, ihren Scope zu
+öffnen. Nichts fließt nach unten.
+
+Eine **Ursache** (`CA-0003`) ist, was das Team hinter einer oder mehreren
+Beobachtungen vermutet, oder hinter anderen Ursachen. Sie beginnt
+**angenommen** und wird **verifiziert**, sobald sie geprüft ist. **Mit einer
+Ursache verknüpfen…** auf einer Beobachtung nennt eine bestehende oder eine
+neue Ursache, mit der Stärke des Zusammenhangs — stark, normal oder schwach,
+die Dicke der Linie. **Mit einer tieferen Ursache verknüpfen…** auf einer
+Ursache tut dasselbe eine Ebene weiter. Eine Ursache, die nichts erklärt, ist
+eine **Grundursache**, zuletzt gezeichnet mit dem stärkeren Rand; verknüpfen
+Sie sie mit einer tieferen, und sie ist keine mehr.
 
 ## Zeit, und der Tag, den ein Board zeigt
 

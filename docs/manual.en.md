@@ -114,8 +114,8 @@ stand-in elsewhere in the folder that pointed into it is carried over to the
 new address in the same step, so a move never leaves a trail of stale copies
 behind it. On boot the app reopens the scope you had open.
 
-Six names are refused, because a scope's own folders use them already:
-`diagrams`, `docs`, `decisions`, `transitions`, `images` and `logos`.
+Seven names are refused, because a scope's own folders use them already:
+`diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` and `logos`.
 
 ## One name across the organisation
 
@@ -565,6 +565,46 @@ title, body and reviewers, this scope's and the ones above. Bodies are markdown,
 with the same `[[Name]]` links as documentation; **Formatting help** beside the
 source shows the syntax, mermaid diagrams included. Changes are saved with this
 scope.
+
+## Observations
+
+**Observations** in the top bar opens what the team saw in this scope — and,
+analysed as a team, what lies behind it. The page has two tabs. The
+**register** is a table read off the records: number, title, the day it was
+first seen, where, its impact, how often it has been seen, and the causes it
+was analysed into; the record you pick opens beside it. The **analysis** is
+a picture: the observations on the left as circles, the causes they were
+analysed into in the lanes to the right, and the root causes last.
+
+An observation is a numbered record (`OB-0007`) with a title, a date, a
+place, an impact — *minor*, *major* or *critical* — and a markdown body for
+what was seen, the evidence and first thoughts. **Seen again** counts one
+more and writes the day into the record's **history**, which is the dated
+ledger at the end of every observation: recorded, seen again, shared,
+merged. The count is what the picture tints a circle by; the impact is its
+size.
+
+Two observations that turn out to be the same thing are **merged**: pick the
+one it is the same as, and its sightings and its causes move over. Both
+records say so with the day. The merged record stays — it is where the
+original wording is — and is read as merged rather than deleted; *Show
+merged* brings it back into the register.
+
+An observation is **local** to its scope unless you **share** it. Shared, it
+is read by every scope above — under *Shared from …* — where it can be
+linked to a cause of that scope and merged into an observation of that
+scope. It is still changed where it lives; the reader above shows it without
+an Edit and offers to open its scope. Nothing flows down: what the
+organisation observes stays the organisation's.
+
+A **cause** (`CA-0003`) is what the team says lies behind one or more
+observations, or behind other causes. It starts **assumed** and is marked
+**verified** once checked. **Link to a cause…** on an observation names an
+existing cause or a new one, with the strength of the relationship — strong,
+normal or weak, which is the weight of the line. **Link to a deeper cause…**
+on a cause does the same one level further. A cause nobody explains is a
+**root cause**, drawn last with the heavier outline; link it to a deeper
+cause and it stops being one.
 
 ## Time, and the day a board shows
 

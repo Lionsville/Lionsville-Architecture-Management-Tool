@@ -118,7 +118,7 @@ nije adres oerbrocht, sadat in ferpleatsing nea in spoar fan ferâldere kopyen
 efterlit. By it starten iepenet de app it ûnderdiel dat jo iepen hienen opnij.
 
 Seis nammen wurde wegere, om't de eigen mappen fan in ûnderdiel se al brûke:
-`diagrams`, `docs`, `decisions`, `transitions`, `images` en `logos`.
+`diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` en `logos`.
 
 ## Ien namme yn de hiele organisaasje
 
@@ -585,6 +585,45 @@ en beoardielers, dy fan dit ûnderdiel en dy derboppe. Teksten binne markdown,
 mei deselde `[[Namme]]`-keppelings as de dokumintaasje; **Help by opmaak**
 njonken de boarne toant de syntaksis, mermaid-diagrammen ynbegrepen. Wizigings
 wurde mei dit ûnderdiel bewarre.
+
+## Waarnimmings
+
+**Waarnimmings** yn de boppebalke iepenet wat it team yn dizze scope sjoen
+hat — en, as team analysearre, wat derefter sit. De side hat twa ljepblêden.
+It **register** is in tabel dy't út de records lêzen wurdt: nûmer, titel, de
+dei dat it foar it earst sjoen is, wêr, de ympakt, hoe faak it sjoen is en de
+oarsaken dêr't it nei analysearre is; it record dat jo kieze iepenet
+dernjonken. De **analyze** is in tekening: de waarnimmings links as sirkels,
+de oarsaken dêr't se nei analysearre binne yn de banen rjochts derfan, en de
+grûnoarsaken as lêste.
+
+In waarnimming is in nûmere record (`OB-0007`) mei in titel, in datum, in
+plak, in ympakt — *lyts*, *grut* of *krityk* — en in markdowntekst foar wat
+der sjoen is, it bewiis en de earste gedachten. **Opnij sjoen** telt der ien
+by en skriuwt de dei yn de **skiednis** fan it record: it datearre oersjoch
+ûnderoan elke waarnimming — fêstlein, opnij sjoen, dield, gearfoege. De teller
+bepaalt de tint fan de sirkel yn de tekening; de ympakt de grutte.
+
+Twa waarnimmings dy't itselde blike te wêzen wurde **gearfoege**: kies de
+waarnimming dêr't it deselde fan is, en de kearen dat it sjoen is en de
+oarsaken geane oer. Beide records sizze dat mei de datum. It gearfoege record
+bliuwt — dêr stiet de oarspronklike tekst — en wurdt as gearfoege lêzen, net
+fuortsmiten; *Gearfoege toane* hellet it werom yn it register.
+
+In waarnimming is **lokaal** yn har scope, útsein jo **diele** har. Dield
+lêst elke scope derboppe har — ûnder *Dield út …* — en kin har dêr oan in
+eigen oarsaak keppelje en gearfoegje mei in eigen waarnimming. Se wurdt noch
+altyd wizige dêr't se wennet; de lêzer derboppe toant har sûnder Bewurkje en
+biedt oan har scope te iepenjen. Neat streamt nei ûnderen.
+
+In **oarsaak** (`CA-0003`) is wat it team seit dat efter ien of mear
+waarnimmings sit, of efter oare oarsaken. Se begjint **oannommen** en wurdt
+**ferifiearre** sadree't se kontrolearre is. **Keppelje oan in oarsaak…** op
+in waarnimming neamt in besteande oarsaak of in nije, mei de sterkte fan it
+ferbân — sterk, normaal of swak, de dikte fan de line. **Keppelje oan in
+djippere oarsaak…** op in oarsaak docht itselde in nivo fierder. In oarsaak
+dy't troch neat ferklearre wurdt is in **grûnoarsaak**, as lêste tekene mei de
+dikkere râne; keppelje har oan in djippere en se is der gjin mear.
 
 ## Tiid, en de dei dy't in boerd toant
 
