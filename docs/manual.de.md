@@ -1037,10 +1037,37 @@ sagt *(durch Hosting impliziert)*, die Technologielandschaft zeichnet es
 gepunktet und zählt es, und eine später geschriebene *Nutzt*-Zeile ist
 dieselbe Tatsache, laut gesagt.
 
+**Festhalten, was eine Anwendung nutzt.** Der Datensatz einer Anwendung hat
+neben *Läuft auf* eine Auswahl **Nutzt**: die Zeilen, die sie hat, als
+Marken, und eine durchsuchbare Liste mit zuerst den Diensten und
+Dienstplattformen dieses Bereichs und dann — unter *Anderswo in der
+Organisation* — jedem Dienst, den ein anderer Bereich als geteilt markiert,
+und jeder Dienstplattform, die der Baum kennt, jeweils mit ihrem Bereich.
+Mehrere ankreuzen und schließen: ein Schritt, ein Rückgängig, und ein Kreuz
+bei etwas von anderswo schreibt den Platzhalter mit der Zeile. Dasselbe
+Panel ist an der Technologielandschaft angedockt, und die Landschaft hat
+eine eigene Geste: **eine Anwendungskarte auf eine Karte in den unteren
+Bändern ziehen**. Ein Ort nimmt *Läuft auf*, eine Dienstplattform oder ein
+Dienst nimmt *Nutzt*, ein geteilter Dienst bringt seinen Platzhalter mit;
+solange eine Anwendung ausgewählt ist, zeigen die Ziele dieselben zwei
+Verben als kleine Knöpfe. Hosting-Linien werden jetzt gezeichnet, denn in
+einem Bereich ohne Dienste ist das die einzige Linie, die eine Anwendung
+hat; *Hosting in Dienstlinien einfalten* verbirgt eine, wo eine Nutzung
+dieselbe Plattform schon erreicht. Eine Zeile **In der Organisation
+geteilt** im Dienste-Band listet jeden Dienst, den andere Bereiche als
+geteilt markieren, gedimmt, bis hier etwas einen nutzt; ein Bereich ganz
+ohne Dienste zeigt das Band als Streifen, und die Plattformen rücken
+hoch. Unter *Stützt sich auf* im Datensatz einer Tafel öffnet *Auf der
+Technologielandschaft zeigen* die Landschaft auf dieser Karte. Die Tafel
+selbst zeichnet weiterhin nur Flüsse.
+
 **Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten nach
 Plattform — dem Cluster, nicht dem Namespace — oder nach Lebenszyklus der
 Technik, damit die Karten, die auf etwas Auslaufendem stehen, bernsteinfarben
-werden, die ganze Kette mitgezählt. Das Abzeichen **Plattform** liest ab,
+werden, die ganze Kette mitgezählt — oder nach **einer Plattform oder einem
+Dienst**: jede Anwendung, die ihn nutzt, darauf gehostet ist oder sich
+darauf stützt, wird eingefärbt und der Rest verblasst, die umgekehrte
+Frage: wer steht darauf. Das Abzeichen **Plattform** liest ab,
 worauf die Container stehen, wenn es niemand gesetzt hat, und die Befunde der
 Roadmap melden eine Anwendung, die noch auf einer Plattform steht, nachdem
 diese oder etwas darüber ausgelaufen ist, mit der Plattform, die tatsächlich

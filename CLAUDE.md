@@ -1142,3 +1142,21 @@ technology landscape, whose palette offers the layer's two kinds, made
 with no placement and edited with the inspector every kind has. The three
 hooks hold no state of their own any more; which view is up is the
 session's. The platform scope's one view is its landscape.
+
+Then the landscape became **where technology use is written**
+(`docs/decisions/0020`). A look at a real scope with places and no
+offerings found the picture empty for an application that only says where
+it runs — hosting lines hid behind a checkbox that was off — and found
+that a person could not write a `uses` row at all: the board's connect
+gesture writes a flow, the inspector had no picker for it, and the only
+writer was the agent. Hosting is a line at rest now, folded on request
+into a line that already reaches the same platform; the offerings other
+scopes mark shared join the services as a row of their own, dimmed until
+something here uses one; and the row is written in three places that are
+one step — the inspector's **Uses** picker (this scope first, then the
+organisation, a stand-in brought with the tick), a **drop** of an
+application card onto a platform or an offering on the landscape (the row
+follows the target's archetype), and the agent's `technology.use`. The
+board keeps *only a flow is a line*; it gains a door from the record to
+the landscape focused on the card, and a third overlay that asks the
+reverse question, who stands on this one platform or offering.

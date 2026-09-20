@@ -969,10 +969,35 @@ Cloud steunt op de clouddienst die Azure Cloud realiseert, of iemand nu een
 hosting)*, het technologielandschap tekent het gestippeld en telt het mee,
 en een later geschreven *Gebruikt*-regel is hetzelfde feit hardop gezegd.
 
+**Vastleggen wat een applicatie gebruikt.** Het record van een applicatie
+heeft naast *Draait op* een kiezer **Gebruikt**: de regels die het heeft als
+labels, en een doorzoekbare lijst met eerst de diensten en dienstplatforms
+van deze scope en dan — onder *Elders in de organisatie* — elke dienst die
+een andere scope gedeeld noemt en elk dienstplatform dat de boom kent, elk
+met zijn scope. Vink er meerdere aan en sluit: één stap, één ongedaan
+maken, en een vinkje bij iets van elders schrijft de stand-in mee met de
+regel. Hetzelfde paneel staat naast het technologielandschap, en het
+landschap heeft één gebaar van zichzelf: **sleep een applicatiekaart op een
+kaart in de onderste banden**. Een plek neemt *Draait op*, een
+dienstplatform of een dienst neemt *Gebruikt*, een gedeelde dienst brengt
+haar stand-in mee; zolang een applicatie geselecteerd is tonen de doelen
+dezelfde twee werkwoorden als kleine knoppen. Hostinglijnen worden nu
+getekend, want in een scope zonder diensten is dat de enige lijn die een
+applicatie heeft; *Hosting samenvouwen met dienstlijnen* verbergt er een
+waar een gebruik hetzelfde platform al bereikt. Een rij **Gedeeld in de
+organisatie** binnen de dienstenband toont elke dienst die andere scopes
+gedeeld noemen, gedimd tot iets hier er een gebruikt; een scope zonder
+diensten toont de band als een strook en de platforms schuiven omhoog.
+Onder *Steunt op* op het record van een bord opent *Toon op
+technologielandschap* het landschap op die kaart. Het bord zelf tekent nog
+altijd alleen stromen.
+
 **Kleuren op** in de werkbalk van het landschap kleurt de kaarten op platform
 — het cluster, niet de namespace — of op levenscyclus van de techniek, zodat
 de kaarten die op iets staan dat uitgefaseerd wordt amber worden, de hele
-keten meegerekend. De badge **platform** leest af waar de containers op staan
+keten meegerekend — of op **één platform of dienst**: elke applicatie die
+het gebruikt, erop gehost is of erop steunt wordt gekleurd en de rest
+vervaagt, de omgekeerde vraag: wie staat hierop. De badge **platform** leest af waar de containers op staan
 als niemand hem heeft gezet, en de bevindingen van de roadmap melden een
 applicatie die nog op een platform staat nadat dat, of iets erboven, is
 uitgefaseerd, met het platform erbij dat werkelijk verdwijnt.

@@ -4,6 +4,8 @@
 * Date: 2026-09-17
 * Deciders: Wouter Simons
 * Amends: ADR-0014 §5 (one thing per question, and the rest computed)
+* Amended, 20 September 2026, by ADR-0020: *Uses* has the *Elsewhere* list
+  §4 left open, and the technology landscape is where the row is written
 
 ## Context and Problem Statement
 

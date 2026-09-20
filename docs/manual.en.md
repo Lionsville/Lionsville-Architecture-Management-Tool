@@ -919,9 +919,33 @@ the cloud service Azure Cloud realises, whether or not anybody wrote a
 landscape draws it dotted and counts it, and a *Uses* row written later is
 the same fact said out loud.
 
+**Writing what an application uses.** An application's record has a
+**Uses** picker beside *Hosted on*: the rows it has as pills, and a
+searchable list over this scope's offerings and service platforms first,
+then — under *Elsewhere in the organisation* — every offering another scope
+marks shared and every service platform the tree knows, each with its
+scope. Tick several and close: one step, one undo, and a tick on something
+from elsewhere writes its stand-in with the row. The same panel is docked
+on the technology landscape, and the landscape has one gesture of its own:
+**drag an application card onto a card in the lower bands**. A place takes
+*Hosted on*, a service platform or an offering takes *Uses*, a shared
+offering brings its stand-in; while an application is selected the targets
+show the same two verbs as small buttons. Hosting lines are drawn now,
+because on a scope with no offerings that is the only line an application
+has; *Fold hosting into service lines* hides one where a use already
+reaches the same platform. A **Shared in the organisation** row inside the
+services band lists every offering other scopes mark shared, dimmed until
+something here uses one; a scope with no offerings at all shows the band
+as a strip and the platforms move up. Under *Leverages* on a board's
+record, *Show on technology landscape* opens the landscape on that card.
+The board itself still draws flows only.
+
 **Colour by** in the landscape's toolbar tints the cards by platform — the
 cluster, not the namespace — or by technology lifecycle, so the cards
-standing on something retiring go amber, the whole chain counted. The
+standing on something retiring go amber, the whole chain counted — or by
+**one platform or offering**: every application that uses it, is hosted on
+it or leverages it is coloured and the rest fade, which is the reverse
+question, who stands on this. The
 **platform** badge reads off the roll-up where nobody set it, and the
 roadmap's findings flag an application still standing on a platform after it
 or anything above it has retired, naming the platform that actually goes.

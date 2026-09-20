@@ -958,10 +958,34 @@ skreau of net — it rekord seit *(ymplisyt troch hosting)*, it
 technologylânskip tekenet it stippele en telt it mei, en in letter skreaune
 *Brûkt*-rigel is itselde feit lûdop sein.
 
+**Fêstlizze wat in applikaasje brûkt.** It rekord fan in applikaasje hat
+neist *Rint op* in kiezer **Brûkt**: de rigels dy't it hat as labels, en in
+trochsykbere list mei earst de tsjinsten en tsjinstplatfoarms fan dizze
+scope en dan — ûnder *Earne oars yn de organisaasje* — elke tsjinst dy't in
+oare scope dield neamt en elk tsjinstplatfoarm dat de beam ken, elk mei syn
+scope. Finkje der mear oan en slút: ien stap, ien ûngedien meitsje, en in
+finkje by wat fan earne oars skriuwt de stand-in mei de rigel. Itselde
+paniel stiet neist it technologylânskip, en it lânskip hat ien gebeart fan
+himsels: **sleep in applikaasjekaart op in kaart yn de ûnderste bannen**.
+In plak nimt *Rint op*, in tsjinstplatfoarm of in tsjinst nimt *Brûkt*, in
+dielde tsjinst bringt har stand-in mei; salang't in applikaasje selektearre
+is toane de doelen deselde twa tiidwurden as lytse knoppen. Hostinglinen
+wurde no tekene, want yn in scope sûnder tsjinsten is dat de iennige line
+dy't in applikaasje hat; *Hosting gearfâldzje mei tsjinstlinen* ferberget
+der ien dêr't in gebrûk itselde platfoarm al berikt. In rige **Dield yn de
+organisaasje** binnen de tsjinstebân toant elke tsjinst dy't oare scopes
+dield neame, dimd oant wat hjir der ien fan brûkt; in scope hielendal
+sûnder tsjinsten toant de bân as in stripe en de platfoarms skowe omheech.
+Under *Stipet op* op it rekord fan in boerd iepenet *Toan op
+technologylânskip* it lânskip op dy kaart. It boerd sels tekenet noch altyd
+allinnich streamen.
+
 **Kleurje op** yn de arkbalke fan it lânskip kleuret de kaarten op platfoarm —
 it kluster, net de namespace — of op libbenssyklus fan de technyk, sadat de
 kaarten dy't op wat steane dat útfazearre wurdt amber wurde, de hiele keatling
-meirekkene. De badge **platfoarm** lêst ôf wêr't de containers op steane as
+meirekkene — of op **ien platfoarm of tsjinst**: elke applikaasje dy't it
+brûkt, derop host is of derop stipet wurdt kleure en de rest ferfaget, de
+omkearde fraach: wa stiet hjirop. De badge **platfoarm** lêst ôf wêr't de containers op steane as
 nimmen him set hat, en de befiningen fan de roadmap melde in applikaasje dy't
 noch op in platfoarm stiet neidat dat, of wat derboppe, útfazearre is, mei it
 platfoarm derby dat wier ferdwynt.
