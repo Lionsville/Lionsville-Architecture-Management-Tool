@@ -47,7 +47,7 @@ import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
 import { inspectSheet } from './inspectSheet'
 import { inspectMap } from './inspectMap'
-import { inspectTechnology } from './inspectTechnology'
+import { inspectTechnology, sharedElsewhereOf } from './inspectTechnology'
 import { isRendererRefusal, toBase64 } from './renderer'
 import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
@@ -93,6 +93,8 @@ export type SessionView = {
    * ask, and then nothing is refused on this ground.
    */
   ownedElsewhere?(id: ElementId, patch: Partial<DesignElement>): { owner?: string } | undefined
+  /** See {@link WriteView.standInFor} (ADR-0020): the stand-in this scope would keep of another scope's technology. */
+  standInFor?(id: ElementId): DesignElement | undefined
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
   /**
@@ -220,7 +222,9 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
     if (diagram.kind === 'map') {
       return json(inspectMap(view.model, diagram, args.limit as number | undefined, session.today()))
     }
-    if (diagram.kind === 'technology') return json(inspectTechnology(view.model, diagram, args.limit as number | undefined))
+    if (diagram.kind === 'technology') {
+      return json(inspectTechnology(view.model, diagram, args.limit as number | undefined, sharedElsewhereOf(session.tree, session.scopePath())))
+    }
     return json(inspect(view.model, diagram, args.limit as number | undefined))
   }
 
@@ -335,6 +339,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     translate: session.translate,
     containerName: session.containerName,
     ...(session.ownedElsewhere ? { ownedElsewhere: session.ownedElsewhere } : {}),
+    ...(session.standInFor ? { standInFor: session.standInFor } : {}),
     ...(session.tree ? { known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...over,
   }

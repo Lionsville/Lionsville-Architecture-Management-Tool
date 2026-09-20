@@ -553,6 +553,56 @@ describe('a typed relation', () => {
       .toMatchObject({ refusal: 'agent.unknownId' })
   })
 
+  /**
+   * What an application uses, as one list (ADR-0020): the editor's `setUses`
+   * said to an agent — the rows written and taken off as one step, the
+   * stand-in for a target another scope defines in that step, a wrong end
+   * refused with the writer's own key.
+   */
+  it('sets what an application uses as one step, bringing the stand-in for a target from elsewhere', () => {
+    const layer = fromArrays({
+      ...host,
+      elements: [
+        ...host.elements,
+        element('bus', 'Message brokering', { kind: 'platformService' }),
+        element('k8s', 'Cluster', { kind: 'platform', platformArchetype: 'place' }),
+      ],
+      relations: [...host.relations, { id: 'u0', type: 'uses', sourceId: 'billing', targetId: 'bus', validFrom: '2027-01-01' }],
+    })
+    const db = { id: 'managed-db', kind: 'platformService' as const, name: 'Managed database', ref: 'platforms', lifecycle: 'live' as const, isManaged: false, aspects: {} }
+    const standInFor = (id: string) => (id === 'managed-db' ? db : undefined)
+    const out = commandFor('technology.use', { elementId: 'billing', targetIds: ['bus', 'k8s', 'managed-db'] }, view(layer, { standInFor }))
+    expect(answerOf(out)).toMatchObject({
+      elementId: 'billing', uses: ['bus', 'k8s', 'managed-db'],
+      written: [{ targetId: 'k8s' }, { targetId: 'managed-db' }], removed: [], standIns: ['managed-db'],
+    })
+    const after = roundTrip(layer, out)
+    expect(after.elements['managed-db']).toMatchObject({ ref: 'platforms' })
+    const rows = Object.values(after.relations).filter((row) => row.type === 'uses').map((row) => `${row.targetId}${row.validFrom ? '@' + row.validFrom : ''}`)
+    expect(rows).toEqual(['bus@2027-01-01', 'k8s', 'managed-db'])
+    // And taken off, leaving another application's rows alone.
+    const two = fromArrays({ ...toArrays(after), relations: [...toArrays(after).relations, { id: 'u9', type: 'uses', sourceId: 'crm', targetId: 'bus' }] })
+    const off = commandFor('technology.use', { elementId: 'billing', targetIds: ['k8s'] }, view(two))
+    expect(answerOf(off)).toMatchObject({ removed: [{ targetId: 'bus' }, { targetId: 'managed-db' }], written: [] })
+    const left = Object.values(roundTrip(two, off).relations).filter((row) => row.type === 'uses').map((row) => `${row.sourceId}>${row.targetId}`)
+    expect(left).toEqual(['billing>k8s', 'crm>bus'])
+    // Saying the same thing is an answer and not a step.
+    expect(commandFor('technology.use', { elementId: 'billing', targetIds: ['bus', 'k8s', 'managed-db'] }, view(after))).toMatchObject({ ok: true })
+    expect('command' in commandFor('technology.use', { elementId: 'billing', targetIds: ['bus', 'k8s', 'managed-db'] }, view(after))).toBe(false)
+  })
+
+  it('refuses a wrong end of a use with the writer\'s key, and a target nobody defines', () => {
+    const layer = fromArrays({ ...host, elements: [...host.elements, element('bus', 'Message brokering', { kind: 'platformService' })] })
+    expect(commandFor('technology.use', { elementId: 'billing', targetIds: ['who'] }, view(layer)))
+      .toMatchObject({ refusal: 'command.technologyEnds' })
+    expect(commandFor('technology.use', { elementId: 'who', targetIds: ['bus'] }, view(layer)))
+      .toMatchObject({ refusal: 'command.technologyEnds' })
+    expect(commandFor('technology.use', { elementId: 'billing', targetIds: ['ghost'] }, view(layer)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+    expect(commandFor('technology.use', { elementId: 'ghost', targetIds: ['bus'] }, view(layer)))
+      .toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
   it('changes what a row means, and the days it holds', () => {
     const after = roundTrip(model, commandFor('relation.update', { id: 'c1', type: 'serves', validUntil: '2028-01-31' }, view(model)))
     expect(after.relations.c1).toMatchObject({ type: 'serves', validUntil: '2028-01-31' })

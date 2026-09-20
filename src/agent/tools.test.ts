@@ -37,6 +37,7 @@ describe('the tool list', () => {
 
   it('answers whether a string is a tool', () => {
     expect(isToolName('elements.list')).toBe(true)
+    expect(toolSpec('technology.use').tier).toBe('write')
     expect(isToolName('elements.destroy')).toBe(false)
     expect(isToolName(42)).toBe(false)
     expect(toolSpec('search').tier).toBe('read')

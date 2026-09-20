@@ -727,6 +727,28 @@ const SPECS = [
     },
   },
   {
+    name: 'technology.use',
+    tier: 'write',
+    description:
+      'Make what an application or a component uses equal to a list (ADR-0020): the platformServices it '
+      + 'consumes and the platforms it binds to, as one step — rows for targets no longer named are removed, '
+      + 'rows for new ones written, and a kept row left exactly as it was. A target another scope defines '
+      + '(technology.list knows it) arrives as a stand-in in the same step. This is what the inspector\'s Uses '
+      + 'picker and a drop on the technology landscape write; relation.add with type uses writes one row at '
+      + 'a time. Refused command.technologyEnds for a target that is neither a platformService nor a platform, '
+      + 'or an element that is neither an application nor a component, and agent.unknownId for a target '
+      + 'nobody in the organisation defines. Answers with the rows written and removed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        elementId: ID('application or component'),
+        targetIds: { type: 'array', description: 'The platformServices and platforms it uses, whole. Empty takes every row off.', items: { type: 'string' } },
+      },
+      required: ['elementId', 'targetIds'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'relation.update',
     tier: 'write',
     description:

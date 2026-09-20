@@ -93,6 +93,14 @@ export type WriteView = ReadView & {
    * known, which is what a session with no tree honestly has.
    */
   readonly known?: (id: ElementId) => boolean
+  /**
+   * The stand-in this scope would keep of a platform or a service another
+   * scope defines (ADR-0017, ADR-0020): the two caches and nothing of the
+   * owner's detail, written in the same step as the row that names it.
+   * Handed in for the reason `known` is; absent, a target this scope does
+   * not hold is unknown.
+   */
+  readonly standInFor?: (id: ElementId) => DesignElement | undefined
 }
 
 /** A command, and what to say once it has landed. */
@@ -253,6 +261,60 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
       return {
         command: { type: 'relation.create', relation, origin: 'agent' },
         answer: json({ id: relation.id, type, sourceId, targetId }),
+      }
+    }
+    case 'technology.use': {
+      // What an application uses, as one list (ADR-0020): the editor's
+      // `setUses`, said to an agent. The rows lead and any stand-in comes
+      // first, as the editor writes it, so one undo takes the step back whole.
+      const elementId = args.elementId as string
+      const targetIds = args.targetIds as string[]
+      const source = model.elements[elementId]
+      if (!source) return refused('agent.unknownId', `element ${elementId}`)
+      if (source.kind !== 'application' && source.kind !== 'component') {
+        return refused('command.technologyEnds', `${elementId} is a ${source.kind}`)
+      }
+      const wanted: string[] = []
+      const arrives: Command[] = []
+      for (const targetId of targetIds) {
+        if (wanted.includes(targetId) || targetId === elementId) continue
+        const held = model.elements[targetId]
+        if (held) {
+          if (held.kind !== 'platform' && held.kind !== 'platformService') {
+            return refused('command.technologyEnds', `${elementId} → ${targetId} is a ${held.kind}`)
+          }
+        } else {
+          const standIn = view.standInFor?.(targetId)
+          if (!standIn || (standIn.kind !== 'platform' && standIn.kind !== 'platformService')) {
+            return refused('agent.unknownId', `platform or platformService ${targetId}`)
+          }
+          arrives.push({ type: 'element.create', element: standIn })
+        }
+        wanted.push(targetId)
+      }
+      const held = model.order.relations
+        .map((id) => model.relations[id])
+        .filter((row) => row.type === 'uses' && row.sourceId === elementId)
+      const removed = held.filter((row) => !wanted.includes(row.targetId))
+      const written = wanted
+        .filter((targetId) => !held.some((row) => row.targetId === targetId))
+        .map((targetId): Relation => ({ id: view.ids.connection(), type: 'uses', sourceId: elementId, targetId }))
+      const answer = json({
+        elementId,
+        uses: wanted,
+        written: written.map((row) => ({ id: row.id, targetId: row.targetId })),
+        removed: removed.map((row) => ({ id: row.id, targetId: row.targetId })),
+        standIns: arrives.map((command) => (command.type === 'element.create' ? command.element.id : '')).filter(Boolean),
+      })
+      // Saying what is already said is not a step.
+      if (removed.length === 0 && written.length === 0) return answer
+      return {
+        command: transaction([
+          ...arrives,
+          ...removed.map((row): Command => ({ type: 'relation.delete', id: row.id })),
+          ...written.map((relation): Command => ({ type: 'relation.create', relation })),
+        ], { origin: 'agent' }),
+        answer,
       }
     }
     case 'relation.update': {

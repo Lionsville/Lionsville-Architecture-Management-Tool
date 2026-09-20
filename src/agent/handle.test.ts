@@ -142,6 +142,18 @@ describe('handle', () => {
     expect(placedOn(held.model().diagrams['l7'], 'crm')).toMatchObject({ zone: 'landscape' })
   })
 
+  it('sets what an application uses through the session, answering with the revision (ADR-0020)', async () => {
+    const held = session()
+    await handle({ id: '1', tool: 'element.add', args: { name: 'Message brokering', kind: 'platformService' } }, held)
+    const out = await handle({ id: '2', tool: 'technology.use', args: { elementId: 'billing', targetIds: ['message-brokering'] } }, held)
+    expect(parsed(out)).toMatchObject({ uses: ['message-brokering'], revision: 2 })
+    expect(Object.values(held.model().relations).some((row) => row.type === 'uses' && row.sourceId === 'billing')).toBe(true)
+    // A target this scope holds that is not technology, with the writer's own key.
+    await handle({ id: '3', tool: 'element.add', args: { name: 'CRM' } }, held)
+    expect(await handle({ id: '4', tool: 'technology.use', args: { elementId: 'billing', targetIds: ['crm'] } }, held))
+      .toMatchObject({ ok: false, refusal: 'command.technologyEnds' })
+  })
+
   it('refuses a write while the session is blocked, and changes nothing', async () => {
     const held = session({ blocked: () => 'agent.conflict' })
     expect(await handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held))

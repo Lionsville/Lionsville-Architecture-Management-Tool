@@ -1013,6 +1013,13 @@ export function ProjectWorkspace({
       const answer = mayApplyPatch(patch, id, project.path, indexRef.current, held)
       return answer === true ? undefined : { owner: answer.owner }
     },
+    // The stand-in a technology.use writes for a target another scope
+    // defines (ADR-0020): the same record the inspector's picker writes.
+    standInFor: (id: string) => {
+      const entry = indexRef.current.lookup(id)
+      const ref = entry?.master ?? entry?.cachedRef
+      return entry && ref !== undefined ? standInOf(entry, ref) : undefined
+    },
     renderer,
     revision: session.revision,
     history: session.history,

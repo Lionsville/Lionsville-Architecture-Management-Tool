@@ -132,8 +132,10 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         // roll-up over its components, because that is where the rows are and
         // an application is not deployed anywhere itself; one with no
         // components answers with its own row, and a component always does.
+        // And, apart from the derived line, what was SAID (ADR-0020): the
+        // uses rows as written, so a client can tell the two apart.
         ...(element.kind === 'application' || element.kind === 'component'
-          ? { runsOn: runsOn(model, element.id), leverages: leverages(model, element.id, view) }
+          ? { runsOn: runsOn(model, element.id), uses: usesOf(model, element, view), leverages: leverages(model, element.id, view) }
           : {}),
         // The technology layer, said from either side (ADR-0014): what a
         // service is maintained by, realised by and consumed by; what a
@@ -603,6 +605,33 @@ function runsOn(model: Model, elementId: string) {
     from: hosting.from,
     ...(hosting.from === 'containers' ? { containers: hosting.containers } : {}),
   }
+}
+
+/**
+ * The `uses` rows as written (ADR-0020): the element's own, and for an
+ * application its containers' with the container named — ids and names, and
+ * where a stand-in is answered for. Separate from `leverages`, which is
+ * what the rows amount to.
+ */
+function usesOf(model: Model, element: DesignElement, view: ReadView) {
+  const rows = model.order.relations.map((id) => model.relations[id]).filter((row) => row.type === 'uses')
+  const containers = element.kind === 'application'
+    ? model.order.elements.map((id) => model.elements[id]).filter((held) => held.kind === 'component' && held.parentId === element.id)
+    : []
+  const said: { row: Relation; through?: ElementId }[] = [
+    ...rows.filter((row) => row.sourceId === element.id).map((row) => ({ row })),
+    ...containers.flatMap((container) => rows.filter((row) => row.sourceId === container.id).map((row) => ({ row, through: container.id }))),
+  ]
+  return said.map(({ row, through }) => {
+    const held = model.elements[row.targetId]
+    const where = held?.ref !== undefined ? view.tree?.lookup(row.targetId)?.master ?? held.ref : undefined
+    return {
+      id: row.targetId,
+      name: held?.name ?? view.tree?.lookup(row.targetId)?.name,
+      ...(where !== undefined ? { where } : {}),
+      ...(through !== undefined ? { through } : {}),
+    }
+  })
 }
 
 /** The rows the rest of the tree wrote about an id, where there is a tree to ask. */

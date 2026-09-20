@@ -197,8 +197,11 @@ describe('element.describe', () => {
     const parsed = (tool: 'element.describe', args: unknown, over: ReadView = withTree) =>
       JSON.parse((answer(tool, args, over) as unknown as { content: { text: string }[] }).content[0].text)
     expect(parsed('element.describe', { id: 'billing' })).toMatchObject({
+      // What was said, apart from what it amounts to (ADR-0020): the row is the container's.
+      uses: [{ id: 'containers', name: 'Container platform', through: 'billing-api' }],
       leverages: { services: [{ id: 'containers', name: 'Container platform', platforms: [{ id: 'openshift', name: 'OpenShift' }] }], platforms: [] },
     })
+    expect(parsed('element.describe', { id: 'billing-api' })).toMatchObject({ uses: [{ id: 'containers', name: 'Container platform' }] })
     expect(parsed('element.describe', { id: 'containers' })).toMatchObject({
       maintainedBy: [{ id: 'platform-team', name: 'Platform team' }],
       shared: true,
