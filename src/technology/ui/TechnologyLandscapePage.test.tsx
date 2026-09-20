@@ -66,8 +66,9 @@ describe('the three bands', () => {
     expect(screen.getByTestId('landscape-summary').textContent).toBe('3 applications · 2 services · 3 platforms')
     const apps = screen.getByTestId('landscape-applications')
     expect(within(apps).getAllByTestId(/^landscape-group-/).map((box) => box.dataset.testid)).toEqual(['landscape-group-channels', 'landscape-group-logistics'])
+    // A platform bound to is said as one, not counted among the services (ADR-0020).
     expect(within(screen.getByTestId('landscape-group-logistics')).getAllByTestId(/^landscape-application-/).map((card) => card.textContent)).toEqual([
-      'Rating (legacy)2 services', 'Warehouse Managementon OpenShift · 2 services',
+      'Rating (legacy)1 service · 1 platform', 'Warehouse Managementon OpenShift · 2 services',
     ])
     expect(screen.getByTestId('landscape-service-containers').textContent).toContain('A namespace on a managed cluster.')
     expect(screen.getByTestId('landscape-service-containers').textContent).toContain('3 users')
@@ -215,5 +216,137 @@ describe('in the tab (ADR-0016)', () => {
   it('offers nothing to add when read only', () => {
     open({ inline: true, onAdd: vi.fn(), readOnly: true })
     expect(screen.queryByTestId('landscape-add-service')).toBeNull()
+  })
+})
+
+/**
+ * The landscape as the place technology use is written (ADR-0020): hosting
+ * drawn at rest and folded on request, the band that degrades to a strip,
+ * the shared row, and the one write gesture — a drop, or the button while an
+ * application is chosen — calling the editor's own actions.
+ */
+describe('a scope with places and no offerings (ADR-0020)', () => {
+  // The spreadsheet case: an application that only says where it runs.
+  function bare(): DesignModel {
+    return {
+      name: 'Finance',
+      diagrams: [VIEW],
+      elements: [
+        element('sheets', { name: 'Spreadsheets' }),
+        element('portal', { name: 'Order portal' }),
+        element('o365', { kind: 'platform', name: 'Office 365', platformArchetype: 'place', outside: true }),
+        element('k8s', { kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
+        element('bus', { kind: 'platform', name: 'Event bus' }),
+      ],
+      relations: [row('h1', 'hostedOn', 'sheets', 'o365'), row('h2', 'hostedOn', 'portal', 'k8s'), row('u1', 'uses', 'portal', 'k8s')],
+    }
+  }
+  const shared = [
+    { id: 'managed-db', name: 'Managed database', where: 'platforms', realisedBy: ['azure-sql'] },
+    { id: 'ent-bus', name: 'Enterprise bus', where: 'platforms', realisedBy: [] },
+  ]
+  const describeShared: PlatformDescribe = (id) => ({ 'azure-sql': { name: 'Azure SQL', kind: 'platform' as const, where: 'platforms' } }[id])
+  const titles = () => [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
+
+  it('draws the hosting of a card that says nothing else, and folds it only into a line that reaches the same platform', () => {
+    open({ model: bare(), elsewhere: [], describe: () => undefined })
+    expect(screen.getByTestId('landscape-application-sheets').textContent).toBe('Spreadsheetson Office 365')
+    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
+    expect(titles()).toEqual(['hostedOn'])
+    fireEvent.click(screen.getByTestId('landscape-fold-hosting'))
+    expect(titles()).toEqual(['hostedOn'])
+    fireEvent.click(screen.getByTestId('landscape-application-portal'))
+    // Bound to the cluster it runs on: the binding stands for both.
+    expect(titles()).toEqual(['binds'])
+    fireEvent.click(screen.getByTestId('landscape-fold-hosting'))
+    expect(titles()).toEqual(['binds', 'hostedOn'])
+  })
+
+  it('folds the services band to a strip when there is nothing to show in it', () => {
+    open({ model: bare(), elsewhere: [], describe: () => undefined })
+    const band = screen.getByTestId('landscape-band-services')
+    expect(band.dataset.strip).toBe('true')
+    expect(band.textContent).toContain('no offerings in this scope')
+    cleanup()
+    open({ model: bare(), elsewhere: [], describe: () => undefined, sharedElsewhere: shared })
+    expect(screen.getByTestId('landscape-band-services').dataset.strip).toBeUndefined()
+    fireEvent.click(screen.getByTestId('landscape-show-shared'))
+    expect(screen.getByTestId('landscape-band-services').dataset.strip).toBe('true')
+  })
+
+  it('shows the shared offerings from elsewhere, dimmed until something here uses one', () => {
+    const model = bare()
+    model.relations.push(row('u2', 'uses', 'sheets', 'ent-bus'))
+    open({ model, elsewhere: [], describe: describeShared, sharedElsewhere: shared })
+    const row_ = screen.getByTestId('landscape-shared-row')
+    expect(row_.textContent).toContain('Shared in the organisation')
+    const db = within(row_).getByTestId('landscape-shared-managed-db')
+    expect(db.dataset.ghost).toBe('true')
+    expect(db.textContent).toContain('from platforms · realised by Azure SQL')
+    expect(db.textContent).toContain('shared')
+    const bus = within(row_).getByTestId('landscape-shared-ent-bus')
+    expect(bus.dataset.ghost).toBeUndefined()
+    expect(bus.textContent).toContain('1 user')
+    // A use of one is a line like any other.
+    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
+    expect(titles()).toEqual(['uses', 'hostedOn'])
+    // And the row can be hidden.
+    fireEvent.click(screen.getByTestId('landscape-show-shared'))
+    expect(screen.queryByTestId('landscape-shared-row')).toBeNull()
+  })
+
+  it('writes the row a drop means: hosting on a place, a use on a service platform or an offering', () => {
+    const onHost = vi.fn()
+    const onUse = vi.fn()
+    const notify = vi.fn()
+    open({ model: bare(), elsewhere: [], describe: describeShared, sharedElsewhere: shared, onHost, onUse, notify })
+    expect(screen.getByTestId('landscape-applications').textContent).toContain('drag a card onto a platform')
+    fireEvent.dragStart(screen.getByTestId('landscape-application-sheets'))
+    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
+    expect(onHost).toHaveBeenCalledWith('sheets', 'k8s')
+    fireEvent.dragStart(screen.getByTestId('landscape-application-sheets'))
+    fireEvent.drop(screen.getByTestId('landscape-platform-bus'))
+    expect(onUse).toHaveBeenLastCalledWith('sheets', ['bus'])
+    // A shared offering: the same row, the stand-in being the editor's business.
+    fireEvent.dragStart(screen.getByTestId('landscape-application-portal'))
+    fireEvent.drop(screen.getByTestId('landscape-shared-managed-db'))
+    expect(onUse).toHaveBeenLastCalledWith('portal', ['k8s', 'managed-db'])
+    // What is already said is said, not written twice.
+    fireEvent.dragStart(screen.getByTestId('landscape-application-portal'))
+    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
+    expect(notify).toHaveBeenLastCalledWith('Order portal is already hosted on Cluster.')
+    fireEvent.dragStart(screen.getByTestId('landscape-application-portal'))
+    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
+    expect(onHost).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers the same two verbs as buttons on the targets while an application is chosen', () => {
+    const onHost = vi.fn()
+    const onUse = vi.fn()
+    open({ model: bare(), elsewhere: [], describe: describeShared, sharedElsewhere: shared, onHost, onUse })
+    expect(screen.queryByTestId('landscape-host-k8s')).toBeNull()
+    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
+    fireEvent.click(screen.getByTestId('landscape-host-k8s'))
+    expect(onHost).toHaveBeenCalledWith('sheets', 'k8s')
+    fireEvent.click(screen.getByTestId('landscape-use-bus'))
+    expect(onUse).toHaveBeenLastCalledWith('sheets', ['bus'])
+    fireEvent.click(screen.getByTestId('landscape-use-ent-bus'))
+    expect(onUse).toHaveBeenLastCalledWith('sheets', ['ent-bus'])
+    // Choosing a platform instead takes the buttons away.
+    fireEvent.click(screen.getByTestId('landscape-platform-bus'))
+    expect(screen.queryByTestId('landscape-host-k8s')).toBeNull()
+  })
+
+  it('neither drags nor offers a button when read only', () => {
+    const onHost = vi.fn()
+    const onUse = vi.fn()
+    open({ model: bare(), elsewhere: [], describe: describeShared, sharedElsewhere: shared, onHost, onUse, readOnly: true })
+    expect(screen.getByTestId('landscape-application-sheets').getAttribute('draggable')).not.toBe('true')
+    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
+    expect(screen.queryByTestId('landscape-host-k8s')).toBeNull()
+    fireEvent.dragStart(screen.getByTestId('landscape-application-sheets'))
+    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
+    expect(onHost).not.toHaveBeenCalled()
+    expect(onUse).not.toHaveBeenCalled()
   })
 })

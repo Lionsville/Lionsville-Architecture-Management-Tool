@@ -15,7 +15,7 @@ import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { PageView } from './props';
-import type { DesignDiagram, DesignModel } from '../model/types';
+import type { DesignDiagram, DesignElement, DesignModel } from '../model/types';
 
 beforeAll(() => installReactFlowMocks());
 afterEach(() => cleanup());
@@ -24,7 +24,10 @@ function model(active: DesignDiagram): DesignModel {
   return {
     name: 'Platforms',
     diagrams: [{ id: 'd1', kind: 'layer7', name: 'Board', members: [], geometry: { nodes: [] } }, active],
-    elements: [{ id: 'openshift', kind: 'platform', name: 'OpenShift', lifecycle: 'live', isManaged: false, aspects: {} }],
+    elements: [
+      { id: 'openshift', kind: 'platform', name: 'OpenShift', lifecycle: 'live', isManaged: false, aspects: {} },
+      { id: 'wms', kind: 'application', name: 'WMS', lifecycle: 'live', isManaged: true, aspects: {} },
+    ],
     relations: [],
   };
 }
@@ -90,6 +93,34 @@ describe('the technology landscape in the tab', () => {
     expect(last().selectedId).toBe('openshift');
     act(() => last().onSelect(undefined));
     expect(last().selectedId).toBeUndefined();
+  });
+});
+
+describe('the landscape\'s write gesture through the page slot (ADR-0020)', () => {
+  it('writes where an application runs and what it uses, bringing the stand-in for a target another scope defines', () => {
+    const azure: DesignElement = { id: 'azure', kind: 'platform', name: 'Azure Cloud', ref: 'platforms', lifecycle: 'live', isManaged: false, aspects: {} };
+    const db: DesignElement = { id: 'managed-db', kind: 'platformService', name: 'Managed database', ref: 'platforms', lifecycle: 'live', isManaged: false, aspects: {} };
+    const { host, last } = renderEditor(TECHNOLOGY, {
+      ownership: {
+        ownerOf: () => undefined,
+        noteFor: () => undefined,
+        technology: {
+          elsewhere: [
+            { id: 'azure', name: 'Azure Cloud', kind: 'platform', place: true, where: 'platforms' },
+            { id: 'managed-db', name: 'Managed database', kind: 'platformService', place: false, where: 'platforms', shared: true },
+          ],
+          standInFor: (id: string) => ({ azure, 'managed-db': db } as Record<string, DesignElement>)[id],
+        },
+      },
+    });
+    act(() => last().onHost('wms', 'openshift'));
+    act(() => last().onUse('wms', ['openshift', 'managed-db']));
+    const rows = host.current.model.relations.map((row) => `${row.type}:${row.sourceId}>${row.targetId}`);
+    expect(rows).toEqual(['hostedOn:wms>openshift', 'uses:wms>openshift', 'uses:wms>managed-db']);
+    expect(host.current.model.elements.find((element) => element.id === 'managed-db')?.ref).toBe('platforms');
+    act(() => last().onHost('wms', 'azure'));
+    expect(host.current.model.elements.find((element) => element.id === 'azure')?.ref).toBe('platforms');
+    expect(host.current.model.relations.find((row) => row.type === 'hostedOn')?.targetId).toBe('azure');
   });
 });
 

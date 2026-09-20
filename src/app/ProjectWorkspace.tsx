@@ -29,7 +29,7 @@ import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
 import { decisionsOf, decisionsToCommands, describeLeverage, leverageOf, transaction, transitionsOf } from '../model'
-import type { DesignElement, ElementId, PlatformDescription, Relation, DesignDiagram } from '../model'
+import type { DesignElement, ElementId, PlatformDescription, Relation, DesignDiagram, SharedElsewhere } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
@@ -697,6 +697,21 @@ export function ProjectWorkspace({
    * index, so an application a landscape adds reaches the organisation's
    * sheet when the watcher next reads the tree.
    */
+  /**
+   * Every offering the rest of the tree marks shared, for the landscape's
+   * shared row (ADR-0020): the scope that answers for it and what realises
+   * it there, off the index rather than a load per scope.
+   */
+  const sharedElsewhere = useMemo<SharedElsewhere[]>(
+    () => index.entries()
+      .filter((entry) => entry.kind === 'platformService' && entry.shared && entry.master !== undefined && entry.master !== project.path)
+      .map((entry) => ({
+        id: entry.id, name: entry.name, where: scopeLabel(entry.master!),
+        realisedBy: [...new Set(index.rowsTo(entry.id, ['realises']).map(({ relation }) => relation.sourceId))],
+      })),
+    [index, project.path, scopeLabel],
+  )
+
   const applicationsInTree = useMemo<Supporter[]>(
     () => index.register().map(({ id, name, master }) => ({
       id, name,
@@ -1282,9 +1297,13 @@ export function ProjectWorkspace({
           {...(landscapes.focus !== undefined ? { focus: landscapes.focus } : {})}
           onSelect={view.onSelect}
           onAdd={view.onAdd}
+          onHost={view.onHost}
+          onUse={view.onUse}
+          notify={notify}
           onClose={() => {}}
           onHandle={onSheetHandle}
           elsewhere={rowsThrough}
+          sharedElsewhere={sharedElsewhere}
           describe={describeForMap}
           tree={ownership.platformTree}
           onOpenDocumentation={(id) => openDocumentation(id, diagram.id)}

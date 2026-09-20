@@ -38,6 +38,15 @@ export interface PageView {
   onSelect(elementId: ElementId | undefined): void;
   /** Make one of the kinds the view authors, filed under `parentId` where given. */
   onAdd(seed: { kind: CanvasKind; parentId?: ElementId }): void;
+  /**
+   * The technology landscape's one write gesture (ADR-0020), as the
+   * editor's own `setHostedOn` and `setUses`: where an application runs, and
+   * what it uses as the whole list. A target this scope does not hold is
+   * brought as its stand-in by the editor, off the ownership seam, so the
+   * page names ids and nothing else.
+   */
+  onHost(elementId: ElementId, platformId: ElementId): void;
+  onUse(elementId: ElementId, targetIds: readonly ElementId[]): void;
 }
 
 /**

@@ -63,6 +63,8 @@ export type HostedEditorProps = {
   onExportImagesMissing?(labels: string[]): void
   renderMarkdown?: SolutionDesignEditorProps['renderMarkdown']
   exportTitleBlock?: SolutionDesignEditorProps['exportTitleBlock']
+  /** The ownership seam (ADR-0012 §10, ADR-0017): what another scope answers for, and the technology it defines. */
+  ownership?: SolutionDesignEditorProps['ownership']
   windowChrome?: WindowChrome
   onForceSave?(): void
 }
@@ -204,6 +206,7 @@ export function hostedProps(
     renderMarkdown: o.renderMarkdown,
     pages: o.pages,
     exportTitleBlock: o.exportTitleBlock,
+    ownership: o.ownership,
     windowChrome: o.windowChrome,
     onForceSave: o.onForceSave,
   }

@@ -6,7 +6,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import type {
-  DesignDiagram, ElementId, ElementKind, Rect, UploadedLogo,
+  DesignDiagram, DesignElement, ElementId, ElementKind, Rect, UploadedLogo,
 } from '../model/types';
 import type { PlatformTree } from '../model/deployment';
 import type { Theme } from '@mui/material/styles';
@@ -1418,6 +1418,23 @@ function EditorBody(props: SolutionDesignEditorProps) {
               ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
               onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
               onAdd: (seed) => state.actions.addElement(seed),
+              // The landscape's write gesture (ADR-0020): the same actions the
+              // inspector calls, with the stand-in for a target another scope
+              // defines resolved here, off the ownership seam.
+              onHost: (elementId, platformId) => {
+                const standIn = props.ownership?.technology?.standInFor(platformId);
+                if (standIn) state.actions.setHostedOn(elementId, platformId, standIn);
+                else state.actions.setHostedOn(elementId, platformId);
+              },
+              onUse: (elementId, targetIds) => {
+                const held = new Set(state.model.elements.map((element) => element.id));
+                const standIns = targetIds
+                  .filter((id) => !held.has(id))
+                  .map((id) => props.ownership?.technology?.standInFor(id))
+                  .filter((one): one is DesignElement => one !== undefined);
+                if (standIns.length > 0) state.actions.setUses(elementId, targetIds, standIns);
+                else state.actions.setUses(elementId, targetIds);
+              },
             })}
           </Box>
         ) : (

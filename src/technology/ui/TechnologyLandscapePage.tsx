@@ -19,9 +19,15 @@
  * Above `FOLD_ABOVE` applications every domain starts folded into one box;
  * a filter that brings the visible set under it unfolds the matches again.
  *
- * It is all read. What a person changes about a service or a platform is
- * changed on the board, where the rows are; a name here opens the thing's
- * page or its report.
+ * **One write gesture** (ADR-0020). A service or a platform is authored
+ * through the docked inspector (ADR-0016); what an application uses or
+ * runs on is written here, by dropping its card on a card in the lower
+ * bands — a place takes `hostedOn`, a service platform or an offering takes
+ * `uses`, and a shared offering from elsewhere brings its stand-in — or,
+ * while an application is selected, by the small button every target card
+ * then shows. The page calls the editor's own actions through the page
+ * slot and builds no command itself. The board keeps its rule that only a
+ * flow is a line; these lines are rows, never geometry.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -41,7 +47,7 @@ import {
 } from '../../model'
 import type {
   LandscapeApplication, LandscapeEdge, LandscapeEdgeKind, LandscapeGroup, LandscapePlatform, LandscapeService,
-  LandscapeView, NodeKey, PlatformDescribe, PlatformTree, TechnologyLandscape,
+  LandscapeView, NodeKey, PlatformDescribe, PlatformTree, SharedElsewhere, TechnologyLandscape,
 } from '../../model'
 import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
@@ -70,6 +76,18 @@ export type TechnologyLandscapePageProps = {
   focus?: NodeKey
   /** Make a service or a platform, filed under `parentId` where given. Absent = no `+` on the bands. */
   onAdd?(seed: { kind: 'platform' | 'platformService'; parentId?: ElementId }): void
+  /**
+   * The one write gesture (ADR-0020), as the editor's own actions: where an
+   * application runs, and what it uses as the whole list. A target this
+   * scope does not hold is the host's to bring as a stand-in. Absent = the
+   * cards do not drag and offer no button.
+   */
+  onHost?(elementId: ElementId, platformId: ElementId): void
+  onUse?(elementId: ElementId, targetIds: readonly ElementId[]): void
+  /** A gesture that would say what is already said: told, rather than written twice. */
+  notify?(message: string): void
+  /** Every offering the rest of the tree marks shared, for the shared row (ADR-0020). A STABLE array. */
+  sharedElsewhere?: readonly SharedElsewhere[]
   model: DesignModel
   /** Absent while the page is closing, or when the view was deleted under it. */
   diagram: DesignDiagram | undefined
@@ -112,10 +130,14 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
         ...(props.elsewhere ? { elsewhere: props.elsewhere } : {}),
         ...(props.describe ? { describe: props.describe } : {}),
         ...(props.tree ? { tree: props.tree } : {}),
+        ...(props.sharedElsewhere ? { sharedElsewhere: props.sharedElsewhere } : {}),
       })
       : undefined),
-    [model, diagram, props.elsewhere, props.describe, props.tree],
+    [model, diagram, props.elsewhere, props.describe, props.tree, props.sharedElsewhere],
   )
+  // This scope's own offerings, and the shared row (ADR-0020).
+  const own = useMemo(() => (landscape ?? { services: [] }).services.filter((service) => service.where === undefined), [landscape])
+  const shared = useMemo(() => (landscape ?? { services: [] }).services.filter((service) => service.where !== undefined), [landscape])
 
   // --- what the page is showing --------------------------------------------
   const [query, setQuery] = useState('')
@@ -124,6 +146,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const [services, setServices] = useState(true)
   const [lines, setLines] = useState<Lines>('focus')
   const [foldHosting, setFoldHosting] = useState(false)
+  const [showShared, setShowShared] = useState(true)
   const [onlyTouched, setOnlyTouched] = useState(false)
   const [selected, setSelected] = useState<NodeKey | undefined>(undefined)
   const [hovered, setHovered] = useState<NodeKey | undefined>(undefined)
@@ -197,6 +220,45 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
     }
   }, [landscape, focusKey, onSelect, held])
   const add = props.readOnly ? undefined : props.onAdd
+
+  // --- the one write gesture (ADR-0020) ----------------------------------------
+  const { onHost, onUse, notify } = props
+  const writes = !props.readOnly && onHost !== undefined && onUse !== undefined
+  const [dragging, setDragging] = useState<ElementId | undefined>(undefined)
+  const nameOfCard = useCallback((id: ElementId) => (landscape ? nameOf(landscape, id) : id), [landscape])
+  /**
+   * The row follows the target: a place takes `hostedOn`, anything else
+   * takes `uses`. A row already there is said rather than written twice;
+   * the stand-in for a shared offering is the host's business, behind
+   * `onUse`.
+   */
+  const write = useCallback((applicationId: ElementId, target: Target) => {
+    if (!writes || !landscape) return
+    const app = nameOfCard(applicationId)
+    if (target.kind === 'platform' && target.archetype === 'place') {
+      const hosted = model.relations.some((row) => row.type === 'hostedOn' && row.sourceId === applicationId && row.targetId === target.id)
+      if (hosted) { notify?.(t('landscape.alreadyHosted', { app, name: nameOfCard(target.id) })); return }
+      onHost(applicationId, target.id)
+      return
+    }
+    const used = model.relations.filter((row) => row.type === 'uses' && row.sourceId === applicationId).map((row) => row.targetId)
+    if (used.includes(target.id)) { notify?.(t('landscape.alreadyUses', { app, name: nameOfCard(target.id) })); return }
+    onUse(applicationId, [...used, target.id])
+  }, [writes, landscape, model.relations, onHost, onUse, notify, nameOfCard, t])
+  const drop = useCallback((target: Target) => {
+    if (dragging === undefined) return
+    write(dragging, target)
+    setDragging(undefined)
+  }, [dragging, write])
+  const dragStart = writes ? (id: ElementId) => { setDragging(id); setSelected(nodeKey.application(id)) } : undefined
+  // The buttons every target shows while an application is chosen: the keyboard and touch path.
+  const offering = writes && selected !== undefined && selected.startsWith('application:') ? selected.slice('application:'.length) : undefined
+  const targeting = useMemo<Targeting | undefined>(() => (writes ? {
+    over: dragging !== undefined,
+    onDrop: drop,
+    ...(offering !== undefined ? { onPress: (target: Target) => write(offering, target) } : {}),
+  } : undefined), [writes, dragging, drop, offering, write])
+
   const fold = useCallback((key: string) => setFolded((held) => {
     const next = new Set(held)
     if (next.has(key)) next.delete(key); else next.add(key)
@@ -322,6 +384,13 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
             control={<Checkbox size="small" checked={foldHosting} onChange={(event) => setFoldHosting(event.target.checked)} inputProps={{ 'data-testid': 'landscape-fold-hosting' } as never} />}
             label={t('landscape.foldHosting')}
           />
+          {shared.length > 0 && (
+            <FormControlLabel
+              sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
+              control={<Checkbox size="small" checked={showShared} onChange={(event) => setShowShared(event.target.checked)} inputProps={{ 'data-testid': 'landscape-show-shared' } as never} />}
+              label={t('landscape.sharedRow')}
+            />
+          )}
           <FormControlLabel
             sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
             control={<Checkbox size="small" checked={onlyTouched} onChange={(event) => setOnlyTouched(event.target.checked)} inputProps={{ 'data-testid': 'landscape-only-touched' } as never} />}
@@ -356,20 +425,26 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                 ))}
               </svg>
 
-              <Band title={t('landscape.applications')} note={startsFolded(shown) ? t('landscape.foldedAbove', { count: shown }) : undefined} testId="landscape-applications">
+              <Band title={t('landscape.applications')} testId="landscape-applications"
+                note={startsFolded(shown) ? t('landscape.foldedAbove', { count: shown }) : writes ? t('landscape.dragHint') : undefined}>
                 {visible.length === 0 ? <Empty text={t('landscape.noApplications')} /> : (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
                     {visible.map((group, at) => (
                       <Domain key={group.key} group={group} colour={groupColour(at, theme)} folded={folded.has(group.key)}
                         onFold={() => fold(group.key)} selected={selected} dims={dims} hides={hides} onChoose={choose}
-                        nameOf={(id) => nameOf(landscape, id)} t={t} />
+                        nameOf={(id) => nameOf(landscape, id)} onDragStart={dragStart} t={t} />
                     ))}
                   </Box>
                 )}
               </Band>
 
-              <Band title={t('landscape.services')} note={services ? undefined : t('landscape.servicesHidden', { count: landscape.counts.services })}
-                testId="landscape-band-services" action={(
+              {/* No offerings here and none shared to show: the band is a strip,
+                  and the layer degrades to one level (ADR-0020). */}
+              <Band title={t('landscape.services')} testId="landscape-band-services"
+                strip={own.length === 0 && (shared.length === 0 || !showShared)}
+                note={!services ? t('landscape.servicesHidden', { count: landscape.counts.services })
+                  : own.length === 0 && (shared.length === 0 || !showShared) ? t('landscape.noServicesStrip') : undefined}
+                action={(
                   <>
                     {add && services && <AddButton label={t('landscape.addService')} testId="landscape-add-service" onClick={() => add({ kind: 'platformService' })} />}
                     <Button size="small" data-testid="landscape-services-band" onClick={(event) => { event.stopPropagation(); setServices((held) => !held) }} sx={{ fontSize: 11, py: 0 }}>
@@ -377,13 +452,27 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                     </Button>
                   </>
                 )}>
-                {services && (landscape.services.length === 0 ? <Empty text={t('landscape.noServices')} /> : (
+                {services && own.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
-                    {landscape.services.map((service) => (
-                      <ServiceNode key={service.id} service={service} selected={selected} dims={dims} onChoose={choose} onAdd={add} t={t} theme={theme} />
+                    {own.map((service) => (
+                      <ServiceNode key={service.id} service={service} selected={selected} dims={dims} onChoose={choose} onAdd={add} targeting={targeting} t={t} theme={theme} />
                     ))}
                   </Box>
-                ))}
+                )}
+                {services && shared.length > 0 && showShared && (
+                  <Box data-testid="landscape-shared-row" sx={{ mt: own.length > 0 ? 1.5 : 0, pt: own.length > 0 ? 1.5 : 0, borderTop: own.length > 0 ? 1 : 0, borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 1 }}>
+                      <Typography sx={{ fontSize: 10.5, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>{t('landscape.sharedRow')}</Typography>
+                      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('landscape.sharedRowNote')}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
+                      {shared.map((service) => (
+                        <SharedCard key={service.id} service={service} selected={selected} dims={dims} onChoose={choose} targeting={targeting}
+                          nameOf={(id) => props.describe?.(id)?.name ?? nameOf(landscape, id)} t={t} />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
               </Band>
 
               <Band title={t('landscape.platforms')} testId="landscape-band-platforms" last action={
@@ -392,7 +481,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                 {landscape.platforms.length === 0 ? <Empty text={t('landscape.noPlatforms')} /> : (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>
                     {landscape.platforms.map((platform) => (
-                      <PlatformNode key={platform.id} platform={platform} selected={selected} dims={dims} onChoose={choose} onAdd={add} t={t} theme={theme} />
+                      <PlatformNode key={platform.id} platform={platform} selected={selected} dims={dims} onChoose={choose} onAdd={add} targeting={targeting} t={t} theme={theme} />
                     ))}
                   </Box>
                 )}
@@ -534,12 +623,14 @@ function drawEdges(board: HTMLElement, edges: readonly LandscapeEdge[]): Drawn[]
 
 // --- the bands and their cards ----------------------------------------------
 
-function Band({ title, note, action, testId, last, children }: {
-  title: string; note?: string; action?: React.ReactNode; testId: string; last?: boolean; children: React.ReactNode
+/** A band, or — with `strip` — its one-line header alone, with a small margin so the band below moves up. */
+function Band({ title, note, action, testId, last, strip, children }: {
+  title: string; note?: string; action?: React.ReactNode; testId: string; last?: boolean; strip?: boolean; children: React.ReactNode
 }) {
   return (
-    <Box data-testid={testId} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 1.5, mb: last ? 0 : 8, bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6) }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1, minHeight: 22 }}>
+    <Box data-testid={testId} data-strip={strip ? 'true' : undefined}
+      sx={{ border: 1, borderColor: 'divider', borderRadius: 2, px: 1.5, py: strip ? 0.5 : 1.5, mb: last ? 0 : strip ? 3 : 8, bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6) }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: strip ? 0 : 1, minHeight: 22 }}>
         <Typography sx={{ fontSize: 10.5, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>{title}</Typography>
         {note && <Typography sx={{ fontSize: 11, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note}</Typography>}
         <Box sx={{ flex: 1 }} />
@@ -579,10 +670,10 @@ function DomainChip({ group, off, onToggle, t }: { group: LandscapeGroup; off: b
   )
 }
 
-function Domain({ group, colour, folded, onFold, selected, dims, hides, onChoose, nameOf: name, t }: {
+function Domain({ group, colour, folded, onFold, selected, dims, hides, onChoose, nameOf: name, onDragStart, t }: {
   group: LandscapeGroup; colour: string; folded: boolean; onFold(): void
   selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; hides(key: NodeKey): boolean
-  onChoose(key: NodeKey): void; nameOf(id: ElementId): string; t: Translate
+  onChoose(key: NodeKey): void; nameOf(id: ElementId): string; onDragStart?: ((id: ElementId) => void) | undefined; t: Translate
 }) {
   const key = nodeKey.group(group.key)
   const label = group.label ?? t('landscape.thisScope')
@@ -609,29 +700,103 @@ function Domain({ group, colour, folded, onFold, selected, dims, hides, onChoose
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, maxWidth: 470 }}>
         {group.applications.map((app) => (
-          <ApplicationCard key={app.id} app={app} colour={colour} selected={selected} dims={dims} hidden={hides(nodeKey.application(app.id))} onChoose={onChoose} nameOf={name} t={t} />
+          <ApplicationCard key={app.id} app={app} colour={colour} selected={selected} dims={dims} hidden={hides(nodeKey.application(app.id))} onChoose={onChoose} nameOf={name} onDragStart={onDragStart} t={t} />
         ))}
       </Box>
     </Box>
   )
 }
 
-function ApplicationCard({ app, colour, selected, dims, hidden, onChoose, nameOf: name, t }: {
+function ApplicationCard({ app, colour, selected, dims, hidden, onChoose, nameOf: name, onDragStart, t }: {
   app: LandscapeApplication; colour: string; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; hidden: boolean
-  onChoose(key: NodeKey): void; nameOf(id: ElementId): string; t: Translate
+  onChoose(key: NodeKey): void; nameOf(id: ElementId): string; onDragStart?: ((id: ElementId) => void) | undefined; t: Translate
 }) {
   const key = nodeKey.application(app.id)
-  const uses = app.uses.length + app.implied.length + app.binds.length
+  // The hosting, the offerings it uses, the platforms it binds to: each
+  // said only where it is said, so a card that only runs somewhere says
+  // that alone rather than "0 services" (ADR-0020).
+  const uses = app.uses.length + app.implied.length
+  const said = [
+    app.hostedOn.length > 0 ? t('landscape.on', { name: name(app.hostedOn[0]!) }) : '',
+    uses > 0 ? plural(t, { one: 'landscape.servicesOne', other: 'landscape.servicesOther' }, uses) : '',
+    app.binds.length > 0 ? plural(t, { one: 'landscape.platformsOne', other: 'landscape.platformsOther' }, app.binds.length) : '',
+  ].filter(Boolean)
   return (
     <Box data-node={key} data-testid={`landscape-application-${app.id}`} {...cardData(key, dims, hidden)} onClick={(event) => { event.stopPropagation(); onChoose(key) }}
-      sx={{ ...cardSx(key, selected, dims, hidden), width: 144, bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderTop: 3, borderTopColor: colour, borderRadius: 1, px: 0.875, py: 0.5 }}>
+      draggable={onDragStart !== undefined}
+      onDragStart={onDragStart ? (event) => { event.dataTransfer?.setData('text/plain', app.id); onDragStart(app.id) } : undefined}
+      sx={{ ...cardSx(key, selected, dims, hidden), width: 144, bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderTop: 3, borderTopColor: colour, borderRadius: 1, px: 0.875, py: 0.5, cursor: onDragStart ? 'grab' : 'pointer' }}>
       <Typography sx={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontStyle: app.known ? undefined : 'italic' }}>{app.name}</Typography>
       <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {[
-          app.hostedOn.length > 0 ? t('landscape.on', { name: name(app.hostedOn[0]!) }) : '',
-          plural(t, { one: 'landscape.servicesOne', other: 'landscape.servicesOther' }, uses),
-        ].filter(Boolean).join(' · ')}
+        {said.length > 0 ? said.join(' · ') : t('landscape.nothingSaid')}
       </Typography>
+    </Box>
+  )
+}
+
+// --- the targets of the write gesture ------------------------------------------
+
+/** A card an application may be dropped on, and what the drop means. */
+type Target = { kind: 'platform'; id: ElementId; archetype: LandscapePlatform['archetype'] } | { kind: 'service'; id: ElementId }
+
+/** How the lower bands take the gesture: a drop in flight, and the button while an application is chosen. */
+type Targeting = {
+  /** An application is being dragged: the cards may take it. */
+  over: boolean
+  onDrop(target: Target): void
+  /** Present while an application is selected: the button's action. */
+  onPress?(target: Target): void
+}
+
+/** The drop handlers a target card wears, and the button it shows. */
+function targetProps(targeting: Targeting | undefined, target: Target) {
+  if (!targeting) return {}
+  return {
+    onDragOver: (event: React.DragEvent) => { if (targeting.over) event.preventDefault() },
+    onDrop: (event: React.DragEvent) => { event.preventDefault(); event.stopPropagation(); targeting.onDrop(target) },
+  }
+}
+
+function TargetButton({ targeting, target, t }: { targeting: Targeting | undefined; target: Target; t: Translate }) {
+  const press = targeting?.onPress
+  if (!press) return null
+  const hosts = target.kind === 'platform' && target.archetype === 'place'
+  return (
+    <Button size="small" variant="outlined" color="primary" data-testid={`landscape-${hosts ? 'host' : 'use'}-${target.id}`}
+      onClick={(event) => { event.stopPropagation(); press(target) }}
+      sx={{ position: 'absolute', right: 4, top: 4, fontSize: 10, py: 0, px: 0.75, minWidth: 0, lineHeight: '16px', zIndex: 4, bgcolor: 'background.paper' }}>
+      {hosts ? t('landscape.hostHere') : t('landscape.use')}
+    </Button>
+  )
+}
+
+/** An offering another scope marks shared (ADR-0020): dimmed until something here uses it. */
+function SharedCard({ service, selected, dims, onChoose, targeting, nameOf: name, t }: {
+  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void
+  targeting: Targeting | undefined; nameOf(id: ElementId): string; t: Translate
+}) {
+  const key = nodeKey.service(service.id)
+  const ghost = service.consumers === 0
+  return (
+    <Box data-node={key} data-testid={`landscape-shared-${service.id}`} {...cardData(key, dims, false)} {...(ghost ? { 'data-ghost': 'true' } : {})}
+      {...targetProps(targeting, { kind: 'service', id: service.id })}
+      onClick={(event) => { event.stopPropagation(); onChoose(key) }}
+      sx={{
+        ...cardSx(key, selected, dims, false), width: 180, bgcolor: 'background.paper', border: 1, borderStyle: ghost ? 'dashed' : 'solid', borderColor: 'divider',
+        borderLeft: 3, borderLeftColor: 'secondary.main', borderRadius: 1, px: 1, py: 0.75,
+        opacity: dims !== undefined && !dims.has(key) ? 0.28 : ghost ? 0.6 : 1,
+      }}>
+      <TargetButton targeting={targeting} target={{ kind: 'service', id: service.id }} t={t} />
+      <Typography sx={{ fontSize: 12.5, fontWeight: 600, pr: targeting?.onPress ? 5 : 0 }}>{service.name}</Typography>
+      <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>
+        {[t('landscape.from', { name: service.where ?? '' }), service.realisedBy.length > 0 ? t('landscape.realisedByNames', { names: service.realisedBy.map(name).join(', ') }) : ''].filter(Boolean).join(' · ')}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 0.5, mt: 0.75, flexWrap: 'wrap' }}>
+        {lifecycleTag(service.lifecycle, t)}
+        <Tag text={t('landscape.shared')} tone="service" />
+        {service.standIn && <Tag text={t('landscape.standInHere')} />}
+        <Tag text={plural(t, { one: 'landscape.usersOne', other: 'landscape.usersOther' }, service.consumers)} />
+      </Box>
     </Box>
   )
 }
@@ -652,28 +817,32 @@ function lifecycleTag(lifecycle: LandscapeService['lifecycle'], t: Translate) {
 
 type OnAdd = ((seed: { kind: 'platform' | 'platformService'; parentId?: ElementId }) => void) | undefined
 
-function ServiceNode({ service, selected, dims, onChoose, onAdd, t, theme }: {
-  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; onAdd: OnAdd; t: Translate; theme: Theme
+function ServiceNode({ service, selected, dims, onChoose, onAdd, targeting, t, theme }: {
+  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; onAdd: OnAdd
+  targeting: Targeting | undefined; t: Translate; theme: Theme
 }) {
-  const card = <ServiceCard service={service} selected={selected} dims={dims} onChoose={onChoose} t={t} />
+  const card = <ServiceCard service={service} selected={selected} dims={dims} onChoose={onChoose} targeting={targeting} t={t} />
   if (service.children.length === 0) return card
   return (
     <Box data-testid={`landscape-service-group-${service.id}`} sx={{ border: 1, borderStyle: 'dashed', borderColor: 'divider', borderRadius: 1.5, p: 1, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start' }}>
       {card}
-      {service.children.map((child) => <ServiceNode key={child.id} service={child} selected={selected} dims={dims} onChoose={onChoose} onAdd={onAdd} t={t} theme={theme} />)}
+      {service.children.map((child) => <ServiceNode key={child.id} service={child} selected={selected} dims={dims} onChoose={onChoose} onAdd={onAdd} targeting={targeting} t={t} theme={theme} />)}
       {onAdd && <AddButton label={t('landscape.addServiceUnder', { name: service.name })} testId={`landscape-add-service-${service.id}`} onClick={() => onAdd({ kind: 'platformService', parentId: service.id })} />}
     </Box>
   )
 }
 
-function ServiceCard({ service, selected, dims, onChoose, t }: {
-  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; t: Translate
+function ServiceCard({ service, selected, dims, onChoose, targeting, t }: {
+  service: LandscapeService; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void
+  targeting: Targeting | undefined; t: Translate
 }) {
   const key = nodeKey.service(service.id)
   return (
-    <Box data-node={key} data-testid={`landscape-service-${service.id}`} {...cardData(key, dims, false)} onClick={(event) => { event.stopPropagation(); onChoose(key) }}
+    <Box data-node={key} data-testid={`landscape-service-${service.id}`} {...cardData(key, dims, false)} {...targetProps(targeting, { kind: 'service', id: service.id })}
+      onClick={(event) => { event.stopPropagation(); onChoose(key) }}
       sx={{ ...cardSx(key, selected, dims, false), width: 180, bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderLeft: 3, borderLeftColor: 'secondary.main', borderRadius: 1, px: 1, py: 0.75 }}>
-      <Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{service.name}</Typography>
+      <TargetButton targeting={targeting} target={{ kind: 'service', id: service.id }} t={t} />
+      <Typography sx={{ fontSize: 12.5, fontWeight: 600, pr: targeting?.onPress ? 5 : 0 }}>{service.name}</Typography>
       {service.summary && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{service.summary}</Typography>}
       <Box sx={{ display: 'flex', gap: 0.5, mt: 0.75, flexWrap: 'wrap' }}>
         {lifecycleTag(service.lifecycle, t)}
@@ -685,10 +854,12 @@ function ServiceCard({ service, selected, dims, onChoose, t }: {
   )
 }
 
-function PlatformNode({ platform, selected, dims, onChoose, onAdd, t, theme }: {
-  platform: LandscapePlatform; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; onAdd: OnAdd; t: Translate; theme: Theme
+function PlatformNode({ platform, selected, dims, onChoose, onAdd, targeting, t, theme }: {
+  platform: LandscapePlatform; selected: NodeKey | undefined; dims: ReadonlySet<NodeKey> | undefined; onChoose(key: NodeKey): void; onAdd: OnAdd
+  targeting: Targeting | undefined; t: Translate; theme: Theme
 }) {
   const key = nodeKey.platform(platform.id)
+  const target: Target = { kind: 'platform', id: platform.id, archetype: platform.archetype }
   const tags = (
     <>
       {platform.outside && <Tag text={t('landscape.outside')} />}
@@ -700,21 +871,30 @@ function PlatformNode({ platform, selected, dims, onChoose, onAdd, t, theme }: {
   )
   if (platform.children.length === 0) {
     return (
-      <Box data-node={key} data-testid={`landscape-platform-${platform.id}`} {...cardData(key, dims, false)} onClick={(event) => { event.stopPropagation(); onChoose(key) }}
+      <Box data-node={key} data-testid={`landscape-platform-${platform.id}`} {...cardData(key, dims, false)} {...targetProps(targeting, target)}
+        onClick={(event) => { event.stopPropagation(); onChoose(key) }}
         sx={{ ...cardSx(key, selected, dims, false), width: 156, bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderLeft: 3, borderLeftColor: 'text.disabled', borderRadius: 1, px: 0.875, py: 0.625 }}>
-        <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{platform.name}</Typography>
+        <TargetButton targeting={targeting} target={target} t={t} />
+        <Typography sx={{ fontSize: 12, fontWeight: 600, pr: targeting?.onPress ? 5 : 0 }}>{platform.name}</Typography>
         <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>{tags}</Box>
       </Box>
     )
   }
   return (
     <Box data-testid={`landscape-platform-${platform.id}`} sx={{ border: 1, borderStyle: platform.outside ? 'dashed' : 'solid', borderColor: 'divider', borderRadius: 1.5, pt: 3, px: 1, pb: 1, position: 'relative', display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start', bgcolor: alpha(theme.palette.background.paper, 0.4) }}>
-      <Box data-node={key} {...cardData(key, dims, false)} onClick={(event) => { event.stopPropagation(); onChoose(key) }}
+      <Box data-node={key} {...cardData(key, dims, false)} {...targetProps(targeting, target)} onClick={(event) => { event.stopPropagation(); onChoose(key) }}
         sx={{ ...cardSx(key, selected, dims, false), position: 'absolute', left: 8, top: 4, fontSize: 11, display: 'flex', gap: 0.75, alignItems: 'center', px: 0.5, borderRadius: 0.5 }}>
         <Box component="span" sx={{ fontWeight: 700 }}>{platform.name}</Box>
         {tags}
+        {targeting?.onPress && (
+          <Button size="small" variant="outlined" color="primary" data-testid={`landscape-${platform.archetype === 'place' ? 'host' : 'use'}-${platform.id}`}
+            onClick={(event) => { event.stopPropagation(); targeting.onPress?.(target) }}
+            sx={{ fontSize: 10, py: 0, px: 0.75, minWidth: 0, lineHeight: '16px', bgcolor: 'background.paper' }}>
+            {platform.archetype === 'place' ? t('landscape.hostHere') : t('landscape.use')}
+          </Button>
+        )}
       </Box>
-      {platform.children.map((child) => <PlatformNode key={child.id} platform={child} selected={selected} dims={dims} onChoose={onChoose} onAdd={onAdd} t={t} theme={theme} />)}
+      {platform.children.map((child) => <PlatformNode key={child.id} platform={child} selected={selected} dims={dims} onChoose={onChoose} onAdd={onAdd} targeting={targeting} t={t} theme={theme} />)}
       {onAdd && <AddButton label={t('landscape.addPlatformUnder', { name: platform.name })} testId={`landscape-add-platform-${platform.id}`} onClick={() => onAdd({ kind: 'platform', parentId: platform.id })} />}
     </Box>
   )

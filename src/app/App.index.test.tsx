@@ -26,7 +26,7 @@ vi.mock('../editor', async (importOriginal) => {
     const active = props.document.model.diagrams.find((diagram) => diagram.id === props.document.activeDiagramId)
     return (
       <div data-testid="editor">
-        {active && props.pages?.render(active, { readOnly: false, onSelect: () => {}, onAdd: () => {} })}
+        {active && props.pages?.render(active, { readOnly: false, onSelect: () => {}, onAdd: () => {}, onHost: () => {}, onUse: () => {} })}
       </div>
     )
   }
