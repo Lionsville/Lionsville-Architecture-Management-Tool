@@ -49,6 +49,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
+import { SeamResizer } from '../../widgets/SeamResizer'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import {
@@ -98,6 +99,16 @@ export type ObservationsPageProps = {
 
 type Tab = 'register' | 'analysis'
 
+/**
+ * How wide the reading pane is, in pixels, per tab: the register wants room
+ * for its columns and the picture wants room for its lanes, so each keeps a
+ * width of its own. Dragged at the seam, put back with a double-click.
+ */
+const READER = {
+  register: { default: 640, min: 360, max: 1200 },
+  analysis: { default: 420, min: 320, max: 900 },
+} as const
+
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
     open, onClose, model, groupName, shared = [], onChange, initialId, readOnly = false, s, today, makeId,
@@ -111,6 +122,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const scopeLabel = props.scopeLabel ?? ((path: string) => path)
 
   const [tab, setTab] = useState<Tab>('register')
+  const [readerWidth, setReaderWidth] = useState<Record<Tab, number>>({ register: READER.register.default, analysis: READER.analysis.default })
   const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
   const [showMerged, setShowMerged] = useState(false)
@@ -282,7 +294,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   )
 
   const register = (
-    <Box data-testid="observation-register" sx={{ overflow: 'auto', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+    <Box data-testid="observation-register" sx={{ overflow: 'auto', minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
         <TextField
           size="small"
@@ -352,7 +364,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   ] as const
 
   const picture = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
       <Box data-testid="analysis-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
         {phases.map(([key, count]) => (
           <Typography key={key} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
@@ -480,8 +492,18 @@ export function ObservationsPage(props: ObservationsPageProps) {
           )}
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: tab === 'register' ? 'minmax(0, 1.1fr) minmax(0, 1fr)' : 'minmax(0, 1fr) 400px', flex: 1, minHeight: 0 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0 }}>
           {tab === 'register' ? register : picture}
+          <SeamResizer
+            orientation="vertical"
+            region="after"
+            value={readerWidth[tab]}
+            min={READER[tab].min}
+            max={READER[tab].max}
+            defaultValue={READER[tab].default}
+            onChange={(next) => setReaderWidth((held) => ({ ...held, [tab]: next }))}
+            label={s('observation.resizeReader')}
+          />
           <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>{reader}</Box>
             {tab === 'analysis' && toAnalyse}

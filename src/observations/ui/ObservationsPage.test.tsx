@@ -210,6 +210,19 @@ describe('ObservationsPage', () => {
     expect(next.causes[1]).toMatchObject({ title: 'No capacity planning', explains: [{ id: 'c1', strength: 'normal' }] })
   })
 
+  it('has a seam the reading pane is resized at, with the keyboard too', () => {
+    mount()
+    const seam = screen.getByRole('separator', { name: 'Resize the reading pane' })
+    expect(seam.getAttribute('aria-valuenow')).toBe('640')
+    fireEvent.keyDown(seam, { key: 'ArrowLeft' })
+    expect(seam.getAttribute('aria-valuenow')).toBe('648')
+    fireEvent.doubleClick(seam)
+    expect(seam.getAttribute('aria-valuenow')).toBe('640')
+    // Each tab keeps a width of its own.
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    expect(screen.getByRole('separator', { name: 'Resize the reading pane' }).getAttribute('aria-valuenow')).toBe('420')
+  })
+
   it('is read-only where told: no record, no verbs', () => {
     mount({ readOnly: true })
     expect(screen.queryByRole('button', { name: '+ New observation' })).toBeNull()

@@ -118,4 +118,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.phaseRoots': 'grondoorzaken',
   'observation.toAnalyse': 'Nog niet geanalyseerd',
   'observation.graphEmpty': 'Nog niets te tekenen. Leg een waarneming vast en koppel die aan een oorzaak.',
+  'observation.resizeReader': 'Leespaneel van grootte veranderen',
 }

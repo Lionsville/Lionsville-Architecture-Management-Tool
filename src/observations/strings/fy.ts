@@ -118,4 +118,5 @@ export const FY: Record<keyof typeof EN, string> = {
   'observation.phaseRoots': 'grûnoarsaken',
   'observation.toAnalyse': 'Noch net analysearre',
   'observation.graphEmpty': 'Noch neat te tekenjen. Lis in waarnimming fêst en keppelje dy oan in oarsaak.',
+  'observation.resizeReader': 'Lêspaniel fan grutte feroarje',
 }

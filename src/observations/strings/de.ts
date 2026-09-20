@@ -118,4 +118,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.phaseRoots': 'Grundursachen',
   'observation.toAnalyse': 'Noch nicht analysiert',
   'observation.graphEmpty': 'Noch nichts zu zeichnen. Halten Sie eine Beobachtung fest und verknüpfen Sie sie mit einer Ursache.',
+  'observation.resizeReader': 'Lesebereich in der Größe ändern',
 }

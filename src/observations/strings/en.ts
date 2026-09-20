@@ -135,4 +135,5 @@ export const EN = {
   'observation.phaseRoots': 'root causes',
   'observation.toAnalyse': 'Not yet analysed',
   'observation.graphEmpty': 'Nothing to draw yet. Record an observation, then link it to a cause.',
+  'observation.resizeReader': 'Resize the reading pane',
 } as const
