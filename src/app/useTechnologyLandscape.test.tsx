@@ -88,3 +88,19 @@ describe('opening and closing', () => {
     expect(host.views().diagram?.name).toBe('Technology landscape')
   })
 })
+
+describe('the door from a record (ADR-0020)', () => {
+  it('opens the scope\'s landscape on the application, making one where there is none, and lets the focus go on opening another view', () => {
+    const host = mount()
+    act(() => host.views().showOn('wms'))
+    expect(host.activeId()).toBe('tl-1')
+    expect(host.views().focus).toBe('application:wms')
+    act(() => host.views().open('d1'))
+    expect(host.views().focus).toBeUndefined()
+    // The landscape that exists is the one opened; no second one is made.
+    act(() => host.views().showOn('portal'))
+    expect(host.activeId()).toBe('tl-1')
+    expect(host.views().focus).toBe('application:portal')
+    expect(host.model().diagrams.filter((d) => d.kind === 'technology')).toHaveLength(1)
+  })
+})

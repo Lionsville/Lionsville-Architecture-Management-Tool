@@ -2,6 +2,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -37,6 +39,9 @@ import { MarkdownField } from '../documentation/ui/MarkdownField';
 import { ElementRecord, recordSummary } from './ElementRecord';
 
 const LIFECYCLES: DesignElement['lifecycle'][] = ['planned', 'live', 'retiring', 'retired'];
+
+/** One thing the *Uses* picker offers: this scope's, or another's with where it comes from (ADR-0020). */
+type UseOption = { id: ElementId; name: string; group: 'here' | 'elsewhere'; where?: string; platform: boolean };
 
 /**
  * Shape-variant options (U6a). The empty option writes `undefined` → NULL →
@@ -157,8 +162,14 @@ export interface ElementInspectorProps {
    * itself where nobody has ticked. Absent where the host has no tree to read.
    */
   offeredBeyond?: readonly string[];
-  /** The technology the rest of the organisation defines, for *Hosted on* (ADR-0017). */
+  /** The technology the rest of the organisation defines, for *Hosted on* and *Uses* (ADR-0017, ADR-0020). */
   technology?: EditorOwnership['technology'];
+  /**
+   * The door under *Leverages* (ADR-0020): open the technology landscape
+   * with this application selected. Absent where the host has no landscape
+   * to open, and the line then stands alone.
+   */
+  onShowOnTechnology?(elementId: ElementId): void;
   /**
    * Make this application's container diagram. Offered as a button on the
    * General tab of an application that has none, because a view is made on
@@ -328,6 +339,50 @@ export function ElementInspector(props: ElementInspectorProps) {
     ...leverage.platforms.map((one) => one.name),
   ].join(' · ');
   const showAspects = element.kind === 'application';
+
+  // What it uses, as written (ADR-0020): the rows from this element, as
+  // pills, and a picker over this scope's offerings and service platforms
+  // first, then what the rest of the organisation offers — every shared
+  // offering and every service platform the index knows, with its scope.
+  // Ticking several and closing writes one step; a tick on something this
+  // scope does not hold writes the stand-in in that step.
+  const usesRows = props.model.relations.filter((row) => row.type === 'uses' && row.sourceId === element.id);
+  const usesIds = usesRows.map((row) => row.targetId);
+  const elsewhereById = new Map((props.technology?.elsewhere ?? []).map((one) => [one.id, one]));
+  const usable: UseOption[] = element.kind === 'application' || element.kind === 'component'
+    ? [
+      ...props.model.elements
+        .filter((held) => held.id !== element.id
+          && (held.kind === 'platformService' || (held.kind === 'platform' && platformArchetypeOf(held) === 'service')))
+        .map((held): UseOption => ({ id: held.id, name: held.name, group: 'here', platform: held.kind === 'platform' })),
+      ...(props.technology?.elsewhere ?? [])
+        .filter((one) => !heldIds.has(one.id) && (one.kind === 'platformService' ? one.shared === true : !one.place))
+        .map((one): UseOption => ({ id: one.id, name: one.name, group: 'elsewhere', where: one.where, platform: one.kind === 'platform' })),
+    ]
+    : [];
+  const nameOfUse = (id: ElementId) => props.model.elements.find((held) => held.id === id)?.name ?? elsewhereById.get(id)?.name ?? id;
+  const noteOfUse = (id: ElementId) => {
+    const one = elsewhereById.get(id);
+    return one ? [one.shared ? t('field.usesShared') : undefined, one.where].filter(Boolean).join(' · ') : undefined;
+  };
+  // The picker's ticks, until it closes: then they are the list, as one step.
+  const [pending, setPending] = useState<ElementId[]>(usesIds);
+  const usesKey = `${element.id}|${usesIds.join(',')}`;
+  const [seenUses, setSeenUses] = useState(usesKey);
+  if (seenUses !== usesKey) {
+    setSeenUses(usesKey);
+    setPending(usesIds);
+  }
+  const commitUses = () => {
+    if (pending.length === usesIds.length && pending.every((id) => usesIds.includes(id))) return;
+    const standIns = pending
+      .filter((id) => !heldIds.has(id))
+      .map((id) => props.technology?.standInFor(id))
+      .filter((one): one is DesignElement => one !== undefined);
+    if (standIns.length > 0) actions.setUses(element.id, pending, standIns);
+    else actions.setUses(element.id, pending);
+    setPending(usesIds);
+  };
 
   const summary = recordSummary(element, props.model, t);
 
@@ -645,13 +700,89 @@ export function ElementInspector(props: ElementInspectorProps) {
             )
           )}
 
+          {(element.kind === 'component' || element.kind === 'application') && (usesIds.length > 0 || (!readOnly && usable.length > 0)) && (
+            <Box data-testid="element-uses">
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.uses')}</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                {usesIds.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{t('field.usesNothing')}</Typography>}
+                {usesIds.map((id) => (
+                  <Chip
+                    key={id}
+                    size="small"
+                    data-testid={`uses-pill-${id}`}
+                    label={noteOfUse(id) ? `${nameOfUse(id)} · ${noteOfUse(id)}` : nameOfUse(id)}
+                    onDelete={readOnly || owned('uses') ? undefined : () => actions.setUses(element.id, usesIds.filter((held) => held !== id))}
+                  />
+                ))}
+              </Box>
+              {!readOnly && !owned('uses') && usable.length > 0 && (
+                <Autocomplete
+                  multiple
+                  disableCloseOnSelect
+                  size="small"
+                  options={usable}
+                  groupBy={(option) => option.group}
+                  getOptionLabel={(option) => option.name}
+                  isOptionEqualToValue={(a, b) => a.id === b.id}
+                  value={usable.filter((option) => pending.includes(option.id))}
+                  onChange={(_e, value) => setPending(value.map((option) => option.id))}
+                  onClose={commitUses}
+                  renderTags={() => null}
+                  renderGroup={(params) => (
+                    <li key={params.key}>
+                      <ListSubheader component="div" sx={{ lineHeight: '28px' }}>
+                        {params.group === 'here' ? t('field.usesHere') : t('field.hostedOnElsewhere')}
+                      </ListSubheader>
+                      <ul style={{ padding: 0 }}>{params.children}</ul>
+                    </li>
+                  )}
+                  renderOption={(optionProps, option, { selected }) => (
+                    <li {...optionProps} key={option.id} data-testid={`uses-option-${option.id}`}>
+                      <Checkbox size="small" checked={selected} sx={{ p: 0.25, mr: 0.5 }} />
+                      {option.name}
+                      {(option.where !== undefined || option.platform) && (
+                        <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
+                          {[option.platform ? t('field.usesPlatform') : undefined, option.where].filter(Boolean).join(' · ')}
+                        </Typography>
+                      )}
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('field.usesPick')}
+                      placeholder={t('field.usesSearch')}
+                      helperText={t('field.usesHelp')}
+                      inputProps={{ ...params.inputProps, 'data-testid': 'uses-pick' }}
+                    />
+                  )}
+                  sx={{ mt: 1 }}
+                  data-testid="element-uses-picker"
+                />
+              )}
+            </Box>
+          )}
+
           {/* Read only, and derived (ADR-0014): the consumer says which
               service it uses, the platform team says what realises it, and
-              nobody types the platform on the application. */}
-          {leverage !== undefined && leverageText !== '' && (
+              nobody types the platform on the application. The door under
+              it (ADR-0020) opens the landscape on this card. */}
+          {leverage !== undefined && (leverageText !== '' || props.onShowOnTechnology) && (
             <Box data-testid="element-leverages">
               <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.leverages')}</Typography>
-              <Typography sx={{ fontSize: 13 }}>{leverageText}</Typography>
+              <Typography sx={{ fontSize: 13 }}>{leverageText || t('field.runsOnNothing')}</Typography>
+              {props.onShowOnTechnology && (
+                <Link
+                  component="button"
+                  type="button"
+                  underline="hover"
+                  data-testid="show-on-landscape"
+                  sx={{ fontSize: 12, mt: 0.5, textAlign: 'left' }}
+                  onClick={() => props.onShowOnTechnology?.(element.id)}
+                >
+                  {t('field.showOnLandscape')} ›
+                </Link>
+              )}
             </Box>
           )}
 

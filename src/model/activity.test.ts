@@ -113,6 +113,19 @@ describe('summarise', () => {
     }], before())).toEqual({ key: 'activity.rowAdded', typeKey: 'relation.supports' })
   })
 
+  it('names a step that sets what an application uses after the application, with the count (ADR-0020)', () => {
+    const use = (id: string, targetId: string) => ({
+      type: 'relation.create' as const, relation: { id, type: 'uses' as const, sourceId: 'billing', targetId },
+    })
+    expect(summarise([transaction([use('u1', 'bus'), use('u2', 'db'), { type: 'element.create', element: element('db', 'Managed database') }])], before()))
+      .toEqual({ key: 'activity.usesSet', name: 'Billing', count: 2 })
+    // One row alone is that step too; a row of another type, or from another
+    // source, is not.
+    expect(summarise([use('u1', 'bus')], before())).toMatchObject({ key: 'activity.usesSet', count: 1 })
+    expect(summarise([transaction([use('u1', 'bus'), { type: 'relation.create', relation: { id: 'u3', type: 'uses', sourceId: 'crm', targetId: 'bus' } }])], before()))
+      .toMatchObject({ key: 'activity.rowAdded' })
+  })
+
   it('has a name for every command in the vocabulary', () => {
     // A step with no words is a step the list would show as blank, and the one
     // way that happens is a command nobody thought about here.

@@ -106,6 +106,7 @@ export const EN = {
   'activity.rowAdded': 'Drew a row ({type})',
   'activity.rowChanged': 'Changed a row ({type})',
   'activity.rowDeleted': 'Deleted a row ({type})',
+  'activity.usesSet': 'Set what {name} uses ({count} rows)',
   'activity.movedOne': 'Moved one element',
   'activity.movedMany': 'Moved {count} elements',
   'activity.removedOne': 'Took one element off the diagram',

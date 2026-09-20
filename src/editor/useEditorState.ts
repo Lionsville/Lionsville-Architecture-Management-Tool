@@ -35,6 +35,7 @@ import { allowedKindsOn, canChangeKind, placementForKind } from '../model/kindCh
 import { nodeFigure } from '../model/kinds';
 import { candidateInterfaces, isContainerLine, landedEnd, landingRow } from '../model/refines';
 import { deletableSelection } from '../model/deletion';
+import { technologyEndsRefusal } from '../model/relations';
 import type { ColourBy } from '../model/overlay';
 
 /**
@@ -285,6 +286,20 @@ export interface EditorActions {
    */
   /** With `standIn`, a platform another scope defines: the stand-in is written in the same step as the row (ADR-0017). */
   setHostedOn(elementId: ElementId, platformId: ElementId | undefined, standIn?: DesignElement): void;
+  /**
+   * What an application or a container uses (ADR-0020): the services it
+   * consumes and the platforms it binds to, as one list and one step. Rows
+   * for targets no longer named are taken off, rows for new ones written,
+   * and a row that stays is left exactly as it was. A target another scope
+   * defines arrives as the stand-in handed in for it, in the same step, as
+   * `setHostedOn` takes one.
+   *
+   * Answers with the targets it left out: one this scope holds that is
+   * neither a service nor a platform (`technologyEndsRefusal`), or one it
+   * does not hold and was handed no stand-in for. A refusal is a value, so a
+   * picker can say it; nothing about the rest of the list is held back.
+   */
+  setUses(elementId: ElementId, targetIds: readonly ElementId[], standIns?: readonly DesignElement[]): { refused: ElementId[] };
   /**
    * What a platform realises (ADR-0014): the services, as one step. Rows for
    * services no longer named are taken off, rows for new ones written, and a
@@ -1063,6 +1078,45 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           ...arrives,
           { type: 'relation.create', relation: { id: ids.connection(), type: 'hostedOn', sourceId: elementId, targetId: platformId } },
         ]));
+      },
+
+      setUses(elementId, targetIds, standIns = []) {
+        const model = currentModel();
+        const kindOf = (id: ElementId) => model.elements.find((e) => e.id === id);
+        const held = model.relations.filter((c) => c.type === 'uses' && c.sourceId === elementId);
+        const refused: ElementId[] = [];
+        const wanted: ElementId[] = [];
+        const arrives: Command[] = [];
+        for (const targetId of targetIds) {
+          if (wanted.includes(targetId) || targetId === elementId) continue;
+          if (kindOf(targetId)) {
+            if (technologyEndsRefusal({ type: 'uses', sourceId: elementId, targetId }, kindOf)) { refused.push(targetId); continue; }
+          } else {
+            // A target this scope does not hold arrives as its stand-in, in
+            // the same step as the row that names it; with none to write,
+            // the row would be about nothing this scope can draw.
+            const standIn = standIns.find((one) => one.id === targetId);
+            if (!standIn || (standIn.kind !== 'platform' && standIn.kind !== 'platformService')) { refused.push(targetId); continue; }
+            arrives.push({ type: 'element.create', element: standIn });
+          }
+          wanted.push(targetId);
+        }
+        const commands: Command[] = [];
+        for (const row of held) {
+          if (!wanted.includes(row.targetId)) commands.push({ type: 'relation.delete', id: row.id });
+        }
+        for (const targetId of wanted) {
+          if (held.some((row) => row.targetId === targetId)) continue;
+          commands.push({
+            type: 'relation.create',
+            relation: { id: ids.connection(), type: 'uses', sourceId: elementId, targetId },
+          });
+        }
+        // The stand-ins first, as `setHostedOn` writes them: undoing the
+        // step then takes the rows off before the records they name go, and
+        // the Activity line reads past them to name the step after the rows.
+        if (commands.length > 0) dispatch(transaction([...arrives, ...commands]));
+        return { refused };
       },
 
       setRealises(platformId, serviceIds) {

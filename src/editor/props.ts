@@ -132,6 +132,13 @@ export interface EditorDiagramActions {
     onOpenPlatformReport?(platformId: string): void;
     /** A service's report (ADR-0014): what would be stranded if it were withdrawn. As the platform's. */
     onOpenServiceReport?(serviceId: string): void;
+    /**
+     * The technology landscape, focused on one application (ADR-0020): the
+     * door under the record's *Leverages* line. The host opens the scope's
+     * landscape with the card selected and its lines up; the board itself
+     * keeps drawing flows only. Absent = no door.
+     */
+    onOpenTechnologyFor?(elementId: string): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */
@@ -469,7 +476,15 @@ export interface EditorOwnership {
    * writes in the same step as the row. Absent in a shell with no tree.
    */
   technology?: {
-    elsewhere: readonly { id: ElementId; name: string; kind: 'platform' | 'platformService'; place: boolean; where: string }[];
+    /**
+     * `shared` and `realisedBy` are the offering's, for the *Uses* picker and
+     * the landscape's shared row (ADR-0020): whether another team may lean
+     * on it, and what delivers it in the scope that answers for it.
+     */
+    elsewhere: readonly {
+      id: ElementId; name: string; kind: 'platform' | 'platformService'; place: boolean; where: string;
+      shared?: true; realisedBy?: readonly ElementId[];
+    }[];
     standInFor(id: ElementId): DesignElement | undefined;
   };
   /**

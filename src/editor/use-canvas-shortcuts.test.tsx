@@ -41,6 +41,7 @@ function stubActions(): EditorActions {
     removeLanding: vi.fn(),
     detachLanding: vi.fn(),
     setHostedOn: vi.fn(),
+    setUses: vi.fn(),
     setRealises: vi.fn(),
     setMaintainedBy: vi.fn(),
     setShowDeployment: vi.fn(),

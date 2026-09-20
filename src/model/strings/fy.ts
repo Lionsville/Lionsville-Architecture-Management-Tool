@@ -96,6 +96,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'activity.rowAdded': 'Rige tekene ({type})',
   'activity.rowChanged': 'Rige feroare ({type})',
   'activity.rowDeleted': 'Rige wiske ({type})',
+  'activity.usesSet': 'Fêstlein wat {name} brûkt ({count} rigen)',
   'activity.movedOne': 'Ien elemint ferpleatst',
   'activity.movedMany': '{count} eleminten ferpleatst',
   'activity.removedOne': 'Ien elemint fan it diagram helle',

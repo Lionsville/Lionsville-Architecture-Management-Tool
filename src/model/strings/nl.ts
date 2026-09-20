@@ -96,6 +96,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.rowAdded': 'Rij getekend ({type})',
   'activity.rowChanged': 'Rij gewijzigd ({type})',
   'activity.rowDeleted': 'Rij verwijderd ({type})',
+  'activity.usesSet': 'Vastgelegd wat {name} gebruikt ({count} rijen)',
   'activity.movedOne': 'Eén element verplaatst',
   'activity.movedMany': '{count} elementen verplaatst',
   'activity.removedOne': 'Eén element van het diagram gehaald',

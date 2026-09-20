@@ -96,6 +96,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.rowAdded': 'Zeile gezeichnet ({type})',
   'activity.rowChanged': 'Zeile geändert ({type})',
   'activity.rowDeleted': 'Zeile gelöscht ({type})',
+  'activity.usesSet': 'Festgelegt, was {name} nutzt ({count} Zeilen)',
   'activity.movedOne': 'Ein Element verschoben',
   'activity.movedMany': '{count} Elemente verschoben',
   'activity.removedOne': 'Ein Element vom Diagramm genommen',

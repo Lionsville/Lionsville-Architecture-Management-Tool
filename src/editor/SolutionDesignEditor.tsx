@@ -1249,6 +1249,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
               move={moveFor(props.ownership, element.id)}
               offeredBeyond={props.ownership?.offeredBeyond?.(element.id)}
               leverage={props.ownership?.leverageOf?.(element.id)}
+              technology={props.ownership?.technology}
+              onShowOnTechnology={props.diagrams.onOpenTechnologyFor
+                ? (id) => { setDocumentationId(undefined); props.diagrams.onOpenTechnologyFor?.(id); }
+                : undefined}
               layout="stacked"
               hideDescription
             />
@@ -1492,6 +1496,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
               offeredBeyond={props.ownership?.offeredBeyond?.(state.selectedElement.id)}
               leverage={props.ownership?.leverageOf?.(state.selectedElement.id)}
               technology={props.ownership?.technology}
+              onShowOnTechnology={props.diagrams.onOpenTechnologyFor}
               onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
             />
           ) : state.selectedConnection ? (

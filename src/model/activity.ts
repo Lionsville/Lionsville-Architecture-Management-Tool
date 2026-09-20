@@ -62,6 +62,28 @@ function rowStep(
 /** A step nobody can name — the empty transaction, and nothing else. */
 const NOTHING: StepSummary = { key: 'activity.nothing' }
 
+/**
+ * A step made only of `uses` rows from one source, plus the stand-ins they
+ * brought: what `setUses` and `technology.use` write. Anything else in it,
+ * or rows from two sources, and it is not that step.
+ */
+function usesSet(flat: readonly CommandBody[], before: Model): StepSummary | undefined {
+  let source: string | undefined
+  let count = 0
+  for (const command of flat) {
+    if (command.type === 'element.create') continue
+    const row = command.type === 'relation.create' ? command.relation
+      : command.type === 'relation.delete' ? before.relations[command.id]
+        : undefined
+    if (row?.type !== 'uses') return undefined
+    if (source !== undefined && source !== row.sourceId) return undefined
+    source = row.sourceId
+    count += 1
+  }
+  if (source === undefined) return undefined
+  return { key: 'activity.usesSet', name: before.elements[source]?.name ?? source, count }
+}
+
 const RESTORED: Record<Restored['what'], StringKey> = {
   diagram: 'activity.diagramRestored',
   description: 'activity.descriptionRestored',
@@ -82,6 +104,13 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
   if (!lead) return NOTHING
 
   const many = (type: CommandBody['type']) => flat.filter((c) => c.type === type).length
+
+  // What an application uses, set as one list (ADR-0020): the rows written
+  // and taken off, and any stand-in that arrived with them. Named after the
+  // application rather than the first row, because "drew a row (uses)" for
+  // a step that rewrote four of them would describe a quarter of it.
+  const uses = usesSet(flat, before)
+  if (uses) return uses
 
   switch (lead.type) {
     case 'element.create':

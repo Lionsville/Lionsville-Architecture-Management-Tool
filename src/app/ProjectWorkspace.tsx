@@ -772,6 +772,13 @@ export function ProjectWorkspace({
         .map((entry) => ({
           id: entry.id, name: entry.name, kind: entry.kind as 'platform' | 'platformService',
           place: entry.platformArchetype === 'place', where: scopeLabel(entry.master!),
+          // What an offering is and what delivers it, for *Uses* and the
+          // landscape's shared row (ADR-0020): the other scope's rows, off
+          // the index rather than a load per scope.
+          ...(entry.shared ? { shared: true as const } : {}),
+          ...(entry.kind === 'platformService'
+            ? { realisedBy: [...new Set(index.rowsTo(entry.id, ['realises']).map(({ relation }) => relation.sourceId))] }
+            : {}),
         })),
       standInFor: (id) => {
         const entry = index.lookup(id)
@@ -934,8 +941,15 @@ export function ProjectWorkspace({
     setAdrPage({ open: false })
     plans.closeAll()
     platformReading.close()
-    session.setActiveDiagramId(id)
-  }, [plans.closeAll, platformReading.close, session])
+    landscapes.open(id)
+  }, [plans.closeAll, platformReading.close, landscapes.open])
+  /** The door from a record (ADR-0020): the scope's landscape, on that application. */
+  const openTechnologyFor = useCallback((elementId: string) => {
+    setAdrPage({ open: false })
+    plans.closeAll()
+    platformReading.close()
+    landscapes.showOn(elementId)
+  }, [plans.closeAll, platformReading.close, landscapes.showOn])
   const createTechnology = useCallback(() => {
     setAdrPage({ open: false })
     plans.closeAll()
@@ -1265,6 +1279,7 @@ export function ProjectWorkspace({
           diagram={diagram}
           readOnly={view.readOnly}
           {...(view.selectedId !== undefined ? { selectedId: view.selectedId } : {})}
+          {...(landscapes.focus !== undefined ? { focus: landscapes.focus } : {})}
           onSelect={view.onSelect}
           onAdd={view.onAdd}
           onClose={() => {}}
@@ -1339,6 +1354,7 @@ export function ProjectWorkspace({
             onCreateMap: createMap,
             onOpenTechnology: openTechnology,
             onCreateTechnology: createTechnology,
+            onOpenTechnologyFor: openTechnologyFor,
             onOpenPlatformReport: openPlatformReport,
             onOpenServiceReport: openServiceReport,
           }}

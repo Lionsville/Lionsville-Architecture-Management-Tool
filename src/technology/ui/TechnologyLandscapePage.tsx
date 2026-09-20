@@ -66,6 +66,8 @@ export type TechnologyLandscapePageProps = {
   /** The editor's selected element, and the way to choose one — with `inline`. */
   selectedId?: ElementId
   onSelect?(elementId: ElementId | undefined): void
+  /** The card the page starts on: a record's door opened it here (ADR-0020). */
+  focus?: NodeKey
   /** Make a service or a platform, filed under `parentId` where given. Absent = no `+` on the bands. */
   onAdd?(seed: { kind: 'platform' | 'platformService'; parentId?: ElementId }): void
   model: DesignModel
@@ -183,6 +185,17 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
     if (serviceList(landscape).some(({ node }) => node.id === selectedId)) setSelected(nodeKey.service(selectedId))
     else if (platformList(landscape).some(({ node }) => node.id === selectedId)) setSelected(nodeKey.platform(selectedId))
   }, [landscape, selectedId])
+  // Where a door led: chosen as a click would choose it, so the editor's
+  // panel edits an application this scope holds.
+  const focusKey = props.focus
+  useEffect(() => {
+    if (!landscape || focusKey === undefined) return
+    setSelected(focusKey)
+    if (onSelect) {
+      const id = focusKey.slice(focusKey.indexOf(':') + 1)
+      onSelect(held.has(id) && !focusKey.startsWith('group:') ? id : undefined)
+    }
+  }, [landscape, focusKey, onSelect, held])
   const add = props.readOnly ? undefined : props.onAdd
   const fold = useCallback((key: string) => setFolded((held) => {
     const next = new Set(held)

@@ -52,19 +52,21 @@ function makeActions(): {
   updateElement: ReturnType<typeof vi.fn>;
   setDomainGroup: ReturnType<typeof vi.fn>;
   setHostedOn: ReturnType<typeof vi.fn>;
+  setUses: ReturnType<typeof vi.fn>;
   setRealises: ReturnType<typeof vi.fn>;
   setMaintainedBy: ReturnType<typeof vi.fn>;
 } {
   const updateElement = vi.fn();
   const setDomainGroup = vi.fn();
   const setHostedOn = vi.fn();
+  const setUses = vi.fn(() => ({ refused: [] }));
   const setRealises = vi.fn();
   const setMaintainedBy = vi.fn();
   const actions = new Proxy(
-    { updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy } as Record<string | symbol, unknown>,
+    { updateElement, setDomainGroup, setHostedOn, setUses, setRealises, setMaintainedBy } as Record<string | symbol, unknown>,
     { get(target, prop) { return target[prop] ?? vi.fn(); } },
   ) as unknown as EditorActions;
-  return { actions, updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy };
+  return { actions, updateElement, setDomainGroup, setHostedOn, setUses, setRealises, setMaintainedBy };
 }
 
 function renderInspector(
@@ -88,10 +90,12 @@ function renderInspector(
     technology?: ElementInspectorProps['technology'];
     /** Make the application's container diagram, on purpose. */
     onCreateContainer?: (id: string) => void;
+    /** The door to the technology landscape (ADR-0020). */
+    onShowOnTechnology?: (id: string) => void;
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
-  const { actions, updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy } = makeActions();
+  const { actions, updateElement, setDomainGroup, setHostedOn, setUses, setRealises, setMaintainedBy } = makeActions();
   const m = model(el, dia);
   const view = render(
     <ThemeProvider theme={createTheme()}>
@@ -114,10 +118,11 @@ function renderInspector(
         offeredBeyond={opts.offeredBeyond}
         leverage={opts.leverage}
         technology={opts.technology}
+        onShowOnTechnology={opts.onShowOnTechnology}
       />
     </ThemeProvider>,
   );
-  return { ...view, updateElement, setDomainGroup, setHostedOn, setRealises, setMaintainedBy };
+  return { ...view, updateElement, setDomainGroup, setHostedOn, setUses, setRealises, setMaintainedBy };
 }
 
 const tab = (name: 'General' | 'Appearance' | 'Data') =>
@@ -712,6 +717,100 @@ describe('ElementInspector — what an application leverages', () => {
     cleanup();
     renderInspector(element({ kind: 'platform' }), { others: technology() });
     expect(screen.queryByTestId('element-leverages')).toBeNull();
+  });
+});
+
+/**
+ * What an application uses, written (ADR-0020): the rows as pills, and one
+ * picker over this scope's offerings and service platforms, then the rest of
+ * the organisation's — several ticks, one step, and the stand-in with it.
+ */
+describe('ElementInspector — what an application uses (ADR-0020)', () => {
+  const held = () => [
+    element({ id: 'brokering', kind: 'platformService', name: 'Message brokering' }),
+    element({ id: 'bus', kind: 'platform', name: 'Event bus' }),
+    element({ id: 'k8s', kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
+  ];
+  const managedDb: DesignElement = { id: 'managed-db', kind: 'platformService', name: 'Managed database', ref: 'platforms', lifecycle: 'live', isManaged: false, aspects: {} };
+  const technology = () => ({
+    elsewhere: [
+      { id: 'managed-db', name: 'Managed database', kind: 'platformService' as const, place: false, where: 'platforms', shared: true as const },
+      { id: 'private-db', name: 'Team database', kind: 'platformService' as const, place: false, where: 'warehouse' },
+      { id: 'asb', name: 'Azure Service Bus', kind: 'platform' as const, place: false, where: 'platforms' },
+      { id: 'azure', name: 'Azure Cloud', kind: 'platform' as const, place: true, where: 'platforms' },
+    ],
+    standInFor: (id: string) => (id === 'managed-db' ? managedDb : undefined),
+  });
+  const openPicker = () => {
+    const input = screen.getByTestId('uses-pick');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    return input;
+  };
+  const options = () => screen.getAllByTestId(/^uses-option-/).map((one) => one.dataset.testid!.slice('uses-option-'.length));
+
+  it('lists this scope\'s offerings and service platforms first, then the shared offerings and service platforms elsewhere', () => {
+    renderInspector(element(), { others: held(), technology: technology() });
+    openPicker();
+    // A place is not something to use, here or elsewhere; a service nobody
+    // marked shared is that team's own.
+    expect(options()).toEqual(['brokering', 'bus', 'managed-db', 'asb']);
+    const listbox = screen.getByRole('listbox');
+    expect(listbox.textContent).toContain('This scope');
+    expect(listbox.textContent).toContain('Elsewhere in the organisation');
+    expect(screen.getByTestId('uses-option-managed-db').textContent).toContain('platforms');
+  });
+
+  it('filters by name as you type', () => {
+    renderInspector(element(), { others: held(), technology: technology() });
+    const input = openPicker();
+    fireEvent.change(input, { target: { value: 'bus' } });
+    expect(options()).toEqual(['bus', 'asb']);
+  });
+
+  it('ticks several and writes them as one setUses on closing, with the stand-in for one from elsewhere', () => {
+    const { setUses } = renderInspector(element(), { others: held(), technology: technology() });
+    const input = openPicker();
+    fireEvent.click(screen.getByTestId('uses-option-brokering'));
+    fireEvent.click(screen.getByTestId('uses-option-bus'));
+    expect(setUses).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(setUses).toHaveBeenCalledTimes(1);
+    expect(setUses).toHaveBeenCalledWith('e1', ['brokering', 'bus']);
+    cleanup();
+    const again = renderInspector(element(), { others: held(), technology: technology() });
+    const box = openPicker();
+    fireEvent.click(screen.getByTestId('uses-option-managed-db'));
+    fireEvent.keyDown(box, { key: 'Escape' });
+    expect(again.setUses).toHaveBeenCalledWith('e1', ['managed-db'], [managedDb]);
+  });
+
+  it('shows the rows as pills that remove, and nothing to write when read only', () => {
+    const relations = [
+      { id: 'u1', type: 'uses' as const, sourceId: 'e1', targetId: 'brokering' },
+      { id: 'u2', type: 'uses' as const, sourceId: 'e1', targetId: 'managed-db' },
+    ];
+    const { setUses } = renderInspector(element(), { others: [...held(), managedDb], relations, technology: technology() });
+    expect(screen.getByTestId('uses-pill-brokering').textContent).toBe('Message brokering');
+    expect(screen.getByTestId('uses-pill-managed-db').textContent).toBe('Managed database · shared · platforms');
+    fireEvent.click(within(screen.getByTestId('uses-pill-brokering')).getByTestId('CancelIcon'));
+    expect(setUses).toHaveBeenCalledWith('e1', ['managed-db']);
+    cleanup();
+    renderInspector(element(), { others: [...held(), managedDb], relations, technology: technology(), readOnly: true });
+    expect(screen.getByTestId('uses-pill-brokering').textContent).toBe('Message brokering');
+    expect(within(screen.getByTestId('uses-pill-brokering')).queryByTestId('CancelIcon')).toBeNull();
+    expect(screen.queryByTestId('uses-pick')).toBeNull();
+  });
+
+  it('offers the door to the landscape under Leverages, and none where the host has no landscape', () => {
+    const onShowOnTechnology = vi.fn();
+    renderInspector(element(), { others: held(), onShowOnTechnology });
+    expect(screen.getByTestId('element-leverages').textContent).toContain('Nothing yet');
+    fireEvent.click(screen.getByTestId('show-on-landscape'));
+    expect(onShowOnTechnology).toHaveBeenCalledWith('e1');
+    cleanup();
+    renderInspector(element(), { others: held() });
+    expect(screen.queryByTestId('show-on-landscape')).toBeNull();
   });
 });
 

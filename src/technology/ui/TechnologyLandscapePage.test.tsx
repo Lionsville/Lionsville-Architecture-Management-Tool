@@ -202,6 +202,16 @@ describe('in the tab (ADR-0016)', () => {
     expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
   })
 
+  it('starts on the card a door led to, chosen as a click would choose it (ADR-0020)', () => {
+    const onSelect = vi.fn()
+    open({ inline: true, onSelect, focus: 'application:wms' })
+    expect(screen.getByTestId('landscape-inspector-title').textContent).toBe('Warehouse Management')
+    expect(screen.getByTestId('landscape-lines').querySelectorAll('path').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
+    // Not held here, so the page's own record shows and the editor is told nothing is its.
+    expect(onSelect).toHaveBeenLastCalledWith(undefined)
+  })
+
   it('offers nothing to add when read only', () => {
     open({ inline: true, onAdd: vi.fn(), readOnly: true })
     expect(screen.queryByTestId('landscape-add-service')).toBeNull()
