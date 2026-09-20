@@ -537,6 +537,9 @@ describe('isFormatPath', () => {
     expect(isFormatPath('decisions/0001-one-writer.md')).toBe(true)
     expect(isFormatPath('decisions/wms/0001-its-own-stock.md')).toBe(true)
     expect(isFormatPath('transitions/0001-replace-it.md')).toBe(true)
+    expect(isFormatPath('observations/0001-batch-overruns.md')).toBe(true)
+    expect(isFormatPath('observations/causes/0001-window-too-small.md')).toBe(true)
+    expect(isFormatPath('observations/notes/0001-x.md')).toBe(false)
     expect(isFormatPath('images/cutover.png')).toBe(true)
     expect(isFormatPath('logos/own.svg')).toBe(true)
   })
@@ -544,6 +547,7 @@ describe('isFormatPath', () => {
   it('leaves what the user put there alone', () => {
     expect(isFormatPath('README.md')).toBe(false)
     expect(isFormatPath('decisions/README.md')).toBe(false)
+    expect(isFormatPath('observations/README.md')).toBe(false)
     expect(isFormatPath('notes/plan.md')).toBe(false)
     expect(isFormatPath('../escape.json')).toBe(false)
   })

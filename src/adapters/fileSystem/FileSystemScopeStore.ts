@@ -40,11 +40,13 @@
  */
 import {
   DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE,
-  TRANSITIONS_FOLDER,
+  TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
 } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { markdownBody } from '../../projects/fileText'
+import { observationFromFile } from '../../projects/observationFile'
+import type { Observation } from '../../model/observation'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
@@ -265,7 +267,11 @@ export class FileSystemScopeStore implements ScopeStore {
         if (!handle) return
         const text = await (await handle.getFile().catch(() => undefined))?.text().catch(() => undefined)
         if (text === undefined) return
-        found.push({ path, model: { ...modelListsFrom(text), transitions: await this.transitionsIn(folder) } })
+        found.push({ path, model: {
+          ...modelListsFrom(text),
+          transitions: await this.transitionsIn(folder),
+          observations: await this.observationsIn(folder),
+        } })
       })
     } catch {
       return []
@@ -314,6 +320,21 @@ export class FileSystemScopeStore implements ScopeStore {
       if (text === undefined) continue
       const plan = transitionFromFile(text, `${TRANSITIONS_FOLDER}/${entry.name}`)
       if (plan) found.push(plan)
+    }
+    return found.sort((a, b) => a.number - b.number)
+  }
+
+  /** The observations, likewise (ADR-0021): the shared ones are what a scope above reads. */
+  private async observationsIn(folder: DirectoryHandleLike): Promise<Observation[]> {
+    const held = await folder.getDirectoryHandle(OBSERVATIONS_FOLDER).catch(() => undefined)
+    if (!held) return []
+    const found: Observation[] = []
+    for await (const entry of held.values()) {
+      if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
+      const text = await (await entry.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      if (text === undefined) continue
+      const observation = observationFromFile(text, `${OBSERVATIONS_FOLDER}/${entry.name}`)
+      if (observation) found.push(observation)
     }
     return found.sort((a, b) => a.number - b.number)
   }

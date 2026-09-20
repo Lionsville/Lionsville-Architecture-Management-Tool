@@ -50,7 +50,7 @@ export const ROOT_SCOPE: ScopePath = ''
  * what is inside it, and no listing would ever be readable again.
  */
 export const RESERVED_SCOPE_NAMES: readonly string[] = [
-  'diagrams', 'docs', 'decisions', 'transitions', 'images', 'logos',
+  'diagrams', 'docs', 'decisions', 'transitions', 'observations', 'images', 'logos',
 ]
 
 export function isReservedScopeName(name: string): boolean {

@@ -33,7 +33,7 @@ export const SCOPE_FILE = 'scope.json'
  * off the disk to prove the format wrote what it says it writes, and it had
  * the number typed into it until ADR-0018 turned it.
  */
-export const SCOPE_FORMAT_VERSION = 6
+export const SCOPE_FORMAT_VERSION = 7
 
 /** What the tool writes into every file it owns, so a folder says what it is. */
 const TOOL = 'lionsville-architecture'

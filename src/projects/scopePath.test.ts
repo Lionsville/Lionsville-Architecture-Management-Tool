@@ -79,8 +79,8 @@ describe('isSafeScopePath', () => {
 })
 
 describe('isReservedScopeName', () => {
-  it('knows the six folders a scope writes into', () => {
-    expect(RESERVED_SCOPE_NAMES).toEqual(['diagrams', 'docs', 'decisions', 'transitions', 'images', 'logos'])
+  it('knows the seven folders a scope writes into', () => {
+    expect(RESERVED_SCOPE_NAMES).toEqual(['diagrams', 'docs', 'decisions', 'transitions', 'observations', 'images', 'logos'])
     expect(isReservedScopeName('images')).toBe(true)
     expect(isReservedScopeName('imagery')).toBe(false)
   })

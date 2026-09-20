@@ -49,6 +49,7 @@
  */
 import type { DesignElement, ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model'
 import type { Transition } from '../model/transition'
+import type { Observation } from '../model/observation'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 import { scopeSegments } from './scopePath'
@@ -166,6 +167,28 @@ export type IndexedTransition = {
   elements: readonly DesignElement[]
 }
 
+/** An observation another scope shared (ADR-0021), with where it lives. */
+export type IndexedObservation = {
+  scope: ScopePath
+  observation: Observation
+}
+
+/**
+ * Where an observation was folded into another scope's (ADR-0021): the scope
+ * above that absorbed it, and the observation there that stands for it now.
+ */
+export type Absorption = {
+  /** The scope the absorbed observation lives in, and its id there. */
+  scope: ScopePath
+  id: string
+  /** The scope that absorbed it, and the observation it went into. */
+  by: ScopePath
+  into: string
+  /** What that observation is called, for the line the scope below shows. */
+  intoTitle: string
+  date: string
+}
+
 /**
  * The answers, over a tree that has already been read.
  *
@@ -222,6 +245,19 @@ export type ScopeIndex = {
    * organisation screen's card counts.
    */
   initiativesBelow(path: ScopePath): IndexedTransition[]
+  /**
+   * The observations shared by the scopes under this one (ADR-0021): every
+   * observation marked `shared` in a scope strictly below `path`, by scope
+   * and then by number. What the observations page above reads, links to its
+   * causes and may fold into its own.
+   */
+  observationsBelow(path: ScopePath): IndexedObservation[]
+  /**
+   * The observations of `path` that a scope above folded into one of its own
+   * (ADR-0021), by id — derived from the absorbing scope's history, because a
+   * record is written where it lives and the scope below is only told.
+   */
+  absorbedFrom(path: ScopePath): Map<string, Absorption>
   /** The scopes this was built from, in path order. */
   scopes(): ScopePath[]
 }
@@ -260,6 +296,8 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const touching = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
   const initiatives: IndexedTransition[] = []
+  const shared: IndexedObservation[] = []
+  const absorptions: Absorption[] = []
 
   const at = (id: ElementId): Held => {
     const found = held.get(id) ?? { id, definitions: [], standIns: [] }
@@ -306,6 +344,15 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
           .map((one) => byId.get(one.elementId))
           .filter((element): element is DesignElement => element !== undefined)
         initiatives.push({ scope: path, transition, elements })
+      }
+    }
+    for (const observation of [...(model.observations ?? [])].sort((a, b) => a.number - b.number)) {
+      if (observation.shared) shared.push({ scope: path, observation })
+      for (const event of observation.history) {
+        if (event.kind !== 'absorbed' || event.scope === undefined || event.id === undefined) continue
+        absorptions.push({
+          scope: event.scope, id: event.id, by: path, into: observation.id, intoTitle: observation.title, date: event.date,
+        })
       }
     }
   }
@@ -367,6 +414,14 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     initiativesBelow: (path) => initiatives.filter(({ scope }) => (
       path === '' ? scope !== '' : scope.startsWith(`${path}/`)
     )),
+    observationsBelow: (path) => shared.filter(({ scope }) => (
+      path === '' ? scope !== '' : scope.startsWith(`${path}/`)
+    )),
+    absorbedFrom: (path) => {
+      const found = new Map<string, Absorption>()
+      for (const one of absorptions) if (one.scope === path && !found.has(one.id)) found.set(one.id, one)
+      return found
+    },
     scopes: () => [...paths],
   }
 }

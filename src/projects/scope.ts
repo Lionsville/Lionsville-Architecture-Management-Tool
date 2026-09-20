@@ -23,6 +23,7 @@ import {
   WORKING_FILE_TYPE, WORKING_FILE_VERSION, isWorkingFile, workingFileLogoLibrary,
 } from '../model/hostModel'
 import type { HostModel, WorkingFile } from '../model/hostModel'
+import type { Observation } from '../model/observation'
 import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, ROOT_SCOPE } from './scopePath'
@@ -139,6 +140,11 @@ export type ScopeModel = {
      * domain; absent where a store has not read them.
      */
     transitions?: readonly Transition[]
+    /**
+     * The scope's observations, for the shared ones a scope above reads
+     * (ADR-0021) — read with the model for the same reason the plans are.
+     */
+    observations?: readonly Observation[]
   }
 }
 

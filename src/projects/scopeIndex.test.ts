@@ -9,6 +9,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import type { DesignElement, Relation } from '../model'
+import type { Observation } from '../model/observation'
 import { indexOf, indexScopes, isMaster, ownerOf } from './scopeIndex'
 import { scopeTree } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -342,5 +343,43 @@ describe('the index — the two questions an inspector asks', () => {
   it('lets a scope edit an id the tree has never heard of', () => {
     expect(isMaster(index, 'drawn-just-now', 'finance')).toBe(true)
     expect(isMaster(indexScopes([]), 'erp', 'finance')).toBe(true)
+  })
+})
+
+describe('the index — the observations shared from below, and what was absorbed above (ADR-0021)', () => {
+  const observation = (id: string, number: number, over: Partial<Observation> = {}): Observation => ({
+    id, number, title: id, date: '2026-09-01', impact: 'minor', seen: 1, body: '',
+    history: [{ date: '2026-09-01', kind: 'recorded' }], ...over,
+  })
+  const tree = () => indexScopes([
+    { path: '', model: { elements: [], relations: [], observations: [
+      observation('root-1', 1, { shared: true }),
+      observation('root-2', 2, { history: [
+        { date: '2026-09-01', kind: 'recorded' },
+        { date: '2026-09-05', kind: 'absorbed', id: 'claims-2', scope: 'acme/claims', seen: 3 },
+      ] }),
+    ] } },
+    { path: 'acme', model: { elements: [], relations: [], observations: [observation('acme-1', 1, { shared: true })] } },
+    { path: 'acme/claims', model: { elements: [], relations: [], observations: [
+      observation('claims-2', 2, { shared: true }), observation('claims-1', 1, { shared: true }), observation('claims-3', 3),
+    ] } },
+    scope('other', []),
+  ])
+
+  it('answers the shared observations of the scopes strictly below, by scope and number', () => {
+    expect(tree().observationsBelow('acme').map(({ scope, observation: held }) => [scope, held.number]))
+      .toEqual([['acme/claims', 1], ['acme/claims', 2]])
+    expect(tree().observationsBelow('').map(({ scope, observation: held }) => [scope, held.number]))
+      .toEqual([['acme', 1], ['acme/claims', 1], ['acme/claims', 2]])
+    expect(tree().observationsBelow('acme/claims')).toEqual([])
+  })
+
+  it('tells a scope which of its own a scope above folded into one of its own', () => {
+    const absorbed = tree().absorbedFrom('acme/claims')
+    expect([...absorbed.keys()]).toEqual(['claims-2'])
+    expect(absorbed.get('claims-2')).toEqual({
+      scope: 'acme/claims', id: 'claims-2', by: '', into: 'root-2', intoTitle: 'root-2', date: '2026-09-05',
+    })
+    expect(tree().absorbedFrom('acme').size).toBe(0)
   })
 })

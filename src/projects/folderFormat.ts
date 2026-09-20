@@ -14,6 +14,8 @@
  * docs/<elementId>.md               an element's description, as prose
  * decisions/[<subjectId>/]NNNN-<slug>.md
  * transitions/NNNN-<slug>.md        a plan, its window and what it touches
+ * observations/NNNN-<slug>.md       what was seen, and its dated history
+ * observations/causes/NNNN-<slug>.md  what lies behind it, and what it explains
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * logos/<key>.svg | .png            uploaded marks, as images
  * <child>/                          a scope under this one: the same files again
@@ -60,6 +62,7 @@ import type {
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
+import type { Cause, Observation } from '../model/observation'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { SCOPE_FILE, SCOPE_FORMAT_VERSION } from '../platform/scopeHeader'
 import { slug } from '../model/keys'
@@ -67,6 +70,10 @@ import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
   TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
 } from './transitionFile'
+import {
+  CAUSES_SUBFOLDER, causeFileText, causeFromFile, causePath, OBSERVATIONS_FOLDER, observationFileText,
+  observationFromFile, observationPath,
+} from './observationFile'
 import {
   dataUrl, markdownBody, markdownFile, parseJson, readDataUrl, stableJson, textFromBytes,
 } from './fileText'
@@ -90,7 +97,7 @@ export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export { DECISIONS_FOLDER, TRANSITIONS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER }
 
 /**
  * The folders a scope's own files live in — which is also the list of names a
@@ -101,7 +108,8 @@ export { DECISIONS_FOLDER, TRANSITIONS_FOLDER }
  * files, and descending into anything else is leaving the scope.
  */
 export const SCOPE_FOLDERS: readonly string[] = [
-  DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, IMAGES_FOLDER, LOGOS_FOLDER,
+  DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, IMAGES_FOLDER,
+  LOGOS_FOLDER,
 ]
 
 /**
@@ -126,11 +134,16 @@ export const SCOPE_FOLDERS: readonly string[] = [
  * directory — dropping every scope under it without a word. Refusing to open is
  * the honest answer, and the version in the root's `scope.json` is the only
  * place such a build can learn to give it.
+ *
+ * **7 is 6, with `observations/` beside the other folders** (ADR-0021). The
+ * same shape of change: a build that reads 6 and no more would open a 7 and
+ * write it back without the observations, so the number turns and the older
+ * build refuses instead.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -312,6 +325,14 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
     files.push({ path: transitionPath(transition), text: transitionFileText(transition) })
   }
 
+  for (const observation of model.observations ?? []) {
+    files.push({ path: observationPath(observation), text: observationFileText(observation) })
+  }
+
+  for (const cause of model.causes ?? []) {
+    files.push({ path: causePath(cause), text: causeFileText(cause) })
+  }
+
   files.push(...imageFiles(scope.imageLibrary ?? []))
 
   files.push({ path: SCOPE_FILE, text: stableJson(header(scope, files)) })
@@ -453,6 +474,10 @@ export function isFormatPath(path: string): boolean {
   if (folder === IMAGES_FOLDER) return rest.length === 1 && isImageFile(name)
   if (folder === DECISIONS_FOLDER) return rest.length <= 2 && /^\d{1,6}-.*\.md$/.test(name)
   if (folder === TRANSITIONS_FOLDER) return rest.length === 1 && /^\d{1,6}-.*\.md$/.test(name)
+  if (folder === OBSERVATIONS_FOLDER) {
+    if (rest.length === 1) return /^\d{1,6}-.*\.md$/.test(name)
+    return rest.length === 2 && rest[0] === CAUSES_SUBFOLDER && /^\d{1,6}-.*\.md$/.test(name)
+  }
   return false
 }
 
@@ -721,6 +746,36 @@ export function readTransitions(files: readonly FolderFile[]): Transition[] {
   return found.sort((a, b) => a.number - b.number)
 }
 
+/**
+ * Every observation in the folder, in number order, and every cause one
+ * folder down (ADR-0021). A `README.md` in either is somebody's note.
+ */
+export function readObservations(files: readonly FolderFile[]): Observation[] {
+  const prefix = `${OBSERVATIONS_FOLDER}/`
+  const found: Observation[] = []
+  for (const file of files) {
+    if (!file.path.startsWith(prefix) || !file.path.endsWith('.md')) continue
+    if (file.path.slice(prefix.length).includes('/')) continue
+    if (!('text' in file)) continue
+    const observation = observationFromFile(file.text, file.path)
+    if (observation) found.push(observation)
+  }
+  return found.sort((a, b) => a.number - b.number)
+}
+
+export function readCauses(files: readonly FolderFile[]): Cause[] {
+  const prefix = `${OBSERVATIONS_FOLDER}/${CAUSES_SUBFOLDER}/`
+  const found: Cause[] = []
+  for (const file of files) {
+    if (!file.path.startsWith(prefix) || !file.path.endsWith('.md')) continue
+    if (file.path.slice(prefix.length).includes('/')) continue
+    if (!('text' in file)) continue
+    const cause = causeFromFile(file.text, file.path)
+    if (cause) found.push(cause)
+  }
+  return found.sort((a, b) => a.number - b.number)
+}
+
 function readLogos(folder: Folder, held: ScopeFile): UploadedLogo[] {
   const named = new Set<string>()
   const library: UploadedLogo[] = []
@@ -806,6 +861,8 @@ export function scopeFromFolder(
 
   const decisions = readDecisions(files)
   const transitions = readTransitions(files)
+  const observations = readObservations(files)
+  const causes = readCauses(files)
   const { elements, explicitFields } = readElements(folder)
   const model: HostModel = {
     name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
@@ -818,6 +875,8 @@ export function scopeFromFolder(
     ...(held.interchange?.adrLinks !== undefined ? { adrLinks: held.interchange.adrLinks } : {}),
     ...(decisions.length ? { decisions } : {}),
     ...(transitions.length ? { transitions } : {}),
+    ...(observations.length ? { observations } : {}),
+    ...(causes.length ? { causes } : {}),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),
