@@ -13,7 +13,10 @@
  * The lines are the rows: `uses` from an application to a service,
  * `realises` from a platform to a service, `uses` from an application
  * straight to a platform where a team binds to one instance, and `hostedOn`
- * for those who ask. One line is derived — **leverages**, the `uses` read
+ * — drawn at rest, because on a scope with no offerings it is the only line
+ * an application has (ADR-0020); *fold hosting* drops it where a `uses`,
+ * an implied use or a leverage from the same application already reaches
+ * the same platform. One line is derived — **leverages**, the `uses` read
  * through the `realises` — and it is drawn only while the service band is
  * hidden, because with the band open the two rows say it better.
  *
@@ -29,6 +32,14 @@
  * are the landscapes', and reach this through `elsewhere` the way the
  * reports take them. An application is then named off the index through
  * `describe`, and grouped by the scope that answers for it.
+ *
+ * **And the offerings may be another scope's** (ADR-0020). Every service the
+ * index marks `shared` that this scope does not answer for arrives through
+ * `sharedElsewhere`, with the scope that does and what realises it there,
+ * and joins the services after this scope's own with `where` set — the
+ * *Shared in the organisation* row. A `uses` row to one is a line like any
+ * other; a stand-in this scope already keeps of one sits in that row too,
+ * marked, rather than among the offerings this scope authors.
  */
 import { ancestorPlatforms, platformParentOf } from './hosting'
 import type { PlatformTree } from './hosting'
@@ -39,9 +50,21 @@ import type { DesignDiagram, DesignElement, ElementId, Lifecycle, PlatformArchet
 /** More applications than this on the board, and every group starts folded. */
 export const FOLD_ABOVE = 40
 
+/** An offering another scope marks shared, as the index says it (ADR-0020). */
+export type SharedElsewhere = {
+  id: ElementId
+  name: string
+  /** The scope that answers for it. */
+  where: string
+  /** What realises it there. */
+  realisedBy: readonly ElementId[]
+}
+
 export type TechnologyLandscapeOptions = {
   /** Rows written in other scopes that name a service or a platform this scope holds (ADR-0012 §2). */
   elsewhere?: readonly Relation[]
+  /** Every shared offering the rest of the tree defines, for the shared row (ADR-0020). */
+  sharedElsewhere?: readonly SharedElsewhere[]
   /** Names, kinds and owners for the ids the rows name and this scope does not hold. */
   describe?: PlatformDescribe
   /** The platform tree, where a stand-in carries no `parentId` of its own. */
@@ -81,6 +104,10 @@ export type LandscapeService = {
   summary?: string
   lifecycle: Lifecycle
   shared?: true
+  /** The scope that answers for it, where that is not this one: a shared offering from elsewhere (ADR-0020). */
+  where?: string
+  /** This scope keeps a stand-in of it already. */
+  standIn?: true
   /** How many applications use it. */
   consumers: number
   realisedBy: ElementId[]
@@ -103,11 +130,12 @@ export type TechnologyLandscape = {
   diagramId: string
   name: string
   groups: LandscapeGroup[]
-  /** The service roots, each with what is filed under it. */
+  /** The service roots, each with what is filed under it — this scope's own first, then the shared offerings from elsewhere, each with `where`. */
   services: LandscapeService[]
   /** The platform roots, likewise. */
   platforms: LandscapePlatform[]
-  counts: { applications: number; services: number; platforms: number }
+  /** `services` counts this scope's own; `shared` the offerings from elsewhere. */
+  counts: { applications: number; services: number; shared: number; platforms: number }
 }
 
 /** A card on the page, addressed the way the edges address it. */
@@ -138,8 +166,12 @@ export type LandscapeEdge = {
 export type LandscapeView = {
   /** The service band is open. Closed, the leverage is drawn instead of the two rows. */
   services: boolean
-  /** Draw `hostedOn` too. */
-  hosting: boolean
+  /**
+   * Fold a `hostedOn` into a line that already reaches the same platform: a
+   * `uses`, an implied use or a leverage from the same application. Off,
+   * every hosting row is a line (ADR-0020).
+   */
+  foldHosting: boolean
   /** The groups folded into one box, by key. */
   folded: ReadonlySet<string>
 }
@@ -171,11 +203,14 @@ export function technologyLandscape(
   diagram: Pick<DesignDiagram, 'id' | 'name'>,
   options: TechnologyLandscapeOptions = {},
 ): TechnologyLandscape {
-  const { describe, tree = {} } = options
+  const { describe, tree = {}, sharedElsewhere = [] } = options
   const byId = new Map(model.elements.map((element) => [element.id, element]))
-  const services = model.elements.filter((element) => element.kind === 'platformService')
+  // A shared offering another scope answers for sits in the shared row,
+  // whether or not this scope keeps a stand-in of it (ADR-0020).
+  const sharedIds = new Set(sharedElsewhere.map((one) => one.id))
+  const services = model.elements.filter((element) => element.kind === 'platformService' && !sharedIds.has(element.id))
   const platforms = model.elements.filter((element) => element.kind === 'platform')
-  const serviceIds = new Set(services.map((one) => one.id))
+  const serviceIds = new Set([...services.map((one) => one.id), ...sharedIds])
   const platformIds = new Set(platforms.map((one) => one.id))
   const rows = rowsOf(model, options.elsewhere)
 
@@ -216,10 +251,14 @@ export function technologyLandscape(
   }
 
   const realisedBy = new Map<ElementId, ElementId[]>()
+  const realiser = (service: ElementId, platform: ElementId) =>
+    once(realisedBy.get(service) ?? (realisedBy.set(service, []), realisedBy.get(service)!), platform)
   for (const row of rows) {
     if (row.type !== 'realises' || !serviceIds.has(row.targetId) || !platformIds.has(row.sourceId)) continue
-    once(realisedBy.get(row.targetId) ?? (realisedBy.set(row.targetId, []), realisedBy.get(row.targetId)!), row.sourceId)
+    realiser(row.targetId, row.sourceId)
   }
+  // What realises a shared offering is the other scope's row, told here.
+  for (const one of sharedElsewhere) for (const platform of one.realisedBy) realiser(one.id, platform)
   const realises = new Map<ElementId, ElementId[]>()
   for (const [service, list] of realisedBy) for (const platform of list) {
     once(realises.get(platform) ?? (realises.set(platform, []), realises.get(platform)!), service)
@@ -282,6 +321,20 @@ export function technologyLandscape(
       .map(serviceNode),
   })
   const serviceRoots = services.filter((one) => one.parentId === undefined || !serviceIds.has(one.parentId)).map(serviceNode)
+  const sharedRoots = sharedElsewhere.map((one): LandscapeService => {
+    const held = byId.get(one.id)
+    return {
+      id: one.id,
+      name: held?.name ?? one.name,
+      lifecycle: held?.lifecycle ?? 'live',
+      shared: true,
+      where: one.where,
+      ...(held !== undefined ? { standIn: true } : {}),
+      consumers: consumers.get(one.id) ?? 0,
+      realisedBy: realisedBy.get(one.id) ?? [],
+      children: [],
+    }
+  })
 
   const outside = (platform: DesignElement) => platform.outside === true || tree.outsideOf?.(platform.id) === true
   const platformNode = (element: DesignElement, seen: Set<ElementId>): LandscapePlatform => ({
@@ -304,9 +357,9 @@ export function technologyLandscape(
     diagramId: diagram.id,
     name: diagram.name,
     groups: grouped,
-    services: serviceRoots,
+    services: [...serviceRoots, ...sharedRoots],
     platforms: platformRoots,
-    counts: { applications: applications.size, services: services.length, platforms: platforms.length },
+    counts: { applications: applications.size, services: services.length, shared: sharedRoots.length, platforms: platforms.length },
   }
 }
 
@@ -380,19 +433,27 @@ export function landscapeEdges(landscape: TechnologyLandscape, view: LandscapeVi
   for (const group of landscape.groups) {
     for (const app of group.applications) {
       const from = view.folded.has(group.key) ? nodeKey.group(group.key) : nodeKey.application(app.id)
+      // The platforms a use reaches, through what realises the service or
+      // straight to it: what a hosting line folds into.
+      const reached = new Set<ElementId>(app.binds)
+      const behind = (service: ElementId) => narrowRealisers(realisedBy.get(service) ?? [], app.hostedOn, chainOf)
       for (const service of app.uses) {
+        for (const platform of behind(service)) reached.add(platform)
         if (view.services) add(from, nodeKey.service(service), 'uses')
-        else {
-          for (const platform of narrowRealisers(realisedBy.get(service) ?? [], app.hostedOn, chainOf)) {
-            add(from, nodeKey.platform(platform), 'leverages', service)
-          }
-        }
+        else for (const platform of behind(service)) add(from, nodeKey.platform(platform), 'leverages', service)
       }
       // Implied by hosting: drawn as a use nobody wrote, with the band open;
       // with it hidden, the hosting itself is the line.
-      if (view.services) for (const service of app.implied) add(from, nodeKey.service(service), 'uses', undefined, true)
+      for (const service of app.implied) {
+        for (const platform of behind(service)) reached.add(platform)
+        if (view.services) add(from, nodeKey.service(service), 'uses', undefined, true)
+      }
       for (const platform of app.binds) add(from, nodeKey.platform(platform), 'binds')
-      if (view.hosting) for (const platform of app.hostedOn) add(from, nodeKey.platform(platform), 'hostedOn')
+      // Hosting is a line at rest (ADR-0020); folded, only where nothing else
+      // from this application reaches the platform.
+      for (const platform of app.hostedOn) {
+        if (!view.foldHosting || !reached.has(platform)) add(from, nodeKey.platform(platform), 'hostedOn')
+      }
     }
   }
   if (view.services) {

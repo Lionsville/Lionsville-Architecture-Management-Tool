@@ -62,7 +62,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.servicesHidden': '{count} Dienste ausgeblendet — die Linien führen direkt zu den Plattformen dahinter',
   'landscape.linesFocus': 'Linien bei Fokus',
   'landscape.linesAll': 'Alle Linien',
-  'landscape.hosting': 'Hosting',
+  'landscape.foldHosting': 'Hosting in Dienstlinien einfalten',
   'landscape.onlyTouched': 'Nur was die Auswahl berührt',
   'landscape.applicationsOne': '{count} Anwendung',
   'landscape.applicationsOther': '{count} Anwendungen',

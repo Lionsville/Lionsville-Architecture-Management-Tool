@@ -62,7 +62,7 @@ export {
 } from './technologyLandscape'
 export type {
   LandscapeApplication, LandscapeEdge, LandscapeEdgeKind, LandscapeGroup, LandscapePlatform, LandscapeService,
-  LandscapeView, NodeKey, TechnologyLandscape, TechnologyLandscapeOptions,
+  LandscapeView, NodeKey, SharedElsewhere, TechnologyLandscape, TechnologyLandscapeOptions,
 } from './technologyLandscape'
 
 /** An interface, and where it lands a level down (ADR-0013). */

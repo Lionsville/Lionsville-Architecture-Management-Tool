@@ -29,7 +29,7 @@ export type TechnologyReport = {
   groups: { total: number; some: { scope: string | undefined; applications: { id: ElementId; name: string; known: boolean; uses: ElementId[]; implied: ElementId[]; binds: ElementId[]; hostedOn: ElementId[] }[] }[] }
   services: { total: number; some: { id: ElementId; name: string; depth: number; shared: boolean; consumers: number; realisedBy: ElementId[] }[] }
   platforms: { total: number; some: { id: ElementId; name: string; depth: number; archetype: LandscapePlatform['archetype']; outside: boolean; realises: ElementId[]; applications: number }[] }
-  /** Every line the page would draw with the service band open and hosting shown, as rows. */
+  /** Every line the page would draw at rest — the service band open, hosting drawn and not folded (ADR-0020) — as rows. */
   edges: { total: number; some: { from: string; to: string; kind: LandscapeEdge['kind']; count: number; via?: ElementId[]; implied?: true }[] }
 }
 
@@ -51,7 +51,7 @@ export function inspectTechnology(model: Model, diagram: Diagram, limit = TECHNO
     }
   }
   walkPlatforms(page.platforms, 0)
-  const edges = landscapeEdges(page, { services: true, hosting: true, folded: new Set() })
+  const edges = landscapeEdges(page, { services: true, foldHosting: false, folded: new Set() })
   return {
     diagramId: diagram.id,
     name: diagram.name,

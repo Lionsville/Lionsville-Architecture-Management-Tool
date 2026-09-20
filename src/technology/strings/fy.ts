@@ -62,7 +62,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'landscape.servicesHidden': '{count} tsjinsten ferburgen — de linen rinne streekrjocht nei de platfoarms derefter',
   'landscape.linesFocus': 'Linen by fokus',
   'landscape.linesAll': 'Alle linen',
-  'landscape.hosting': 'Hosting',
+  'landscape.foldHosting': 'Hosting gearfâldzje mei tsjinstlinen',
   'landscape.onlyTouched': 'Allinnich wat de seleksje rekket',
   'landscape.applicationsOne': '{count} applikaasje',
   'landscape.applicationsOther': '{count} applikaasjes',

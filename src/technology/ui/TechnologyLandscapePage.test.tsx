@@ -82,8 +82,10 @@ describe('the three bands', () => {
     expect(screen.getByTestId('landscape-lines').querySelectorAll('path')).toHaveLength(0)
     fireEvent.click(screen.getByTestId('landscape-service-containers'))
     const titles = [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
-    // The model's own word on the line, as the agent reads it; the legend says "delivers".
-    expect(titles).toEqual(['uses', 'uses', 'uses', 'realises'])
+    // The model's own word on the line, as the agent reads it; the legend
+    // says "delivers". The hosting of a consumer whose platform the service
+    // touches is drawn too: hosting is a line at rest (ADR-0020).
+    expect(titles).toEqual(['uses', 'uses', 'uses', 'hostedOn', 'realises'])
     // What the selection does not touch is dimmed; what it does is not.
     expect(screen.getByTestId('landscape-platform-kafka').dataset.dimmed).toBe('true')
     expect(screen.getByTestId('landscape-application-wms').dataset.dimmed).toBeUndefined()
@@ -96,7 +98,7 @@ describe('the three bands', () => {
   it('draws every line when asked to', () => {
     open()
     fireEvent.click(screen.getByTestId('landscape-lines-mode'))
-    expect(screen.getByTestId('landscape-lines').querySelectorAll('path')).toHaveLength(7)
+    expect(screen.getByTestId('landscape-lines').querySelectorAll('path')).toHaveLength(8)
   })
 })
 
@@ -108,7 +110,7 @@ describe('the service band', () => {
     expect(screen.getByTestId('landscape-band-services').textContent).toContain('2 services hidden')
     fireEvent.click(screen.getByTestId('landscape-application-wms'))
     const titles = [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
-    expect(titles).toEqual(['leverages · containers', 'leverages · brokering'])
+    expect(titles).toEqual(['leverages · containers', 'leverages · brokering', 'hostedOn'])
     // The record says the same, and through which service.
     expect(screen.getByTestId('landscape-inspector').textContent).toContain('OpenShift · for Container platform')
   })

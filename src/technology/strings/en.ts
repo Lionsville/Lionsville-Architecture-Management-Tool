@@ -65,7 +65,7 @@ export const EN = {
   'landscape.servicesHidden': '{count} services hidden — the lines go straight to the platforms behind them',
   'landscape.linesFocus': 'Lines on focus',
   'landscape.linesAll': 'All lines',
-  'landscape.hosting': 'Hosting',
+  'landscape.foldHosting': 'Fold hosting into service lines',
   'landscape.onlyTouched': 'Only what the selection touches',
   'landscape.applicationsOne': '{count} application',
   'landscape.applicationsOther': '{count} applications',

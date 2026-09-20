@@ -62,7 +62,7 @@ const describe_: PlatformDescribe = (id) => ({
 }[id])
 const diagram = { id: 'tl-1', name: 'Technology landscape' }
 const landscape = () => technologyLandscape({ elements, relations }, diagram, { elsewhere, describe: describe_ })
-const open: LandscapeView = { services: true, hosting: false, folded: new Set() }
+const open: LandscapeView = { services: true, foldHosting: false, folded: new Set() }
 
 describe('the three bands', () => {
   it('finds every application the rows name, named off the index and grouped by the scope that answers for it', () => {
@@ -95,7 +95,7 @@ describe('the three bands', () => {
     const cloud = landscape().services[0]
     // Two consumers: the portal says so, and WMS is hosted under the landing zone that realises it (ADR-0017).
     expect(cloud).toMatchObject({ summary: 'An account with a landing zone.', shared: true, consumers: 2, realisedBy: ['landing-zone', 'aws'] })
-    expect(landscape().counts).toEqual({ applications: 3, services: 5, platforms: 7 })
+    expect(landscape().counts).toEqual({ applications: 3, services: 5, shared: 0, platforms: 7 })
   })
 
   it('nests the platforms where the tree nests, and counts what stands on each', () => {
@@ -132,7 +132,9 @@ describe('the lines', () => {
     ])
     expect(edges.filter((edge) => edge.kind === 'realises')).toHaveLength(6)
     expect(edges.find((edge) => edge.kind === 'binds')).toMatchObject({ from: 'application:rater', to: 'platform:kafka' })
-    expect(edges.some((edge) => edge.kind === 'leverages' || edge.kind === 'hostedOn')).toBe(false)
+    // Hosting is a line at rest (ADR-0020); the leverage only with the band hidden.
+    expect(edges.filter((edge) => edge.kind === 'hostedOn').map((edge) => `${edge.from}>${edge.to}`)).toEqual(['application:wms>platform:ns'])
+    expect(edges.some((edge) => edge.kind === 'leverages')).toBe(false)
   })
 
   it('draws the leverage straight to the platforms with the band hidden, narrowed by where the application runs', () => {
@@ -142,6 +144,7 @@ describe('the lines', () => {
       ['platform:openshift', 'leverages', ['containers']],
       ['platform:az-postgres', 'leverages', ['postgres']],
       ['platform:kafka', 'leverages', ['brokering']],
+      ['platform:ns', 'hostedOn', undefined],
     ])
     // Nothing says where the portal runs, so both deliveries are drawn.
     const portal = edges.filter((edge) => edge.from === 'application:portal').map((edge) => edge.to)
@@ -149,8 +152,8 @@ describe('the lines', () => {
     expect(edges.some((edge) => edge.kind === 'uses' || edge.kind === 'realises')).toBe(false)
   })
 
-  it('merges a folded group\'s lines into one per target with the count, and draws hosting when asked', () => {
-    const edges = landscapeEdges(landscape(), { services: true, hosting: true, folded: new Set(['logistics']) })
+  it('merges a folded group\'s lines into one per target with the count', () => {
+    const edges = landscapeEdges(landscape(), { services: true, foldHosting: false, folded: new Set(['logistics']) })
     expect(edges.filter((edge) => edge.from === 'group:logistics').map((edge) => [edge.to, edge.kind, edge.count])).toEqual([
       ['platform:kafka', 'binds', 1],
       ['service:containers', 'uses', 1], ['service:postgres', 'uses', 1], ['service:brokering', 'uses', 1],
@@ -159,7 +162,7 @@ describe('the lines', () => {
     ])
     const both = landscapeEdges(
       technologyLandscape({ elements, relations }, diagram, { elsewhere: [...elsewhere, row('l8', 'uses', 'rater', 'postgres')], describe: describe_ }),
-      { services: true, hosting: false, folded: new Set(['logistics']) },
+      { services: true, foldHosting: false, folded: new Set(['logistics']) },
     )
     expect(both.find((edge) => edge.from === 'group:logistics' && edge.to === 'service:postgres')!.count).toBe(2)
   })
@@ -168,7 +171,7 @@ describe('the lines', () => {
 describe('what a card touches', () => {
   it('lights an application\'s services and the platforms behind them', () => {
     expect([...touchedBy(landscape(), nodeKey.application('wms'), open)].sort()).toEqual([
-      'application:wms', 'platform:aws', 'platform:az-postgres', 'platform:kafka', 'platform:landing-zone', 'platform:openshift', 'platform:rds',
+      'application:wms', 'platform:aws', 'platform:az-postgres', 'platform:kafka', 'platform:landing-zone', 'platform:ns', 'platform:openshift', 'platform:rds',
       'service:brokering', 'service:cloud', 'service:containers', 'service:postgres',
     ])
   })
@@ -199,5 +202,88 @@ describe('what hosting implies (ADR-0017)', () => {
     expect(edge).toMatchObject({ kind: 'uses', implied: true })
     // With the band hidden nothing is drawn for it: the hosting is the line.
     expect(landscapeEdges(landscape(), { ...open, services: false }).some((one) => one.implied)).toBe(false)
+  })
+})
+
+describe('hosting at rest, and folding it (ADR-0020)', () => {
+  // A scope with places and no offerings: the only sentence its applications
+  // have is where they run.
+  const bare = () => technologyLandscape(
+    {
+      elements: [
+        element('sheets', { name: 'Spreadsheets' }),
+        element('portal', { name: 'Order portal' }),
+        element('o365', { kind: 'platform', name: 'Office 365', platformArchetype: 'place', outside: true }),
+        element('k8s', { kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
+        element('bus', { kind: 'platform', name: 'Event bus' }),
+      ],
+      relations: [
+        row('h1', 'hostedOn', 'sheets', 'o365'),
+        row('h2', 'hostedOn', 'portal', 'k8s'),
+        row('u1', 'uses', 'portal', 'k8s'),
+        row('u2', 'uses', 'portal', 'bus'),
+      ],
+    },
+    diagram,
+  )
+
+  it('draws the hosting of an application that says nothing else, at the default view', () => {
+    const edges = landscapeEdges(bare(), open).filter((edge) => edge.from === 'application:sheets')
+    expect(edges.map((edge) => [edge.to, edge.kind])).toEqual([['platform:o365', 'hostedOn']])
+    // Folding has nothing to fold it into.
+    expect(landscapeEdges(bare(), { ...open, foldHosting: true }).some((edge) => edge.from === 'application:sheets')).toBe(true)
+  })
+
+  it('folds a hosting line into a use that already reaches the same platform, and keeps the use', () => {
+    const at = (view: LandscapeView) => landscapeEdges(bare(), view).filter((edge) => edge.from === 'application:portal').map((edge) => `${edge.kind}>${edge.to}`)
+    expect(at(open)).toEqual(['binds>platform:k8s', 'binds>platform:bus', 'hostedOn>platform:k8s'])
+    expect(at({ ...open, foldHosting: true })).toEqual(['binds>platform:k8s', 'binds>platform:bus'])
+    // And through a service: WMS is hosted in the namespace, which nothing
+    // it uses reaches, so that line stays folded or not; the landing zone
+    // its implied use reaches is not where it is hosted.
+    const wms = landscapeEdges(landscape(), { ...open, foldHosting: true }).filter((edge) => edge.from === 'application:wms' && edge.kind === 'hostedOn')
+    expect(wms.map((edge) => edge.to)).toEqual(['platform:ns'])
+  })
+
+  it('lights the platform behind an application that is only hosted', () => {
+    expect([...touchedBy(bare(), nodeKey.application('sheets'), open)].sort()).toEqual(['application:sheets', 'platform:o365'])
+    expect([...touchedBy(bare(), nodeKey.platform('o365'), open)].sort()).toEqual(['application:sheets', 'platform:o365'])
+  })
+})
+
+describe('shared offerings from elsewhere (ADR-0020)', () => {
+  const shared = [
+    { id: 'ent-bus', name: 'Enterprise integration bus', where: 'platforms', realisedBy: ['asb'] },
+    { id: 'managed-db', name: 'Managed database', where: 'platforms', realisedBy: [] },
+  ]
+  const own = () => technologyLandscape(
+    {
+      elements: [
+        element('billing', { name: 'Billing' }),
+        element('k8s', { kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
+        // A stand-in this scope already keeps of one of them.
+        element('managed-db', { kind: 'platformService', name: 'Managed database', ref: 'platforms', lifecycle: 'retiring' }),
+      ],
+      relations: [row('u1', 'uses', 'billing', 'ent-bus'), row('u2', 'uses', 'billing', 'managed-db')],
+    },
+    diagram,
+    { sharedElsewhere: shared },
+  )
+
+  it('lists them after this scope\'s own services, with the scope that answers and the stand-in marked', () => {
+    const page = own()
+    expect(page.counts).toEqual({ applications: 1, services: 0, shared: 2, platforms: 1 })
+    expect(page.services.map((one) => [one.id, one.where, one.shared, one.standIn, one.consumers, one.realisedBy, one.lifecycle])).toEqual([
+      ['ent-bus', 'platforms', true, undefined, 1, ['asb'], 'live'],
+      ['managed-db', 'platforms', true, true, 1, [], 'retiring'],
+    ])
+    expect(serviceList(page).map(({ node }) => node.id)).toEqual(['ent-bus', 'managed-db'])
+  })
+
+  it('draws a use of one as a line like any other', () => {
+    const edges = landscapeEdges(own(), open).filter((edge) => edge.from === 'application:billing')
+    expect(edges.map((edge) => `${edge.kind}>${edge.to}`)).toEqual(['uses>service:ent-bus', 'uses>service:managed-db'])
+    expect(applicationList(own())[0]).toMatchObject({ uses: ['ent-bus', 'managed-db'] })
+    expect([...touchedBy(own(), nodeKey.service('ent-bus'), open)].sort()).toEqual(['application:billing', 'service:ent-bus'])
   })
 })

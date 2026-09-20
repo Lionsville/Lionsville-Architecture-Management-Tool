@@ -62,7 +62,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'landscape.servicesHidden': '{count} diensten verborgen — de lijnen lopen rechtstreeks naar de platformen erachter',
   'landscape.linesFocus': 'Lijnen bij focus',
   'landscape.linesAll': 'Alle lijnen',
-  'landscape.hosting': 'Hosting',
+  'landscape.foldHosting': 'Hosting samenvouwen met dienstlijnen',
   'landscape.onlyTouched': 'Alleen wat de selectie raakt',
   'landscape.applicationsOne': '{count} applicatie',
   'landscape.applicationsOther': '{count} applicaties',

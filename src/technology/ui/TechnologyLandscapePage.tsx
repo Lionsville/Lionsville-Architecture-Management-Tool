@@ -121,7 +121,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
   const [services, setServices] = useState(true)
   const [lines, setLines] = useState<Lines>('focus')
-  const [hosting, setHosting] = useState(false)
+  const [foldHosting, setFoldHosting] = useState(false)
   const [onlyTouched, setOnlyTouched] = useState(false)
   const [selected, setSelected] = useState<NodeKey | undefined>(undefined)
   const [hovered, setHovered] = useState<NodeKey | undefined>(undefined)
@@ -145,7 +145,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
     setFolded(new Set(big ? landscape.groups.map((group) => group.key) : []))
   }, [landscape, shown])
 
-  const view = useMemo<LandscapeView>(() => ({ services, hosting, folded }), [services, hosting, folded])
+  const view = useMemo<LandscapeView>(() => ({ services, foldHosting, folded }), [services, foldHosting, folded])
   const focus = selected ?? hovered
   const touched = useMemo(
     () => (landscape && focus ? touchedBy(landscape, focus, view) : undefined),
@@ -213,7 +213,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
     if (!held) { setPaths([]); return }
     setPaths(drawEdges(held, edges))
   }, [edges])
-  useLayoutEffect(() => { measure() }, [measure, visible, folded, services, hosting])
+  useLayoutEffect(() => { measure() }, [measure, visible, folded, services, foldHosting])
   useEffect(() => {
     const held = board.current
     if (!held || typeof ResizeObserver === 'undefined') return undefined
@@ -306,8 +306,8 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
           </Button>
           <FormControlLabel
             sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
-            control={<Checkbox size="small" checked={hosting} onChange={(event) => setHosting(event.target.checked)} inputProps={{ 'data-testid': 'landscape-hosting' } as never} />}
-            label={t('landscape.hosting')}
+            control={<Checkbox size="small" checked={foldHosting} onChange={(event) => setFoldHosting(event.target.checked)} inputProps={{ 'data-testid': 'landscape-fold-hosting' } as never} />}
+            label={t('landscape.foldHosting')}
           />
           <FormControlLabel
             sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
@@ -734,7 +734,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
     if (app) {
       title = app.name
       const leverages = edges.filter((edge) => edge.from === selected && edge.kind === 'leverages')
-      const behind = landscapeEdges(landscape, { services: false, hosting: false, folded: new Set() }).filter((edge) => edge.from === selected && edge.kind === 'leverages')
+      const behind = landscapeEdges(landscape, { services: false, foldHosting: false, folded: new Set() }).filter((edge) => edge.from === selected && edge.kind === 'leverages')
       const stands = leverages.length > 0 ? leverages : behind
       body = (
         <>
@@ -794,7 +794,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
       report = onOpenPlatformReport && held.has(id) ? () => onOpenPlatformReport(id) : undefined
       const standing = applicationList(landscape).filter((app) => (
         app.binds.includes(id) || app.hostedOn.includes(id)
-        || landscapeEdges(landscape, { services: false, hosting: false, folded: new Set() })
+        || landscapeEdges(landscape, { services: false, foldHosting: false, folded: new Set() })
           .some((edge) => edge.kind === 'leverages' && edge.from === nodeKey.application(app.id) && edge.to === selected)
       ))
       body = (
