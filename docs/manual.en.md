@@ -833,9 +833,11 @@ broker, a cloud account, a firewall — and what a platform team offers is a
 database*, *Identity*. The two are different things on the same layer. A
 service is what a team asks for and a platform team is accountable for; a
 platform is what delivers it this year, and could be replaced next year
-without the service changing its name. Both come from the palette's last
-row and land in the management band as chips, the service with a mark of
-its own so the two are told apart at a glance. A platform says what it is
+without the service changing its name. A platform comes from the palette's
+last row and lands in the management band as a chip; a service is made on
+the technology landscape, where the layer is drawn, and a board draws it as
+a chip with a mark of its own so the two are told apart at a glance. A
+platform says what it is
 on the inspector — a *place* something runs in, a *service* something
 consumes, or a *network*; a service when unsaid — and what it is **part
 of**, which is how a namespace goes under its cluster in the app; a platform

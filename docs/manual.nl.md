@@ -876,10 +876,11 @@ is een **platformdienst**: *Containerplatform*, *Berichtenverkeer*, *Beheerde
 database*, *Identiteit*. Het zijn twee verschillende dingen op dezelfde laag.
 Een dienst is wat een team vraagt en waar een platformteam voor
 verantwoordelijk is; een platform is wat die dit jaar levert, en kan volgend
-jaar vervangen worden zonder dat de dienst van naam verandert. Beide komen uit
-de onderste rij van het palet en landen als chip in de beheerlaag, de dienst
-met een eigen merkteken zodat de twee in één oogopslag uit elkaar te houden
-zijn. Een platform zegt in het inspectiepaneel wat het is — een *plek* waar
+jaar vervangen worden zonder dat de dienst van naam verandert. Een platform
+komt uit de onderste rij van het palet en landt als chip in de beheerlaag; een
+dienst maak je op het technologielandschap, waar de laag getekend wordt, en
+een bord tekent haar als chip met een eigen merkteken zodat de twee in één
+oogopslag uit elkaar te houden zijn. Een platform zegt in het inspectiepaneel wat het is — een *plek* waar
 iets in draait, een *dienst* die iets gebruikt, of een *netwerk*; een dienst
 als niets gezegd is — en waar het **onderdeel van** is, wat maakt dat een
 namespace in de app onder zijn cluster kan; een platform **realiseert** de

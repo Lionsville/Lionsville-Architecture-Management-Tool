@@ -871,9 +871,11 @@ in **platfoarmtsjinst**: *Containerplatfoarm*, *Berjochteferkear*, *Beheard
 database*, *Identiteit*. It binne twa ferskillende dingen op deselde laach. In
 tsjinst is wat in team freget en dêr't in platfoarmteam foar ferantwurdlik is;
 in platfoarm is wat dy dit jier leveret, en kin takom jier ferfongen wurde
-sûnder dat de tsjinst fan namme feroaret. Beide komme út de ûnderste rige fan
-it palet en lânje as chip yn de behearsbân, de tsjinst mei in eigen merkteken
-sadat de twa yn ien eachopslach útinoar te hâlden binne. In platfoarm seit yn
+sûnder dat de tsjinst fan namme feroaret. In platfoarm komt út de ûnderste
+rige fan it palet en lânet as chip yn de behearsbân; in tsjinst makkest op it
+technologylânskip, dêr't de laach tekene wurdt, en in boerd tekenet har as
+chip mei in eigen merkteken sadat de twa yn ien eachopslach útinoar te hâlden
+binne. In platfoarm seit yn
 it ynspeksjepaniel wat it is — in *plak* dêr't wat yn draait, in *tsjinst* dy't
 wat brûkt, of in *netwurk*; in tsjinst as neat sein is — en wêr't it
 **ûnderdiel fan** is, wat makket dat in namespace yn de app ûnder syn kluster

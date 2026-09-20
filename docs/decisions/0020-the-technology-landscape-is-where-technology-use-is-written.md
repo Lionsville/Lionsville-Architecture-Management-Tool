@@ -162,9 +162,10 @@ and is now where three of them are written.
 * On a scope with places and no offerings the landscape draws what its
   applications say. On any scope the platform team's offerings can be
   leaned on without a board.
-* `platformService` stays on the board palettes for now; taking it off is
-  a separate change with its own test flip, and boards that hold one keep
-  drawing it.
+* `platformService` left the board palettes and the *Change kind* menu: an
+  offering is authored where the layer is drawn. A board that already
+  holds one keeps drawing it, and the library still draws a stand-in of
+  one from the register.
 * Open, carried from ADR-0017: whether the service report should count
   implied consumers. Open from ADR-0015: multi-select of two services for
   the migration question, and a matrix report behind the view.

@@ -943,9 +943,11 @@ Plattformteam anbietet, ist ein **Plattformdienst**: *Containerplattform*,
 Dinge auf derselben Ebene. Ein Dienst ist, was ein Team anfragt und wofür ein
 Plattformteam verantwortlich ist; eine Plattform ist, was ihn dieses Jahr
 liefert, und kann nächstes Jahr ersetzt werden, ohne dass der Dienst seinen
-Namen ändert. Beide kommen aus der untersten Reihe der Palette und landen als
-Chip im Management-Band, der Dienst mit einem eigenen Zeichen, damit die
-beiden auf einen Blick zu unterscheiden sind. Eine Plattform sagt im
+Namen ändert. Eine Plattform kommt aus der untersten Reihe der Palette und
+landet als Chip im Management-Band; ein Dienst wird auf der
+Technologielandschaft angelegt, wo die Schicht gezeichnet wird, und eine
+Tafel zeichnet ihn als Chip mit einem eigenen Zeichen, damit die beiden auf
+einen Blick zu unterscheiden sind. Eine Plattform sagt im
 Inspektor, was sie ist — ein *Ort*, an dem etwas läuft, ein *Dienst*, den
 etwas nutzt, oder ein *Netzwerk*; ein Dienst, wenn nichts gesagt ist — und
 wovon sie **Teil** ist, was einen Namespace in der App unter seinen Cluster

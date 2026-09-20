@@ -45,6 +45,13 @@ describe('allowedKindsOn', () => {
     expect(allowedKindsOn({ kind: 'layer7' })).not.toContain('component');
     expect(allowedKindsOn({ kind: 'container' })).toContain('component');
   });
+
+  it('offers an offering only where the layer is drawn (ADR-0020), and a platform on every board', () => {
+    expect(allowedKindsOn({ kind: 'layer7' })).not.toContain('platformService');
+    expect(allowedKindsOn({ kind: 'container' })).not.toContain('platformService');
+    expect(allowedKindsOn({ kind: 'technology' })).toContain('platformService');
+    expect(allowedKindsOn({ kind: 'layer7' })).toContain('platform');
+  });
 });
 
 describe('canChangeKind', () => {

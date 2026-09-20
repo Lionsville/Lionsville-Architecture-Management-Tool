@@ -78,7 +78,7 @@ export type KindChangeCheck =
  * row of buttons: `canChangeKind` below refuses a kind the diagram may not show,
  * and the palette offers exactly what the rule allows by importing these.
  */
-export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform', 'platformService'];
+export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform'];
 
 /**
  * C4 container-diagram kinds.
@@ -87,13 +87,18 @@ export const LAYER7_PALETTE: CanvasKind[] = ['application', 'actor', 'platform',
  * a container view has no bands to say "somebody else's", so on one of these
  * the fact does it — `outside` on the record, which the inspector offers.
  */
-export const CONTAINER_PALETTE: CanvasKind[] = ['component', 'actor', 'application', 'platform', 'platformService'];
+export const CONTAINER_PALETTE: CanvasKind[] = ['component', 'actor', 'application', 'platform'];
 
 /**
  * What the technology landscape authors (ADR-0016): the layer's two kinds,
- * made without a placement because the view lays them out. The other
- * laid-out views author nothing from the palette — the sheet has gestures
- * of its own, and the map is read.
+ * and the offering only here (ADR-0020): a board draws a platform chip
+ * because a board is where an application is, and an offering is authored
+ * where the layer is drawn. A board that already holds one keeps drawing
+ * it — this is the palette and the *Change kind* menu, not the placement
+ * rule — and the library still draws a stand-in of one from the register.
+ * Both are made without a placement because the view lays them out. The
+ * other laid-out views author nothing from the palette — the sheet has
+ * gestures of its own, and the map is read.
  */
 export const TECHNOLOGY_PALETTE: CanvasKind[] = ['platformService', 'platform'];
 
