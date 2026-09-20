@@ -29,10 +29,11 @@
 import type { StringKey } from '../i18n/strings'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
+import type { Cause, Observation } from './observation'
 import type {
-  AdrId, RelationId, Diagram, DiagramId, GroupId, Model, TransitionId,
+  AdrId, CauseId, RelationId, Diagram, DiagramId, GroupId, Model, ObservationId, TransitionId,
 } from './normalised'
-import { decisionsOf } from './normalised'
+import { causesOf, decisionsOf, observationsOf } from './normalised'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
   EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
@@ -152,6 +153,14 @@ export type CommandBody =
   | { type: 'transition.add'; transition: Transition; at?: number }
   | { type: 'transition.update'; id: TransitionId; patch: Partial<Transition> }
   | { type: 'transition.remove'; id: TransitionId }
+
+  // --- observations and causes (ADR-0021) ----------------------------------
+  | { type: 'observation.add'; observation: Observation; at?: number }
+  | { type: 'observation.update'; id: ObservationId; patch: Partial<Observation> }
+  | { type: 'observation.remove'; id: ObservationId }
+  | { type: 'cause.add'; cause: Cause; at?: number }
+  | { type: 'cause.update'; id: CauseId; patch: Partial<Cause> }
+  | { type: 'cause.remove'; id: CauseId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }
@@ -370,4 +379,44 @@ export function decisionsToCommands(model: Model, next: readonly Adr[]): Command
  */
 function sameAdr(a: Adr, b: Adr): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
+}
+
+/**
+ * A whole list of observations, said as the changes that get there — the
+ * observations page hands its lists back the way the decisions page does, and
+ * for the same reason ⌘Z should put back one record rather than a list.
+ */
+export function observationsToCommands(model: Model, next: readonly Observation[]): Command[] {
+  const held = observationsOf(model)
+  const wanted = new Set(next.map((one) => one.id))
+  const commands: Command[] = []
+  for (const id of model.order.observations) {
+    if (!wanted.has(id)) commands.push({ type: 'observation.remove', id })
+  }
+  for (const one of next) {
+    const before = held[one.id]
+    if (!before) commands.push({ type: 'observation.add', observation: one })
+    else if (JSON.stringify(before) !== JSON.stringify(one)) {
+      commands.push({ type: 'observation.update', id: one.id, patch: replacement(before, one) })
+    }
+  }
+  return commands
+}
+
+/** The causes, likewise. */
+export function causesToCommands(model: Model, next: readonly Cause[]): Command[] {
+  const held = causesOf(model)
+  const wanted = new Set(next.map((one) => one.id))
+  const commands: Command[] = []
+  for (const id of model.order.causes) {
+    if (!wanted.has(id)) commands.push({ type: 'cause.remove', id })
+  }
+  for (const one of next) {
+    const before = held[one.id]
+    if (!before) commands.push({ type: 'cause.add', cause: one })
+    else if (JSON.stringify(before) !== JSON.stringify(one)) {
+      commands.push({ type: 'cause.update', id: one.id, patch: replacement(before, one) })
+    }
+  }
+  return commands
 }

@@ -27,7 +27,7 @@ import { isAdrLocked } from './adr'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  boxesOf, decisionsOf, fromDiagram, groupList, groupsOf, routesOf, toDiagram,
+  boxesOf, causesOf, decisionsOf, fromDiagram, groupList, groupsOf, observationsOf, routesOf, toDiagram,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
@@ -174,6 +174,36 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
     if (thenDecisions[id]) continue
     if (isAdrLocked(nowDecisions[id])) kept += 1
     else commands.push({ type: 'decision.remove', id })
+  }
+
+  // Observations and causes restore whole (ADR-0021): nothing locks them.
+  const thenObservations = observationsOf(then)
+  const nowObservations = observationsOf(now)
+  for (const id of then.order.observations) {
+    const target = thenObservations[id]
+    const current = nowObservations[id]
+    if (!current) commands.push({ type: 'observation.add', observation: target })
+    else {
+      const patch = differing(current, target)
+      if (Object.keys(patch).length) commands.push({ type: 'observation.update', id, patch })
+    }
+  }
+  for (const id of now.order.observations) {
+    if (!thenObservations[id]) commands.push({ type: 'observation.remove', id })
+  }
+  const thenCauses = causesOf(then)
+  const nowCauses = causesOf(now)
+  for (const id of then.order.causes) {
+    const target = thenCauses[id]
+    const current = nowCauses[id]
+    if (!current) commands.push({ type: 'cause.add', cause: target })
+    else {
+      const patch = differing(current, target)
+      if (Object.keys(patch).length) commands.push({ type: 'cause.update', id, patch })
+    }
+  }
+  for (const id of now.order.causes) {
+    if (!thenCauses[id]) commands.push({ type: 'cause.remove', id })
   }
 
   const restored: Restored = { what: 'project', name: then.name, asOf }

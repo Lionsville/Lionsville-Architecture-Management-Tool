@@ -27,13 +27,14 @@
 import type { HostModel } from './hostModel'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
+import type { Cause, Observation } from './observation'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
-  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition'
+  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause'
   | 'membership' | 'geometry'
 
 export type ModelChange = {
@@ -239,8 +240,22 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
       'transition', id, wasPlans.get(id), nowPlans.get(id), (held) => held.title))
   }
 
+  // Observations and their causes after the plans (ADR-0021): what was seen,
+  // then what was said to lie behind it.
+  const wasObservations = byId(before.observations ?? [])
+  const nowObservations = byId(after.observations ?? [])
+  for (const id of ids(wasObservations, nowObservations)) {
+    changes.push(...compare<Observation>(
+      'observation', id, wasObservations.get(id), nowObservations.get(id), (held) => held.title))
+  }
+  const wasCauses = byId(before.causes ?? [])
+  const nowCauses = byId(after.causes ?? [])
+  for (const id of ids(wasCauses, nowCauses)) {
+    changes.push(...compare<Cause>('cause', id, wasCauses.get(id), nowCauses.get(id), (held) => held.title))
+  }
+
   const order: ChangeSubject[] = [
-    'element', 'relation', 'diagram', 'decision', 'transition', 'membership', 'geometry',
+    'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }

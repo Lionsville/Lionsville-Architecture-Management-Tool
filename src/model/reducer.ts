@@ -38,8 +38,9 @@ import type {
 } from './commands'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
+import type { Cause, Observation } from './observation'
 import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from './normalised'
-import { boxesOf, decisionsOf, groupsOf, routesOf, transitionsOf } from './normalised'
+import { boxesOf, causesOf, decisionsOf, groupsOf, observationsOf, routesOf, transitionsOf } from './normalised'
 import { datesInOrder } from './lifecycle'
 import { mayBeHosted } from './hosting'
 import { technologyEndsRefusal } from './relations'
@@ -168,6 +169,26 @@ function withTransitions(model: Model, rows: Rows<Transition>): Model {
     return out
   }
   return { ...model, transitions: rows.by, order }
+}
+
+function withObservations(model: Model, rows: Rows<Observation>): Model {
+  const order = withOrder(model, 'observations', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.observations
+    return out
+  }
+  return { ...model, observations: rows.by, order }
+}
+
+function withCauses(model: Model, rows: Rows<Cause>): Model {
+  const order = withOrder(model, 'causes', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.causes
+    return out
+  }
+  return { ...model, causes: rows.by, order }
 }
 
 function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {
@@ -712,6 +733,51 @@ export function apply(model: Model, command: Command): ApplyResult {
     }
 
     // --- the project itself -------------------------------------------------
+    // --- observations and causes (ADR-0021) ---------------------------------
+    case 'observation.add': {
+      const { observation, at } = command
+      const rows = put(observationsOf(model), model.order.observations, observation.id, observation, at)
+      return ok(withObservations(model, rows), { type: 'observation.remove', id: observation.id })
+    }
+
+    case 'observation.update': {
+      const held = observationsOf(model)[command.id]
+      if (!held) return gone
+      const { row, inverse } = patched(held, command.patch)
+      const rows = put(observationsOf(model), model.order.observations, command.id, row)
+      return ok(withObservations(model, rows), { type: 'observation.update', id: command.id, patch: inverse })
+    }
+
+    case 'observation.remove': {
+      const held = observationsOf(model)[command.id]
+      if (!held) return gone
+      const at = model.order.observations.indexOf(command.id)
+      const rows = drop(observationsOf(model), model.order.observations, command.id)
+      return ok(withObservations(model, rows), { type: 'observation.add', observation: held, at })
+    }
+
+    case 'cause.add': {
+      const { cause, at } = command
+      const rows = put(causesOf(model), model.order.causes, cause.id, cause, at)
+      return ok(withCauses(model, rows), { type: 'cause.remove', id: cause.id })
+    }
+
+    case 'cause.update': {
+      const held = causesOf(model)[command.id]
+      if (!held) return gone
+      const { row, inverse } = patched(held, command.patch)
+      const rows = put(causesOf(model), model.order.causes, command.id, row)
+      return ok(withCauses(model, rows), { type: 'cause.update', id: command.id, patch: inverse })
+    }
+
+    case 'cause.remove': {
+      const held = causesOf(model)[command.id]
+      if (!held) return gone
+      const at = model.order.causes.indexOf(command.id)
+      const rows = drop(causesOf(model), model.order.causes, command.id)
+      return ok(withCauses(model, rows), { type: 'cause.add', cause: held, at })
+    }
+
     case 'project.settings': {
       const { row, inverse } = patched(model, command.patch as Partial<Model>)
       return ok(row, { type: 'project.settings', patch: inverse as ProjectPatch })

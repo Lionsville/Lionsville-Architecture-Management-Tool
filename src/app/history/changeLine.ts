@@ -37,6 +37,12 @@ const KEYS: Record<LineKey, StringKey> = {
   'transition:added': 'change.transitionAdded',
   'transition:removed': 'change.transitionRemoved',
   'transition:changed': 'change.transitionChanged',
+  'observation:added': 'change.observationAdded',
+  'observation:removed': 'change.observationRemoved',
+  'observation:changed': 'change.observationChanged',
+  'cause:added': 'change.causeAdded',
+  'cause:removed': 'change.causeRemoved',
+  'cause:changed': 'change.causeChanged',
   // What came onto a board and what left it. Named, not counted: a card put on
   // a view is a decision somebody made (ADR-0012 §6).
   'membership:added': 'change.membershipAdded',

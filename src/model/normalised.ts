@@ -36,6 +36,7 @@ import { edgeRouteRows, splitRoutes } from './routes'
 import type { Adr } from './adr'
 import type { HostModel } from './hostModel'
 import type { Transition } from './transition'
+import type { Cause, Observation } from './observation'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -43,6 +44,8 @@ export type GroupId = string
 export type DiagramId = string
 export type AdrId = string
 export type TransitionId = string
+export type ObservationId = string
+export type CauseId = string
 
 /** What the file's array order encoded implicitly, said out loud. */
 export type ModelOrder = {
@@ -51,6 +54,8 @@ export type ModelOrder = {
   diagrams: DiagramId[]
   decisions: AdrId[]
   transitions: TransitionId[]
+  observations: ObservationId[]
+  causes: CauseId[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -96,7 +101,7 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
   order: DiagramOrder
 }
 
-export type Model = Omit<HostModel, 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions'> & {
+export type Model = Omit<HostModel, 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -104,6 +109,9 @@ export type Model = Omit<HostModel, 'elements' | 'relations' | 'diagrams' | 'dec
   decisions?: Record<AdrId, Adr>
   /** The plans (ADR-0009). Absent exactly as `decisions` is, and for the same reason. */
   transitions?: Record<TransitionId, Transition>
+  /** The observations and the causes (ADR-0021). Absent exactly as `decisions` is. */
+  observations?: Record<ObservationId, Observation>
+  causes?: Record<CauseId, Cause>
   order: ModelOrder
 }
 
@@ -115,6 +123,16 @@ export function decisionsOf(model: Model): Record<AdrId, Adr> {
 /** The plans on this model, whether or not the file carried the key. */
 export function transitionsOf(model: Model): Record<TransitionId, Transition> {
   return model.transitions ?? {}
+}
+
+/** The observations on this model, whether or not the file carried the key. */
+export function observationsOf(model: Model): Record<ObservationId, Observation> {
+  return model.observations ?? {}
+}
+
+/** The causes on this model, whether or not the file carried the key. */
+export function causesOf(model: Model): Record<CauseId, Cause> {
+  return model.causes ?? {}
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
@@ -154,6 +172,18 @@ export function decisionList(model: Model): Adr[] {
 export function transitionList(model: Model): Transition[] {
   const by = transitionsOf(model)
   return model.order.transitions.map((id) => by[id])
+}
+
+/** The observations in file order. */
+export function observationList(model: Model): Observation[] {
+  const by = observationsOf(model)
+  return model.order.observations.map((id) => by[id])
+}
+
+/** The causes in file order. */
+export function causeList(model: Model): Cause[] {
+  const by = causesOf(model)
+  return model.order.causes.map((id) => by[id])
 }
 
 export function memberList(diagram: Diagram): DiagramMember[] {
@@ -316,12 +346,26 @@ export function fromArrays(host: HostModel): Model {
     out.transitions = transitions
     transitionOrder = order
   }
+  let observationOrder: ObservationId[] = []
+  if (host.observations !== undefined) {
+    const [observations, order] = index(host.observations, (o) => o.id)
+    out.observations = observations
+    observationOrder = order
+  }
+  let causeOrder: CauseId[] = []
+  if (host.causes !== undefined) {
+    const [causes, order] = index(host.causes, (c) => c.id)
+    out.causes = causes
+    causeOrder = order
+  }
   out.order = {
     elements: elementOrder,
     relations: relationOrder,
     diagrams: diagramOrder,
     decisions: decisionOrder,
     transitions: transitionOrder,
+    observations: observationOrder,
+    causes: causeOrder,
   }
   return out
 }
@@ -337,6 +381,12 @@ export function toArrays(model: Model): HostModel {
   }
   if (model.transitions !== undefined) {
     out.transitions = unindex(model.transitions, model.order.transitions)
+  }
+  if (model.observations !== undefined) {
+    out.observations = unindex(model.observations, model.order.observations)
+  }
+  if (model.causes !== undefined) {
+    out.causes = unindex(model.causes, model.order.causes)
   }
   delete out.order
   return out

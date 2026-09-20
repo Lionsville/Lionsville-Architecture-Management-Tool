@@ -23,11 +23,18 @@ export type {
  */
 export type {
   Model, Diagram, ModelOrder, DiagramOrder, RelationId, DiagramId, GroupId, AdrId, TransitionId,
+  ObservationId, CauseId,
 } from './normalised'
 export {
-  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf,
-  elementList, relationList, diagramList, decisionList, transitionList, memberList, routeList,
+  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf, observationsOf, causesOf,
+  elementList, relationList, diagramList, decisionList, transitionList, observationList, causeList, memberList, routeList,
 } from './normalised'
+
+/** What was seen, and what lies behind it (ADR-0021). */
+export { CAUSE_STATES, CAUSE_STRENGTHS, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS } from './observation'
+export type {
+  Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind, ObservationImpact,
+} from './observation'
 
 /** What a relation is, and the one type a canvas draws (ADR-0012 §5). */
 export {
@@ -130,7 +137,7 @@ export type {
 /** The one vocabulary for changing a model, and the one writer (ADR-0002). */
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'
 export {
-  transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands,
+  transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands, observationsToCommands, causesToCommands,
   fieldEdit,
 } from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'
