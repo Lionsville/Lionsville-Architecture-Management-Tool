@@ -238,6 +238,8 @@ export type ShellToolbarProps = {
    */
   onOpenDocumentation: () => void
   onOpenDecisions: () => void
+  /** What was seen, and what lies behind it (ADR-0021). */
+  onOpenObservations: () => void
   /** The time axis and the plans over it (ADR-0009). */
   onOpenRoadmap: () => void
   onOpenSearch: () => void
@@ -263,7 +265,7 @@ export type ShellToolbarProps = {
 
 export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
-  language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenRoadmap,
+  language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
   onOpenSearch, activity,
   overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
@@ -313,6 +315,7 @@ export function ShellToolbar({
       {([
         ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
         ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],
+        ['shell.observations', 'shell.observationsTip', onOpenObservations],
         ['shell.roadmap', 'shell.roadmapTip', onOpenRoadmap],
         ['shell.search', 'shell.searchTip', onOpenSearch],
       ] as const).map(([label, tip, onClick]) => (

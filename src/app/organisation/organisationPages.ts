@@ -24,6 +24,9 @@ import type { Finding } from '../../model/checks'
 import { TRANSITION_STATUSES } from '../../model/transition'
 import type { TransitionStatus } from '../../model/transition'
 import type { ScopeSnapshot } from '../../projects/scope'
+import { liveObservations, rootCauses } from '../../observations/observation'
+import { CAUSE_STATES } from '../../model/observation'
+import type { CauseState } from '../../model/observation'
 
 /** How many of each, in the vocabulary's own order and without the zeroes. */
 export type StatusTally<T extends string> = readonly { status: T; count: number }[]
@@ -67,6 +70,13 @@ export type OrganisationPages = {
     /** The first thing the dates disagree about — `findings` answers worst first. */
     finding?: Finding
   }
+  /** What was seen here and what lies behind it (ADR-0021). */
+  observations: {
+    /** The observations still standing: merged ones are history. */
+    total: number
+    causes: StatusTally<CauseState>
+    roots: number
+  }
   /** The technology landscape to open (ADR-0015). Absent means there is one to make. */
   technology: {
     landscapeId?: string
@@ -97,11 +107,13 @@ export function organisationPages(
   const diagrams = model?.diagrams ?? []
   const decisions = model?.decisions ?? []
   const transitions = model?.transitions ?? []
+  const observations = model?.observations ?? []
+  const causes = model?.causes ?? []
   const of = (kind: string) => elements.filter((element) => element.kind === kind).length
 
   return {
     empty: elements.length === 0 && relations.length === 0 && diagrams.length === 0
-      && decisions.length === 0 && transitions.length === 0,
+      && decisions.length === 0 && transitions.length === 0 && observations.length === 0 && causes.length === 0,
     business: {
       // A journey is a `step` root; an area is a `function` root. The same
       // reading `seedSheet` makes, and for the same reason — what a tree's
@@ -124,6 +136,11 @@ export function organisationPages(
       ...(decisions.length
         ? { latest: [...decisions].sort((a, b) => a.number - b.number)[decisions.length - 1] }
         : {}),
+    },
+    observations: {
+      total: liveObservations(observations).length,
+      causes: tally(CAUSE_STATES, causes.map((one) => ({ status: one.state }))),
+      roots: rootCauses(causes).length,
     },
     technology: {
       ...(diagrams.find((diagram) => diagram.kind === 'technology')

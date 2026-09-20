@@ -383,7 +383,7 @@ describe('the organisation screen — a fresh folder', () => {
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
     expect(subtitle.textContent).toContain('Each domain and landscape below is a scope of its own')
     const cards = await screen.findByTestId('organisation-cards')
-    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(6))
+    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(7))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
     expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
     expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')

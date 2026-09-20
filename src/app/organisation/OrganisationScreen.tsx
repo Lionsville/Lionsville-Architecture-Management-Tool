@@ -126,6 +126,8 @@ export type OrganisationScreenProps = {
   technology?: readonly TechnologyRow[]
   /** How many plans below the root are initiatives (ADR-0012 §7), off the same index. */
   initiatives?: number
+  /** How many observations the scopes below shared (ADR-0021), off the same index. */
+  sharedObservations?: number
   /** Open a row where it is answered for, with the element selected. */
   onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
   /** Open a row's page — the record and its document — where it is answered for. */
@@ -149,7 +151,7 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
-  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0,
+  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
@@ -381,6 +383,8 @@ export function OrganisationScreen({
                 { page: 'map', ...(pages.business.mapId ? { id: pages.business.mapId } : {}) },
               )}
               onOpenDecisions={() => organisation.open(at, { page: 'decisions' })}
+              onOpenObservations={() => organisation.open(at, { page: 'observations' })}
+              sharedObservations={sharedObservations}
               onOpenRoadmap={() => organisation.open(at, { page: 'roadmap' })}
               register={registerCounts}
               technology={technologyCounts}

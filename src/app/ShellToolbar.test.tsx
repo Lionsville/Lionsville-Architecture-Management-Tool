@@ -29,6 +29,7 @@ const props = {
   onOpenSettings: () => {},
   onOpenDocumentation: () => {},
   onOpenDecisions: () => {},
+  onOpenObservations: () => {},
   onOpenRoadmap: () => {},
   onOpenSearch: () => {},
   activity: () => [],

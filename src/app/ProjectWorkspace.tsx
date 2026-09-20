@@ -28,7 +28,7 @@ import { technologyRows } from './organisation/technologyRegister'
 import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
-import { decisionsOf, decisionsToCommands, describeLeverage, leverageOf, transaction, transitionsOf } from '../model'
+import { causesToCommands, decisionsOf, decisionsToCommands, describeLeverage, leverageOf, observationsToCommands, transaction, transitionsOf } from '../model'
 import type { DesignElement, ElementId, PlatformDescription, Relation, DesignDiagram, SharedElsewhere } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
@@ -42,6 +42,8 @@ import type { HostCommand } from '../platform/hostCommands'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { AdrPage } from '../decisions/ui/AdrPage'
+import { ObservationsPage } from '../observations/ui/ObservationsPage'
+import type { Analysis } from '../observations/observation'
 import { DiskChangeNotice } from './DiskChangeNotice'
 import { HistoryPage } from './history/HistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
@@ -885,6 +887,8 @@ export function ProjectWorkspace({
   // --- the three pages beside the canvas ---------------------------------------
 
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
+  /** The observations page (ADR-0021), on one observation or cause when an id is given. */
+  const [obsPage, setObsPage] = useState<{ open: boolean; id?: string }>({ open: false })
   /**
    * How tall the shell toolbar is, measured: every page opens below it, so
    * Documentation, Decisions and Roadmap stay one click from each other while
@@ -920,16 +924,24 @@ export function ProjectWorkspace({
   const openDecisions = useCallback((adrId?: string) => {
     plans.closeAll()
     platformReading.close()
+    setObsPage({ open: false })
     showDecision(adrId)
   }, [plans.closeAll, platformReading.close, showDecision])
-  const openRoadmap = useCallback(() => {
+  /** The observations page (ADR-0021): the same one-at-a-time rule. */
+  const openObservations = useCallback((id?: string) => {
+    plans.closeAll()
+    platformReading.close()
     setAdrPage({ open: false })
+    setObsPage({ open: true, ...(id !== undefined ? { id } : {}) })
+  }, [plans.closeAll, platformReading.close])
+  const openRoadmap = useCallback(() => {
+    setAdrPage({ open: false }); setObsPage({ open: false })
     platformReading.close()
     plans.openRoadmap()
   }, [plans.openRoadmap, platformReading.close])
   /** Every page beside the canvas shut, so the tab shows: what opening a view does first. */
   const closePages = useCallback(() => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.close()
   }, [plans.closeAll, platformReading.close])
@@ -940,33 +952,33 @@ export function ProjectWorkspace({
   }, [closePages, session])
   const openSheet = openView
   const openMap = useCallback((id: string) => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.close()
     session.setActiveDiagramId(id)
   }, [plans.closeAll, platformReading.close, session])
   const createMap = useCallback(() => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.close()
     maps.create()
   }, [plans.closeAll, platformReading.close, maps.create])
   /** The technology landscape (ADR-0015): the third laid-out page, opened and made the map's way. */
   const openTechnology = useCallback((id: string) => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.close()
     landscapes.open(id)
   }, [plans.closeAll, platformReading.close, landscapes.open])
   /** The door from a record (ADR-0020): the scope's landscape, on that application. */
   const openTechnologyFor = useCallback((elementId: string) => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.close()
     landscapes.showOn(elementId)
   }, [plans.closeAll, platformReading.close, landscapes.showOn])
   const createTechnology = useCallback(() => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.close()
     landscapes.create()
@@ -977,7 +989,7 @@ export function ProjectWorkspace({
    * it is derived from the rows, so opening it is the whole of making it.
    */
   const openServiceReport = useCallback((serviceId: string) => {
-    setAdrPage({ open: false })
+    setAdrPage({ open: false }); setObsPage({ open: false })
     plans.closeAll()
     platformReading.openService(serviceId)
   }, [plans.closeAll, platformReading.openService])
@@ -1029,6 +1041,7 @@ export function ProjectWorkspace({
     save: forceSave,
     page: () => {
       if (adrPage.open) return { page: 'decisions', ...(adrPage.adrId !== undefined ? { id: adrPage.adrId } : {}) }
+      if (obsPage.open) return { page: 'observations', ...(obsPage.id !== undefined ? { id: obsPage.id } : {}) }
       if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
       if (plans.roadmapOpen) return { page: 'roadmap' }
       if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
@@ -1067,6 +1080,7 @@ export function ProjectWorkspace({
       register: () => indexRef.current.register(),
       technology: () => technologyRows(indexRef.current, identityFindings(indexRef.current)),
       initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
+      observationsBelow: (path) => indexRef.current.observationsBelow(path),
       rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
       findings: () => {
         const model = session.current()
@@ -1122,6 +1136,7 @@ export function ProjectWorkspace({
     if (!initialPage || openedFor.current) return
     openedFor.current = true
     if (initialPage.page === 'decisions') openDecisions(initialPage.id)
+    if (initialPage.page === 'observations') openObservations(initialPage.id)
     if (initialPage.page === 'roadmap') openRoadmap()
     if (initialPage.page === 'sheet') {
       if (initialPage.id) openSheet(initialPage.id)
@@ -1153,7 +1168,7 @@ export function ProjectWorkspace({
     if (initialPage.page === 'link') {
       gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
     }
-  }, [initialPage, openDecisions, openRoadmap, openSheet, sheets.create, openMap, createMap, openTechnology, createTechnology, plans.openPlan, focusElement, openDocumentation, gestures, openPlatformReport, openServiceReport])
+  }, [initialPage, openDecisions, openObservations, openRoadmap, openSheet, sheets.create, openMap, createMap, openTechnology, createTechnology, plans.openPlan, focusElement, openDocumentation, gestures, openPlatformReport, openServiceReport])
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -1226,6 +1241,21 @@ export function ProjectWorkspace({
     const commands = decisionsToCommands(session.indexed(), next)
     if (commands.length) session.dispatch(transaction(commands))
   }, [session])
+
+  /** The observations page hands both lists back (ADR-0021); what moved is one undo step. */
+  const onAnalysisChange = useCallback((next: Analysis) => {
+    const indexed = session.indexed()
+    const commands = [...observationsToCommands(indexed, next.observations), ...causesToCommands(indexed, next.causes)]
+    if (commands.length) session.dispatch(transaction(commands))
+  }, [session])
+
+  /**
+   * The observations the scopes below shared (ADR-0021), off the index like
+   * the initiatives — and, the other way, which of this scope's own a scope
+   * above folded into one of its own.
+   */
+  const sharedBelow = useMemo(() => index.observationsBelow(project.path), [index, project.path])
+  const absorbedAbove = useMemo(() => index.absorbedFrom(project.path), [index, project.path])
 
   /**
    * "History…" on a diagram's tab and on the documentation page (ADR-0008):
@@ -1338,6 +1368,7 @@ export function ProjectWorkspace({
         onOpenSettings={openSettings}
         onOpenDocumentation={() => openDocumentation()}
         onOpenDecisions={() => openDecisions()}
+        onOpenObservations={() => openObservations()}
         onOpenRoadmap={openRoadmap}
         onOpenSearch={() => setSearchOpen(true)}
         activity={session.history}
@@ -1457,7 +1488,7 @@ export function ProjectWorkspace({
       />
       <AdrPage
         open={adrPage.open}
-        onClose={() => { setAdrPage({ open: false }); leaveIfNothingToDraw() }}
+        onClose={() => { setAdrPage({ open: false }); setObsPage({ open: false }); leaveIfNothingToDraw() }}
         model={session.model}
         groupName={groupName}
         ancestors={ancestorDecisions}
@@ -1471,9 +1502,30 @@ export function ProjectWorkspace({
         renderMarkdown={renderDocument}
         onOpenElement={(elementId) => openDocumentation(elementId)}
         onOpenHistory={snapshots.available
-          ? (adrId) => { setAdrPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
+          ? (adrId) => { setAdrPage({ open: false }); setObsPage({ open: false }); openHistoryOf({ what: 'decision', id: adrId }) }
           : undefined}
         onOpenPlan={plans.openPlan}
+        windowChrome={pageChrome}
+      />
+      <ObservationsPage
+        open={obsPage.open}
+        onClose={() => { setObsPage({ open: false }); leaveIfNothingToDraw() }}
+        model={session.model}
+        groupName={groupName}
+        shared={sharedBelow}
+        scopeLabel={scopeLabel}
+        absorbedAbove={absorbedAbove}
+        canShare={project.path !== ''}
+        {...(onOpenScope ? { onOpenScope: (path: string) => onOpenScope(path, { page: 'observations' }) } : {})}
+        onChange={onAnalysisChange}
+        initialId={obsPage.id}
+        s={s}
+        language={language}
+        makeId={makeId}
+        today={today}
+        renderMarkdown={renderDocument}
+        onAddImage={files.addImage}
+        images={{ library: session.imageLibrary, usedBy: imageUsedBy, onRemove: files.removeImage }}
         windowChrome={pageChrome}
       />
       <RoadmapPage

@@ -123,6 +123,8 @@ export type ShellDiagnostics = {
 export type InitialPage =
   /** The decisions page, on one record when an id is given (ADR-0019). */
   | { page: 'decisions'; id?: string }
+  /** The observations page (ADR-0021), on one observation or cause when an id is given. */
+  | { page: 'observations'; id?: string }
   | { page: 'roadmap' }
   /** A platform's report, or a service's (ADR-0013, ADR-0014): derived, opened by id, never made. */
   | { page: 'platform'; id: ElementId }
@@ -321,6 +323,7 @@ export function initialPageFor(to: Destination): InitialPage | undefined {
     case 'map': return { page: 'map', ...(to.id !== undefined ? { id: to.id } : {}) }
     case 'technology': return { page: 'technology', ...(to.id !== undefined ? { id: to.id } : {}) }
     case 'decisions': return { page: 'decisions', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'observations': return { page: 'observations', ...(to.id !== undefined ? { id: to.id } : {}) }
     case 'roadmap': return { page: 'roadmap' }
     case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
     case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
@@ -759,6 +762,8 @@ export function App({
   const identity = useMemo(() => identityFindings(tree.index), [tree.index])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => tree.index.initiativesBelow(home).length, [tree.index, home])
+  /** Every observation shared from anywhere below this home (ADR-0021), for the observations card. */
+  const sharedObservations = useMemo(() => tree.index.observationsBelow(home).length, [tree.index, home])
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])
   /**
    * The tree, for the agent while nothing is open (ADR-0019): the same index
@@ -776,6 +781,7 @@ export function App({
     register: () => treeRef.current.index.register(),
     technology: () => technologyRows(treeRef.current.index, treeRef.current.identity),
     initiativesBelow: (path) => treeRef.current.index.initiativesBelow(path),
+    observationsBelow: (path) => treeRef.current.index.observationsBelow(path),
     rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
     findings: () => treeRef.current.identity,
     read: async (path) => {
@@ -1184,6 +1190,7 @@ export function App({
             register={register}
             technology={technology}
             initiatives={initiatives}
+            sharedObservations={sharedObservations}
             onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
             onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
             onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}

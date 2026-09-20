@@ -28,8 +28,9 @@ import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisions'
 import { CHECK_SENTENCE, PLAN_STATUS_LABEL } from '../../roadmap'
+import { STATE_LABEL as CAUSE_STATE_LABEL } from '../../observations/observationScope'
 import { RELATION_LABEL } from '../../model'
-import { DecisionIcon, DeploymentIcon, DocumentIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
+import { DecisionIcon, DeploymentIcon, DocumentIcon, ObservationIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
 import type { TechnologySummary } from './technologyRegister'
@@ -67,6 +68,10 @@ export type OrganisationCardsProps = {
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
   onOpenDecisions: () => void
+  /** The observations page (ADR-0021). */
+  onOpenObservations: () => void
+  /** How many observations the scopes below shared, off the index. */
+  sharedObservations?: number
   onOpenRoadmap: () => void
   onOpenRegister: () => void
   onOpenTechnology: () => void
@@ -119,8 +124,8 @@ function tallyLine<T extends string>(
 }
 
 export function OrganisationCards({
-  pages, ready, register, technology, initiatives = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
-  onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape, onOpenDocumentation, s,
+  pages, ready, register, technology, initiatives = 0, sharedObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
+  onOpenObservations, onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape, onOpenDocumentation, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -206,6 +211,33 @@ export function OrganisationCards({
           : undefined}
         action={(
           <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions">
+            {s('picker.open')}
+          </Button>
+        )}
+      />
+
+      <OnePage
+        icon={<ObservationIcon />}
+        title={s('shell.observations')}
+        description={s('org.describeObservations')}
+        count={[
+          nothing ? s('org.nothingHere') : ready
+            ? [
+              plural(s, { one: 'org.observationsOne', other: 'org.observationsOther' }, pages.observations.total),
+              tallyLine(pages.observations.causes, CAUSE_STATE_LABEL, s),
+              pages.observations.roots > 0
+                ? plural(s, { one: 'org.rootCausesOne', other: 'org.rootCausesOther' }, pages.observations.roots)
+                : '',
+            ].filter(Boolean).join(' · ')
+            : '',
+          // What the scopes below offered upward (ADR-0021): off the index,
+          // like the initiatives on the roadmap card.
+          sharedObservations > 0
+            ? plural(s, { one: 'org.sharedBelowOne', other: 'org.sharedBelowOther' }, sharedObservations)
+            : '',
+        ].filter(Boolean).join(' · ') || undefined}
+        action={(
+          <Button size="small" onClick={onOpenObservations} sx={quiet} data-testid="open-observations">
             {s('picker.open')}
           </Button>
         )}
