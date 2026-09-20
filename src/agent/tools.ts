@@ -1021,9 +1021,10 @@ const SPECS = [
         colourBy: {
           type: 'string',
           description: 'A landscape: what the application cards are tinted by (ADR-0013) — "platform" groups them '
-            + 'by what they run on, "technologyLifecycle" by the worst phase among the platforms they stand on. '
-            + 'Null: nothing. Presentation only; no rows change.',
-          enum: ['platform', 'technologyLifecycle'],
+            + 'by what they run on, "technologyLifecycle" by the worst phase among the platforms they stand on, '
+            + 'and "one:<id>" (ADR-0020) colours every application that uses, is hosted on or leverages the '
+            + 'platform or platformService with that id and fades the rest. Null: nothing. Presentation only; '
+            + 'no rows change.',
         },
         showDeployment: {
           type: 'boolean',

@@ -68,6 +68,8 @@ export interface ElementNodeData extends Record<string, unknown> {
    * it means. Absent = no overlay, which is every card on every other view.
    */
   overlayTint?: string;
+  /** Under the one-thing overlay (ADR-0020): this card does not stand on it, and fades. */
+  overlayFaded?: true;
 }
 
 export type ElementNode = Node<ElementNodeData>;

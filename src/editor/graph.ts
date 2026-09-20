@@ -98,6 +98,8 @@ export interface BuildGraphArgs {
    * it compares equal and stays out of a re-render.
    */
   overlayTints?: ReadonlyMap<ElementId, string>;
+  /** The cards the overlay fades rather than washes (ADR-0020). */
+  overlayFaded?: ReadonlySet<ElementId>;
 }
 
 const BOUNDARY_PADDING = 56;
@@ -124,6 +126,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     const figure = nodeFigure(element, placement.zone);
     const note = args.noteFor?.(element.id);
     const tint = args.overlayTints?.get(element.id);
+    const faded = args.overlayFaded?.has(element.id) === true;
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
       : placementRect(figure, placement);
@@ -156,6 +159,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
         phase: args.asOfDay ? phaseAt(element, args.asOfDay) : element.lifecycle,
         ...(note !== undefined ? { note } : {}),
         ...(tint !== undefined ? { overlayTint: tint } : {}),
+        ...(faded ? { overlayFaded: true as const } : {}),
       },
     });
   }
@@ -462,6 +466,7 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
     // rather than two string compares per card per derive.
     held.note === next.note &&
     held.overlayTint === next.overlayTint &&
+    held.overlayFaded === next.overlayFaded &&
     held.resizeLimits.min.width === next.resizeLimits.min.width &&
     held.resizeLimits.min.height === next.resizeLimits.min.height &&
     held.resizeLimits.max.width === next.resizeLimits.max.width &&

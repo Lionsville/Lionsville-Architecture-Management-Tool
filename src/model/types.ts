@@ -774,7 +774,7 @@ export interface DesignDiagram {
    * Presentation and nothing else: no geometry, no rows, and the bands are
    * derived on every render from the rows themselves.
    */
-  colourBy?: 'platform' | 'technologyLifecycle';
+  colourBy?: 'platform' | 'technologyLifecycle' | `one:${string}`;
   /** Where it all ended up. A separate file, and a separate question (§6). */
   geometry: Geometry;
 }

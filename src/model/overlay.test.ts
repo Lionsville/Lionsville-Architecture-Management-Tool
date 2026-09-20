@@ -7,7 +7,7 @@
  * how healthy it is.
  */
 import { describe, expect, it } from 'vitest'
-import { overlayBandOf, overlayBands } from './overlay'
+import { colourByOne, isColourBy, oneColouredBy, overlayBandOf, overlayBands } from './overlay'
 import { element } from './testFixtures'
 import type { DesignDiagram, DesignElement, Relation } from './types'
 
@@ -126,5 +126,60 @@ describe('colouring over the platform tree', () => {
     const parentOf = (id: string) => (id === 'ns' ? 'openshift' : undefined)
     expect(overlayBandOf(overlayBands({ elements: standIn, relations: rows }, board(), 'technologyLifecycle', undefined, { parentOf })).get('wms')?.phase).toBe('retiring')
     expect(overlayBandOf(overlayBands({ elements: standIn, relations: rows }, board(), 'platform', undefined, { parentOf })).get('wms')?.name).toBe('OpenShift')
+  })
+})
+
+/**
+ * The reverse question (ADR-0020): who stands on this one platform or
+ * offering. Coloured by a use, by a hosting, by a leverage through what
+ * realises the service; the rest faded.
+ */
+describe('colouring by one platform or offering', () => {
+  const layer = [
+    ...elements,
+    element('brokering', { kind: 'platformService', name: 'Message brokering' }),
+    element('kafka', { kind: 'platform', name: 'Event broker' }),
+    platform('ns', 'Logistics namespace', { parentId: 'openshift', platformArchetype: 'place' }),
+  ]
+  const rows: Relation[] = [
+    host('h1', 'wms-api', 'ns'),
+    host('h2', 'portal', 'openshift'),
+    { id: 'u1', type: 'uses', sourceId: 'billing', targetId: 'brokering' },
+    { id: 'u2', type: 'uses', sourceId: 'portal', targetId: 'kafka' },
+    { id: 'r1', type: 'realises', sourceId: 'kafka', targetId: 'brokering' },
+  ]
+  const drawn = { ...board(), members: [...board().members, { id: 'kafka' }, { id: 'brokering' }] }
+
+  it('colours by a use, a hosting under it, a binding, and a leverage through what realises the service', () => {
+    const byOffering = overlayBands({ elements: layer, relations: rows }, drawn, colourByOne('brokering'))
+    expect(byOffering.map((band) => [band.key, band.name, band.faded, band.memberIds])).toEqual([
+      ['brokering', 'Message brokering', undefined, ['billing']],
+      ['none', undefined, true, ['wms', 'portal', 'partner']],
+    ])
+    // The broker: bound to by the portal, leveraged by billing through the offering it realises.
+    expect(overlayBandOf(overlayBands({ elements: layer, relations: rows }, drawn, colourByOne('kafka'))).get('billing')?.key).toBe('kafka')
+    expect(overlayBandOf(overlayBands({ elements: layer, relations: rows }, drawn, colourByOne('kafka'))).get('portal')?.key).toBe('kafka')
+    // The cluster: WMS through its container in the namespace under it, the portal hosted on it.
+    const byCluster = overlayBandOf(overlayBands({ elements: layer, relations: rows }, drawn, colourByOne('openshift')))
+    expect(byCluster.get('wms')?.key).toBe('openshift')
+    expect(byCluster.get('portal')?.key).toBe('openshift')
+    expect(byCluster.get('billing')?.faded).toBe(true)
+  })
+
+  it('keeps the one band even where nothing stands on it, and no faded band where everything does', () => {
+    const none = overlayBands({ elements: layer, relations: rows }, drawn, colourByOne('azure'))
+    expect(none.map((band) => [band.key, band.memberIds.length])).toEqual([['azure', 0], ['none', 4]])
+    const all = overlayBands({ elements: layer, relations: rows }, { kind: 'layer7', members: [{ id: 'billing' }] }, colourByOne('brokering'))
+    expect(all.map((band) => band.key)).toEqual(['brokering'])
+  })
+
+  it('says the value as one string, and reads it back', () => {
+    expect(colourByOne('kafka')).toBe('one:kafka')
+    expect(oneColouredBy('one:kafka')).toBe('kafka')
+    expect(oneColouredBy('platform')).toBeUndefined()
+    expect(isColourBy('one:kafka')).toBe(true)
+    expect(isColourBy('one:')).toBe(false)
+    expect(isColourBy('platform')).toBe(true)
+    expect(isColourBy('service')).toBe(false)
   })
 })

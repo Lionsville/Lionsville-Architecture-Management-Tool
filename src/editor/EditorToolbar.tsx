@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { placedNodes } from '../model/placement';
+import { colourByOne } from '../model/overlay';
 import type { ColourBy, OverlayBand } from '../model/overlay';
 import { overlayTint } from './theme/overlayColors';
 import Box from '@mui/material/Box';
@@ -15,6 +16,7 @@ import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
+import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
 import Popover from '@mui/material/Popover';
 import Tab from '@mui/material/Tab';
@@ -28,7 +30,7 @@ import { ContextMenu } from './canvas/ContextMenu';
 import { menuItemsFor, type MenuItem as MenuItemModel } from './canvas/menuItems';
 import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
-import type { DesignDiagram, DesignModel, Lifecycle, Point } from '../model/types';
+import type { DesignDiagram, DesignModel, ElementId, Lifecycle, Point } from '../model/types';
 import { getNodeTokens } from './theme/tokens';
 import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, ExportIcon, FitIcon, HelpIcon, LabelIcon, LegendIcon, LifecycleIcon, MinimapIcon, PaletteIcon, RadarIcon, RedoIcon, RouteIcon, SearchIcon, TidyIcon, UndoIcon } from '../widgets/icons';
 import { badgeLegend } from '../model/aspects';
@@ -132,6 +134,8 @@ export interface EditorToolbarProps {
   colourBy?: ColourBy;
   onColourByChange?(by: ColourBy | undefined): void;
   overlayBands?: readonly OverlayBand[];
+  /** What the one-thing overlay may ask about (ADR-0020): this scope's platforms and offerings, by name. */
+  overlayCandidates?: readonly { id: ElementId; name: string }[];
   /**
    * The day the board shows (ADR-0009); absent = today. Set it and the same
    * single model is drawn as it stood then — which is how a future diagram is
@@ -587,6 +591,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           colourBy={props.colourBy}
           onChange={props.onColourByChange}
           bands={props.overlayBands ?? []}
+          candidates={props.overlayCandidates ?? []}
         />
       )}
       {props.onToggleDeployment && (
@@ -1065,6 +1070,7 @@ function ColourByControl(props: {
   colourBy: ColourBy | undefined;
   onChange(by: ColourBy | undefined): void;
   bands: readonly OverlayBand[];
+  candidates: readonly { id: ElementId; name: string }[];
 }) {
   const { t } = useStrings();
   const theme = useTheme();
@@ -1105,6 +1111,25 @@ function ColourByControl(props: {
               {t(option.labelKey)}
             </MenuItem>
           ))}
+          {/* The reverse question (ADR-0020): who stands on this one thing. */}
+          {props.candidates.length > 0 && (
+            <>
+              <ListSubheader disableSticky sx={{ lineHeight: '28px', fontSize: 11 }}>{t('overlay.one')}</ListSubheader>
+              <Box sx={{ maxHeight: 240, overflow: 'auto' }}>
+                {props.candidates.map((candidate) => (
+                  <MenuItem
+                    key={candidate.id}
+                    dense
+                    data-testid={`colour-by-one-${candidate.id}`}
+                    selected={props.colourBy === colourByOne(candidate.id)}
+                    onClick={() => { props.onChange(colourByOne(candidate.id)); setAnchor(null); }}
+                  >
+                    {candidate.name}
+                  </MenuItem>
+                ))}
+              </Box>
+            </>
+          )}
           {props.bands.length > 0 && (
             <Box sx={{ mt: 0.75, pt: 0.75, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               {props.bands.map((band) => (
@@ -1115,7 +1140,7 @@ function ColourByControl(props: {
                     border: `1px solid ${theme.palette.divider}`,
                   }} />
                   <Typography sx={{ fontSize: 11 }}>
-                    {band.name ?? (band.phase ? t(LIFECYCLE_LABEL[band.phase]) : t('overlay.onNothing'))}
+                    {band.name ?? (band.phase ? t(LIFECYCLE_LABEL[band.phase]) : band.faded ? t('overlay.notOnIt') : t('overlay.onNothing'))}
                   </Typography>
                 </Box>
               ))}

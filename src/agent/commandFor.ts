@@ -30,8 +30,7 @@ import { isDay } from '../model/lifecycle'
 import { seedContainerDiagram } from '../model/containerDiagram'
 import { isPlatformArchetype, technologyEndsRefusal } from '../model/relations'
 import { mayBeHosted } from '../model/hosting'
-import { COLOUR_BY } from '../model/overlay'
-import type { ColourBy } from '../model/overlay'
+import { COLOUR_BY, isColourBy, oneColouredBy } from '../model/overlay'
 import { acceptImplied, impliedInterfaces } from '../model/implied'
 import { DEFAULT_PAPER, isSheetPaper, rootsOfKind, seedMap, seedSheet, wouldCycle } from '../business'
 import { seedTechnologyLandscape } from '../model/technologyLandscape'
@@ -1266,8 +1265,15 @@ function updateDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
   // so a reader opening it gets the picture it was left showing.
   if (args.colourBy === null || args.colourBy === '') patch.colourBy = undefined
   else if (typeof args.colourBy === 'string') {
-    if (!COLOUR_BY.includes(args.colourBy as ColourBy)) {
-      return refused('agent.badArguments', `"colourBy" is one of ${COLOUR_BY.join(', ')}`)
+    if (!isColourBy(args.colourBy)) {
+      return refused('agent.badArguments', `"colourBy" is one of ${COLOUR_BY.join(', ')}, or one:<id>`)
+    }
+    // The one thing asked about (ADR-0020) has to be a platform or an
+    // offering this scope holds; the picker offers nothing else.
+    const one = oneColouredBy(args.colourBy)
+    if (one !== undefined) {
+      const kind = model.elements[one]?.kind
+      if (kind !== 'platform' && kind !== 'platformService') return refused('agent.unknownId', `platform or platformService ${one}`)
     }
     patch.colourBy = args.colourBy
   }

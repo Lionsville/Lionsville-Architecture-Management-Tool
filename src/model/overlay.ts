@@ -8,24 +8,48 @@
  * question every technology migration opens with, and on a landscape of forty
  * cards it is answered by looking rather than by reading.
  *
- * Two overlays, because there are two questions. **Platform** groups the cards
- * by what they run on, one colour each. **Technology lifecycle** ignores which
- * platform and asks how healthy it is: the worst phase among the platforms a
- * card stands on, so a card on something retiring goes amber whatever else it
- * is on.
+ * Three overlays, because there are three questions. **Platform** groups the
+ * cards by what they run on, one colour each. **Technology lifecycle** ignores
+ * which platform and asks how healthy it is: the worst phase among the
+ * platforms a card stands on, so a card on something retiring goes amber
+ * whatever else it is on. **One platform or offering** (ADR-0020) asks the
+ * reverse question — not *what does this card stand on* but *who stands on
+ * this*: every application that uses it, is hosted on it or leverages it
+ * through a service it uses is coloured, and the rest fade.
  *
  * Presentation, and nothing else: the band an element falls in is derived on
  * every render from the rows, and which overlay is up is a setting on the view.
  */
 import { ancestorPlatforms, hostingOf, rootPlatformsOf } from './hosting'
 import type { PlatformTree } from './hosting'
+import { leverageOf } from './leverage'
 import { phaseAt } from './lifecycle'
 import type { DesignDiagram, DesignElement, ElementId, Lifecycle, Relation } from './types'
 
-/** What the landscape is coloured by; absent on the view means nothing. */
-export type ColourBy = 'platform' | 'technologyLifecycle'
+/**
+ * What the landscape is coloured by; absent on the view means nothing. The
+ * third names the one platform or offering asked about, `one:<id>`, so the
+ * view keeps one string as it always has.
+ */
+export type ColourBy = 'platform' | 'technologyLifecycle' | `one:${string}`
 
+/** The two overlays that name no element. */
 export const COLOUR_BY: readonly ColourBy[] = ['platform', 'technologyLifecycle']
+
+/** The overlay for one platform or offering (ADR-0020). */
+export function colourByOne(id: ElementId): ColourBy {
+  return `one:${id}`
+}
+
+/** The platform or offering a `one:` overlay asks about; nothing for the other two, or none. */
+export function oneColouredBy(by: ColourBy | undefined): ElementId | undefined {
+  return by !== undefined && by.startsWith('one:') ? by.slice('one:'.length) : undefined
+}
+
+/** Whether a string a file or a tool call carries is an overlay. */
+export function isColourBy(value: string): value is ColourBy {
+  return COLOUR_BY.includes(value as ColourBy) || (value.startsWith('one:') && value.length > 'one:'.length)
+}
 
 /**
  * One band of the overlay: a set of cards that share an answer, and what to
@@ -42,6 +66,8 @@ export type OverlayBand = {
   name?: string
   /** For the lifecycle overlay: which phase this band is. */
   phase?: Lifecycle
+  /** For the one-thing overlay: the cards that do not stand on it, faded rather than washed. */
+  faded?: true
   slot: number
   memberIds: ElementId[]
 }
@@ -69,6 +95,19 @@ export function overlayBands(
   const drawn = diagram.members
     .map((member) => byId.get(member.id))
     .filter((element): element is DesignElement => element?.kind === 'application')
+
+  // The reverse question (ADR-0020): who stands on this one thing. The one
+  // band first, and the rest faded — a second band only where there is a rest.
+  const one = oneColouredBy(colourBy)
+  if (one !== undefined) {
+    const on: ElementId[] = []
+    const off: ElementId[] = []
+    for (const element of drawn) (standsOn(model, element.id, one, tree) ? on : off).push(element.id)
+    return [
+      { key: one, name: byId.get(one)?.name ?? one, slot: 0, memberIds: on },
+      ...(off.length > 0 ? [{ key: 'none', slot: 1, faded: true as const, memberIds: off }] : []),
+    ]
+  }
 
   const bands = new Map<string, { name?: string; phase?: Lifecycle; order: string; memberIds: ElementId[] }>()
   const put = (key: string, order: string, memberId: ElementId, rest: { name?: string; phase?: Lifecycle } = {}) => {
@@ -105,6 +144,25 @@ export function overlayBands(
       slot,
       memberIds: band.memberIds,
     }))
+}
+
+/**
+ * Whether an application stands on one platform or offering: it uses the
+ * offering (itself or through its containers, or implied by its hosting),
+ * it is hosted on the platform or on anything filed under it, it binds to
+ * the platform, or it leverages the platform through a service it uses.
+ */
+function standsOn(
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+  applicationId: ElementId,
+  id: ElementId,
+  tree: PlatformTree,
+): boolean {
+  const hosted = hostingOf(model, applicationId).platformIds
+  if (hosted.some((platform) => platform === id || ancestorPlatforms(model.elements, platform, tree).some((above) => above.id === id))) return true
+  const leverage = leverageOf(model, applicationId, { tree })
+  return leverage.platformIds.includes(id)
+    || leverage.services.some((service) => service.id === id || service.platformIds.includes(id))
 }
 
 /** Which band each card falls in, for a caller that draws rather than lists. */

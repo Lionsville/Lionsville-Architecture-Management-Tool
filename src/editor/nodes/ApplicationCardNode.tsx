@@ -56,6 +56,9 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         ...(data.overlayTint
           ? { backgroundImage: `linear-gradient(${data.overlayTint}, ${data.overlayTint})` }
           : {}),
+        // The reverse question's answer for this card is no (ADR-0020): it
+        // fades, so the ones that do stand on the thing are what is left.
+        ...(data.overlayFaded ? { opacity: 0.35 } : {}),
         border: `1px solid ${tokens.card.border}`,
         borderRadius: shapeRadiusFor('application', element.shapeVariant, false),
         overflow: 'hidden',

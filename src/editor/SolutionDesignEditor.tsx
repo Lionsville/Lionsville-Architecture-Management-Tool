@@ -330,11 +330,25 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const overlayTints = useMemo(() => {
     const tints = new Map<ElementId, string>();
     for (const band of overlay) {
+      if (band.faded) continue;
       const colour = overlayTint(theme, band);
       for (const id of band.memberIds) tints.set(id, colour);
     }
     return tints;
   }, [overlay, theme]);
+  const overlayFaded = useMemo(
+    () => new Set<ElementId>(overlay.filter((band) => band.faded).flatMap((band) => band.memberIds)),
+    [overlay],
+  );
+  // What the one-thing overlay may ask about (ADR-0020): this scope's
+  // platforms and offerings, a shared one with a stand-in here among them.
+  const overlayCandidates = useMemo(
+    () => state.model.elements
+      .filter((element) => element.kind === 'platform' || element.kind === 'platformService')
+      .map((element) => ({ id: element.id, name: element.name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [state.model.elements],
+  );
 
   const { setSelection } = state;
   const requestRename = useCallback(
@@ -1337,6 +1351,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           ? {
             colourBy,
             overlayBands: overlay,
+            overlayCandidates,
             onColourByChange: (by: ColourBy | undefined) => {
               setColourShown((kept) => ({ ...kept, [activeDiagram.id]: by ?? 'none' }));
               state.actions.setColourBy(by);
@@ -1460,6 +1475,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
           showDeployment={showDeployment}
           platformTree={props.ownership?.platformTree}
           overlayTints={overlayTints}
+          overlayFaded={overlayFaded}
           onOpenDocumentation={openDocumentation}
           onTidyGroup={readOnly ? undefined : (name) => void handleTidyGroup(name)}
           groupTidyOptions={groupTidyOptions}
@@ -1733,6 +1749,7 @@ function CanvasForDiagram({
   showDeployment,
   platformTree,
   overlayTints,
+  overlayFaded,
   onTidyGroup,
   groupTidyOptions,
   onGroupTidyOptionsChange,
@@ -1779,6 +1796,8 @@ function CanvasForDiagram({
   platformTree?: PlatformTree;
   /** The wash each card takes under the landscape's overlay (ADR-0013). */
   overlayTints: ReadonlyMap<ElementId, string>;
+  /** The cards the overlay fades rather than washes (ADR-0020). */
+  overlayFaded: ReadonlySet<ElementId>;
   /** Layer 7 only — undefined in read-only mode. */
   onTidyGroup?(name: string): void;
   groupTidyOptions: TidyOptions;
@@ -1824,6 +1843,7 @@ function CanvasForDiagram({
     onLineDoubleClick,
     onOpenDocumentation,
     overlayTints,
+    overlayFaded,
     onTidy,
     onRouteConnections,
     onRouteConnectionsAll,

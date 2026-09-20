@@ -121,6 +121,21 @@ describe('colour by', () => {
     expect(host.current.model.diagrams[0].colourBy).toBe('technologyLifecycle');
   });
 
+  it('colours the cards that stand on one platform or offering and fades the rest (ADR-0020)', async () => {
+    const { host } = renderEditor();
+    await measured();
+    open();
+    fireEvent.click(screen.getByTestId('colour-by-one-openshift'));
+    await measured();
+    expect(host.current.model.diagrams[0].colourBy).toBe('one:openshift');
+    // Both on the cluster wear its wash; the one on nothing is faded, not washed.
+    expect(wash('wms')).toBe(wash('portal'));
+    expect(wash('crm')).not.toBe(wash('wms'));
+    open();
+    expect(within(screen.getByTestId('overlay-legend-openshift')).getByText('OpenShift')).toBeTruthy();
+    expect(screen.getByTestId('overlay-legend-none').textContent).toContain('Not standing on it');
+  });
+
   it('is not offered on a view that is not a landscape', async () => {
     const held = model();
     held.diagrams.push(laidOut({ id: 'cd', kind: 'container', name: 'WMS', applicationElementId: 'wms', placements: [{ id: 'wms', x: 0, y: 0 }] }));
