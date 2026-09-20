@@ -7,6 +7,7 @@
 import { FY as adapters } from '../adapters/strings/fy'
 import { FY as app } from '../app/strings/fy'
 import { FY as decisions } from '../decisions/strings/fy'
+import { FY as observations } from '../observations/strings/fy'
 import { FY as roadmap } from '../roadmap/strings/fy'
 import { FY as documentation } from '../documentation/strings/fy'
 import { FY as editor } from '../editor/strings/fy'
@@ -22,6 +23,7 @@ export const FY = {
   ...adapters,
   ...app,
   ...decisions,
+  ...observations,
   ...roadmap,
   ...documentation,
   ...editor,

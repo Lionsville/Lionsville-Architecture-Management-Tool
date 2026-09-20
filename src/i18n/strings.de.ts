@@ -7,6 +7,7 @@
 import { DE as adapters } from '../adapters/strings/de'
 import { DE as app } from '../app/strings/de'
 import { DE as decisions } from '../decisions/strings/de'
+import { DE as observations } from '../observations/strings/de'
 import { DE as roadmap } from '../roadmap/strings/de'
 import { DE as documentation } from '../documentation/strings/de'
 import { DE as editor } from '../editor/strings/de'
@@ -22,6 +23,7 @@ export const DE = {
   ...adapters,
   ...app,
   ...decisions,
+  ...observations,
   ...roadmap,
   ...documentation,
   ...editor,

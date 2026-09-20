@@ -47,7 +47,7 @@ import tseslint from 'typescript-eslint'
  * every row has to be complete.
  */
 const MODULES = [
-  'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions',
+  'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations',
   'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
 ]
 
@@ -59,13 +59,14 @@ const MAY_IMPORT = {
   widgets: ['i18n'],
   documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
+  observations: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],
   search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'roadmap'],
-  projects: ['model', 'i18n', 'platform', 'decisions', 'ports'],
+  projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
-  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'business', 'search'],
+  agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
   ports: ['model', 'platform', 'projects', 'agent'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent'],
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'app'),
@@ -79,6 +80,7 @@ const WHY = {
   widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
+  observations: 'An observation is what was seen and a cause what lies behind it (ADR-0021): markdown over the model, laid out in lanes. It does not know how the model is drawn or where it is saved.',
   roadmap: 'A roadmap is the model on a time axis, and the plans over it. It does not know how a landscape is drawn or where it is saved.',
   business: 'A sheet is laid out from the model\'s own trees, not dragged. It does not know what a canvas is, nor a project.',
   technology: 'A platform\'s report is derived from the rows that name it (ADR-0013). It is read, never drawn and never captured, so it does not know what a canvas is, nor a project.',
