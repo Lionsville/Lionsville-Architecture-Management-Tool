@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4156 tests** and one of every config. The
+One codebase, in modules, with **4251 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4006 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4251 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -241,6 +241,10 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                     inspect           the layout report, in geometry not pixels
                     handle · renderer   one request in, one answer out; the four
                                       things only the canvas can do, as a view
+                    mcpProtocol       the streamable-HTTP protocol the agent's
+                                      server speaks, by hand: a request in, the
+                                      framing out. No Electron, so it is tested
+                                      in node beside the tools it carries
                     screen · shell · driving   the app as a screen and a
                                       destination, moving it, and the session
                                       the person can stop (ADR-0019)
@@ -294,6 +298,13 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     updates           is this newer, which file is mine — the
                                       desktop's update check, without its fetch
                     agentServer       the server's three states, and mcp.json's shape
+                    sourceProvider    a kind of place work is kept, as something
+                                      that can be registered: what it opens to,
+                                      its way in, and what it means by the five
+                                      words the bar says (ADR-0022)
+                    desktopHook       what a build composed from this one may ask
+                                      of the main process: somewhere to answer the
+                                      renderer, somewhere to keep a small secret
 src/widgets/      Presentation with no opinions: icons, one confirm dialog, and
                   a laid-out page rasterised (`capturePage`).
 src/ports/        The seams. Interfaces only, no implementations.
@@ -304,13 +315,23 @@ src/ports/        The seams. Interfaces only, no implementations.
                     ProjectHistory · Diagnostics · HostControls
                     FolderSettings · UpdateSettings   the two other scopes
                     AgentGateway      where an agent's calls arrive, and the switch
-                    ScopeStore.contract.ts — behaviour every store must show
+                    CommandChannel    where a step goes when this session is not
+                                      the only author of a scope (ADR-0022): one
+                                      scope, one order, a sequenced step back
+                    ScopeStore.contract.ts · CommandChannel.contract.ts —
+                                      behaviour every filling must show
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
+                    memory/           …and InMemoryCommandChannel: a head model, a
+                                      bounded log and the subscribers, for two
+                                      sessions put in one order without a process
                     desktop/          the Electron file channel, as a folder handle
 src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
-                    composition.ts    which adapter, and which icon packs
+                    composition.ts    which adapter, which icon packs, and which
+                                      source providers (ADR-0022)
+                    rebase            a run of steps off the model and back on,
+                                      pure — no React, no stack, no policy
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
                     organisation/     the first screen: the root scope's home.
                                       OrganisationScreen · OrganisationCards ·
@@ -343,9 +364,13 @@ electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel
                     git.ts            snapshots, through the machine's own git
                     appMenu.ts        the File menu; every item sends a command
-                    mcp.ts · mcpProtocol.ts · mcpServer.ts   the agent server:
-                                      the kept port and token, the protocol by
-                                      hand, the loopback listener
+                    mcp.ts · mcpServer.ts   the agent server: the kept port and
+                                      token, the loopback listener; the protocol
+                                      itself is `src/agent/mcpProtocol.ts`
+                    desktopHooks.ts · secrets.ts   the hooks a build composed from
+                                      this one registered, run where main
+                                      registers its own channels; a secret in
+                                      `userData` at mode 0600
 ```
 
 **Components declare the interface they need**, not the widest one available.
@@ -379,7 +404,7 @@ module is tested in node with a plain object in that slot.
 | what a landscape is, or arithmetic over it | `src/model/` | node, no mocks needed |
 | where something ends up on the board | `src/layout/` | node |
 | talking to a browser/OS/network API | `src/adapters/<flavour>/` | its own suite |
-| a new kind of place to keep things | new adapter + one line in `composition.ts` | the contract |
+| a new kind of place to keep things | new adapter + a `registerSourceProvider` in `composition.ts` | the contract |
 | inside the canvas/palette/inspector | `src/editor/` | jsdom (`// @vitest-environment jsdom`) |
 | a screen that is not the canvas | that module's `ui/` | jsdom |
 | the shell around it all | `src/app/` | jsdom |
@@ -515,10 +540,13 @@ listed under its parent, a nested scope is kept apart from it, a reserved name
 is refused, a scope with no views still loads, a save-then-remove move keeps the
 children, `updatedAt` is stamped, a path that could escape the folder is
 refused, and a scope survives a round trip unchanged. Passing it is the whole
-admission test. Then one branch in `composition.ts`. **Nothing above the seam
-changes** — not `main.tsx`, not a component, not a test.
+admission test. Then one `registerSourceProvider` in `composition.ts` — a kind,
+what opening it gives the shell, and what it means by the words on the bar
+(ADR-0022). **Nothing above the seam changes** — not `main.tsx`, not a
+component, not a test.
 
-The same holds for `PreferencesStore` and `DocumentGateway`.
+The same holds for `PreferencesStore`, `DocumentGateway` and `CommandChannel`,
+whose contract is `ports/CommandChannel.contract.ts`.
 
 ## Conventions
 
@@ -613,6 +641,11 @@ identifiers is still a list of a customer's identifiers.
 | Offered beyond its team (ADR-0014) | `shared` on a service, typed and left as typed; where nobody typed it, a service `assigned` to one actor and used by another team's application is `check.offeredNotShared`, a finding and never a value |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
+| Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
+| A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
+| Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only. What crosses scopes does not come through it |
+| A step this session did not make (ADR-0022) | an **external step**: `origin: 'remote'` and `by` on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
+| What a build composed from this one may ask of main (ADR-0022) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600. Core registers none |
 | Working-folder format | **7** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021) |
 | What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
@@ -1169,3 +1202,26 @@ follows the target's archetype), and the agent's `technology.use`. The
 board keeps *only a flow is a line*; it gains a door from the record to
 the landscape focused on the card, and a third overlay that asks the
 reverse question, who stands on this one platform or offering.
+
+Then a source became **a provider**, and a step became something that can
+arrive from another author (`docs/decisions/0022`). Where work is kept had been
+a closed union with a branch per case in five files above the seam; it is a
+registry now — a folder, this browser's storage and memory registered at module
+load, `WorkingSource` open to one more case, and a provider saying for itself
+what *dirty* means where it keeps things and whether work there may be written
+at all, which the workspace and the agent both read instead of assuming.
+
+Beside it, the seam for a second author, which ADR-0002 is the reason is small:
+`ports/CommandChannel` and the contract a filling has to pass — one scope, one
+order, a sequenced step back, a subscriber told what it missed, a create on an
+id somebody else took refused `command.taken` — with an in-memory filling that
+passes it and is useful on its own. The session gained three functions that
+carry no policy at all: hear what was just done here, land a command another
+author made, and lift a run of our own off the model by its inverses while
+theirs goes underneath it. A step has a name, ⌘Z steps over what it did not
+make, the Activity list says whose a step was, and `electron/main` runs the
+hooks a build composed from this one registered — somewhere to answer the
+renderer, somewhere to keep a small secret. Core registers no provider and
+fills no channel: what is here is the place a filling plugs into, the words it
+plugs in with, and two whole workspaces over one in-memory channel proving that
+it fits.
