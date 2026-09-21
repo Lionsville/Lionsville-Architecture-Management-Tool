@@ -329,12 +329,14 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       shell hands over, and it may take its
                                       time about it — its way in (a label, the
                                       provider's own dialog, and an address a
-                                      link may carry) and what it means by the
-                                      five words the bar says (ADR-0022)
+                                      link may carry), the sentence it gives for
+                                      where work is kept, and what it means by
+                                      the five words the bar says (ADR-0022)
                     desktopHook       what a build composed from this one may ask
                                       of the main process: somewhere to answer the
                                       renderer, somewhere to keep a small secret,
-                                      and the `hook:` prefix both sides name
+                                      the origins the page may reach, and the
+                                      `hook:` prefix both sides name
                     node/             the one folder in `src/` that may say
                                       `node:`, its own row in the matrix and on
                                       no barrel, imported by no module at all
@@ -426,6 +428,10 @@ electron/         The desktop main process and preload.
                                       this one registered, run where main
                                       registers its own channels; a secret in
                                       `userData` at mode 0600
+                    csp.ts            the renderer's Content-Security-Policy,
+                                      assembled per document: a list of origins
+                                      in, one header out, and everything that is
+                                      not an origin dropped
 ```
 
 **Components declare the interface they need**, not the widest one available.
@@ -717,12 +723,13 @@ identifiers is still a list of a customer's identifiers.
 | How a person, or a link, reaches one (ADR-0022, amended) | a **way in**: `connect.labelKey` for what the button says, `connect.open()` for the dialog behind it — the provider's, because what it has to ask for is its business — and `connect.fromLocation(location)` for an address a link carries, read before the first render. The boot draws one button per registered provider on the root's home and on the first-run screen (`registeredConnects`); `openSource(kind, opening, base)` is the one call that opens what a dialog answered. The folder's button is the one that was already there, because choosing a folder is also remembered, adopted into and upgraded |
 | What the shell hands a provider at `open` (ADR-0022, amended) | **`SourceBase`**: the `Diagnostics` the app already keeps — the trail "Copy diagnostics" hands over, and never the console — and the `Shell` as it stands *before* this provider's parts are spread over it, so a provider reuses the preferences store, the document gateway and the browser store instead of composing a second set. Required on `openSource`; no shell in one place only, the first compose, whose shell is the one that source is bringing the stores for |
 | When a source is only itself after it has asked (ADR-0022, amended) | `open` may answer **a promise**, and the boot waits for it before the first render, so `readOnly` is right at the first paint. A rejection is a source that could not be opened: from an address, the boot's own failure screen with the provider's sentence; from a button, the notice a way in already has. The three that ship answer without waiting, and the two shells `composition.ts` composes itself cannot wait |
-| What a provider draws for itself (ADR-0022, amended) | **`Shell.chrome`**: a component the app renders inside its theme and inside the language that is on, beside its own notices and on every screen, in a boundary of its own — handed the `ScopeSession` of the scope that is open, and nothing where none is. For a strip, a badge, a dialog of the provider's own; core's three supply none |
+| What a provider draws for itself (ADR-0022, amended) | a **chrome**, declared on the registration and listed by `registeredChrome()`: a component the app renders inside its theme and inside the language that is on, beside its own notices and on every screen, in a boundary each — for **every** registered provider and not only the open source's, because the press that opens a source happens while that provider answers for nothing. The one whose kind the working source names is handed that scope's `ScopeSession`, the rest nothing, and a chrome is therefore mounted more than once over a session: it must be idempotent about its own state. For a strip, a badge, a connect dialog of the provider's own; core's three supply none |
+| The sentence for where work is kept (ADR-0005, ADR-0022, amended) | `sourceTipKey`: one per built-in kind, and for a registered source the provider's own **`describeKey`** — its key, from its own table — or nothing at all. Nothing rather than a sentence of ours, for the reason the name on the bar is the provider's: a guess about somewhere this shell has never heard of could promise a copy that cannot be made |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
 | Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it. **A reducer refusal is answered first**: a step whose `base` is behind the head and whose command the reducer refuses is answered with the reducer's key, so `command.taken` always means *mint another id*; a channel that decides such a step overlaps a later one refuses with a key of its own, which this repository does not define |
 | One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
-| A step this session did not make (ADR-0022) | an **external step**: `origin: 'remote'` and `by` on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
-| What a build composed from this one may ask of main (ADR-0022) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600. Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
+| A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
+| What a build composed from this one may ask of main (ADR-0022, amended) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600, and `origins()` names where the page may reach — folded into `connect-src`, and into `img-src` where that hook said pictures load from there, asked again every time a document's header is built and dropped unless it is `scheme://host[:port]` and nothing more (`electron/main/csp.ts`). Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Working-folder format | **7** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021) |
 | What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
@@ -1324,22 +1331,6 @@ the instant a step is made.
 
 Then a build composed from core ran the reducer and the folder format in a node
 process with no Electron, filled the command channel over a network, and found
-Then the same build drew a screen of its own beside this shell's and opened a
-source that cannot say what it is until it has asked somebody, and four more
-seams stopped short (ADR-0022, *Amended* a third time). A provider has
-**somewhere to draw**: `Shell.chrome`, rendered inside the theme and the
-language, beside the app's own notices, in a boundary of its own, and handed the
-session of the scope that is open — the alternative was a container on
-`document.body`, which is a second app in the same window wearing the wrong
-colours. `open` is **handed the shell's own side** as `SourceBase`: the trail the
-app keeps, because the console is the one place *Copy diagnostics* cannot reach,
-and the shell as it stands before this provider's parts are spread over it, so
-nobody composes a second preferences store to replace one store. And `open` **may
-answer a promise**, which the boot waits for: `readOnly` decides what the
-workspace draws and what an agent is refused, so it has to be right at the first
-paint rather than a moment after it, and a handshake that fails says so on the
-failure screen the boot already has.
-
 four more (ADR-0022, *Amended* again). The **git module** is
 `src/platform/node/git.ts` now: it never had any Electron in it, and
 `platform/node/` is the one row in the import matrix for code that may say
@@ -1355,3 +1346,35 @@ message can be drafted from two slices** rather than from the registry
 (`translateFrom`, `draftCommitMessageInEnglish`), which a walk of the imports
 pins — a process with no screen has no business loading `app/strings` to write
 one subject line.
+
+Then the same build drew a screen of its own beside this shell's and opened a
+source that cannot say what it is until it has asked somebody, and four more
+seams stopped short (ADR-0022, *Amended* a third time). A provider has
+**somewhere to draw**: a chrome rendered inside the theme and the language,
+beside the app's own notices, in a boundary of its own, and handed the session of
+the scope that is open — the alternative was a container on `document.body`,
+which is a second app in the same window wearing the wrong colours. `open` is
+**handed the shell's own side** as `SourceBase`: the trail the app keeps, because
+the console is the one place *Copy diagnostics* cannot reach, and the shell as it
+stands before this provider's parts are spread over it, so nobody composes a
+second preferences store to replace one store. And `open` **may answer a
+promise**, which the boot waits for: `readOnly` decides what the workspace draws
+and what an agent is refused, so it has to be right at the first paint rather
+than a moment after it, and a handshake that fails says so on the failure screen
+the boot already has.
+
+Then that build pressed its own way in, reached its source from the desktop, and
+took a step somebody else had made, and four more stopped short (ADR-0022,
+*Amended* a fourth time). A chrome is **declared on the registration** and drawn
+for every registered provider, open or not (`registeredChrome`), because the
+press that opens a source happens while that provider answers for nothing — so
+the session is what tells the open one from the rest, and a chrome must be
+idempotent about its own state. A **desktop hook may name origins** the page is
+allowed to reach, folded into `connect-src`, and into `img-src` where pictures
+load from there; the header is assembled per document by `electron/main/csp.ts`,
+which drops anything that is not an origin. A step may say **`via`**, the client
+its author made it with, and the Activity list says *by NAME via CLIENT* in the
+four languages while `activity.list` answers it as a field. And **where work is
+kept** is the provider's own sentence for a registered source (`describeKey`) or
+nothing at all, because a sentence of ours about somewhere this shell has never
+heard of could promise a copy that cannot be made.

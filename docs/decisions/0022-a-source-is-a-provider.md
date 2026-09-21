@@ -381,6 +381,83 @@ app is in, the provider's own subscription untouched beside it, nothing at all
 where a source brought none, and the window still standing when the strip falls
 over.
 
+## Amended — the four the first build that pressed its own way in needed
+
+*21 September 2026.* The same build pressed the button its provider had
+registered, reached its source from the desktop, and put a step somebody else had
+made on the model. Four more seams stopped short, and each is added as the
+smallest public thing that closes it. All three built-ins are written exactly as
+they were, and nothing above any of them is edited.
+
+* **A chrome belongs to the registration, not to an opened source.** `Shell.chrome`
+  arrived with the parts of a source that had been opened, so the one provider
+  that could not draw was the one with something to ask: the first press of a way
+  in happens while that provider answers for nothing, and its connect dialog had
+  nowhere to go but a container on `document.body` — which is the thing the slot
+  was added to stop. So it is declared where `connect` is, the boot reads the list
+  (`registeredChrome()`), and the shell draws every one of them on every screen,
+  in a boundary each so one strip falling over does not cost the next. Which
+  provider answers for the open source decides what it is HANDED and never
+  whether it is drawn: the session goes to the registration whose kind
+  `sourceProviderKind` names, and to nobody else. A chrome is therefore mounted
+  while its provider is nobody's source and mounted again when a source opens,
+  because `App` is keyed on the working source — so the type says what that asks
+  in return: be idempotent about your own state, and keep what has to outlive a
+  mount where the provider keeps it.
+* **A hook may name where the page is allowed to reach.** `connect-src 'self'
+  data: blob:` is ADR-0007's sandbox written as a header, and it is also a page
+  that cannot reach a registered source at all — which it does not report, it
+  fails every request and leaves the network to be blamed. Widening it for
+  everybody is the other wrong answer, so `DesktopHook.origins()` names this
+  hook's own, folded into `connect-src` and into `img-src` where that hook said
+  pictures load from there. Asked where the header is built rather than read once
+  at startup: a CSP travels with the document, so *it changed* can only ever mean
+  the next load. The assembly left `index.ts` for `electron/main/csp.ts`, as
+  arithmetic — a list of names in, one string out — because what a hook may widen
+  is a suite and not a smoke run: nothing reaches `script-src`, `style-src` or
+  `worker-src`, an origin is `scheme://host[:port]` and nothing more, and what is
+  not one is dropped and logged rather than folded in as written. A hook is code
+  this tree never saw, and one unchecked string in this header is the sandbox
+  gone. Core registers no hook, so the header this build sends is character for
+  character the one it always sent, which is the suite's first clause.
+* **`via` on a step another author made.** The Activity list named the author and
+  stopped there, and one author working from two clients is not the same thing to
+  read about as two authors — nor is a step a person made through something that
+  speaks for them. `ExternalStep` and `HistoryStep` carry `via` beside `by`, the
+  line says *by NAME via CLIENT* in the four languages and falls back to the
+  author nobody named exactly as it did, and `activity.list` answers it as a
+  field of its own, absent where nothing said one. Nothing is inferred: this tree
+  cannot tell what somebody else was working in, and a guess in a log is worse
+  than a gap. The session reads neither — `undo` still goes by `origin`.
+* **The sentence for where work is kept is the provider's.** The chip on the
+  organisation's home says what a source costs you, and for a registered one it
+  said a sentence this tree made up: that work is kept where the source keeps it,
+  and that a working file will keep a copy of your own. Neither is ours to
+  promise about a place we have never heard of, and one of them is false the
+  moment a source is read-only. `SourceProvider.describeKey` sits beside
+  `connect.labelKey` and is read the same way — the provider's key, from the table
+  it registered — and where a provider gives none the chip says nothing at all.
+  The generic sentence is gone from the four tables rather than kept as a
+  fallback, because a fallback is the guess under another name.
+
+`composition.test.tsx` covers the two the registry answers for — every provider
+that draws one listed and only those, a chrome held before that provider has
+opened anything, and a provider's sentence answered for a registered source and
+not for a built-in kind or a provider that gave none — `App.storage.test.tsx` the
+two on screen: a strip drawn for a provider that answers for nothing here, the
+session going to the provider whose source is open and to no other, the next
+provider's strip standing when one falls over, and the chip saying the provider's
+own sentence and nothing where there is none. `electron/main/csp.test.ts` pins the
+header with no hook registered character for character, what one origin and a
+picture origin widen, and every string that is not an origin dropped — including
+the one with a `;` in it, which must not have added a directive;
+`desktopHook.test.ts` pins that the origins are gathered per ask and that a hook
+that throws costs the rest nothing. `ActivityMenu.test.tsx`,
+`useModelSession.test.tsx` and `handle.test.ts` pin `via`: the line in four
+languages, the fallback where the author is nameless, the field carried onto the
+stack and never invented, and the answer with `via` present for the step that
+said one and absent for the step that did not.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a
