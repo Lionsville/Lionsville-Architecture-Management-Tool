@@ -20,8 +20,9 @@ Hilfe-Menü fragt auf Wunsch nach.
 
 **Die Menüs** auf dem Desktop sind vorerst englisch. **File** hält den Ordner,
 die Arbeitsdatei, Schnappschüsse und den Verlauf; seine Einträge zum
-geöffneten Bereich — Open…, Save, Save a Copy of the Working File… — sind
-ausgegraut, solange nichts geöffnet ist. **Edit** hält Undo, Redo, Delete und
+geöffneten Bereich — Save — ist ausgegraut, solange nichts geöffnet ist;
+Open… und Save a Copy of the Working File… betreffen die ganze Organisation
+und funktionieren von jedem Bildschirm aus. **Edit** hält Undo, Redo, Delete und
 Select All, die auf den eigenen Rückgängig-Stapel der App und auf die
 Zeichenfläche wirken, neben Cut, Copy und Paste. **Help** hält dieses
 Handbuch, in der Sprache der App, die Tastenkürzel und die Update-Prüfung.
@@ -1170,13 +1171,17 @@ Zwei Wege hinaus, für zwei Zwecke.
 
 - **Die Arbeitsdatei** (`.lvarch`) ist alles und ist das, was Sie jemandem
   geben, der weiterbearbeiten wird. Sie ist Ihr **ganzer Arbeitsordner** in
-  einer Datei — ein Zip — sodass jeder sie entpacken und lesen kann, was darin
-  ist, ohne dieses Werkzeug. Sie enthält jeden Bereich, in welchem Sie beim
-  Exportieren auch stehen: eine Landschaft für sich verweist auf Anwendungen,
-  die eine Ebene höher definiert sind, und eine Datei mit nur dieser Landschaft
-  darin ginge auf dem Rechner eines anderen voller Namen auf, die ins Leere
-  zeigen. Die Datei heißt nach Ihrer Organisation. Arbeitsdateien aus früheren
-  Versionen lassen sich weiterhin öffnen, und eine Datei mit einem einzigen
+  einer Datei, **mit einem Passwort versiegelt**: Sie werden beim Speichern
+  der Kopie danach gefragt — zweimal, denn ein verlorenes Passwort lässt sich
+  nicht wiederherstellen — und wer die Datei öffnet, wird erneut gefragt.
+  Ohne das Passwort ist nichts vom Inhalt lesbar. Sie enthält jeden Bereich,
+  auf welchem Bildschirm Sie beim Exportieren auch stehen — der Startseite der
+  Organisation, der eines Bereichs oder einem geöffneten Board: eine
+  Landschaft für sich verweist auf Anwendungen, die eine Ebene höher definiert
+  sind, und eine Datei mit nur dieser Landschaft darin ginge auf dem Rechner
+  eines anderen voller Namen auf, die ins Leere zeigen. Die Datei heißt nach
+  Ihrer Organisation. Arbeitsdateien aus früheren Versionen lassen sich
+  weiterhin öffnen, versiegelt oder nicht, und eine Datei mit einem einzigen
   Bereich öffnet weiterhin als dieser Bereich.
 - **PNG-Export** (die Download-Schaltfläche) öffnet einen Dialog mit einer
   Vorschau des Bildes, wie es hinausgeht: im hellen oder im dunklen Design,
@@ -1219,7 +1224,10 @@ wird wie bisher mit ⌘Z rückgängig gemacht.
 Raster, Einrasten, Lebenszyklus-Abzeichen, eingeklappte Panels und ihre Breiten,
 die Übersichtskarte, die Aufräum-Einstellungen, die Sprache und das Design
 werden je Browser oder je Desktop-Installation gemerkt. Sie gehören Ihnen, nicht
-dem Projekt: sie reisen in keiner Datei mit.
+dem Projekt: sie reisen in keiner Datei mit. Dasselbe gilt für das, was dieser
+Rechner mit einem Ordner tut — beim Öffnen holen, nach einer Momentaufnahme
+pushen: der Desktop verwahrt das bei der Installation und schreibt nichts
+Eigenes in Ihren Ordner.
 
 ## Rückgängig
 

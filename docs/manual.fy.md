@@ -18,8 +18,8 @@ Help-menu freget it op fersyk.
 
 **De menu's** op de desktop binne foarearst Ingelsk. **File** hâldt de map, it
 wurkbestân, momintopnamen en skiednis; syn items oer it iepene ûnderdiel —
-Open…, Save, Save a Copy of the Working File… — binne griis salang't der neat
-iepen is. **Edit** hâldt Undo, Redo, Delete en Select All, dy't wurkje op de
+Save — is griis salang't der neat iepen is; Open… en Save a Copy of the
+Working File… geane oer de hiele organisaasje en wurkje fan elk skerm ôf. **Edit** hâldt Undo, Redo, Delete en Select All, dy't wurkje op de
 eigen ûngedien-meitsje-steapel fan de app en op it tekenflak, njonken Cut, Copy
 en Paste. **Help** hâldt dizze hantlieding, yn de taal fan de app, de
 fluchtoetsen en de updatekontrôle.
@@ -1078,13 +1078,17 @@ Rjochtsklik op in diagramtabblêd, **Diagramynstellingen…**.
 Twa wegen nei bûten, foar twa doelen.
 
 - **It wurkbestân** (`.lvarch`) is alles en is wat jo jouwe oan ien dy't fierder
-  bewurket. It is jo **hiele wurkmap** yn ien bestân — in zip — dus elkenien kin
-  it útpakke en lêze wat deryn sit sûnder dit ark. It hâldt elke scope, yn hokker
-  jo ek sitte as jo eksportearje: in lânskip op himsels ferwiist nei applikaasjes
-  dy't in nivo heger definieare binne, en in bestân mei allinnich dat lânskip
-  deryn soe op immen oars syn masine iepengean fol nammen dy't nearne hinne
-  wize. It bestân hjit nei jo organisaasje. Wurkbestannen fan eardere ferzjes
-  iepenje noch, en in bestân mei ien scope deryn iepenet noch as dy scope.
+  bewurket. It is jo **hiele wurkmap** yn ien bestân, **fersegele mei in
+  wachtwurd**: jo wurde derom frege as jo de kopy bewarje — twa kear, want in
+  ferlern wachtwurd is net werom te heljen — en wa't it bestân iepenet wurdt der
+  opnij om frege. Sûnder wachtwurd is neat fan de ynhâld te lêzen. It hâldt elke
+  scope, op hokker skerm jo ek steane as jo eksportearje — it startskerm fan de
+  organisaasje, dat fan in scope of in iepen boerd: in lânskip op himsels
+  ferwiist nei applikaasjes dy't in nivo heger definieare binne, en in bestân mei
+  allinnich dat lânskip deryn soe op immen oars syn masine iepengean fol nammen
+  dy't nearne hinne wize. It bestân hjit nei jo organisaasje. Wurkbestannen fan
+  eardere ferzjes iepenje noch, fersegele of net, en in bestân mei ien scope
+  deryn iepenet noch as dy scope.
 - **PNG-eksport** (de downloadknop) iepenet in finster mei in foarbyld fan de
   plaat sa't dy fuortgiet: yn it ljochte of it tsjustere tema los fan dat op it
   skerm, mei it label fan elke line of allinnich de keale linen, mei of sûnder
@@ -1123,7 +1127,9 @@ Alles wat in agent wiziget, stiet yn Aktiviteit ûnder syn namme en wurdt
 Roaster, útlinjen, libbenssyklusbadges, ynklapte panielen en har breedten, de
 oersichtskaart, de ynstellingen foar oprêden, de taal en it tema wurde per
 brouwer of per desktop-ynstallaasje ûnthâlden. Se hearre by jo, net by it
-projekt: se reizgje net mei yn in bestân.
+projekt: se reizgje net mei yn in bestân. Itselde jildt foar wat dizze masine
+mei in map docht — ophelje by iepenjen, pushe nei in momintopname: de desktop
+bewarret dat by de ynstallaasje en skriuwt neat fan himsels yn jo map.
 
 ## Ûngedien meitsje
 

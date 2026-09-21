@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4361 tests** and one of every config. The
+One codebase, in modules, with **4395 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -44,7 +44,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4361 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4395 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -700,12 +700,12 @@ identifiers is still a list of a customer's identifiers.
 | Product name | **Lionsville Architect** |
 | Short name (menus, window title, tight spaces) | **Lionsville Architect** — one name, short enough for all of them |
 | Desktop `userData` folder | `Lionsville Architecture Management Tool` — **frozen** at the name the product had when those folders were made, so a rename does not move everybody's preferences (`platform/userData.ts`, pinned in `electron/main/index.ts`) |
-| Working-file extension | **`.lvarch`** |
+| Working-file extension | **`.lvarch`** — the working set (ADR-0018), **sealed** under a password (ADR-0023): `projects/sealedFile.ts`, `lvarch-sealed` magic, AES-256-GCM under PBKDF2-SHA256; asked twice on saving a copy, once on opening, from the workspace and from every home |
 | Working-file discriminator (in `scope.json`) | `lionsville-architecture` |
 | npm package name | `lionsville-architecture-management-tool` |
 | Desktop bundle id | `nl.lionsville.architecture` |
 | Working-directory layout | `<scope>/scope.json`, nested as deep as the work needs |
-| Folder settings (ADR-0005) | `<root>/.lionsville-architecture/folder.json` (shared) and `local.json` (this machine) |
+| Folder settings (ADR-0005, amended by ADR-0023) | what this machine does about a folder: `<userData>/folder-settings.json`, keyed by the folder's path (`platform/node/machineFolderSettings.ts`), over `DesktopSettings.readFolderLocal` · `writeFolderLocal`; `<root>/.lionsville-architecture/local.json` is read where an older build left it and never written by the desktop, `folder.json` beside it read for the legacy `organisation` key and never written by anybody. A browser tab or the hosted plugin still keeps the machine file in the folder it serves |
 | Browser storage prefix (the fallback) | `lvarch.scope.<path>`; the root is the bare prefix |
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
@@ -773,9 +773,11 @@ name are **not** opened: `isWorkingFile` accepts only the
 with its reasoning. The working file was redefined rather than extended, at a
 moment when nobody had one worth keeping. Every version since opens: 1 and 2 are
 a JSON document, 3, 4 and 5 are a scope's folder in a zip, and 5 is what is
-written now. A `.lvarch` is ONE scope: the scopes filed under it are not in it,
-and a zip handed over with them inside opens as the scope at the top.
-`docs/decisions/0001` and `0003` have the long version.
+written now. Since format 6 a `.lvarch` is the **working set** — the scope at
+the top and every scope filed under it, relative to it (ADR-0018) — and since
+ADR-0023 the zip leaves **sealed** under a password and opens with it; a file
+from before either still opens as what it was. `docs/decisions/0001`, `0003`,
+`0018` and `0023` have the long version.
 
 **2.x may break the file format as often as the model needs**, as long as every
 older version opens and migrates (`docs/plan-2.0.0.md`). A 1.x build meeting a
@@ -914,10 +916,13 @@ Then preferences got three scopes and the top bar said where you are
 (`docs/decisions/0005`). A setting is written to whatever it is about: language,
 theme, project order and the update check follow the person (the last one in
 main's own file, over a small `DesktopSettings` channel); what everyone who
-opens a folder agrees on is `.lionsville-architecture/folder.json`, not written
-until it has a key; and what this machine does about the folder's remote is
+opens a folder agrees on was `.lionsville-architecture/folder.json`, not written
+until it had a key; and what this machine does about the folder's remote was
 `local.json` beside it, unstaged after every snapshot and listed in
-`.git/info/exclude` rather than in the user's `.gitignore`. The File and View
+`.git/info/exclude` rather than in the user's `.gitignore`. ADR-0023 took the
+machine file out of the folder: it is `folder-settings.json` in `userData`
+now, keyed by the folder's path, and the folder's own copy is read through
+until this install has written and never touched. The File and View
 vocabulary is data in `platform/menu.ts`, rendered by the menu bar on the
 desktop and by one `⋯` on the web, both sending into one command bus; the Save
 menu, Open and the theme glyph left the toolbar, and the bar now opens with
@@ -1065,8 +1070,8 @@ it did.
 folder comes through — a 1.x folder goes 3 → 4 → 5. The pass over a whole tree
 (`upgradeProjects`) also gives a `scope.json` to the two folders format 4 had
 that were not records: a group nobody wrote a `group.json` for, and the root,
-whose name was the `organisation` key in `folder.json` and is taken out of it
-once the root exists. A browser tab moves its keys from `lvarch.project.` to
+whose name was the `organisation` key in `folder.json` — read, and since
+ADR-0023 left where it is. A browser tab moves its keys from `lvarch.project.` to
 `lvarch.scope.` through the same pass.
 
 Then an id came to mean one thing across the whole organisation

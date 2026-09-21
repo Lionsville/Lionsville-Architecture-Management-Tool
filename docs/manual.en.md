@@ -17,8 +17,9 @@ Help menu asks on request.
 
 **The menus** on the desktop are in English for now. **File** holds the
 folder, the working file, snapshots and history; its items about the open
-scope — Open…, Save, Save a Copy of the Working File… — are greyed out while
-nothing is open. **Edit** holds Undo, Redo, Delete and Select All, which act on
+scope — Save — is greyed out while nothing is open; Open… and Save a Copy of
+the Working File… are about the whole organisation and work from every
+screen. **Edit** holds Undo, Redo, Delete and Select All, which act on
 the app's own undo stack and on the canvas, beside Cut, Copy and Paste.
 **Help** holds this manual, in the app's language, the keyboard shortcuts and
 the update check.
@@ -1038,14 +1039,17 @@ Two ways out, for two purposes.
 
 - **The working file** (`.lvarch`, **File › Save a Copy of the Working
   File…**) is everything and is what you hand to someone who will edit
-  further. It is your **whole working folder** in one
-  file — a zip — so anybody can unpack it and read what is inside without this
-  tool. It holds every scope, whichever one you are in when you export: a
-  landscape on its own refers to applications defined a level up, and a file
-  with only the landscape in it would open on someone else's machine full of
-  names pointing at nothing. The file is named after your organisation.
-  Working files from earlier versions still open, and one holding a single
-  scope still opens as that scope.
+  further. It is your **whole working folder** in one file, **sealed under a
+  password**: you are asked for one when you save the copy — twice, because
+  a lost password cannot be recovered — and whoever opens the file is asked
+  for it again. Nothing about what is inside can be read without it. It holds
+  every scope, whichever screen you are on when you export — the
+  organisation's home, a scope's home or an open board: a landscape on its
+  own refers to applications defined a level up, and a file with only the
+  landscape in it would open on someone else's machine full of names pointing
+  at nothing. The file is named after your organisation. Working files from
+  earlier versions still open, sealed or not, and one holding a single scope
+  still opens as that scope.
 - **PNG export** (the download button) opens a dialog with a preview of the
   picture as it will leave: in the light or the dark theme regardless of the
   one on screen, with every line's label or only the bare lines, with or
@@ -1083,7 +1087,9 @@ with ⌘Z, as before.
 Grid, snapping, lifecycle badges, collapsed panels and their widths, the
 minimap, the tidy settings, the language and the theme are remembered per
 browser or per desktop install. They belong to you, not to the project: they
-do not travel in a file.
+do not travel in a file. The same goes for what this machine does about a
+folder — pull on open, push after a snapshot: the desktop keeps that with the
+install, and writes nothing of its own into your folder.
 
 ## Undo
 

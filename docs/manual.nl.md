@@ -17,8 +17,8 @@ Help-menu vraagt het op verzoek.
 
 **De menu's** op de desktop zijn voorlopig Engels. **File** bevat de map, het
 werkbestand, momentopnamen en geschiedenis; de items over het geopende
-onderdeel — Open…, Save, Save a Copy of the Working File… — zijn grijs zolang
-er niets open is. **Edit** bevat Undo, Redo, Delete en Select All, die werken
+onderdeel — Save — is grijs zolang er niets open is; Open… en Save a Copy of
+the Working File… gaan over de hele organisatie en werken vanaf elk scherm. **Edit** bevat Undo, Redo, Delete en Select All, die werken
 op de eigen ongedaan-maak-stapel van de app en op het canvas, naast Cut, Copy
 en Paste. **Help** bevat deze handleiding, in de taal van de app, de
 sneltoetsen en de updatecontrole.
@@ -1092,14 +1092,18 @@ Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 Twee uitgangen, voor twee doelen.
 
 - **Het werkbestand** (`.lvarch`) is alles, en is wat je aan iemand geeft die
-  verder gaat bewerken. Het is je **hele werkmap** in één bestand — een zip —
-  zodat iedereen het kan uitpakken en lezen zonder deze tool. Het bevat elke
-  scope, in welke je ook zit als je exporteert: een landschap op zichzelf
-  verwijst naar applicaties die een niveau hoger gedefinieerd zijn, en een
-  bestand met alleen dat landschap erin zou op andermans machine opengaan vol
-  namen die nergens heen wijzen. Het bestand heet naar je organisatie.
-  Werkbestanden van eerdere versies openen gewoon, en een bestand met één
-  scope erin opent nog steeds als die scope.
+  verder gaat bewerken. Het is je **hele werkmap** in één bestand, **verzegeld
+  met een wachtwoord**: je wordt erom gevraagd als je de kopie bewaart — twee
+  keer, want een verloren wachtwoord is niet terug te halen — en wie het
+  bestand opent wordt er opnieuw om gevraagd. Zonder wachtwoord is niets van
+  de inhoud te lezen. Het bevat elke scope, op welk scherm je ook staat als
+  je exporteert — het startscherm van de organisatie, dat van een scope of een
+  geopend bord: een landschap op zichzelf verwijst naar applicaties die een
+  niveau hoger gedefinieerd zijn, en een bestand met alleen dat landschap
+  erin zou op andermans machine opengaan vol namen die nergens heen wijzen.
+  Het bestand heet naar je organisatie. Werkbestanden van eerdere versies
+  openen gewoon, verzegeld of niet, en een bestand met één scope erin opent
+  nog steeds als die scope.
 - **PNG-export** (de downloadknop) opent een dialoog met een voorbeeld van de
   plaat zoals die vertrekt: in het lichte of het donkere thema, los van wat er
   op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of
@@ -1138,7 +1142,10 @@ ongedaan gemaakt met ⌘Z, zoals altijd.
 Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun
 breedte, het overzichtskaartje, de Tidy-instellingen, de taal en het thema
 worden per browser of per desktopinstallatie onthouden. Ze zijn van jou, niet
-van het project: ze reizen niet mee in een bestand.
+van het project: ze reizen niet mee in een bestand. Hetzelfde geldt voor wat
+deze machine met een map doet — ophalen bij openen, pushen na een
+momentopname: de desktop bewaart dat bij de installatie en schrijft niets van
+zichzelf in je map.
 
 ## Ongedaan maken
 
