@@ -12,14 +12,22 @@
  * checked against what a real client expects rather than against a reading
  * of the specification.
  *
- * Pure. Node's `http` and Electron are `mcp.ts`'s business; this file takes a
- * parsed request and answers with a response, so it can be tested with a
+ * Pure. A listener and Electron are `electron/main`'s business; this file takes
+ * a parsed request and answers with a response, so it can be tested with a
  * plain object at each end.
+ *
+ * It sits in `agent/` rather than beside the listener because it is the
+ * vocabulary spoken out loud, and the vocabulary is here: it reads `TOOLS` and
+ * `REFUSAL_SENTENCE`, which the import matrix lets `agent` reach and `platform`
+ * does not. A second thing that composes what this tree builds therefore has a
+ * protocol to speak without a desktop under it. It is deliberately not on
+ * `index.ts`: `node:crypto` has no business in a browser bundle, and a barrel
+ * is what would put it there.
  */
-import type { AgentAnswer, AgentRequest, ToolContent } from '../../src/agent/tools'
-import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS } from '../../src/agent/tools'
+import type { AgentAnswer, AgentRequest, ToolContent } from './tools'
+import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS } from './tools'
 import { randomUUID } from 'node:crypto'
-import type { AgentClient } from '../../src/platform/agentServer'
+import type { AgentClient } from '../platform/agentServer'
 
 /**
  * The newest version this server speaks, and the ones it will answer a client

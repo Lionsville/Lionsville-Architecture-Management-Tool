@@ -13,8 +13,8 @@
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import { AGENT_ENDPOINT_PATH, AGENT_HOST } from '../../src/platform/agentServer'
-import { serve } from './mcpProtocol'
-import type { Relay, ServerIdentity } from './mcpProtocol'
+import { serve } from '../../src/agent/mcpProtocol'
+import type { Relay, ServerIdentity } from '../../src/agent/mcpProtocol'
 
 /** A tool call's body is small; a megabyte is somebody else's mistake. */
 const MAX_BODY_BYTES = 1_048_576

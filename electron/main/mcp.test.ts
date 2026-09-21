@@ -5,7 +5,9 @@
  * client the agents actually use has to get through `initialize`, list the
  * tools, call one and read a refusal, against a server written by hand. The
  * relay behind it is a plain object, because what the app answers is
- * `agent/`'s business and tested there.
+ * `agent/`'s business and tested there — and so, since it moved, is the
+ * protocol on its own (`src/agent/mcpProtocol.test.ts`). What is left here
+ * needs a socket.
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -16,7 +18,6 @@ import type { AgentClient } from '../../src/platform/agentServer'
 import { agentEndpoint } from '../../src/platform/agentServer'
 import { listen } from './mcpServer'
 import type { AgentListener } from './mcpServer'
-import { authorised, respond, toolResult } from './mcpProtocol'
 
 const TOKEN = 'a-token-long-enough-to-be-one-0123456789'
 
@@ -138,42 +139,5 @@ describe('an SDK client against the server', () => {
     await listener.close()
     open = []
     await expect(fetch(agentEndpoint(listener.port))).rejects.toThrow()
-  })
-})
-
-describe('the protocol on its own', () => {
-  const server = { name: 's', version: '1' }
-  const quiet = { ask: async () => json({}), onInitialized: () => {}, onClosed: () => {} }
-
-  it('answers a notification with nothing', async () => {
-    expect(await respond({ jsonrpc: '2.0', method: 'notifications/initialized' }, quiet, server)).toBeUndefined()
-  })
-
-  it('names a method it does not have', async () => {
-    expect(await respond({ jsonrpc: '2.0', id: 1, method: 'prompts/list' }, quiet, server))
-      .toMatchObject({ id: 1, error: { code: -32601 } })
-  })
-
-  it('speaks the version the client asks for when it can', async () => {
-    const old = await respond({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26' } }, quiet, server)
-    expect(old).toMatchObject({ result: { protocolVersion: '2025-03-26' } })
-    const unknown = await respond({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '1999-01-01' } }, quiet, server)
-    expect(unknown).toMatchObject({ result: { protocolVersion: '2025-06-18' } })
-  })
-
-  it('compares tokens without a shortcut', () => {
-    expect(authorised(`Bearer ${TOKEN}`, TOKEN)).toBe(true)
-    expect(authorised(`bearer ${TOKEN}`, TOKEN)).toBe(true)
-    expect(authorised(`Bearer ${TOKEN}x`, TOKEN)).toBe(false)
-    expect(authorised(TOKEN, TOKEN)).toBe(false)
-    expect(authorised(undefined, TOKEN)).toBe(false)
-  })
-
-  it('turns an answer into a result, and a refusal into an error result', () => {
-    expect(toolResult(json({ a: 1 }))).toEqual({ content: [{ type: 'text', text: '{\n  "a": 1\n}' }] })
-    expect(toolResult(refused('agent.off'))).toEqual({
-      content: [{ type: 'text', text: 'agent.off: The app is not accepting agent connections. Turn them on in Connect an agent.' }],
-      isError: true,
-    })
   })
 })

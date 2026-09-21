@@ -5,8 +5,9 @@
  * whether the feature is on and which port and token it settled on; the
  * relay that hands a tool call to the window and waits for its answer; and
  * the three facts the renderer is told — off, listening on which port,
- * connected by whom. The protocol is `mcpProtocol.ts` and the listener is
- * `mcpServer.ts`; this file decides nothing about either.
+ * connected by whom. The protocol is `src/agent/mcpProtocol.ts` — it speaks
+ * the vocabulary, so it lives with it — and the listener is `mcpServer.ts`;
+ * this file decides nothing about either.
  *
  * **Off by default, and kept once on.** The port and the token are generated
  * the first time the feature is turned on and kept in `mcp.json` in
