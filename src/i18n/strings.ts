@@ -22,12 +22,20 @@
  * throwing: a missing string is a blemish, never a blank editor.
  */
 import { DE } from './strings.de';
+import { interpolate } from './interpolate';
 import { EN } from './strings.en';
 import { FY } from './strings.fy';
 import { NL } from './strings.nl';
 import type { StringKey, StringParams, StringTable } from './table';
 
 export type { StringKey, StringParams, StringTable } from './table';
+/**
+ * Re-exported where it always was. It lives in `./interpolate` now so that a
+ * caller that has a table of its own — a node process drafting a commit message
+ * with two slices and no registry — can fill placeholders without importing the
+ * registry, and therefore without importing every module's words.
+ */
+export { interpolate } from './interpolate';
 export { DE } from './strings.de';
 export { EN } from './strings.en';
 export { FY } from './strings.fy';
@@ -146,17 +154,6 @@ export const LOCALE: Record<Language, string> = {
   en: 'en-GB',
 };
 
-/**
- * Fill `{placeholders}` from `params`. A placeholder with no matching param is
- * left standing rather than replaced with `undefined`, so a wiring mistake reads
- * as an obvious `{name}` on screen instead of a plausible-looking sentence.
- */
-export function interpolate(template: string, params?: StringParams): string {
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in params ? String(params[key]) : match,
-  );
-}
 
 /**
  * The one lookup. Pure, and explicit about the language.

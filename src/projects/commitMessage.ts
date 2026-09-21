@@ -13,9 +13,52 @@
  * of what happened but the reason for it.
  *
  * Pure: the summaries and a translate go in, a string comes out.
+ *
+ * And a `Translate` is available here without the registry, which matters for
+ * who else drafts these. The registry (`i18n/strings.ts`) composes every
+ * module's words, so asking it for a translator imports `app/strings` and
+ * `editor/strings` at module load — right for anything that draws a screen, and
+ * wrong for a build composed from this one that runs the reducer and the folder
+ * format in a node process and wants a snapshot's message. A drafted message
+ * says what a step is called and how many more there were: two slices, no
+ * screens. {@link translateFrom} and {@link draftCommitMessageInEnglish} are
+ * those two slices and nothing else, so `projects/` can be reached from a
+ * process that never touches `app/` — which `commitMessage.test.ts` pins by
+ * walking the imports.
  */
 import type { StepSummary } from '../model/activity'
 import type { Translate } from '../i18n'
+import { interpolate } from '../i18n/interpolate'
+import { EN as MODEL_WORDS } from '../model/strings/en'
+import { EN as PROJECT_WORDS } from './strings/en'
+
+/**
+ * A translate over one table and no registry.
+ *
+ * Every key a drafted message names is looked up in what it is handed, and an
+ * unknown one comes back as itself — the registry's own answer to a missing
+ * string, for the same reason: a blemish in a commit subject, never a failure to
+ * take a snapshot. A caller with a table in another language hands that one over
+ * instead.
+ */
+export function translateFrom(table: Readonly<Record<string, string>>): Translate {
+  return (key, params) => interpolate(table[key] ?? key, params)
+}
+
+/**
+ * The words a drafted message can use, in English.
+ *
+ * The two slices whole, rather than the dozen keys this file happens to reach
+ * today: a step summary names any `activity.` key and any `relation.` one
+ * (`model/activity.ts`), the tail is `git.andMore`, and a key added to either
+ * slice is one a drafted message should have. Both slices import nothing at all,
+ * which is what makes this cheap — they are the two `as const` objects and no
+ * graph behind them.
+ */
+export const COMMIT_MESSAGE_WORDS: Readonly<Record<string, string>> = { ...MODEL_WORDS, ...PROJECT_WORDS }
+
+/** English, for a caller that has no language to be in. */
+export const ENGLISH_DRAFT: Translate = translateFrom(COMMIT_MESSAGE_WORDS)
 
 /** How many steps the subject line names before it gives up and counts. */
 const NAMED_IN_SUBJECT = 3
@@ -72,4 +115,12 @@ export function draftCommitMessage(steps: readonly StepSummary[], t: Translate):
   // shape: subject, blank line, the details.
   if (lines.length <= NAMED_IN_SUBJECT && subject === lines.join(', ')) return subject
   return `${subject}\n\n${lines.map((line) => `- ${line}`).join('\n')}\n`
+}
+
+/**
+ * The same message with no language chosen and no registry imported: what a
+ * process with no screen drafts with.
+ */
+export function draftCommitMessageInEnglish(steps: readonly StepSummary[]): string {
+  return draftCommitMessage(steps, ENGLISH_DRAFT)
 }
