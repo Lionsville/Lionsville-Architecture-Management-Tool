@@ -585,6 +585,44 @@ under, as a fact and not a control, where no chip was given.
 `ShellToolbar.test.tsx` pins the three that ship byte for byte, chip or no chip:
 a word reaching this code from outside must not move what a folder is called.
 
+## Amended — the three a build whose source has its own answers needed
+
+*22 September 2026.* The same build watched its own source say no, offered a way
+in to the place a person was already working from, and had an agent reach a
+landscape that is on nobody's loopback; each is a sentence of ours that was
+wrong rather than vague. A **refusal** where work is kept is the source's own
+sentence now (`SourceFailure`, carried with a source's parts as
+`sourceFailure`), because *this browser could not save the design (storage full
+or blocked)* names the wrong place, blames a quota that did not run out and
+recommends a working file to somebody whose copy that matters is elsewhere —
+and `undefined` from it says nothing at all, for a provider that has already
+said so in a chrome or a line of its own, ours included, since a refusal nobody
+mentioned must not be followed by *saving works again*. A **way in** is asked
+whether it is worth drawing where it is about to be drawn (`SourceConnect.offer`,
+told the source and the address, `null` for not here and a label for something
+else to say), because a standing *connect to…* offers the provider's own open
+source the place it already is. And *Connect an agent* takes the open source's
+own **panel** (`agentPanel` on the registration): in a tab it stands where the
+sentence about the desktop stood, which is true about the loopback and beside
+the point once an agent can arrive some other way, and on a host it stands under
+that section rather than over it, because both ways in exist there. The three
+built-ins define none of the three. And, from the same build and not a seam at
+all: *Check for Updates…* and the switch behind it are drawn only where updates
+are this build's to check (`offersUpdateCheck`, `updateSettingsFor`,
+`helpMenuTail`) — a build composed from this one may keep its own updates, and
+an item reaching a release page that is not its own answers a question nobody
+asked.
+
+`useStorageNotice.test.tsx` pins the sentence, the silence and the latch that
+does not close over it; `useDocumentSession.test.tsx` pins the cause travelling
+with the fact; `composition.test.tsx` pins what a provider's parts carry and what
+the registry answers for the open source alone; `App.storage.test.tsx` pins a
+way in hidden, relabelled, asked again and standing where its provider threw,
+and a refusal said in the provider's words, in nobody's, and in ours;
+`ConnectAgentDialog.test.tsx` pins the panel in place of the sentence and beside
+the section; `menuLayout.test.ts` and `updates.test.ts` pin both states of a
+build that offers a check and one that does not.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a
