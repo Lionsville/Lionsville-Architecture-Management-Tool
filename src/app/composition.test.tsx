@@ -16,7 +16,7 @@ import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
-  inWorkingDirectory, registerSourceProvider, sourceProvider,
+  inWorkingDirectory, openSource, registerSourceProvider, sourceProvider,
   type FolderOpening, type Shell, type SourceParts,
 } from './composition'
 
@@ -164,6 +164,44 @@ describe('registerSourceProvider', () => {
     registerSourceProvider({ kind: 'folder', open: () => ({ source: IN_MEMORY }) })
     expect(sourceProvider('folder')?.open).not.toBe(undefined)
     expect(sourceProvider<FolderOpening>('folder')?.connect?.labelKey).toBe('picker.chooseFolder')
+  })
+})
+
+/**
+ * Opening one, which is the step a composer outside this file also takes.
+ *
+ * Exported for exactly that: the parts a provider builds and its word about
+ * the five statuses travel together, and a composer that spelled that out for
+ * itself would be one field short the day a third thing joins them.
+ */
+describe('openSource', () => {
+  it('brings the provider\'s word about the five words along with its parts', () => {
+    registerSourceProvider<{ name: string }>({
+      kind: 'measured',
+      statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
+      open: ({ name }) => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'measured', name, key: name },
+      }),
+    })
+
+    const parts = openSource('measured', { name: 'Measured' })
+
+    expect(parts.source).toEqual({ kind: 'registered', provider: 'measured', name: 'Measured', key: 'Measured' })
+    expect(parts.sourceStatus?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
+  })
+
+  /** A folder means what a file means, and says so by bringing no `statusOf`. */
+  it('leaves the answer undefined where the provider has none', () => {
+    expect(openSource('memory', undefined).sourceStatus).toBeUndefined()
+  })
+
+  /**
+   * A wiring mistake found at the boot is a wiring mistake; found at the first
+   * save it is a lost document.
+   */
+  it('refuses a kind nobody registered', () => {
+    expect(() => openSource('nowhere', undefined)).toThrow(/nowhere/)
   })
 })
 

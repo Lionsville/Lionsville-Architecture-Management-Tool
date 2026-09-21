@@ -240,9 +240,15 @@ export function sourceProvider<Opening = void>(
  *
  * The provider's word about the five statuses travels with its parts, so the
  * shell carries it beside the source itself and nothing downstream has to
- * consult the registry to find out what *dirty* means here.
+ * consult the registry to find out what *dirty* means here. That last part is
+ * the whole of why this is exported: a build composed from this one opens its
+ * own source at its own moment, and writing out
+ * `{ ...provider.open(o), sourceStatus: provider.statusOf }` at that moment is
+ * restating a rule of this file badly — the day a third thing travels with a
+ * provider's parts, every such composer is quietly one field short and the bar
+ * says the wrong word about somebody's unsaved work.
  */
-function openSource<Opening>(kind: string, opening: Opening): SourceParts {
+export function openSource<Opening>(kind: string, opening: Opening): SourceParts {
   const provider = sourceProvider<Opening>(kind)
   // The boot, in the one file that chose the kind. A wiring mistake found here
   // is a wiring mistake; found at the first save it is a lost document.
