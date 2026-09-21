@@ -133,6 +133,11 @@ and the boundary that is enforced is the matrix below, not the barrel.
 src/model/        What a landscape is made of, and the arithmetic over it.
                     types             the domain half; imports nothing at all
                     kinds · zones · placement · aspects · kindChange · deletion
+                    words             the model's own slice, in English, as the
+                                      default every label table here falls back
+                                      on — so importing the model does not import
+                                      the registry, and through it every screen's
+                                      words
                     lifecycle · transition · checks   dates on the facts, a plan,
                                       and what the dates contradict (ADR-0009)
                     relations         what a row between two elements MEANS, and
@@ -253,11 +258,20 @@ src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.t
                     registerStrings   words a build composed from this one brought,
                                       kept beside the schema and never merged into
                                       it: keys added, none replaced (ADR-0022)
-                    interpolate       `{placeholders}`, and the one piece of this
-                                      that needs no table — so a caller with a
-                                      slice of its own fills them without
-                                      importing every module's words
+                    interpolate       `{placeholders}` and `translateFrom`: the
+                                      pieces of this that need no table — so a
+                                      caller with a slice of its own reads it
+                                      without importing every module's words
+                    languages         which languages there are, with no words in
+                                      them, for a caller that only has to
+                                      recognise a code; `strings.ts` holds the
+                                      list and the tables together
 src/projects/     A scope: open, save, order, summarise, address, remember.
+                    technologyRegister   every service and platform in the tree,
+                                      derived from the index (ADR-0014 §2.6) —
+                                      here rather than beside the page it draws,
+                                      so a process with no screen answers
+                                      `technology.list` from the same fold
                     scope             the document every level is (ADR-0012 §1),
                                       and the arithmetic over a tree of them
                     scopeIndex        who owns an id and who else draws it, over
@@ -378,9 +392,10 @@ src/app/          The shell around the editor.
                                       in the tree, derived (ADR-0012 §2); a page
                                       here rather than under `projects/ui/`,
                                       which may not import React
-                                      technologyRegister · TechnologyPage   every
-                                      service and platform in the tree, the same
-                                      fold over the same index (ADR-0014)
+                                      TechnologyPage   every service and
+                                      platform in the tree, the same fold over
+                                      the same index (ADR-0014) — the fold
+                                      itself is `projects/technologyRegister`
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
@@ -424,9 +439,15 @@ narrowing costs nothing: no wrappers, just a smaller type.
 `eslint.config.js` and generated into one rule per module, each with its own
 sentence. `model` is the bottom and knows nobody; `app` is the top and knows
 everyone; nobody imports `app`, and nobody but `app/composition.ts` imports
-`adapters`. `model`, `layout`, `platform`, `ports`, `projects` and `i18n` may not
-import React, MUI, Emotion or React Flow at all. If a rule blocks you, the design
-is telling you something; move the code, don't route around the rule.
+`adapters`. `model`, `layout`, `platform`, `ports`, `projects`, `i18n` and
+`agent` may not import React, MUI, Emotion or React Flow at all — nor a `ui/`
+file, nor the barrel of a module that re-exports one, which is the same rule one
+step out: `agent/commandFor.ts` said `from '../business'` for six pure functions
+and got three dialogs with them. Those modules name the file they want.
+`src/agent/pure.test.ts` walks the chain that has to stay loadable by node, and
+is what catches a barrel that grows a page after the list in the config was
+written. If a rule blocks you, the design is telling you something; move the
+code, don't route around the rule.
 
 Three rows are worth knowing because they are not obvious. `editor` may not import
 `decisions` or `projects` — a canvas that knows what a project is cannot be
