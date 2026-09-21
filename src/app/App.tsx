@@ -58,8 +58,9 @@ import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import { SyncNotice } from './SyncNotice'
 import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
-import { BROWSER_STORAGE } from '../platform/workingSource'
+import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
+import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { HostControls } from '../ports/HostControls'
@@ -212,6 +213,13 @@ export type AppProps = {
    */
   source?: WorkingSource
   /**
+   * What this source means by the five words the bar says (ADR-0005; the
+   * source provider says the rest). Absent where the document's own machine is
+   * the whole answer, which is what all three built-in sources are, and the
+   * bar then says exactly what it has always said.
+   */
+  sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
    * How to change the folder. Absent in a browser tab whose browser cannot
    * give one: an app that showed the button anyway would be offering what it
    * cannot do.
@@ -346,7 +354,7 @@ function localToday(): string {
 
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, onChooseWorkingDirectory, needsFolder = false, watchProject,
+  source = BROWSER_STORAGE, sourceStatus, onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, today = localToday,
   initialProject, initialPreferences,
@@ -1132,6 +1140,11 @@ export function App({
             projects={workspaceStore}
             index={tree.index}
             watch={watchOpenProject}
+            // Two facts about where work is kept that the workspace reads as
+            // its own: whether it may be written at all, and what this source
+            // means by the words on the bar.
+            readOnly={sourceIsReadOnly(source)}
+            sourceStatus={sourceStatus}
             commands={bus.on}
             hostMenu={hostMenu}
             overflow={hostMenu ? undefined : {

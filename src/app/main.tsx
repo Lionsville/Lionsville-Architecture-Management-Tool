@@ -484,6 +484,7 @@ function renderApp(
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
         source={shell.source}
+        sourceStatus={shell.sourceStatus}
         onChooseWorkingDirectory={
           files || browserFolders.possible() ? chooseWorkingDirectory : undefined
         }

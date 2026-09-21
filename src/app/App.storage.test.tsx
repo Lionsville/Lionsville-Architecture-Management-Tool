@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -69,5 +69,49 @@ describe('what the root’s home says you are working from', () => {
     renderApp({ initialProject: project, source: { kind: 'memory' } })
     expect(screen.queryByTestId('working-source')).toBeNull()
     expect(screen.getByTestId('storage-notice')).toBeDefined()
+  })
+})
+
+/**
+ * A source a provider registered (`platform/sourceProvider.ts`).
+ *
+ * Nothing in this tree knows what kind of place it is, which is the point: the
+ * bar calls it what its provider called it, and whether work may be written
+ * there is the source's own answer rather than the constant the workspace
+ * passed while a folder was the only thing a source could be.
+ */
+describe('a source a provider answers for', () => {
+  const elsewhere = {
+    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+  }
+  const scope = {
+    path: 'acme/landscape',
+    model: {
+      name: 'Landscape', elements: [], relations: [],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
+    },
+    activeDiagramId: 'd1',
+    logoLibrary: [],
+  }
+
+  it('is called on the home what its provider called it, with no word of ours in front', () => {
+    renderApp({ source: elsewhere })
+    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    // Not the nothing-is-kept strip: that is memory's, and this keeps things.
+    expect(screen.queryByTestId('storage-notice')).toBeNull()
+  })
+
+  it('offers what a folder offers when it writes', async () => {
+    renderApp({ initialProject: scope, source: elsewhere })
+    fireEvent.click(await screen.findByText('Roadmap'))
+    expect(await screen.findByText('New plan')).toBeDefined()
+  })
+
+  it('hides what writes when it says it only reads', async () => {
+    renderApp({ initialProject: scope, source: { ...elsewhere, readOnly: true } })
+    fireEvent.click(await screen.findByText('Roadmap'))
+    // The page is up; what is missing is the one thing on it that writes.
+    expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
+    expect(screen.queryByText('New plan')).toBeNull()
   })
 })

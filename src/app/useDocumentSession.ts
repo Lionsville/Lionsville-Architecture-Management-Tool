@@ -19,11 +19,12 @@
  * is the moment a person thinks they are done. Quit: the last moment there is,
  * and the only one that also asks.
  */
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import {
   AUTOSAVE_IDLE_MS, documentSession, hasUnsavedWork, openSession, shouldSaveNow,
 } from '../projects/documentSession'
 import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/documentSession'
+import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { StorageNotice } from './useStorageNotice'
@@ -115,9 +116,25 @@ export function useDocumentSession(deps: {
    * process, and it cannot know unless it is told.
    */
   onUnsavedWork?: (unsaved: boolean) => void
+  /**
+   * What the source this scope is kept in means by the five words
+   * (`platform/sourceProvider.ts`).
+   *
+   * The machine below reduces events into a status the way it always has; this
+   * is the last word on what that status is CALLED, and only a source that
+   * keeps work somewhere other than a file has one. Absent — all three sources
+   * that ship — and the machine's own answer is what everybody reads, exactly
+   * as before.
+   *
+   * Deliberately over the answer rather than inside the machine: whether
+   * anything is outstanding, when to write and whether closing the window
+   * would lose something are this hook's questions, and a provider renaming
+   * *saving* must not be able to change any of them.
+   */
+  sourceStatus?: (work: SourceWork) => SourceStatus
 }): DocumentSessionHook {
   const {
-    session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork,
+    session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork, sourceStatus,
   } = deps
   const { model, logoLibrary, snapshot } = session
 
@@ -294,5 +311,19 @@ export function useDocumentSession(deps: {
   // top of somebody else's change.
   const forceSave = useCallback(() => save('blur'), [save])
 
-  return { state, forceSave, takeTheirs, keepMine }
+  /**
+   * The state as everybody above reads it, with the source's word on the
+   * status if it has one.
+   *
+   * `no-file` is never handed over: it is the one state that is genuinely
+   * about a file — nothing is attached yet — and a source that keeps work
+   * elsewhere has nothing to say about it. The same object when there is no
+   * word to take, so a reader that watches the state by identity is unmoved.
+   */
+  const shown = useMemo(() => {
+    if (!sourceStatus || state.status === 'no-file') return state
+    return { ...state, status: sourceStatus({ status: state.status, editedWhileSaving: state.editedWhileSaving }) }
+  }, [sourceStatus, state])
+
+  return { state: shown, forceSave, takeTheirs, keepMine }
 }

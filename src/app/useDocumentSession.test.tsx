@@ -17,6 +17,7 @@ import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
 import type { ScopeSnapshot } from '../projects/scope'
+import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
 import type { DocumentSessionHook, SavableSession } from './useDocumentSession'
 
@@ -38,6 +39,7 @@ const project = (name = 'Landscape'): ScopeSnapshot => ({
 function mount(
   save: (p: ScopeSnapshot) => Promise<void> = () => Promise.resolve(),
   onDisk?: { current: ScopeSnapshot | undefined },
+  sourceStatus?: (work: SourceWork) => SourceStatus,
 ) {
   const latest = { current: project() }
   const saved = vi.fn()
@@ -74,6 +76,7 @@ function mount(
         return () => { watching -= 1 }
       }),
       onAdopt: (held) => adopted.push(held),
+      sourceStatus,
     })
     return null
   }
@@ -352,4 +355,57 @@ describe('what the window is told', () => {
     expect(view3.reported.at(-1)).toBe(false)
   })
 
+})
+
+/**
+ * A source that keeps work somewhere other than a file means something else by
+ * the five words, and says so through its provider
+ * (`platform/sourceProvider.ts`). What it may never do is change what this
+ * hook DOES: when it writes, whether anything is outstanding, and whether
+ * closing the window is interrupted are the hook's questions, decided on the
+ * machine's own answer.
+ */
+describe('a source with a word of its own on the status', () => {
+  it('is what the bar reads, in place of the machine\'s own answer', () => {
+    const view = mount(undefined, undefined, () => 'conflict')
+    expect(view.status()).toBe('conflict')
+  })
+
+  it('is told what the machine made of it, and what it kept beside it', () => {
+    const seen: SourceWork[] = []
+    const view = mount(undefined, undefined, (work) => { seen.push(work); return work.status })
+    view.edit('Renamed')
+    expect(view.status()).toBe('dirty')
+    expect(seen.at(-1)).toEqual({ status: 'dirty', editedWhileSaving: false })
+  })
+
+  it('does not move when a save happens, or whether the window may close', async () => {
+    // Everything it renames still writes on the same schedule and still
+    // interrupts a close with work in hand.
+    const view = mount(undefined, undefined, () => 'clean')
+    view.edit('Renamed')
+
+    await view.idle()
+
+    // It calls everything clean, and the write still happened on the machine's
+    // schedule; with nothing outstanding the close is not interrupted.
+    expect(view.writes).toHaveLength(1)
+    expect(view.close()).toBe(false)
+
+    // And with something outstanding it still is, whatever the source calls it.
+    view.edit('Again')
+    expect(view.close()).toBe(true)
+  })
+
+  it('is only ever asked about the five words it answers for', () => {
+    // Nothing to be attached to is the one state that is genuinely about a
+    // file, and a provider hearing about it would be answering for somewhere
+    // it does not keep anything. Its type says so; this says the wiring does.
+    const five = ['clean', 'dirty', 'saving', 'external-changed', 'conflict']
+    const asked: string[] = []
+    const view = mount(undefined, undefined, (work) => { asked.push(work.status); return work.status })
+    view.edit('Renamed')
+    expect(asked.length).toBeGreaterThan(0)
+    expect(asked.filter((status) => !five.includes(status))).toEqual([])
+  })
 })

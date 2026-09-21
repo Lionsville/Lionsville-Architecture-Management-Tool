@@ -38,6 +38,7 @@ import type { AncestorRecords } from '../decisions/adrScope'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
+import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
 import type { HostCommand } from '../platform/hostCommands'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
@@ -110,6 +111,20 @@ export type ProjectWorkspaceProps = {
    * the caller, and absent in a browser tab, where nothing can watch.
    */
   watch?: (onChanged: () => void) => () => void
+  /**
+   * May work here be written?
+   *
+   * A fact about the source this scope is kept in, read rather than assumed —
+   * it was the constant `false` until a source could be somewhere other than a
+   * folder this machine owns, and for all three sources that ship it still is.
+   */
+  readOnly?: boolean
+  /**
+   * What this source means by *dirty*, *saving*, *clean*, *external-changed*
+   * and *conflict*. Absent where the document's own machine is the whole
+   * answer, which is what a file is.
+   */
+  sourceStatus?: (work: SourceWork) => SourceStatus
   /**
    * Menu items, the web's overflow and files the OS opened us with — the ones
    * about the project that is open. The shell above takes the ones about
@@ -269,7 +284,8 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
+  project, projects, index, watch, readOnly = false, sourceStatus,
+  commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, onAgentSession, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
   onOpenSettings, onTreeChanged = () => {},
@@ -438,6 +454,7 @@ export function ProjectWorkspace({
     onResult: onSaveResult,
     onPressure: nearlyFull,
     watch,
+    sourceStatus,
     onUnsavedWork,
     // Their version, once it has been read: straight onto the session, without
     // a relayout — a project read back from its folder carries its geometry.
@@ -1536,7 +1553,7 @@ export function ProjectWorkspace({
         today={todayDay}
         platformTree={ownership.platformTree}
         asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
-        readOnly={false}
+        readOnly={readOnly}
         actions={plans.roadmapActions}
         onClose={() => { plans.closeRoadmap(); leaveIfNothingToDraw() }}
         windowChrome={pageChrome}
@@ -1553,7 +1570,7 @@ export function ProjectWorkspace({
         model={session.model}
         decisions={session.model.decisions}
         today={todayDay}
-        readOnly={false}
+        readOnly={readOnly}
         actions={plans.planActions}
         renderMarkdown={renderDocument}
         onAddImage={files.addImage}
