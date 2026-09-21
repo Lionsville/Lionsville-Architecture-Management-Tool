@@ -1,4 +1,4 @@
-# Lionsville Architecture Management Tool
+# Lionsville Architect
 
 An architecture modelling tool. It draws an **application landscape in Layer-7
 bands** and the **C4 container diagrams underneath it**, edits both, and saves

@@ -7,18 +7,23 @@
  *
  * **The scope first**, because that is what changes and what a person is
  * looking for when they have four windows open; the product last, because it is
- * the same in all four. The short name is used, for the reason it exists: a
- * title bar is a tight space (*Names, decided*).
+ * the same in all four — and short enough for a title bar, which is a tight
+ * space (*Names, decided*).
  *
  * Pure, and forgiving: a tree nobody has named yet is the product on its own,
  * which is what the page says before anything is open.
  */
 
-/** The short name, for menus, window titles and tight spaces. */
-export const PRODUCT_NAME = 'Architecture Management Tool'
+/**
+ * What the product is called, in menus, window titles and tight spaces.
+ *
+ * Not what the desktop's `userData` folder is called: that one is frozen at the
+ * name the product used to have, and `platform/userData.ts` says why.
+ */
+export const PRODUCT_NAME = 'Lionsville Architect'
 
 /**
- * `Warehouse — Acme Logistics — Architecture Management Tool`, with each part
+ * `Warehouse — Acme Logistics — Lionsville Architect`, with each part
  * left out when there is nothing to say.
  *
  * The organisation is the root scope's name (ADR-0012 §1) and the scope is the

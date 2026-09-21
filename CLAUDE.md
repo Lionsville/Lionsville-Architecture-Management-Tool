@@ -1,8 +1,7 @@
 # CLAUDE.md — working in this repo
 
-The **Lionsville Architecture Management Tool**: a general-purpose architecture
-modelling tool — a Layer-7 application landscape and the C4 container diagrams
-under it. **There is no customer in this codebase.** An organisation is a
+**Lionsville Architect**: a general-purpose architecture modelling tool — a
+Layer-7 application landscape and the C4 container diagrams under it. **There is no customer in this codebase.** An organisation is a
 *scope*, which is data a user creates. Never write a customer's name into an
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
@@ -698,8 +697,9 @@ identifiers is still a list of a customer's identifiers.
 
 | Thing | Value |
 |---|---|
-| Product name | **Lionsville Architecture Management Tool** |
-| Short name (menus, window title, tight spaces) | **Architecture Management Tool** |
+| Product name | **Lionsville Architect** |
+| Short name (menus, window title, tight spaces) | **Lionsville Architect** — one name, short enough for all of them |
+| Desktop `userData` folder | `Lionsville Architecture Management Tool` — **frozen** at the name the product had when those folders were made, so a rename does not move everybody's preferences (`platform/userData.ts`, pinned in `electron/main/index.ts`) |
 | Working-file extension | **`.lvarch`** |
 | Working-file discriminator (in `scope.json`) | `lionsville-architecture` |
 | npm package name | `lionsville-architecture-management-tool` |

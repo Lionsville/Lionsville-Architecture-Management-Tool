@@ -15,7 +15,7 @@ import {
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const COMMITTED = readFileSync(new URL('../THIRD-PARTY-NOTICES.md', import.meta.url), 'utf8')
-const PRODUCT = 'The Lionsville Architecture Management Tool'
+const PRODUCT = 'Lionsville Architect'
 
 describe('what counts as shipped source', () => {
   it('is everything but the tests and their helpers', () => {

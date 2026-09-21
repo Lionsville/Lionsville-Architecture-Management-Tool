@@ -74,7 +74,7 @@ export type ServerIdentity = { name: string; version: string }
 
 /** The one sentence a client is handed on connect, so it knows what it is talking to. */
 export const INSTRUCTIONS =
-  'This is the Lionsville Architecture Management Tool, running on the person\'s screen. It holds an '
+  'This is Lionsville Architect, running on the person\'s screen. It holds an '
   + 'organisation of scopes, each with views (boards, business sheets, enterprise maps, technology '
   + 'landscapes), records, decisions and plans; one scope at a time is open in the workspace, or a scope\'s '
   + 'home screen is up with nothing open. Start with app.current to see where the app is, scopes.list and '

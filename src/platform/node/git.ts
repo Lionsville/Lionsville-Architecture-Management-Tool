@@ -88,7 +88,7 @@ const SYNC_TIMEOUT_MS = 90_000
 const MAX_OUTPUT = 64 * 1024 * 1024
 
 /** Who a snapshot is by, when the machine has nobody configured. */
-const FALLBACK_NAME = 'Architecture Management Tool'
+const FALLBACK_NAME = 'Lionsville Architect'
 const FALLBACK_EMAIL = 'noreply@lionsville.nl'
 
 /** What the merge commit of *keep ours* says. English: it is a git message, not UI. */

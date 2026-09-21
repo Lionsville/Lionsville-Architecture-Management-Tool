@@ -55,6 +55,12 @@ const signWin = Object.values(azure).every(Boolean)
 
 // The product's name is package.json's, which main reads too for the app
 // menu: one place, so About <name> and the bundle cannot disagree.
+//
+// This is a *display* name and may be changed. What it must not drag with it is
+// `userData`, which Electron would otherwise derive from it — every install's
+// preferences, recents, update settings and agent token live in a folder named
+// after whatever this said when they were made. Main pins that path instead
+// (`src/platform/userData.ts`), so a rename here costs nobody their settings.
 const { productName } = require('./package.json')
 
 module.exports = {

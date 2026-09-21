@@ -3,6 +3,8 @@
 *What has landed on `main` since 2.3.0 that a user would notice, in the user's
 words. Pasted into the GitHub release when it is cut, and emptied then.*
 
+**The app is called Lionsville Architect.** The window, the menus, the About box and the installers all say the new name. Nothing else changed: your folders, your files and your settings are where they were, and this version opens them exactly as the last one did.
+
 **Observations, and what lies behind them.** *Observations* on the bar, and a card on every scope's home, opens a register of what the team saw — numbered, dated, where, how much it matters, how often it has been seen — with the record beside it. *Seen again* counts one more and writes the day into the record's history. Two observations that turn out to be the same are merged, with the sightings and the history kept on both records. An observation is local unless you share it; shared, every scope above reads it, may link it to a cause of its own and may merge it into one of its own — changed where it lives, as every record is.
 
 **Analysed, as a team, into causes.** *Link to a cause…* names what lies behind an observation, existing or new, with the strength of the relationship; *Link to a deeper cause…* does the same one level further. A cause starts assumed and is marked verified once checked; a cause nobody explains is a root cause, and stops being one the moment a deeper cause is linked. The *Analysis* tab draws it: observations on the left as circles sized by impact and tinted by how often they were seen, causes in lanes, root causes on the right, and the weight of each line the strength of the link. The seam between the register or the picture and the reading pane is dragged to give either more room.

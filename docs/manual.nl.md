@@ -1,8 +1,7 @@
 # Gebruikershandleiding
 
-De Lionsville Architecture Management Tool tekent een applicatielandschap in
-Layer 7-banden en de C4-containerdiagrammen eronder. Dit is de handleiding
-voor het gebruik. Wat het is en waarom het bestaat staat in de
+Lionsville Architect tekent een applicatielandschap in Layer 7-banden en de
+C4-containerdiagrammen eronder. Dit is de handleiding voor het gebruik. Wat het is en waarom het bestaat staat in de
 [README](../README.md); deze handleiding is er ook in het
 [Engels](manual.en.md), het [Fries](manual.fy.md) en het [Duits](manual.de.md).
 

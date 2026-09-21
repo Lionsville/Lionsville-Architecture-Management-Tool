@@ -516,7 +516,7 @@ function fatal(during: string, error: unknown): void {
   log('main', `failed while ${during}: ${detail}`)
   if (UNATTENDED) { app.exit(1); return }
   dialog.showErrorBox(
-    'The Architecture Management Tool could not start.',
+    'Lionsville Architect could not start.',
     `It failed while ${during}.\n\n${detail}\n\nDiagnostics: ${logFilePath()}`,
   )
 }

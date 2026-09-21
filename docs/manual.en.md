@@ -1,8 +1,7 @@
 # User manual
 
-The Lionsville Architecture Management Tool draws an application landscape in
-Layer-7 bands and the C4 container diagrams underneath it. This is the manual
-for using it. What it is and why it exists is in the [README](../README.md);
+Lionsville Architect draws an application landscape in Layer-7 bands and the
+C4 container diagrams underneath it. This is the manual for using it. What it is and why it exists is in the [README](../README.md);
 this manual is also in [Dutch](manual.nl.md), [Frisian](manual.fy.md) and
 [German](manual.de.md).
 

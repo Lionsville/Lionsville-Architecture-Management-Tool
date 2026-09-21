@@ -224,7 +224,7 @@ export function noticesFor(root: string, sourceRoots = ['src', 'electron']): Pac
 // `node build/thirdPartyNotices.ts [--check]`, from the repository root.
 if (process.argv[1]?.endsWith('thirdPartyNotices.ts')) {
   const target = 'THIRD-PARTY-NOTICES.md'
-  const product = 'The Lionsville Architecture Management Tool'
+  const product = 'Lionsville Architect'
   const generated = renderNotices(noticesFor(process.cwd()), product)
   if (process.argv.includes('--check')) {
     const current = readFileSync(target, 'utf8')

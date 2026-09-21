@@ -1,8 +1,7 @@
 # Brûkershantlieding
 
-De Lionsville Architecture Management Tool tekenet in applikaasjelânskip yn
-Layer 7-bannen en de C4-containerdiagrammen dêrûnder. Dit is de hantlieding
-foar it brûken derfan. Wat it is en wêrom't it bestiet stiet yn de
+Lionsville Architect tekenet in applikaasjelânskip yn Layer 7-bannen en de
+C4-containerdiagrammen dêrûnder. Dit is de hantlieding foar it brûken derfan. Wat it is en wêrom't it bestiet stiet yn de
 [README](../README.md); dizze hantlieding is der ek yn it
 [Ingelsk](manual.en.md), it [Nederlânsk](manual.nl.md) en it
 [Dútsk](manual.de.md).
