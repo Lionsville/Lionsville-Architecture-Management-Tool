@@ -94,11 +94,13 @@ export type OrganisationScreenProps = {
    * The sentence the source's own provider gives for where work is kept, as the
    * key of its own string (`platform/sourceProvider.ts`'s `describeKey`).
    *
-   * The chip that names the source says one when you hover it, and there is one
-   * per built-in kind because this tree knows what a folder and a browser's
-   * storage cost you. For a registered source only the provider knows, so this
-   * is its answer — and where it has none the chip says nothing at all rather
-   * than a sentence of ours about somewhere this shell has never heard of.
+   * Read in two places on this screen: the chip that names the source says it
+   * when you hover it, and the subtitle under the heading says it to everybody.
+   * There is one per built-in kind because this tree knows what a folder and a
+   * browser's storage cost you. For a registered source only the provider
+   * knows, so this is its answer — and where it has none both places say
+   * nothing at all rather than a sentence of ours about somewhere this shell
+   * has never heard of.
    */
   sourceDescription?: StringKey | (string & {})
   onChooseWorkingDirectory?: () => void
@@ -357,11 +359,7 @@ export function OrganisationScreen({
               explanation. */}
           {atRoot && (
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1, maxWidth: 720 }} data-testid="organisation-subtitle">
-              {s('org.subtitle', {
-                where: s(source?.kind === 'folder'
-                  ? 'org.whereFolder'
-                  : source?.kind === 'memory' ? 'org.whereMemory' : 'org.whereBrowser'),
-              })}
+              {[whereSaid(source, sourceDescription, s), s('org.subtitle')].filter(Boolean).join(' ')}
             </Typography>
           )}
 
@@ -782,6 +780,34 @@ function tipFor(
 ): string {
   const key = sourceTipKey(source, describeKey)
   return key === undefined ? '' : s(key as StringKey)
+}
+
+/**
+ * The subtitle's first sentence: where work is kept, or nothing.
+ *
+ * The second place on this screen that says it, the chip's tooltip being the
+ * first, and it follows the same rule for the same reason. A clause per
+ * built-in kind, because this tree knows what a folder and a browser's storage
+ * are; for a registered source the provider's own sentence (`describeKey`, from
+ * its own table), whole rather than folded into a clause of ours, because a
+ * sentence about somewhere this shell has never heard of is the provider's to
+ * write. Where it gave none the clause is dropped and the subtitle says what it
+ * can say truthfully: what a domain and a landscape below are.
+ *
+ * A source that is not there yet reads as the browser's storage, which is what
+ * a tab with no source is working from.
+ */
+function whereSaid(
+  source: WorkingSource | undefined, describeKey: StringKey | (string & {}) | undefined, s: Translate,
+): string {
+  if (source?.kind === 'registered') {
+    return describeKey === undefined ? '' : s(describeKey as StringKey)
+  }
+  return s('org.subtitleWhere', {
+    where: s(source?.kind === 'folder'
+      ? 'org.whereFolder'
+      : source?.kind === 'memory' ? 'org.whereMemory' : 'org.whereBrowser'),
+  })
 }
 
 /**

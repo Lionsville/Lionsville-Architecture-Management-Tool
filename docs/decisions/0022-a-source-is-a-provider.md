@@ -438,7 +438,11 @@ they were, and nothing above any of them is edited.
   `connect.labelKey` and is read the same way — the provider's key, from the table
   it registered — and where a provider gives none the chip says nothing at all.
   The generic sentence is gone from the four tables rather than kept as a
-  fallback, because a fallback is the guess under another name.
+  fallback, because a fallback is the guess under another name. The home's
+  **subtitle** is the second place that says it, and it reads `describeKey` the
+  same way: it chose its clause by kind and fell through to *in this browser*
+  for a source that is not the browser, and where a provider gives no sentence
+  the clause is dropped rather than guessed at.
 
 `composition.test.tsx` covers the two the registry answers for — every provider
 that draws one listed and only those, a chrome held before that provider has

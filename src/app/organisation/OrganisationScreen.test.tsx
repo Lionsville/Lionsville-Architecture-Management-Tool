@@ -16,6 +16,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { registerStrings } from '../../i18n'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { EXAMPLES } from '../examples'
@@ -391,6 +392,44 @@ describe('the organisation screen — a fresh folder', () => {
     expect(screen.getByRole('button', { name: 'New domain or landscape…' })).toBeDefined()
     // Nothing to attend to, so no block at all — not an empty heading.
     expect(screen.queryByTestId('needs-attention')).toBeNull()
+  })
+
+  /**
+   * And the where-clause is the provider's own words for a registered source.
+   *
+   * It used to fall through the two built-in kinds it knew to the browser's
+   * storage, so a build composed from this one showed *Everything here is kept
+   * in this browser* about a source that is not the browser — the one sentence
+   * on this screen a reader has no way to check.
+   */
+  it('says where work is kept in the provider’s own sentence for a registered source', async () => {
+    registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
+    renderApp({
+      scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]),
+      today: TODAY,
+      source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
+      sourceDescription: 'elsewhere.kept',
+    })
+    const subtitle = await screen.findByTestId('organisation-subtitle')
+    expect(subtitle.textContent).toContain('Your work is kept elsewhere, and elsewhere says when.')
+    expect(subtitle.textContent).not.toContain('in this browser')
+    // The rest of the sentence is this screen's own, and is still said.
+    expect(subtitle.textContent).toContain('Each domain and landscape below is a scope of its own')
+  })
+
+  /**
+   * And nothing at all where the provider gave no sentence: a guess of ours
+   * about somewhere this shell has never heard of could promise a copy that
+   * cannot be made, which is the rule the chip's tooltip already follows.
+   */
+  it('drops the clause where a registered source’s provider gave no sentence', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]),
+      today: TODAY,
+      source: { kind: 'registered', provider: 'nowords', name: 'Elsewhere', key: 'one' },
+    })
+    const subtitle = await screen.findByTestId('organisation-subtitle')
+    expect(subtitle.textContent).toBe('Each domain and landscape below is a scope of its own, with its own boards, pages and decisions.')
   })
 
   // Copying the shipped example is the heaviest thing this file does: every
