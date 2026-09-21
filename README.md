@@ -27,15 +27,15 @@ marketplace partner's beside the common path, and the areas that serve it.*
 ## Download
 
 <p align="center">
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v2.3.0/lionsville-architecture-management-tool-2.3.0-mac-arm64.dmg"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/macos-dark.svg"><img src="docs/download/macos.svg" width="220" alt="macOS: Download .dmg"></picture></a>
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v3.0.0/lionsville-architecture-management-tool-3.0.0-mac-arm64.dmg"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/macos-dark.svg"><img src="docs/download/macos.svg" width="220" alt="macOS: Download .dmg"></picture></a>
 &nbsp;
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v2.3.0/lionsville-architecture-management-tool-2.3.0-win-x64.exe"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/windows-dark.svg"><img src="docs/download/windows.svg" width="220" alt="Windows: Download .exe"></picture></a>
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v3.0.0/lionsville-architecture-management-tool-3.0.0-win-x64.exe"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/windows-dark.svg"><img src="docs/download/windows.svg" width="220" alt="Windows: Download .exe"></picture></a>
 &nbsp;
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v2.3.0/lionsville-architecture-management-tool-2.3.0-linux-amd64.deb"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/linux-dark.svg"><img src="docs/download/linux.svg" width="220" alt="Linux: Download .deb"></picture></a>
+<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v3.0.0/lionsville-architecture-management-tool-3.0.0-linux-amd64.deb"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/linux-dark.svg"><img src="docs/download/linux.svg" width="220" alt="Linux: Download .deb"></picture></a>
 </p>
 
 <p align="center"><b><a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest">More details →</a></b><br>
-<sub>Version 2.3.0 · the release page also has a Windows ARM64 installer, a Linux AppImage and the notes.</sub></p>
+<sub>Version 3.0.0 · the release page also has a Windows ARM64 installer, a Linux AppImage and the notes.</sub></p>
 
 The desktop app checks that release page for a newer version in the background —
 switchable off, and **Check for Updates…** in the Help menu asks on request. It
