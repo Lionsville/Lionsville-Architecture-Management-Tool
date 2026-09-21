@@ -26,6 +26,7 @@ import { readFile } from 'node:fs/promises'
 import { installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
+import { USER_DATA_NAME } from '../../src/platform/userData'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { contentSecurityPolicy, pageOrigins } from './csp'
 import { hookOrigins } from '../../src/platform/desktopHook'
@@ -216,6 +217,23 @@ const RENDERER_LOG_PREFIX = '[lvarch]'
 const UNATTENDED = process.argv.includes('--smoke')
 
 /**
+ * `userData` is pinned, so that renaming the product does not move it.
+ *
+ * Electron's default is `appData/<app name>`, and the app name is the bundle's
+ * `productName` — so the folder every install already keeps its preferences,
+ * its remembered working folder, its recent list, its update settings and the
+ * agent's kept port and token in is named after whatever the product was
+ * called when it was installed. Let that follow a rename and none of it fails
+ * loudly: the new build simply looks in an empty folder and asks the person to
+ * start again. `platform/userData` holds the name those folders actually have
+ * and says why it may not change.
+ *
+ * Here rather than anywhere else because this is before `whenReady` — the only
+ * moment a path can be set — and before the first thing that reads one.
+ */
+app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))
+
+/**
  * The smoke run keeps its own `userData`, and therefore its own preferences.
  *
  * `userData` is where Chromium puts localStorage, which is where the renderer
@@ -229,7 +247,8 @@ const UNATTENDED = process.argv.includes('--smoke')
  * is a gate that reports something different on the second run: the migration
  * step counts what it copied, and a run after a run has nothing left to copy.
  *
- * Before `whenReady`, which is the only moment a path can be set.
+ * Before `whenReady`, which is the only moment a path can be set, and after
+ * the pin above, which it deliberately overrides.
  */
 if (UNATTENDED) {
   const own = join(tmpdir(), 'lvarch-smoke-userdata')

@@ -34,13 +34,14 @@
  * read — an empty answer there is the exact symptom the switch tests exist to
  * catch.
  */
-import { Menu } from 'electron'
+import { app, Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { productName } from '../../package.json'
 import { sendCommand } from './appMenu'
 import { grantDirectory } from './files'
 import { logFilePath } from './log'
 import { SCOPE_FORMAT_VERSION } from '../../src/platform/scopeHeader'
+import { USER_DATA_NAME } from '../../src/platform/userData'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 
 export type SmokeResult = { name: string; ok: boolean; detail: string }
@@ -253,6 +254,23 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       if (!edit.includes(want)) throw new Error(`no "${want}" in Edit: ${edit.join(' · ')}`)
     }
     return `${labels.join(' · ')}; Help: ${help.join(' · ')}`
+  }))
+
+  // The name on screen is allowed to change; the folder a person's preferences,
+  // their recent list, their update settings and the agent's token already sit
+  // in is not (`platform/userData`). Asked of a real Electron, because the thing
+  // that would break it — Electron deriving `userData` from `app.getName()` — is
+  // Electron's own behaviour and not ours. This run has a userData of its own,
+  // so what is checked is that the two names are still deliberately apart.
+  results.push(await checkHere('the folder a person keeps things in does not follow the product name', async () => {
+    if (app.getName() !== productName) {
+      throw new Error(`the app is named "${app.getName()}", not "${productName}"`)
+    }
+    const kept = join(app.getPath('appData'), USER_DATA_NAME)
+    if (basename(kept) === app.getName()) {
+      throw new Error('userData is named after the product; the next rename moves every install')
+    }
+    return `${app.getName()} keeps things in ${basename(kept)}`
   }))
 
   results.push(await check(window, 'origin is a standard app:// scheme', `
