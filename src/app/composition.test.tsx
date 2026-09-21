@@ -12,13 +12,23 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { DesktopFiles } from '../adapters/desktop/channel'
 import { DEFAULT_LOCAL_SETTINGS } from '../projects/folderSettings'
+import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   inWorkingDirectory, openSource, registerSourceProvider, registeredConnects, sourceProvider,
-  type FolderOpening, type Shell, type SourceParts,
+  type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
+
+/**
+ * The shell's own side of opening a source, as little of it as a test needs:
+ * somewhere to report, and nothing to reuse unless the case is about that.
+ */
+function opening(shell?: Shell): SourceBase & { diagnostics: RecordingDiagnostics } {
+  return { diagnostics: new RecordingDiagnostics(), shell }
+}
 
 function channel(): DesktopFiles {
   return {
@@ -157,7 +167,7 @@ describe('registerSourceProvider', () => {
     expect(found?.connect?.labelKey).toBe('elsewhere.connect')
     expect(found?.statusOf?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
     expect(found?.statusOf?.({ status: 'saving', editedWhileSaving: false })).toBe('saving')
-    expect(found?.open({ name: 'Elsewhere' }).source)
+    expect(found?.open({ name: 'Elsewhere' }, opening()).source)
       .toEqual({ kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'Elsewhere', readOnly: true })
   })
 
@@ -191,7 +201,7 @@ describe('openSource', () => {
       }),
     })
 
-    const parts = openSource('measured', { name: 'Measured' })
+    const parts = openSource('measured', { name: 'Measured' }, opening())
 
     expect(parts.source).toEqual({ kind: 'registered', provider: 'measured', name: 'Measured', key: 'Measured' })
     expect(parts.sourceStatus?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
@@ -199,7 +209,7 @@ describe('openSource', () => {
 
   /** A folder means what a file means, and says so by bringing no `statusOf`. */
   it('leaves the answer undefined where the provider has none', () => {
-    expect(openSource('memory', undefined).sourceStatus).toBeUndefined()
+    expect(openSource('memory', undefined, opening()).sourceStatus).toBeUndefined()
   })
 
   /**
@@ -207,7 +217,54 @@ describe('openSource', () => {
    * save it is a lost document.
    */
   it('refuses a kind nobody registered', () => {
-    expect(() => openSource('nowhere', undefined)).toThrow(/nowhere/)
+    expect(() => openSource('nowhere', undefined, opening())).toThrow(/nowhere/)
+  })
+})
+
+/**
+ * What the shell hands over from its own side, which used to be nothing.
+ *
+ * A provider had the console to report to and nothing of this shell to reuse,
+ * so the honest thing for it to do was compose a second preferences store, a
+ * second document gateway and a second browser store — three decisions this
+ * file exists to make once, made twice in one window.
+ */
+describe('what a provider is handed besides its own opening', () => {
+  const handed: SourceProvider<SourceParts, void, SourceBase> = {
+    kind: 'handed',
+    open: (_nothing, base) => {
+      base.diagnostics.report({ level: 'info', where: 'source', message: 'shook hands' })
+      return {
+        scopes: new InMemoryScopeStore(),
+        // The whole point of being handed the shell: the language, the theme
+        // and which folder this machine uses stay where they were.
+        preferences: base.shell?.preferences,
+        source: { kind: 'registered', provider: 'handed', name: 'Handed', key: 'one' },
+      }
+    },
+  }
+  registerSourceProvider(handed)
+
+  it('reports into the trail the app already keeps, not into the console', () => {
+    const base = opening()
+    openSource('handed', undefined, base)
+    expect(base.diagnostics.messages()).toEqual(['shook hands'])
+  })
+
+  it('is given the shell as it stands, so a provider reuses its seams', () => {
+    // As much of a shell as this provider reads, which is the one seam a
+    // folder deliberately leaves where it was.
+    const shell = { ...({} as Shell), preferences: new InMemoryPreferencesStore() }
+    expect(openSource('handed', undefined, opening(shell)).preferences).toBe(shell.preferences)
+  })
+
+  /**
+   * The one opening with no shell in it, because there is none yet: what
+   * `composeShell` would hand over is the shell it is building out of what this
+   * provider answers.
+   */
+  it('has no shell to give at the first compose, and says so by leaving it out', () => {
+    expect(openSource('handed', undefined, opening()).preferences).toBeUndefined()
   })
 })
 

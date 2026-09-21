@@ -163,13 +163,29 @@ export type SourceWayIn = {
  * `Parts` is what opening it produces — the composition root's `Shell`, or the
  * parts of one it replaces. `Opening` is what this provider needs to be given
  * to do it, which only it understands: a directory handle, a name, a channel.
- * A provider that needs nothing takes nothing.
+ * A provider that needs nothing takes nothing. `Base` is what the shell hands
+ * over from its own side, and is generic for the reason `Parts` is: a shell is
+ * the composition root's word, and nothing down here may learn it. It defaults
+ * to `unknown` rather than to nothing, so the three that ship — which declare
+ * their own type and read none of it — are written exactly as they were.
  */
-export type SourceProvider<Parts, Opening = void> = {
+export type SourceProvider<Parts, Opening = void, Base = unknown> = {
   /** The kind this provider answers for, as `WorkingSource` spells it. */
   readonly kind: string
-  /** What working from this source gives the shell. */
-  open(opening: Opening): Parts
+  /**
+   * What working from this source gives the shell, from what this source was
+   * given and from the shell it is opening into.
+   *
+   * `base` is that shell's own side of the handshake — the trail it keeps and
+   * the seams it has already filled (`composition.ts` says which). A provider
+   * that replaces the store has no reason to compose a second preferences
+   * store, a second document gateway or a second browser store, and one that
+   * did would be a build in which the language, the theme and the *Save as…*
+   * dialog quietly stopped being the app's. It is also where a failure of its
+   * own goes: a provider reporting to the console reports somewhere the crash
+   * page cannot hand over.
+   */
+  open(opening: Opening, base: Base): Parts
   /** How a person reaches it, where there is a way in. */
   readonly connect?: SourceConnect<Opening>
   /**

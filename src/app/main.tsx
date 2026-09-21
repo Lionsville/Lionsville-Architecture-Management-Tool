@@ -179,7 +179,11 @@ let recentFolders: readonly DesktopDirectory[] = []
  * here would be this file keeping a fact it cannot check.
  */
 function workFrom(kind: string, opening: unknown): boolean {
-  const parts = openSource(kind, opening)
+  // The shell as it stands, before this source's parts are spread over it: the
+  // trail to report on, and the seams already filled — a provider that replaces
+  // the store has no business composing a second preferences store or a second
+  // *Save as…* dialog, and this is what it reuses instead.
+  const parts = openSource(kind, opening, { diagnostics: shell.diagnostics, shell })
   // The preferences are read before the first render and the scopes right after
   // it, so a source that brought neither is not one this boot can use — said
   // here rather than discovered as an empty screen.

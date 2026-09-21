@@ -207,11 +207,37 @@ export type Shell = {
 export type SourceParts = Partial<Omit<Shell, 'source'>> & Pick<Shell, 'source'>
 
 /**
+ * The shell's own side of opening a source: what a provider is handed besides
+ * the opening it asked for.
+ *
+ * Two things, and both of them were reachable from inside this file and from
+ * nowhere else. A provider that has to report a failure had the console and
+ * nothing better — which is the one place the crash page cannot hand over, so a
+ * source that would not open left no trail in the thing the user is invited to
+ * copy. And a provider that replaces the store had no way to reuse the seams
+ * this shell has already filled, so the honest thing for it to do was compose a
+ * second preferences store, a second document gateway and a second browser
+ * store — three decisions this file exists to make once.
+ *
+ * `shell` is the shell as it stands BEFORE this provider's parts are spread
+ * over it, which is what makes it safe to read: nothing in it is the provider's
+ * own answer coming back at it. It is absent in exactly one place, and
+ * {@link composeShell} says why — the first compose has no shell yet, because
+ * the shell being built there is the one this source brings the stores for.
+ */
+export type SourceBase = {
+  /** The trail the app already keeps. `diagnostics.report`, and nothing else. */
+  readonly diagnostics: Diagnostics
+  /** What this source is opening into, where there is one. */
+  readonly shell?: Shell
+}
+
+/**
  * Every kind of place this build can work from, by the kind it registered
  * under. A live map rather than a snapshot: registration happens at module
  * load and the lookups below run at the boot, long after.
  */
-const SOURCE_PROVIDERS = new Map<string, SourceProvider<SourceParts, never>>()
+const SOURCE_PROVIDERS = new Map<string, SourceProvider<SourceParts, never, SourceBase>>()
 
 /**
  * Teach this build a kind of place work can be kept.
@@ -222,20 +248,20 @@ const SOURCE_PROVIDERS = new Map<string, SourceProvider<SourceParts, never>>()
  * safe, and a build cannot quietly take over the folder.
  */
 export function registerSourceProvider<Opening>(
-  provider: SourceProvider<SourceParts, Opening>,
+  provider: SourceProvider<SourceParts, Opening, SourceBase>,
 ): void {
   if (SOURCE_PROVIDERS.has(provider.kind)) return
   // The one cast in this registry, and it is where the type is genuinely lost:
   // what a provider needs to be given is its own, the map holds every kind at
   // once, and only the caller that asks for a kind knows which. `sourceProvider`
   // below hands the knowledge back, which is why nothing else has to.
-  SOURCE_PROVIDERS.set(provider.kind, provider as SourceProvider<SourceParts, never>)
+  SOURCE_PROVIDERS.set(provider.kind, provider as SourceProvider<SourceParts, never, SourceBase>)
 }
 
 /** Who answers for a kind of source, or nobody. */
 export function sourceProvider<Opening = void>(
   kind: string,
-): SourceProvider<SourceParts, Opening> | undefined {
+): SourceProvider<SourceParts, Opening, SourceBase> | undefined {
   return SOURCE_PROVIDERS.get(kind)
 }
 
@@ -251,13 +277,20 @@ export function sourceProvider<Opening = void>(
  * restating a rule of this file badly — the day a third thing travels with a
  * provider's parts, every such composer is quietly one field short and the bar
  * says the wrong word about somebody's unsaved work.
+ *
+ * `base` is not optional, for the same kind of reason: a composer that left it
+ * out would be handing a provider a source with nowhere to report and nothing
+ * of this shell to reuse, and it would find that out the first time something
+ * went wrong there. {@link SourceBase} says what belongs in it.
  */
-export function openSource<Opening>(kind: string, opening: Opening): SourceParts {
+export function openSource<Opening>(
+  kind: string, opening: Opening, base: SourceBase,
+): SourceParts {
   const provider = sourceProvider<Opening>(kind)
   // The boot, in the one file that chose the kind. A wiring mistake found here
   // is a wiring mistake; found at the first save it is a lost document.
   if (!provider) throw new Error(`no source provider is registered for '${kind}'`)
-  return { ...provider.open(opening), sourceStatus: provider.statusOf }
+  return { ...provider.open(opening, base), sourceStatus: provider.statusOf }
 }
 
 /**
@@ -304,7 +337,12 @@ function keeper(kind: string, parts: SourceParts): ScopeStore {
 export function composeShell(): Shell {
   const storage = browserStorage()
   const kind = storage ? 'browserStorage' : 'memory'
-  const kept = openSource(kind, storage)
+  const diagnostics = new ConsoleDiagnostics()
+  // The one opening with no shell to hand over, and it cannot have one: the
+  // shell a provider would be given here is the shell being built out of what
+  // it answers. The trail is the half that does exist, and it is the half a
+  // fallback source could conceivably have something to say to.
+  const kept = openSource(kind, storage, { diagnostics })
   return {
     ...kept,
     scopes: keeper(kind, kept),
@@ -312,7 +350,7 @@ export function composeShell(): Shell {
     // render — so a source that brought none is not a shell this boot can use.
     preferences: kept.preferences ?? failNoPreferences(kind),
     documents: new BrowserDocumentGateway(),
-    diagnostics: new ConsoleDiagnostics(),
+    diagnostics,
     hostControls: browserHostControls(),
     // The one desktop seam that does not wait for a folder: it is about this
     // install, not about where the projects are.
@@ -392,7 +430,10 @@ export const browserFolders = {
 function overFolder(
   shell: Shell, handle: DirectoryHandleLike, name: string, root = name,
 ): Shell {
-  const kept = openSource('folder', { handle, name, root })
+  // The shell this folder is opening into, before its own parts are spread over
+  // it: the preferences stay where they were (see below), so what a provider in
+  // its place would reuse is exactly what this line leaves alone.
+  const kept = openSource('folder', { handle, name, root }, { diagnostics: shell.diagnostics, shell })
   return { ...shell, ...kept, scopes: keeper('folder', kept) }
 }
 
