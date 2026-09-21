@@ -105,6 +105,19 @@ export const EN = {
   'seal.wrong': 'That is not the password this file was sealed under, or the file is damaged.',
   'seal.confirmSet': 'Save',
   'seal.confirmEnter': 'Open',
+  /**
+   * Where a working file goes (ADR-0025): a folder of its own, or over what
+   * is open here — said before anything is written, every time.
+   */
+  'openInto.title': 'Where should “{name}” go?',
+  'openInto.body': 'A working file is a whole organisation. It can become a working folder of its own, or replace what is open here.',
+  'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. What is there now is kept only where the folder has a snapshot.',
+  'openInto.here': 'Replace “{scope}” here',
+  'openInto.newFolder': 'A new folder…',
+  'openInto.unnamedHere': 'the working folder',
+  'openInto.occupiedTitle': 'This folder is not empty',
+  'openInto.occupiedBody': 'The folder already holds “{name}”. Opening the file there writes over it.',
+  'openInto.occupiedConfirm': 'Replace',
   'shell.workingFileLoaded': 'Working file “{name}” loaded.',
   'shell.workingSetLoaded': 'Working file “{name}” loaded, with {count} scopes filed under it.',
   'shell.workingSetNotHere': 'This file holds a whole working set, which can only be opened into a working folder.',

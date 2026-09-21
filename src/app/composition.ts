@@ -28,6 +28,7 @@
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
 import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
+import type { ScopeSnapshot } from '../projects/scope'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../adapters/browser/workingDirectory'
@@ -614,6 +615,33 @@ export type FolderOpening = {
   handle: DirectoryHandleLike
   name: string
   root: string
+}
+
+/**
+ * A folder a working file may become (ADR-0025): chosen with the same picker
+ * as *Open Folder…*, looked at before anything is written — a name, a scope
+ * or a board in it is "occupied", and the shell asks again before writing
+ * over one — and written scope by scope, shallowest first, the way a file's
+ * scopes are answered. Moving the app there is the boot's, which owns the
+ * shell; this only knows the store.
+ */
+export type FolderDestination = {
+  opening: FolderOpening
+  occupied: boolean
+  place(scopes: readonly ScopeSnapshot[]): Promise<void>
+}
+
+export async function chooseFolderDestination(): Promise<FolderDestination | undefined> {
+  const opening = await chooseFolderOpening()
+  if (!opening) return undefined
+  const store = new FileSystemScopeStore(opening.handle)
+  const listed = await store.list()
+  const occupied = listed.name.trim() !== '' || listed.children.length > 0 || listed.diagrams > 0
+  return {
+    opening,
+    occupied,
+    place: async (scopes) => { for (const scope of scopes) await store.save(scope) },
+  }
 }
 
 /**

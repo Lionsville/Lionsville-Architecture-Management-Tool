@@ -132,6 +132,8 @@ describe('commands from the host', () => {
     await enter('incorrect horse')
     await waitFor(() => expect(screen.getByText(/not the password/)).toBeDefined())
     await enter('correct horse')
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-here'))
     await waitFor(() => expect(screen.getByText('From a colleague')).toBeDefined())
   })
 
@@ -145,6 +147,8 @@ describe('commands from the host', () => {
       bytes: workingFileBytes([{ ...project('From a colleague'), path: '' }]),
     })
 
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-here'))
     await waitFor(async () => expect((await view.projects.load(''))?.model.name).toBe('From a colleague'))
   })
 
@@ -212,7 +216,7 @@ describe('commands from the host', () => {
     })
   })
 
-  it('a document from the OS is opened into the project that is open', async () => {
+  it('a document from the OS asks where it goes, and replaces the open scope only on "here"', async () => {
     const view = show()
     view.send({
       type: 'openDocument',
@@ -220,7 +224,57 @@ describe('commands from the host', () => {
       bytes: workingFileBytes([project('From a colleague')]),
     })
 
+    // The warning names what replacing writes over (ADR-0025).
+    await waitFor(() => expect(screen.getByText(/writes over “Landscape”/)).toBeDefined())
+    expect(screen.queryByText('From a colleague')).toBeNull()
+    fireEvent.click(screen.getByTestId('open-into-here'))
     await waitFor(() => expect(screen.getByText('From a colleague')).toBeDefined())
+  })
+
+  it('a cancelled landing writes nothing and says nothing', async () => {
+    const view = show()
+    view.send({
+      type: 'openDocument', name: 'theirs.lvarch', bytes: workingFileBytes([project('From a colleague')]),
+    })
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    fireEvent.click(screen.getByText('Cancel'))
+    await waitFor(() => expect(screen.queryByTestId('open-into-here')).toBeNull())
+    expect((await view.projects.load('acme/landscape'))?.model.name).toBe('Landscape')
+    expect(screen.queryByText('From a colleague')).toBeNull()
+  })
+
+  it('a new folder is offered where one can be chosen, checked for what it holds, and written with the file at its root', async () => {
+    const placed: string[][] = []
+    const view = show({
+      onChooseFolderForWorkingFile: () => Promise.resolve({
+        name: 'Elsewhere',
+        occupied: true,
+        place: (scopes) => { placed.push(scopes.map((scope) => scope.path)); return Promise.resolve() },
+      }),
+    })
+    view.send({
+      type: 'openDocument',
+      name: 'theirs.lvarch',
+      bytes: workingFileBytes([{ ...project('From a colleague'), path: 'org' }, { ...project('Under it'), path: 'org/retail' }]),
+    })
+    await waitFor(() => expect(screen.getByTestId('open-into-folder')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-folder'))
+
+    // Not empty: a second yes before anything is written there.
+    await waitFor(() => expect(screen.getByText(/already holds “Elsewhere”/)).toBeDefined())
+    fireEvent.click(screen.getByText('Replace'))
+    await waitFor(() => expect(placed).toEqual([['', 'retail']]))
+    // And nothing here was touched.
+    expect((await view.projects.load('acme/landscape'))?.model.name).toBe('Landscape')
+  })
+
+  it('offers no folder where none can be chosen', async () => {
+    const view = show()
+    view.send({
+      type: 'openDocument', name: 'theirs.lvarch', bytes: workingFileBytes([project('From a colleague')]),
+    })
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    expect(screen.queryByTestId('open-into-folder')).toBeNull()
   })
 
   it('Open Folder… asks the shell, which is the only layer that can', () => {

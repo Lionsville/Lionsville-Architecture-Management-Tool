@@ -46,9 +46,10 @@ import { configureElkWorker, configureLibavoidWasm, configureLibavoidWorker } fr
 import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
-  browserFolders, composeShell, desktopCommandChannel, desktopFileChannel, inBrowserFolder,
-  inWorkingDirectory, openSource, registeredChrome, registeredConnects, sourceDescription,
+  browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
+  inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects, sourceDescription,
 } from './composition'
+import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
 import type { SourceWayIn } from '../platform/sourceProvider'
 import {
@@ -354,6 +355,29 @@ async function openBrowserFolder(): Promise<void> {
     shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'no folder was chosen' })
     return
   }
+  await openBrowserFolderWith(handle)
+}
+
+/**
+ * A folder a working file just became (ADR-0025): chosen and written by the
+ * composition, moved into here the way *Open Folder…* moves — the desktop's
+ * route and the browser's, whichever this host has.
+ */
+async function chooseFolderForWorkingFile(): Promise<WorkingFileDestination | undefined> {
+  const found = await chooseFolderDestination()
+  if (!found) return undefined
+  return {
+    name: found.opening.name,
+    occupied: found.occupied,
+    place: async (scopes) => {
+      await found.place(scopes)
+      if (files) await workIn({ root: found.opening.root, name: found.opening.name })
+      else await openBrowserFolderWith(found.opening.handle)
+    },
+  }
+}
+
+async function openBrowserFolderWith(handle: Parameters<typeof inBrowserFolder>[1] & { name: string }): Promise<void> {
   // The trail says where a pick got to, because "nothing happened" has been
   // reported and a folder's name is not the folder's content.
   shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'a folder was chosen' })
@@ -637,6 +661,9 @@ function renderApp(
         waysIn={waysIn}
         needsFolder={Boolean(files)}
         onOpenWorkingDirectory={files ? openWorkingDirectory : undefined}
+        onChooseFolderForWorkingFile={
+          files || browserFolders.possible() ? chooseFolderForWorkingFile : undefined
+        }
         recentFolders={recentFolders}
         watchProject={shell.watchProject}
         commands={commands?.on}

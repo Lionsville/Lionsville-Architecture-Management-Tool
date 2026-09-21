@@ -28,6 +28,7 @@ import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel, ProjectFiles } from './useProjectFiles'
 import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
+import type { LandingPrompts } from './workingFileFlows'
 
 afterEach(() => cleanup())
 
@@ -60,6 +61,11 @@ function fakeSession() {
 /** The dialog, answered without a person: the same password every time. */
 const PASSWORD = 'correct horse'
 const typed: AskPassword = () => Promise.resolve(PASSWORD)
+/** The landing question, answered "here" without a person (ADR-0025). */
+const here: LandingPrompts = {
+  askDestination: () => Promise.resolve('here'),
+  confirmReplace: () => Promise.resolve(true),
+}
 
 function mount(
   documents: Partial<ProjectFileChannel>,
@@ -83,6 +89,7 @@ function mount(
       ...(workingSet ? { workingSet } : {}),
       ...(adoptWorkingSet ? { adoptWorkingSet } : {}),
       askPassword,
+      landing: here,
       notify,
       s: translator('en'),
     })

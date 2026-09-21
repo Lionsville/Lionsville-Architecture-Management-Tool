@@ -22,7 +22,8 @@ import type { ScopeSnapshot } from '../projects/scope'
 import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
-import { sealedWorkingFile, unsealedBytes } from './workingFileFlows'
+import { landWorkingFile, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
+import type { ChooseFolderForWorkingFile, LandingPrompts, OpenedWorkingFile } from './workingFileFlows'
 
 /**
  * What this hook needs from a document channel.
@@ -95,10 +96,14 @@ export function useProjectFiles(deps: {
    * opened with (ADR-0023). A dialog behind a promise; `undefined` is a cancel.
    */
   askPassword: AskPassword
+  /** Where a working file goes, asked before it lands (ADR-0025). */
+  landing: LandingPrompts
+  /** A folder it may become; absent where none can be chosen. */
+  chooseFolder?: ChooseFolderForWorkingFile
   notify: Notify
   s: Translate
 }): ProjectFiles {
-  const { session, documents, workingSet, adoptWorkingSet, askPassword, notify, s } = deps
+  const { session, documents, workingSet, adoptWorkingSet, askPassword, landing, chooseFolder, notify, s } = deps
 
   /**
    * Hand a document over, and say what happened — after it happened.
@@ -158,13 +163,8 @@ export function useProjectFiles(deps: {
    * Recognising the file and deciding whether to lay out again sit in
    * `openProjectDocument`, testable without a browser.
    */
-  const openBytes = useCallback((name: string, bytes: Uint8Array) => {
+  const landHere = useCallback((name: string, result: OpenedWorkingFile) => {
     try {
-      // Bytes and not text, because what a file IS is a question about its
-      // content: a version-3 zip or an older JSON document. The extension is a
-      // hint, and a renamed file is still what it is.
-      const result = openDocumentBytes(bytes, session.snapshot())
-      if (!result.ok) { notify(s(result.messageKey), 'error'); return }
       const rest = result.rest ?? []
       if (rest.length && !adoptWorkingSet) {
         notify(s('shell.workingSetNotHere'), 'error')
@@ -192,12 +192,17 @@ export function useProjectFiles(deps: {
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
     // A sealed file asks for its password first (ADR-0023), and everything
-    // written before there was a seal opens as it did.
-    void unsealedBytes(held, askPassword, s('seal.wrong')).then(
-      (bytes) => { if (bytes) openBytes(name, bytes) },
-      (err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'),
-    )
-  }, [openBytes, askPassword, notify, s])
+    // written before there was a seal opens as it did. Then where it goes
+    // (ADR-0025): bytes and not text throughout, because what a file IS is a
+    // question about its content, and a renamed file is still what it is.
+    void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
+      if (!bytes) return
+      await landWorkingFile({
+        name, bytes, into: session.snapshot(), prompts: landing, chooseFolder,
+        here: (opened) => landHere(name, opened), notify, s,
+      })
+    }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
+  }, [session, landHere, askPassword, landing, chooseFolder, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

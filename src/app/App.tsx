@@ -91,6 +91,8 @@ import { useHomeFiles } from './useHomeFiles'
 import { useFilePicker } from './useFilePicker'
 import { useHostCommands } from './useHostCommands'
 import { usePasswordPrompt } from './usePasswordPrompt'
+import { useOpenIntoPrompt } from './useOpenIntoPrompt'
+import type { ChooseFolderForWorkingFile } from './workingFileFlows'
 import type { CommandStream } from './useHostCommands'
 import { useIndex } from './useIndex'
 import { useShellPreferences } from './useShellPreferences'
@@ -369,6 +371,11 @@ export type AppProps = {
   onScopeOpen?: (open: boolean) => void
   /** Work in a folder the user has already granted. The Recent submenu. */
   onOpenWorkingDirectory?: (root: string) => void
+  /**
+   * A folder a working file may become (ADR-0025). Absent where no folder
+   * can be chosen, and the dialog then offers only to replace what is open.
+   */
+  onChooseFolderForWorkingFile?: ChooseFolderForWorkingFile
   /** Folders this machine has worked in before, for the first-run screen. */
   recentFolders?: readonly { root: string; name: string }[]
   /** The snapshots of the working directory. Absent where there can be none. */
@@ -476,6 +483,7 @@ export function App({
   onScopeSession, chrome: chromes = [],
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
+  onChooseFolderForWorkingFile,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, sourceFailure,
   today = localToday,
   initialProject, initialPreferences,
@@ -991,6 +999,7 @@ export function App({
    * home's below, with nothing open.
    */
   const password = usePasswordPrompt(s)
+  const openInto = useOpenIntoPrompt(s)
   const homeFiles = useHomeFiles({
     documents,
     workingSet: readWorkingSet,
@@ -1000,6 +1009,8 @@ export function App({
       treeChanged()
     },
     askPassword: password.askPassword,
+    landing: openInto.prompts,
+    chooseFolder: onChooseFolderForWorkingFile,
     notify: toasts.notify,
     s,
   })
@@ -1367,6 +1378,8 @@ export function App({
             agentBar={agentBar}
             documents={documents}
             askPassword={password.askPassword}
+            landing={openInto.prompts}
+            chooseFolder={onChooseFolderForWorkingFile}
             notify={toasts.notify}
             onStorageResult={reportStorage}
             s={s}
@@ -1505,6 +1518,7 @@ export function App({
           </ErrorBoundary>
         ))}
         {password.dialog}
+        {openInto.dialogs}
         {/* Invisible; the home's Open… clicks it. Beside the dialog rather than on
             the screen, because the home does not own the working file either. */}
         {project ? null : homePicker.input}
