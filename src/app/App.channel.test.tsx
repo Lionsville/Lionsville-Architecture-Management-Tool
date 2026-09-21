@@ -29,6 +29,7 @@ import type { Command } from '../model'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import { InMemoryCommandChannel } from '../adapters/memory/InMemoryCommandChannel'
+import type { HostCommand } from '../platform/hostCommands'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 import type { ScopeSession } from './useModelSession'
@@ -125,6 +126,12 @@ const asOne = (commands: readonly Command[]): Command =>
  * spell out — somewhere to keep steps while there is nowhere to send them — and
  * it is here so a step can be caught mid-flight, which is the only state in
  * which a rebase has anything to do.
+ *
+ * It publishes per **announcement** (`change.changeId`) and not per step. A
+ * step that coalesces is announced every time it grows, always under the same
+ * `stepId`, so publishing under that would make every keystroke after the
+ * first a retry of the first — and a channel idempotent by that name answers a
+ * retry out of what it already decided and sequences nothing.
  */
 function overChannel(channel: InMemoryCommandChannel, by: string) {
   const wire = channel.connect(by)
@@ -132,20 +139,22 @@ function overChannel(channel: InMemoryCommandChannel, by: string) {
   const ours = new Set<string>()
   /** Ours that the channel has not answered for yet, oldest first. */
   const pending: string[] = []
+  let held: ScopeSession | undefined
   let head = 0
   let holding = false
   const waiting: (() => void)[] = []
   const send = (job: () => void) => { if (holding) waiting.push(job); else job() }
 
   const bind = (session: ScopeSession) => {
+    held = session
     const stopListening = session.steps.onChange((change) => {
       // It came from the channel a moment ago; sending it back would be this
       // side telling the others what they told it.
       if (change.origin === 'remote') return
-      // An undo is a step in its own right, and the step it takes back has been
-      // sequenced under its own name already — so it needs a name of its own,
-      // or the channel would answer a retry instead of taking the change.
-      const stepId = change.kind === 'step' ? change.stepId : crypto.randomUUID()
+      // The announcement's own name, whatever step it grew. An undo gets one
+      // too — the step it takes back was sequenced under its own names already,
+      // and a retry of those would be answered instead of taken.
+      const stepId = change.changeId
       ours.add(stepId)
       pending.push(stepId)
       const envelope = {
@@ -169,6 +178,9 @@ function overChannel(channel: InMemoryCommandChannel, by: string) {
       if (ours.has(step.stepId)) {
         const at = pending.indexOf(step.stepId)
         if (at >= 0) pending.splice(at, 1)
+        // Sequenced, so nobody here has to hand it back for a rebase and the
+        // log may let it go when it reaches its cap.
+        session.steps.settled([step.stepId])
         return
       }
       const land = () => {
@@ -185,6 +197,8 @@ function overChannel(channel: InMemoryCommandChannel, by: string) {
 
   return {
     bind,
+    /** The session as it was handed over, for a test that has to make a step. */
+    session: () => held,
     hold: () => { holding = true },
     release: async () => {
       holding = false
@@ -195,16 +209,37 @@ function overChannel(channel: InMemoryCommandChannel, by: string) {
   }
 }
 
+/**
+ * A menu of this workspace's own: ⌘Z and the Edit items arrive at the
+ * workspace as a `HostCommand` and nowhere else (ADR-0005), so this is how a
+ * test asks for an undo that the person, rather than the agent, made.
+ */
+function hostMenu() {
+  const listeners = new Set<(command: HostCommand) => void>()
+  return {
+    on: (listener: (command: HostCommand) => void) => {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    press: async (command: HostCommand) => {
+      await act(async () => { for (const listener of [...listeners]) listener(command) })
+    },
+  }
+}
+
 async function twoWorkspaces() {
   const channel = new InMemoryCommandChannel({ seed: [{ scope: scope.path, model: scope.model }] })
   const first = overChannel(channel, 'A. Author')
   const second = overChannel(channel, 'B. Bee')
   const wireA = listeningGateway()
   const wireB = listeningGateway()
-  const a = renderApp({ initialProject: scope, agent: wireA.gateway, onScopeSession: first.bind })
+  const menuA = hostMenu()
+  const a = renderApp({
+    initialProject: scope, agent: wireA.gateway, onScopeSession: first.bind, commands: menuA.on,
+  })
   const b = renderApp({ initialProject: scope, agent: wireB.gateway, onScopeSession: second.bind })
   await waitFor(() => expect(wireA.bound() && wireB.bound()).toBe(true))
-  return { channel, a, b, first, second, askA: wireA.ask, askB: wireB.ask }
+  return { channel, a, b, first, second, menuA, askA: wireA.ask, askB: wireB.ask }
 }
 
 /** What the other workspace's Activity list says about who made what. */
@@ -278,6 +313,45 @@ describe('two workspaces over one command channel', () => {
     })
     expect(parsed(await askA('project.current')).elements).toBe(3)
     expect(parsed(await askB('project.current')).elements).toBe(3)
+  })
+
+  it('sends a typed name keystroke by keystroke, and takes it back as one', async () => {
+    const { askB, b, first, menuA, channel } = await twoWorkspaces()
+    const typed = 'Crews'
+
+    // What the name field does: one command per keystroke, all under one
+    // `coalesce` key, so it is one step here and one ⌘Z for the person.
+    for (let i = 1; i <= typed.length; i += 1) {
+      await act(async () => {
+        first.session()!.dispatch({
+          type: 'element.update', id: 'billing', patch: { name: typed.slice(0, i) },
+          coalesce: 'element.update:billing:name',
+        })
+      })
+    }
+    expect(first.session()!.history()).toHaveLength(1)
+    expect(first.session()!.history()[0].folds).toHaveLength(typed.length)
+
+    // Whole, on the other side and in the one order both agreed on — not
+    // 'C', which is where a step published five times under one name stops.
+    await waitFor(() => {
+      expect(channel.head(scope.path).elements.billing.name).toBe(typed)
+    })
+    const there = parsed(await askB('elements.list')) as { elements: { name: string }[] }
+    expect(there.elements.map((row) => row.name)).toEqual([typed])
+
+    // One step here is five out there, which is what the stack's type says:
+    // each announcement is sequenced, named and undoable on its own over there.
+    expect(await activityOf(b)).toEqual(Array(typed.length).fill('BY A. Author'))
+
+    // And taking it back is ONE change of ours, carrying every fold's inverse —
+    // so it crosses as one step and their name goes back in one go.
+    await menuA.press({ type: 'undo' })
+    expect(first.session()!.history()).toHaveLength(0)
+    await waitFor(() => {
+      expect(channel.head(scope.path).elements.billing.name).toBe('Billing')
+    })
+    expect(await activityOf(b)).toHaveLength(typed.length + 1)
   })
 
   it('names the other author on the bar, and never oneself', async () => {

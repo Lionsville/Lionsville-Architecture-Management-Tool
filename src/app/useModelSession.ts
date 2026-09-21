@@ -37,14 +37,27 @@ import { needsRemount } from '../model/hostModel'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
-import { newestOwn, pickRun, rewind, unwind } from './rebase'
-import type { DroppedStep } from './rebase'
+import { flatten, newestOwn, pickRun, rewind, unwind } from './rebase'
+import type { DroppedStep, StepFold } from './rebase'
+
+export type { StepFold } from './rebase'
 import type { Notify } from './useToasts'
 
 /**
  * How many steps the session remembers. A step is a pair of commands rather than
  * two full-model snapshots, so this is a bound on a log rather than on memory,
  * and it can be generous where fifty was already expensive.
+ *
+ * It is a cap on what nobody is waiting for. While something is listening on
+ * `onChange`, a step is announced outwards and whoever heard it may still have
+ * to hand it back for a rebase — and a step trimmed out from under such a
+ * listener is one it can name and this stack cannot find, which is the one
+ * thing `rebase` has no honest answer for. So the trim stops at the oldest
+ * step carrying a fold nobody has called `settled`, and the log is allowed to
+ * grow past the cap until it is. That is the whole rule: with no listener
+ * every step is settled the moment it is made and the cap behaves exactly as
+ * it always did; with one, how far the log grows is the listener's own
+ * business and `settled` is how it says so.
  */
 const HISTORY_CAP = 200
 
@@ -55,6 +68,17 @@ const HISTORY_CAP = 200
  * keystrokes into one field, or a drag and the routing that follows it, is one
  * step made of several commands. `commands` replays it forwards; `inverses`
  * is already in undo order, newest first.
+ *
+ * **A coalescing step is one step on this stack and several on a channel.**
+ * Each time it grows it is announced outwards under a `changeId` of its own
+ * (`SessionChange.changeId`), because whoever carries an announcement
+ * somewhere else has to be able to be answered for it separately — one id per
+ * announcement is one sequenced step per announcement, and a second
+ * announcement under the first one's name is a retry of work nobody has seen.
+ * `folds` is that list, and `commands`/`inverses` are the folds flattened
+ * (`rebase.flatten`). **Undoing such a step is one new change** whose commands
+ * are the inverses of every fold, announced under a `changeId` of its own like
+ * any other.
  */
 export type HistoryStep = {
   /**
@@ -64,10 +88,19 @@ export type HistoryStep = {
    * The session itself never reads it. It is here so that whoever composes the
    * session can name a step — recognise one of its own arriving back, ask for
    * a run of them by name, and land a step sent twice only once. A coalescing
-   * run keeps the id its first command was given, because it is one step.
+   * run keeps the id its first command was given, because it is one step;
+   * what is different every time it grows is the `changeId` on `folds`.
    */
   stepId: string
+  /**
+   * The announcements this step is made of, oldest first — one per time it was
+   * announced outwards, each with the commands that announcement applied and
+   * their inverses. A step that never coalesced has exactly one.
+   */
+  folds: StepFold[]
+  /** Every fold's commands, in the order they were applied. */
   commands: Command[]
+  /** Every fold's inverses, in undo order: the newest fold's first. */
   inverses: Command[]
   coalesce?: string
   /**
@@ -144,13 +177,38 @@ export type ExternalStep = {
   stepId?: string
 }
 
-/** A run of our own steps to take off the model and put back on. */
+/** A run of our own work to take off the model and put back on. */
 export type RebaseRun = {
   /**
-   * The steps, by `stepId`. The stack's own order is what they are taken off
-   * and put back in, whatever order they are named in here.
+   * What to take off, by `stepId` or by `changeId`. The stack's own order is
+   * what it is taken off and put back in, whatever order it is named in here.
+   *
+   * A `stepId` names every fold of that step; a `changeId` names one fold of
+   * it. A caller that publishes each announcement separately holds `changeId`s
+   * and will sometimes hold only the last few of a step — the earlier folds
+   * were answered for already and belong *under* what has just arrived, not
+   * over it — so naming one fold has to mean unwinding that fold's commands
+   * and no more.
    */
   stepIds: readonly string[]
+  /**
+   * Bodies for ids this stack no longer holds, from the caller that still
+   * does.
+   *
+   * The log is capped, and a caller that is reconnecting after a reload has no
+   * stack here at all — so `unknown` would be the whole answer and the run
+   * would stay on the model unrebased. A caller that kept the commands and the
+   * inverses hands them over instead, and a fold named in `stepIds` that this
+   * stack cannot find is taken from here.
+   *
+   * They go **under** the stack's own run, because what this stack no longer
+   * holds is older than what it does. They are reapplied but **not** put on
+   * the stack: they were not on it before the rebase and resurrecting them
+   * would put an undo back within reach that this session had already let go.
+   * Their inverses are stale afterwards, which is what `RebaseReport.supplied`
+   * hands back.
+   */
+  steps?: readonly StepFold[]
   /**
    * Run once the run is off the model, which is the moment a step from
    * elsewhere belongs underneath it — `applyExternal`, usually more than once.
@@ -160,12 +218,25 @@ export type RebaseRun = {
 
 /** What a rebase did, for a caller that has to tell somebody about it. */
 export type RebaseReport = {
-  /** The steps that went back on, oldest first. */
+  /** The folds that went back on, oldest first, by `changeId`. */
   reapplied: string[]
-  /** The steps the reducer refused on the way back. They are off the stack now. */
+  /** The folds the reducer refused on the way back. They are off the stack now. */
   dropped: DroppedStep[]
-  /** Ids in the run that named no step on the stack: trimmed, or asked for twice. */
+  /**
+   * Ids in the run that named nothing this stack holds and that no supplied
+   * step filled in: trimmed, or asked for twice.
+   */
   unknown: string[]
+  /**
+   * The supplied steps as they now stand — the same commands, with the
+   * inverses recomputed against the model they now undo.
+   *
+   * Nothing here is on the stack, so nothing here will be recomputed again:
+   * a caller that means to rebase the same work twice keeps these in place of
+   * what it handed over, or the second rebase unwinds with an inverse for a
+   * model that has moved.
+   */
+  supplied: StepFold[]
   /** Set when the run could not be taken off at all, in which case nothing moved. */
   refused?: CommandRefusal
 }
@@ -184,14 +255,33 @@ export type SessionChange = {
   /** What happened: a step was taken, taken back, or taken again. */
   kind: 'step' | 'undo' | 'redo'
   /**
+   * **The name to hand this change over under**: a fresh UUID, minted per
+   * announcement and never said twice.
+   *
+   * A coalescing step is announced every time it grows and `stepId` is the
+   * same on all of them, so a caller that published under `stepId` published
+   * the second keystroke as a retry of the first — and anywhere idempotent by
+   * that name answers a retry out of what it already decided and sequences
+   * nothing. Everything after the first keystroke would then be on this screen
+   * and nowhere else, with the answer that says it landed. So each
+   * announcement carries its own name and `commands` is exactly what that
+   * announcement applied, which makes each fold its own step wherever it is
+   * carried to. It is also what `rebase` takes to name one fold of a step, and
+   * what `settled` takes to say the far end is done with one.
+   *
+   * An undo and a redo get one too, for the same reason and without the caller
+   * having to mint it: taking a step back is a change in its own right.
+   */
+  changeId: string
+  /**
    * The step on the stack this change is about: the one taken, or the one
    * taken back or forward again.
    *
-   * For a step it is the name to hand the change over under. For an undo or a
-   * redo it is **not**: that step has been handed over already, and somewhere
-   * that answers a name it has already answered would repeat that answer
-   * instead of taking this change. Taking a step back is a change in its own
-   * right and needs a name of its own, which the caller mints.
+   * The same on every announcement of a coalescing step, which is what says
+   * they are one step here however many they are elsewhere — and for an undo
+   * or a redo it names the step being taken back, which was handed over under
+   * its own announcements already. It is never the name to publish under:
+   * `changeId` is.
    */
   stepId: string
   /** The commands applied, in the order they were applied. */
@@ -209,10 +299,10 @@ export type SessionChange = {
  * A change that was made somewhere other than this keyboard, and one made here
  * that somewhere else is waiting for.
  *
- * Three functions and no policy, so that the session stays the one place a
+ * Four functions and no policy, so that the session stays the one place a
  * change enters while knowing nothing about where a change can come from or go.
- * The fourth of the four is `history()` above, which already says what every
- * step did and what undoes it.
+ * The fifth of the five is `history()` above, which already says what every
+ * step did, what undoes it, and which announcements it was made of.
  */
 export type SessionSteps = {
   /**
@@ -243,13 +333,32 @@ export type SessionSteps = {
    */
   applyExternal: (command: Command, from: ExternalStep) => HostModel | undefined
   /**
-   * Take a run of our own steps off the model by their inverses, let the
-   * caller put what it has underneath them, and put the run back on.
+   * Take a run of our own work off the model by its inverses, let the caller
+   * put what it has underneath it, and put the run back on.
+   *
+   * Named by step or by fold (`RebaseRun.stepIds`), and a caller that still
+   * holds work this stack has let go hands the bodies over with it
+   * (`RebaseRun.steps`).
    *
    * One React update, because nothing is rendered between the three. This is
    * what the inverses were computed for.
    */
   rebase: (run: RebaseRun) => RebaseReport
+  /**
+   * Say that the far end is done with these announcements, by `changeId`.
+   *
+   * The log is capped, and a listener is the one thing that makes trimming it
+   * dishonest: a step trimmed while somebody outside still has to hand it back
+   * for a rebase is a step they can name and this stack cannot find. So while
+   * anything is listening the trim stops at the oldest fold nobody has settled
+   * — see `HISTORY_CAP`. A caller that never calls this is a caller whose log
+   * never trims, which is its own memory and its own choice; a caller that is
+   * not listening at all need not call it, because nothing was ever waiting.
+   *
+   * Ids it does not recognise are ignored: settling twice, or settling a fold
+   * already trimmed, is the ordinary way a caller catching up behaves.
+   */
+  settled: (changeIds: readonly string[]) => void
 }
 
 export type ModelSession = {
@@ -345,7 +454,10 @@ export type ModelSession = {
 export type ScopeSession = {
   /** Where this scope is in the tree (ADR-0012 §1); the empty string is the root. */
   scope: ScopePath
-  /** The seam: hear about a change, take one from elsewhere, rebase a run of ours. */
+  /**
+   * The seam: hear about a change, take one from elsewhere, rebase a run of
+   * ours, and say what the far end is done with.
+   */
   steps: SessionSteps
   /** The one way in (ADR-0002), for a change this side decides to make itself. */
   dispatch: ModelSession['dispatch']
@@ -511,6 +623,33 @@ export function useModelSession(deps: {
   // beside them is what makes `canUndo` and `canRedo` reach the screen.
   const past = useRef<HistoryStep[]>([])
   const future = useRef<HistoryStep[]>([])
+  /**
+   * Folds a listener has heard about and nobody has called `settled` on yet —
+   * the floor the trim stops at, by `changeId`. Only ours go in: a step that
+   * arrived from elsewhere came from wherever it would have been sent, so
+   * there is nothing outstanding about it and a floor at one would never lift.
+   */
+  const unsettled = useRef(new Set<string>())
+
+  /**
+   * Bring the log back to its cap, stopping at the oldest fold nobody has
+   * settled.
+   *
+   * With nothing listening the set is empty and this is the `shift` it always
+   * was. With a listener it is a floor: the steps older than it go, the step
+   * carrying the oldest outstanding fold stays, and everything after it stays
+   * with it — the log is one order and a hole in the middle of it is not a
+   * shorter log, it is a wrong one. See `HISTORY_CAP` for why.
+   */
+  const trim = useCallback(() => {
+    const over = past.current.length - HISTORY_CAP
+    if (over <= 0) return
+    const floor = past.current.findIndex(
+      (held) => held.folds.some((fold) => unsettled.current.has(fold.changeId)),
+    )
+    const cut = floor < 0 ? over : Math.min(over, floor)
+    if (cut > 0) past.current.splice(0, cut)
+  }, [])
   const [, setHistoryVersion] = useState(0)
   const revision = useRef(0)
 
@@ -560,12 +699,18 @@ export function useModelSession(deps: {
     // Not recorded, so not announced: it has no inverse, and a change nothing
     // can take back is not a step (`SessionSteps.onChange`).
     if (meta.undoable === false) return
+    // The fold: this announcement's own name, and exactly what it applied.
+    const fold: StepFold = { changeId: mintStepId(), commands, inverses }
     const top = past.current[past.current.length - 1]
     let landed: HistoryStep
     if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
       // The step keeps the name its FIRST command gave it: a run of keystrokes
       // is "Changed Billing", not "Changed Billing" twelve times over. It keeps
-      // that first command's `stepId` for the same reason.
+      // that first command's `stepId` for the same reason. What it does NOT
+      // keep is the name it is announced under — see `SessionChange.changeId`.
+      top.folds.push(fold)
+      // The same arithmetic `flatten` states, done in place: the hot path here
+      // is one keystroke, and rebuilding both lists per keystroke is not.
       top.commands.push(...commands)
       top.inverses.unshift(...inverses)
       top.at = Date.now()
@@ -573,7 +718,10 @@ export function useModelSession(deps: {
     } else {
       landed = {
         stepId: meta.stepId ?? mintStepId(),
-        commands, inverses, at: meta.at ?? Date.now(), summary: summarise(commands, before),
+        folds: [fold],
+        // Copies, because the fold's are the ones a later fold appends to.
+        commands: [...commands], inverses: [...inverses],
+        at: meta.at ?? Date.now(), summary: summarise(commands, before),
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
         ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
         ...(meta.by !== undefined ? { by: meta.by } : {}),
@@ -581,8 +729,13 @@ export function useModelSession(deps: {
         ...(meta.barrier !== undefined ? { barrier: meta.barrier } : {}),
       }
       past.current.push(landed)
-      if (past.current.length > HISTORY_CAP) past.current.shift()
     }
+    // Somebody is listening, so this fold may have to be handed back for a
+    // rebase until they say otherwise, and the trim may not reach past it.
+    if (meta.origin !== 'remote' && listeners.current.size > 0) {
+      unsettled.current.add(fold.changeId)
+    }
+    trim()
     if (!meta.keepFuture) future.current = []
     setHistoryVersion((v) => v + 1)
     // The commands of THIS change and not the step's whole run: a coalescing
@@ -590,6 +743,7 @@ export function useModelSession(deps: {
     // would apply the earlier keystrokes twice wherever it is carried to.
     announce({
       kind: 'step',
+      changeId: fold.changeId,
       stepId: landed.stepId,
       // A copy: the list a coalescing step keeps is the one it grows, and a
       // listener holding the step's own array would see it change under it.
@@ -599,7 +753,7 @@ export function useModelSession(deps: {
       ...(landed.origin !== undefined ? { origin: landed.origin } : {}),
       ...(landed.by !== undefined ? { by: landed.by } : {}),
     })
-  }, [announce])
+  }, [announce, trim])
 
   /**
    * Removing an application from the model takes its container diagram with it.
@@ -684,6 +838,7 @@ export function useModelSession(deps: {
     const applied = from === 'past' ? entry.inverses : entry.commands
     announce({
       kind: from === 'past' ? 'undo' : 'redo',
+      changeId: mintStepId(),
       stepId: entry.stepId,
       commands: [...applied],
       at: Date.now(),
@@ -746,29 +901,80 @@ export function useModelSession(deps: {
    * about rather than new work for it to carry anywhere.
    */
   const rebase = useCallback<SessionSteps['rebase']>((run) => {
-    const { run: steps, unknown } = pickRun(past.current, run.stepIds)
-    const off = unwind(modelRef.current, steps)
+    const picked = pickRun(past.current, run.stepIds)
+    // A body the caller still holds for a fold this stack has let go. Only for
+    // an id the run actually names: a caller hands over what it has, and what
+    // it did not ask for is not part of the run.
+    const missing = new Set(picked.unknown)
+    const supplied = (run.steps ?? []).filter((held) => missing.has(held.changeId))
+    const filled = new Set(supplied.map((held) => held.changeId))
+    const unknown = picked.unknown.filter((id) => !filled.has(id))
+    // Oldest first, and what this stack no longer holds is older than what it does.
+    const whole: (StepFold & { stepId?: string })[] = [...supplied, ...picked.run]
+    const off = unwind(modelRef.current, whole)
     if (!off.ok) {
       // Nothing moved. The caller has the key and decides what to do with it —
       // apply the external steps unrebased, or ask a person.
       notify(s(off.reason), 'error')
-      return { reapplied: [], dropped: [], unknown, refused: off.reason }
+      return { reapplied: [], dropped: [], unknown, supplied: [], refused: off.reason }
     }
-    const lifted = new Set(steps.map((held) => held.stepId))
-    past.current = past.current.filter((held) => !lifted.has(held.stepId))
+    /**
+     * A step with a fold in the run comes off the stack whole, and goes back on
+     * at the end with the folds that stayed on the model followed by the folds
+     * that went back on top of what landed underneath — which is the order the
+     * model is now in. A step that only had SOME of its folds named keeps the
+     * others exactly where they were on the model: they were answered for
+     * already, so what has just arrived belongs over them and not under them.
+     */
+    const lifted = new Set(picked.run.map((fold) => fold.changeId))
+    const moving: HistoryStep[] = []
+    past.current = past.current.filter((held) => {
+      if (!held.folds.some((fold) => lifted.has(fold.changeId))) return true
+      moving.push(held)
+      return false
+    })
     modelRef.current = off.model
     run.between?.()
-    const back = rewind(modelRef.current, steps)
-    past.current.push(...back.kept)
-    if (past.current.length > HISTORY_CAP) {
-      past.current.splice(0, past.current.length - HISTORY_CAP)
+    const back = rewind(modelRef.current, whole)
+    const rejoin = new Map<string, StepFold[]>()
+    for (const fold of back.kept) {
+      if (fold.stepId === undefined) continue
+      const list = rejoin.get(fold.stepId)
+      if (list) list.push(fold)
+      else rejoin.set(fold.stepId, [fold])
     }
+    for (const held of moving) {
+      const folds = [
+        ...held.folds.filter((fold) => !lifted.has(fold.changeId)),
+        ...(rejoin.get(held.stepId) ?? []),
+      ]
+      // Every fold of it refused: there is no step left to put back.
+      if (folds.length === 0) continue
+      past.current.push({ ...held, folds, ...flatten(folds) })
+    }
+    trim()
     modelRef.current = back.model
     setModel(back.model)
     revision.current += 1
     setHistoryVersion((v) => v + 1)
-    return { reapplied: back.kept.map((held) => held.stepId), dropped: back.dropped, unknown }
-  }, [notify, s])
+    const of = new Map(picked.run.map((fold) => [fold.changeId, fold.stepId]))
+    return {
+      reapplied: back.kept.map((fold) => fold.changeId),
+      dropped: back.dropped.map((gone) => {
+        const stepId = of.get(gone.changeId)
+        return stepId === undefined ? gone : { ...gone, stepId }
+      }),
+      unknown,
+      supplied: back.kept
+        .filter((fold) => fold.stepId === undefined)
+        .map(({ changeId, commands, inverses }) => ({ changeId, commands, inverses })),
+    }
+  }, [notify, s, trim])
+
+  const settled = useCallback<SessionSteps['settled']>((changeIds) => {
+    for (const id of changeIds) unsettled.current.delete(id)
+    trim()
+  }, [trim])
 
   /**
    * The seam, as one object with an identity that holds still.
@@ -780,8 +986,8 @@ export function useModelSession(deps: {
    * arrangement, for the same reason.
    */
   const steps = useMemo<SessionSteps>(
-    () => ({ onChange, applyExternal, rebase }),
-    [onChange, applyExternal, rebase],
+    () => ({ onChange, applyExternal, rebase, settled }),
+    [onChange, applyExternal, rebase, settled],
   )
   const history = useCallback(() => past.current as readonly HistoryStep[], [])
   const revisionNow = useCallback(() => revision.current, [])
@@ -798,6 +1004,7 @@ export function useModelSession(deps: {
   const adopt = useCallback<ModelSession['adopt']>((project, relayout) => {
     past.current = []
     future.current = []
+    unsettled.current.clear()
     setHistoryVersion((v) => v + 1)
     // Measured before the swap: `needsRemount` compares the old with the new.
     const remount = needsRemount(asArrays(modelRef.current), project.model, relayout)

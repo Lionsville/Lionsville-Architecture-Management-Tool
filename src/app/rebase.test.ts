@@ -9,8 +9,8 @@ import { describe, expect, it } from 'vitest'
 import { apply, fromArrays } from '../model'
 import type { Command, Model } from '../model'
 import { element, model as designModel } from '../model/testFixtures'
-import { newestOwn, pickRun, rewind, unwind } from './rebase'
-import type { StepRun } from './rebase'
+import { flatten, newestOwn, pickRun, rewind, unwind } from './rebase'
+import type { StepFold, StepRun } from './rebase'
 
 const start = (): Model => fromArrays(designModel({
   elements: [element('billing', { name: 'Billing' }), element('crm', { name: 'CRM' })],
@@ -21,8 +21,13 @@ const start = (): Model => fromArrays(designModel({
 const rename = (id: string, name: string): Command =>
   ({ type: 'element.update', id, patch: { name } })
 
-/** One step, as the session would have recorded it: applied, with its inverse kept. */
-function step(model: Model, stepId: string, ...commands: Command[]): { step: StepRun; model: Model } {
+/**
+ * One fold, as the session would have recorded it: applied, with its inverse
+ * kept — and the one-fold step around it, for the tests that ask by step.
+ */
+function step(
+  model: Model, stepId: string, ...commands: Command[]
+): { step: StepRun; fold: StepFold; model: Model } {
   let next = model
   const inverses: Command[] = []
   for (const command of commands) {
@@ -30,8 +35,12 @@ function step(model: Model, stepId: string, ...commands: Command[]): { step: Ste
     next = result.model
     inverses.unshift(result.inverse)
   }
-  return { step: { stepId, commands, inverses }, model: next }
+  const fold: StepFold = { changeId: `${stepId}-1`, commands, inverses }
+  return { step: { stepId, folds: [fold] }, fold, model: next }
 }
+
+/** A fold that applies nothing, for the tests that only ask which one was picked. */
+const empty = (changeId: string): StepFold => ({ changeId, commands: [], inverses: [] })
 
 function applyOrThrow(model: Model, command: Command) {
   const result = apply(model, command)
@@ -41,21 +50,60 @@ function applyOrThrow(model: Model, command: Command) {
 
 const nameOf = (model: Model, id: string) => model.elements[id].name
 
+/** A coalescing step, as the session grows one: three announcements, one step. */
+const typed: StepRun = { stepId: 'typed', folds: [empty('k1'), empty('k2'), empty('k3')] }
+
 describe('pickRun', () => {
   it('keeps the stack’s own order, whatever order the ids arrive in', () => {
     const steps: StepRun[] = [
-      { stepId: 'a', commands: [], inverses: [] },
-      { stepId: 'b', commands: [], inverses: [] },
-      { stepId: 'c', commands: [], inverses: [] },
+      { stepId: 'a', folds: [empty('a-1')] },
+      { stepId: 'b', folds: [empty('b-1')] },
+      { stepId: 'c', folds: [empty('c-1')] },
     ]
-    expect(pickRun(steps, ['c', 'a']).run.map((s) => s.stepId)).toEqual(['a', 'c'])
+    expect(pickRun(steps, ['c', 'a']).run.map((fold) => fold.stepId)).toEqual(['a', 'c'])
   })
 
   it('reports an id that names nothing rather than refusing the run', () => {
-    const steps: StepRun[] = [{ stepId: 'a', commands: [], inverses: [] }]
+    const steps: StepRun[] = [{ stepId: 'a', folds: [empty('a-1')] }]
     const picked = pickRun(steps, ['a', 'gone'])
     expect(picked.run).toHaveLength(1)
     expect(picked.unknown).toEqual(['gone'])
+  })
+
+  it('takes every fold of a step named by its own id', () => {
+    const picked = pickRun([typed], ['typed'])
+    expect(picked.run.map((fold) => fold.changeId)).toEqual(['k1', 'k2', 'k3'])
+    expect(picked.run.every((fold) => fold.stepId === 'typed')).toBe(true)
+    expect(picked.unknown).toEqual([])
+  })
+
+  it('takes one fold of a step named by its changeId, and says whose it is', () => {
+    // The keystrokes before it were answered for already; only the last is
+    // still in flight, so only the last comes off the model.
+    const picked = pickRun([typed], ['k3'])
+    expect(picked.run.map((fold) => fold.changeId)).toEqual(['k3'])
+    expect(picked.run[0].stepId).toBe('typed')
+  })
+
+  it('names a fold once when its step is asked for as well', () => {
+    const picked = pickRun([typed], ['typed', 'k2'])
+    expect(picked.run.map((fold) => fold.changeId)).toEqual(['k1', 'k2', 'k3'])
+    expect(picked.unknown).toEqual([])
+  })
+})
+
+describe('flatten', () => {
+  it('reads a step forwards in the order its folds were made', () => {
+    const a = rename('billing', 'One')
+    const b = rename('billing', 'Two')
+    const folds: StepFold[] = [
+      { changeId: 'f1', commands: [a], inverses: [rename('billing', 'Billing')] },
+      { changeId: 'f2', commands: [b], inverses: [a] },
+    ]
+    expect(flatten(folds).commands).toEqual([a, b])
+    // Undo order: the newest fold's inverse first, so the field ends up saying
+    // what it said before the first keystroke.
+    expect(flatten(folds).inverses).toEqual([a, rename('billing', 'Billing')])
   })
 })
 
@@ -64,7 +112,7 @@ describe('unwind', () => {
     const before = start()
     const first = step(before, 's1', rename('billing', 'Billing v2'))
     const second = step(first.model, 's2', rename('billing', 'Billing v3'))
-    const back = unwind(second.model, [first.step, second.step])
+    const back = unwind(second.model, [first.fold, second.fold])
     expect(back.ok).toBe(true)
     if (back.ok) expect(nameOf(back.model, 'billing')).toBe('Billing')
   })
@@ -74,7 +122,7 @@ describe('unwind', () => {
     const made = step(before, 's1', rename('crm', 'CRM v2'))
     // The row the inverse names is gone: another author removed it.
     const removed = applyOrThrow(made.model, { type: 'element.delete', id: 'crm' }).model
-    const back = unwind(removed, [made.step])
+    const back = unwind(removed, [made.fold])
     expect(back.ok).toBe(false)
     if (!back.ok) expect(back.reason).toBe('command.gone')
   })
@@ -86,7 +134,7 @@ describe('rewind', () => {
     const mine = step(before, 's1', rename('billing', 'Billing v2'))
     // Somebody else renamed the other row while ours was off the model.
     const theirs = applyOrThrow(before, rename('crm', 'Customers')).model
-    const back = rewind(theirs, [mine.step])
+    const back = rewind(theirs, [mine.fold])
     expect(back.dropped).toEqual([])
     expect(nameOf(back.model, 'billing')).toBe('Billing v2')
     expect(nameOf(back.model, 'crm')).toBe('Customers')
@@ -97,9 +145,9 @@ describe('rewind', () => {
     const doomed = step(before, 's1', rename('crm', 'CRM v2'))
     const other = step(doomed.model, 's2', rename('billing', 'Billing v2'))
     const withoutCrm = applyOrThrow(before, { type: 'element.delete', id: 'crm' }).model
-    const back = rewind(withoutCrm, [doomed.step, other.step])
-    expect(back.dropped).toEqual([{ stepId: 's1', reason: 'command.gone' }])
-    expect(back.kept.map((s) => s.stepId)).toEqual(['s2'])
+    const back = rewind(withoutCrm, [doomed.fold, other.fold])
+    expect(back.dropped).toEqual([{ changeId: 's1-1', reason: 'command.gone' }])
+    expect(back.kept.map((fold) => fold.changeId)).toEqual(['s2-1'])
     expect(nameOf(back.model, 'billing')).toBe('Billing v2')
   })
 
@@ -107,7 +155,7 @@ describe('rewind', () => {
     const before = start()
     const mine = step(before, 's1', rename('billing', 'Billing v2'))
     const theirs = applyOrThrow(before, rename('billing', 'Invoicing')).model
-    const back = rewind(theirs, [mine.step])
+    const back = rewind(theirs, [mine.fold])
     const undone = unwind(back.model, back.kept)
     expect(undone.ok).toBe(true)
     // Not 'Billing', which is what the original inverse would have given back.

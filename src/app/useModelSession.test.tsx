@@ -542,6 +542,66 @@ describe('useModelSession — undo, where somebody else has been editing too', (
   })
 })
 
+describe('useModelSession — the cap on the log', () => {
+  /** One more step than the cap, each its own, so the trim has to do something. */
+  const typeALot = (session: () => ModelSession, howMany: number) => {
+    for (let i = 0; i < howMany; i += 1) {
+      act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: `L7 ${i}` }) })
+    }
+  }
+
+  it('trims the oldest when nothing is listening', () => {
+    const { session } = mount()
+    typeALot(session, 205)
+    expect(session().history()).toHaveLength(200)
+    expect(session().history()[0].summary.name).toBe('L7 5')
+  })
+
+  it('keeps a step a listener has not been told is settled', () => {
+    const { session } = mount()
+    act(() => { session().steps.onChange(() => {}) })
+    typeALot(session, 205)
+    // Nothing was settled, so nothing may go: a step trimmed out from under a
+    // listener is one it can name and `rebase` cannot find, which is the one
+    // thing a rebase has no honest answer for.
+    expect(session().history()).toHaveLength(205)
+    expect(session().history()[0].summary.name).toBe('L7 0')
+  })
+
+  it('lets go as far as the oldest fold nobody has settled, and no further', () => {
+    const { session } = mount()
+    const heard: SessionChange[] = []
+    act(() => { session().steps.onChange((change) => heard.push(change)) })
+    typeALot(session, 205)
+    // The far end is done with the first three, and only those.
+    act(() => { session().steps.settled(heard.slice(0, 3).map((change) => change.changeId)) })
+    expect(session().history()).toHaveLength(202)
+    expect(session().history()[0].summary.name).toBe('L7 3')
+
+    // And once the whole backlog is settled the cap is a cap again.
+    act(() => { session().steps.settled(heard.map((change) => change.changeId)) })
+    expect(session().history()).toHaveLength(200)
+  })
+
+  it('does not hold the log open for a step another author made', () => {
+    const { session } = mount()
+    const heard: SessionChange[] = []
+    act(() => { session().steps.onChange((change) => heard.push(change)) })
+    act(() => { session().steps.applyExternal(rename('Theirs'), { by: 'A. Author' }) })
+    typeALot(session, 204)
+    act(() => {
+      session().steps.settled(heard
+        .filter((change) => change.origin === undefined)
+        .map((change) => change.changeId))
+    })
+    // Theirs arrived from wherever it would have been sent, so there was
+    // nothing outstanding about it — a floor at one would never lift, and this
+    // log would grow for ever on a scope somebody else is working in.
+    expect(session().history()).toHaveLength(200)
+    expect(session().history().some((step) => step.origin === 'remote')).toBe(false)
+  })
+})
+
 describe('useModelSession — rebase', () => {
   const elsewhere = { by: 'A. Author' }
 
@@ -552,9 +612,14 @@ describe('useModelSession — rebase', () => {
     return session().history().map((step) => step.stepId)
   }
 
+  /** Every announcement on the stack, in order — one per fold. */
+  const folds = (session: () => ModelSession) =>
+    session().history().flatMap((step) => step.folds.map((fold) => fold.changeId))
+
   it('lands their step underneath ours, and puts ours back on top', () => {
     const { session } = mount()
     const stepIds = pending(session)
+    const changeIds = folds(session)
     let report!: ReturnType<ModelSession['steps']['rebase']>
     act(() => {
       report = session().steps.rebase({
@@ -565,7 +630,8 @@ describe('useModelSession — rebase', () => {
         },
       })
     })
-    expect(report.reapplied).toEqual(stepIds)
+    // Named by step; answered by fold, which is what a caller publishes under.
+    expect(report.reapplied).toEqual(changeIds)
     expect(report.dropped).toEqual([])
     expect(session().current().diagrams[0].name).toBe('Mine')
     expect(session().current().diagrams[1].name).toBe('Also mine')
@@ -580,6 +646,7 @@ describe('useModelSession — rebase', () => {
     act(() => { session().dispatch(rename('Mine')) })
     act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Also mine' }) })
     const stepIds = session().history().map((step) => step.stepId)
+    const changeIds = folds(session)
     let report!: ReturnType<ModelSession['steps']['rebase']>
     act(() => {
       report = session().steps.rebase({
@@ -589,8 +656,10 @@ describe('useModelSession — rebase', () => {
         },
       })
     })
-    expect(report.dropped).toEqual([{ stepId: stepIds[0], reason: 'command.gone' }])
-    expect(report.reapplied).toEqual([stepIds[1]])
+    // The fold that was refused, and the step it was a fold of.
+    expect(report.dropped)
+      .toEqual([{ changeId: changeIds[0], stepId: stepIds[0], reason: 'command.gone' }])
+    expect(report.reapplied).toEqual([changeIds[1]])
     expect(session().current().diagrams[0].name).toBe('Also mine')
     // Theirs, then the one of ours that survived. The refused step is gone.
     const left = session().history()
@@ -601,10 +670,104 @@ describe('useModelSession — rebase', () => {
   it('reports an id that names no step, and rebases the rest', () => {
     const { session } = mount()
     const stepIds = pending(session)
+    const changeIds = folds(session)
     let report!: ReturnType<ModelSession['steps']['rebase']>
     act(() => { report = session().steps.rebase({ stepIds: [...stepIds, 'never-seen'] }) })
     expect(report.unknown).toEqual(['never-seen'])
-    expect(report.reapplied).toEqual(stepIds)
+    expect(report.reapplied).toEqual(changeIds)
+    expect(report.supplied).toEqual([])
+  })
+
+  it('takes a run the caller supplies for work the cap has taken off the stack', () => {
+    const { session } = mount()
+    const heard: SessionChange[] = []
+    act(() => { session().steps.onChange((change) => heard.push(change)) })
+    act(() => { session().dispatch(rename('Mine')) })
+    // What a caller holds about a step it published and is still waiting on:
+    // the name it went out under, and both directions.
+    const kept = { ...session().history()[0].folds[0] }
+
+    // Two hundred more, and the cap takes the oldest off — which is the state
+    // a caller is in whenever what it still has to hand back is older than this
+    // log: a queue that outlived the session that filled it, or work it was
+    // told had landed and has to take off the model after all.
+    for (let i = 0; i < 200; i += 1) {
+      act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: `L7 ${i}` }) })
+    }
+    act(() => { session().steps.settled(heard.map((change) => change.changeId)) })
+    expect(session().history()).toHaveLength(200)
+
+    let report!: ReturnType<ModelSession['steps']['rebase']>
+    act(() => {
+      report = session().steps.rebase({
+        stepIds: [kept.changeId],
+        steps: [kept],
+        between: () => { session().steps.applyExternal(rename('Theirs'), elsewhere) },
+      })
+    })
+    // Not `unknown`: the caller handed over the body for the id this stack
+    // could not find, so the run came off the model and went back on over theirs.
+    expect(report.unknown).toEqual([])
+    expect(report.reapplied).toEqual([kept.changeId])
+    expect(session().current().elements[0].name).toBe('Mine')
+    // Reapplied, and deliberately NOT put back on the stack: it was not on it
+    // before the rebase, and an undo this session had let go stays let go.
+    expect(session().history().some((step) => step.folds
+      .some((fold) => fold.changeId === kept.changeId))).toBe(false)
+    // Its inverse now undoes the model it actually sits on — it gives back
+    // *their* name, not the one it was made against — and comes back so the
+    // caller can rebase the same work again without unwinding into thin air.
+    expect(report.supplied.map((fold) => fold.changeId)).toEqual([kept.changeId])
+    expect(report.supplied[0].inverses).toEqual([rename('Theirs')])
+  })
+
+  it('leaves a supplied body alone when the stack holds the fold itself', () => {
+    const { session } = mount()
+    const stepIds = pending(session)
+    let report!: ReturnType<ModelSession['steps']['rebase']>
+    act(() => {
+      report = session().steps.rebase({
+        stepIds,
+        steps: [{ changeId: 'never-asked-for', commands: [rename('Wrong')], inverses: [] }],
+      })
+    })
+    expect(report.supplied).toEqual([])
+    expect(session().current().elements[0].name).toBe('Billing')
+  })
+
+  it('unwinds one fold of a step, and leaves it one step on the stack', () => {
+    const { session } = mount()
+    const heard: SessionChange[] = []
+    act(() => { session().steps.onChange((change) => heard.push(change)) })
+    act(() => {
+      for (const name of ['M', 'Mine'] as const) {
+        session().dispatch({ ...rename(name), coalesce: 'element.update:billing:name' })
+      }
+    })
+    expect(session().history()).toHaveLength(1)
+
+    // The first keystroke was answered for already, so it belongs UNDER what
+    // has just arrived; only the second is still in flight.
+    act(() => {
+      session().steps.rebase({
+        stepIds: [heard[1].changeId],
+        between: () => {
+          session().steps.applyExternal({ type: 'diagram.rename', id: 'd1', name: 'Theirs' }, elsewhere)
+        },
+      })
+    })
+    expect(session().current().elements[0].name).toBe('Mine')
+    expect(session().current().diagrams[0].name).toBe('Theirs')
+
+    // Still one step here, with both its folds — and ⌘Z is still one press,
+    // taking the whole typed name back and not the last keystroke of it.
+    const [theirs, ours] = session().history()
+    expect(theirs.origin).toBe('remote')
+    expect(ours.folds.map((fold) => fold.changeId))
+      .toEqual([heard[0].changeId, heard[1].changeId])
+    act(() => session().undo())
+    expect(session().history()).toHaveLength(1)
+    expect(session().current().elements[0].name).toBe('Billing')
   })
 
   it('is one undo step per step, after the run has been back and forth', () => {
@@ -661,7 +824,23 @@ describe('useModelSession — saying that a change was made here', () => {
     // command — applying the run again elsewhere would rename it twice.
     expect(session().history()).toHaveLength(1)
     expect(heard.map((change) => change.commands.length)).toEqual([1, 1])
+    // One step here, under one name — and two announcements, each under a name
+    // of its own, because each is its own step wherever it is carried to. A
+    // second announcement under the first one's name is a retry of work that
+    // nobody outside this session has seen.
     expect(new Set(heard.map((change) => change.stepId)).size).toBe(1)
+    expect(new Set(heard.map((change) => change.changeId)).size).toBe(2)
+    expect(session().history()[0].folds.map((fold) => fold.changeId))
+      .toEqual(heard.map((change) => change.changeId))
+  })
+
+  it('gives an undo a name of its own, so it is not read as a retry of the step', () => {
+    const { session } = mount()
+    const { heard } = listening(session)
+    act(() => { session().dispatch(rename('Mine')) })
+    act(() => session().undo())
+    expect(heard[1].stepId).toBe(heard[0].stepId)
+    expect(heard[1].changeId).not.toBe(heard[0].changeId)
   })
 
   it('says an undo is an undo, and hands over the inverses that were applied', () => {
