@@ -301,6 +301,39 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
     })
 
     /**
+     * Which refusal a step gets when it is both stale and impossible — the one
+     * clause here that says something about `base`.
+     *
+     * Every publish above is `base: 0`, which is what a sender who has heard
+     * nothing yet says. This sender is behind: it built its step against the
+     * head as it stood before a step that has since been sequenced, and what it
+     * built is a create on the id that step took. A channel that decides two
+     * steps overlap — which this repository does not define a key for, because
+     * the decision belongs to whoever holds the other end — could answer either
+     * way, so the order is settled here: the reducer's refusal first.
+     *
+     * It matters because the two refusals have different repairs. `command.taken`
+     * is mended by minting another id and sending the step again; a channel's
+     * staleness refusal is mended by reading the scope and starting from what
+     * everybody else has. A sender handed the second where the first was true
+     * re-reads a scope it had no reason to re-read, and still holds the step
+     * that cannot land.
+     */
+    it('answers a step behind the head that the reducer refuses with the reducer’s refusal', async () => {
+      const channel = await one()
+      const mine = channel.connect('me')
+      const theirs = channel.connect('you')
+      const here = await channel.listen(mine)
+      const at = seqOf(await channel.publish(mine, addBilling))
+
+      expect(await channel.publish(theirs, addBilling, { base: at - 1 }))
+        .toEqual({ refused: 'command.taken' })
+      // Refused is not sequenced, however far behind the sender was.
+      expect(here.seen.map((step) => step.seq)).toEqual([at])
+      here.stop()
+    })
+
+    /**
      * A step that changes nothing is not a refusal and is not news. The
      * sequence stands still and nobody is woken, or an Activity list somewhere
      * fills up with steps nobody made.

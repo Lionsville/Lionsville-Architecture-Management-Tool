@@ -47,6 +47,14 @@ export type StepEnvelope = {
    * The sequence number the command was built against: the `revision` the
    * agent already names (ADR-0011), read across authors instead of within one
    * session.
+   *
+   * A sender fills it in and a channel need not read it: putting steps in one
+   * order does not require knowing what anybody built theirs on. It is carried
+   * because a channel that DOES decide two steps overlap has nothing else to
+   * decide it with — a step whose `base` is behind the head was built against a
+   * model that has since moved, and which of the steps since then it disagrees
+   * with is a question only the head can answer. See {@link PublishAnswer} for
+   * what such a channel may answer and in which order.
    */
   base: number
   command: Command
@@ -82,10 +90,23 @@ export type SequencedStep = {
  * (`model/reducer.ts`) and arrives here when the head model already holds an
  * id this step creates; `agent.readOnly` is the one refusal that is about the
  * sender rather than the command.
+ *
+ * **A channel may have one more of its own, and the reducer's comes first.**
+ * Deciding that a step whose `base` is behind the head overlaps one sequenced
+ * since is a judgement about the landscape and belongs to whoever holds the
+ * other end (ADR-0022, *what is deliberately not here*), so the key for it is
+ * not defined in this repository and the type is open for it. What IS settled
+ * here is the order the two are asked in: **a command the reducer refuses is
+ * answered with the reducer's refusal, whatever the step's `base` says.** So a
+ * create on an id the head already holds is always `command.taken` — the
+ * refusal whose repair is to mint another id and send the step again — and
+ * never a staleness key, which would send that sender to re-read a scope it has
+ * no reason to re-read. A channel's own refusal is for the steps the reducer
+ * would have taken.
  */
 export type PublishAnswer =
   | { seq: number }
-  | { refused: CommandRefusal | 'agent.readOnly' }
+  | { refused: CommandRefusal | 'agent.readOnly' | (string & Record<never, never>) }
 
 export interface CommandChannel {
   /** Which channel this is, for a diagnostic to name. */
