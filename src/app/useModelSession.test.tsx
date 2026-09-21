@@ -376,3 +376,232 @@ describe('useModelSession — undo and redo', () => {
     expect(session().canRedo).toBe(false)
   })
 })
+
+/**
+ * A change can be made somewhere other than this keyboard (step 24a). The
+ * session is still the one door it comes through: the same reducer, the same
+ * stack, the same Activity list — with two differences that are the whole
+ * point. It is marked as somebody else's, and ⌘Z steps over it.
+ */
+describe('useModelSession — a step made by another author', () => {
+  const elsewhere = { by: 'A. Author' }
+
+  it('gives every step a name of its own, so a step can be spoken about', () => {
+    const { session } = mount()
+    act(() => { session().dispatch(rename('One')) })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Two' }) })
+    const ids = session().history().map((step) => step.stepId)
+    expect(ids.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)
+    expect(new Set(ids).size).toBe(2)
+  })
+
+  it('keeps one name over a run that coalesces, because it is one step', () => {
+    const { session } = mount()
+    act(() => {
+      for (const name of ['R', 'Re', 'Ren']) {
+        session().dispatch({ type: 'diagram.rename', id: 'd1', name, coalesce: 'name:d1' })
+      }
+    })
+    expect(session().history()).toHaveLength(1)
+    expect(session().history()[0].stepId).toBeTruthy()
+  })
+
+  it('carries what the log needs to say whose a step was', () => {
+    const { session } = mount()
+    act(() => { session().steps.applyExternal(rename('Theirs'), { ...elsewhere, at: 1_700_000 }) })
+    const [step] = session().history()
+    expect(session().current().elements[0].name).toBe('Theirs')
+    expect(step.origin).toBe('remote')
+    expect(step.by).toBe('A. Author')
+    expect(step.at).toBe(1_700_000)
+    // Named the way every other step is, against the model as it was.
+    expect(step.summary.key).toBeTruthy()
+    expect(step.inverses).toHaveLength(1)
+  })
+
+  it('takes the name a step already travels under, and mints one where it has none', () => {
+    const { session } = mount()
+    act(() => { session().steps.applyExternal(rename('Theirs'), { ...elsewhere, stepId: 'their-step' }) })
+    act(() => { session().steps.applyExternal(rename('Again'), elsewhere) })
+    const [first, second] = session().history()
+    expect(first.stepId).toBe('their-step')
+    expect(second.stepId).not.toBe('their-step')
+  })
+
+  it('moves the revision, because the model moved', () => {
+    const { session } = mount()
+    const before = session().revision()
+    act(() => { session().steps.applyExternal(rename('Theirs'), elsewhere) })
+    expect(session().revision()).toBeGreaterThan(before)
+  })
+
+  it('says so and changes nothing when the reducer refuses their command', () => {
+    const { session, notify } = mount()
+    let answer: unknown = 'unset'
+    act(() => { answer = session().steps.applyExternal(rename('x'), elsewhere) })
+    // The row they renamed is here, so this one lands; the one below does not.
+    expect(answer).toBeDefined()
+    act(() => { answer = session().steps.applyExternal({ type: 'element.delete', id: 'nobody' }, elsewhere) })
+    expect(answer).toBeUndefined()
+    expect(notify).toHaveBeenCalledWith(expect.anything(), 'error')
+    expect(session().history()).toHaveLength(1)
+  })
+
+  /**
+   * A colleague typing is not a reason to take this person's redo away. The
+   * redo that no longer applies is refused by the reducer and said, which is
+   * cheaper than deciding for them that it is gone.
+   */
+  it('leaves the redo tail standing', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Mine' }) })
+    act(() => session().undo())
+    expect(session().canRedo).toBe(true)
+    act(() => { session().steps.applyExternal(rename('Theirs'), elsewhere) })
+    expect(session().canRedo).toBe(true)
+    act(() => session().redo())
+    expect(session().current().diagrams[0].name).toBe('Mine')
+  })
+
+  /**
+   * The policy reads what is taken when it is asked, but it is minted once for
+   * the life of the session and an id another author took is not in anything
+   * it was reading. So it is asked again once their step has landed.
+   */
+  it('mints no id another author has just taken', () => {
+    const { session } = mount()
+    expect(session().ids.element('Orders')).toBe('orders')
+    act(() => {
+      session().steps.applyExternal({
+        type: 'element.create',
+        element: {
+          id: 'orders', kind: 'application', name: 'Orders',
+          lifecycle: 'live', isManaged: true, aspects: {},
+        },
+      }, elsewhere)
+    })
+    expect(session().ids.element('Orders')).not.toBe('orders')
+  })
+})
+
+describe('useModelSession — undo, where somebody else has been editing too', () => {
+  const elsewhere = { by: 'A. Author' }
+
+  it('steps over their step and takes back the newest of ours', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Mine' }) })
+    act(() => { session().steps.applyExternal(rename('Theirs'), elsewhere) })
+    act(() => session().undo())
+    expect(session().current().diagrams[0].name).toBe('L7')
+    // Theirs is untouched, and still on the stack because it happened.
+    expect(session().current().elements[0].name).toBe('Theirs')
+    expect(session().history()).toHaveLength(1)
+    expect(session().history()[0].origin).toBe('remote')
+  })
+
+  it('has nothing to undo when every step on the stack is somebody else’s', () => {
+    const { session } = mount()
+    act(() => { session().steps.applyExternal(rename('Theirs'), elsewhere) })
+    expect(session().canUndo).toBe(false)
+    act(() => session().undo())
+    expect(session().current().elements[0].name).toBe('Theirs')
+  })
+
+  it('still stops at a step that crossed two scopes, under theirs', () => {
+    const { session, notify } = mount()
+    act(() => {
+      session().dispatch({
+        type: 'element.link', id: 'billing', name: 'Billing', ref: 'acme',
+        barrier: 'gesture.barrier',
+      })
+    })
+    act(() => { session().steps.applyExternal({ type: 'diagram.rename', id: 'd1', name: 'Theirs' }, elsewhere) })
+    act(() => session().undo())
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('two scopes'), 'warning')
+    expect(session().current().elements[0].ref).toBe('acme')
+  })
+})
+
+describe('useModelSession — rebase', () => {
+  const elsewhere = { by: 'A. Author' }
+
+  /** Two own steps on the stack, and their ids. */
+  function pending(session: () => ModelSession) {
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Mine' }) })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd2', name: 'Also mine' }) })
+    return session().history().map((step) => step.stepId)
+  }
+
+  it('lands their step underneath ours, and puts ours back on top', () => {
+    const { session } = mount()
+    const stepIds = pending(session)
+    let report!: ReturnType<ModelSession['steps']['rebase']>
+    act(() => {
+      report = session().steps.rebase({
+        stepIds,
+        between: () => {
+          // What they changed is what this session was NOT holding back.
+          session().steps.applyExternal(rename('Theirs'), elsewhere)
+        },
+      })
+    })
+    expect(report.reapplied).toEqual(stepIds)
+    expect(report.dropped).toEqual([])
+    expect(session().current().diagrams[0].name).toBe('Mine')
+    expect(session().current().diagrams[1].name).toBe('Also mine')
+    expect(session().current().elements[0].name).toBe('Theirs')
+    // The stack is in the order the model was built: theirs, then ours.
+    expect(session().history().map((step) => step.origin))
+      .toEqual(['remote', undefined, undefined])
+  })
+
+  it('drops the one step the reducer now refuses, and says which', () => {
+    const { session } = mount()
+    act(() => { session().dispatch(rename('Mine')) })
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Also mine' }) })
+    const stepIds = session().history().map((step) => step.stepId)
+    let report!: ReturnType<ModelSession['steps']['rebase']>
+    act(() => {
+      report = session().steps.rebase({
+        stepIds,
+        between: () => {
+          session().steps.applyExternal({ type: 'element.delete', id: 'billing' }, elsewhere)
+        },
+      })
+    })
+    expect(report.dropped).toEqual([{ stepId: stepIds[0], reason: 'command.gone' }])
+    expect(report.reapplied).toEqual([stepIds[1]])
+    expect(session().current().diagrams[0].name).toBe('Also mine')
+    // Theirs, then the one of ours that survived. The refused step is gone.
+    const left = session().history()
+    expect(left.map((step) => step.origin)).toEqual(['remote', undefined])
+    expect(left[1].stepId).toBe(stepIds[1])
+  })
+
+  it('reports an id that names no step, and rebases the rest', () => {
+    const { session } = mount()
+    const stepIds = pending(session)
+    let report!: ReturnType<ModelSession['steps']['rebase']>
+    act(() => { report = session().steps.rebase({ stepIds: [...stepIds, 'never-seen'] }) })
+    expect(report.unknown).toEqual(['never-seen'])
+    expect(report.reapplied).toEqual(stepIds)
+  })
+
+  it('is one undo step per step, after the run has been back and forth', () => {
+    const { session } = mount()
+    const stepIds = pending(session)
+    act(() => {
+      session().steps.rebase({
+        stepIds,
+        between: () => { session().steps.applyExternal(rename('Theirs'), elsewhere) },
+      })
+    })
+    act(() => session().undo())
+    expect(session().current().diagrams[1].name).toBe('Second')
+    act(() => session().undo())
+    expect(session().current().diagrams[0].name).toBe('L7')
+    // Theirs is all that is left, and it is not ours to take back.
+    expect(session().canUndo).toBe(false)
+    expect(session().current().elements[0].name).toBe('Theirs')
+  })
+})

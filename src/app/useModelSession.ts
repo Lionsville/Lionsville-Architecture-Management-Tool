@@ -16,16 +16,26 @@
  *
  * No outward dependency: no storage, no files. What comes out is `snapshot()`,
  * and who writes that away is not this hook's business.
+ *
+ * A change can also arrive from somewhere other than this keyboard. The three
+ * functions that make that possible — the log with both directions on it,
+ * `steps.applyExternal` and `steps.rebase` — are the whole of the seam, and
+ * they carry no policy: what a run is, where a step came from and who is told
+ * about a refusal are all the business of whoever composes the session.
  */
 import { useCallback, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
-import type { Command, CommandMeta, DocumentImage, Model, StepSummary, UploadedLogo } from '../model'
+import type {
+  Command, CommandMeta, CommandRefusal, DocumentImage, Model, StepSummary, UploadedLogo,
+} from '../model'
 import { apply, fromArrays, summarise, toArrays, transaction } from '../model'
 import { idPolicy } from '../model/keys'
 import type { IdPolicy } from '../model/keys'
 import { needsRemount } from '../model/hostModel'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
+import { newestOwn, pickRun, rewind, unwind } from './rebase'
+import type { DroppedStep } from './rebase'
 import type { Notify } from './useToasts'
 
 /**
@@ -44,6 +54,16 @@ const HISTORY_CAP = 200
  * is already in undo order, newest first.
  */
 export type HistoryStep = {
+  /**
+   * What this step is called outside this session: a UUID, minted when the
+   * step is recorded.
+   *
+   * The session itself never reads it. It is here so that whoever composes the
+   * session can name a step — recognise one of its own arriving back, ask for
+   * a run of them by name, and land a step sent twice only once. A coalescing
+   * run keeps the id its first command was given, because it is one step.
+   */
+  stepId: string
   commands: Command[]
   inverses: Command[]
   coalesce?: string
@@ -55,8 +75,14 @@ export type HistoryStep = {
   summary: StepSummary
   /** When the step was made, for an activity list. */
   at: number
-  /** Who made it, when it was not the person (ADR-0007). */
-  origin?: 'agent'
+  /** Who made it, when it was not the person at this keyboard (ADR-0007). */
+  origin?: StepOrigin
+  /**
+   * The author, for a step another author made. The Activity list says it, and
+   * `undo` reads `origin` rather than this: a step with no name on it that
+   * arrived from elsewhere is still not ours to take back.
+   */
+  by?: string
   /**
    * ⌘Z stops here, and this key says why (ADR-0012 §10).
    *
@@ -70,6 +96,81 @@ export type HistoryStep = {
 
 export type DispatchOptions = {
   activeDiagramId?: string
+}
+
+/**
+ * Who took a step, when it was not the person at this keyboard: the agent on
+ * this session (ADR-0007), or another author whose step reached us from
+ * somewhere else.
+ */
+export type StepOrigin = 'agent' | 'remote'
+
+/** What is known about a step another author made. */
+export type ExternalStep = {
+  /**
+   * The author. Whoever hands the step over says who made it; this is never a
+   * sender's claim about itself, and the session does not check it — it shows
+   * it, and treats the step as not ours whatever it says.
+   */
+  by: string
+  /** When it was made. Now, where the caller knows nothing better. */
+  at?: number
+  /** The name the step already travels under, so a step is not renamed on arrival. */
+  stepId?: string
+}
+
+/** A run of our own steps to take off the model and put back on. */
+export type RebaseRun = {
+  /**
+   * The steps, by `stepId`. The stack's own order is what they are taken off
+   * and put back in, whatever order they are named in here.
+   */
+  stepIds: readonly string[]
+  /**
+   * Run once the run is off the model, which is the moment a step from
+   * elsewhere belongs underneath it — `applyExternal`, usually more than once.
+   */
+  between?: () => void
+}
+
+/** What a rebase did, for a caller that has to tell somebody about it. */
+export type RebaseReport = {
+  /** The steps that went back on, oldest first. */
+  reapplied: string[]
+  /** The steps the reducer refused on the way back. They are off the stack now. */
+  dropped: DroppedStep[]
+  /** Ids in the run that named no step on the stack: trimmed, or asked for twice. */
+  unknown: string[]
+  /** Set when the run could not be taken off at all, in which case nothing moved. */
+  refused?: CommandRefusal
+}
+
+/**
+ * A change that was made somewhere other than this keyboard.
+ *
+ * Two functions and no policy, so that the session stays the one place a
+ * change enters while knowing nothing about where a change can come from.
+ * The third of the three is `history()` above, which already says what every
+ * step did and what undoes it.
+ */
+export type SessionSteps = {
+  /**
+   * Apply a command another author made: through the same reducer, on the same
+   * stack, named by `model/activity.ts` like any other step, and marked as
+   * theirs so ⌘Z steps over it.
+   *
+   * Answers the model as it now stands, or `undefined` when the reducer
+   * refused — the same answer `dispatch` gives, for the same reason.
+   */
+  applyExternal: (command: Command, from: ExternalStep) => HostModel | undefined
+  /**
+   * Take a run of our own steps off the model by their inverses, let the
+   * caller put what it has underneath them, and put the run back on.
+   *
+   * One React update, because nothing is rendered between the three. This is
+   * what the inverses were computed for.
+   */
+  rebase: (run: RebaseRun) => RebaseReport
 }
 
 export type ModelSession = {
@@ -106,8 +207,18 @@ export type ModelSession = {
    * until the next render.
    */
   dispatch: (command: Command, options?: DispatchOptions) => HostModel | undefined
+  /**
+   * The same door, for a change that was made somewhere else. Nothing in the
+   * app uses it; the composition root is what hands it to whoever does.
+   */
+  steps: SessionSteps
   undo: () => void
   redo: () => void
+  /**
+   * Is there a step of OURS to take back? Another author's step on the stack
+   * is not one, so a session that has only ever been changed by somebody else
+   * has nothing to undo.
+   */
   canUndo: boolean
   canRedo: boolean
   /** The steps taken this session, oldest first. */
@@ -135,6 +246,37 @@ export type ModelSession = {
   snapshot: () => ScopeSnapshot
   /** Take on an entirely different document: an opened file, or the shipped one. */
   adopt: (project: ScopeSnapshot, relayout: boolean) => void
+}
+
+/**
+ * What `record` is told about a step: what the command says about itself, plus
+ * the four things only the session knows.
+ */
+type StepMeta = Omit<CommandMeta, 'origin'> & {
+  origin?: StepOrigin
+  by?: string
+  stepId?: string
+  at?: number
+  /**
+   * Leave the redo tail standing.
+   *
+   * A step another author made is not this person's edit, and taking their
+   * redo away because a colleague typed is a change to their screen that
+   * nobody asked for. A redo that no longer applies costs nothing to keep
+   * offering: the reducer refuses it and says so, which is the branch `step`
+   * already has.
+   */
+  keepFuture?: boolean
+}
+
+/**
+ * A step's name outside this session.
+ *
+ * A UUID rather than a counter, because two sessions that have never met mint
+ * these at the same time and both names have to be good.
+ */
+function mintStepId(): string {
+  return crypto.randomUUID()
 }
 
 export function useModelSession(deps: {
@@ -206,13 +348,29 @@ export function useModelSession(deps: {
   const treeIds = useRef(takenInTree)
   treeIds.current = takenInTree
 
-  const ids = useRef<IdPolicy | null>(null)
-  ids.current ??= idPolicy(() => [
+  const spokenFor = useCallback(() => [
     ...(treeIds.current?.() ?? []),
     ...modelRef.current.order.elements,
     ...modelRef.current.order.relations,
     ...modelRef.current.order.diagrams,
-  ])
+  ], [])
+
+  const ids = useRef<IdPolicy | null>(null)
+  ids.current ??= idPolicy(spokenFor)
+
+  /**
+   * Read what is spoken for again, after a step from elsewhere landed.
+   *
+   * The policy remembers what it has handed out for the life of the session,
+   * so an id another author took in the meantime is not one it knows about —
+   * and a create here would mint the name they just used.
+   *
+   * NOTE for the seam: minted anew until `idPolicy` has a `refresh()` of its
+   * own. What that costs is the ids handed out and not yet in the model.
+   */
+  const refreshIds = useCallback(() => {
+    ids.current = idPolicy(spokenFor)
+  }, [spokenFor])
 
 
   // The stacks are refs, because a caller has to be able to read and move them
@@ -240,7 +398,7 @@ export function useModelSession(deps: {
     next: Model,
     commands: Command[],
     inverses: Command[],
-    meta: CommandMeta,
+    meta: StepMeta,
   ) => {
     modelRef.current = next
     setModel(next)
@@ -249,20 +407,23 @@ export function useModelSession(deps: {
     const top = past.current[past.current.length - 1]
     if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
       // The step keeps the name its FIRST command gave it: a run of keystrokes
-      // is "Changed Billing", not "Changed Billing" twelve times over.
+      // is "Changed Billing", not "Changed Billing" twelve times over. It keeps
+      // that first command's `stepId` for the same reason.
       top.commands.push(...commands)
       top.inverses.unshift(...inverses)
       top.at = Date.now()
     } else {
       past.current.push({
-        commands, inverses, at: Date.now(), summary: summarise(commands, before),
+        stepId: meta.stepId ?? mintStepId(),
+        commands, inverses, at: meta.at ?? Date.now(), summary: summarise(commands, before),
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
         ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
+        ...(meta.by !== undefined ? { by: meta.by } : {}),
         ...(meta.barrier !== undefined ? { barrier: meta.barrier } : {}),
       })
       if (past.current.length > HISTORY_CAP) past.current.shift()
     }
-    future.current = []
+    if (!meta.keepFuture) future.current = []
     setHistoryVersion((v) => v + 1)
   }, [])
 
@@ -292,7 +453,7 @@ export function useModelSession(deps: {
     if (options?.activeDiagramId !== undefined) setActiveDiagramId(options.activeDiagramId)
     // A command that changed nothing is not a refusal and not a step.
     if (result.model === before) return asArrays(before)
-    const meta: CommandMeta = {}
+    const meta: StepMeta = {}
     if (command.coalesce !== undefined) meta.coalesce = command.coalesce
     if (command.undoable !== undefined) meta.undoable = command.undoable
     if (command.origin !== undefined) meta.origin = command.origin
@@ -306,18 +467,27 @@ export function useModelSession(deps: {
     const stack = from === 'past' ? past.current : future.current
     const other = from === 'past' ? future.current : past.current
     /**
+     * Which step is taken back: the newest that is OURS.
+     *
+     * Another author's step stays where it is and the walk steps over it — it
+     * is not ours to undo, and it does not make the step of ours underneath it
+     * un-undoable either. Nothing ever reaches `future` that way, so a redo is
+     * always the top of its stack.
+     */
+    const at = from === 'past' ? newestOwn(stack) : stack.length - 1
+    if (at < 0) return
+    const entry = stack[at]
+    /**
      * A two-scope gesture is where a run of undos stops (ADR-0012 §10). The
      * step stays on the stack, because it happened and the Activity list says
      * so; what is refused is taking it back, and the reason is the key the
      * gesture put there rather than a sentence invented here.
      */
-    const barrier = stack[stack.length - 1]?.barrier
-    if (from === 'past' && barrier !== undefined) {
-      notify(s(barrier), 'warning')
+    if (from === 'past' && entry.barrier !== undefined) {
+      notify(s(entry.barrier), 'warning')
       return
     }
-    const entry = stack.pop()
-    if (!entry) return
+    stack.splice(at, 1)
     const result = apply(
       modelRef.current,
       transaction(from === 'past' ? entry.inverses : entry.commands),
@@ -338,6 +508,75 @@ export function useModelSession(deps: {
 
   const undo = useCallback(() => step('past'), [step])
   const redo = useCallback(() => step('future'), [step])
+
+  /**
+   * A command another author made, through the same door as our own.
+   *
+   * It goes on `past` because it happened to this model and the Activity list
+   * has to be able to say so, and because a run of our steps can only be
+   * rebased over it if it is in the one order everything else is in. What it
+   * does NOT do is clear the redo tail: see `StepMeta.keepFuture`.
+   *
+   * The refusal is reported here rather than swallowed. A step of theirs the
+   * reducer will not take means this model is no longer the one they built it
+   * against, and that is a thing to say, not a thing to hide.
+   */
+  const applyExternal = useCallback<SessionSteps['applyExternal']>((command, from) => {
+    const before = modelRef.current
+    const result = apply(before, command)
+    if (!result.ok) {
+      notify(s(result.reason), 'error')
+      return undefined
+    }
+    // A command that changed nothing is not a refusal and not a step, exactly
+    // as at `dispatch` — a step that has already reached us, for instance.
+    if (result.model === before) return asArrays(before)
+    record(before, result.model, [command], [result.inverse], {
+      origin: 'remote',
+      by: from.by,
+      keepFuture: true,
+      ...(from.at !== undefined ? { at: from.at } : {}),
+      ...(from.stepId !== undefined ? { stepId: from.stepId } : {}),
+    })
+    // Their create took an id this session had no way of knowing about.
+    refreshIds()
+    if (deletesAnElement(command)) reportOrphans(before, result.model)
+    return asArrays(result.model)
+  }, [notify, s, record, asArrays, refreshIds, reportOrphans])
+
+  /**
+   * Take a run of our own steps off the model, let the caller put what it has
+   * underneath them, and put the run back on.
+   *
+   * The stack ends up in the order the model was actually built in: the run
+   * comes off, whatever `between` lands is pushed where it belongs, and the
+   * steps that still apply go back on top of it. Nothing renders in between,
+   * so this is one update however many steps it moves.
+   */
+  const rebase = useCallback<SessionSteps['rebase']>((run) => {
+    const { run: steps, unknown } = pickRun(past.current, run.stepIds)
+    const off = unwind(modelRef.current, steps)
+    if (!off.ok) {
+      // Nothing moved. The caller has the key and decides what to do with it —
+      // apply the external steps unrebased, or ask a person.
+      notify(s(off.reason), 'error')
+      return { reapplied: [], dropped: [], unknown, refused: off.reason }
+    }
+    const lifted = new Set(steps.map((held) => held.stepId))
+    past.current = past.current.filter((held) => !lifted.has(held.stepId))
+    modelRef.current = off.model
+    run.between?.()
+    const back = rewind(modelRef.current, steps)
+    past.current.push(...back.kept)
+    if (past.current.length > HISTORY_CAP) {
+      past.current.splice(0, past.current.length - HISTORY_CAP)
+    }
+    modelRef.current = back.model
+    setModel(back.model)
+    revision.current += 1
+    setHistoryVersion((v) => v + 1)
+    return { reapplied: back.kept.map((held) => held.stepId), dropped: back.dropped, unknown }
+  }, [notify, s])
 
   const onLayoutSettled = useCallback((diagramId: string) => {
     // Not a step: ⌘Z after opening a document must not ask for the layout back.
@@ -390,7 +629,8 @@ export function useModelSession(deps: {
     ids: ids.current,
     editorKey, logoLibrary, setLogoLibrary, imageLibrary, setImageLibrary,
     dispatch, undo, redo,
-    canUndo: past.current.length > 0,
+    steps: { applyExternal, rebase },
+    canUndo: newestOwn(past.current) >= 0,
     canRedo: future.current.length > 0,
     history: () => past.current,
     revision: () => revision.current,

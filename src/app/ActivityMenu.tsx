@@ -19,13 +19,18 @@ import type { Language, Translate } from '../i18n'
 import type { StepSummary } from '../model'
 import { clockTime } from './ShellToolbar'
 
-/** One line of the list: what was done, and when. */
+/** One line of the list: what was done, when, and by whom where that is not obvious. */
 export type ActivityEntry = {
   summary: StepSummary
   /** Epoch milliseconds, as `Date.now()` gives them. */
   at: number
-  /** An agent's step rather than the person's (ADR-0007): the line says so. */
-  origin?: 'agent'
+  /**
+   * Not the person at this keyboard: the agent on this session (ADR-0007), or
+   * another author whose step reached this model from elsewhere.
+   */
+  origin?: 'agent' | 'remote'
+  /** Who the other author was, where the step arrived with a name on it. */
+  by?: string
 }
 
 export type ActivityMenuProps = {

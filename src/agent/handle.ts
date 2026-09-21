@@ -123,7 +123,13 @@ export type SessionView = {
 /** One step as the handler reads it: enough to name it, date it and say whose it was. */
 export type HistoryEntry = {
   readonly at: number
-  readonly origin?: 'agent'
+  /**
+   * Whose step it was, when it was not the person at the keyboard: this
+   * agent's, or another author's, arriving from elsewhere.
+   */
+  readonly origin?: 'agent' | 'remote'
+  /** The author of a step another author made, where one is known. */
+  readonly by?: string
   readonly summary: StepSummary
   readonly commands: readonly Command[]
   /**
