@@ -197,6 +197,39 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     expect(paths).toContain('README.md')
   })
 
+  /**
+   * A cause is filed one folder deeper than anything else (ADR-0021). The
+   * walk that lists a scope's files has to go in there, or the file is
+   * written on every save and read on none — which is how a team's root
+   * causes vanished the first time the scope was reopened.
+   */
+  it('reads the causes back from observations/causes/, one folder deeper than the rest', async () => {
+    const { root, store } = setup()
+    const scope = sampleScope()
+    scope.model.observations = [{
+      id: 'ob-1', number: 1, title: 'Batch overruns', date: '2026-09-08', impact: 'major', seen: 2, body: 'Seen twice.',
+      history: [{ date: '2026-09-08', kind: 'recorded' }],
+    }]
+    scope.model.causes = [{
+      id: 'ca-1', number: 1, title: 'Window sized for 2019', state: 'verified', body: 'Volumes doubled.',
+      explains: [{ id: 'ob-1', strength: 'strong' }],
+    }]
+    await store.save(scope)
+
+    const paths = root.paths().map((path) => path.replace('acme-logistics/landscape/', ''))
+    expect(paths).toContain('observations/0001-batch-overruns.md')
+    expect(paths).toContain('observations/causes/0001-window-sized-for-2019.md')
+
+    const back = await store.load(scope.path)
+    expect(back?.model.causes).toEqual(scope.model.causes)
+    expect(back?.model.observations).toEqual(scope.model.observations)
+
+    // And a cause that is gone from the model is gone from the folder too.
+    delete scope.model.causes
+    await store.save(scope)
+    expect(root.paths().some((path) => path.includes('observations/causes/'))).toBe(false)
+  })
+
   it('answers an unreadable folder with an empty list rather than an exception', async () => {
     // Permission withdrawn, drive unplugged, folder deleted under us.
     const gone = {

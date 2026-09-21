@@ -45,7 +45,7 @@ import {
 } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { markdownBody } from '../../projects/fileText'
-import { observationFromFile } from '../../projects/observationFile'
+import { CAUSES_SUBFOLDER, observationFromFile } from '../../projects/observationFile'
 import type { Observation } from '../../model/observation'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { scopeTree, sortScopes } from '../../projects/scope'
@@ -118,11 +118,16 @@ function usablePath(path: ScopePath): boolean {
  * user or to a scope nested in it?
  *
  * `decisions/` holds one more level, because an application's records are
- * filed in a folder of their own (numbers are per list).
+ * filed in a folder of their own (numbers are per list); `observations/`
+ * holds exactly one, `causes/`, where what lies behind the observations is
+ * filed (ADR-0021). A folder the walk does not enter is a folder whose files
+ * are written and never read back — which is what a cause looked like before
+ * this said so.
  */
 function ownFolder(name: string, within: string): boolean {
   if (within === '') return SCOPE_FOLDERS.includes(name)
-  return within === DECISIONS_FOLDER
+  if (within === DECISIONS_FOLDER) return true
+  return within === OBSERVATIONS_FOLDER && name === CAUSES_SUBFOLDER
 }
 
 /** One file in a scope's folder, with enough to read it, replace it or remove it. */
