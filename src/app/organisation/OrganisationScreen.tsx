@@ -50,7 +50,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
-import type { SourceWayIn } from '../../platform/sourceProvider'
+import type { SourceChip, SourceWayIn } from '../../platform/sourceProvider'
 import { AgentIcon } from '../../widgets/icons'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import IconButton from '@mui/material/IconButton'
@@ -103,6 +103,19 @@ export type OrganisationScreenProps = {
    * has never heard of.
    */
   sourceDescription?: StringKey | (string & {})
+  /**
+   * What that provider calls the chip right now, and what pressing it does
+   * (`platform/sourceProvider.ts`'s `chip`).
+   *
+   * The name a registered source was opened under is the one it was given at the
+   * handshake; who is signed in to it is an answer that arrives after it and
+   * moves again while the window is open, so the chip is the provider's word and
+   * not a fact this screen keeps. `App` re-reads it when the provider says so.
+   *
+   * Absent for the three that ship and for a provider that gave none, and then
+   * the chip is the fact it always was.
+   */
+  sourceChip?: SourceChip
   onChooseWorkingDirectory?: () => void
   /**
    * The other places this build can work from, one button each, beside the one
@@ -174,7 +187,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, sourceDescription,
+  organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip,
   onChooseWorkingDirectory, waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
@@ -312,6 +325,7 @@ export function OrganisationScreen({
         level={level}
         source={atRoot ? source : undefined}
         sourceDescription={sourceDescription}
+        sourceChip={sourceChip}
         onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
@@ -777,8 +791,9 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
  */
 function tipFor(
   source: WorkingSource, describeKey: StringKey | (string & {}) | undefined, s: Translate,
+  chip?: SourceChip,
 ): string {
-  const key = sourceTipKey(source, describeKey)
+  const key = sourceTipKey(source, describeKey, chip)
   return key === undefined ? '' : s(key as StringKey)
 }
 
@@ -819,7 +834,7 @@ function whereSaid(
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, sourceDescription,
+  barRef, tree, home, heading, level, source, sourceDescription, sourceChip,
   onChooseWorkingDirectory, waysIn = [],
   onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
@@ -832,6 +847,7 @@ function OrganisationBar({
   level: 'organisation' | 'domain' | 'landscape'
   source?: WorkingSource
   sourceDescription?: StringKey | (string & {})
+  sourceChip?: SourceChip
   onChooseWorkingDirectory?: () => void
   waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
@@ -871,16 +887,29 @@ function OrganisationBar({
            provider gave none — nothing, which an empty title is how MUI says.
            A guess of ours about somewhere this shell has never heard of could
            promise a copy that cannot be made. */
-        <Tooltip title={tipFor(source, sourceDescription, s)}>
+        <Tooltip title={tipFor(source, sourceDescription, s, sourceChip)}>
           <Typography
             data-testid="working-source"
+            /* A real `button` where a provider gave something to press, and not
+               a span that listens: this bar is the window's drag surface on the
+               desktop, and the rule that keeps a control clickable inside it
+               names elements (`& button, & a, & input`) rather than whatever
+               happens to have a handler. A span with an `onClick` here would be
+               dead surface that drags the window instead. */
+            {...(sourceChip?.onClick
+              ? { component: 'button' as const, type: 'button', onClick: sourceChip.onClick }
+              : {})}
             sx={{
               fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1,
               color: sourceIsAlarming(source) ? 'warning.main' : 'text.secondary',
               border: 1, borderColor: sourceIsAlarming(source) ? 'warning.main' : 'divider',
+              // A button brings the browser's own font and background with it,
+              // so both are said back to what the chip has always looked like.
+              fontFamily: 'inherit', bgcolor: 'transparent',
+              cursor: sourceChip?.onClick ? 'pointer' : undefined,
             }}
           >
-            {sourceLabel(source, s)}
+            {sourceLabel(source, s, sourceChip)}
           </Typography>
         </Tooltip>
       )}
@@ -927,6 +956,8 @@ function OrganisationBar({
           themeMode={overflow.themeMode}
           can={overflow.can}
           onCommand={overflow.onCommand}
+          sourceEntries={overflow.sourceEntries}
+          onSourceWork={overflow.onSourceWork}
           s={s}
         />
       )}

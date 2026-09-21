@@ -68,10 +68,11 @@ import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
+  SourceChip as ProviderChip,
   SourceConnect, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
-import type { RegisteredChrome, SourceChrome } from './App'
+import type { RegisteredChrome, RegisteredMenu, SourceChrome, SourceMenu } from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -255,6 +256,23 @@ export type SourceBase = {
 export type RegisteredSourceProvider<Opening = never> =
   SourceProvider<SourceParts, Opening, SourceBase> & {
     readonly chrome?: SourceChrome
+    /**
+     * What this provider wants in the app's own menu, asked for afresh
+     * ({@link SourceMenu}).
+     *
+     * Here rather than in `platform/` for the same reason `chrome` is, one step
+     * further in: what a line IS carries no React and lives down there
+     * (`SourceMenuEntry`), but what a provider is TOLD when it decides which
+     * lines to offer is the session of the open scope, and a session is a word
+     * this layer owns. What a line looks like stays the shell's business either
+     * way — a provider hands over lines and never a menu.
+     *
+     * The alternative for a provider with actions of its own is a strip of its
+     * own floating over the app, which is a second place to look for what can be
+     * done here. Core's three register none: there is nothing to do to a folder
+     * that the File menu does not already offer.
+     */
+    readonly menu?: SourceMenu
   }
 
 /**
@@ -329,6 +347,49 @@ export function registeredChrome(): readonly RegisteredChrome[] {
     if (provider.chrome) found.push({ kind: provider.kind, chrome: provider.chrome })
   }
   return found
+}
+
+/**
+ * What every registered provider wants in the app's own menu, in the order they
+ * registered: one entry per registration, and none for a provider that wants
+ * nothing.
+ *
+ * Read by the boot and handed whole to `App`, for the reason the chromes are:
+ * *sign in…* is a line the provider that is nobody's source yet needs most, and
+ * a list built from the open source would be a menu that only offers what is
+ * already reachable. Which provider answers for the open source decides what it
+ * is TOLD when it is asked (`App`'s `SourceMenuContext`), and never whether it
+ * is asked.
+ *
+ * Nothing for the three that ship: what can be done to a folder is the File
+ * menu, and this registry is not a second place to say it.
+ */
+export function registeredMenus(): readonly RegisteredMenu[] {
+  const found: RegisteredMenu[] = []
+  for (const provider of SOURCE_PROVIDERS.values()) {
+    if (provider.menu) found.push({ kind: provider.kind, menu: provider.menu })
+  }
+  return found
+}
+
+/**
+ * What a provider calls the chip that names its source, at the moment it is
+ * asked, or nothing.
+ *
+ * Beside {@link sourceDescription} and read the same way: the registry is here,
+ * so the screen that draws the chip — which may not name a filling — is handed
+ * the answer rather than asking for it. A function and not a word, because the
+ * word moves while the window is open: the name a source was opened under is
+ * fixed at the handshake, and who is signed in to it is not.
+ *
+ * Nothing for the three that ship, whose chip this tree has always said, and
+ * nothing for a registered provider that gave none — and then the chip says the
+ * name the source was opened under.
+ */
+export function sourceChip(
+  source: WorkingSource,
+): ((work?: SourceWork) => ProviderChip) | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.chip : undefined
 }
 
 /**

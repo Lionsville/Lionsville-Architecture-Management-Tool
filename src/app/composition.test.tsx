@@ -19,7 +19,7 @@ import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
-  sourceDescription, sourceProvider,
+  registeredMenus, sourceChip, sourceDescription, sourceProvider,
   type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -447,6 +447,73 @@ describe('sourceDescription', () => {
   it('says nothing about a built-in kind, whose sentence this tree holds', () => {
     expect(sourceDescription(IN_MEMORY)).toBeUndefined()
     expect(sourceDescription({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+  })
+})
+
+/**
+ * The lines a provider puts in the app's own menu, and the name it puts on the
+ * chip. Both are read from the registration, for the reason the chrome is: a
+ * provider is at its most talkative before it is anybody's source.
+ */
+describe('registeredMenus', () => {
+  const lines = () => [{ key: 'in', labelKey: 'lined.signIn', onSelect: () => {} }]
+
+  it('lists every provider that wants lines, and only those', () => {
+    registerSourceProvider({
+      kind: 'lined',
+      menu: lines,
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' },
+      }),
+    })
+
+    const asked = registeredMenus()
+    expect(asked.find((entry) => entry.kind === 'lined')?.menu).toBe(lines)
+    // The three that ship add nothing: what can be done to a folder is the File
+    // menu, and this is not a second place to say it.
+    for (const kind of ['folder', 'browserStorage', 'memory']) {
+      expect(asked.map((entry) => entry.kind)).not.toContain(kind)
+    }
+  })
+
+  /** On the registration, so the line that opens a source is there to be pressed. */
+  it('has them before that provider has opened anything at all', () => {
+    expect(registeredMenus().some((entry) => entry.kind === 'lined')).toBe(true)
+    expect(sourceProvider('lined')?.menu).toBe(lines)
+  })
+})
+
+describe('sourceChip', () => {
+  const named = () => ({ label: 'Anna Berg' })
+
+  it('is the provider\'s own for a source it answers for', () => {
+    registerSourceProvider({
+      kind: 'named',
+      chip: named,
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'named', name: 'Named', key: 'one' },
+      }),
+    })
+    expect(sourceChip({
+      kind: 'registered', provider: 'named', name: 'Named', key: 'one',
+    })).toBe(named)
+  })
+
+  /** Then the chip says the name the source was opened under, as it always has. */
+  it('is nothing where the provider gave none, and nothing for a kind nobody registered', () => {
+    expect(sourceChip({
+      kind: 'registered', provider: 'lined', name: 'Lined', key: 'one',
+    })).toBeUndefined()
+    expect(sourceChip({
+      kind: 'registered', provider: 'nobody', name: 'Nobody', key: 'one',
+    })).toBeUndefined()
+  })
+
+  it('says nothing about a built-in kind, whose chip this tree has always said', () => {
+    expect(sourceChip(IN_MEMORY)).toBeUndefined()
+    expect(sourceChip({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
   })
 })
 

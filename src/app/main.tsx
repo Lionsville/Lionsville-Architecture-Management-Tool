@@ -47,7 +47,8 @@ import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
-  inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects, sourceDescription,
+  inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
+  registeredMenus, sourceChip, sourceDescription,
 } from './composition'
 import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
@@ -274,6 +275,14 @@ const waysIn: readonly SourceWayIn[] = registeredConnects()
  * somewhere by then.
  */
 const chromes = registeredChrome()
+
+/**
+ * And what they want in the app's own menu, read once for the same reason: the
+ * registrations are made at module load, and every registration's lines rather
+ * than the open source's, because the line a provider needs most is the one that
+ * is pressed while it answers for nothing.
+ */
+const menus = registeredMenus()
 
 /**
  * A build that knows its source before the first render, from the address the
@@ -653,6 +662,8 @@ function renderApp(
         sourceStatus={shell.sourceStatus}
         onSourceWork={shell.onSourceWork}
         sourceDescription={sourceDescription(shell.source)}
+        sourceChip={sourceChip(shell.source)}
+        sourceMenu={menus}
         onScopeSession={shell.onScopeSession}
         chrome={chromes}
         onChooseWorkingDirectory={

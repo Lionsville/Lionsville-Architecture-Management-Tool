@@ -9,8 +9,13 @@
  *
  * It decides nothing beyond what `offered` decides: an item that cannot work
  * here is not shown, rather than shown disabled.
+ *
+ * A source provider's own lines are the one thing in here that is not this
+ * tree's (`platform/sourceProvider.ts`'s `SourceMenuEntry`): they come last, in
+ * a section of their own, and they are asked for when the menu opens rather than
+ * held — what a provider offers moves with whether anybody is signed in to it.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
@@ -19,8 +24,9 @@ import ListSubheader from '@mui/material/ListSubheader'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
-import type { Translate } from '../i18n'
+import type { StringKey, Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
+import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
 import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
@@ -29,14 +35,42 @@ export type OverflowMenuProps = {
   themeMode: ThemeMode
   can: MenuCapabilities
   onCommand: (command: HostCommand) => void
+  /**
+   * What the source providers want in here, asked for on every open. Absent
+   * where no provider registered a line, and then this menu is what it was.
+   */
+  sourceEntries?: () => readonly SourceMenuEntry[]
+  /**
+   * A provider says its own answer has moved. An open menu asks again, which is
+   * how *Sign in…* becomes a name while the person is looking at it.
+   */
+  onSourceWork?: SourceWorkChanged
   s: Translate
 }
 
-export function OverflowMenu({ themeMode, can, onCommand, s }: OverflowMenuProps) {
+export function OverflowMenu({
+  themeMode, can, onCommand, sourceEntries, onSourceWork, s,
+}: OverflowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
   const entries = offered(FILE_MENU, 'web', can)
   const help = offered(HELP_MENU, 'web', can)
+
+  /**
+   * The providers' lines, read while the menu is open and not before.
+   *
+   * Asked on the open because a provider's answer is about this moment, and
+   * asked again on *ask me again* because the moment can move while the list is
+   * on screen — a handshake finishing behind an open menu is exactly the case
+   * that would otherwise need the menu closed and opened again. Nothing is asked
+   * and nothing is subscribed to while the menu is shut, which is almost always.
+   */
+  const [lines, setLines] = useState<readonly SourceMenuEntry[]>([])
+  useEffect(() => {
+    if (anchor === null || !sourceEntries) return
+    setLines(sourceEntries())
+    return onSourceWork?.(() => setLines(sourceEntries()))
+  }, [anchor, sourceEntries, onSourceWork])
 
   return (
     <>
@@ -92,6 +126,27 @@ export function OverflowMenu({ themeMode, can, onCommand, s }: OverflowMenuProps
             <ListItemText primary={s(entry.label)} primaryTypographyProps={{ fontSize: 13 }} />
           </MenuItem>
         ) : null))}
+        {/* The providers' own lines, last and under a rule. A rule and not a
+            heading: a heading would be a word of ours about somewhere this shell
+            has never heard of, and the lines say what they are. The label is the
+            provider's key, from the table it registered, and a key nobody
+            registered renders as itself — which is a blemish and never a blank.
+            `href` makes the line a link as well, because a provider's own page
+            is somewhere a person may want to open beside this window rather
+            than instead of it; the press still reaches `onSelect`. */}
+        {lines.length > 0 && <Divider />}
+        {lines.map((line) => [
+          line.divider ? <Divider key={`${line.key}-divider`} /> : null,
+          <MenuItem
+            key={line.key}
+            data-testid={`source-entry-${line.key}`}
+            disabled={line.disabled}
+            {...(line.href ? { component: 'a' as const, href: line.href, target: '_blank', rel: 'noreferrer' } : {})}
+            onClick={() => { setAnchor(null); line.onSelect() }}
+          >
+            <ListItemText primary={s(line.labelKey as StringKey)} primaryTypographyProps={{ fontSize: 13 }} />
+          </MenuItem>,
+        ])}
       </Menu>
     </>
   )

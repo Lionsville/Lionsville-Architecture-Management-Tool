@@ -482,3 +482,211 @@ describe('an agent on a source that only reads', () => {
     expect((await ask('element.add', { kind: 'application', name: 'Ledger' })).ok).toBe(true)
   })
 })
+
+/**
+ * The lines a provider puts in the app's own menu.
+ *
+ * A provider with actions of its own — somewhere to sign in, pages of its own,
+ * something to do to the scope that is open — has two places to put them: the
+ * menu this app already has, or a strip of its own floating over it. The second
+ * is a second place to look for what can be done here, so the seam is lines and
+ * not a screen: the provider says what it offers, the shell draws it the way it
+ * draws its own, and the section comes after everything of ours.
+ */
+describe('the lines a registered provider puts in the menu', () => {
+  const elsewhere = {
+    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+  }
+  const scope = {
+    path: 'acme/landscape',
+    model: {
+      name: 'Landscape', elements: [], relations: [],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
+    },
+    activeDiagramId: 'd1',
+    logoLibrary: [],
+  }
+
+  const open = () => fireEvent.click(screen.getByTestId('overflow-button'))
+  const provided = () => [...document.querySelectorAll('[data-testid^="source-entry-"]')]
+
+  it('draws them in their own section after ours, and fires what a press means', () => {
+    registerStrings('en', {
+      'elsewhere.account': 'Your account…',
+      'elsewhere.pages': 'Open elsewhere',
+    })
+    const pressed: string[] = []
+    renderApp({
+      source: elsewhere,
+      sourceMenu: [{
+        kind: 'elsewhere',
+        menu: () => [
+          { key: 'account', labelKey: 'elsewhere.account', onSelect: () => pressed.push('account') },
+          {
+            key: 'pages', labelKey: 'elsewhere.pages', divider: true,
+            onSelect: () => pressed.push('pages'),
+          },
+        ],
+      }],
+    })
+    open()
+    const lines = provided()
+    expect(lines.map((line) => line.textContent)).toEqual(['Your account…', 'Open elsewhere'])
+    // After everything of ours: the last of our own items comes before the first
+    // of theirs, wherever in the list it happens to be.
+    const items = [...document.querySelectorAll('[data-testid="overflow-menu"] li')]
+    expect(items.indexOf(lines[0])).toBeGreaterThan(items.indexOf(items.find((item) => item.textContent === 'Preferences…')!))
+
+    fireEvent.click(lines[1])
+    open()
+    fireEvent.click(provided()[0])
+    expect(pressed).toEqual(['pages', 'account'])
+  })
+
+  /** Core's three register none, and the menu is then character for character the menu. */
+  it('adds nothing at all for the sources that ship', () => {
+    renderApp({ source: { kind: 'browserStorage' } })
+    open()
+    expect(provided()).toEqual([])
+  })
+
+  /**
+   * Asked when the menu opens and again when the provider says its own answer
+   * has moved — a handshake finishing behind an open menu is the case a list
+   * held from the first open would get wrong.
+   */
+  it('asks again while the menu is open, when the provider says so', () => {
+    registerStrings('en', { 'elsewhere.signIn': 'Sign in…', 'elsewhere.signedIn': 'Anna Berg' })
+    let signedIn = false
+    let tell: (() => void) | undefined
+    renderApp({
+      source: elsewhere,
+      onSourceWork: (listener) => { tell = listener; return () => { tell = undefined } },
+      sourceMenu: [{
+        kind: 'elsewhere',
+        menu: () => [{
+          key: 'who',
+          labelKey: signedIn ? 'elsewhere.signedIn' : 'elsewhere.signIn',
+          onSelect: () => {},
+        }],
+      }],
+    })
+    open()
+    expect(screen.getByTestId('source-entry-who').textContent).toBe('Sign in…')
+
+    signedIn = true
+    act(() => tell?.())
+    expect(screen.getByTestId('source-entry-who').textContent).toBe('Anna Berg')
+  })
+
+  /**
+   * The provider is told the two things it has to know before it decides: the
+   * scope that is open as it sees it, and whether work here may be written at
+   * all. The session goes to the provider whose source is open and to no other,
+   * which is the rule the chrome is drawn by.
+   */
+  it('tells the provider whose source is open about the scope, and the others nothing', async () => {
+    const seen: { kind: string; hasSession: boolean; readOnly: boolean }[] = []
+    const watcher = (kind: string) => ({
+      kind,
+      menu: (context: { session?: ScopeSession; readOnly: boolean }) => {
+        seen.push({ kind, hasSession: context.session !== undefined, readOnly: context.readOnly })
+        return []
+      },
+    })
+    renderApp({
+      initialProject: scope,
+      source: { ...elsewhere, readOnly: true },
+      sourceMenu: [watcher('elsewhere'), watcher('other')],
+    })
+    await screen.findByTestId('shell-toolbar')
+    open()
+    expect(seen).toEqual([
+      { kind: 'elsewhere', hasSession: true, readOnly: true },
+      { kind: 'other', hasSession: false, readOnly: true },
+    ])
+  })
+
+  /** A provider's own code runs here, so a provider that throws costs its own lines. */
+  it('keeps the rest of the menu when a provider’s lines throw', () => {
+    registerStrings('en', { 'elsewhere.account': 'Your account…' })
+    const { diagnostics } = renderApp({
+      source: elsewhere,
+      sourceMenu: [
+        { kind: 'falls', menu: () => { throw new Error('asked at a bad moment') } },
+        {
+          kind: 'elsewhere',
+          menu: () => [{ key: 'account', labelKey: 'elsewhere.account', onSelect: () => {} }],
+        },
+      ],
+    })
+    open()
+    expect(provided().map((line) => line.textContent)).toEqual(['Your account…'])
+    expect(diagnostics.recent().some((entry) => entry.where === 'sourceMenu')).toBe(true)
+  })
+})
+
+/**
+ * The chip that names the source, in the provider's words.
+ *
+ * `WorkingSource.name` is what the source was called when it was opened, and for
+ * a source somebody has to be known to before it answers anything that word is
+ * decided at the handshake — who is signed in is an answer that arrives after it
+ * and moves again while the window is open.
+ */
+describe('the chip a registered provider names', () => {
+  const elsewhere = {
+    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+  }
+
+  it('says the provider’s word rather than the name the source was opened under', async () => {
+    registerStrings('en', { 'elsewhere.signedIn': 'Signed in as Anna Berg.' })
+    renderApp({
+      source: elsewhere,
+      sourceChip: () => ({ label: 'Anna Berg', tipKey: 'elsewhere.signedIn' }),
+    })
+    expect(screen.getByTestId('working-source').textContent).toBe('Anna Berg')
+    fireEvent.mouseOver(screen.getByTestId('working-source'))
+    expect((await screen.findByRole('tooltip')).textContent).toBe('Signed in as Anna Berg.')
+  })
+
+  it('asks again when the provider says its own answer has moved', () => {
+    let label = 'Not signed in'
+    let tell: (() => void) | undefined
+    renderApp({
+      source: elsewhere,
+      sourceChip: () => ({ label }),
+      onSourceWork: (listener) => { tell = listener; return () => { tell = undefined } },
+    })
+    expect(screen.getByTestId('working-source').textContent).toBe('Not signed in')
+
+    label = 'Anna Berg'
+    act(() => tell?.())
+    expect(screen.getByTestId('working-source').textContent).toBe('Anna Berg')
+  })
+
+  /**
+   * And it is something to press where the provider gave something to press — a
+   * real button, because this bar is the window's drag surface on the desktop
+   * and the rule that keeps a control clickable in it names elements.
+   */
+  it('runs what the provider gave it to do when it is pressed', () => {
+    const pressed: number[] = []
+    renderApp({
+      source: elsewhere,
+      sourceChip: () => ({ label: 'Anna Berg', onClick: () => pressed.push(1) }),
+    })
+    const chip = screen.getByTestId('working-source')
+    expect(chip.tagName).toBe('BUTTON')
+    fireEvent.click(chip)
+    expect(pressed).toEqual([1])
+  })
+
+  /** And stays what it was where no provider gave a chip at all. */
+  it('is the name it was opened under, and a fact and not a control, with no chip', () => {
+    renderApp({ source: elsewhere })
+    const chip = screen.getByTestId('working-source')
+    expect(chip.textContent).toBe('Elsewhere')
+    expect(chip.tagName).not.toBe('BUTTON')
+  })
+})

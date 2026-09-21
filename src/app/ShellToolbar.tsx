@@ -38,6 +38,7 @@ import type { ThemeMode } from '../platform/theme'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
+import type { SourceChip, SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
 import { ActivityMenu } from './ActivityMenu'
 import type { ActivityEntry } from './ActivityMenu'
 import { OverflowMenu } from './OverflowMenu'
@@ -81,13 +82,20 @@ function alarming(status: DocumentStatus, saveFailed: boolean): boolean {
  * ours in front of it: only the provider knows what kind of place it is, and a
  * label invented here would be this shell guessing about somewhere it has
  * never heard of.
+ *
+ * `chip` is that provider's word for it *now* (`platform/sourceProvider.ts`),
+ * which is not always the word the source was opened under: a source somebody
+ * has to be known to before it answers anything is called the name it was given
+ * at the handshake, and the person can sign out of it without the source
+ * changing. So the chip wins where a provider gave one, and `name` is what is
+ * left where it did not. A built-in kind reads neither.
  */
-export function sourceLabel(source: WorkingSource, s: Translate): string {
+export function sourceLabel(source: WorkingSource, s: Translate, chip?: SourceChip): string {
   switch (source.kind) {
     case 'folder': return s('shell.sourceFolder', { name: source.name })
     case 'browserStorage': return s('shell.sourceBrowser')
     case 'memory': return s('shell.sourceMemory')
-    case 'registered': return source.name
+    case 'registered': return chip?.label ?? source.name
   }
 }
 
@@ -108,13 +116,17 @@ export function sourceLabel(source: WorkingSource, s: Translate): string {
  * that only says where work is kept is already true.
  */
 export function sourceTipKey(
-  source: WorkingSource, describeKey?: StringKey | (string & {}),
+  source: WorkingSource, describeKey?: StringKey | (string & {}), chip?: SourceChip,
 ): StringKey | (string & {}) | undefined {
   switch (source.kind) {
     case 'folder': return 'shell.sourceTipFolder'
     case 'memory': return 'shell.sourceTipMemory'
     case 'browserStorage': return 'shell.sourceTipBrowser'
-    case 'registered': return describeKey
+    // The provider's word about this moment first, then its standing sentence
+    // about where work is kept: a chip that has just been renamed to somebody's
+    // name has something else to say on hover than the registration does, and a
+    // provider that only renamed it said nothing new and keeps the sentence.
+    case 'registered': return chip?.tipKey ?? describeKey
   }
 }
 
@@ -239,6 +251,14 @@ export type ToolbarOverflow = {
   themeMode: ThemeMode
   can: MenuCapabilities
   onCommand: (command: HostCommand) => void
+  /**
+   * What the source providers want in the menu, asked for when it opens
+   * (`App`'s `SourceMenu`). Absent where no provider registered a line, which
+   * is every build in this repository.
+   */
+  sourceEntries?: () => readonly SourceMenuEntry[]
+  /** A provider says its own answer has moved, so an open menu asks again. */
+  onSourceWork?: SourceWorkChanged
 }
 
 export type ShellToolbarProps = {
@@ -420,6 +440,8 @@ export function ShellToolbar({
           themeMode={overflow.themeMode}
           can={overflow.can}
           onCommand={overflow.onCommand}
+          sourceEntries={overflow.sourceEntries}
+          onSourceWork={overflow.onSourceWork}
           s={s}
         />
       )}

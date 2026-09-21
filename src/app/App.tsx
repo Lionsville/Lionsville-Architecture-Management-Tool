@@ -61,7 +61,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, sourceIsReadOnly, sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type {
-  SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
+  SourceChip, SourceMenuEntry, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -168,6 +168,43 @@ export type SourceChrome = ComponentType<{ session?: ScopeSession }>
 export type RegisteredChrome = {
   readonly kind: string
   readonly chrome: SourceChrome
+}
+
+/**
+ * What a provider is told when it is asked what it wants in the menu.
+ *
+ * The same two facts the workspace reads about a source before it draws
+ * anything: the scope that is open as whoever answers for the source sees it —
+ * absent for every provider but the one whose source is open, exactly as with
+ * {@link SourceChrome}, and absent for that one too while nothing is open — and
+ * whether work here may be written at all. A provider that offers *Share this
+ * scope…* has both questions answered before it decides whether to offer it,
+ * which is the whole reason the lines are asked for rather than registered once.
+ *
+ * It names a `ScopeSession`, which is why the lines are declared on the
+ * registration in `composition.ts` beside `chrome` and not in `platform/`: what
+ * a line IS is a `SourceMenuEntry` and lives down there, where a test with no
+ * DOM can read it.
+ */
+export type SourceMenuContext = {
+  readonly session?: ScopeSession
+  readonly readOnly: boolean
+}
+
+/**
+ * The lines one provider wants in the app's own menu, asked for afresh.
+ *
+ * A function and not a list, because what a provider offers moves: signed in or
+ * not, a scope open or not, work in flight or not. It is asked when the menu is
+ * opened and again whenever the provider says its own answer has moved
+ * (`onSourceWork`), which are the two moments the person can see the difference.
+ */
+export type SourceMenu = (context: SourceMenuContext) => readonly SourceMenuEntry[]
+
+/** One provider's menu lines, and which provider's they are. */
+export type RegisteredMenu = {
+  readonly kind: string
+  readonly menu: SourceMenu
 }
 
 /**
@@ -299,6 +336,34 @@ export type AppProps = {
    * boot, which is the one place that may ask (`composition.ts`).
    */
   sourceDescription?: StringKey | (string & {})
+  /**
+   * What this source's provider calls the chip that names it, at this moment,
+   * and what pressing it does (`platform/sourceProvider.ts`'s `chip`).
+   *
+   * Read again whenever {@link AppProps.onSourceWork} fires, because the word
+   * worth putting there — who is signed in, and whether anybody is — is an
+   * answer that arrives after the source was opened and moves again while the
+   * window is open. Absent for the three that ship, and for a registered
+   * provider that gave none, and then the chip says the name the source was
+   * opened under, exactly as it always has. Read from the registration by the
+   * boot, which is the one place that may ask (`composition.ts`).
+   */
+  sourceChip?: (work?: SourceWork) => SourceChip
+  /**
+   * The lines the source providers put in the app's own menu, one entry per
+   * registration ({@link SourceMenu}).
+   *
+   * Every registered provider's and not the open source's, for the reason
+   * {@link AppProps.chrome} is: a provider that is not the source yet is exactly
+   * the one with something to offer — *sign in*, *connect to…* — and the one
+   * whose provider answers for the open source is the only one handed the
+   * session.
+   *
+   * Empty for every build in this repository: a folder, this browser's storage
+   * and memory have nothing to add to a menu that already says what can be done
+   * to a folder.
+   */
+  sourceMenu?: readonly RegisteredMenu[]
   /**
    * A scope has been opened, and here is the session over it: for whoever
    * answers for the source (`composition.ts`). Passed straight through to the
@@ -480,6 +545,7 @@ function localToday(): string {
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, sourceStatus, onSourceWork, sourceDescription,
+  sourceChip, sourceMenu: menus = [],
   onScopeSession, chrome: chromes = [],
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
@@ -1311,13 +1377,61 @@ export function App({
     const stop = onScopeSession?.(session)
     return () => { setOpenScope(undefined); stop?.() }
   }, [onScopeSession])
-  const takeScopeSession = chromes.length > 0 || onScopeSession ? holdScopeSession : undefined
+  const takeScopeSession = chromes.length > 0 || menus.length > 0 || onScopeSession
+    ? holdScopeSession
+    : undefined
   /**
    * Which registration answers for the source that is open, so that one chrome
    * is handed the session and the others are not. A built-in source is its own
    * provider's kind, and a registered one names it.
    */
   const openProvider = sourceProviderKind(source)
+
+  /**
+   * What the chip on a home says, as the provider says it now.
+   *
+   * State rather than a read at the draw, because the answer moves without
+   * anything on this screen moving: a handshake finishes, somebody signs out,
+   * and the name on the chip was decided when the source was opened. The
+   * provider says *ask me again* through the one signal it already has, and
+   * both this and the word on the bar are re-read from it.
+   */
+  const [chip, setChip] = useState<SourceChip | undefined>(() => sourceChip?.())
+  useEffect(() => {
+    if (!sourceChip) { setChip(undefined); return }
+    setChip(sourceChip())
+    return onSourceWork?.(() => setChip(sourceChip()))
+  }, [sourceChip, onSourceWork])
+
+  /**
+   * Every provider's menu lines, asked for at the moment the menu draws them.
+   *
+   * A provider's own code runs here, so a provider that throws costs its own
+   * lines and not the menu: the rest of the list is what a person came to the
+   * menu for, and half a menu is worse than a missing section. It goes into the
+   * trail the way every other failure in this shell does.
+   */
+  const sourceEntries = useCallback((): readonly SourceMenuEntry[] => {
+    const lines: SourceMenuEntry[] = []
+    for (const { kind, menu } of menus) {
+      try {
+        lines.push(...menu({
+          session: kind === openProvider ? openScope : undefined,
+          readOnly: sourceIsReadOnly(source),
+        }))
+      } catch (cause) {
+        diagnostics.report({ level: 'error', where: 'sourceMenu', message: kind, cause })
+      }
+    }
+    return lines
+  }, [menus, openProvider, openScope, source, diagnostics])
+
+  /**
+   * What the menu is given about the providers, and nothing at all where no
+   * provider registered a line — so a build with none passes the menu exactly
+   * what it always passed, and the section is not there to be empty.
+   */
+  const overflowSource = menus.length > 0 ? { sourceEntries, onSourceWork } : undefined
 
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
@@ -1367,6 +1481,7 @@ export function App({
             commands={bus.on}
             hostMenu={hostMenu}
             overflow={hostMenu ? undefined : {
+              ...overflowSource,
               themeMode: prefs.themeMode,
               can: { folders: Boolean(onChooseWorkingDirectory), scope: true },
               onCommand: bus.send,
@@ -1413,12 +1528,14 @@ export function App({
             onOrderChange={chooseOrder}
             source={source}
             sourceDescription={sourceDescription}
+            sourceChip={chip}
             onChooseWorkingDirectory={onChooseWorkingDirectory}
             waysIn={waysIn}
             // The same two the workspace's bar carries: the menu on a host
             // that has none of its own, and the agent glyph, which has to be
             // reachable with nothing open (ADR-0007).
             overflow={hostMenu ? undefined : {
+              ...overflowSource,
               themeMode: prefs.themeMode,
               // The folder's history, from its front door too (`homeHistory`).
               can: { folders: Boolean(onChooseWorkingDirectory), history: homeHistory.available, scope: false },

@@ -234,4 +234,85 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    * file means, which is what all three that ship mean.
    */
   readonly statusOf?: (work: SourceWork) => SourceStatus
+  /**
+   * What the chip on a scope's home says about this source, in the provider's
+   * own words — and what pressing it does.
+   *
+   * `WorkingSource.name` is what the source was called when it was opened, and
+   * for a source somebody has to be known to before it will answer anything, the
+   * interesting word is not decided then: who is signed in, and whether anybody
+   * is at all, are answers that arrive after the handshake and change again
+   * while the window is open. Without this the chip would say the name it was
+   * opened under until the app was reloaded.
+   *
+   * Asked again whenever {@link SourceWorkChanged} fires, which is the same *ask
+   * me again* {@link SourceProvider.statusOf} is asked on: a provider whose own
+   * answer has moved says so once and both are re-read.
+   *
+   * `work` is what the shell knows about the work where the chip is drawn, which
+   * on a scope's home — the one place the chip is — is nothing at all, because
+   * nothing is open there. A provider that only wants to name somebody ignores
+   * it, as all of them could.
+   *
+   * Absent for the three that ship, and then the chip says what it always said.
+   */
+  readonly chip?: (work?: SourceWork) => SourceChip
+}
+
+/**
+ * What a provider calls its source on the bar, at this moment.
+ *
+ * A label rather than a key, because what it says is usually not a word at all:
+ * a person's name, an address, the thing this provider was told to call itself.
+ * The tip beside it IS a key, for the reason {@link SourceProvider.describeKey}
+ * is one — a sentence has to be in four languages and this tree holds none of
+ * this provider's.
+ */
+export type SourceChip = {
+  /** What the chip says, instead of the name the source was opened under. */
+  readonly label: string
+  /**
+   * What hovering it says: the provider's key, from its own table. Absent falls
+   * back to {@link SourceProvider.describeKey}, which is the standing sentence
+   * about where work is kept — so a provider that only renames the chip keeps
+   * the sentence it already gave.
+   */
+  readonly tipKey?: StringKey | (string & {})
+  /**
+   * What pressing it does — open the provider's own menu, its account page,
+   * whatever the name on it is a way into.
+   *
+   * Absent leaves the chip what it has always been: a fact, not a control.
+   */
+  readonly onClick?: () => void
+}
+
+/**
+ * One line a provider puts in the app's own menu.
+ *
+ * The alternative is a strip of the provider's own floating over the app
+ * ({@link SourceProvider} has somewhere to draw one), and a second place to
+ * look for commands is what the menu exists to stop: a person looking for what
+ * they can do here should find all of it in one list. So a provider hands over
+ * lines rather than a screen, and the shell renders them the way it renders its
+ * own — one section, after everything of ours.
+ *
+ * `labelKey` is a key, from the provider's own table (`i18n`'s
+ * `registerStrings`), for the reason every other string here is one; `key` is
+ * what tells two lines apart and is never shown. `onSelect` is what a press
+ * does, and runs after the menu has shut, so a dialog it opens is not fighting
+ * a menu for the focus. `href` makes the line a link as well — a provider's own
+ * page is on the web and a person may want to copy it or open it beside this
+ * window — and `onSelect` still runs.
+ */
+export type SourceMenuEntry = {
+  readonly key: string
+  readonly labelKey: StringKey | (string & {})
+  readonly onSelect: () => void
+  /** Offered and not available: shown greyed, because it says what is missing. */
+  readonly disabled?: boolean
+  /** A rule above this line, for a provider whose lines are two groups. */
+  readonly divider?: boolean
+  /** Where it goes, where it goes anywhere. */
+  readonly href?: string
 }
