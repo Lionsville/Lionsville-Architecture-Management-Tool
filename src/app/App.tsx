@@ -59,7 +59,7 @@ import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import { SyncNotice } from './SyncNotice'
 import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
-import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
+import { BROWSER_STORAGE, sourceIsReadOnly, sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type {
   SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
@@ -132,8 +132,39 @@ export type ShellDiagnostics = {
  * `session` is absent where nothing is open, which is most of the time on the
  * organisation screen and all of the time on the first-run screen. A provider
  * that has nothing to say then draws nothing, which is what `null` is for.
+ *
+ * **It is drawn for every registered provider, open or not.** A chrome that
+ * arrived with the parts of an opened source was a chrome no unopened provider
+ * had: the first press of its way in had nowhere to draw the dialog that asks
+ * where to connect to, which is the one screen a provider needs BEFORE it is
+ * the source. So the boot hands over one per registration
+ * (`composition.ts`'s `registeredChrome`) and this shell draws them all, giving
+ * `session` to the one whose provider answers for the open source and to no
+ * other.
+ *
+ * **So a chrome must be idempotent about its own state.** It is mounted while
+ * its provider is nobody's source, and mounted again — a fresh component, with
+ * fresh state — when a source opens, because the app is keyed on the working
+ * source. Whatever it has to remember across that (a handshake in flight, a
+ * dialog left open, a subscription) belongs where the provider keeps it and not
+ * in this component, and being mounted twice over one session must cost nothing
+ * but a render.
  */
 export type SourceChrome = ComponentType<{ session?: ScopeSession }>
+
+/**
+ * One provider's chrome, and which provider's it is.
+ *
+ * The kind it registered under, because that is what says whether the open
+ * source is this provider's: `sourceProviderKind` answers the same question
+ * from the other side, and a chrome handed a session belonging to somebody
+ * else's source would be a strip describing a document its provider has never
+ * seen.
+ */
+export type RegisteredChrome = {
+  readonly kind: string
+  readonly chrome: SourceChrome
+}
 
 /**
  * Which page the workspace should be showing the moment it appears.
@@ -260,12 +291,19 @@ export type AppProps = {
    */
   onScopeSession?: (session: ScopeSession) => (() => void) | void
   /**
-   * Whatever the source provider draws for itself ({@link SourceChrome}).
+   * Whatever the source providers draw for themselves ({@link SourceChrome}),
+   * one entry per registration and not per open source.
    *
-   * Absent for all three sources that ship: a folder, this browser's storage and
-   * memory have nothing to say that the bar does not say for them.
+   * Every registered provider's, because a provider that is not the source yet
+   * is exactly the one with something to ask: its way in has to be able to draw
+   * a dialog, and before this there was nowhere for it to go. The one whose
+   * provider answers for the open source is handed the session; the rest are
+   * drawn with nothing.
+   *
+   * Empty for every build in this repository: a folder, this browser's storage
+   * and memory have nothing to say that the bar does not say for them.
    */
-  chrome?: SourceChrome
+  chrome?: readonly RegisteredChrome[]
   /**
    * How to change the folder. Absent in a browser tab whose browser cannot
    * give one: an app that showed the button anyway would be offering what it
@@ -420,7 +458,7 @@ function localToday(): string {
 
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession, chrome: Chrome,
+  source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession, chrome: chromes = [],
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, sourceFailure,
@@ -1206,7 +1244,13 @@ export function App({
     const stop = onScopeSession?.(session)
     return () => { setOpenScope(undefined); stop?.() }
   }, [onScopeSession])
-  const takeScopeSession = Chrome || onScopeSession ? holdScopeSession : undefined
+  const takeScopeSession = chromes.length > 0 || onScopeSession ? holdScopeSession : undefined
+  /**
+   * Which registration answers for the source that is open, so that one chrome
+   * is handed the session and the others are not. A built-in source is its own
+   * provider's kind, and a registered one names it.
+   */
+  const openProvider = sourceProviderKind(source)
 
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
@@ -1377,19 +1421,31 @@ export function App({
             {s('shell.storageFailed')}
           </Alert>
         )}
-        {Chrome && (
+        {chromes.map(({ kind, chrome: Chrome }) => (
           /* Inside the theme and inside the language, so a provider's strip is
              in this person's dark mode and this person's Frisian; beside the
              app's own notices rather than around the screens, because it is one
              of them. In a boundary of its own for the reason the canvas has
              one: a strip somebody else wrote falling over must cost the strip
-             and not the window. */
-          <ErrorBoundary where="sourceChrome" diagnostics={diagnostics} controls={hostControls} s={s}>
+             and not the window — and one boundary EACH, so it does not cost the
+             next provider's strip either.
+
+             Every registration, open or not: the provider whose way in has just
+             been pressed is by definition not the source yet, and its dialog has
+             to be somewhere. The session goes to the one that answers for the
+             source that is open, and to nobody else. */
+          <ErrorBoundary
+            key={kind}
+            where="sourceChrome"
+            diagnostics={diagnostics}
+            controls={hostControls}
+            s={s}
+          >
             <LanguageProvider language={prefs.language}>
-              <Chrome session={openScope} />
+              <Chrome session={kind === openProvider ? openScope : undefined} />
             </LanguageProvider>
           </ErrorBoundary>
-        )}
+        ))}
         <PreferencesDialog
           open={prefsOpen}
           onClose={() => setPrefsOpen(false)}

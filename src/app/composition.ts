@@ -68,7 +68,7 @@ import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceConnect, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
-import type { SourceChrome } from './App'
+import type { RegisteredChrome, SourceChrome } from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -154,20 +154,6 @@ export type Shell = {
    */
   onScopeSession?: (session: ScopeSession) => (() => void) | void
   /**
-   * Whatever the source draws for itself: a strip, a badge, a dialog of its own
-   * (`App.tsx`'s `SourceChrome`).
-   *
-   * The other thing a registered provider could not reach. Its way in is a
-   * label the shell draws a button from, and its words about the work are five
-   * the bar already says — but a source that has something of its own to show
-   * had nowhere in this tree to show it, and the only place left was a container
-   * on `document.body`, outside the theme and the language. The app renders it
-   * beside its own notices instead.
-   *
-   * Absent for all three that ship, which have nothing to say.
-   */
-  chrome?: SourceChrome
-  /**
    * Tell me when this project's folder changed under us, other than by us.
    *
    * Absent when nothing can watch — a browser tab, or a folder the platform
@@ -248,11 +234,32 @@ export type SourceBase = {
 }
 
 /**
+ * A provider as this build registers one: what `platform/sourceProvider.ts`
+ * says, plus the one thing only a file that may name a screen can carry.
+ *
+ * `chrome` is a component, and `platform` computes — it may not so much as name
+ * React (`eslint.config.js`). So the strip a provider draws is declared here,
+ * where `SourceChrome` is already a word this file knows, and everything else
+ * about a provider stays where a test with no DOM can read it.
+ *
+ * It is declared on the REGISTRATION rather than brought with the parts of an
+ * opened source, which is the whole of the fix: a chrome that only existed once
+ * a source was open was missing at the one moment a provider needs a screen —
+ * the first press of its way in, when it has to ask where to connect to and is
+ * not the source yet. {@link SourceChrome} says what the shell then owes it, and
+ * what being drawn while its provider is nobody's source asks of it in return.
+ */
+export type RegisteredSourceProvider<Opening = never> =
+  SourceProvider<SourceParts, Opening, SourceBase> & {
+    readonly chrome?: SourceChrome
+  }
+
+/**
  * Every kind of place this build can work from, by the kind it registered
  * under. A live map rather than a snapshot: registration happens at module
  * load and the lookups below run at the boot, long after.
  */
-const SOURCE_PROVIDERS = new Map<string, SourceProvider<SourceParts, never, SourceBase>>()
+const SOURCE_PROVIDERS = new Map<string, RegisteredSourceProvider>()
 
 /**
  * Teach this build a kind of place work can be kept.
@@ -263,21 +270,42 @@ const SOURCE_PROVIDERS = new Map<string, SourceProvider<SourceParts, never, Sour
  * safe, and a build cannot quietly take over the folder.
  */
 export function registerSourceProvider<Opening>(
-  provider: SourceProvider<SourceParts, Opening, SourceBase>,
+  provider: RegisteredSourceProvider<Opening>,
 ): void {
   if (SOURCE_PROVIDERS.has(provider.kind)) return
   // The one cast in this registry, and it is where the type is genuinely lost:
   // what a provider needs to be given is its own, the map holds every kind at
   // once, and only the caller that asks for a kind knows which. `sourceProvider`
   // below hands the knowledge back, which is why nothing else has to.
-  SOURCE_PROVIDERS.set(provider.kind, provider as SourceProvider<SourceParts, never, SourceBase>)
+  SOURCE_PROVIDERS.set(provider.kind, provider as RegisteredSourceProvider)
 }
 
 /** Who answers for a kind of source, or nobody. */
 export function sourceProvider<Opening = void>(
   kind: string,
-): SourceProvider<SourceParts, Opening, SourceBase> | undefined {
-  return SOURCE_PROVIDERS.get(kind)
+): RegisteredSourceProvider<Opening> | undefined {
+  return SOURCE_PROVIDERS.get(kind) as RegisteredSourceProvider<Opening> | undefined
+}
+
+/**
+ * What every registered provider draws for itself, in the order they
+ * registered: one entry per registration, and none for a provider that draws
+ * nothing.
+ *
+ * Read by the boot, which hands the whole list to `App` — not the open source's
+ * one. A provider is at its most talkative before it is the source: its way in
+ * has to ask for an address, say that a handshake is in flight, and say that it
+ * came to nothing, and a strip that only appeared once the source was open was
+ * one that appeared a moment too late to do any of it. Whether a provider
+ * happens to answer for the source that is open decides what it is HANDED
+ * ({@link SourceChrome}), and never whether it is drawn.
+ */
+export function registeredChrome(): readonly RegisteredChrome[] {
+  const found: RegisteredChrome[] = []
+  for (const provider of SOURCE_PROVIDERS.values()) {
+    if (provider.chrome) found.push({ kind: provider.kind, chrome: provider.chrome })
+  }
+  return found
 }
 
 /**

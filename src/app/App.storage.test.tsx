@@ -152,6 +152,12 @@ describe('a source a provider answers for', () => {
  * was a container on `document.body`: outside the theme, outside the language,
  * and over or under whatever the app had drawn. So the app draws it, beside its
  * own notices, and hands it the scope that is open while one is.
+ *
+ * One per REGISTRATION, and drawn whether or not that provider answers for the
+ * source that is open: the press that opens a source happens while that
+ * provider is nobody's source, so a chrome that waited for its own source to be
+ * open was a connect dialog with nowhere to be. The session is what tells the
+ * two apart.
  */
 describe('the chrome a registered provider brought', () => {
   const elsewhere = {
@@ -178,14 +184,16 @@ describe('the chrome a registered provider brought', () => {
   }
 
   it('is drawn with nothing open, where the source is still the source', () => {
-    renderApp({ source: elsewhere, chrome: Strip })
+    renderApp({ source: elsewhere, chrome: [{ kind: 'elsewhere', chrome: Strip }] })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     // Beside the app's own screen rather than instead of it.
     expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
   })
 
   it('is handed the session of the scope that is open, and told when it closes', async () => {
-    renderApp({ initialProject: scope, source: elsewhere, chrome: Strip })
+    renderApp({
+      initialProject: scope, source: elsewhere, chrome: [{ kind: 'elsewhere', chrome: Strip }],
+    })
     await waitFor(() => {
       expect(screen.getByTestId('provider-strip').textContent).toBe('en: acme/landscape')
     })
@@ -200,7 +208,7 @@ describe('the chrome a registered provider brought', () => {
 
   /** Inside the app's language, which is the whole reason it is not on `body`. */
   it('renders in the language the app is in', () => {
-    renderApp({ source: elsewhere, chrome: Strip }, { language: 'nl' })
+    renderApp({ source: elsewhere, chrome: [{ kind: 'elsewhere', chrome: Strip }] }, { language: 'nl' })
     expect(screen.getByTestId('provider-strip').textContent).toBe('nl: nothing open')
   })
 
@@ -213,7 +221,7 @@ describe('the chrome a registered provider brought', () => {
     renderApp({
       initialProject: scope,
       source: elsewhere,
-      chrome: Strip,
+      chrome: [{ kind: 'elsewhere', chrome: Strip }],
       onScopeSession: (session) => {
         seen.push(session.scope)
         return () => seen.push('let go')
@@ -223,9 +231,47 @@ describe('the chrome a registered provider brought', () => {
   })
 
   /** Every build in this repository: nothing registered, nothing drawn. */
-  it('draws nothing where the source brought none', () => {
+  it('draws nothing where no provider registered one', () => {
     renderApp({ source: elsewhere })
     expect(screen.queryByTestId('provider-strip')).toBeNull()
+  })
+
+  /**
+   * The case the strip exists for: a provider that is not the source at all.
+   *
+   * A way in is pressed on a screen where work is still kept in a folder, so the
+   * dialog that asks where to connect to has to be drawn by a provider that
+   * answers for nothing yet. Drawn, and handed no session — there is none of its
+   * to hand.
+   */
+  it('is drawn for a provider that answers for nothing here', () => {
+    renderApp({
+      source: { kind: 'folder', name: 'Architecture', root: '/work' },
+      chrome: [{ kind: 'elsewhere', chrome: Strip }],
+    })
+    expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
+    expect(screen.getByTestId('working-source').textContent).toBe('Folder \u00b7 Architecture')
+  })
+
+  /**
+   * Two registrations, one open source: both draw, and the session goes to the
+   * provider that answers for the source and to nobody else. A strip handed
+   * somebody else's session would be describing a document its provider has
+   * never seen.
+   */
+  it('hands the session to the provider whose source is open, and to no other', async () => {
+    function Other({ session }: { session?: ScopeSession }) {
+      return <p data-testid="other-strip">{session ? session.scope : 'nothing open'}</p>
+    }
+    renderApp({
+      initialProject: scope,
+      source: elsewhere,
+      chrome: [{ kind: 'elsewhere', chrome: Strip }, { kind: 'other', chrome: Other }],
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('provider-strip').textContent).toBe('en: acme/landscape')
+    })
+    expect(screen.getByTestId('other-strip').textContent).toBe('nothing open')
   })
 
   /**
@@ -237,10 +283,28 @@ describe('the chrome a registered provider brought', () => {
     try {
       renderApp({
         source: elsewhere,
-        chrome: () => { throw new Error('the strip fell over') },
+        chrome: [{ kind: 'elsewhere', chrome: () => { throw new Error('the strip fell over') } }],
       })
       expect(screen.getByTestId('crash-fallback')).toBeDefined()
       expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  /** A boundary EACH, so one provider's strip does not cost the next one's. */
+  it('leaves the next provider\'s strip standing when one falls over', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      renderApp({
+        source: elsewhere,
+        chrome: [
+          { kind: 'falls', chrome: () => { throw new Error('the strip fell over') } },
+          { kind: 'elsewhere', chrome: Strip },
+        ],
+      })
+      expect(screen.getByTestId('crash-fallback')).toBeDefined()
+      expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     } finally {
       spy.mockRestore()
     }

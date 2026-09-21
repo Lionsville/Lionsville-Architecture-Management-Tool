@@ -18,8 +18,8 @@ import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
-  inWorkingDirectory, openSource, registerSourceProvider, registeredConnects, sourceProvider,
-  type FolderOpening, type Shell, type SourceBase, type SourceParts,
+  inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
+  sourceProvider, type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
 /**
@@ -368,6 +368,48 @@ describe('registeredConnects', () => {
     // The folder has no address to read, so it has no say in the question.
     expect(registeredConnects().find((way) => way.kind === 'folder')?.connect.fromLocation)
       .toBeUndefined()
+  })
+})
+
+/**
+ * The strips, which the boot draws for every registration and not for the open
+ * source alone.
+ *
+ * A chrome that arrived with the parts of an opened source was missing at the
+ * one moment a provider needs a screen: the first press of its way in, when it
+ * has to ask where to connect to and is not the source yet. So it is declared on
+ * the registration, and this is the list the boot hands over.
+ */
+describe('registeredChrome', () => {
+  function Strip() {
+    return <p>Elsewhere</p>
+  }
+
+  it('lists every provider that draws one, and only those', () => {
+    registerSourceProvider({
+      kind: 'drawing',
+      chrome: Strip,
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'drawing', name: 'Drawing', key: 'one' },
+      }),
+    })
+
+    const drawn = registeredChrome()
+    expect(drawn.find((entry) => entry.kind === 'drawing')?.chrome).toBe(Strip)
+    // The three that ship have nothing to say that the bar does not say for them.
+    expect(drawn.map((entry) => entry.kind))
+      .not.toContain('folder')
+    expect(drawn.map((entry) => entry.kind)).not.toContain('memory')
+  })
+
+  /**
+   * It is on the registration and not on the parts, so it is there before the
+   * provider has opened anything — which is the whole of the fix.
+   */
+  it('has it before that provider has opened anything at all', () => {
+    expect(registeredChrome().some((entry) => entry.kind === 'drawing')).toBe(true)
+    expect(sourceProvider('drawing')?.chrome).toBe(Strip)
   })
 })
 

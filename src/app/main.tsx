@@ -47,7 +47,7 @@ import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, composeShell, desktopCommandChannel, desktopFileChannel, inBrowserFolder,
-  inWorkingDirectory, openSource, registeredConnects,
+  inWorkingDirectory, openSource, registeredChrome, registeredConnects,
 } from './composition'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
 import type { SourceWayIn } from '../platform/sourceProvider'
@@ -261,6 +261,19 @@ const waysIn: readonly SourceWayIn[] = registeredConnects()
     labelKey: way.connect.labelKey,
     onConnect: () => connectTo(way),
   }))
+
+/**
+ * What every registered provider draws for itself, whichever source this boot
+ * ends up working from. Empty in every build in this repository.
+ *
+ * Read once, out here, for the same reason the ways in are: registration
+ * happens at module load, and a list read per render would be a fresh array
+ * every render and the same entries every time. Every registration and not the
+ * open source's own, because the press that opens a source happens on a screen
+ * where that provider is not the source yet — and its dialog has to be
+ * somewhere by then.
+ */
+const chromes = registeredChrome()
 
 /**
  * A build that knows its source before the first render, from the address the
@@ -626,7 +639,7 @@ function renderApp(
         sourceStatus={shell.sourceStatus}
         onSourceWork={shell.onSourceWork}
         onScopeSession={shell.onScopeSession}
-        chrome={shell.chrome}
+        chrome={chromes}
         onChooseWorkingDirectory={
           files || browserFolders.possible() ? chooseWorkingDirectory : undefined
         }
