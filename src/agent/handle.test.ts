@@ -320,6 +320,19 @@ describe('the session’s own: revision, the log, undo, save', () => {
     expect(await handle({ id: '4', tool: 'image.upload', args: { name: 'x', data: big, type: 'image/png' } }, held)).toMatchObject({ refusal: 'agent.tooLarge' })
     expect(held.images()).toHaveLength(0)
   })
+
+  /**
+   * A build with no window keeps no pictures, so the honest answer is the key
+   * that says so rather than bytes accepted and dropped. `addImage` absent is
+   * how the handler is told, the way `renderer` absent is for the see tier.
+   */
+  it('refuses a picture where there is nowhere to keep one', async () => {
+    const held = session()
+    const noPictures = { ...held, addImage: undefined }
+    expect(await handle({ id: '1', tool: 'image.upload', args: { name: 'x', data: PNG, type: 'image/png' } }, noPictures))
+      .toMatchObject({ refusal: 'agent.noScreen' })
+    expect(held.images()).toHaveLength(0)
+  })
 })
 
 describe('batch', () => {
@@ -359,10 +372,10 @@ describe('batch', () => {
 describe('the four things only the renderer can do', () => {
   it('refuses them all without a canvas', async () => {
     for (const tool of ['diagram.render', 'diagram.tidy', 'diagram.route']) {
-      expect(await handle({ id: '1', tool, args: {} }, session())).toMatchObject({ refusal: 'agent.noAnswer', detail: 'no canvas' })
+      expect(await handle({ id: '1', tool, args: {} }, session())).toMatchObject({ refusal: 'agent.noScreen', detail: 'no canvas' })
     }
     expect(await handle({ id: '1', tool: 'focus', args: { elementId: 'billing' } }, session()))
-      .toMatchObject({ refusal: 'agent.noAnswer' })
+      .toMatchObject({ refusal: 'agent.noScreen' })
   })
 
   it('points at an element through the renderer, and refuses one that is not there', async () => {

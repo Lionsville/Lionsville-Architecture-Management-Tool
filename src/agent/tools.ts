@@ -1785,6 +1785,13 @@ export type AgentRefusal =
   | 'agent.unknownId'
   | 'agent.tooLarge'
   | 'agent.windowHidden'
+  /**
+   * This build has no window at all, so there is nothing to draw on, nothing
+   * to move and nowhere to keep a picture. Not `agent.windowHidden`, which is a
+   * window that exists and is behind something: that one is worth retrying
+   * after asking the person to bring it forward, and this one never is.
+   */
+  | 'agent.noScreen'
   | 'agent.locked'
   | 'agent.notDrawn'
   | 'agent.busy'
@@ -1837,6 +1844,9 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.busy': 'A layout pass is already running. Try again when it has finished.',
   'agent.cancelled': 'The person cancelled the layout pass.',
   'agent.windowHidden': 'The window is hidden or minimised, so nothing can be drawn. Bring it to the front.',
+  'agent.noScreen':
+    'This build has no window, so it draws nothing, has nowhere to move and keeps no pictures. The read tier '
+    + 'answers everything about the landscape; app.current says what there is.',
   'agent.noAnswer': 'The app did not answer in time.',
   'agent.planned': 'That interface was already dated by another plan, or by hand. Take that port back first.',
   'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',

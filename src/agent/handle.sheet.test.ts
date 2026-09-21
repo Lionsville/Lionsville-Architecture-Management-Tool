@@ -237,7 +237,7 @@ describe('diagram.render on a sheet', () => {
   it('refuses where the host has no page for one', async () => {
     const { renderer } = fakePage({ sheet: undefined })
     expect(await handle({ id: '1', tool: 'diagram.render', args: { diagramId: 'sh-1' } }, session({ renderer })))
-      .toMatchObject({ ok: false, refusal: 'agent.noAnswer' })
+      .toMatchObject({ ok: false, refusal: 'agent.noScreen' })
   })
 
   it('turns the page’s own refusal into a key', async () => {

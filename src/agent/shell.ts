@@ -156,7 +156,7 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
 type Resolved = { page?: Page; id?: string }
 
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
-  if (!shell) return refused('agent.noAnswer', 'the app has no screen to move')
+  if (!shell) return refused('agent.noScreen', 'there is no screen to move')
   const asked = (rawArgs ?? {}) as Destination
   const scope = asked.scope ?? session?.scopePath() ?? scopeOf(shell.screen())
   if (scope === undefined) return refused('agent.badArguments', '"scope" is needed when nothing is open')
@@ -271,14 +271,14 @@ function pageOf(diagram: DesignDiagram): Page {
 // --- session.start / session.end ------------------------------------------------------
 
 export function startSession(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): AgentAnswer {
-  if (!shell) return refused('agent.noAnswer', 'the app has no screen to drive')
+  if (!shell) return refused('agent.noScreen', 'there is no screen to drive')
   const purpose = ((rawArgs ?? {}) as { purpose?: string }).purpose?.trim()
   shell.driving.start(shell.client(), purpose || undefined)
   return currentApp(session, shell)
 }
 
 export function endSession(shell: ShellView | undefined): AgentAnswer {
-  if (!shell) return refused('agent.noAnswer', 'the app has no screen to drive')
+  if (!shell) return refused('agent.noScreen', 'there is no screen to drive')
   shell.driving.end('agent')
   return json({ ended: true })
 }

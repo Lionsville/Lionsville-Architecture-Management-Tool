@@ -115,7 +115,13 @@ export type SessionView = {
   undo(): void
   /** The pictures the documents may show, and the way one arrives (ADR-0009). Shell state, not a step. */
   images(): readonly DocumentImage[]
-  addImage(image: DocumentImage): void
+  /**
+   * Absent where there is nowhere to keep one: a build with no window keeps no
+   * pictures, and `image.upload` then answers `agent.noScreen` rather than
+   * accepting bytes it would drop. The documents still say what they show, and
+   * `images.list` still lists whatever {@link SessionView.images} has.
+   */
+  addImage?(image: DocumentImage): void
   /** Write the project now. Rejects when the store refuses. */
   save(): Promise<void>
 }
@@ -498,6 +504,8 @@ function dataUrlBytes(url: string): number {
  * four formats, the size, the file name with the moment in it — are one set.
  */
 async function uploadImage(args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> {
+  const addImage = session.addImage?.bind(session)
+  if (!addImage) return refused('agent.noScreen', 'no pictures are kept here')
   const name = (args.name as string).trim()
   if (!name) return refused('agent.badArguments', '"name" must not be blank')
   const data = (args.data as string).trim()
@@ -513,7 +521,7 @@ async function uploadImage(args: Record<string, unknown>, session: SessionView):
       takenImageFiles(session.images()),
       () => Promise.resolve(url),
     )
-    session.addImage(image)
+    addImage(image)
     return json({ file: image.file, reference: `../images/${image.file}`, markdown: imageReference(image.file, name), bytes: dataUrlBytes(url) })
   } catch (error) {
     if (error instanceof ShellError) {
@@ -589,7 +597,7 @@ async function seeing(
   session: SessionView,
 ): Promise<AgentAnswer> {
   const renderer = session.renderer
-  if (!renderer) return refused('agent.noAnswer', 'no canvas')
+  if (!renderer) return refused('agent.noScreen', 'no canvas')
   const model = session.indexed()
 
   if (tool === 'focus') {
@@ -650,7 +658,7 @@ async function seeSheet(
   if (tool !== 'diagram.render') {
     return refused('agent.badArguments', `a ${diagram.kind} is laid out: there is nothing to tidy or route`)
   }
-  if (!renderer.sheet) return refused('agent.noAnswer', 'no page')
+  if (!renderer.sheet) return refused('agent.noScreen', 'no page')
   const maxPixels = (args.maxPixels as number | undefined) ?? DEFAULT_MAX_PIXELS
   const width = args.pageWidth as number | undefined
   if (width !== undefined && (!Number.isInteger(width) || width < 320 || width > 8000)) {

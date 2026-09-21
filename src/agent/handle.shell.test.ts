@@ -307,7 +307,7 @@ describe('with a scope open', () => {
   it('describes the screen from the session alone when there is no shell', async () => {
     const out = parsed(await handle(call('app.current'), session()))
     expect(out.open).toEqual({ path: 'acme/finance', name: 'Finance', view: { id: 'l7', name: 'L7', kind: 'layer7' } })
-    expect(refusal(await handle(call('app.open', { page: 'roadmap' }), session()))).toBe('agent.noAnswer')
+    expect(refusal(await handle(call('app.open', { page: 'roadmap' }), session()))).toBe('agent.noScreen')
   })
 
   it('moves within the open scope, checked against the model on screen', async () => {
