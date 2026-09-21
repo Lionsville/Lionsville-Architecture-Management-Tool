@@ -458,9 +458,12 @@ export function ProjectWorkspace({
    */
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [saveFailed, setSaveFailed] = useState(false)
-  const onSaveResult = useCallback((ok: boolean) => {
+  // The cause is passed on rather than read here: the bar says the same thing
+  // about a refused save whatever refused it, and what the notice SAYS is the
+  // source's business (`useStorageNotice`).
+  const onSaveResult = useCallback((ok: boolean, cause?: unknown) => {
     setSaveFailed(!ok)
-    onStorageResult(ok)
+    onStorageResult(ok, cause)
   }, [onStorageResult])
   // Per project rather than per session, because the workspace is remounted when
   // one is opened: the same warning on a different project is worth hearing.

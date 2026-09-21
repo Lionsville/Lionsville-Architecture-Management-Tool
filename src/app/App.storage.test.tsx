@@ -13,6 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { scopeTree } from '../projects/scope'
 import { registerStrings, useStrings } from '../i18n'
 import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
@@ -21,6 +22,26 @@ import type { ScopeSession } from './useModelSession'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
+
+/**
+ * A provider's *ask me again*, told to every listener.
+ *
+ * This shell asks the same source in more than one place — the word on the bar,
+ * the chip, and which ways in are worth drawing — and one signal means all of
+ * them. A fake that kept only the last listener would pass whichever test
+ * happened to subscribe last, which is not what a provider is being asked to
+ * implement.
+ */
+function asksAgain() {
+  const listeners = new Set<() => void>()
+  return {
+    onSourceWork: (listener: () => void) => {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    tell: () => act(() => { for (const listener of [...listeners]) listener() }),
+  }
+}
 
 describe('App and the storage it was given', () => {
   it('shows the notice from the first render when nothing will be kept', () => {
@@ -127,18 +148,18 @@ describe('a source a provider answers for', () => {
    */
   it('says what the provider now says, without the document\u2019s machine moving', async () => {
     let held: SourceStatus = 'clean'
-    let tell: (() => void) | undefined
+    const asked = asksAgain()
     renderApp({
       initialProject: scope,
       source: elsewhere,
       sourceStatus: () => held,
-      onSourceWork: (listener) => { tell = listener; return () => { tell = undefined } },
+      onSourceWork: asked.onSourceWork,
     })
     const bar = await screen.findByTestId('saved-indicator')
     expect(bar.textContent).toBe('Not saved yet')
 
     held = 'dirty'
-    act(() => tell?.())
+    asked.tell()
     expect(screen.getByTestId('saved-indicator').textContent).toBe('Unsaved changes')
   })
 
@@ -407,6 +428,164 @@ describe('a way in a registered provider brought', () => {
     renderApp({ onChooseWorkingDirectory: () => {} })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
   })
+
+  /**
+   * And it is asked whether it is worth drawing where it is about to be drawn.
+   *
+   * A standing button per registration is right on a screen asking where work
+   * should live for the first time, and wrong for the provider that already
+   * answers for the open source: *connect to…* then offers a person the place
+   * they are already working from, and pressing it shakes the same hand again to
+   * arrive where they already are. Only the provider can tell those apart.
+   */
+  const open = { kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one' }
+
+  it('is not drawn at all where its provider says not here', () => {
+    renderApp({
+      source: open,
+      waysIn: [{ ...waysIn[0], offer: () => null }, waysIn[1]],
+      onChooseWorkingDirectory: () => {},
+    })
+    expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
+    // Its own button and nobody else's: the other provider's stands, and so does
+    // the folder's, which is offered wherever a folder can be chosen.
+    expect(screen.getByTestId('connect-source-somewhere')).toBeDefined()
+    expect(screen.getByText('Choose folder\u2026')).toBeDefined()
+  })
+
+  it('says what its provider now says on it, where it gave a word', () => {
+    renderApp({
+      source: open,
+      waysIn: [{ ...waysIn[0], offer: () => ({ labelKey: 'Sign in to elsewhere\u2026' }) }],
+      onChooseWorkingDirectory: () => {},
+    })
+    expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Sign in to elsewhere\u2026')
+  })
+
+  it('is told which source is open when it is asked', () => {
+    const asked: unknown[] = []
+    renderApp({
+      source: open,
+      waysIn: [{ ...waysIn[0], offer: (source) => { asked.push(source); return null } }],
+    })
+    expect(asked[0]).toEqual(open)
+  })
+
+  /**
+   * Asked again on the provider's own *ask me again*, which is the signal the
+   * chip and the bar are re-read on: signing out of somewhere is exactly the
+   * moment its way in becomes worth offering again, and no keystroke happens.
+   */
+  it('asks again when the provider says its answer has moved', () => {
+    let said: { labelKey: string } | null = null
+    const asked = asksAgain()
+    renderApp({
+      source: open,
+      waysIn: [{ ...waysIn[0], offer: () => said }],
+      onSourceWork: asked.onSourceWork,
+      onChooseWorkingDirectory: () => {},
+    })
+    expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
+
+    said = { labelKey: 'Sign in to elsewhere\u2026' }
+    asked.tell()
+    expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Sign in to elsewhere\u2026')
+  })
+
+  /**
+   * A provider's own code runs while a screen draws, so one that throws costs
+   * its own button the label it asked for and nothing else: the button stands as
+   * it was registered, and the trail takes the cause.
+   */
+  it('stands as registered where the provider throws, with the cause in the trail', () => {
+    const { diagnostics } = renderApp({
+      source: open,
+      waysIn: [{ ...waysIn[0], offer: () => { throw new Error('asked too soon') } }, waysIn[1]],
+      onChooseWorkingDirectory: () => {},
+    })
+    expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
+    expect(screen.getByTestId('connect-source-somewhere')).toBeDefined()
+    expect(diagnostics.messages()).toContain('elsewhere')
+  })
+})
+
+/**
+ * What a refused write says, where the source is not this browser.
+ *
+ * Our sentence is *this browser could not save the design (storage full or
+ * blocked)*, which is right for the three sources that ship and wrong for
+ * anywhere else: it names the wrong place, blames a quota that is not the one
+ * that ran out, and tells somebody to keep a working file when the copy that
+ * matters is somewhere else. Only the provider knows what its store said no for.
+ */
+describe('a refusal where the source keeps work', () => {
+  const elsewhere = {
+    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+  }
+
+  /**
+   * A store that will not read, and the act that reports it through the notice:
+   * copying the example into this scope has to read before it writes, and a read
+   * that refuses is a store refusing.
+   */
+  function refuse(over: Partial<Parameters<typeof renderApp>[0]> = {}) {
+    return renderApp({
+      source: elsewhere,
+      scopes: {
+        list: () => Promise.resolve(scopeTree([])),
+        load: () => Promise.reject(new Error('signed out')),
+        save: () => Promise.resolve(),
+        remove: () => Promise.resolve(),
+      },
+      examples: [{
+        key: 'acme',
+        path: 'acme/landscape',
+        label: 'Acme Logistics',
+        description: 'an example',
+        folder: {
+          'scope.json': {
+            type: 'lionsville-architecture', version: 5, name: 'Warehouse landscape',
+            activeDiagramId: 'l7', diagrams: ['l7'],
+          },
+          'model.json': { elements: [], relations: [] },
+          'diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
+          'diagrams/l7.geometry.json': { nodes: [] },
+        },
+      }],
+      ...over,
+    })
+  }
+
+  const copy = async () => fireEvent.click(await screen.findByText('Copy into this folder\u2026'))
+
+  it('says the provider\u2019s sentence instead of ours', async () => {
+    refuse({ storageFailure: () => 'Elsewhere is not taking changes: sign in again.' })
+    await copy()
+    await waitFor(() => expect(screen.getByRole('alert').textContent)
+      .toContain('Elsewhere is not taking changes'))
+    expect(screen.getByRole('alert').textContent).not.toContain('could not save the design')
+  })
+
+  /**
+   * And nothing where the provider answered nothing: it has said so somewhere of
+   * its own, and two sentences for one refusal read as two failures.
+   */
+  it('says nothing where the provider answered nothing', async () => {
+    const { diagnostics } = refuse({ storageFailure: () => undefined })
+    await copy()
+    // The failure still reached the trail, which is where a failure always goes.
+    await waitFor(() => expect(diagnostics.recent()
+      .some((entry) => entry.where === 'organisation.copyExample')).toBe(true))
+    expect(screen.queryByText(/could not save the design/)).toBeNull()
+  })
+
+  /** And the three that ship say what they have always said, byte for byte. */
+  it('says what it has always said where the source gives no sentence', async () => {
+    refuse({ source: { kind: 'browserStorage' } })
+    await copy()
+    await waitFor(() => expect(screen.getByRole('alert').textContent)
+      .toContain('could not save the design'))
+  })
 })
 
 /**
@@ -652,16 +831,16 @@ describe('the chip a registered provider names', () => {
 
   it('asks again when the provider says its own answer has moved', () => {
     let label = 'Not signed in'
-    let tell: (() => void) | undefined
+    const asked = asksAgain()
     renderApp({
       source: elsewhere,
       sourceChip: () => ({ label }),
-      onSourceWork: (listener) => { tell = listener; return () => { tell = undefined } },
+      onSourceWork: asked.onSourceWork,
     })
     expect(screen.getByTestId('working-source').textContent).toBe('Not signed in')
 
     label = 'Anna Berg'
-    act(() => tell?.())
+    asked.tell()
     expect(screen.getByTestId('working-source').textContent).toBe('Anna Berg')
   })
 

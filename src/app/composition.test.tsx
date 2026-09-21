@@ -19,7 +19,7 @@ import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
-  registeredMenus, sourceChip, sourceDescription, sourceProvider,
+  registeredMenus, sourceAgentPanel, sourceChip, sourceDescription, sourceProvider,
   type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -214,6 +214,41 @@ describe('openSource', () => {
   })
 
   /**
+   * And the sentence for a refusal comes the other way: with the parts, not from
+   * the registration.
+   *
+   * What the five words mean is a fact about the kind of place; what a store
+   * saying no means is a fact about the store this opening just made — which
+   * host answered, who is signed in. A provider answering from the registration
+   * would have to keep the last opening in a variable to say it.
+   */
+  it('carries a provider\u2019s own sentence for a refusal where it keeps work', async () => {
+    registerSourceProvider<{ name: string }>({
+      kind: 'refusing',
+      open: ({ name }) => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'refusing', name, key: name },
+        sourceFailure: (cause) => `${name} would not take it: ${String(cause)}.`,
+      }),
+    })
+
+    const parts = await openSource('refusing', { name: 'Refusing' }, opening())
+
+    expect(parts.sourceFailure?.('signed out')).toBe('Refusing would not take it: signed out.')
+  })
+
+  /**
+   * And the three that ship bring none, so a refused save says what it has
+   * always said: that this browser could not save the design.
+   */
+  it('leaves the sentence for a refusal to this tree where no provider gives one', async () => {
+    expect((await openSource('memory', undefined, opening())).sourceFailure).toBeUndefined()
+    expect((await openSource('browserStorage', {
+      getItem: () => null, setItem: () => {}, removeItem: () => {}, key: () => null, length: 0,
+    } as never, opening())).sourceFailure).toBeUndefined()
+  })
+
+  /**
    * The three that ship answer without waiting, and two shells in
    * `composition.ts` are composed on the strength of that: `composeShell` runs
    * before the boot's first line and answers a shell, not a promise.
@@ -370,6 +405,44 @@ describe('registeredConnects', () => {
     expect(registeredConnects().find((way) => way.kind === 'folder')?.connect.fromLocation)
       .toBeUndefined()
   })
+
+  /**
+   * And whether the button is drawn where it is about to be drawn: a way in is
+   * standing, and standing is wrong for the provider that already answers for
+   * the open source — *connect to…* then offers a person where they already are.
+   *
+   * The folder defines none, which is *always offered*: a folder is offered
+   * wherever a folder can be chosen, and the picker is how you change to another
+   * one.
+   */
+  it('leaves the question to the shell where the folder is concerned', () => {
+    expect(registeredConnects().find((way) => way.kind === 'folder')?.connect.offer)
+      .toBeUndefined()
+  })
+
+  it('lets a provider hide its own way in, or say something else on it', () => {
+    registerSourceProvider({
+      kind: 'offering',
+      connect: {
+        labelKey: 'offering.connect',
+        open: () => Promise.resolve(undefined),
+        offer: ({ source }) => (source.kind === 'registered' && source.provider === 'offering'
+          ? null
+          : { labelKey: 'offering.connectInstead' }),
+      },
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'offering', name: 'Offering', key: 'one' },
+      }),
+    })
+
+    const offer = registeredConnects().find((way) => way.kind === 'offering')?.connect.offer
+    const location = { href: 'https://example.test/', search: '', hash: '' }
+    expect(offer?.({ source: { kind: 'registered', provider: 'offering', name: 'O', key: 'one' }, location }))
+      .toBeNull()
+    expect(offer?.({ source: { kind: 'folder', name: 'work', root: '/work' }, location }))
+      .toEqual({ labelKey: 'offering.connectInstead' })
+  })
 })
 
 /**
@@ -514,6 +587,48 @@ describe('sourceChip', () => {
   it('says nothing about a built-in kind, whose chip this tree has always said', () => {
     expect(sourceChip(IN_MEMORY)).toBeUndefined()
     expect(sourceChip({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+  })
+})
+
+/**
+ * What a provider puts inside *Connect an agent*, which is the open source's
+ * alone.
+ *
+ * The chromes and the menu lines are asked of every registration because a
+ * provider that answers for nothing still has a way in to offer; this is the
+ * opposite case — the dialog is about reaching the landscape that is open, and
+ * nobody else has anything to say about that.
+ */
+describe('sourceAgentPanel', () => {
+  function Panel() {
+    return <p>Reach this from anywhere</p>
+  }
+
+  it('is the provider\u2019s own for a source it answers for', () => {
+    registerSourceProvider({
+      kind: 'reachable',
+      agentPanel: Panel,
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'reachable', name: 'Reachable', key: 'one' },
+      }),
+    })
+    expect(sourceAgentPanel({
+      kind: 'registered', provider: 'reachable', name: 'Reachable', key: 'one',
+    })).toBe(Panel)
+  })
+
+  /**
+   * And nothing for the three that ship or for a provider that gave none: the
+   * loopback server is the only way an agent reaches a folder, and this shell
+   * already says so.
+   */
+  it('is nothing for a built-in kind, or a provider that gave none', () => {
+    expect(sourceAgentPanel(IN_MEMORY)).toBeUndefined()
+    expect(sourceAgentPanel({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+    expect(sourceAgentPanel({
+      kind: 'registered', provider: 'lined', name: 'Lined', key: 'one',
+    })).toBeUndefined()
   })
 })
 

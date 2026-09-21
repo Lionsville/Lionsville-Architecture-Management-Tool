@@ -12,12 +12,21 @@
  * the honest fallback the rest of the shell uses, and it beats the feature
  * being invisible on the web.
  *
+ * Unless the source the work is kept in can be reached some other way, and says
+ * so itself: `sourcePanel` is whatever the provider answering for it put here
+ * (`App`'s `SourceAgentPanel`). In a tab it stands in place of the sentence about
+ * the desktop, which is true about the loopback and beside the point once there
+ * is a way in that is not the loopback. Where there IS a host it is drawn under
+ * this shell's own section instead of over it: both ways exist there, and
+ * hiding one of two true answers to pick a favourite is not this dialog's call.
+ *
  * The recipes are strings with placeholders (`app/strings/`), filled here
  * with the port and the token main reported. `readOnly` hides the switch and
  * the token, not the explanation. An ordinary dialog, not fullscreen, so it
  * needs no `windowChrome`.
  */
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -60,11 +69,21 @@ export type ConnectAgentDialogProps = {
   onNewToken: () => void
   /** Through the `HostControls` seam, so a test can see what was copied. */
   copyText: (text: string) => Promise<void>
+  /**
+   * What the source this work is kept in has to say about reaching it, already
+   * wrapped in the boundary and the session it needs (`App`).
+   *
+   * An element rather than a component, so this stays a dialog that places what
+   * it is handed: the trail a panel reports to, the scope that is open and the
+   * boundary around it all live where the shell is composed. Absent for every
+   * build in this repository.
+   */
+  sourcePanel?: ReactNode
   s: Translate
 }
 
 export function ConnectAgentDialog({
-  open, onClose, status, readOnly = false, onEnabledChange, onNewToken, copyText, s,
+  open, onClose, status, readOnly = false, onEnabledChange, onNewToken, copyText, sourcePanel, s,
 }: ConnectAgentDialogProps) {
   const [tab, setTab] = useState(RECIPES[0].id)
   const [copied, setCopied] = useState(false)
@@ -95,11 +114,16 @@ export function ConnectAgentDialog({
         <Stack spacing={2} sx={{ pt: 1 }}>
           <Typography sx={{ fontSize: 13 }}>{s('agent.what')}</Typography>
 
-          {status === undefined ? (
+          {status === undefined ? (sourcePanel ? (
+            /* In its place, not beside it: the sentence says to go and open this
+               somewhere else, and there is nothing to go and open when the source
+               itself answers for agents. */
+            <Box data-testid="agent-source-panel">{sourcePanel}</Box>
+          ) : (
             <Typography sx={{ fontSize: 12, color: 'text.secondary' }} data-testid="agent-desktop-only">
               {s('agent.desktopOnly')}
             </Typography>
-          ) : !readOnly && (
+          )) : !readOnly && (
             <>
               <Divider />
               <FormControlLabel
@@ -157,6 +181,15 @@ export function ConnectAgentDialog({
                 <Button size="small" onClick={onNewToken}>{s('agent.newToken')}</Button>
                 <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('agent.newTokenNote')}</Typography>
               </Stack>
+            </>
+          )}
+          {status !== undefined && sourcePanel && (
+            /* Under this shell's own section, and after it, because the switch
+               above is the answer for this machine and this is the answer for
+               wherever the work is kept. Both are true here. */
+            <>
+              <Divider />
+              <Box data-testid="agent-source-panel">{sourcePanel}</Box>
             </>
           )}
         </Stack>

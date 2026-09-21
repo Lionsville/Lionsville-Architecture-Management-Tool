@@ -61,7 +61,8 @@ import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, sourceIsReadOnly, sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type {
-  SourceChip, SourceMenuEntry, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
+  SourceChip, SourceFailure, SourceMenuEntry, SourceOffer, SourceStatus, SourceWayIn, SourceWork,
+  SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -169,6 +170,32 @@ export type RegisteredChrome = {
   readonly kind: string
   readonly chrome: SourceChrome
 }
+
+/**
+ * What a provider puts inside *Connect an agent* (ADR-0007) for its own source.
+ *
+ * That dialog is about one way of reaching this landscape: a server on this
+ * machine, on the loopback, which only the desktop can listen on — so in a
+ * browser tab the whole of it is a paragraph saying to open the app instead.
+ * That sentence is true about the loopback and false about the question the
+ * person asked, once the source their work is kept in can be reached by an agent
+ * some other way: it tells them to go somewhere else to do a thing that can be
+ * done here.
+ *
+ * So the provider answering for the open source fills that space in. In a tab it
+ * takes the paragraph's place, because the paragraph is the alternative to
+ * nothing and this is a better one. On the desktop it is drawn under the
+ * loopback section rather than instead of it: both ways in exist there, the
+ * switch is still this machine's, and hiding one of two true answers to pick a
+ * favourite is not this shell's call.
+ *
+ * Handed the session of the open scope, as a chrome is ({@link SourceChrome}) —
+ * that dialog can be opened from a home with nothing open, so it may be absent.
+ * Drawn in a boundary of its own for the same reason: a panel somebody else
+ * wrote falling over must cost the panel and not the window. On the
+ * registration, beside `chrome` and `menu`, and core's three register none.
+ */
+export type SourceAgentPanel = ComponentType<{ session?: ScopeSession }>
 
 /**
  * What a provider is told when it is asked what it wants in the menu.
@@ -350,6 +377,20 @@ export type AppProps = {
    */
   sourceChip?: (work?: SourceWork) => SourceChip
   /**
+   * What this source says a refusal where it keeps work means, in its own
+   * sentence (`platform/sourceProvider.ts`'s `SourceFailure`).
+   *
+   * Named for the notice it feeds rather than for the source that gives it,
+   * because {@link AppProps.sourceFailure} below is already a source that would
+   * not OPEN — one cause, said once, about a press that went nowhere — and this
+   * is a sentence-maker asked every time a write is not taken.
+   *
+   * Absent for the three that ship, and for a registered provider that gives
+   * none, and a refused save then says what it has always said: that this
+   * browser could not save the design.
+   */
+  storageFailure?: SourceFailure
+  /**
    * The lines the source providers put in the app's own menu, one entry per
    * registration ({@link SourceMenu}).
    *
@@ -385,6 +426,20 @@ export type AppProps = {
    * and memory have nothing to say that the bar does not say for them.
    */
   chrome?: readonly RegisteredChrome[]
+  /**
+   * What the provider answering for the open source puts inside *Connect an
+   * agent* ({@link SourceAgentPanel}).
+   *
+   * The open source's alone, unlike the two above — that dialog is about
+   * reaching the landscape that is open, so a panel from a provider that answers
+   * for nothing would be a way in to nowhere. Read from the registration by the
+   * boot, which is the one place that may ask (`composition.ts`).
+   *
+   * Absent for every build in this repository, and the dialog is then what it
+   * has always been: the switch on the desktop, and the sentence about the
+   * desktop in a tab.
+   */
+  agentPanel?: SourceAgentPanel
   /**
    * How to change the folder. Absent in a browser tab whose browser cannot
    * give one: an app that showed the button anyway would be offering what it
@@ -545,8 +600,8 @@ function localToday(): string {
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, sourceStatus, onSourceWork, sourceDescription,
-  sourceChip, sourceMenu: menus = [],
-  onScopeSession, chrome: chromes = [],
+  sourceChip, storageFailure, sourceMenu: menus = [],
+  onScopeSession, chrome: chromes = [], agentPanel: AgentPanel,
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   onChooseFolderForWorkingFile,
@@ -567,7 +622,8 @@ export function App({
    * writer is built.
    */
   const noticeRef = useRef<StorageNotice>(() => {})
-  const reportStorage = useCallback<StorageNotice>((ok) => noticeRef.current(ok), [])
+  const reportStorage = useCallback<StorageNotice>(
+    (ok, cause) => noticeRef.current(ok, cause), [])
 
   const prefs = useShellPreferences({
     store: preferences,
@@ -576,7 +632,7 @@ export function App({
     browserLanguages,
   })
   const s = useMemo(() => translator(prefs.language), [prefs.language])
-  noticeRef.current = useStorageNotice(toasts.notify, s)
+  noticeRef.current = useStorageNotice(toasts.notify, s, storageFailure)
 
   // The half a boundary cannot see: a throw in a listener, a timer or a promise.
   useGlobalErrors({ diagnostics, notify: toasts.notify, s })
@@ -1377,7 +1433,10 @@ export function App({
     const stop = onScopeSession?.(session)
     return () => { setOpenScope(undefined); stop?.() }
   }, [onScopeSession])
-  const takeScopeSession = chromes.length > 0 || menus.length > 0 || onScopeSession
+  // Held for whoever will be handed it, and for nobody else: a subscription per
+  // scope ever opened is a leak with a slow fuse, and a build that registered
+  // none of these asks the workspace for nothing.
+  const takeScopeSession = chromes.length > 0 || menus.length > 0 || onScopeSession || AgentPanel
     ? holdScopeSession
     : undefined
   /**
@@ -1402,6 +1461,46 @@ export function App({
     setChip(sourceChip())
     return onSourceWork?.(() => setChip(sourceChip()))
   }, [sourceChip, onSourceWork])
+
+  /**
+   * Which ways in are worth drawing here, and what each says — the answer every
+   * provider that offers one gives about the source that is open now.
+   *
+   * A standing button per registration is right on a screen asking where work
+   * should live for the first time, and wrong for the provider that already
+   * answers for the open source: *connect to…* then offers a person where they
+   * already are. Only the provider can tell those apart, so it is asked, and
+   * asked HERE rather than at the boot because the answer moves while the window
+   * is open — a `useMemo` over the same *ask me again* the chip is re-read on,
+   * and afresh per source, because a source that changes is a fresh mount.
+   *
+   * A provider's own code runs while a screen draws, so one that throws costs
+   * its own button the label it asked for and nothing else: the button stands as
+   * it was registered, and the trail takes the cause.
+   */
+  const [askedWaysIn, setAskedWaysIn] = useState(0)
+  useEffect(() => onSourceWork?.(() => setAskedWaysIn((n) => n + 1)), [onSourceWork])
+  const offered = useMemo(() => {
+    if (!waysIn) return undefined
+    const drawn: SourceWayIn[] = []
+    for (const way of waysIn) {
+      if (!way.offer) { drawn.push(way); continue }
+      let said: SourceOffer | null | undefined
+      try {
+        said = way.offer(source)
+      } catch (cause) {
+        diagnostics.report({ level: 'error', where: 'sourceOffer', message: way.kind, cause })
+        drawn.push(way)
+        continue
+      }
+      if (said === null) continue
+      drawn.push(said ? { ...way, labelKey: said.labelKey } : way)
+    }
+    return drawn
+    // `askedWaysIn` is a dependency nothing below reads: it is the provider
+    // saying its answer has moved, and asking again is the whole of what that
+    // means here.
+  }, [waysIn, source, diagnostics, askedWaysIn])
 
   /**
    * Every provider's menu lines, asked for at the moment the menu draws them.
@@ -1457,7 +1556,7 @@ export function App({
             recent={recentFolders}
             onChoose={onChooseWorkingDirectory}
             onOpen={onOpenWorkingDirectory ?? (() => {})}
-            waysIn={waysIn}
+            waysIn={offered}
             s={s}
             windowChrome={windowChrome}
           />
@@ -1530,7 +1629,7 @@ export function App({
             sourceDescription={sourceDescription}
             sourceChip={chip}
             onChooseWorkingDirectory={onChooseWorkingDirectory}
-            waysIn={waysIn}
+            waysIn={offered}
             // The same two the workspace's bar carries: the menu on a host
             // that has none of its own, and the agent glyph, which has to be
             // reachable with nothing open (ADR-0007).
@@ -1661,6 +1760,21 @@ export function App({
           onEnabledChange={changeAgentEnabled}
           onNewToken={newAgentToken}
           copyText={hostControls.copyText}
+          /* Built here rather than named there, so the dialog stays a dialog: it
+             places what it is handed, and the session, the trail and the
+             boundary are this file's to wire. The boundary is the chromes'
+             reasoning inside a dialog — a panel somebody else wrote falling over
+             must cost the panel and not the window. */
+          sourcePanel={AgentPanel && (
+            <ErrorBoundary
+              where="sourceAgentPanel"
+              diagnostics={diagnostics}
+              controls={hostControls}
+              s={s}
+            >
+              <AgentPanel session={openScope} />
+            </ErrorBoundary>
+          )}
           s={s}
         />
         <ToastBar

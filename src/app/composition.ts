@@ -69,10 +69,12 @@ import type { WorkingSource } from '../platform/workingSource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceChip as ProviderChip,
-  SourceConnect, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
+  SourceConnect, SourceFailure, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
-import type { RegisteredChrome, RegisteredMenu, SourceChrome, SourceMenu } from './App'
+import type {
+  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChrome, SourceMenu,
+} from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -141,6 +143,22 @@ export type Shell = {
    * behaves exactly as it always has.
    */
   onSourceWork?: SourceWorkChanged
+  /**
+   * What this source says a refusal where it keeps work means
+   * (`platform/sourceProvider.ts`).
+   *
+   * The sentence a refused save shows is this tree's — *this browser could not
+   * save the design* — and it is right for the three that ship and wrong for
+   * anywhere else. Absent, and it is said exactly as it always was.
+   *
+   * Brought with a source's parts rather than declared on the registration,
+   * which is where its word about the five statuses is: what the five words mean
+   * is a fact about the KIND of place, and what a refusal from it means is a
+   * fact about the store this opening just made — which host answered, who is
+   * signed in, what it would say about either. A provider answering from the
+   * registration would have to keep the last opening in a variable to say it.
+   */
+  sourceFailure?: SourceFailure
   /**
    * A scope has been opened: the session over it, for whoever answers for the
    * source it is kept in.
@@ -273,6 +291,18 @@ export type RegisteredSourceProvider<Opening = never> =
      * that the File menu does not already offer.
      */
     readonly menu?: SourceMenu
+    /**
+     * What this provider puts inside *Connect an agent* about reaching its own
+     * source ({@link SourceAgentPanel}).
+     *
+     * Here rather than in `platform/` for the reason `chrome` is: it is a
+     * component. Asked for the open source's provider only, unlike those two —
+     * that dialog is about reaching the landscape that is open, and a panel from
+     * a provider answering for nothing would be a way in to nowhere. Core's
+     * three register none: the loopback server is the only way an agent reaches
+     * a folder, and this shell already says so.
+     */
+    readonly agentPanel?: SourceAgentPanel
   }
 
 /**
@@ -390,6 +420,23 @@ export function sourceChip(
   source: WorkingSource,
 ): ((work?: SourceWork) => ProviderChip) | undefined {
   return source.kind === 'registered' ? sourceProvider(source.provider)?.chip : undefined
+}
+
+/**
+ * What the provider answering for this source puts inside *Connect an agent*,
+ * or nothing.
+ *
+ * Read here for the reason {@link sourceChip} is, and the open source's alone
+ * rather than every registration: the chromes and the menu lines are asked of
+ * every provider because a provider that answers for nothing still has a way in
+ * to offer, and this is the opposite case — the dialog is about reaching the
+ * landscape that is open, and nobody else has anything to say about that.
+ *
+ * Nothing for the three that ship, whose only way in for an agent is the server
+ * on this machine that this shell already draws.
+ */
+export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.agentPanel : undefined
 }
 
 /**

@@ -181,12 +181,17 @@ describe('a document that has just been opened', () => {
 
 describe('when the store refuses', () => {
   it('stays dirty and reports it — the bar must not claim otherwise', async () => {
-    const view = mount(() => Promise.reject(new Error('quota')))
+    const refusal = new Error('quota')
+    const view = mount(() => Promise.reject(refusal))
     view.edit('Edited')
     await view.idle()
 
     expect(view.status()).toBe('dirty')
-    expect(view.result).toHaveBeenCalledWith(false)
+    // The cause travels with the fact, which it did not before: a source that
+    // keeps work somewhere other than this browser says in its own words what a
+    // refusal there means, and this is the one place holding both the refusal
+    // and the thing refused.
+    expect(view.result).toHaveBeenCalledWith(false, refusal)
     expect(view.saved).not.toHaveBeenCalled()
   })
 

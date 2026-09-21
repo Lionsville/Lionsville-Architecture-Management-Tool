@@ -104,3 +104,49 @@ describe('ConnectAgentDialog', () => {
     expect(screen.queryByTestId('agent-recipe')).toBeNull()
   })
 })
+
+/**
+ * And what the source the work is kept in has to say about reaching it.
+ *
+ * The sentence about the desktop is true about the loopback — only a host can
+ * listen on this machine — and beside the point once an agent can reach the work
+ * some other way: it tells a person to go and open this somewhere else to do a
+ * thing that can be done here. So the provider answering for the open source
+ * fills that space in (`App`'s `SourceAgentPanel`), and this dialog places what
+ * it is handed.
+ */
+describe('ConnectAgentDialog, with a source that answers for agents itself', () => {
+  const panel = <p data-testid="from-elsewhere">Reach this landscape from elsewhere</p>
+
+  it('takes the place of the sentence about the desktop in a browser tab', () => {
+    renderShell(<ConnectAgentDialog {...base} status={undefined} sourcePanel={panel} />)
+    expect(screen.getByTestId('from-elsewhere')).toBeDefined()
+    expect(screen.queryByTestId('agent-desktop-only')).toBeNull()
+    // The dialog is still this dialog: the title and the way out are ours.
+    expect(screen.getByText('Connect an agent')).toBeDefined()
+    expect(screen.getByText('Close')).toBeDefined()
+  })
+
+  /**
+   * And stands beside the loopback section on a host that has one, because both
+   * ways in exist there: the switch is still this machine's, and hiding one of
+   * two true answers to pick a favourite is not this dialog's call.
+   */
+  it('is drawn under this shell\u2019s own section on the desktop, not instead of it', () => {
+    renderShell(<ConnectAgentDialog {...base} status={listening} sourcePanel={panel} />)
+    expect(screen.getByLabelText('Accept agent connections')).toBeDefined()
+    expect(screen.getByTestId('agent-recipe')).toBeDefined()
+    expect(screen.getByTestId('from-elsewhere')).toBeDefined()
+  })
+
+  /** And every build in this repository: no panel, and the dialog as it was. */
+  it('is what it always was where the source brought none', () => {
+    renderShell(<ConnectAgentDialog {...base} status={undefined} />)
+    expect(screen.getByTestId('agent-desktop-only')).toBeDefined()
+    expect(screen.queryByTestId('agent-source-panel')).toBeNull()
+    cleanup()
+    renderShell(<ConnectAgentDialog {...base} status={listening} />)
+    expect(screen.getByTestId('agent-recipe')).toBeDefined()
+    expect(screen.queryByTestId('agent-source-panel')).toBeNull()
+  })
+})

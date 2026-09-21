@@ -188,7 +188,10 @@ export function useDocumentSession(deps: {
       },
       (cause: unknown) => {
         apply({ type: 'saveFailed', reason: String(cause) })
-        onResult(false)
+        // The cause travels with the fact: what a refusal where this source
+        // keeps work means is the source's own sentence to say, and this is the
+        // one place in the app that has both the refusal and the thing refused.
+        onResult(false, cause)
       },
     )
   }, [apply, projects, snapshot, onSaved, onResult])

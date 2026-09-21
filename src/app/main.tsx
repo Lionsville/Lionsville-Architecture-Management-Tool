@@ -48,11 +48,11 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
   inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
-  registeredMenus, sourceChip, sourceDescription,
+  registeredMenus, sourceAgentPanel, sourceChip, sourceDescription,
 } from './composition'
 import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
-import type { SourceWayIn } from '../platform/sourceProvider'
+import type { SourceLocation, SourceWayIn } from '../platform/sourceProvider'
 import {
   mayOfferAdoption, readLanguage, readLastScope, readWorkingDirectory, withDeclinedFolder,
   withMigratedFolder, withoutLastScope, withWorkingDirectory,
@@ -261,6 +261,14 @@ const waysIn: readonly SourceWayIn[] = registeredConnects()
     kind: way.kind,
     labelKey: way.connect.labelKey,
     onConnect: () => connectTo(way),
+    // The location bound here and the source asked for there: an address may be
+    // read where the page is (`pageLocation`), and what is open moves while the
+    // window is open, so the shell asks the rest of the question every time it
+    // draws the button. Read at the ask rather than closed over, so a provider
+    // reached by a link that changed sees the address it was reached at.
+    offer: way.connect.offer
+      ? (source) => way.connect.offer?.({ source, location: pageLocation() })
+      : undefined,
   }))
 
 /**
@@ -296,11 +304,7 @@ const menus = registeredMenus()
  * would have broken every boot, so it is caught here and reported.
  */
 async function sourceFromLocation(): Promise<boolean> {
-  const location = {
-    href: window.location.href,
-    search: window.location.search,
-    hash: window.location.hash,
-  }
+  const location = pageLocation()
   for (const way of registeredConnects()) {
     let opening: unknown
     try {
@@ -321,6 +325,22 @@ async function sourceFromLocation(): Promise<boolean> {
     if (await workFrom(way.kind, opening)) return true
   }
   return false
+}
+
+/**
+ * Where the page was opened, as much of it as a provider may read.
+ *
+ * The one place this file reads an address, and the reason a provider is handed
+ * three strings rather than the DOM's `Location`: what a provider does with them
+ * is its own business, and this tree neither parses them nor says what an
+ * address looks like.
+ */
+function pageLocation(): SourceLocation {
+  return {
+    href: window.location.href,
+    search: window.location.search,
+    hash: window.location.hash,
+  }
 }
 
 /**
@@ -663,6 +683,8 @@ function renderApp(
         onSourceWork={shell.onSourceWork}
         sourceDescription={sourceDescription(shell.source)}
         sourceChip={sourceChip(shell.source)}
+        storageFailure={shell.sourceFailure}
+        agentPanel={sourceAgentPanel(shell.source)}
         sourceMenu={menus}
         onScopeSession={shell.onScopeSession}
         chrome={chromes}

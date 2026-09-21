@@ -19,6 +19,7 @@
  * need a fourth to exist for it to make sense.
  */
 import type { StringKey } from '../i18n/strings'
+import type { WorkingSource } from './workingSource'
 
 /**
  * The words a bar says about work in hand, and the one definition of them.
@@ -77,6 +78,35 @@ export type SourceWork = {
 export type SourceWorkChanged = (listener: () => void) => () => void
 
 /**
+ * What a refusal where this source keeps work means, as the sentence to show
+ * for it.
+ *
+ * A save that was not taken says one thing above this line — *this browser
+ * could not save the design (storage full or blocked)* — and for a source that
+ * is not this browser that sentence is not vague, it is wrong: it names the
+ * wrong place, blames a quota that is not the one that ran out, and tells
+ * somebody to keep a working file when the copy that matters is somewhere else
+ * entirely. Only whoever answers for the source knows what its store said no
+ * for, so only it can say what a person should do about it.
+ *
+ * A sentence and not a key, which is the one thing this asks for differently
+ * from {@link SourceProvider.describeKey}: what is worth saying depends on the
+ * cause, and a key with nothing to interpolate could not tell being signed out
+ * from being out of room. A provider that brought its own table brought its own
+ * way of reading it (`i18n`'s `registerStrings` and `translateFrom`), so it is
+ * asked for the words.
+ *
+ * `undefined` is *nothing from me about this one*, for a provider that has
+ * already said it somewhere of its own — a strip, a line in the menu. Nothing
+ * of ours is shown then either: the pair is ours, and a refusal nobody
+ * mentioned must not be followed by *saving works again*.
+ *
+ * The cause is whatever the store rejected with, and is absent where the caller
+ * had none, so nothing may be assumed about its shape.
+ */
+export type SourceFailure = (cause: unknown) => string | undefined
+
+/**
  * The way in for a person, as a description rather than a screen.
  *
  * A label the shell can render beside the ones it already offers; the
@@ -122,6 +152,57 @@ export type SourceConnect<Opening = void> = {
    * cheap and must never throw.
    */
   fromLocation?(location: SourceLocation): Opening | undefined
+  /**
+   * Whether this way in is worth drawing at all where it is about to be drawn,
+   * and what it should say there.
+   *
+   * A button per registered provider is exactly right on a screen that is
+   * asking where work should live for the first time. It is wrong in the one
+   * case the registry cannot see: where this provider already answers for the
+   * source that is open, *connect to…* offers a person the place they are
+   * already working from, and pressing it runs the handshake again to arrive
+   * where they already are.
+   *
+   * `null` is *not here*, and nothing is drawn; an answer with a label is
+   * *drawn, saying this*, which is how a provider that has something else to
+   * offer once its own source is open says so without registering a second way
+   * in. Absent — core's folder, which is offered wherever a folder can be
+   * chosen — leaves {@link SourceConnect.labelKey} exactly as it is, and so does
+   * an answer of `undefined`: a provider that said nothing has said nothing.
+   *
+   * Told what it needs to tell those apart, and nothing else: what is open now,
+   * and where the page was opened. Asked again whenever
+   * {@link SourceWorkChanged} fires — signing out of somewhere is the moment its
+   * way in becomes worth offering again — and afresh per source, because a
+   * source that changes is a fresh mount. So it must be cheap, and it is a
+   * provider's own code running while a screen draws: one that throws costs its
+   * own button the label it asked for and nobody else's anything.
+   */
+  offer?(context: SourceOfferContext): SourceOffer | null | undefined
+}
+
+/**
+ * What a provider is told when it is asked whether to draw its way in.
+ *
+ * The source as it stands — a folder, a browser's storage, its own, somebody
+ * else's — and the address the page was opened at, which is the other half of
+ * *where am I*: a provider reached by a link is looking at the same location
+ * {@link SourceConnect.fromLocation} read, and may mean to say something
+ * different about a button beside it.
+ */
+export type SourceOfferContext = {
+  readonly source: WorkingSource
+  readonly location: SourceLocation
+}
+
+/**
+ * A way in, offered: what it says here.
+ *
+ * A label and nothing else, because everything else about a way in was settled
+ * when it was registered. `null` in its place is the button not drawn at all.
+ */
+export type SourceOffer = {
+  readonly labelKey: StringKey | (string & {})
 }
 
 /**
@@ -155,6 +236,17 @@ export type SourceWayIn = {
   /** What the button says: {@link SourceConnect.labelKey}, unchanged. */
   readonly labelKey: StringKey | (string & {})
   readonly onConnect: () => void
+  /**
+   * {@link SourceConnect.offer}, with the one thing the shell may not read
+   * already bound.
+   *
+   * The question is asked where the button is drawn, because that is where the
+   * answer can change while the window is open; the location is read where an
+   * address may be read at all, which is the boot. So the boot binds it and the
+   * shell asks the rest. Absent for a provider that offers its way in
+   * unconditionally, which is every one in this repository.
+   */
+  readonly offer?: (source: WorkingSource) => SourceOffer | null | undefined
 }
 
 /**
