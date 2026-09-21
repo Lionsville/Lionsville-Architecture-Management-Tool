@@ -19,8 +19,9 @@
  * wherever it hangs, and a report that listed only the grouped ones would not
  * see the one a person had just made.
  */
-import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, paperHeight, sheetPage, sheetPaper, sheetPaperWidth, spanOf } from '../business'
-import type { Coverage } from '../business'
+import type { Coverage } from '../business/coverage'
+import { DEFAULT_PAPER, MAX_SPAN, isSheetPaper, paperHeight, sheetPaper, sheetPaperWidth, spanOf } from '../business/grid'
+import { sheetPage } from '../business/sheet'
 import type { Diagram, Model } from '../model/normalised'
 import { toArrays } from '../model/normalised'
 import type { ElementId, SheetPaper } from '../model/types'

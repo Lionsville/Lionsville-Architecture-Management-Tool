@@ -13,7 +13,7 @@
  * that is waiting on a person, a window that cannot draw. The reducer's own
  * refusals pass through.
  */
-import type { StringKey } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 import type { StepSummary } from '../model/activity'
 import { nodeFigure } from '../model/kinds'
 import type { Adr } from '../model/adr'

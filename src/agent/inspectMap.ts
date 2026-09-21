@@ -12,8 +12,8 @@
  * agent at every scope. Until then a map at the organisation reads through a
  * person's screen, and through this tool as the scope's own rows say.
  */
-import { mapPage } from '../business'
-import type { Coverage } from '../business'
+import type { Coverage } from '../business/coverage'
+import { mapPage } from '../business/map'
 import type { Diagram, Model } from '../model/normalised'
 import { toArrays } from '../model/normalised'
 import type { ElementId } from '../model/types'
