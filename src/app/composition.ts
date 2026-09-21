@@ -285,12 +285,41 @@ export function sourceProvider<Opening = void>(
  */
 export function openSource<Opening>(
   kind: string, opening: Opening, base: SourceBase,
-): SourceParts {
+): SourceParts | Promise<SourceParts> {
   const provider = sourceProvider<Opening>(kind)
   // The boot, in the one file that chose the kind. A wiring mistake found here
   // is a wiring mistake; found at the first save it is a lost document.
   if (!provider) throw new Error(`no source provider is registered for '${kind}'`)
-  return { ...provider.open(opening, base), sourceStatus: provider.statusOf }
+  const built = provider.open(opening, base)
+  const carrying = (parts: SourceParts): SourceParts => ({ ...parts, sourceStatus: provider.statusOf })
+  // Awaited rather than handed on as a promise of parts: what travels with them
+  // travels either way, and a caller that had to know which of the two it was
+  // holding would be every caller writing the same `await` differently.
+  return promised(built) ? built.then(carrying) : carrying(built)
+}
+
+/** Told apart the way `await` tells it apart, and for the same reason. */
+function promised(parts: SourceParts | Promise<SourceParts>): parts is Promise<SourceParts> {
+  return typeof (parts as Partial<Promise<SourceParts>>).then === 'function'
+}
+
+/**
+ * The same, where there is nowhere to wait.
+ *
+ * The two shells this file composes itself are composed synchronously —
+ * `composeShell` runs before the boot's first line and answers a shell, and a
+ * folder is opened in the middle of building one — so the three that ship must
+ * open without waiting, and they do. A provider that answered a promise to one
+ * of these would be a wiring mistake in this file and never a build's, which is
+ * why it is said out loud rather than awaited somewhere a folder would then have
+ * to be awaited too.
+ */
+function openSourceNow<Opening>(
+  kind: string, opening: Opening, base: SourceBase,
+): SourceParts {
+  const parts = openSource(kind, opening, base)
+  if (promised(parts)) throw new Error(`the '${kind}' source opens asynchronously, and this composition cannot wait`)
+  return parts
 }
 
 /**
@@ -342,7 +371,7 @@ export function composeShell(): Shell {
   // shell a provider would be given here is the shell being built out of what
   // it answers. The trail is the half that does exist, and it is the half a
   // fallback source could conceivably have something to say to.
-  const kept = openSource(kind, storage, { diagnostics })
+  const kept = openSourceNow(kind, storage, { diagnostics })
   return {
     ...kept,
     scopes: keeper(kind, kept),
@@ -433,7 +462,7 @@ function overFolder(
   // The shell this folder is opening into, before its own parts are spread over
   // it: the preferences stay where they were (see below), so what a provider in
   // its place would reuse is exactly what this line leaves alone.
-  const kept = openSource('folder', { handle, name, root }, { diagnostics: shell.diagnostics, shell })
+  const kept = openSourceNow('folder', { handle, name, root }, { diagnostics: shell.diagnostics, shell })
   return { ...shell, ...kept, scopes: keeper('folder', kept) }
 }
 

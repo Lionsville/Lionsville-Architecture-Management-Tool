@@ -184,8 +184,26 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    * dialog quietly stopped being the app's. It is also where a failure of its
    * own goes: a provider reporting to the console reports somewhere the crash
    * page cannot hand over.
+   *
+   * **A promise is allowed, and the boot waits for it.** Some sources are only
+   * themselves once they have shaken hands: what this source is called, which
+   * scope it holds and whether a person may write to it at all are answers that
+   * have to be asked for, and `readOnly` is read at the first paint rather than
+   * a moment after it — a shell mounted over the wrong answer and swapped is a
+   * mount thrown away, which is the same reasoning
+   * {@link SourceConnect.fromLocation} is written for. Waiting where the
+   * alternative is drawing twice is the cheaper of the two.
+   *
+   * A rejection is a source that could not be opened, and the boot says so on
+   * the screen it already keeps for a boot that failed, with the provider's own
+   * sentence on it. Nothing is a refusal only at the way in, where a person
+   * closed a dialog; here there is nobody to have said anything.
+   *
+   * All three that ship answer straight away and say `Parts` rather than
+   * `Promise<Parts>`, which is not only their habit: the fallback shell is
+   * composed before the boot has anywhere to wait.
    */
-  open(opening: Opening, base: Base): Parts
+  open(opening: Opening, base: Base): Parts | Promise<Parts>
   /** How a person reaches it, where there is a way in. */
   readonly connect?: SourceConnect<Opening>
   /**

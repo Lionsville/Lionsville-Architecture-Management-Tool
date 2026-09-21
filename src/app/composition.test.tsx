@@ -143,7 +143,7 @@ describe('registerSourceProvider', () => {
     expect(sourceProvider('elsewhere')).toBeUndefined()
   })
 
-  it('takes a build\'s own provider, with its way in and its own words', () => {
+  it('takes a build\'s own provider, with its way in and its own words', async () => {
     const provider: SourceProvider<SourceParts, { name: string }> = {
       kind: 'elsewhere',
       connect: {
@@ -167,7 +167,7 @@ describe('registerSourceProvider', () => {
     expect(found?.connect?.labelKey).toBe('elsewhere.connect')
     expect(found?.statusOf?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
     expect(found?.statusOf?.({ status: 'saving', editedWhileSaving: false })).toBe('saving')
-    expect(found?.open({ name: 'Elsewhere' }, opening()).source)
+    expect((await found?.open({ name: 'Elsewhere' }, opening()))?.source)
       .toEqual({ kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'Elsewhere', readOnly: true })
   })
 
@@ -191,7 +191,7 @@ describe('registerSourceProvider', () => {
  * itself would be one field short the day a third thing joins them.
  */
 describe('openSource', () => {
-  it('brings the provider\'s word about the five words along with its parts', () => {
+  it('brings the provider\'s word about the five words along with its parts', async () => {
     registerSourceProvider<{ name: string }>({
       kind: 'measured',
       statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
@@ -201,15 +201,24 @@ describe('openSource', () => {
       }),
     })
 
-    const parts = openSource('measured', { name: 'Measured' }, opening())
+    const parts = await openSource('measured', { name: 'Measured' }, opening())
 
     expect(parts.source).toEqual({ kind: 'registered', provider: 'measured', name: 'Measured', key: 'Measured' })
     expect(parts.sourceStatus?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
   })
 
   /** A folder means what a file means, and says so by bringing no `statusOf`. */
-  it('leaves the answer undefined where the provider has none', () => {
-    expect(openSource('memory', undefined, opening()).sourceStatus).toBeUndefined()
+  it('leaves the answer undefined where the provider has none', async () => {
+    expect((await openSource('memory', undefined, opening())).sourceStatus).toBeUndefined()
+  })
+
+  /**
+   * The three that ship answer without waiting, and two shells in
+   * `composition.ts` are composed on the strength of that: `composeShell` runs
+   * before the boot's first line and answers a shell, not a promise.
+   */
+  it('answers the three that ship without a promise in the way', () => {
+    expect(openSource('memory', undefined, opening())).not.toBeInstanceOf(Promise)
   })
 
   /**
@@ -245,17 +254,17 @@ describe('what a provider is handed besides its own opening', () => {
   }
   registerSourceProvider(handed)
 
-  it('reports into the trail the app already keeps, not into the console', () => {
+  it('reports into the trail the app already keeps, not into the console', async () => {
     const base = opening()
-    openSource('handed', undefined, base)
+    await openSource('handed', undefined, base)
     expect(base.diagnostics.messages()).toEqual(['shook hands'])
   })
 
-  it('is given the shell as it stands, so a provider reuses its seams', () => {
+  it('is given the shell as it stands, so a provider reuses its seams', async () => {
     // As much of a shell as this provider reads, which is the one seam a
     // folder deliberately leaves where it was.
     const shell = { ...({} as Shell), preferences: new InMemoryPreferencesStore() }
-    expect(openSource('handed', undefined, opening(shell)).preferences).toBe(shell.preferences)
+    expect((await openSource('handed', undefined, opening(shell))).preferences).toBe(shell.preferences)
   })
 
   /**
@@ -263,8 +272,53 @@ describe('what a provider is handed besides its own opening', () => {
    * `composeShell` would hand over is the shell it is building out of what this
    * provider answers.
    */
-  it('has no shell to give at the first compose, and says so by leaving it out', () => {
-    expect(openSource('handed', undefined, opening()).preferences).toBeUndefined()
+  it('has no shell to give at the first compose, and says so by leaving it out', async () => {
+    expect((await openSource('handed', undefined, opening())).preferences).toBeUndefined()
+  })
+})
+
+/**
+ * A source that has to shake hands before it can say what it is.
+ *
+ * What it is called, which scopes it holds and whether this person may write to
+ * it at all are answers over a wire, and the boot waits for them: `readOnly`
+ * decides what the workspace offers and what an agent is refused, so a shell
+ * mounted over a guess and corrected a moment later is a mount thrown away and
+ * a write offered that was never allowed.
+ */
+describe('a provider that opens asynchronously', () => {
+  registerSourceProvider<{ name: string }>({
+    kind: 'awaited',
+    statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
+    open: async ({ name }) => {
+      await Promise.resolve()
+      return {
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'awaited', name, key: name, readOnly: true },
+      }
+    },
+  })
+
+  it('is waited for, and what travels with its parts travels anyway', async () => {
+    const parts = await openSource('awaited', { name: 'Awaited' }, opening())
+    expect(parts.source).toEqual({
+      kind: 'registered', provider: 'awaited', name: 'Awaited', key: 'Awaited', readOnly: true,
+    })
+    expect(parts.sourceStatus?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
+  })
+
+  /**
+   * A handshake that fails is a source that could not be opened, and the
+   * sentence is the provider's: the boot puts it on the screen it already keeps
+   * for a boot that failed (`BootFailure`), which is the one screen with a way
+   * back in.
+   */
+  it('rejects with its own sentence rather than opening over nothing', async () => {
+    registerSourceProvider({
+      kind: 'refused',
+      open: () => Promise.reject(new Error('elsewhere would not have us')),
+    })
+    await expect(openSource('refused', undefined, opening())).rejects.toThrow(/would not have us/)
   })
 })
 

@@ -177,13 +177,23 @@ let recentFolders: readonly DesktopDirectory[] = []
  * business, which is why `connect.fromLocation` exists: the address a build
  * reopens with is one it can read for itself, and a preference written from
  * here would be this file keeping a fact it cannot check.
+ *
+ * A rejection is not caught here. It is a source that could not be opened, which
+ * each of the two callers below answers in the way that suits where it is: the
+ * boot's own failure screen, or the notice a way in already has.
  */
-function workFrom(kind: string, opening: unknown): boolean {
+async function workFrom(kind: string, opening: unknown): Promise<boolean> {
   // The shell as it stands, before this source's parts are spread over it: the
   // trail to report on, and the seams already filled — a provider that replaces
   // the store has no business composing a second preferences store or a second
   // *Save as…* dialog, and this is what it reuses instead.
-  const parts = openSource(kind, opening, { diagnostics: shell.diagnostics, shell })
+  //
+  // Awaited, because a source may have to shake hands before it can say what it
+  // is: what it is called, which scopes it holds and whether this person may
+  // write to it are answers over a wire, and `readOnly` has to be right at the
+  // first paint rather than a moment after it. A folder answers before the
+  // `await` has anything to do.
+  const parts = await openSource(kind, opening, { diagnostics: shell.diagnostics, shell })
   // The preferences are read before the first render and the scopes right after
   // it, so a source that brought neither is not one this boot can use — said
   // here rather than discovered as an empty screen.
@@ -220,12 +230,16 @@ const FOLDER_ASKS_FOR_MORE = 'folder'
  * that ends in nothing looks like a button that does nothing.
  */
 function connectTo(way: RegisteredConnect): void {
-  void way.connect.open().then((opening) => {
+  void way.connect.open().then(async (opening) => {
     if (opening === undefined) {
       shell.diagnostics.report({ level: 'info', where: 'source', message: 'no source was chosen' })
       return
     }
-    if (!workFrom(way.kind, opening)) return
+    // A source that has to shake hands does it here, with the app that is
+    // already on screen behind the press: this is the one way in where there is
+    // something to look at while it happens, and the `catch` below is what says
+    // so when it comes to nothing.
+    if (!await workFrom(way.kind, opening)) return
     shell.diagnostics.report({ level: 'info', where: 'source', message: 'the source is open' })
     renderApp(stored, undefined)
   }).catch((cause: unknown) => {
@@ -259,22 +273,30 @@ const waysIn: readonly SourceWayIn[] = registeredConnects()
  * recognises it wins; a provider that throws over a URL is a provider that
  * would have broken every boot, so it is caught here and reported.
  */
-function sourceFromLocation(): boolean {
+async function sourceFromLocation(): Promise<boolean> {
   const location = {
     href: window.location.href,
     search: window.location.search,
     hash: window.location.hash,
   }
   for (const way of registeredConnects()) {
+    let opening: unknown
     try {
-      const opening = way.connect.fromLocation?.(location)
-      if (opening === undefined) continue
-      if (workFrom(way.kind, opening)) return true
+      opening = way.connect.fromLocation?.(location)
     } catch (cause) {
       shell.diagnostics.report({
         level: 'error', where: 'source', message: 'a source could not read the address', cause,
       })
+      continue
     }
+    if (opening === undefined) continue
+    // Opening what the address named is deliberately NOT caught: reading a URL
+    // is a guess and the next provider may recognise it, while a source that
+    // recognised it and then could not be opened is the boot failing — and the
+    // boot has a screen for that, which says the provider's own sentence and
+    // offers a way back in. Swallowing it here would leave the fallback store
+    // open under an address that says otherwise.
+    if (await workFrom(way.kind, opening)) return true
   }
   return false
 }
@@ -661,7 +683,7 @@ void shell.preferences.read()
     // worked in: it is what was asked for just now, and the preference is what
     // was asked for last time.
     // Before the project is read, because it decides which store reads it.
-    if (!sourceFromLocation()) await rememberedDirectory(storedPreferences)
+    if (!await sourceFromLocation()) await rememberedDirectory(storedPreferences)
     // After the folder, before the project: see `pullOnOpen`.
     const initialSync = await pullOnOpen()
     // And before the project is read, so what opens is already this format.
