@@ -68,6 +68,7 @@ import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceConnect, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
+import type { SourceChrome } from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -152,6 +153,20 @@ export type Shell = {
    * storage and memory have nobody to tell.
    */
   onScopeSession?: (session: ScopeSession) => (() => void) | void
+  /**
+   * Whatever the source draws for itself: a strip, a badge, a dialog of its own
+   * (`App.tsx`'s `SourceChrome`).
+   *
+   * The other thing a registered provider could not reach. Its way in is a
+   * label the shell draws a button from, and its words about the work are five
+   * the bar already says — but a source that has something of its own to show
+   * had nowhere in this tree to show it, and the only place left was a container
+   * on `document.body`, outside the theme and the language. The app renders it
+   * beside its own notices instead.
+   *
+   * Absent for all three that ship, which have nothing to say.
+   */
+  chrome?: SourceChrome
   /**
    * Tell me when this project's folder changed under us, other than by us.
    *

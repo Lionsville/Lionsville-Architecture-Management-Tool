@@ -10,12 +10,14 @@
  * A standing notice rather than a toast: it is true for the whole session, not
  * an event within it.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { useStrings } from '../i18n'
 import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
+import type { ScopeSession } from './useModelSession'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -138,6 +140,110 @@ describe('a source a provider answers for', () => {
     // The page is up; what is missing is the one thing on it that writes.
     expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
     expect(screen.queryByText('New plan')).toBeNull()
+  })
+})
+
+/**
+ * The chrome a registered provider brought.
+ *
+ * A provider's way in is a label this shell draws a button from and its words
+ * about the work are five the bar already says — but a source that has something
+ * of its own to show had nowhere in this tree to show it. The only place left
+ * was a container on `document.body`: outside the theme, outside the language,
+ * and over or under whatever the app had drawn. So the app draws it, beside its
+ * own notices, and hands it the scope that is open while one is.
+ */
+describe('the chrome a registered provider brought', () => {
+  const elsewhere = {
+    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+  }
+  const scope = {
+    path: 'acme/landscape',
+    model: {
+      name: 'Landscape', elements: [], relations: [],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })],
+    },
+    activeDiagramId: 'd1',
+    logoLibrary: [],
+  }
+
+  /** A strip of a provider's own: what it says, and what it was told. */
+  function Strip({ session }: { session?: ScopeSession }) {
+    const { language } = useStrings()
+    return (
+      <p data-testid="provider-strip">
+        {`${language}: ${session ? session.scope : 'nothing open'}`}
+      </p>
+    )
+  }
+
+  it('is drawn with nothing open, where the source is still the source', () => {
+    renderApp({ source: elsewhere, chrome: Strip })
+    expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
+    // Beside the app's own screen rather than instead of it.
+    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+  })
+
+  it('is handed the session of the scope that is open, and told when it closes', async () => {
+    renderApp({ initialProject: scope, source: elsewhere, chrome: Strip })
+    await waitFor(() => {
+      expect(screen.getByTestId('provider-strip').textContent).toBe('en: acme/landscape')
+    })
+    // Back to the organisation: the workspace lets the session go, and so does
+    // the strip — a strip naming a session whose model has been unmounted would
+    // be a strip describing something that is not there.
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => {
+      expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
+    })
+  })
+
+  /** Inside the app's language, which is the whole reason it is not on `body`. */
+  it('renders in the language the app is in', () => {
+    renderApp({ source: elsewhere, chrome: Strip }, { language: 'nl' })
+    expect(screen.getByTestId('provider-strip').textContent).toBe('nl: nothing open')
+  })
+
+  /**
+   * And the subscription the provider already had is untouched: the shell holds
+   * the session for the chrome beside handing it over, never instead of it.
+   */
+  it('leaves the provider\'s own subscription exactly where it was', async () => {
+    const seen: string[] = []
+    renderApp({
+      initialProject: scope,
+      source: elsewhere,
+      chrome: Strip,
+      onScopeSession: (session) => {
+        seen.push(session.scope)
+        return () => seen.push('let go')
+      },
+    })
+    await waitFor(() => expect(seen).toEqual(['acme/landscape']))
+  })
+
+  /** Every build in this repository: nothing registered, nothing drawn. */
+  it('draws nothing where the source brought none', () => {
+    renderApp({ source: elsewhere })
+    expect(screen.queryByTestId('provider-strip')).toBeNull()
+  })
+
+  /**
+   * A boundary of its own, for the reason the canvas has one: a strip somebody
+   * else wrote falling over costs the strip and not the window.
+   */
+  it('falls over on its own, with the app still standing', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      renderApp({
+        source: elsewhere,
+        chrome: () => { throw new Error('the strip fell over') },
+      })
+      expect(screen.getByTestId('crash-fallback')).toBeDefined()
+      expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+    } finally {
+      spy.mockRestore()
+    }
   })
 })
 

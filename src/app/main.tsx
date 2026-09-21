@@ -626,6 +626,7 @@ function renderApp(
         sourceStatus={shell.sourceStatus}
         onSourceWork={shell.onSourceWork}
         onScopeSession={shell.onScopeSession}
+        chrome={shell.chrome}
         onChooseWorkingDirectory={
           files || browserFolders.possible() ? chooseWorkingDirectory : undefined
         }

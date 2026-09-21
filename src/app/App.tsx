@@ -12,11 +12,12 @@
  * knows whether a project lives in browser storage, on disk or on a server.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ComponentType } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import { translator } from '../i18n'
+import { LanguageProvider, translator } from '../i18n'
 import type { StringKey } from '../i18n'
 import type { Command, ElementId, StepSummary } from '../model'
 import { apply, fromArrays, toArrays } from '../model'
@@ -110,6 +111,29 @@ export type ShellDiagnostics = {
   report(entry: Diagnostic): void
   recent(): DiagnosticEntry[]
 }
+
+/**
+ * A screen of the source provider's own, drawn inside this shell.
+ *
+ * Everything else a provider brings is a store, a setting or a function; some of
+ * what it has to do is a *strip*, a badge, a dialog — settle two changes that
+ * disagree, say it is reconnecting, ask for an address again. The provider owns
+ * what it draws, for the same reason it owns its way in: what has to be said
+ * there is its business, and a shell that tried to describe all of it would be a
+ * shell edited for the fifth provider.
+ *
+ * What this shell owes is somewhere to put it. Without one the only place left
+ * is a container of the provider's own on `document.body` — outside the theme,
+ * outside the language, above or below whatever the app has drawn — which is a
+ * second app in the same window wearing the wrong colours. So it renders here:
+ * inside the theme and inside the language, beside the app's own notices, on
+ * every screen, with the session of the scope that is open while one is.
+ *
+ * `session` is absent where nothing is open, which is most of the time on the
+ * organisation screen and all of the time on the first-run screen. A provider
+ * that has nothing to say then draws nothing, which is what `null` is for.
+ */
+export type SourceChrome = ComponentType<{ session?: ScopeSession }>
 
 /**
  * Which page the workspace should be showing the moment it appears.
@@ -235,6 +259,13 @@ export type AppProps = {
    * that ship, and then nothing subscribes to anything.
    */
   onScopeSession?: (session: ScopeSession) => (() => void) | void
+  /**
+   * Whatever the source provider draws for itself ({@link SourceChrome}).
+   *
+   * Absent for all three sources that ship: a folder, this browser's storage and
+   * memory have nothing to say that the bar does not say for them.
+   */
+  chrome?: SourceChrome
   /**
    * How to change the folder. Absent in a browser tab whose browser cannot
    * give one: an app that showed the button anyway would be offering what it
@@ -389,7 +420,7 @@ function localToday(): string {
 
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession,
+  source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession, chrome: Chrome,
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, sourceFailure,
@@ -1156,6 +1187,27 @@ export function App({
   }, [onTitle, project, groupName, organisation.tree.name, home, homeName])
 
 
+  /**
+   * The scope that is open, as whoever answers for the source sees it — held
+   * here only so the provider's own chrome can be handed it.
+   *
+   * The session is made inside the workspace and handed out through
+   * `onScopeSession`, which is a subscription and not a render: a strip that has
+   * to say something about the open scope cannot reach it any other way. Taken
+   * back the moment the workspace lets go, which is every scope switch, so
+   * nothing here can name a session whose model has been unmounted.
+   *
+   * Left undefined where neither the provider nor its chrome asked, so the
+   * workspace is handed nothing at all and behaves as it always has.
+   */
+  const [openScope, setOpenScope] = useState<ScopeSession>()
+  const holdScopeSession = useCallback((session: ScopeSession) => {
+    setOpenScope(session)
+    const stop = onScopeSession?.(session)
+    return () => { setOpenScope(undefined); stop?.() }
+  }, [onScopeSession])
+  const takeScopeSession = Chrome || onScopeSession ? holdScopeSession : undefined
+
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside
@@ -1200,7 +1252,7 @@ export function App({
             readOnly={sourceIsReadOnly(source)}
             sourceStatus={sourceStatus}
             onSourceWork={onSourceWork}
-            onScopeSession={onScopeSession}
+            onScopeSession={takeScopeSession}
             commands={bus.on}
             hostMenu={hostMenu}
             overflow={hostMenu ? undefined : {
@@ -1324,6 +1376,19 @@ export function App({
           >
             {s('shell.storageFailed')}
           </Alert>
+        )}
+        {Chrome && (
+          /* Inside the theme and inside the language, so a provider's strip is
+             in this person's dark mode and this person's Frisian; beside the
+             app's own notices rather than around the screens, because it is one
+             of them. In a boundary of its own for the reason the canvas has
+             one: a strip somebody else wrote falling over must cost the strip
+             and not the window. */
+          <ErrorBoundary where="sourceChrome" diagnostics={diagnostics} controls={hostControls} s={s}>
+            <LanguageProvider language={prefs.language}>
+              <Chrome session={openScope} />
+            </LanguageProvider>
+          </ErrorBoundary>
         )}
         <PreferencesDialog
           open={prefsOpen}
