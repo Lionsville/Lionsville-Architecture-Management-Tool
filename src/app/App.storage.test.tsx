@@ -12,7 +12,8 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import { renderApp } from './testing/renderShell'
@@ -107,6 +108,28 @@ describe('a source a provider answers for', () => {
     renderApp({ initialProject: scope, source: elsewhere })
     fireEvent.click(await screen.findByText('Roadmap'))
     expect(await screen.findByText('New plan')).toBeDefined()
+  })
+
+  /**
+   * The bar asks the provider again when the provider says so, and a provider
+   * with work of its own outstanding has nothing else to hang that on: no
+   * keystroke, no write, nothing the document's own machine can see.
+   */
+  it('says what the provider now says, without the document\u2019s machine moving', async () => {
+    let held: SourceStatus = 'clean'
+    let tell: (() => void) | undefined
+    renderApp({
+      initialProject: scope,
+      source: elsewhere,
+      sourceStatus: () => held,
+      onSourceWork: (listener) => { tell = listener; return () => { tell = undefined } },
+    })
+    const bar = await screen.findByTestId('saved-indicator')
+    expect(bar.textContent).toBe('Not saved yet')
+
+    held = 'dirty'
+    act(() => tell?.())
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('Unsaved changes')
   })
 
   it('hides what writes when it says it only reads', async () => {

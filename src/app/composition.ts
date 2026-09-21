@@ -64,7 +64,9 @@ import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
-import type { SourceProvider, SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type {
+  SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
+} from '../platform/sourceProvider'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -123,6 +125,15 @@ export type Shell = {
    * `platform/sourceProvider.ts` has the reasoning.
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
+   * The source says its own answer to {@link Shell.sourceStatus} has moved.
+   *
+   * Without it that function is only ever asked again when the document's own
+   * machine moves — which is every answer there is for a file, and half of the
+   * answer for anywhere else. Absent with `sourceStatus`, and then the bar
+   * behaves exactly as it always has.
+   */
+  onSourceWork?: SourceWorkChanged
   /**
    * A scope has been opened: the session over it, for whoever answers for the
    * source it is kept in.

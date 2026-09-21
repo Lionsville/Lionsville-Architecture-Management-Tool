@@ -60,6 +60,23 @@ export type SourceWork = {
 }
 
 /**
+ * Say when what this source knows about the work has changed, until the
+ * returned function is called.
+ *
+ * {@link SourceProvider.statusOf} is asked again whenever the document's own
+ * machine moves, which is the whole story for a file. A source that keeps work
+ * somewhere else has a second story — work that has not left this machine yet,
+ * a write somewhere that has not been acknowledged — and nothing in it moves
+ * the machine. Without this the bar would say *clean* until a keystroke
+ * happened to make it say something else, which is worse than saying nothing.
+ *
+ * A listener means *ask me again*, and carries nothing: `statusOf` is where the
+ * answer is given, and the provider knows which scope it is being asked about
+ * because it was handed that scope's session when it opened.
+ */
+export type SourceWorkChanged = (listener: () => void) => () => void
+
+/**
  * The way in for a person, as a description rather than a screen.
  *
  * A label the shell can render beside the ones it already offers; the

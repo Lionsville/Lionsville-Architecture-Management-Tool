@@ -60,7 +60,7 @@ import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
-import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { HostControls } from '../ports/HostControls'
@@ -221,6 +221,12 @@ export type AppProps = {
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
   /**
+   * The source says its answer to {@link AppProps.sourceStatus} has moved, so
+   * the bar asks again. Absent for all three sources that ship, whose every
+   * answer moves with the document's own machine.
+   */
+  onSourceWork?: SourceWorkChanged
+  /**
    * A scope has been opened, and here is the session over it: for whoever
    * answers for the source (`composition.ts`). Passed straight through to the
    * workspace, which is where a session exists; absent for all three sources
@@ -362,7 +368,7 @@ function localToday(): string {
 
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, sourceStatus, onScopeSession,
+  source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession,
   onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, today = localToday,
@@ -1154,6 +1160,7 @@ export function App({
             // means by the words on the bar.
             readOnly={sourceIsReadOnly(source)}
             sourceStatus={sourceStatus}
+            onSourceWork={onSourceWork}
             onScopeSession={onScopeSession}
             commands={bus.on}
             hostMenu={hostMenu}

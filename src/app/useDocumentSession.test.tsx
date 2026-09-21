@@ -17,7 +17,7 @@ import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render } from '@testing-library/react'
 import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
 import type { DocumentSessionHook, SavableSession } from './useDocumentSession'
 
@@ -40,6 +40,7 @@ function mount(
   save: (p: ScopeSnapshot) => Promise<void> = () => Promise.resolve(),
   onDisk?: { current: ScopeSnapshot | undefined },
   sourceStatus?: (work: SourceWork) => SourceStatus,
+  onSourceWork?: SourceWorkChanged,
 ) {
   const latest = { current: project() }
   const saved = vi.fn()
@@ -77,6 +78,7 @@ function mount(
       }),
       onAdopt: (held) => adopted.push(held),
       sourceStatus,
+      onSourceWork,
     })
     return null
   }
@@ -407,5 +409,47 @@ describe('a source with a word of its own on the status', () => {
     view.edit('Renamed')
     expect(asked.length).toBeGreaterThan(0)
     expect(asked.filter((status) => !five.includes(status))).toEqual([])
+  })
+})
+
+/**
+ * The same source, saying its answer has moved.
+ *
+ * `statusOf` is asked again whenever the document's machine moves, which is
+ * every answer a file has. A source that keeps work somewhere else has answers
+ * the machine knows nothing about — and no keystroke to hang them on.
+ */
+describe('a source that says its own answer has moved', () => {
+  it('is asked again, and the bar says what it now says', () => {
+    let word: SourceStatus = 'clean'
+    let tell: (() => void) | undefined
+    const view = mount(undefined, undefined, () => word, (listener) => {
+      tell = listener
+      return () => { tell = undefined }
+    })
+    expect(view.status()).toBe('clean')
+
+    // Nothing has been typed and nothing has been written: the machine has not
+    // moved at all, and the word on the bar has.
+    word = 'dirty'
+    act(() => tell?.())
+    expect(view.status()).toBe('dirty')
+    expect(view.writes).toEqual([])
+
+    // And back again, which is why this is a counter and not a flag.
+    word = 'clean'
+    act(() => tell?.())
+    expect(view.status()).toBe('clean')
+  })
+
+  it('is let go of when the workspace goes', () => {
+    let listeners = 0
+    const view = mount(undefined, undefined, () => 'clean', () => {
+      listeners += 1
+      return () => { listeners -= 1 }
+    })
+    expect(listeners).toBe(1)
+    view.unmount()
+    expect(listeners).toBe(0)
   })
 })

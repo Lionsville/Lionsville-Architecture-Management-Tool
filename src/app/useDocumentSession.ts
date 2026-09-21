@@ -19,12 +19,12 @@
  * is the moment a person thinks they are done. Quit: the last moment there is,
  * and the only one that also asks.
  */
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   AUTOSAVE_IDLE_MS, documentSession, hasUnsavedWork, openSession, shouldSaveNow,
 } from '../projects/documentSession'
 import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/documentSession'
-import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { StorageNotice } from './useStorageNotice'
@@ -132,9 +132,21 @@ export function useDocumentSession(deps: {
    * *saving* must not be able to change any of them.
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
+   * The source says its own answer has moved, so ask it again.
+   *
+   * The machine below is untouched by this: nothing it decides — when to write,
+   * whether anything is outstanding, whether closing the window would lose
+   * something — can be reached from here. All that happens is that the last
+   * word on what the status is CALLED is asked for again, which is the only
+   * thing a source that keeps work somewhere else can have changed its mind
+   * about without a keystroke.
+   */
+  onSourceWork?: SourceWorkChanged
 }): DocumentSessionHook {
   const {
-    session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork, sourceStatus,
+    session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork,
+    sourceStatus, onSourceWork,
   } = deps
   const { model, logoLibrary, snapshot } = session
 
@@ -320,10 +332,21 @@ export function useDocumentSession(deps: {
    * elsewhere has nothing to say about it. The same object when there is no
    * word to take, so a reader that watches the state by identity is unmoved.
    */
+  /**
+   * How many times the source has said to ask again. A counter and not a flag,
+   * because two answers in a row have to be two renders: the second may put the
+   * word back where the first took it from.
+   */
+  const [asked, setAsked] = useState(0)
+  useEffect(() => onSourceWork?.(() => setAsked((n) => n + 1)), [onSourceWork])
+
   const shown = useMemo(() => {
     if (!sourceStatus || state.status === 'no-file') return state
     return { ...state, status: sourceStatus({ status: state.status, editedWhileSaving: state.editedWhileSaving }) }
-  }, [sourceStatus, state])
+    // `asked` is deliberately a dependency nothing above reads: it is the
+    // source saying its answer has moved, and asking again is the whole of what
+    // that means here.
+  }, [sourceStatus, state, asked])
 
   return { state: shown, forceSave, takeTheirs, keepMine }
 }

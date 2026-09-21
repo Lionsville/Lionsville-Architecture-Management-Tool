@@ -38,7 +38,7 @@ import type { AncestorRecords } from '../decisions/adrScope'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import type { SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import type { HostCommand } from '../platform/hostCommands'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
@@ -126,6 +126,11 @@ export type ProjectWorkspaceProps = {
    * answer, which is what a file is.
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
+   * The source says its answer to {@link ProjectWorkspaceProps.sourceStatus}
+   * has moved. Absent where the document's own machine is the whole answer.
+   */
+  onSourceWork?: SourceWorkChanged
   /**
    * Whoever answers for the source wants the session over this scope
    * (`composition.ts`). Handed over once it exists and taken back on unmount,
@@ -291,7 +296,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, readOnly = false, sourceStatus, onScopeSession,
+  project, projects, index, watch, readOnly = false, sourceStatus, onSourceWork, onScopeSession,
   commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, onAgentSession, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
@@ -462,6 +467,7 @@ export function ProjectWorkspace({
     onPressure: nearlyFull,
     watch,
     sourceStatus,
+    onSourceWork,
     onUnsavedWork,
     // Their version, once it has been read: straight onto the session, without
     // a relayout — a project read back from its folder carries its geometry.
