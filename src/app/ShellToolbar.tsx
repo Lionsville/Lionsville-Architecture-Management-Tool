@@ -255,6 +255,13 @@ export type ShellToolbarProps = {
    * wrong this bar can be.
    */
   saveFailed?: boolean
+  /**
+   * Who else has this scope open, names only — the shell is told, and never
+   * works it out (`useModelSession.ts`, `ScopeSession.alsoHere`). Empty for
+   * every source that ships, and then the bar says nothing rather than saying
+   * that nobody is there.
+   */
+  alsoHere?: readonly string[]
   language: Language
   /** Leave this scope for the home of one above it, or its own: what a crumb does. */
   onGoHome: (path: ScopePath) => void
@@ -296,7 +303,7 @@ export type ShellToolbarProps = {
 
 export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
-  language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
+  alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
   onOpenSearch, activity,
   overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
@@ -342,6 +349,14 @@ export function ShellToolbar({
           {narrow ? '●' : statusText}
         </Typography>
       </Tooltip>
+      {alsoHere.length > 0 && (
+        <Typography
+          data-testid="also-here"
+          sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}
+        >
+          {s('shell.alsoHere', { names: alsoHere.join(', ') })}
+        </Typography>
+      )}
       <Box sx={{ flex: 1 }} />
       {([
         ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],

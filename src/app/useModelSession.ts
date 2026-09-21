@@ -331,6 +331,20 @@ export type ScopeSession = {
   history: () => readonly HistoryStep[]
   /** The counter that moves with every change, external ones included. */
   revision: () => number
+  /**
+   * Who else has this scope open: names, and nothing else.
+   *
+   * The one thing this handover carries INTO the shell rather than out of it,
+   * because it is the one thing the shell cannot work out for itself — and
+   * `CommandChannel.presence` answers in exactly this shape. Whoever holds the
+   * other end says so when it changes and says so with an empty list when the
+   * last of them goes; the bar then says nothing at all.
+   *
+   * Names only, deliberately. A name is a thing this app can say in a sentence;
+   * where a colleague's pointer is would be a second model of the canvas, and
+   * nobody has asked for one.
+   */
+  alsoHere: (names: readonly string[]) => void
 }
 
 /**

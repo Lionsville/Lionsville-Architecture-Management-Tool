@@ -94,6 +94,33 @@ describe('the saved indicator', () => {
   })
 })
 
+/**
+ * Who else is in this scope. The shell never works this out — it is told, by
+ * whoever answers for the source (`ScopeSession.alsoHere`) — so what is pinned
+ * here is what it does with what it is told.
+ */
+describe('the other authors', () => {
+  it('says nothing when there is nobody, rather than that you are alone', () => {
+    renderShell(<ShellToolbar {...props} />)
+    expect(screen.queryByTestId('also-here')).toBeNull()
+    renderShell(<ShellToolbar {...props} alsoHere={[]} />)
+    expect(screen.queryByTestId('also-here')).toBeNull()
+  })
+
+  it('names them, in the order it was given and in one sentence', () => {
+    renderShell(<ShellToolbar {...props} alsoHere={['A. Author', 'B. Bee']} />)
+    expect(screen.getByTestId('also-here').textContent).toBe('Also here: A. Author, B. Bee')
+  })
+
+  it('says it in the language the app is in', () => {
+    renderShell(
+      <ShellToolbar {...props} language="nl" s={translator('nl')} alsoHere={['A. Author']} />,
+      { language: 'nl' },
+    )
+    expect(screen.getByTestId('also-here').textContent).toBe('Ook hier: A. Author')
+  })
+})
+
 describe('ShellToolbar and the window around it', () => {
   it('starts where the window controls end', () => {
     const { container } = renderShell(

@@ -153,6 +153,17 @@ function overChannel(channel: InMemoryCommandChannel, by: string) {
       }
       send(() => { void wire.publish(envelope) })
     })
+    /**
+     * Who else is on this scope, as the channel is willing to say — ours is not
+     * one of them, because the bar is about the OTHER authors. Asked at the
+     * start and again whenever somebody else's step arrives, which is the
+     * cheapest signal a channel like this gives that the room has changed.
+     */
+    const sayWhoElse = () => {
+      void wire.presence?.(session.scope).then((names) => {
+        session.alsoHere(names.filter((name) => name !== by))
+      })
+    }
     const stopSubscription = wire.subscribe(session.scope, head, (step) => {
       head = step.seq
       if (ours.has(step.stepId)) {
@@ -166,7 +177,9 @@ function overChannel(channel: InMemoryCommandChannel, by: string) {
       // Theirs belongs under everything of ours the channel has not seen yet.
       if (pending.length === 0) land()
       else session.steps.rebase({ stepIds: [...pending], between: land })
+      sayWhoElse()
     }, () => {})
+    sayWhoElse()
     return () => { stopListening(); stopSubscription() }
   }
 
@@ -265,5 +278,26 @@ describe('two workspaces over one command channel', () => {
     })
     expect(parsed(await askA('project.current')).elements).toBe(3)
     expect(parsed(await askB('project.current')).elements).toBe(3)
+  })
+
+  it('names the other author on the bar, and never oneself', async () => {
+    const { askB, a, b } = await twoWorkspaces()
+
+    // The second to arrive found the first already there; the first has not
+    // been told anything yet, and its bar says nothing rather than saying it is
+    // alone.
+    await waitFor(() => {
+      expect(within(b.container).getByTestId('also-here').textContent).toBe('Also here: A. Author')
+    })
+    expect(within(a.container).queryByTestId('also-here')).toBeNull()
+
+    // Their step arriving is what makes this side ask the channel who is there.
+    await askB('element.add', { kind: 'application', name: 'Ledger' })
+    await waitFor(() => {
+      expect(within(a.container).getByTestId('also-here').textContent).toBe('Also here: B. Bee')
+    })
+    // Each names the other and neither names itself: a bar that names you back
+    // is a bar nobody trusts.
+    expect(within(b.container).getByTestId('also-here').textContent).toBe('Also here: A. Author')
   })
 })

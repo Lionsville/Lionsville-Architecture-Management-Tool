@@ -362,6 +362,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.activityAgent': 'AGENT',
   'shell.activityBy': 'VON {name}',
   'shell.activityElsewhere': 'EIN ANDERER AUTOR',
+  'shell.alsoHere': 'Auch hier: {names}',
   'shell.search': 'Suchen',
   'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen (⌘K)',
 

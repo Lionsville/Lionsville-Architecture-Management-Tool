@@ -484,6 +484,13 @@ export const EN = {
   'shell.activityBy': 'BY {name}',
   /** What that tag says when the step arrived with no author's name on it. */
   'shell.activityElsewhere': 'ANOTHER AUTHOR',
+  /**
+   * Who else has the open scope in front of them, on the bar beside the status.
+   * Names only, as the source said them, and nothing at all when there is
+   * nobody: a bar that says a scope is yours alone is a bar answering a
+   * question nobody asked.
+   */
+  'shell.alsoHere': 'Also here: {names}',
   'shell.search': 'Search',
   'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
 

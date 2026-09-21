@@ -362,6 +362,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.activityAgent': 'AGENT',
   'shell.activityBy': 'DOOR {name}',
   'shell.activityElsewhere': 'EEN ANDERE AUTEUR',
+  'shell.alsoHere': 'Ook hier: {names}',
   'shell.search': 'Zoeken',
   'shell.searchTip': 'Zoek elementen, documentatie en besluiten (\u2318K)',
 

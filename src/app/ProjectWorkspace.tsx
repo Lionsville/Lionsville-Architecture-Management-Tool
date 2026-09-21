@@ -476,6 +476,13 @@ export function ProjectWorkspace({
   const forceSave = document.forceSave
 
   /**
+   * Who else has this scope open, as whoever answers for the source last said.
+   * Empty for all three sources that ship — there is nobody else to be — and
+   * the bar says nothing then. Per mount, like everything else about one scope.
+   */
+  const [alsoHere, setAlsoHere] = useState<readonly string[]>([])
+
+  /**
    * The session over this scope, handed to whoever answers for the source it is
    * kept in — and taken back when this workspace goes.
    *
@@ -491,6 +498,7 @@ export function ProjectWorkspace({
     dispatch: session.dispatch,
     history: session.history,
     revision: session.revision,
+    alsoHere: setAlsoHere,
   }), [project.path, session.steps, session.dispatch, session.history, session.revision])
   useEffect(() => onScopeSession?.(scopeSession), [onScopeSession, scopeSession])
 
@@ -1421,6 +1429,7 @@ export function ProjectWorkspace({
         savedAt={savedAt}
         status={document.state.status}
         saveFailed={saveFailed}
+        alsoHere={alsoHere}
         language={language}
         overflow={overflow && { ...overflow, can: { ...overflow.can, history: snapshots.available } }}
         onGoHome={onGoHome}
