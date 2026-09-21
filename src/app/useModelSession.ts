@@ -17,13 +17,15 @@
  * No outward dependency: no storage, no files. What comes out is `snapshot()`,
  * and who writes that away is not this hook's business.
  *
- * A change can also arrive from somewhere other than this keyboard. The three
- * functions that make that possible — the log with both directions on it,
+ * A change can also arrive from somewhere other than this keyboard, and one
+ * made here can be of interest somewhere else. The four things that make that
+ * possible — the log with both directions on it, `steps.onChange`,
  * `steps.applyExternal` and `steps.rebase` — are the whole of the seam, and
- * they carry no policy: what a run is, where a step came from and who is told
- * about a refusal are all the business of whoever composes the session.
+ * they carry no policy: what a run is, where a step came from, what is done
+ * with a change that was made here and who is told about a refusal are all the
+ * business of whoever composes the session.
  */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
 import type {
   Command, CommandMeta, CommandRefusal, DocumentImage, Model, StepSummary, UploadedLogo,
@@ -34,6 +36,7 @@ import type { IdPolicy } from '../model/keys'
 import { needsRemount } from '../model/hostModel'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
+import type { ScopePath } from '../projects/scopePath'
 import { newestOwn, pickRun, rewind, unwind } from './rebase'
 import type { DroppedStep } from './rebase'
 import type { Notify } from './useToasts'
@@ -146,14 +149,68 @@ export type RebaseReport = {
 }
 
 /**
- * A change that was made somewhere other than this keyboard.
+ * A change this session just made to the model, for whoever has to tell
+ * somewhere else about it.
  *
- * Two functions and no policy, so that the session stays the one place a
- * change enters while knowing nothing about where a change can come from.
- * The third of the three is `history()` above, which already says what every
+ * The commands are the ones that were actually applied — a step's own going
+ * forwards, its inverses coming back — so a listener never has to work out
+ * which direction the model moved in. They are a list because a step grows: a
+ * run of keystrokes into one field is one step of several commands, and
+ * `transaction` is how it is said as one.
+ */
+export type SessionChange = {
+  /** What happened: a step was taken, taken back, or taken again. */
+  kind: 'step' | 'undo' | 'redo'
+  /**
+   * The step on the stack this change is about: the one taken, or the one
+   * taken back or forward again.
+   *
+   * For a step it is the name to hand the change over under. For an undo or a
+   * redo it is **not**: that step has been handed over already, and somewhere
+   * that answers a name it has already answered would repeat that answer
+   * instead of taking this change. Taking a step back is a change in its own
+   * right and needs a name of its own, which the caller mints.
+   */
+  stepId: string
+  /** The commands applied, in the order they were applied. */
+  commands: readonly Command[]
+  /** Where the step came from, and who made it: absent on this keyboard's own. */
+  origin?: StepOrigin
+  by?: string
+  /** When this change was made, epoch milliseconds. */
+  at: number
+  /** What `revision()` answers now, so a caller need not ask. */
+  revision: number
+}
+
+/**
+ * A change that was made somewhere other than this keyboard, and one made here
+ * that somewhere else is waiting for.
+ *
+ * Three functions and no policy, so that the session stays the one place a
+ * change enters while knowing nothing about where a change can come from or go.
+ * The fourth of the four is `history()` above, which already says what every
  * step did and what undoes it.
  */
 export type SessionSteps = {
+  /**
+   * Hear about every change this session makes to the model, until the
+   * returned function is called.
+   *
+   * It is the half of the seam that goes outwards: without it a caller could
+   * take a step from elsewhere but not say that one was taken here, and
+   * "publish what was just done" would mean polling `history()`. A listener
+   * hears its own doing too — a step it applied with `applyExternal` comes
+   * back marked `remote`, which is how it knows to let it be.
+   *
+   * What is NOT announced: a change the session does not record as a step
+   * (`undoable: false`, the settling pass after a layout), because it has no
+   * inverse and so nothing could take it back or put it back; a rebase,
+   * because whoever asked for one is holding its report; and a document
+   * adopted in place of another, which is not a step and not this seam's
+   * business.
+   */
+  onChange: (listener: (change: SessionChange) => void) => () => void
   /**
    * Apply a command another author made: through the same reducer, on the same
    * stack, named by `model/activity.ts` like any other step, and marked as
@@ -246,6 +303,34 @@ export type ModelSession = {
   snapshot: () => ScopeSnapshot
   /** Take on an entirely different document: an opened file, or the shipped one. */
   adopt: (project: ScopeSnapshot, relayout: boolean) => void
+}
+
+/**
+ * One scope, open: the seam over it, and which scope it is.
+ *
+ * The session lives inside the workspace and is remounted with it, so
+ * everything above the workspace only ever sees it through this — the narrow
+ * view of it, declared where the shell's own is, exactly as the agent's
+ * `SessionView` is declared beside the handler that needs it.
+ *
+ * It exists for whoever answers for the source the scope is kept in: that is a
+ * registration in the composition root (`platform/sourceProvider.ts`), which is
+ * nowhere near the workspace, and a seam that cannot be reached from where a
+ * provider is composed is not a seam. The handing over is per mount and the
+ * answer is how to stop — the workspace is remounted per scope, and a
+ * subscription per scope ever opened is a leak with a slow fuse.
+ */
+export type ScopeSession = {
+  /** Where this scope is in the tree (ADR-0012 §1); the empty string is the root. */
+  scope: ScopePath
+  /** The seam: hear about a change, take one from elsewhere, rebase a run of ours. */
+  steps: SessionSteps
+  /** The one way in (ADR-0002), for a change this side decides to make itself. */
+  dispatch: ModelSession['dispatch']
+  /** Every step taken this session, oldest first, with both directions on each. */
+  history: () => readonly HistoryStep[]
+  /** The counter that moves with every change, external ones included. */
+  revision: () => number
 }
 
 /**
@@ -379,6 +464,27 @@ export function useModelSession(deps: {
   const [, setHistoryVersion] = useState(0)
   const revision = useRef(0)
 
+  /**
+   * Who is listening for a change made here. A set in a ref rather than state:
+   * a listener is bound in an effect and read inside a handler, and neither is
+   * a reason to render.
+   */
+  const listeners = useRef(new Set<(change: SessionChange) => void>())
+  const onChange = useCallback<SessionSteps['onChange']>((listener) => {
+    listeners.current.add(listener)
+    return () => { listeners.current.delete(listener) }
+  }, [])
+  /**
+   * Say what just happened, to everyone listening.
+   *
+   * Over a copy, because a listener is free to stop listening — or to start —
+   * inside its own handler, and a set walked while it is being edited is a
+   * fault nobody would find twice.
+   */
+  const announce = useCallback((change: SessionChange) => {
+    for (const listener of [...listeners.current]) listener(change)
+  }, [])
+
   const setActiveDiagramId = useCallback((id: string) => {
     activeRef.current = id
     setActiveId(id)
@@ -401,8 +507,11 @@ export function useModelSession(deps: {
     modelRef.current = next
     setModel(next)
     revision.current += 1
+    // Not recorded, so not announced: it has no inverse, and a change nothing
+    // can take back is not a step (`SessionSteps.onChange`).
     if (meta.undoable === false) return
     const top = past.current[past.current.length - 1]
+    let landed: HistoryStep
     if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
       // The step keeps the name its FIRST command gave it: a run of keystrokes
       // is "Changed Billing", not "Changed Billing" twelve times over. It keeps
@@ -410,20 +519,36 @@ export function useModelSession(deps: {
       top.commands.push(...commands)
       top.inverses.unshift(...inverses)
       top.at = Date.now()
+      landed = top
     } else {
-      past.current.push({
+      landed = {
         stepId: meta.stepId ?? mintStepId(),
         commands, inverses, at: meta.at ?? Date.now(), summary: summarise(commands, before),
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
         ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
         ...(meta.by !== undefined ? { by: meta.by } : {}),
         ...(meta.barrier !== undefined ? { barrier: meta.barrier } : {}),
-      })
+      }
+      past.current.push(landed)
       if (past.current.length > HISTORY_CAP) past.current.shift()
     }
     if (!meta.keepFuture) future.current = []
     setHistoryVersion((v) => v + 1)
-  }, [])
+    // The commands of THIS change and not the step's whole run: a coalescing
+    // step is announced as it grows, and announcing the run again each time
+    // would apply the earlier keystrokes twice wherever it is carried to.
+    announce({
+      kind: 'step',
+      stepId: landed.stepId,
+      // A copy: the list a coalescing step keeps is the one it grows, and a
+      // listener holding the step's own array would see it change under it.
+      commands: [...commands],
+      at: landed.at,
+      revision: revision.current,
+      ...(landed.origin !== undefined ? { origin: landed.origin } : {}),
+      ...(landed.by !== undefined ? { by: landed.by } : {}),
+    })
+  }, [announce])
 
   /**
    * Removing an application from the model takes its container diagram with it.
@@ -502,7 +627,20 @@ export function useModelSession(deps: {
     setModel(result.model)
     revision.current += 1
     setHistoryVersion((v) => v + 1)
-  }, [notify, s])
+    // Which way the model moved is in `kind`, and what moved it is `commands`:
+    // a listener carrying this somewhere else applies exactly these, and does
+    // not have to know that an undo is a step's inverses.
+    const applied = from === 'past' ? entry.inverses : entry.commands
+    announce({
+      kind: from === 'past' ? 'undo' : 'redo',
+      stepId: entry.stepId,
+      commands: [...applied],
+      at: Date.now(),
+      revision: revision.current,
+      ...(entry.origin !== undefined ? { origin: entry.origin } : {}),
+      ...(entry.by !== undefined ? { by: entry.by } : {}),
+    })
+  }, [notify, s, announce])
 
   const undo = useCallback(() => step('past'), [step])
   const redo = useCallback(() => step('future'), [step])
@@ -550,6 +688,10 @@ export function useModelSession(deps: {
    * comes off, whatever `between` lands is pushed where it belongs, and the
    * steps that still apply go back on top of it. Nothing renders in between,
    * so this is one update however many steps it moves.
+   *
+   * Nothing is announced: a caller that asked for a rebase is holding its
+   * report, and a run put back on the model is the same work it already knows
+   * about rather than new work for it to carry anywhere.
    */
   const rebase = useCallback<SessionSteps['rebase']>((run) => {
     const { run: steps, unknown } = pickRun(past.current, run.stepIds)
@@ -575,6 +717,22 @@ export function useModelSession(deps: {
     setHistoryVersion((v) => v + 1)
     return { reapplied: back.kept.map((held) => held.stepId), dropped: back.dropped, unknown }
   }, [notify, s])
+
+  /**
+   * The seam, as one object with an identity that holds still.
+   *
+   * Whoever composes the session binds these in an effect, and an object built
+   * fresh on every render would be a subscription dropped and remade on every
+   * keystroke. The three inside it are already stable; this is what makes the
+   * grip around them stable too. `history` and `revision` are the same
+   * arrangement, for the same reason.
+   */
+  const steps = useMemo<SessionSteps>(
+    () => ({ onChange, applyExternal, rebase }),
+    [onChange, applyExternal, rebase],
+  )
+  const history = useCallback(() => past.current as readonly HistoryStep[], [])
+  const revisionNow = useCallback(() => revision.current, [])
 
   const onLayoutSettled = useCallback((diagramId: string) => {
     // Not a step: ⌘Z after opening a document must not ask for the layout back.
@@ -627,11 +785,11 @@ export function useModelSession(deps: {
     ids: ids.current,
     editorKey, logoLibrary, setLogoLibrary, imageLibrary, setImageLibrary,
     dispatch, undo, redo,
-    steps: { applyExternal, rebase },
+    steps,
     canUndo: newestOwn(past.current) >= 0,
     canRedo: future.current.length > 0,
-    history: () => past.current,
-    revision: () => revision.current,
+    history,
+    revision: revisionNow,
     onLayoutSettled,
     current: () => asArrays(modelRef.current),
     indexed: () => modelRef.current,

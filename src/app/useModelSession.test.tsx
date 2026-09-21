@@ -20,7 +20,7 @@ import type { DesignElement, PlacedNode } from '../model'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
 import { useModelSession } from './useModelSession'
-import type { ModelSession } from './useModelSession'
+import type { ModelSession, SessionChange } from './useModelSession'
 
 /** The full shape, so a test does not have to repeat five fields it never reads. */
 function element(id: string, name: string): DesignElement {
@@ -603,5 +603,102 @@ describe('useModelSession — rebase', () => {
     // Theirs is all that is left, and it is not ours to take back.
     expect(session().canUndo).toBe(false)
     expect(session().current().elements[0].name).toBe('Theirs')
+  })
+})
+
+describe('useModelSession — saying that a change was made here', () => {
+  const elsewhere = { by: 'A. Author' }
+
+  /** Everything the session said, in the order it said it. */
+  function listening(session: () => ModelSession) {
+    const heard: SessionChange[] = []
+    let stop!: () => void
+    act(() => { stop = session().steps.onChange((change) => heard.push(change)) })
+    return { heard, stop: () => act(() => stop()) }
+  }
+
+  it('says what was applied, under the name the step goes by', () => {
+    const { session } = mount()
+    const { heard } = listening(session)
+    act(() => { session().dispatch(rename('One')) })
+    expect(heard).toHaveLength(1)
+    expect(heard[0].kind).toBe('step')
+    expect(heard[0].stepId).toBe(session().history()[0].stepId)
+    expect(heard[0].commands).toEqual([rename('One')])
+    expect(heard[0].revision).toBe(session().revision())
+    expect(heard[0].origin).toBeUndefined()
+  })
+
+  it('says only what a coalescing step just grew by, not the run again', () => {
+    const { session } = mount()
+    const { heard } = listening(session)
+    act(() => {
+      for (const name of ['R', 'Re'] as const) {
+        session().dispatch({ type: 'diagram.rename', id: 'd1', name, coalesce: 'name:d1' })
+      }
+    })
+    // One step on the stack, two changes to carry, and the second carries one
+    // command — applying the run again elsewhere would rename it twice.
+    expect(session().history()).toHaveLength(1)
+    expect(heard.map((change) => change.commands.length)).toEqual([1, 1])
+    expect(new Set(heard.map((change) => change.stepId)).size).toBe(1)
+  })
+
+  it('says an undo is an undo, and hands over the inverses that were applied', () => {
+    const { session } = mount()
+    act(() => { session().dispatch(rename('One')) })
+    const { heard } = listening(session)
+    act(() => session().undo())
+    expect(heard).toHaveLength(1)
+    expect(heard[0].kind).toBe('undo')
+    // The step it took back, by name — not the name this change would go under.
+    expect(heard[0].stepId).toBeTruthy()
+    expect(heard[0].commands).toEqual([rename('Billing')])
+    act(() => session().redo())
+    expect(heard[1].kind).toBe('redo')
+    expect(heard[1].commands).toEqual([rename('One')])
+  })
+
+  it('marks another author’s step as theirs, so a listener lets it be', () => {
+    const { session } = mount()
+    const { heard } = listening(session)
+    act(() => { session().steps.applyExternal(rename('Theirs'), elsewhere) })
+    expect(heard[0].origin).toBe('remote')
+    expect(heard[0].by).toBe('A. Author')
+  })
+
+  it('says nothing about a change it does not record, because nothing can take it back', () => {
+    const { session } = mount()
+    const { heard } = listening(session)
+    act(() => {
+      session().dispatch({ type: 'element.update', id: 'billing', patch: { name: 'Quietly' }, undoable: false })
+    })
+    expect(session().current().elements[0].name).toBe('Quietly')
+    expect(heard).toEqual([])
+  })
+
+  it('says nothing about a rebase, which the caller asked for and has the report of', () => {
+    const { session } = mount()
+    act(() => { session().dispatch({ type: 'diagram.rename', id: 'd1', name: 'Mine' }) })
+    const stepIds = session().history().map((step) => step.stepId)
+    const { heard } = listening(session)
+    act(() => {
+      session().steps.rebase({
+        stepIds,
+        between: () => { session().steps.applyExternal(rename('Theirs'), elsewhere) },
+      })
+    })
+    // Their step, which arrived through the door that announces; not one word
+    // about ours coming off the model and going back on.
+    expect(heard.map((change) => change.origin)).toEqual(['remote'])
+  })
+
+  it('stops when the listener is dropped', () => {
+    const { session } = mount()
+    const { heard, stop } = listening(session)
+    act(() => { session().dispatch(rename('One')) })
+    stop()
+    act(() => { session().dispatch(rename('Two')) })
+    expect(heard).toHaveLength(1)
   })
 })
