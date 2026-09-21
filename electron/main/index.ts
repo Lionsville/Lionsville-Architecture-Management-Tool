@@ -27,6 +27,7 @@ import { installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './app
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
+import { runDesktopHooks } from './desktopHooks'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
@@ -344,6 +345,11 @@ void app.whenReady().then(() => {
   // the list of folders changes, because a submenu already on screen does not
   // redraw itself.
   registerFileChannel({ onRecentsChanged: menu })
+
+  // And, in the same breath and for the same reason, whatever a build composed
+  // from this one registered at composition (`platform/desktopHook`). This
+  // build registers none, so this is a loop over an empty list.
+  runDesktopHooks()
 
   // Said by the preload the moment anything subscribes. Everything the OS
   // handed us before that has been waiting.
