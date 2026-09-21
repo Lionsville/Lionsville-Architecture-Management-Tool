@@ -45,9 +45,17 @@ import tseslint from 'typescript-eslint'
  * eleventh row quietly disagrees with the other ten — and because a per-module
  * `no-restricted-imports` block REPLACES the rule rather than adding to it, so
  * every row has to be complete.
+ *
+ * One row is a folder inside another module: `platform/node`, the only place in
+ * `src/` that may say `node:`. It is a row rather than a rule of its own because
+ * everything the matrix does for a module it has to do for this one too — most
+ * of all keeping it OUT of every other row, since a renderer bundle that pulls
+ * in `node:child_process` fails at the first import. It comes after `platform`
+ * in this list on purpose: its files match both rows, and the last config wins,
+ * so `platform`'s shorter row must not be the one left standing.
  */
 const MODULES = [
-  'model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations',
+  'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'documentation', 'decisions', 'observations',
   'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
 ]
 
@@ -56,6 +64,7 @@ const MAY_IMPORT = {
   layout: ['model', 'i18n', 'platform'],
   i18n: [],
   platform: ['i18n'],
+  'platform/node': ['model', 'i18n', 'platform', 'projects'],
   widgets: ['i18n'],
   documentation: ['model', 'i18n', 'platform', 'widgets'],
   decisions: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
@@ -69,7 +78,9 @@ const MAY_IMPORT = {
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
   ports: ['model', 'platform', 'projects', 'agent'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent'],
-  app: MODULES.filter((m) => m !== 'adapters' && m !== 'app'),
+  // `platform/node` is the one thing the top of the tree may not have either:
+  // `app` is the renderer, and code that says `node:` cannot be in it.
+  app: MODULES.filter((m) => m !== 'adapters' && m !== 'app' && m !== 'platform/node'),
 }
 
 const WHY = {
@@ -77,6 +88,7 @@ const WHY = {
   layout: 'Layout computes geometry over the model. It draws nothing and stores nothing.',
   i18n: 'The words know nobody — every module hands its own slice to the registry.',
   platform: 'A refusal, a diagnostic, the window. Everything may read it, so it may read almost nothing.',
+  'platform/node': 'Node and nothing else: `node:` lives here, so this folder may read the pure modules and is imported by no module at all — only by a process that has a node under it (electron/main, or a build composed from this one).',
   widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
@@ -104,7 +116,7 @@ const WHY = {
  * `no-restricted-imports` instead of adding to it, and the matrix would silently
  * stop applying to exactly the modules that most need it.
  */
-const PURE = ['model', 'layout', 'platform', 'ports', 'projects', 'i18n', 'agent']
+const PURE = ['model', 'layout', 'platform', 'platform/node', 'ports', 'projects', 'i18n', 'agent']
 const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*']
 
 

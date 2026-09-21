@@ -27,7 +27,7 @@ import { SCOPE_FILE, scopeNameIn } from '../../src/platform/scopeHeader'
 import {
   excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, label, pull, push, remote,
   resolve, snapshot,
-} from './git'
+} from '../../src/platform/node/git'
 import { log } from './log'
 import { watchFolder } from './watch'
 import {

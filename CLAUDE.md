@@ -311,6 +311,15 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       of the main process: somewhere to answer the
                                       renderer, somewhere to keep a small secret,
                                       and the `hook:` prefix both sides name
+                    node/             the one folder in `src/` that may say
+                                      `node:`, its own row in the matrix and on
+                                      no barrel, imported by no module at all
+                      node/git        a folder's history through the machine's
+                                      own git (ADR-0003 layer two, ADR-0005's
+                                      remote): snapshots, the log, a label, the
+                                      files at one, and `.git/info/exclude` —
+                                      `electron/main` was its first caller and
+                                      is no longer its only one
 src/widgets/      Presentation with no opinions: icons, one confirm dialog, and
                   a laid-out page rasterised (`capturePage`).
 src/ports/        The seams. Interfaces only, no implementations.
@@ -374,8 +383,9 @@ src/app/          The shell around the editor.
                     use*              the hooks: session, files, document, toasts
                     usePlans          the roadmap, a plan and Replace…, wired
 electron/         The desktop main process and preload.
-                    files.ts · fileStore.ts · watch.ts   the file channel
-                    git.ts            snapshots, through the machine's own git
+                    files.ts · fileStore.ts · watch.ts   the file channel — and
+                                      the caller of `platform/node/git`, which
+                                      had no Electron in it and is not here
                     appMenu.ts        the File menu; every item sends a command
                     preload/index.ts  the doorway: the typed channels, and the one
                                       generic door for a hook's own (`invokeHook`)
@@ -411,6 +421,16 @@ mounted in a test with two plain objects. `documentation` may not import
 `ports` or `app`: the four things only the canvas can do reach it as a
 `RendererView` the workspace fills over the editor's handle, so the whole
 module is tested in node with a plain object in that slot.
+
+And one row is a folder inside a module: **`platform/node/` is the only place in
+`src/` that may say `node:`**, and no module may import it — not even `app`,
+which may import everything else. It is where code moves when it turns out to be
+pure node rather than Electron's (`platform/node/git.ts`, whose caller was
+`electron/main` and is now also a build composed from this one that keeps a
+folder in a node process). Nothing puts it on a barrel, the way
+`agent/mcpProtocol.ts` is kept off one: a renderer bundle that reaches
+`node:child_process` fails at its first import, and a barrel is what would take
+it there.
 
 ### Where does my change go?
 

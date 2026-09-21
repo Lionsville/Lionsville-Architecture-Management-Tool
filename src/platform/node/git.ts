@@ -38,19 +38,29 @@
  * project reads that project's commits as its own snapshots, and commits into
  * it when one is taken.
  *
- * No Electron in here, so it can be tested against a real repository.
+ * No Electron in here at all, which is why it sits in `platform/node/` rather
+ * than beside the main process that was its first caller: keeping a folder's
+ * history is `git`, `node:fs` and the folder's own settings path, and a build
+ * composed from this one that runs the reducer and the folder format in a node
+ * process with no Electron needs exactly that. `platform/node/` is the one row
+ * in the import matrix for code that may say `node:` — it is deliberately not
+ * on `platform/index.ts` and nothing in `src/` may import it, because a barrel
+ * or one stray import is what would put `node:child_process` in a renderer
+ * bundle (`src/agent/mcpProtocol.ts` is kept off a barrel for the same reason).
+ *
+ * Tested in node against a real repository, which is what it always was.
  */
 import { execFile } from 'node:child_process'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { LOCAL_SETTINGS_PATH } from '../../src/projects/folderSettings'
-import { labelSlug } from '../../src/platform/history'
-import type { LabelOutcome } from '../../src/platform/history'
-import { BEFORE_SYNC_BRANCH_PREFIX } from '../../src/platform/sync'
+import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
+import { labelSlug } from '../history'
+import type { LabelOutcome } from '../history'
+import { BEFORE_SYNC_BRANCH_PREFIX } from '../sync'
 import type {
   PullOutcome, PushOutcome, ResolveOutcome, SyncRefusal, SyncRemote, SyncSide,
-} from '../../src/platform/sync'
+} from '../sync'
 
 const run = promisify(execFile)
 
