@@ -282,6 +282,30 @@ describe('DocumentationPage', () => {
     expect(props.onNavigate).toHaveBeenLastCalledWith('e2');
   });
 
+  it('stays one dialog from one element to the next, and starts the next one afresh', () => {
+    // Remounted per element, the dialog faded in again on every step through
+    // the left column and the board showed through the fade. The page is one
+    // dialog now; what is per element resets when the element changes.
+    const { props, rerender, updateElement } = setup();
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(source()!, { target: { value: 'Rewritten.' } });
+
+    rerender(
+      <ThemeProvider theme={createTheme()}>
+        <DocumentationPage {...props} element={billing} model={model(billing)} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Billing');
+    // Reading again, and the stored text of the new element — not the old draft.
+    expect(source()).toBeNull();
+    expect(screen.getByTestId('source').textContent).toBe('## Purpose\n\nBills.');
+    // What was being written reached the element it was written on, and none other.
+    expect(updateElement).toHaveBeenCalledTimes(1);
+    expect(updateElement).toHaveBeenCalledWith('e1', { description: 'Rewritten.' }, expect.any(String));
+  });
+
   it('gives the inspector slot the element, editable whenever the page is', () => {
     // What the fields ARE is the editor's business — this page takes them as a
     // slot. They used to be greyed out until Edit was pressed; Edit is about
@@ -298,8 +322,8 @@ describe('DocumentationPage', () => {
   });
 
   it('lets the fields column be dragged wider, through the host that keeps the width', () => {
-    // The host keeps it because the page is remounted per element; without a
-    // host there is nothing to keep it and no seam either.
+    // The host keeps it so it outlives the page; without a host there is
+    // nothing to keep it and no seam either.
     const onChange = vi.fn();
     setup({ fieldsWidth: { value: 340, onChange } });
     const seam = screen.getByRole('separator', { name: 'Resize the fields column' });

@@ -137,9 +137,9 @@ export interface DocumentationPageProps {
   /**
    * How wide the fields column is, and where a drag on its seam goes.
    *
-   * The host's rather than this page's, because the page is remounted per
-   * element and a width that snapped back on *next* would be a width nobody
-   * bothered to drag. Absent = the default, and no seam to drag.
+   * The host's rather than this page's, so the width outlives the page: a
+   * width that snapped back the next time the page opened would be a width
+   * nobody bothered to drag. Absent = the default, and no seam to drag.
    */
   fieldsWidth?: { value: number; onChange(next: number): void };
 }
@@ -149,12 +149,32 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const { t } = useStrings();
   const [mode, setMode] = useState<DocumentationMode>('read');
   const [draft, setDraft] = useState(element.description ?? '');
+  // The rendered page beside the source, which a wide table wants out of the way.
+  const [previewShown, setPreviewShown] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // --- the draft and its commits ---------------------------------------------
 
   const latest = useRef({ draft, stored: element.description ?? '', id: element.id, actions });
+
+  // One page for every element, not a page per element: the dialog stays up
+  // from one to the next. Remounted per element, the dialog faded in again
+  // each time and the board showed through the fade. What a new element
+  // starts afresh — reading, its own stored text, the preview shown — is
+  // reset here instead, before anything of the new element is rendered.
+  // `latest` still holds the element being left, whose unsaved draft is
+  // kept aside for the effect below: a write does not belong in a render.
+  const [shownId, setShownId] = useState(element.id);
+  const leaving = useRef<typeof latest.current | undefined>(undefined);
+  if (shownId !== element.id) {
+    leaving.current = latest.current;
+    setShownId(element.id);
+    setMode('read');
+    setDraft(element.description ?? '');
+    setPreviewShown(true);
+  }
+
   latest.current = { draft, stored: element.description ?? '', id: element.id, actions };
 
   const commit = useCallback(() => {
@@ -173,8 +193,20 @@ export function DocumentationPage(props: DocumentationPageProps) {
     return () => clearTimeout(timer);
   }, [draft, mode, commit]);
 
-  // Leaving the page (close, another element) commits whatever is pending.
+  // Leaving the page commits whatever is pending.
   useEffect(() => commit, [commit]);
+
+  // So does leaving an element for another, however the host got there: the
+  // page's own ways commit before they ask, a search hit or the agent may not.
+  // And the new element's page starts at its top, as a page just opened does.
+  useEffect(() => {
+    const left = leaving.current;
+    leaving.current = undefined;
+    if (left && left.draft !== left.stored) {
+      left.actions.updateElement(left.id, { description: left.draft || undefined }, fieldEdit(left.id, 'description'));
+    }
+    contentRef.current?.parentElement?.scrollTo?.({ top: 0 });
+  }, [element.id]);
 
   // An undo while reading changes the stored text under us; follow it. While
   // editing, the draft is the truth and the store is behind by design.
@@ -243,8 +275,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
     textareaRef.current?.focus();
   };
 
-  // The rendered page beside the source, which a wide table wants out of the way.
-  const [previewShown, setPreviewShown] = useState(true);
   const showPreview = mode === 'read' || previewShown;
 
   const subtitle = [element.category, element.vendor, element.technology].filter(Boolean).join(' · ');

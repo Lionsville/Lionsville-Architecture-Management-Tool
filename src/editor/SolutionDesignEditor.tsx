@@ -1235,7 +1235,6 @@ function EditorBody(props: SolutionDesignEditorProps) {
    */
   const documentationPage = documentationElement && documentationDiagram && (
         <DocumentationPage
-          key={documentationElement.id}
           element={documentationElement}
           model={state.model}
           scopeLabel={props.exportTitleBlock?.client}
