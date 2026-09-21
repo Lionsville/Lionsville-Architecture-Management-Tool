@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4261 tests** and one of every config. The
+One codebase, in modules, with **4281 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4261 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4281 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -250,6 +250,9 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                                       the person can stop (ADR-0019)
 src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
                   `strings.en.ts` composes them and is the schema.
+                    registerStrings   words a build composed from this one brought,
+                                      kept beside the schema and never merged into
+                                      it: keys added, none replaced (ADR-0022)
 src/projects/     A scope: open, save, order, summarise, address, remember.
                     scope             the document every level is (ADR-0012 §1),
                                       and the arithmetic over a tree of them
@@ -300,8 +303,10 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     agentServer       the server's three states, and mcp.json's shape
                     sourceProvider    a kind of place work is kept, as something
                                       that can be registered: what it opens to,
-                                      its way in, and what it means by the five
-                                      words the bar says (ADR-0022)
+                                      its way in — a label, the provider's own
+                                      dialog, and an address a link may carry —
+                                      and what it means by the five words the
+                                      bar says (ADR-0022)
                     desktopHook       what a build composed from this one may ask
                                       of the main process: somewhere to answer the
                                       renderer, somewhere to keep a small secret,
@@ -309,6 +314,11 @@ src/platform/     What the app runs inside, and what a failure looks like.
 src/widgets/      Presentation with no opinions: icons, one confirm dialog, and
                   a laid-out page rasterised (`capturePage`).
 src/ports/        The seams. Interfaces only, no implementations.
+                    DirectoryHandle   as little of a folder as the folder store
+                                      asks for — the shape a browser's handle,
+                                      the desktop's over IPC and the suites'
+                                      fake are all held to (re-exported by
+                                      `adapters/fileSystem/`, so nothing moved)
                     ScopeStore        …and `models?()`, the tree's `model.json`
                                       files and nothing else — what the index is
                                       built from, one file per scope
@@ -330,7 +340,9 @@ src/adapters/     The outside world, one folder per flavour.
 src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     composition.ts    which adapter, which icon packs, and which
-                                      source providers (ADR-0022)
+                                      source providers (ADR-0022) — with
+                                      `openSource` and `registeredConnects` for
+                                      whoever composes over this one
                     rebase            a run of steps off the model and back on,
                                       pure — no React, no stack, no policy
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
@@ -645,8 +657,10 @@ identifiers is still a list of a customer's identifiers.
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
 | Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says — with `onSourceWork` to say *ask me again*, for an answer that moved without the document's own machine moving. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
+| How a person, or a link, reaches one (ADR-0022, amended) | a **way in**: `connect.labelKey` for what the button says, `connect.open()` for the dialog behind it — the provider's, because what it has to ask for is its business — and `connect.fromLocation(location)` for an address a link carries, read before the first render. The boot draws one button per registered provider on the root's home and on the first-run screen (`registeredConnects`); `openSource(kind, opening)` is the one call that opens what a dialog answered. The folder's button is the one that was already there, because choosing a folder is also remembered, adopted into and upgraded |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
 | Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it |
+| One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
 | A step this session did not make (ADR-0022) | an **external step**: `origin: 'remote'` and `by` on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600. Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Working-folder format | **7** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021) |
@@ -1231,3 +1245,19 @@ in this app that the caller cannot skip. Core registers no provider and fills
 no channel: what is here is the place a filling plugs into, the words it plugs
 in with, and two whole workspaces over one in-memory channel proving that it
 fits.
+
+Then a build composed from core registered a provider and found five places
+where the seam stopped short of being one (ADR-0022, *Amended*). A provider's
+way in is **reached** now: the boot draws a button per registered provider on
+the two screens that ask where work should live, the dialog behind it is the
+provider's own (`connect.open`), and `connect.fromLocation` is read before the
+first render so a link can carry the address — the folder's button stays the one
+that was always there, because choosing a folder is also remembered, adopted
+into and upgraded. `openSource` is exported, so nobody restates what travels
+with a provider's parts. `DirectoryHandleLike` moved to `ports/`, where the
+shape a filling has to show can be read without naming an adapter. `i18n`'s
+`registerStrings` makes a provider's own label real — additive, and a key this
+app owns is refused. And the session handed over can be asked what the model
+says (`current` · `indexed`), because minting an id against what is taken and
+telling a conflict from a change that fits are both questions about the model at
+the instant a step is made.

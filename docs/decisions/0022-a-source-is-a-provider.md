@@ -264,6 +264,37 @@ speaks the agent's vocabulary and imports nothing of Electron's.
   read back, and the door passing a hook's channel through while refusing every
   channel of ours. The smoke run is unchanged, which is the point.
 
+## Amended — the five the first build composed from this one needed
+
+*21 September 2026.* A build composed from core registered a provider through
+`registerSourceProvider` and found five places where the seam stopped short of
+being one. Each is added as the smallest public thing that closes it, and
+nothing above them changed for any of them.
+
+* **A way in that is reached.** `SourceConnect` said how a person gets to a
+  source and the boot never read it, so a registered provider could be composed
+  and never opened. It now carries `open()` — the provider's own dialog, the
+  shell's own button — and `fromLocation`, which the boot reads before the first
+  render so a link can carry the address; the two screens that ask where work
+  should live draw one button per registered provider. The folder's way in is
+  the button that was already there, because choosing a folder is remembered,
+  adopted into and upgraded, which is more than opening a source.
+* **`openSource(kind, opening)` is exported.** The parts a provider builds and
+  its word about the five words travel together, and a composer that restated
+  that for itself would be one field short the day a third thing joins them.
+* **`ports/DirectoryHandle.ts`.** `DirectoryHandleLike` is the shape a filling
+  has to show and could only be read out of `adapters/fileSystem/`, which is the
+  one folder nothing but the composition root may name. The store re-exports all
+  four names.
+* **`i18n`'s `registerStrings(language, table)`.** `SourceConnect` always said a
+  provider brings its own table and there was nowhere to put one, so its label
+  rendered as its key. Additive only: a key this app owns is refused, loudly
+  while the build is being developed and quietly in the one that ships.
+* **`ScopeSession` can read its model.** `current()` and `indexed()`, the two the
+  session's own actions use. Minting an id against what is taken and telling a
+  conflict from a change that fits are both questions about the model at the
+  instant a step is made, which is one render before anything is drawn.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a
