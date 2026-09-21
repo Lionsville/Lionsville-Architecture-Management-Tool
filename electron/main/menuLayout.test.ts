@@ -6,7 +6,7 @@
  * Close Window.
  */
 import { describe, expect, it } from 'vitest'
-import { fileMenuSlot, replacingSlot } from './menuLayout'
+import { fileMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 
 /** The default macOS menu bar, with the roles spelled as Electron returns them. */
 const macDefaults = [
@@ -42,5 +42,25 @@ describe('replacingSlot', () => {
       .toEqual({ index: 2, replace: true })
     expect(replacingSlot([{ role: 'filemenu' }, { role: 'Help' }], 'editmenu'))
       .toEqual({ index: 2, replace: false })
+  })
+})
+
+/**
+ * And what Help ends with, which is not always an item.
+ *
+ * *Check for Updates…* used to be drawn whatever the build had decided about
+ * updates, and to call a check the process had already decided not to make. A
+ * build composed from this one may keep its own updates, and then the item
+ * reaches a release page that is not its own.
+ */
+describe('helpMenuTail', () => {
+  it('ends Help with the rule and the item where this build offers a check', () => {
+    expect(helpMenuTail(true)).toEqual([{ kind: 'separator' }, { kind: 'checkForUpdates' }])
+  })
+
+  /** Both, or neither: a Help menu ending in a rule with nothing under it is the
+      shape a conditional at the end of the menu ships. */
+  it('ends it where it always ended where this build offers none', () => {
+    expect(helpMenuTail(false)).toEqual([])
   })
 })

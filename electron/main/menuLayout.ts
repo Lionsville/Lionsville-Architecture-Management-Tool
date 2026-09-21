@@ -54,3 +54,24 @@ export function replacingSlot(items: readonly PlaceableItem[], role: 'editmenu' 
   const existing = items.findIndex((item) => roleOf(item) === role)
   return existing !== -1 ? { index: existing, replace: true } : { index: items.length, replace: false }
 }
+
+/**
+ * What the Help menu ends with.
+ *
+ * *Check for Updates…* is main's own item, in one place on every platform, and
+ * it is there only where something answers it. **A build composed from this one
+ * may keep its own updates**, and so does a development run, a smoke run and a
+ * machine told not to phone home (`shouldCheckForUpdates`): in all of those the
+ * item used to be drawn and used to call a check the process had already decided
+ * not to make — which answers *You are up to date* about a question it did not
+ * ask, or reaches a release page that is not this build's.
+ *
+ * The separator goes with it, which is the whole reason this is data rather than
+ * a conditional at the end of the menu: a Help menu ending in a rule with
+ * nothing under it is the shape that gets shipped.
+ */
+export type HelpTailEntry = { readonly kind: 'separator' } | { readonly kind: 'checkForUpdates' }
+
+export function helpMenuTail(checksForUpdates: boolean): readonly HelpTailEntry[] {
+  return checksForUpdates ? [{ kind: 'separator' }, { kind: 'checkForUpdates' }] : []
+}

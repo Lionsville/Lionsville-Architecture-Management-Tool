@@ -270,3 +270,38 @@ export function shouldCheckForUpdates(
   if (env['LVARCH_UPDATE_CHECK']) return true
   return packaged
 }
+
+/**
+ * Whether this build OFFERS to check for updates: the menu item, and the switch
+ * in the preferences dialog.
+ *
+ * Deliberately narrower than {@link shouldCheckForUpdates}, which also answers
+ * no to a development run and to a smoke run. Those two are about not reaching
+ * the network *by itself* — a dev build has no version to compare and a smoke
+ * run must stay deterministic — and checking by hand is exactly what is worth
+ * keeping there: it is how the feature can be looked at at all, and it is the
+ * point of an off switch that the manual check still works.
+ *
+ * `LVARCH_NO_UPDATE` is the one that means updates are not this build's
+ * business: a machine that must not phone home, or **a build composed from this
+ * one that keeps its own updates** — where this app's release page is not where
+ * its versions come from, and an item that reaches it would answer a question
+ * nobody asked about a product nobody is running.
+ */
+export function offersUpdateCheck(env: Record<string, string | undefined>): boolean {
+  return !env['LVARCH_NO_UPDATE']
+}
+
+/**
+ * The update settings as a process that does not offer updates may answer them.
+ *
+ * Nothing in such a process ever asks the release page anything, so *Check
+ * automatically* ticked in the dialog would be a switch with no engine behind
+ * it — a promise of a check that will never happen, which is worse than the
+ * honest no. What is kept on disk is deliberately left as it is: it is the
+ * answer for a build that does check, and one that checks nothing has no
+ * business rewriting it.
+ */
+export function updateSettingsFor(kept: UpdateSettings, checks: boolean): UpdateSettings {
+  return checks ? kept : { ...kept, checkAutomatically: false }
+}

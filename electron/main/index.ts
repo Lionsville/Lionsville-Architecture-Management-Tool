@@ -33,6 +33,7 @@ import { hookOrigins } from '../../src/platform/desktopHook'
 import { runDesktopHooks } from './desktopHooks'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
+import { offersUpdateCheck } from '../../src/platform/updates'
 import { registerFolderSettingsChannel } from './folderSettings'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 
@@ -349,10 +350,15 @@ void app.whenReady().then(() => {
   // finds a window when it has one to sit on and does without when it does not.
   // It returns immediately unless this is a real installed app — see updates.ts.
   //
-  // The menu item is unconditional: checking by hand has to work even in a build
-  // that never checks by itself, which is the point of an off switch.
+  // Whether this build offers updates at all, read once here and told to both
+  // things that offer them: the menu item and the renderer's switch. Narrower
+  // than the question `startUpdates` asks itself — checking by hand is worth
+  // having in a build that does not check by ITSELF, which is the point of an
+  // off switch, and worth nothing in one whose updates are not this app's to
+  // find. A build composed from this one may keep its own updates.
+  const updating = offersUpdateCheck(process.env)
   startUpdates()
-  registerSettingsChannel()
+  registerSettingsChannel({ checks: updating })
   // What this machine does about each folder, kept here and not in the folder
   // (ADR-0023). Before the window, like every channel a boot may ask of.
   registerFolderSettingsChannel()
@@ -368,7 +374,7 @@ void app.whenReady().then(() => {
   app.setName(productName)
   const menu = () => installAppMenu({
     recents: recentDirectories(),
-    onCheckForUpdates: checkForUpdatesNow,
+    onCheckForUpdates: updating ? checkForUpdatesNow : undefined,
     packaged: app.isPackaged,
   })
   menu()

@@ -39,7 +39,7 @@
 import { Menu, MenuItem, webContents } from 'electron'
 import type { MenuItemConstructorOptions } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
-import { fileMenuSlot, replacingSlot } from './menuLayout'
+import { fileMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
   EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, preferencesPlacement,
@@ -99,12 +99,18 @@ function editMenuFor(): MenuItemConstructorOptions[] {
   ]
 }
 
-/** Help: the two commands, then Check for Updates…, main's own, in one place on every platform. */
-function helpMenuFor(onCheck: () => void): MenuItemConstructorOptions[] {
+/**
+ * Help: the two commands, then Check for Updates…, main's own, in one place on
+ * every platform — and only where this build checks for updates at all
+ * (`helpMenuTail`). Without `onCheck` the item and the rule above it are both
+ * absent, rather than an item that calls nothing.
+ */
+function helpMenuFor(onCheck?: () => void): MenuItemConstructorOptions[] {
   return [
     ...HELP_MENU.map((entry): MenuItemConstructorOptions => (entry.kind === 'item' ? itemFor(entry) : { type: 'separator' })),
-    { type: 'separator' },
-    { label: label('menu.checkForUpdates'), click: onCheck },
+    ...helpMenuTail(onCheck !== undefined).map((entry): MenuItemConstructorOptions => (
+      entry.kind === 'separator' ? { type: 'separator' } : { label: label('menu.checkForUpdates'), click: onCheck }
+    )),
   ]
 }
 
@@ -158,7 +164,13 @@ let scopeOpen = false
  */
 export function installAppMenu(options: {
   recents: readonly DesktopDirectory[]
-  onCheckForUpdates: () => void
+  /**
+   * Check for updates, by hand, now. Absent where this build does not check for
+   * them at all — a development run, a smoke run, a machine told not to phone
+   * home, or a build composed from this one that keeps its own updates — and
+   * Help then ends where it ended before the item existed.
+   */
+  onCheckForUpdates?: () => void
   /** A packaged build: the developer items leave the View menu. */
   packaged: boolean
 }): void {

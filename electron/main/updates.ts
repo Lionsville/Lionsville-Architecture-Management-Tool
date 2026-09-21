@@ -41,6 +41,7 @@ import {
   readUpdateSettings,
   shouldCheckForUpdates,
   updateAvailable,
+  updateSettingsFor,
 } from '../../src/platform/updates'
 import type { Release, UpdateSettings } from '../../src/platform/updates'
 import type { UpdateSettingsPatch } from '../../src/platform/updateSettings'
@@ -262,10 +263,22 @@ function stop(): void {
  *
  * The patch is a shape until it has been checked, like every payload from the
  * renderer: only a boolean under the one key the dialog owns gets through.
+ *
+ * `checks` is whether this process checks for updates at all
+ * (`shouldCheckForUpdates`), and where it does not, both handlers answer that
+ * rather than acting: updates are not this build's to check. The switch used to
+ * be live in a process that had already decided not to ask anybody — turning it
+ * on started the six-hourly timer, which is the one thing here that outlives the
+ * call — so a build composed from this one that keeps its own updates had a
+ * checkbox in this app's dialog that started this app's clock against this app's
+ * release page. What is kept on disk is left exactly as it is: it is the answer
+ * for a build that does check, and this one has no business rewriting it.
  */
-export function registerSettingsChannel(): void {
-  ipcMain.handle('settings:readUpdates', (): UpdateSettings => settings)
+export function registerSettingsChannel(options: { checks: boolean }): void {
+  const { checks } = options
+  ipcMain.handle('settings:readUpdates', (): UpdateSettings => updateSettingsFor(settings, checks))
   ipcMain.handle('settings:writeUpdates', async (_event, patch: unknown): Promise<UpdateSettings> => {
+    if (!checks) return updateSettingsFor(settings, false)
     const held = (patch ?? {}) as UpdateSettingsPatch
     const wanted = typeof held.checkAutomatically === 'boolean' ? held.checkAutomatically : settings.checkAutomatically
     const channel = held.channel === 'beta' || held.channel === 'stable' ? held.channel : settings.channel

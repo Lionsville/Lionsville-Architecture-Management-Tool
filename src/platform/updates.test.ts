@@ -7,8 +7,10 @@ import {
   readNewestRelease,
   readRelease,
   readUpdateSettings,
+  offersUpdateCheck,
   shouldCheckForUpdates,
   updateAvailable,
+  updateSettingsFor,
 } from './updates'
 
 describe('parseVersion', () => {
@@ -220,5 +222,50 @@ describe('shouldCheckForUpdates', () => {
     expect(shouldCheckForUpdates(false, ['--smoke'], { LVARCH_UPDATE_CHECK: '1' })).toBe(false)
     expect(shouldCheckForUpdates(false, [], { LVARCH_UPDATE_CHECK: '1', LVARCH_NO_UPDATE: '1' }))
       .toBe(false)
+  })
+})
+
+/**
+ * Whether the app OFFERS a check at all: the menu item, and the switch.
+ *
+ * Narrower than `shouldCheckForUpdates`, and the difference is the point. A dev
+ * run and a smoke run do not check by THEMSELVES, and checking by hand is worth
+ * keeping in both — it is the only way to look at the feature without cutting a
+ * release, and a manual check that still works is what an off switch is for.
+ */
+describe('offersUpdateCheck', () => {
+  it('offers one anywhere updates are this build\u2019s business', () => {
+    expect(offersUpdateCheck({})).toBe(true)
+    // A dev run, a smoke run: neither checks by itself, both may be asked.
+    expect(offersUpdateCheck({ LVARCH_UPDATE_CHECK: '1' })).toBe(true)
+  })
+
+  /**
+   * And none where they are not: a machine that must not phone home, or a build
+   * composed from this one that keeps its own updates — where this app's release
+   * page is not where its versions come from.
+   */
+  it('offers none where updates are not this build\u2019s to check', () => {
+    expect(offersUpdateCheck({ LVARCH_NO_UPDATE: '1' })).toBe(false)
+    expect(offersUpdateCheck({ LVARCH_NO_UPDATE: '1', LVARCH_UPDATE_CHECK: '1' })).toBe(false)
+  })
+})
+
+describe('updateSettingsFor', () => {
+  it('answers what is kept where this build checks', () => {
+    const kept = { checkAutomatically: true, channel: 'beta' as const }
+    expect(updateSettingsFor(kept, true)).toBe(kept)
+  })
+
+  /**
+   * And says off where it does not, whatever the file remembers: *check
+   * automatically* ticked in a process that asks nobody anything is a switch with
+   * no engine behind it. What is on disk is left alone — it is the answer for a
+   * build that does check.
+   */
+  it('says off where this build checks nothing, and leaves the channel alone', () => {
+    expect(updateSettingsFor({ checkAutomatically: true, channel: 'beta' }, false))
+      .toEqual({ checkAutomatically: false, channel: 'beta' })
+    expect(updateSettingsFor(DEFAULT_UPDATE_SETTINGS, false).checkAutomatically).toBe(false)
   })
 })
