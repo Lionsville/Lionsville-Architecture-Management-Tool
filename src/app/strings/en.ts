@@ -365,7 +365,7 @@ export const EN = {
    */
   'prefs.thisMachine': 'THIS FOLDER, ON THIS MACHINE',
   'prefs.thisMachineNote':
-    'Kept in {path} and not shared \u2014 another machine that opens this folder decides for itself.',
+    'Kept by this install and not shared \u2014 nothing is written into the folder, and another machine that opens it decides for itself.',
   'prefs.pullOnOpen': 'Pull from the remote when this folder is opened',
   'prefs.pushAfterSnapshot': 'Push after every snapshot',
   'prefs.writeFailed': 'That setting could not be saved: {message}',

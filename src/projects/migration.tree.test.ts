@@ -18,7 +18,7 @@ import { FakeDirectory } from '../adapters/fileSystem/fakeDirectory'
 import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
 import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
 import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemScopeStore'
-import { FOLDER_SETTINGS_PATH, WITHOUT_ORGANISATION } from './folderSettings'
+import { FOLDER_SETTINGS_PATH } from './folderSettings'
 import { upgradeProjects } from './migration'
 import { flattenScopes } from './scope'
 
@@ -118,7 +118,6 @@ async function migrate(root: FakeDirectory) {
   const settings = new FileSystemFolderSettings(root)
   const name = (await settings.readFolder()).legacyOrganisationName
   const tally = await upgradeProjects(store, { rootName: name ?? root.name })
-  if (name) await settings.writeFolder(WITHOUT_ORGANISATION)
   return { store, settings, tally }
 }
 
@@ -175,15 +174,16 @@ describe('a format-4 working directory', () => {
     expect(held['README.md']).toBe(V4_TREE['README.md'])
   })
 
-  it('takes the organisation out of folder.json once the root has its name', async () => {
+  it('reads the organisation out of folder.json and leaves the file exactly as it found it', async () => {
+    // The pass used to take the key out once the root had its name. It no
+    // longer writes into the folder at all (ADR-0023): the key is stale data
+    // in a file every build forgives, and the folder is a person's.
     const root = await folderOf()
-    const { settings } = await migrate(root)
+    const { settings, store } = await migrate(root)
 
-    const held = JSON.parse((await contents(root))[FOLDER_SETTINGS_PATH]) as Record<string, unknown>
-    expect('organisation' in held).toBe(false)
-    // A colleague's newer key is not this pass's to prune.
-    expect(held.somethingLater).toBe(true)
-    expect(await settings.readFolder()).toEqual({})
+    expect((await contents(root))[FOLDER_SETTINGS_PATH]).toBe(V4_TREE[FOLDER_SETTINGS_PATH])
+    expect((await settings.readFolder()).legacyOrganisationName).toBe('Acme Logistics')
+    expect((await store.load(''))?.model.name).toBe('Acme Logistics')
   })
 
   it('falls back to the folder’s own name when folder.json never said one', async () => {

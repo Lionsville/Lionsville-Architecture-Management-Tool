@@ -9,14 +9,18 @@
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
 import { describe, expect, it } from 'vitest'
-import {
-  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH, WITHOUT_ORGANISATION,
-} from '../projects/folderSettings'
+import { DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
 import type { FolderSettingsStore } from './FolderSettings'
 
 export type SeededStore = {
   store: FolderSettingsStore
-  /** The text at a path inside the folder, as it now stands. */
+  /**
+   * The text at a path, as it now stands — the two paths ADR-0005 named, as
+   * this store keeps them. A store that keeps the machine file elsewhere
+   * (the desktop's, ADR-0023) answers `LOCAL_SETTINGS_PATH` with the text it
+   * holds for the folder, wherever that is, and the maker plants the seed
+   * the same way.
+   */
   textAt(path: string): Promise<string | undefined>
 }
 
@@ -72,22 +76,16 @@ export function describeFolderSettings(
     })
 
     /**
-     * The shared file's one and only write: the 4 → 5 pass taking away the key
-     * that held an organisation's name before the root scope existed to hold
-     * it (ADR-0012 §1). A colleague's newer keys have to survive it.
+     * The shared file is read for the one key an older build wrote — the
+     * organisation's name, before the root scope existed to hold it (ADR-0012
+     * §1) — and never written (ADR-0023): the folder is a person's.
      */
-    it('takes away the key the pass names, and carries every other through', async () => {
-      const { store, textAt } = await make({
-        [FOLDER_SETTINGS_PATH]: '{"version":1,"organisation":{"name":"Acme Logistics"},"somethingLater":true}\n',
-      })
+    it('reads the name an older build wrote, and leaves the shared file exactly as it found it', async () => {
+      const planted = '{"version":1,"organisation":{"name":"Acme Logistics"},"somethingLater":true}\n'
+      const { store, textAt } = await make({ [FOLDER_SETTINGS_PATH]: planted })
       expect((await store.readFolder()).legacyOrganisationName).toBe('Acme Logistics')
-
-      await store.writeFolder(WITHOUT_ORGANISATION)
-
-      const held = JSON.parse((await textAt(FOLDER_SETTINGS_PATH))!)
-      expect('organisation' in held).toBe(false)
-      expect(held.somethingLater).toBe(true)
-      expect(await store.readFolder()).toEqual({})
+      await store.writeLocal({ git: { pullOnOpen: true } })
+      expect(await textAt(FOLDER_SETTINGS_PATH)).toBe(planted)
     })
   })
 }

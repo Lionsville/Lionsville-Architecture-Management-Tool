@@ -62,12 +62,12 @@ describe('PreferencesDialog', () => {
     expect(onChange).toHaveBeenCalledWith({ channel: 'beta' })
   })
 
-  it('says where the machine settings are kept, and writes them as a patch', () => {
+  it('says the machine settings stay with this install, and writes them as a patch', () => {
     const onChange = vi.fn()
     renderShell(<PreferencesDialog {...base} machine={{
-      pullOnOpen: false, pushAfterSnapshot: false, path: '.lionsville-architecture/local.json', onChange,
+      pullOnOpen: false, pushAfterSnapshot: false, onChange,
     }} />)
-    expect(screen.getByText(/local\.json/)).toBeDefined()
+    expect(screen.getByText(/not shared/)).toBeDefined()
     fireEvent.click(screen.getByLabelText(/Pull from the remote/))
     expect(onChange).toHaveBeenCalledWith({ git: { pullOnOpen: true } })
     fireEvent.click(screen.getByLabelText(/Push after every snapshot/))

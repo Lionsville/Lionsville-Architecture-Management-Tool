@@ -26,6 +26,7 @@ import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentSe
 import type { LabelOutcome } from '../../platform/history'
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
 import type {
   PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide,
 } from '../../platform/sync'
@@ -90,6 +91,14 @@ export type DesktopSettings = {
   readUpdates(): Promise<UpdateSettings>
   /** Patch, and answer with what is now in force. */
   writeUpdates(patch: UpdateSettingsPatch): Promise<UpdateSettings>
+  /**
+   * What this machine does about one folder (ADR-0023), kept in `userData`
+   * rather than in the folder. `undefined` is "never written", which is the
+   * renderer's cue to read what the folder itself may still say.
+   */
+  readFolderLocal(root: string): Promise<LocalSettings | undefined>
+  /** Patch the folder's entry, and answer with what is now in force. */
+  writeFolderLocal(root: string, patch: LocalSettingsPatch): Promise<LocalSettings>
 }
 
 /**

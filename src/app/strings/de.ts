@@ -260,7 +260,7 @@ export const DE: Record<keyof typeof EN, string> = {
     'Betas sind Builds vor einem Release, auf dieselbe Weise signiert und veröffentlicht. Wer den Beta-Kanal verlässt, behält, was installiert ist.',
   'prefs.thisMachine': 'DIESER ORDNER, AUF DIESEM RECHNER',
   'prefs.thisMachineNote':
-    'Liegt in {path} und wird nicht geteilt — ein anderer Rechner, der diesen Ordner öffnet, entscheidet selbst.',
+    'Von dieser Installation verwahrt und nicht geteilt — in den Ordner wird nichts geschrieben, und ein anderer Rechner, der ihn öffnet, entscheidet selbst.',
   'prefs.pullOnOpen': 'Beim Öffnen dieses Ordners vom Remote holen',
   'prefs.pushAfterSnapshot': 'Nach jeder Momentaufnahme pushen',
   'prefs.writeFailed': 'Diese Einstellung konnte nicht gespeichert werden: {message}',

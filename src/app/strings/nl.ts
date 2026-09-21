@@ -260,7 +260,7 @@ export const NL: Record<keyof typeof EN, string> = {
     'Bèta’s zijn builds die vooruitlopen op een release, op dezelfde manier ondertekend en gepubliceerd. Wie het bètakanaal verlaat, houdt wat er geïnstalleerd is.',
   'prefs.thisMachine': 'DEZE MAP, OP DEZE MACHINE',
   'prefs.thisMachineNote':
-    'Staat in {path} en wordt niet gedeeld \u2014 een andere machine die deze map opent beslist zelf.',
+    'Bewaard door deze installatie en niet gedeeld \u2014 er wordt niets in de map geschreven, en een andere machine die deze map opent beslist zelf.',
   'prefs.pullOnOpen': 'Van de remote ophalen als deze map wordt geopend',
   'prefs.pushAfterSnapshot': 'Na elke momentopname pushen',
   'prefs.writeFailed': 'Die instelling kon niet worden bewaard: {message}',

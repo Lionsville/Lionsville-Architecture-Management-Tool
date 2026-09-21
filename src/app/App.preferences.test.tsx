@@ -56,7 +56,6 @@ function fakeFolderSettings(initial: LocalSettings = DEFAULT_LOCAL_SETTINGS) {
   const store: FolderSettingsStore = {
     id: 'fake',
     readFolder: () => Promise.resolve({}),
-    writeFolder: () => Promise.resolve(),
     readLocal: () => Promise.resolve(held),
     writeLocal: (patch) => {
       writes.push(patch)
@@ -179,12 +178,12 @@ describe('the machine scope', () => {
     expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
   })
 
-  it('writes to the folder, as a patch, and says it stays on this machine', async () => {
+  it('writes through the store, as a patch, and says it stays with this install', async () => {
     const folder = fakeFolderSettings()
     const view = show({ folderSettings: folder.store, history: history(true) })
     await opened(view)
     expect(await screen.findByText('THIS FOLDER, ON THIS MACHINE')).toBeDefined()
-    expect(screen.getByText(/local\.json/)).toBeDefined()
+    expect(screen.getByText(/nothing is written into the folder/)).toBeDefined()
 
     fireEvent.click(screen.getByLabelText(/Push after every snapshot/))
     await waitFor(() => expect(folder.writes).toEqual([{ git: { pushAfterSnapshot: true } }]))

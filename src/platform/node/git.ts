@@ -170,9 +170,11 @@ export async function initRepository(root: string): Promise<void> {
 }
 
 /**
- * Keep this machine's settings file out of history without touching the
+ * Keep the machine's old settings file out of history without touching the
  * user's `.gitignore`: `.git/info/exclude` is git's own local, uncommitted
- * ignore list. Idempotent, and nothing when the folder keeps no history.
+ * ignore list. The desktop no longer writes that file (ADR-0023) but a folder
+ * an older build opened may still carry one, and it must not travel.
+ * Idempotent, and nothing when the folder keeps no history.
  */
 export async function excludeLocalSettings(root: string): Promise<void> {
   if (!await isRepository(root)) return

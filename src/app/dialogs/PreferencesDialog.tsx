@@ -66,8 +66,6 @@ export type PreferencesDialogProps = {
   machine?: {
     pullOnOpen: boolean
     pushAfterSnapshot: boolean
-    /** Where it is kept, said on the screen so nobody expects it to travel. */
-    path: string
     onChange: (patch: LocalSettingsPatch) => void
   }
 
@@ -185,7 +183,7 @@ export function PreferencesDialog({
               <Divider />
               <Section
                 title={s('prefs.thisMachine')}
-                note={s('prefs.thisMachineNote', { path: machine.path })}
+                note={s('prefs.thisMachineNote')}
               >
                 <FormControlLabel
                   control={(

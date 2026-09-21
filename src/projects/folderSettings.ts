@@ -1,10 +1,11 @@
 /**
- * The two settings files a working directory may carry (ADR-0005).
+ * The two settings files a working directory may carry (ADR-0005), and what
+ * became of them (ADR-0023).
  *
  * A preference belongs to whatever it is actually about, and two of the three
  * scopes are about the folder rather than the person: what is true of this
  * working directory for everyone who opens it, and what this machine does
- * about it. They are two files in one dot-folder at the root:
+ * about it. ADR-0005 made them two files in one dot-folder at the root:
  *
  *   <root>/.lionsville-architecture/folder.json   shared, committed
  *   <root>/.lionsville-architecture/local.json    this machine only
@@ -13,20 +14,23 @@
  * its extension: `.lvarch/` beside `something.lvarch` would be one token
  * meaning two things in the same directory listing.
  *
- * **The shared file is keyless again**, and that is the point rather than an
- * oversight. Its first key was the organisation's name (ADR-0012), put there
- * before there was anywhere better; the root scope's `scope.json` is that
- * place, and a name in two files is a name that can disagree with itself. The
- * 4 → 5 pass reads the old key once and drops it (`migrate4to5.ts`), and this
- * file's location, its rules and a reader that tolerates its absence stay ready
- * for whatever the next shared setting turns out to be.
+ * **The desktop writes neither any more.** Configuration of the application
+ * belongs with the application, not in every project a person opens: what
+ * this machine does about a folder is kept in the desktop's own data folder,
+ * keyed by the folder's path (`platform/node/machineFolderSettings.ts`), and
+ * `local.json` is read where an older build left it and never written back.
+ * The shared file is keyless — its one key was the organisation's name
+ * (ADR-0012), put there before the root scope's `scope.json` existed to hold
+ * it — and is only read, for that name, by the 4 → 5 pass; a source that
+ * keeps its settings in the folder it serves (the hosted plugin's) still
+ * writes the machine file through `FileSystemFolderSettings`, which is why
+ * the shape of that file is still decided here.
  *
  * Readers tolerate anything — absent, malformed, a `version` newer than this
  * build — and fail towards the safe default, which for the machine file is
- * "do nothing automatically". Writers patch rather than replace: keys this
- * build does not recognise are carried through unchanged, because an older
- * build must not prune a newer one's settings, and with a shared file the
- * newer build may be a colleague's.
+ * "do nothing automatically". The writer patches rather than replaces: keys
+ * this build does not recognise are carried through unchanged, because an
+ * older build must not prune a newer one's settings.
  *
  * Pure. Nothing here touches a disk; `ports/FolderSettings.ts` is the seam
  * that does.
@@ -39,18 +43,14 @@ export const LOCAL_SETTINGS_FILE = 'local.json'
 export const FOLDER_SETTINGS_PATH = `${SETTINGS_FOLDER}/${FOLDER_SETTINGS_FILE}`
 export const LOCAL_SETTINGS_PATH = `${SETTINGS_FOLDER}/${LOCAL_SETTINGS_FILE}`
 
-/** The format of `local.json` this build writes. */
+/** The format of `local.json` this build writes, where a source still keeps one. */
 export const LOCAL_SETTINGS_VERSION = 1
 
-/** The format of `folder.json` this build writes. */
-export const FOLDER_SETTINGS_VERSION = 1
-
 /**
- * What everyone who opens this folder agrees on.
+ * What an older build wrote into the shared file, read and never written.
  *
- * Nothing, at this version — see the header. The type stays so the seam that
- * reads it keeps its shape, and so the next shared setting is one field rather
- * than a new file.
+ * Nothing this build governs — see the header. The type stays so the seam
+ * that reads it keeps its shape.
  */
 export type FolderSettings = {
   /**
@@ -58,30 +58,15 @@ export type FolderSettings = {
    *
    * Not a setting, and not read by anything that draws: the root scope's
    * `scope.json` is where a name belongs (ADR-0012 §1). The 4 → 5 pass is this
-   * field's only reader — it takes the name for the root it is about to write,
-   * and then names the key in a patch that drops it.
+   * field's only reader — it takes the name for the root it is about to write.
+   * The key is left where it is: a build that reads it forgives it, and the
+   * folder is a person's, not a place this app keeps its files (ADR-0023).
    */
   readonly legacyOrganisationName?: string
 }
 
-/**
- * What a writer may change in the shared file.
- *
- * `without` is how a key LEAVES. Everything a writer does not name is carried
- * through unchanged — that is the rule this file is built on, because the newer
- * build whose keys must survive an older one writing is routinely a colleague's
- * — so a key that has been superseded has to be named to go, and the only
- * caller that names one is the 4 → 5 pass.
- */
-export type FolderSettingsPatch = {
-  readonly without?: readonly string[]
-}
-
 /** The key an older build wrote the organisation's name under. */
 const LEGACY_ORGANISATION = 'organisation'
-
-/** The patch that pass applies, once, after the root scope has its name. */
-export const WITHOUT_ORGANISATION: FolderSettingsPatch = { without: [LEGACY_ORGANISATION] }
 
 /** What this machine does about the folder's git remote. */
 export type LocalGitSettings = {
@@ -121,37 +106,16 @@ function flag(value: unknown, fallback: boolean): boolean {
 /**
  * The shared settings out of `folder.json`, or what an absent one means.
  *
- * Nothing this build governs, at this version, and forgiving about everything:
- * a file that will not parse, a file from a newer build, no file at all. What a
- * key this build does not know means is that build's business, and the writer
- * carries it through. The one key it does read is the one it is about to take
- * away — see {@link FolderSettings.legacyOrganisationName}.
+ * Nothing this build governs, and forgiving about everything: a file that
+ * will not parse, a file from a newer build, no file at all. The one key it
+ * reads is the one an older build wrote — see
+ * {@link FolderSettings.legacyOrganisationName}.
  */
 export function readFolderSettings(text: string | undefined): FolderSettings {
   const held = text === undefined ? undefined : record(parseJson(text))
   const organisation = record(held?.[LEGACY_ORGANISATION])
   const name = typeof organisation?.['name'] === 'string' ? organisation['name'].trim() : ''
   return name ? { legacyOrganisationName: name } : {}
-}
-
-/**
- * The text `folder.json` should hold after `patch` is applied to `existing`.
- *
- * Unknown keys are kept and the version is never lowered — the same two rules
- * as `local.json`, and here they are load-bearing rather than careful: this
- * file is committed, so the newer build whose keys must survive an older one
- * writing is routinely a colleague's. `patch.without` is the one exception, and
- * the only thing that can take a key out.
- */
-export function folderSettingsText(
-  existing: string | undefined, patch: FolderSettingsPatch = {},
-): string {
-  const held = { ...((existing === undefined ? undefined : record(parseJson(existing))) ?? {}) }
-  for (const key of patch.without ?? []) delete held[key]
-  const version = typeof held['version'] === 'number' && held['version'] > FOLDER_SETTINGS_VERSION
-    ? held['version']
-    : FOLDER_SETTINGS_VERSION
-  return stableJson({ ...held, version })
 }
 
 /**

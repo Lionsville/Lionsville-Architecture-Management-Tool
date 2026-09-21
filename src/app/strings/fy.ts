@@ -260,7 +260,7 @@ export const FY: Record<keyof typeof EN, string> = {
     'Beta’s binne builds dy’t foarútrinne op in release, op deselde wize ûndertekene en publisearre. Wa’t it betakanaal ferlit, hâldt wat der ynstallearre is.',
   'prefs.thisMachine': 'DIZZE MAP, OP DIZZE MASINE',
   'prefs.thisMachineNote':
-    'Stiet yn {path} en wurdt net dield — in oare masine dy’t dizze map iepenet beslút sels.',
+    'Bewarre troch dizze ynstallaasje en net dield — der wurdt neat yn de map skreaun, en in oare masine dy’t dizze map iepenet beslút sels.',
   'prefs.pullOnOpen': 'Fan de remote ophelje as dizze map iepene wurdt',
   'prefs.pushAfterSnapshot': 'Nei elke momintopname pushe',
   'prefs.writeFailed': 'Dy ynstelling koe net bewarre wurde: {message}',

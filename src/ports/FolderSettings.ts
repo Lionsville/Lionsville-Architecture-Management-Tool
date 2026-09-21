@@ -1,38 +1,30 @@
 /**
- * Where a working directory's own settings are kept (ADR-0005).
+ * Where a working directory's own settings are kept (ADR-0005, ADR-0023).
  *
- * Two of the three preference scopes live in the folder itself: what is true
- * of it for everyone, and what this machine does about it. This seam is how
- * the shell reaches both without knowing whether the folder is an IPC handle
- * or a browser's directory handle — and it is **absent** on a shell that has
- * no folder, the way `history?` is, rather than a null object that answers
- * "no" to everything. A section of the preferences dialog that has nothing to
- * be about is not drawn.
+ * Two of the three preference scopes are about the folder: what is true of
+ * it for everyone, and what this machine does about it. This seam is how the
+ * shell reaches both without knowing where whoever answers for the folder
+ * keeps them — the desktop in its own data folder (ADR-0023), a browser tab
+ * or the hosted plugin in the folder itself — and it is **absent** on a shell
+ * that has no folder, the way `history?` is, rather than a null object that
+ * answers "no" to everything. A section of the preferences dialog that has
+ * nothing to be about is not drawn.
  *
  * Reading never fails: an absent, malformed or newer file reads as its safe
  * default (`projects/folderSettings.ts` decides what that is). Writing patches
  * what is there and may reject, the way every other write may.
  */
-import type {
-  FolderSettings, FolderSettingsPatch, LocalSettings, LocalSettingsPatch,
-} from '../projects/folderSettings'
+import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
 
 export interface FolderSettingsStore {
   /** Where this one keeps things, in plain words. For messages and the trail. */
   readonly id: string
 
-  /** What everyone who opens this folder agrees on. Nothing this build governs. */
-  readFolder(): Promise<FolderSettings>
-
   /**
-   * Change the shared file.
-   *
-   * Only one caller, and only once: the 4 → 5 pass, taking away the key that
-   * held an organisation's name before the root scope existed to hold it
-   * (ADR-0012 §1). Everything the patch does not name is carried through, so an
-   * older build writing here cannot prune a newer one's settings.
+   * What an older build wrote about this folder for everyone. Nothing this
+   * build governs, and nothing this build writes (ADR-0023).
    */
-  writeFolder(patch: FolderSettingsPatch): Promise<void>
+  readFolder(): Promise<FolderSettings>
 
   /** What this machine does about the folder. Defaults when there is no file. */
   readLocal(): Promise<LocalSettings>

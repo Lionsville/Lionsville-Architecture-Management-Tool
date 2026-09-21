@@ -38,6 +38,7 @@ import {
   desktopHookChannel as hookChannel, desktopSettings,
 } from '../adapters/desktop/desktopFiles'
 import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
+import { DesktopFolderSettings } from '../adapters/desktop/DesktopFolderSettings'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
 import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
@@ -591,25 +592,13 @@ export function inWorkingDirectory(
     documents: new DesktopDocumentGateway(files),
     watchProject,
     history: git && new DesktopProjectHistory(git, directory.root),
-    // The machine file is kept out of the folder's history from the moment it
-    // first exists: `.git/info/exclude`, so a `git add -A` typed in a terminal
-    // does not pick it up either. Best effort — the snapshot excludes it on
-    // its own — and this is the one place that knows both the store and the
-    // git, which is why the wrapping is here and not in either.
-    //
-    // Delegated method by method, not spread: the store is a class, and a
-    // spread copies an instance's own fields and none of its prototype — which
-    // is how `readLocal` went missing from every desktop boot for a day.
-    folderSettings: settings && {
-      id: settings.id,
-      readFolder: () => settings.readFolder(),
-      writeFolder: (patch) => settings.writeFolder(patch),
-      readLocal: () => settings.readLocal(),
-      writeLocal: async (patch) => {
-        await settings.writeLocal(patch)
-        await git?.excludeLocal(directory.root).catch(() => undefined)
-      },
-    },
+    // What this machine does about the folder is the desktop's to keep, in its
+    // own data folder and not in the folder (ADR-0023); the folder's store is
+    // read through for what an older build left there. A renderer without the
+    // settings channel is a test, and keeps the folder's store as it is.
+    folderSettings: settings && (
+      desktopSettings() ? new DesktopFolderSettings(desktopSettings()!, directory.root, settings) : settings
+    ),
   }
 }
 

@@ -33,6 +33,7 @@ import { hookOrigins } from '../../src/platform/desktopHook'
 import { runDesktopHooks } from './desktopHooks'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
+import { registerFolderSettingsChannel } from './folderSettings'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 
 /**
@@ -352,6 +353,9 @@ void app.whenReady().then(() => {
   // that never checks by itself, which is the point of an off switch.
   startUpdates()
   registerSettingsChannel()
+  // What this machine does about each folder, kept here and not in the folder
+  // (ADR-0023). Before the window, like every channel a boot may ask of.
+  registerFolderSettingsChannel()
 
   // The agent server (ADR-0007): its channel before the window, like the
   // files', and the listener only if `mcp.json` says so. Off by default.

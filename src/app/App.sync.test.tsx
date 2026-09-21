@@ -92,7 +92,6 @@ function folderSettings(local: LocalSettings): FolderSettingsStore {
   return {
     id: 'fake',
     readFolder: () => Promise.resolve({}),
-    writeFolder: () => Promise.resolve(),
     readLocal: () => Promise.resolve(local),
     writeLocal: () => Promise.resolve(),
   }

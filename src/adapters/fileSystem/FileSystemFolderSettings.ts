@@ -2,11 +2,12 @@
  * A working directory's own settings, as two files in a dot-folder at its
  * root (ADR-0005).
  *
- * The one implementation, over `DirectoryHandleLike`: the desktop's IPC handle
- * and the browser's directory handle both satisfy it, which is how
- * `FileSystemScopeStore` avoids two as well. Everything about what the files
- * mean is in `projects/folderSettings.ts`; this only finds them and puts the
- * text back.
+ * Over `DirectoryHandleLike`, so a browser's directory handle and the hosted
+ * plugin's folder over HTTP both satisfy it. The desktop reads through it for
+ * what an older build left in the folder and keeps the machine's own settings
+ * elsewhere (`DesktopFolderSettings`, ADR-0023). Everything about what the
+ * files mean is in `projects/folderSettings.ts`; this only finds them and
+ * puts the text back. The shared file is read and never written.
  *
  * The dot-folder is outside the project format — `isFormatPath` does not
  * claim it — so a project save can never remove these and a settings write
@@ -15,12 +16,10 @@
  * change notice: folder settings are read on open, not live.
  */
 import {
-  FOLDER_SETTINGS_FILE, folderSettingsText, LOCAL_SETTINGS_FILE, SETTINGS_FOLDER, localSettingsText,
+  FOLDER_SETTINGS_FILE, LOCAL_SETTINGS_FILE, SETTINGS_FOLDER, localSettingsText,
   readFolderSettings, readLocalSettings,
 } from '../../projects/folderSettings'
-import type {
-  FolderSettings, FolderSettingsPatch, LocalSettings, LocalSettingsPatch,
-} from '../../projects/folderSettings'
+import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
 import type { FolderSettingsStore } from '../../ports/FolderSettings'
 import type { DirectoryHandleLike } from './FileSystemScopeStore'
 
@@ -52,10 +51,6 @@ export class FileSystemFolderSettings implements FolderSettingsStore {
 
   async writeLocal(patch: LocalSettingsPatch): Promise<void> {
     await this.write(LOCAL_SETTINGS_FILE, localSettingsText(await this.text(LOCAL_SETTINGS_FILE), patch))
-  }
-
-  async writeFolder(patch: FolderSettingsPatch): Promise<void> {
-    await this.write(FOLDER_SETTINGS_FILE, folderSettingsText(await this.text(FOLDER_SETTINGS_FILE), patch))
   }
 
   private async write(name: string, text: string): Promise<void> {

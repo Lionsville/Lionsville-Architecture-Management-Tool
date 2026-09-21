@@ -107,6 +107,8 @@ const history: DesktopHistory = {
 const settings: DesktopSettings = {
   readUpdates: () => ipcRenderer.invoke('settings:readUpdates'),
   writeUpdates: (patch) => ipcRenderer.invoke('settings:writeUpdates', patch),
+  readFolderLocal: (root) => ipcRenderer.invoke('settings:readFolderLocal', root),
+  writeFolderLocal: (root, patch) => ipcRenderer.invoke('settings:writeFolderLocal', root, patch),
 }
 
 const agent: DesktopAgent = {

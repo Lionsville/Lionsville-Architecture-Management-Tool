@@ -8,9 +8,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, FOLDER_SETTINGS_VERSION, LOCAL_SETTINGS_PATH,
-  LOCAL_SETTINGS_VERSION, folderSettingsText, localSettingsText, readFolderSettings,
-  readLocalSettings,
+  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH,
+  LOCAL_SETTINGS_VERSION, localSettingsText, readFolderSettings, readLocalSettings,
 } from './folderSettings'
 
 describe('where the files are', () => {
@@ -100,34 +99,6 @@ describe('readFolderSettings', () => {
       '{"organisation":{"name":"   "}}', '{"organisation":{}}']) {
       expect(readFolderSettings(held), held).toEqual({})
     }
-  })
-
-})
-
-describe('folderSettingsText', () => {
-  it('stamps this build’s version on a file that had none, as stable JSON', () => {
-    expect(JSON.parse(folderSettingsText(undefined))).toEqual({ version: FOLDER_SETTINGS_VERSION })
-    const once = folderSettingsText('{"b":2,"a":1}')
-    expect(folderSettingsText('{"a":1,"b":2}')).toBe(once)
-  })
-
-  /**
-   * This file is committed, so the newer build whose keys must survive an older
-   * one writing is routinely a colleague's.
-   */
-  it('keeps keys it does not know, and never lowers the version', () => {
-    const existing = '{"version":9,"somethingLater":{"kept":true}}'
-    const held = JSON.parse(folderSettingsText(existing))
-    expect(held.version).toBe(9)
-    expect(held.somethingLater).toEqual({ kept: true })
-  })
-
-  /** The only thing that can take a key out, and the 4 → 5 pass is its caller. */
-  it('drops exactly the keys the patch names', () => {
-    const existing = '{"version":1,"organisation":{"name":"Acme"},"somethingLater":true}'
-    const held = JSON.parse(folderSettingsText(existing, { without: ['organisation'] }))
-    expect('organisation' in held).toBe(false)
-    expect(held.somethingLater).toBe(true)
   })
 
 })

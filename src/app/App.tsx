@@ -87,7 +87,6 @@ import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { Destination, Screen } from '../agent/screen'
 import type { TreeView } from '../agent/tree'
 import { useGlobalErrors } from './useGlobalErrors'
-import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
 import { useHomeFiles } from './useHomeFiles'
 import { useFilePicker } from './useFilePicker'
 import { useHostCommands } from './useHostCommands'
@@ -1521,9 +1520,7 @@ export function App({
           updates={updateSettings && updates && {
             checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: changeUpdates,
           }}
-          machine={folderSettings && history && local && {
-            ...local.git, path: LOCAL_SETTINGS_PATH, onChange: changeLocal,
-          }}
+          machine={folderSettings && history && local && { ...local.git, onChange: changeLocal }}
           s={s}
         />
         <ConnectAgentDialog
