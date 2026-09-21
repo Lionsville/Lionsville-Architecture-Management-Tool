@@ -94,6 +94,27 @@ describe('idPolicy', () => {
     expect(ids.element('Depot')).not.toBe(first)
   })
 
+  /**
+   * An id another author took, kept — because the model that says it is taken
+   * is the model a rebase is free to move under us.
+   */
+  it('keeps what was taken when it was asked to look, whatever the model says later', () => {
+    const taken = new Set<string>()
+    const ids = idPolicy(() => taken)
+    taken.add('billing')           // somebody else's step arrives and is applied
+    ids.refresh()
+    taken.delete('billing')        // ...and is undone again while it is put in order
+    expect(ids.element('Billing')).toBe('billing-2')
+  })
+
+  it('is a read, not a write: refreshing hands out nothing and changes no name', () => {
+    const ids = idPolicy(() => ['order-management'])
+    ids.refresh()
+    ids.refresh()
+    expect(ids.element('Billing')).toBe('billing')
+    expect(ids.element('Order Management')).toBe('order-management-2')
+  })
+
   it('gives connections a serial, which the interchange format leaves to us', () => {
     const ids = idPolicy(() => [])
     const first = ids.connection()

@@ -48,6 +48,24 @@ export type IdPolicy = {
   element(name: string): ElementId
   /** Connections carry no key in the interchange format, so they get a serial. */
   connection(): RelationId
+  /**
+   * Read what is taken now, and keep it.
+   *
+   * An id can be taken by another author this session never hears of: a step
+   * made elsewhere arrives, is applied, and the model holds a key nothing here
+   * minted. The read behind `taken` catches that while the step is in the
+   * model — but only while it is. A step that is taken back, or undone on the
+   * way to being put in order with everybody else's, leaves the read saying
+   * the key is free while somewhere it is not, and the next create here would
+   * mint it and collide.
+   *
+   * So whoever applies a step from elsewhere calls this, and the policy
+   * remembers those ids the way it remembers what it handed out itself: never
+   * minted again, whatever the read says later. Cheap — one pass over the
+   * taken set — and the conservative direction to be wrong in, because an
+   * id nobody uses costs nothing and two records with one id cost a record.
+   */
+  refresh(): void
 }
 
 export function idPolicy(taken: () => Iterable<string>): IdPolicy {
@@ -72,6 +90,9 @@ export function idPolicy(taken: () => Iterable<string>): IdPolicy {
       } while (ids.has(id))
       handedOut.add(id)
       return id
+    },
+    refresh() {
+      for (const id of taken()) handedOut.add(id)
     },
   }
 }
