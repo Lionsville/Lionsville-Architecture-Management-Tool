@@ -65,6 +65,19 @@ export type CommandRefusal =
   | 'command.hostedOnContainers'
   /** A `hostedOn` that is not application | component → platform (ADR-0014). */
   | 'command.technologyEnds'
+  /**
+   * A create on an id the model already holds.
+   *
+   * A create used to upsert, which is silent and is only ever right by
+   * accident: an id comes from `idPolicy`, which mints against what is taken,
+   * so a create that lands on something is a create built against a model that
+   * has moved on — another author took the id, or a step is being replayed on
+   * a model that already has it. Overwriting a record nobody asked about is
+   * the one outcome that loses work, so it is refused and the caller mints
+   * again. Putting a record BACK is `at`-carrying and only ever runs where the
+   * id is free, which is why the inverses are unaffected.
+   */
+  | 'command.taken'
 
 export type ApplyResult =
   | { ok: true; model: Model; inverse: Command }
@@ -72,6 +85,7 @@ export type ApplyResult =
 
 const gone = { ok: false, reason: 'command.gone' } as const
 const outOfOrder = { ok: false, reason: 'command.datesOutOfOrder' } as const
+const taken = { ok: false, reason: 'command.taken' } as const
 const REFINES_REFUSAL = {
   ends: { ok: false, reason: 'command.refinesEnds' },
   level: { ok: false, reason: 'command.refinesLevel' },
@@ -239,6 +253,7 @@ export function apply(model: Model, command: Command): ApplyResult {
     // --- elements -----------------------------------------------------------
     case 'element.create': {
       const { element, at } = command
+      if (element.id in model.elements) return taken
       const rows = put(model.elements, model.order.elements, element.id, element, at)
       return ok(withElements(model, rows), { type: 'element.delete', id: element.id })
     }
@@ -314,6 +329,7 @@ export function apply(model: Model, command: Command): ApplyResult {
       // tree knows — an organisation's capability supported by a landscape's
       // application. Neither end held is a row about nothing.
       if (!model.elements[relation.sourceId] && !model.elements[relation.targetId]) return gone
+      if (relation.id in model.relations) return taken
       const refused = landingRefusal(model, relation) ?? hostingRefusal(model, relation)
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, relation.id, relation, at)
@@ -634,6 +650,7 @@ export function apply(model: Model, command: Command): ApplyResult {
     // --- diagrams -----------------------------------------------------------
     case 'diagram.create': {
       const { diagram, at } = command
+      if (diagram.id in model.diagrams) return taken
       const rows = put(model.diagrams, model.order.diagrams, diagram.id, diagram, at)
       return ok(withDiagrams(model, rows), { type: 'diagram.delete', id: diagram.id })
     }
@@ -689,6 +706,7 @@ export function apply(model: Model, command: Command): ApplyResult {
     // --- decisions ----------------------------------------------------------
     case 'decision.add': {
       const { decision, at } = command
+      if (decision.id in decisionsOf(model)) return taken
       const rows = put(decisionsOf(model), model.order.decisions, decision.id, decision, at)
       return ok(withDecisions(model, rows), { type: 'decision.remove', id: decision.id })
     }
@@ -712,6 +730,7 @@ export function apply(model: Model, command: Command): ApplyResult {
     // --- plans (ADR-0009) ---------------------------------------------------
     case 'transition.add': {
       const { transition, at } = command
+      if (transition.id in transitionsOf(model)) return taken
       const rows = put(transitionsOf(model), model.order.transitions, transition.id, transition, at)
       return ok(withTransitions(model, rows), { type: 'transition.remove', id: transition.id })
     }
@@ -736,6 +755,7 @@ export function apply(model: Model, command: Command): ApplyResult {
     // --- observations and causes (ADR-0021) ---------------------------------
     case 'observation.add': {
       const { observation, at } = command
+      if (observation.id in observationsOf(model)) return taken
       const rows = put(observationsOf(model), model.order.observations, observation.id, observation, at)
       return ok(withObservations(model, rows), { type: 'observation.remove', id: observation.id })
     }
@@ -758,6 +778,7 @@ export function apply(model: Model, command: Command): ApplyResult {
 
     case 'cause.add': {
       const { cause, at } = command
+      if (cause.id in causesOf(model)) return taken
       const rows = put(causesOf(model), model.order.causes, cause.id, cause, at)
       return ok(withCauses(model, rows), { type: 'cause.remove', id: cause.id })
     }

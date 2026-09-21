@@ -64,7 +64,11 @@ function mount(initial = project()) {
   let counter = 0
   function Host() {
     session = useModelSession({ initialProject: initial, notify: vi.fn(), s: translator('en') })
-    plans = usePlans({ session, makeId: (p) => `${p}-${++counter}`, s: translator('en'), navigate })
+    // Predictable, and deliberately not the shape the fixture's own plan has:
+    // a create on an id the model already holds is refused `command.taken`,
+    // and `tr-1` here would be this fake colliding with `PLAN` rather than
+    // anything the hook does. The real `makeId` carries the clock.
+    plans = usePlans({ session, makeId: (p) => `${p}-new-${++counter}`, s: translator('en'), navigate })
     return null
   }
   render(<Host />)

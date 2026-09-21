@@ -1851,6 +1851,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.refinesLevel': 'The interface named by "refines" is itself a refinement. An interface lands once; refine the application-level line instead.',
   'command.hostedOnContainers': 'An application that has components runs where those run: write the hostedOn row from the component. Only an application with no components — an outside system, a SaaS service, a bought package — says where it runs itself.',
   'command.technologyEnds': 'hostedOn runs from an application or a component to a platform, and nothing else. A platform inside another platform is filed under it with parentId; a service consumed is a uses row.',
+  'command.taken': 'Something in the scope already has that id, so the record you meant to add would have overwritten it. Read the scope again and add it under a free id.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

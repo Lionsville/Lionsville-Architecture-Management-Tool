@@ -22,6 +22,8 @@ import { RELATION_TYPES } from './relations'
 import type { Relation } from './types'
 import { connection, diagram, element, placement } from './testFixtures'
 import type { Adr } from './adr'
+import type { Transition } from './transition'
+import type { Cause, Observation } from './observation'
 import type { EdgeRoute } from './types'
 
 function adr(id: string, number: number, overrides: Partial<Adr> = {}): Adr {
@@ -29,6 +31,18 @@ function adr(id: string, number: number, overrides: Partial<Adr> = {}): Adr {
     id, number, title: `Decision ${number}`, status: 'proposed',
     date: '2026-09-06', body: '', signers: [], ...overrides,
   }
+}
+
+function plan(id: string, number: number): Transition {
+  return { id, number, title: `Plan ${number}`, status: 'draft', elements: [], decisions: [], milestones: [], body: '' }
+}
+
+function observed(id: string, number: number): Observation {
+  return { id, number, title: `Seen ${number}`, date: '2026-09-21', impact: 'minor', seen: 1, body: '', history: [] }
+}
+
+function because(id: string, number: number): Cause {
+  return { id, number, title: `Because ${number}`, state: 'assumed', body: '', explains: [] }
 }
 
 function route(connectionId: string, overrides: Partial<EdgeRoute> = {}): EdgeRoute {
@@ -676,6 +690,65 @@ describe('apply — decisions and the project', () => {
     const named = reversible(m, { type: 'project.settings', patch: { name: 'Another', defaultAuthor: 'W' } })
     expect(named.name).toBe('Another')
     reversible(named, { type: 'project.settings', patch: { defaultAuthor: undefined } })
+  })
+})
+
+/**
+ * A create is not an upsert.
+ *
+ * An id comes from `idPolicy`, which mints against what is taken, so a create
+ * that lands on something is a create built against a model that has moved on
+ * — another author took the id while this change was being made, or the step
+ * is being replayed on a model that already holds it. The upsert was silent
+ * and lost the record it landed on, which is the one outcome nobody can undo
+ * their way out of; `command.taken` says so instead and the caller mints
+ * again.
+ */
+describe('apply — a create on an id the model already holds', () => {
+  const held = { ok: false, reason: 'command.taken' }
+
+  it('refuses each of the seven creates', () => {
+    const m = sample()
+    expect(apply(m, { type: 'element.create', element: element('a') })).toEqual(held)
+    expect(apply(m, { type: 'relation.create', relation: connection('c#1', 'a', 'b') })).toEqual(held)
+    expect(apply(m, { type: 'diagram.create', diagram: toDiagram(diagram('landscape')) })).toEqual(held)
+
+    const withRecords = ok(apply(m, transaction([
+      { type: 'decision.add', decision: adr('d1', 1) },
+      { type: 'transition.add', transition: plan('tr1', 1) },
+      { type: 'observation.add', observation: observed('ob1', 1) },
+      { type: 'cause.add', cause: because('ca1', 1) },
+    ]))).model
+    expect(apply(withRecords, { type: 'decision.add', decision: adr('d1', 9) })).toEqual(held)
+    expect(apply(withRecords, { type: 'transition.add', transition: plan('tr1', 9) })).toEqual(held)
+    expect(apply(withRecords, { type: 'observation.add', observation: observed('ob1', 9) })).toEqual(held)
+    expect(apply(withRecords, { type: 'cause.add', cause: because('ca1', 9) })).toEqual(held)
+  })
+
+  it('leaves the record that was already there alone', () => {
+    const m = sample()
+    expect(apply(m, { type: 'element.create', element: element('a', { name: 'Somebody else\u2019s' }) })).toEqual(held)
+    expect(m.elements.a.name).toBe('App a')
+  })
+
+  /**
+   * The refusal is about a create arriving on a model that has the id, and a
+   * delete's inverse never is: it runs on the model the delete left behind,
+   * where the id is free. That is why nothing about undo changes.
+   */
+  it('does not touch an inverse, which puts a record back where it is gone', () => {
+    reversible(sample(), { type: 'element.delete', id: 'b' })
+    reversible(sample(), { type: 'relation.delete', id: 'c#1' })
+    reversible(sample(), { type: 'diagram.delete', id: 'inside-a' })
+  })
+
+  /** A transaction that refuses anywhere changes nothing — including here. */
+  it('takes the whole transaction down with it', () => {
+    const m = sample()
+    expect(apply(m, transaction([
+      { type: 'element.create', element: element('d') },
+      { type: 'element.create', element: element('a') },
+    ]))).toEqual(held)
   })
 })
 

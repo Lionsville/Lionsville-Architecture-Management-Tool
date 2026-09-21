@@ -58,6 +58,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'command.refinesLevel': 'Dat keppelflak is sels al ûnderdiel fan in oar. In keppelflak lânet ien kear.',
   'command.hostedOnContainers': 'In applikaasje mei containers rint dêr\'t har containers rinne. Sis it op de container.',
   'command.technologyEnds': 'Draait op rint fan in applikaasje of in container nei in platfoarm. In platfoarm yn in oar platfoarm falt derûnder, it draait der net op.',
+  'command.taken': 'Der is hjir al wat mei dat id — in oare auteur naam it wylst dizze wiziging makke waard. Besykje it nochris.',
   'restore.absentThen': 'Dit stie by dy momintopname net yn it projekt.',
   'restore.absentNow': 'It elemint stiet net mear yn it projekt; set it hiele projekt werom om it werom te heljen.',
   'restore.locked': 'Dit beslút is oannommen, ôfwiisd of ferfongen, en in ôfsletten record wurdt net wizige. Skriuw in nij beslút dat it ferfangt.',
