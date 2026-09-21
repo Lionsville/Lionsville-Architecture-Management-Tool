@@ -61,7 +61,7 @@ import MenuItem from '@mui/material/MenuItem'
 import type { ExampleProject } from '../examples'
 import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
-import { agentTip, Crumbs, crumbsFor, sourceLabel } from '../ShellToolbar'
+import { agentTip, Crumbs, crumbsFor, sourceIsAlarming, sourceLabel, sourceTipKey } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
@@ -797,15 +797,13 @@ function OrganisationBar({
       <Box sx={{ flex: 1 }} />
 
       {source && (
-        <Tooltip title={s(source.kind === 'folder'
-          ? 'shell.sourceTipFolder'
-          : source.kind === 'memory' ? 'shell.sourceTipMemory' : 'shell.sourceTipBrowser')}>
+        <Tooltip title={s(sourceTipKey(source))}>
           <Typography
             data-testid="working-source"
             sx={{
               fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1,
-              color: source.kind === 'memory' ? 'warning.main' : 'text.secondary',
-              border: 1, borderColor: source.kind === 'memory' ? 'warning.main' : 'divider',
+              color: sourceIsAlarming(source) ? 'warning.main' : 'text.secondary',
+              border: 1, borderColor: sourceIsAlarming(source) ? 'warning.main' : 'divider',
             }}
           >
             {sourceLabel(source, s)}

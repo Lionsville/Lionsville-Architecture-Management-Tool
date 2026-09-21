@@ -80,6 +80,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.sourceTipFolder': 'Je projecten zijn bestanden in deze map. Momentopnamen gaan in haar geschiedenis.',
   'shell.sourceTipBrowser': 'Je projecten staan in de opslag van deze browser. Bewaar een werkbestand om ze ergens anders te houden.',
   'shell.sourceTipMemory': 'Er wordt niets bewaard: de opslag weigerde. Bewaar een werkbestand voor je dit tabblad sluit.',
+  'shell.sourceTipRegistered': 'Je werk wordt bewaard waar deze bron het bewaart. Bewaar een werkbestand om zelf een kopie te houden.',
   'shell.chooseBoard': 'Welk bord?',
   'shell.chooseBoardHint': '{name} staat op meer dan één bord.',
   'shell.chooseBoardAsOf': 'Per {day}',

@@ -80,6 +80,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.sourceTipFolder': 'Dyn projekten binne bestannen yn dizze map. Momintopnamen geane yn har skiednis.',
   'shell.sourceTipBrowser': 'Dyn projekten steane yn de opslach fan dizze brouwer. Bewarje in wurkbestân om se earne oars te hâlden.',
   'shell.sourceTipMemory': 'Der wurdt neat bewarre: de opslach wegere. Bewarje in wurkbestân foardatsto dit ljepblêd slutst.',
+  'shell.sourceTipRegistered': 'Dyn wurk wurdt bewarre dêr\'t dizze boarne it bewarret. Bewarje in wurkbestân om sels in kopy te hâlden.',
   'shell.chooseBoard': 'Hokker boerd?',
   'shell.chooseBoardHint': '{name} stiet op mear as ien boerd.',
   'shell.chooseBoardAsOf': 'Per {day}',

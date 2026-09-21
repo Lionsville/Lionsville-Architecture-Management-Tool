@@ -80,6 +80,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.sourceTipFolder': 'Ihre Projekte sind Dateien in diesem Ordner. Schnappschüsse gehen in seinen Verlauf.',
   'shell.sourceTipBrowser': 'Ihre Projekte liegen im Speicher dieses Browsers. Speichern Sie eine Arbeitsdatei, um sie anderswo aufzubewahren.',
   'shell.sourceTipMemory': 'Nichts wird aufbewahrt: der Speicher hat abgelehnt. Speichern Sie eine Arbeitsdatei, bevor Sie diesen Tab schließen.',
+  'shell.sourceTipRegistered': 'Ihre Arbeit wird dort aufbewahrt, wo diese Quelle sie aufbewahrt. Speichern Sie eine Arbeitsdatei, um selbst eine Kopie zu behalten.',
   'shell.chooseBoard': 'Welches Board?',
   'shell.chooseBoardHint': '{name} ist auf mehr als einem Board gezeichnet.',
   'shell.chooseBoardAsOf': 'Stand {day}',

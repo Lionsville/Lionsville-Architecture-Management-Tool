@@ -76,13 +76,44 @@ function alarming(status: DocumentStatus, saveFailed: boolean): boolean {
 /**
  * What the source is called on the bar. A folder by its name — the name is
  * what the person called it in their file manager, and the path is long.
+ *
+ * A registered source is called what its provider called it, with no word of
+ * ours in front of it: only the provider knows what kind of place it is, and a
+ * label invented here would be this shell guessing about somewhere it has
+ * never heard of.
  */
 export function sourceLabel(source: WorkingSource, s: Translate): string {
   switch (source.kind) {
     case 'folder': return s('shell.sourceFolder', { name: source.name })
     case 'browserStorage': return s('shell.sourceBrowser')
     case 'memory': return s('shell.sourceMemory')
+    case 'registered': return source.name
   }
+}
+
+/**
+ * What the chip says when you hover it: where this actually keeps things, and
+ * what that costs you.
+ *
+ * Beside {@link sourceLabel} because the two answer one question between them,
+ * and the organisation's bar and the workspace's must not drift on it.
+ */
+export function sourceTipKey(source: WorkingSource): StringKey {
+  switch (source.kind) {
+    case 'folder': return 'shell.sourceTipFolder'
+    case 'memory': return 'shell.sourceTipMemory'
+    case 'browserStorage': return 'shell.sourceTipBrowser'
+    case 'registered': return 'shell.sourceTipRegistered'
+  }
+}
+
+/**
+ * The one source that says *nothing here will outlive this tab*, and is drawn
+ * in the warning colour for it. A registered source that cannot keep anything
+ * would be a provider nobody would register.
+ */
+export function sourceIsAlarming(source: WorkingSource): boolean {
+  return source.kind === 'memory'
 }
 
 /**
