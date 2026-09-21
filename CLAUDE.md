@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4407 tests** and one of every config. The
+One codebase, in modules, with **4423 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -44,7 +44,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4407 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4423 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -379,8 +379,9 @@ src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     composition.ts    which adapter, which icon packs, and which
                                       source providers (ADR-0022) — with
-                                      `openSource`, `SourceBase` and
-                                      `registeredConnects` for whoever composes
+                                      `openSource`, `SourceBase`,
+                                      `registeredConnects`, `registeredMenus`
+                                      and `sourceChip` for whoever composes
                                       over this one
                     rebase            a run off the model and back on, pure —
                                       no React, no stack, no policy; the unit
@@ -409,7 +410,9 @@ src/app/          The shell around the editor.
                                       *Existing application…*: the picker over
                                       the register, and the one question it asks
                     dialogs/ · examples/ · iconPacks/ · history/
-                    OverflowMenu      the menu, on a host that has no menu bar
+                    OverflowMenu      the menu, on a host that has no menu bar —
+                                      and the section a source provider's own
+                                      lines are drawn in, after all of ours
                     SyncNotice · useSync   the folder and its remote disagree
                     useAgentGateway · dialogs/ConnectAgentDialog   the seam bound
                                       to the session, and the way in for a person
@@ -728,6 +731,8 @@ identifiers is still a list of a customer's identifiers.
 | When a source is only itself after it has asked (ADR-0022, amended) | `open` may answer **a promise**, and the boot waits for it before the first render, so `readOnly` is right at the first paint. A rejection is a source that could not be opened: from an address, the boot's own failure screen with the provider's sentence; from a button, the notice a way in already has. The three that ship answer without waiting, and the two shells `composition.ts` composes itself cannot wait |
 | What a provider draws for itself (ADR-0022, amended) | a **chrome**, declared on the registration and listed by `registeredChrome()`: a component the app renders inside its theme and inside the language that is on, beside its own notices and on every screen, in a boundary each — for **every** registered provider and not only the open source's, because the press that opens a source happens while that provider answers for nothing. The one whose kind the working source names is handed that scope's `ScopeSession`, the rest nothing, and a chrome is therefore mounted more than once over a session: it must be idempotent about its own state. For a strip, a badge, a connect dialog of the provider's own; core's three supply none |
 | The sentence for where work is kept (ADR-0005, ADR-0022, amended) | `sourceTipKey`: one per built-in kind, and for a registered source the provider's own **`describeKey`** — its key, from its own table — or nothing at all. Nothing rather than a sentence of ours, for the reason the name on the bar is the provider's: a guess about somewhere this shell has never heard of could promise a copy that cannot be made |
+| What a provider puts in this shell's own menu (ADR-0022, amended) | **menu lines**: `menu(context)` on the registration, answering `SourceMenuEntry`s — a `key`, a `labelKey` from the provider's own table, what a press means, and `disabled` · `divider` · `href`. Drawn by the `⋯` in a section after every entry of ours, under a rule and never a heading of ours; asked when the menu opens and again on `onSourceWork`, so *Sign in…* becomes a name while it is open. Asked of every registered provider, open or not; the one whose kind the working source names is told that scope's `ScopeSession`, both are told `readOnly`, and a provider whose lines throw costs its own lines and nobody else's. A strip of the provider's own is the alternative, and a second place to look for a command is what one menu exists to stop. Core's three register none |
+| What the chip that names a registered source says (ADR-0022, amended) | the provider's **`chip`**: the `label` it goes by now — not the `name` it was opened under, which is decided at the handshake and says nothing about who is signed in — with `tipKey` for the hover, falling through to `describeKey` where it gave none, and `onClick` where there is something to press, which makes it a `button` and not a span, because that bar is the window's drag surface. Re-read on `onSourceWork`, as `statusOf` is. Absent for the three that ship, whose chip is unchanged byte for byte |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
 | Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it. **A reducer refusal is answered first**: a step whose `base` is behind the head and whose command the reducer refuses is answered with the reducer's key, so `command.taken` always means *mint another id*; a channel that decides such a step overlaps a later one refuses with a key of its own, which this repository does not define |
 | One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase` · `settled`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
@@ -1387,3 +1392,21 @@ four languages while `activity.list` answers it as a field. And **where work is
 kept** is the provider's own sentence for a registered source (`describeKey`) or
 nothing at all, because a sentence of ours about somewhere this shell has never
 heard of could promise a copy that cannot be made.
+
+Then that build had things for a person to do that are not this shell's, and a
+person signed in to it, and two more seams stopped short (ADR-0022, *Amended* a
+sixth time). A provider's actions are **lines in the menu** now
+(`SourceMenuEntry`): a key from its own table and what a press means, drawn by
+the `⋯` in a section after every entry of ours, asked for when the menu opens
+and again on the provider's own *ask me again* — because the alternative was a
+strip of the provider's own floating over the app, and then a person looking for
+what they can do here has two places to look. They are asked of every registered
+provider, open or not, and the one whose source is open is the only one told the
+session; a provider whose lines throw costs its own lines. And the **chip** that
+names a registered source says what its provider calls it at this moment rather
+than the name it was opened under — which is decided at the handshake, and says
+nothing about who is signed in — with the provider's own sentence on hover and
+something the press reaches where it gave one, as a real button, because that bar
+is the window's drag surface and the rule that keeps a control clickable in it
+names elements rather than handlers. Core's three register neither, and the three
+chips this tree has always said are unchanged byte for byte.

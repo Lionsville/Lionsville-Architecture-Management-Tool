@@ -523,6 +523,68 @@ away, and the trim at the cap, at the floor, and with the floor lifted.
 name typed in five keystrokes arrives whole and not as its first letter, it is
 five sequenced steps over there and one here, and taking it back crosses as one.
 
+## Amended — the two a build with actions and a person of its own needed
+
+*22 September 2026.* The same build had things for a person to do that are not
+this shell's — somewhere to sign in, pages of its own, something to do to the
+scope that is open — and a person signed in to it whose name is not the name the
+source was opened under. Both were drawable in the chrome a provider already
+has, and both would have been in the wrong place. Each is added as the smallest
+public thing that closes it, and the three built-ins are written exactly as they
+were.
+
+* **A provider's actions go in the menu, as lines.** A strip of the provider's
+  own is where they would otherwise be, and then a person looking for what they
+  can do here has two places to look — which is the thing one menu exists to
+  stop; nothing about a floating strip says *this is a command, like the ones
+  under the ⋯*. So a provider hands over lines and never a menu:
+  `SourceMenuEntry` is a key from its own table, what a press means, and the
+  three small facts a line can carry — disabled, a rule above it, somewhere it
+  goes — and the shell renders them the way it renders its own, in a section
+  after everything of ours, under a rule rather than a heading, because a
+  heading would be a word of ours about somewhere this shell has never heard of.
+  They are **asked for** and not registered: `menu(context)` runs when the menu
+  opens and again on the provider's own *ask me again* (`onSourceWork`), so
+  *Sign in…* becomes a name while the person is looking at the list. It sits on
+  the registration beside `chrome`, for the same reason and one step further in:
+  what a line IS carries no React and stays in `platform/`, but what a provider
+  is TOLD before it decides — the session of the open scope, and whether work
+  here may be written at all — is a word this shell owns. And it is asked of
+  **every** registered provider, open or not, because *sign in…* is the line the
+  provider that answers for nothing needs most; which one answers for the open
+  source decides only what it is handed. A provider's own code runs at the
+  moment the menu draws, so one that throws costs its own lines and the rest of
+  the list stands, with the failure in the trail.
+* **The chip is the provider's word about now, not about the handshake.**
+  `WorkingSource.name` is decided when a source is opened, and for a source
+  somebody has to be known to before it answers anything the interesting word
+  moves after that: who is signed in, and whether anybody is. The chip said the
+  opening name until the window was reloaded. `SourceProvider.chip` answers with
+  the label, the key of its own sentence for the hover — falling through to
+  `describeKey`, so a provider that only renamed the chip keeps the standing
+  sentence it already gave — and, where it gave one, something the press
+  reaches: a provider's own menu, its account page, whatever the name is a way
+  into. Re-read on the same signal `statusOf` is, because a provider whose
+  answer has moved says so once and everything reading it asks again. It is a
+  **button** where it is pressable and a span where it is not, because that bar
+  is the window's drag surface on the desktop and the rule that keeps a control
+  clickable inside it names elements rather than handlers — a span that listens
+  there is dead surface that drags the window.
+
+`composition.test.tsx` covers what the registry answers for: every provider that
+wants lines listed and only those, the lines held before that provider has opened
+anything, and a provider's chip answered for a registered source and not for a
+built-in kind or a provider that gave none. `App.storage.test.tsx` covers what is
+on screen: two lines drawn after ours and each firing what it meant, nothing at
+all added for the sources that ship, the list asked again behind an open menu, the
+session handed to the provider whose source is open and to no other with
+`readOnly` said to both, the rest of the menu standing when a provider's lines
+throw, and the chip saying the provider's word, asking again when it moves,
+pressing through to what the provider gave — and staying the name it was opened
+under, as a fact and not a control, where no chip was given.
+`ShellToolbar.test.tsx` pins the three that ship byte for byte, chip or no chip:
+a word reaching this code from outside must not move what a folder is called.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a
