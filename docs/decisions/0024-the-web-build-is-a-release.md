@@ -1,4 +1,4 @@
-# ADR-0023 — The web build is a release, and it has an address
+# ADR-0024 — The web build is a release, and it has an address
 
 * Status: accepted
 * Date: 2026-09-21
