@@ -59,14 +59,14 @@ function fakeRenderer(over: Partial<RendererView> = {}) {
 function session(over: Partial<SessionView> = {}): SessionView & {
   model: () => Model
   saved: () => number
-  remote: (command: Command, by: string) => void
+  remote: (command: Command, by: string, via?: string) => void
 } {
   let model = fromArrays(host)
   let counter = 0
   let revision = 0
   let saved = 0
   const library: DocumentImage[] = []
-  const past: { at: number; origin?: 'agent' | 'remote'; by?: string; summary: StepSummary; commands: Command[]; inverse: Command }[] = []
+  const past: { at: number; origin?: 'agent' | 'remote'; by?: string; via?: string; summary: StepSummary; commands: Command[]; inverse: Command }[] = []
   return {
     model: () => model,
     indexed: () => model,
@@ -103,10 +103,10 @@ function session(over: Partial<SessionView> = {}): SessionView & {
       if (result.ok) { model = result.model; revision += 1 }
     },
     /** A step another author made, landing on this model the way one does. */
-    remote: (command: Command, by: string) => {
+    remote: (command: Command, by: string, via?: string) => {
       const result = apply(model, command)
       if (!result.ok) return
-      past.push({ at: 1_700_000_000_000 + past.length, summary: summarise([command], model), commands: [command], inverse: result.inverse, origin: 'remote', by })
+      past.push({ at: 1_700_000_000_000 + past.length, summary: summarise([command], model), commands: [command], inverse: result.inverse, origin: 'remote', by, ...(via !== undefined ? { via } : {}) })
       model = result.model
       revision += 1
     },
@@ -236,6 +236,23 @@ describe('the session’s own: revision, the log, undo, save', () => {
     expect(out.steps.map((s) => [s.by, s.what])).toEqual([['agent', 'Added CRM'], ['person', 'Changed Billing']])
     expect(out.steps[0]).toMatchObject({ key: 'activity.elementAdded', name: 'CRM', commands: 1 })
     expect((parsed(await handle({ id: '3', tool: 'activity.list', args: { limit: 1 } }, held)) as { steps: unknown[] }).steps).toHaveLength(1)
+  })
+
+  /**
+   * A step another author made says who, and — where the step said so — what
+   * they made it with: a field of its own, for the reason `by` is not an enum.
+   * An agent reading the log can then tell one author's two clients apart, and
+   * cannot invent the answer from a name.
+   */
+  it('names another author and the client they made the step with', async () => {
+    const held = session()
+    held.remote({ type: 'element.update', id: 'billing', patch: { vendor: 'Theirs' } }, 'A. Author', 'their client')
+    held.remote({ type: 'element.update', id: 'billing', patch: { vendor: 'Also theirs' } }, 'B. Bee')
+    const out = parsed(await handle({ id: '1', tool: 'activity.list', args: {} }, held)) as { steps: Record<string, unknown>[] }
+    expect(out.steps[1]).toMatchObject({ by: 'A. Author', via: 'their client' })
+    // Nobody said which client the second was made with, so nothing says one.
+    expect(out.steps[0].by).toBe('B. Bee')
+    expect(out.steps[0]).not.toHaveProperty('via')
   })
 
   it('undoes the newest steps while they are an agent’s, and stops at a person’s', async () => {

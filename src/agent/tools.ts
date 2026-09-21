@@ -558,8 +558,9 @@ const SPECS = [
     tier: 'read',
     description:
       'The steps taken in this session, newest first, as the app\'s Activity list shows them: when, by '
-      + 'whom (the person or an agent), and what. Read it to see what stuck; undo takes back the '
-      + 'newest steps while they are an agent\'s.',
+      + 'whom (the person, an agent, or another author by name), and what. A step another author made '
+      + 'may also say `via`, the client they made it with. Read it to see what stuck; undo takes back '
+      + 'the newest steps while they are an agent\'s.',
     inputSchema: {
       type: 'object',
       properties: { limit: { type: 'integer', description: 'At most this many. Default 20.', minimum: 1, maximum: 200 } },

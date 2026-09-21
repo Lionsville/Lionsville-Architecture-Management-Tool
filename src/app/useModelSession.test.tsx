@@ -419,6 +419,26 @@ describe('useModelSession — a step made by another author', () => {
     expect(step.inverses).toHaveLength(1)
   })
 
+  /**
+   * And what they made it with, where the step said. A client is not a person:
+   * the two travel side by side, and the Activity list says both — one author
+   * working from two clients is two lines worth telling apart.
+   */
+  it('carries the client the author made it with, and nothing where none was said', () => {
+    const { session } = mount()
+    act(() => {
+      session().steps.applyExternal(rename('Theirs'), { ...elsewhere, via: 'their client' })
+    })
+    act(() => { session().steps.applyExternal(rename('Again'), elsewhere) })
+    const [said, unsaid] = session().history()
+    expect(said.by).toBe('A. Author')
+    expect(said.via).toBe('their client')
+    // Nothing invented: this session has no way to know what anyone else was
+    // working in, and a guess in a log is worse than a gap.
+    expect(unsaid.via).toBeUndefined()
+    expect('via' in unsaid).toBe(false)
+  })
+
   it('takes the name a step already travels under, and mints one where it has none', () => {
     const { session } = mount()
     act(() => { session().steps.applyExternal(rename('Theirs'), { ...elsewhere, stepId: 'their-step' }) })

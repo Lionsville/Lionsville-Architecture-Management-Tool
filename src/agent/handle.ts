@@ -136,6 +136,13 @@ export type HistoryEntry = {
   readonly origin?: 'agent' | 'remote'
   /** The author of a step another author made, where one is known. */
   readonly by?: string
+  /**
+   * What that author made it with, where the step said: a client, never a
+   * person. Answered as a field of its own for the reason `by` is not an enum —
+   * an agent reading the log can tell one author's two clients apart, and
+   * cannot invent the answer from a name.
+   */
+  readonly via?: string
   readonly summary: StepSummary
   readonly commands: readonly Command[]
   /**
@@ -398,6 +405,10 @@ function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
     by: step.origin === 'agent'
       ? 'agent'
       : step.origin === 'remote' ? step.by ?? 'another author' : 'person',
+    // Absent where the step named no client, which is every step this build
+    // makes: a field that was always there and usually null would read as a
+    // fact about the step rather than as one nobody said.
+    ...(step.via !== undefined ? { via: step.via } : {}),
     what: session.translate(step.summary.key, {
       name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '',
     }),

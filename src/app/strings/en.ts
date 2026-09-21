@@ -489,6 +489,12 @@ export const EN = {
   'shell.activityAgent': 'AGENT',
   /** The tag on a step another author made, beside the time: their name. */
   'shell.activityBy': 'BY {name}',
+  /**
+   * The same tag where the step also said which client the person made it with
+   * — one author working from two is two different things to read a log about,
+   * and a line that said only the name would flatten them into one.
+   */
+  'shell.activityByVia': 'BY {name} VIA {client}',
   /** What that tag says when the step arrived with no author's name on it. */
   'shell.activityElsewhere': 'ANOTHER AUTHOR',
   /**

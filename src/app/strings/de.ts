@@ -362,6 +362,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.activityEmpty': 'Noch nichts',
   'shell.activityAgent': 'AGENT',
   'shell.activityBy': 'VON {name}',
+  'shell.activityByVia': 'VON {name} ÜBER {client}',
   'shell.activityElsewhere': 'EIN ANDERER AUTOR',
   'shell.alsoHere': 'Auch hier: {names}',
   'shell.search': 'Suchen',

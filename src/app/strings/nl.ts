@@ -362,6 +362,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.activityEmpty': 'Nog niets',
   'shell.activityAgent': 'AGENT',
   'shell.activityBy': 'DOOR {name}',
+  'shell.activityByVia': 'DOOR {name} VIA {client}',
   'shell.activityElsewhere': 'EEN ANDERE AUTEUR',
   'shell.alsoHere': 'Ook hier: {names}',
   'shell.search': 'Zoeken',

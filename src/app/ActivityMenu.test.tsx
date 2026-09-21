@@ -149,4 +149,39 @@ describe('who took the step', () => {
     list([entry({ origin: 'remote', by: 'A. Author' })], 'nl')
     expect(screen.getByTestId('activity-origin').textContent).toBe('DOOR A. Author')
   })
+
+  /**
+   * And what they made it with, where the step said. One author working from two
+   * clients and two authors are not the same thing to read about, so the line
+   * says both rather than choosing.
+   */
+  it('names the client the author made it with, where the step said', () => {
+    list([entry({ origin: 'remote', by: 'A. Author', via: 'their client' })])
+    expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author VIA their client')
+  })
+
+  it('names the client in each of the four languages', () => {
+    const said = (language: Language) => {
+      cleanup()
+      list([entry({ origin: 'remote', by: 'A. Author', via: 'their client' })], language)
+      return screen.getByTestId('activity-origin').textContent
+    }
+    expect(said('nl')).toBe('DOOR A. Author VIA their client')
+    expect(said('de')).toBe('VON A. Author \u00dcBER their client')
+    expect(said('fy')).toBe('FAN A. Author FIA their client')
+    expect(said('en')).toBe('BY A. Author VIA their client')
+  })
+
+  /** A step with a client and no author is still not ours, and still says so. */
+  it('falls back to the author nobody named, with the client beside it', () => {
+    list([entry({ origin: 'remote', via: 'their client' })])
+    expect(screen.getByTestId('activity-origin').textContent)
+      .toBe('BY ANOTHER AUTHOR VIA their client')
+  })
+
+  /** Every step in this repository: no client said, and the line as it was. */
+  it('says only the name where no client was said', () => {
+    list([entry({ origin: 'remote', by: 'A. Author' })])
+    expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author')
+  })
 })

@@ -33,6 +33,16 @@ export type ActivityEntry = {
   origin?: 'agent' | 'remote'
   /** Who the other author was, where the step arrived with a name on it. */
   by?: string
+  /**
+   * What they made it with, where the step said: the line then reads *by
+   * A. Author via their client*.
+   *
+   * The two are separate answers and the line says both, because one author
+   * working from two clients and two authors are not the same thing to somebody
+   * reading a log. Nothing at all where the step named no client, which is what
+   * every step in this repository does.
+   */
+  via?: string
 }
 
 export type ActivityMenuProps = {
@@ -81,8 +91,12 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
                   {entry.origin === 'agent'
                     ? s('shell.activityAgent')
                     // The author's own name where there is one — a step whose
-                    // author arrived nameless is still not this person's.
-                    : s('shell.activityBy', { name: entry.by ?? s('shell.activityElsewhere') })}
+                    // author arrived nameless is still not this person's — and
+                    // the client beside it where the step said which.
+                    : s(entry.via === undefined ? 'shell.activityBy' : 'shell.activityByVia', {
+                      name: entry.by ?? s('shell.activityElsewhere'),
+                      client: entry.via ?? '',
+                    })}
                 </Typography>
               )}
               <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>

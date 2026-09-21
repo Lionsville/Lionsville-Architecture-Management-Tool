@@ -362,6 +362,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.activityEmpty': 'Noch neat',
   'shell.activityAgent': 'AGENT',
   'shell.activityBy': 'FAN {name}',
+  'shell.activityByVia': 'FAN {name} FIA {client}',
   'shell.activityElsewhere': 'IN OARE AUTEUR',
   'shell.alsoHere': 'Ek hjir: {names}',
   'shell.search': 'Sykje',

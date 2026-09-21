@@ -87,6 +87,18 @@ export type HistoryStep = {
    */
   by?: string
   /**
+   * What that author made the step with, where it was said: the client, not the
+   * person.
+   *
+   * A log that named the author and not the client flattens two different
+   * things into one line — the same colleague working from two clients, and a
+   * step a person made through something that speaks for them. Beside `by`
+   * rather than folded into it, because the two are answers to different
+   * questions and only one of them is a person; nothing in this session reads
+   * either, and the list shows both.
+   */
+  via?: string
+  /**
    * ⌘Z stops here, and this key says why (ADR-0012 §10).
    *
    * A gesture that wrote two scopes leaves one of its two writes on this
@@ -118,6 +130,16 @@ export type ExternalStep = {
   by: string
   /** When it was made. Now, where the caller knows nothing better. */
   at?: number
+  /**
+   * The client the author made it with, where that is known: *by A. Author via
+   * their client*, which is the line the Activity list draws.
+   *
+   * Absent where whoever handed the step over says only who made it, and the
+   * list then says exactly what it always said. Never inferred here: this tree
+   * has no way to tell what somebody else was working in, and a guess in a log
+   * is worse than a gap.
+   */
+  via?: string
   /** The name the step already travels under, so a step is not renamed on arrival. */
   stepId?: string
 }
@@ -367,6 +389,7 @@ export type ScopeSession = {
 type StepMeta = Omit<CommandMeta, 'origin'> & {
   origin?: StepOrigin
   by?: string
+  via?: string
   stepId?: string
   at?: number
   /**
@@ -554,6 +577,7 @@ export function useModelSession(deps: {
         ...(meta.coalesce !== undefined ? { coalesce: meta.coalesce } : {}),
         ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
         ...(meta.by !== undefined ? { by: meta.by } : {}),
+        ...(meta.via !== undefined ? { via: meta.via } : {}),
         ...(meta.barrier !== undefined ? { barrier: meta.barrier } : {}),
       }
       past.current.push(landed)
@@ -698,6 +722,7 @@ export function useModelSession(deps: {
       origin: 'remote',
       by: from.by,
       keepFuture: true,
+      ...(from.via !== undefined ? { via: from.via } : {}),
       ...(from.at !== undefined ? { at: from.at } : {}),
       ...(from.stepId !== undefined ? { stepId: from.stepId } : {}),
     })
