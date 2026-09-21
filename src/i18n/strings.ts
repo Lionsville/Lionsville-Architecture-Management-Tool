@@ -47,6 +47,67 @@ export type Language = keyof typeof TABLES;
 export const STRINGS: Record<Language, StringTable> = TABLES;
 
 /**
+ * Words a build composed from this one brought with it.
+ *
+ * `TABLES` above is the schema and cannot be anything else: `StringKey` is
+ * `keyof typeof EN`, and a type cannot be built from a runtime registration. So
+ * a build that registers a source provider of its own — which brings its own
+ * way in, and therefore its own label (`platform/sourceProvider.ts`) — has
+ * words this table has never heard of, and `t` answered them with the key
+ * itself. A blemish, as that file says, and one this makes unnecessary.
+ *
+ * Kept beside the tables rather than merged into them, which is what makes
+ * "adding keys only" structural rather than a rule somebody has to keep: the
+ * schema is never touched, `EN` stays the object every module composed, and
+ * `strings.test.ts` still reads exactly the tables this repository ships.
+ */
+const REGISTERED: Partial<Record<Language, Record<string, string>>> = {};
+
+/**
+ * Is this build being developed rather than used?
+ *
+ * Read through a cast because this file is compiled twice — once by the app's
+ * own config, which has Vite's types, and once by the desktop's, which has Node
+ * and nothing else and reaches this file through `platform/`. The answer is the
+ * same either way: a bundler that does not define it is a build nobody is
+ * debugging.
+ */
+const DEV = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
+
+/**
+ * Teach this build words of its own.
+ *
+ * Additive, and only additive. A key this repository already owns is refused —
+ * loudly while the build is being developed, and quietly in the one that ships,
+ * because the alternative is a released app that will not start over a string.
+ * The refusal is the whole point: a registration that could overwrite
+ * `common.save` would be a way to change what every existing screen says from
+ * outside the tree that is tested, and the keys it could hit are the ones a
+ * person reads in a dialog before pressing the button.
+ *
+ * `strict` exists so the quiet half can be tested at all, exactly as
+ * `ErrorBoundary`'s `showStack` does; nobody else passes it. What comes back is
+ * the keys that were refused, so a caller that wants to know can look.
+ */
+export function registerStrings(
+  language: Language,
+  table: Readonly<Record<string, string>>,
+  strict: boolean = DEV,
+): readonly string[] {
+  const taken = Object.keys(table).filter((key) => key in EN);
+  if (taken.length > 0 && strict) {
+    throw new Error(
+      `registerStrings: these keys belong to the app itself and cannot be replaced: ${taken.join(', ')}`,
+    );
+  }
+  const kept = REGISTERED[language] ?? (REGISTERED[language] = {});
+  for (const [key, value] of Object.entries(table)) {
+    if (!(key in EN)) kept[key] = value;
+  }
+  return taken;
+}
+
+/**
  * The languages in menu order — a presentation choice, so it is written out
  * rather than derived from `TABLES` (whose order means nothing). Dutch first and
  * Frisian beside it because that is where the tool comes from; then the two
@@ -97,10 +158,19 @@ export function interpolate(template: string, params?: StringParams): string {
   );
 }
 
-/** The one lookup. Pure, and explicit about the language. */
+/**
+ * The one lookup. Pure, and explicit about the language.
+ *
+ * This language, then whatever a build registered for it, then English, then
+ * whatever a build registered for English — the app's own words first at every
+ * step, because a registration may only add. An unknown key still returns
+ * itself rather than throwing: a missing string is a blemish, never a blank
+ * editor.
+ */
 export function t(language: Language, key: StringKey, params?: StringParams): string {
   const table = STRINGS[language] ?? STRINGS.en;
-  return interpolate(table[key] ?? STRINGS.en[key] ?? key, params);
+  const found = table[key] ?? REGISTERED[language]?.[key] ?? STRINGS.en[key] ?? REGISTERED.en?.[key];
+  return interpolate(found ?? key, params);
 }
 
 /** What every pure label table takes instead of reaching for React context. */

@@ -10,6 +10,8 @@
  * browser in a language we have a table for gets that one, everyone else
  * English.
  */
-export { LANGUAGES, LANGUAGE_NAME, LOCALE, STRINGS, detectBrowserLanguage, isLanguage, t, translator } from './strings'
+export {
+  LANGUAGES, LANGUAGE_NAME, LOCALE, STRINGS, detectBrowserLanguage, isLanguage, registerStrings, t, translator,
+} from './strings'
 export type { Language, StringKey, StringParams, StringTable, Translate } from './strings'
 export { LanguageProvider, useStrings } from './LanguageContext'

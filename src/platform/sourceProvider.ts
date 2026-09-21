@@ -84,8 +84,9 @@ export type SourceWorkChanged = (listener: () => void) => () => void
  * the provider's business and not the shell's. A key rather than a sentence,
  * for the same reason every other string here is one — and `string` beside
  * `StringKey` because a provider a build composed from this one registers
- * brings its own table, whose keys are not in this one's. An unknown key
- * renders as itself (`i18n/strings.ts`), which is a blemish and never a blank.
+ * brings its own table, whose keys are not in this one's. That table is
+ * `i18n`'s `registerStrings`, which adds keys and may replace none; a key
+ * nobody registered renders as itself, which is a blemish and never a blank.
  */
 export type SourceConnect = {
   readonly labelKey: StringKey | (string & {})
