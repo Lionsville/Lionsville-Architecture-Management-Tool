@@ -323,6 +323,64 @@ that closes it.
   `commitMessage.ts` reaches neither the registry nor `app/`. The registry is
   right for a screen and wrong for a process that has none.
 
+## Amended — the four the first build with a screen of its own needed
+
+*21 September 2026.* The same build registered its provider, gave it a screen of
+its own beside this shell's, and opened a source that cannot say what it is until
+it has asked somebody. Four more seams stopped short, and each is added as the
+smallest public thing that closes it. Nothing above them is edited for any of
+them, and all three built-ins are written exactly as they were.
+
+* **A slot for a provider's own chrome.** `Shell.chrome` is a component this app
+  renders inside its own theme and inside the language that is on, beside its own
+  notices and on every screen — the first-run screen included, because a source
+  that will not open is exactly when its provider has something to say. It is
+  handed the `ScopeSession` of the scope that is open, which a component could
+  not otherwise reach: the session is handed out as a subscription, so the shell
+  holds it for the chrome beside handing it on and never instead of. Without this
+  the only place a strip or a connect dialog could go was a container on
+  `document.body`, which is a second app in the same window, in the wrong colours
+  and in English. It renders in a boundary of its own, for the reason the canvas
+  has one: a strip somebody else wrote falling over costs the strip, not the
+  window.
+* **A provider is handed `Diagnostics`.** The trail the app already keeps, at
+  `open`. A provider had the console, which is the one place "Copy diagnostics"
+  cannot reach — so a source that would not open left nothing in the thing the
+  user is invited to hand over.
+* **A provider can reach the shell whose parts it replaces.** The `Shell` as it
+  stands *before* its own parts are spread over it, which is what makes it safe
+  to read: nothing in it is the provider's own answer coming back. A provider
+  that replaces the store was otherwise left composing a second preferences
+  store, a second document gateway and a second browser store — three decisions
+  `composition.ts` exists to make once, made twice in one window, and the
+  language, the theme and *Save as…* quietly stop being the app's. Both travel
+  as `SourceBase`, the second argument to `open` and the required third to
+  `openSource`; it carries no shell in exactly one place, the first compose,
+  whose shell is the one that source is bringing the stores for.
+* **`open` may answer a promise.** `open(opening, base): Parts | Promise<Parts>`,
+  awaited by the boot before the first render. What a source is called, which
+  scopes it holds and whether this person may write to it at all can be answers
+  over a wire, and `readOnly` decides what the workspace draws and what an agent
+  is refused: a shell mounted over a guess and corrected a moment later is a
+  mount thrown away and a *New plan* offered to somebody who may not write. A
+  rejection is a source that could not be opened, and the two ways in answer it
+  where they are — the address the page was opened at goes to the boot's own
+  failure screen with the provider's own sentence on it, while a button that
+  came to nothing says so on the bar as it already did. Reading the address stays
+  caught, because that is a guess and the next provider may recognise it.
+  `composition.ts` keeps one tripwire of its own: the two shells it composes
+  itself are built where a shell is the answer rather than a promise of one, and
+  a provider that answered a promise to those is named rather than spread.
+
+`composition.test.tsx` covers the three below the screen — the trail reported
+into, the shell reused, the first compose with none, a promise waited for with
+what travels alongside it intact, and a rejection carrying the provider's
+sentence — and `App.storage.test.tsx` the chrome: drawn with nothing open,
+handed the session while a scope is and told when it closes, in the language the
+app is in, the provider's own subscription untouched beside it, nothing at all
+where a source brought none, and the window still standing when the strip falls
+over.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

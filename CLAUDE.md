@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4298 tests** and one of every config. The
+One codebase, in modules, with **4310 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4298 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4310 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -310,11 +310,13 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       desktop's update check, without its fetch
                     agentServer       the server's three states, and mcp.json's shape
                     sourceProvider    a kind of place work is kept, as something
-                                      that can be registered: what it opens to,
-                                      its way in — a label, the provider's own
-                                      dialog, and an address a link may carry —
-                                      and what it means by the five words the
-                                      bar says (ADR-0022)
+                                      that can be registered: what it opens to
+                                      — from its own opening and from what the
+                                      shell hands over, and it may take its
+                                      time about it — its way in (a label, the
+                                      provider's own dialog, and an address a
+                                      link may carry) and what it means by the
+                                      five words the bar says (ADR-0022)
                     desktopHook       what a build composed from this one may ask
                                       of the main process: somewhere to answer the
                                       renderer, somewhere to keep a small secret,
@@ -362,8 +364,9 @@ src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     composition.ts    which adapter, which icon packs, and which
                                       source providers (ADR-0022) — with
-                                      `openSource` and `registeredConnects` for
-                                      whoever composes over this one
+                                      `openSource`, `SourceBase` and
+                                      `registeredConnects` for whoever composes
+                                      over this one
                     rebase            a run of steps off the model and back on,
                                       pure — no React, no stack, no policy
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
@@ -588,8 +591,9 @@ is refused, a scope with no views still loads, a save-then-remove move keeps the
 children, `updatedAt` is stamped, a path that could escape the folder is
 refused, and a scope survives a round trip unchanged. Passing it is the whole
 admission test. Then one `registerSourceProvider` in `composition.ts` — a kind,
-what opening it gives the shell, and what it means by the words on the bar
-(ADR-0022). **Nothing above the seam changes** — not `main.tsx`, not a
+what opening it gives the shell (from its own opening and from the `SourceBase`
+the shell hands over, and it may answer a promise), and what it means by the
+words on the bar (ADR-0022). **Nothing above the seam changes** — not `main.tsx`, not a
 component, not a test.
 
 The same holds for `PreferencesStore`, `DocumentGateway` and `CommandChannel`,
@@ -689,7 +693,10 @@ identifiers is still a list of a customer's identifiers.
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
 | Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says — with `onSourceWork` to say *ask me again*, for an answer that moved without the document's own machine moving. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
-| How a person, or a link, reaches one (ADR-0022, amended) | a **way in**: `connect.labelKey` for what the button says, `connect.open()` for the dialog behind it — the provider's, because what it has to ask for is its business — and `connect.fromLocation(location)` for an address a link carries, read before the first render. The boot draws one button per registered provider on the root's home and on the first-run screen (`registeredConnects`); `openSource(kind, opening)` is the one call that opens what a dialog answered. The folder's button is the one that was already there, because choosing a folder is also remembered, adopted into and upgraded |
+| How a person, or a link, reaches one (ADR-0022, amended) | a **way in**: `connect.labelKey` for what the button says, `connect.open()` for the dialog behind it — the provider's, because what it has to ask for is its business — and `connect.fromLocation(location)` for an address a link carries, read before the first render. The boot draws one button per registered provider on the root's home and on the first-run screen (`registeredConnects`); `openSource(kind, opening, base)` is the one call that opens what a dialog answered. The folder's button is the one that was already there, because choosing a folder is also remembered, adopted into and upgraded |
+| What the shell hands a provider at `open` (ADR-0022, amended) | **`SourceBase`**: the `Diagnostics` the app already keeps — the trail "Copy diagnostics" hands over, and never the console — and the `Shell` as it stands *before* this provider's parts are spread over it, so a provider reuses the preferences store, the document gateway and the browser store instead of composing a second set. Required on `openSource`; no shell in one place only, the first compose, whose shell is the one that source is bringing the stores for |
+| When a source is only itself after it has asked (ADR-0022, amended) | `open` may answer **a promise**, and the boot waits for it before the first render, so `readOnly` is right at the first paint. A rejection is a source that could not be opened: from an address, the boot's own failure screen with the provider's sentence; from a button, the notice a way in already has. The three that ship answer without waiting, and the two shells `composition.ts` composes itself cannot wait |
+| What a provider draws for itself (ADR-0022, amended) | **`Shell.chrome`**: a component the app renders inside its theme and inside the language that is on, beside its own notices and on every screen, in a boundary of its own — handed the `ScopeSession` of the scope that is open, and nothing where none is. For a strip, a badge, a dialog of the provider's own; core's three supply none |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
 | Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it. **A reducer refusal is answered first**: a step whose `base` is behind the head and whose command the reducer refuses is answered with the reducer's key, so `command.taken` always means *mint another id*; a channel that decides such a step overlaps a later one refuses with a key of its own, which this repository does not define |
 | One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
@@ -1296,6 +1303,22 @@ the instant a step is made.
 
 Then a build composed from core ran the reducer and the folder format in a node
 process with no Electron, filled the command channel over a network, and found
+Then the same build drew a screen of its own beside this shell's and opened a
+source that cannot say what it is until it has asked somebody, and four more
+seams stopped short (ADR-0022, *Amended* a third time). A provider has
+**somewhere to draw**: `Shell.chrome`, rendered inside the theme and the
+language, beside the app's own notices, in a boundary of its own, and handed the
+session of the scope that is open — the alternative was a container on
+`document.body`, which is a second app in the same window wearing the wrong
+colours. `open` is **handed the shell's own side** as `SourceBase`: the trail the
+app keeps, because the console is the one place *Copy diagnostics* cannot reach,
+and the shell as it stands before this provider's parts are spread over it, so
+nobody composes a second preferences store to replace one store. And `open` **may
+answer a promise**, which the boot waits for: `readOnly` decides what the
+workspace draws and what an agent is refused, so it has to be right at the first
+paint rather than a moment after it, and a handshake that fails says so on the
+failure screen the boot already has.
+
 four more (ADR-0022, *Amended* again). The **git module** is
 `src/platform/node/git.ts` now: it never had any Electron in it, and
 `platform/node/` is the one row in the import matrix for code that may say
