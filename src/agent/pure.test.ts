@@ -16,6 +16,11 @@
  *     re-exports `business/ui/SheetPage.tsx` for the screens that want it. That
  *     is how it got in. So the graph is walked here rather than reasoned about,
  *     the way `projects/commitMessage.test.ts` walks its own.
+ *   - **Nothing around it draws either.** The same walk over `model/`,
+ *     `projects/`, `platform/node` and `agent/` whole, asserting that none of
+ *     them reaches `app/` or `editor/` — not even a string table. The registry
+ *     (`i18n/strings.ts`) composes every module's slice, so one value imported
+ *     from it puts the whole shell's vocabulary behind `import { kindLabel }`.
  *   - **Node can erase its types.** `--experimental-strip-types` blanks types
  *     out where they stand; it does not compile. So the three pieces of
  *     TypeScript that are more than a type — a parameter property, an `enum`, a
@@ -27,7 +32,7 @@
  * besides the flag, and says why.
  */
 import { execFileSync } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import { stripTypeScriptTypes } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -40,6 +45,23 @@ const ENTRIES = ['handle.ts', 'tools.ts', 'driving.ts', 'mcpProtocol.ts']
 
 /** The packages a screen is made of. Any of them, anywhere in the chain, is the bug. */
 const DRAWS = [/^react$/, /^react-dom/, /^@mui\//, /^@emotion\//, /^@xyflow\//, /^html-to-image$/]
+
+/**
+ * The modules a process with no screen is composed of, whole.
+ *
+ * `agent/` is what this file is about, and it is the narrowest of the four: the
+ * others are what a build reaches for around it — the reducer and the arithmetic
+ * (`model/`), a scope as files and the derivations over a tree of them
+ * (`projects/`, which is where the technology register lives for exactly this
+ * reason), and the one folder that may say `node:` (`platform/node`). None of
+ * them may import `app/` or `editor/` by the matrix, and the matrix cannot see
+ * the one path that matters: `i18n/strings.ts` is the registry, so it imports
+ * every module's slice, `app/strings` and `editor/strings` included. Four files
+ * in `model/` reached it for an English default and one in `projects/` for
+ * `isLanguage`, which put the whole shell's vocabulary behind an `import
+ * { kindLabel }` — and behind the day something in `app/` needs a browser.
+ */
+const COMPUTES = ['model', 'projects', 'platform/node', 'agent']
 
 describe('the agent in a node process', () => {
   it('reaches nothing that draws', async () => {
@@ -61,6 +83,21 @@ describe('the agent in a node process', () => {
       .filter((specifier) => DRAWS.some((package_) => package_.test(specifier)))
       .map((specifier) => `${relative(SRC, file)} → ${specifier}`))
     expect(drawn).toEqual([])
+  })
+
+  it('and neither does anything else that computes', async () => {
+    const entries = (await Promise.all(COMPUTES.map((module) => sourcesOf(resolve(SRC, module))))).flat()
+    const reached = await imported(entries)
+    const paths = [...reached.keys()].map((file) => relative(SRC, file))
+
+    expect(paths.filter((path) => path.startsWith('app/') || path.startsWith('editor/'))).toEqual([])
+
+    // The walk covers what it says it covers, entries included.
+    expect(paths).toContain('projects/technologyRegister.ts')
+    expect(paths).toContain('platform/node/git.ts')
+    expect(paths).toContain('agent/mcpProtocol.ts')
+    expect(paths).toContain('model/words.ts')
+    expect(paths).not.toContain('i18n/strings.ts')
   })
 
   it('is TypeScript node can erase', async () => {
@@ -93,6 +130,28 @@ describe('the agent in a node process', () => {
     ], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })).not.toThrow()
   }, 60_000)
 })
+
+/**
+ * Every source file in a module: what it has to hold as a whole, rather than
+ * through the one or two files somebody remembered to name.
+ *
+ * `*.test.ts` and `*.contract.ts` are left out, the way the matrix leaves them
+ * out: a suite reaching across the tree for a fixture is not the coupling this
+ * guards against. `testing/` folders are test support under another name and go
+ * with them.
+ */
+async function sourcesOf(directory: string): Promise<string[]> {
+  const found: string[] = []
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const at = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      if (entry.name !== 'testing') found.push(...await sourcesOf(at))
+    } else if (/\.tsx?$/.test(entry.name) && !/\.(test|contract)\.tsx?$/.test(entry.name)) {
+      found.push(at)
+    }
+  }
+  return found
+}
 
 /** Where a `from '…'` in this tree resolves to, if anywhere. */
 async function fileFor(from: string, specifier: string): Promise<string | undefined> {
