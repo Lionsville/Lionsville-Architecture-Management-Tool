@@ -59,8 +59,18 @@ export class Driving {
   private state: DrivingState = {}
   private readonly stopListeners = new Set<() => void>()
   private readonly changeListeners = new Set<() => void>()
+  /**
+   * Declared and assigned rather than written as `constructor(private clock)`,
+   * because a parameter property is the one piece of TypeScript that is not
+   * only a type: erasing it would delete the assignment too, so node's type
+   * stripping refuses the file outright. A module a node process loads from
+   * source says its fields out loud.
+   */
+  private readonly clock: () => string
 
-  constructor(private readonly clock: () => string = () => new Date().toISOString()) {}
+  constructor(clock: () => string = () => new Date().toISOString()) {
+    this.clock = clock
+  }
 
   current(): DrivingState {
     return this.state

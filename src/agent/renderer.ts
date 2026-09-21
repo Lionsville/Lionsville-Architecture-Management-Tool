@@ -21,8 +21,12 @@ export type RendererRefusal =
   | 'gone'
 
 export class RendererRefused extends Error {
-  constructor(readonly reason: RendererRefusal) {
+  /** A field of its own, not `constructor(readonly reason)`: see {@link Driving}. */
+  readonly reason: RendererRefusal
+
+  constructor(reason: RendererRefusal) {
     super(reason)
+    this.reason = reason
     this.name = 'RendererRefused'
   }
 }
