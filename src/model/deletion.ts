@@ -1,4 +1,5 @@
-import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
+import type { StringKey, Translate } from '../i18n/strings';
+import { MODEL_ENGLISH } from './words';
 import type { DesignDiagram, DesignModel, ElementId } from './types';
 
 /**
@@ -114,7 +115,7 @@ export function needsDeleteConfirmation(summary: DeletionSummary): boolean {
  */
 export function describeDeletion(
   summary: DeletionSummary,
-  translate: Translate = DEFAULT_TRANSLATE,
+  translate: Translate = MODEL_ENGLISH,
 ): string {
   const count = (n: number, one: StringKey, other: StringKey) =>
     translate(n === 1 ? one : other, { count: n });

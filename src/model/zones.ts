@@ -1,4 +1,5 @@
-import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
+import type { StringKey, Translate } from '../i18n/strings';
+import { MODEL_ENGLISH } from './words';
 import type { NodeFigure } from './kinds';
 import type {
   Geometry,
@@ -130,7 +131,7 @@ export const ZONE_LABEL_KEYS: Record<Layer7Zone, StringKey> = {
 };
 
 /** The uppercase band caption for a zone, in the given language (default English). */
-export function zoneLabel(zone: Layer7Zone, translate: Translate = DEFAULT_TRANSLATE): string {
+export function zoneLabel(zone: Layer7Zone, translate: Translate = MODEL_ENGLISH): string {
   return translate(ZONE_LABEL_KEYS[zone]);
 }
 
@@ -143,7 +144,7 @@ export const ZONE_MENU_LABEL_KEYS: Record<Layer7Zone, StringKey> = {
   management: 'zoneMenu.management',
 };
 
-export function zoneMenuLabel(zone: Layer7Zone, translate: Translate = DEFAULT_TRANSLATE): string {
+export function zoneMenuLabel(zone: Layer7Zone, translate: Translate = MODEL_ENGLISH): string {
   return translate(ZONE_MENU_LABEL_KEYS[zone]);
 }
 

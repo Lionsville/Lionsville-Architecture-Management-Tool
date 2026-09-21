@@ -14,10 +14,10 @@
  * `PreferencesStore` (`src/ports/`), so the desktop can later have a different
  * store without these two functions noticing.
  */
-import { isLanguage } from '../i18n'
+import { isLanguage } from '../i18n/languages'
 import { isThemeMode } from '../platform/theme'
 import type { ThemeMode } from '../platform/theme'
-import type { Language } from '../i18n'
+import type { Language } from '../i18n/languages'
 import { isSafeScopePath, pathOfOldRef } from './scopePath'
 import type { ScopePath } from './scopePath'
 

@@ -26,9 +26,17 @@ import { interpolate } from './interpolate';
 import { EN } from './strings.en';
 import { FY } from './strings.fy';
 import { NL } from './strings.nl';
+import type { Language } from './languages';
 import type { StringKey, StringParams, StringTable } from './table';
 
 export type { StringKey, StringParams, StringTable } from './table';
+/**
+ * Re-exported where they always were. They live in `./languages` now so that a
+ * caller which only has to recognise a language code — a settings reader in a
+ * node process — can do that without importing every module's words.
+ */
+export type { Language } from './languages';
+export { LANGUAGE_CODES, detectBrowserLanguage, isLanguage } from './languages';
 /**
  * Re-exported where it always was. It lives in `./interpolate` now so that a
  * caller that has a table of its own — a node process drafting a commit message
@@ -42,15 +50,15 @@ export { FY } from './strings.fy';
 export { NL } from './strings.nl';
 
 /**
- * Every language there is. THE place to register one.
+ * Every table there is, one per code in `LANGUAGE_CODES`.
  *
- * `satisfies` rather than an annotation on purpose: it checks each table without
- * widening the keys away, so `Language` below stays the exact union.
+ * The two are held together by this one declaration, in both directions: the
+ * `Record<Language, …>` is complete, so a code with no table is an error, and
+ * `satisfies` keeps the keys narrow, so a table whose code nobody listed is one
+ * too. That is what lets `Language` be a list in a file with no words in it
+ * (`languages.ts`) without becoming a list somebody has to remember.
  */
-const TABLES = { en: EN, nl: NL, fy: FY, de: DE } satisfies Record<string, StringTable>;
-
-/** Derived, so it can never disagree with the tables that actually exist. */
-export type Language = keyof typeof TABLES;
+const TABLES = { en: EN, nl: NL, fy: FY, de: DE } satisfies Record<Language, StringTable>;
 
 export const STRINGS: Record<Language, StringTable> = TABLES;
 
@@ -196,34 +204,6 @@ export function translator(language: Language): Translate {
  * changed no test's expectations.
  */
 export const DEFAULT_TRANSLATE: Translate = TRANSLATORS.en;
-
-/** Derived from the registry, so a new language is understood without an edit here. */
-export function isLanguage(value: unknown): value is Language {
-  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(STRINGS, value);
-}
-
-/**
- * The language to start in when nobody has chosen: the first browser tag we have
- * a table for, English otherwise (roadmap decision 1).
- *
- * Matches against the registry rather than a hardcoded pair, so a language added
- * to `TABLES` is picked up here too. Order is honoured: the browser lists tags
- * by preference, and the first one we can serve wins.
- *
- * Takes the tags rather than reading `navigator` so it is testable without a
- * browser; the caller passes `navigator.languages ?? navigator.language`.
- */
-export function detectBrowserLanguage(
-  tags?: readonly string[] | string | undefined,
-): Language {
-  const list = typeof tags === 'string' ? [tags] : (tags ?? []);
-  for (const tag of list) {
-    if (typeof tag !== 'string') continue;
-    const primary = tag.toLowerCase().split('-')[0];
-    if (isLanguage(primary)) return primary;
-  }
-  return 'en';
-}
 
 /** Count-aware pick between a `…One` and a `…Other` key. */
 export function plural(

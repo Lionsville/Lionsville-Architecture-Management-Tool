@@ -3,6 +3,7 @@
  * not. The marks themselves are covered in `editor/nodes/logoRegistry.test.tsx`.
  */
 import { describe, expect, it } from 'vitest'
+import { translator } from '../i18n/strings'
 import {
   LOGO_CATEGORIES,
   LOGO_ENTRIES,
@@ -47,9 +48,19 @@ describe('registerLogoPack', () => {
     expect(LOGO_CATEGORIES.filter((category) => category.key === 'fish')).toHaveLength(1)
   })
 
+  /**
+   * With a translator, not without one: the key this pack brought is in the table
+   * of whoever brought it (`app/strings`), and the model's own English
+   * (`model/words.ts`) is the model's slice and nothing else — which is the whole
+   * point of it. A caller that wants a registered pack's heading has a registry;
+   * one that has no registry gets the key, which is the registry's own answer to
+   * a word it has not got.
+   */
   it('gives the heading in the language asked for, through the pack’s own key', () => {
     registerLogoPack(pack('boats'))
-    expect(logoCategoryLabel('boats')).toBe('Rail')
+    expect(logoCategoryLabel('boats', translator('en'))).toBe('Rail')
+    expect(logoCategoryLabel('boats', translator('nl'))).toBe('Spoor')
+    expect(logoCategoryLabel('boats')).toBe('logo.category.rail')
   })
 
   it('says nothing about a key no pack brought', () => {

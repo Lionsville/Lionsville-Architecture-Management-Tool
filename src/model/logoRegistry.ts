@@ -1,5 +1,6 @@
 import { matchesQuery, queryTokens } from './textSearch';
-import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../i18n/strings';
+import type { StringKey, Translate } from '../i18n/strings';
+import { MODEL_ENGLISH } from './words';
 import { GENERIC_MARKS } from './marks/generic';
 import { VENDOR_MARKS } from './marks/vendors';
 
@@ -91,7 +92,7 @@ export const LOGO_CATEGORIES: { key: LogoCategory; labelKey: StringKey }[] = [
 /** A picker group's heading in the given language; English when none is given. */
 export function logoCategoryLabel(
   category: LogoCategory,
-  translate: Translate = DEFAULT_TRANSLATE,
+  translate: Translate = MODEL_ENGLISH,
 ): string {
   const entry = LOGO_CATEGORIES.find((c) => c.key === category);
   return entry ? translate(entry.labelKey) : category;
@@ -167,7 +168,7 @@ export function builtInLogo(key: string): LogoEntry | undefined {
 export function searchLogos(
   query: string,
   entries: LogoEntry[] = LOGO_ENTRIES,
-  translate: Translate = DEFAULT_TRANSLATE,
+  translate: Translate = MODEL_ENGLISH,
 ): LogoEntry[] {
   if (queryTokens(query).length === 0) return entries;
   return entries.filter((entry) =>

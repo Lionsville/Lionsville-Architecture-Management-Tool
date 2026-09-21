@@ -27,23 +27,17 @@
  * walking the imports.
  */
 import type { StepSummary } from '../model/activity'
-import type { Translate } from '../i18n'
-import { interpolate } from '../i18n/interpolate'
+import type { Translate } from '../i18n/strings'
+import { translateFrom } from '../i18n/interpolate'
 import { EN as MODEL_WORDS } from '../model/strings/en'
 import { EN as PROJECT_WORDS } from './strings/en'
 
 /**
- * A translate over one table and no registry.
- *
- * Every key a drafted message names is looked up in what it is handed, and an
- * unknown one comes back as itself — the registry's own answer to a missing
- * string, for the same reason: a blemish in a commit subject, never a failure to
- * take a snapshot. A caller with a table in another language hands that one over
- * instead.
+ * Re-exported where it always was. It lives in `i18n/interpolate.ts` now, beside
+ * the placeholder filling it is built on, because `model/` needs the same thing
+ * for the same reason and may not import `projects/`.
  */
-export function translateFrom(table: Readonly<Record<string, string>>): Translate {
-  return (key, params) => interpolate(table[key] ?? key, params)
-}
+export { translateFrom } from '../i18n/interpolate'
 
 /**
  * The words a drafted message can use, in English.

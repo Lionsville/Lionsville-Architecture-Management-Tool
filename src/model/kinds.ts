@@ -11,7 +11,7 @@
  * site, in whatever language is on screen at that moment.
  */
 import type { StringKey, Translate } from '../i18n/strings'
-import { DEFAULT_TRANSLATE } from '../i18n/strings'
+import { MODEL_ENGLISH } from './words'
 import type { DesignDiagram, DesignElement, ElementId, ElementKind, Layer7Zone } from './types'
 
 /** Every kind, in the order ADR-0012 §4 names them, then ADR-0013's and ADR-0014's. */
@@ -35,7 +35,7 @@ export const KIND_LABEL_KEYS: Record<ElementKind, StringKey> = {
 }
 
 /** An element kind's name, in the given language (English when none is given). */
-export function kindLabel(kind: ElementKind, translate: Translate = DEFAULT_TRANSLATE): string {
+export function kindLabel(kind: ElementKind, translate: Translate = MODEL_ENGLISH): string {
   return translate(KIND_LABEL_KEYS[kind])
 }
 
