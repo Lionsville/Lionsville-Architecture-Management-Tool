@@ -3,7 +3,7 @@ import { translator } from '../../i18n'
 import type { Finding } from '../../projects/checks'
 import { attentionItems } from './attention'
 import type { RegisterRow } from './register'
-import type { TechnologyRow } from './technologyRegister'
+import type { TechnologyRow } from '../../projects/technologyRegister'
 
 /**
  * The block under the cards: the findings the cards and the rows used to

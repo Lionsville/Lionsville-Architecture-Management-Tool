@@ -13,17 +13,25 @@
  * platform is, what it realises, what it hosts with everything under it, and
  * the service it belongs to where there is one.
  *
- * **Nothing is materialised**, for the reason `register.ts` gives: a
- * materialised list is a merge conflict every domain touches, and a derived
- * one is right by construction. Pure, and tested in node, so the card and the
- * page cannot disagree.
+ * **Nothing is materialised**, for the reason `app/organisation/register.ts`
+ * gives: a materialised list is a merge conflict every domain touches, and a
+ * derived one is right by construction. Pure, and tested in node, so the card
+ * and the page cannot disagree.
+ *
+ * Here rather than beside the page it draws, which is where it started. It is a
+ * fold over `scopeIndex` and nothing else — no React, no props, nothing about a
+ * card — and `technology.list` is the same fold: the agent answers it through a
+ * {@link TechnologyRow} it declares structurally, because `agent` may not import
+ * `projects` either. Under `app/` it could only be reached by something that had
+ * a shell; here a process with no screen at all folds the index it already holds
+ * and answers the same question. The page and the card import it from here.
  */
-import { matchesQuery } from '../../model'
-import type { ElementId, PlatformArchetype } from '../../model'
-import type { Finding } from '../../projects/checks'
-import type { IndexEntry, ScopeIndex } from '../../projects/scopeIndex'
-import { isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
-import type { ScopePath } from '../../projects/scopePath'
+import { matchesQuery } from '../model'
+import type { ElementId, PlatformArchetype } from '../model'
+import type { Finding } from './checks'
+import type { IndexEntry, ScopeIndex } from './scopeIndex'
+import { isWithinScope, ROOT_SCOPE } from './scopePath'
+import type { ScopePath } from './scopePath'
 
 export type TechnologyKind = 'platformService' | 'platform'
 

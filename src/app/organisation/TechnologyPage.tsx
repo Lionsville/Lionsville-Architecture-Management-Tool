@@ -41,8 +41,8 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
-import { matchingTechnology, sortTechnology, technologySummary } from './technologyRegister'
-import type { TechnologyOrder, TechnologyRow, TechnologySummary } from './technologyRegister'
+import { matchingTechnology, sortTechnology, technologySummary } from '../../projects/technologyRegister'
+import type { TechnologyOrder, TechnologyRow, TechnologySummary } from '../../projects/technologyRegister'
 
 export type TechnologyPageProps = {
   open: boolean

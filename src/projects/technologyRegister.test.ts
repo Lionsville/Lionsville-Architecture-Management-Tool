@@ -7,10 +7,10 @@
  * register exists beside the platform scope's own list.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignElement, Relation } from '../../model'
-import { identityFindings } from '../../projects/checks'
-import { indexScopes } from '../../projects/scopeIndex'
-import type { ScopeModel } from '../../projects/scope'
+import type { DesignElement, Relation } from '../model'
+import { identityFindings } from './checks'
+import { indexScopes } from './scopeIndex'
+import type { ScopeModel } from './scope'
 import {
   matchingTechnology, sortTechnology, technologyRows, technologySummary, technologyWithin,
 } from './technologyRegister'

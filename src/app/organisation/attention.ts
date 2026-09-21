@@ -24,7 +24,7 @@ import { ROOT_SCOPE, isWithinScope } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { isUnattributed } from './register'
 import type { RegisterRow } from './register'
-import type { TechnologyRow } from './technologyRegister'
+import type { TechnologyRow } from '../../projects/technologyRegister'
 
 export type AttentionItem = {
   /** What kind of thing it is, for a test and a key. */

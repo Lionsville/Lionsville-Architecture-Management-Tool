@@ -64,7 +64,7 @@ export type TreeEntry = {
   readonly shared?: true
 }
 
-/** One row of the technology register (ADR-0014 §2.6): `app/organisation/technologyRegister`'s, structurally. */
+/** One row of the technology register (ADR-0014 §2.6): `projects/technologyRegister`'s, structurally. */
 export type TreeTechnologyRow = {
   readonly id: ElementId
   readonly kind: 'platformService' | 'platform'

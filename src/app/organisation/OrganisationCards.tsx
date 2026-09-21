@@ -33,7 +33,7 @@ import { RELATION_LABEL } from '../../model'
 import { DecisionIcon, DeploymentIcon, DocumentIcon, ObservationIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
-import type { TechnologySummary } from './technologyRegister'
+import type { TechnologySummary } from '../../projects/technologyRegister'
 
 export type OrganisationCardsProps = {
   pages: OrganisationPages
