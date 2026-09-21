@@ -382,7 +382,7 @@ jobs:
       - run: npm run build
       - name: What this build is
         run: |
-          jq -n --arg version "${{ needs.preflight.outputs.version }}" --arg commit "$GITHUB_SHA" \
+          jq -cn --arg version "${{ needs.preflight.outputs.version }}" --arg commit "$GITHUB_SHA" \
             '{version: $version, commit: $commit, built: (now | todate)}' > dist/version.json
       - name: Zip it
         run: (cd dist && zip -qr "../web-${{ needs.preflight.outputs.version }}.zip" .)
