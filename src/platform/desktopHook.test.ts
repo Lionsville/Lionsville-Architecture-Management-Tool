@@ -7,7 +7,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { DesktopHook, DesktopSide } from './desktopHook'
-import { desktopHooks, registerDesktopHook } from './desktopHook'
+import {
+  HOOK_CHANNEL_PREFIX, desktopHooks, isHookChannel, registerDesktopHook,
+} from './desktopHook'
 
 function nothing(): DesktopSide {
   return {
@@ -48,5 +50,23 @@ describe('the desktop hooks', () => {
     for (const hook of desktopHooks()) hook.registerChannels(nothing())
     expect(first.runs()).toBe(1)
     expect(again.runs()).toBe(0)
+  })
+})
+
+/**
+ * The name every channel a hook registers has to have. It is the preload's
+ * whole test for whether the page may call something
+ * (`electron/preload/index.ts`), so what counts as one is decided here and
+ * nowhere else.
+ */
+describe('isHookChannel', () => {
+  it('is a channel under the prefix, and nothing else', () => {
+    expect(HOOK_CHANNEL_PREFIX).toBe('hook:')
+    expect(isHookChannel('hook:somewhere:sign-in')).toBe(true)
+    expect(isHookChannel('hook:')).toBe(true)
+    // The app's own channels, the near misses, and what is not a string at all.
+    for (const held of ['files:read', 'agent:answer', 'app:command', 'hooks:x', 'Hook:x', ' hook:x', '', 7, undefined, null, {}]) {
+      expect(isHookChannel(held)).toBe(false)
+    }
   })
 })

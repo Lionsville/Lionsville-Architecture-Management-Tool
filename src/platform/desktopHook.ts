@@ -30,6 +30,35 @@
  */
 
 /**
+ * What every channel a hook registers is named with: `hook:<hook>:<what>`.
+ *
+ * The page cannot reach an IPC channel on its own — a sandboxed renderer with
+ * no `ipcRenderer` is the whole of ADR-0007's reasoning — so it reaches a
+ * hook's through one door in the preload, and that door opens for this prefix
+ * and nothing else. It is therefore the one check in this app that is NOT a
+ * check the caller can skip: main cannot tell who called, and the page has no
+ * second way to ask. A hook that names its channels anything else has a main
+ * side nothing can call.
+ */
+export const HOOK_CHANNEL_PREFIX = 'hook:'
+
+/** Is this a channel a hook may have registered, and the page may therefore call? */
+export function isHookChannel(channel: unknown): channel is string {
+  return typeof channel === 'string' && channel.startsWith(HOOK_CHANNEL_PREFIX)
+}
+
+/**
+ * Call a hook's main side from the page: the channel it registered, whatever
+ * arguments it takes, and whatever it answers.
+ *
+ * `unknown` at both ends on purpose. What crosses here is a hook's own
+ * business, and this tree neither knows nor checks the shape of it — which is
+ * also why the payload is checked again in main, exactly as the file channel's
+ * is.
+ */
+export type HookInvoke = (channel: string, ...args: unknown[]) => Promise<unknown>
+
+/**
  * As much of `ipcMain` as a hook may have: answer a call from the renderer,
  * and take the answer back.
  *
@@ -37,6 +66,9 @@
  * a channel can also listen to one it did not register. The event and the
  * arguments are `unknown`: a payload from the renderer is a shape until it has
  * been checked, which is the rule every channel in this app already keeps.
+ *
+ * The channel is named `hook:<hook>:<what>` ({@link HOOK_CHANNEL_PREFIX}), or
+ * the page has no way to call it.
  */
 export type ChannelHost = {
   handle(channel: string, listener: (event: unknown, ...args: unknown[]) => unknown): void

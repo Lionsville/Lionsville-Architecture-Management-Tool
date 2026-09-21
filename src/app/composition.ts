@@ -35,7 +35,8 @@ import {
 import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
 import { DesktopProjectHistory } from '../adapters/desktop/DesktopProjectHistory'
 import {
-  desktopAgent, desktopCommands, desktopFiles, desktopHistory, desktopSettings,
+  desktopAgent, desktopCommands, desktopFiles, desktopHistory,
+  desktopHookChannel as hookChannel, desktopSettings,
 } from '../adapters/desktop/desktopFiles'
 import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
 import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
@@ -64,6 +65,7 @@ import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
+import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
@@ -301,6 +303,16 @@ function failNoPreferences(kind: string): never {
  */
 export function desktopFileChannel(): DesktopFiles | undefined {
   return desktopFiles()
+}
+
+/**
+ * The way to a hook's main side, where there is a desktop under us
+ * (`platform/desktopHook.ts`). Re-exported for the same reason as the file
+ * channel: only this file may name an adapter, and a build composed from this
+ * one has to be able to ask.
+ */
+export function desktopHookChannel(): HookInvoke | undefined {
+  return hookChannel()
 }
 
 /**

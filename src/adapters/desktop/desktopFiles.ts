@@ -9,10 +9,12 @@
 import type {
   DesktopAgent, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings,
 } from './channel'
+import type { HookInvoke } from '../../platform/desktopHook'
 
 type Bridge = {
   files?: DesktopFiles; commands?: DesktopCommands; history?: DesktopHistory; settings?: DesktopSettings
   agent?: DesktopAgent
+  invokeHook?: HookInvoke
 }
 
 function bridge(): Bridge | undefined {
@@ -41,4 +43,13 @@ export function desktopSettings(): DesktopSettings | undefined {
 /** An agent's tool calls, relayed from main. Absent in a browser tab. */
 export function desktopAgent(): DesktopAgent | undefined {
   return bridge()?.agent
+}
+
+/**
+ * Call a hook's main side (`platform/desktopHook.ts`). Absent in a browser tab
+ * and in a desktop build older than the door, which is why a provider asks
+ * rather than assumes.
+ */
+export function desktopHookChannel(): HookInvoke | undefined {
+  return bridge()?.invokeHook
 }

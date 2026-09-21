@@ -25,6 +25,8 @@ import type { AgentRequest } from '../../src/agent/tools'
 import type { AgentServerStatus } from '../../src/platform/agentServer'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import type { ThemeMode } from '../../src/platform/theme'
+import { HOOK_CHANNEL_PREFIX, isHookChannel } from '../../src/platform/desktopHook'
+import type { HookInvoke } from '../../src/platform/desktopHook'
 
 export type DesktopBridge = {
   readonly platform: NodeJS.Platform
@@ -39,6 +41,12 @@ export type DesktopBridge = {
   readonly settings: DesktopSettings
   /** An agent's tool calls, relayed from the MCP server in main. See `DesktopAgent`. */
   readonly agent: DesktopAgent
+  /**
+   * The one door that is not a channel of ours: a call to whatever a build
+   * composed from this one registered in main (`platform/desktopHook.ts`).
+   * Restricted to `hook:` channels, and see the note at {@link invokeHook}.
+   */
+  readonly invokeHook: HookInvoke
 }
 
 const files: DesktopFiles = {
@@ -118,6 +126,28 @@ const agent: DesktopAgent = {
   newToken: () => ipcRenderer.invoke('agent:newToken'),
 }
 
+/**
+ * A hook's channel, called from the page.
+ *
+ * The file above says nothing here validates anything, because a check on this
+ * side is a check the caller can skip. This is the exception, and the reason is
+ * that it is the opposite case: the page has no `ipcRenderer` of its own, so
+ * this door is the ONLY way it can name a channel — and main, answering a
+ * `handle`, cannot tell who called. The prefix is therefore a check only this
+ * side can make, and it is what keeps one generic door from being a way to call
+ * `files:remove` with a path of the caller's choosing.
+ *
+ * The payload is not looked at. That part is unchanged: a hook checks its own
+ * arguments in main, where it knows what they are supposed to be.
+ */
+const invokeHook: HookInvoke = (channel, ...args) => (
+  isHookChannel(channel)
+    ? ipcRenderer.invoke(channel, ...args)
+    : Promise.reject(new Error(
+      `not a hook channel: '${channel}'. A hook answers on '${HOOK_CHANNEL_PREFIX}<hook>:<what>'.`,
+    ))
+)
+
 const bridge: DesktopBridge = {
   platform: process.platform,
   versions: { electron: process.versions.electron, chrome: process.versions.chrome },
@@ -126,6 +156,7 @@ const bridge: DesktopBridge = {
   history,
   settings,
   agent,
+  invokeHook,
 }
 
 contextBridge.exposeInMainWorld('desktop', bridge)
