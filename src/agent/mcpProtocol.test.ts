@@ -7,6 +7,7 @@
  * reason the protocol is a pure file.
  */
 import { describe, expect, it } from 'vitest'
+import type { ToolSpec } from './tools'
 import { json, refused } from './tools'
 import { authorised, respond, toolResult } from './mcpProtocol'
 
@@ -38,6 +39,39 @@ describe('the protocol on its own', () => {
     expect(authorised(`Bearer ${TOKEN}x`, TOKEN)).toBe(false)
     expect(authorised(TOKEN, TOKEN)).toBe(false)
     expect(authorised(undefined, TOKEN)).toBe(false)
+  })
+
+  /**
+   * The two things a host that is not this window has to be able to say. The
+   * desktop passes neither, which is what the cases above are: the paragraph
+   * about the app on screen, and all twenty-odd tools.
+   */
+  it('says what the host is, where the host says', async () => {
+    const opened = await respond(
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, quiet, server,
+      { instructions: 'Something else entirely.' },
+    )
+    expect(opened).toMatchObject({ result: { instructions: 'Something else entirely.' } })
+  })
+
+  it('offers only the tools the host has, and answers for the ones it does not', async () => {
+    const reads = { tools: (tool: ToolSpec) => tool.tier === 'read' }
+    const listed = await respond({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, quiet, server, reads)
+    const names = ((listed as { result: { tools: { name: string }[] } }).result.tools).map((tool) => tool.name)
+    expect(names).toContain('elements.list')
+    expect(names).not.toContain('diagram.render')
+    expect(names).not.toContain('app.open')
+
+    // And the list and the answer cannot disagree: the relay is never asked.
+    let asked = 0
+    const counting = { ...quiet, ask: async () => { asked += 1; return json({}) } }
+    const called = await respond(
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'diagram.render', arguments: {} } },
+      counting, server, reads,
+    )
+    expect(called).toMatchObject({ result: { isError: true } })
+    expect((called as { result: { content: { text: string }[] } }).result.content[0].text).toContain('agent.unknownTool')
+    expect(asked).toBe(0)
   })
 
   it('turns an answer into a result, and a refusal into an error result', () => {

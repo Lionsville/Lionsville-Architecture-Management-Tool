@@ -24,8 +24,8 @@
  * `index.ts`: `node:crypto` has no business in a browser bundle, and a barrel
  * is what would put it there.
  */
-import type { AgentAnswer, AgentRequest, ToolContent } from './tools'
-import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS } from './tools'
+import type { AgentAnswer, AgentRequest, ToolContent, ToolSpec } from './tools'
+import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS, refused } from './tools'
 import { randomUUID } from 'node:crypto'
 import type { AgentClient } from '../platform/agentServer'
 
@@ -92,6 +92,32 @@ export const INSTRUCTIONS =
   + 'takes the banner down when you are done. If they press Stop, your next call is refused with '
   + 'agent.stopped: tell them where you got to and wait to be asked before you continue.'
 
+/**
+ * What a host says about itself, and how much of the vocabulary it has.
+ *
+ * Both are optional and both default to what the app on this person's screen
+ * says, so the desktop passes nothing and is unchanged.
+ *
+ * They exist because the vocabulary is one contract and a host is not always a
+ * window. A build with no screen refuses the see tier and the drive tier at
+ * every call (`agent.noScreen`), and a tool advertised to be refused every time
+ * is worse than one that is not there: the model spends a call finding out, and
+ * the sentence it gets back reads like a fault. `tools` decides what
+ * `tools/list` offers, and the same predicate answers `tools/call` for anything
+ * it leaves out — one decision, so the list and the answer cannot disagree.
+ *
+ * `instructions` is the paragraph a client is handed on connect. It says what
+ * the thing at the other end IS, which only that thing knows: {@link
+ * INSTRUCTIONS} describes a window a person is watching, and a host without one
+ * would be telling the model about a banner nobody can see.
+ */
+export type RespondOptions = {
+  /** The paragraph handed over on connect; {@link INSTRUCTIONS} when unsaid. */
+  readonly instructions?: string
+  /** Which of `TOOLS` this host has. Everything, when unsaid. */
+  readonly tools?: (tool: ToolSpec) => boolean
+}
+
 /** The see-tier tools that change nothing: a report, and a picture. */
 const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render']
 
@@ -106,8 +132,9 @@ export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
  * nothing, which the transport turns into a 202.
  */
 export async function respond(
-  message: JsonRpcRequest, relay: Relay, server: ServerIdentity,
+  message: JsonRpcRequest, relay: Relay, server: ServerIdentity, options: RespondOptions = {},
 ): Promise<JsonRpcResponse | undefined> {
+  const has = (tool: ToolSpec): boolean => options.tools?.(tool) ?? true
   if (message.id === undefined) {
     // `notifications/initialized` and the like: acknowledged by the 202.
     return undefined
@@ -130,7 +157,7 @@ export async function respond(
         protocolVersion: typeof wanted === 'string' && SPOKEN_VERSIONS.includes(wanted) ? wanted : PROTOCOL_VERSION,
         capabilities: { tools: {}, resources: {} },
         serverInfo: server,
-        instructions: INSTRUCTIONS,
+        instructions: options.instructions ?? INSTRUCTIONS,
       })
     }
 
@@ -139,7 +166,7 @@ export async function respond(
 
     case 'tools/list':
       return ok({
-        tools: TOOLS.map((tool) => ({
+        tools: TOOLS.filter(has).map((tool) => ({
           name: tool.name,
           description: tool.description,
           inputSchema: tool.inputSchema,
@@ -156,6 +183,11 @@ export async function respond(
     case 'tools/call': {
       const name = params['name']
       if (typeof name !== 'string') return fail(RPC.invalidParams, 'tools/call needs a name')
+      // A tool this host said it does not have is a tool it does not have, and
+      // the answer says so here rather than after a round trip to a relay that
+      // would have refused it anyway.
+      const spec = TOOLS.find((tool) => tool.name === name)
+      if (spec && !has(spec)) return ok(toolResult(refused('agent.unknownTool', name)))
       const answer = await relay.ask({ id: String(id), tool: name, args: params['arguments'] ?? {} })
       return ok(toolResult(answer))
     }
@@ -234,7 +266,7 @@ export function authorised(header: string | undefined, token: string): boolean {
  */
 export async function serve(
   request: { method: string; path: string; authorization?: string; contentType?: string; body: string },
-  options: { token: string; endpoint: string; relay: Relay; server: ServerIdentity },
+  options: { token: string; endpoint: string; relay: Relay; server: ServerIdentity } & RespondOptions,
 ): Promise<HttpDecision> {
   if (request.path !== options.endpoint) return { status: 404 }
   if (!authorised(request.authorization, options.token)) {
@@ -273,7 +305,7 @@ export async function serve(
 
   const answers: JsonRpcResponse[] = []
   for (const message of messages) {
-    const held = await respond(message, options.relay, options.server)
+    const held = await respond(message, options.relay, options.server, options)
     if (held) answers.push(held)
   }
   if (answers.length === 0) return { status: 202 }
