@@ -59,39 +59,20 @@ import {
 import type { ScopePath } from '../../projects/scopePath'
 import { ShellError } from '../../platform/errors'
 import type { ScopeStore } from '../../ports/ScopeStore'
+import type { DirectoryHandleLike, FileHandleLike } from '../../ports/DirectoryHandle'
 
 /**
- * The slice of the File System Access API this store uses.
+ * The slice of the File System Access API this store works through.
  *
- * Declared here rather than taken from the DOM lib, for two reasons that both
- * matter: the ambient types are not present in every TypeScript configuration
- * this repo builds under, and naming exactly what is used makes the store
- * testable against a small in-memory double instead of a browser. The double is
- * then held to the same shape by the compiler — and so is the desktop's IPC
- * handle, which is the same abstraction over a channel instead of a browser.
+ * It lives in `ports/DirectoryHandle.ts` now — it is the shape a filling has to
+ * show, and the compiler holds the browser's handle, the desktop's over IPC and
+ * the fake the suites run on to the same one. Re-exported here because every
+ * import of these four names already comes through this file, and because only
+ * `app/composition.ts` may name an adapter at all.
  */
-export type FileLike = {
-  text(): Promise<string>
-  /** For the marks: a PNG has no honest text form. */
-  arrayBuffer(): Promise<ArrayBuffer>
-  lastModified: number
-  size: number
-}
-export type WritableLike = { write(data: string | Uint8Array): Promise<void>; close(): Promise<void> }
-export type FileHandleLike = {
-  kind: 'file'
-  name: string
-  getFile(): Promise<FileLike>
-  createWritable(): Promise<WritableLike>
-}
-export type DirectoryHandleLike = {
-  kind: 'directory'
-  name: string
-  getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<DirectoryHandleLike>
-  getFileHandle(name: string, options?: { create?: boolean }): Promise<FileHandleLike>
-  removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>
-  values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike>
-}
+export type {
+  DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
+} from '../../ports/DirectoryHandle'
 
 /** Text unless the extension says otherwise. Only the bitmaps are bytes. */
 function isBinary(path: string): boolean {

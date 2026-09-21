@@ -28,7 +28,6 @@
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
 import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
-import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemScopeStore'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../adapters/browser/workingDirectory'
@@ -80,6 +79,7 @@ import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
 import type { ScopeStore } from '../ports/ScopeStore'
+import type { DirectoryHandleLike } from '../ports/DirectoryHandle'
 
 /**
  * A subscription to one scope's folder. Returns the way to stop it — the
