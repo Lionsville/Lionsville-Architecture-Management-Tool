@@ -46,7 +46,6 @@ import type { ThemeMode } from '../platform/theme'
 import { manualUrl } from '../platform/manual'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
 import type { PullOutcome } from '../platform/sync'
-import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
@@ -88,7 +87,11 @@ import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { Destination, Screen } from '../agent/screen'
 import type { TreeView } from '../agent/tree'
 import { useGlobalErrors } from './useGlobalErrors'
+import { LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
+import { useHomeFiles } from './useHomeFiles'
+import { useFilePicker } from './useFilePicker'
 import { useHostCommands } from './useHostCommands'
+import { usePasswordPrompt } from './usePasswordPrompt'
 import type { CommandStream } from './useHostCommands'
 import { useIndex } from './useIndex'
 import { useShellPreferences } from './useShellPreferences'
@@ -628,6 +631,15 @@ export function App({
    * workspace answers them itself while one is.
    */
   const homeHistoryRef = useRef<{ openDialog: () => void; openPage: () => void } | undefined>(undefined)
+  /**
+   * The working file from a home (ADR-0023), through the same ref pattern:
+   * answered here only while no scope is open, and by the workspace while one
+   * is. The desktop's `openDocument` — a double click on a `.lvarch` — lands
+   * here too when the app is on a home, where it used to fall on the floor.
+   */
+  const homeFilesRef = useRef<{
+    exportWorkingFile: () => void; open: () => void; openDocument: (name: string, bytes: Uint8Array) => void
+  } | undefined>(undefined)
   useEffect(() => bus.on((command) => {
     if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
     if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
@@ -636,6 +648,9 @@ export function App({
     if (command.type === 'connectAgent') setAgentOpen(true)
     if (command.type === 'snapshot') homeHistoryRef.current?.openDialog()
     if (command.type === 'history') homeHistoryRef.current?.openPage()
+    if (command.type === 'export') homeFilesRef.current?.exportWorkingFile()
+    if (command.type === 'open') homeFilesRef.current?.open()
+    if (command.type === 'openDocument') homeFilesRef.current?.openDocument(command.name, command.bytes)
     // In the app's language, which is why it is answered here and not by the
     // menu bar: main does not know which one is on.
     if (command.type === 'manual') hostControls.openExternal(manualUrl(prefs.language))
@@ -970,6 +985,35 @@ export function App({
     refreshTree.current()
     tree.refresh()
   }, [tree])
+
+  /**
+   * The one password dialog (ADR-0023), drawn here and lent to whichever of
+   * the two file flows is asking: the workspace's, with a scope open, or the
+   * home's below, with nothing open.
+   */
+  const password = usePasswordPrompt(s)
+  const homeFiles = useHomeFiles({
+    documents,
+    workingSet: readWorkingSet,
+    into: homeDocument,
+    adopt: async (held) => {
+      await adoptScopes(held)
+      treeChanged()
+    },
+    askPassword: password.askPassword,
+    notify: toasts.notify,
+    s,
+  })
+  const homePicker = useFilePicker({
+    accept: '.lvarch,.json,application/json,application/zip,application/octet-stream',
+    onPick: homeFiles.openFile,
+    testId: 'home-document-input',
+  })
+  homeFilesRef.current = project ? undefined : {
+    exportWorkingFile: homeFiles.exportWorkingFile,
+    open: homePicker.open,
+    openDocument: homeFiles.openDocument,
+  }
 
   const goHome = useCallback((to: ScopePath) => {
     setHome(to)
@@ -1323,6 +1367,7 @@ export function App({
             onAgentSession={registerAgentSession}
             agentBar={agentBar}
             documents={documents}
+            askPassword={password.askPassword}
             notify={toasts.notify}
             onStorageResult={reportStorage}
             s={s}
@@ -1460,6 +1505,10 @@ export function App({
             </LanguageProvider>
           </ErrorBoundary>
         ))}
+        {password.dialog}
+        {/* Invisible; the home's Open… clicks it. Beside the dialog rather than on
+            the screen, because the home does not own the working file either. */}
+        {project ? null : homePicker.input}
         <PreferencesDialog
           open={prefsOpen}
           onClose={() => setPrefsOpen(false)}

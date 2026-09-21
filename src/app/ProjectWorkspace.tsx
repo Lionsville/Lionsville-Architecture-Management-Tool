@@ -91,6 +91,7 @@ import { useTechnologyLandscape } from './useTechnologyLandscape'
 import { usePlatformReport } from './usePlatformReport'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFileChannel } from './useProjectFiles'
+import type { AskPassword } from './usePasswordPrompt'
 import { useNearlyFullNotice } from './useStorageNotice'
 import type { StorageNotice } from './useStorageNotice'
 import type { Notify } from './useToasts'
@@ -176,6 +177,8 @@ export type ProjectWorkspaceProps = {
   /** The glyph on the bar: the server's state, and the way to the dialog. */
   agentBar?: ToolbarAgent
   documents: ProjectFileChannel
+  /** The shell's one password dialog, behind a promise (ADR-0023). */
+  askPassword: AskPassword
 
   notify: Notify
   onStorageResult: StorageNotice
@@ -298,7 +301,7 @@ function localToday(): string {
 export function ProjectWorkspace({
   project, projects, index, watch, readOnly = false, sourceStatus, onSourceWork, onScopeSession,
   commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
-  onSnapshotTaken, onAgentSession, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
+  onSnapshotTaken, onAgentSession, agentBar, documents, askPassword, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
   onOpenSettings, onTreeChanged = () => {},
   onApplySettings, makeId, ancestorDecisions,
@@ -349,6 +352,7 @@ export function ProjectWorkspace({
     documents,
     ...(workingSet ? { workingSet } : {}),
     ...(onAdoptScopes ? { adoptWorkingSet } : {}),
+    askPassword,
     notify,
     s,
   })

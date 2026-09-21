@@ -82,13 +82,15 @@ describe('the vocabulary', () => {
 describe('with no scope open', () => {
   const nothing = { history: true, folders: true, scope: false }
 
-  it('leaves out Open…, Save and Save a Copy…, and keeps the folder and its history', () => {
+  it('leaves out Save, and keeps Open…, Save a Copy…, the folder and its history', () => {
+    // Save is the open scope's. Open… and Save a Copy… are the working set's
+    // (ADR-0023): the organisation's home is the screen the file is named
+    // after, and it has to be able to write it.
     const entries = labels(offered(FILE_MENU, 'web', nothing))
-    expect(entries).not.toContain('menu.open')
     expect(entries).not.toContain('menu.save')
-    expect(entries).not.toContain('menu.exportWorkingFile')
     expect(entries).toEqual([
-      'menu.openFolder', '<separator>', 'menu.snapshot', 'menu.history', '<separator>', 'menu.connectAgent',
+      'menu.openFolder', '<separator>', 'menu.open', 'menu.exportWorkingFile', '<separator>',
+      'menu.snapshot', 'menu.history', '<separator>', 'menu.connectAgent',
     ])
   })
 

@@ -20,6 +20,7 @@ import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '..
 import { translator } from '../i18n'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { ScopeSnapshot } from '../projects/scope'
+import { sealBytes, unsealBytes } from '../projects/sealedFile'
 import { workingFileBytes } from '../projects/workingFile'
 import { renderApp } from './testing/renderShell'
 
@@ -75,6 +76,20 @@ function show(over: Parameters<typeof renderApp>[0] = {}) {
   }
 }
 
+/** Type the password into the dialog that is up, twice where it asks twice. */
+async function seal(password: string) {
+  await waitFor(() => expect(screen.getByTestId('password')).toBeDefined())
+  fireEvent.change(screen.getByTestId('password'), { target: { value: password } })
+  fireEvent.change(screen.getByTestId('password-repeat'), { target: { value: password } })
+  fireEvent.click(screen.getByTestId('password-confirm'))
+}
+
+async function enter(password: string) {
+  await waitFor(() => expect(screen.getByTestId('password')).toBeDefined())
+  fireEvent.change(screen.getByTestId('password'), { target: { value: password } })
+  fireEvent.click(screen.getByTestId('password-confirm'))
+}
+
 describe('commands from the host', () => {
   it('reach the shell and the workspace through one bus, subscribed to once', () => {
     // One subscription to the host, because the web's overflow sends into the
@@ -83,13 +98,54 @@ describe('commands from the host', () => {
     expect(show().listeners()).toBe(1)
   })
 
-  it('Export… hands the project over as a working file', async () => {
+  it('Export… asks for a password and hands the working set over sealed under it', async () => {
     const view = show()
     view.send({ type: 'export' })
 
+    await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
     expect(view.documents.saved[0].name).toBe('landscape.lvarch')
-    expect(view.documents.saved[0].mediaType).toBe('application/zip')
+    expect(view.documents.saved[0].mediaType).toBe('application/octet-stream')
+    expect(await unsealBytes(view.documents.saved[0].bytes as Uint8Array, 'correct horse')).toBeDefined()
+  })
+
+  it('Export… from the organisation’s home writes the same file, with nothing open (ADR-0023)', async () => {
+    const view = show()
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(screen.queryByTestId('crumb-')).toBeNull())
+    view.send({ type: 'export' })
+
+    await seal('correct horse')
+    await waitFor(() => expect(view.documents.saved).toHaveLength(1))
+    expect(view.documents.saved[0].name).toBe('landscape.lvarch')
+    expect(await unsealBytes(view.documents.saved[0].bytes as Uint8Array, 'correct horse')).toBeDefined()
+  })
+
+  it('a sealed document from the OS asks for its password, and opens on the right one', async () => {
+    const view = show()
+    view.send({
+      type: 'openDocument',
+      name: 'theirs.lvarch',
+      bytes: await sealBytes(workingFileBytes([project('From a colleague')]), 'correct horse', { iterations: 1_000 }),
+    })
+
+    await enter('incorrect horse')
+    await waitFor(() => expect(screen.getByText(/not the password/)).toBeDefined())
+    await enter('correct horse')
+    await waitFor(() => expect(screen.getByText('From a colleague')).toBeDefined())
+  })
+
+  it('a document from the OS lands on a home too, into the scope that home is about', async () => {
+    const view = show()
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(screen.queryByTestId('crumb-')).toBeNull())
+    view.send({
+      type: 'openDocument',
+      name: 'theirs.lvarch',
+      bytes: workingFileBytes([{ ...project('From a colleague'), path: '' }]),
+    })
+
+    await waitFor(async () => expect((await view.projects.load(''))?.model.name).toBe('From a colleague'))
   })
 
   it('the theme is chosen outright, from the View menu or the overflow', async () => {
@@ -231,6 +287,7 @@ describe('the overflow on the web', () => {
     await openOverflow()
     fireEvent.click(screen.getByText('Save a Copy of the Working File…'))
 
+    await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
     expect(view.documents.saved[0].name).toBe('landscape.lvarch')
   })

@@ -68,11 +68,14 @@ export const FILE_MENU: readonly MenuEntry[] = [
   item('menu.openFolder', { type: 'chooseFolder' }, 'CmdOrCtrl+Shift+O', ['folders']),
   { kind: 'recentFolders' },
   { kind: 'separator' },
-  // The three about the open scope: with nothing open they did nothing, in
-  // silence. Snapshot… and History… are the folder's and work from its home.
-  item('menu.open', { type: 'open' }, 'CmdOrCtrl+O', ['scope']),
+  // Save is the open scope's: with nothing open there is nothing it could
+  // write. Open… and Save a Copy… are the working set's and work from a home
+  // as well (ADR-0023) — the organisation's screen is the one the file is
+  // named after. Snapshot… and History… are the folder's and work from its
+  // home too.
+  item('menu.open', { type: 'open' }, 'CmdOrCtrl+O'),
   item('menu.save', { type: 'save' }, 'CmdOrCtrl+S', ['scope']),
-  item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E', ['scope']),
+  item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E'),
   { kind: 'separator' },
   item('menu.snapshot', { type: 'snapshot' }, undefined, ['history']),
   item('menu.history', { type: 'history' }, undefined, ['history']),

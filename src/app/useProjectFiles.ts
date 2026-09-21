@@ -15,14 +15,14 @@ import type { Translate } from '../i18n'
 import { reasonOf } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
 import { readImageFile, takenImageFiles } from '../model/documentImage'
-import {
-  openDocumentBytes, workingFileBytes, workingFileName, WORKING_FILE_MEDIA_TYPE,
-} from '../projects/workingFile'
+import { openDocumentBytes } from '../projects/workingFile'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { messageFor } from './messageFor'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ModelSession } from './useModelSession'
+import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
+import { sealedWorkingFile, unsealedBytes } from './workingFileFlows'
 
 /**
  * What this hook needs from a document channel.
@@ -90,10 +90,15 @@ export function useProjectFiles(deps: {
    * whole arrangement exists to prevent.
    */
   adoptWorkingSet?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
+  /**
+   * The password a working file leaves under, and the one a sealed file is
+   * opened with (ADR-0023). A dialog behind a promise; `undefined` is a cancel.
+   */
+  askPassword: AskPassword
   notify: Notify
   s: Translate
 }): ProjectFiles {
-  const { session, documents, workingSet, adoptWorkingSet, notify, s } = deps
+  const { session, documents, workingSet, adoptWorkingSet, askPassword, notify, s } = deps
 
   /**
    * Hand a document over, and say what happened — after it happened.
@@ -128,24 +133,23 @@ export function useProjectFiles(deps: {
    * the store holds what was last written and the session holds what is on
    * screen. Exporting is not saving, and an export that quietly left out the
    * last ten minutes would be worse than one that refused.
+   *
+   * Sealed under a password the person is asked for first (ADR-0023); a
+   * cancelled dialog is no file and no toast.
    */
   const saveWorkingFile = useCallback(() => {
     const live = session.snapshot()
     const set = workingSet ? workingSet() : Promise.resolve([])
     void set.then(
-      (stored) => {
+      async (stored) => {
         const scopes = stored.some((scope) => scope.path === live.path)
           ? stored.map((scope) => (scope.path === live.path ? live : scope))
           : [live, ...stored]
-        handOver({
-          name: workingFileName(scopes[0]),
-          bytes: workingFileBytes(scopes),
-          mediaType: WORKING_FILE_MEDIA_TYPE,
-        }, s('shell.savedWorkingFile'))
+        const doc = await sealedWorkingFile(scopes, askPassword)
+        if (doc) handOver(doc, s('shell.savedWorkingFile'))
       },
-      (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
-    )
-  }, [session, workingSet, handOver, notify, s])
+    ).catch((err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
+  }, [session, workingSet, askPassword, handOver, notify, s])
 
   /**
    * Open a chosen file into the project you are in.
@@ -154,7 +158,7 @@ export function useProjectFiles(deps: {
    * Recognising the file and deciding whether to lay out again sit in
    * `openProjectDocument`, testable without a browser.
    */
-  const openDocument = useCallback((name: string, bytes: Uint8Array) => {
+  const openBytes = useCallback((name: string, bytes: Uint8Array) => {
     try {
       // Bytes and not text, because what a file IS is a question about its
       // content: a version-3 zip or an older JSON document. The extension is a
@@ -185,6 +189,15 @@ export function useProjectFiles(deps: {
       notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
     }
   }, [session, adoptWorkingSet, notify, s])
+
+  const openDocument = useCallback((name: string, held: Uint8Array) => {
+    // A sealed file asks for its password first (ADR-0023), and everything
+    // written before there was a seal opens as it did.
+    void unsealedBytes(held, askPassword, s('seal.wrong')).then(
+      (bytes) => { if (bytes) openBytes(name, bytes) },
+      (err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'),
+    )
+  }, [openBytes, askPassword, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

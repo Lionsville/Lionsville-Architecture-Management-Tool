@@ -89,7 +89,22 @@ export const EN = {
    */
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Picture saved.',
-  'shell.savedWorkingFile': 'Working file saved — everything, including geometry, styling and your own logos.',
+  'shell.savedWorkingFile': 'Working file saved, sealed under your password — every scope, including geometry, styling and your own logos.',
+  /**
+   * The password a working file leaves under, and the one it is opened with
+   * (ADR-0023). `seal.wrong` does double duty on purpose: a wrong password and
+   * a damaged file are one answer from the cipher, and one next move.
+   */
+  'seal.setTitle': 'Seal the working file',
+  'seal.setBody': 'The file is sealed under this password, and whoever opens it types it again. Nothing can recover a password that is lost.',
+  'seal.enterTitle': 'Open the sealed working file',
+  'seal.enterBody': 'This working file was sealed under a password when it was saved.',
+  'seal.password': 'Password',
+  'seal.repeat': 'Repeat the password',
+  'seal.mismatch': 'The two do not match.',
+  'seal.wrong': 'That is not the password this file was sealed under, or the file is damaged.',
+  'seal.confirmSet': 'Save',
+  'seal.confirmEnter': 'Open',
   'shell.workingFileLoaded': 'Working file “{name}” loaded.',
   'shell.workingSetLoaded': 'Working file “{name}” loaded, with {count} scopes filed under it.',
   'shell.workingSetNotHere': 'This file holds a whole working set, which can only be opened into a working folder.',
