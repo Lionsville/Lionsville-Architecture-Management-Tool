@@ -90,6 +90,17 @@ export type OrganisationScreenProps = {
    * cannot give one: a button that cannot work is worse than no button.
    */
   source?: WorkingSource
+  /**
+   * The sentence the source's own provider gives for where work is kept, as the
+   * key of its own string (`platform/sourceProvider.ts`'s `describeKey`).
+   *
+   * The chip that names the source says one when you hover it, and there is one
+   * per built-in kind because this tree knows what a folder and a browser's
+   * storage cost you. For a registered source only the provider knows, so this
+   * is its answer — and where it has none the chip says nothing at all rather
+   * than a sentence of ours about somewhere this shell has never heard of.
+   */
+  sourceDescription?: StringKey | (string & {})
   onChooseWorkingDirectory?: () => void
   /**
    * The other places this build can work from, one button each, beside the one
@@ -161,7 +172,8 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory, waysIn,
+  organisation, examples, order, onOrderChange, source, sourceDescription,
+  onChooseWorkingDirectory, waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
@@ -297,6 +309,7 @@ export function OrganisationScreen({
         heading={heading}
         level={level}
         source={atRoot ? source : undefined}
+        sourceDescription={sourceDescription}
         onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
@@ -758,6 +771,20 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
 }
 
 /**
+ * The sentence for the chip, or the empty string where there is none to say.
+ *
+ * A provider's key comes from its own table (`i18n`'s `registerStrings`), so it
+ * is rendered exactly as the ways in render their labels: this shell passes the
+ * key through and never holds the words.
+ */
+function tipFor(
+  source: WorkingSource, describeKey: StringKey | (string & {}) | undefined, s: Translate,
+): string {
+  const key = sourceTipKey(source, describeKey)
+  return key === undefined ? '' : s(key as StringKey)
+}
+
+/**
  * The bar, the way the workspace has one.
  *
  * The same left-to-right reading ADR-0005 asks for — where you are, as the
@@ -766,7 +793,8 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, onChooseWorkingDirectory, waysIn = [],
+  barRef, tree, home, heading, level, source, sourceDescription,
+  onChooseWorkingDirectory, waysIn = [],
   onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
   /** Measured, so the pages that open under it know how far down to start. */
@@ -777,6 +805,7 @@ function OrganisationBar({
   /** What the scope is by shape, for the word beside the name when it has not said. */
   level: 'organisation' | 'domain' | 'landscape'
   source?: WorkingSource
+  sourceDescription?: StringKey | (string & {})
   onChooseWorkingDirectory?: () => void
   waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
@@ -811,7 +840,12 @@ function OrganisationBar({
       <Box sx={{ flex: 1 }} />
 
       {source && (
-        <Tooltip title={s(sourceTipKey(source))}>
+        /* The sentence about where work is kept: this tree's for a built-in
+           kind, the provider's own for a registered source, and — where a
+           provider gave none — nothing, which an empty title is how MUI says.
+           A guess of ours about somewhere this shell has never heard of could
+           promise a copy that cannot be made. */
+        <Tooltip title={tipFor(source, sourceDescription, s)}>
           <Typography
             data-testid="working-source"
             sx={{

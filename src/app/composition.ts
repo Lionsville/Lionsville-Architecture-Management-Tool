@@ -68,6 +68,7 @@ import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceConnect, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
+import type { StringKey } from '../i18n/strings'
 import type { RegisteredChrome, SourceChrome } from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
@@ -300,6 +301,26 @@ export function sourceProvider<Opening = void>(
  * happens to answer for the source that is open decides what it is HANDED
  * ({@link SourceChrome}), and never whether it is drawn.
  */
+/**
+ * The sentence a provider gives for where it keeps work, or nothing.
+ *
+ * The organisation's home says one about the chip that names the source, and it
+ * has a sentence per built-in kind because this tree knows what a folder and a
+ * browser's storage are. A registered source's is the provider's own
+ * (`describeKey`, in the provider's own table), and it is read here because the
+ * registry is here: the screen that draws the chip may not name a filling, and
+ * the boot is the one place that can ask.
+ *
+ * Nothing for the three that ship, whose sentences this tree holds already, and
+ * nothing for a registered provider that gives none — which the chip then says
+ * by saying nothing, rather than by guessing on its behalf.
+ */
+export function sourceDescription(
+  source: WorkingSource,
+): StringKey | (string & {}) | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.describeKey : undefined
+}
+
 export function registeredChrome(): readonly RegisteredChrome[] {
   const found: RegisteredChrome[] = []
   for (const provider of SOURCE_PROVIDERS.values()) {

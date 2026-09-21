@@ -19,7 +19,8 @@ import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
-  sourceProvider, type FolderOpening, type Shell, type SourceBase, type SourceParts,
+  sourceDescription, sourceProvider,
+  type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
 /**
@@ -410,6 +411,42 @@ describe('registeredChrome', () => {
   it('has it before that provider has opened anything at all', () => {
     expect(registeredChrome().some((entry) => entry.kind === 'drawing')).toBe(true)
     expect(sourceProvider('drawing')?.chrome).toBe(Strip)
+  })
+})
+
+/**
+ * The sentence for the chip that names the source, which only a provider can
+ * give for a source this tree has never heard of.
+ */
+describe('sourceDescription', () => {
+  it('is the provider\'s own key for a source it answers for', () => {
+    registerSourceProvider({
+      kind: 'described',
+      describeKey: 'described.kept',
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'described', name: 'Described', key: 'one' },
+      }),
+    })
+    expect(sourceDescription({
+      kind: 'registered', provider: 'described', name: 'Described', key: 'one',
+    })).toBe('described.kept')
+  })
+
+  /** Nothing to guess with, so nothing said: the chip then says only the name. */
+  it('is nothing where the provider gave none, and nothing for a kind nobody registered', () => {
+    expect(sourceDescription({
+      kind: 'registered', provider: 'handed', name: 'Handed', key: 'one',
+    })).toBeUndefined()
+    expect(sourceDescription({
+      kind: 'registered', provider: 'nobody', name: 'Nobody', key: 'one',
+    })).toBeUndefined()
+  })
+
+  /** The three that ship have their sentences in this tree's own tables. */
+  it('says nothing about a built-in kind, whose sentence this tree holds', () => {
+    expect(sourceDescription(IN_MEMORY)).toBeUndefined()
+    expect(sourceDescription({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
   })
 })
 

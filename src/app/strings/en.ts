@@ -139,7 +139,6 @@ export const EN = {
   'shell.sourceTipFolder': 'Your projects are files in this folder. Snapshots go into its history.',
   'shell.sourceTipBrowser': 'Your projects are kept in this browser\'s storage. Save a working file to keep them anywhere else.',
   'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a working file before you close this tab.',
-  'shell.sourceTipRegistered': 'Your work is kept where this source keeps it. Save a working file to keep a copy of your own.',
   /**
    * The bar's way back. Each scope above the open one is a crumb, and the
    * organisation is the first: pressing one lands on that scope's home.

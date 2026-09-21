@@ -97,13 +97,24 @@ export function sourceLabel(source: WorkingSource, s: Translate): string {
  *
  * Beside {@link sourceLabel} because the two answer one question between them,
  * and the organisation's bar and the workspace's must not drift on it.
+ *
+ * A sentence per built-in kind, because this tree knows what a folder and a
+ * browser's storage are and what each of them costs. For a registered source it
+ * is the provider's own sentence or nothing at all: `describeKey`, from the
+ * registration (`platform/sourceProvider.ts`), in the provider's own table.
+ * Nothing rather than a sentence of ours for the reason the LABEL is the
+ * provider's — a guess about somewhere this shell has never heard of could
+ * promise a copy that cannot be made or a folder that does not exist, and a chip
+ * that only says where work is kept is already true.
  */
-export function sourceTipKey(source: WorkingSource): StringKey {
+export function sourceTipKey(
+  source: WorkingSource, describeKey?: StringKey | (string & {}),
+): StringKey | (string & {}) | undefined {
   switch (source.kind) {
     case 'folder': return 'shell.sourceTipFolder'
     case 'memory': return 'shell.sourceTipMemory'
     case 'browserStorage': return 'shell.sourceTipBrowser'
-    case 'registered': return 'shell.sourceTipRegistered'
+    case 'registered': return describeKey
   }
 }
 

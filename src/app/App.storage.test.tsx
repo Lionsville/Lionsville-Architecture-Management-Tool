@@ -13,7 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { useStrings } from '../i18n'
+import { registerStrings, useStrings } from '../i18n'
 import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -59,6 +59,14 @@ describe('what the root’s home says you are working from', () => {
   it('names the folder', () => {
     renderApp({ source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' } })
     expect(screen.getByTestId('working-source').textContent).toBe('Folder · Architecture')
+  })
+
+  /** The sentence per built-in kind, which this tree holds and always has. */
+  it('says what a folder costs you when you hover the chip', async () => {
+    renderApp({ source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' } })
+    fireEvent.mouseOver(screen.getByTestId('working-source'))
+    expect((await screen.findByRole('tooltip')).textContent)
+      .toBe('Your projects are files in this folder. Snapshots go into its history.')
   })
 
   it('says when it is the browser, and when it is nowhere', () => {
@@ -132,6 +140,34 @@ describe('a source a provider answers for', () => {
     held = 'dirty'
     act(() => tell?.())
     expect(screen.getByTestId('saved-indicator').textContent).toBe('Unsaved changes')
+  })
+
+  /**
+   * And it says where work is kept in the provider's own words, from the
+   * provider's own table. There is a sentence per built-in kind because this
+   * tree knows what a folder and a browser's storage cost you; what a registered
+   * source costs you is the one thing only its provider can say.
+   */
+  it('describes where work is kept in the provider\'s own sentence', async () => {
+    registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
+    renderApp({ source: elsewhere, sourceDescription: 'elsewhere.kept' })
+    fireEvent.mouseOver(screen.getByTestId('working-source'))
+    expect((await screen.findByRole('tooltip')).textContent)
+      .toBe('Your work is kept elsewhere, and elsewhere says when.')
+  })
+
+  /**
+   * And nothing at all where the provider gave none: a sentence of ours about
+   * somewhere this shell has never heard of could promise a copy that cannot be
+   * made or a folder that does not exist.
+   */
+  it('says nothing about where work is kept where the provider gave no sentence', async () => {
+    renderApp({ source: elsewhere })
+    fireEvent.mouseOver(screen.getByTestId('working-source'))
+    await act(() => Promise.resolve())
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    // The chip itself is still there, saying what the provider called it.
+    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
   })
 
   it('hides what writes when it says it only reads', async () => {

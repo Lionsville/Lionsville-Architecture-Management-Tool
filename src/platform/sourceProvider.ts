@@ -207,6 +207,29 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
   /** How a person reaches it, where there is a way in. */
   readonly connect?: SourceConnect<Opening>
   /**
+   * The sentence that says where work is kept here, as the key of the
+   * provider's own string.
+   *
+   * The organisation's home says it about the chip that names the source: *your
+   * projects are files in this folder*, *nothing is being kept*. There is a
+   * sentence per built-in kind because this tree knows what a folder and a
+   * browser's storage are, and there can be none for a registered source: only
+   * the provider knows what kind of place it is, whether anything outlives the
+   * window and what a person should do about it, exactly as with
+   * {@link SourceProvider} and the name on the bar.
+   *
+   * A key, and `string` beside `StringKey` for the reason
+   * {@link SourceConnect.labelKey} is: a provider brings its own table through
+   * `i18n`'s `registerStrings`, so the sentence is in all four languages
+   * without this tree holding a word of it.
+   *
+   * Absent means the chip says nothing at all — no tooltip rather than a
+   * sentence of ours. A guess about somewhere this shell has never heard of
+   * would be worse than silence: it might promise a copy that cannot be made,
+   * or a folder that does not exist.
+   */
+  readonly describeKey?: StringKey | (string & {})
+  /**
    * What this source means by the five words. Absent where it means what a
    * file means, which is what all three that ship mean.
    */

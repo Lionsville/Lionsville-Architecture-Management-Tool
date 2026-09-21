@@ -284,6 +284,18 @@ export type AppProps = {
    */
   onSourceWork?: SourceWorkChanged
   /**
+   * The sentence this source's provider gives for where work is kept, as the key
+   * of its own string — what the organisation's home says about the chip that
+   * names the source.
+   *
+   * Absent for the three that ship, whose sentences this tree holds already
+   * (`ShellToolbar`'s `sourceTipKey`), and absent for a registered provider that
+   * gives none: the chip then says nothing rather than a sentence of ours about
+   * somewhere this shell has never heard of. Read from the registration by the
+   * boot, which is the one place that may ask (`composition.ts`).
+   */
+  sourceDescription?: StringKey | (string & {})
+  /**
    * A scope has been opened, and here is the session over it: for whoever
    * answers for the source (`composition.ts`). Passed straight through to the
    * workspace, which is where a session exists; absent for all three sources
@@ -458,7 +470,8 @@ function localToday(): string {
 
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession, chrome: chromes = [],
+  source = BROWSER_STORAGE, sourceStatus, onSourceWork, sourceDescription,
+  onScopeSession, chrome: chromes = [],
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, sourceFailure,
@@ -1342,6 +1355,7 @@ export function App({
             order={order}
             onOrderChange={chooseOrder}
             source={source}
+            sourceDescription={sourceDescription}
             onChooseWorkingDirectory={onChooseWorkingDirectory}
             waysIn={waysIn}
             // The same two the workspace's bar carries: the menu on a host

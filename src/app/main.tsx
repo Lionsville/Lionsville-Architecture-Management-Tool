@@ -47,7 +47,7 @@ import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, composeShell, desktopCommandChannel, desktopFileChannel, inBrowserFolder,
-  inWorkingDirectory, openSource, registeredChrome, registeredConnects,
+  inWorkingDirectory, openSource, registeredChrome, registeredConnects, sourceDescription,
 } from './composition'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
 import type { SourceWayIn } from '../platform/sourceProvider'
@@ -638,6 +638,7 @@ function renderApp(
         source={shell.source}
         sourceStatus={shell.sourceStatus}
         onSourceWork={shell.onSourceWork}
+        sourceDescription={sourceDescription(shell.source)}
         onScopeSession={shell.onScopeSession}
         chrome={chromes}
         onChooseWorkingDirectory={
