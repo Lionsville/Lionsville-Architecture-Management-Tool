@@ -12,7 +12,9 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import type { AgentAnswer, AgentRequest } from '../agent/tools'
+import type { AgentGateway } from '../ports/AgentGateway'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -113,5 +115,79 @@ describe('a source a provider answers for', () => {
     // The page is up; what is missing is the one thing on it that writes.
     expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
     expect(screen.queryByText('New plan')).toBeNull()
+  })
+})
+
+/**
+ * A gateway that keeps whoever subscribed, so a test can ask as an agent
+ * would. The same fake as `App.driving.test.tsx`'s, cut to what is asked here.
+ */
+function listeningGateway() {
+  let handler: ((request: AgentRequest) => Promise<AgentAnswer>) | undefined
+  const connected = {
+    kind: 'connected' as const, port: 51733, token: 't'.repeat(24),
+    client: { name: 'Claude Code', version: '2.0' },
+  }
+  const gateway: AgentGateway = {
+    id: 'fake',
+    on(next) { handler = next; return () => { if (handler === next) handler = undefined } },
+    status: () => Promise.resolve(connected),
+    onStatus: () => () => {},
+    configure: () => Promise.resolve(connected),
+    newToken: () => Promise.resolve(connected),
+  }
+  let n = 0
+  return {
+    gateway,
+    bound: () => handler !== undefined,
+    ask: (tool: string, args: unknown = {}): Promise<AgentAnswer> => {
+      if (!handler) throw new Error('nobody is listening')
+      return handler({ id: `r${n += 1}`, tool, args })
+    },
+  }
+}
+
+/**
+ * An agent can do what a person can (ADR-0011) — and no more. A source that
+ * says work here is only read is the one fact that has to reach the agent as
+ * well as the buttons: `agent.readOnly` was a refusal nothing had ever
+ * answered until a source could say no.
+ */
+describe('an agent on a source that only reads', () => {
+  const readOnly = {
+    kind: 'registered' as const,
+    provider: 'elsewhere', name: 'Elsewhere', key: 'one', readOnly: true,
+  }
+  const scope = {
+    path: 'acme/landscape',
+    model: {
+      name: 'Landscape',
+      elements: [{ id: 'billing', kind: 'application' as const, name: 'Billing', lifecycle: 'live' as const, isManaged: true, aspects: {} }],
+      relations: [],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })],
+    },
+    activeDiagramId: 'd1',
+    logoLibrary: [],
+  }
+
+  async function open(source: typeof readOnly | undefined) {
+    const wire = listeningGateway()
+    renderApp({ initialProject: scope, agent: wire.gateway, ...(source ? { source } : {}) })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    return wire
+  }
+
+  it('refuses a write, and still answers a read', async () => {
+    const { ask } = await open(readOnly)
+    const refused = await ask('element.add', { kind: 'application', name: 'Ledger' })
+    expect(refused.ok).toBe(false)
+    expect(refused.ok === false && refused.refusal).toBe('agent.readOnly')
+    // Looking is not writing: the tree, the landscape and the reports still answer.
+    expect((await ask('elements.list')).ok).toBe(true)
+  })
+
+  it('refuses nothing where the source writes', async () => {
+    const { ask } = await open(undefined)
+    expect((await ask('element.add', { kind: 'application', name: 'Ledger' })).ok).toBe(true)
   })
 })
