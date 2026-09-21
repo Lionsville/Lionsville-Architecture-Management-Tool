@@ -13,6 +13,7 @@ later the release page carries:
 | `…-win-x64.exe`, `…-win-arm64.exe` | Windows NSIS installers — signed |
 | `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` | Linux, unsigned |
 | `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | update manifests — written by electron-builder, read by nothing since the notice replaced the self-updater |
+| `web-<version>.zip` | the web build — `npm run build`'s `dist/`, with a `version.json` saying which release it is; what [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) runs |
 
 **Then the README, by itself.** Its Download section links three installers
 by full name, and the name carries the version (`…-1.1.0-mac-arm64.dmg`). The
@@ -30,6 +31,16 @@ workflow stamps the number from the tag before it builds. A tag that is not
 and signs exactly as a release does but publishes nothing, and its `notarize`
 input can be switched off to skip Apple's ~15-minute queue. Use it to test a
 change to the pipeline; the installers come back as run artifacts.
+
+**Then the browser.** A stable release ends with the web build deployed to
+[app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) —
+the `web-host` job, which waits for the README job, so the host never runs a
+release the README does not yet offer. A beta is never deployed there: the
+host runs what the README offers, and the README offers stable releases only.
+The job signs in to Azure by OIDC under the `app` environment, fetches the
+Static Web App's deployment token for the run, uploads the unpacked zip with
+`.github/staticwebapp.config.json` beside it, and polls `/version.json` until
+the host says the new version. The five values it reads are listed below.
 
 ## What has to be configured once
 
@@ -84,6 +95,27 @@ Every one of the four is readable from the signing account itself rather than
 remembered — `accountUri` is the endpoint, and the publisher is the `CN=` in the
 certificate profile's subject name. Read them; the publisher in particular is the
 legal entity and looks nothing like the product name.
+
+### Variables — the browser host
+
+None of these is a secret either; they name where the web build goes.
+
+| Name | Example |
+|---|---|
+| `WEB_HOST_CLIENT_ID` | the application (client) id of the identity that deploys the web build |
+| `WEB_HOST_TENANT_ID` | its tenant |
+| `WEB_HOST_SUBSCRIPTION_ID` | the subscription the host is in |
+| `WEB_HOST_RESOURCE_GROUP` | the host's resource group |
+| `WEB_HOST_STATIC_SITE` | the Static Web App's name |
+
+The identity is a registration of its own, with a federated credential for
+this repository's `app` environment and *Contributor* on that one Static Web
+App — enough to read its deployment token, nothing beyond it. There is no
+secret: the workflow proves who it is with the OIDC token GitHub mints for
+the run. The `web-host` job is skipped when the variables are absent only in
+the sense that it fails at sign-in; there is no preflight for them, because a
+release with its installers on the page and no browser deployment is a release
+with one job to re-run, not a broken one.
 
 ### The signing identity is this app's own
 

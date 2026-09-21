@@ -5,8 +5,9 @@ bands** and the **C4 container diagrams underneath it**, edits both, and saves
 them to a file. No account, no backend, no telemetry: your design lives on your
 own machine and goes no further than you send it.
 
-It runs as a desktop app on macOS, Windows and Linux, and in a browser from
-source.
+It runs as a desktop app on macOS, Windows and Linux, and in a browser: the
+newest release is always at **[app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)**,
+or run it from source.
 
 ![The Acme Logistics example open: an application landscape in Layer-7 bands,
 with domain groups, lifecycle badges, routed connections, the right-click menu
@@ -45,7 +46,9 @@ New here? The **[user manual](docs/manual.en.md)** (also in
 [Dutch](docs/manual.nl.md), [Frisian](docs/manual.fy.md) and
 [German](docs/manual.de.md)) is the place to start.
 
-Prefer a browser, or want to change something? See
+Prefer a browser? [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
+is this release, with nothing installed — your work stays in that browser, or in
+a folder it opens for you. Want to change something? See
 [Running from source](#running-from-source).
 
 ## What it does

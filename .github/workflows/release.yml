@@ -356,3 +356,109 @@ jobs:
           git commit -m "readme: downloads point at ${{ needs.preflight.outputs.version }}" \
             -m "Made by the release workflow once every installer was on the release."
           git push origin HEAD:main
+
+  # The same app, for a browser. `npm run build` is the web build the README's
+  # "Running from source" section serves on :5200; here it is zipped as
+  # `web-<version>.zip` and put on the release beside the installers, so a
+  # release carries every form the app takes. It is built on the tag, stamped
+  # like the installers are, after the same `verify`; a manual run keeps it as
+  # a run artifact and uploads nothing, the way the installers behave.
+  web:
+    name: Build web
+    needs: [preflight, verify]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Stamp the version
+        run: npm version --no-git-tag-version --allow-same-version "${{ needs.preflight.outputs.version }}"
+      - run: npm run build
+      - name: What this build is
+        run: |
+          jq -n --arg version "${{ needs.preflight.outputs.version }}" --arg commit "$GITHUB_SHA" \
+            '{version: $version, commit: $commit, built: (now | todate)}' > dist/version.json
+      - name: Zip it
+        run: (cd dist && zip -qr "../web-${{ needs.preflight.outputs.version }}.zip" .)
+      - name: Put it on the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "web-${{ needs.preflight.outputs.version }}.zip" --clobber
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-${{ needs.preflight.outputs.version }}
+          path: web-${{ needs.preflight.outputs.version }}.zip
+          retention-days: 14
+
+  # app.architecture.lionsville.nl runs the newest stable release, and this is
+  # where it gets it: the web build above, deployed once the release is whole —
+  # every installer on the release page and the README pointing at it. Never for
+  # a beta: the host runs what the README offers, and the README offers stable
+  # releases only. The host is a Static Web App; the workflow signs in by OIDC
+  # under the `app` environment with an identity that can read that one
+  # resource's deployment token and nothing else, and the token is fetched for
+  # the run and never stored. The five `WEB_HOST_*` values are variables, not
+  # secrets — docs/release.md lists them.
+  web-host:
+    name: Point app.architecture.lionsville.nl at this release
+    needs: [preflight, web, readme]
+    if: github.event_name == 'release' && !github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: app
+      url: https://app.architecture.lionsville.nl/
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/staticwebapp.config.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v7
+        with:
+          name: web-${{ needs.preflight.outputs.version }}
+      - name: Unpack it, with how the host serves it
+        run: |
+          mkdir app && unzip -q "web-${{ needs.preflight.outputs.version }}.zip" -d app
+          cp .github/staticwebapp.config.json app/
+          test -f app/index.html && test -f app/version.json
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.WEB_HOST_CLIENT_ID }}
+          tenant-id: ${{ vars.WEB_HOST_TENANT_ID }}
+          subscription-id: ${{ vars.WEB_HOST_SUBSCRIPTION_ID }}
+      - name: The deployment token, for this run only
+        id: token
+        run: |
+          token="$(az staticwebapp secrets list \
+            --name "${{ vars.WEB_HOST_STATIC_SITE }}" \
+            --resource-group "${{ vars.WEB_HOST_RESOURCE_GROUP }}" \
+            --query properties.apiKey -o tsv)"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.token.outputs.token }}
+          action: upload
+          app_location: app
+          skip_app_build: true
+          skip_api_build: true
+      - name: It answers, with this version
+        run: |
+          for attempt in $(seq 1 30); do
+            said="$(curl -fsS --max-time 10 https://app.architecture.lionsville.nl/version.json || true)"
+            case "$said" in
+              *'"version":"${{ needs.preflight.outputs.version }}"'*) echo "$said"; exit 0 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::app.architecture.lionsville.nl is not running ${{ needs.preflight.outputs.version }}: $said"
+          exit 1

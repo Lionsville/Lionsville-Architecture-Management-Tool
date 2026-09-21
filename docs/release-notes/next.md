@@ -13,6 +13,8 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 
 **Since 2.4.0-beta.1:** the causes are read back from the folder — the beta wrote `observations/causes/` on every save and never read it, so an analysis was lost when the scope was reopened. The files were never removed: open the folder with this version and the causes are back.
 
+**In a browser, with nothing installed.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) runs the newest release — this one, from now on — as a page: your work stays in that browser, or in a folder it opens for you in Chrome and Edge, and nothing is sent anywhere. Every release also carries `web-<version>.zip`, the same build, for hosting it yourself.
+
 **On disk:** `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md` beside the decisions and the plans, and the folder format is 7. A folder written by 2.3.0 opens as it is; a folder written by this version keeps its observations, which 2.3.0 would not read.
 
 The reasoning is ADR-0021 in `docs/decisions/`.

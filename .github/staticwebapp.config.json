@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/staticwebapp.config.json",
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/*.wasm", "/*.svg", "/*.json"]
+  },
+  "mimeTypes": {
+    ".wasm": "application/wasm",
+    ".lvarch": "application/zip"
+  },
+  "globalHeaders": {
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY"
+  },
+  "routes": [
+    { "route": "/assets/*", "headers": { "Cache-Control": "public, max-age=31536000, immutable" } },
+    { "route": "/index.html", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/version.json", "headers": { "Cache-Control": "no-cache" } }
+  ]
+}
