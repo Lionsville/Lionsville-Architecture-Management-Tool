@@ -359,6 +359,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.activityTip': 'Was sich an diesem Projekt seit dem Öffnen geändert hat',
   'shell.activityEmpty': 'Noch nichts',
   'shell.activityAgent': 'AGENT',
+  'shell.activityBy': 'VON {name}',
+  'shell.activityElsewhere': 'EIN ANDERER AUTOR',
   'shell.search': 'Suchen',
   'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen (⌘K)',
 

@@ -17,7 +17,11 @@ import { transaction } from '../model'
 import type { Command } from '../model'
 import type { EditorHistory } from '../editor'
 import type { ScopeSnapshot } from '../projects/scope'
-import { renderApp } from './testing/renderShell'
+import { renderApp, renderShell } from './testing/renderShell'
+import { translator } from '../i18n'
+import type { Language } from '../i18n'
+import { ActivityMenu } from './ActivityMenu'
+import type { ActivityEntry } from './ActivityMenu'
 
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
@@ -96,5 +100,53 @@ describe('the activity list', () => {
     click('settled')
     openActivity()
     expect(screen.getByText('Nothing yet')).toBeDefined()
+  })
+})
+
+/**
+ * Whose step it was. A change nobody at this keyboard made, appearing on the
+ * board unattributed, is indistinguishable from a fault — which is the same
+ * reasoning that put AGENT on an agent's step (ADR-0007), applied to a step
+ * that arrived from somewhere else.
+ */
+describe('who took the step', () => {
+  const entry = (over: Partial<ActivityEntry>): ActivityEntry =>
+    ({ summary: { key: 'activity.diagramRenamed', name: 'L7' }, at: 0, ...over })
+
+  const list = (entries: ActivityEntry[], language: Language = 'en') =>
+    renderShell(
+      <ActivityMenu
+        anchorEl={document.body}
+        onClose={() => {}}
+        entries={entries}
+        language={language}
+        s={translator(language)}
+      />,
+      { language },
+    )
+
+  it('says nothing about a step the person took', () => {
+    list([entry({})])
+    expect(screen.queryByTestId('activity-origin')).toBeNull()
+  })
+
+  it('tags an agent’s step, as it always has', () => {
+    list([entry({ origin: 'agent' })])
+    expect(screen.getByTestId('activity-origin').textContent).toBe('AGENT')
+  })
+
+  it('names the author of a step made elsewhere', () => {
+    list([entry({ origin: 'remote', by: 'A. Author' })])
+    expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author')
+  })
+
+  it('still says it was not ours when the step arrived with no name on it', () => {
+    list([entry({ origin: 'remote' })])
+    expect(screen.getByTestId('activity-origin').textContent).toBe('BY ANOTHER AUTHOR')
+  })
+
+  it('says it in the language the app is in', () => {
+    list([entry({ origin: 'remote', by: 'A. Author' })], 'nl')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('DOOR A. Author')
   })
 })

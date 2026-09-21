@@ -359,6 +359,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.activityTip': 'Wat er sinds het openen aan dit project is veranderd',
   'shell.activityEmpty': 'Nog niets',
   'shell.activityAgent': 'AGENT',
+  'shell.activityBy': 'DOOR {name}',
+  'shell.activityElsewhere': 'EEN ANDERE AUTEUR',
   'shell.search': 'Zoeken',
   'shell.searchTip': 'Zoek elementen, documentatie en besluiten (\u2318K)',
 

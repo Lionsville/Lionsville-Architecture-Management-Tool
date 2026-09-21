@@ -26,7 +26,9 @@ export type ActivityEntry = {
   at: number
   /**
    * Not the person at this keyboard: the agent on this session (ADR-0007), or
-   * another author whose step reached this model from elsewhere.
+   * another author whose step reached this model from elsewhere. The line says
+   * which, because a change nobody here made appearing unattributed on the
+   * board is indistinguishable from a fault.
    */
   origin?: 'agent' | 'remote'
   /** Who the other author was, where the step arrived with a name on it. */
@@ -71,12 +73,16 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
                   type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
                 })}
               </Typography>
-              {entry.origin === 'agent' && (
+              {entry.origin !== undefined && (
                 <Typography
                   data-testid="activity-origin"
                   sx={{ fontSize: 10, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}
                 >
-                  {s('shell.activityAgent')}
+                  {entry.origin === 'agent'
+                    ? s('shell.activityAgent')
+                    // The author's own name where there is one — a step whose
+                    // author arrived nameless is still not this person's.
+                    : s('shell.activityBy', { name: entry.by ?? s('shell.activityElsewhere') })}
                 </Typography>
               )}
               <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>

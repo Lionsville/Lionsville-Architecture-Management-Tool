@@ -479,6 +479,10 @@ export const EN = {
   'shell.activityEmpty': 'Nothing yet',
   /** The tag on a step an agent took, beside the time (ADR-0007). */
   'shell.activityAgent': 'AGENT',
+  /** The tag on a step another author made, beside the time: their name. */
+  'shell.activityBy': 'BY {name}',
+  /** What that tag says when the step arrived with no author's name on it. */
+  'shell.activityElsewhere': 'ANOTHER AUTHOR',
   'shell.search': 'Search',
   'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
 

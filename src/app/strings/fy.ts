@@ -359,6 +359,8 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.activityTip': 'Wat der sûnt it iepenjen oan dit projekt feroare is',
   'shell.activityEmpty': 'Noch neat',
   'shell.activityAgent': 'AGENT',
+  'shell.activityBy': 'FAN {name}',
+  'shell.activityElsewhere': 'IN OARE AUTEUR',
   'shell.search': 'Sykje',
   'shell.searchTip': 'Sykje eleminten, dokumintaasje en besluten (⌘K)',
 

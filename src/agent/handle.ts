@@ -387,7 +387,11 @@ function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
   const limit = ((rawArgs ?? {}) as { limit?: number }).limit ?? 20
   const steps = [...session.history()].reverse().slice(0, limit).map((step) => ({
     at: new Date(step.at).toISOString(),
-    by: step.origin === 'agent' ? 'agent' : 'person',
+    // Not an enum: a step that came from elsewhere is named by its author, so
+    // an agent reading the log can tell whose work it is building on.
+    by: step.origin === 'agent'
+      ? 'agent'
+      : step.origin === 'remote' ? step.by ?? 'another author' : 'person',
     what: session.translate(step.summary.key, {
       name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '',
     }),
