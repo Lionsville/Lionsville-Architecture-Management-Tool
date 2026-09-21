@@ -301,3 +301,33 @@ describe('two workspaces over one command channel', () => {
     expect(within(b.container).getByTestId('also-here').textContent).toBe('Also here: A. Author')
   })
 })
+
+/**
+ * The handover itself, with nobody on the other end of it.
+ *
+ * `overChannel` above uses the three functions on `steps`; this is the other
+ * half of what a provider was given the session for. Minting an id against what
+ * is taken and working out whether what has just arrived disagrees with what was
+ * done here are both questions about the model at an instant — the instant a
+ * step is made, which is one render before anything is drawn.
+ */
+describe('the session handed to whoever answers for the source', () => {
+  it('reads the model it is minting against, as it stands', async () => {
+    const wire = listeningGateway()
+    let handed: ScopeSession | undefined
+    const take = (session: ScopeSession) => { handed = session }
+    renderApp({ initialProject: scope, agent: wire.gateway, onScopeSession: take })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    expect(handed?.scope).toBe(scope.path)
+
+    expect(handed!.indexed().order.elements).toEqual(['billing'])
+    expect(handed!.current().elements.map((element) => element.id)).toEqual(['billing'])
+
+    await wire.ask('element.add', { kind: 'application', name: 'Ledger' })
+
+    // The step is on this model the moment it is made, which is what makes
+    // `ledger` a name the next one must not take.
+    expect(handed!.indexed().order.elements).toEqual(['billing', 'ledger'])
+    expect(handed!.current().elements.map((element) => element.id)).toEqual(['billing', 'ledger'])
+  })
+})

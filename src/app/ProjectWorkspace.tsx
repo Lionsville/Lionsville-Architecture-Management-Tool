@@ -486,8 +486,12 @@ export function ProjectWorkspace({
    * The session over this scope, handed to whoever answers for the source it is
    * kept in — and taken back when this workspace goes.
    *
-   * Narrow on purpose: the seam, the one way in, the log and the revision, and
-   * not the model, the libraries or a single dialog. Memoised on the pieces
+   * Narrow on purpose: the seam, the one way in, the model as it stands, the log
+   * and the revision — and not the libraries, the pictures or a single dialog.
+   * The model is read through the two functions the session's own actions use,
+   * because a command is built against the indexed model and an id is minted
+   * against what it says is taken; a copy handed over per render would be a
+   * second model, one render behind. Memoised on the pieces
    * rather than on `session`, which is a fresh object every render: what is on
    * the other end may be holding a connection open, and dropping and remaking
    * it on every keystroke is not a thing to do by accident.
@@ -496,10 +500,15 @@ export function ProjectWorkspace({
     scope: project.path,
     steps: session.steps,
     dispatch: session.dispatch,
+    current: session.current,
+    indexed: session.indexed,
     history: session.history,
     revision: session.revision,
     alsoHere: setAlsoHere,
-  }), [project.path, session.steps, session.dispatch, session.history, session.revision])
+  }), [
+    project.path, session.steps, session.dispatch,
+    session.current, session.indexed, session.history, session.revision,
+  ])
   useEffect(() => onScopeSession?.(scopeSession), [onScopeSession, scopeSession])
 
   /**

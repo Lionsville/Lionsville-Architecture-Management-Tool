@@ -327,6 +327,19 @@ export type ScopeSession = {
   steps: SessionSteps
   /** The one way in (ADR-0002), for a change this side decides to make itself. */
   dispatch: ModelSession['dispatch']
+  /**
+   * The model as it stands now, without waiting for a render — the arrays, and
+   * the same model indexed by id.
+   *
+   * The two the session already answers for its own actions, and whoever answers
+   * for the source needs exactly them: a command is built against the indexed
+   * model (ADR-0002), so minting an id against what is actually taken and working
+   * out whether a change that has arrived disagrees with one made here are both
+   * questions about this model at this instant. Reading it off a render would be
+   * reading it one render late, which is the render in which a step is published.
+   */
+  current: ModelSession['current']
+  indexed: ModelSession['indexed']
   /** Every step taken this session, oldest first, with both directions on each. */
   history: () => readonly HistoryStep[]
   /** The counter that moves with every change, external ones included. */
@@ -794,6 +807,18 @@ export function useModelSession(deps: {
     ...(imageRef.current.length ? { imageLibrary: imageRef.current } : {}),
   }), [path])
 
+  /**
+   * The model as it stands, in both shapes, and the same function every render.
+   *
+   * Both read a ref that is fixed for the life of the session, so a `useCallback`
+   * with nothing to depend on is honest rather than a habit — and it is what lets
+   * `ScopeSession` carry them. The handover is memoised on its pieces, and a piece
+   * that is a fresh arrow every render would drop and remake whatever is on the
+   * other end of it on every keystroke.
+   */
+  const current = useCallback(() => asArrays(modelRef.current), [asArrays])
+  const indexed = useCallback(() => modelRef.current, [])
+
   return {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId,
     ids: ids.current,
@@ -805,8 +830,8 @@ export function useModelSession(deps: {
     history,
     revision: revisionNow,
     onLayoutSettled,
-    current: () => asArrays(modelRef.current),
-    indexed: () => modelRef.current,
+    current,
+    indexed,
     currentActiveId: () => activeRef.current,
     currentLibrary: () => logoRef.current,
     currentImages: () => imageRef.current,
