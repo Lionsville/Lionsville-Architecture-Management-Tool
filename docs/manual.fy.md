@@ -1088,7 +1088,11 @@ Twa wegen nei bûten, foar twa doelen.
   allinnich dat lânskip deryn soe op immen oars syn masine iepengean fol nammen
   dy't nearne hinne wize. It bestân hjit nei jo organisaasje. Wurkbestannen fan
   eardere ferzjes iepenje noch, fersegele of net, en in bestân mei ien scope
-  deryn iepenet noch as dy scope.
+  deryn iepenet noch as dy scope. **By it iepenjen wurdt frege wêr’t it hinne
+  moat**: *In nije map…* makket der in eigen wurkmap fan en bringt jo dêrhinne,
+  wat jo iepen hiene bliuwt ûnoanroerd; *… hjir ferfange* skriuwt it oer de
+  scope dêr’t jo steane en alles derûnder hinne, en seit dat foarôf. In map dy’t
+  al wat befettet wurdt pas nei in twadde ja oerskreaun.
 - **PNG-eksport** (de downloadknop) iepenet in finster mei in foarbyld fan de
   plaat sa't dy fuortgiet: yn it ljochte of it tsjustere tema los fan dat op it
   skerm, mei it label fan elke line of allinnich de keale linen, mei of sûnder

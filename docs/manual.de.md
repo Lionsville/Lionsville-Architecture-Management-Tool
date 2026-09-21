@@ -1182,7 +1182,12 @@ Zwei Wege hinaus, für zwei Zwecke.
   eines anderen voller Namen auf, die ins Leere zeigen. Die Datei heißt nach
   Ihrer Organisation. Arbeitsdateien aus früheren Versionen lassen sich
   weiterhin öffnen, versiegelt oder nicht, und eine Datei mit einem einzigen
-  Bereich öffnet weiterhin als dieser Bereich.
+  Bereich öffnet weiterhin als dieser Bereich. **Beim Öffnen wird gefragt,
+  wohin sie soll**: *Ein neuer Ordner…* macht sie zu einem eigenen
+  Arbeitsordner und bringt Sie dorthin, was Sie geöffnet hatten bleibt
+  unberührt; *… hier ersetzen* schreibt sie über den Bereich, in dem Sie
+  stehen, und alles darunter, und sagt das vorher. Ein Ordner, der schon
+  etwas enthält, wird erst nach einem zweiten Ja überschrieben.
 - **PNG-Export** (die Download-Schaltfläche) öffnet einen Dialog mit einer
   Vorschau des Bildes, wie es hinausgeht: im hellen oder im dunklen Design,
   unabhängig von dem auf dem Bildschirm, mit der Beschriftung jeder Linie oder

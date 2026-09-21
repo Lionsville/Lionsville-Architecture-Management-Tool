@@ -1103,7 +1103,11 @@ Twee uitgangen, voor twee doelen.
   erin zou op andermans machine opengaan vol namen die nergens heen wijzen.
   Het bestand heet naar je organisatie. Werkbestanden van eerdere versies
   openen gewoon, verzegeld of niet, en een bestand met één scope erin opent
-  nog steeds als die scope.
+  nog steeds als die scope. **Bij het openen wordt gevraagd waar het heen
+  moet**: *Een nieuwe map…* maakt er een eigen werkmap van en brengt je
+  daarheen, wat je open had blijft onaangeroerd; *… hier vervangen* schrijft
+  het over de scope waar je staat en alles eronder heen, en zegt dat vooraf.
+  Een map die al iets bevat wordt pas na een tweede ja overschreven.
 - **PNG-export** (de downloadknop) opent een dialoog met een voorbeeld van de
   plaat zoals die vertrekt: in het lichte of het donkere thema, los van wat er
   op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of

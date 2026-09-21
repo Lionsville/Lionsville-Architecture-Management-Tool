@@ -1049,7 +1049,11 @@ Two ways out, for two purposes.
   landscape in it would open on someone else's machine full of names pointing
   at nothing. The file is named after your organisation. Working files from
   earlier versions still open, sealed or not, and one holding a single scope
-  still opens as that scope.
+  still opens as that scope. **Opening one asks where it goes**: *A new
+  folder…* makes it a working folder of its own and takes you there, leaving
+  what you had open untouched; *Replace … here* writes it over the scope you
+  are on and everything filed under it, and says so before it does. A folder
+  that already holds something is only written over after a second yes.
 - **PNG export** (the download button) opens a dialog with a preview of the
   picture as it will leave: in the light or the dark theme regardless of the
   one on screen, with every line's label or only the bare lines, with or
