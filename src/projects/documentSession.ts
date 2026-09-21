@@ -28,15 +28,20 @@
  * - `conflict`   — both sides changed. This is the only state that requires a
  *                  human, and it is deliberately the only one.
  */
+import type { SourceStatus } from '../platform/sourceProvider'
 import type { ScopePath } from './scopePath'
 
-export type DocumentStatus =
-  | 'no-file'
-  | 'clean'
-  | 'dirty'
-  | 'saving'
-  | 'external-changed'
-  | 'conflict'
+/**
+ * The five words a source answers for, plus the one that is only ever about a
+ * file.
+ *
+ * Written this way round because the five are not this file's to own: a source
+ * that keeps work somewhere other than a folder still reports *dirty*,
+ * *saving*, *clean*, *external-changed* and *conflict*, and says for itself
+ * what it means by them (`platform/sourceProvider.ts`). `no-file` stays here,
+ * because "nothing is attached yet" is a sentence only a file can say.
+ */
+export type DocumentStatus = 'no-file' | SourceStatus
 
 /**
  * Enough of a file to tell our own write from somebody else's.
