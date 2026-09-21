@@ -74,6 +74,7 @@ import { registerRows } from './organisation/register'
 import { technologyRows } from './organisation/technologyRegister'
 import { useOrganisation } from './organisation/useOrganisation'
 import { ProjectWorkspace } from './ProjectWorkspace'
+import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
 import type { MakeId } from './useDiagramActions'
@@ -220,6 +221,13 @@ export type AppProps = {
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
   /**
+   * A scope has been opened, and here is the session over it: for whoever
+   * answers for the source (`composition.ts`). Passed straight through to the
+   * workspace, which is where a session exists; absent for all three sources
+   * that ship, and then nothing subscribes to anything.
+   */
+  onScopeSession?: (session: ScopeSession) => (() => void) | void
+  /**
    * How to change the folder. Absent in a browser tab whose browser cannot
    * give one: an app that showed the button anyway would be offering what it
    * cannot do.
@@ -354,7 +362,8 @@ function localToday(): string {
 
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, sourceStatus, onChooseWorkingDirectory, needsFolder = false, watchProject,
+  source = BROWSER_STORAGE, sourceStatus, onScopeSession,
+  onChooseWorkingDirectory, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   history, folderSettings, updateSettings, agent, initialSync, folderFailure, today = localToday,
   initialProject, initialPreferences,
@@ -1145,6 +1154,7 @@ export function App({
             // means by the words on the bar.
             readOnly={sourceIsReadOnly(source)}
             sourceStatus={sourceStatus}
+            onScopeSession={onScopeSession}
             commands={bus.on}
             hostMenu={hostMenu}
             overflow={hostMenu ? undefined : {

@@ -77,6 +77,7 @@ import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
 import { useGestures } from './useGestures'
 import { useModelSession } from './useModelSession'
+import type { ScopeSession } from './useModelSession'
 import { usePlans } from './usePlans'
 import { useSheet } from './useSheet'
 import { useShowElement } from './useShowElement'
@@ -125,6 +126,12 @@ export type ProjectWorkspaceProps = {
    * answer, which is what a file is.
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
+   * Whoever answers for the source wants the session over this scope
+   * (`composition.ts`). Handed over once it exists and taken back on unmount,
+   * the way the agent's view is; absent for all three sources that ship.
+   */
+  onScopeSession?: (session: ScopeSession) => (() => void) | void
   /**
    * Menu items, the web's overflow and files the OS opened us with — the ones
    * about the project that is open. The shell above takes the ones about
@@ -284,7 +291,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, readOnly = false, sourceStatus,
+  project, projects, index, watch, readOnly = false, sourceStatus, onScopeSession,
   commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, onAgentSession, agentBar, documents, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
@@ -461,6 +468,25 @@ export function ProjectWorkspace({
     onAdopt: useCallback((held: ScopeSnapshot) => session.adopt(held, false), [session]),
   })
   const forceSave = document.forceSave
+
+  /**
+   * The session over this scope, handed to whoever answers for the source it is
+   * kept in — and taken back when this workspace goes.
+   *
+   * Narrow on purpose: the seam, the one way in, the log and the revision, and
+   * not the model, the libraries or a single dialog. Memoised on the pieces
+   * rather than on `session`, which is a fresh object every render: what is on
+   * the other end may be holding a connection open, and dropping and remaking
+   * it on every keystroke is not a thing to do by accident.
+   */
+  const scopeSession = useMemo<ScopeSession>(() => ({
+    scope: project.path,
+    steps: session.steps,
+    dispatch: session.dispatch,
+    history: session.history,
+    revision: session.revision,
+  }), [project.path, session.steps, session.dispatch, session.history, session.revision])
+  useEffect(() => onScopeSession?.(scopeSession), [onScopeSession, scopeSession])
 
   /**
    * The agent, as a peer of the menu: a request is answered against the
@@ -1027,7 +1053,17 @@ export function ProjectWorkspace({
     activeDiagramId: session.currentActiveId,
     scopePath: () => project.path,
     ancestorDecisions: () => ancestorRecords,
-    blocked: () => (documentStatus === 'conflict' ? 'agent.conflict' : undefined),
+    /**
+     * Why nothing may change right now: a source that is read-only, or a person
+     * deciding which version of the project stands. An agent can do what a
+     * person can (ADR-0011) and no more, so a source nobody may write to is a
+     * source an agent may not write to either — and it is the one of the two
+     * that does not go away by itself, so it is answered first.
+     */
+    blocked: () => {
+      if (readOnly) return 'agent.readOnly'
+      return documentStatus === 'conflict' ? 'agent.conflict' : undefined
+    },
     dispatch: session.dispatch,
     ids: session.ids,
     makeId,
@@ -1131,7 +1167,7 @@ export function ProjectWorkspace({
       },
     },
   }), [
-    session, project.path, ancestorRecords, documentStatus, makeId, today, s, renderer, forceSave, scopes, projects,
+    session, project.path, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, forceSave, scopes, projects,
     adrPage, plans.planId, plans.roadmapOpen, plans.openPlan, platformReading.platformId, platformReading.serviceId,
     openView, openDecisions, openRoadmap, closePages, showElement.show, openDocumentation, openPlatformReport, openServiceReport,
   ])

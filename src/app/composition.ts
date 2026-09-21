@@ -65,6 +65,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type { SourceProvider, SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
@@ -122,6 +123,22 @@ export type Shell = {
    * `platform/sourceProvider.ts` has the reasoning.
    */
   sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
+   * A scope has been opened: the session over it, for whoever answers for the
+   * source it is kept in.
+   *
+   * The one thing a registered provider could not reach. Everything else it
+   * brings is a store or a setting, handed over at `open` and read from above;
+   * a scope's session is made inside the workspace, remounted with it, and
+   * lives a whole level below the boot — so a source that has to carry a change
+   * somewhere, or take one from somewhere, had no way in. This is that way in,
+   * and the answer is how to stop: the workspace is remounted per scope, and a
+   * subscription per scope ever opened is a leak with a slow fuse.
+   *
+   * Absent for all three sources that ship, because a folder, this browser's
+   * storage and memory have nobody to tell.
+   */
+  onScopeSession?: (session: ScopeSession) => (() => void) | void
   /**
    * Tell me when this project's folder changed under us, other than by us.
    *

@@ -485,6 +485,7 @@ function renderApp(
         hostControls={shell.hostControls}
         source={shell.source}
         sourceStatus={shell.sourceStatus}
+        onScopeSession={shell.onScopeSession}
         onChooseWorkingDirectory={
           files || browserFolders.possible() ? chooseWorkingDirectory : undefined
         }
