@@ -295,6 +295,34 @@ nothing above them changed for any of them.
   conflict from a change that fits are both questions about the model at the
   instant a step is made, which is one render before anything is drawn.
 
+## Amended — the four the first build with no Electron needed
+
+*21 September 2026.* A build composed from core ran the reducer and the folder
+format in a node process with no Electron and filled the channel over a network.
+Four more seams stopped short, and each is added as the smallest public thing
+that closes it.
+
+* **`src/platform/node/git.ts`.** Keeping a folder's history was under
+  `electron/`, with a header saying it had no Electron in it. It now sits in the
+  one row of the import matrix for code that may say `node:` — imported by no
+  module, `app` included, and on no barrel, for the reason `mcpProtocol.ts` is on
+  none.
+* **A contract a network filling can pass.** The channel suite settles after
+  every subscribe and every publish before it asserts (`ChannelUnderTest.settled`),
+  and the channel, scope-store and folder-settings makers may be async. A second
+  run over the same in-memory channel with every answer put off a turn is what
+  keeps the settles from quietly disappearing again.
+* **Which refusal wins.** A step whose `base` is behind the head and whose
+  command the reducer refuses is answered with the reducer's key, so
+  `command.taken` always means *mint another id and send it again*. A channel that
+  decides such a step overlaps one sequenced since refuses with a key of its own,
+  which is still deliberately not defined here.
+* **A commit message without the registry.** `translateFrom(table)` and
+  `draftCommitMessageInEnglish` draft from the model's and `projects`' English
+  slices, which import nothing; a walk of the static imports pins that
+  `commitMessage.ts` reaches neither the registry nor `app/`. The registry is
+  right for a screen and wrong for a process that has none.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

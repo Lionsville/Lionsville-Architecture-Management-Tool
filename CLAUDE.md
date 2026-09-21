@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4281 tests** and one of every config. The
+One codebase, in modules, with **4298 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4281 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4298 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -253,6 +253,10 @@ src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.t
                     registerStrings   words a build composed from this one brought,
                                       kept beside the schema and never merged into
                                       it: keys added, none replaced (ADR-0022)
+                    interpolate       `{placeholders}`, and the one piece of this
+                                      that needs no table — so a caller with a
+                                      slice of its own fills them without
+                                      importing every module's words
 src/projects/     A scope: open, save, order, summarise, address, remember.
                     scope             the document every level is (ADR-0012 §1),
                                       and the arithmetic over a tree of them
@@ -284,6 +288,10 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       and, for an element's page, everywhere in
                                       the tree it is filed (§7)
                     documentSession   dirty / saving / changed on disk / conflict
+                    commitMessage     what a snapshot is called, drafted from the
+                                      log — `translateFrom(table)` and an English
+                                      drafter beside it, so a process with no
+                                      screen drafts without the registry
                     migration         out of browser storage into the folder, and
                                       out of an older format into this one
 src/platform/     What the app runs inside, and what a failure looks like.
@@ -339,7 +347,11 @@ src/ports/        The seams. Interfaces only, no implementations.
                                       the only author of a scope (ADR-0022): one
                                       scope, one order, a sequenced step back
                     ScopeStore.contract.ts · CommandChannel.contract.ts —
-                                      behaviour every filling must show
+                                      behaviour every filling must show. Makers
+                                      may be async and the channel suite settles
+                                      after every subscribe and publish, so a
+                                      filling that answers over a network passes
+                                      the same clauses an in-memory one does
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
                     memory/           …and InMemoryCommandChannel: a head model, a
@@ -679,7 +691,7 @@ identifiers is still a list of a customer's identifiers.
 | Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says — with `onSourceWork` to say *ask me again*, for an answer that moved without the document's own machine moving. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
 | How a person, or a link, reaches one (ADR-0022, amended) | a **way in**: `connect.labelKey` for what the button says, `connect.open()` for the dialog behind it — the provider's, because what it has to ask for is its business — and `connect.fromLocation(location)` for an address a link carries, read before the first render. The boot draws one button per registered provider on the root's home and on the first-run screen (`registeredConnects`); `openSource(kind, opening)` is the one call that opens what a dialog answered. The folder's button is the one that was already there, because choosing a folder is also remembered, adopted into and upgraded |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
-| Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it |
+| Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it. **A reducer refusal is answered first**: a step whose `base` is behind the head and whose command the reducer refuses is answered with the reducer's key, so `command.taken` always means *mint another id*; a channel that decides such a step overlaps a later one refuses with a key of its own, which this repository does not define |
 | One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
 | A step this session did not make (ADR-0022) | an **external step**: `origin: 'remote'` and `by` on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600. Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
@@ -1281,3 +1293,21 @@ app owns is refused. And the session handed over can be asked what the model
 says (`current` · `indexed`), because minting an id against what is taken and
 telling a conflict from a change that fits are both questions about the model at
 the instant a step is made.
+
+Then a build composed from core ran the reducer and the folder format in a node
+process with no Electron, filled the command channel over a network, and found
+four more (ADR-0022, *Amended* again). The **git module** is
+`src/platform/node/git.ts` now: it never had any Electron in it, and
+`platform/node/` is the one row in the import matrix for code that may say
+`node:` — no module may import it, `app` included, and nothing puts it on a
+barrel. The **channel contract** settles after every subscribe and every publish
+before it asserts, and all three suites' makers may be async, because a
+subscription that is a message in flight is not live when `subscribe` returns;
+the in-memory filling passes unchanged, and a second run of the same clauses
+over the same channel with every answer put off a turn is what keeps the suite
+honest about a transport it cannot see. **Which refusal wins** is written down:
+the reducer's, before any staleness a channel decides for itself. And a **commit
+message can be drafted from two slices** rather than from the registry
+(`translateFrom`, `draftCommitMessageInEnglish`), which a walk of the imports
+pins — a process with no screen has no business loading `app/strings` to write
+one subject line.
