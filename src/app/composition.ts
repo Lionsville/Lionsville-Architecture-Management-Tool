@@ -66,7 +66,7 @@ import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
-  SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
+  SourceConnect, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
@@ -225,7 +225,11 @@ export function registerSourceProvider<Opening>(
   provider: SourceProvider<SourceParts, Opening>,
 ): void {
   if (SOURCE_PROVIDERS.has(provider.kind)) return
-  SOURCE_PROVIDERS.set(provider.kind, provider)
+  // The one cast in this registry, and it is where the type is genuinely lost:
+  // what a provider needs to be given is its own, the map holds every kind at
+  // once, and only the caller that asks for a kind knows which. `sourceProvider`
+  // below hands the knowledge back, which is why nothing else has to.
+  SOURCE_PROVIDERS.set(provider.kind, provider as SourceProvider<SourceParts, never>)
 }
 
 /** Who answers for a kind of source, or nobody. */
@@ -254,6 +258,29 @@ export function openSource<Opening>(kind: string, opening: Opening): SourceParts
   // is a wiring mistake; found at the first save it is a lost document.
   if (!provider) throw new Error(`no source provider is registered for '${kind}'`)
   return { ...provider.open(opening), sourceStatus: provider.statusOf }
+}
+
+/**
+ * Every registered provider that offers a way in for a person, in the order
+ * they registered.
+ *
+ * The boot draws one button per entry (`platform/sourceProvider.ts`), so what
+ * it needs is the label and the provider's own dialog — and `unknown` for what
+ * that dialog answers with, because the boot never looks at it: it hands it
+ * straight back to {@link openSource} under the same kind, which is the one
+ * place that knows what it is.
+ */
+export type RegisteredConnect = {
+  readonly kind: string
+  readonly connect: SourceConnect<unknown>
+}
+
+export function registeredConnects(): readonly RegisteredConnect[] {
+  const found: RegisteredConnect[] = []
+  for (const provider of SOURCE_PROVIDERS.values()) {
+    if (provider.connect) found.push({ kind: provider.kind, connect: provider.connect })
+  }
+  return found
 }
 
 /** Somewhere to keep a scope, which is the one part no source may leave out. */
@@ -467,6 +494,38 @@ export type FolderOpening = {
 }
 
 /**
+ * The folder's own way in: the picker this app has always had.
+ *
+ * Whichever picker there is — the desktop's dialog through the file channel, or
+ * the browser's where the browser has one — and nothing at all where there is
+ * neither, which is a tab that cannot be given a folder. The words on the
+ * button are unchanged; this is only the answer to "what does pressing it ask
+ * for", said in the shape every other provider says it in.
+ *
+ * The writes go through the remembering wrapper on the desktop for the reason
+ * `inWorkingDirectory` does it: a write that went round it comes back from the
+ * watcher as somebody else's change, and the app interrupts itself.
+ */
+async function chooseFolderOpening(): Promise<FolderOpening | undefined> {
+  const files = desktopFiles()
+  if (files) {
+    const chosen = await files.chooseDirectory()
+    if (!chosen) return undefined
+    const channel = rememberingWrites(files)
+    return {
+      handle: new IpcDirectoryHandle(channel.files, chosen.root, chosen.name),
+      name: chosen.name,
+      root: chosen.root,
+    }
+  }
+  if (!canChooseDirectory()) return undefined
+  const handle = await chooseBrowserDirectory()
+  // A browser's handle has no path to give, so the name is all there is to tell
+  // two folders apart within one tab — which is what `FolderOpening` says.
+  return handle && { handle, name: handle.name, root: handle.name }
+}
+
+/**
  * A folder of text files (ADR-0003), which is what the desktop works from and
  * what a browser tab works from when it has been given one.
  *
@@ -477,7 +536,7 @@ export type FolderOpening = {
  */
 const FOLDER_SOURCE: SourceProvider<SourceParts, FolderOpening> = {
   kind: 'folder',
-  connect: { labelKey: 'picker.chooseFolder' },
+  connect: { labelKey: 'picker.chooseFolder', open: chooseFolderOpening },
   open: ({ handle, name, root }) => ({
     scopes: new FileSystemScopeStore(handle),
     folderSettings: new FileSystemFolderSettings(handle),

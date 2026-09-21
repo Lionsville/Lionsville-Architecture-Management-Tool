@@ -42,6 +42,13 @@ export const EN = {
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.storageRecovered': 'Saving in this browser works again.',
   'shell.folderNotOpened': 'The folder could not be opened: {message}',
+  /**
+   * The same sentence for a source that is not a folder: a way in a
+   * registered provider offered, pressed, and gone nowhere. It says nothing
+   * about where the work would have been kept, because only the provider
+   * knows and this is the shell talking.
+   */
+  'shell.sourceNotOpened': 'That source could not be opened: {message}',
   'shell.storageNearlyFull':
     'This browser is about {percent}% full for this app. Save your work to a folder or a '
     + 'file before it runs out — a browser stops saving without asking.',

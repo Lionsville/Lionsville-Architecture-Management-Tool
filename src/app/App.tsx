@@ -60,7 +60,9 @@ import { useSync } from './useSync'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
-import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
+import type {
+  SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
+} from '../platform/sourceProvider'
 import type { ExampleProject } from './examples'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { HostControls } from '../ports/HostControls'
@@ -240,6 +242,18 @@ export type AppProps = {
    */
   onChooseWorkingDirectory?: () => void
   /**
+   * The other places this build can work from: what each button says, and what
+   * pressing it does (`platform/sourceProvider.ts`).
+   *
+   * Built at the boot from the providers this build registered, so it is empty
+   * for every build in this repository — core registers a folder, this
+   * browser's storage and memory, and only the first of those is something a
+   * person goes to. Offered on the root's home and on the first-run screen,
+   * which are the two screens that ask where work should live; everything
+   * below them is about work that already has somewhere to be.
+   */
+  waysIn?: readonly SourceWayIn[]
+  /**
    * Does this host keep projects ONLY in folders?
    *
    * True on the desktop, where keeping them anywhere else means a leveldb
@@ -303,6 +317,13 @@ export type AppProps = {
    * does nothing.
    */
   folderFailure?: unknown
+  /**
+   * The same, for a way in a registered provider offered: pressed, and gone
+   * nowhere. Its own prop rather than a second meaning for the one above,
+   * because the two say different sentences — this one cannot say *folder*, and
+   * the boot cannot say what a provider's own dialog was asking for.
+   */
+  sourceFailure?: unknown
 
   /** Today as `yyyy-mm-dd`. Injected so a card's finding is not at the clock's mercy. */
   today?: () => string
@@ -369,9 +390,10 @@ function localToday(): string {
 export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, sourceStatus, onSourceWork, onScopeSession,
-  onChooseWorkingDirectory, needsFolder = false, watchProject,
+  onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
-  history, folderSettings, updateSettings, agent, initialSync, folderFailure, today = localToday,
+  history, folderSettings, updateSettings, agent, initialSync, folderFailure, sourceFailure,
+  today = localToday,
   initialProject, initialPreferences,
   examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME, onTitle,
 }: AppProps) {
@@ -616,6 +638,18 @@ export function App({
   useEffect(() => {
     if (folderFailure !== undefined) sayFolderFailed.current(folderFailure)
   }, [folderFailure])
+
+  // The same shape for a source that is not a folder, and the same reasoning:
+  // keyed on the failure alone, because the toast helpers are fresh each render.
+  const saySourceFailed = useRef((cause: unknown) => {
+    toasts.notify(s('shell.sourceNotOpened', { message: reasonOf(cause) }), 'error')
+  })
+  saySourceFailed.current = (cause: unknown) => {
+    toasts.notify(s('shell.sourceNotOpened', { message: reasonOf(cause) }), 'error')
+  }
+  useEffect(() => {
+    if (sourceFailure !== undefined) saySourceFailed.current(sourceFailure)
+  }, [sourceFailure])
 
   const settingFailed = useCallback((where: string, cause: unknown) => {
     failedRef.current(where, cause)
@@ -1133,15 +1167,20 @@ export function App({
             and around the two screens rather than around everything: a crash
             must not take the toast bar with it. */}
         <ErrorBoundary where="app" diagnostics={diagnostics} controls={hostControls} s={s}>
-        {needsFolder && onChooseWorkingDirectory && source.kind !== 'folder' ? (
-          /* The desktop, with no folder yet. Not the picker: there is nowhere
-             for a project to be until this is answered, and offering a list of
-             projects kept inside the app is offering the thing ADR-0003
-             removed. */
+        {needsFolder && onChooseWorkingDirectory
+          && source.kind !== 'folder' && source.kind !== 'registered' ? (
+          /* The desktop, with nowhere to keep anything yet. Not the picker:
+             there is nowhere for a project to be until this is answered, and
+             offering a list of projects kept inside the app is offering the
+             thing ADR-0003 removed. A source a provider answers for is an
+             answer to the same question — this screen asks where work should
+             live, not which folder it is in, and a build that has connected to
+             one and is still being asked has been asked twice. */
           <ChooseFolder
             recent={recentFolders}
             onChoose={onChooseWorkingDirectory}
             onOpen={onOpenWorkingDirectory ?? (() => {})}
+            waysIn={waysIn}
             s={s}
             windowChrome={windowChrome}
           />
@@ -1208,6 +1247,7 @@ export function App({
             onOrderChange={chooseOrder}
             source={source}
             onChooseWorkingDirectory={onChooseWorkingDirectory}
+            waysIn={waysIn}
             // The same two the workspace's bar carries: the menu on a host
             // that has none of its own, and the agent glyph, which has to be
             // reachable with nothing open (ADR-0007).

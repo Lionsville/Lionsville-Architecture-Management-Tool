@@ -16,7 +16,7 @@ import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
-  inWorkingDirectory, openSource, registerSourceProvider, sourceProvider,
+  inWorkingDirectory, openSource, registerSourceProvider, registeredConnects, sourceProvider,
   type FolderOpening, type Shell, type SourceParts,
 } from './composition'
 
@@ -136,7 +136,13 @@ describe('registerSourceProvider', () => {
   it('takes a build\'s own provider, with its way in and its own words', () => {
     const provider: SourceProvider<SourceParts, { name: string }> = {
       kind: 'elsewhere',
-      connect: { labelKey: 'elsewhere.connect' },
+      connect: {
+        labelKey: 'elsewhere.connect',
+        // The provider's own dialog, which in a test is the answer without one.
+        open: () => Promise.resolve({ name: 'Elsewhere' }),
+        fromLocation: (location) =>
+          (location.search.includes('elsewhere=') ? { name: 'From the address' } : undefined),
+      },
       // Somewhere that means something else by *dirty* than a file does: work
       // that has not left this machine, whatever the document's machine says.
       statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
@@ -202,6 +208,55 @@ describe('openSource', () => {
    */
   it('refuses a kind nobody registered', () => {
     expect(() => openSource('nowhere', undefined)).toThrow(/nowhere/)
+  })
+})
+
+/**
+ * The ways in, which is what the boot draws a button from.
+ *
+ * `registerSourceProvider` above registers `elsewhere` with a connect
+ * affordance, so this reads the folder's and that one's. A provider with no way
+ * in is not on the list at all: this browser's storage and memory are where
+ * work ends up when there was nowhere to go, not places a person navigates to.
+ */
+describe('registeredConnects', () => {
+  it('lists every provider that offers a way in, and only those', () => {
+    const kinds = registeredConnects().map((way) => way.kind)
+    expect(kinds).toContain('folder')
+    expect(kinds).toContain('elsewhere')
+    expect(kinds).not.toContain('browserStorage')
+    expect(kinds).not.toContain('memory')
+  })
+
+  it('says what the button says, unchanged', () => {
+    const folder = registeredConnects().find((way) => way.kind === 'folder')
+    expect(folder?.connect.labelKey).toBe('picker.chooseFolder')
+  })
+
+  /**
+   * The folder's own dialog is the picker this app has always had — and in a
+   * test there is neither a file channel nor a browser that can give a folder,
+   * which is a tab that cannot be offered one and answers with nothing.
+   */
+  it('has the folder answering for its own picker', async () => {
+    const folder = registeredConnects().find((way) => way.kind === 'folder')
+    expect(await folder?.connect.open()).toBeUndefined()
+  })
+
+  /**
+   * The way in that needs nobody: a link carries the address, and the boot reads
+   * it before the first render rather than composing over the fallback and
+   * swapping a mount away a moment later.
+   */
+  it('reads an address a provider recognises, and passes over one nobody does', () => {
+    const elsewhere = registeredConnects().find((way) => way.kind === 'elsewhere')
+    const location = { href: 'https://example.test/?elsewhere=one', search: '?elsewhere=one', hash: '' }
+    expect(elsewhere?.connect.fromLocation?.(location)).toEqual({ name: 'From the address' })
+    expect(elsewhere?.connect.fromLocation?.({ href: 'https://example.test/', search: '', hash: '' }))
+      .toBeUndefined()
+    // The folder has no address to read, so it has no say in the question.
+    expect(registeredConnects().find((way) => way.kind === 'folder')?.connect.fromLocation)
+      .toBeUndefined()
   })
 })
 

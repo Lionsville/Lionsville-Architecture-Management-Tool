@@ -37,7 +37,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { LOCALE } from '../../i18n'
 import { plural } from '../../i18n/strings'
-import type { Language, Translate } from '../../i18n'
+import type { Language, StringKey, Translate } from '../../i18n'
 import { countScopes, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
 import { isBoardKind } from '../../model/placement'
 import type { DesignDiagram } from '../../model'
@@ -50,6 +50,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
+import type { SourceWayIn } from '../../platform/sourceProvider'
 import { AgentIcon } from '../../widgets/icons'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import IconButton from '@mui/material/IconButton'
@@ -90,6 +91,16 @@ export type OrganisationScreenProps = {
    */
   source?: WorkingSource
   onChooseWorkingDirectory?: () => void
+  /**
+   * The other places this build can work from, one button each, beside the one
+   * that chooses a folder.
+   *
+   * Empty for every build in this repository, and the bar then reads exactly as
+   * it always has. On the root's home only, for the same reason the source chip
+   * is: where work is kept is a fact about the whole tree and is said once,
+   * where the tree begins.
+   */
+  waysIn?: readonly SourceWayIn[]
   /** The menu, for a host that has no menu bar — where theme and language are. */
   overflow?: ToolbarOverflow
   agent?: ToolbarAgent
@@ -150,7 +161,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory,
+  organisation, examples, order, onOrderChange, source, onChooseWorkingDirectory, waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   today, language, s, windowChrome = NO_WINDOW_CHROME,
@@ -287,6 +298,7 @@ export function OrganisationScreen({
         level={level}
         source={atRoot ? source : undefined}
         onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
+        waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
         onSettings={() => organisation.editScope(home)}
         overflow={overflow}
@@ -754,7 +766,8 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, onChooseWorkingDirectory, onGoHome, onSettings, overflow, agent, s, windowChrome,
+  barRef, tree, home, heading, level, source, onChooseWorkingDirectory, waysIn = [],
+  onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
   /** Measured, so the pages that open under it know how far down to start. */
   barRef: (node: HTMLDivElement | null) => void
@@ -765,6 +778,7 @@ function OrganisationBar({
   level: 'organisation' | 'domain' | 'landscape'
   source?: WorkingSource
   onChooseWorkingDirectory?: () => void
+  waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
   onSettings: () => void
   overflow?: ToolbarOverflow
@@ -815,6 +829,20 @@ function OrganisationBar({
           {s(source?.kind === 'folder' ? 'picker.changeFolder' : 'picker.chooseFolder')}
         </Button>
       )}
+      {waysIn.map((way) => (
+        <Button
+          key={way.kind}
+          size="small"
+          color="inherit"
+          data-testid={`connect-source-${way.kind}`}
+          onClick={way.onConnect}
+          sx={quiet}
+        >
+          {/* The provider's key, from its own table or from this one's
+              (`i18n/registerStrings`); the shell only renders it. */}
+          {s(way.labelKey as StringKey)}
+        </Button>
+      ))}
       {agent && (
         <Tooltip title={agentTip(agent.status, s)}>
           <IconButton

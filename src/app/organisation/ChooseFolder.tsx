@@ -18,18 +18,31 @@ import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
+import type { StringKey } from '../../i18n'
+import type { SourceWayIn } from '../../platform/sourceProvider'
 
 export type ChooseFolderProps = {
   /** Folders this machine has worked in before, most recent first. */
   recent?: readonly { root: string; name: string }[]
   onChoose: () => void
   onOpen: (root: string) => void
+  /**
+   * The other places this build can work from, one button each.
+   *
+   * Empty for every build in this repository — a folder is the only way in core
+   * registers — and then this screen reads exactly as it always has. A build
+   * that registered a provider of its own asks the same question here as it
+   * does on the organisation screen: this is the screen where there is no
+   * answer yet, and offering only a folder on it would be offering a person
+   * the one thing their build was composed not to use.
+   */
+  waysIn?: readonly SourceWayIn[]
   s: Translate
   windowChrome?: WindowChrome
 }
 
 export function ChooseFolder({
-  recent = [], onChoose, onOpen, s, windowChrome = NO_WINDOW_CHROME,
+  recent = [], onChoose, onOpen, waysIn = [], s, windowChrome = NO_WINDOW_CHROME,
 }: ChooseFolderProps) {
   return (
     <Box
@@ -56,9 +69,23 @@ export function ChooseFolder({
           {s('folder.body')}
         </Typography>
 
-        <Button variant="contained" onClick={onChoose} sx={{ mt: 3 }}>
-          {s('folder.choose')}
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ mt: 3 }} flexWrap="wrap">
+          <Button variant="contained" onClick={onChoose}>
+            {s('folder.choose')}
+          </Button>
+          {waysIn.map((way) => (
+            <Button
+              key={way.kind}
+              variant="outlined"
+              data-testid={`connect-source-${way.kind}`}
+              onClick={way.onConnect}
+            >
+              {/* The provider's key, from its own table or from this one's
+                  (`i18n/registerStrings`); the shell only renders it. */}
+              {s(way.labelKey as StringKey)}
+            </Button>
+          ))}
+        </Stack>
 
         {recent.length > 0 && (
           <Box sx={{ mt: 4 }}>

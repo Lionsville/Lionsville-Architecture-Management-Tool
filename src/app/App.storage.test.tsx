@@ -142,6 +142,68 @@ describe('a source a provider answers for', () => {
 })
 
 /**
+ * The way in a registered provider brought.
+ *
+ * The provider owns the dialog and the shell owns the button, so what the shell
+ * owes is a button per way in, labelled what the provider said, and the press
+ * arriving where the provider is composed. Core registers no such provider, so
+ * the list is empty in every build here — what is tested is that a build which
+ * registers one is offered on the two screens that ask where work should live.
+ */
+describe('a way in a registered provider brought', () => {
+  const waysIn = [
+    { kind: 'elsewhere', labelKey: 'Connect to elsewhere\u2026', onConnect: () => {} },
+    { kind: 'somewhere', labelKey: 'Connect to somewhere\u2026', onConnect: () => {} },
+  ]
+
+  it('is a button each on the root\u2019s home, beside the one that chooses a folder', () => {
+    renderApp({ waysIn, onChooseWorkingDirectory: () => {} })
+    expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
+    expect(screen.getByTestId('connect-source-somewhere').textContent).toBe('Connect to somewhere\u2026')
+    expect(screen.getByText('Choose folder\u2026')).toBeDefined()
+  })
+
+  it('presses through to whoever registered it', () => {
+    let pressed = ''
+    renderApp({ waysIn: [{ ...waysIn[0], onConnect: () => { pressed = 'elsewhere' } }] })
+    fireEvent.click(screen.getByTestId('connect-source-elsewhere'))
+    expect(pressed).toBe('elsewhere')
+  })
+
+  /**
+   * The screen that asks where work should live at all. A desktop composed with
+   * a provider of its own and offered only a folder would be offered the one
+   * thing that build exists not to use.
+   */
+  it('is offered on the first-run screen too', () => {
+    renderApp({ waysIn, needsFolder: true, onChooseWorkingDirectory: () => {} })
+    expect(screen.getByTestId('choose-folder')).toBeDefined()
+    expect(screen.getByTestId('connect-source-elsewhere')).toBeDefined()
+  })
+
+  /**
+   * And is not asked again once it has been answered: a source a provider
+   * answers for keeps work as surely as a folder does.
+   */
+  it('leaves the first-run screen behind once a source is open', () => {
+    renderApp({
+      waysIn,
+      needsFolder: true,
+      onChooseWorkingDirectory: () => {},
+      source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
+    })
+    expect(screen.queryByTestId('choose-folder')).toBeNull()
+    expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
+  })
+
+  /** Nothing registered, nothing drawn: every build in this repository. */
+  it('draws nothing where a build registered none', () => {
+    renderApp({ onChooseWorkingDirectory: () => {} })
+    expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
+  })
+})
+
+/**
  * A gateway that keeps whoever subscribed, so a test can ask as an agent
  * would. The same fake as `App.driving.test.tsx`'s, cut to what is asked here.
  */

@@ -88,8 +88,73 @@ export type SourceWorkChanged = (listener: () => void) => () => void
  * `i18n`'s `registerStrings`, which adds keys and may replace none; a key
  * nobody registered renders as itself, which is a blemish and never a blank.
  */
-export type SourceConnect = {
+export type SourceConnect<Opening = void> = {
   readonly labelKey: StringKey | (string & {})
+  /**
+   * Ask the person for whatever this source needs to be given, and answer with
+   * it — or with nothing, where they backed out.
+   *
+   * The provider owns the dialog and the shell owns the button. That split is
+   * the whole of this type: what has to be asked for is an address, a folder, a
+   * name, a choice from a list only the provider can fetch, and a shell that
+   * tried to describe all of those would be a shell that has to be edited for
+   * the fifth one. What comes back is the same `Opening`
+   * {@link SourceProvider.open} takes, so the boot's next line is the one it
+   * already runs for a folder.
+   *
+   * Nothing is a refusal, not a failure: a person who closed the dialog has
+   * said what they meant, and a screen that then reported an error would be
+   * arguing with them. A failure is a rejection, and is reported.
+   */
+  open(): Promise<Opening | undefined>
+  /**
+   * The same answer, worked out from where the page was opened — for a build
+   * that knows its source before it draws anything.
+   *
+   * A person clicking a button is one way in; a link is the other, and it is
+   * the one that has to work before the first render, because a shell composed
+   * over the wrong source and swapped afterwards is a mount thrown away and an
+   * empty screen in between. Synchronous for the same reason: the boot reads
+   * this while it is deciding what to render, not after.
+   *
+   * Absent where an address cannot be carried, and `undefined` where this
+   * location carries nobody's — which is every ordinary boot, so it must be
+   * cheap and must never throw.
+   */
+  fromLocation?(location: SourceLocation): Opening | undefined
+}
+
+/**
+ * Where the page was opened, as much of it as a provider may read.
+ *
+ * Written out rather than taken from the DOM's `Location`: this module is pure
+ * and the desktop's main process compiles it, so naming the three strings is
+ * both honest about what is used and testable with an object literal. What a
+ * provider does with them is its own business — this tree neither parses them
+ * nor says what an address looks like.
+ */
+export type SourceLocation = {
+  readonly href: string
+  readonly search: string
+  readonly hash: string
+}
+
+/**
+ * A way in, as the shell draws it: what the button says, and what pressing it
+ * does.
+ *
+ * The other side of {@link SourceConnect}, one layer up. The boot turns each
+ * registered provider's connect affordance into one of these — the label
+ * unchanged, the pressing wired to the provider's own dialog and then to
+ * opening what it answered — and the screens that offer a way in draw one
+ * button each, in registration order, knowing nothing else about any of them.
+ */
+export type SourceWayIn = {
+  /** Which provider it reaches. Its own kind, and what a list is keyed on. */
+  readonly kind: string
+  /** What the button says: {@link SourceConnect.labelKey}, unchanged. */
+  readonly labelKey: StringKey | (string & {})
+  readonly onConnect: () => void
 }
 
 /**
@@ -106,7 +171,7 @@ export type SourceProvider<Parts, Opening = void> = {
   /** What working from this source gives the shell. */
   open(opening: Opening): Parts
   /** How a person reaches it, where there is a way in. */
-  readonly connect?: SourceConnect
+  readonly connect?: SourceConnect<Opening>
   /**
    * What this source means by the five words. Absent where it means what a
    * file means, which is what all three that ship mean.
