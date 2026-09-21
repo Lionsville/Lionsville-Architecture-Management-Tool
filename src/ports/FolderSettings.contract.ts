@@ -20,32 +20,37 @@ export type SeededStore = {
   textAt(path: string): Promise<string | undefined>
 }
 
+/**
+ * `make` may answer with a promise, for the same reason `describeScopeStore`'s
+ * maker may: a store that answers over a network is connected before it is a
+ * store. Every clause awaits it, and a synchronous maker runs as it always did.
+ */
 export function describeFolderSettings(
-  name: string, make: (files?: Record<string, string>) => SeededStore,
+  name: string, make: (files?: Record<string, string>) => SeededStore | Promise<SeededStore>,
 ): void {
   describe(`FolderSettings contract — ${name}`, () => {
     it('reads the defaults from a folder with no settings at all', async () => {
-      const { store } = make()
+      const { store } = await make()
       expect(await store.readLocal()).toEqual(DEFAULT_LOCAL_SETTINGS)
       expect(await store.readFolder()).toEqual({})
     })
 
     it('reads back what it wrote, and only under its own path', async () => {
-      const { store, textAt } = make()
+      const { store, textAt } = await make()
       await store.writeLocal({ git: { pullOnOpen: true } })
       expect((await store.readLocal()).git.pullOnOpen).toBe(true)
       expect(await textAt(LOCAL_SETTINGS_PATH)).toContain('"pullOnOpen": true')
     })
 
     it('patches: a second write leaves the first flag standing', async () => {
-      const { store } = make()
+      const { store } = await make()
       await store.writeLocal({ git: { pullOnOpen: true } })
       await store.writeLocal({ git: { pushAfterSnapshot: true } })
       expect(await store.readLocal()).toEqual({ git: { pullOnOpen: true, pushAfterSnapshot: true } })
     })
 
     it('carries a newer build’s keys through a write', async () => {
-      const { store, textAt } = make({
+      const { store, textAt } = await make({
         [LOCAL_SETTINGS_PATH]: '{"version":2,"git":{"pullOnOpen":false,"rebase":true}}\n',
       })
       await store.writeLocal({ git: { pullOnOpen: true } })
@@ -56,12 +61,12 @@ export function describeFolderSettings(
     })
 
     it('reads a malformed file as the defaults rather than failing', async () => {
-      const { store } = make({ [LOCAL_SETTINGS_PATH]: 'not json at all' })
+      const { store } = await make({ [LOCAL_SETTINGS_PATH]: 'not json at all' })
       expect(await store.readLocal()).toEqual(DEFAULT_LOCAL_SETTINGS)
     })
 
     it('never writes the shared file for a machine setting', async () => {
-      const { store, textAt } = make()
+      const { store, textAt } = await make()
       await store.writeLocal({ git: { pullOnOpen: true } })
       expect(await textAt('.lionsville-architecture/folder.json')).toBeUndefined()
     })
@@ -72,7 +77,7 @@ export function describeFolderSettings(
      * it (ADR-0012 §1). A colleague's newer keys have to survive it.
      */
     it('takes away the key the pass names, and carries every other through', async () => {
-      const { store, textAt } = make({
+      const { store, textAt } = await make({
         [FOLDER_SETTINGS_PATH]: '{"version":1,"organisation":{"name":"Acme Logistics"},"somethingLater":true}\n',
       })
       expect((await store.readFolder()).legacyOrganisationName).toBe('Acme Logistics')

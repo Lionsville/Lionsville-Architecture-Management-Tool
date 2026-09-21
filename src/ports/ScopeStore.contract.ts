@@ -99,8 +99,12 @@ async function paths(store: ScopeStore): Promise<ScopePath[]> {
 /**
  * The test. `create` must hand back an empty, fresh store on every call —
  * otherwise one test leaks into the next and the suite proves nothing.
+ *
+ * It may answer with a promise, because a store that answers over a network is
+ * connected before it is a store. Every clause awaits it; a maker that is
+ * synchronous is awaited too and nothing about its run changes.
  */
-export function describeScopeStore(name: string, create: () => ScopeStore): void {
+export function describeScopeStore(name: string, create: () => ScopeStore | Promise<ScopeStore>): void {
   describe(`ScopeStore contract: ${name}`, () => {
     /**
      * The root is not created; it is where you are. A store that answered with
@@ -108,7 +112,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * way to make the first scope.
      */
     it('has a root on an empty store, and nothing under it', async () => {
-      const store = create()
+      const store = await create()
       const root = await store.list()
       expect(root.path).toBe(ROOT_SCOPE)
       expect(root.children).toEqual([])
@@ -116,7 +120,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('saves the root scope and reads it back', async () => {
-      const store = create()
+      const store = await create()
       await store.save(bareScope(ROOT_SCOPE, 'Acme Logistics', 'organisation'))
       const root = await store.list()
       expect(root.name).toBe('Acme Logistics')
@@ -125,7 +129,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('gives back what was saved, at its own path', async () => {
-      const store = create()
+      const store = await create()
       const scope = sampleScope()
       await store.save(scope)
       const back = await store.load(SAMPLE_PATH)
@@ -145,20 +149,20 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * freshest write outdated would rewrite the folder on every open.
      */
     it('does not call what it has just written outdated', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope())
       await expect(store.outdated?.() ?? Promise.resolve([])).resolves.toEqual([])
     })
 
     it('does not answer for a path that was never saved', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope())
       await expect(store.load('other/landscape')).resolves.toBeUndefined()
       await expect(store.load('acme-logistics/other')).resolves.toBeUndefined()
     })
 
     it('keeps two scopes under the same parent apart', async () => {
-      const store = create()
+      const store = await create()
       await store.save(scopeAt('acme/one', 'One'))
       await store.save(scopeAt('acme/two', 'Two'))
       expect((await store.load('acme/one'))?.model.name).toBe('One')
@@ -169,7 +173,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
       // The whole reason the tree exists: this tool is shared with the people
       // whose landscape it describes, and everybody calls their first one the
       // same thing.
-      const store = create()
+      const store = await create()
       await store.save(scopeAt('acme/landscape', 'Acme'))
       await store.save(scopeAt('globex/landscape', 'Globex'))
       expect((await store.load('acme/landscape'))?.model.name).toBe('Acme')
@@ -177,7 +181,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('keeps a nested scope apart from its parent', async () => {
-      const store = create()
+      const store = await create()
       await store.save(scopeAt('acme', 'Parent'))
       await store.save(scopeAt('acme/rail', 'Nested'))
       expect((await store.load('acme'))?.model.name).toBe('Parent')
@@ -186,7 +190,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
 
     /** The listing is the tree, so a child has to arrive under its own parent. */
     it('lists a child under its parent', async () => {
-      const store = create()
+      const store = await create()
       await store.save(bareScope('acme', 'Acme', 'domain'))
       await store.save(scopeAt('acme/rail', 'Rail'))
       const root = await store.list()
@@ -196,7 +200,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('counts the views a scope holds, so a screen need not load it', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope())
       await store.save(bareScope('acme-logistics', 'Acme Logistics'))
       const [, domain, landscape] = flattenScopes(await store.list())
@@ -209,13 +213,13 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * would be a folder whose meaning depends on what is inside it.
      */
     it('refuses a scope named after one of its own folders', async () => {
-      const store = create()
+      const store = await create()
       await expect(store.save(scopeAt('acme/decisions'))).rejects.toBeInstanceOf(Error)
       await expect(store.load('acme/decisions')).resolves.toBeUndefined()
     })
 
     it('overwrites in place rather than accumulating', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope())
       await store.save(sampleScope({ activeDiagramId: 'cd' }))
       expect(await paths(store)).toContain(SAMPLE_PATH)
@@ -223,7 +227,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('lists a summary of every scope it holds', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope({ kind: 'landscape', client: 'Acme Logistics BV' }))
       const held = flattenScopes(await store.list()).find((s) => s.path === SAMPLE_PATH)
       expect(held).toMatchObject({
@@ -235,7 +239,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('stamps a save so a screen can order by it', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope())
       const held = flattenScopes(await store.list()).find((s) => s.path === SAMPLE_PATH)
       expect(held?.updatedAt, 'updatedAt').toBeTruthy()
@@ -243,7 +247,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('forgets a scope after remove()', async () => {
-      const store = create()
+      const store = await create()
       await store.save(sampleScope())
       await store.remove(SAMPLE_PATH)
       await expect(store.load(SAMPLE_PATH)).resolves.toBeUndefined()
@@ -251,7 +255,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('removes only what it was asked to', async () => {
-      const store = create()
+      const store = await create()
       await store.save(scopeAt('acme/one'))
       await store.save(scopeAt('acme/two'))
       await store.remove('acme/one')
@@ -260,7 +264,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
 
     /** A child left behind by a removed parent is addressed by nothing. */
     it('removes the scopes filed under the one it removes', async () => {
-      const store = create()
+      const store = await create()
       await store.save(scopeAt('acme'))
       await store.save(scopeAt('acme/rail'))
       await store.remove('acme')
@@ -268,14 +272,14 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('does not mind remove() for something that is not there', async () => {
-      await expect(create().remove(SAMPLE_PATH)).resolves.toBeUndefined()
+      await expect((await create()).remove(SAMPLE_PATH)).resolves.toBeUndefined()
     })
 
     it('refuses to file a scope at an unusable path', async () => {
       // A segment that is not a slug could walk out of its own folder once a
       // store keeps scopes on disk. Refusing here means no adapter has to
       // sanitise.
-      const store = create()
+      const store = await create()
       await expect(store.save({ ...sampleScope(), path: '../escape' }))
         .rejects.toBeInstanceOf(Error)
     })
@@ -286,7 +290,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * old address must not be what takes them away.
      */
     it('keeps the children when a scope is moved by saving and then removing', async () => {
-      const store = create()
+      const store = await create()
       await store.save(scopeAt('acme', 'Acme'))
       await store.save(scopeAt('acme/rail', 'Rail'))
       const held = await store.load('acme')
@@ -300,7 +304,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
       // `undefined` as the same thing — and losing fields is exactly what an
       // adapter that goes through JSON does quietly. Key order is allowed to
       // differ: a store may rebuild the object, and several do.
-      const store = create()
+      const store = await create()
       const scope = sampleScope({ kind: 'landscape', client: 'Acme BV', links: [{ label: 'Wiki', url: 'https://example.test/wiki' }] })
       await store.save(scope)
       const back = await store.load(SAMPLE_PATH)
@@ -314,7 +318,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * documents and everything filed under it.
      */
     it('loads a scope that holds no views, because that is a domain', async () => {
-      const store = create()
+      const store = await create()
       await store.save(bareScope('acme', 'Acme', 'domain'))
       const back = await store.load('acme')
       expect(back?.model.name).toBe('Acme')
@@ -322,7 +326,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('keeps the decisions a scope carries, verbatim', async () => {
-      const store = create()
+      const store = await create()
       const scope = bareScope('acme', 'Acme', 'domain')
       scope.model.decisions = [{
         id: 'adr-1', number: 1, title: 'Use one identity provider', status: 'accepted',
@@ -353,7 +357,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
      * gives, by id, and nothing for a scope the store does not hold.
      */
     it('answers one scope\'s descriptions as load() gives them', async () => {
-      const store = create()
+      const store = await create()
       const scope = sampleScope()
       scope.model.elements = scope.model.elements.map((element, n) => (
         n === 0 ? { ...element, description: 'What it does, in prose.' } : element
@@ -370,7 +374,7 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
     })
 
     it('answers for every scope it lists, with the models load() gives', async () => {
-      const store = create()
+      const store = await create()
       await store.save(bareScope(ROOT_SCOPE, 'Acme Logistics', 'organisation'))
       await store.save(bareScope('acme-logistics', 'Acme', 'domain'))
       // A plan on the landscape, because the roadmap of a scope above reads
@@ -394,8 +398,8 @@ export function describeScopeStore(name: string, create: () => ScopeStore): void
       }
     })
 
-    it('names itself, so a message can say where it went wrong', () => {
-      expect(create().id).toBeTruthy()
+    it('names itself, so a message can say where it went wrong', async () => {
+      expect((await create()).id).toBeTruthy()
     })
   })
 }

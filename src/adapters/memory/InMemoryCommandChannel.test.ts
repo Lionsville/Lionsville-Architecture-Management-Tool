@@ -1,12 +1,69 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fromArrays } from '../../model/normalised'
 import { SAMPLE_SCOPE, describeCommandChannel, sampleHead } from '../../ports/CommandChannel.contract'
+import type { ChannelUnderTest } from '../../ports/CommandChannel.contract'
+import type { CommandChannel, SequencedStep } from '../../ports/CommandChannel'
 import { InMemoryCommandChannel } from './InMemoryCommandChannel'
 
 describeCommandChannel('memory', ({ seed, keep }) => {
   const channel = new InMemoryCommandChannel({ seed, keep })
   return { connect: (by) => channel.connect(by) }
 })
+
+/**
+ * The same channel with every answer and every broadcast put off a turn, run
+ * through the same contract.
+ *
+ * Nothing in this repository fills the channel over a network, so nothing here
+ * would notice if the suite went back to asserting on a subscriber in the
+ * statement after the publish — and a filling that answers over a network would
+ * then fail a contract it actually satisfies. This is that filling, with the
+ * latency and none of the transport: a subscription is not live when
+ * `subscribe` returns, a step is not delivered when `publish` answers, and
+ * `settled` is the only thing that says when they are. If a clause forgets to
+ * settle, this run fails and the memory run above does not.
+ */
+function answeredLate(channel: InMemoryCommandChannel): ChannelUnderTest {
+  let pending = 0
+  const later = (work: () => void): void => {
+    pending++
+    setTimeout(() => { pending--; work() }, 0)
+  }
+  const connect = (by: string): CommandChannel => {
+    const inner = channel.connect(by)
+    return {
+      id: inner.id,
+      publish: (step) => new Promise((resolve, reject) => {
+        later(() => { inner.publish(step).then(resolve, reject) })
+      }),
+      subscribe: (scope, after, on, onGap) => {
+        let live = true
+        let stopInner: (() => void) | undefined
+        later(() => {
+          if (!live) return
+          stopInner = inner.subscribe(
+            scope, after,
+            (step: SequencedStep) => later(() => { if (live) on(step) }),
+            () => later(() => { if (live) onGap() }),
+          )
+        })
+        return () => { live = false; stopInner?.() }
+      },
+      presence: (scope) => inner.presence?.(scope) ?? Promise.resolve([]),
+    }
+  }
+  return {
+    connect,
+    settled: async () => {
+      // Every turn a queued piece of work may queue another: a publish that
+      // lands tells subscribers, and telling them is a turn of its own.
+      while (pending > 0) await new Promise((resolve) => setTimeout(resolve, 0))
+    },
+  }
+}
+
+describeCommandChannel('memory, answered late', async ({ seed, keep }) =>
+  answeredLate(new InMemoryCommandChannel({ seed, keep })))
 
 describe('InMemoryCommandChannel', () => {
   const step = (over = {}) => ({
