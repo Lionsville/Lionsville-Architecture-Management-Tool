@@ -462,6 +462,67 @@ languages, the fallback where the author is nameless, the field carried onto the
 stack and never invented, and the answer with `via` present for the step that
 said one and absent for the step that did not.
 
+## Amended — the four a build that puts every announcement on the wire needed
+
+*21 September 2026.* The same build carried each announcement to a second
+author and read its own log back, and four seams stopped short at the one
+thing this repository had said nothing about: a step that grows. Each is added
+as the smallest public thing that closes it, and nothing above the session is
+edited.
+
+* **A name per announcement, not per step.** A coalescing step — a typed name,
+  a drag and the routing after it — is one step on this stack and was announced
+  every time it grew under the one `stepId`. Anywhere idempotent by that name
+  answers the second announcement out of what it decided for the first and
+  sequences nothing, so a name typed in five keystrokes left this session as
+  one: the rest were on this screen, in this stack and in this `revision()`,
+  and nowhere else, with an answer saying they had landed. `HistoryStep.folds`
+  is the list of them now, each with a `changeId`, the commands that
+  announcement applied and their inverses, and `SessionChange.changeId` is the
+  name to publish under. `stepId` is what still says they are one step here,
+  and the type says so out loud: one step on this stack, several on a channel,
+  and undoing it is one new change carrying every fold's inverse — which gets a
+  `changeId` of its own too, rather than the caller minting one.
+* **A rebase is named by fold as well as by step.** A caller that publishes per
+  announcement is answered per announcement, so it holds folds and not steps,
+  and the earlier keystrokes of a step that is half answered for belong *under*
+  what has just arrived and not over it. `RebaseRun.stepIds` reads either name:
+  a `stepId` is every fold of that step, a `changeId` is one fold, and naming
+  one unwinds that fold's commands and no more. The step stays one step on the
+  stack whichever way it was named — the alternative, folds as separate steps
+  whenever anything is listening, would make a typed name twelve presses of ⌘Z
+  for the person, which is the thing coalescing exists to stop.
+* **A rebase reaches work this stack has let go.** The log is capped, so a
+  caller holding a run older than the cap could name it and be told `unknown`,
+  and the run then stayed on the model unrebased with its `base` never
+  corrected. `RebaseRun.steps` is the bodies, from the caller that still has
+  them: they go under the stack's own run, are reapplied with it, and come back
+  in `RebaseReport.supplied` with their inverses recomputed against the model
+  they now undo. They are deliberately **not** put on the stack — they were not
+  on it before, and an undo this session had let go stays let go.
+* **The cap does not take a step out from under a listener.** The simplest
+  honest rule, and it is the one: while anything is listening, the trim stops
+  at the oldest fold nobody has called `steps.settled` on. A step trimmed while
+  somebody outside still has to hand it back is one they can name and `rebase`
+  cannot find, and that is the one question a rebase has no honest answer for.
+  With no listener every step is settled the moment it is made and the cap is
+  the two hundred it always was; with one, how far the log grows is the
+  listener's own business and `settled` is how it says so. A step another
+  author made is settled on arrival — it came from wherever it would have been
+  sent — or a floor at one would never lift.
+
+So `steps` is four functions rather than three. `rebase.test.ts` pins the
+arithmetic pure: a whole step picked by its id, one fold picked by its
+`changeId` and the step it belongs to named, an id that matches neither, and
+`flatten` as the statement of what a step's two directions are.
+`useModelSession.test.tsx` pins the rest: two announcements under two names and
+one `stepId`, an undo under a third, one fold of a step unwound with the other
+left where it was and ⌘Z still one press, a supplied run for an id the cap took
+away, and the trim at the cap, at the floor, and with the floor lifted.
+`App.channel.test.tsx` is the end of it, two workspaces over one channel: a
+name typed in five keystrokes arrives whole and not as its first letter, it is
+five sequenced steps over there and one here, and taking it back crosses as one.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

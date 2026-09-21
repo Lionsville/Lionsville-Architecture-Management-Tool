@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4310 tests** and one of every config. The
+One codebase, in modules, with **4361 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4310 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4361 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -383,8 +383,11 @@ src/app/          The shell around the editor.
                                       `openSource`, `SourceBase` and
                                       `registeredConnects` for whoever composes
                                       over this one
-                    rebase            a run of steps off the model and back on,
-                                      pure — no React, no stack, no policy
+                    rebase            a run off the model and back on, pure —
+                                      no React, no stack, no policy; the unit
+                                      is the **fold**, one announcement's worth
+                                      of a step, because a step that coalesces
+                                      is answered for one fold at a time
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
                     organisation/     the first screen: the root scope's home.
                                       OrganisationScreen · OrganisationCards ·
@@ -727,8 +730,8 @@ identifiers is still a list of a customer's identifiers.
 | The sentence for where work is kept (ADR-0005, ADR-0022, amended) | `sourceTipKey`: one per built-in kind, and for a registered source the provider's own **`describeKey`** — its key, from its own table — or nothing at all. Nothing rather than a sentence of ours, for the reason the name on the bar is the provider's: a guess about somewhere this shell has never heard of could promise a copy that cannot be made |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
 | Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it. **A reducer refusal is answered first**: a step whose `base` is behind the head and whose command the reducer refuses is answered with the reducer's key, so `command.taken` always means *mint another id*; a channel that decides such a step overlaps a later one refuses with a key of its own, which this repository does not define |
-| One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
-| A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
+| One scope, open, as whoever answers for its source sees it (ADR-0022) | a **`ScopeSession`**: the `scope`, `steps` (`onChange` · `applyExternal` · `rebase` · `settled`), `dispatch`, `current()` and `indexed()` for the model at this instant, `history()`, `revision()`, and `alsoHere(names)` the other way. Handed over once per mount through `Shell.onScopeSession` and taken back on unmount |
+| A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one — named by `stepId` or by `changeId`, and with `steps` for the bodies of what the cap has taken off this stack; `steps.onChange` is how anything outside hears what was done here, **once per announcement**, each under a `changeId` of its own, because a step that coalesces is one step here and one sequenced step per fold out there (`HistoryStep.folds`); `steps.settled` is how the far end says it is done with one, and the log's cap of 200 will not evict a fold nobody has said that about; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022, amended) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600, and `origins()` names where the page may reach — folded into `connect-src`, and into `img-src` where that hook said pictures load from there, asked again every time a document's header is built and dropped unless it is `scheme://host[:port]` and nothing more (`electron/main/csp.ts`). Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Working-folder format | **7** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021) |
 | What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
