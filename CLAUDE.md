@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4251 tests** and one of every config. The
+One codebase, in modules, with **4261 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -45,7 +45,7 @@ yourself, read it before committing it.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4251 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4261 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -304,7 +304,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       words the bar says (ADR-0022)
                     desktopHook       what a build composed from this one may ask
                                       of the main process: somewhere to answer the
-                                      renderer, somewhere to keep a small secret
+                                      renderer, somewhere to keep a small secret,
+                                      and the `hook:` prefix both sides name
 src/widgets/      Presentation with no opinions: icons, one confirm dialog, and
                   a laid-out page rasterised (`capturePage`).
 src/ports/        The seams. Interfaces only, no implementations.
@@ -364,6 +365,8 @@ electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel
                     git.ts            snapshots, through the machine's own git
                     appMenu.ts        the File menu; every item sends a command
+                    preload/index.ts  the doorway: the typed channels, and the one
+                                      generic door for a hook's own (`invokeHook`)
                     mcp.ts · mcpServer.ts   the agent server: the kept port and
                                       token, the loopback listener; the protocol
                                       itself is `src/agent/mcpProtocol.ts`
@@ -641,11 +644,11 @@ identifiers is still a list of a customer's identifiers.
 | Offered beyond its team (ADR-0014) | `shared` on a service, typed and left as typed; where nobody typed it, a service `assigned` to one actor and used by another team's application is `check.offeredNotShared`, a finding and never a value |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
-| Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
+| Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says — with `onSourceWork` to say *ask me again*, for an answer that moved without the document's own machine moving. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
 | A source somebody else answers for (ADR-0022) | a **registered source**: `kind: 'registered'`, the `provider` that answers for it, the `name` it is called on the bar, the `key` that tells two of the same provider's apart, and `readOnly` where work there is only read — the fact the workspace and the agent both read |
-| Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only. What crosses scopes does not come through it |
+| Where a step goes when a scope has more than one author (ADR-0022) | a **command channel**, per scope: `publish` a `StepEnvelope` (`stepId` · `base` · one command · `at`) and be answered its `seq` or the refusal; `subscribe` from a number for every **sequenced step** — `seq` counts from 1, so **0 is nothing yet**, and `by` is the channel's word about who made it and never the sender's claim; `presence` optional, names only — handed to the shell as `ScopeSession.alsoHere(names)` and said on the bar as *Also here: …*, with no cursors and nothing when the list is empty. What crosses scopes does not come through it |
 | A step this session did not make (ADR-0022) | an **external step**: `origin: 'remote'` and `by` on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one; `steps.onChange` is how anything outside hears what was done here; `command.taken` is what a create on an id another author took is refused with |
-| What a build composed from this one may ask of main (ADR-0022) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600. Core registers none |
+| What a build composed from this one may ask of main (ADR-0022) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600. Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Working-folder format | **7** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021) |
 | What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
@@ -1219,9 +1222,12 @@ passes it and is useful on its own. The session gained three functions that
 carry no policy at all: hear what was just done here, land a command another
 author made, and lift a run of our own off the model by its inverses while
 theirs goes underneath it. A step has a name, ⌘Z steps over what it did not
-make, the Activity list says whose a step was, and `electron/main` runs the
-hooks a build composed from this one registered — somewhere to answer the
-renderer, somewhere to keep a small secret. Core registers no provider and
-fills no channel: what is here is the place a filling plugs into, the words it
-plugs in with, and two whole workspaces over one in-memory channel proving that
-it fits.
+make, and the Activity list says whose a step was. The bar says *Also here: …*
+when it is told who else has the scope open — names, never cursors — and asks
+the source again when the source says its own answer has moved. `electron/main`
+runs the hooks a build composed from this one registered, and the preload has
+one door for their channels: `hook:` and nothing else, which is the one check
+in this app that the caller cannot skip. Core registers no provider and fills
+no channel: what is here is the place a filling plugs into, the words it plugs
+in with, and two whole workspaces over one in-memory channel proving that it
+fits.

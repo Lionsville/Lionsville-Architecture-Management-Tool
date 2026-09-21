@@ -70,6 +70,15 @@ five words the bar says (`clean`, `dirty`, `saving`, `external-changed`,
 `conflict`). `SourceStatus` moves here and `DocumentStatus` becomes it plus
 `no-file`, which is the one state that is genuinely about a file.
 
+`statusOf` is asked again whenever the document's own machine moves, which is
+every answer a file has and half of one for anywhere else: work that has not
+left this machine yet moves nothing the machine can see. So a provider may also
+say *ask me again* — `Shell.onSourceWork`, a listener that carries nothing,
+because `statusOf` is where the answer is given. It reaches only the last word
+on what a status is CALLED; when to write, whether anything is outstanding and
+whether closing the window would lose something are still the document
+session's, and nothing a provider says can reach them.
+
 `registerSourceProvider` and `sourceProvider(kind)` live in `composition.ts`,
 because that is the one file allowed to name both a seam and a filling, and
 the three that ship register themselves there at module load. `composeShell`'s
@@ -139,6 +148,14 @@ the session over — narrowly: the seam, `dispatch`, the log, the revision —
 through `Shell.onScopeSession`, once per mount, taken back on unmount. A seam
 that cannot be reached from where its filling is composed is not a seam.
 
+It carries one thing the other way too. `alsoHere(names)` is who else has this
+scope open, which is the shape `CommandChannel.presence` answers in and the one
+thing about a scope this tree cannot work out for itself; the bar says *Also
+here: A. Author, B. Bee* in the four languages, and nothing at all when the list
+is empty, because a bar that says a scope is yours alone answers a question
+nobody asked. Names only — where a colleague's pointer is would be a second
+model of the canvas.
+
 ### `command.taken`, and an id policy that looks again
 
 Two authors adding *Billing* in the same second both mint `billing`, and
@@ -158,7 +175,17 @@ of the main process: `ChannelHost`, as much of `ipcMain` as answering a call
 takes and not one method more, and `SecretStore` — three verbs, no list — over
 a file in `userData` at mode 0600, the way the agent's token is kept.
 `electron/main` runs the registered hooks where it registers its own channels,
-and core registers none, so the loop runs over an empty list. `mcpProtocol.ts`
+and core registers none, so the loop runs over an empty list.
+
+A main side nothing can call is not a seam either, and the page has no
+`ipcRenderer` of its own — that is the sandbox ADR-0007 reasons from. So the
+preload gains one door, `invokeHook(channel, ...args)`, which opens for the
+`hook:` prefix and nothing else. That prefix is the one check in this app that
+is genuinely not a check the caller can skip: main, answering a `handle`, cannot
+tell who called, and the page has no second way to ask, so without it one
+generic door is a way to call `files:remove` with a path of the caller's
+choosing. The payload is not looked at, exactly as before: a hook checks its own
+arguments in main, where it knows what they are supposed to be. `mcpProtocol.ts`
 moved out of `electron/main` to `src/agent/`, where it always belonged: it
 speaks the agent's vocabulary and imports nothing of Electron's.
 
@@ -174,9 +201,11 @@ speaks the agent's vocabulary and imports nothing of Electron's.
   was made here, whether an undo is published, and who is told about a
   refusal are all the caller's. The session stays the one place a change
   enters and knows nothing about where a change can come from or go.
-* **No presence, no resolution screen, no queue.** A bar that names who else
-  is looking, and a strip for settling two changes that disagree, are screens
-  about a filling. `presence` is optional on the port and nothing draws it.
+* **No resolution screen, and no queue.** A strip for settling two changes that
+  disagree, and somewhere to keep work while there is nowhere to send it, are
+  the filling's. Presence is the one screen here, and it is one sentence on the
+  bar: the shell is told the names and never works them out, there are no
+  cursors, and nothing polls.
 * **Marks and pictures are not commands.** The mark and image libraries are
   shell state that travels in the working file; they do not go through a
   channel, and a source that keeps them elsewhere reports them changed the way
@@ -218,14 +247,22 @@ speaks the agent's vocabulary and imports nothing of Electron's.
   provider with its way in and its own words, a kind registered twice ignored.
 * `App.storage.test.tsx`: a registered source named on the bar by its
   provider, what it offers when it writes and what it hides when it does not,
-  and an agent refused `agent.readOnly` where a person is offered nothing.
+  an agent refused `agent.readOnly` where a person is offered nothing, and the
+  bar saying what the provider now says without the document's machine moving.
+* `useDocumentSession.test.tsx` and `ShellToolbar.test.tsx`: asked again when
+  the source says so and let go of on unmount, while everything the machine
+  decides stays where it was; the other authors named in one sentence, in the
+  language the app is in, and nothing at all when there are none.
 * `App.channel.test.tsx`: two whole workspaces over one in-memory channel,
   composed from outside with nothing that is not public — a step made in one
   arriving in the other's model and Activity list under its author's name, an
-  undo crossing as a new step, and a step of ours that has not been sequenced
-  yet coming off the model while theirs lands underneath it.
-* `desktopHook.test.ts` and `secrets.test.ts`: the registry, and a secret kept
-  at mode 0600 and read back. The smoke run is unchanged, which is the point.
+  undo crossing as a new step, a step of ours that has not been sequenced yet
+  coming off the model while theirs lands underneath it, and each bar naming
+  the other author and never itself.
+* `desktopHook.test.ts`, `secrets.test.ts` and `electron/preload/index.test.ts`:
+  the registry, what counts as a hook's channel, a secret kept at mode 0600 and
+  read back, and the door passing a hook's channel through while refusing every
+  channel of ours. The smoke run is unchanged, which is the point.
 
 ## More Information
 
