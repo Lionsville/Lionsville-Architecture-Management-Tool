@@ -27,6 +27,8 @@ import { installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './app
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
+import { contentSecurityPolicy, pageOrigins } from './csp'
+import { hookOrigins } from '../../src/platform/desktopHook'
 import { runDesktopHooks } from './desktopHooks'
 import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
@@ -75,26 +77,29 @@ const APP_ORIGIN = 'app://local'
 const RENDERER_ROOT = resolve(__dirname, '../renderer')
 
 /**
- * The renderer's own budget.
+ * The renderer's own budget, assembled where it is sent (`csp.ts` says what is
+ * in it and why).
  *
- * `'wasm-unsafe-eval'` is the libavoid router: compiling WebAssembly is barred by
- * a plain `script-src 'self'`, and without it the editor silently draws straight
- * lines. `'unsafe-inline'` for styles is Emotion, which injects the MUI theme as
- * style tags — MUI cannot run without it. `blob:` covers the module worker and
- * the PNG export; `connect-src` needs `data:`/`blob:` for the same two.
+ * Built per document rather than held in a constant, because one directive is no
+ * longer this file's alone to decide: a registered source has to be reachable,
+ * and the hooks name where (`platform/desktopHook.ts`). Asking them here means a
+ * hook that has since learnt where it was pointed is read at the next load,
+ * which is the only moment a CSP can change anyway — the header travels with the
+ * document.
+ *
+ * What a hook names and what is refused is logged once per document, because a
+ * page that cannot reach its own source otherwise fails every request with
+ * nothing anywhere saying why.
  */
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self' data: blob:",
-  "worker-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'none'",
-  "form-action 'none'",
-].join('; ')
+function policyForDocument(): string {
+  const named = hookOrigins()
+  if (named.length > 0) {
+    const { data, pictures, refused } = pageOrigins(named)
+    log('main', `csp: ${data.length} origins, ${pictures.length} for pictures`)
+    for (const bad of refused) log('main', `csp: refused origin ${bad}`)
+  }
+  return contentSecurityPolicy(named)
+}
 
 const MIME: Record<string, string> = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
@@ -134,7 +139,7 @@ function serveRenderer(): void {
     const response = await net.fetch(pathToFileURL(filePath).toString())
     const headers = new Headers(response.headers)
     headers.set('Content-Type', MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream')
-    headers.set('Content-Security-Policy', CSP)
+    headers.set('Content-Security-Policy', policyForDocument())
     headers.set('X-Content-Type-Options', 'nosniff')
     return new Response(response.body, { status: 200, headers })
   })

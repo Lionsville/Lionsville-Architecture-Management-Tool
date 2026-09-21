@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesktopHook, DesktopSide } from './desktopHook'
 import {
-  HOOK_CHANNEL_PREFIX, desktopHooks, isHookChannel, registerDesktopHook,
+  HOOK_CHANNEL_PREFIX, desktopHooks, hookOrigins, isHookChannel, registerDesktopHook,
 } from './desktopHook'
 
 function nothing(): DesktopSide {
@@ -50,6 +50,58 @@ describe('the desktop hooks', () => {
     for (const hook of desktopHooks()) hook.registerChannels(nothing())
     expect(first.runs()).toBe(1)
     expect(again.runs()).toBe(0)
+  })
+})
+
+/**
+ * Where the page may reach, which is the one part of the desktop's
+ * Content-Security-Policy a hook has a say in (`electron/main/csp.ts` folds
+ * these in and drops what is not an origin).
+ */
+describe('hookOrigins', () => {
+  it('has none, because this build registers no hook that names one', () => {
+    expect(hookOrigins().filter((named) => !named.origin.startsWith('https://test.'))).toEqual([])
+  })
+
+  it('gathers what the hooks name, in the order they registered', () => {
+    registerDesktopHook({
+      ...counting('test.reaches'),
+      origins: () => [{ origin: 'https://test.one' }],
+    })
+    registerDesktopHook({
+      ...counting('test.pictures'),
+      origins: () => [{ origin: 'https://test.two', pictures: true }],
+    })
+    const mine = hookOrigins().filter((named) => named.origin.startsWith('https://test.'))
+    expect(mine).toEqual([
+      { origin: 'https://test.one' },
+      { origin: 'https://test.two', pictures: true },
+    ])
+  })
+
+  /**
+   * Asked at every document rather than read once, so a hook that has since
+   * learnt where it was pointed is read again at the next load.
+   */
+  it('asks again each time, rather than remembering the first answer', () => {
+    let pointed = 'https://test.before'
+    registerDesktopHook({
+      ...counting('test.moves'),
+      origins: () => [{ origin: pointed }],
+    })
+    expect(hookOrigins().map((named) => named.origin)).toContain('https://test.before')
+    pointed = 'https://test.after'
+    expect(hookOrigins().map((named) => named.origin)).toContain('https://test.after')
+    expect(hookOrigins().map((named) => named.origin)).not.toContain('https://test.before')
+  })
+
+  /** One hook that throws is not a window with no document. */
+  it('skips a hook that throws and still asks the rest', () => {
+    registerDesktopHook({
+      ...counting('test.throws'),
+      origins: () => { throw new Error('not yet') },
+    })
+    expect(hookOrigins().map((named) => named.origin)).toContain('https://test.one')
   })
 })
 
