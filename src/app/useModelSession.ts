@@ -363,14 +363,12 @@ export function useModelSession(deps: {
    *
    * The policy remembers what it has handed out for the life of the session,
    * so an id another author took in the meantime is not one it knows about —
-   * and a create here would mint the name they just used.
-   *
-   * NOTE for the seam: minted anew until `idPolicy` has a `refresh()` of its
-   * own. What that costs is the ids handed out and not yet in the model.
+   * and a create here would mint the name they just used. It is told to look
+   * again, which keeps what it handed out and has not yet put on the model.
    */
   const refreshIds = useCallback(() => {
-    ids.current = idPolicy(spokenFor)
-  }, [spokenFor])
+    ids.current?.refresh()
+  }, [])
 
 
   // The stacks are refs, because a caller has to be able to read and move them
