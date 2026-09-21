@@ -228,10 +228,16 @@ const UNATTENDED = process.argv.includes('--smoke')
  * start again. `platform/userData` holds the name those folders actually have
  * and says why it may not change.
  *
+ * Only for a packaged app. An unpackaged run — `npm run dev:desktop`, and the
+ * smoke run below — has always had a `userData` of its own, named after the
+ * package rather than the product, and it keeps it: a dev session sharing the
+ * installed app's folder would repoint somebody's real app at a scratch
+ * directory, which is the hazard the smoke run's own override is about.
+ *
  * Here rather than anywhere else because this is before `whenReady` — the only
  * moment a path can be set — and before the first thing that reads one.
  */
-app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))
+if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))
 
 /**
  * The smoke run keeps its own `userData`, and therefore its own preferences.

@@ -18,7 +18,7 @@ const MAIN = readFileSync(new URL('./index.ts', import.meta.url), 'utf8')
 
 describe('where main puts userData', () => {
   it('pins it to the frozen folder name, not to what the product is called', () => {
-    expect(MAIN).toContain("app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))")
+    expect(MAIN).toContain("if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))")
     expect(USER_DATA_NAME).toBe('Lionsville Architecture Management Tool')
   })
 
@@ -30,7 +30,10 @@ describe('where main puts userData', () => {
     expect(pinned).toBeLessThan(ready)
   })
 
-  /** The smoke run's own temporary folder has to win over the pin, not lose to it. */
+  /**
+   * The smoke run's own temporary folder has to win over the pin, not lose to
+   * it — belt and braces, since the pin is a packaged app's only.
+   */
   it('lets the smoke run override it afterwards', () => {
     const pinned = MAIN.indexOf("app.setPath('userData', join(")
     const smoke = MAIN.indexOf("app.setPath('userData', own)")
