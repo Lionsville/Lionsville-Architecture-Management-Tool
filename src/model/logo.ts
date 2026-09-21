@@ -16,7 +16,7 @@
  * sees it should look in the library first, and it makes a collision with a
  * built-in key impossible.
  */
-import type { StringKey, StringParams } from '../i18n'
+import type { StringKey, StringParams } from '../i18n/strings'
 import type { UploadedLogo } from '.'
 import { ShellError } from '../platform/errors'
 import { claimKey } from './keys'

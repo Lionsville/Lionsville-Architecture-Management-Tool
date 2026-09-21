@@ -19,7 +19,7 @@
  * does not outlive the tab, and the export has to be able to draw without a
  * network.
  */
-import type { StringKey, StringParams } from '../i18n'
+import type { StringKey, StringParams } from '../i18n/strings'
 import type { DocumentImage } from '.'
 import { ShellError } from '../platform/errors'
 import { claimKey, slug } from './keys'

@@ -30,7 +30,7 @@
  * That is the same rule the index follows in the other direction, and it keeps
  * this module testable with two plain arrays.
  */
-import type { StringKey, Translate } from '../i18n'
+import type { StringKey, Translate } from '../i18n/strings'
 import { OWNER_DETAIL } from '../model'
 import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'

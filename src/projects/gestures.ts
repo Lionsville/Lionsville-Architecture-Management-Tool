@@ -29,7 +29,7 @@
  * Pure. The tree's records come in, the writes and the command go out; who
  * loads, who saves and who dispatches is `app/useGestures.ts`.
  */
-import type { StringKey } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 import type { Command, DesignElement, ElementId } from '../model'
 import { ownerDetailOn } from './checks'
 import type { ScopeModel, ScopeSnapshot } from './scope'

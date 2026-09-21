@@ -27,7 +27,7 @@
  * person and dispatches. In `projects/` because the answer is about which
  * scope holds what, which `model/` may not know.
  */
-import type { StringKey } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 import type { DesignDiagram, DesignElement, ElementId, Relation } from '../model'
 import { canPlaceKind } from '../model/placement'
 import type { IndexedRelation, IndexEntry, ScopeIndex } from './scopeIndex'

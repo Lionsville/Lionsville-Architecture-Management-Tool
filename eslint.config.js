@@ -119,6 +119,45 @@ const WHY = {
 const PURE = ['model', 'layout', 'platform', 'platform/node', 'ports', 'projects', 'i18n', 'agent']
 const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*']
 
+/**
+ * The barrels that carry a page, and so are not a way in for a module that
+ * computes.
+ *
+ * Keeping a pure module out of every `ui/` folder is not the same promise as
+ * keeping a screen out of it, and the difference is a barrel: an `index.ts` at a
+ * module's root, pure by its own extension, that re-exports its module's pages
+ * so a screen can have them in one import. `agent/commandFor.ts` said
+ * `from '../business'` for six pure functions and got React, MUI and three
+ * dialogs with them — into the module the desktop's agent server loads in a
+ * process that has no DOM at all.
+ *
+ * So a pure module names the file the function is in, which is what the module
+ * map asks of every cross-module import anyway. Listed by hand because a lint
+ * config cannot walk an import graph; `src/agent/pure.test.ts` walks the one
+ * chain where it matters, and is what would catch a barrel that grows a page
+ * after this line was written.
+ *
+ * `paths` rather than `patterns`, because this is the one restriction here that
+ * has to be exact. A `group` is matched with gitignore semantics, where a
+ * pattern ending in a folder's name covers everything *under* that folder too —
+ * so a group naming the `i18n` barrel would forbid `i18n/strings` with it, which
+ * is the file these imports are being sent to. A negated glob does not narrow a
+ * group in this ESLint either (see the table's exemption above), so the four
+ * spellings a barrel has from inside `src/` are written out instead.
+ */
+const BARRELS_THAT_DRAW = [
+  'i18n', 'widgets', 'decisions', 'observations', 'roadmap', 'business', 'technology', 'search',
+]
+
+/** A barrel as it is written from inside `src/`: one level up, or two from `platform/node`. */
+const barrelPaths = (from) => BARRELS_THAT_DRAW
+  .filter((to) => to !== from)
+  .flatMap((to) => [`../${to}`, `../../${to}`, `../${to}/index`, `../../${to}/index`])
+  .map((name) => ({
+    name,
+    message: 'This module computes, and that barrel has pages on it: name the file the function is in.',
+  }))
+
 
 /**
  * The one hole in the matrix, and it is a hole on purpose.
@@ -159,6 +198,7 @@ const IMPORT_MATRIX = MODULES.map((from) => ({
   ],
   rules: {
     'no-restricted-imports': ['error', {
+      paths: PURE.includes(from) ? barrelPaths(from) : [],
       patterns: [
         {
           group: MODULES
@@ -169,6 +209,9 @@ const IMPORT_MATRIX = MODULES.map((from) => ({
         ...(PURE.includes(from) ? [{
           group: SCREEN_PACKAGES,
           message: 'This module computes; screen work belongs in a ui/ folder, in editor/ or in app/.',
+        }, {
+          group: ['**/ui/**'],
+          message: 'This module computes; a page belongs to whoever draws it.',
         }] : []),
       ],
     }],
