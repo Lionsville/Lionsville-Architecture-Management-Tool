@@ -406,12 +406,27 @@ function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
  * run rather than being undone: it is theirs, and undoing it from a terminal
  * they are not looking at is what "a peer of the menu" must not do.
  */
+/**
+ * The newest step ⌘Z would take back: the newest that is not another author's.
+ *
+ * The session steps over a step that arrived from elsewhere rather than
+ * stopping at it — a colleague's change is not ours to take back, and it does
+ * not make the step of ours underneath it un-undoable either. So the check here
+ * steps over it too, or the agent would be refused an undo the person at the
+ * same keyboard is offered.
+ */
+function newestOurs(history: readonly HistoryEntry[]): HistoryEntry | undefined {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i].origin !== 'remote') return history[i]
+  }
+  return undefined
+}
+
 function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAnswer {
   const wanted = (args.steps as number | undefined) ?? 1
   const undone: string[] = []
   for (let n = 0; n < wanted; n += 1) {
-    const history = session.history()
-    const top = history[history.length - 1]
+    const top = newestOurs(session.history())
     if (!top || top.origin !== 'agent' || top.barrier !== undefined) break
     const what = session.translate(top.summary.key, {
       name: top.summary.name ?? '', count: top.summary.count ?? 0, asOf: top.summary.asOf ?? '',
@@ -420,13 +435,14 @@ function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAn
     undone.push(what)
   }
   if (undone.length === 0) {
-    const history = session.history()
-    const held = history[history.length - 1]
+    const held = newestOurs(session.history())
     if (held?.barrier !== undefined) return refused('gesture.barrier', session.translate(held.barrier))
-    return history.length === 0 ? refused('agent.badArguments', 'nothing to undo') : refused('agent.notYours')
+    // Nothing of ours at all — an empty stack, or one holding only work that
+    // arrived from elsewhere — reads as nothing to undo rather than as a refusal
+    // about somebody's step.
+    return held === undefined ? refused('agent.badArguments', 'nothing to undo') : refused('agent.notYours')
   }
-  const history = session.history()
-  const top = history[history.length - 1]
+  const top = newestOurs(session.history())
   return json({
     undone,
     revision: session.revision(),

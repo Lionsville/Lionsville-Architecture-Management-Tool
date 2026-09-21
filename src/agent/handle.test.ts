@@ -56,13 +56,17 @@ function fakeRenderer(over: Partial<RendererView> = {}) {
  * The stack is the session's own two-line version of it — a step per
  * dispatch, whose origin is the command's — so undo and the log can be tested.
  */
-function session(over: Partial<SessionView> = {}): SessionView & { model: () => Model; saved: () => number } {
+function session(over: Partial<SessionView> = {}): SessionView & {
+  model: () => Model
+  saved: () => number
+  remote: (command: Command, by: string) => void
+} {
   let model = fromArrays(host)
   let counter = 0
   let revision = 0
   let saved = 0
   const library: DocumentImage[] = []
-  const past: { at: number; origin?: 'agent'; summary: StepSummary; commands: Command[]; inverse: Command }[] = []
+  const past: { at: number; origin?: 'agent' | 'remote'; by?: string; summary: StepSummary; commands: Command[]; inverse: Command }[] = []
   return {
     model: () => model,
     indexed: () => model,
@@ -86,11 +90,25 @@ function session(over: Partial<SessionView> = {}): SessionView & { model: () => 
     containerName: (name) => `${name} · containers`,
     revision: () => revision,
     history: () => past,
+    /**
+     * As the session's own does: the newest step that is not another author's,
+     * stepped over rather than stopped at.
+     */
     undo: () => {
-      const top = past.pop()
-      if (!top) return
+      let at = past.length - 1
+      while (at >= 0 && past[at].origin === 'remote') at -= 1
+      if (at < 0) return
+      const [top] = past.splice(at, 1)
       const result = apply(model, top.inverse)
       if (result.ok) { model = result.model; revision += 1 }
+    },
+    /** A step another author made, landing on this model the way one does. */
+    remote: (command: Command, by: string) => {
+      const result = apply(model, command)
+      if (!result.ok) return
+      past.push({ at: 1_700_000_000_000 + past.length, summary: summarise([command], model), commands: [command], inverse: result.inverse, origin: 'remote', by })
+      model = result.model
+      revision += 1
     },
     images: () => library,
     addImage: (image) => { library.push(image) },
@@ -231,6 +249,25 @@ describe('the session’s own: revision, the log, undo, save', () => {
     expect(held.model().elements.billing.vendor).toBe('Kestrel')
     expect(await handle({ id: '4', tool: 'undo', args: {} }, held)).toMatchObject({ refusal: 'agent.notYours' })
     expect(await handle({ id: '5', tool: 'undo', args: {} }, session())).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  /**
+   * Somebody else has been editing the same scope. Their step is on the stack
+   * because it happened, and it is not the agent's to take back — but it does
+   * not make the agent's own step underneath it un-undoable either, which is
+   * exactly what ⌘Z does for the person at the keyboard.
+   */
+  it('steps over another author\u2019s step and takes back its own underneath', async () => {
+    const held = session()
+    await handle({ id: '1', tool: 'element.add', args: { name: 'CRM' } }, held)
+    held.remote({ type: 'element.update', id: 'billing', patch: { vendor: 'Theirs' } }, 'A. Author')
+    const out = parsed(await handle({ id: '2', tool: 'undo', args: {} }, held))
+    expect(out).toMatchObject({ undone: ['Added CRM'] })
+    expect(held.model().elements.crm).toBeUndefined()
+    // Theirs stands, and there is nothing of ours left to ask for.
+    expect(held.model().elements.billing.vendor).toBe('Theirs')
+    expect(await handle({ id: '3', tool: 'undo', args: {} }, held))
+      .toMatchObject({ refusal: 'agent.badArguments' })
   })
 
   /**
