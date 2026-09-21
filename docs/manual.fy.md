@@ -610,6 +610,17 @@ oarsaken geane oer. Beide records sizze dat mei de datum. It gearfoege record
 bliuwt — dêr stiet de oarspronklike tekst — en wurdt as gearfoege lêzen, net
 fuortsmiten; *Gearfoege toane* hellet it werom yn it register.
 
+In waarnimming dy't oplost, oanpakt of net mear fan belang is wurdt
+**argivearre**: *Argivearje…* freget, frijbliuwend, wêrom, en skriuwt de dei
+en de taljochting yn de skiednis. It rekord bliuwt dêr't it is, foar de
+skiednis, en ferdwynt út de analyze — net tekene, net yn de wachtrige, net as
+gearfoegdoel — oant *Werom helje* it werombringt. *Argivearre toane* lit de
+sletten sjen. In waarnimming dy't derûnder argivearre is, wurdt de scopes
+derboppe net mear oanbean. Om in waarnimming te sluten wurdt neat fuortsmiten;
+*Fuortsmite* is foar in rekord dat der nea ien wêze moatten hie. Wa't de
+waarnimming die is in frij tekstfjild op it rekord: in namme, inisjalen, in
+team.
+
 In waarnimming is **lokaal** yn har scope, útsein jo **diele** har. Dield
 lêst elke scope derboppe har — ûnder *Dield út …* — en kin har dêr oan in
 eigen oarsaak keppelje en gearfoegje mei in eigen waarnimming. Se wurdt noch

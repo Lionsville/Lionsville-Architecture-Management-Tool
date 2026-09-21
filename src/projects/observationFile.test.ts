@@ -6,13 +6,14 @@ import {
 
 const observation: Observation = {
   id: 'ob-a1', number: 3, title: 'The nightly claims batch runs into office hours', date: '2026-09-08',
-  where: 'Claims settlement run', impact: 'major', seen: 4, shared: true,
+  where: 'Claims settlement run', by: 'W. Simons', impact: 'major', seen: 4, shared: true, archived: true,
   body: '## What we saw\n\nStill running at 08:40.\n',
   history: [
     { date: '2026-09-08', kind: 'recorded' },
     { date: '2026-09-10', kind: 'seen', note: 'Monday run' },
     { date: '2026-09-11', kind: 'shared' },
     { date: '2026-09-15', kind: 'absorbed', id: 'ob-b7', scope: 'acme/claims', seen: 2 },
+    { date: '2026-09-20', kind: 'archived', note: 'Fixed by the window change' },
   ],
 }
 
@@ -31,16 +32,20 @@ describe('an observation as a file', () => {
   it('writes front matter, a heading people say out loud, and the body', () => {
     const text = observationFileText(observation)
     expect(text.startsWith('---\nid: ob-a1\nnumber: 3\ndate: 2026-09-08\n')).toBe(true)
-    expect(text).toContain('shared: true')
+    expect(text).toContain('by: W. Simons\n')
+    expect(text).toContain('shared: true\narchived: true\n')
     expect(text).toContain('history:\n  - date: 2026-09-08\n    kind: recorded\n')
+    expect(text).toContain('  - date: 2026-09-20\n    kind: archived\n    note: Fixed by the window change\n')
     expect(text).toContain('# OB-0003 — The nightly claims batch runs into office hours\n\n## What we saw')
   })
 
   it('round-trips unchanged', () => {
     expect(observationFromFile(observationFileText(observation), observationPath(observation))).toEqual(observation)
-    const local: Observation = { ...observation, where: undefined, shared: undefined, history: [{ date: '2026-09-08', kind: 'recorded' }] }
+    const local: Observation = { ...observation, history: [{ date: '2026-09-08', kind: 'recorded' }] }
     delete local.where
+    delete local.by
     delete local.shared
+    delete local.archived
     expect(observationFromFile(observationFileText(local), observationPath(local))).toEqual(local)
   })
 

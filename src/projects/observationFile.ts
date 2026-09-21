@@ -4,8 +4,8 @@
  * The third sibling of {@link ./adrFile} and {@link ./transitionFile}, and
  * deliberately the same shape: front matter for the fields that are not
  * prose, a heading that names it the way people say it out loud, and markdown
- * below. The history of an observation — seen again, shared, absorbed, merged
- * — is rows in the front matter, dated, so that `git log` on the file and the
+ * below. The history of an observation — seen again, shared, absorbed, merged,
+ * archived — is rows in the front matter, dated, so that `git log` on the file and the
  * file itself tell the same story.
  *
  * Forgiving in one direction, as the other two codecs are: it writes one
@@ -79,9 +79,11 @@ export function observationFileText(observation: Observation): string {
     number: observation.number,
     date: observation.date,
     where: observation.where,
+    by: observation.by,
     impact: observation.impact,
     seen: observation.seen,
     shared: observation.shared,
+    archived: observation.archived,
     history: historyRows(observation.history),
   })
   const heading = `# OB-${numberPrefix(observation.number)} — ${observation.title}`
@@ -171,6 +173,7 @@ export function observationFromFile(text: string, path: string): Observation | u
   if (number === undefined) return undefined
   const date = frontMatterString(fields, 'date') ?? ''
   const where = frontMatterString(fields, 'where')
+  const by = frontMatterString(fields, 'by')
   const seen = frontMatterNumber(fields, 'seen')
   const history = historyFrom(frontMatterRows(fields, 'history'))
   return {
@@ -179,9 +182,11 @@ export function observationFromFile(text: string, path: string): Observation | u
     title,
     date,
     ...(where ? { where } : {}),
+    ...(by ? { by } : {}),
     impact: impactOf(frontMatterString(fields, 'impact')),
     seen: seen !== undefined && seen >= 1 ? Math.trunc(seen) : 1,
     ...(frontMatterString(fields, 'shared') === 'true' ? { shared: true as const } : {}),
+    ...(frontMatterString(fields, 'archived') === 'true' ? { archived: true as const } : {}),
     body,
     history: history.length ? history : [{ date, kind: 'recorded' }],
   }

@@ -663,6 +663,18 @@ Der zusammengeführte Datensatz bleibt — dort steht der ursprüngliche Wortlau
 — und wird als zusammengeführt gelesen, nicht gelöscht; *Zusammengeführte
 zeigen* holt ihn ins Register zurück.
 
+Eine Beobachtung, die behoben, angegangen oder nicht mehr von Belang ist, wird
+**archiviert**: *Archivieren…* fragt, unverbindlich, nach dem Warum und
+schreibt den Tag und die Notiz in die Geschichte. Der Datensatz bleibt, wo er
+ist, für die Geschichte, und verlässt die Analyse — nicht gezeichnet, nicht in
+der Warteschlange, kein Ziel einer Zusammenführung — bis *Wiederherstellen*
+ihn zurückbringt. *Archivierte zeigen* listet die geschlossenen. Eine
+darunter archivierte Beobachtung wird den Scopes darüber nicht mehr
+angeboten. Um eine Beobachtung zu schließen, wird nichts gelöscht; *Löschen*
+ist für einen Datensatz, der nie einer hätte sein sollen. Wer die Beobachtung
+gemacht hat, ist ein freies Textfeld am Datensatz: ein Name, Initialen, ein
+Team.
+
 Eine Beobachtung ist **lokal** in ihrem Scope, solange Sie sie nicht
 **teilen**. Geteilt liest jeder Scope darüber sie — unter *Geteilt aus …* —
 und kann sie dort mit einer eigenen Ursache verknüpfen und in eine eigene

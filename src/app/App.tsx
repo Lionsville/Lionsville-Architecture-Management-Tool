@@ -763,7 +763,10 @@ export function App({
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => tree.index.initiativesBelow(home).length, [tree.index, home])
   /** Every observation shared from anywhere below this home (ADR-0021), for the observations card. */
-  const sharedObservations = useMemo(() => tree.index.observationsBelow(home).length, [tree.index, home])
+  const sharedObservations = useMemo(
+    () => tree.index.observationsBelow(home).filter(({ observation }) => !observation.archived).length,
+    [tree.index, home],
+  )
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])
   /**
    * The tree, for the agent while nothing is open (ADR-0019): the same index

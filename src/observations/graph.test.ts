@@ -20,6 +20,18 @@ const analysis: Analysis = {
 }
 
 describe('analysisGraph', () => {
+  it('leaves an archived observation out, here and from below, and the lines to it with it', () => {
+    const closed: Analysis = {
+      ...analysis,
+      observations: analysis.observations.map((one) => (one.id === 'o2' ? { ...one, archived: true as const } : one)),
+    }
+    const below = [{ scope: 'acme/x', observation: observation('b1', 1, { shared: true, archived: true }) }]
+    const graph = analysisGraph(closed, below)
+    expect(graph.nodes.map((node) => node.key)).not.toContain('o2')
+    expect(graph.nodes.map((node) => node.key)).not.toContain('acme/x#b1')
+    expect(graph.edges.map((edge) => edge.from)).toEqual(['o1', 'o3', 'c1', 'c2'])
+  })
+
   it('lays observations in lane 0, causes by depth, the root last', () => {
     const graph = analysisGraph(analysis)
     const lane = (key: string) => graph.nodes.find((node) => node.key === key)?.lane

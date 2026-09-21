@@ -35,7 +35,9 @@ export const OBSERVATION_IMPACTS: readonly ObservationImpact[] = ['minor', 'majo
  * taken back. `absorbed` — another observation was judged to be the same
  * thing and folded into this one: `id` (and `scope`, when it lived in a scope
  * below) say which, and `seen` how many sightings came with it. `merged` —
- * this one was folded into `id`, and is history from then on.
+ * this one was folded into `id`, and is history from then on. `archived` —
+ * fixed, addressed or no longer relevant: the record stays, as history, and
+ * leaves the analysis; `restored` brings it back. A note on either says why.
  *
  * The record's own count moves with the events; the events are why it stands
  * where it does, kept because "seen seven times" is worth less than "seen on
@@ -54,10 +56,11 @@ export type ObservationEvent = {
   note?: string
 }
 
-export type ObservationEventKind = 'recorded' | 'seen' | 'shared' | 'unshared' | 'absorbed' | 'merged'
+export type ObservationEventKind =
+  'recorded' | 'seen' | 'shared' | 'unshared' | 'absorbed' | 'merged' | 'archived' | 'restored'
 
 export const OBSERVATION_EVENT_KINDS: readonly ObservationEventKind[] =
-  ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged']
+  ['recorded', 'seen', 'shared', 'unshared', 'absorbed', 'merged', 'archived', 'restored']
 
 export type Observation = {
   /** Stable, never shown. The number is what people call it. */
@@ -69,6 +72,8 @@ export type Observation = {
   date: string
   /** Where it was seen: a system, a desk, a job, a meeting. Prose, not an id. */
   where?: string
+  /** Who saw it, or who wrote it down. Free text: a name, initials, a team. */
+  by?: string
   impact: ObservationImpact
   /** How often it has been seen, this record's own sightings and the absorbed ones together. */
   seen: number
@@ -80,6 +85,11 @@ export type Observation = {
    * and pick them.
    */
   shared?: true
+  /**
+   * Fixed, addressed, or no longer relevant. The record stays where it is,
+   * for the history, and is out of the analysis until it is restored.
+   */
+  archived?: true
   /** Markdown: what was seen, the evidence, first thoughts. */
   body: string
   /** What happened to it, oldest first. */

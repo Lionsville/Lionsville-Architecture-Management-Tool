@@ -44,7 +44,7 @@ import { boxesOf, causeList, decisionsOf, fromArrays, groupList, observationList
 import type { CauseLink, CauseState, CauseStrength, ObservationImpact } from '../model/observation'
 import {
   absorbShared, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause, newObservation,
-  nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, setShared, unlinkCause,
+  nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, setArchived, setShared, unlinkCause,
   updateCause, updateObservation,
 } from '../observations/observation'
 import type { Analysis, CausePatch, ObservationPatch } from '../observations/observation'
@@ -353,6 +353,7 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'observation.record':
     case 'observation.update':
     case 'observation.seen':
+    case 'observation.archive':
     case 'observation.merge':
     case 'observation.remove':
     case 'cause.add':
@@ -1233,6 +1234,7 @@ function observationCommand(tool: ToolName, args: Args, view: WriteView): Prepar
       const fresh = newObservation({
         id: view.makeId('ob'), number: nextObservationNumber(before.observations), title, date, t: view.translate,
         ...(typeof args.where === 'string' ? { where: args.where } : {}),
+        ...(typeof args.by === 'string' ? { by: args.by } : {}),
         ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
         ...(args.shared === true ? { shared: true } : {}),
         ...(typeof args.body === 'string' ? { body: args.body } : {}),
@@ -1250,6 +1252,7 @@ function observationCommand(tool: ToolName, args: Args, view: WriteView): Prepar
       }
       if (typeof args.body === 'string') patch.body = args.body
       if (typeof args.where === 'string') patch.where = args.where
+      if (typeof args.by === 'string') patch.by = args.by
       if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
       if (typeof args.date === 'string') {
         if (!isDay(args.date)) return refused('agent.badArguments', `date ${args.date} is not yyyy-mm-dd`)
@@ -1264,6 +1267,17 @@ function observationCommand(tool: ToolName, args: Args, view: WriteView): Prepar
       const held = observationOf(args.id)
       if (!held) return refused('agent.unknownId', `observation ${String(args.id)}`)
       const after = { ...before, observations: seenAgain(before.observations, held.id, view.today(), args.note as string | undefined) }
+      return finish(after, observationAnswer(after, held.id))
+    }
+    case 'observation.archive': {
+      const held = observationOf(args.id)
+      if (!held) return refused('agent.unknownId', `observation ${String(args.id)}`)
+      const restore = args.restore === true
+      const observations = setArchived(before.observations, held.id, !restore, view.today(), args.note as string | undefined)
+      if (observations[before.observations.indexOf(held)] === held) {
+        return refused('agent.badArguments', `${held.id} is ${restore ? 'not archived' : 'archived already'}`)
+      }
+      const after = { ...before, observations }
       return finish(after, observationAnswer(after, held.id))
     }
     case 'observation.merge': {

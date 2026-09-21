@@ -55,8 +55,8 @@ import type { MakeId } from '../../model/keys'
 import {
   absorbShared, absorbedBy, explainedBy, formatCauseNumber, formatObservationNumber, isMerged, isRootCause,
   linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  nextObservationNumber, removeCause, removeObservation, seenAgain, setShared, sortCauses,
-  sortObservations, unlinkCause, updateCause, updateObservation,
+  isArchived, nextObservationNumber, removeCause, removeObservation, seenAgain, setArchived, setShared,
+  sortCauses, sortObservations, unlinkCause, updateCause, updateObservation,
 } from '../observation'
 import type {
   Analysis, Cause, CauseLink, CausePatch, Observation, ObservationPatch, SharedObservation,
@@ -64,7 +64,7 @@ import type {
 import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
-import { LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
+import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
 import { CauseReader, ObservationReader } from './Readers'
 
 export type ObservationsPageProps = {
@@ -126,7 +126,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
   const [showMerged, setShowMerged] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [creating, setCreating] = useState(false)
+  /** What is being archived: a dialog asks why first. */
+  const [archiving, setArchiving] = useState<Observation | undefined>(undefined)
   const [creatingCause, setCreatingCause] = useState(false)
   /** What is being merged away: one of this scope's, or one a scope below shared. */
   const [merging, setMerging] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
@@ -135,9 +138,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   // --- what is where ------------------------------------------------------------------
 
-  /** The observations from below this scope has not folded into its own. */
+  /** The observations from below this scope has not folded into its own, and that are still open below. */
   const sharedShown = useMemo(
-    () => shared.filter((one) => !absorbedBy(observations, one.observation.id, one.scope)),
+    () => shared.filter((one) => !absorbedBy(observations, one.observation.id, one.scope) && !isArchived(one.observation)),
     [shared, observations],
   )
   const sharedByScope = useMemo(() => {
@@ -184,7 +187,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   const commit = useCallback((next: Analysis) => { if (!readOnly) onChange(next) }, [onChange, readOnly])
 
-  const create = (fields: { title: string; where: string; impact: Observation['impact']; shared: boolean }) => {
+  const create = (fields: { title: string; where: string; by: string; impact: Observation['impact']; shared: boolean }) => {
     const fresh = newObservation({
       id: makeId('ob'), number: nextObservationNumber(observations), date: today(), t: s, ...fields,
     })
@@ -206,6 +209,11 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
   const seen = (id: string) => commit({ ...analysis, observations: seenAgain(observations, id, today()) })
   const share = (id: string, on: boolean) => commit({ ...analysis, observations: setShared(observations, id, on, today()) })
+  const archive = (id: string, note: string) => {
+    commit({ ...analysis, observations: setArchived(observations, id, true, today(), note) })
+    setArchiving(undefined)
+  }
+  const restore = (id: string) => commit({ ...analysis, observations: setArchived(observations, id, false, today()) })
   const merge = (from: Observation, into: string) => {
     commit(mergeObservations(analysis, from.id, into, today()))
     setMerging(undefined)
@@ -243,8 +251,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- the register --------------------------------------------------------------------
 
   const trimmed = query.trim()
-  const matches = (one: Observation) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.where ?? '', formatObservationNumber(one.number)])
-  const ownRows = sortObservations(observations).filter((one) => (showMerged || !isMerged(observations, one.id)) && matches(one))
+  const matches = (one: Observation) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.where ?? '', one.by ?? '', formatObservationNumber(one.number)])
+  const ownRows = sortObservations(observations)
+    .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && matches(one))
   const causeRows = sortCauses(causes).filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, formatCauseNumber(one.number)]))
 
   const analysedInto = (id: string, scope?: string) => explainedBy(causes, id, scope)
@@ -259,19 +268,23 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const key = nodeKey(one.id, scope)
     const into = analysedInto(one.id, scope)
     const merged = scope === undefined ? mergedLabel(one) : undefined
+    const archived = isArchived(one)
     return (
       <TableRow
         key={key}
         hover
         selected={key === selectedKey}
         onClick={() => setSelectedKey(key)}
-        sx={{ cursor: 'pointer', opacity: merged ? 0.55 : 1 }}
+        sx={{ cursor: 'pointer', opacity: merged || archived ? 0.55 : 1 }}
         data-testid={`observation-row-${key}`}
       >
         <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
           {formatObservationNumber(one.number)}
         </TableCell>
-        <TableCell sx={{ fontWeight: 600 }}>{one.title}</TableCell>
+        <TableCell sx={{ fontWeight: 600 }}>
+          {one.title}
+          {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
+        </TableCell>
         <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{one.date}</TableCell>
         <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>
         <TableCell><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
@@ -307,6 +320,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <FormControlLabel
           control={<Checkbox size="small" checked={showMerged} onChange={(event) => setShowMerged(event.target.checked)} />}
           label={<Typography sx={{ fontSize: 12 }}>{s('observation.showMerged')}</Typography>}
+        />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />}
+          label={<Typography sx={{ fontSize: 12 }}>{s('observation.showArchived')}</Typography>}
         />
       </Box>
       <Table size="small" stickyHeader>
@@ -440,6 +457,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
       onUpdate={(patch) => patchObservation(selected.observation.id, patch)}
       onSeenAgain={() => seen(selected.observation.id)}
       onShare={(on) => share(selected.observation.id, on)}
+      onArchive={() => setArchiving(selected.observation)}
+      onRestore={() => restore(selected.observation.id)}
       onMerge={() => setMerging({ observation: selected.observation, ...(selected.kind === 'shared' ? { scope: selected.scope } : {}) })}
       onLink={() => setLinking({
         key: selectedKey!,
@@ -512,6 +531,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
         <NewObservationDialog open={creating} canShare={canShare} onCancel={() => setCreating(false)} onCreate={create} s={s} />
         <NewCauseDialog open={creatingCause} onCancel={() => setCreatingCause(false)} onCreate={addCause} s={s} />
+        <ArchiveDialog
+          subject={archiving ? { label: nameOf(archiving.id) } : undefined}
+          onCancel={() => setArchiving(undefined)}
+          onConfirm={(note) => { if (archiving) archive(archiving.id, note) }}
+          s={s}
+        />
         {/* A shared observation from below is merged INTO one of this scope's:
             the rules absorb it here without touching the scope it lives in. */}
         <MergeDialog

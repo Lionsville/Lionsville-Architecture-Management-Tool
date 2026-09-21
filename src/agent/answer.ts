@@ -217,10 +217,11 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       }
       const rows = own
         .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
+        .filter((one) => args.includeArchived === true || !one.archived)
         .filter((one) => wanted(one))
         .map((one) => observationLine(one, causes, own))
       const fromBelow = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
-        .filter(({ scope, observation }) => !absorbedBy(own, observation.id, scope) && wanted(observation, scope))
+        .filter(({ scope, observation }) => !absorbedBy(own, observation.id, scope) && !observation.archived && wanted(observation, scope))
         .map(({ scope, observation }) => ({ scope, ...observationLine(observation, causes, own, scope) }))
       return json({ observations: rows, ...(fromBelow.length > 0 ? { fromBelow } : {}) })
     }
@@ -563,9 +564,11 @@ export function observationLine(observation: Observation, causes: readonly Cause
     title: observation.title,
     date: observation.date,
     ...(observation.where ? { where: observation.where } : {}),
+    ...(observation.by ? { by: observation.by } : {}),
     impact: observation.impact,
     seen: observation.seen,
     shared: observation.shared === true,
+    ...(observation.archived ? { archived: true } : {}),
     ...(merged ? { mergedInto: merged.id } : {}),
     causes: explainedBy(causes, observation.id, scope).map((cause) => ({
       id: cause.id,

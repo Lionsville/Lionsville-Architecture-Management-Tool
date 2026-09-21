@@ -436,13 +436,15 @@ const SPECS = [
       'What was observed in this scope (ADR-0021): id, label, title, date, where, impact, how often it was seen, '
       + 'whether it is shared upward, and the causes it was analysed into — plus, as fromBelow, the observations '
       + 'the scopes under this one shared, each with the scope it lives in. An observation merged into another '
-      + 'is listed only when includeMerged is true.',
+      + 'is listed only when includeMerged is true; an archived one — fixed, addressed, no longer relevant — only '
+      + 'when includeArchived is true.',
     inputSchema: {
       type: 'object',
       properties: {
         impact: { type: 'string', description: 'Only observations of this impact.', enum: ['minor', 'major', 'critical'] },
         analysed: { type: 'boolean', description: 'true: only those linked to a cause; false: only those not yet analysed.' },
         includeMerged: { type: 'boolean', description: 'Also list observations that were merged into another.' },
+        includeArchived: { type: 'boolean', description: 'Also list observations that were archived.' },
       },
       additionalProperties: false,
     },
@@ -894,6 +896,7 @@ const SPECS = [
         title: { type: 'string', description: 'What was seen, as one sentence.' },
         body: { type: 'string', description: 'What was seen, the evidence and first thoughts, as markdown.' },
         where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id.' },
+        by: { type: 'string', description: 'Who saw it, or who wrote it down. Free text: a name, initials, a team.' },
         date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today.' },
         impact: { type: 'string', description: 'How much it matters. Default: minor.', enum: ['minor', 'major', 'critical'] },
         shared: { type: 'boolean', description: 'Offer it to the scopes above. Default: false.' },
@@ -906,8 +909,9 @@ const SPECS = [
     name: 'observation.update',
     tier: 'write',
     description:
-      'Correct an observation: its title, body, where, date or impact — or share it upward and take that back, which '
-      + 'is written into its history with the day. The count moves only through observation.seen and observation.merge.',
+      'Correct an observation: its title, body, where, who, date or impact — or share it upward and take that back, '
+      + 'which is written into its history with the day. The count moves only through observation.seen and '
+      + 'observation.merge; closing it is observation.archive.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -915,6 +919,7 @@ const SPECS = [
         title: { type: 'string', description: 'A new title.' },
         body: { type: 'string', description: 'The body as markdown.' },
         where: { type: 'string', description: 'Where it was seen.' },
+        by: { type: 'string', description: 'Who saw it. Blank clears it.' },
         date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd.' },
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
         shared: { type: 'boolean', description: 'Shared with the scopes above, or local.' },
@@ -932,6 +937,24 @@ const SPECS = [
       properties: {
         id: ID('observation'),
         note: { type: 'string', description: 'A word about this sighting, kept beside the day.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'observation.archive',
+    tier: 'write',
+    description:
+      'Close an observation that was fixed, addressed or is no longer relevant — or, with restore, bring one back. '
+      + 'The record stays where it is, as history, with the day and the note; archived, it is out of the analysis: '
+      + 'not drawn, not queued, not a merge target. Nothing is deleted.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('observation'),
+        note: { type: 'string', description: 'Why: what fixed it, or why it stopped mattering. Kept beside the day.' },
+        restore: { type: 'boolean', description: 'true: bring an archived observation back instead.' },
       },
       required: ['id'],
       additionalProperties: false,

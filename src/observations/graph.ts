@@ -13,12 +13,12 @@
  *
  * Merged observations are not drawn — their sightings and their links moved
  * to the survivor — and neither is an observation from below that this scope
- * absorbed. What is drawn of a node is on the node: the size of a mark is its
+ * absorbed, nor an archived one, here or below: closed is out of the analysis. What is drawn of a node is on the node: the size of a mark is its
  * impact, its tint how often it was seen, a dashed outline an assumed cause,
  * the weight of a line the strength of the link.
  */
 import {
-  absorbedBy, causeDepth, isMerged, isRootCause,
+  absorbedBy, causeDepth, isArchived, isMerged, isRootCause,
 } from './observation'
 import type { Analysis, Cause, CauseStrength, Observation, SharedObservation } from './observation'
 
@@ -71,13 +71,13 @@ export function analysisGraph(analysis: Analysis, shared: readonly SharedObserva
   const { observations, causes } = analysis
   const drawnObservations: GraphNode[] = []
   for (const observation of observations) {
-    if (isMerged(observations, observation.id)) continue
+    if (isMerged(observations, observation.id) || isArchived(observation)) continue
     drawnObservations.push({
       kind: 'observation', key: nodeKey(observation.id), id: observation.id, observation, lane: 0, row: 0,
     })
   }
   for (const { scope, observation } of shared) {
-    if (absorbedBy(observations, observation.id, scope)) continue
+    if (absorbedBy(observations, observation.id, scope) || isArchived(observation)) continue
     drawnObservations.push({
       kind: 'observation', key: nodeKey(observation.id, scope), id: observation.id, scope, observation, lane: 0, row: 0,
     })

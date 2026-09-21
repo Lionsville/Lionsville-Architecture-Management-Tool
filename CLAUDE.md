@@ -7,7 +7,7 @@ under it. **There is no customer in this codebase.** An organisation is a
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4146 tests** and one of every config. The
+One codebase, in modules, with **4156 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -624,9 +624,9 @@ identifiers is still a list of a customer's identifiers.
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen; flagged `initiative`, it is drawn on the roadmap of every scope above it (ADR-0012 §7) |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
-| What was seen, and why (ADR-0021) | an **observation**, `OB-0001` on screen, `seen` times, local unless `shared` — then read by every scope above; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`; a **root cause** is derived: explains something, explained by nothing. Merging is an `absorbed` event on the survivor and a `merged` one on the other; a shared one absorbed above is written on the survivor only |
+| What was seen, and why (ADR-0021) | an **observation**, `OB-0001` on screen, `seen` times, `by` whom (free text), local unless `shared` — then read by every scope above; `archived` when fixed or no longer relevant — kept, out of the analysis, restored the same way; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`; a **root cause** is derived: explains something, explained by nothing. Merging is an `absorbed` event on the survivor and a `merged` one on the other; a shared one absorbed above is written on the survivor only |
 | Observations on disk | `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md`, flat, numbers per scope |
-| Agent tools, observations (ADR-0021) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.merge` `observation.remove` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` |
+| Agent tools, observations (ADR-0021) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.archive` `observation.merge` `observation.remove` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |
 | Agent resources | `lvarch://<scope path>/element/<id>/description`, `lvarch://<scope path>/decision/<id>`; the organisation's path is empty, and no path on read means the open scope |

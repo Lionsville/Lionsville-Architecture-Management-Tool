@@ -625,6 +625,17 @@ samengevoegde record blijft — daar staat de oorspronkelijke tekst — en wordt
 als samengevoegd gelezen, niet verwijderd; *Samengevoegde tonen* haalt het
 terug in het register.
 
+Een waarneming die is opgelost, aangepakt of er niet meer toe doet wordt
+**gearchiveerd**: *Archiveren…* vraagt, vrijblijvend, waarom, en schrijft de
+dag en de toelichting in de geschiedenis. Het record blijft waar het is, voor
+de geschiedenis, en verdwijnt uit de analyse — niet getekend, niet in de
+wachtrij, niet als samenvoegdoel — tot *Terughalen* het terugbrengt.
+*Gearchiveerde tonen* laat de gesloten zien. Een waarneming die eronder
+gearchiveerd is, wordt de scopes erboven niet meer aangeboden. Om een
+waarneming te sluiten wordt niets verwijderd; *Verwijderen* is voor een
+record dat er nooit een had moeten zijn. Wie de waarneming deed is een vrij
+tekstveld op het record: een naam, initialen, een team.
+
 Een waarneming is **lokaal** in haar scope tenzij je haar **deelt**. Gedeeld
 leest elke scope erboven haar — onder *Gedeeld vanuit …* — en kan haar daar
 aan een eigen oorzaak koppelen en samenvoegen met een eigen waarneming. Ze

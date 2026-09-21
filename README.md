@@ -133,7 +133,8 @@ how often and how much it matters — and analyses them, as a team, into
 The analysis is drawn: observations on the left, causes in lanes, roots on
 the right, with the weight of each line saying how firmly one explains the
 other. Two observations that turn out to be the same are merged with the
-history kept; an observation is local unless it is explicitly shared with the
+history kept, and one that was fixed is archived rather than deleted; an
+observation is local unless it is explicitly shared with the
 scopes above, which can then analyse it or merge it into their own
 (`docs/decisions/0021`).
 

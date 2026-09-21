@@ -577,8 +577,9 @@ a picture: the observations on the left as circles, the causes they were
 analysed into in the lanes to the right, and the root causes last.
 
 An observation is a numbered record (`OB-0007`) with a title, a date, a
-place, an impact — *minor*, *major* or *critical* — and a markdown body for
-what was seen, the evidence and first thoughts. **Seen again** counts one
+place, who saw it — free text: a name, initials, a team — an impact —
+*minor*, *major* or *critical* — and a markdown body for what was seen, the
+evidence and first thoughts. **Seen again** counts one
 more and writes the day into the record's **history**, which is the dated
 ledger at the end of every observation: recorded, seen again, shared,
 merged. The count is what the picture tints a circle by; the impact is its
@@ -589,6 +590,15 @@ one it is the same as, and its sightings and its causes move over. Both
 records say so with the day. The merged record stays — it is where the
 original wording is — and is read as merged rather than deleted; *Show
 merged* brings it back into the register.
+
+An observation that was fixed, addressed or has stopped mattering is
+**archived**: *Archive…* asks why, optionally, and writes the day and the
+note into the history. The record stays where it is, for the history, and
+leaves the analysis — not drawn, not queued, not offered as a merge target —
+until *Restore* brings it back. *Show archived* lists the closed ones.
+Archived below, an observation is no longer offered to the scopes above.
+Nothing is deleted to close an observation; *Delete* is for a record that
+should never have been one.
 
 An observation is **local** to its scope unless you **share** it. Shared, it
 is read by every scope above — under *Shared from …* — where it can be

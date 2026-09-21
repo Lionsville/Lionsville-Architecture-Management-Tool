@@ -1,7 +1,7 @@
 /**
  * The questions the observations page asks in a dialog: what a new observation
  * is, what a new cause is called, which observation another is the same as,
- * and what lies behind a thing (ADR-0021).
+ * what lies behind a thing, and why an observation is being archived (ADR-0021).
  *
  * Each says what it wants and lets the page perform it — the page owns the
  * lists, the numbering and the date.
@@ -27,20 +27,21 @@ export type NewObservationDialogProps = {
   /** Whether sharing is worth asking: a root has nobody above it. */
   canShare: boolean
   onCancel: () => void
-  onCreate: (fields: { title: string; where: string; impact: ObservationImpact; shared: boolean }) => void
+  onCreate: (fields: { title: string; where: string; by: string; impact: ObservationImpact; shared: boolean }) => void
   s: Translate
 }
 
 export function NewObservationDialog({ open, canShare, onCancel, onCreate, s }: NewObservationDialogProps) {
   const [title, setTitle] = useState('')
   const [where, setWhere] = useState('')
+  const [by, setBy] = useState('')
   const [impact, setImpact] = useState<ObservationImpact>('minor')
   const [shared, setShared] = useState(false)
   useEffect(() => {
-    if (open) { setTitle(''); setWhere(''); setImpact('minor'); setShared(false) }
+    if (open) { setTitle(''); setWhere(''); setBy(''); setImpact('minor'); setShared(false) }
   }, [open])
   const ready = title.trim().length > 0
-  const submit = () => { if (ready) onCreate({ title: title.trim(), where: where.trim(), impact, shared }) }
+  const submit = () => { if (ready) onCreate({ title: title.trim(), where: where.trim(), by: by.trim(), impact, shared }) }
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -64,6 +65,13 @@ export function NewObservationDialog({ open, canShare, onCancel, onCreate, s }: 
           onChange={(event) => setWhere(event.target.value)}
         />
         <TextField
+          fullWidth
+          size="small"
+          label={s('observation.newByField')}
+          value={by}
+          onChange={(event) => setBy(event.target.value)}
+        />
+        <TextField
           select
           size="small"
           label={s('observation.newImpactField')}
@@ -83,6 +91,45 @@ export function NewObservationDialog({ open, canShare, onCancel, onCreate, s }: 
       <DialogActions>
         <Button onClick={onCancel}>{s('common.cancel')}</Button>
         <Button variant="contained" disabled={!ready} onClick={submit}>{s('observation.create')}</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+/**
+ * Why an observation is being closed — fixed, addressed, no longer relevant —
+ * asked once, kept beside the day in its history. The note is optional: the
+ * archiving itself is the record.
+ */
+export type ArchiveDialogProps = {
+  /** The observation being archived, by the name the page shows; closed when absent. */
+  subject: { label: string } | undefined
+  onCancel: () => void
+  onConfirm: (note: string) => void
+  s: Translate
+}
+
+export function ArchiveDialog({ subject, onCancel, onConfirm, s }: ArchiveDialogProps) {
+  const [note, setNote] = useState('')
+  useEffect(() => { if (subject) setNote('') }, [subject])
+  return (
+    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
+      <DialogTitle>{s('observation.archiveTitle', { name: subject?.label ?? '' })}</DialogTitle>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <DialogContentText sx={{ fontSize: 14 }}>{s('observation.archiveBody')}</DialogContentText>
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          label={s('observation.archiveNote')}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onConfirm(note.trim()) } }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button variant="contained" onClick={() => onConfirm(note.trim())}>{s('observation.archiveConfirm')}</Button>
       </DialogActions>
     </Dialog>
   )

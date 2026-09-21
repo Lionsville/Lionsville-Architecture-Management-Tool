@@ -96,11 +96,12 @@ describe('ObservationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Duplicate customers' } })
     fireEvent.change(screen.getByLabelText('Where it was seen'), { target: { value: 'CRM' } })
+    fireEvent.change(screen.getByLabelText('Observed by'), { target: { value: 'W.S.' } })
     fireEvent.click(screen.getByLabelText('Share with the scopes above'))
     fireEvent.click(screen.getByRole('button', { name: 'Record' }))
     const next = lastChange(onChange)
     expect(next.observations).toHaveLength(3)
-    expect(next.observations[2]).toMatchObject({ number: 3, title: 'Duplicate customers', where: 'CRM', seen: 1, shared: true, date: '2026-09-20' })
+    expect(next.observations[2]).toMatchObject({ number: 3, title: 'Duplicate customers', where: 'CRM', by: 'W.S.', seen: 1, shared: true, date: '2026-09-20' })
     expect(next.observations[2].history.map((one) => one.kind)).toEqual(['recorded', 'shared'])
     expect(next.causes).toEqual(model.causes)
   })
@@ -113,6 +114,40 @@ describe('ObservationsPage', () => {
     expect(lastChange(onChange).observations[1].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'seen' })
     fireEvent.click(screen.getByTestId('observation-share'))
     expect(lastChange(onChange).observations[1]).toMatchObject({ shared: true })
+  })
+
+  it('archives an observation with a note, hides it until asked, and restores it', async () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getByTestId('observation-row-o2'))
+    fireEvent.click(screen.getByTestId('observation-archive'))
+    fireEvent.change(screen.getByLabelText('Why (optional)'), { target: { value: 'Release checklist fixed' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+    const closed = lastChange(onChange).observations[1]
+    expect(closed.archived).toBe(true)
+    expect(closed.history.at(-1)).toEqual({ date: '2026-09-20', kind: 'archived', note: 'Release checklist fixed' })
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Archive', hidden: true })).toBeNull())
+
+    // The page is handed the closed record back, as the workspace would.
+    cleanup()
+    const reopened = mount({ model: { ...model, observations: [model.observations![0], closed] } })
+    const register = screen.getByTestId('observation-register')
+    expect(within(register).queryByTestId('observation-row-o2')).toBeNull()
+    fireEvent.click(screen.getByLabelText('Show archived'))
+    expect(within(register).getByTestId('observation-row-o2').textContent).toContain('Archived')
+    fireEvent.click(within(register).getByTestId('observation-row-o2'))
+    expect(screen.getByTestId('observation-archived-note').textContent).toBe('Archived on 2026-09-20')
+    expect(screen.queryByTestId('observation-seen-again')).toBeNull()
+    fireEvent.click(screen.getByTestId('observation-restore'))
+    const back = lastChange(reopened.onChange).observations[1]
+    expect(back.archived).toBeUndefined()
+    expect(back.history.map((one) => one.kind)).toEqual(['recorded', 'archived', 'restored'])
+    // Closed, it is out of the analysis: the picture and the queue no longer count it.
+    cleanup()
+    mount({ model: { ...model, observations: [model.observations![0], closed] } })
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    expect(within(screen.getByTestId('analysis-queue')).queryByText(/OB-0002/)).toBeNull()
+    // Two circles: this scope's OB-0001 and the shared one from below; the archived one is not drawn.
+    expect(within(screen.getByTestId('analysis-picture')).getAllByTestId('analysis-observation')).toHaveLength(2)
   })
 
   it('links an observation to a new cause with a strength, and lands on the cause', () => {

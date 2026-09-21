@@ -138,10 +138,41 @@ into one transaction, so ⌘Z puts back one record.
 Read: `observations.list` (with `fromBelow`), `observation.read`,
 `causes.list`, `cause.read`. Write: `observation.record`,
 `observation.update` (fields, and `shared`), `observation.seen`,
-`observation.merge` (with `fromScope` for one shared from below),
-`observation.remove`, `cause.add` (with `explains`), `cause.update`,
-`cause.link`, `cause.unlink`, `cause.remove`. `app.open` takes
-`observations` as a page.
+`observation.archive` (and `restore`), `observation.merge` (with
+`fromScope` for one shared from below), `observation.remove`, `cause.add`
+(with `explains`), `cause.update`, `cause.link`, `cause.unlink`,
+`cause.remove`. `app.open` takes `observations` as a page.
+
+### 7. Closing one, and who saw it (21 September 2026)
+
+The first week of use asked for two things the first cut had left out.
+
+**An observation is closed by archiving it, never by deleting it.** A
+sighting that was fixed, addressed or has stopped mattering is still what
+the team saw, and the cause it was analysed into is still the cause. So
+`archived` is one more bit beside `shared`, written the same way: an
+`archived` event with the day and an optional note (what fixed it), a
+`restored` event the other way, and the confirmations left unwritten. An
+archived observation is not **live** — `liveObservations` excludes it as it
+excludes a merged one — so it is not drawn, not queued, not counted on the
+card and not offered as a merge target; and one archived in a scope below
+is no longer offered above, which the page, the picture, the agent's list
+and the home's count each read off the record rather than off a second
+index. It stays in the register under *Show archived*, and in the folder,
+and in every cause's `explains` that named it: a link to a closed
+observation is history, not an error. Deleting is still there, for a record
+that should never have been one.
+
+**Who saw it is free text.** `by` on the record: a name, initials, a team.
+Not an actor of the model and not an account, because the tool has no
+accounts and an observation is very often made by somebody who is not in
+the landscape at all. Searched, shown, written to the front matter as `by`,
+and blank means unsaid.
+
+Neither turns the format: both fields are additive, and a 2.4.0-beta.1
+reading a file with them ignores what it does not know — and would show an
+archived observation as open, which is the one reason not to stay on that
+beta.
 
 ## Consequences
 
@@ -159,4 +190,11 @@ Read: `observations.list` (with `fromBelow`), `observation.read`,
 * Open: the observations are not yet in ⌘K search, not yet a history
   subject (ADR-0008), and not yet an agent resource URI. A cause's
   verification carries no signers table; the body is where the evidence
-  goes. The picture has no export of its own beyond the window.
+  goes. The picture has no export of its own beyond the window. A cause
+  has no archived state of its own: it leaves the picture when everything
+  it explains has, and stays in the list.
+* Fixed on the way (§7's week): the folder store's walk stopped at
+  `observations/` and never entered `causes/`, so every cause was written on
+  save and read on no load — the analysis vanished on reopen. The walk now
+  enters exactly that one subfolder, and the store's test round-trips a
+  cause through the folder.

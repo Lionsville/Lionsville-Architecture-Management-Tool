@@ -83,10 +83,37 @@ describe('observations.list and observation.read', () => {
   })
 })
 
+describe('archiving', () => {
+  it('closes an observation with the day and the note, lists it only when asked, and restores it', () => {
+    let model = fromArrays(host)
+    const closed = write(model, 'observation.archive', { id: 'OB-2', note: 'Fixed in the release checklist' })
+    model = closed.model
+    expect(closed.answer).toMatchObject({ id: 'ob-2', archived: true })
+    expect(model.observations!['ob-2'].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'archived', note: 'Fixed in the release checklist' })
+    expect((read(model, 'observations.list') as { observations: { id: string }[] }).observations.map((one) => one.id)).toEqual(['ob-1'])
+    expect((read(model, 'observations.list', { includeArchived: true }) as { observations: { id: string }[] }).observations.map((one) => one.id)).toEqual(['ob-1', 'ob-2'])
+    expect(commandFor('observation.archive', { id: 'ob-2' }, view(model))).toMatchObject({ ok: false })
+    expect(commandFor('observation.merge', { id: 'ob-2', into: 'ob-1' }, view(model))).toMatchObject({ ok: false })
+
+    model = write(model, 'observation.archive', { id: 'ob-2', restore: true }).model
+    expect(model.observations!['ob-2'].archived).toBeUndefined()
+    expect(model.observations!['ob-2'].history.map((one) => one.kind)).toEqual(['recorded', 'archived', 'restored'])
+  })
+
+  it('an observation archived below is no longer offered above', () => {
+    const closedBelow = [{ scope: 'acme/claims/intake', observation: observation('in-1', 1, { shared: true, archived: true }) }]
+    const listed = read(fromArrays(host), 'observations.list') as { fromBelow?: unknown }
+    expect(listed.fromBelow).toBeDefined()
+    const gone = parse(answer('observations.list', {}, view(fromArrays(host), { tree: { lookup: () => undefined, initiativesBelow: () => [], observationsBelow: () => closedBelow, rowsTo: () => [] } }))) as { fromBelow?: unknown }
+    expect(gone.fromBelow).toBeUndefined()
+  })
+})
+
 describe('recording and analysing', () => {
-  it('records a local observation, seen once, with the template', () => {
-    const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Duplicate customers', where: 'CRM', impact: 'major' })
-    expect(said).toMatchObject({ label: 'OB-0003', title: 'Duplicate customers', where: 'CRM', impact: 'major', seen: 1, shared: false })
+  it('records a local observation, seen once, with the template, and says who saw it', () => {
+    const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major' })
+    expect(said).toMatchObject({ label: 'OB-0003', title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major', seen: 1, shared: false })
+    expect(read(write(model, 'observation.update', { id: 'ob-new-1', by: '' }).model, 'observation.read', { id: 'ob-new-1' })).not.toHaveProperty('by')
     expect(model.order.observations).toEqual(['ob-1', 'ob-2', 'ob-new-1'])
     expect(model.observations!['ob-new-1'].body).toMatch(/^## /)
   })

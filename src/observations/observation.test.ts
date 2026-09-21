@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
-  absorbShared, absorbedBy, causeDepth, explainedBy, formatCauseNumber, formatObservationNumber, isMerged,
+  absorbShared, absorbedBy, causeDepth, explainedBy, formatCauseNumber, formatObservationNumber, isArchived, isMerged,
   isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, setShared, unlinkCause,
+  nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, setArchived, setShared, unlinkCause,
   updateObservation,
 } from './observation'
 import type { Analysis, Cause, Observation } from './observation'
@@ -74,6 +74,41 @@ describe('seeing, sharing, editing', () => {
     const list = updateObservation([observation({ where: 'Desk' })], 'o1', { where: '  ', title: ' New ' })
     expect(list[0].where).toBeUndefined()
     expect(list[0].title).toBe('New')
+  })
+  it('who saw it is free text, trimmed on the way in and dropped when emptied', () => {
+    const fresh = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, by: '  W.S. ' })
+    expect(fresh.by).toBe('W.S.')
+    expect(newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, by: ' ' }).by).toBeUndefined()
+    expect(updateObservation([fresh], 'x', { by: '' })[0].by).toBeUndefined()
+    expect(updateObservation([fresh], 'x', { by: 'The desk' })[0].by).toBe('The desk')
+  })
+})
+
+describe('archiving', () => {
+  it('closes the record with the day and the note, keeps it, and takes it out of the live ones', () => {
+    const closed = setArchived([observation({}), observation({ id: 'o2', number: 2 })], 'o1', true, '2026-09-20', ' Fixed by the window change ')
+    expect(closed).toHaveLength(2)
+    expect(isArchived(closed[0])).toBe(true)
+    expect(closed[0].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'archived', note: 'Fixed by the window change' })
+    expect(liveObservations(closed).map((one) => one.id)).toEqual(['o2'])
+  })
+  it('writes the change of mind and not the confirmation, and restores the same way', () => {
+    const closed = setArchived([observation({})], 'o1', true, '2026-09-20')
+    expect(setArchived(closed, 'o1', true, '2026-09-21')).toEqual(closed)
+    const back = setArchived(closed, 'o1', false, '2026-09-22')
+    expect(back[0].archived).toBeUndefined()
+    expect(back[0].history.map((one) => one.kind)).toEqual(['recorded', 'archived', 'restored'])
+    expect(liveObservations(back)).toHaveLength(1)
+  })
+  it('an archived observation is neither merged away nor merged into', () => {
+    const analysis: Analysis = {
+      observations: setArchived([observation({}), observation({ id: 'o2', number: 2 })], 'o1', true, '2026-09-20'),
+      causes: [],
+    }
+    expect(mergeObservations(analysis, 'o1', 'o2', '2026-09-21')).toBe(analysis)
+    expect(mergeObservations(analysis, 'o2', 'o1', '2026-09-21')).toBe(analysis)
+    const below = { scope: 'acme/x', observation: observation({ id: 'b1', shared: true, archived: true }) }
+    expect(absorbShared(analysis, below, 'o2', '2026-09-21')).toBe(analysis)
   })
 })
 

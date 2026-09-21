@@ -27,6 +27,15 @@
  * because a record is edited where it lives, and the scope below reads that
  * its observation went into one above from the tree (`scopeIndex.absorbedFrom`).
  *
+ * ## Archiving is history too
+ *
+ * An observation that was fixed, addressed or has stopped mattering is
+ * **archived**: it stays in the list and in the folder, says so in its dated
+ * history, and is no longer live — not drawn, not queued, not offered as a
+ * merge target. Restoring it is the same verb the other way. Nothing is
+ * deleted to close an observation; deleting is for a record that should
+ * never have been one.
+ *
  * ## Sharing goes up, and only when said
  *
  * `shared` is the one bit a scope sets to offer an observation to the scopes
@@ -112,18 +121,22 @@ export function newObservation(args: {
   date: string
   t: Translate
   where?: string
+  /** Who saw it. Free text. */
+  by?: string
   impact?: ObservationImpact
   shared?: boolean
   body?: string
 }): Observation {
   const { id, number, title, date, t } = args
   const where = args.where?.trim()
+  const by = args.by?.trim()
   return {
     id,
     number,
     title: title.trim(),
     date,
     ...(where ? { where } : {}),
+    ...(by ? { by } : {}),
     impact: args.impact ?? 'minor',
     seen: 1,
     ...(args.shared ? { shared: true as const } : {}),
@@ -157,12 +170,13 @@ function withEvent(one: Observation, event: ObservationEvent): Observation {
 }
 
 /** The fields a person edits by hand. The count and the history move only through the verbs below. */
-export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'impact' | 'date'>>
+export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'by' | 'impact' | 'date'>>
 
 export function updateObservation(list: readonly Observation[], id: string, patch: ObservationPatch): Observation[] {
   return replace(list, id, (one) => {
     const next = { ...one, ...patch }
     if (patch.where !== undefined && !patch.where.trim()) delete next.where
+    if (patch.by !== undefined && !patch.by.trim()) delete next.by
     if (patch.title !== undefined) next.title = patch.title.trim()
     return next
   })
@@ -191,6 +205,27 @@ export function setShared(list: readonly Observation[], id: string, shared: bool
   })
 }
 
+/**
+ * Close an observation without deleting it — fixed, addressed, no longer
+ * relevant — or bring it back. Saying what it already is changes nothing;
+ * the note, when given, is kept beside the day.
+ */
+export function setArchived(
+  list: readonly Observation[], id: string, archived: boolean, date: string, note?: string,
+): Observation[] {
+  return replace(list, id, (one) => {
+    if (Boolean(one.archived) === archived) return one
+    const next = { ...one }
+    if (archived) next.archived = true
+    else delete next.archived
+    return withEvent(next, { date, kind: archived ? 'archived' : 'restored', ...(note?.trim() ? { note: note.trim() } : {}) })
+  })
+}
+
+export function isArchived(one: Pick<Observation, 'archived'>): boolean {
+  return one.archived === true
+}
+
 // --- merging --------------------------------------------------------------------------
 
 /** The observation of this scope that absorbed `id` (from `scope`, or from this scope when absent). */
@@ -207,9 +242,13 @@ export function isMerged(list: readonly Observation[], id: string): boolean {
   return absorbedBy(list, id) !== undefined
 }
 
-/** The observations still standing: everything this scope holds that has not been folded into another. */
+/**
+ * The observations still standing: everything this scope holds that has not
+ * been folded into another and has not been archived. What is analysed,
+ * drawn, queued and offered as a merge target.
+ */
 export function liveObservations(list: readonly Observation[]): Observation[] {
-  return list.filter((one) => !isMerged(list, one.id))
+  return list.filter((one) => !isMerged(list, one.id) && !isArchived(one))
 }
 
 /**
@@ -250,6 +289,7 @@ export function mergeObservations(analysis: Analysis, from: string, into: string
   const survivor = observations.find((one) => one.id === into)
   if (!absorbed || !survivor) return analysis
   if (isMerged(observations, from) || isMerged(observations, into)) return analysis
+  if (isArchived(absorbed) || isArchived(survivor)) return analysis
   return {
     observations: observations.map((one) => {
       if (one.id === into) {
@@ -274,7 +314,8 @@ export function absorbShared(
 ): Analysis {
   const { observations, causes } = analysis
   const survivor = observations.find((one) => one.id === into)
-  if (!survivor || isMerged(observations, into)) return analysis
+  if (!survivor || isMerged(observations, into) || isArchived(survivor)) return analysis
+  if (isArchived(from.observation)) return analysis
   if (absorbedBy(observations, from.observation.id, from.scope)) return analysis
   return {
     observations: replace(observations, into, (one) => withEvent(

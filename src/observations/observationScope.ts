@@ -42,4 +42,6 @@ export const EVENT_LABEL: Record<ObservationEventKind, StringKey> = {
   unshared: 'observation.eventUnshared',
   absorbed: 'observation.eventAbsorbed',
   merged: 'observation.eventMerged',
+  archived: 'observation.eventArchived',
+  restored: 'observation.eventRestored',
 }
