@@ -18,6 +18,12 @@
  * icon packs are the first of those: a general-purpose architecture tool has no
  * business shipping a railway vocabulary in its model, so the rail marks are a
  * pack and the line below is the whole of their wiring.
+ *
+ * Where work is kept is the second. A folder, this browser's storage and memory
+ * are three **registered source providers** rather than three branches, and the
+ * registry is here for the same reason the branch was: this is the one file
+ * that may name both a seam and a filling. A build composed from this one adds
+ * a fourth by registering it, and nothing above this line is edited for it.
  */
 import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
@@ -58,6 +64,8 @@ import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
+import type { SourceProvider, SourceStatus, SourceWork } from '../platform/sourceProvider'
+import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { ProjectHistory } from '../ports/ProjectHistory'
@@ -104,6 +112,17 @@ export type Shell = {
    */
   source: WorkingSource
   /**
+   * What this source means by the five words the bar says (`dirty`, `saving`,
+   * `clean`, `external-changed`, `conflict`).
+   *
+   * Absent where the document's own machine is the whole answer, which is what
+   * a file is and what all three sources that ship are. A source that keeps
+   * work somewhere else may mean something else by *dirty* than "a file not
+   * yet written", and this is where it says so —
+   * `platform/sourceProvider.ts` has the reasoning.
+   */
+  sourceStatus?: (work: SourceWork) => SourceStatus
+  /**
    * Tell me when this project's folder changed under us, other than by us.
    *
    * Absent when nothing can watch — a browser tab, or a folder the platform
@@ -148,6 +167,66 @@ export type Shell = {
 }
 
 /**
+ * What opening a source gives the shell.
+ *
+ * The parts of one, not a whole: a folder brings a store and the folder's own
+ * settings and deliberately leaves the preferences where they were, while the
+ * two fallbacks bring both stores and nothing else. Only `source` is required,
+ * because a source that cannot say what it is has nothing to put on the bar.
+ */
+export type SourceParts = Partial<Omit<Shell, 'source'>> & Pick<Shell, 'source'>
+
+/**
+ * Every kind of place this build can work from, by the kind it registered
+ * under. A live map rather than a snapshot: registration happens at module
+ * load and the lookups below run at the boot, long after.
+ */
+const SOURCE_PROVIDERS = new Map<string, SourceProvider<SourceParts, never>>()
+
+/**
+ * Teach this build a kind of place work can be kept.
+ *
+ * Call it before anything composes a shell — the three that ship do, at module
+ * load, at the foot of this file. A kind registered twice is ignored rather
+ * than replaced, the way a logo pack is: a test that registers per case is then
+ * safe, and a build cannot quietly take over the folder.
+ */
+export function registerSourceProvider<Opening>(
+  provider: SourceProvider<SourceParts, Opening>,
+): void {
+  if (SOURCE_PROVIDERS.has(provider.kind)) return
+  SOURCE_PROVIDERS.set(provider.kind, provider)
+}
+
+/** Who answers for a kind of source, or nobody. */
+export function sourceProvider<Opening = void>(
+  kind: string,
+): SourceProvider<SourceParts, Opening> | undefined {
+  return SOURCE_PROVIDERS.get(kind)
+}
+
+/**
+ * Open a source by its kind, with what it asked to be given.
+ *
+ * The provider's word about the five statuses travels with its parts, so the
+ * shell carries it beside the source itself and nothing downstream has to
+ * consult the registry to find out what *dirty* means here.
+ */
+function openSource<Opening>(kind: string, opening: Opening): SourceParts {
+  const provider = sourceProvider<Opening>(kind)
+  // The boot, in the one file that chose the kind. A wiring mistake found here
+  // is a wiring mistake; found at the first save it is a lost document.
+  if (!provider) throw new Error(`no source provider is registered for '${kind}'`)
+  return { ...provider.open(opening), sourceStatus: provider.statusOf }
+}
+
+/** Somewhere to keep a scope, which is the one part no source may leave out. */
+function keeper(kind: string, parts: SourceParts): ScopeStore {
+  if (!parts.scopes) throw new Error(`the '${kind}' source brought nowhere to keep a scope`)
+  return parts.scopes
+}
+
+/**
  * The shell as it stands in a browser.
  *
  * If storage refuses — private window, strict policy — memory takes its place.
@@ -155,16 +234,23 @@ export type Shell = {
  * precisely what the user asked for by opening such a window. Before this layer
  * the answer to that situation was a `try/catch` in four places and an empty
  * editor if one of them was missed.
+ *
+ * Which of the two it is used to be a ternary here; it is a lookup now, and the
+ * two fallbacks are registrations like any other.
  */
 export function composeShell(): Shell {
   const storage = browserStorage()
+  const kind = storage ? 'browserStorage' : 'memory'
+  const kept = openSource(kind, storage)
   return {
-    scopes: storage ? new WebStorageScopeStore(storage) : new InMemoryScopeStore(),
-    preferences: storage ? new WebStoragePreferencesStore(storage) : new InMemoryPreferencesStore(),
+    ...kept,
+    scopes: keeper(kind, kept),
+    // Both fallbacks bring one, and the preferences are read before the first
+    // render — so a source that brought none is not a shell this boot can use.
+    preferences: kept.preferences ?? failNoPreferences(kind),
     documents: new BrowserDocumentGateway(),
     diagnostics: new ConsoleDiagnostics(),
     hostControls: browserHostControls(),
-    source: storage ? BROWSER_STORAGE : IN_MEMORY,
     // The one desktop seam that does not wait for a folder: it is about this
     // install, not about where the projects are.
     updateSettings: desktopSettings() && new DesktopUpdateSettings(desktopSettings()!),
@@ -172,6 +258,10 @@ export function composeShell(): Shell {
     windowChrome: hostWindowChrome(),
     showTitle: showWindowTitle,
   }
+}
+
+function failNoPreferences(kind: string): never {
+  throw new Error(`the '${kind}' source brought nowhere to keep a preference`)
 }
 
 /**
@@ -226,14 +316,11 @@ export const browserFolders = {
  * the stores. Shared by the desktop and by a browser tab that has been given a
  * directory handle, which is the whole reason `DirectoryHandleLike` exists.
  */
-function overFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Shell {
-  return {
-    ...shell,
-    scopes: new FileSystemScopeStore(handle),
-    folderSettings: new FileSystemFolderSettings(handle),
-    // A browser's handle has no path to give, so its name stands in for one.
-    source: { kind: 'folder', name, root: name },
-  }
+function overFolder(
+  shell: Shell, handle: DirectoryHandleLike, name: string, root = name,
+): Shell {
+  const kept = openSource('folder', { handle, name, root })
+  return { ...shell, ...kept, scopes: keeper('folder', kept) }
 }
 
 /**
@@ -286,7 +373,7 @@ export function inWorkingDirectory(
     })
   }
 
-  const folder = overFolder(shell, handle, directory.name)
+  const folder = overFolder(shell, handle, directory.name, directory.root)
   const settings = folder.folderSettings
   const git = desktopHistory()
   return {
@@ -295,7 +382,6 @@ export function inWorkingDirectory(
     // `composeShell` because it is the same decision as the store: this is the
     // desktop, and on the desktop a file goes where the user says.
     documents: new DesktopDocumentGateway(files),
-    source: { kind: 'folder', name: directory.name, root: directory.root },
     watchProject,
     history: git && new DesktopProjectHistory(git, directory.root),
     // The machine file is kept out of the folder's history from the moment it
@@ -321,8 +407,71 @@ export function inWorkingDirectory(
 }
 
 /**
+ * What a folder source needs to be given: the handle to work through, and what
+ * the folder is called and where it is.
+ *
+ * A browser's handle has no path to give, so `root` falls back to the name —
+ * which is all a tab knows about where it is, and enough to tell two folders
+ * apart within one tab.
+ */
+export type FolderOpening = {
+  handle: DirectoryHandleLike
+  name: string
+  root: string
+}
+
+/**
+ * A folder of text files (ADR-0003), which is what the desktop works from and
+ * what a browser tab works from when it has been given one.
+ *
+ * It brings the store and the folder's own settings and nothing else. The
+ * preferences stay where they were on purpose: they describe this machine — its
+ * language, its theme, which folder it uses — so putting them in the folder
+ * would carry one machine's settings to every other machine that opens it.
+ */
+const FOLDER_SOURCE: SourceProvider<SourceParts, FolderOpening> = {
+  kind: 'folder',
+  connect: { labelKey: 'picker.chooseFolder' },
+  open: ({ handle, name, root }) => ({
+    scopes: new FileSystemScopeStore(handle),
+    folderSettings: new FileSystemFolderSettings(handle),
+    source: { kind: 'folder', name, root },
+  }),
+}
+
+/** This browser's own storage: the fallback, and it says so on the bar. */
+const BROWSER_STORAGE_SOURCE: SourceProvider<SourceParts, KeyValueStorage> = {
+  kind: 'browserStorage',
+  open: (storage) => ({
+    scopes: new WebStorageScopeStore(storage),
+    preferences: new WebStoragePreferencesStore(storage),
+    source: BROWSER_STORAGE,
+  }),
+}
+
+/**
+ * Nowhere at all, which is the honest answer when storage refuses. It never
+ * fails, so the session works in full and simply leaves nothing behind.
+ */
+const IN_MEMORY_SOURCE: SourceProvider<SourceParts, unknown> = {
+  kind: 'memory',
+  open: () => ({
+    scopes: new InMemoryScopeStore(),
+    preferences: new InMemoryPreferencesStore(),
+    source: IN_MEMORY,
+  }),
+}
+
+/**
  * At module load, which is before the first render and long before an export
  * asks whether an icon key is one this build knows. Registering later would
  * mean a window in which a saved `rail-*` key does not resolve.
+ *
+ * The three sources go the same way and for the same kind of reason: the boot
+ * composes a shell before it draws anything, and a provider registered after
+ * that is a provider nothing can be opened from.
  */
 registerLogoPack(RAIL_PACK)
+registerSourceProvider(FOLDER_SOURCE)
+registerSourceProvider(BROWSER_STORAGE_SOURCE)
+registerSourceProvider(IN_MEMORY_SOURCE)
