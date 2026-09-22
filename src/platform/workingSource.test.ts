@@ -11,10 +11,10 @@ const registered: WorkingSource = {
 
 describe('sourceKey', () => {
   it('tells two folders apart by root, not by name', () => {
-    expect(sourceKey({ kind: 'folder', name: 'NS', root: '/a/NS' }))
-      .not.toBe(sourceKey({ kind: 'folder', name: 'NS', root: '/b/NS' }))
-    expect(sourceKey({ kind: 'folder', name: 'NS', root: '/a/NS' }))
-      .toBe(sourceKey({ kind: 'folder', name: 'renamed', root: '/a/NS' }))
+    expect(sourceKey({ kind: 'folder', name: 'Acme', root: '/a/acme' }))
+      .not.toBe(sourceKey({ kind: 'folder', name: 'Acme', root: '/b/acme' }))
+    expect(sourceKey({ kind: 'folder', name: 'Acme', root: '/a/acme' }))
+      .toBe(sourceKey({ kind: 'folder', name: 'renamed', root: '/a/acme' }))
   })
 
   it('keeps a folder apart from both fallbacks, and the fallbacks from each other', () => {

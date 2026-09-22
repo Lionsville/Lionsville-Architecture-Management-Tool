@@ -516,18 +516,18 @@ describe('ElementInspector — the record on the page', () => {
     fireEvent.click(screen.getByLabelText('Outside the organisation'));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { outside: true });
     cleanup();
-    const again = renderInspector(element({ outside: true, partyId: 'p1' }), { layout: 'stacked', others: [actor('p1', 'ProRail')] });
+    const again = renderInspector(element({ outside: true, partyId: 'p1' }), { layout: 'stacked', others: [actor('p1', 'Globex')] });
     fireEvent.click(screen.getByLabelText('Outside the organisation'));
     expect(again.updateElement).toHaveBeenLastCalledWith('e1', { outside: undefined, partyId: undefined });
   });
 
   it('asks whose it is only once it is outside, offering the actors of this scope', () => {
-    renderInspector(element(), { layout: 'stacked', others: [actor('p1', 'ProRail')] });
+    renderInspector(element(), { layout: 'stacked', others: [actor('p1', 'Globex')] });
     expect(screen.queryByLabelText('Belongs to')).toBeNull();
     cleanup();
-    const { updateElement } = renderInspector(element({ outside: true }), { layout: 'stacked', others: [actor('p1', 'ProRail')] });
+    const { updateElement } = renderInspector(element({ outside: true }), { layout: 'stacked', others: [actor('p1', 'Globex')] });
     fireEvent.mouseDown(screen.getByLabelText('Belongs to'));
-    fireEvent.click(screen.getByRole('option', { name: 'ProRail' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Globex' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { partyId: 'p1' });
   });
 
@@ -552,8 +552,8 @@ describe('ElementInspector — the record on the page', () => {
   });
 
   it('reads the party back into the panel\'s one line', () => {
-    renderInspector(element({ outside: true, partyId: 'p1' }), { others: [actor('p1', 'ProRail')] });
-    expect(screen.getByTestId('record-summary').textContent).toContain('Outside · ProRail');
+    renderInspector(element({ outside: true, partyId: 'p1' }), { others: [actor('p1', 'Globex')] });
+    expect(screen.getByTestId('record-summary').textContent).toContain('Outside · Globex');
   });
 });
 

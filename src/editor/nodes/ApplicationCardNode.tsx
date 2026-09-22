@@ -15,9 +15,10 @@ import { shownDescription } from './nodeData';
 import { hasDocumentation, shortDescription } from '../../documentation/documentation';
 
 /**
- * Application card (default 200×130, PVH/Akzo board style): category strip on
- * top, name bar with vendor chip, two-line description, derived-figures chip
- * row, aspect badge row, and a meta row with price/link/drift decorations.
+ * Application card (default 200×130, the enterprise board style it is
+ * modelled on): category strip on top, name bar with vendor chip, two-line
+ * description, derived-figures chip row, aspect badge row, and a meta row
+ * with price/link/drift decorations.
  * Resizable when selected (persists on the placement).
  *
  * The card is the one kind whose header is a title BAR rather than the body's

@@ -14,11 +14,11 @@ describe('OpenIntoDialog', () => {
     const onHere = vi.fn()
     const onFolder = vi.fn()
     renderShell(<OpenIntoDialog
-      open file="theirs.lvarch" here="Nederlandse Spoorwegen" canChooseFolder
+      open file="theirs.lvarch" here="Acme Logistics" canChooseFolder
       onCancel={() => {}} onHere={onHere} onFolder={onFolder} s={s}
     />)
     expect(screen.getByText('Where should “theirs.lvarch” go?')).toBeDefined()
-    expect(screen.getByText(/writes over “Nederlandse Spoorwegen” and every scope filed under it/)).toBeDefined()
+    expect(screen.getByText(/writes over “Acme Logistics” and every scope filed under it/)).toBeDefined()
     fireEvent.click(screen.getByTestId('open-into-folder'))
     expect(onFolder).toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('open-into-here'))
