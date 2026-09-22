@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# Refuse a push that carries a word this checkout is not allowed to publish.
+#
+# The list itself cannot live in this repository — a list of words that must
+# never be published is exactly as publishable as the words on it. So it lives
+# one level up, outside this tree, and this hook is installed by `npm run
+# setup` only when it is there. A clone that has no list has no hook and loses
+# nothing: everything the hook could catch is a word such a clone never had.
+#
+# Both halves of a commit are read: the diff and the message.
+
+set -u
+
+root=$(git rev-parse --show-toplevel) || exit 0
+list="$root/../docs/boundary/words.txt"
+[ -f "$list" ] || exit 0
+
+zero=0000000000000000000000000000000000000000
+found=0
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  # Deleting a ref pushes nothing to read.
+  [ "$local_sha" = "$zero" ] && continue
+
+  if [ "$remote_sha" = "$zero" ]; then
+    # A branch the remote has never seen: everything it adds to what is there.
+    range="$local_sha --not --remotes"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+
+  # shellcheck disable=SC2086
+  text=$(git log -p --no-color $range 2>/dev/null) || continue
+  [ -n "$text" ] || continue
+
+  line=0
+  while IFS= read -r word || [ -n "$word" ]; do
+    line=$((line + 1))
+    word=$(printf '%s' "$word" | tr -d '\r')
+    case "$word" in '' | '#'*) continue ;; esac
+    if printf '%s' "$text" | grep -qiF -- "$word"; then
+      echo "pre-push: $local_sha matches line $line of docs/boundary/words.txt." >&2
+      found=1
+    fi
+  done <"$list"
+done
+
+if [ "$found" -ne 0 ]; then
+  echo "pre-push: refused. Rewrite the history that carries it, then push again." >&2
+  exit 1
+fi
+
+exit 0

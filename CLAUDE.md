@@ -38,6 +38,17 @@ identify them as well as their logo does. When you add data you did not invent,
 ask who it came from before you `git add` it — and if you did not write a file
 yourself, read it before committing it.
 
+Some of this is checked rather than remembered. `npm run setup` installs a
+**pre-push hook** (`scripts/hooks/pre-push`) when — and only when — the
+checkout sits beside a file of words that must not be published; the file is
+kept outside this tree, because a list of words nobody may publish is itself
+unpublishable. The hook reads the diff and the messages of the commits a push
+would send, and refuses the push naming the file and the line that matched, so
+the refusal says where to look without repeating the word. A clone that has no
+such file gets no hook and loses nothing: everything the hook would catch is
+something that clone never had. It is a seatbelt, not the rule — the rule is
+the two categories above.
+
 ## The fast loop
 
 ```bash

@@ -19,7 +19,7 @@
     "lint": "eslint src electron build",
     "pack:desktop": "electron-vite build && electron-builder --dir",
     "preview": "vite preview --port 4180 --host 127.0.0.1",
-    "setup": "npm install",
+    "setup": "npm install && node scripts/installHooks.mjs",
     "smoke": "node scripts/verify.mjs smoke",
     "smoke:desktop": "npm run smoke",
     "smoke:run": "electron . --smoke",
