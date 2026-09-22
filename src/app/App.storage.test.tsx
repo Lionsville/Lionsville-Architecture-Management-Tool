@@ -19,6 +19,8 @@ import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSession } from './useModelSession'
+import type { Destination } from '../agent/screen'
+import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -347,6 +349,59 @@ describe('the chrome a registered provider brought', () => {
     } finally {
       spy.mockRestore()
     }
+  })
+
+  /**
+   * The way out of a notice (ADR-0022, eighth amendment).
+   *
+   * A strip that names where the work it is about is kept, and cannot take the
+   * person there, is a sentence asking them to go and find it in the tree. It is
+   * handed the same `open` the agent drives the app with, so the path in the
+   * sentence is the pressable part of it.
+   */
+  function Notice({ open, to }: { open: (to: Destination) => void; to: Destination }) {
+    return (
+      <button type="button" data-testid="provider-open" onClick={() => open(to)}>
+        open the board
+      </button>
+    )
+  }
+
+  it('is handed a way to a scope, and takes the person there', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([scope]),
+      source: elsewhere,
+      chrome: [{
+        kind: 'elsewhere',
+        chrome: ({ open }) => <Notice open={open} to={{ scope: 'acme/landscape' }} />,
+      }],
+    })
+    // Nothing is open: the home is up, and the strip is the way off it.
+    expect(screen.getByTestId('working-source')).toBeDefined()
+    fireEvent.click(screen.getByTestId('provider-open'))
+    await waitFor(() => {
+      expect(screen.getByTestId('crumb-current').textContent).toBe('Landscape')
+    })
+  })
+
+  /**
+   * No scope named is the scope that is open, which is what it means to the
+   * agent — a provider's notice is usually about the landscape in front of the
+   * person, and a second grammar for the same three words is what this avoids.
+   */
+  it('takes the scope that is open where the destination names none', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([scope]),
+      initialProject: scope,
+      source: elsewhere,
+      chrome: [{
+        kind: 'elsewhere',
+        chrome: ({ open }) => <Notice open={open} to={{ page: 'roadmap' }} />,
+      }],
+    })
+    fireEvent.click(screen.getByTestId('provider-open'))
+    expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
+    expect(screen.getByTestId('crumb-current').textContent).toBe('Landscape')
   })
 
   /** A boundary EACH, so one provider's strip does not cost the next one's. */
@@ -720,6 +775,32 @@ describe('the lines a registered provider puts in the menu', () => {
     open()
     fireEvent.click(provided()[0])
     expect(pressed).toEqual(['pages', 'account'])
+  })
+
+  /**
+   * A line that is a way somewhere is told how to go there (ADR-0022, eighth
+   * amendment): the same `open` a chrome is handed, so *Open the board* is one
+   * line and not a sentence about the tree.
+   */
+  it('tells a line how to send the person to a scope', async () => {
+    registerStrings('en', { 'elsewhere.board': 'Open the board' })
+    renderApp({
+      scopes: new InMemoryScopeStore([scope]),
+      source: elsewhere,
+      sourceMenu: [{
+        kind: 'elsewhere',
+        menu: ({ open: go }) => [{
+          key: 'board',
+          labelKey: 'elsewhere.board',
+          onSelect: () => go({ scope: 'acme/landscape' }),
+        }],
+      }],
+    })
+    open()
+    fireEvent.click(provided()[0])
+    await waitFor(() => {
+      expect(screen.getByTestId('crumb-current').textContent).toBe('Landscape')
+    })
   })
 
   /** Core's three register none, and the menu is then character for character the menu. */

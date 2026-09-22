@@ -154,8 +154,33 @@ export type ShellDiagnostics = {
  * dialog left open, a subscription) belongs where the provider keeps it and not
  * in this component, and being mounted twice over one session must cost nothing
  * but a render.
+ *
+ * `open` is the way out of the notice: a provider's chrome may have to send the
+ * person to a scope — the one its sentence names — and a sentence that names a
+ * place without being a way to it is a sentence that asks somebody to go and
+ * find it in the tree. It is {@link SourceOpen}, so what a chrome can ask for is
+ * what the agent can ask for (ADR-0019) and not a second grammar for the same
+ * three words.
  */
-export type SourceChrome = ComponentType<{ session?: ScopeSession }>
+export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceOpen }>
+
+/**
+ * Sending the person to a scope, as a provider's chrome or a menu line may.
+ *
+ * The same {@link Destination} ADR-0019 gave the agent — a scope path, a page
+ * and an id — bound to the same shell functions `app.open` moves the app with.
+ * A provider knows a path and nothing about this shell's screens: which of them
+ * a destination lands on, whether a home or a workspace answers for it, and what
+ * *open* costs when another scope is already open are all decided in one place,
+ * here, and would otherwise be decided a second time by everybody composing over
+ * this build.
+ *
+ * `scope` absent means the scope that is open, which is what it means to the
+ * agent; with nothing open it is the home that is up. Nothing comes back: a
+ * scope is read before it is entered and a path that names nothing is a refreshed
+ * tree, which is the same answer *Open …* gives a person.
+ */
+export type SourceOpen = (to: Destination) => void
 
 /**
  * One provider's chrome, and which provider's it is.
@@ -216,6 +241,13 @@ export type SourceAgentPanel = ComponentType<{ session?: ScopeSession }>
 export type SourceMenuContext = {
   readonly session?: ScopeSession
   readonly readOnly: boolean
+  /**
+   * Sending the person to a scope ({@link SourceOpen}), for a line that is a
+   * way somewhere rather than something done here — the same call a chrome is
+   * given, because a line and a strip are two shapes of the one thing a
+   * provider has to say.
+   */
+  readonly open: SourceOpen
 }
 
 /**
@@ -1390,6 +1422,20 @@ export function App({
     }
     openScopeAt(to.scope, initialPageFor(to))
   }, [goHome, project, openScopeAt])
+  /**
+   * The same move, for a source provider's own chrome and its own menu lines
+   * ({@link SourceOpen}).
+   *
+   * `openFor` wants a scope because the agent has already resolved one by the
+   * time it calls, and a provider has not: a notice that says *open the board*
+   * is usually about the scope the person is looking at. So the one word that
+   * can be left out is filled in here the way `app.open` fills it in — the scope
+   * that is open, and with nothing open the home that is up — and everything
+   * after that is the one path the agent takes.
+   */
+  const openSomewhere = useCallback<SourceOpen>((to) => {
+    openFor({ ...to, scope: to.scope ?? project?.path ?? home })
+  }, [openFor, project, home])
   const agentStopped = useCallback((client: string | undefined) => {
     toasts.notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
   }, [toasts, s])
@@ -1517,13 +1563,14 @@ export function App({
         lines.push(...menu({
           session: kind === openProvider ? openScope : undefined,
           readOnly: sourceIsReadOnly(source),
+          open: openSomewhere,
         }))
       } catch (cause) {
         diagnostics.report({ level: 'error', where: 'sourceMenu', message: kind, cause })
       }
     }
     return lines
-  }, [menus, openProvider, openScope, source, diagnostics])
+  }, [menus, openProvider, openScope, source, diagnostics, openSomewhere])
 
   /**
    * What the menu is given about the providers, and nothing at all where no
@@ -1729,7 +1776,7 @@ export function App({
             s={s}
           >
             <LanguageProvider language={prefs.language}>
-              <Chrome session={kind === openProvider ? openScope : undefined} />
+              <Chrome session={kind === openProvider ? openScope : undefined} open={openSomewhere} />
             </LanguageProvider>
           </ErrorBoundary>
         ))}
