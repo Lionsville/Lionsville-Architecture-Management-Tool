@@ -42,6 +42,42 @@ Static Web App's deployment token for the run, uploads the unpacked zip with
 `.github/staticwebapp.config.json` beside it, and polls `/version.json` until
 the host says the new version. The five values it reads are listed below.
 
+## Rolling back
+
+There is no rollback button and no separate procedure: **putting the previous
+release back is publishing it again.** Open the previous release on GitHub,
+press *Edit*, and publish it once more — that fires `release: published` on
+that tag, and the workflow does for it exactly what it did the first time:
+builds and signs the installers from the tag's commit, uploads them over the
+ones already there, points the README's Download section back at that version,
+and deploys its web build to
+[app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/),
+polling `/version.json` until the host says so. Re-running that release's own
+workflow run from the Actions page has the same effect, and is quicker when
+the run is still in the list.
+
+Two things to know before you press it. The **Run workflow** button is *not*
+this: a manual run builds and signs but publishes nothing and deploys nowhere,
+which makes it a rehearsal rather than a rollback. And `preflight` refuses a
+tag whose commit has no successful `check` run, so a tag older than that gate
+has to be checked first — push nothing, just let `check.yml` run on the
+commit, or the run stops in its first job.
+
+What this does **not** roll back:
+
+- **An installed desktop app.** Nothing is pushed to a machine and there is no
+  downgrade path; someone running the newer version keeps running it until
+  they install another. The update notice points at the newest release, so
+  while the bad one is on the releases page it is what they are pointed at —
+  delete it or mark it a pre-release, which is a separate act.
+- **Files already written.** A working file saved by the newer version is a
+  file in that version's format; the previous build reads what its own format
+  version can read and nothing more.
+- **The newer release itself.** Its page, its tag and its notes stay until
+  somebody removes them.
+- **Anything outside this repository.** The public site and the hosted
+  service are released on their own and roll back on their own.
+
 ## What has to be configured once
 
 Thirteen values. The workflow's `preflight` job checks all of them are present
