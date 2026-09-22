@@ -186,6 +186,55 @@ const COMPOSES_THE_TABLE = [
  */
 const EXEMPT = { i18n: ['src/i18n/LanguageContext.tsx', ...COMPOSES_THE_TABLE] }
 
+/**
+ * THE LICENCE, ON EVERY FILE.
+ *
+ * `LICENSE` says what the tree is under; a file that has left the tree — a
+ * fork, a gist, an answer, a bug report — says nothing unless it carries the
+ * line itself, and a licence scanner reads the file rather than the repository.
+ * `scripts/spdx.mjs` wrote them once and can write the next one (`--check`
+ * lists what is missing); this is what keeps a new file from arriving without.
+ *
+ * A local rule rather than a plugin: it is fifteen lines, and a dependency in
+ * the lint config is a dependency in every contributor's install.
+ */
+const SPDX = [
+  '// SPDX-License-Identifier: AGPL-3.0-only',
+  '// SPDX-FileCopyrightText: 2024\u20132026 Lionsville Group BV',
+]
+
+const licenceHeader = {
+  rules: {
+    header: {
+      meta: {
+        type: 'problem',
+        fixable: 'code',
+        schema: [],
+        messages: { missing: 'Every source file carries its licence. Run `node scripts/spdx.mjs`.' },
+      },
+      create(context) {
+        return {
+          Program(node) {
+            const source = context.sourceCode ?? context.getSourceCode()
+            const lines = source.getText().split('\n')
+            // A shebang is the one line that has to come first; the header
+            // goes under it.
+            const at = lines[0]?.startsWith('#!') ? 1 : 0
+            if (lines[at] === SPDX[0] && lines[at + 1] === SPDX[1]) return
+            const offset = lines.slice(0, at).reduce((n, line) => n + line.length + 1, 0)
+            context.report({
+              node,
+              loc: { line: at + 1, column: 0 },
+              messageId: 'missing',
+              fix: (fixer) => fixer.insertTextAfterRange([0, offset], `${SPDX.join('\n')}\n\n`),
+            })
+          },
+        }
+      },
+    },
+  },
+}
+
 const IMPORT_MATRIX = MODULES.map((from) => ({
   files: [`src/${from}/**/*.{ts,tsx}`],
   // Tests are exempt: a test reaching across the tree for a fixture is not the
@@ -254,6 +303,14 @@ export default tseslint.config(
         { object: 'window', property: 'showOpenFilePicker', message: 'File access goes through the DocumentGateway (src/ports).' },
       ],
     },
+  },
+  {
+    // The three folders `scripts/spdx.mjs` writes into; anything else in the
+    // tree is data, config or build output.
+    files: ['src/**/*.{ts,tsx}', 'electron/**/*.{ts,tsx}', 'scripts/**/*.{mjs,cjs,ts}'],
+    ignores: ['**/*.d.ts'],
+    plugins: { licence: licenceHeader },
+    rules: { 'licence/header': 'error' },
   },
   ...IMPORT_MATRIX,
 
