@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The block under the cards: what the organisation contradicts about itself,
  * one sentence each, every one a way to the thing it is about.

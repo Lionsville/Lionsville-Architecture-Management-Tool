@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The two conversations around a working file that have a password in them
  * (ADR-0023), written once for the two places that hold one: the workspace,

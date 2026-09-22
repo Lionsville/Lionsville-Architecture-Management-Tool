@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
 import type { CanvasKind } from '../../model/placement';
 import { KIND_LABEL_KEYS } from '../../model/kinds';

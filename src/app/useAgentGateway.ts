@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The binding between the agent seam and the app (ADR-0007, ADR-0019).
  *

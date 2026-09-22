@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { useEffect, useRef } from 'react';
 import type { DesignDiagram } from '../model/types';
 import type { TidyOptions } from '../layout/tidy';

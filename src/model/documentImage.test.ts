@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The two refusals a person can act on, and the one rule that keeps a folder
  * readable: the extension says what the bytes are, not what the file claimed.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 // @vitest-environment jsdom
 /**
  * The decisions page as a user meets it: the tree of places, a record created

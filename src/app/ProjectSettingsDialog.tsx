@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Everything about a project that is not its content: its name, its group, and
  * the two answers it gives on behalf of the diagrams inside it.

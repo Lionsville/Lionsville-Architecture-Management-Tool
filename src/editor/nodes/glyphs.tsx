@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Tiny inline SVG glyphs (stroke = currentColor). The package deliberately
  * avoids an @mui/icons-material dependency — these few marks are all it needs.

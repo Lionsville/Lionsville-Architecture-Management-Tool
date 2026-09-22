@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The two questions asked before a working file lands (ADR-0025), as
  * promises: where it goes, and — when a chosen folder is not empty — whether

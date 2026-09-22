@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Everything about one diagram that is not the picture: what it is called, what
  * the exported drawing says about it, and which maturity columns its

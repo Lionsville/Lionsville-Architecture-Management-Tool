@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * A history that lives in memory: what a test hands the shell when it wants
  * snapshots to exist without a git.

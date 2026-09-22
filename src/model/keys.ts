@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Interchange keys: lowercase letters, digits and dashes, unique across the
  * document. Shared by the interchange export and by the id policy below, which

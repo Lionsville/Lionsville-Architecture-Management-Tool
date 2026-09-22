@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * A restore is one command, and it brings the thing to what the snapshot held
  * (ADR-0008). Tested against the reducer, not by inspecting the command: what

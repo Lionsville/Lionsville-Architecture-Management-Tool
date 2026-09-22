@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The maturity columns, as a list you can edit: rename, reorder, re-code, drop,
  * add a standard one, add your own.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import Autocomplete from '@mui/material/Autocomplete';
 import { placedNodes } from '../model/placement';
 import Box from '@mui/material/Box';

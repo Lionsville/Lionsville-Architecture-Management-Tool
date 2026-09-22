@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * A driving session: the stretch during which an agent is moving the app or
  * changing the model, said to the person on screen and ended by either of

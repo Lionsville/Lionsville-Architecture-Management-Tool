@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The encodings a project folder is written in. Small functions, and the whole
  * value of ADR-0003 rests on them: if two saves of an unchanged project can

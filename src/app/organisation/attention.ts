@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What the organisation screen asks a person to look at: one sentence per
  * finding, each a way to the thing it is about.

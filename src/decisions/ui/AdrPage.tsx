@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Every architecture decision in one place: the tree of where they live down
  * the left, the records of the chosen place in the middle, the one you are

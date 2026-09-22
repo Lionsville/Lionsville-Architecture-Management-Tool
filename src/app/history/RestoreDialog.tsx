@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The one question before a restore, and the copy that says what a restore IS
  * (ADR-0008): a new change on top of everything since, not a slider back.

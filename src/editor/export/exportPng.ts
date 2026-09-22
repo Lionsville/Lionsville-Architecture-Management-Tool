@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { toCanvas } from 'html-to-image';
 import type { Rect } from '../../model/types';
 import type { ExportDiagramPngOptions, ExportLegend, ExportSwatch, ExportTitleBlock } from '../props';

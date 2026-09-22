@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * True when a keyboard event's target is a text-entry surface where the editor
  * must NOT hijack keys (copy/paste, Delete/Backspace, and the U4c canvas

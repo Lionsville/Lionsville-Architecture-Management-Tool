@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The architecture model: what a landscape is made of, and the arithmetic over
  * it. Pure — no React, no browser, no storage — and enforced as such.

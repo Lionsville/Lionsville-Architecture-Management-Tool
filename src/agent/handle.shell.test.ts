@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The agent drives the app (ADR-0019): where the app is, what there is to
  * open, opening it with nothing open and with a scope open, and the session

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The folder's settings on the desktop (ADR-0023, amending ADR-0005): what
  * this machine does about it kept by the app in `userData`, and what the

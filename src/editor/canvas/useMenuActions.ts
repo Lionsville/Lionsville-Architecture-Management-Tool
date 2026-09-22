@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import type { RefObject } from 'react';
 import type { PlacedNode, DesignDiagram, DesignModel, ElementId, ElementKind, Layer7Zone, Point, Rect } from '../../model/types';
 import {

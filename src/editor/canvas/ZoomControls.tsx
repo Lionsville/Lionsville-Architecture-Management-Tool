@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { Panel, useReactFlow } from '@xyflow/react';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';

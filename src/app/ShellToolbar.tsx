@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The bar at the top: what you are working from, what you have open and how
  * it stands, the three pages beside the canvas, and — on a host with no menu

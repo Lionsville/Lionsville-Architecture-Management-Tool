@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The technology landscape (ADR-0015): the three bands, the lines the page
  * would draw for how it is shown, and what one card touches.

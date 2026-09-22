@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { nodeMaxSize, nodeMinSize } from '../../model/placement';
 import type { NodeFigure } from '../../model/kinds';
 import type { Layer7Zone } from '../../model/types';

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What a project is, where it is filed, and what the app remembers between
  * sessions. A project is addressed by a `ScopePath` — the folder it is in,

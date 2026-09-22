@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The reading pane of the observations page: one observation, or one cause,
  * read first and edited on request (ADR-0021).

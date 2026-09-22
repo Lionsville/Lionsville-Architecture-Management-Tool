@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import type { DesignDiagram, DesignModel } from '../../model/types';
 import { LOCALE } from '../../i18n';
 import type { Language, Translate } from '../../i18n';

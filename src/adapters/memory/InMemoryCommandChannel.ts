@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * A command channel in memory: for tests, and for anywhere two sessions have
  * to be put in one order without anything outliving the process.

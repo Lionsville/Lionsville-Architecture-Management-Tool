@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX, type RefObject } from 'react';
 import { placedNodes } from '../model/placement';
 import { getNodesBounds, ReactFlowProvider, useReactFlow } from '@xyflow/react';

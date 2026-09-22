@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What this machine does about each working directory, kept in `userData`
  * (ADR-0023, amending ADR-0005).

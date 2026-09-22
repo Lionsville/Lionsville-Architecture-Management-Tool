@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { describe, expect, it } from 'vitest';
 import { searchElements } from './elementSearch';
 import { diagram, element, model, placement } from '../model/testFixtures';

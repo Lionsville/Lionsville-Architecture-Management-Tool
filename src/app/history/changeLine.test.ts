@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Every row the diff can produce has a sentence. The page once threw on a
  * project with a plan in its history, because `transition` had been added to

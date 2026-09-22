@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 // @vitest-environment jsdom
 /**
  * The only shell suite that needs a real browser API — which is the point:

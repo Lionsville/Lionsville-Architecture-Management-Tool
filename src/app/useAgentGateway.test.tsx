@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 // @vitest-environment jsdom
 /**
  * An agent's request is answered from the model on screen (ADR-0007, step 2).

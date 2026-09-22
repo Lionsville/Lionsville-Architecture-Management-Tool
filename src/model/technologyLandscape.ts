@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The technology landscape: who uses what, what is offered, and what
  * delivers it, on one page (ADR-0015).

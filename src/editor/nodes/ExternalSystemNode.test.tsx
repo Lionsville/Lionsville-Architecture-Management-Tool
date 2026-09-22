@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 // @vitest-environment jsdom
 /**
  * A card for something this board is not the subject of (ADR-0012 §3, §4).

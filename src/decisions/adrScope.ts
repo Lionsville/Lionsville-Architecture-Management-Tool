@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The page's idea of WHERE a decision lives, as one string a tree node and a
  * list can be keyed by: this scope, one subject in it, or a scope above.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 // @vitest-environment jsdom
 /**
  * The way in for a person (ADR-0007): the glyph carries the server's state,

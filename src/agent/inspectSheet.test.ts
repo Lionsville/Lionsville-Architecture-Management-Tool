@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The sheet's report, as an agent reads it: the grid it can set up with
  * `diagram.update`, and the columns each area takes.

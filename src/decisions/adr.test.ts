@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The decision record's rules: where a status may go, what a locked record
  * refuses, and what a list does when one of its members is removed. The

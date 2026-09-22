@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../layout/tidy';
 import { PANEL_LIMITS, panelWidth } from './panels';
 

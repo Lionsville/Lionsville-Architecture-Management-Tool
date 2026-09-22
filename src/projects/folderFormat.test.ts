@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The folder format. Two properties carry ADR-0003 and both are tested here
  * rather than through a store: a scope survives the round trip exactly, and a

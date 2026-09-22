@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * jsdom shims React Flow needs to render (per the React Flow testing guide):
  * ResizeObserver, DOMMatrixReadOnly, layout dimensions, SVGElement.getBBox, and

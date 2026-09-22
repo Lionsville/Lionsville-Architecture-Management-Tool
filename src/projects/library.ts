@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Drawing an application the organisation already has, on this scope's board
  * — the register used as a library (ADR-0012 §2, §3).

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What a relation is: the vocabulary ADR-0012 §5 turned one connection into,
  * and the one piece of arithmetic that falls out of it.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The words themselves live one slice per module (`<module>/strings/en.ts`),
  * composed into one table per language by `strings.<lang>.ts`; this

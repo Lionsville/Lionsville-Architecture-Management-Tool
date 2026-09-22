@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * An agent as a peer of the menu (ADR-0007): the vocabulary a coding agent
  * speaks to a running app, and the pure functions that answer it.

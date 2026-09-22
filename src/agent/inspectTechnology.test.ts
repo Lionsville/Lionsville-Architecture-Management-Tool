@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What an agent is told about a technology landscape (ADR-0015): the bands
  * and the lines, over the scope's own rows, bounded.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * A decision record through a file and back. The round trip is the whole test:
  * a record that loses its signers, its number or a paragraph of its body on the

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The rules for observations and causes (ADR-0021): numbering, what a new one
  * starts as, seeing one again, sharing it upward, folding two into one, and

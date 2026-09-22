@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * English, for the platform report (ADR-0013): one platform, what stands on
  * it, and what crosses it.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The analysis as a picture: observations on the left, causes in the lanes
  * after them, root causes on the right (ADR-0021).

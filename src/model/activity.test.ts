@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What a step is called. The rule is "read the lead command, against the model
  * as it was", so these are the cases where that matters: a delete still names

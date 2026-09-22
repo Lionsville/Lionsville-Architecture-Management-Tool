@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The register as a library: pick an application the organisation already
  * has, and — for one nobody defines — answer whether this scope should

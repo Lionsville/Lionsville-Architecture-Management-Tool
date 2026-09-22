@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The desktop smoke run: the packaged renderer, in a real window, over `app://`,
  * driven the way a person and an agent drive it, against real folders.

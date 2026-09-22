@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The layout report, against a board with the faults planted: two cards on
  * top of each other, a line through a third, a card filed in one band and

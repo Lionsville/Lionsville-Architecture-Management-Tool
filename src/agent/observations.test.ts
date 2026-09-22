@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The observation tools (ADR-0021) as an agent uses them: record, see again,
  * share, analyse into a cause, deepen it to a root, merge two, and fold in one

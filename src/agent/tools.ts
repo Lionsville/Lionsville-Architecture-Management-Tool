@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The agent's vocabulary (ADR-0007): what a coding agent beside the app may
  * ask, and the shape of every ask and every answer.

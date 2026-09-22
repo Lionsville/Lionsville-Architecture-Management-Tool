@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { MarkerType, type Edge } from '@xyflow/react';
 import type { DesignDiagram, DesignElement, DesignModel, EdgeRoute, ElementId, Rect } from '../model/types';
 import type { ElementNode, ElementNodeData, StandInNote } from './nodes/nodeData';

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The handler over a session view: which tools are answered, which refusals
  * come first, and how the four renderer-only tools go through the view. The

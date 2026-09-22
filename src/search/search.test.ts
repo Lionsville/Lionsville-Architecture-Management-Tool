@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The search over a whole project: which kind of hit a match becomes, in what
  * order, and what the snippet shows a reader about why it matched.

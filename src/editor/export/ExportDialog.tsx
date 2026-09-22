@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The export, as a dialog: which theme the picture is made in, whether every
  * line carries its label, whether the strip along the bottom is drawn — and a

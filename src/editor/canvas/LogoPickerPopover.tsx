@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import Box from '@mui/material/Box';
 import Popover from '@mui/material/Popover';
 import type { Point } from '../../model/types';

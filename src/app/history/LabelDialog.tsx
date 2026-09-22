@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * One field: what to call this snapshot (ADR-0008). The copy says what a
  * label is — beside the subject, never instead of it, and shared — because

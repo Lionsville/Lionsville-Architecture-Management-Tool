@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The screen words for the vocabulary (ADR-0021), published as tables so that a
  * card on the organisation screen or a line in the search can label an impact

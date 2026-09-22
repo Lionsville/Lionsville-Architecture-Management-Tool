@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The organisation screen's wiring: what it may do, which dialog is up, and
  * where a person lands on leaving it.

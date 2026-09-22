@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Rule 5 of the format, carried out: a component of another application does not
  * belong on this diagram, its parent application does. Until now that could only

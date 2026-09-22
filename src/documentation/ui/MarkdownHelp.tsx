@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What the renderer draws, on one card: a `?` beside every markdown field
  * that opens a table of the marks and what each becomes.

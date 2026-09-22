@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The one thing about `userData` a unit test can actually hold: that main pins
  * it, to the frozen name, before anything reads a path.

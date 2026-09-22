@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The property ADR-0008 promises: after a whole-project restore, the files
  * the folder would hold are the snapshot's, byte for byte. That is what makes

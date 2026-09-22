@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The physical view (ADR-0013, redone): one platform, and what would be left
  * standing if it went, on a page.

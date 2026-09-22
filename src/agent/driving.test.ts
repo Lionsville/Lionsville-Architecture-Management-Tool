@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The driving session (ADR-0019): which calls start one, what Stop does to
  * the next call and to the one in flight, and how a session ends.

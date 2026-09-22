@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * One search over everything a project knows: its elements, what is written
  * about them, and the decisions taken around them — the group's included.

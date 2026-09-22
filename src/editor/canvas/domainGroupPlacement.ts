@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { DEFAULT_TRANSLATE, type Translate } from '../../i18n/strings';
 import { MIN_GROUP_SIZE } from '../../model/placement';
 export { GROUP_AROUND_PADDING, GROUP_LABEL_ROOM, groupRectAround } from '../../model/placement';

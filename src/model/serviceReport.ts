@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * One platform service, and what would be stranded if it were withdrawn
  * (ADR-0014 §2.8).

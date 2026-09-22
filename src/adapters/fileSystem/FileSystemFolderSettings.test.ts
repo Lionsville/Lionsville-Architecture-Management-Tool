@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The contract, over the in-memory directory. The desktop's IPC handle is held
  * to the same `DirectoryHandleLike` shape, so this is the admission test for

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 import { matchesQuery, queryTokens } from './textSearch';
 import type { StringKey, Translate } from '../i18n/strings';
 import { MODEL_ENGLISH } from './words';

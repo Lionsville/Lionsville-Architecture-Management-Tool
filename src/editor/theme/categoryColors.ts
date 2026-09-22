@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Deterministic category → colour mapping for application card strips.
  * The same category string always hashes to the same hue, in every session

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Where a record should be answered for — the chooser in front of the four
  * gestures (ADR-0012 §10).

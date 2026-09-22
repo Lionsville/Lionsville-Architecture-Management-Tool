@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The sheet's grid: how many columns fit, how many an area takes, and how
  * wide a sheet of paper is.

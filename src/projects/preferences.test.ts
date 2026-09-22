@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * What comes out of browser storage is text of unknown provenance: written by an
  * older version, edited by hand, or cut off halfway by a full store. Preferences

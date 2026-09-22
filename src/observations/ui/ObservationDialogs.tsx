@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The questions the observations page asks in a dialog: what a new observation
  * is, what a new cause is called, which observation another is the same as,

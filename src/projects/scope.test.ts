@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The scope as a unit: what can be opened, what gets saved, how a tree is
  * ordered, and why a file is refused.

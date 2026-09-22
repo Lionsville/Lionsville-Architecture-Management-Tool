@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * The words for what a badge says, one table for the two things that draw a
  * legend — the toolbar's popover and the export's key — and for the tooltip

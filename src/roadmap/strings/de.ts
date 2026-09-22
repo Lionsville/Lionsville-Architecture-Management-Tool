@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /** German, for the roadmap (ADR-0009). Typed from `en.ts`. */
 import type { EN } from './en'
 

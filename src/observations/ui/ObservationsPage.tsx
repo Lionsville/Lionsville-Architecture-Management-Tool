@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
 /**
  * Everything a scope observed in one place, and the analysis the team makes
  * of it (ADR-0021): a register of the observations — this scope's own and the
