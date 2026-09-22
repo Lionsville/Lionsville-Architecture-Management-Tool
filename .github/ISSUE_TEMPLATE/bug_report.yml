@@ -1,0 +1,54 @@
+name: Bug report
+description: Something does not do what the manual or the screen says it does.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A security problem is not a bug report: see `SECURITY.md`.
+        Attach only landscapes you invented; a real organisation's data does not belong here.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The About dialog in the desktop app, or `version.json` beside the web build.
+      placeholder: "3.0.5"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where it runs
+      options:
+        - macOS, desktop app
+        - Windows, desktop app
+        - Linux, desktop app
+        - Browser, the web build
+        - From source (npm run dev)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: Step by step, from a fresh start if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Include the exact message if there was one.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: A fictional landscape that reproduces it, a screenshot, the browser and its version.

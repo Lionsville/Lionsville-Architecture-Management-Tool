@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and proposals
+    url: https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/discussions
+    about: Ask how something works, or propose a change before writing code.
+  - name: Security vulnerabilities
+    url: https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/blob/main/SECURITY.md
+    about: Not here. SECURITY.md says how to report one privately.
