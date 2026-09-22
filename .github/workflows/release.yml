@@ -334,6 +334,35 @@ jobs:
           npx electron-vite build
           npx electron-builder "--$PLATFORM" --publish "$PUBLISH"
 
+      # A download nobody can check is a download nobody should run. One
+      # `.sha256` per installer, in sha256sum's own format so `sha256sum -c`
+      # reads it, and naming the file alone so it reads from the folder the
+      # download landed in. The `checksums` job gathers them into one
+      # SHA256SUMS at the end. macOS ships `shasum` and no `sha256sum`, so
+      # whichever of the two this runner has is the one used.
+      - name: A checksum per installer
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHING: ${{ github.event_name == 'release' && 'yes' || 'no' }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          # No `-u`: an empty array under it is an error in the bash macOS ships.
+          set -eo pipefail
+          sum() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
+          cd release
+          shopt -s nullglob
+          files=(*.dmg *.zip *.exe *.AppImage *.deb)
+          if [ ${#files[@]} -eq 0 ]; then echo "Nothing built to check."; exit 0; fi
+          for file in "${files[@]}"; do
+            sum "$file" > "$file.sha256"
+            cat "$file.sha256"
+          done
+          if [ "$PUBLISHING" = 'yes' ]; then
+            gh release upload "$TAG" ./*.sha256 --clobber
+          fi
+
       # Proof, and a safety net: if the upload to the release fails, the
       # installers still exist and can be attached by hand.
       - name: Keep the installers
@@ -348,10 +377,43 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.blockmap
+            release/*.sha256
             release/latest*.yml
           # A build that failed early has nothing to keep; that is not a second failure.
           if-no-files-found: warn
           retention-days: 14
+
+  # One file to check a download against, over everything on the release.
+  #
+  # It has to be a job of its own: the installers are built on three runners
+  # and the web build on a fourth, and no one of them has ever seen the other
+  # three's output. It stays cheap by gathering the `.sha256` files each of
+  # them already wrote rather than downloading the installers again — a few
+  # hundred bytes instead of a gigabyte.
+  checksums:
+    name: SHA256SUMS
+    needs: [preflight, build, web]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Gather them into one file
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          mkdir sums && cd sums
+          gh release download "$TAG" --repo "$REPOSITORY" --pattern '*.sha256'
+          # The glob is sorted, so the same release always produces the same
+          # file — and `sha256sum -c SHA256SUMS` reads it from a folder of
+          # downloads as it stands.
+          cat -- *.sha256 > SHA256SUMS
+          cat SHA256SUMS
+          gh release upload "$TAG" SHA256SUMS --repo "$REPOSITORY" --clobber
 
   # The README's Download section names the installers by file, and the file
   # names carry the version. So a stable release ends by pointing the README at
@@ -434,6 +496,11 @@ jobs:
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: (cd dist && zip -qr "../web-$VERSION.zip" .)
+      - name: A checksum for it
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: sha256sum "web-$VERSION.zip" > "web-$VERSION.zip.sha256"
       - name: Put it on the release
         if: github.event_name == 'release'
         shell: bash
@@ -441,11 +508,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
           VERSION: ${{ needs.preflight.outputs.version }}
-        run: gh release upload "$TAG" "web-$VERSION.zip" --clobber
+        run: gh release upload "$TAG" "web-$VERSION.zip" "web-$VERSION.zip.sha256" --clobber
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: web-${{ needs.preflight.outputs.version }}
-          path: web-${{ needs.preflight.outputs.version }}.zip
+          path: |
+            web-${{ needs.preflight.outputs.version }}.zip
+            web-${{ needs.preflight.outputs.version }}.zip.sha256
           retention-days: 14
 
   # app.architecture.lionsville.nl runs the newest stable release, and this is

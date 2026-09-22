@@ -13,6 +13,7 @@ later the release page carries:
 | `…-win-x64.exe`, `…-win-arm64.exe` | Windows NSIS installers — signed |
 | `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` | Linux, unsigned |
 | `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | update manifests — written by electron-builder, read by nothing since the notice replaced the self-updater |
+| `SHA256SUMS`, `<file>.sha256` | a SHA-256 per file, and one file listing them all |
 | `web-<version>.zip` | the web build — `npm run build`'s `dist/`, with a `version.json` saying which release it is; what [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) runs |
 
 **Then the README, by itself.** Its Download section links three installers
@@ -41,6 +42,21 @@ The job signs in to Azure by OIDC under the `app` environment, fetches the
 Static Web App's deployment token for the run, uploads the unpacked zip with
 `.github/staticwebapp.config.json` beside it, and polls `/version.json` until
 the host says the new version. The five values it reads are listed below.
+
+## Verifying a download
+
+Every installer and the web zip arrive with a **`<file>.sha256`** beside them,
+and the release carries one **`SHA256SUMS`** over all of them — sha256sum's own
+format, file names only, so it reads from whatever folder the downloads landed
+in: `sha256sum -c SHA256SUMS` on Linux, `shasum -a 256 -c SHA256SUMS` on macOS,
+`certutil -hashfile <file> SHA256` on Windows compared by eye. Each build job
+writes the sums for what it built, because that is the only machine that has
+those files; the `checksums` job then gathers the small files into
+`SHA256SUMS`, which is why it downloads a few hundred bytes rather than a
+gigabyte. It runs for a beta too — a beta is downloaded like anything else.
+This is a check against a damaged or swapped download, not a signature: the
+macOS and Windows installers are signed, and that is what proves who built
+them.
 
 ## Rolling back
 
