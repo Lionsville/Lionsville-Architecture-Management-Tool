@@ -48,10 +48,14 @@ jobs:
   preflight:
     name: Preflight
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # To read check-runs of the commit the tag names.
+      checks: read
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: The tag is the version
         id: version
@@ -110,6 +114,28 @@ jobs:
           fi
           echo "All 13 credentials present."
 
+      # The trunk gate is what makes a release trustworthy, so a release may
+      # not step around it: the commit the tag names must already carry a
+      # green `check` run from check.yml.
+      - name: The tag's commit has a green check
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          green="$(gh api \
+            "repos/$REPOSITORY/commits/$COMMIT/check-runs?check_name=check&status=completed" \
+            --jq '[.check_runs[] | select(.conclusion == "success")] | length')"
+          if [ "$green" -eq 0 ]; then
+            echo "::error::$TAG names $COMMIT, which has no successful 'check' run. A release is built from a commit the trunk gate has already passed: push the commit, let Check go green, then publish the release." >&2
+            exit 1
+          fi
+          echo "$COMMIT has a green check."
+
   # Nothing gets signed, let alone published, on a red suite. This is the same
   # `check:all` a human runs before handing work back — the shell's 274 tests,
   # the package's 1428, both typechecks, both lints, and a production web build.
@@ -117,8 +143,8 @@ jobs:
     name: Verify
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -150,9 +176,9 @@ jobs:
           - { os: ubuntu-24.04, platform: linux }
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -161,7 +187,7 @@ jobs:
       # The Electron binaries are ~200 MB per platform and do not change between
       # releases; downloading them three times per run is the slowest thing here.
       - name: Cache the Electron downloads
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/electron
@@ -179,7 +205,10 @@ jobs:
       # carries 0.0.0 in the repository so nobody has to remember to bump it,
       # and nobody can bump it to something the tag disagrees with.
       - name: Stamp the version
-        run: npm version --no-git-tag-version --allow-same-version "${{ needs.preflight.outputs.version }}"
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: npm version --no-git-tag-version --allow-same-version "$VERSION"
 
       # Two files and three variables, because @electron/notarize wants a *path*
       # to the .p8 — not its contents, and not base64 of its contents. Passing
@@ -298,16 +327,18 @@ jobs:
           # re-running one failed job the next morning does.
           EP_GH_IGNORE_TIME: 'true'
           NOTARIZE: ${{ (github.event_name == 'workflow_dispatch' && !inputs.notarize) && 'false' || 'true' }}
+          PLATFORM: ${{ matrix.platform }}
+          PUBLISH: ${{ github.event_name == 'release' && 'always' || 'never' }}
         run: |
+          set -euo pipefail
           npx electron-vite build
-          npx electron-builder --${{ matrix.platform }} \
-            --publish ${{ github.event_name == 'release' && 'always' || 'never' }}
+          npx electron-builder "--$PLATFORM" --publish "$PUBLISH"
 
       # Proof, and a safety net: if the upload to the release fails, the
       # installers still exist and can be attached by hand.
       - name: Keep the installers
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.platform }}-${{ needs.preflight.outputs.version }}
           path: |
@@ -336,24 +367,31 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Rewrite the download links
-        run: node build/readmeDownloads.ts "${{ needs.preflight.outputs.version }}"
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: node build/readmeDownloads.ts "$VERSION"
       - name: Commit, if anything moved
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
         run: |
+          set -euo pipefail
           if git diff --quiet -- README.md; then
-            echo "README already points at ${{ needs.preflight.outputs.version }}."
+            echo "README already points at $VERSION."
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add README.md
-          git commit -m "readme: downloads point at ${{ needs.preflight.outputs.version }}" \
+          git commit -m "readme: downloads point at $VERSION" \
             -m "Made by the release workflow once every installer was on the release."
           git push origin HEAD:main
 
@@ -370,28 +408,41 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
       - name: Stamp the version
-        run: npm version --no-git-tag-version --allow-same-version "${{ needs.preflight.outputs.version }}"
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: npm version --no-git-tag-version --allow-same-version "$VERSION"
       - run: npm run build
       - name: What this build is
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
         run: |
-          jq -cn --arg version "${{ needs.preflight.outputs.version }}" --arg commit "$GITHUB_SHA" \
+          set -euo pipefail
+          jq -cn --arg version "$VERSION" --arg commit "$GITHUB_SHA" \
             '{version: $version, commit: $commit, built: (now | todate)}' > dist/version.json
       - name: Zip it
-        run: (cd dist && zip -qr "../web-${{ needs.preflight.outputs.version }}.zip" .)
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: (cd dist && zip -qr "../web-$VERSION.zip" .)
       - name: Put it on the release
         if: github.event_name == 'release'
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "web-${{ needs.preflight.outputs.version }}.zip" --clobber
-      - uses: actions/upload-artifact@v7
+          TAG: ${{ github.event.release.tag_name }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: gh release upload "$TAG" "web-$VERSION.zip" --clobber
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: web-${{ needs.preflight.outputs.version }}
           path: web-${{ needs.preflight.outputs.version }}.zip
@@ -418,33 +469,42 @@ jobs:
       name: app
       url: https://app.architecture.lionsville.nl/
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/staticwebapp.config.json
           sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: web-${{ needs.preflight.outputs.version }}
       - name: Unpack it, with how the host serves it
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
         run: |
-          mkdir app && unzip -q "web-${{ needs.preflight.outputs.version }}.zip" -d app
+          set -euo pipefail
+          mkdir app && unzip -q "web-$VERSION.zip" -d app
           cp .github/staticwebapp.config.json app/
           test -f app/index.html && test -f app/version.json
-      - uses: azure/login@v2
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2.3.1
         with:
           client-id: ${{ vars.WEB_HOST_CLIENT_ID }}
           tenant-id: ${{ vars.WEB_HOST_TENANT_ID }}
           subscription-id: ${{ vars.WEB_HOST_SUBSCRIPTION_ID }}
       - name: The deployment token, for this run only
         id: token
+        shell: bash
+        env:
+          STATIC_SITE: ${{ vars.WEB_HOST_STATIC_SITE }}
+          RESOURCE_GROUP: ${{ vars.WEB_HOST_RESOURCE_GROUP }}
         run: |
+          set -euo pipefail
           token="$(az staticwebapp secrets list \
-            --name "${{ vars.WEB_HOST_STATIC_SITE }}" \
-            --resource-group "${{ vars.WEB_HOST_RESOURCE_GROUP }}" \
+            --name "$STATIC_SITE" \
+            --resource-group "$RESOURCE_GROUP" \
             --query properties.apiKey -o tsv)"
           echo "::add-mask::$token"
           echo "token=$token" >> "$GITHUB_OUTPUT"
-      - uses: Azure/static-web-apps-deploy@v1
+      - uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
           azure_static_web_apps_api_token: ${{ steps.token.outputs.token }}
           action: upload
@@ -452,13 +512,18 @@ jobs:
           skip_app_build: true
           skip_api_build: true
       - name: It answers, with this version
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
         run: |
+          set -uo pipefail
+          said=''
           for attempt in $(seq 1 30); do
             said="$(curl -fsS --max-time 10 https://app.architecture.lionsville.nl/version.json || true)"
             case "$said" in
-              *'"version":"${{ needs.preflight.outputs.version }}"'*) echo "$said"; exit 0 ;;
+              *"\"version\":\"$VERSION\""*) echo "$said"; exit 0 ;;
             esac
             sleep 10
           done
-          echo "::error::app.architecture.lionsville.nl is not running ${{ needs.preflight.outputs.version }}: $said"
+          echo "::error::app.architecture.lionsville.nl is not running $VERSION: $said"
           exit 1

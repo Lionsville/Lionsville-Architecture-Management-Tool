@@ -1,0 +1,17 @@
+# A pinned action is a frozen action; this is what thaws it on purpose.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # One pull request a week for the small moves, so the noticeable ones
+      # arrive on their own.
+      minor-and-patch:
+        update-types: [minor, patch]
