@@ -22,8 +22,9 @@
  * package.json, and this file only decides the order and keeps the score.
  *
  * Deliberately a local script and not a CI workflow. The loop is local and
- * fast on purpose (CLAUDE.md, "The fast loop"); GitHub Actions is for building
- * and signing a release, not for waiting on.
+ * fast on purpose (CLAUDE.md, "The fast loop"); what CI runs is `check`, as
+ * the evidence for a commit, and the release build. A desktop build and a
+ * smoke run per push is a runner nobody waits for.
  */
 import { spawnSync } from 'node:child_process'
 

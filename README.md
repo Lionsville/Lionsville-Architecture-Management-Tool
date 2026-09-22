@@ -2,8 +2,8 @@
 
 An architecture modelling tool. It draws an **application landscape in Layer-7
 bands** and the **C4 container diagrams underneath it**, edits both, and saves
-them to a file. No account, no backend, no telemetry: your design lives on your
-own machine and goes no further than you send it.
+them to a file. This build has no account, no backend and no telemetry: your
+design lives on your own machine and goes no further than you send it.
 
 It runs as a desktop app on macOS, Windows and Linux, and in a browser: the
 newest release is always at **[app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)**,
@@ -288,7 +288,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 3178 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4454 tests. Run it
 after every change; it is fast on purpose.
 
 ```bash
@@ -333,8 +333,9 @@ src/i18n/           the registry; each module keeps its own strings/ slice
 src/projects/       what a project is, where it is filed, what is remembered
 src/platform/       a refusal, a diagnostic, the log's name, the window's chrome
 src/widgets/        icons and one dialog — presentation with no opinions
-src/ports/          the seams: ProjectStore · PreferencesStore · DocumentGateway
-                    GroupStore · ProjectHistory · Diagnostics · HostControls
+src/ports/          the seams: ScopeStore · PreferencesStore · DocumentGateway
+                    ProjectHistory · Diagnostics · HostControls · AgentGateway
+                    CommandChannel
 src/adapters/       the outside world, one folder per flavour
 src/app/            the shell: the organisation screen, workspace, toolbar, dialogs
 electron/           the desktop main process and preload
@@ -343,10 +344,16 @@ electron/           the desktop main process and preload
 Who may import whom is a **matrix**, declared as data at the top of
 `eslint.config.js` and generated into one rule per module, each with its own
 sentence. `model` is the bottom of the tree and knows nobody; `app` is the top
-and knows everyone; nobody imports `app`. `model`, `layout`, `platform`, `ports`,
-`projects` and `i18n` may not import React, MUI, Emotion or React Flow at all.
-Browser globals are an error outside `src/adapters/`. If a rule blocks you, the
-design is telling you something — move the code, do not route around it.
+and knows everyone; nobody imports `app`. `model`, `layout`, `platform`,
+`ports`, `projects`, `i18n` and `agent` may not import React, MUI, Emotion or
+React Flow at all — nor a `ui/` file, nor the barrel of a module that
+re-exports one; those modules name the file they want. `platform/node/` is the
+only folder in `src/` that may say `node:`, and no module may import it, `app`
+included. `localStorage` and `sessionStorage` are an error outside
+`src/adapters/`, along with the file pickers on `window`. Every source file
+carries its SPDX licence header, which is a rule here too. If a rule blocks
+you, the design is telling you something — move the code, do not route around
+it.
 
 Until September 2026 the editor was a separate package under
 `vendor/solution-design`, with its own toolchain and a string table carrying 177
@@ -354,8 +361,8 @@ keys for screens it could not render. `docs/decisions/0001` records why that
 boundary went and what replaced it.
 
 Adding a different place to keep things is a class under `src/adapters/`, the
-shared behaviour suite (`src/ports/ProjectStore.contract.ts`) run over it, and
-one branch in `composition.ts`. Nothing above the seam changes.
+shared behaviour suite (`src/ports/ScopeStore.contract.ts`) run over it, and
+one `registerSourceProvider` in `composition.ts`. Nothing above the seam changes.
 
 `CLAUDE.md` carries the full map, including a "where does my change go" table
 and the names that are settled.
