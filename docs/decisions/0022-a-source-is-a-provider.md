@@ -623,6 +623,39 @@ and a refusal said in the provider's words, in nobody's, and in ours;
 the section; `menuLayout.test.ts` and `updates.test.ts` pin both states of a
 build that offers a check and one that does not.
 
+## Amended — the one a build whose notices name a scope needed
+
+*22 September 2026.* The same build's chrome had something to say about work
+kept somewhere else in the tree, and could name the scope it meant and not take
+anybody there. Naming a path is the easy half: a person reading *the work is on
+acme/rail/rolling-stock* still has to find that scope in the tree themselves,
+and a provider that tried to help had nothing to help with — the whole of what
+it was handed was the session of the scope that is already open, which is by
+definition not the one the sentence is about. It is added as the smallest public
+thing that closes it, and the three built-ins are written exactly as they were.
+
+* **A provider's chrome is handed the open, and nothing that opens.**
+  `SourceChrome` and `SourceMenuContext` take `open(to)`, where `to` is the
+  `Destination` ADR-0019 already defines for the agent — a scope path, a page
+  and an id — bound in `App` to the same `openFor` and `openScopeAt` that
+  `app.open` moves the app with. The same three words and not a second grammar
+  for them, because a shell with two ways to say *the roadmap of that scope* is
+  a shell where one of them is a version behind. A scope left unsaid is the
+  scope that is open, which is what it means to the agent and what a notice
+  about the landscape in front of somebody means too. Nothing comes back: a path
+  that names nothing is a refreshed tree, the same answer *Open …* gives a
+  person, and an answer a provider could branch on would be this shell inviting
+  it to draw a second failure screen for something already said here. It is
+  deliberately **not** a second way to move the app — there is no *close*, no
+  *save*, no history — because what a chrome asked for was a way to the place it
+  had already named, and every other verb belongs to the person or to the agent
+  they can see driving.
+
+`App.storage.test.tsx` pins both sides of it: a chrome drawn through the
+registered-chrome path pressing its own notice open and the named scope arriving
+in the crumbs, a destination with no scope landing on the scope that is open,
+and a menu line told the same call sending the person to the scope it names.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a
