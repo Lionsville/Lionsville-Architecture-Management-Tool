@@ -426,3 +426,6 @@ usable here under LGPL-3.0. Its wasm is published beside the app under its own
 unhashed name so that a self-built replacement can be dropped in, which is what
 that licence asks for; see `build/libavoidWasm.ts`. Other dependencies
 installed through npm are under their own licences.
+
+Contributions are welcome; [`CONTRIBUTING.md`](CONTRIBUTING.md) says how, and
+under what terms a contribution is accepted.
