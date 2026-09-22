@@ -428,4 +428,4 @@ that licence asks for; see `build/libavoidWasm.ts`. Other dependencies
 installed through npm are under their own licences.
 
 Contributions are welcome; [`CONTRIBUTING.md`](CONTRIBUTING.md) says how, and
-under what terms a contribution is accepted.
+under what terms a contribution is accepted (AGPL-3.0-only, copyright assigned).

@@ -2,7 +2,8 @@ Lionsville Architect
 Copyright (C) 2024–2026 Lionsville Group BV
 
 This program is licensed under the GNU Affero General Public License,
-version 3; the full text and the notice above it are in LICENSE.
+version 3 only (SPDX: AGPL-3.0-only); the full text and the notice above
+it are in LICENSE.
 
 Lionsville Group BV also offers this software under a commercial licence.
 To keep that possible it holds the copyright of the whole tree, and a

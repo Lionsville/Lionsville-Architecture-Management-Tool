@@ -97,9 +97,10 @@ none is merged.
 ## Intellectual property
 
 Lionsville Group BV holds the copyright of everything in this repository. It
-publishes the whole tree under the GNU Affero General Public License v3.0
-(`LICENSE`), and it also offers the same software under a commercial licence.
-Both can stay true only while one holder owns every line. So a contribution is
+publishes the whole tree under the GNU Affero General Public License,
+version 3 only (`AGPL-3.0-only`, `LICENSE`), and it also offers the same
+software under a commercial licence. Both can stay true only while one holder
+owns every line. So a contribution is
 accepted only under a contributor licence agreement in which you assign the
 copyright of your contribution to Lionsville Group BV. The text of that
 agreement will be in [`CLA.md`](CLA.md) once counsel has written it; a check on
@@ -108,7 +109,7 @@ check are in place, pull requests are reviewed but not merged.
 
 What this does and does not change:
 
-- Everything in this repository is AGPL-3.0 and stays that way, including
+- Everything in this repository is AGPL-3.0-only and stays that way, including
   every contribution merged into it. Assigning the copyright moves the holder;
   it does not move the licence you and everyone else receive the code under.
 - A commercial edition exists. It is a plugin that composes over this tree
