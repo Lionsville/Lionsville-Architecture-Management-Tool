@@ -228,9 +228,11 @@ export function OrganisationCards({
             ? [
               plural(s, { one: 'org.observationsOne', other: 'org.observationsOther' }, pages.observations.total),
               tallyLine(pages.observations.causes, CAUSE_STATE_LABEL, s),
-              pages.observations.roots > 0
-                ? plural(s, { one: 'org.rootCausesOne', other: 'org.rootCausesOther' }, pages.observations.roots)
-                : '',
+              pages.observations.roots > 0 && pages.observations.solutions > 0
+                ? s('solution.coverage', { count: pages.observations.covered, total: pages.observations.roots })
+                : pages.observations.roots > 0
+                  ? plural(s, { one: 'org.rootCausesOne', other: 'org.rootCausesOther' }, pages.observations.roots)
+                  : '',
             ].filter(Boolean).join(' · ')
             : '',
           // What the scopes below offered upward (ADR-0021): off the index,

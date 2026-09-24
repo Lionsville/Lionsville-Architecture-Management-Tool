@@ -28,6 +28,7 @@ import { TRANSITION_STATUSES } from '../../model/transition'
 import type { TransitionStatus } from '../../model/transition'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { liveObservations, rootCauses } from '../../observations/observation'
+import { isLive, rootsWithoutSolution } from '../../observations/solution'
 import { CAUSE_STATES } from '../../model/observation'
 import type { CauseState } from '../../model/observation'
 
@@ -79,6 +80,9 @@ export type OrganisationPages = {
     total: number
     causes: StatusTally<CauseState>
     roots: number
+    /** Solutions still standing, and how many of the roots one of them addresses (ADR-0026). */
+    solutions: number
+    covered: number
   }
   /** The technology landscape to open (ADR-0015). Absent means there is one to make. */
   technology: {
@@ -112,11 +116,13 @@ export function organisationPages(
   const transitions = model?.transitions ?? []
   const observations = model?.observations ?? []
   const causes = model?.causes ?? []
+  const solutions = model?.solutions ?? []
   const of = (kind: string) => elements.filter((element) => element.kind === kind).length
 
   return {
     empty: elements.length === 0 && relations.length === 0 && diagrams.length === 0
-      && decisions.length === 0 && transitions.length === 0 && observations.length === 0 && causes.length === 0,
+      && decisions.length === 0 && transitions.length === 0 && observations.length === 0 && causes.length === 0
+      && solutions.length === 0,
     business: {
       // A journey is a `step` root; an area is a `function` root. The same
       // reading `seedSheet` makes, and for the same reason — what a tree's
@@ -144,6 +150,8 @@ export function organisationPages(
       total: liveObservations(observations).length,
       causes: tally(CAUSE_STATES, causes.map((one) => ({ status: one.state }))),
       roots: rootCauses(causes).length,
+      solutions: solutions.filter(isLive).length,
+      covered: rootCauses(causes).length - rootsWithoutSolution(causes, solutions).length,
     },
     technology: {
       ...(diagrams.find((diagram) => diagram.kind === 'technology')

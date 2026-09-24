@@ -31,10 +31,14 @@ import { technologyRows } from '../projects/technologyRegister'
 import { ancestorScopes } from '../projects/scopePath'
 import { flattenScopes } from '../projects/scope'
 import { coverageOf, unmappedFunctions } from '../business'
-import { causesToCommands, decisionsOf, decisionsToCommands, describeLeverage, leverageOf, observationsToCommands, transaction, transitionsOf } from '../model'
+import {
+  causeList, causesToCommands, decisionList, decisionsOf, decisionsToCommands, describeLeverage, experimentsToCommands,
+  leverageOf, nextTransitionNumber, observationsToCommands, replacement, solutionList, solutionsOf, solutionsToCommands,
+  transaction, transitionList, transitionsOf,
+} from '../model'
 import type { DesignElement, ElementId, PlatformDescription, Relation, DesignDiagram, SharedElsewhere } from '../model'
 import { transitionLabel } from '../model/transition'
-import { formatAdrNumber } from '../decisions/adr'
+import { formatAdrNumber, newAdr, nextAdrNumber } from '../decisions/adr'
 import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { AncestorRecords } from '../decisions/adrScope'
@@ -47,7 +51,9 @@ import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { ObservationsPage } from '../observations/ui/ObservationsPage'
-import type { Analysis } from '../observations/observation'
+import type { ObservationWork } from '../observations/ui/ObservationsPage'
+import { decisionContext, linkRecord } from '../observations/solution'
+import { planBodyTemplate } from '../roadmap/planTemplate'
 import { DiskChangeNotice } from './DiskChangeNotice'
 import { HistoryPage } from './history/HistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
@@ -1342,12 +1348,57 @@ export function ProjectWorkspace({
     if (commands.length) session.dispatch(transaction(commands))
   }, [session])
 
-  /** The observations page hands both lists back (ADR-0021); what moved is one undo step. */
-  const onAnalysisChange = useCallback((next: Analysis) => {
+  /**
+   * The observations page hands its four lists back (ADR-0021, ADR-0026);
+   * what moved is one undo step.
+   */
+  const onAnalysisChange = useCallback((next: ObservationWork) => {
     const indexed = session.indexed()
-    const commands = [...observationsToCommands(indexed, next.observations), ...causesToCommands(indexed, next.causes)]
+    const commands = [
+      ...observationsToCommands(indexed, next.observations), ...causesToCommands(indexed, next.causes),
+      ...solutionsToCommands(indexed, next.solutions), ...experimentsToCommands(indexed, next.experiments),
+    ]
     if (commands.length) session.dispatch(transaction(commands))
   }, [session])
+
+  /**
+   * A solution's decision record, proposed from the Solutions tab (ADR-0026):
+   * a new record on the Decisions page, its context written from what the
+   * solution addresses and what else was considered, and the link — one step.
+   */
+  const onDecideSolution = useCallback((solutionId: string) => {
+    const indexed = session.indexed()
+    const solution = solutionsOf(indexed)[solutionId]
+    if (!solution || solution.decision) return
+    const day = today()
+    const adr = newAdr({ id: makeId('adr'), number: nextAdrNumber(decisionList(indexed)), title: solution.title, date: day, t: s })
+    const opening = adr.body.indexOf('\n\n') + 2
+    adr.body = `${adr.body.slice(0, opening)}${decisionContext(solution, causeList(indexed), solutionList(indexed), s)}\n${adr.body.slice(opening)}`
+    const [linked] = linkRecord([solution], solutionId, 'decision', adr.id, day)
+    session.dispatch(transaction([
+      { type: 'decision.add', decision: adr },
+      { type: 'solution.update', id: solutionId, patch: replacement(solution, linked) },
+    ]))
+  }, [session, makeId, today, s])
+
+  /** The plan that builds an adopted solution, resting on its decision record. One step. */
+  const onStartSolutionPlan = useCallback((solutionId: string) => {
+    const indexed = session.indexed()
+    const solution = solutionsOf(indexed)[solutionId]
+    if (!solution || solution.plan) return
+    const id = makeId('tr')
+    const [linked] = linkRecord([solution], solutionId, 'plan', id, today())
+    session.dispatch(transaction([
+      {
+        type: 'transition.add',
+        transition: {
+          id, number: nextTransitionNumber(transitionList(indexed)), title: solution.title, status: 'draft',
+          elements: [], decisions: solution.decision ? [solution.decision] : [], milestones: [], body: planBodyTemplate(s),
+        },
+      },
+      { type: 'solution.update', id: solutionId, patch: replacement(solution, linked) },
+    ]))
+  }, [session, makeId, today, s])
 
   /**
    * The observations the scopes below shared (ADR-0021), off the index like
@@ -1619,6 +1670,10 @@ export function ProjectWorkspace({
         canShare={project.path !== ''}
         {...(onOpenScope ? { onOpenScope: (path: string) => onOpenScope(path, { page: 'observations' }) } : {})}
         onChange={onAnalysisChange}
+        onDecide={readOnly ? undefined : onDecideSolution}
+        onStartPlan={readOnly ? undefined : onStartSolutionPlan}
+        onOpenDecision={(adrId) => { setObsPage({ open: false }); openDecisions(adrId) }}
+        onOpenPlan={(planId) => { setObsPage({ open: false }); plans.openPlan(planId) }}
         initialId={obsPage.id}
         s={s}
         language={language}

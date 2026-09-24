@@ -24,11 +24,11 @@ import { formatCauseNumber, formatObservationNumber } from '../observation'
 import type { Analysis, CauseStrength, ObservationImpact, SharedObservation } from '../observation'
 import { STATE_LABEL } from '../observationScope'
 
-const LANE_WIDTH = 260
-const ROW_HEIGHT = 84
-const BOX = { width: 180, height: 44 }
-const RADIUS: Record<ObservationImpact, number> = { minor: 12, major: 17, critical: 23 }
-const STROKE: Record<CauseStrength, { width: number; dash?: string }> = {
+export const LANE_WIDTH = 260
+export const ROW_HEIGHT = 84
+export const BOX = { width: 180, height: 44 }
+export const RADIUS: Record<ObservationImpact, number> = { minor: 12, major: 17, critical: 23 }
+export const STROKE: Record<CauseStrength, { width: number; dash?: string }> = {
   strong: { width: 3.5 },
   normal: { width: 1.6 },
   weak: { width: 1.4, dash: '3 4' },
@@ -40,10 +40,6 @@ export type AnalysisPictureProps = {
   selectedKey?: string
   onSelect: (key: string) => void
   s: Translate
-}
-
-function shorten(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
 
 export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, s }: AnalysisPictureProps) {
@@ -137,56 +133,98 @@ export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, s }: 
             'data-testid': node.kind === 'observation' ? 'analysis-observation' : 'analysis-cause',
           }
           if (node.kind === 'observation') {
-            const r = RADIUS[node.observation.impact]
-            const seen = node.observation.seen
-            return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} {...common} data-key={node.key}>
-                <title>{`${formatObservationNumber(node.observation.number)} ${node.observation.title}`}</title>
-                <circle
-                  r={r}
-                  fill={tint(seen)}
-                  stroke={selected ? theme.palette.secondary.main : theme.palette.primary.main}
-                  strokeWidth={selected ? 3 : 1.5}
-                />
-                {seen > 1 && (
-                  <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={theme.palette.text.primary}>{seen}×</text>
-                )}
-                <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
-                  {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}
-                </text>
-                <text textAnchor="middle" y={r + 25} fontSize={10} fill={theme.palette.text.primary}>
-                  {shorten(node.observation.title, 34)}
-                </text>
-              </g>
-            )
+            return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen)} {...common} />
           }
-          const rootStroke = node.root ? theme.palette.secondary.main : node.cause.state === 'verified' ? theme.palette.success.main : theme.palette.warning.main
-          return (
-            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} {...common} data-key={node.key} data-root={node.root ? 'true' : undefined}>
-              <title>{`${formatCauseNumber(node.cause.number)} ${node.cause.title}`}</title>
-              <rect
-                x={-BOX.width / 2}
-                y={-BOX.height / 2}
-                width={BOX.width}
-                height={BOX.height}
-                rx={node.root ? BOX.height / 2 : 5}
-                fill={theme.palette.background.paper}
-                stroke={selected ? theme.palette.secondary.main : rootStroke}
-                strokeWidth={selected ? 3 : node.root ? 2.5 : 1.8}
-                strokeDasharray={node.cause.state === 'assumed' ? '5 3' : undefined}
-              />
-              <text textAnchor="middle" dy="-0.15em" fontSize={11} fill={theme.palette.text.primary}>
-                {shorten(node.cause.title, 28)}
-              </text>
-              <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-                {formatCauseNumber(node.cause.number)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
-              </text>
-            </g>
-          )
+          return <CauseMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} s={s} {...common} />
         })}
       </svg>
     </Box>
   )
+}
+
+type MarkProps<N> = {
+  node: N
+  x: number
+  y: number
+  selected: boolean
+  onClick: () => void
+  cursor: 'pointer'
+  'data-testid': string
+  dim?: boolean
+}
+
+/** An observation: a circle sized by its impact, tinted by how often it was seen. */
+export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'observation' }>> & { fill: string }) {
+  const theme = useTheme()
+  const { node, x, y, selected, fill, dim, ...rest } = props
+  const r = RADIUS[node.observation.impact]
+  const seen = node.observation.seen
+  return (
+    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} opacity={dim ? 0.35 : 1}>
+      <title>{`${formatObservationNumber(node.observation.number)} ${node.observation.title}`}</title>
+      <circle
+        r={r}
+        fill={fill}
+        stroke={selected ? theme.palette.secondary.main : theme.palette.primary.main}
+        strokeWidth={selected ? 3 : 1.5}
+      />
+      {seen > 1 && (
+        <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={theme.palette.text.primary}>{seen}×</text>
+      )}
+      <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
+        {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}
+      </text>
+      <text textAnchor="middle" y={r + 25} fontSize={10} fill={theme.palette.text.primary}>
+        {shorten(node.observation.title, 34)}
+      </text>
+    </g>
+  )
+}
+
+/** A cause: a box, dashed while assumed, with the heavier rounded outline for a root. */
+export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>> & { s: Translate; flag?: string }) {
+  const theme = useTheme()
+  const { node, x, y, selected, s, flag, dim, ...rest } = props
+  const rootStroke = node.root ? theme.palette.secondary.main : node.cause.state === 'verified' ? theme.palette.success.main : theme.palette.warning.main
+  return (
+    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined} opacity={dim ? 0.35 : 1}>
+      <title>{`${formatCauseNumber(node.cause.number)} ${node.cause.title}`}</title>
+      <rect
+        x={-BOX.width / 2}
+        y={-BOX.height / 2}
+        width={BOX.width}
+        height={BOX.height}
+        rx={node.root ? BOX.height / 2 : 5}
+        fill={theme.palette.background.paper}
+        stroke={selected ? theme.palette.secondary.main : rootStroke}
+        strokeWidth={selected ? 3 : node.root ? 2.5 : 1.8}
+        strokeDasharray={node.cause.state === 'assumed' ? '5 3' : undefined}
+      />
+      <text textAnchor="middle" dy="-0.15em" fontSize={11} fill={theme.palette.text.primary}>
+        {shorten(node.cause.title, 28)}
+      </text>
+      <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
+        {formatCauseNumber(node.cause.number)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
+      </text>
+      {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
+    </g>
+  )
+}
+
+/** The small mark on a node that asks for attention, with the reason as its title. */
+export function Flag({ x, y, title, strong = false }: { x: number; y: number; title: string; strong?: boolean }) {
+  const theme = useTheme()
+  return (
+    <g transform={`translate(${x},${y})`} data-testid="picture-flag">
+      <title>{title}</title>
+      <circle r={8} fill={strong ? theme.palette.error.main : theme.palette.warning.main} />
+      <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={700} fill={theme.palette.background.paper}>!</text>
+    </g>
+  )
+}
+
+export function shorten(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
 
 /** What the marks mean, said once under the picture. */

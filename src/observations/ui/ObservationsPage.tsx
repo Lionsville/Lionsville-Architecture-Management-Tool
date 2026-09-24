@@ -6,7 +6,10 @@
  * of it (ADR-0021): a register of the observations — this scope's own and the
  * ones the scopes below shared — with the record beside it, and a second tab
  * that draws the observations analysed into causes and causes into root
- * causes, with the same reading pane for whatever is clicked.
+ * causes, with the same reading pane for whatever is clicked. A third tab
+ * (ADR-0026) takes the causes on: solutions proposed for them, vetted through
+ * their gates, tested, decided and built, and asked afterwards whether the
+ * sightings stopped.
  *
  * **One list per scope, read upward.** This scope's observations and causes
  * are two arrays on its model and go back whole (`onChange`), so the caller
@@ -69,6 +72,35 @@ import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL } from '../observa
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
 import { CauseReader, ObservationReader } from './Readers'
+import {
+  addressCause, alternatives, concludeExperiment, defaultStrength, dropSolution, experimentsFor, forgetCause,
+  formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, moveSolution, newExperiment, newSolution,
+  nextExperimentNumber, nextSolutionNumber, removeExperiment, removeSolution, restoreSolution, rootsWithoutSolution,
+  seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
+  updateExperiment, updateSolution, waiveExperiment,
+} from '../solution'
+import type {
+  Experiment, ExperimentOutcome, ExperimentPatch, Solution, SolutionContext, SolutionPatch, SolutionPhase,
+  SolutionPlan, SolutionState, SolutionWork,
+} from '../solution'
+import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
+import { PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
+import { SolutionLegend, SolutionPicture } from './SolutionPicture'
+import { ExperimentReader, SolutionReader } from './SolutionReaders'
+import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
+
+/** Everything the page hands back: the analysis and what is being done about it. */
+export type ObservationWork = Analysis & SolutionWork
+
+const ADR_STATUS_KEY = {
+  proposed: 'adr.statusProposed', reviewing: 'adr.statusReviewing', accepted: 'adr.statusAccepted',
+  rejected: 'adr.statusRejected', superseded: 'adr.statusSuperseded',
+} as const
+const PLAN_STATUS_KEY = {
+  draft: 'plan.draft', agreed: 'plan.agreed', running: 'plan.running', done: 'plan.done', abandoned: 'plan.abandoned',
+} as const
+
+const label4 = (prefix: string, number: number) => `${prefix}-${String(Math.max(0, Math.trunc(number))).padStart(4, '0')}`
 
 export type ObservationsPageProps = {
   open: boolean
@@ -85,7 +117,17 @@ export type ObservationsPageProps = {
   canShare: boolean
   /** Open the scope an observation from below lives in. */
   onOpenScope?: (path: string) => void
-  onChange: (next: Analysis) => void
+  onChange: (next: ObservationWork) => void
+  /**
+   * Propose the decision record for a solution (ADR-0026): the host writes
+   * the record and the link in one step, because a record of the Decisions
+   * page is not this page's to write.
+   */
+  onDecide?: (solutionId: string) => void
+  /** Start the plan that builds an adopted solution, likewise. */
+  onStartPlan?: (solutionId: string) => void
+  onOpenDecision?: (adrId: string) => void
+  onOpenPlan?: (planId: string) => void
   /** Open straight onto this observation or cause. */
   initialId?: string
   readOnly?: boolean
@@ -100,7 +142,7 @@ export type ObservationsPageProps = {
   windowChrome?: WindowChrome
 }
 
-type Tab = 'register' | 'analysis'
+type Tab = 'register' | 'analysis' | 'solutions'
 
 /**
  * How wide the reading pane is, in pixels, per tab: the register wants room
@@ -110,6 +152,16 @@ type Tab = 'register' | 'analysis'
 const READER = {
   register: { default: 640, min: 360, max: 1200 },
   analysis: { default: 420, min: 320, max: 900 },
+  solutions: { default: 480, min: 340, max: 900 },
+} as const
+
+const DELETE_TITLE = {
+  observation: 'observation.deleteTitle', cause: 'observation.deleteCauseTitle',
+  solution: 'solution.deleteTitle', experiment: 'solution.deleteTitle',
+} as const
+const DELETE_BODY = {
+  observation: 'observation.deleteBody', cause: 'observation.deleteCauseBody',
+  solution: 'solution.deleteBody', experiment: 'solution.deleteExperimentBody',
 } as const
 
 export function ObservationsPage(props: ObservationsPageProps) {
@@ -122,10 +174,29 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const observations = useMemo(() => model.observations ?? [], [model.observations])
   const causes = useMemo(() => model.causes ?? [], [model.causes])
   const analysis = useMemo<Analysis>(() => ({ observations: [...observations], causes: [...causes] }), [observations, causes])
+  const solutions = useMemo(() => model.solutions ?? [], [model.solutions])
+  const experiments = useMemo(() => model.experiments ?? [], [model.experiments])
+  const work = useMemo<ObservationWork>(
+    () => ({ ...analysis, solutions: [...solutions], experiments: [...experiments] }), [analysis, solutions, experiments])
+  const plans = useMemo<SolutionPlan[]>(() => (model.transitions ?? []).map((one) => ({
+    id: one.id, status: one.status, ...(one.to ? { to: one.to } : {}), elements: one.elements,
+  })), [model.transitions])
+  const context = useMemo<SolutionContext>(() => ({
+    causes, experiments, plans, decisions: (model.decisions ?? []).map((one) => ({ id: one.id, status: one.status })),
+  }), [causes, experiments, plans, model.decisions])
   const scopeLabel = props.scopeLabel ?? ((path: string) => path)
 
   const [tab, setTab] = useState<Tab>('register')
-  const [readerWidth, setReaderWidth] = useState<Record<Tab, number>>({ register: READER.register.default, analysis: READER.analysis.default })
+  const [readerWidth, setReaderWidth] = useState<Record<Tab, number>>({
+    register: READER.register.default, analysis: READER.analysis.default, solutions: READER.solutions.default,
+  })
+  const [wholeChain, setWholeChain] = useState(false)
+  const [showDropped, setShowDropped] = useState(false)
+  /** A solution being proposed, from a cause or from the bar. */
+  const [proposing, setProposing] = useState<{ causeId?: string } | undefined>(undefined)
+  const [addressing, setAddressing] = useState<Solution | undefined>(undefined)
+  const [planning, setPlanning] = useState<Solution | undefined>(undefined)
+  const [dropping, setDropping] = useState<Solution | undefined>(undefined)
   const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
   const [showMerged, setShowMerged] = useState(false)
@@ -137,7 +208,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** What is being merged away: one of this scope's, or one a scope below shared. */
   const [merging, setMerging] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
   const [linking, setLinking] = useState<{ key: string; label: string; link: Omit<CauseLink, 'strength'> } | undefined>(undefined)
-  const [deleting, setDeleting] = useState<{ kind: 'observation' | 'cause'; id: string; label: string } | undefined>(undefined)
+  const [deleting, setDeleting] = useState<{ kind: 'observation' | 'cause' | 'solution' | 'experiment'; id: string; label: string } | undefined>(undefined)
 
   // --- what is where ------------------------------------------------------------------
 
@@ -160,35 +231,60 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const observation = observations.find((one) => one.id === id)
     if (observation) return `${formatObservationNumber(observation.number)} ${observation.title}`
     const cause = causes.find((one) => one.id === id)
-    return cause ? `${formatCauseNumber(cause.number)} ${cause.title}` : id
-  }, [shared, observations, causes, scopeLabel])
+    if (cause) return `${formatCauseNumber(cause.number)} ${cause.title}`
+    const solution = solutions.find((one) => one.id === id)
+    if (solution) return `${formatSolutionNumber(solution.number)} ${solution.title}`
+    const experiment = experiments.find((one) => one.id === id)
+    if (experiment) return `${formatExperimentNumber(experiment.number)} ${experiment.title}`
+    const decision = model.decisions?.find((one) => one.id === id)
+    if (decision) return `${label4('ADR', decision.number)} ${decision.title}`
+    const plan = model.transitions?.find((one) => one.id === id)
+    return plan ? `${label4('TR', plan.number)} ${plan.title}` : id
+  }, [shared, observations, causes, solutions, experiments, model.decisions, model.transitions, scopeLabel])
 
   const selected = useMemo(() => {
     if (!selectedKey) return undefined
+    const solution = solutions.find((one) => solutionKey(one.id) === selectedKey)
+    if (solution) return { kind: 'solution' as const, solution }
+    const experiment = experiments.find((one) => experimentKey(one.id) === selectedKey)
+    if (experiment) return { kind: 'experiment' as const, experiment }
     const cause = causes.find((one) => one.id === selectedKey)
     if (cause) return { kind: 'cause' as const, cause }
     const own = observations.find((one) => one.id === selectedKey)
     if (own) return { kind: 'observation' as const, observation: own }
     const below = shared.find((one) => nodeKey(one.observation.id, one.scope) === selectedKey)
     return below ? { kind: 'shared' as const, ...below } : undefined
-  }, [selectedKey, causes, observations, shared])
+  }, [selectedKey, causes, observations, shared, solutions, experiments])
 
   // Each opening starts on the newest standing observation — unless asked for
   // one, which the id honours. Read through a ref so a record changing while
   // the page is up does not reset the selection.
   const latestObservations = useRef(observations)
   latestObservations.current = observations
+  const latestWork = useRef({ solutions, experiments })
+  latestWork.current = { solutions, experiments }
   useEffect(() => {
     if (!open) return
     setQuery('')
-    if (initialId) { setSelectedKey(initialId); return }
+    if (initialId) {
+      // A solution or an experiment opens on its own tab, by its key or its bare id (ADR-0026).
+      const solution = latestWork.current.solutions.find((one) => initialId === one.id || initialId === solutionKey(one.id))
+      const experiment = latestWork.current.experiments.find((one) => initialId === one.id || initialId === experimentKey(one.id))
+      const key = solution ? solutionKey(solution.id) : experiment ? experimentKey(experiment.id) : initialId
+      if (solution || experiment) setTab('solutions')
+      setSelectedKey(key)
+      return
+    }
     setTab('register')
     setSelectedKey(sortObservations(liveObservations(latestObservations.current))[0]?.id)
   }, [open, initialId])
 
   // --- changes ---------------------------------------------------------------------------
 
-  const commit = useCallback((next: Analysis) => { if (!readOnly) onChange(next) }, [onChange, readOnly])
+  /** Hand the lists back whole; what is not said is what it was. */
+  const commit = useCallback((next: Partial<ObservationWork>) => {
+    if (!readOnly) onChange({ ...work, ...next })
+  }, [onChange, readOnly, work])
 
   const create = (fields: { title: string; where: string; by: string; impact: Observation['impact']; shared: boolean }) => {
     const fresh = newObservation({
@@ -246,10 +342,45 @@ export function ObservationsPage(props: ObservationsPageProps) {
   )
   const remove = () => {
     if (!deleting) return
-    commit(deleting.kind === 'observation' ? removeObservation(analysis, deleting.id) : removeCause(analysis, deleting.id))
-    if (selectedKey === deleting.id) setSelectedKey(undefined)
+    if (deleting.kind === 'observation') commit(removeObservation(analysis, deleting.id))
+    else if (deleting.kind === 'cause') commit({ ...removeCause(analysis, deleting.id), solutions: forgetCause(solutions, deleting.id) })
+    else if (deleting.kind === 'solution') commit(removeSolution({ solutions: [...solutions], experiments: [...experiments] }, deleting.id))
+    else commit({ experiments: removeExperiment(experiments, deleting.id) })
+    if (selectedKey === deleting.id || selectedKey === solutionKey(deleting.id) || selectedKey === experimentKey(deleting.id)) setSelectedKey(undefined)
     setDeleting(undefined)
   }
+
+  // --- solutions (ADR-0026) ----------------------------------------------------------------
+
+  const proposeSolution = (fields: { title: string; causeId?: string }) => {
+    const fresh = newSolution({
+      id: makeId('so'), number: nextSolutionNumber(solutions), title: fields.title, date: today(), t: s,
+      ...(fields.causeId ? { addresses: [{ id: fields.causeId, strength: defaultStrength(fields.causeId, causes) }] } : {}),
+    })
+    commit({ solutions: [...solutions, fresh] })
+    setProposing(undefined)
+    setTab('solutions')
+    setSelectedKey(solutionKey(fresh.id))
+  }
+  const patchSolution = (id: string, patch: SolutionPatch) => commit({ solutions: updateSolution(solutions, id, patch) })
+  const move = (id: string, to: SolutionState) => {
+    const result = moveSolution(solutions, id, to, today(), context)
+    if (result.ok) commit({ solutions: result.solutions })
+  }
+  const planExperiment = (solution: Solution, fields: { title: string; hypothesis: string; measure: string }) => {
+    const fresh = newExperiment({
+      id: makeId('ex'), number: nextExperimentNumber(experiments), tests: [solution.id], t: s, from: today(), ...fields,
+    })
+    commit({ experiments: [...experiments, fresh] })
+    setPlanning(undefined)
+    setSelectedKey(experimentKey(fresh.id))
+  }
+  const patchExperiment = (id: string, patch: ExperimentPatch) => commit({ experiments: updateExperiment(experiments, id, patch) })
+  const conclude = (id: string, outcome: ExperimentOutcome) => commit({ experiments: concludeExperiment(experiments, id, outcome) })
+
+  const phaseOf = (one: Solution): SolutionPhase => solutionPhase(one, plans)
+  const solutionsFor = (causeId: string) => solutions.filter((one) => one.addresses.some((address) => address.id === causeId))
+  const orphanRoots = rootsWithoutSolution(causes, solutions)
 
   // --- the register --------------------------------------------------------------------
 
@@ -258,6 +389,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const ownRows = sortObservations(observations)
     .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && matches(one))
   const causeRows = sortCauses(causes).filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, formatCauseNumber(one.number)]))
+  const solutionRows = [...solutions].sort((a, b) => b.number - a.number)
+    .filter((one) => (showArchived || isLive(one)) && (!trimmed || matchesQuery(trimmed, [one.title, one.body, formatSolutionNumber(one.number)])))
+  const experimentRows = [...experiments].sort((a, b) => b.number - a.number)
+    .filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.hypothesis, formatExperimentNumber(one.number)]))
 
   const analysedInto = (id: string, scope?: string) => explainedBy(causes, id, scope)
   const mergedLabel = (one: Observation): { label: string; scope?: string; date?: string } | undefined => {
@@ -368,6 +503,26 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </ListItemButton>
         ))}
       </List>
+      <List dense disablePadding data-testid="solution-list">
+        <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.solutions')}</ListSubheader>
+        {solutionRows.map((one) => {
+          const phase = phaseOf(one)
+          return (
+            <ListItemButton key={one.id} selected={solutionKey(one.id) === selectedKey} onClick={() => setSelectedKey(solutionKey(one.id))} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }}>
+              <ListItemText primary={`${formatSolutionNumber(one.number)} ${one.title}`} slotProps={{ primary: { fontSize: 13 } }} />
+              <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} sx={{ height: 18, fontSize: 10 }} />
+            </ListItemButton>
+          )
+        })}
+      </List>
+      <List dense disablePadding data-testid="experiment-list">
+        <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.experiments')}</ListSubheader>
+        {experimentRows.map((one) => (
+          <ListItemButton key={one.id} selected={experimentKey(one.id) === selectedKey} onClick={() => setSelectedKey(experimentKey(one.id))} sx={{ py: 0.5 }}>
+            <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id)).join(', ')} slotProps={{ primary: { fontSize: 13 }, secondary: { fontSize: 11 } }} />
+          </ListItemButton>
+        ))}
+      </List>
     </Box>
   )
 
@@ -398,6 +553,52 @@ export function ObservationsPage(props: ObservationsPageProps) {
     </Box>
   )
 
+  const graph = useMemo(
+    () => solutionGraph(analysis, { solutions: [...solutions], experiments: [...experiments] }, plans, { shared: sharedShown, wholeChain, showDropped }),
+    [analysis, solutions, experiments, plans, sharedShown, wholeChain, showDropped],
+  )
+  const flags = useMemo(() => {
+    const found = new Map<string, { text: string; strong?: boolean }>()
+    for (const cause of orphanRoots) found.set(cause.id, { text: s('solution.flagNoSolution') })
+    for (const one of solutions) {
+      const seenAgain = seenSinceImplemented(one, analysis, shared, plans)
+      const questions = solutionQuestions(one, context)
+      if (seenAgain.length) found.set(solutionKey(one.id), { text: s('solution.findingSeenAgain', { names: seenAgain.map((held) => nameOf(held.id, held.scope)).join(', ') }), strong: true })
+      else if (questions.length) found.set(solutionKey(one.id), { text: questions.map((question) => s(QUESTION_LABEL[question])).join(' ') })
+    }
+    return found
+  }, [orphanRoots, solutions, analysis, shared, plans, context, s, nameOf])
+  const rootCount = causes.filter((one) => isRootCause(one, causes)).length
+  const phaseCounts = (['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented'] as const)
+    .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
+
+  const solutionsView = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
+      <Box data-testid="solution-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap', alignItems: 'center' }}>
+        {phaseCounts.map(([phase, count]) => (
+          <Typography key={phase} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums' }}>{count}</Box>
+            <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>{s(PHASE_LABEL[phase]).toLowerCase()}</Box>
+          </Typography>
+        ))}
+        <Typography variant="caption" color="text.secondary" data-testid="solution-coverage">
+          {s('solution.coverage', { count: rootCount - orphanRoots.length, total: rootCount })}
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={wholeChain} onChange={(event) => setWholeChain(event.target.checked)} data-testid="solution-whole-chain" />}
+          label={<Typography sx={{ fontSize: 12 }}>{s('solution.wholeChain')}</Typography>}
+        />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={showDropped} onChange={(event) => setShowDropped(event.target.checked)} />}
+          label={<Typography sx={{ fontSize: 12 }}>{s('solution.showDropped')}</Typography>}
+        />
+      </Box>
+      <SolutionPicture graph={graph} selectedKey={selectedKey} onSelect={setSelectedKey} flags={flags} s={s} />
+      <SolutionLegend s={s} />
+    </Box>
+  )
+
   const toAnalyse = (queue.length + sharedQueue.length) > 0 && (
     <Box data-testid="analysis-queue" sx={{ borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', maxHeight: '40%', overflow: 'auto' }}>
       <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('observation.toAnalyse')}</ListSubheader>
@@ -424,9 +625,85 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- the reading pane ---------------------------------------------------------------------
 
   const openKey = (key: string) => setSelectedKey(key)
+  const solutionReader = (one: Solution) => {
+    const phase = phaseOf(one)
+    const since = implementedOn(one, plans)
+    const seenAgain = seenSinceImplemented(one, analysis, shared, plans)
+    const decision = model.decisions?.find((held) => held.id === one.decision)
+    const plan = model.transitions?.find((held) => held.id === one.plan)
+    return (
+      <SolutionReader
+        key={one.id}
+        solution={one}
+        phase={phase}
+        gate={solutionGate(one, context)}
+        questions={solutionQuestions(one, context)}
+        addresses={one.addresses.map((address) => {
+          const cause = causes.find((held) => held.id === address.id)
+          return { id: address.id, label: nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause, causes) : false }
+        })}
+        experiments={experimentsFor(experiments, one.id).map((held) => ({ key: experimentKey(held.id), label: nameOf(held.id), outcome: held.outcome }))}
+        alternatives={alternatives(one, solutions).map((held) => ({ key: solutionKey(held.id), label: nameOf(held.id), phase: phaseOf(held) }))}
+        {...(decision ? { decision: { label: nameOf(decision.id), status: s(ADR_STATUS_KEY[decision.status]).toLowerCase() } } : {})}
+        {...(plan ? { plan: { label: nameOf(plan.id), status: s(PLAN_STATUS_KEY[plan.status]).toLowerCase() } } : {})}
+        {...(since ? {
+          implemented: {
+            since,
+            observations: underneath(one, analysis).map((held) => ({
+              key: nodeKey(held.id, held.scope),
+              label: nameOf(held.id, held.scope),
+              ...(() => {
+                const seenOn = seenAgain.find((again) => again.id === held.id && again.scope === held.scope)?.date
+                return seenOn ? { seenOn } : {}
+              })(),
+            })),
+          },
+        } : {})}
+        readOnly={readOnly}
+        s={s}
+        renderMarkdown={props.renderMarkdown}
+        nameOf={(id) => nameOf(id)}
+        onUpdate={(patch) => patchSolution(one.id, patch)}
+        onMove={(to) => move(one.id, to)}
+        onWaive={(reason) => commit({ solutions: waiveExperiment(solutions, one.id, reason, today()) })}
+        onAddress={() => setAddressing(one)}
+        onUnaddress={(causeId) => commit({ solutions: unaddressCause(solutions, one.id, causeId) })}
+        onPlanExperiment={() => setPlanning(one)}
+        {...(props.onDecide ? { onDecide: () => props.onDecide?.(one.id) } : {})}
+        {...(props.onStartPlan ? { onStartPlan: () => props.onStartPlan?.(one.id) } : {})}
+        {...(decision && props.onOpenDecision ? { onOpenDecision: () => props.onOpenDecision?.(decision.id) } : {})}
+        {...(plan && props.onOpenPlan ? { onOpenPlan: () => props.onOpenPlan?.(plan.id) } : {})}
+        onDrop={() => setDropping(one)}
+        onRestore={() => commit({ solutions: restoreSolution(solutions, one.id, today()) })}
+        onDelete={() => setDeleting({ kind: 'solution', id: one.id, label: nameOf(one.id) })}
+        onOpen={openKey}
+        onAddImage={props.onAddImage}
+        images={props.images}
+      />
+    )
+  }
+  const experimentReader = (one: Experiment) => (
+    <ExperimentReader
+      key={one.id}
+      experiment={one}
+      tests={one.tests.map((id) => ({ key: solutionKey(id), label: nameOf(id) }))}
+      readOnly={readOnly}
+      s={s}
+      renderMarkdown={props.renderMarkdown}
+      onUpdate={(patch) => patchExperiment(one.id, patch)}
+      onConclude={(outcome) => conclude(one.id, outcome)}
+      onDelete={() => setDeleting({ kind: 'experiment', id: one.id, label: nameOf(one.id) })}
+      onOpen={openKey}
+      onAddImage={props.onAddImage}
+      images={props.images}
+    />
+  )
+
   const reader = !selected ? (
     <Box sx={{ p: 5, color: 'text.secondary' }}><Typography>{s('observation.noneSelected')}</Typography></Box>
-  ) : selected.kind === 'cause' ? (
+  ) : selected.kind === 'solution' ? solutionReader(selected.solution)
+    : selected.kind === 'experiment' ? experimentReader(selected.experiment)
+    : selected.kind === 'cause' ? (
     <CauseReader
       key={selected.cause.id}
       cause={selected.cause}
@@ -441,6 +718,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
       onUnlinkFrom={(causeId) => unlink(causeId, { id: selected.cause.id })}
       onDelete={() => setDeleting({ kind: 'cause', id: selected.cause.id, label: nameOf(selected.cause.id) })}
       onOpen={openKey}
+      solutions={solutionsFor(selected.cause.id).map((one) => ({
+        key: solutionKey(one.id), label: nameOf(one.id), note: s(PHASE_LABEL[phaseOf(one)]).toLowerCase(),
+      }))}
+      {...(readOnly ? {} : { onPropose: () => setProposing({ causeId: selected.cause.id }) })}
       onAddImage={props.onAddImage}
       images={props.images}
     />
@@ -504,18 +785,21 @@ export function ObservationsPage(props: ObservationsPageProps) {
           <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_e, value: Tab | null) => { if (value) setTab(value) }} sx={{ ml: 2 }}>
             <ToggleButton value="register" data-testid="observation-tab-register">{s('observation.tabRegister')}</ToggleButton>
             <ToggleButton value="analysis" data-testid="observation-tab-analysis">{s('observation.tabAnalysis')}</ToggleButton>
+            <ToggleButton value="solutions" data-testid="observation-tab-solutions">{s('solution.tab')}</ToggleButton>
           </ToggleButtonGroup>
           <Box sx={{ flex: 1 }} />
           {!readOnly && (
             <>
               <Button size="small" onClick={() => setCreatingCause(true)}>+ {s('observation.newCause')}</Button>
-              <Button size="small" variant="contained" onClick={() => setCreating(true)}>+ {s('observation.new')}</Button>
+              {tab === 'solutions'
+                ? <Button size="small" variant="contained" onClick={() => setProposing({})} data-testid="solution-new">+ {s('solution.new')}</Button>
+                : <Button size="small" variant="contained" onClick={() => setCreating(true)}>+ {s('observation.new')}</Button>}
             </>
           )}
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0 }}>
-          {tab === 'register' ? register : picture}
+          {tab === 'register' ? register : tab === 'analysis' ? picture : solutionsView}
           <SeamResizer
             orientation="vertical"
             region="after"
@@ -560,10 +844,43 @@ export function ObservationsPage(props: ObservationsPageProps) {
           onConfirm={link}
           s={s}
         />
+        <NewSolutionDialog
+          open={Boolean(proposing)}
+          causes={causesForProposal(causes)}
+          causeId={proposing?.causeId}
+          onCancel={() => setProposing(undefined)}
+          onCreate={proposeSolution}
+          s={s}
+        />
+        <AddressDialog
+          subject={addressing ? { label: nameOf(addressing.id) } : undefined}
+          candidates={causesForProposal(causes).filter((one) => !addressing?.addresses.some((address) => address.id === one.id))}
+          onCancel={() => setAddressing(undefined)}
+          onConfirm={({ causeId, strength }) => {
+            if (addressing) commit({ solutions: addressCause(solutions, addressing.id, { id: causeId, strength }) })
+            setAddressing(undefined)
+          }}
+          s={s}
+        />
+        <NewExperimentDialog
+          subject={planning ? { label: nameOf(planning.id) } : undefined}
+          onCancel={() => setPlanning(undefined)}
+          onCreate={(fields) => { if (planning) planExperiment(planning, fields) }}
+          s={s}
+        />
+        <DropDialog
+          subject={dropping ? { label: nameOf(dropping.id) } : undefined}
+          onCancel={() => setDropping(undefined)}
+          onConfirm={(note) => {
+            if (dropping) commit({ solutions: dropSolution(solutions, dropping.id, note, today()) })
+            setDropping(undefined)
+          }}
+          s={s}
+        />
         <ConfirmDialog
           open={Boolean(deleting)}
-          title={deleting ? s(deleting.kind === 'observation' ? 'observation.deleteTitle' : 'observation.deleteCauseTitle', { name: deleting.label }) : ''}
-          body={deleting?.kind === 'cause' ? s('observation.deleteCauseBody') : s('observation.deleteBody')}
+          title={deleting ? s(DELETE_TITLE[deleting.kind], { name: deleting.label }) : ''}
+          body={deleting ? s(DELETE_BODY[deleting.kind]) : ''}
           confirmLabel={s('observation.delete')}
           cancelLabel={s('common.cancel')}
           onCancel={() => setDeleting(undefined)}

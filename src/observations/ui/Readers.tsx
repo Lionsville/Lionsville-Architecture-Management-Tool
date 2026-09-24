@@ -43,13 +43,13 @@ import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRE
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
 
-type Mode = 'read' | 'edit'
+export type Mode = 'read' | 'edit'
 
 /** A name for whatever a link or an event points at, resolved by the page. */
 export type NameOf = (id: string, scope?: string) => string
 
 /** The draft-and-commit cycle both readers share. */
-function useDraft<T extends { title: string; body: string }>(
+export function useDraft<T extends { title: string; body: string }>(
   stored: T, onUpdate: (patch: Partial<T>) => void, canEdit: boolean,
 ) {
   const [mode, setMode] = useState<Mode>('read')
@@ -81,15 +81,15 @@ function useDraft<T extends { title: string; body: string }>(
   return { mode, draft, setDraft, commit, switchMode }
 }
 
-function Term({ children }: { children: ReactNode }) {
+export function Term({ children }: { children: ReactNode }) {
   return <Box component="dt" sx={{ color: 'text.secondary', fontWeight: 500 }}>{children}</Box>
 }
 
-function Value({ children, testId }: { children: ReactNode; testId?: string }) {
+export function Value({ children, testId }: { children: ReactNode; testId?: string }) {
   return <Box component="dd" sx={{ m: 0 }} data-testid={testId}>{children}</Box>
 }
 
-function LinkList({ links, onOpen }: {
+export function LinkList({ links, onOpen }: {
   links: readonly { key: string; label: string; note?: string; onRemove?: () => void; removeLabel?: string }[]
   onOpen: (key: string) => void
 }) {
@@ -316,6 +316,10 @@ export type CauseReaderProps = {
   onUnlinkFrom: (causeId: string) => void
   onDelete: () => void
   onOpen: (key: string) => void
+  /** The solutions that address it (ADR-0026), resolved by the page. */
+  solutions?: readonly { key: string; label: string; note: string }[]
+  /** Propose a solution for it; absent where nothing may be written. */
+  onPropose?: () => void
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
 }
@@ -408,6 +412,17 @@ export function CauseReader(props: CauseReaderProps) {
                     />
                   )}
               </Value>
+              {props.solutions && (
+                <>
+                  <Term>{s('solution.forCause')}</Term>
+                  <Value testId="cause-solutions">
+                    {props.solutions.length > 0 && <LinkList onOpen={props.onOpen} links={props.solutions} />}
+                    {props.onPropose
+                      ? <Button size="small" onClick={props.onPropose} data-testid="cause-propose" sx={{ px: 0 }}>{s('solution.proposeForCause')}</Button>
+                      : props.solutions.length === 0 && <Box component="span" sx={{ color: 'text.secondary' }}>{s('solution.none')}</Box>}
+                  </Value>
+                </>
+              )}
             </Box>
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
           </DocumentSheet>
