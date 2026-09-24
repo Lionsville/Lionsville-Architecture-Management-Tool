@@ -601,7 +601,7 @@ onderdeel bewaard.
 ## Waarnemingen
 
 **Waarnemingen** in de bovenbalk opent wat het team in deze scope gezien
-heeft — en, als team geanalyseerd, wat erachter zit. De pagina heeft twee
+heeft — en, als team geanalyseerd, wat erachter zit. De pagina heeft drie
 tabbladen. Het **register** is een tabel die uit de records gelezen wordt:
 nummer, titel, de dag waarop het voor het eerst gezien is, waar, de impact,
 hoe vaak het gezien is en de oorzaken waarnaar het geanalyseerd is; het
@@ -650,6 +650,55 @@ de sterkte van het verband — sterk, normaal of zwak, de dikte van de lijn.
 niveau verder. Een oorzaak die door niets verklaard wordt is een
 **grondoorzaak**, als laatste getekend met de dikkere rand; koppel haar aan
 een diepere en ze is er geen meer.
+
+### Oplossingen
+
+Het derde tabblad, **Oplossingen**, begint waar de analyse ophoudt: wat het
+team aan een oorzaak doet, hoe een idee zich een besluit verdient, en of wat
+er gebouwd is de waarnemingen heeft laten ophouden. De tekening heeft links
+de oorzaken — de grondoorzaken, en elke andere oorzaak die een oplossing
+aanpakt — dan de **richtingen** (ideeën die worden uitgewerkt of getest), de
+**experimenten**, en de **structurele** oplossingen (bewezen, aangenomen,
+ingevoerd). Een oplossing schuift naar rechts naarmate ze rijper wordt; haar
+breedte is de baat die ze belooft en haar vulling hoe ver ze is. **Hele
+keten** zet de waarnemingen en de hele analyse er links weer bij, zodat één
+tekening loopt van wat gezien is tot wat gebouwd is. Een markering (!) zegt
+waar je moet kijken: een grondoorzaak waar niemand aan werkt, of een
+oplossing met een vraag.
+
+**Een oplossing voorstellen…** bij een oorzaak, of **Nieuwe oplossing** in de
+balk, schrijft een genummerd record (`SO-0003`) met een titel en de oorzaak
+waarvoor het is, en verder niets. Voordat het als **uitgewerkt** telt, heeft
+het nodig wat het team toch al zou vragen: de verwachte baat en grove
+kosten, bij wie het getoetst is, en of iets dergelijks eerder geprobeerd is —
+en zo ja, waarom het nu wel zou werken. De lezer zet wat nog open staat onder
+*Om door te gaan naar…*, elke regel met zijn invoer ernaast, en de knop blijft
+uitgeschakeld tot de lijst leeg is. **Terug naar…** zet het op elk moment één
+stap terug.
+
+Van uitgewerkt naar **wordt getest** is een **experiment** (`EX-0002`) nodig:
+een hypothese, hoe het gemeten wordt, waar, door wie en wanneer. Zodra er een
+**bevestigd** is, mag de oplossing naar **bewezen**. Sommige dingen zijn niet
+uit te proberen; *Overslaan* vraagt dan een reden, en die reden blijft
+bewaard. Een weerlegd experiment blijft staan, als het bewijs waar de
+volgende om vraagt.
+
+Over een bewezen oplossing wordt besloten op de pagina **Besluiten**. **Het
+besluit voorstellen** schrijft een nieuw besluit waarvan de context noemt wat
+de oplossing aanpakt en wat er verder is overwogen. Zodra dat besluit is
+aangenomen, kan de oplossing naar **aangenomen**, en **Een plan starten**
+schrijft het plan dat haar bouwt. Als dat plan **klaar** is, leest de
+oplossing als **ingevoerd**, en **Heeft het gewerkt?** toont de waarnemingen
+eronder: die zouden niet meer gezien moeten worden, en een die opnieuw gezien
+wordt, wordt bij de oplossing gemarkeerd.
+
+Twee vragen worden aan een oplossing gesteld zonder haar tegen te houden:
+werkt ze alleen om een symptoom heen (ze is bewezen maar pakt geen
+grondoorzaak aan), en ruimt haar plan iets op, of voegt het alleen toe? Een
+oplossing die niet wordt doorgezet, wordt met reden **laten vallen** en
+blijft staan als overwogen alternatief: ze staat bij elke andere oplossing
+voor dezelfde oorzaken. Beide records zijn markdownbestanden, onder
+`observations/solutions/` en `observations/experiments/`.
 
 ## Tijd, en de dag die een bord toont
 

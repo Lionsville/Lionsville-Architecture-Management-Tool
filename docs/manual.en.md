@@ -569,7 +569,7 @@ scope.
 ## Observations
 
 **Observations** in the top bar opens what the team saw in this scope — and,
-analysed as a team, what lies behind it. The page has two tabs. The
+analysed as a team, what lies behind it. The page has three tabs. The
 **register** is a table read off the records: number, title, the day it was
 first seen, where, its impact, how often it has been seen, and the causes it
 was analysed into; the record you pick opens beside it. The **analysis** is
@@ -615,6 +615,50 @@ normal or weak, which is the weight of the line. **Link to a deeper cause…**
 on a cause does the same one level further. A cause nobody explains is a
 **root cause**, drawn last with the heavier outline; link it to a deeper
 cause and it stops being one.
+
+### Solutions
+
+The third tab, **Solutions**, starts where the analysis ends: what the team
+does about a cause, how an idea earns its way to a decision, and whether what
+was built made the sightings stop. The picture has the causes on the left —
+the root causes, and any other cause a solution addresses — then the
+**directions** (ideas being shaped or tested), the **experiments**, and the
+**structural** solutions (proven, adopted, implemented). A solution moves
+right as it matures; its width is the benefit it promises and its fill how
+far it has got. **Whole chain** puts the observations and the whole analysis
+back on the left, so one picture runs from what was seen to what was built.
+A mark (!) says where to look: a root cause nobody is working on, or a
+solution with a question.
+
+**Propose a solution…** on a cause, or **New solution** on the bar, writes a
+numbered record (`SO-0003`) with a title and the cause it is for, and nothing
+else. Before it counts as **shaped** it needs what the team would ask anyway:
+the benefit it is expected to bring and a rough cost, who it was checked
+with, and whether something like it was tried before — and if so, why it
+would work now. The reader lists what is still open under *To move on to…*,
+each line with its control beside it, and the button stays disabled until
+the list is clear. **Back to…** moves it one step back at any time.
+
+From shaped to **testing** it needs an **experiment** (`EX-0002`): a
+hypothesis, how it is measured, where, by whom and when. Once one is
+**confirmed**, the solution may move to **proven**. Some things cannot be
+trialled; *Waive* takes a reason instead, and the reason is kept. A refuted
+experiment stays, as the evidence the next person asks for.
+
+A proven solution is decided on the **Decisions** page. **Propose the
+decision record** writes a new record whose context names what the solution
+addresses and what else was considered. Once that record is accepted, the
+solution can move to **adopted**, and **Start a plan** writes the plan that
+builds it. When the plan is **done** the solution reads as **implemented**,
+and **Did it work?** lists the observations under it: each should stop being
+seen, and one seen again is flagged against the solution.
+
+Two questions are asked of a solution without stopping it: does it only work
+around a symptom (it is proven but addresses no root cause), and does its
+plan clear anything up, or only add? A solution that is not pursued is
+**dropped** with the reason and stays as an alternative that was considered:
+it is listed on every other solution for the same causes. Both records are
+markdown files, under `observations/solutions/` and `observations/experiments/`.
 
 ## Time, and the day a board shows
 

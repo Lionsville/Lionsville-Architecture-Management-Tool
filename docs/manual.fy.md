@@ -588,7 +588,7 @@ wurde mei dit ûnderdiel bewarre.
 ## Waarnimmings
 
 **Waarnimmings** yn de boppebalke iepenet wat it team yn dizze scope sjoen
-hat — en, as team analysearre, wat derefter sit. De side hat twa ljepblêden.
+hat — en, as team analysearre, wat derefter sit. De side hat trije ljepblêden.
 It **register** is in tabel dy't út de records lêzen wurdt: nûmer, titel, de
 dei dat it foar it earst sjoen is, wêr, de ympakt, hoe faak it sjoen is en de
 oarsaken dêr't it nei analysearre is; it record dat jo kieze iepenet
@@ -634,6 +634,53 @@ ferbân — sterk, normaal of swak, de dikte fan de line. **Keppelje oan in
 djippere oarsaak…** op in oarsaak docht itselde in nivo fierder. In oarsaak
 dy't troch neat ferklearre wurdt is in **grûnoarsaak**, as lêste tekene mei de
 dikkere râne; keppelje har oan in djippere en se is der gjin mear.
+
+### Oplossingen
+
+It tredde ljepblêd, **Oplossingen**, begjint dêr't de analyze ophâldt: wat it
+team oan in oarsaak docht, hoe't in idee him in beslút fertsjinnet, en oft wat
+der boud is de waarnimmings ophâlde litten hat. De tekening hat links de
+oarsaken — de grûnoarsaken, en elke oare oarsaak dy't in oplossing oanpakt —
+dan de **rjochtingen** (ideeën dy't útwurke of test wurde), de
+**eksperiminten**, en de **strukturele** oplossingen (bewiisd, oannommen,
+ynfierd). In oplossing skoot nei rjochts as se riper wurdt; har breedte is de
+baat dy't se tasizzet en har folling hoe fier se is. **Hiele keten** set de
+waarnimmings en de hiele analyze der links wer by, sadat ien tekening rint
+fan wat sjoen is oant wat boud is. In markearring (!) seit wêr't jo sjen
+moatte: in grûnoarsaak dêr't nimmen oan wurket, of in oplossing mei in fraach.
+
+**In oplossing foarstelle…** by in oarsaak, of **Nije oplossing** yn de
+balke, skriuwt in nûmere record (`SO-0003`) mei in titel en de oarsaak dêr't
+it foar is, en fierder neat. Foardat it as **útwurke** telt, hat it nedich
+wat it team dochs al freegje soe: de ferwachte baat en growwe kosten, by wa't
+it hifke is, en oft soks earder besocht is — en sa ja, wêrom't it no wol
+wurkje soe. De lêzer set wat noch iepen stiet ûnder *Om troch te gean nei…*,
+elke rigel mei syn ynfier dernjonken, en de knop bliuwt útskeakele oant de
+list leech is. **Werom nei…** set it op elk momint ien stap werom.
+
+Fan útwurke nei **wurdt test** is in **eksperimint** (`EX-0002`) nedich: in
+hypoteze, hoe't it metten wurdt, wêr, troch wa en wannear. Sadree't der ien
+**befestige** is, mei de oplossing nei **bewiisd**. Guon dingen binne net út
+te probearjen; *Oerslaan* freget dan in reden, en dy reden bliuwt bewarre.
+In wjerlein eksperimint bliuwt stean, as it bewiis dêr't de folgjende om
+freget.
+
+Oer in bewiisde oplossing wurdt besletten op de side **Besluten**. **It
+beslút foarstelle** skriuwt in nij beslút dêr't de kontekst fan neamt wat de
+oplossing oanpakt en wat der fierder oerwoegen is. Sadree't dat beslút
+oannommen is, kin de oplossing nei **oannommen**, en **In plan begjinne**
+skriuwt it plan dat har bout. As dat plan **klear** is, lêst de oplossing as
+**ynfierd**, en **Hat it wurke?** toant de waarnimmings dêrûnder: dy soene
+net mear sjoen wurde moatte, en ien dy't op 'e nij sjoen wurdt, wurdt by de
+oplossing markearre.
+
+Twa fragen wurde oan in oplossing steld sûnder har tsje te hâlden: wurket se
+allinne om in symptoom hinne (se is bewiisd mar pakt gjin grûnoarsaak oan),
+en rêdt har plan wat op, of foeget it allinne ta? In oplossing dy't net
+trochset wurdt, wurdt mei reden **litten falle** en bliuwt stean as
+oerwoegen alternatyf: se stiet by elke oare oplossing foar deselde
+oarsaken. Beide records binne markdownbestannen, ûnder
+`observations/solutions/` en `observations/experiments/`.
 
 ## Tiid, en de dei dy't in boerd toant
 

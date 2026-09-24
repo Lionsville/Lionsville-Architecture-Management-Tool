@@ -641,7 +641,7 @@ eingeschlossen. Änderungen werden mit diesem Bereich gespeichert.
 ## Beobachtungen
 
 **Beobachtungen** in der oberen Leiste öffnet, was das Team in diesem Scope
-gesehen hat — und, im Team analysiert, was dahintersteckt. Die Seite hat zwei
+gesehen hat — und, im Team analysiert, was dahintersteckt. Die Seite hat drei
 Reiter. Das **Register** ist eine Tabelle, die aus den Datensätzen gelesen
 wird: Nummer, Titel, der Tag, an dem es zuerst gesehen wurde, wo, die
 Auswirkung, wie oft es gesehen wurde und die Ursachen, zu denen es analysiert
@@ -692,6 +692,55 @@ die Dicke der Linie. **Mit einer tieferen Ursache verknüpfen…** auf einer
 Ursache tut dasselbe eine Ebene weiter. Eine Ursache, die nichts erklärt, ist
 eine **Grundursache**, zuletzt gezeichnet mit dem stärkeren Rand; verknüpfen
 Sie sie mit einer tieferen, und sie ist keine mehr.
+
+### Lösungen
+
+Der dritte Reiter, **Lösungen**, beginnt, wo die Analyse endet: was das Team
+gegen eine Ursache unternimmt, wie sich eine Idee eine Entscheidung verdient,
+und ob das Gebaute die Beobachtungen aufhören ließ. Das Bild zeigt links die
+Ursachen — die Grundursachen und jede andere Ursache, die eine Lösung
+angeht —, dann die **Richtungen** (Ideen, die ausgearbeitet oder getestet
+werden), die **Experimente** und die **strukturellen** Lösungen (bewährt,
+beschlossen, umgesetzt). Eine Lösung rückt nach rechts, während sie reift;
+ihre Breite ist der Nutzen, den sie verspricht, ihre Füllung, wie weit sie
+ist. **Ganze Kette** stellt die Beobachtungen und die ganze Analyse wieder
+links dazu, sodass ein Bild vom Gesehenen bis zum Gebauten reicht. Eine
+Markierung (!) sagt, wohin man schauen sollte: eine Grundursache, an der
+niemand arbeitet, oder eine Lösung mit einer Frage.
+
+**Eine Lösung vorschlagen…** an einer Ursache oder **Neue Lösung** in der
+Leiste schreibt einen nummerierten Eintrag (`SO-0003`) mit einem Titel und der
+Ursache, für die er ist, und sonst nichts. Bevor er als **ausgearbeitet**
+gilt, braucht er, was das Team ohnehin fragen würde: den erwarteten Nutzen
+und grobe Kosten, mit wem er geprüft wurde und ob etwas Ähnliches schon
+einmal versucht wurde — und wenn ja, warum es jetzt funktionieren würde. Der
+Leser führt unter *Um weiterzugehen zu…* auf, was noch offen ist, jede Zeile
+mit ihrer Eingabe daneben, und die Schaltfläche bleibt gesperrt, bis die
+Liste leer ist. **Zurück zu…** setzt ihn jederzeit einen Schritt zurück.
+
+Von ausgearbeitet zu **im Test** braucht es ein **Experiment** (`EX-0002`):
+eine Hypothese, wie gemessen wird, wo, von wem und wann. Sobald eines
+**bestätigt** ist, darf die Lösung zu **bewährt**. Manches lässt sich nicht
+erproben; *Überspringen* verlangt dann einen Grund, und der Grund bleibt
+erhalten. Ein widerlegtes Experiment bleibt, als der Beleg, nach dem die
+Nächsten fragen.
+
+Über eine bewährte Lösung wird auf der Seite **Entscheidungen** entschieden.
+**Die Entscheidung vorschlagen** schreibt einen neuen Eintrag, dessen Kontext
+nennt, was die Lösung angeht und was sonst erwogen wurde. Ist er dort
+angenommen, kann die Lösung zu **beschlossen**, und **Einen Plan beginnen**
+schreibt den Plan, der sie baut. Ist der Plan **erledigt**, gilt die Lösung
+als **umgesetzt**, und **Hat es gewirkt?** listet die Beobachtungen darunter
+auf: keine sollte mehr auftreten, und eine, die erneut gesehen wird, wird an
+der Lösung markiert.
+
+Zwei Fragen werden an eine Lösung gestellt, ohne sie aufzuhalten: umgeht sie
+nur ein Symptom (sie ist bewährt, behebt aber keine Grundursache), und räumt
+ihr Plan etwas auf oder fügt er nur hinzu? Eine Lösung, die nicht verfolgt
+wird, wird mit Grund **verworfen** und bleibt als erwogene Alternative
+stehen: sie erscheint bei jeder anderen Lösung für dieselben Ursachen. Beide
+Einträge sind Markdown-Dateien, unter `observations/solutions/` und
+`observations/experiments/`.
 
 ## Zeit, und der Tag, den ein Board zeigt
 
