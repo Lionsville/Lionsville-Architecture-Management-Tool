@@ -88,8 +88,10 @@ module.exports = {
   // THIRD-PARTY-NOTICES.md rides along for the opposite reason: almost every
   // licence in that bundle asks for its notice to travel with the binary, and
   // with nothing but bundled output in the asar there was nowhere for a reader
-  // to find one. It sits at the package root, beside package.json.
-  files: ['out/**', 'package.json', 'THIRD-PARTY-NOTICES.md'],
+  // to find one. It sits at the package root, beside package.json — and so do
+  // LICENSE and NOTICE, the AGPL text this build is published under and who
+  // holds it, which the licence asks to be given with every copy.
+  files: ['out/**', 'package.json', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'NOTICE'],
 
   // The product name has spaces in it, which is right for the Dock and wrong
   // for a download link. Name the artifacts after the package instead.
