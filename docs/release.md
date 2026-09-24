@@ -94,6 +94,34 @@ What this does **not** roll back:
 - **Anything outside this repository.** The public site and the hosted
   service are released on their own and roll back on their own.
 
+### A desktop release that should not be installed
+
+Publishing the previous release again puts the README and the browser back, and
+does nothing for the people the update notice is about to send to the bad one.
+The notice asks GitHub for the `latest` release, so while the bad release is
+the latest, every running copy offers it. In this order, the same hour:
+
+1. **Stop it being offered.** Edit the bad release and tick *Set as a
+   pre-release*. It is then not `latest` for the notice (a beta channel still
+   sees it — untick *Set as the latest release* too, and on the beta channel
+   say so in the notes), and the README job, which offers stable releases only,
+   no longer points at it. Deleting its installers from the release page is the
+   stronger form, for a build that must not run at all: a download link that
+   answers 404 is better than one that installs something broken. Keep the
+   `SHA256SUMS` and the notes, so what was published stays on record.
+2. **Put the previous one back** — *Rolling back*, above: publish it again, and
+   the README and the web build follow.
+3. **Say so.** Edit the bad release's notes to open with one line: what is
+   wrong with it, which release to install instead, and — for a file-format
+   change — what to do with files it saved. Then write the same in
+   `docs/release-notes/next.md`, so the release that fixes it says it too.
+4. **Fix forward.** The next release is the fix; a bad release is never
+   re-tagged or re-published under the same version, because an installer
+   somebody already downloaded has that version in its name.
+
+People who installed it keep it until they install another; nothing reaches
+into a machine. The notice will offer them the fix as soon as it is `latest`.
+
 ## What has to be configured once
 
 Thirteen values. The workflow's `preflight` job checks all of them are present
