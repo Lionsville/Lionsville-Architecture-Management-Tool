@@ -96,4 +96,33 @@ describe('landWorkingFile', () => {
     await landWorkingFile({ name: 'x', bytes: set(), into: scope('   ', ''), prompts: asked, here: vi.fn(), notify: vi.fn(), s })
     expect(asked.askDestination).toHaveBeenCalledWith({ file: 'x', here: 'the working folder', canChooseFolder: false })
   })
+
+  it('"here" asks for a snapshot first, and replaces only once it answers yes', async () => {
+    const order: string[] = []
+    const here = vi.fn(() => { order.push('here') })
+    const beforeReplace = vi.fn(() => { order.push('snapshot'); return Promise.resolve(true) })
+    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('here'), here, beforeReplace, notify: vi.fn(), s })
+    expect(order).toEqual(['snapshot', 'here'])
+  })
+
+  it('replaces nothing when the snapshot before it could not be taken', async () => {
+    const here = vi.fn()
+    await landWorkingFile({
+      name: 'x', bytes: set(), into, prompts: prompts('here'), here,
+      beforeReplace: () => Promise.resolve(false), notify: vi.fn(), s,
+    })
+    expect(here).not.toHaveBeenCalled()
+  })
+
+  it('takes no snapshot for a file that becomes a folder of its own: nothing here is written over', async () => {
+    const beforeReplace = vi.fn(() => Promise.resolve(true))
+    const chosen = folder(false)
+    await landWorkingFile({
+      name: 'x', bytes: set(), into, prompts: prompts('folder'), chooseFolder: () => Promise.resolve(chosen),
+      here: vi.fn(), beforeReplace, notify: vi.fn(), s,
+    })
+    expect(beforeReplace).not.toHaveBeenCalled()
+    expect(chosen.placed).toHaveLength(1)
+  })
 })
+

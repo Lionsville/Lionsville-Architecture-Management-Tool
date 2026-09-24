@@ -101,10 +101,18 @@ export async function landWorkingFile(args: {
   prompts: LandingPrompts
   chooseFolder?: ChooseFolderForWorkingFile
   here: (opened: OpenedWorkingFile) => void | Promise<void>
+  /**
+   * What happens between *Replace here* and the replacing: a snapshot of what
+   * is there, where the folder keeps a history (ADR-0025, amended). `false`
+   * means it could not be taken, and then nothing is replaced — the person
+   * was told a snapshot would be taken, and a replace without one is the loss
+   * this dialog exists to prevent.
+   */
+  beforeReplace?: () => Promise<boolean>
   notify: Notify
   s: Translate
 }): Promise<void> {
-  const { name, bytes, into, prompts, chooseFolder, here, notify, s } = args
+  const { name, bytes, into, prompts, chooseFolder, here, beforeReplace, notify, s } = args
   const opened = openDocumentBytes(bytes, into)
   if (!opened.ok) { notify(s(opened.messageKey), 'error'); return }
   const choice = await prompts.askDestination({
@@ -113,7 +121,11 @@ export async function landWorkingFile(args: {
     canChooseFolder: chooseFolder !== undefined,
   })
   if (choice === undefined) return
-  if (choice === 'here' || !chooseFolder) { await here(opened); return }
+  if (choice === 'here' || !chooseFolder) {
+    if (beforeReplace && !(await beforeReplace())) return
+    await here(opened)
+    return
+  }
   const destination = await chooseFolder()
   if (!destination) return
   if (destination.occupied && !(await prompts.confirmReplace(destination.name))) return

@@ -1168,6 +1168,7 @@ export function App({
     askPassword: password.askPassword,
     landing: openInto.prompts,
     chooseFolder: onChooseFolderForWorkingFile,
+    beforeReplace: homeHistory.safeguard,
     notify: toasts.notify,
     s,
   })

@@ -1,6 +1,6 @@
 # ADR-0025 — Where a working file lands is asked
 
-* Status: accepted
+* Status: accepted; amended 24 September 2026 (a snapshot before a replace)
 * Date: 2026-09-22
 * Deciders: Wouter Simons
 * Closes: the question ADR-0018 and ADR-0023 left open — whether opening a
@@ -72,6 +72,28 @@ way it lends the password dialog.
   are addressed from that root and their stand-ins point where they should.
 * Opening a working file is never one gesture any more; it is two. That is
   the trade, and the evening it is written for is why.
-* Still open: the app cannot take a snapshot on the person's behalf from
-  inside this dialog. *Replace here* on a folder without history is a loss
-  the warning names and the app cannot undo.
+* ~~Still open: the app cannot take a snapshot on the person's behalf from
+  inside this dialog.~~ It does now (amendment 1, below). *Replace here* on a
+  folder without history is still a loss the warning names and the app cannot
+  undo.
+
+## Amendment 1 — 24 September 2026: a snapshot before a replace
+
+**Where the folder keeps a history, *Replace here* takes a snapshot first**,
+and replaces only once it has landed (`useProjectHistory`'s `safeguard`,
+handed to `landWorkingFile` as `beforeReplace` by the workspace and by the
+home). The folder is written out, then recorded under *Before a working file
+replaced this*, and the person is told a snapshot was taken and that what was
+there can be restored from the history. If the snapshot was due and failed,
+**nothing is replaced** and the person is told why: the dialog's warning
+promised a snapshot, and a replace without one is the loss this decision exists
+to prevent.
+
+A folder that keeps no history is not given one: starting a history is the
+person's opt-in (ADR-0008), and the warning under the button still says what
+*Replace here* costs there. A file that becomes a folder of its own takes no
+snapshot, because it writes over nothing that was open.
+
+The evening this decision was written for had a history, and a snapshot from
+the day before; with this amendment the snapshot would have been from the
+minute before.

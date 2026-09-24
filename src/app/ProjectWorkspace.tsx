@@ -355,9 +355,15 @@ export function ProjectWorkspace({
     },
     [onAdoptScopes, onTreeChanged],
   )
+  // The history is set up further down (it needs the save this file list does
+  // not), so *Replace here* reaches its snapshot through a ref filled once it
+  // exists (ADR-0025, amended).
+  const safeguardRef = useRef<() => Promise<boolean>>(async () => true)
+  const beforeReplace = useCallback(() => safeguardRef.current(), [])
   const files = useProjectFiles({
     session,
     documents,
+    beforeReplace,
     ...(workingSet ? { workingSet } : {}),
     ...(onAdoptScopes ? { adoptWorkingSet } : {}),
     askPassword,
@@ -907,6 +913,7 @@ export function ProjectWorkspace({
     s,
     onTaken: onSnapshotTaken,
   })
+  useEffect(() => { safeguardRef.current = snapshots.safeguard }, [snapshots.safeguard])
 
   const documentPicker = useFilePicker({
     // A working file is a zip now; the JSON entries are versions 1 and 2, which

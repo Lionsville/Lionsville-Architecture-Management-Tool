@@ -114,7 +114,7 @@ export const EN = {
    */
   'openInto.title': 'Where should “{name}” go?',
   'openInto.body': 'A working file is a whole organisation. It can become a working folder of its own, or replace what is open here.',
-  'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. What is there now is kept only where the folder has a snapshot.',
+  'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. Where the folder keeps a history, a snapshot is taken first and what is there now can be restored from it; where it does not, what is there now is gone.',
   'openInto.here': 'Replace “{scope}” here',
   'openInto.newFolder': 'A new folder…',
   'openInto.unnamedHere': 'the working folder',
@@ -217,6 +217,9 @@ export const EN = {
   'history.take': 'Take snapshot',
   'history.taken': 'Snapshot taken.',
   'history.nothingToRecord': 'Nothing has changed since the last snapshot.',
+  'history.beforeReplace': 'Before a working file replaced this',
+  'history.takenBeforeReplace': 'A snapshot was taken first: what was here can be restored from the history.',
+  'history.failedBeforeReplace': 'Nothing was replaced: a snapshot of what is here could not be taken first. {message}',
   'history.failed': 'The snapshot could not be taken: {message}',
   'history.readFailed': 'The history could not be read: {message}',
   'history.none': 'No snapshots yet.',

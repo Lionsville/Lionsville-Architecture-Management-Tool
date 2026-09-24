@@ -103,10 +103,12 @@ export function useProjectFiles(deps: {
   landing: LandingPrompts
   /** A folder it may become; absent where none can be chosen. */
   chooseFolder?: ChooseFolderForWorkingFile
+  /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
+  beforeReplace?: () => Promise<boolean>
   notify: Notify
   s: Translate
 }): ProjectFiles {
-  const { session, documents, workingSet, adoptWorkingSet, askPassword, landing, chooseFolder, notify, s } = deps
+  const { session, documents, workingSet, adoptWorkingSet, askPassword, landing, chooseFolder, beforeReplace, notify, s } = deps
 
   /**
    * Hand a document over, and say what happened — after it happened.
@@ -202,10 +204,12 @@ export function useProjectFiles(deps: {
       if (!bytes) return
       await landWorkingFile({
         name, bytes, into: session.snapshot(), prompts: landing, chooseFolder,
-        here: (opened) => landHere(name, opened), notify, s,
+        here: (opened) => landHere(name, opened),
+        ...(beforeReplace ? { beforeReplace } : {}),
+        notify, s,
       })
     }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, landHere, askPassword, landing, chooseFolder, notify, s])
+  }, [session, landHere, askPassword, landing, chooseFolder, beforeReplace, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

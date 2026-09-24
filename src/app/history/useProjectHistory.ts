@@ -81,6 +81,13 @@ export type ProjectHistoryState = {
    * happens until the snapshot has been read; the page's button waits for it.
    */
   restore: () => void
+  /**
+   * A snapshot before something writes over what is here, where the folder
+   * keeps a history (ADR-0025, amended): `true` when it is safe to go on —
+   * taken, nothing to take, or no history kept, which the warning already
+   * said — and `false` when a snapshot was due and could not be taken.
+   */
+  safeguard: () => Promise<boolean>
   /** Call the chosen snapshot something (ADR-0008). The list is read again when it took. */
   label: (name: string) => void
 }
@@ -177,6 +184,31 @@ export function useProjectHistory(deps: {
       notify(s('history.failed', { message: reasonOf(cause) }), 'error')
     })
   }, [history, keeping, save, steps, notify, s, onTaken])
+
+  const safeguard = useCallback(async (): Promise<boolean> => {
+    if (!history) return true
+    // Asked now rather than read from state: the state is filled by an effect
+    // that may not have answered yet, and a replace is not a thing to let
+    // through on a guess.
+    const keeps = await history.available().then(
+      async (can) => can && await history.keeping(),
+      () => false,
+    )
+    if (!keeps) return true
+    try {
+      await save()
+      const written = await history.snapshot(s('history.beforeReplace'))
+      if (written) {
+        recorded.current = steps().length
+        notify(s('history.takenBeforeReplace'), 'info')
+        onTaken?.()
+      }
+      return true
+    } catch (cause) {
+      notify(s('history.failedBeforeReplace', { message: reasonOf(cause) }), 'error')
+      return false
+    }
+  }, [history, save, steps, notify, s, onTaken])
 
   const choose = useCallback((id: string) => {
     if (!history) return
@@ -282,5 +314,6 @@ export function useProjectHistory(deps: {
     setSubject,
     restore,
     label,
+    safeguard,
   }
 }

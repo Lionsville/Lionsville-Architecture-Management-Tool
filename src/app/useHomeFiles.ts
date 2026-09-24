@@ -45,10 +45,12 @@ export function useHomeFiles(deps: {
   landing: LandingPrompts
   /** A folder it may become; absent where none can be chosen. */
   chooseFolder?: ChooseFolderForWorkingFile
+  /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
+  beforeReplace?: () => Promise<boolean>
   notify: Notify
   s: Translate
 }): HomeFiles {
-  const { documents, workingSet, into, adopt, askPassword, landing, chooseFolder, notify, s } = deps
+  const { documents, workingSet, into, adopt, askPassword, landing, chooseFolder, beforeReplace, notify, s } = deps
 
   const exportWorkingFile = useCallback(() => {
     void workingSet().then(async (stored) => {
@@ -73,10 +75,11 @@ export function useHomeFiles(deps: {
             ? s('shell.workingSetLoaded', { name, count: String(rest.length) })
             : s('shell.workingFileLoaded', { name }), 'success')
         },
+        ...(beforeReplace ? { beforeReplace } : {}),
         notify, s,
       })
     }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [askPassword, landing, chooseFolder, into, adopt, notify, s])
+  }, [askPassword, landing, chooseFolder, beforeReplace, into, adopt, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(
