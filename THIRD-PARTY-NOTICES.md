@@ -165,7 +165,7 @@ which is the safe direction for a notice to be wrong in.
 - json-schema-traverse 0.4.1 — MIT
 - json-schema-typed 8.0.2 — BSD-2-Clause
 - katex 0.16.47 — MIT
-- khroma 2.1.0 — licence not declared
+- khroma 2.1.0 — MIT
 - layout-base 1.0.2 — MIT
 - libavoid-js 0.4.5 — LGPL-2.1-or-later
 - lodash-es 4.18.1 — MIT
@@ -5378,7 +5378,7 @@ SOFTWARE.
 
 ## khroma 2.1.0
 
-Licence: not declared; see the text below
+Licence: MIT, from its licence file (the package declares none)
 
 ```
 The MIT License (MIT)

@@ -5,6 +5,7 @@ import {
   dependencyClosure,
   homepageOf,
   isShipped,
+  licenseFromText,
   licenseOf,
   noticesFor,
   packagesImportedBy,
@@ -110,9 +111,16 @@ describe('the notices document', () => {
     expect(rendered).toContain('https://example.test/fastdom')
   })
 
-  it('points at the text for a package that declares nothing but ships one', () => {
-    const rendered = renderNotices([{ name: 'khroma', version: '2', text: 'The MIT License' }], PRODUCT)
+  it('reads the licence off the text for a package that declares nothing but ships one', () => {
+    const rendered = renderNotices([{ name: 'khroma', version: '2', text: 'The MIT License (MIT)\n\nCopyright' }], PRODUCT)
+    expect(rendered).toContain('- khroma 2 — MIT')
+    expect(rendered).toContain('Licence: MIT, from its licence file (the package declares none)')
+  })
+
+  it('points at the text where the text is not one it can name', () => {
+    const rendered = renderNotices([{ name: 'odd', version: '1', text: 'Do what you like.' }], PRODUCT)
     expect(rendered).toContain('Licence: not declared; see the text below')
+    expect(licenseFromText('Apache License\n                           Version 2.0, January 2004')).toBe('Apache-2.0')
   })
 })
 

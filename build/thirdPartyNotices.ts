@@ -112,6 +112,32 @@ export function homepageOf(manifest: Manifest): string | undefined {
   return manifest.homepage ?? repository?.replace(/^git\+/, '').replace(/\.git$/, '')
 }
 
+/**
+ * The licence a shipped text is, where the package's manifest says nothing.
+ *
+ * `khroma` is the case that made this: no `license` field, and an MIT text
+ * with its copyright line in the package — so *licence not declared* was true
+ * of the manifest and wrong about the package, and read by a reviewer as *no
+ * licence at all*. Only the three whose first words name them unambiguously
+ * are recognised; anything else stays *not declared*, which is the safe
+ * direction for a notice to be wrong in.
+ */
+export function licenseFromText(text: string | undefined): string | undefined {
+  const head = (text ?? '').trimStart().slice(0, 200)
+  if (/^(the )?mit license/i.test(head)) return 'MIT'
+  if (/^isc license/i.test(head)) return 'ISC'
+  if (/^apache license\s+version 2\.0/i.test(head)) return 'Apache-2.0'
+  return undefined
+}
+
+/** What a notice says its licence is: declared, read off its text, or neither. */
+function licenceLine(notice: PackageNotice): string {
+  if (notice.license) return notice.license
+  const read = licenseFromText(notice.text)
+  if (read) return `${read}, from its licence file (the package declares none)`
+  return notice.text ? 'not declared; see the text below' : 'not declared'
+}
+
 const HEADING = 'Third-party notices'
 
 /**
@@ -133,7 +159,7 @@ export function renderNotices(notices: PackageNotice[], productName: string): st
     '',
     `${notices.length} packages:`,
     '',
-    ...notices.map((n) => `- ${n.name} ${n.version} — ${n.license ?? 'licence not declared'}`),
+    ...notices.map((n) => `- ${n.name} ${n.version} — ${n.license ?? licenseFromText(n.text) ?? 'licence not declared'}`),
     '',
   ]
   for (const notice of notices) {
@@ -142,7 +168,7 @@ export function renderNotices(notices: PackageNotice[], productName: string): st
       '',
       `## ${notice.name} ${notice.version}`,
       '',
-      `Licence: ${notice.license ?? (notice.text ? 'not declared; see the text below' : 'not declared')}`,
+      `Licence: ${licenceLine(notice)}`,
       '',
     )
     if (notice.text) {
