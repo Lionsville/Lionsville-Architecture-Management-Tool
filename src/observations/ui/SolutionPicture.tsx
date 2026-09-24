@@ -180,14 +180,17 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           if (node.kind === 'experiment') {
             const { experiment } = node
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} opacity={dim ? 0.35 : 1}>
-                <title>{`${formatExperimentNumber(experiment.number)} ${experiment.title}`}</title>
-                <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} stroke={selected ? stroke : theme.palette.divider} strokeWidth={selected ? 3 : 1.2} />
-                <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={5} height={HEIGHT} fill={outcomeColour[experiment.outcome]} />
-                <text x={-BOX.width / 2 + 12} dy="-0.2em" fontSize={11} fill={theme.palette.text.primary}>{shorten(experiment.title, 27)}</text>
-                <text x={-BOX.width / 2 + 12} dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-                  {formatExperimentNumber(experiment.number)} · {s(OUTCOME_LABEL[experiment.outcome]).toLowerCase()}
-                </text>
+              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
+                <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} />
+                <g opacity={dim ? 0.35 : 1}>
+                  <title>{`${formatExperimentNumber(experiment.number)} ${experiment.title}`}</title>
+                  <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} stroke={selected ? stroke : theme.palette.divider} strokeWidth={selected ? 3 : 1.2} />
+                  <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={5} height={HEIGHT} fill={outcomeColour[experiment.outcome]} />
+                  <text x={-BOX.width / 2 + 12} dy="-0.2em" fontSize={11} fill={theme.palette.text.primary}>{shorten(experiment.title, 27)}</text>
+                  <text x={-BOX.width / 2 + 12} dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
+                    {formatExperimentNumber(experiment.number)} · {s(OUTCOME_LABEL[experiment.outcome]).toLowerCase()}
+                  </text>
+                </g>
               </g>
             )
           }
@@ -195,20 +198,23 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           const w = WIDTH[solution.benefit ?? 'unset']
           const done = phase === 'implemented'
           return (
-            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase} opacity={dim ? 0.35 : phase === 'dropped' ? 0.55 : 1}>
-              <title>{`${formatSolutionNumber(solution.number)} ${solution.title}`}</title>
-              <rect
-                x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10}
-                fill={fillOf(phase)} stroke={stroke} strokeWidth={selected ? 3 : 1.5}
-                strokeDasharray={phase === 'idea' || phase === 'dropped' ? '5 3' : undefined}
-              />
-              <text textAnchor="middle" dy="-0.2em" fontSize={11} fill={done ? theme.palette.success.contrastText : theme.palette.text.primary} textDecoration={phase === 'dropped' ? 'line-through' : undefined}>
-                {shorten(solution.title, Math.round(w / 6.4))}
-              </text>
-              <text textAnchor="middle" dy="1.05em" fontSize={10} fill={done ? theme.palette.success.contrastText : theme.palette.text.secondary}>
-                {formatSolutionNumber(solution.number)} · {s(PHASE_LABEL[phase]).toLowerCase()}
-              </text>
-              {flag && <Flag x={w / 2} y={-HEIGHT / 2} title={flag.text} strong={flag.strong} />}
+            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
+              <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
+              <g opacity={dim ? 0.35 : phase === 'dropped' ? 0.55 : 1}>
+                <title>{`${formatSolutionNumber(solution.number)} ${solution.title}`}</title>
+                <rect
+                  x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10}
+                  fill={fillOf(phase)} stroke={stroke} strokeWidth={selected ? 3 : 1.5}
+                  strokeDasharray={phase === 'idea' || phase === 'dropped' ? '5 3' : undefined}
+                />
+                <text textAnchor="middle" dy="-0.2em" fontSize={11} fill={done ? theme.palette.success.contrastText : theme.palette.text.primary} textDecoration={phase === 'dropped' ? 'line-through' : undefined}>
+                  {shorten(solution.title, Math.round(w / 6.4))}
+                </text>
+                <text textAnchor="middle" dy="1.05em" fontSize={10} fill={done ? theme.palette.success.contrastText : theme.palette.text.secondary}>
+                  {formatSolutionNumber(solution.number)} · {s(PHASE_LABEL[phase]).toLowerCase()}
+                </text>
+                {flag && <Flag x={w / 2} y={-HEIGHT / 2} title={flag.text} strong={flag.strong} />}
+              </g>
             </g>
           )
         })}

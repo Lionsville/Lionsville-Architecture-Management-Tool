@@ -94,6 +94,8 @@ export type SolutionReaderProps = {
     since: string
     observations: readonly { key: string; label: string; seenOn?: string }[]
   }
+  /** False while it is adopted and its decision record stands accepted: the record is locked, and so is the step back. */
+  mayGoBack: boolean
   readOnly: boolean
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
@@ -127,7 +129,7 @@ export function SolutionReader(props: SolutionReaderProps) {
   const text = mode === 'edit' ? draft.body : solution.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatSolutionNumber(solution.number)
-  const back = previousState(solution.state)
+  const back = props.mayGoBack ? previousState(solution.state) : undefined
   const open = gate ? gate.items.filter((one) => !one.ok) : []
 
   const [name, setName] = useState('')
@@ -221,7 +223,7 @@ export function SolutionReader(props: SolutionReaderProps) {
               </Box>
             )}
 
-            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 1, mt: 2, mb: 0, fontSize: 14, alignItems: 'center' }}>
+            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'minmax(88px, 26%) minmax(0, 1fr)', columnGap: 2, rowGap: 1, mt: 2, mb: 0, fontSize: 14, alignItems: 'start' }}>
               <Term>{s('solution.addresses')}</Term>
               <Value testId="solution-addresses">
                 {props.addresses.length === 0
@@ -281,7 +283,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 <>
                   <Term>{null}</Term>
                   <Value>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '90px 1fr 1fr auto', gap: 0.5 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 0.5, alignItems: 'center' }}>
                       <TextField size="small" placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
                       <TextField size="small" placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
                       <TextField size="small" placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />

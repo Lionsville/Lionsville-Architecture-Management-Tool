@@ -152,7 +152,7 @@ type Tab = 'register' | 'analysis' | 'solutions'
 const READER = {
   register: { default: 640, min: 360, max: 1200 },
   analysis: { default: 420, min: 320, max: 900 },
-  solutions: { default: 480, min: 340, max: 900 },
+  solutions: { default: 640, min: 380, max: 1000 },
 } as const
 
 const DELETE_TITLE = {
@@ -637,6 +637,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         solution={one}
         phase={phase}
         gate={solutionGate(one, context)}
+        mayGoBack={!(one.state === 'adopted' && decision?.status === 'accepted')}
         questions={solutionQuestions(one, context)}
         addresses={one.addresses.map((address) => {
           const cause = causes.find((held) => held.id === address.id)

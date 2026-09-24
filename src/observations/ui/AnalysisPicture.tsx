@@ -160,23 +160,27 @@ export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'obs
   const r = RADIUS[node.observation.impact]
   const seen = node.observation.seen
   return (
-    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} opacity={dim ? 0.35 : 1}>
-      <title>{`${formatObservationNumber(node.observation.number)} ${node.observation.title}`}</title>
-      <circle
-        r={r}
-        fill={fill}
-        stroke={selected ? theme.palette.secondary.main : theme.palette.primary.main}
-        strokeWidth={selected ? 3 : 1.5}
-      />
-      {seen > 1 && (
-        <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={theme.palette.text.primary}>{seen}×</text>
-      )}
-      <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
-        {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}
-      </text>
-      <text textAnchor="middle" y={r + 25} fontSize={10} fill={theme.palette.text.primary}>
-        {shorten(node.observation.title, 34)}
-      </text>
+    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key}>
+      {/* An opaque backing, so a dimmed mark still hides the lines behind it. */}
+      <circle r={r} fill={theme.palette.background.default} />
+      <g opacity={dim ? 0.35 : 1}>
+        <title>{`${formatObservationNumber(node.observation.number)} ${node.observation.title}`}</title>
+        <circle
+          r={r}
+          fill={fill}
+          stroke={selected ? theme.palette.secondary.main : theme.palette.primary.main}
+          strokeWidth={selected ? 3 : 1.5}
+        />
+        {seen > 1 && (
+          <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={theme.palette.text.primary}>{seen}×</text>
+        )}
+        <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
+          {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}
+        </text>
+        <text textAnchor="middle" y={r + 25} fontSize={10} fill={theme.palette.text.primary}>
+          {shorten(node.observation.title, 34)}
+        </text>
+      </g>
     </g>
   )
 }
@@ -187,26 +191,29 @@ export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>
   const { node, x, y, selected, s, flag, dim, ...rest } = props
   const rootStroke = node.root ? theme.palette.secondary.main : node.cause.state === 'verified' ? theme.palette.success.main : theme.palette.warning.main
   return (
-    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined} opacity={dim ? 0.35 : 1}>
-      <title>{`${formatCauseNumber(node.cause.number)} ${node.cause.title}`}</title>
-      <rect
-        x={-BOX.width / 2}
-        y={-BOX.height / 2}
-        width={BOX.width}
-        height={BOX.height}
-        rx={node.root ? BOX.height / 2 : 5}
-        fill={theme.palette.background.paper}
-        stroke={selected ? theme.palette.secondary.main : rootStroke}
-        strokeWidth={selected ? 3 : node.root ? 2.5 : 1.8}
-        strokeDasharray={node.cause.state === 'assumed' ? '5 3' : undefined}
-      />
-      <text textAnchor="middle" dy="-0.15em" fontSize={11} fill={theme.palette.text.primary}>
-        {shorten(node.cause.title, 28)}
-      </text>
-      <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-        {formatCauseNumber(node.cause.number)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
-      </text>
-      {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
+    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
+      <rect x={-BOX.width / 2} y={-BOX.height / 2} width={BOX.width} height={BOX.height} rx={node.root ? BOX.height / 2 : 5} fill={theme.palette.background.paper} />
+      <g opacity={dim ? 0.35 : 1}>
+        <title>{`${formatCauseNumber(node.cause.number)} ${node.cause.title}`}</title>
+        <rect
+          x={-BOX.width / 2}
+          y={-BOX.height / 2}
+          width={BOX.width}
+          height={BOX.height}
+          rx={node.root ? BOX.height / 2 : 5}
+          fill={theme.palette.background.paper}
+          stroke={selected ? theme.palette.secondary.main : rootStroke}
+          strokeWidth={selected ? 3 : node.root ? 2.5 : 1.8}
+          strokeDasharray={node.cause.state === 'assumed' ? '5 3' : undefined}
+        />
+        <text textAnchor="middle" dy="-0.15em" fontSize={11} fill={theme.palette.text.primary}>
+          {shorten(node.cause.title, 28)}
+        </text>
+        <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
+          {formatCauseNumber(node.cause.number)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
+        </text>
+        {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
+      </g>
     </g>
   )
 }

@@ -144,6 +144,8 @@ describe('the Solutions tab', () => {
     expect(screen.getByTestId('solution-phase').textContent).toBe('Implemented')
     expect(screen.getByTestId('solution-did-it-work').textContent).toContain('Seen again on 2026-09-10')
     expect(screen.getByTestId('solution-seen-again').textContent).toContain('OB-0001')
+    // Its decision stands accepted, so the step back is not offered.
+    expect(screen.queryByTestId('solution-back')).toBeNull()
   })
 
   it('draws the picture with the solution in its lane and flags a root nobody works on', () => {
